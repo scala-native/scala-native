@@ -19,10 +19,12 @@ class ArrayDequeTest {
 
     assertTrue("constructed ArrayDeque() is not empty", ad.isEmpty())
 
-    val resultSize   = ad.size
+    val resultSize = ad.size
     val expectedSize = 0
-    assertTrue(s"size: ${resultSize} != expected: ${expectedSize}",
-               resultSize == expectedSize)
+    assertTrue(
+      s"size: ${resultSize} != expected: ${expectedSize}",
+      resultSize == expectedSize
+    )
   }
 
   @Test def constructorInitialCapacityMinusCapacityGreaterThan0(): Unit = {
@@ -35,10 +37,12 @@ class ArrayDequeTest {
 
     assertTrue("constructed ArrayDeque() is not empty", ad.isEmpty())
 
-    val resultSize   = ad.size
+    val resultSize = ad.size
     val expectedSize = 0
-    assertTrue(s"size: ${resultSize} != expected: ${expectedSize}",
-               resultSize == expectedSize)
+    assertTrue(
+      s"size: ${resultSize} != expected: ${expectedSize}",
+      resultSize == expectedSize
+    )
   }
 
   @Test def constructorInitialCapacityMinuCapacityLessThanZero0(): Unit = {
@@ -54,10 +58,12 @@ class ArrayDequeTest {
 
     assertTrue("constructed ArrayDeque() is not empty", ad.isEmpty())
 
-    val resultSize   = ad.size
+    val resultSize = ad.size
     val expectedSize = 0
-    assertTrue(s"size: ${resultSize} != expected: ${expectedSize}",
-               resultSize == expectedSize)
+    assertTrue(
+      s"size: ${resultSize} != expected: ${expectedSize}",
+      resultSize == expectedSize
+    )
   }
 
   @Test def constructorNull(): Unit = {
@@ -71,10 +77,12 @@ class ArrayDequeTest {
     assertTrue("a1", ad.size() == 3)
     assertFalse("a2", ad.isEmpty())
 
-    val result   = ad.toArray
+    val result = ad.toArray
     val expected = is.toArray
-    assertTrue(s"element: ${result} != expected: ${expected})",
-               result.sameElements(expected))
+    assertTrue(
+      s"element: ${result} != expected: ${expected})",
+      result.sameElements(expected)
+    )
   }
 
   @Test def constructorCollectionString(): Unit = {
@@ -84,11 +92,13 @@ class ArrayDequeTest {
     assertTrue("a1", ad.size() == 3)
     assertFalse("a2", ad.isEmpty())
 
-    val result   = ad.toArray
+    val result = ad.toArray
     val expected = is.toArray
 
-    assertTrue(s"element: ${result} != expected: ${expected})",
-               result.sameElements(expected))
+    assertTrue(
+      s"element: ${result} != expected: ${expected})",
+      result.sameElements(expected)
+    )
   }
 
   @Test def addElementMinusTriggerCapacityChange(): Unit = {
@@ -97,18 +107,20 @@ class ArrayDequeTest {
     // Code should not fail when it resizes when adding the 17th element.
 
     val max = 20 // Must be > 16
-    val is  = 1 to 20
-    val ad  = new ArrayDeque[Int]()
+    val is = 1 to 20
+    val ad = new ArrayDeque[Int]()
 
     for (e <- is) {
       ad.add(e)
     }
 
     for (e <- is) {
-      val result   = ad.removeFirst()
+      val result = ad.removeFirst()
       val expected = e
-      assertTrue(s"element: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"element: ${result} != expected: ${expected}",
+        result == expected
+      )
     }
   }
 
@@ -117,8 +129,10 @@ class ArrayDequeTest {
       type E = AnyRef
       val ad = new ArrayDeque[E]()
 
-      assertThrows(classOf[NullPointerException],
-                   ad.addFirst(null.asInstanceOf[E]))
+      assertThrows(
+        classOf[NullPointerException],
+        ad.addFirst(null.asInstanceOf[E])
+      )
     }
 
     locally {
@@ -128,12 +142,14 @@ class ArrayDequeTest {
       ad.add(is(0))
       ad.addFirst(is(1))
 
-      val result   = ad.toArray
+      val result = ad.toArray
       val expected = is.reverse.toArray
 
-      assertTrue(s"result: ${ad.toString} != " +
-                   s"expected: ${expected.mkString("[", ", ", "]")}",
-                 result.sameElements(expected))
+      assertTrue(
+        s"result: ${ad.toString} != " +
+          s"expected: ${expected.mkString("[", ", ", "]")}",
+        result.sameElements(expected)
+      )
     }
   }
 
@@ -142,22 +158,26 @@ class ArrayDequeTest {
       type E = AnyRef
       val ad = new ArrayDeque[E]()
 
-      assertThrows(classOf[NullPointerException],
-                   ad.addLast(null.asInstanceOf[E]))
+      assertThrows(
+        classOf[NullPointerException],
+        ad.addLast(null.asInstanceOf[E])
+      )
     }
 
     locally {
       val expected = Array(-1, -2)
-      val ad       = new ArrayDeque[Int]()
+      val ad = new ArrayDeque[Int]()
 
       ad.add(expected(0))
       ad.addLast(expected(1))
 
       val result = ad.toArray
 
-      assertTrue(s"result: ${ad.toString} != " +
-                   s"expected: ${expected.mkString("[", ", ", "]")}",
-                 result.sameElements(expected))
+      assertTrue(
+        s"result: ${ad.toString} != " +
+          s"expected: ${expected.mkString("[", ", ", "]")}",
+        result.sameElements(expected)
+      )
     }
   }
 
@@ -186,8 +206,8 @@ class ArrayDequeTest {
 
   @Test def containsAny(): Unit = {
     val needle = Math.PI
-    val is     = Seq(1.1, 2.2, 3.3, needle, 4.0)
-    val ad     = new ArrayDeque(is.toJavaList)
+    val is = Seq(1.1, 2.2, 3.3, needle, 4.0)
+    val ad = new ArrayDeque(is.toJavaList)
 
     val result = ad.contains(needle)
     assertTrue(s"'${ad.toString}' does not contain '${needle}'", result)
@@ -200,11 +220,13 @@ class ArrayDequeTest {
     val is = Seq(1, 2, 3)
     val ad = new ArrayDeque(is.toJavaList)
 
-    val result   = ad.descendingIterator.toScalaSeq.toArray
+    val result = ad.descendingIterator.toScalaSeq.toArray
     val expected = is.reverse.toArray
 
-    assertTrue(s"element: result} != expected: ${expected})",
-               result.sameElements(expected))
+    assertTrue(
+      s"element: result} != expected: ${expected})",
+      result.sameElements(expected)
+    )
   }
 
   @Test def element(): Unit = {
@@ -222,13 +244,17 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -247,13 +273,17 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -272,13 +302,17 @@ class ArrayDequeTest {
 
       val expected = is.last
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -291,11 +325,13 @@ class ArrayDequeTest {
     val is = Seq(-11, 0, 1)
     val ad = new ArrayDeque(is.toJavaList)
 
-    val result   = ad.iterator.toScalaSeq.toArray
+    val result = ad.iterator.toScalaSeq.toArray
     val expected = is.toArray
 
-    assertTrue(s"element: ${result} != expected: ${expected})",
-               result.sameElements(expected))
+    assertTrue(
+      s"element: ${result} != expected: ${expected})",
+      result.sameElements(expected)
+    )
   }
 
   @Test def offerNull(): Unit = {
@@ -303,22 +339,26 @@ class ArrayDequeTest {
       type E = AnyRef
       val ad = new ArrayDeque[E]()
 
-      assertThrows(classOf[NullPointerException],
-                   ad.offer(null.asInstanceOf[E]))
+      assertThrows(
+        classOf[NullPointerException],
+        ad.offer(null.asInstanceOf[E])
+      )
     }
 
     locally {
       val expected = Array(-1, -2)
-      val ad       = new ArrayDeque[Int]()
+      val ad = new ArrayDeque[Int]()
 
       ad.offer(expected(0))
       ad.offer(expected(1))
 
       val result = ad.toArray
 
-      assertTrue(s"result: ${ad.toString} != " +
-                   s"expected: ${expected.mkString("[", ", ", "]")}",
-                 result.sameElements(expected))
+      assertTrue(
+        s"result: ${ad.toString} != " +
+          s"expected: ${expected.mkString("[", ", ", "]")}",
+        result.sameElements(expected)
+      )
     }
   }
 
@@ -327,8 +367,10 @@ class ArrayDequeTest {
       type E = AnyRef
       val ad = new ArrayDeque[E]()
 
-      assertThrows(classOf[NullPointerException],
-                   ad.offerFirst(null.asInstanceOf[E]))
+      assertThrows(
+        classOf[NullPointerException],
+        ad.offerFirst(null.asInstanceOf[E])
+      )
     }
 
     locally {
@@ -338,12 +380,14 @@ class ArrayDequeTest {
       ad.offer(is(0))
       ad.offerFirst(is(1))
 
-      val result   = ad.toArray
+      val result = ad.toArray
       val expected = is.reverse.toArray
 
-      assertTrue(s"result: ${ad.toString} != " +
-                   s"expected: ${expected.mkString("[", ", ", "]")}",
-                 result.sameElements(expected))
+      assertTrue(
+        s"result: ${ad.toString} != " +
+          s"expected: ${expected.mkString("[", ", ", "]")}",
+        result.sameElements(expected)
+      )
     }
   }
 
@@ -352,22 +396,26 @@ class ArrayDequeTest {
       type E = AnyRef
       val ad = new ArrayDeque[E]()
 
-      assertThrows(classOf[NullPointerException],
-                   ad.offerLast(null.asInstanceOf[E]))
+      assertThrows(
+        classOf[NullPointerException],
+        ad.offerLast(null.asInstanceOf[E])
+      )
     }
 
     locally {
       val expected = Array(-1, -2)
-      val ad       = new ArrayDeque[Int]()
+      val ad = new ArrayDeque[Int]()
 
       ad.offerLast(expected(0))
       ad.offerLast(expected(1))
 
       val result = ad.toArray
 
-      assertTrue(s"result: ${ad.toString} != " +
-                   s"expected: ${expected.mkString("[", ", ", "]")}",
-                 result.sameElements(expected))
+      assertTrue(
+        s"result: ${ad.toString} != " +
+          s"expected: ${expected.mkString("[", ", ", "]")}",
+        result.sameElements(expected)
+      )
     }
   }
 
@@ -375,8 +423,10 @@ class ArrayDequeTest {
     locally {
       val ad = new ArrayDeque()
 
-      assertTrue("expected null from peek() with empty ArrayDeque",
-                 ad.peek == null)
+      assertTrue(
+        "expected null from peek() with empty ArrayDeque",
+        ad.peek == null
+      )
     }
 
     locally {
@@ -387,13 +437,17 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -401,8 +455,10 @@ class ArrayDequeTest {
     locally {
       val ad = new ArrayDeque()
 
-      assertTrue("expected null from peekFirst() with empty ArrayDeque",
-                 ad.peekFirst == null)
+      assertTrue(
+        "expected null from peekFirst() with empty ArrayDeque",
+        ad.peekFirst == null
+      )
     }
 
     locally {
@@ -413,13 +469,17 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -427,8 +487,10 @@ class ArrayDequeTest {
     locally {
       val ad = new ArrayDeque()
 
-      assertTrue("expected null from peekFirst() with empty ArrayDeque",
-                 ad.peekLast == null)
+      assertTrue(
+        "expected null from peekFirst() with empty ArrayDeque",
+        ad.peekLast == null
+      )
     }
 
     locally {
@@ -439,13 +501,17 @@ class ArrayDequeTest {
 
       val expected = is.last
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -453,8 +519,10 @@ class ArrayDequeTest {
     locally {
       val ad = new ArrayDeque()
 
-      assertTrue("expected null from poll() with empty ArrayDeque",
-                 ad.poll == null)
+      assertTrue(
+        "expected null from poll() with empty ArrayDeque",
+        ad.poll == null
+      )
     }
 
     locally {
@@ -465,13 +533,17 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -479,8 +551,10 @@ class ArrayDequeTest {
     locally {
       val ad = new ArrayDeque()
 
-      assertTrue("expected null from pollFirst() with empty ArrayDeque",
-                 ad.pollFirst == null)
+      assertTrue(
+        "expected null from pollFirst() with empty ArrayDeque",
+        ad.pollFirst == null
+      )
     }
 
     locally {
@@ -491,21 +565,27 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
   @Test def pollLast(): Unit = {
     locally {
       val ad = new ArrayDeque()
-      assertTrue(s"expected null from pollLast() with empty ArrayDeque",
-                 ad.pollLast == null)
+      assertTrue(
+        s"expected null from pollLast() with empty ArrayDeque",
+        ad.pollLast == null
+      )
     }
 
     locally {
@@ -516,13 +596,17 @@ class ArrayDequeTest {
 
       val expected = is.last
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -541,13 +625,17 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
@@ -566,12 +654,14 @@ class ArrayDequeTest {
       ad.add(is(0))
       ad.push(is(1))
 
-      val result   = ad.toArray
+      val result = ad.toArray
       val expected = is.reverse.toArray
 
-      assertTrue(s"result: ${ad.toString} != " +
-                   s"expected: ${expected.mkString("[", ", ", "]")}",
-                 result.sameElements(expected))
+      assertTrue(
+        s"result: ${ad.toString} != " +
+          s"expected: ${expected.mkString("[", ", ", "]")}",
+        result.sameElements(expected)
+      )
     }
   }
 
@@ -590,30 +680,36 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
   @Test def removeAny(): Unit = {
     val haystack = "Looking for a needle in a haystack"
-    val words    = haystack.split(" ").toSeq
-    val ad       = new ArrayDeque(words.toJavaList)
+    val words = haystack.split(" ").toSeq
+    val ad = new ArrayDeque(words.toJavaList)
 
     locally {
-      val adClone    = ad.clone()
+      val adClone = ad.clone()
       val adCloneStr = adClone.toString
 
-      assertTrue("deque and its clone must have same contents",
-                 ad.toString == adClone.toString)
+      assertTrue(
+        "deque and its clone must have same contents",
+        ad.toString == adClone.toString
+      )
 
       val beforeSize = ad.size
-      val needle     = "sharp"
+      val needle = "sharp"
 
       val result = ad.remove(needle)
 
@@ -621,19 +717,23 @@ class ArrayDequeTest {
 
       // Show deque has not changed
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = beforeSize
 
-      assertTrue(s"size: ${afterSize} != expected: ${beforeSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"size: ${afterSize} != expected: ${beforeSize}",
+        afterSize == expectedSize
+      )
 
       val adStr = ad.toString
-      assertTrue("deque: ${adStr} != expected: '${adCloneStr}'",
-                 ad.toString == adCloneStr)
+      assertTrue(
+        "deque: ${adStr} != expected: '${adCloneStr}'",
+        ad.toString == adCloneStr
+      )
     }
 
     locally {
-      val needle     = "needle"
+      val needle = "needle"
       val beforeSize = ad.size
 
       val result = ad.remove(needle)
@@ -642,16 +742,20 @@ class ArrayDequeTest {
 
       // Show deque changed as expected.
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = beforeSize - 1
 
-      assertTrue(s"size: ${afterSize} != expected: ${beforeSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"size: ${afterSize} != expected: ${beforeSize}",
+        afterSize == expectedSize
+      )
 
       val adStr = ad.toString
 
-      assertFalse("deque: ${adStr} must not contain '${needle}'",
-                  ad.toString.contains(needle))
+      assertFalse(
+        "deque: ${adStr} must not contain '${needle}'",
+        ad.toString.contains(needle)
+      )
     }
   }
 
@@ -670,30 +774,36 @@ class ArrayDequeTest {
 
       val expected = is.head
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
   @Test def removeFirstOccurrenceAny(): Unit = {
     val haystack = "Square needle || round needle || shiny needle"
-    val words    = haystack.split(" ").toSeq
-    val ad       = new ArrayDeque(words.toJavaList)
+    val words = haystack.split(" ").toSeq
+    val ad = new ArrayDeque(words.toJavaList)
 
     locally {
-      val adClone    = ad.clone()
+      val adClone = ad.clone()
       val adCloneStr = adClone.toString
 
-      assertTrue("deque and its clone must have same contents",
-                 ad.toString == adClone.toString)
+      assertTrue(
+        "deque and its clone must have same contents",
+        ad.toString == adClone.toString
+      )
 
       val beforeSize = ad.size
-      val needle     = "sharp"
+      val needle = "sharp"
 
       val result = ad.removeFirstOccurrence(needle)
 
@@ -701,19 +811,23 @@ class ArrayDequeTest {
 
       // Show deque has not changed
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = beforeSize
 
-      assertTrue(s"size: ${afterSize} != expected: ${beforeSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"size: ${afterSize} != expected: ${beforeSize}",
+        afterSize == expectedSize
+      )
 
       val adStr = ad.toString
-      assertTrue("deque: ${adStr} != expected: '${adCloneStr}'",
-                 ad.toString == adCloneStr)
+      assertTrue(
+        "deque: ${adStr} != expected: '${adCloneStr}'",
+        ad.toString == adCloneStr
+      )
     }
 
     locally {
-      val needle     = "needle"
+      val needle = "needle"
       val beforeSize = ad.size
 
       val result = ad.removeFirstOccurrence(needle)
@@ -722,17 +836,21 @@ class ArrayDequeTest {
 
       // Show deque changed as expected.
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = beforeSize - 1
 
-      assertTrue(s"size: ${afterSize} != expected: ${beforeSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"size: ${afterSize} != expected: ${beforeSize}",
+        afterSize == expectedSize
+      )
 
       for (i <- 0 until words.length if i != 1) {
-        val result   = ad.removeFirst
+        val result = ad.removeFirst
         val expected = words(i)
-        assertTrue("deque(${i}): ${result} != expected: '${expected}'",
-                   result == expected)
+        assertTrue(
+          "deque(${i}): ${result} != expected: '${expected}'",
+          result == expected
+        )
       }
     }
   }
@@ -752,30 +870,36 @@ class ArrayDequeTest {
 
       val expected = is.last
 
-      assertTrue(s"result: ${result} != expected: ${expected}",
-                 result == expected)
+      assertTrue(
+        s"result: ${result} != expected: ${expected}",
+        result == expected
+      )
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = is.size - 1
-      assertTrue(s"after size: ${afterSize} != expected: ${expectedSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"after size: ${afterSize} != expected: ${expectedSize}",
+        afterSize == expectedSize
+      )
     }
   }
 
   @Test def removeLastOccurrenceAny(): Unit = {
     val haystack = "Square needle || round needle || shiny needle"
-    val words    = haystack.split(" ").toSeq
-    val ad       = new ArrayDeque(words.toJavaList)
+    val words = haystack.split(" ").toSeq
+    val ad = new ArrayDeque(words.toJavaList)
 
     locally {
-      val adClone    = ad.clone()
+      val adClone = ad.clone()
       val adCloneStr = adClone.toString
 
-      assertTrue("deque and its clone must have same contents",
-                 ad.toString == adClone.toString)
+      assertTrue(
+        "deque and its clone must have same contents",
+        ad.toString == adClone.toString
+      )
 
       val beforeSize = ad.size
-      val needle     = "sharp"
+      val needle = "sharp"
 
       val result = ad.removeLastOccurrence(needle)
 
@@ -783,19 +907,23 @@ class ArrayDequeTest {
 
       // Show deque has not changed
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = beforeSize
 
-      assertTrue(s"size: ${afterSize} != expected: ${beforeSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"size: ${afterSize} != expected: ${beforeSize}",
+        afterSize == expectedSize
+      )
 
       val adStr = ad.toString
-      assertTrue("deque: ${adStr} != expected: '${adCloneStr}'",
-                 ad.toString == adCloneStr)
+      assertTrue(
+        "deque: ${adStr} != expected: '${adCloneStr}'",
+        ad.toString == adCloneStr
+      )
     }
 
     locally {
-      val needle     = "needle"
+      val needle = "needle"
       val beforeSize = ad.size
 
       val result = ad.removeLastOccurrence(needle)
@@ -804,17 +932,21 @@ class ArrayDequeTest {
 
       // Show deque changed as expected.
 
-      val afterSize    = ad.size
+      val afterSize = ad.size
       val expectedSize = beforeSize - 1
 
-      assertTrue(s"size: ${afterSize} != expected: ${beforeSize}",
-                 afterSize == expectedSize)
+      assertTrue(
+        s"size: ${afterSize} != expected: ${beforeSize}",
+        afterSize == expectedSize
+      )
 
       for (i <- 0 until (words.length - 1)) {
-        val result   = ad.removeFirst
+        val result = ad.removeFirst
         val expected = words(i)
-        assertTrue("deque(${i}): ${result} != expected: '${expected}'",
-                   result == expected)
+        assertTrue(
+          "deque(${i}): ${result} != expected: '${expected}'",
+          result == expected
+        )
       }
     }
   }
@@ -836,7 +968,7 @@ class ArrayDequeTest {
   @Test def toArrayArrayMinusArrayIsShorter(): Unit = {
     val al1 =
       new ArrayDeque[String](Seq("apple", "banana", "cherry").toJavaList)
-    val ain  = Array.empty[String]
+    val ain = Array.empty[String]
     val aout = al1.toArray(ain)
     assertTrue(ain ne aout)
     assertTrue(Array("apple", "banana", "cherry") sameElements aout)
@@ -845,7 +977,7 @@ class ArrayDequeTest {
   @Test def toArrayArrayMinusArrayIsTheSameLengthOrLonger(): Unit = {
     val al1 =
       new ArrayDeque[String](Seq("apple", "banana", "cherry").toJavaList)
-    val ain  = Array.fill(4)("foo")
+    val ain = Array.fill(4)("foo")
     val aout = al1.toArray(ain)
     assertTrue(ain eq aout)
     assertTrue(Array("apple", "banana", "cherry", null) sameElements aout)
@@ -854,8 +986,8 @@ class ArrayDequeTest {
   @Test def toArrayArrayWhenSuperClass(): Unit = {
     class SuperClass
     class SubClass extends SuperClass
-    val in   = Seq.fill(2)(new SubClass)
-    val al1  = new ArrayDeque[SubClass](in.toJavaList)
+    val in = Seq.fill(2)(new SubClass)
+    val al1 = new ArrayDeque[SubClass](in.toJavaList)
     val aout = al1.toArray(Array.empty[SuperClass])
     assertTrue(in.toArray sameElements aout)
   }
@@ -875,8 +1007,10 @@ class ArrayDequeTest {
       // The difference is that this Deque is not Empty.
       val ad = new ArrayDeque(Seq(new SubClass).toJavaList)
 
-      assertThrows(classOf[ArrayStoreException],
-                   ad.toArray(Array.empty[NotSuperClass]))
+      assertThrows(
+        classOf[ArrayStoreException],
+        ad.toArray(Array.empty[NotSuperClass])
+      )
     }
   }
 }

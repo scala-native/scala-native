@@ -8,9 +8,13 @@ import scala.scalanative.junit.utils.JUnitTest
 
 class AssertThrowsTest {
   @Test def test(): Unit = {
-    assertThrows(classOf[UnsupportedOperationException], new ThrowingRunnable {
-      def run(): Unit = throw new IllegalArgumentException("Exception message")
-    })
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      new ThrowingRunnable {
+        def run(): Unit =
+          throw new IllegalArgumentException("Exception message")
+      }
+    )
   }
 }
 

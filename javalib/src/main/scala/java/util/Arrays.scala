@@ -75,17 +75,21 @@ object Arrays {
     sortRangeAnyRefImpl(a, fromIndex, toIndex)
 
   @noinline
-  def sort[T <: AnyRef](array: Array[T],
-                        comparator: Comparator[_ >: T]): Unit = {
+  def sort[T <: AnyRef](
+      array: Array[T],
+      comparator: Comparator[_ >: T]
+  ): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortAnyRefImpl(array.asInstanceOf[Array[AnyRef]])
   }
 
   @noinline
-  def sort[T <: AnyRef](array: Array[T],
-                        fromIndex: Int,
-                        toIndex: Int,
-                        comparator: Comparator[_ >: T]): Unit = {
+  def sort[T <: AnyRef](
+      array: Array[T],
+      fromIndex: Int,
+      toIndex: Int,
+      comparator: Comparator[_ >: T]
+  ): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortRangeAnyRefImpl(array.asInstanceOf[Array[AnyRef]], fromIndex, toIndex)
   }
@@ -94,7 +98,8 @@ object Arrays {
   private def sortRangeImpl[@specialized T: ClassTag](
       a: Array[T],
       fromIndex: Int,
-      toIndex: Int)(implicit ord: Ordering[T]): Unit = {
+      toIndex: Int
+  )(implicit ord: Ordering[T]): Unit = {
     checkRangeIndices(a, fromIndex, toIndex)
     stableMergeSort[T](a, fromIndex, toIndex)
   }
@@ -103,7 +108,8 @@ object Arrays {
   private def sortRangeAnyRefImpl(
       a: Array[AnyRef],
       fromIndex: Int,
-      toIndex: Int)(implicit ord: Ordering[AnyRef]): Unit = {
+      toIndex: Int
+  )(implicit ord: Ordering[AnyRef]): Unit = {
     checkRangeIndices(a, fromIndex, toIndex)
     stableMergeSortAnyRef(a, fromIndex, toIndex)
   }
@@ -113,20 +119,22 @@ object Arrays {
     stableMergeSort[T](a, 0, a.length)
 
   @inline
-  private def sortAnyRefImpl(a: Array[AnyRef])(
-      implicit ord: Ordering[AnyRef]): Unit =
+  private def sortAnyRefImpl(a: Array[AnyRef])(implicit
+      ord: Ordering[AnyRef]
+  ): Unit =
     stableMergeSortAnyRef(a, 0, a.length)
 
   private final val inPlaceSortThreshold = 16
 
-  /** Sort array `a` with merge sort and insertion sort,
-   *  using the Ordering on its elements.
+  /** Sort array `a` with merge sort and insertion sort, using the Ordering on
+   *  its elements.
    */
   @inline
   private def stableMergeSort[@specialized K: ClassTag](
       a: Array[K],
       start: Int,
-      end: Int)(implicit ord: Ordering[K]): Unit = {
+      end: Int
+  )(implicit ord: Ordering[K]): Unit = {
     if (end - start > inPlaceSortThreshold)
       stableSplitMerge(a, new Array[K](a.length), start, end)
     else
@@ -138,7 +146,8 @@ object Arrays {
       a: Array[K],
       temp: Array[K],
       start: Int,
-      end: Int)(implicit ord: Ordering[K]): Unit = {
+      end: Int
+  )(implicit ord: Ordering[K]): Unit = {
     val length = end - start
     if (length > inPlaceSortThreshold) {
       val middle = start + (length / 2)
@@ -157,9 +166,10 @@ object Arrays {
       temp: Array[K],
       start: Int,
       middle: Int,
-      end: Int)(implicit ord: Ordering[K]): Unit = {
-    var outIndex     = start
-    var leftInIndex  = start
+      end: Int
+  )(implicit ord: Ordering[K]): Unit = {
+    var outIndex = start
+    var leftInIndex = start
     var rightInIndex = middle
     while (outIndex < end) {
       if (leftInIndex < middle &&
@@ -181,7 +191,8 @@ object Arrays {
   private final def insertionSort[@specialized T](
       a: Array[T],
       start: Int,
-      end: Int)(implicit ord: Ordering[T]): Unit = {
+      end: Int
+  )(implicit ord: Ordering[T]): Unit = {
     val n = end - start
     if (n >= 2) {
       if (ord.compare(a(start), a(start + 1)) > 0) {
@@ -204,7 +215,7 @@ object Arrays {
               iA = ix
           }
           val ix = iA + (if (ord.compare(next, a(iA)) < 0) 0 else 1)
-          var i  = start + m
+          var i = start + m
           while (i > ix) {
             a(i) = a(i - 1)
             i -= 1
@@ -216,12 +227,13 @@ object Arrays {
     }
   }
 
-  /** Sort array `a` with merge sort and insertion sort,
-   *  using the Ordering on its elements.
+  /** Sort array `a` with merge sort and insertion sort, using the Ordering on
+   *  its elements.
    */
   @inline
   private def stableMergeSortAnyRef(a: Array[AnyRef], start: Int, end: Int)(
-      implicit ord: Ordering[AnyRef]): Unit = {
+      implicit ord: Ordering[AnyRef]
+  ): Unit = {
     if (end - start > inPlaceSortThreshold)
       stableSplitMergeAnyRef(a, new Array(a.length), start, end)
     else
@@ -233,7 +245,8 @@ object Arrays {
       a: Array[AnyRef],
       temp: Array[AnyRef],
       start: Int,
-      end: Int)(implicit ord: Ordering[AnyRef]): Unit = {
+      end: Int
+  )(implicit ord: Ordering[AnyRef]): Unit = {
     val length = end - start
     if (length > inPlaceSortThreshold) {
       val middle = start + (length / 2)
@@ -252,9 +265,10 @@ object Arrays {
       temp: Array[AnyRef],
       start: Int,
       middle: Int,
-      end: Int)(implicit ord: Ordering[AnyRef]): Unit = {
-    var outIndex     = start
-    var leftInIndex  = start
+      end: Int
+  )(implicit ord: Ordering[AnyRef]): Unit = {
+    var outIndex = start
+    var leftInIndex = start
     var rightInIndex = middle
     while (outIndex < end) {
       if (leftInIndex < middle &&
@@ -271,7 +285,8 @@ object Arrays {
 
   @noinline
   private final def insertionSortAnyRef(a: Array[AnyRef], start: Int, end: Int)(
-      implicit ord: Ordering[AnyRef]): Unit = {
+      implicit ord: Ordering[AnyRef]
+  ): Unit = {
     val n = end - start
     if (n >= 2) {
       if (ord.compare(a(start), a(start + 1)) > 0) {
@@ -294,7 +309,7 @@ object Arrays {
               iA = ix
           }
           val ix = iA + (if (ord.compare(next, a(iA)) < 0) 0 else 1)
-          var i  = start + m
+          var i = start + m
           while (i > ix) {
             a(i) = a(i - 1)
             i -= 1
@@ -310,10 +325,12 @@ object Arrays {
     binarySearchImpl[Long](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Long],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Long): Int = {
+  def binarySearch(
+      a: Array[Long],
+      startIndex: Int,
+      endIndex: Int,
+      key: Long
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Long](a, startIndex, endIndex, key, _ < _)
   }
@@ -322,10 +339,12 @@ object Arrays {
     binarySearchImpl[Int](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Int],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Int): Int = {
+  def binarySearch(
+      a: Array[Int],
+      startIndex: Int,
+      endIndex: Int,
+      key: Int
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Int](a, startIndex, endIndex, key, _ < _)
   }
@@ -334,10 +353,12 @@ object Arrays {
     binarySearchImpl[Short](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Short],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Short): Int = {
+  def binarySearch(
+      a: Array[Short],
+      startIndex: Int,
+      endIndex: Int,
+      key: Short
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Short](a, startIndex, endIndex, key, _ < _)
   }
@@ -346,10 +367,12 @@ object Arrays {
     binarySearchImpl[Char](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Char],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Char): Int = {
+  def binarySearch(
+      a: Array[Char],
+      startIndex: Int,
+      endIndex: Int,
+      key: Char
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Char](a, startIndex, endIndex, key, _ < _)
   }
@@ -358,10 +381,12 @@ object Arrays {
     binarySearchImpl[Byte](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Byte],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Byte): Int = {
+  def binarySearch(
+      a: Array[Byte],
+      startIndex: Int,
+      endIndex: Int,
+      key: Byte
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Byte](a, startIndex, endIndex, key, _ < _)
   }
@@ -370,10 +395,12 @@ object Arrays {
     binarySearchImpl[Double](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Double],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Double): Int = {
+  def binarySearch(
+      a: Array[Double],
+      startIndex: Int,
+      endIndex: Int,
+      key: Double
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Double](a, startIndex, endIndex, key, _ < _)
   }
@@ -382,10 +409,12 @@ object Arrays {
     binarySearchImpl[Float](a, 0, a.length, key, _ < _)
 
   @noinline
-  def binarySearch(a: Array[Float],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: Float): Int = {
+  def binarySearch(
+      a: Array[Float],
+      startIndex: Int,
+      endIndex: Int,
+      key: Float
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[Float](a, startIndex, endIndex, key, _ < _)
   }
@@ -394,10 +423,12 @@ object Arrays {
     binarySearchImplRef(a, 0, a.length, key)
 
   @noinline
-  def binarySearch(a: Array[AnyRef],
-                   startIndex: Int,
-                   endIndex: Int,
-                   key: AnyRef): Int = {
+  def binarySearch(
+      a: Array[AnyRef],
+      startIndex: Int,
+      endIndex: Int,
+      key: AnyRef
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImplRef(a, startIndex, endIndex, key)
   }
@@ -407,32 +438,38 @@ object Arrays {
     binarySearchImpl[T](a, 0, a.length, key, (a, b) => c.compare(a, b) < 0)
 
   @noinline
-  def binarySearch[T](a: Array[T],
-                      startIndex: Int,
-                      endIndex: Int,
-                      key: T,
-                      c: Comparator[_ >: T]): Int = {
+  def binarySearch[T](
+      a: Array[T],
+      startIndex: Int,
+      endIndex: Int,
+      key: T,
+      c: Comparator[_ >: T]
+  ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
-    binarySearchImpl[T](a,
-                        startIndex,
-                        endIndex,
-                        key,
-                        (a, b) => c.compare(a, b) < 0)
+    binarySearchImpl[T](
+      a,
+      startIndex,
+      endIndex,
+      key,
+      (a, b) => c.compare(a, b) < 0
+    )
   }
 
   @inline
   @tailrec
-  private def binarySearchImpl[T](a: Array[T],
-                                  startIndex: Int,
-                                  endIndex: Int,
-                                  key: T,
-                                  lt: (T, T) => Boolean): Int = {
+  private def binarySearchImpl[T](
+      a: Array[T],
+      startIndex: Int,
+      endIndex: Int,
+      key: T,
+      lt: (T, T) => Boolean
+  ): Int = {
     if (startIndex == endIndex) {
       // Not found
       -startIndex - 1
     } else {
       // Indices are unsigned 31-bit integer, so this does not overflow
-      val mid  = (startIndex + endIndex) >>> 1
+      val mid = (startIndex + endIndex) >>> 1
       val elem = a(mid)
       if (lt(key, elem)) {
         binarySearchImpl(a, startIndex, mid, key, lt)
@@ -447,10 +484,12 @@ object Arrays {
 
   @inline
   @tailrec
-  def binarySearchImplRef(a: Array[AnyRef],
-                          startIndex: Int,
-                          endIndex: Int,
-                          key: AnyRef): Int = {
+  def binarySearchImplRef(
+      a: Array[AnyRef],
+      startIndex: Int,
+      endIndex: Int,
+      key: AnyRef
+  ): Int = {
     if (startIndex == endIndex) {
       // Not found
       -startIndex - 1
@@ -554,20 +593,24 @@ object Arrays {
     fillImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
-  def fill(a: Array[Boolean],
-           fromIndex: Int,
-           toIndex: Int,
-           value: Boolean): Unit =
+  def fill(
+      a: Array[Boolean],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Boolean
+  ): Unit =
     fillImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Double], value: Double): Unit =
     fillImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
-  def fill(a: Array[Double],
-           fromIndex: Int,
-           toIndex: Int,
-           value: Double): Unit =
+  def fill(
+      a: Array[Double],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Double
+  ): Unit =
     fillImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Float], value: Float): Unit =
@@ -581,18 +624,22 @@ object Arrays {
     fillImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
-  def fill(a: Array[AnyRef],
-           fromIndex: Int,
-           toIndex: Int,
-           value: AnyRef): Unit =
+  def fill(
+      a: Array[AnyRef],
+      fromIndex: Int,
+      toIndex: Int,
+      value: AnyRef
+  ): Unit =
     fillImpl(a, fromIndex, toIndex, value)
 
   @inline
-  private def fillImpl[T](a: Array[T],
-                          fromIndex: Int,
-                          toIndex: Int,
-                          value: T,
-                          checkIndices: Boolean = true): Unit = {
+  private def fillImpl[T](
+      a: Array[T],
+      fromIndex: Int,
+      toIndex: Int,
+      value: T,
+      checkIndices: Boolean = true
+  ): Unit = {
     if (checkIndices)
       checkRangeIndices(a, fromIndex, toIndex)
     var i = fromIndex
@@ -612,7 +659,8 @@ object Arrays {
   def copyOf[T <: AnyRef, U <: AnyRef](
       original: Array[U],
       newLength: Int,
-      newType: Class[_ <: Array[T]]): Array[T] = {
+      newType: Class[_ <: Array[T]]
+  ): Array[T] = {
     implicit val tag = ClassTag[T](newType.getComponentType)
     copyOfImpl(original, newLength)
   }
@@ -644,21 +692,26 @@ object Arrays {
     copyOfImpl(original, newLength)
 
   @inline
-  private def copyOfImpl[U, T: ClassTag](original: Array[U],
-                                         newLength: Int): Array[T] = {
+  private def copyOfImpl[U, T: ClassTag](
+      original: Array[U],
+      newLength: Int
+  ): Array[T] = {
     checkArrayLength(newLength)
     val copyLength = Math.min(newLength, original.length)
-    val ret        = new Array[T](newLength)
+    val ret = new Array[T](newLength)
     System.arraycopy(original, 0, ret, 0, copyLength)
     ret
   }
 
   @noinline
-  def copyOfRange[T <: AnyRef](original: Array[T],
-                               from: Int,
-                               to: Int): Array[T] = {
+  def copyOfRange[T <: AnyRef](
+      original: Array[T],
+      from: Int,
+      to: Int
+  ): Array[T] = {
     copyOfRangeImpl[T](original, from, to)(
-      ClassTag(original.getClass.getComponentType)).asInstanceOf[Array[T]]
+      ClassTag(original.getClass.getComponentType)
+    ).asInstanceOf[Array[T]]
   }
 
   @noinline
@@ -666,9 +719,11 @@ object Arrays {
       original: Array[U],
       from: Int,
       to: Int,
-      newType: Class[_ <: Array[T]]): Array[T] = {
+      newType: Class[_ <: Array[T]]
+  ): Array[T] = {
     copyOfRangeImpl[AnyRef](original.asInstanceOf[Array[AnyRef]], from, to)(
-      ClassTag(newType.getComponentType)).asInstanceOf[Array[T]]
+      ClassTag(newType.getComponentType)
+    ).asInstanceOf[Array[T]]
   }
 
   @noinline
@@ -696,27 +751,33 @@ object Arrays {
     copyOfRangeImpl(original, start, end)
 
   @noinline
-  def copyOfRange(original: Array[Double],
-                  start: Int,
-                  end: Int): Array[Double] =
+  def copyOfRange(
+      original: Array[Double],
+      start: Int,
+      end: Int
+  ): Array[Double] =
     copyOfRangeImpl(original, start, end)
 
   @noinline
-  def copyOfRange(original: Array[Boolean],
-                  start: Int,
-                  end: Int): Array[Boolean] =
+  def copyOfRange(
+      original: Array[Boolean],
+      start: Int,
+      end: Int
+  ): Array[Boolean] =
     copyOfRangeImpl(original, start, end)
 
   @inline
-  private def copyOfRangeImpl[T: ClassTag](original: Array[T],
-                                           start: Int,
-                                           end: Int): Array[T] = {
+  private def copyOfRangeImpl[T: ClassTag](
+      original: Array[T],
+      start: Int,
+      end: Int
+  ): Array[T] = {
     if (start > end)
       throw new IllegalArgumentException("" + start + " > " + end)
 
-    val retLength  = end - start
+    val retLength = end - start
     val copyLength = Math.min(retLength, original.length - start)
-    val ret        = new Array[T](retLength)
+    val ret = new Array[T](retLength)
     System.arraycopy(original, start, ret, 0, copyLength)
     ret
   }
@@ -852,8 +913,8 @@ object Arrays {
       "null"
     } else {
       var result = "["
-      val len    = a.length
-      var i      = 0
+      val len = a.length
+      var i = 0
       while (i != len) {
         if (i != 0)
           result += ", "
@@ -867,8 +928,10 @@ object Arrays {
   @noinline def deepToString(a: Array[AnyRef]): String =
     deepToStringImpl(a, new java.util.HashSet[AsRef])
 
-  private def deepToStringImpl(a: Array[AnyRef],
-                               branch: java.util.Set[AsRef]): String = {
+  private def deepToStringImpl(
+      a: Array[AnyRef],
+      branch: java.util.Set[AsRef]
+  ): String = {
     @inline def valueToString(e: AnyRef): String = {
       if (e == null) "null"
       else {
@@ -894,12 +957,15 @@ object Arrays {
   }
 
   @inline
-  private def checkRangeIndices[@specialized T](a: Array[T],
-                                                start: Int,
-                                                end: Int): Unit = {
+  private def checkRangeIndices[@specialized T](
+      a: Array[T],
+      start: Int,
+      end: Int
+  ): Unit = {
     if (start > end)
       throw new IllegalArgumentException(
-        "fromIndex(" + start + ") > toIndex(" + end + ")")
+        "fromIndex(" + start + ") > toIndex(" + end + ")"
+      )
 
     // bounds checks
     if (start < 0)

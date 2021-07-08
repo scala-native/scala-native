@@ -72,8 +72,10 @@ object Instant {
   }
 
   def ofEpochMilli(epochMilli: Long): Instant = {
-    new Instant(Math.floorDiv(epochMilli, 1000L),
-                1000000 * Math.floorMod(epochMilli, 1000L).toInt)
+    new Instant(
+      Math.floorDiv(epochMilli, 1000L),
+      1000000 * Math.floorMod(epochMilli, 1000L).toInt
+    )
   }
 
   def ofEpochSecond(epochSecond: Long): Instant = ofEpochSecond(epochSecond, 0L)

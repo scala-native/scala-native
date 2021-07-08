@@ -15,16 +15,18 @@ final class TestAdapter(config: TestAdapter.Config) {
 
   import TestAdapter._
 
-  require(config.binaryFile.exists(),
-          "Attempted to create a TestAdapter with non existing binary file. ")
+  require(
+    config.binaryFile.exists(),
+    "Attempted to create a TestAdapter with non existing binary file. "
+  )
 
   /** Map of ThreadId -> ManagedRunner */
   private[this] val runners = TrieMap.empty[Long, ManagedRunner]
 
   /** State management. May only be accessed under synchronization. */
-  private[this] var closed    = false
+  private[this] var closed = false
   private[this] var nextRunID = 0
-  private[this] var runs      = Set.empty[RunMux.RunID]
+  private[this] var runs = Set.empty[RunMux.RunID]
 
   /** A custom execution context that delegates to the global one for execution,
    *  but handles failures internally.
@@ -38,7 +40,8 @@ final class TestAdapter(config: TestAdapter.Config) {
    *  [[close]] is called.
    */
   def loadFrameworks(
-      frameworkNames: List[List[String]]): List[Option[Framework]] = {
+      frameworkNames: List[List[String]]
+  ): List[Option[Framework]] = {
     getRunnerForThread().com
       .call(NativeEndpoints.detectFrameworks)(frameworkNames)
       .map(_.map(_.map(info => new FrameworkAdapter(info, this))))
@@ -69,7 +72,7 @@ final class TestAdapter(config: TestAdapter.Config) {
    *  on an async operation to complete.
    */
   private def reportFailure(cause: Throwable): Unit = {
-    val msg   = "Failure in async execution. Aborting all test runs."
+    val msg = "Failure in async execution. Aborting all test runs."
     val error = new AssertionError(msg, cause)
     config.logger.error(msg)
     config.logger.trace(error)
@@ -111,10 +114,12 @@ final class TestAdapter(config: TestAdapter.Config) {
     // Otherwise we might leak runners.
     require(!closed, "We are closed. Cannot create new runner.")
 
-    val com = new NativeRunnerRPC(executableFile = config.binaryFile,
-                                  envVars = config.envVars,
-                                  args = Seq.empty,
-                                  logger = config.logger)
+    val com = new NativeRunnerRPC(
+      executableFile = config.binaryFile,
+      envVars = config.envVars,
+      args = Seq.empty,
+      logger = config.logger
+    )
     val mux = new RunMuxRPC(com)
 
     new ManagedRunner(threadId, com, mux)
@@ -139,10 +144,11 @@ object TestAdapter {
       logger = Logger.default
     )
 
-    private case class ConfigImpl(binaryFile: File,
-                                  envVars: Map[String, String],
-                                  logger: Logger)
-        extends Config {
+    private case class ConfigImpl(
+        binaryFile: File,
+        envVars: Map[String, String],
+        logger: Logger
+    ) extends Config {
       override def withEnvVars(envVars: Map[String, String]): Config =
         copy(envVars = this.envVars ++ envVars)
 

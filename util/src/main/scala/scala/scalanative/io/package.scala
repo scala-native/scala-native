@@ -13,7 +13,7 @@ package object io {
 
   def packageNameFromPath(path: Path): String = {
     val fileName = path.getFileName.toString
-    val base     = fileName.split('.').init.mkString(".")
+    val base = fileName.split('.').init.mkString(".")
 
     Option(path.getParent) match {
       case Some(parent) =>

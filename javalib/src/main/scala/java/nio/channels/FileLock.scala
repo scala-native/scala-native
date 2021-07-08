@@ -1,19 +1,24 @@
 package java.nio.channels
 
-abstract class FileLock private (channel: Channel,
-                                 final val position: Long,
-                                 final val size: Long,
-                                 shared: Boolean)
-    extends AutoCloseable {
-  protected def this(channel: AsynchronousFileChannel,
-                     position: Long,
-                     size: Long,
-                     shared: Boolean) =
+abstract class FileLock private (
+    channel: Channel,
+    final val position: Long,
+    final val size: Long,
+    shared: Boolean
+) extends AutoCloseable {
+  protected def this(
+      channel: AsynchronousFileChannel,
+      position: Long,
+      size: Long,
+      shared: Boolean
+  ) =
     this(channel: Channel, position, size, shared)
-  protected def this(channel: FileChannel,
-                     position: Long,
-                     size: Long,
-                     shared: Boolean) =
+  protected def this(
+      channel: FileChannel,
+      position: Long,
+      size: Long,
+      shared: Boolean
+  ) =
     this(channel: Channel, position, size, shared)
 
   final def channel(): FileChannel =

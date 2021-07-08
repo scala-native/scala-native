@@ -6,8 +6,8 @@ import org.junit.Assert._
 
 class MixinTest {
   var messages: List[String] = Nil
-  def log(msg: String)       = messages ::= msg
-  def clear(): Unit          = messages = Nil
+  def log(msg: String) = messages ::= msg
+  def clear(): Unit = messages = Nil
   def testEffects(name: String)(effects: String*)(body: => Unit): Unit = {
     clear()
     body

@@ -13,7 +13,7 @@ object URLEncoder {
     }
     // check for UnsupportedEncodingException
     "".getBytes(enc)
-    val buf   = new java.lang.StringBuilder(s.length + 16)
+    val buf = new java.lang.StringBuilder(s.length + 16)
     var start = -1
     @tailrec
     def loop(i: Int): Unit = {
@@ -44,11 +44,13 @@ object URLEncoder {
     buf.toString
   }
 
-  private[this] def convert(s: String,
-                            buf: java.lang.StringBuilder,
-                            enc: String): Unit = {
+  private[this] def convert(
+      s: String,
+      buf: java.lang.StringBuilder,
+      enc: String
+  ): Unit = {
     val bytes = s.getBytes(enc)
-    var j     = 0
+    var j = 0
     @tailrec
     def loop(j: Int): Unit = {
       if (j < bytes.length) {

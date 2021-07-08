@@ -42,8 +42,10 @@ class StringBufferTest {
     assertEquals("true", newBuf.insert(0, true).toString)
     assertEquals("a", newBuf.insert(0, 'a').toString)
     assertEquals("abcd", newBuf.insert(0, Array('a', 'b', 'c', 'd')).toString)
-    assertEquals("bc",
-                 newBuf.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals(
+      "bc",
+      newBuf.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString
+    )
     assertEquals("4", newBuf.insert(0, 4.toByte).toString)
     assertEquals("304", newBuf.insert(0, 304.toShort).toString)
     assertEquals("100000", newBuf.insert(0, 100000).toString)
@@ -54,12 +56,17 @@ class StringBufferTest {
     assertEquals("abcdef", initBuf("adef").insert(1, initBuf("bc")).toString)
     assertEquals(
       "abcdef",
-      initBuf("abef").insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2).toString)
+      initBuf("abef").insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2).toString
+    )
 
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("abcd").insert(-1, "whatever"))
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("abcd").insert(5, "whatever"))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuf("abcd").insert(-1, "whatever")
+    )
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuf("abcd").insert(5, "whatever")
+    )
   }
 
   @Test def insertFloat(): Unit = {
@@ -69,18 +76,24 @@ class StringBufferTest {
 
   // TODO: segfaults with EXC_BAD_ACCESS (code=1, address=0x0)
   @Test def insertStringBuffer(): Unit = {
-    assertEquals("abcdef",
-                 initBuf("abef").insert(2, initBuf("abcde"), 2, 4).toString)
+    assertEquals(
+      "abcdef",
+      initBuf("abef").insert(2, initBuf("abcde"), 2, 4).toString
+    )
   }
 
   @Test def deleteCharAt(): Unit = {
     assertEquals("023", initBuf("0123").deleteCharAt(1).toString)
     assertEquals("123", initBuf("0123").deleteCharAt(0).toString)
     assertEquals("012", initBuf("0123").deleteCharAt(3).toString)
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("0123").deleteCharAt(-1))
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("0123").deleteCharAt(4))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuf("0123").deleteCharAt(-1)
+    )
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuf("0123").deleteCharAt(4)
+    )
   }
 
   @Test def replace(): Unit = {
@@ -92,8 +105,10 @@ class StringBufferTest {
     assertEquals("0xxxx123", initBuf("0123").replace(1, 1, "xxxx").toString)
     assertEquals("0123x", initBuf("0123").replace(4, 5, "x").toString)
 
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuf("0123").replace(-1, 3, "x"))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuf("0123").replace(-1, 3, "x")
+    )
   }
 
   @Test def setCharAt(): Unit = {
@@ -106,10 +121,14 @@ class StringBufferTest {
     buf.setCharAt(5, 'h')
     assertEquals("foxbah", buf.toString)
 
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 buf.setCharAt(-1, 'h'))
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 buf.setCharAt(6, 'h'))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      buf.setCharAt(-1, 'h')
+    )
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      buf.setCharAt(6, 'h')
+    )
   }
 
   @Test def ensureCapacity(): Unit = {
@@ -134,7 +153,7 @@ class StringBufferTest {
     buf.appendCodePoint(0x10000)
     assertEquals("a\uD800\uDC00", buf.toString)
     buf.append("fixture")
-    buf.appendCodePoint(0x00010FFFF)
+    buf.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", buf.toString)
   }
 }

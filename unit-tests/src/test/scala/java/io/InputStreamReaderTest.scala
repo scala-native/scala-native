@@ -22,28 +22,34 @@ class InputStreamReaderTest {
     assertThrows(classOf[NullPointerException], new InputStreamReader(null))
     assertThrows(
       classOf[NullPointerException],
-      new InputStreamReader(new MockInputStream, null: CharsetDecoder))
-    assertThrows(classOf[NullPointerException],
-                 new InputStreamReader(new MockInputStream, null: Charset))
-    assertThrows(classOf[NullPointerException],
-                 new InputStreamReader(new MockInputStream, null: String))
+      new InputStreamReader(new MockInputStream, null: CharsetDecoder)
+    )
+    assertThrows(
+      classOf[NullPointerException],
+      new InputStreamReader(new MockInputStream, null: Charset)
+    )
+    assertThrows(
+      classOf[NullPointerException],
+      new InputStreamReader(new MockInputStream, null: String)
+    )
   }
 
   @Test def inputStreamReaderInputStreamStringWithUnsupportedEnc(): Unit = {
     assertThrows(
       classOf[java.io.UnsupportedEncodingException],
-      new InputStreamReader(new MockInputStream, "unsupported encoding"))
+      new InputStreamReader(new MockInputStream, "unsupported encoding")
+    )
   }
 
   @Test def closeClosesTheInnerStream(): Unit = {
-    val in     = new MockInputStream
+    val in = new MockInputStream
     val reader = new InputStreamReader(in)
     reader.close()
     assertTrue(in.isClosed)
   }
 
   @Test def closingTwiceIsHarmless(): Unit = {
-    val in     = new MockInputStream
+    val in = new MockInputStream
     val reader = new InputStreamReader(in)
     reader.close()
     reader.close()

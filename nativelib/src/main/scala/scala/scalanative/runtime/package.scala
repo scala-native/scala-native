@@ -12,8 +12,8 @@ package object runtime {
   /** Get monitor for given object. */
   @alwaysinline def getMonitor(obj: Object): Monitor = Monitor.dummy
 
-  /** Initialize runtime with given arguments and return the
-   *  rest as Java-style array.
+  /** Initialize runtime with given arguments and return the rest as Java-style
+   *  array.
    */
   def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
     val argv = fromRawPtr[CString](rawargv)
@@ -36,8 +36,8 @@ package object runtime {
   @alwaysinline def toRawPtr[T](ptr: Ptr[T]): RawPtr =
     Boxes.unboxToPtr(ptr)
 
-  /** Run the runtime's event loop. The method is called from the
-   *  generated C-style after the application's main method terminates.
+  /** Run the runtime's event loop. The method is called from the generated
+   *  C-style after the application's main method terminates.
    */
   @noinline def loop(): Unit =
     ExecutionContext.loop()
@@ -49,9 +49,10 @@ package object runtime {
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
     val fromName = loadObject(elemRawPtr(from, 16))
-    val toName   = loadObject(elemRawPtr(to, 16))
+    val toName = loadObject(elemRawPtr(to, 16))
     throw new java.lang.ClassCastException(
-      s"$fromName cannot be cast to $toName")
+      s"$fromName cannot be cast to $toName"
+    )
   }
 
   /** Called by the generated code in case of operations on null. */
@@ -66,7 +67,8 @@ package object runtime {
   @noinline def throwOutOfBounds(i: Int): Nothing =
     throw new ArrayIndexOutOfBoundsException(i.toString)
 
-  /** Called by the generated code in case of missing method on reflective call. */
+  /** Called by the generated code in case of missing method on reflective call.
+   */
   @noinline def throwNoSuchMethod(sig: String): Nothing =
     throw new NoSuchMethodException(sig)
 }

@@ -7,17 +7,18 @@ import scalanative.junit.utils.AssertThrows.assertThrows
 import scalanative.junit.utils.ThrowsHelper._
 
 class ShortTest {
-  val signedMaxValue     = Short.MAX_VALUE
+  val signedMaxValue = Short.MAX_VALUE
   val signedMaxValueText = "32767"
-  val signedMinValue     = Short.MIN_VALUE
+  val signedMinValue = Short.MIN_VALUE
   val signedMinValueText = "-32768"
 
-  val signedMaxPlusOneText  = "32768"
+  val signedMaxPlusOneText = "32768"
   val signedMinMinusOneText = "-32769"
 
   def assertThrowsAndMessage[T <: Throwable, U](
       expectedThrowable: Class[T],
-      code: => U)(expectedMsg: String): Unit = {
+      code: => U
+  )(expectedMsg: String): Unit = {
     val exception = assertThrows(expectedThrowable, code)
     assertEquals(expectedMsg, exception.toString)
   }
@@ -102,12 +103,16 @@ class ShortTest {
     assertThrowsAndMessage(classOf[NumberFormatException], decode("123a"))(
       """java.lang.NumberFormatException: For input string: "123a""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           decode(signedMaxPlusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      decode(signedMaxPlusOneText)
+    )(
       s"""java.lang.NumberFormatException: Value $signedMaxPlusOneText out of range from input $signedMaxPlusOneText"""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           decode(signedMinMinusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      decode(signedMinMinusOneText)
+    )(
       s"""java.lang.NumberFormatException: Value $signedMinMinusOneText out of range from input $signedMinMinusOneText"""
     )
   }
@@ -142,23 +147,31 @@ class ShortTest {
     assertThrowsAndMessage(classOf[NumberFormatException], parse(""))(
       """java.lang.NumberFormatException: For input string: """""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse("123", Character.MIN_RADIX - 1))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("123", Character.MIN_RADIX - 1)
+    )(
       """java.lang.NumberFormatException: radix 1 less than Character.MIN_RADIX"""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse("123", Character.MAX_RADIX + 1))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("123", Character.MAX_RADIX + 1)
+    )(
       """java.lang.NumberFormatException: radix 37 greater than Character.MAX_RADIX"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
       """java.lang.NumberFormatException: For input string: "123a""""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse(signedMaxPlusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse(signedMaxPlusOneText)
+    )(
       s"""java.lang.NumberFormatException: Value out of range. Value:"$signedMaxPlusOneText" Radix:10"""
     )
-    assertThrowsAndMessage(classOf[NumberFormatException],
-                           parse(signedMinMinusOneText))(
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse(signedMinMinusOneText)
+    )(
       s"""java.lang.NumberFormatException: Value out of range. Value:"$signedMinMinusOneText" Radix:10"""
     )
   }

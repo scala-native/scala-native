@@ -14,7 +14,7 @@ class IteratorTest {
   @Test def testRemove(): Unit = {
     val iter = new ju.Iterator[String] {
       def hasNext(): Boolean = true
-      def next(): String     = "foo"
+      def next(): String = "foo"
     }
 
     assertThrows(classOf[UnsupportedOperationException], iter.remove())
@@ -23,7 +23,7 @@ class IteratorTest {
   }
 
   @Test def testForEachRemaining(): Unit = {
-    val elems     = Array("one", "two", "three", "four")
+    val elems = Array("one", "two", "three", "four")
     val elemsList = elems.toList
 
     class Iter extends ju.Iterator[String] {
@@ -40,7 +40,7 @@ class IteratorTest {
     }
 
     // from scratch
-    val iter1    = new Iter
+    val iter1 = new Iter
     val builder1 = List.newBuilder[String]
     iter1.forEachRemaining(new Consumer[String] {
       def accept(elem: String): Unit =

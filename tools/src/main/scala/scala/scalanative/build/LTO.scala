@@ -1,7 +1,6 @@
 package scala.scalanative.build
 
-/**
- * Link Time Optimization (LTO) mode to be used when during a release build.
+/** Link Time Optimization (LTO) mode to be used when during a release build.
  */
 sealed abstract class LTO private (val name: String) {
   override def toString: String = name

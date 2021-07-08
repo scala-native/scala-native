@@ -13,22 +13,23 @@ import scala.scalanative.compat.StreamsCompat._
 
 object Pattern {
 
-  def CANON_EQ: Int                = 128
-  def CASE_INSENSITIVE: Int        = 2
-  def COMMENTS: Int                = 4
-  def DOTALL: Int                  = 32
-  def LITERAL: Int                 = 16
-  def MULTILINE: Int               = 8
-  def UNICODE_CASE: Int            = 64
+  def CANON_EQ: Int = 128
+  def CASE_INSENSITIVE: Int = 2
+  def COMMENTS: Int = 4
+  def DOTALL: Int = 32
+  def LITERAL: Int = 16
+  def MULTILINE: Int = 8
+  def UNICODE_CASE: Int = 64
   def UNICODE_CHARACTER_CLASS: Int = 256
-  def UNIX_LINES: Int              = 1
+  def UNIX_LINES: Int = 1
 
   private def validateJavaFlags(flags: Int): Unit = {
 
     def notSupported(flag: Int, flagName: String): Unit = {
       if ((flags & flag) == flag) {
         throw new UnsupportedOperationException(
-          s"regex flag $flagName is not supported.")
+          s"regex flag $flagName is not supported."
+        )
       }
     }
 

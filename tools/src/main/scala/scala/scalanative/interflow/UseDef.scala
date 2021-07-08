@@ -14,16 +14,18 @@ object UseDef {
     var alive: Boolean = false
   }
 
-  final case class InstDef(name: Local,
-                           deps: mutable.UnrolledBuffer[Def],
-                           uses: mutable.UnrolledBuffer[Def])
-      extends Def
+  final case class InstDef(
+      name: Local,
+      deps: mutable.UnrolledBuffer[Def],
+      uses: mutable.UnrolledBuffer[Def]
+  ) extends Def
 
-  final case class BlockDef(name: Local,
-                            deps: mutable.UnrolledBuffer[Def],
-                            uses: mutable.UnrolledBuffer[Def],
-                            params: Seq[Def])
-      extends Def
+  final case class BlockDef(
+      name: Local,
+      deps: mutable.UnrolledBuffer[Def],
+      uses: mutable.UnrolledBuffer[Def],
+      params: Seq[Def]
+  ) extends Def
 
   private class CollectLocalValDeps extends Transform {
     val deps = mutable.UnrolledBuffer.empty[Local]
@@ -67,13 +69,13 @@ object UseDef {
   }
 
   def apply(cfg: ControlFlow.Graph): Map[Local, Def] = {
-    val defs   = mutable.Map.empty[Local, Def]
+    val defs = mutable.Map.empty[Local, Def]
     val blocks = cfg.all
 
     def enterBlock(n: Local, params: Seq[Local]) = {
       params.foreach(enterInst)
-      val deps      = mutable.UnrolledBuffer.empty[Def]
-      val uses      = mutable.UnrolledBuffer.empty[Def]
+      val deps = mutable.UnrolledBuffer.empty[Def]
+      val uses = mutable.UnrolledBuffer.empty[Def]
       val paramDefs = params.map(defs)
       assert(!defs.contains(n))
       defs += ((n, BlockDef(n, deps, uses, paramDefs)))
@@ -145,10 +147,10 @@ object UseDef {
   }
 
   def eliminateDeadCode(insts: Seq[Inst]): Seq[Inst] = {
-    val fresh  = Fresh(insts)
-    val cfg    = ControlFlow.Graph(insts)
+    val fresh = Fresh(insts)
+    val cfg = ControlFlow.Graph(insts)
     val usedef = UseDef(cfg)
-    val buf    = new nir.Buffer()(fresh)
+    val buf = new nir.Buffer()(fresh)
 
     cfg.all.foreach { block =>
       if (usedef(block.name).alive) {

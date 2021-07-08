@@ -83,9 +83,9 @@ object Statics {
 
   /** Just throws an exception.
    *
-   *  Used by the synthetic `productElement` and `productElementName` methods
-   *  in case classes. Delegating the exception-throwing to this function
-   *  reduces the bytecode size of the case class.
+   *  Used by the synthetic `productElement` and `productElementName` methods in
+   *  case classes. Delegating the exception-throwing to this function reduces
+   *  the bytecode size of the case class.
    */
   final def ioobe[T](n: Int): T =
     throw new IndexOutOfBoundsException(String.valueOf(n))

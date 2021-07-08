@@ -43,7 +43,7 @@ object BoxesRunTime {
   // Intrinsified as primitives. They are never called.
   def hashFromObject(o: java.lang.Object): Int = ???
   def hashFromNumber(o: java.lang.Number): Int = ???
-  def hashFromFloat(o: java.lang.Float): Int   = ???
+  def hashFromFloat(o: java.lang.Float): Int = ???
   def hashFromDouble(o: java.lang.Double): Int = ???
-  def hashFromLong(o: java.lang.Long): Int     = ???
+  def hashFromLong(o: java.lang.Long): Int = ???
 }

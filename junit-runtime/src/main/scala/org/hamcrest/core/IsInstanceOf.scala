@@ -11,8 +11,10 @@ class IsInstanceOf private (expectedClass: Class[_], matchableClass: Class[_])
   def this(expectedClass: Class[_]) =
     this(expectedClass, IsInstanceOf.matchableClass(expectedClass))
 
-  override protected def matches(item: AnyRef,
-                                 mismatch: Description): Boolean = {
+  override protected def matches(
+      item: AnyRef,
+      mismatch: Description
+  ): Boolean = {
     if (null == item) {
       mismatch.appendText("null")
       false
@@ -29,7 +31,8 @@ class IsInstanceOf private (expectedClass: Class[_], matchableClass: Class[_])
 object IsInstanceOf {
 
   private[IsInstanceOf] def matchableClass(
-      expectedClass: Class[_]): Class[_] = {
+      expectedClass: Class[_]
+  ): Class[_] = {
     expectedClass match {
       case java.lang.Byte.TYPE      => classOf[java.lang.Byte]
       case java.lang.Boolean.TYPE   => classOf[java.lang.Boolean]

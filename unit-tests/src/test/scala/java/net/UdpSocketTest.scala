@@ -18,14 +18,14 @@ class UdpSocketTest {
   // All tests in this class assume that an IPv4 network is up & running.
 
   @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
-    val localhost         = c"127.0.0.1"
+    val localhost = c"127.0.0.1"
     val localhostInetAddr = inet_addr(localhost)
 
     val inSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     assertNotEquals("socket_1", -1, inSocket)
 
     try {
-      val inAddr      = alloc[sockaddr]
+      val inAddr = alloc[sockaddr]
       val inAddrInPtr = inAddr.asInstanceOf[Ptr[sockaddr_in]]
 
       inAddrInPtr.sin_family = AF_INET.toUShort
@@ -51,7 +51,7 @@ class UdpSocketTest {
       assertNotEquals("socket_2", -1, outSocket)
 
       try {
-        val outAddr      = alloc[sockaddr]
+        val outAddr = alloc[sockaddr]
         val outAddrInPtr = outAddr.asInstanceOf[Ptr[sockaddr_in]]
         outAddrInPtr.sin_family = AF_INET.toUShort
         outAddrInPtr.sin_addr.s_addr = localhostInetAddr
@@ -67,12 +67,14 @@ class UdpSocketTest {
           |   Freedom from fear
           """.stripMargin
 
-        val nBytesSent = sendto(outSocket,
-                                toCString(outData),
-                                outData.length.toULong,
-                                0,
-                                outAddr,
-                                sizeof[sockaddr].toUInt)
+        val nBytesSent = sendto(
+          outSocket,
+          toCString(outData),
+          outData.length.toULong,
+          0,
+          outAddr,
+          sizeof[sockaddr].toUInt
+        )
         assertEquals("sendto", outData.size, nBytesSent)
 
         // There is a "pick your poison" design choice here.
@@ -92,16 +94,18 @@ class UdpSocketTest {
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData    = alloc[Byte](maxInData)
+        val inData = alloc[Byte](maxInData)
 
         // Test not fetching remote address. Exercise last two arguments.
         val nBytesPeekedAt =
-          recvfrom(inSocket,
-                   inData,
-                   maxInData.toUInt,
-                   MSG_PEEK,
-                   null.asInstanceOf[Ptr[sockaddr]],
-                   null.asInstanceOf[Ptr[socklen_t]])
+          recvfrom(
+            inSocket,
+            inData,
+            maxInData.toUInt,
+            MSG_PEEK,
+            null.asInstanceOf[Ptr[sockaddr]],
+            null.asInstanceOf[Ptr[socklen_t]]
+          )
 
         // Friendlier code here and after the next recvfrom() would loop
         // on partial reads rather than fail.
@@ -110,7 +114,7 @@ class UdpSocketTest {
         assertEquals("recvfrom_1 length", nBytesSent, nBytesPeekedAt)
 
         // Test retrieving remote address.
-        val srcAddr    = alloc[sockaddr]
+        val srcAddr = alloc[sockaddr]
         val srcAddrLen = alloc[socklen_t]
         !srcAddrLen = sizeof[sockaddr].toUInt
         val nBytesRecvd =
@@ -119,9 +123,11 @@ class UdpSocketTest {
         assertEquals("recvfrom_2 length", nBytesSent, nBytesRecvd)
 
         // Packet came from where we expected, and not Mars.
-        assertEquals("unexpected remote address",
-                     localhostInetAddr,
-                     srcAddr.asInstanceOf[Ptr[sockaddr_in]].sin_addr.s_addr)
+        assertEquals(
+          "unexpected remote address",
+          localhostInetAddr,
+          srcAddr.asInstanceOf[Ptr[sockaddr_in]].sin_addr.s_addr
+        )
 
         assertEquals("inData NUL termination", 0, inData(nBytesRecvd))
 

@@ -28,8 +28,8 @@ object ExternTest {
   def runTest(): Unit = {
     import scalanative.libc.string
     val bufsize = 10.toUInt
-    val buf1    = stackalloc[Byte](bufsize)
-    val buf2    = stackalloc[Byte](bufsize)
+    val buf1 = stackalloc[Byte](bufsize)
+    val buf2 = stackalloc[Byte](bufsize)
     Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
     assertTrue(string.strcmp(buf1, c"hello") == 0)
     Ext2.p(buf2, bufsize, c"%d", 1)
@@ -72,7 +72,7 @@ class ExternTest {
   val cb: CFuncPtr0[CInt] = () => 42
   @Test def allowsToUseGenericFunctionAsArgument(): Unit = {
     val res0 = testlib.exec0(cb) //expected CFuncPtr0[Int]
-    val res1 = testlib.exec(cb)  //expected CFuncPtr
+    val res1 = testlib.exec(cb) //expected CFuncPtr
     assertTrue(res0 == 42)
     assertTrue(res1 == 42)
   }

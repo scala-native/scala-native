@@ -2,16 +2,16 @@ package scala.scalanative.build
 
 /** Compilation mode. Either of the two:
  *
- *  * Debug mode. Most optimizations are turned off
- *    to get the best linking speed. This mode is the
- *    default and is preferred for iterative development.
+ *  * Debug mode. Most optimizations are turned off to get the best linking
+ *  speed. This mode is the default and is preferred for iterative development.
  *
- *  * Release mode. Runs all the optimizations but
- *    may take substantially longer to link the application.
+ *  * Release mode. Runs all the optimizations but may take substantially longer
+ *  to link the application.
  *
  *  Additional compilation modes might be added in the future.
  *
- *  @param name name of the compilation mode
+ *  @param name
+ *    name of the compilation mode
  */
 sealed abstract class Mode private (val name: String) {
   override def toString: String = name

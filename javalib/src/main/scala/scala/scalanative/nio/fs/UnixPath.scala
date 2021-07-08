@@ -23,7 +23,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     if (path.isEmpty()) Array(-1, 0)
     else if (path == "/") Array(0)
     else {
-      var i     = 0
+      var i = 0
       var count = 1
       do {
         count += 1
@@ -73,13 +73,15 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     else new File(s"${fs.defaultDirectory}/$path")
 
   private lazy val uri =
-    new URI(scheme = "file",
-            userInfo = null,
-            host = null,
-            port = -1,
-            path = toFile().getAbsolutePath(),
-            query = null,
-            fragment = null)
+    new URI(
+      scheme = "file",
+      userInfo = null,
+      host = null,
+      port = -1,
+      path = toFile().getAbsolutePath(),
+      query = null,
+      fragment = null
+    )
 
   override def getFileSystem(): FileSystem = fs
 
@@ -114,7 +116,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   override def startsWith(other: Path): Boolean =
     if (fs.provider == other.getFileSystem().provider()) {
       val otherLength = other.getNameCount()
-      val thisLength  = getNameCount()
+      val thisLength = getNameCount()
 
       if (otherLength > thisLength) false
       else if (isAbsolute() ^ other.isAbsolute()) false
@@ -131,11 +133,12 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   override def endsWith(other: Path): Boolean =
     if (fs.provider == other.getFileSystem().provider()) {
       val otherLength = other.getNameCount()
-      val thisLength  = getNameCount()
+      val thisLength = getNameCount()
       if (otherLength > thisLength) false
       else if (!other.isAbsolute()) {
         (0 until otherLength).forall(i =>
-          getName(thisLength - 1 - i) == other.getName(otherLength - 1 - i))
+          getName(thisLength - 1 - i) == other.getName(otherLength - 1 - i)
+        )
       } else if (isAbsolute()) {
         this == other
       } else {
@@ -190,7 +193,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     else {
       new UnixPath(fs, toFile().getCanonicalPath()) match {
         case p if Files.exists(p, Array.empty) => p
-        case p                                 => throw new NoSuchFileException(p.path)
+        case p => throw new NoSuchFileException(p.path)
       }
     }
   }
@@ -201,8 +204,8 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
 
   override def iterator(): Iterator[Path] =
     new Iterator[Path] {
-      private var i: Int              = 0
-      override def remove(): Unit     = throw new UnsupportedOperationException()
+      private var i: Int = 0
+      override def remove(): Unit = throw new UnsupportedOperationException()
       override def hasNext(): Boolean = i < getNameCount()
       override def next(): Path =
         if (hasNext()) {
@@ -266,8 +269,8 @@ private object UnixPath {
           else str //length > 1
         case idx =>
           val buffer: StringBuffer = new StringBuffer(str)
-          var previous             = '/'
-          var i                    = idx + 1
+          var previous = '/'
+          var i = idx + 1
           while (i < buffer.length()) {
             val current = buffer.charAt(i)
             if (previous == '/' && current == '/') {

@@ -8,9 +8,11 @@ import org.junit.Assert._
 class RE2Test {
   @Test def fullMatch(): Unit = {
     assertTrue(
-      new RE2("ab+c").match_("abbbbbc", 0, 7, RE2.ANCHOR_BOTH, null, 0))
+      new RE2("ab+c").match_("abbbbbc", 0, 7, RE2.ANCHOR_BOTH, null, 0)
+    )
     assertFalse(
-      new RE2("ab+c").match_("xabbbbbc", 0, 8, RE2.ANCHOR_BOTH, null, 0))
+      new RE2("ab+c").match_("xabbbbbc", 0, 8, RE2.ANCHOR_BOTH, null, 0)
+    )
   }
 
   @Test def findEnd(): Unit = {

@@ -7,19 +7,19 @@ import org.junit.Assert._
 
 class StreamTest {
   @Test def streamBuilderCanBuildAnEmptyStream(): Unit = {
-    val s  = Stream.builder().build()
+    val s = Stream.builder().build()
     val it = s.iterator()
     assertFalse(it.hasNext())
   }
 
   @Test def streamEmptyIsEmpty(): Unit = {
-    val s  = Stream.empty[Int]()
+    val s = Stream.empty[Int]()
     val it = s.iterator()
     assertFalse(it.hasNext())
   }
 
   @Test def streamOfCanPutElementsInStream(): Unit = {
-    val s  = Stream.of(1, 2, 3)
+    val s = Stream.of(1, 2, 3)
     val it = s.iterator()
     assertTrue(it.next() == 1)
     assertTrue(it.next() == 2)
@@ -59,7 +59,7 @@ class StreamTest {
     val expected =
       Seq(5, 4, 3, 2, 1, 5, 4, 3, 2, 5, 4, 3, 5, 4, 3, 2, 5, 4, 3, 5, 4, 3)
     val result = scala.collection.mutable.ArrayBuffer.empty[Int]
-    val it     = s2.iterator()
+    val it = s2.iterator()
     while (it.hasNext()) {
       result += it.next()
     }
@@ -69,7 +69,7 @@ class StreamTest {
   @Test def streamOnCloseWorks(): Unit = {
     var success = false
     val handler = new Runnable { override def run(): Unit = success = true }
-    val s       = Stream.empty[Int]().onClose(handler)
+    val s = Stream.empty[Int]().onClose(handler)
     assertFalse(success)
     s.close()
     assertTrue(success)

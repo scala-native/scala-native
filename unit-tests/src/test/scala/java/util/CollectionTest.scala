@@ -199,7 +199,8 @@ trait CollectionTest extends IterableTest {
     coll.add("three")
 
     assertIteratorSameElementsAsSetDupesAllowed("one", "two", "three")(
-      coll.iterator())
+      coll.iterator()
+    )
   }
 
   @Test def removeIf(): Unit = {
@@ -244,8 +245,10 @@ trait CollectionTest extends IterableTest {
     // order here. Specific collections should test the order they specify.
     val expected = elements.permutations.map(_.mkString("[", ", ", "]")).toSet
 
-    assertTrue(s"result '${result}' not in expected set '${expected}'",
-               expected.contains(result))
+    assertTrue(
+      s"result '${result}' not in expected set '${expected}'",
+      expected.contains(result)
+    )
   }
 
   @Test def toStringShouldHandleNullElements(): Unit = {
@@ -257,8 +260,10 @@ trait CollectionTest extends IterableTest {
       val result = coll.toString()
 
       val expected = elements.permutations.map(_.mkString("[", ", ", "]")).toSet
-      assertTrue(s"result '${result}' not in expected set '${expected}'",
-                 expected.contains(result))
+      assertTrue(
+        s"result '${result}' not in expected set '${expected}'",
+        expected.contains(result)
+      )
     }
   }
 
@@ -271,10 +276,12 @@ trait CollectionTest extends IterableTest {
 
     val coll = factory.fromElements[Custom](elements: _*)
 
-    val result   = coll.toString()
+    val result = coll.toString()
     val expected = elements.permutations.map(_.mkString("[", ", ", "]")).toSet
-    assertTrue(s"result '${result}' not in expected set '${expected}'",
-               expected.contains(result))
+    assertTrue(
+      s"result '${result}' not in expected set '${expected}'",
+      expected.contains(result)
+    )
   }
 
 }
@@ -282,8 +289,8 @@ trait CollectionTest extends IterableTest {
 trait CollectionFactory extends IterableFactory {
   def empty[E: ClassTag]: ju.Collection[E]
   def allowsMutationThroughIterator: Boolean = true
-  def allowsNullElementQuery: Boolean        = true
-  def allowsNullElement: Boolean             = true
+  def allowsNullElementQuery: Boolean = true
+  def allowsNullElement: Boolean = true
 
   override def fromElements[E: ClassTag](elems: E*): ju.Collection[E] = {
     val coll = empty[E]

@@ -8,14 +8,15 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(
-      implicit state: State): Inst.Cf = {
+  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(implicit
+      state: State
+  ): Inst.Cf = {
     import state.{materialize, delay}
 
     var pc = offsets(from) + 1
 
     while (true) {
-      val inst                   = insts(pc)
+      val inst = insts(pc)
       implicit val pos: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
@@ -43,11 +44,13 @@ trait Eval { self: Interflow =>
           return Inst.Ret(eval(v))
         case Inst.Jump(Next.Label(target, args)) =>
           val evalArgs = args.map(eval)
-          val next     = Next.Label(target, evalArgs)
+          val next = Next.Label(target, evalArgs)
           return Inst.Jump(next)
-        case Inst.If(cond,
-                     Next.Label(thenTarget, thenArgs),
-                     Next.Label(elseTarget, elseArgs)) =>
+        case Inst.If(
+              cond,
+              Next.Label(thenTarget, thenArgs),
+              Next.Label(elseTarget, elseArgs)
+            ) =>
           def thenNext =
             Next.Label(thenTarget, thenArgs.map(eval))
           def elseNext =
@@ -60,9 +63,11 @@ trait Eval { self: Interflow =>
             case cond =>
               return Inst.If(materialize(cond), thenNext, elseNext)
           }
-        case Inst.Switch(scrut,
-                         Next.Label(defaultTarget, defaultArgs),
-                         cases) =>
+        case Inst.Switch(
+              scrut,
+              Next.Label(defaultTarget, defaultArgs),
+              cases
+            ) =>
           def defaultNext =
             Next.Label(defaultTarget, defaultArgs.map(eval))
           eval(scrut) match {
@@ -72,7 +77,7 @@ trait Eval { self: Interflow =>
                   case Next.Case(caseValue, Next.Label(caseTarget, caseArgs))
                       if caseValue == value =>
                     val evalArgs = caseArgs.map(eval)
-                    val next     = Next.Label(caseTarget, evalArgs)
+                    val next = Next.Label(caseTarget, evalArgs)
                     return Inst.Jump(next)
                 }
                 .getOrElse {
@@ -99,9 +104,9 @@ trait Eval { self: Interflow =>
     unreachable
   }
 
-  def eval(op: Op)(implicit state: State,
-                   linked: linker.Result,
-                   origPos: Position): Val = {
+  def eval(
+      op: Op
+  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -134,7 +139,7 @@ trait Eval { self: Interflow =>
 
           def fallback = {
             val mtarget = materialize(dtarget)
-            val margs   = adapt(eargs, dsig).map(materialize)
+            val margs = adapt(eargs, dsig).map(materialize)
 
             emit(Op.Call(dsig, mtarget, margs))
           }
@@ -227,8 +232,15 @@ trait Eval { self: Interflow =>
             values(fld.index) = eval(value)
             Val.Unit
           case obj =>
-            emit(Op
-              .Fieldstore(ty, materialize(obj), name, materialize(eval(value))))
+            emit(
+              Op
+                .Fieldstore(
+                  ty,
+                  materialize(obj),
+                  name,
+                  materialize(eval(value))
+                )
+            )
         }
       case Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
@@ -376,7 +388,7 @@ trait Eval { self: Interflow =>
           case Val.Int(count) if count <= 128 =>
             Val.Virtual(state.allocArray(ty, count))
           case Val.ArrayValue(_, values) if values.size <= 128 =>
-            val addr     = state.allocArray(ty, values.size)
+            val addr = state.allocArray(ty, values.size)
             val instance = state.derefVirtual(addr)
             values.zipWithIndex.foreach {
               case (v, idx) =>
@@ -402,10 +414,13 @@ trait Eval { self: Interflow =>
             Val.Unit
           case (arr, idx) =>
             emit(
-              Op.Arraystore(ty,
-                            materialize(arr),
-                            materialize(idx),
-                            materialize(eval(value))))
+              Op.Arraystore(
+                ty,
+                materialize(arr),
+                materialize(idx),
+                materialize(eval(value))
+              )
+            )
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
@@ -427,8 +442,10 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State,
-                                               origPos: Position): Val = {
+  def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit
+      state: State,
+      origPos: Position
+  ): Val = {
     import state.{emit, materialize}
     def fallback =
       emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
@@ -596,25 +613,26 @@ trait Eval { self: Interflow =>
   def eval(comp: Comp, ty: Type, l: Val, r: Val)(implicit state: State): Val = {
     def bailOut =
       throw BailOut(
-        s"can't eval comp op: $comp[${ty.show}] ${l.show}, ${r.show}")
+        s"can't eval comp op: $comp[${ty.show}] ${l.show}, ${r.show}"
+      )
     comp match {
       case Comp.Ieq =>
         (l, r) match {
-          case (Val.Bool(l), Val.Bool(r))                           => Val.Bool(l == r)
-          case (Val.Int(l), Val.Int(r))                             => Val.Bool(l == r)
-          case (Val.Long(l), Val.Long(r))                           => Val.Bool(l == r)
-          case (Val.Null, Val.Null)                                 => Val.True
-          case (Val.Global(l, _), Val.Global(r, _))                 => Val.Bool(l == r)
+          case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l == r)
+          case (Val.Int(l), Val.Int(r))             => Val.Bool(l == r)
+          case (Val.Long(l), Val.Long(r))           => Val.Bool(l == r)
+          case (Val.Null, Val.Null)                 => Val.True
+          case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l == r)
           case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.False
           case _                                                    => bailOut
         }
       case Comp.Ine =>
         (l, r) match {
-          case (Val.Bool(l), Val.Bool(r))                           => Val.Bool(l != r)
-          case (Val.Int(l), Val.Int(r))                             => Val.Bool(l != r)
-          case (Val.Long(l), Val.Long(r))                           => Val.Bool(l != r)
-          case (Val.Null, Val.Null)                                 => Val.False
-          case (Val.Global(l, _), Val.Global(r, _))                 => Val.Bool(l != r)
+          case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l != r)
+          case (Val.Int(l), Val.Int(r))             => Val.Bool(l != r)
+          case (Val.Long(l), Val.Long(r))           => Val.Bool(l != r)
+          case (Val.Null, Val.Null)                 => Val.False
+          case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l != r)
           case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.True
           case _                                                    => bailOut
         }
@@ -898,7 +916,7 @@ trait Eval { self: Interflow =>
     def isPureModuleCtor(defn: Defn.Define): Boolean = {
       val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head
 
-      val canStoreTo  = mutable.Set(self)
+      val canStoreTo = mutable.Set(self)
       val arrayLength = mutable.Map.empty[Local, Int]
 
       defn.insts.foreach {
@@ -952,9 +970,11 @@ trait Eval { self: Interflow =>
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           true
-        case Inst.Let(_,
-                      Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value),
-                      _)
+        case Inst.Let(
+              _,
+              Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value),
+              _
+            )
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           canStoreValue(value)

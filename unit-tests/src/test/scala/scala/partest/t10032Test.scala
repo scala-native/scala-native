@@ -5,9 +5,9 @@ import org.junit.Test
 import org.junit.Assert._
 
 class t10032Test {
-  var effects                    = List.empty[String]
+  var effects = List.empty[String]
   def println(str: String): Unit = effects = effects :+ str
-  def clean(): Unit              = effects = Nil
+  def clean(): Unit = effects = Nil
   def assertEffects(effects: String*)(f: => Unit) = {
     this.effects = Nil
     f

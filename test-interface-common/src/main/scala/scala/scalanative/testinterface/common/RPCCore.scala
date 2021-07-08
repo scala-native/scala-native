@@ -47,8 +47,8 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
         val callID = in.readLong()
 
         /** Note that `callID` might not be in `pending` anymore if it got
-         * removed during a close operation. In this case we're not doing
-         * anything.
+         *  removed during a close operation. In this case we're not doing
+         *  anything.
          */
         Option(pending.remove(callID))
       }
@@ -73,12 +73,11 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
           endpoints.get(opCode) match {
             case null =>
               /** Quick and dirty way to provide more error detail for certain
-               * known problems.
-               * This is not ideal, but the best we can do, since we do not know
-               * all possible opCodes we could receive (we'd need something like
-               * an opCode "domain").
-               * For now this is good enough; if collisions happen in the
-               * future, we can improve this.
+               *  known problems. This is not ideal, but the best we can do,
+               *  since we do not know all possible opCodes we could receive
+               *  (we'd need something like an opCode "domain"). For now this is
+               *  good enough; if collisions happen in the future, we can
+               *  improve this.
                */
               val detail = opCode match {
                 case NativeEndpoints.msgWorker.opCode =>
@@ -161,7 +160,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
   final def attach(ep: MsgEndpoint)(ex: ep.Msg => Unit): Unit = {
     attach(new BoundMsgEndpoint {
       val endpoint: ep.type = ep
-      val exec              = ex
+      val exec = ex
     })
   }
 
@@ -171,17 +170,18 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
   }
 
   /* Attaches the given method to the given (local) endpoint. */
-  final def attachAsync(ep: RPCEndpoint)(
-      ex: ep.Req => Future[ep.Resp]): Unit = {
+  final def attachAsync(
+      ep: RPCEndpoint
+  )(ex: ep.Req => Future[ep.Resp]): Unit = {
     attach(new BoundRPCEndpoint {
       val endpoint: ep.type = ep
-      val exec              = ex
+      val exec = ex
     })
   }
 
   private final def attach(bep: BoundEndpoint): Unit = {
     val opCode = bep.endpoint.opCode
-    val old    = endpoints.put(opCode, bep)
+    val old = endpoints.put(opCode, bep)
     require(old == null, s"Duplicate endpoint for opcode $opCode.")
   }
 
@@ -210,7 +210,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
      * method is binary compatible on JDK7.
      */
     val pendingCallIDs = (pending: java.util.Map[Long, _]).keySet()
-    val exception      = new ClosedException(closeReason)
+    val exception = new ClosedException(closeReason)
 
     /* Directly use the Java Iterator because Scala's JavaConverters are
      * tricky to use across 2.12- and 2.13+.
@@ -230,9 +230,11 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
     }
   }
 
-  private def makeRPCMsg[T: Serializer](opCode: OpCode,
-                                        id: Long,
-                                        payload: T): String = {
+  private def makeRPCMsg[T: Serializer](
+      opCode: OpCode,
+      id: Long,
+      payload: T
+  ): String = {
     Serializer.withOutputStream { out =>
       out.writeByte(opCode)
       out.writeLong(id)
@@ -257,7 +259,7 @@ private[testinterface] object RPCCore {
   /** Exception thrown if the channel got closed. */
   final case class ClosedException(c: Throwable) extends Exception(c)
 
-  private val ReplyOK: Byte  = 0.toByte
+  private val ReplyOK: Byte = 0.toByte
   private val ReplyErr: Byte = 1.toByte
 
   def isReservedOpCode(opc: OpCode): Boolean =

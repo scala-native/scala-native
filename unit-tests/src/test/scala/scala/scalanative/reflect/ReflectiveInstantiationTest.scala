@@ -67,10 +67,12 @@ class ReflectiveInstantiationTest {
 
   @Test def testClassRuntimeClass(): Unit = {
     for {
-      name <- Seq(NameClassEnableDirect,
-                  NameClassEnableDirectNoZeroArgCtor,
-                  NameClassEnableIndirect,
-                  NameClassEnableIndirectNoZeroArgCtor)
+      name <- Seq(
+        NameClassEnableDirect,
+        NameClassEnableDirectNoZeroArgCtor,
+        NameClassEnableIndirect,
+        NameClassEnableIndirectNoZeroArgCtor
+      )
     } {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
@@ -110,8 +112,10 @@ class ReflectiveInstantiationTest {
         NameTraitDisable
       )
     } {
-      assertFalse(s"$name should not be found",
-                  Reflect.lookupInstantiatableClass(name).isDefined)
+      assertFalse(
+        s"$name should not be found",
+        Reflect.lookupInstantiatableClass(name).isDefined
+      )
     }
   }
 
@@ -132,8 +136,10 @@ class ReflectiveInstantiationTest {
         NameTraitDisable
       )
     } {
-      assertFalse(s"$name should not be found",
-                  Reflect.lookupLoadableModuleClass(name).isDefined)
+      assertFalse(
+        s"$name should not be found",
+        Reflect.lookupLoadableModuleClass(name).isDefined
+      )
     }
   }
 
@@ -150,23 +156,29 @@ class ReflectiveInstantiationTest {
   }
 
   @Test def testClassNoArgCtorErrorCase(): Unit = {
-    for (name <- Seq(NameClassEnableDirectNoZeroArgCtor,
-                     NameClassEnableIndirectNoZeroArgCtor)) {
+    for (name <- Seq(
+          NameClassEnableDirectNoZeroArgCtor,
+          NameClassEnableIndirectNoZeroArgCtor
+        )) {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
       val classData = optClassData.get
 
-      assertThrows(classOf[InstantiationException], {
-        classData.newInstance()
-      })
+      assertThrows(
+        classOf[InstantiationException], {
+          classData.newInstance()
+        }
+      )
     }
   }
 
   @Test def testClassCtorWithArgs(): Unit = {
-    for (name <- Seq(NameClassEnableDirect,
-                     NameClassEnableDirectNoZeroArgCtor,
-                     NameClassEnableIndirect,
-                     NameClassEnableIndirectNoZeroArgCtor)) {
+    for (name <- Seq(
+          NameClassEnableDirect,
+          NameClassEnableDirectNoZeroArgCtor,
+          NameClassEnableIndirect,
+          NameClassEnableIndirectNoZeroArgCtor
+        )) {
       val optClassData = Reflect.lookupInstantiatableClass(name)
       assertTrue(optClassData.isDefined)
       val classData = optClassData.get
@@ -213,7 +225,7 @@ class ReflectiveInstantiationTest {
 
     // test with array of bytes
     Zone { implicit z =>
-      val size   = 64
+      val size = 64
       val buffer = alloc[Byte](size.toUInt)
 
       def fn(idx: Int) = size - idx
@@ -264,8 +276,10 @@ class ReflectiveInstantiationTest {
     class LocalClassWithEnableReflectiveInstantiation
 
     val fqcn = classOf[LocalClassWithEnableReflectiveInstantiation].getName
-    assertFalse(s"$fqcn should not be found",
-                Reflect.lookupInstantiatableClass(fqcn).isDefined)
+    assertFalse(
+      s"$fqcn should not be found",
+      Reflect.lookupInstantiatableClass(fqcn).isDefined
+    )
   }
 
   @Test def testObjectLoad(): Unit = {
@@ -422,9 +436,10 @@ object ReflectTest {
     private def this(d: Double) = this(d.toInt)
   }
 
-  class ClassNoPublicConstructorEnableIndirect private (val x: Int,
-                                                        val y: String)
-      extends EnablingTrait
+  class ClassNoPublicConstructorEnableIndirect private (
+      val x: Int,
+      val y: String
+  ) extends EnablingTrait
       with Accessors {
 
     protected def this(y: String) = this(-5, y)

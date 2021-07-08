@@ -21,21 +21,23 @@ class ManifestTest {
 
   @Test def constructorManifest(): Unit = {
     val firstManifest = new Manifest(
-      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
+      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1"))
+    )
     val secondManifest = new Manifest(firstManifest)
     assertTrue(firstManifest == secondManifest)
   }
 
   @Test def constructorInputStream(): Unit = {
-    val m    = getManifest(hyts_attBytes)
+    val m = getManifest(hyts_attBytes)
     val baos = new ByteArrayOutputStream()
     m.write(baos)
-    val is    = new ByteArrayInputStream(baos.toByteArray())
+    val is = new ByteArrayInputStream(baos.toByteArray())
     val mCopy = new Manifest(is)
     assertTrue(m == mCopy)
 
     val manifest = new Manifest(
-      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
+      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1"))
+    )
     checkManifest(manifest)
 
     val manifestContent =
@@ -52,7 +54,8 @@ class ManifestTest {
     assertTrue(namedEntryAttributes.size() == 6)
 
     new Manifest(
-      new ByteArrayInputStream(MANIFEST_CONTENTS_2.getBytes("ISO-8859-1")))
+      new ByteArrayInputStream(MANIFEST_CONTENTS_2.getBytes("ISO-8859-1"))
+    )
   }
 
   @Test def clear(): Unit = {
@@ -69,13 +72,16 @@ class ManifestTest {
 
   @Test def equals(): Unit = {
     var firstManifest = new Manifest(
-      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
+      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1"))
+    )
     val secondManifest = new Manifest(
-      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1")))
+      new ByteArrayInputStream(MANIFEST_CONTENTS.getBytes("ISO-8859-1"))
+    )
     assertTrue(firstManifest == secondManifest)
 
     val thirdManifest = new Manifest(
-      new ByteArrayInputStream(MANIFEST_CONTENTS_1.getBytes("ISO-8859-1")))
+      new ByteArrayInputStream(MANIFEST_CONTENTS_1.getBytes("ISO-8859-1"))
+    )
     assertTrue(firstManifest != thirdManifest)
 
     firstManifest = null
@@ -93,15 +99,17 @@ class ManifestTest {
     assertTrue(m.getAttributes("Doesn't Exist") == null)
     assertTrue(
       m.getAttributes(ATT_ENTRY_NAME)
-        .get(new Attributes.Name(ATT_ATT_NAME)) == "OK")
+        .get(new Attributes.Name(ATT_ATT_NAME)) == "OK"
+    )
   }
 
   @Test def getEntries(): Unit = {
-    val m     = getManifest(hyts_attBytes)
+    val m = getManifest(hyts_attBytes)
     val myMap = m.getEntries()
     assertTrue(myMap.get("Doesn't exist") == null)
     assertTrue(
-      myMap.get(ATT_ENTRY_NAME).get(new Attributes.Name(ATT_ATT_NAME)) == "OK")
+      myMap.get(ATT_ENTRY_NAME).get(new Attributes.Name(ATT_ATT_NAME)) == "OK"
+    )
   }
 
   @Test def getMainAttributes(): Unit = {
@@ -112,7 +120,7 @@ class ManifestTest {
 
   @Test def writeOutputStream(): Unit = {
     val baos = new ByteArrayOutputStream()
-    val m    = getManifest(hyts_attBytes)
+    val m = getManifest(hyts_attBytes)
     // maximum allowed length is 72 for a header, colong and a following
     // space
     var headerName = "Manifest-" + ("0" * (70 - "Manifest-".length))
@@ -135,8 +143,10 @@ class ManifestTest {
     new Manifest(new ByteArrayInputStream(bytes))
 
     bytes(2) = 0 // NUL char in Manifest
-    assertThrows(classOf[IOException],
-                 new Manifest(new ByteArrayInputStream(bytes)))
+    assertThrows(
+      classOf[IOException],
+      new Manifest(new ByteArrayInputStream(bytes))
+    )
   }
 
   @Test def decoding(): Unit = {
@@ -191,7 +201,7 @@ class ManifestTest {
     // (byte) 0xed, (byte) 0xbc, (byte) 0xb9, ' '
 
     val vendor = new String(bVendor, "UTF-8")
-    val spec   = new String(bSpec, "UTF-8")
+    val spec = new String(bSpec, "UTF-8")
     m.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VENDOR, vendor)
     m.getAttributes(ATT_ENTRY_NAME)
       .put(Attributes.Name.IMPLEMENTATION_VENDOR, vendor)
@@ -206,16 +216,19 @@ class ManifestTest {
     assertTrue(
       vendor == m
         .getMainAttributes()
-        .get(Attributes.Name.IMPLEMENTATION_VENDOR))
+        .get(Attributes.Name.IMPLEMENTATION_VENDOR)
+    )
     assertTrue(
       vendor == m
         .getEntries()
         .get(ATT_ENTRY_NAME)
-        .get(Attributes.Name.IMPLEMENTATION_VENDOR))
+        .get(Attributes.Name.IMPLEMENTATION_VENDOR)
+    )
     assertTrue(
       spec == m
         .getAttributes(ATT_ENTRY_NAME)
-        .get(Attributes.Name.SPECIFICATION_TITLE))
+        .get(Attributes.Name.SPECIFICATION_TITLE)
+    )
 
   }
 
@@ -224,9 +237,11 @@ class ManifestTest {
     assertThrows(classOf[IOException], new Manifest().read(is))
   }
 
-  private def assertAttribute(attr: Attributes,
-                              name: String,
-                              value: String): Unit = {
+  private def assertAttribute(
+      attr: Attributes,
+      name: String,
+      value: String
+  ): Unit = {
     assertTrue(value == attr.getValue(name))
   }
 
@@ -240,10 +255,13 @@ class ManifestTest {
     assertAttribute(
       main,
       "Bundle-Description",
-      "Provides SessionService, AuthenticationService. Extends RegistryService.")
-    assertAttribute(main,
-                    "Bundle-Activator",
-                    "com.ibm.ive.eccomm.client.support.ClientSupportActivator")
+      "Provides SessionService, AuthenticationService. Extends RegistryService."
+    )
+    assertAttribute(
+      main,
+      "Bundle-Activator",
+      "com.ibm.ive.eccomm.client.support.ClientSupportActivator"
+    )
     assertAttribute(
       main,
       "Import-Package",
@@ -252,7 +270,8 @@ class ManifestTest {
     assertAttribute(
       main,
       "Import-Service",
-      "org.osgi.service.log.LogReaderServiceorg.osgi.service.log.LogService,com.ibm.ive.eccomm.service.registry.RegistryService")
+      "org.osgi.service.log.LogReaderServiceorg.osgi.service.log.LogService,com.ibm.ive.eccomm.service.registry.RegistryService"
+    )
     assertAttribute(
       main,
       "Export-Package",
@@ -261,7 +280,8 @@ class ManifestTest {
     assertAttribute(
       main,
       "Export-Service",
-      "com.ibm.ive.eccomm.service.authentication.AuthenticationService,com.ibm.ive.eccomm.service.session.SessionService")
+      "com.ibm.ive.eccomm.service.authentication.AuthenticationService,com.ibm.ive.eccomm.service.session.SessionService"
+    )
     assertAttribute(main, "Bundle-Vendor", "IBM")
     assertAttribute(main, "Bundle-Version", "1.2.0")
   }
@@ -272,9 +292,10 @@ class ManifestTest {
   private val MANIFEST_CONTENTS_1 =
     "Manifest-Version: 2.0\nBundle-Name: ClientSupport\nBundle-Description: Provides SessionService, AuthenticationService. Extends RegistryService.\nBundle-Activator: com.ibm.ive.eccomm.client.support.ClientSupportActivator\nImport-Package: com.ibm.ive.eccomm.client.services.log,\n com.ibm.ive.eccomm.client.services.registry,\n com.ibm.ive.eccomm.service.registry; specification-version=2.0.0,\n com.ibm.ive.eccomm.service.session; specification-version=2.0.0,\n com.ibm.ive.eccomm.service.framework; specification-version=2.1.0,\n org.osgi.framework; specification-version=2.0.0,\n org.osgi.service.log; specification-version=2.0.0,\n com.ibm.ive.eccomm.flash; specification-version=2.2.0,\n com.ibm.ive.eccomm.client.xml,\n com.ibm.ive.eccomm.client.http.common,\n com.ibm.ive.eccomm.client.http.client\nImport-Service: org.osgi.service.log.LogReaderService\n org.osgi.service.log.LogService,\n com.ibm.ive.eccomm.service.registry.RegistryService\nExport-Package: com.ibm.ive.eccomm.client.services.authentication; specification-version=1.0.0,\n com.ibm.ive.eccomm.service.authentication; specification-version=1.0.0,\n com.ibm.ive.eccomm.common; specification-version=1.0.0,\n com.ibm.ive.eccomm.client.services.registry.store; specification-version=1.0.0\nExport-Service: com.ibm.ive.eccomm.service.authentication.AuthenticationService,\n com.ibm.ive.eccomm.service.session.SessionService\nBundle-Vendor: IBM\nBundle-Version: 1.2.0\n";
 
-  private val MANIFEST_CONTENTS_2 = "Manifest-Version: 1.0\nName: value\n \n" // Note penultimate line is single space
+  private val MANIFEST_CONTENTS_2 =
+    "Manifest-Version: 1.0\nName: value\n \n" // Note penultimate line is single space
   private def getManifest(bytes: Array[Byte]): Manifest = {
-    val jarFile  = getJarFile(bytes)
+    val jarFile = getJarFile(bytes)
     val manifest = jarFile.getManifest()
     jarFile.close()
     manifest

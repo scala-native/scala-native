@@ -14,11 +14,11 @@ import ZipBytes.{brokenManifestBytes, zipFile}
 
 class ZipInputStreamTest {
 
-  private var zis: ZipInputStream    = null
-  private var zipBytes: Array[Byte]  = null
+  private var zis: ZipInputStream = null
+  private var zipBytes: Array[Byte] = null
   private val dataBytes: Array[Byte] = "Some data in my file".getBytes()
-  private var zip: ZipInputStream    = null
-  private var zentry: ZipEntry       = null
+  private var zip: ZipInputStream = null
+  private var zentry: ZipEntry = null
 
   @Test def constructorInputStream(): Unit = {
     zentry = zis.getNextEntry()
@@ -43,16 +43,18 @@ class ZipInputStreamTest {
   }
 
   @Test def closeAfterException(): Unit = {
-    val bis  = new ByteArrayInputStream(brokenManifestBytes)
+    val bis = new ByteArrayInputStream(brokenManifestBytes)
     val zis1 = new ZipInputStream(bis)
 
-    assertThrows(classOf[ZipException], {
-      var i = 0
-      while (i < 6) {
-        zis1.getNextEntry()
-        i += 1
+    assertThrows(
+      classOf[ZipException], {
+        var i = 0
+        while (i < 6) {
+          zis1.getNextEntry()
+          i += 1
+        }
       }
-    })
+    )
 
     zis1.close()
     assertThrows(classOf[IOException], zis1.getNextEntry())
@@ -65,7 +67,7 @@ class ZipInputStreamTest {
   @Test def readArrayByteIntInt(): Unit = {
     zentry = zis.getNextEntry()
     val rbuf = new Array[Byte](zentry.getSize().toInt)
-    val r    = zis.read(rbuf, 0, rbuf.length)
+    val r = zis.read(rbuf, 0, rbuf.length)
     new String(rbuf, 0, r)
     assertTrue(r == 12)
   }
@@ -109,7 +111,7 @@ class ZipInputStreamTest {
   }
 
   @Test def available(): Unit = {
-    val zis1  = new ZipInputStream(new ByteArrayInputStream(zipFile))
+    val zis1 = new ZipInputStream(new ByteArrayInputStream(zipFile))
     val entry = zis1.getNextEntry()
     assertTrue(entry != null)
     val entrySize = entry.getSize()
@@ -133,8 +135,8 @@ class ZipInputStreamTest {
   @Before
   def setUp() {
     zis = new ZipInputStream(new ByteArrayInputStream(zipFile))
-    val bos   = new ByteArrayOutputStream()
-    val zos   = new ZipOutputStream(bos)
+    val bos = new ByteArrayOutputStream()
+    val zos = new ZipOutputStream(bos)
     val entry = new ZipEntry("myFile")
     zos.putNextEntry(entry)
     zos.write(dataBytes)

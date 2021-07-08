@@ -76,10 +76,10 @@ final class Matcher private (private var _pattern: Pattern) {
   private var _anchorFlag: Int = _
 
   private var _lastMatchStart = 0
-  private var _lastMatchEnd   = 0
+  private var _lastMatchEnd = 0
 
   private var _regionStart = 0
-  private var _regionEnd   = 0
+  private var _regionEnd = 0
 
   // Creates a new {@code Matcher} with the given pattern and input.
   def this(pattern: Pattern, input: CharSequence) = {
@@ -154,8 +154,8 @@ final class Matcher private (private var _pattern: Pattern) {
     _groups(2 * group + 1)
   }
 
-  def start(name: String): Int    = start(groupIndex(name))
-  def end(name: String): Int      = end(groupIndex(name))
+  def start(name: String): Int = start(groupIndex(name))
+  def end(name: String): Int = end(groupIndex(name))
   def group(name: String): String = group(groupIndex(name))
 
   private def groupIndex(name: String): Int = {
@@ -208,7 +208,7 @@ final class Matcher private (private var _pattern: Pattern) {
     }
 
     val start = this.start(group)
-    val end   = this.end(group)
+    val end = this.end(group)
     if (start < 0 && end < 0) {
       // Means the subpattern didn't get matched at all.
       return null
@@ -248,12 +248,14 @@ final class Matcher private (private var _pattern: Pattern) {
       end = _inputLength
     }
 
-    val ok = _pattern.re2.match_(_inputSequence,
-                                 _groups(0),
-                                 end,
-                                 _anchorFlag,
-                                 _groups,
-                                 1 + _groupCount)
+    val ok = _pattern.re2.match_(
+      _inputSequence,
+      _groups(0),
+      end,
+      _anchorFlag,
+      _groups,
+      1 + _groupCount
+    )
     // Must match - hasMatch says that the last call with these
     // parameters worked just fine.
     if (!ok) {
@@ -309,12 +311,14 @@ final class Matcher private (private var _pattern: Pattern) {
 
   // Helper: does match starting at start, with RE2 anchor flag.
   private def genMatch(startByte: Int, anchor: Int): Boolean = {
-    val ok = _pattern.re2.match_(_inputSequence,
-                                 startByte,
-                                 _inputLength,
-                                 anchor,
-                                 _groups,
-                                 1)
+    val ok = _pattern.re2.match_(
+      _inputSequence,
+      startByte,
+      _inputLength,
+      anchor,
+      _groups,
+      1
+    )
     if (!ok) {
       false
     } else {
@@ -367,8 +371,8 @@ final class Matcher private (private var _pattern: Pattern) {
     }
     _appendPos = e
     var last = 0
-    var i    = 0
-    val m    = replacement.length()
+    var i = 0
+    val m = replacement.length()
     while (i < m - 1) {
       if (replacement.charAt(i) == '\\') {
         if (last < i) {
@@ -409,13 +413,16 @@ final class Matcher private (private var _pattern: Pattern) {
           }
           i += 1 // '{'
           var j = i + 1
-          while (j < replacement.length && replacement.charAt(j) != '}' && replacement
-                   .charAt(j) != ' ') {
+          while (j < replacement.length && replacement.charAt(
+                j
+              ) != '}' && replacement
+                .charAt(j) != ' ') {
             j += 1
           }
           if (j == replacement.length || replacement.charAt(j) == ' ') {
             throw new IllegalArgumentException(
-              "named capturing group is missing trailing '}'")
+              "named capturing group is missing trailing '}'"
+            )
           }
           val groupName = replacement.substring(i + 1, j)
           sb.append(this.group(groupName))
@@ -443,7 +450,8 @@ final class Matcher private (private var _pattern: Pattern) {
 
   private def noLookAhead(methodName: String): Nothing =
     throw new Exception(
-      s"$methodName is not defined since we don't support lookaheads")
+      s"$methodName is not defined since we don't support lookaheads"
+    )
 
   def useTransparentBounds(b: Boolean): Matcher =
     noLookAhead("useTransparentBounds")
@@ -470,7 +478,7 @@ final class Matcher private (private var _pattern: Pattern) {
   // Helper: replaceAll/replaceFirst hybrid.
   private def replace(replacement: String, all: Boolean): String = {
     reset()
-    val sb    = new StringBuffer()
+    val sb = new StringBuffer()
     var break = false
     while (!break && find()) {
       appendReplacement(sb, replacement)
@@ -524,7 +532,7 @@ object Matcher {
       return s
     }
     val sb = new StringBuilder()
-    var i  = 0
+    var i = 0
     while (i < s.length()) {
       val c = s.charAt(i)
       if (c == '\\' || c == '$') {

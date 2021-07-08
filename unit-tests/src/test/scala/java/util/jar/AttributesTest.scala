@@ -51,7 +51,7 @@ class AttributesTest {
 
   @Test def entrySet(): Unit = {
     val entrySet = a.entrySet()
-    val keySet   = new HashSet[Object]()
+    val keySet = new HashSet[Object]()
     val valueSet = new HashSet[Object]()
     assertTrue(entrySet.size() == 4)
 
@@ -117,8 +117,10 @@ class AttributesTest {
     assertTrue(atts2.get(Attributes.Name.CLASS_PATH) == "tools.jar")
     assertTrue(atts2.get(Attributes.Name.MANIFEST_VERSION) == "1")
 
-    assertThrows(classOf[ClassCastException],
-                 atts.putAll(java.util.Collections.EMPTY_MAP))
+    assertThrows(
+      classOf[ClassCastException],
+      atts.putAll(java.util.Collections.EMPTY_MAP)
+    )
   }
 
   @Test def removeObject(): Unit = {

@@ -34,18 +34,18 @@ final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
    * implementations.
    */
 
-  protected def unary_! : scala.Boolean             = !_value
+  protected def unary_! : scala.Boolean = !_value
   protected def ||(x: scala.Boolean): scala.Boolean = _value || x
   protected def &&(x: scala.Boolean): scala.Boolean = _value && x
-  protected def |(x: scala.Boolean): scala.Boolean  = _value | x
-  protected def &(x: scala.Boolean): scala.Boolean  = _value & x
-  protected def ^(x: scala.Boolean): scala.Boolean  = _value ^ x
+  protected def |(x: scala.Boolean): scala.Boolean = _value | x
+  protected def &(x: scala.Boolean): scala.Boolean = _value & x
+  protected def ^(x: scala.Boolean): scala.Boolean = _value ^ x
 }
 
 object Boolean {
   final val TYPE =
     scala.Predef.classOf[scala.scalanative.runtime.PrimitiveBoolean]
-  final val TRUE: Boolean  = new Boolean(true)
+  final val TRUE: Boolean = new Boolean(true)
   final val FALSE: Boolean = new Boolean(false)
 
   @inline def compare(x: scala.Boolean, y: scala.Boolean): scala.Int =

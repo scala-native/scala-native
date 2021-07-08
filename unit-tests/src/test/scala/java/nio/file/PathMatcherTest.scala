@@ -13,8 +13,10 @@ class PathMatcherTest {
   }
 
   @Test def throwsUnsupportedOperationExceptionIfUnknownSyntaxIsUsed(): Unit = {
-    assertThrows(classOf[UnsupportedOperationException],
-                 getMatcher("foobar:blabla"))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      getMatcher("foobar:blabla")
+    )
   }
 
   @Test def throwsIllegalArgumentExceptionIfParamIsNotSyntaxPattern(): Unit = {

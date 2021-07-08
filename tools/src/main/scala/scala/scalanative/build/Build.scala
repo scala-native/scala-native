@@ -7,13 +7,11 @@ import scala.scalanative.util.Scope
 /** Utility methods for building code using Scala Native. */
 object Build {
 
-  /** Run the complete Scala Native pipeline,
-   *  LLVM optimizer and system linker, producing
-   *  a native binary in the end.
+  /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
+   *  producing a native binary in the end.
    *
-   *  For example, to produce a binary one needs
-   *  a classpath, a working directory and a main
-   *  class entry point:
+   *  For example, to produce a binary one needs a classpath, a working
+   *  directory and a main class entry point:
    *
    *  {{{
    *  val classpath: Seq[Path] = ...
@@ -31,14 +29,14 @@ object Build {
    *    Config.empty
    *      .withCompilerConfig{
    *        NativeConfig.empty
-   *         .withGC(GC.default)
-   *         .withMode(Mode.default)
-   *         .withClang(clang)
-   *         .withClangPP(clangpp)
-   *         .withLinkingOptions(linkopts)
-   *         .withCompileOptions(compopts)
-   *         .withLinkStubs(true)
-   *       }
+   *        .withGC(GC.default)
+   *        .withMode(Mode.default)
+   *        .withClang(clang)
+   *        .withClangPP(clangpp)
+   *        .withLinkingOptions(linkopts)
+   *        .withCompileOptions(compopts)
+   *        .withLinkStubs(true)
+   *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
    *      .withWorkdir(workdir)
@@ -46,19 +44,22 @@ object Build {
    *  Build.build(config, outpath)
    *  }}}
    *
-   *  @param config  The configuration of the toolchain.
-   *  @param outpath The path to the resulting native binary.
-   *  @return `outpath`, the path to the resulting native binary.
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @param outpath
+   *    The path to the resulting native binary.
+   *  @return
+   *    `outpath`, the path to the resulting native binary.
    */
   def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
     config.logger.time("Total") {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
-      val fconfig    = config.withClassPath(fclasspath)
-      val workdir    = fconfig.workdir
+      val fconfig = config.withClassPath(fclasspath)
+      val workdir = fconfig.workdir
 
       // create optimized code and generate ll
       val entries = ScalaNative.entries(fconfig)
-      val linked  = ScalaNative.link(fconfig, entries)
+      val linked = ScalaNative.link(fconfig, entries)
       ScalaNative.logLinked(fconfig, linked)
       val optimized = ScalaNative.optimize(fconfig, linked)
       val generated = ScalaNative.codegen(fconfig, optimized)

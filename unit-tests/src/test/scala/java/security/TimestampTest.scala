@@ -9,8 +9,7 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
-/**
- * Tests for [[Timestamp]] class fields and methods
+/** Tests for [[Timestamp]] class fields and methods
  */
 class TimestampTest {
 
@@ -47,8 +46,10 @@ class TimestampTest {
 
   @Test def constructor(): Unit = {
     // Check that nulls are not accepted.
-    assertThrows(classOf[NullPointerException],
-                 new Timestamp(null, MockCertPath))
+    assertThrows(
+      classOf[NullPointerException],
+      new Timestamp(null, MockCertPath)
+    )
     assertThrows(classOf[NullPointerException], new Timestamp(now, null))
   }
 

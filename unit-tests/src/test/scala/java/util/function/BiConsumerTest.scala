@@ -14,7 +14,7 @@ class BiConsumerTest {
 
   @Test def accept(): Unit = {
     // Side-effects
-    var left: Int  = 0
+    var left: Int = 0
     var right: Int = 0
 
     val add: BiConsumer[Int, Int] = makeBiConsumer { (t, u) =>
@@ -33,7 +33,7 @@ class BiConsumerTest {
 
   @Test def andThen(): Unit = {
     // Side-effects
-    var left: Int  = 0
+    var left: Int = 0
     var right: Int = 0
 
     val add: BiConsumer[Int, Int] = makeBiConsumer { (t, u) =>
@@ -53,17 +53,21 @@ class BiConsumerTest {
     assertEquals(16, right)
 
     addAndMultiply.accept(3, 6)
-    assertEquals(21, left)   // (4+3) * 3
+    assertEquals(21, left) // (4+3) * 3
     assertEquals(132, right) // (16+6) * 6
 
     // Consume, then throw
-    assertThrows(classOf[ThrowingConsumerException],
-                 add.andThen(throwingConsumer).accept(1, 2))
+    assertThrows(
+      classOf[ThrowingConsumerException],
+      add.andThen(throwingConsumer).accept(1, 2)
+    )
     assertEquals(22, left)
     assertEquals(134, right)
 
-    assertThrows(classOf[ThrowingConsumerException],
-                 throwingConsumer.andThen(dontCallConsumer).accept(0, 0))
+    assertThrows(
+      classOf[ThrowingConsumerException],
+      throwingConsumer.andThen(dontCallConsumer).accept(0, 0)
+    )
 
   }
 }

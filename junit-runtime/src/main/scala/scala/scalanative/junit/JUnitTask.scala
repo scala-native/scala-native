@@ -8,14 +8,17 @@ import scala.scalanative.reflect.Reflect
 import scala.util.{Failure, Success, Try}
 import org.junit.TestCouldNotBeSkippedException
 
-private[junit] final class JUnitTask(val taskDef: TaskDef,
-                                     runSettings: RunSettings)
-    extends Task {
+private[junit] final class JUnitTask(
+    val taskDef: TaskDef,
+    runSettings: RunSettings
+) extends Task {
 
   def tags(): Array[String] = Array.empty
 
-  override def execute(eventHandler: EventHandler,
-                       loggers: Array[Logger]): Array[Task] = {
+  override def execute(
+      eventHandler: EventHandler,
+      loggers: Array[Logger]
+  ): Array[Task] = {
     val reporter = new Reporter(eventHandler, loggers, runSettings, taskDef)
 
     loadBootstrapper(reporter).foreach { bootstrapper =>
@@ -25,17 +28,21 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     Array.empty
   }
 
-  private def executeTests(bootstrapper: Bootstrapper,
-                           reporter: Reporter): Unit = {
+  private def executeTests(
+      bootstrapper: Bootstrapper,
+      reporter: Reporter
+  ): Unit = {
     reporter.reportRunStarted()
 
-    var failed  = 0
+    var failed = 0
     var ignored = 0
-    var total   = 0
+    var total = 0
 
     @tailrec
-    def runTests(tests: List[TestMetadata],
-                 testClass: TestClassMetadata): Try[Unit] = {
+    def runTests(
+        tests: List[TestMetadata],
+        testClass: TestClassMetadata
+    ): Try[Unit] = {
       val (nextIgnored, other) = tests.span(_.ignored)
 
       if (testClass.ignored) {
@@ -86,9 +93,11 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
     reporter.reportRunFinished(failed, ignored, total, timeInSeconds)
   }
 
-  private[this] def executeTestMethod(bootstrapper: Bootstrapper,
-                                      test: TestMetadata,
-                                      reporter: Reporter): Int = {
+  private[this] def executeTestMethod(
+      bootstrapper: Bootstrapper,
+      test: TestMetadata,
+      reporter: Reporter
+  ): Int = {
     reporter.reportTestStarted(test.name)
 
     val result = runTestLifecycle {
@@ -116,10 +125,12 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
           case error =>
             error
         }
-        reporter.reportErrors("Test ",
-                              Some(test.name),
-                              timeInSeconds,
-                              errorsWithSkipped)
+        reporter.reportErrors(
+          "Test ",
+          Some(test.name),
+          timeInSeconds,
+          errorsWithSkipped
+        )
         es.size
     }
 
@@ -136,7 +147,8 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
       val b = Reflect
         .lookupLoadableModuleClass(bootstrapperName)
         .getOrElse(
-          throw new ClassNotFoundException(s"Cannot find $bootstrapperName"))
+          throw new ClassNotFoundException(s"Cannot find $bootstrapperName")
+        )
         .loadModule()
 
       b match {
@@ -144,20 +156,24 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
 
         case _ =>
           throw new ClassCastException(
-            s"Expected $bootstrapperName to extend Bootstrapper")
+            s"Expected $bootstrapperName to extend Bootstrapper"
+          )
       }
     } catch {
       case t: Throwable =>
-        reporter.reportErrors("Error while loading test class ",
-                              None,
-                              0,
-                              List(t))
+        reporter.reportErrors(
+          "Error while loading test class ",
+          None,
+          0,
+          List(t)
+        )
         None
     }
   }
 
-  private def handleExpected(expectedException: Class[_ <: Throwable])(
-      body: => Try[Unit]): Try[Unit] = {
+  private def handleExpected(
+      expectedException: Class[_ <: Throwable]
+  )(body: => Try[Unit]): Try[Unit] = {
     val wantException = expectedException != classOf[org.junit.Test.None]
 
     if (wantException) {
@@ -165,7 +181,9 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
         case Success(_) =>
           Failure(
             new AssertionError(
-              "Expected exception: " + expectedException.getName))
+              "Expected exception: " + expectedException.getName
+            )
+          )
 
         case Failure(t) if expectedException.isInstance(t) =>
           Success(())
@@ -176,16 +194,18 @@ private[junit] final class JUnitTask(val taskDef: TaskDef,
           Failure(
             new Exception(
               s"Unexpected exception, expected<$expName> but was<$gotName>",
-              t))
+              t
+            )
+          )
       }
     } else {
       body
     }
   }
 
-  private def runTestLifecycle[T](build: => Try[T])(before: T => Try[Unit])(
-      body: T => Try[Unit])(
-      after: T => Try[Unit]): (List[Throwable], Double) = {
+  private def runTestLifecycle[T](build: => Try[T])(
+      before: T => Try[Unit]
+  )(body: T => Try[Unit])(after: T => Try[Unit]): (List[Throwable], Double) = {
     val startTime = System.nanoTime
 
     val exceptions: List[Throwable] = build match {

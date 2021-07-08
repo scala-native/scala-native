@@ -22,14 +22,17 @@ class ClassTest {
     assertTrue(Array('0').getClass.getComponentType == classOf[scala.Char])
     assertTrue(Array(0.toByte).getClass.getComponentType == classOf[scala.Byte])
     assertTrue(
-      Array(0.toShort).getClass.getComponentType == classOf[scala.Short])
+      Array(0.toShort).getClass.getComponentType == classOf[scala.Short]
+    )
     assertTrue(Array(0).getClass.getComponentType == classOf[scala.Int])
     assertTrue(Array(0L).getClass.getComponentType == classOf[scala.Long])
-    assertTrue(Array(0F).getClass.getComponentType == classOf[scala.Float])
-    assertTrue(Array(0D).getClass.getComponentType == classOf[scala.Double])
+    assertTrue(Array(0f).getClass.getComponentType == classOf[scala.Float])
+    assertTrue(Array(0d).getClass.getComponentType == classOf[scala.Double])
     assertTrue(
       Array(new java.lang.Object).getClass.getComponentType == classOf[
-        java.lang.Object])
+        java.lang.Object
+      ]
+    )
   }
 
   @Test def isPrimitive(): Unit = {
@@ -132,7 +135,8 @@ class ClassTest {
   @Test def testToString(): Unit = {
     assertTrue(classOf[java.lang.Class[_]].toString == "class java.lang.Class")
     assertTrue(
-      classOf[java.lang.Runnable].toString == "interface java.lang.Runnable")
+      classOf[java.lang.Runnable].toString == "interface java.lang.Runnable"
+    )
   }
 
   @Test def isInterface(): Unit = {
@@ -140,13 +144,17 @@ class ClassTest {
     assertTrue(classOf[java.lang.Runnable].isInterface)
   }
 
-  private def assertDiffClass(l: java.lang.Class[_],
-                              r: java.lang.Class[_]): Unit = {
+  private def assertDiffClass(
+      l: java.lang.Class[_],
+      r: java.lang.Class[_]
+  ): Unit = {
     assertTrue(s"$l eq $r", l ne r)
   }
 
-  private def assertEqualClass(l: java.lang.Class[_],
-                               r: java.lang.Class[_]): Unit = {
+  private def assertEqualClass(
+      l: java.lang.Class[_],
+      r: java.lang.Class[_]
+  ): Unit = {
     assertTrue(s"$l ne $r", l eq r)
   }
 

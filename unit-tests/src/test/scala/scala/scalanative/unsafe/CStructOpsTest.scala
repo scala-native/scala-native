@@ -7,9 +7,9 @@ import org.junit.Assert._
 class CStructOpsTest {
 
   @Test def atN(): Unit = {
-    val alloc  = stackalloc[CStruct4[Byte, Short, Int, Long]]
+    val alloc = stackalloc[CStruct4[Byte, Short, Int, Long]]
     val struct = !alloc
-    val ptr    = alloc.asInstanceOf[Ptr[Byte]]
+    val ptr = alloc.asInstanceOf[Ptr[Byte]]
 
     assertTrue(ptr == struct.at1)
     assertTrue(ptr + 2 == struct.at2)
@@ -18,9 +18,9 @@ class CStructOpsTest {
   }
 
   @Test def applyUpdate(): Unit = {
-    val alloc  = stackalloc[CStruct4[Int, Int, Int, Int]]
+    val alloc = stackalloc[CStruct4[Int, Int, Int, Int]]
     val struct = !alloc
-    val ptr    = alloc.asInstanceOf[Ptr[Int]]
+    val ptr = alloc.asInstanceOf[Ptr[Int]]
 
     struct._1 = 1
     assertTrue(struct._1 == 1)

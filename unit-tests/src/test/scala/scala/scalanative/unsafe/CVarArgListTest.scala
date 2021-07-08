@@ -34,45 +34,60 @@ class CVarArgListTest {
   @Test def byteArgs3(): Unit =
     vatest(c"%d %d %d", Seq(1.toByte, 2.toByte, 3.toByte), "1 2 3")
   @Test def byteArgs4(): Unit =
-    vatest(c"%d %d %d %d",
-           Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte),
-           "1 2 3 4")
+    vatest(
+      c"%d %d %d %d",
+      Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte),
+      "1 2 3 4"
+    )
   @Test def byteArgs5(): Unit =
-    vatest(c"%d %d %d %d %d",
-           Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte),
-           "1 2 3 4 5")
+    vatest(
+      c"%d %d %d %d %d",
+      Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte),
+      "1 2 3 4 5"
+    )
   @Test def byteArgs6(): Unit =
-    vatest(c"%d %d %d %d %d %d",
-           Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte, 6.toByte),
-           "1 2 3 4 5 6")
+    vatest(
+      c"%d %d %d %d %d %d",
+      Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte, 6.toByte),
+      "1 2 3 4 5 6"
+    )
   @Test def byteArgs7(): Unit =
     vatest(
       c"%d %d %d %d %d %d %d",
       Seq(1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte, 6.toByte, 7.toByte),
-      "1 2 3 4 5 6 7")
+      "1 2 3 4 5 6 7"
+    )
   @Test def byteArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1.toByte,
-               2.toByte,
-               3.toByte,
-               4.toByte,
-               5.toByte,
-               6.toByte,
-               7.toByte,
-               8.toByte),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(
+        1.toByte,
+        2.toByte,
+        3.toByte,
+        4.toByte,
+        5.toByte,
+        6.toByte,
+        7.toByte,
+        8.toByte
+      ),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def byteArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1.toByte,
-               2.toByte,
-               3.toByte,
-               4.toByte,
-               5.toByte,
-               6.toByte,
-               7.toByte,
-               8.toByte,
-               9.toByte),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(
+        1.toByte,
+        2.toByte,
+        3.toByte,
+        4.toByte,
+        5.toByte,
+        6.toByte,
+        7.toByte,
+        8.toByte,
+        9.toByte
+      ),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def shortValue0(): Unit =
     vatest(c"%d", Seq(0.toShort), "0")
@@ -91,51 +106,68 @@ class CVarArgListTest {
   @Test def shortArgs3(): Unit =
     vatest(c"%d %d %d", Seq(1.toShort, 2.toShort, 3.toShort), "1 2 3")
   @Test def shortArgs4(): Unit =
-    vatest(c"%d %d %d %d",
-           Seq(1.toShort, 2.toShort, 3.toShort, 4.toShort),
-           "1 2 3 4")
+    vatest(
+      c"%d %d %d %d",
+      Seq(1.toShort, 2.toShort, 3.toShort, 4.toShort),
+      "1 2 3 4"
+    )
   @Test def shortArgs5(): Unit =
-    vatest(c"%d %d %d %d %d",
-           Seq(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort),
-           "1 2 3 4 5")
+    vatest(
+      c"%d %d %d %d %d",
+      Seq(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort),
+      "1 2 3 4 5"
+    )
   @Test def shortArgs6(): Unit =
     vatest(
       c"%d %d %d %d %d %d",
       Seq(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort, 6.toShort),
-      "1 2 3 4 5 6")
+      "1 2 3 4 5 6"
+    )
   @Test def shortArgs7(): Unit =
-    vatest(c"%d %d %d %d %d %d %d",
-           Seq(1.toShort,
-               2.toShort,
-               3.toShort,
-               4.toShort,
-               5.toShort,
-               6.toShort,
-               7.toShort),
-           "1 2 3 4 5 6 7")
+    vatest(
+      c"%d %d %d %d %d %d %d",
+      Seq(
+        1.toShort,
+        2.toShort,
+        3.toShort,
+        4.toShort,
+        5.toShort,
+        6.toShort,
+        7.toShort
+      ),
+      "1 2 3 4 5 6 7"
+    )
   @Test def shortArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1.toShort,
-               2.toShort,
-               3.toShort,
-               4.toShort,
-               5.toShort,
-               6.toShort,
-               7.toShort,
-               8.toShort),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(
+        1.toShort,
+        2.toShort,
+        3.toShort,
+        4.toShort,
+        5.toShort,
+        6.toShort,
+        7.toShort,
+        8.toShort
+      ),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def shortArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1.toShort,
-               2.toShort,
-               3.toShort,
-               4.toShort,
-               5.toShort,
-               6.toShort,
-               7.toShort,
-               8.toShort,
-               9.toShort),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(
+        1.toShort,
+        2.toShort,
+        3.toShort,
+        4.toShort,
+        5.toShort,
+        6.toShort,
+        7.toShort,
+        8.toShort,
+        9.toShort
+      ),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def intValue0(): Unit =
     vatest(c"%d", Seq(0), "0")
@@ -162,13 +194,17 @@ class CVarArgListTest {
   @Test def intArgs7(): Unit =
     vatest(c"%d %d %d %d %d %d %d", Seq(1, 2, 3, 4, 5, 6, 7), "1 2 3 4 5 6 7")
   @Test def intArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1, 2, 3, 4, 5, 6, 7, 8),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(1, 2, 3, 4, 5, 6, 7, 8),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def intArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1, 2, 3, 4, 5, 6, 7, 8, 9),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(1, 2, 3, 4, 5, 6, 7, 8, 9),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def longValue0(): Unit =
     vatest(c"%d", Seq(0L), "0")
@@ -193,17 +229,23 @@ class CVarArgListTest {
   @Test def longArgs6(): Unit =
     vatest(c"%d %d %d %d %d %d", Seq(1L, 2L, 3L, 4L, 5L, 6L), "1 2 3 4 5 6")
   @Test def longArgs7(): Unit =
-    vatest(c"%d %d %d %d %d %d %d",
-           Seq(1L, 2L, 3L, 4L, 5L, 6L, 7L),
-           "1 2 3 4 5 6 7")
+    vatest(
+      c"%d %d %d %d %d %d %d",
+      Seq(1L, 2L, 3L, 4L, 5L, 6L, 7L),
+      "1 2 3 4 5 6 7"
+    )
   @Test def longArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def longArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def ubyteValueMin(): Unit =
     vatest(c"%d", Seq(UByte.MinValue), "0")
@@ -216,51 +258,68 @@ class CVarArgListTest {
   @Test def ubyteArgs3(): Unit =
     vatest(c"%d %d %d", Seq(1.toUByte, 2.toUByte, 3.toUByte), "1 2 3")
   @Test def ubyteArgs4(): Unit =
-    vatest(c"%d %d %d %d",
-           Seq(1.toUByte, 2.toUByte, 3.toUByte, 4.toUByte),
-           "1 2 3 4")
+    vatest(
+      c"%d %d %d %d",
+      Seq(1.toUByte, 2.toUByte, 3.toUByte, 4.toUByte),
+      "1 2 3 4"
+    )
   @Test def ubyteArgs5(): Unit =
-    vatest(c"%d %d %d %d %d",
-           Seq(1.toUByte, 2.toUByte, 3.toUByte, 4.toUByte, 5.toUByte),
-           "1 2 3 4 5")
+    vatest(
+      c"%d %d %d %d %d",
+      Seq(1.toUByte, 2.toUByte, 3.toUByte, 4.toUByte, 5.toUByte),
+      "1 2 3 4 5"
+    )
   @Test def ubyteArgs6(): Unit =
     vatest(
       c"%d %d %d %d %d %d",
       Seq(1.toUByte, 2.toUByte, 3.toUByte, 4.toUByte, 5.toUByte, 6.toUByte),
-      "1 2 3 4 5 6")
+      "1 2 3 4 5 6"
+    )
   @Test def ubyteArgs7(): Unit =
-    vatest(c"%d %d %d %d %d %d %d",
-           Seq(1.toUByte,
-               2.toUByte,
-               3.toUByte,
-               4.toUByte,
-               5.toUByte,
-               6.toUByte,
-               7.toUByte),
-           "1 2 3 4 5 6 7")
+    vatest(
+      c"%d %d %d %d %d %d %d",
+      Seq(
+        1.toUByte,
+        2.toUByte,
+        3.toUByte,
+        4.toUByte,
+        5.toUByte,
+        6.toUByte,
+        7.toUByte
+      ),
+      "1 2 3 4 5 6 7"
+    )
   @Test def ubyteArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1.toUByte,
-               2.toUByte,
-               3.toUByte,
-               4.toUByte,
-               5.toUByte,
-               6.toUByte,
-               7.toUByte,
-               8.toUByte),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(
+        1.toUByte,
+        2.toUByte,
+        3.toUByte,
+        4.toUByte,
+        5.toUByte,
+        6.toUByte,
+        7.toUByte,
+        8.toUByte
+      ),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def ubyteArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1.toUByte,
-               2.toUByte,
-               3.toUByte,
-               4.toUByte,
-               5.toUByte,
-               6.toUByte,
-               7.toUByte,
-               8.toUByte,
-               9.toUByte),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(
+        1.toUByte,
+        2.toUByte,
+        3.toUByte,
+        4.toUByte,
+        5.toUByte,
+        6.toUByte,
+        7.toUByte,
+        8.toUByte,
+        9.toUByte
+      ),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def ushortValueMin(): Unit =
     vatest(c"%d", Seq(UShort.MinValue), "0")
@@ -273,55 +332,73 @@ class CVarArgListTest {
   @Test def ushortArgs3(): Unit =
     vatest(c"%d %d %d", Seq(1.toUShort, 2.toUShort, 3.toUShort), "1 2 3")
   @Test def ushortArgs4(): Unit =
-    vatest(c"%d %d %d %d",
-           Seq(1.toUShort, 2.toUShort, 3.toUShort, 4.toUShort),
-           "1 2 3 4")
+    vatest(
+      c"%d %d %d %d",
+      Seq(1.toUShort, 2.toUShort, 3.toUShort, 4.toUShort),
+      "1 2 3 4"
+    )
   @Test def ushortArgs5(): Unit =
-    vatest(c"%d %d %d %d %d",
-           Seq(1.toUShort, 2.toUShort, 3.toUShort, 4.toUShort, 5.toUShort),
-           "1 2 3 4 5")
+    vatest(
+      c"%d %d %d %d %d",
+      Seq(1.toUShort, 2.toUShort, 3.toUShort, 4.toUShort, 5.toUShort),
+      "1 2 3 4 5"
+    )
   @Test def ushortArgs6(): Unit =
-    vatest(c"%d %d %d %d %d %d",
-           Seq(1.toUShort,
-               2.toUShort,
-               3.toUShort,
-               4.toUShort,
-               5.toUShort,
-               6.toUShort),
-           "1 2 3 4 5 6")
+    vatest(
+      c"%d %d %d %d %d %d",
+      Seq(
+        1.toUShort,
+        2.toUShort,
+        3.toUShort,
+        4.toUShort,
+        5.toUShort,
+        6.toUShort
+      ),
+      "1 2 3 4 5 6"
+    )
   @Test def ushortArgs7(): Unit =
-    vatest(c"%d %d %d %d %d %d %d",
-           Seq(1.toUShort,
-               2.toUShort,
-               3.toUShort,
-               4.toUShort,
-               5.toUShort,
-               6.toUShort,
-               7.toUShort),
-           "1 2 3 4 5 6 7")
+    vatest(
+      c"%d %d %d %d %d %d %d",
+      Seq(
+        1.toUShort,
+        2.toUShort,
+        3.toUShort,
+        4.toUShort,
+        5.toUShort,
+        6.toUShort,
+        7.toUShort
+      ),
+      "1 2 3 4 5 6 7"
+    )
   @Test def ushortArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1.toUShort,
-               2.toUShort,
-               3.toUShort,
-               4.toUShort,
-               5.toUShort,
-               6.toUShort,
-               7.toUShort,
-               8.toUShort),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(
+        1.toUShort,
+        2.toUShort,
+        3.toUShort,
+        4.toUShort,
+        5.toUShort,
+        6.toUShort,
+        7.toUShort,
+        8.toUShort
+      ),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def ushortArgs9(): Unit =
     vatest(
       c"%d %d %d %d %d %d %d %d %d",
-      Seq(1.toUShort,
-          2.toUShort,
-          3.toUShort,
-          4.toUShort,
-          5.toUShort,
-          6.toUShort,
-          7.toUShort,
-          8.toUShort,
-          9.toUShort),
+      Seq(
+        1.toUShort,
+        2.toUShort,
+        3.toUShort,
+        4.toUShort,
+        5.toUShort,
+        6.toUShort,
+        7.toUShort,
+        8.toUShort,
+        9.toUShort
+      ),
       "1 2 3 4 5 6 7 8 9"
     )
 
@@ -336,45 +413,60 @@ class CVarArgListTest {
   @Test def uintArgs3(): Unit =
     vatest(c"%d %d %d", Seq(1.toUInt, 2.toUInt, 3.toUInt), "1 2 3")
   @Test def uintArgs4(): Unit =
-    vatest(c"%d %d %d %d",
-           Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt),
-           "1 2 3 4")
+    vatest(
+      c"%d %d %d %d",
+      Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt),
+      "1 2 3 4"
+    )
   @Test def uintArgs5(): Unit =
-    vatest(c"%d %d %d %d %d",
-           Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt, 5.toUInt),
-           "1 2 3 4 5")
+    vatest(
+      c"%d %d %d %d %d",
+      Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt, 5.toUInt),
+      "1 2 3 4 5"
+    )
   @Test def uintArgs6(): Unit =
-    vatest(c"%d %d %d %d %d %d",
-           Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt, 5.toUInt, 6.toUInt),
-           "1 2 3 4 5 6")
+    vatest(
+      c"%d %d %d %d %d %d",
+      Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt, 5.toUInt, 6.toUInt),
+      "1 2 3 4 5 6"
+    )
   @Test def uintArgs7(): Unit =
     vatest(
       c"%d %d %d %d %d %d %d",
       Seq(1.toUInt, 2.toUInt, 3.toUInt, 4.toUInt, 5.toUInt, 6.toUInt, 7.toUInt),
-      "1 2 3 4 5 6 7")
+      "1 2 3 4 5 6 7"
+    )
   @Test def uintArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1.toUInt,
-               2.toUInt,
-               3.toUInt,
-               4.toUInt,
-               5.toUInt,
-               6.toUInt,
-               7.toUInt,
-               8.toUInt),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(
+        1.toUInt,
+        2.toUInt,
+        3.toUInt,
+        4.toUInt,
+        5.toUInt,
+        6.toUInt,
+        7.toUInt,
+        8.toUInt
+      ),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def uintArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1.toUInt,
-               2.toUInt,
-               3.toUInt,
-               4.toUInt,
-               5.toUInt,
-               6.toUInt,
-               7.toUInt,
-               8.toUInt,
-               9.toUInt),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(
+        1.toUInt,
+        2.toUInt,
+        3.toUInt,
+        4.toUInt,
+        5.toUInt,
+        6.toUInt,
+        7.toUInt,
+        8.toUInt,
+        9.toUInt
+      ),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def ulongValueMin(): Unit =
     vatest(c"%llu", Seq(ULong.MinValue), "0")
@@ -387,51 +479,68 @@ class CVarArgListTest {
   @Test def ulongArgs3(): Unit =
     vatest(c"%d %d %d", Seq(1.toULong, 2.toULong, 3.toULong), "1 2 3")
   @Test def ulongArgs4(): Unit =
-    vatest(c"%d %d %d %d",
-           Seq(1.toULong, 2.toULong, 3.toULong, 4.toULong),
-           "1 2 3 4")
+    vatest(
+      c"%d %d %d %d",
+      Seq(1.toULong, 2.toULong, 3.toULong, 4.toULong),
+      "1 2 3 4"
+    )
   @Test def ulongArgs5(): Unit =
-    vatest(c"%d %d %d %d %d",
-           Seq(1.toULong, 2.toULong, 3.toULong, 4.toULong, 5.toULong),
-           "1 2 3 4 5")
+    vatest(
+      c"%d %d %d %d %d",
+      Seq(1.toULong, 2.toULong, 3.toULong, 4.toULong, 5.toULong),
+      "1 2 3 4 5"
+    )
   @Test def ulongArgs6(): Unit =
     vatest(
       c"%d %d %d %d %d %d",
       Seq(1.toULong, 2.toULong, 3.toULong, 4.toULong, 5.toULong, 6.toULong),
-      "1 2 3 4 5 6")
+      "1 2 3 4 5 6"
+    )
   @Test def ulongArgs7(): Unit =
-    vatest(c"%d %d %d %d %d %d %d",
-           Seq(1.toULong,
-               2.toULong,
-               3.toULong,
-               4.toULong,
-               5.toULong,
-               6.toULong,
-               7.toULong),
-           "1 2 3 4 5 6 7")
+    vatest(
+      c"%d %d %d %d %d %d %d",
+      Seq(
+        1.toULong,
+        2.toULong,
+        3.toULong,
+        4.toULong,
+        5.toULong,
+        6.toULong,
+        7.toULong
+      ),
+      "1 2 3 4 5 6 7"
+    )
   @Test def ulongArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d",
-           Seq(1.toULong,
-               2.toULong,
-               3.toULong,
-               4.toULong,
-               5.toULong,
-               6.toULong,
-               7.toULong,
-               8.toULong),
-           "1 2 3 4 5 6 7 8")
+    vatest(
+      c"%d %d %d %d %d %d %d %d",
+      Seq(
+        1.toULong,
+        2.toULong,
+        3.toULong,
+        4.toULong,
+        5.toULong,
+        6.toULong,
+        7.toULong,
+        8.toULong
+      ),
+      "1 2 3 4 5 6 7 8"
+    )
   @Test def ulongArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d",
-           Seq(1.toULong,
-               2.toULong,
-               3.toULong,
-               4.toULong,
-               5.toULong,
-               6.toULong,
-               7.toULong,
-               8.toULong,
-               9.toULong),
-           "1 2 3 4 5 6 7 8 9")
+    vatest(
+      c"%d %d %d %d %d %d %d %d %d",
+      Seq(
+        1.toULong,
+        2.toULong,
+        3.toULong,
+        4.toULong,
+        5.toULong,
+        6.toULong,
+        7.toULong,
+        8.toULong,
+        9.toULong
+      ),
+      "1 2 3 4 5 6 7 8 9"
+    )
 
   @Test def floatArgs1(): Unit =
     vatest(c"%1.1f", Seq(1.1f), "1.1")
@@ -440,29 +549,41 @@ class CVarArgListTest {
   @Test def floatArgs3(): Unit =
     vatest(c"%1.1f %1.1f %1.1f", Seq(1.1f, 2.2f, 3.3f), "1.1 2.2 3.3")
   @Test def floatArgs4(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1f, 2.2f, 3.3f, 4.4f),
-           "1.1 2.2 3.3 4.4")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1f, 2.2f, 3.3f, 4.4f),
+      "1.1 2.2 3.3 4.4"
+    )
   @Test def floatArgs5(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f),
-           "1.1 2.2 3.3 4.4 5.5")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f),
+      "1.1 2.2 3.3 4.4 5.5"
+    )
   @Test def floatArgs6(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f),
-           "1.1 2.2 3.3 4.4 5.5 6.6")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f),
+      "1.1 2.2 3.3 4.4 5.5 6.6"
+    )
   @Test def floatArgs7(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f),
-           "1.1 2.2 3.3 4.4 5.5 6.6 7.7")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f),
+      "1.1 2.2 3.3 4.4 5.5 6.6 7.7"
+    )
   @Test def floatArgs8(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f),
-           "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f),
+      "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8"
+    )
   @Test def floatArgs9(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f, 9.9f),
-           "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8 9.9")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f, 9.9f),
+      "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8 9.9"
+    )
 
   @Test def doubleArgs1(): Unit =
     vatest(c"%1.1f", Seq(1.1d), "1.1")
@@ -471,50 +592,70 @@ class CVarArgListTest {
   @Test def doubleArgs3(): Unit =
     vatest(c"%1.1f %1.1f %1.1f", Seq(1.1d, 2.2d, 3.3d), "1.1 2.2 3.3")
   @Test def doubleArgs4(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1d, 2.2d, 3.3d, 4.4d),
-           "1.1 2.2 3.3 4.4")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1d, 2.2d, 3.3d, 4.4d),
+      "1.1 2.2 3.3 4.4"
+    )
   @Test def doubleArgs5(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d),
-           "1.1 2.2 3.3 4.4 5.5")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d),
+      "1.1 2.2 3.3 4.4 5.5"
+    )
   @Test def doubleArgs6(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d),
-           "1.1 2.2 3.3 4.4 5.5 6.6")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d),
+      "1.1 2.2 3.3 4.4 5.5 6.6"
+    )
   @Test def doubleArgs7(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d, 7.7d),
-           "1.1 2.2 3.3 4.4 5.5 6.6 7.7")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d, 7.7d),
+      "1.1 2.2 3.3 4.4 5.5 6.6 7.7"
+    )
   @Test def doubleArgs8(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d, 7.7d, 8.8d),
-           "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d, 7.7d, 8.8d),
+      "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8"
+    )
   @Test def doubleArgs9(): Unit =
-    vatest(c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d, 7.7d, 8.8d, 9.9d),
-           "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8 9.9")
+    vatest(
+      c"%1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d, 7.7d, 8.8d, 9.9d),
+      "1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8 9.9"
+    )
 
   @Test def mixArgs1(): Unit =
     vatest(c"%d %1.1f", Seq(1, 1.1d), "1 1.1")
   @Test def mixArgs2(): Unit =
     vatest(c"%d %d %1.1f %1.1f", Seq(1, 2, 1.1d, 2.2d), "1 2 1.1 2.2")
   @Test def mixArgs3(): Unit =
-    vatest(c"%d %d %d %1.1f %1.1f %1.1f",
-           Seq(1, 2, 3, 1.1d, 2.2d, 3.3d),
-           "1 2 3 1.1 2.2 3.3")
+    vatest(
+      c"%d %d %d %1.1f %1.1f %1.1f",
+      Seq(1, 2, 3, 1.1d, 2.2d, 3.3d),
+      "1 2 3 1.1 2.2 3.3"
+    )
   @Test def mixArgs4(): Unit =
-    vatest(c"%d %d %d %d %1.1f %1.1f %1.1f %1.1f",
-           Seq(1, 2, 3, 4, 1.1d, 2.2d, 3.3d, 4.4d),
-           "1 2 3 4 1.1 2.2 3.3 4.4")
+    vatest(
+      c"%d %d %d %d %1.1f %1.1f %1.1f %1.1f",
+      Seq(1, 2, 3, 4, 1.1d, 2.2d, 3.3d, 4.4d),
+      "1 2 3 4 1.1 2.2 3.3 4.4"
+    )
   @Test def mixArgs5(): Unit =
-    vatest(c"%d %d %d %d %d %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1, 2, 3, 4, 5, 1.1d, 2.2d, 3.3d, 4.4d, 5.5d),
-           "1 2 3 4 5 1.1 2.2 3.3 4.4 5.5")
+    vatest(
+      c"%d %d %d %d %d %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1, 2, 3, 4, 5, 1.1d, 2.2d, 3.3d, 4.4d, 5.5d),
+      "1 2 3 4 5 1.1 2.2 3.3 4.4 5.5"
+    )
   @Test def mixArgs6(): Unit =
-    vatest(c"%d %d %d %d %d %d %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
-           Seq(1, 2, 3, 4, 5, 6, 1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d),
-           "1 2 3 4 5 6 1.1 2.2 3.3 4.4 5.5 6.6")
+    vatest(
+      c"%d %d %d %d %d %d %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",
+      Seq(1, 2, 3, 4, 5, 6, 1.1d, 2.2d, 3.3d, 4.4d, 5.5d, 6.6d),
+      "1 2 3 4 5 6 1.1 2.2 3.3 4.4 5.5 6.6"
+    )
   @Test def mixArgs7(): Unit =
     vatest(
       c"%d %d %d %d %d %d %d %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f %1.1f",

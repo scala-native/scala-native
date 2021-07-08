@@ -5,11 +5,12 @@ import java.util.Iterator
 import java.util.function.Predicate
 import java.util.stream.Stream
 
-class DirectoryStreamImpl[T](stream: Stream[T],
-                             filter: DirectoryStream.Filter[_ >: T])
-    extends DirectoryStream[T] {
+class DirectoryStreamImpl[T](
+    stream: Stream[T],
+    filter: DirectoryStream.Filter[_ >: T]
+) extends DirectoryStream[T] {
   private var iteratorCalled: Boolean = false
-  private var closed: Boolean         = false
+  private var closed: Boolean = false
   private val underlying = {
     val predicate = new Predicate[T] {
       override def test(t: T): Boolean = filter.accept(t)

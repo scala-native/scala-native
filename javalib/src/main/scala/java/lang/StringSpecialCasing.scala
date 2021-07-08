@@ -142,108 +142,108 @@ private[lang] object StringSpecialCasing {
    */
   lazy val toUpperCase: java.util.HashMap[Char, String] = {
     val cases = new java.util.HashMap[Char, String]()
-    cases.put('\u00DF', "\u0053\u0053")       // ß to SS
-    cases.put('\u0149', "\u02BC\u004E")       // ŉ to ʼN
-    cases.put('\u01F0', "\u004A\u030C")       // ǰ to J̌
+    cases.put('\u00DF', "\u0053\u0053") // ß to SS
+    cases.put('\u0149', "\u02BC\u004E") // ŉ to ʼN
+    cases.put('\u01F0', "\u004A\u030C") // ǰ to J̌
     cases.put('\u0390', "\u0399\u0308\u0301") // ΐ to Ϊ́
     cases.put('\u03B0', "\u03A5\u0308\u0301") // ΰ to Ϋ́
-    cases.put('\u0587', "\u0535\u0552")       // և to ԵՒ
-    cases.put('\u1E96', "\u0048\u0331")       // ẖ to H̱
-    cases.put('\u1E97', "\u0054\u0308")       // ẗ to T̈
-    cases.put('\u1E98', "\u0057\u030A")       // ẘ to W̊
-    cases.put('\u1E99', "\u0059\u030A")       // ẙ to Y̊
-    cases.put('\u1E9A', "\u0041\u02BE")       // ẚ to Aʾ
-    cases.put('\u1F50', "\u03A5\u0313")       // ὐ to Υ̓
+    cases.put('\u0587', "\u0535\u0552") // և to ԵՒ
+    cases.put('\u1E96', "\u0048\u0331") // ẖ to H̱
+    cases.put('\u1E97', "\u0054\u0308") // ẗ to T̈
+    cases.put('\u1E98', "\u0057\u030A") // ẘ to W̊
+    cases.put('\u1E99', "\u0059\u030A") // ẙ to Y̊
+    cases.put('\u1E9A', "\u0041\u02BE") // ẚ to Aʾ
+    cases.put('\u1F50', "\u03A5\u0313") // ὐ to Υ̓
     cases.put('\u1F52', "\u03A5\u0313\u0300") // ὒ to Υ̓̀
     cases.put('\u1F54', "\u03A5\u0313\u0301") // ὔ to Υ̓́
     cases.put('\u1F56', "\u03A5\u0313\u0342") // ὖ to Υ̓͂
-    cases.put('\u1F80', "\u1F08\u0399")       // ᾀ to ἈΙ
-    cases.put('\u1F81', "\u1F09\u0399")       // ᾁ to ἉΙ
-    cases.put('\u1F82', "\u1F0A\u0399")       // ᾂ to ἊΙ
-    cases.put('\u1F83', "\u1F0B\u0399")       // ᾃ to ἋΙ
-    cases.put('\u1F84', "\u1F0C\u0399")       // ᾄ to ἌΙ
-    cases.put('\u1F85', "\u1F0D\u0399")       // ᾅ to ἍΙ
-    cases.put('\u1F86', "\u1F0E\u0399")       // ᾆ to ἎΙ
-    cases.put('\u1F87', "\u1F0F\u0399")       // ᾇ to ἏΙ
-    cases.put('\u1F88', "\u1F08\u0399")       // ᾈ to ἈΙ
-    cases.put('\u1F89', "\u1F09\u0399")       // ᾉ to ἉΙ
-    cases.put('\u1F8A', "\u1F0A\u0399")       // ᾊ to ἊΙ
-    cases.put('\u1F8B', "\u1F0B\u0399")       // ᾋ to ἋΙ
-    cases.put('\u1F8C', "\u1F0C\u0399")       // ᾌ to ἌΙ
-    cases.put('\u1F8D', "\u1F0D\u0399")       // ᾍ to ἍΙ
-    cases.put('\u1F8E', "\u1F0E\u0399")       // ᾎ to ἎΙ
-    cases.put('\u1F8F', "\u1F0F\u0399")       // ᾏ to ἏΙ
-    cases.put('\u1F90', "\u1F28\u0399")       // ᾐ to ἨΙ
-    cases.put('\u1F91', "\u1F29\u0399")       // ᾑ to ἩΙ
-    cases.put('\u1F92', "\u1F2A\u0399")       // ᾒ to ἪΙ
-    cases.put('\u1F93', "\u1F2B\u0399")       // ᾓ to ἫΙ
-    cases.put('\u1F94', "\u1F2C\u0399")       // ᾔ to ἬΙ
-    cases.put('\u1F95', "\u1F2D\u0399")       // ᾕ to ἭΙ
-    cases.put('\u1F96', "\u1F2E\u0399")       // ᾖ to ἮΙ
-    cases.put('\u1F97', "\u1F2F\u0399")       // ᾗ to ἯΙ
-    cases.put('\u1F98', "\u1F28\u0399")       // ᾘ to ἨΙ
-    cases.put('\u1F99', "\u1F29\u0399")       // ᾙ to ἩΙ
-    cases.put('\u1F9A', "\u1F2A\u0399")       // ᾚ to ἪΙ
-    cases.put('\u1F9B', "\u1F2B\u0399")       // ᾛ to ἫΙ
-    cases.put('\u1F9C', "\u1F2C\u0399")       // ᾜ to ἬΙ
-    cases.put('\u1F9D', "\u1F2D\u0399")       // ᾝ to ἭΙ
-    cases.put('\u1F9E', "\u1F2E\u0399")       // ᾞ to ἮΙ
-    cases.put('\u1F9F', "\u1F2F\u0399")       // ᾟ to ἯΙ
-    cases.put('\u1FA0', "\u1F68\u0399")       // ᾠ to ὨΙ
-    cases.put('\u1FA1', "\u1F69\u0399")       // ᾡ to ὩΙ
-    cases.put('\u1FA2', "\u1F6A\u0399")       // ᾢ to ὪΙ
-    cases.put('\u1FA3', "\u1F6B\u0399")       // ᾣ to ὫΙ
-    cases.put('\u1FA4', "\u1F6C\u0399")       // ᾤ to ὬΙ
-    cases.put('\u1FA5', "\u1F6D\u0399")       // ᾥ to ὭΙ
-    cases.put('\u1FA6', "\u1F6E\u0399")       // ᾦ to ὮΙ
-    cases.put('\u1FA7', "\u1F6F\u0399")       // ᾧ to ὯΙ
-    cases.put('\u1FA8', "\u1F68\u0399")       // ᾨ to ὨΙ
-    cases.put('\u1FA9', "\u1F69\u0399")       // ᾩ to ὩΙ
-    cases.put('\u1FAA', "\u1F6A\u0399")       // ᾪ to ὪΙ
-    cases.put('\u1FAB', "\u1F6B\u0399")       // ᾫ to ὫΙ
-    cases.put('\u1FAC', "\u1F6C\u0399")       // ᾬ to ὬΙ
-    cases.put('\u1FAD', "\u1F6D\u0399")       // ᾭ to ὭΙ
-    cases.put('\u1FAE', "\u1F6E\u0399")       // ᾮ to ὮΙ
-    cases.put('\u1FAF', "\u1F6F\u0399")       // ᾯ to ὯΙ
-    cases.put('\u1FB2', "\u1FBA\u0399")       // ᾲ to ᾺΙ
-    cases.put('\u1FB3', "\u0391\u0399")       // ᾳ to ΑΙ
-    cases.put('\u1FB4', "\u0386\u0399")       // ᾴ to ΆΙ
-    cases.put('\u1FB6', "\u0391\u0342")       // ᾶ to Α͂
+    cases.put('\u1F80', "\u1F08\u0399") // ᾀ to ἈΙ
+    cases.put('\u1F81', "\u1F09\u0399") // ᾁ to ἉΙ
+    cases.put('\u1F82', "\u1F0A\u0399") // ᾂ to ἊΙ
+    cases.put('\u1F83', "\u1F0B\u0399") // ᾃ to ἋΙ
+    cases.put('\u1F84', "\u1F0C\u0399") // ᾄ to ἌΙ
+    cases.put('\u1F85', "\u1F0D\u0399") // ᾅ to ἍΙ
+    cases.put('\u1F86', "\u1F0E\u0399") // ᾆ to ἎΙ
+    cases.put('\u1F87', "\u1F0F\u0399") // ᾇ to ἏΙ
+    cases.put('\u1F88', "\u1F08\u0399") // ᾈ to ἈΙ
+    cases.put('\u1F89', "\u1F09\u0399") // ᾉ to ἉΙ
+    cases.put('\u1F8A', "\u1F0A\u0399") // ᾊ to ἊΙ
+    cases.put('\u1F8B', "\u1F0B\u0399") // ᾋ to ἋΙ
+    cases.put('\u1F8C', "\u1F0C\u0399") // ᾌ to ἌΙ
+    cases.put('\u1F8D', "\u1F0D\u0399") // ᾍ to ἍΙ
+    cases.put('\u1F8E', "\u1F0E\u0399") // ᾎ to ἎΙ
+    cases.put('\u1F8F', "\u1F0F\u0399") // ᾏ to ἏΙ
+    cases.put('\u1F90', "\u1F28\u0399") // ᾐ to ἨΙ
+    cases.put('\u1F91', "\u1F29\u0399") // ᾑ to ἩΙ
+    cases.put('\u1F92', "\u1F2A\u0399") // ᾒ to ἪΙ
+    cases.put('\u1F93', "\u1F2B\u0399") // ᾓ to ἫΙ
+    cases.put('\u1F94', "\u1F2C\u0399") // ᾔ to ἬΙ
+    cases.put('\u1F95', "\u1F2D\u0399") // ᾕ to ἭΙ
+    cases.put('\u1F96', "\u1F2E\u0399") // ᾖ to ἮΙ
+    cases.put('\u1F97', "\u1F2F\u0399") // ᾗ to ἯΙ
+    cases.put('\u1F98', "\u1F28\u0399") // ᾘ to ἨΙ
+    cases.put('\u1F99', "\u1F29\u0399") // ᾙ to ἩΙ
+    cases.put('\u1F9A', "\u1F2A\u0399") // ᾚ to ἪΙ
+    cases.put('\u1F9B', "\u1F2B\u0399") // ᾛ to ἫΙ
+    cases.put('\u1F9C', "\u1F2C\u0399") // ᾜ to ἬΙ
+    cases.put('\u1F9D', "\u1F2D\u0399") // ᾝ to ἭΙ
+    cases.put('\u1F9E', "\u1F2E\u0399") // ᾞ to ἮΙ
+    cases.put('\u1F9F', "\u1F2F\u0399") // ᾟ to ἯΙ
+    cases.put('\u1FA0', "\u1F68\u0399") // ᾠ to ὨΙ
+    cases.put('\u1FA1', "\u1F69\u0399") // ᾡ to ὩΙ
+    cases.put('\u1FA2', "\u1F6A\u0399") // ᾢ to ὪΙ
+    cases.put('\u1FA3', "\u1F6B\u0399") // ᾣ to ὫΙ
+    cases.put('\u1FA4', "\u1F6C\u0399") // ᾤ to ὬΙ
+    cases.put('\u1FA5', "\u1F6D\u0399") // ᾥ to ὭΙ
+    cases.put('\u1FA6', "\u1F6E\u0399") // ᾦ to ὮΙ
+    cases.put('\u1FA7', "\u1F6F\u0399") // ᾧ to ὯΙ
+    cases.put('\u1FA8', "\u1F68\u0399") // ᾨ to ὨΙ
+    cases.put('\u1FA9', "\u1F69\u0399") // ᾩ to ὩΙ
+    cases.put('\u1FAA', "\u1F6A\u0399") // ᾪ to ὪΙ
+    cases.put('\u1FAB', "\u1F6B\u0399") // ᾫ to ὫΙ
+    cases.put('\u1FAC', "\u1F6C\u0399") // ᾬ to ὬΙ
+    cases.put('\u1FAD', "\u1F6D\u0399") // ᾭ to ὭΙ
+    cases.put('\u1FAE', "\u1F6E\u0399") // ᾮ to ὮΙ
+    cases.put('\u1FAF', "\u1F6F\u0399") // ᾯ to ὯΙ
+    cases.put('\u1FB2', "\u1FBA\u0399") // ᾲ to ᾺΙ
+    cases.put('\u1FB3', "\u0391\u0399") // ᾳ to ΑΙ
+    cases.put('\u1FB4', "\u0386\u0399") // ᾴ to ΆΙ
+    cases.put('\u1FB6', "\u0391\u0342") // ᾶ to Α͂
     cases.put('\u1FB7', "\u0391\u0342\u0399") // ᾷ to Α͂Ι
-    cases.put('\u1FBC', "\u0391\u0399")       // ᾼ to ΑΙ
-    cases.put('\u1FC2', "\u1FCA\u0399")       // ῂ to ῊΙ
-    cases.put('\u1FC3', "\u0397\u0399")       // ῃ to ΗΙ
-    cases.put('\u1FC4', "\u0389\u0399")       // ῄ to ΉΙ
-    cases.put('\u1FC6', "\u0397\u0342")       // ῆ to Η͂
+    cases.put('\u1FBC', "\u0391\u0399") // ᾼ to ΑΙ
+    cases.put('\u1FC2', "\u1FCA\u0399") // ῂ to ῊΙ
+    cases.put('\u1FC3', "\u0397\u0399") // ῃ to ΗΙ
+    cases.put('\u1FC4', "\u0389\u0399") // ῄ to ΉΙ
+    cases.put('\u1FC6', "\u0397\u0342") // ῆ to Η͂
     cases.put('\u1FC7', "\u0397\u0342\u0399") // ῇ to Η͂Ι
-    cases.put('\u1FCC', "\u0397\u0399")       // ῌ to ΗΙ
+    cases.put('\u1FCC', "\u0397\u0399") // ῌ to ΗΙ
     cases.put('\u1FD2', "\u0399\u0308\u0300") // ῒ to Ϊ̀
     cases.put('\u1FD3', "\u0399\u0308\u0301") // ΐ to Ϊ́
-    cases.put('\u1FD6', "\u0399\u0342")       // ῖ to Ι͂
+    cases.put('\u1FD6', "\u0399\u0342") // ῖ to Ι͂
     cases.put('\u1FD7', "\u0399\u0308\u0342") // ῗ to Ϊ͂
     cases.put('\u1FE2', "\u03A5\u0308\u0300") // ῢ to Ϋ̀
     cases.put('\u1FE3', "\u03A5\u0308\u0301") // ΰ to Ϋ́
-    cases.put('\u1FE4', "\u03A1\u0313")       // ῤ to Ρ̓
-    cases.put('\u1FE6', "\u03A5\u0342")       // ῦ to Υ͂
+    cases.put('\u1FE4', "\u03A1\u0313") // ῤ to Ρ̓
+    cases.put('\u1FE6', "\u03A5\u0342") // ῦ to Υ͂
     cases.put('\u1FE7', "\u03A5\u0308\u0342") // ῧ to Ϋ͂
-    cases.put('\u1FF2', "\u1FFA\u0399")       // ῲ to ῺΙ
-    cases.put('\u1FF3', "\u03A9\u0399")       // ῳ to ΩΙ
-    cases.put('\u1FF4', "\u038F\u0399")       // ῴ to ΏΙ
-    cases.put('\u1FF6', "\u03A9\u0342")       // ῶ to Ω͂
+    cases.put('\u1FF2', "\u1FFA\u0399") // ῲ to ῺΙ
+    cases.put('\u1FF3', "\u03A9\u0399") // ῳ to ΩΙ
+    cases.put('\u1FF4', "\u038F\u0399") // ῴ to ΏΙ
+    cases.put('\u1FF6', "\u03A9\u0342") // ῶ to Ω͂
     cases.put('\u1FF7', "\u03A9\u0342\u0399") // ῷ to Ω͂Ι
-    cases.put('\u1FFC', "\u03A9\u0399")       // ῼ to ΩΙ
-    cases.put('\uFB00', "\u0046\u0046")       // ﬀ to FF
-    cases.put('\uFB01', "\u0046\u0049")       // ﬁ to FI
-    cases.put('\uFB02', "\u0046\u004C")       // ﬂ to FL
+    cases.put('\u1FFC', "\u03A9\u0399") // ῼ to ΩΙ
+    cases.put('\uFB00', "\u0046\u0046") // ﬀ to FF
+    cases.put('\uFB01', "\u0046\u0049") // ﬁ to FI
+    cases.put('\uFB02', "\u0046\u004C") // ﬂ to FL
     cases.put('\uFB03', "\u0046\u0046\u0049") // ﬃ to FFI
     cases.put('\uFB04', "\u0046\u0046\u004C") // ﬄ to FFL
-    cases.put('\uFB05', "\u0053\u0054")       // ﬅ to ST
-    cases.put('\uFB06', "\u0053\u0054")       // ﬆ to ST
-    cases.put('\uFB13', "\u0544\u0546")       // ﬓ to ՄՆ
-    cases.put('\uFB14', "\u0544\u0535")       // ﬔ to ՄԵ
-    cases.put('\uFB15', "\u0544\u053B")       // ﬕ to ՄԻ
-    cases.put('\uFB16', "\u054E\u0546")       // ﬖ to ՎՆ
-    cases.put('\uFB17', "\u0544\u053D")       // ﬗ to ՄԽ
+    cases.put('\uFB05', "\u0053\u0054") // ﬅ to ST
+    cases.put('\uFB06', "\u0053\u0054") // ﬆ to ST
+    cases.put('\uFB13', "\u0544\u0546") // ﬓ to ՄՆ
+    cases.put('\uFB14', "\u0544\u0535") // ﬔ to ՄԵ
+    cases.put('\uFB15', "\u0544\u053B") // ﬕ to ՄԻ
+    cases.put('\uFB16', "\u054E\u0546") // ﬖ to ՎՆ
+    cases.put('\uFB17', "\u0544\u053D") // ﬗ to ՄԽ
     cases
   }
 }

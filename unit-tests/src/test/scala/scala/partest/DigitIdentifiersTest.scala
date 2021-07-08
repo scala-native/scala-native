@@ -6,7 +6,7 @@ import org.junit.Assert._
 class DigitIdentifiersTest {
 
   object `1Test` {
-    val `1S`  = "One"
+    val `1S` = "One"
     val `-1L` = -1L
 
     sealed abstract class `0` {

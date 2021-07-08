@@ -150,5 +150,5 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
 object WeakHashMap {
   private[WeakHashMap] final val DEFAULT_INITIAL_CAPACITY = 16
-  private[WeakHashMap] final val DEFAULT_LOAD_FACTOR      = 0.75f
+  private[WeakHashMap] final val DEFAULT_LOAD_FACTOR = 0.75f
 }

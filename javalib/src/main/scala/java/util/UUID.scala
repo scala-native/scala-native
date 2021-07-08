@@ -2,13 +2,14 @@ package java.util
 
 import java.lang.{Long => JLong}
 
-final class UUID private (private val i1: Int,
-                          private val i2: Int,
-                          private val i3: Int,
-                          private val i4: Int,
-                          private[this] var l1: JLong,
-                          private[this] var l2: JLong)
-    extends AnyRef
+final class UUID private (
+    private val i1: Int,
+    private val i2: Int,
+    private val i3: Int,
+    private val i4: Int,
+    private[this] var l1: JLong,
+    private[this] var l2: JLong
+) extends AnyRef
     with java.io.Serializable
     with Comparable[UUID] {
 
@@ -29,12 +30,14 @@ final class UUID private (private val i1: Int,
    */
 
   def this(mostSigBits: Long, leastSigBits: Long) = {
-    this((mostSigBits >>> 32).toInt,
-         mostSigBits.toInt,
-         (leastSigBits >>> 32).toInt,
-         leastSigBits.toInt,
-         mostSigBits,
-         leastSigBits)
+    this(
+      (mostSigBits >>> 32).toInt,
+      mostSigBits.toInt,
+      (leastSigBits >>> 32).toInt,
+      leastSigBits.toInt,
+      mostSigBits,
+      leastSigBits
+    )
   }
 
   def getLeastSignificantBits(): Long = {
@@ -96,7 +99,8 @@ final class UUID private (private val i1: Int,
 
     paddedHex8(i1) + "-" + paddedHex4(i2 >>> 16) + "-" +
       paddedHex4(i2 & 0xffff) + "-" + paddedHex4(i3 >>> 16) + "-" + paddedHex4(
-      i3 & 0xffff) + paddedHex8(i4)
+        i3 & 0xffff
+      ) + paddedHex8(i4)
   }
 
   override def hashCode(): Int =
@@ -125,10 +129,10 @@ final class UUID private (private val i1: Int,
 }
 
 object UUID {
-  private final val TimeBased   = 1
+  private final val TimeBased = 1
   private final val DCESecurity = 2
-  private final val NameBased   = 3
-  private final val Random      = 4
+  private final val NameBased = 3
+  private final val Random = 4
 
   private lazy val rng = new Random() // TODO Use java.security.SecureRandom
 

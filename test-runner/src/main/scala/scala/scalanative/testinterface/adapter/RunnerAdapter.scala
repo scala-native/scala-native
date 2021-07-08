@@ -13,12 +13,13 @@ import scala.scalanative.testinterface.common.{
   RunnerArgs
 }
 
-private final class RunnerAdapter private (runnerArgs: RunnerArgs,
-                                           controller: ManagedRunner,
-                                           testAdapter: TestAdapter)
-    extends Runner {
+private final class RunnerAdapter private (
+    runnerArgs: RunnerArgs,
+    controller: ManagedRunner,
+    testAdapter: TestAdapter
+) extends Runner {
 
-  private val runID     = runnerArgs.runID
+  private val runID = runnerArgs.runID
   private val rpcGetter = () => getRunnerRPC()
 
   private val workers = TrieMap.empty[Long, ManagedRunner]
@@ -67,7 +68,8 @@ private final class RunnerAdapter private (runnerArgs: RunnerArgs,
       // Attach message endpoint.
       mRunner.mux.attach(JVMEndpoints.msgWorker, runID) { msg =>
         controller.mux.send(NativeEndpoints.msgController, runID)(
-          new FrameworkMessage(mRunner.id, msg))
+          new FrameworkMessage(mRunner.id, msg)
+        )
       }
 
       // Start worker.
@@ -79,10 +81,12 @@ private final class RunnerAdapter private (runnerArgs: RunnerArgs,
 }
 
 private[adapter] object RunnerAdapter {
-  def apply(testAdapter: TestAdapter,
-            frameworkImplName: String,
-            args: Array[String],
-            remoteArgs: Array[String]): Runner = {
+  def apply(
+      testAdapter: TestAdapter,
+      frameworkImplName: String,
+      args: Array[String],
+      remoteArgs: Array[String]
+  ): Runner = {
     val runID = testAdapter.runStarting()
 
     try {

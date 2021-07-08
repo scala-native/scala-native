@@ -13,7 +13,8 @@ import scala.scalanative.posix.sys.ioctl._
  */
 private[lang] final class PipeIO[T](
     val nullStream: T,
-    val fdStream: (UnixProcess, FileDescriptor) => T)
+    val fdStream: (UnixProcess, FileDescriptor) => T
+)
 private[lang] object PipeIO {
   def apply[T](
       process: UnixProcess,
@@ -58,7 +59,7 @@ private[lang] object PipeIO {
       res
     }
     override def drain() = {
-      var toRead                     = 0
+      var toRead = 0
       var readBuf: Array[scala.Byte] = Array()
       while ({
         toRead = availableFD()
@@ -90,19 +91,21 @@ private[lang] object PipeIO {
   implicit val InputPipeIO: PipeIO[Stream] =
     new PipeIO(NullInput, (p, fd) => new StreamImpl(p, new FileInputStream(fd)))
   implicit val outputPipeIO: PipeIO[OutputStream] =
-    new PipeIO(NullOutput,
-               (p, fd) => new BufferedOutputStream(new FileOutputStream(fd)))
+    new PipeIO(
+      NullOutput,
+      (p, fd) => new BufferedOutputStream(new FileOutputStream(fd))
+    )
 
   private final object NullInput extends Stream {
     @stub
-    override def process: UnixProcess                                = ???
-    override def available(): Int                                    = 0
-    override def close(): Unit                                       = {}
-    override def read(): Int                                         = 0
+    override def process: UnixProcess = ???
+    override def available(): Int = 0
+    override def close(): Unit = {}
+    override def read(): Int = 0
     override def read(buf: Array[scala.Byte], offset: Int, len: Int) = -1
   }
   private final object NullOutput extends OutputStream {
-    override def close(): Unit       = {}
+    override def close(): Unit = {}
     override def write(b: Int): Unit = {}
   }
 }

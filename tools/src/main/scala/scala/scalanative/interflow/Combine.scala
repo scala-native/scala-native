@@ -11,8 +11,10 @@ import nir.Conv._
 
 trait Combine { self: Interflow =>
 
-  def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State,
-                                                  origPos: Position): Val = {
+  def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit
+      state: State,
+      origPos: Position
+  ): Val = {
     import state.{materialize, delay, emit}
 
     def fallback = {
@@ -385,8 +387,9 @@ trait Combine { self: Interflow =>
     }
   }
 
-  def combine(comp: Comp, ty: Type, l: Val, r: Val)(
-      implicit state: State): Val = {
+  def combine(comp: Comp, ty: Type, l: Val, r: Val)(implicit
+      state: State
+  ): Val = {
     import state.{materialize, delay, emit}
 
     (comp, l, r) match {
@@ -438,15 +441,19 @@ trait Combine { self: Interflow =>
 
       // Comparing two non-null module references will
       // yield true only if it's the same module.
-      case (Ieq,
+      case (
+            Ieq,
             l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-            r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
+            r @ Of(And(rty: Type.RefKind, ClassRef(rcls)))
+          )
           if !lty.isNullable && lty.isExact && lcls.isModule
             && !rty.isNullable && rty.isExact && rcls.isModule =>
         Val.Bool(lcls.name == rcls.name)
-      case (Ine,
+      case (
+            Ine,
             l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-            r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
+            r @ Of(And(rty: Type.RefKind, ClassRef(rcls)))
+          )
           if !lty.isNullable && lty.isExact && lcls.isModule
             && !rty.isNullable && rty.isExact && rcls.isModule =>
         Val.Bool(lcls.name != rcls.name)

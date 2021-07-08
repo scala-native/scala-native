@@ -15,14 +15,18 @@ class UserPrincipalLookupServiceTest {
   @Test def lookupPrincipalByNameSucceedsForNumeric(): Unit = {
     val expected = (Int.MaxValue / 2).toString // an arbitrary value
 
-    assertEquals(expected,
-                 lookupService.lookupPrincipalByName(expected).getName)
+    assertEquals(
+      expected,
+      lookupService.lookupPrincipalByName(expected).getName
+    )
   }
 
   @Test def lookupPrincipalByGroupNameSucceedsForNumeric(): Unit = {
     val expected = (Int.MaxValue / 3).toString // an arbitrary value
 
-    assertEquals(expected,
-                 lookupService.lookupPrincipalByGroupName(expected).getName)
+    assertEquals(
+      expected,
+      lookupService.lookupPrincipalByGroupName(expected).getName
+    )
   }
 }

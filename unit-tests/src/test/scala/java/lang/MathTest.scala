@@ -14,8 +14,10 @@ class MathTest {
     assertTrue("Double.NaN as first argument", Math.max(Double.NaN, b).isNaN)
     assertTrue("Double.NaN as second argument", Math.max(a, Double.NaN).isNaN)
 
-    assertTrue("Float.NaN as first argument",
-               Math.max(Float.NaN, b.toFloat).isNaN)
+    assertTrue(
+      "Float.NaN as first argument",
+      Math.max(Float.NaN, b.toFloat).isNaN
+    )
     assertTrue("Float.NaN as second argument", Math.max(a, Float.NaN).isNaN)
   }
 
@@ -55,8 +57,10 @@ class MathTest {
     assertTrue("Double.NaN as first argument", Math.max(Double.NaN, b).isNaN)
     assertTrue("Double.NaN as second argument", Math.max(a, Double.NaN).isNaN)
 
-    assertTrue("Float.NaN as first argument",
-               Math.max(Float.NaN, b.toFloat).isNaN)
+    assertTrue(
+      "Float.NaN as first argument",
+      Math.max(Float.NaN, b.toFloat).isNaN
+    )
     assertTrue("Float.NaN as second argument", Math.max(a, Float.NaN).isNaN)
   }
 
@@ -94,20 +98,24 @@ class MathTest {
     assertTrue("round(NaN) != 0L", Math.round(Double.NaN) == 0L)
 
     // value d as reported in issue #1071
-    val dTooLarge: Double      = 4228438087383875356545203991520.000000d
-    val roundedTooLarge: Long  = Math.round(dTooLarge)
+    val dTooLarge: Double = 4228438087383875356545203991520.000000d
+    val roundedTooLarge: Long = Math.round(dTooLarge)
     val expectedTooLarge: Long = scala.Long.MaxValue
 
-    assertTrue(s"${roundedTooLarge} != ${expectedTooLarge}" +
-                 " when Double > Long.MaxValue",
-               roundedTooLarge == expectedTooLarge)
+    assertTrue(
+      s"${roundedTooLarge} != ${expectedTooLarge}" +
+        " when Double > Long.MaxValue",
+      roundedTooLarge == expectedTooLarge
+    )
 
-    val roundedTooNegative: Long  = Math.round(-1.0 * dTooLarge)
+    val roundedTooNegative: Long = Math.round(-1.0 * dTooLarge)
     val expectedTooNegative: Long = scala.Long.MinValue
 
-    assertTrue(s"${roundedTooNegative} != ${expectedTooNegative}" +
-                 " when Double < Long.MinValue",
-               roundedTooNegative == expectedTooNegative)
+    assertTrue(
+      s"${roundedTooNegative} != ${expectedTooNegative}" +
+        " when Double < Long.MinValue",
+      roundedTooNegative == expectedTooNegative
+    )
   }
 
   @Test def roundDoubleTiesRoundingTowardsPlusInfinity(): Unit = {
@@ -165,12 +173,14 @@ class MathTest {
 
     for (testPoints <- TestPointGroup) {
       for (testPoint <- testPoints) {
-        val v: Double      = testPoint.value
-        val result: Long   = math.round(v)
+        val v: Double = testPoint.value
+        val result: Long = math.round(v)
         val expected: Long = testPoint.expected
 
-        assertTrue(s"round(${v}) result: ${result} != expected: ${expected}",
-                   result == testPoint.expected)
+        assertTrue(
+          s"round(${v}) result: ${result} != expected: ${expected}",
+          result == testPoint.expected
+        )
       }
     }
   }
@@ -179,20 +189,24 @@ class MathTest {
 
     assertTrue("round(NaN) != 0", Math.round(Float.NaN) == 0)
 
-    val fTooLarge: Float      = scala.Float.MaxValue
-    val roundedTooLarge: Int  = Math.round(fTooLarge)
+    val fTooLarge: Float = scala.Float.MaxValue
+    val roundedTooLarge: Int = Math.round(fTooLarge)
     val expectedTooLarge: Int = scala.Int.MaxValue
 
-    assertTrue(s"${roundedTooLarge} != ${expectedTooLarge}" +
-                 " when Float > Int.MaxValue",
-               roundedTooLarge == expectedTooLarge)
+    assertTrue(
+      s"${roundedTooLarge} != ${expectedTooLarge}" +
+        " when Float > Int.MaxValue",
+      roundedTooLarge == expectedTooLarge
+    )
 
-    val roundedTooNegative: Int  = Math.round(scala.Float.MinValue)
+    val roundedTooNegative: Int = Math.round(scala.Float.MinValue)
     val expectedTooNegative: Int = scala.Int.MinValue
 
-    assertTrue(s"${roundedTooNegative} != ${expectedTooNegative}" +
-                 " when Float < Int.MinValue",
-               roundedTooNegative == expectedTooNegative)
+    assertTrue(
+      s"${roundedTooNegative} != ${expectedTooNegative}" +
+        " when Float < Int.MinValue",
+      roundedTooNegative == expectedTooNegative
+    )
   }
 
   @Test def roundFloatTiesRoundingTowardsPlusInfinity(): Unit = {
@@ -247,12 +261,14 @@ class MathTest {
 
     for (testPoints <- TestPointGroup) {
       for (testPoint <- testPoints) {
-        val v: Float      = testPoint.value
-        val result: Int   = math.round(v)
+        val v: Float = testPoint.value
+        val result: Int = math.round(v)
         val expected: Int = testPoint.expected
 
-        assertTrue(s"round(${v}) result: ${result} != expected: ${expected}",
-                   result == testPoint.expected)
+        assertTrue(
+          s"round(${v}) result: ${result} != expected: ${expected}",
+          result == testPoint.expected
+        )
       }
     }
   }

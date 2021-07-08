@@ -34,8 +34,8 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
       null
     }
 
-  private var mRaf     = new RandomAccessFile(fileName, "r")
-  private val ler      = new ZipEntry.LittleEndianReader()
+  private var mRaf = new RandomAccessFile(fileName, "r")
+  private val ler = new ZipEntry.LittleEndianReader()
   private val mEntries = scala.collection.mutable.Map.empty[String, ZipEntry]
 
   readCentralDir()
@@ -115,10 +115,12 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
         rafstrm.mLength = rafstrm.mOffset + entry.compressedSize
         if (entry.compressionMethod == ZipEntry.DEFLATED) {
           val bufSize = Math.max(1024, Math.min(entry.getSize(), 65535L).toInt)
-          new ZipFile.ZipInflaterInputStream(rafstrm,
-                                             new Inflater(true),
-                                             bufSize,
-                                             entry)
+          new ZipFile.ZipInflaterInputStream(
+            rafstrm,
+            new Inflater(true),
+            bufSize,
+            entry
+          )
         } else {
           rafstrm
         }
@@ -167,12 +169,12 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
      * doing a read() system call every time.
      */
     var rafs = new ZipFile.RAFStream(mRaf, mRaf.getFilePointer())
-    var bin  = new BufferedInputStream(rafs, ZipFile.ENDHDR)
+    var bin = new BufferedInputStream(rafs, ZipFile.ENDHDR)
 
-    val diskNumber         = ler.readShortLE(bin)
+    val diskNumber = ler.readShortLE(bin)
     val diskWithCentralDir = ler.readShortLE(bin)
-    val numEntries         = ler.readShortLE(bin)
-    val totalNumEntries    = ler.readShortLE(bin)
+    val numEntries = ler.readShortLE(bin)
+    val totalNumEntries = ler.readShortLE(bin)
     /*centralDirSize =*/
     ler.readIntLE(bin)
     val centralDirOffset = ler.readIntLE(bin)
@@ -221,12 +223,13 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 }
 
 object ZipFile extends ZipConstants {
-  final val OPEN_READ: Int   = 1
+  final val OPEN_READ: Int = 1
   final val OPEN_DELETE: Int = 4
 
-  private class RAFStream(private var mSharedRaf: RandomAccessFile,
-                          private[zip] var mOffset: Long)
-      extends InputStream {
+  private class RAFStream(
+      private var mSharedRaf: RandomAccessFile,
+      private[zip] var mOffset: Long
+  ) extends InputStream {
     private[zip] var mLength = mSharedRaf.length()
 
     override def available(): Int = {
@@ -244,7 +247,7 @@ object ZipFile extends ZipConstants {
     override def read(): Int = {
       val singleByteBuf = new Array[Byte](1)
       if (read(singleByteBuf, 0, 1) == 1) {
-        singleByteBuf(0) & 0xFF
+        singleByteBuf(0) & 0xff
       } else {
         -1
       }
@@ -267,11 +270,12 @@ object ZipFile extends ZipConstants {
       }
   }
 
-  private class ZipInflaterInputStream(is: InputStream,
-                                       inf: Inflater,
-                                       bsize: Int,
-                                       private var entry: ZipEntry)
-      extends InflaterInputStream(is, inf, bsize) {
+  private class ZipInflaterInputStream(
+      is: InputStream,
+      inf: Inflater,
+      bsize: Int,
+      private var entry: ZipEntry
+  ) extends InflaterInputStream(is, inf, bsize) {
     private var bytesRead: Long = 0L
 
     override def read(buffer: Array[Byte], off: Int, nbytes: Int): Int = {

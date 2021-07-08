@@ -39,7 +39,7 @@ class StringTokenizerTest {
   }
 
   @Test def hasMoreTokens(): Unit = {
-    val st      = new StringTokenizer("This is a test String")
+    val st = new StringTokenizer("This is a test String")
     var counter = 0
     while (counter < 5) {
       assertTrue(st.hasMoreTokens())

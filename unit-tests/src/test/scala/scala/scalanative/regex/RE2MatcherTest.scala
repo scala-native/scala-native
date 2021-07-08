@@ -26,28 +26,38 @@ class RE2MatcherTest {
       "What the Frog's Eye Tells the Frog's Brain",
       "Frog",
       "Lizard",
-      "What the Lizard's Eye Tells the Lizard's Brain")
+      "What the Lizard's Eye Tells the Lizard's Brain"
+    )
     ApiTestUtils.testReplaceAll(
       "What the Frog's Eye Tells the Frog's Brain",
       "F(rog)",
       "\\$Liza\\rd$1",
-      "What the $Lizardrog's Eye Tells the $Lizardrog's Brain")
-    ApiTestUtils.testReplaceAll("abcdefghijklmnopqrstuvwxyz123",
-                                "(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)",
-                                "$10$20",
-                                "jb0wo0123")
-    ApiTestUtils.testReplaceAll("\u00e1\u0062\u00e7\u2655",
-                                "(.)",
-                                "<$1>",
-                                "<\u00e1><\u0062><\u00e7><\u2655>")
-    ApiTestUtils.testReplaceAll("\u00e1\u0062\u00e7\u2655",
-                                "[\u00e0-\u00e9]",
-                                "<$0>",
-                                "<\u00e1>\u0062<\u00e7>\u2655")
-    ApiTestUtils.testReplaceAll("hello world",
-                                "z*",
-                                "x",
-                                "xhxexlxlxox xwxoxrxlxdx")
+      "What the $Lizardrog's Eye Tells the $Lizardrog's Brain"
+    )
+    ApiTestUtils.testReplaceAll(
+      "abcdefghijklmnopqrstuvwxyz123",
+      "(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)",
+      "$10$20",
+      "jb0wo0123"
+    )
+    ApiTestUtils.testReplaceAll(
+      "\u00e1\u0062\u00e7\u2655",
+      "(.)",
+      "<$1>",
+      "<\u00e1><\u0062><\u00e7><\u2655>"
+    )
+    ApiTestUtils.testReplaceAll(
+      "\u00e1\u0062\u00e7\u2655",
+      "[\u00e0-\u00e9]",
+      "<$0>",
+      "<\u00e1>\u0062<\u00e7>\u2655"
+    )
+    ApiTestUtils.testReplaceAll(
+      "hello world",
+      "z*",
+      "x",
+      "xhxexlxlxox xwxoxrxlxdx"
+    )
     // test replaceAll with alternation
     ApiTestUtils.testReplaceAll("123:foo", "(?:\\w+|\\d+:foo)", "x", "x:x")
     ApiTestUtils.testReplaceAll("123:foo", "(?:\\d+:foo|\\w+)", "x", "x")
@@ -60,24 +70,32 @@ class RE2MatcherTest {
       "What the Frog's Eye Tells the Frog's Brain",
       "Frog",
       "Lizard",
-      "What the Lizard's Eye Tells the Frog's Brain")
+      "What the Lizard's Eye Tells the Frog's Brain"
+    )
     ApiTestUtils.testReplaceFirst(
       "What the Frog's Eye Tells the Frog's Brain",
       "F(rog)",
       "\\$Liza\\rd$1",
-      "What the $Lizardrog's Eye Tells the Frog's Brain")
-    ApiTestUtils.testReplaceFirst("abcdefghijklmnopqrstuvwxyz123",
-                                  "(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)",
-                                  "$10$20",
-                                  "jb0nopqrstuvwxyz123")
-    ApiTestUtils.testReplaceFirst("\u00e1\u0062\u00e7\u2655",
-                                  "(.)",
-                                  "<$1>",
-                                  "<\u00e1>\u0062\u00e7\u2655")
-    ApiTestUtils.testReplaceFirst("\u00e1\u0062\u00e7\u2655",
-                                  "[\u00e0-\u00e9]",
-                                  "<$0>",
-                                  "<\u00e1>\u0062\u00e7\u2655")
+      "What the $Lizardrog's Eye Tells the Frog's Brain"
+    )
+    ApiTestUtils.testReplaceFirst(
+      "abcdefghijklmnopqrstuvwxyz123",
+      "(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)",
+      "$10$20",
+      "jb0nopqrstuvwxyz123"
+    )
+    ApiTestUtils.testReplaceFirst(
+      "\u00e1\u0062\u00e7\u2655",
+      "(.)",
+      "<$1>",
+      "<\u00e1>\u0062\u00e7\u2655"
+    )
+    ApiTestUtils.testReplaceFirst(
+      "\u00e1\u0062\u00e7\u2655",
+      "[\u00e0-\u00e9]",
+      "<$0>",
+      "<\u00e1>\u0062\u00e7\u2655"
+    )
     ApiTestUtils.testReplaceFirst("hello world", "z*", "x", "xhello world")
     ApiTestUtils.testReplaceFirst("aab", "a*", "<$0>", "<aa>b")
     ApiTestUtils.testReplaceFirst("aab", "a*?", "<$0>", "<>aab")
@@ -88,12 +106,16 @@ class RE2MatcherTest {
   }
 
   @Test def group(): Unit = {
-    ApiTestUtils.testGroup("xabdez",
-                           "(a)(b(c)?)d?(e)",
-                           Array[String]("abde", "a", "b", null, "e"))
-    ApiTestUtils.testGroup("abc",
-                           "(a)(b$)?(b)?",
-                           Array[String]("ab", "a", null, "b"))
+    ApiTestUtils.testGroup(
+      "xabdez",
+      "(a)(b(c)?)d?(e)",
+      Array[String]("abde", "a", "b", null, "e")
+    )
+    ApiTestUtils.testGroup(
+      "abc",
+      "(a)(b$)?(b)?",
+      Array[String]("ab", "a", null, "b")
+    )
     ApiTestUtils.testGroup("abc", "(^b)?(b)?c", Array[String]("bc", null, "b"))
     ApiTestUtils.testGroup(" a b", "\\b(.).\\b", Array[String]("a ", "a"))
 
@@ -102,10 +124,12 @@ class RE2MatcherTest {
     ApiTestUtils.testGroup(
       "\u03b1\u03b2\u03be\u03b4\u03b5\u03c6\u03b3",
       "(.)(..)(...)",
-      Array[String]("\u03b1\u03b2\u03be\u03b4\u03b5\u03c6",
-                    "\u03b1",
-                    "\u03b2\u03be",
-                    "\u03b4\u03b5\u03c6")
+      Array[String](
+        "\u03b1\u03b2\u03be\u03b4\u03b5\u03c6",
+        "\u03b1",
+        "\u03b2\u03be",
+        "\u03b4\u03b5\u03c6"
+      )
     )
   }
 
@@ -160,8 +184,7 @@ class RE2MatcherTest {
     }
   }
 
-  /**
-   * Test the NullPointerException is thrown on null input.
+  /** Test the NullPointerException is thrown on null input.
    */
   @Test def throwsOnNullInputReset(): Unit = { // null in constructor.
     try {
@@ -183,9 +206,8 @@ class RE2MatcherTest {
     }
   }
 
-  /**
-   * Test that IllegalStateException is thrown if start/end are called
-   * before calling find
+  /** Test that IllegalStateException is thrown if start/end are called before
+   *  calling find
    */
   @Test def startEndBeforeFind(): Unit = {
     try {
@@ -198,17 +220,15 @@ class RE2MatcherTest {
     }
   }
 
-  /**
-   * Test for b/6891357. Basically matches should behave like find when
-   * it comes to updating the information of the match.
+  /** Test for b/6891357. Basically matches should behave like find when it
+   *  comes to updating the information of the match.
    */
   @Test def matchesUpdatesMatchInformation(): Unit = {
     val m = Pattern.compile("a+").matcher("aaa")
     if (m.matches) assertTrue("aaa" == m.group(0))
   }
 
-  /**
-   * Test for b/6891133. Test matches in case of alternation.
+  /** Test for b/6891133. Test matches in case of alternation.
    */
   @Test def alternationMatches(): Unit = {
     val s = "123:foo"
@@ -216,33 +236,37 @@ class RE2MatcherTest {
     assertTrue(Pattern.compile("(?:\\d+:foo|\\w+)").matcher(s).matches)
   }
 
-  private def helperTestMatchEndUTF16(string: String,
-                                      num: Int,
-                                      end: Int): Unit = {
+  private def helperTestMatchEndUTF16(
+      string: String,
+      num: Int,
+      end: Int
+  ): Unit = {
     val pattern = "[" + string + "]"
     val re = new RE2(pattern) {
-      override def match_(input: CharSequence,
-                          start: Int,
-                          e: Int,
-                          anchor: Int,
-                          group: Array[Int],
-                          ngroup: Int): Boolean = {
+      override def match_(
+          input: CharSequence,
+          start: Int,
+          e: Int,
+          anchor: Int,
+          group: Array[Int],
+          ngroup: Int
+      ): Boolean = {
         assertTrue(end == e)
         super.match_(input, start, e, anchor, group, ngroup)
       }
     }
-    val pat   = new Pattern(pattern, 0, re)
-    val m     = pat.matcher(string)
+    val pat = new Pattern(pattern, 0, re)
+    val m = pat.matcher(string)
     var found = 0
     while (m.find) found += 1
     assertTrue(
       "Matches Expected " + num + " but found " + found + ", for input " + string,
-      num == found)
+      num == found
+    )
   }
 
-  /**
-   * Test for variable length encoding, test whether RE2's match function gets
-   * the required parameter based on UTF16 codes and not chars and Runes.
+  /** Test for variable length encoding, test whether RE2's match function gets
+   *  the required parameter based on UTF16 codes and not chars and Runes.
    */
   @Test def matchEndUTF16(): Unit = {
     // Latin alphabetic chars such as these 5 lower-case, acute vowels have multi-byte UTF-8
@@ -261,8 +285,8 @@ class RE2MatcherTest {
   }
 
   @Test def appendTailStringBuffer(): Unit = {
-    val p  = Pattern.compile("cat")
-    val m  = p.matcher("one cat two cats in the yard")
+    val p = Pattern.compile("cat")
+    val m = p.matcher("one cat two cats in the yard")
     val sb = new StringBuffer
     while (m.find) m.appendReplacement(sb, "dog")
     m.appendTail(sb)
@@ -271,8 +295,8 @@ class RE2MatcherTest {
   }
 
   @Test def appendTailStringBuilder(): Unit = {
-    val p  = Pattern.compile("cat")
-    val m  = p.matcher("one cat two cats in the yard")
+    val p = Pattern.compile("cat")
+    val m = p.matcher("one cat two cats in the yard")
     val sb = new StringBuffer()
     while (m.find) m.appendReplacement(sb, "dog")
     m.appendTail(sb)
@@ -281,7 +305,7 @@ class RE2MatcherTest {
   }
 
   @Test def resetOnFindIntStringBuffer(): Unit = {
-    var buffer  = new StringBuffer
+    var buffer = new StringBuffer
     val matcher = Pattern.compile("a").matcher("zza")
     assertTrue(matcher.find)
     buffer = new StringBuffer
@@ -294,7 +318,7 @@ class RE2MatcherTest {
   }
 
   @Test def resetOnFindIntStringBuilder(): Unit = {
-    var buffer  = new StringBuffer
+    var buffer = new StringBuffer
     val matcher = Pattern.compile("a").matcher("zza")
     assertTrue(matcher.find)
     buffer = new StringBuffer
@@ -307,7 +331,7 @@ class RE2MatcherTest {
   }
 
   @Test def emptyReplacementGroupsStringBuffer(): Unit = {
-    var buffer  = new StringBuffer
+    var buffer = new StringBuffer
     var matcher = Pattern.compile("(a)(b$)?(b)?").matcher("abc")
     assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2-$3")
@@ -335,7 +359,7 @@ class RE2MatcherTest {
   }
 
   @Test def emptyReplacementGroupsStringBuilder(): Unit = {
-    var buffer  = new StringBuffer
+    var buffer = new StringBuffer
     var matcher = Pattern.compile("(a)(b$)?(b)?").matcher("abc")
     assertTrue(matcher.find)
     matcher.appendReplacement(buffer, "$1-$2-$3")

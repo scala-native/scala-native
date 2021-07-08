@@ -20,10 +20,10 @@ trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
       settings.outputDirs.outputDirFor(cunit.source.file)
 
     val pathParts = id.split("[./]")
-    val dir       = pathParts.init.foldLeft(baseDir)(_.subdirectoryNamed(_))
+    val dir = pathParts.init.foldLeft(baseDir)(_.subdirectoryNamed(_))
 
     val filename = pathParts.last
-    val file     = dir fileNamed (filename + ".nir")
+    val file = dir fileNamed (filename + ".nir")
 
     Paths.get(file.file.getAbsolutePath)
   }

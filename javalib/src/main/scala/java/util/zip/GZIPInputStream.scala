@@ -7,7 +7,7 @@ import java.io.{EOFException, IOException, InputStream}
 class GZIPInputStream(in: InputStream, size: Int)
     extends InflaterInputStream(in, new Inflater(true), size) {
 
-  protected var crc: CRC32   = new CRC32()
+  protected var crc: CRC32 = new CRC32()
   protected var eos: Boolean = false
 
   def this(in: InputStream) = this(in, InflaterInputStream.BUF_SIZE)
@@ -19,7 +19,7 @@ class GZIPInputStream(in: InputStream, size: Int)
       throw new IOException("Unknown format")
     }
     val flags = header(3)
-    val hcrc  = (flags & GZIPInputStream.FHCRC) != 0
+    val hcrc = (flags & GZIPInputStream.FHCRC) != 0
     if (hcrc) {
       crc.update(header, 0, header.length)
     }
@@ -30,7 +30,7 @@ class GZIPInputStream(in: InputStream, size: Int)
       }
       var length = getShort(header, 0)
       while (length > 0) {
-        val max    = if (length > buf.length) buf.length else length
+        val max = if (length > buf.length) buf.length else length
         val result = in.read(buf, 0, max)
         if (result == -1) {
           throw new EOFException()
@@ -64,15 +64,15 @@ class GZIPInputStream(in: InputStream, size: Int)
 
   private def getLong(buffer: Array[Byte], off: Int): Long = {
     var l: Long = 0L
-    l = l | (buffer(off) & 0xFF)
-    l = l | ((buffer(off + 1) & 0xFF) << 8)
-    l = l | ((buffer(off + 2) & 0xFF) << 16)
-    l = l | ((buffer(off + 3) & 0xFF).toLong << 24)
+    l = l | (buffer(off) & 0xff)
+    l = l | ((buffer(off + 1) & 0xff) << 8)
+    l = l | ((buffer(off + 2) & 0xff) << 16)
+    l = l | ((buffer(off + 3) & 0xff).toLong << 24)
     l
   }
 
   private def getShort(buffer: Array[Byte], off: Int): Int = {
-    (buffer(off) & 0xFF) | ((buffer(off + 1) & 0xFF) << 8)
+    (buffer(off) & 0xff) | ((buffer(off + 1) & 0xff) << 8)
   }
 
   override def read(buffer: Array[Byte], off: Int, nbytes: Int): Int = {
@@ -100,10 +100,10 @@ class GZIPInputStream(in: InputStream, size: Int)
   }
 
   private def verifyCrc(): Unit = {
-    val size        = inf.getRemaining()
+    val size = inf.getRemaining()
     val trailerSize = 8
-    val b           = new Array[Byte](trailerSize)
-    val copySize    = if (size > trailerSize) trailerSize else size
+    val b = new Array[Byte](trailerSize)
+    val copySize = if (size > trailerSize) trailerSize else size
 
     System.arraycopy(buf, len - size, b, 0, copySize)
     readFully(b, copySize, trailerSize - copySize)
@@ -117,8 +117,8 @@ class GZIPInputStream(in: InputStream, size: Int)
 
   private def readFully(buffer: Array[Byte], offset: Int, length: Int): Unit = {
     var result: Int = 0
-    var off: Int    = offset
-    var l: Int      = length
+    var off: Int = offset
+    var l: Int = length
     while (l > 0) {
       result = in.read(buffer, off, l)
       if (result == -1) {
@@ -150,7 +150,7 @@ object GZIPInputStream {
   final val GZIP_MAGIC: Int = 0x8b1f
 
   private final val FCOMMENT: Int = 16
-  private final val FEXTRA: Int   = 4
-  private final val FHCRC: Int    = 2
-  private final val FNAME: Int    = 8
+  private final val FEXTRA: Int = 4
+  private final val FHCRC: Int = 2
+  private final val FNAME: Int = 8
 }

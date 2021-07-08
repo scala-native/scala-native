@@ -29,8 +29,9 @@ private[testinterface] object Serializer {
 
   // Methods to actually perform serialization and deserialization.
 
-  def serialize[T](t: T, out: DataOutputStream)(
-      implicit s: Serializer[T]): Unit = {
+  def serialize[T](t: T, out: DataOutputStream)(implicit
+      s: Serializer[T]
+  ): Unit = {
     s.serialize(t, new SerializeState(out))
   }
 
@@ -47,7 +48,7 @@ private[testinterface] object Serializer {
   @inline
   def withInputStream[T](s: String)(body: DataInputStream => T): T = {
     val bytes = s.toArray.map(_.toByte)
-    val in    = new DataInputStream(new ByteArrayInputStream(bytes))
+    val in = new DataInputStream(new ByteArrayInputStream(bytes))
     try body(in)
     finally in.close()
   }
@@ -60,7 +61,7 @@ private[testinterface] object Serializer {
     try body(dataOut)
     finally dataOut.close()
 
-    new String(byteOut.toByteArray.map(b => (b & 0xFF).toChar))
+    new String(byteOut.toByteArray.map(b => (b & 0xff).toChar))
   }
 
   implicit object BooleanSerializer extends Serializer[Boolean] {
@@ -71,27 +72,27 @@ private[testinterface] object Serializer {
 
   implicit object ByteSerializer extends Serializer[Byte] {
     def serialize(x: Byte, out: SerializeState): Unit = out.out.writeByte(x)
-    def deserialize(in: DeserializeState): Byte       = in.in.readByte()
+    def deserialize(in: DeserializeState): Byte = in.in.readByte()
   }
 
   implicit object IntSerializer extends Serializer[Int] {
     def serialize(x: Int, out: SerializeState): Unit = out.out.writeInt(x)
-    def deserialize(in: DeserializeState): Int       = in.in.readInt()
+    def deserialize(in: DeserializeState): Int = in.in.readInt()
   }
 
   implicit object LongSerializer extends Serializer[Long] {
     def serialize(x: Long, out: SerializeState): Unit = out.out.writeLong(x)
-    def deserialize(in: DeserializeState): Long       = in.in.readLong()
+    def deserialize(in: DeserializeState): Long = in.in.readLong()
   }
 
   implicit object StringSerializer extends Serializer[String] {
     def serialize(x: String, out: SerializeState): Unit = out.out.writeUTF(x)
-    def deserialize(in: DeserializeState): String       = in.in.readUTF()
+    def deserialize(in: DeserializeState): String = in.in.readUTF()
   }
 
   implicit object UnitSerializer extends Serializer[Unit] {
     def serialize(x: Unit, out: SerializeState): Unit = ()
-    def deserialize(in: DeserializeState): Unit       = ()
+    def deserialize(in: DeserializeState): Unit = ()
   }
 
   implicit def listSerializer[T: Serializer]: Serializer[List[T]] = {
@@ -130,10 +131,12 @@ private[testinterface] object Serializer {
     }
 
     def deserialize(in: DeserializeState): StackTraceElement = {
-      new StackTraceElement(in.read[String](),
-                            in.read[String](),
-                            in.read[Option[String]]().orNull,
-                            in.read[Int]())
+      new StackTraceElement(
+        in.read[String](),
+        in.read[String](),
+        in.read[Option[String]]().orNull,
+        in.read[Int]()
+      )
     }
   }
 
@@ -146,7 +149,7 @@ private[testinterface] object Serializer {
     }
 
     def deserialize(in: DeserializeState): Throwable = {
-      val msg   = in.read[Option[String]]().orNull
+      val msg = in.read[Option[String]]().orNull
       val toStr = in.read[String]()
       val trace = in.read[List[StackTraceElement]]()
       val cause = in.read[Option[Throwable]]()
@@ -164,7 +167,7 @@ private[testinterface] object Serializer {
   implicit object FingerprintSerializer extends Serializer[Fingerprint] {
     // Type tags.
     private val Annotated: Byte = 1
-    private val Subclass: Byte  = 2
+    private val Subclass: Byte = 2
 
     def serialize(fp: Fingerprint, out: SerializeState): Unit = fp match {
       case fp: AnnotatedFingerprint =>
@@ -178,20 +181,21 @@ private[testinterface] object Serializer {
         out.write(fp.requireNoArgConstructor())
       case _ =>
         throw new IllegalArgumentException(
-          s"Unknown Fingerprint type: ${fp.getClass()}")
+          s"Unknown Fingerprint type: ${fp.getClass()}"
+        )
     }
 
     def deserialize(in: DeserializeState): Fingerprint = in.read[Byte]() match {
       case Annotated =>
         new AnnotatedFingerprint {
-          val isModule: Boolean      = in.read[Boolean]()
+          val isModule: Boolean = in.read[Boolean]()
           val annotationName: String = in.read[String]()
         }
 
       case Subclass =>
         new SubclassFingerprint {
-          val isModule: Boolean                = in.read[Boolean]()
-          val superclassName: String           = in.read[String]()
+          val isModule: Boolean = in.read[Boolean]()
+          val superclassName: String = in.read[String]()
           val requireNoArgConstructor: Boolean = in.read[Boolean]()
         }
 
@@ -202,10 +206,10 @@ private[testinterface] object Serializer {
 
   implicit object SelectorSerializer extends Serializer[Selector] {
     // Type tags.
-    private val Suite: Byte        = 1
-    private val Test: Byte         = 2
-    private val NestedSuite: Byte  = 3
-    private val NestedTest: Byte   = 4
+    private val Suite: Byte = 1
+    private val Test: Byte = 2
+    private val NestedSuite: Byte = 3
+    private val NestedTest: Byte = 4
     private val TestWildcard: Byte = 5
 
     def serialize(sel: Selector, out: SerializeState): Unit = sel match {
@@ -230,7 +234,8 @@ private[testinterface] object Serializer {
 
       case _ =>
         throw new IllegalArgumentException(
-          s"Unknown Selector type: ${sel.getClass()}")
+          s"Unknown Selector type: ${sel.getClass()}"
+        )
     }
 
     def deserialize(in: DeserializeState): Selector = in.read[Byte]() match {
@@ -253,10 +258,12 @@ private[testinterface] object Serializer {
     }
 
     def deserialize(in: DeserializeState): TaskDef = {
-      new TaskDef(in.read[String](),
-                  in.read[Fingerprint](),
-                  in.read[Boolean](),
-                  in.read[List[Selector]]().toArray)
+      new TaskDef(
+        in.read[String](),
+        in.read[Fingerprint](),
+        in.read[Boolean](),
+        in.read[List[Selector]]().toArray
+      )
     }
   }
 
@@ -265,7 +272,7 @@ private[testinterface] object Serializer {
 
     def deserialize(in: DeserializeState): Status = {
       val values = Status.values()
-      val ord    = in.read[Int]()
+      val ord = in.read[Int]()
       if (ord < 0 || ord >= values.size)
         throw new IOException(s"Got bad status ordinal: $ord")
       values(ord)
@@ -297,12 +304,12 @@ private[testinterface] object Serializer {
     }
 
     def deserialize(in: DeserializeState): Event = new Event {
-      val fullyQualifiedName: String   = in.read[String]()
-      val fingerprint: Fingerprint     = in.read[Fingerprint]()
-      val selector: Selector           = in.read[Selector]()
-      val status: Status               = in.read[Status]()
+      val fullyQualifiedName: String = in.read[String]()
+      val fingerprint: Fingerprint = in.read[Fingerprint]()
+      val selector: Selector = in.read[Selector]()
+      val status: Status = in.read[Status]()
       val throwable: OptionalThrowable = in.read[OptionalThrowable]()
-      val duration: Long               = in.read[Long]()
+      val duration: Long = in.read[Long]()
     }
   }
 }

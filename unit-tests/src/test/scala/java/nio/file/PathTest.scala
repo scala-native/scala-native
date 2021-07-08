@@ -76,7 +76,8 @@ class PathTest {
     assertTrue(Paths.get("/foo/bar/baz").subpath(0, 1).toString == "foo")
     assertTrue(Paths.get("/foo/bar/baz").subpath(0, 2).toString == "foo/bar")
     assertTrue(
-      Paths.get("/foo/bar/baz").subpath(0, 3).toString == "foo/bar/baz")
+      Paths.get("/foo/bar/baz").subpath(0, 3).toString == "foo/bar/baz"
+    )
     assertTrue(Paths.get("/foo/bar/baz").subpath(1, 3).toString == "bar/baz")
     assertTrue(Paths.get("/foo/bar/baz").subpath(2, 3).toString == "baz")
   }
@@ -116,7 +117,8 @@ class PathTest {
   @Test def pathIterator(): Unit = {
     import scala.language.implicitConversions
     implicit def iteratorToSeq[T: scala.reflect.ClassTag](
-        it: java.util.Iterator[T]): Seq[T] = {
+        it: java.util.Iterator[T]
+    ): Seq[T] = {
       import scala.collection.mutable.UnrolledBuffer
       val buf = new UnrolledBuffer[T]()
       while (it.hasNext) buf += it.next()
@@ -126,14 +128,18 @@ class PathTest {
     assertTrue(Paths.get("").iterator.map(_.toString) == Seq(""))
     assertTrue(Paths.get("foo").iterator.map(_.toString) == Seq("foo"))
     assertTrue(
-      Paths.get("foo/bar").iterator.map(_.toString) == Seq("foo", "bar"))
+      Paths.get("foo/bar").iterator.map(_.toString) == Seq("foo", "bar")
+    )
     assertTrue(
-      Paths.get("foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+      Paths.get("foo//bar").iterator.map(_.toString) == Seq("foo", "bar")
+    )
     assertTrue(Paths.get("/foo").iterator.map(_.toString) == Seq("foo"))
     assertTrue(
-      Paths.get("/foo/bar").iterator.map(_.toString) == Seq("foo", "bar"))
+      Paths.get("/foo/bar").iterator.map(_.toString) == Seq("foo", "bar")
+    )
     assertTrue(
-      Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar"))
+      Paths.get("/foo//bar").iterator.map(_.toString) == Seq("foo", "bar")
+    )
   }
 
   @Test def pathNormalize(): Unit = {
@@ -175,81 +181,100 @@ class PathTest {
   @Test def pathRelativize(): Unit = {
     assertTrue(Paths.get("").relativize(Paths.get("")).toString == "")
     assertTrue(
-      Paths.get("foo").relativize(Paths.get("foo/bar")).toString == "bar")
+      Paths.get("foo").relativize(Paths.get("foo/bar")).toString == "bar"
+    )
     assertTrue(
-      Paths.get("foo/bar").relativize(Paths.get("foo")).toString == "..")
+      Paths.get("foo/bar").relativize(Paths.get("foo")).toString == ".."
+    )
     assertTrue(
-      Paths.get("foo").relativize(Paths.get("bar")).toString == "../bar")
+      Paths.get("foo").relativize(Paths.get("bar")).toString == "../bar"
+    )
     assertTrue(
       Paths
         .get("foo/bar")
         .relativize(Paths.get("foo/baz"))
-        .toString == "../baz")
+        .toString == "../baz"
+    )
     assertTrue(Paths.get("").relativize(Paths.get("foo")).toString == "foo")
     assertTrue(
       Paths
         .get("foo/../bar")
         .relativize(Paths.get("bar"))
-        .toString == "../../../bar")
+        .toString == "../../../bar"
+    )
 
     assertThrows(
       classOf[IllegalArgumentException],
-      assertTrue(Paths.get("/").relativize(Paths.get("")).toString == ""))
+      assertTrue(Paths.get("/").relativize(Paths.get("")).toString == "")
+    )
 
     assertTrue(Paths.get("/").relativize(Paths.get("/")).toString == "")
     assertTrue(
-      Paths.get("/foo").relativize(Paths.get("/foo/bar")).toString == "bar")
+      Paths.get("/foo").relativize(Paths.get("/foo/bar")).toString == "bar"
+    )
     assertTrue(
-      Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == "..")
+      Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString == ".."
+    )
     assertTrue(
-      Paths.get("/foo").relativize(Paths.get("/bar")).toString == "../bar")
+      Paths.get("/foo").relativize(Paths.get("/bar")).toString == "../bar"
+    )
     assertTrue(
       Paths
         .get("/foo/bar")
         .relativize(Paths.get("/foo/baz"))
-        .toString == "../baz")
+        .toString == "../baz"
+    )
     assertTrue(Paths.get("/").relativize(Paths.get("/foo")).toString == "foo")
     assertTrue(
       Paths
         .get("/foo/../bar")
         .relativize(Paths.get("/bar"))
-        .toString == "../../../bar")
+        .toString == "../../../bar"
+    )
   }
 
   @Test def pathResolve()(): Unit = {
     assertTrue(Paths.get("").resolve(Paths.get("")).toString == "")
     assertTrue(Paths.get("/").resolve(Paths.get("")).toString == "/")
     assertTrue(
-      Paths.get("foo").resolve(Paths.get("foo/bar")).toString == "foo/foo/bar")
+      Paths.get("foo").resolve(Paths.get("foo/bar")).toString == "foo/foo/bar"
+    )
     assertTrue(
-      Paths.get("foo/bar").resolve(Paths.get("foo")).toString == "foo/bar/foo")
+      Paths.get("foo/bar").resolve(Paths.get("foo")).toString == "foo/bar/foo"
+    )
     assertTrue(Paths.get("foo").resolve(Paths.get("bar")).toString == "foo/bar")
     assertTrue(
       Paths
         .get("foo/bar")
         .resolve(Paths.get("foo/baz"))
-        .toString == "foo/bar/foo/baz")
+        .toString == "foo/bar/foo/baz"
+    )
     assertTrue(Paths.get("").resolve(Paths.get("foo")).toString == "foo")
     assertTrue(
       Paths
         .get("foo/../bar")
         .resolve(Paths.get("bar"))
-        .toString == "foo/../bar/bar")
+        .toString == "foo/../bar/bar"
+    )
 
     assertTrue(Paths.get("/").resolve(Paths.get("/")).toString == "/")
     assertTrue(
-      Paths.get("/foo").resolve(Paths.get("/foo/bar")).toString == "/foo/bar")
+      Paths.get("/foo").resolve(Paths.get("/foo/bar")).toString == "/foo/bar"
+    )
     assertTrue(
-      Paths.get("/foo/bar").resolve(Paths.get("/foo")).toString == "/foo")
+      Paths.get("/foo/bar").resolve(Paths.get("/foo")).toString == "/foo"
+    )
     assertTrue(Paths.get("/foo").resolve(Paths.get("/bar")).toString == "/bar")
     assertTrue(
       Paths
         .get("/foo/bar")
         .resolve(Paths.get("/foo/baz"))
-        .toString == "/foo/baz")
+        .toString == "/foo/baz"
+    )
     assertTrue(Paths.get("/").resolve(Paths.get("/foo")).toString == "/foo")
     assertTrue(
-      Paths.get("/foo/../bar").resolve(Paths.get("/bar")).toString == "/bar")
+      Paths.get("/foo/../bar").resolve(Paths.get("/bar")).toString == "/bar"
+    )
   }
 
   @Test def pathResolveSibling()(): Unit = {
@@ -259,51 +284,62 @@ class PathTest {
       Paths
         .get("foo")
         .resolveSibling(Paths.get("foo/bar"))
-        .toString == "foo/bar")
+        .toString == "foo/bar"
+    )
     assertTrue(
       Paths
         .get("foo/bar")
         .resolveSibling(Paths.get("foo"))
-        .toString == "foo/foo")
+        .toString == "foo/foo"
+    )
     assertTrue(
-      Paths.get("foo").resolveSibling(Paths.get("bar")).toString == "bar")
+      Paths.get("foo").resolveSibling(Paths.get("bar")).toString == "bar"
+    )
     assertTrue(
       Paths
         .get("foo/bar")
         .resolveSibling(Paths.get("foo/baz"))
-        .toString == "foo/foo/baz")
+        .toString == "foo/foo/baz"
+    )
     assertTrue(Paths.get("").resolveSibling(Paths.get("foo")).toString == "foo")
     assertTrue(
       Paths
         .get("foo/../bar")
         .resolveSibling(Paths.get("bar"))
-        .toString == "foo/../bar")
+        .toString == "foo/../bar"
+    )
 
     assertTrue(Paths.get("/").resolveSibling(Paths.get("/")).toString == "/")
     assertTrue(
       Paths
         .get("/foo")
         .resolveSibling(Paths.get("/foo/bar"))
-        .toString == "/foo/bar")
+        .toString == "/foo/bar"
+    )
     assertTrue(
       Paths
         .get("/foo/bar")
         .resolveSibling(Paths.get("/foo"))
-        .toString == "/foo")
+        .toString == "/foo"
+    )
     assertTrue(
-      Paths.get("/foo").resolveSibling(Paths.get("/bar")).toString == "/bar")
+      Paths.get("/foo").resolveSibling(Paths.get("/bar")).toString == "/bar"
+    )
     assertTrue(
       Paths
         .get("/foo/bar")
         .resolveSibling(Paths.get("/foo/baz"))
-        .toString == "/foo/baz")
+        .toString == "/foo/baz"
+    )
     assertTrue(
-      Paths.get("/").resolveSibling(Paths.get("/foo")).toString == "/foo")
+      Paths.get("/").resolveSibling(Paths.get("/foo")).toString == "/foo"
+    )
     assertTrue(
       Paths
         .get("/foo/../bar")
         .resolveSibling(Paths.get("/bar"))
-        .toString == "/bar")
+        .toString == "/bar"
+    )
   }
 
   @Test def pathEquals(): Unit = {

@@ -19,7 +19,7 @@ object HandleApi {
 }
 
 object HandleApiExt {
-  final val INVALID_HANDLE_VALUE: Handle   = fromRawPtr[Byte](castIntToRawPtr(-1))
-  final val HANDLE_FLAG_INHERIT            = 0x00000001.toUInt
+  final val INVALID_HANDLE_VALUE: Handle = fromRawPtr[Byte](castIntToRawPtr(-1))
+  final val HANDLE_FLAG_INHERIT = 0x00000001.toUInt
   final val HANDLE_FLAG_PROTECT_FROM_CLOSE = 0x00000002.toUInt
 }

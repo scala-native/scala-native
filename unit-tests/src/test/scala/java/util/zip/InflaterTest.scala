@@ -12,7 +12,7 @@ class InflaterTest {
 
   @Test def inflaterSetInputDoesNotThrowAnException(): Unit = {
     val inflater = new Inflater()
-    val bytes    = Array[Byte](1, 2, 3)
+    val bytes = Array[Byte](1, 2, 3)
     inflater.setInput(bytes, 0, 3)
   }
 
@@ -23,7 +23,7 @@ class InflaterTest {
 
   @Test def inflaterDoesNotNeedInputAfterInputHasBeenSet(): Unit = {
     val inflater = new Inflater()
-    val bytes    = Array[Byte](1, 2, 3)
+    val bytes = Array[Byte](1, 2, 3)
     assertTrue(inflater.needsInput())
     inflater.setInput(bytes)
     assertTrue(!inflater.needsInput())
@@ -36,7 +36,7 @@ class InflaterTest {
 
   @Test def inflaterDoesNotNeedDictionaryRightAfterInputHasBeenSet(): Unit = {
     val inflater = new Inflater()
-    val bytes    = Array[Byte](1, 2, 3)
+    val bytes = Array[Byte](1, 2, 3)
     assertTrue(!inflater.needsDictionary())
     inflater.setInput(bytes)
     assertTrue(!inflater.needsDictionary())
@@ -48,11 +48,11 @@ class InflaterTest {
     val bytes = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
       0, 6, 120, 4, 1)
     val inflater = new Inflater()
-    val bos      = new ByteArrayOutputStream()
+    val bos = new ByteArrayOutputStream()
     inflater.setInput(bytes)
 
     val buf = new Array[Byte](1024)
-    var h   = 0
+    var h = 0
     while (!inflater.finished()) {
       val count = inflater.inflate(buf)
       bos.write(buf, 0, count)
@@ -68,11 +68,11 @@ class InflaterTest {
     val bytes = Array[Byte](120, -38, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
       0, 6, 120, 4, 1)
     val inflater = new Inflater()
-    val bos      = new ByteArrayOutputStream()
+    val bos = new ByteArrayOutputStream()
     inflater.setInput(bytes)
 
     val buf = new Array[Byte](1024)
-    var h   = 0
+    var h = 0
     while (!inflater.finished()) {
       val count = inflater.inflate(buf)
       bos.write(buf, 0, count)
@@ -89,11 +89,11 @@ class InflaterTest {
     val bytes = Array[Byte](120, -38, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0,
       0, 6, 120, 4, 1)
     val inflater = new Inflater()
-    val bos      = new ByteArrayOutputStream()
+    val bos = new ByteArrayOutputStream()
     inflater.setInput(bytes)
 
     val buf = new Array[Byte](56)
-    var h   = 0
+    var h = 0
     while (!inflater.finished()) {
       val count = inflater.inflate(buf)
       bos.write(buf, 0, count)
@@ -108,7 +108,7 @@ class InflaterTest {
   // The following tests are
   // Ported from Apache Harmony
 
-  var outPutBuff1: Array[Byte]   = null
+  var outPutBuff1: Array[Byte] = null
   var outPutDiction: Array[Byte] = null
 
   @Before
@@ -122,7 +122,7 @@ class InflaterTest {
 
   @Test def finished(): Unit = {
     val byteArray = Array[Byte](1, 3, 4, 7, 8, 'e', 'r', 't', 'y', '5')
-    val inflate   = new Inflater(false)
+    val inflate = new Inflater(false)
     val outPutInf = new Array[Byte](500)
     while (!(inflate.finished())) {
       if (inflate.needsInput()) {
@@ -141,7 +141,7 @@ class InflaterTest {
 
   @Test def getAdler(): Unit = {
     val dictionaryArray = Array[Byte]('e', 'r', 't', 'a', 'b', 2, 3)
-    val inflateDiction  = new Inflater()
+    val inflateDiction = new Inflater()
     inflateDiction.setInput(outPutDiction)
     if (inflateDiction.needsDictionary()) {
       val adl = new Adler32()
@@ -153,7 +153,7 @@ class InflaterTest {
 
   @Test def getRemaining(): Unit = {
     val byteArray = Array[Byte](1, 3, 5, 6, 7)
-    val inflate   = new Inflater()
+    val inflate = new Inflater()
     assertTrue(inflate.getRemaining() == 0)
     inflate.setInput(byteArray)
     assertTrue(inflate.getRemaining() != 0)
@@ -163,8 +163,8 @@ class InflaterTest {
     val outPutBuf = new Array[Byte](500)
     val byteArray = Array[Byte](1, 3, 4, 7, 8)
     val outPutInf = new Array[Byte](500)
-    var x         = 0
-    val deflate   = new Deflater(1)
+    var x = 0
+    val deflate = new Deflater(1)
     deflate.setInput(byteArray)
     while (!deflate.needsInput()) {
       x += deflate.deflate(outPutBuf, x, outPutBuf.length - x)
@@ -184,8 +184,8 @@ class InflaterTest {
     assertTrue(deflate.getTotalOut() == inflate.getTotalIn())
 
     val inflate2 = new Inflater()
-    var offSet   = 0
-    var length   = 4
+    var offSet = 0
+    var length = 4
     if (inflate2.needsInput()) {
       inflate2.setInput(outPutBuff1, offSet, length)
     }
@@ -197,9 +197,9 @@ class InflaterTest {
   @Test def getTotalOut(): Unit = {
     val outPutBuf = new Array[Byte](500)
     val byteArray = Array[Byte](1, 3, 4, 7, 8)
-    var y         = 0
-    var x         = 0
-    val deflate   = new Deflater(1)
+    var y = 0
+    var x = 0
+    val deflate = new Deflater(1)
     deflate.setInput(byteArray)
     while (!deflate.needsInput()) {
       x += deflate.deflate(outPutBuf, x, outPutBuf.length - x)
@@ -209,7 +209,7 @@ class InflaterTest {
       x += deflate.deflate(outPutBuf, x, outPutBuf.length - x)
     }
 
-    val inflate   = new Inflater()
+    val inflate = new Inflater()
     val outPutInf = new Array[Byte](500)
     while (!inflate.finished()) {
       if (inflate.needsInput()) {
@@ -241,7 +241,7 @@ class InflaterTest {
   @Test def inflateArrayByteInt(): Unit = {
     val byteArray = Array[Byte](1, 3, 4, 7, 8, 'e', 'r', 't', 'y', '5')
     val outPutInf = new Array[Byte](500)
-    val inflate   = new Inflater()
+    val inflate = new Inflater()
     while (!inflate.finished()) {
       if (inflate.needsInput()) {
         inflate.setInput(outPutBuff1)
@@ -256,10 +256,10 @@ class InflaterTest {
     }
     assertTrue(0 == outPutInf(byteArray.length))
 
-    val outPutBuf  = new Array[Byte](500)
+    val outPutBuf = new Array[Byte](500)
     val emptyArray = new Array[Byte](11)
-    var x          = 0
-    val defEmpty   = new Deflater(3)
+    var x = 0
+    val defEmpty = new Deflater(3)
     defEmpty.setInput(emptyArray)
     while (!defEmpty.needsInput()) {
       x += defEmpty.deflate(outPutBuf, x, outPutBuf.length - x)
@@ -293,8 +293,8 @@ class InflaterTest {
       -52, 75, 87, 72, -50, -49, 43, 73, -52, -52, 43, 86, 72, 2, 10, 34, 99,
       -123, -60, -68, 20, -80, 32, 0, -101, -69, 17, 84)
     val codedString = "blah string contains blahblahblahblah and blah"
-    val infl1       = new Inflater()
-    val infl2       = new Inflater()
+    val infl1 = new Inflater()
+    val infl2 = new Inflater()
 
     val result = new Array[Byte](100)
     var decLen = 0
@@ -313,8 +313,8 @@ class InflaterTest {
   @Test def inflateArrayByteIntInt(): Unit = {
     val byteArray = Array[Byte](1, 3, 4, 7, 8, 'e', 'r', 't', 'y', '5')
     val outPutInf = new Array[Byte](100)
-    var y         = 0
-    val inflater  = new Inflater()
+    var y = 0
+    val inflater = new Inflater()
     while (!inflater.finished()) {
       if (inflater.needsInput()) {
         assertTrue(inflater.inflate(outPutInf, 0, 1) == 0)
@@ -331,21 +331,25 @@ class InflaterTest {
     assertTrue(0 == outPutInf(byteArray.length))
 
     inflater.reset()
-    var r           = 0
-    var offSet      = 0
+    var r = 0
+    var offSet = 0
     var lengthError = 101
-    assertThrows(classOf[ArrayIndexOutOfBoundsException], {
-      if (inflater.needsInput()) {
-        inflater.setInput(outPutBuff1)
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException], {
+        if (inflater.needsInput()) {
+          inflater.setInput(outPutBuff1)
+        }
+        inflater.inflate(outPutInf, offSet, lengthError)
       }
-      inflater.inflate(outPutInf, offSet, lengthError)
-    })
+    )
 
     assertTrue(inflater.inflate(outPutInf, offSet, 0) == 0)
     inflater.end()
 
-    assertThrows(classOf[IllegalStateException],
-                 inflater.inflate(outPutInf, offSet, 1))
+    assertThrows(
+      classOf[IllegalStateException],
+      inflater.inflate(outPutInf, offSet, 1)
+    )
   }
 
   @Test def inflateArrayByteInt3(): Unit = {
@@ -354,8 +358,8 @@ class InflaterTest {
       -123, -60, -68, 20, -80, 32, 0, -101, -69, 17, 84)
     val codedString = "blah string"
 
-    val infl1  = new Inflater()
-    val infl2  = new Inflater()
+    val infl1 = new Inflater()
+    val infl2 = new Inflater()
     val result = new Array[Byte](100)
     var decLen = 0
 
@@ -373,13 +377,13 @@ class InflaterTest {
 
   @Test def inflateZero(): Unit = {
     val byteArrayOutputStream = new ByteArrayOutputStream()
-    val deflaterOutputStream  = new DeflaterOutputStream(byteArrayOutputStream)
+    val deflaterOutputStream = new DeflaterOutputStream(byteArrayOutputStream)
     deflaterOutputStream.close()
     val input = byteArrayOutputStream.toByteArray()
 
     val inflater = new Inflater()
     inflater.setInput(input)
-    val buffer  = new Array[Byte](0)
+    val buffer = new Array[Byte](0)
     var numRead = 0
     while (!inflater.finished()) {
       val inflatedChunkSize =
@@ -390,23 +394,25 @@ class InflaterTest {
 
   @Test def constructorBoolean(): Unit = {
     val byteArray = Array[Byte](1, 3, 4, 7, 8, 'e', 'r', 't', 'y', '5')
-    val inflate   = new Inflater(true)
+    val inflate = new Inflater(true)
     val outPutInf = new Array[Byte](500)
-    var r         = 0
+    var r = 0
     // An exception should be throws because of header inconsistency.
-    assertThrows(classOf[DataFormatException], {
-      while (!inflate.finished()) {
-        if (inflate.needsInput()) {
-          inflate.setInput(outPutBuff1)
+    assertThrows(
+      classOf[DataFormatException], {
+        while (!inflate.finished()) {
+          if (inflate.needsInput()) {
+            inflate.setInput(outPutBuff1)
+          }
+          inflate.inflate(outPutInf)
         }
-        inflate.inflate(outPutInf)
       }
-    })
+    )
   }
 
   @Test def needsDictionary(): Unit = {
     // note: the needsDictionary flag is set after inflate is called
-    val outPutInf      = new Array[Byte](500)
+    val outPutInf = new Array[Byte](500)
     val inflateDiction = new Inflater()
 
     // testing with dictionary set.
@@ -447,8 +453,8 @@ class InflaterTest {
   @Test def reset(): Unit = {
     val byteArray = Array[Byte](1, 3, 4, 7, 8, 'e', 'r', 't', 'y', '5')
     val outPutInf = new Array[Byte](100)
-    var y         = 0
-    val inflate   = new Inflater()
+    var y = 0
+    val inflate = new Inflater()
     while (!inflate.finished()) {
       if (inflate.needsInput()) {
         inflate.setInput(outPutBuff1)
@@ -482,23 +488,25 @@ class InflaterTest {
 
   @Test def setInputByteArray(): Unit = {
     val byteArray = Array[Byte](2, 3, 4, 't', 'y', 'u', 'e', 'w', 7, 6, 5, 9)
-    val inflate   = new Inflater()
+    val inflate = new Inflater()
     inflate.setInput(byteArray)
     assertTrue(inflate.getRemaining() != 0)
   }
 
   @Test def setInputByteArray2(): Unit = {
     val byteArray = Array[Byte](2, 3, 4, 't', 'y', 'u', 'e', 'w', 7, 6, 5, 9)
-    var offSet    = 6
-    var length    = 6
-    val inflate   = new Inflater()
+    var offSet = 6
+    var length = 6
+    val inflate = new Inflater()
     inflate.setInput(byteArray, offSet, length)
     assertTrue(length == inflate.getRemaining())
 
     // boundary check
     inflate.reset()
-    assertThrows(classOf[ArrayIndexOutOfBoundsException],
-                 inflate.setInput(byteArray, 100, 100))
+    assertThrows(
+      classOf[ArrayIndexOutOfBoundsException],
+      inflate.setInput(byteArray, 100, 100)
+    )
   }
 
   @Test def getBytesRead(): Unit = {
@@ -509,7 +517,7 @@ class InflaterTest {
     assertTrue(0 == defl.getBytesRead())
     // Encode a String into bytes
     val inputString = "blahblahblah??"
-    val input       = inputString.getBytes("UTF-8")
+    val input = inputString.getBytes("UTF-8")
 
     // Compress the bytes
     val output = new Array[Byte](100)
@@ -531,7 +539,7 @@ class InflaterTest {
     assertTrue(0 == defl.getBytesWritten())
     // Encode a String into bytes
     val inputString = "blahblahblah??"
-    val input       = inputString.getBytes("UTF-8")
+    val input = inputString.getBytes("UTF-8")
 
     // Compress the bytes
     val output = new Array[Byte](100)
@@ -551,7 +559,7 @@ class InflaterTest {
     assertTrue(0 == res)
 
     var inflater = new Inflater()
-    val b        = new Array[Byte](1024)
+    val b = new Array[Byte](1024)
     assertTrue(0 == inflater.inflate(b))
     inflater.end()
 
@@ -568,17 +576,17 @@ class InflaterTest {
   }
 
   @Test def setDictionaryByteArray(): Unit = {
-    var i           = 0
+    var i = 0
     val inputString = "blah string contains blahblahblahblah and blah"
     val dictionary1 = "blah"
     val dictionary2 = "1234"
 
-    val outputNo  = new Array[Byte](100)
-    val output1   = new Array[Byte](100)
-    val output2   = new Array[Byte](100)
+    val outputNo = new Array[Byte](100)
+    val output1 = new Array[Byte](100)
+    val output2 = new Array[Byte](100)
     val defDictNo = new Deflater(9)
-    val defDict1  = new Deflater(9)
-    val defDict2  = new Deflater(9)
+    val defDict1 = new Deflater(9)
+    val defDict2 = new Deflater(9)
 
     defDict1.setDictionary(dictionary1.getBytes())
     defDict2.setDictionary(dictionary2.getBytes())
@@ -592,15 +600,16 @@ class InflaterTest {
     defDict2.finish()
 
     val dataLenNo = defDictNo.deflate(outputNo)
-    val dataLen1  = defDict1.deflate(output1)
-    val dataLen2  = defDict2.deflate(output2)
+    val dataLen1 = defDict1.deflate(output1)
+    val dataLen2 = defDict2.deflate(output2)
 
     var passNo1 = false
     var passNo2 = false
-    var pass12  = false
+    var pass12 = false
 
     i = 0
-    while (!passNo1 && i < (if (dataLenNo < dataLen1) dataLenNo else dataLen1)) {
+    while (!passNo1 && i < (if (dataLenNo < dataLen1) dataLenNo
+                            else dataLen1)) {
       if (outputNo(i) != output1(i)) {
         passNo1 = true
       }
@@ -608,7 +617,8 @@ class InflaterTest {
     }
 
     var j = 0
-    while (!passNo2 && j < (if (dataLenNo < dataLen1) dataLenNo else dataLen2)) {
+    while (!passNo2 && j < (if (dataLenNo < dataLen1) dataLenNo
+                            else dataLen2)) {
       if (outputNo(j) != output2(j)) {
         passNo2 = true
       }
@@ -628,8 +638,8 @@ class InflaterTest {
     assertTrue(pass12)
 
     var inflNo = new Inflater()
-    var infl1  = new Inflater()
-    var infl2  = new Inflater()
+    var infl1 = new Inflater()
+    var infl2 = new Inflater()
 
     val result = new Array[Byte](100)
     var decLen = 0
@@ -662,25 +672,31 @@ class InflaterTest {
     inflNo = new Inflater()
     infl1 = new Inflater()
     inflNo.setInput(outputNo, 0, dataLenNo)
-    assertThrows(classOf[IllegalArgumentException],
-                 infl1.setDictionary(dictionary1.getBytes()))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      infl1.setDictionary(dictionary1.getBytes())
+    )
     inflNo.end()
 
     infl1.setInput(output1, 0, dataLen1)
     decLen = infl1.inflate(result)
 
     assertTrue(infl1.needsDictionary())
-    assertThrows(classOf[IllegalArgumentException],
-                 infl1.setDictionary(dictionary2.getBytes()))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      infl1.setDictionary(dictionary2.getBytes())
+    )
     infl1.end()
-    assertThrows(classOf[IllegalStateException],
-                 infl1.setDictionary(dictionary2.getBytes()))
+    assertThrows(
+      classOf[IllegalStateException],
+      infl1.setDictionary(dictionary2.getBytes())
+    )
   }
 
   @Test def exceptions(): Unit = {
     val byteArray = Array[Byte](5, 2, 3, 7, 8)
 
-    val r       = 0;
+    val r = 0;
     val inflate = new Inflater()
     inflate.setInput(byteArray)
     inflate.end()

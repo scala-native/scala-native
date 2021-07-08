@@ -46,10 +46,10 @@ class PatternTest {
     // hex
     pass("\\x10", "\u0010")
 
-    pass("\\t", "\t")     // tab
-    pass("\\n", "\n")     // newline
-    pass("\\r", "\r")     // carriage-return
-    pass("\\f", "\f")     // form-feed
+    pass("\\t", "\t") // tab
+    pass("\\n", "\n") // newline
+    pass("\\r", "\r") // carriage-return
+    pass("\\f", "\f") // form-feed
     pass("\\a", "\u0007") // alert (bell)
   }
 
@@ -91,7 +91,7 @@ class PatternTest {
     pass("\\p{Space}", " ")
     pass("\\p{Upper}", "A")
     pass("\\p{XDigit}", "a")
-    pass("\\p{Cntrl}", new String(Array[Byte](0x7F)))
+    pass("\\p{Cntrl}", new String(Array[Byte](0x7f)))
   }
 
   @Test def unicodeClasses(): Unit = {
@@ -110,8 +110,10 @@ class PatternTest {
   @Ignore
   @Test def pending(): Unit = {
     // The prefix In should only allow blocks like Mongolian
-    assertThrowsAnd(classOf[PatternSyntaxException],
-                    Pattern.compile("\\p{InLatin}"))(
+    assertThrowsAnd(
+      classOf[PatternSyntaxException],
+      Pattern.compile("\\p{InLatin}")
+    )(
       _.getMessage == "Unknown character block name {Latin} near index 10"
     )
 
@@ -348,9 +350,9 @@ class PatternTest {
   }
 
   @Test def groupNotContainingMultibyteCharacters(): Unit = {
-    val pat   = "abcdef(ghi)jkl"
+    val pat = "abcdef(ghi)jkl"
     val input = "abcdefghijkl"
-    val m     = Pattern.compile(pat).matcher(input)
+    val m = Pattern.compile(pat).matcher(input)
     assertTrue(m.matches())
     assertTrue(m.group(0) == input)
     assertTrue(m.group(1) == "ghi")
@@ -358,9 +360,9 @@ class PatternTest {
   }
 
   @Test def groupContainingMultibyteCharacters(): Unit = {
-    val pat   = "abcあいう(えお)def"
+    val pat = "abcあいう(えお)def"
     val input = "abcあいうえおdef"
-    val m     = Pattern.compile(pat).matcher(input)
+    val m = Pattern.compile(pat).matcher(input)
     assertTrue(m.matches())
     assertTrue(m.group(0) == input)
     assertTrue(m.group(1) == "えお")
@@ -372,13 +374,13 @@ class PatternTest {
     // pick a newer pattern (likely in cache).
     locally {
       val pat = pats(198)
-      val m   = pat.matcher("198")
+      val m = pat.matcher("198")
       assertTrue(m.matches())
     }
     // pick an older pattern (likely out of cache).
     locally {
       val pat = pats(1)
-      val m   = pat.matcher("1")
+      val m = pat.matcher("1")
       assertTrue(m.matches())
     }
   }
@@ -388,13 +390,14 @@ class PatternTest {
     assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile("foo\\L"))(
       e => {
         e.getDescription == "Illegal/unsupported escape sequence" &&
-          e.getIndex == 4 &&
-          e.getPattern == "foo\\L" &&
-          e.getMessage ==
-            """|Illegal/unsupported escape sequence near index 4
+        e.getIndex == 4 &&
+        e.getPattern == "foo\\L" &&
+        e.getMessage ==
+          """|Illegal/unsupported escape sequence near index 4
 	     |foo\L
 	     |    ^""".stripMargin
-      })
+      }
+    )
 
     /// Ordered alphabetical by description (second arg).
     /// Helps ensuring that each scalanative/regex Parser description
@@ -436,9 +439,10 @@ class PatternTest {
     assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile(pattern))(
       e => {
         (e.getDescription == description) &&
-          (e.getPattern == pattern) &&
-          (e.getIndex == index)
-      })
+        (e.getPattern == pattern) &&
+        (e.getIndex == index)
+      }
+    )
   }
 
   private def pass(pattern: String, input: String): Unit =
@@ -447,18 +451,22 @@ class PatternTest {
   private def fail(pattern: String, input: String): Unit =
     matches(pattern, input, pass = false)
 
-  private def passAndFail(pattern: String,
-                          passInput: String,
-                          failInput: String): Unit = {
+  private def passAndFail(
+      pattern: String,
+      passInput: String,
+      failInput: String
+  ): Unit = {
     pass(pattern, passInput)
     fail(pattern, failInput)
   }
 
-  private def assertRegex(pass: Boolean,
-                          ret: Boolean,
-                          mid: String,
-                          pattern: String,
-                          input: String): Unit = {
+  private def assertRegex(
+      pass: Boolean,
+      ret: Boolean,
+      mid: String,
+      pattern: String,
+      input: String
+  ): Unit = {
     val ret0 =
       if (pass) ret
       else !ret
@@ -477,9 +485,11 @@ class PatternTest {
     assertRegex(pass, ret, mid, pattern, input)
   }
 
-  private def find(pattern: String,
-                   input: String,
-                   pass: Boolean = true): Unit = {
+  private def find(
+      pattern: String,
+      input: String,
+      pass: Boolean = true
+  ): Unit = {
     val ret = Pattern.compile(pattern).matcher(input).find()
 
     val mid =

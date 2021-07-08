@@ -23,10 +23,10 @@ import org.junit.Assert._
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class FormatterLocaleTest {
-  private var root: Boolean         = false
-  private var notExist: File        = _
+  private var root: Boolean = false
+  private var notExist: File = _
   private var fileWithContent: File = _
-  private var readOnly: File        = _
+  private var readOnly: File = _
 
   // setup resource files for testing
   @Before
@@ -62,16 +62,20 @@ class FormatterLocaleTest {
   }
 
   private class MockFormattable extends Formattable {
-    def formatTo(formatter: Formatter,
-                 flags: Int,
-                 width: Int,
-                 precision: Int): Unit = {
+    def formatTo(
+        formatter: Formatter,
+        flags: Int,
+        width: Int,
+        precision: Int
+    ): Unit = {
       if ((flags & FormattableFlags.UPPERCASE) != 0)
         formatter.format(
-          "CUSTOMIZED FORMAT FUNCTION" + " WIDTH: " + width + " PRECISION: " + precision)
+          "CUSTOMIZED FORMAT FUNCTION" + " WIDTH: " + width + " PRECISION: " + precision
+        )
       else
         formatter.format(
-          "customized format function" + " width: " + width + " precision: " + precision)
+          "customized format function" + " width: " + width + " precision: " + precision
+        )
     }
 
     override def toString(): String = "formattable object"
@@ -148,8 +152,10 @@ class FormatterLocaleTest {
   }
 
   @Test def constructorString(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[String]))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(null.asInstanceOf[String])
+    )
 
     locally {
       val f = new Formatter(notExist.getPath())
@@ -164,15 +170,18 @@ class FormatterLocaleTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly.getPath()))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(readOnly.getPath())
+      )
     }
   }
 
   @Test def constructorStringString(): Unit = {
     assertThrows(
       classOf[NullPointerException],
-      new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name()))
+      new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name())
+    )
 
     locally {
       val f =
@@ -181,8 +190,10 @@ class FormatterLocaleTest {
       f.close()
     }
 
-    assertThrows(classOf[UnsupportedEncodingException],
-                 new Formatter(notExist.getPath(), "ISO 111-1"))
+    assertThrows(
+      classOf[UnsupportedEncodingException],
+      new Formatter(notExist.getPath(), "ISO 111-1")
+    )
 
     locally {
       val f = new Formatter(fileWithContent.getPath(), "UTF-16BE")
@@ -191,16 +202,22 @@ class FormatterLocaleTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly.getPath(), "UTF-16BE"))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(readOnly.getPath(), "UTF-16BE")
+      )
     }
   }
 
   @Test def constructorStringStringLocale(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[String],
-                               Charset.defaultCharset().name(),
-                               Locale.US))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(
+        null.asInstanceOf[String],
+        Charset.defaultCharset().name(),
+        Locale.US
+      )
+    )
 
     locally {
       val f =
@@ -210,15 +227,19 @@ class FormatterLocaleTest {
     }
 
     locally {
-      val f = new Formatter(notExist.getPath(),
-                            Charset.defaultCharset().name(),
-                            Locale.US)
+      val f = new Formatter(
+        notExist.getPath(),
+        Charset.defaultCharset().name(),
+        Locale.US
+      )
       assertEquals(f.locale(), Locale.US)
       f.close()
     }
 
-    assertThrows(classOf[UnsupportedEncodingException],
-                 new Formatter(notExist.getPath(), "ISO 1111-1", Locale.US))
+    assertThrows(
+      classOf[UnsupportedEncodingException],
+      new Formatter(notExist.getPath(), "ISO 1111-1", Locale.US)
+    )
 
     locally {
       val f = new Formatter(fileWithContent.getPath(), "UTF-16BE", Locale.US)
@@ -227,10 +248,14 @@ class FormatterLocaleTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly.getPath(),
-                                 Charset.defaultCharset().name(),
-                                 Locale.US))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(
+          readOnly.getPath(),
+          Charset.defaultCharset().name(),
+          Locale.US
+        )
+      )
     }
   }
 
@@ -267,13 +292,17 @@ class FormatterLocaleTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly, Charset.defaultCharset().name()))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(readOnly, Charset.defaultCharset().name())
+      )
     }
 
     try {
-      assertThrows(classOf[UnsupportedEncodingException],
-                   new Formatter(notExist, "ISO 1111-1"))
+      assertThrows(
+        classOf[UnsupportedEncodingException],
+        new Formatter(notExist, "ISO 1111-1")
+      )
     } finally if (notExist.exists()) {
       // Fail on RI on Windows, because output stream is created and
       // not closed when exception thrown
@@ -296,8 +325,10 @@ class FormatterLocaleTest {
       f.close()
     }
 
-    assertThrows(classOf[UnsupportedEncodingException],
-                 new Formatter(notExist, "ISO 1111-1", Locale.US))
+    assertThrows(
+      classOf[UnsupportedEncodingException],
+      new Formatter(notExist, "ISO 1111-1", Locale.US)
+    )
 
     locally {
       val f = new Formatter(fileWithContent.getPath, "UTF-16BE", Locale.US)
@@ -306,38 +337,50 @@ class FormatterLocaleTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly.getPath,
-                                 Charset.defaultCharset().name(),
-                                 Locale.US))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(
+          readOnly.getPath,
+          Charset.defaultCharset().name(),
+          Locale.US
+        )
+      )
     }
   }
 
   @Test def constructorPrintStream(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[PrintStream]))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(null.asInstanceOf[PrintStream])
+    )
 
     val ps = new PrintStream(notExist, "UTF-16BE")
-    val f  = new Formatter(ps)
+    val f = new Formatter(ps)
     assertEquals(Locale.getDefault(), f.locale())
     f.close()
   }
 
   @Test def constructorOutputStream(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[OutputStream]))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(null.asInstanceOf[OutputStream])
+    )
 
     val os = new FileOutputStream(notExist)
-    val f  = new Formatter(os)
+    val f = new Formatter(os)
     assertEquals(Locale.getDefault(), f.locale())
     f.close()
   }
 
   @Test def constructorOutputStreamString(): Unit = {
 
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[OutputStream],
-                               Charset.defaultCharset().name()))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(
+        null.asInstanceOf[OutputStream],
+        Charset.defaultCharset().name()
+      )
+    )
 
     locally {
       // Porting note: PipedOutputStream is not essential to this test.
@@ -345,13 +388,15 @@ class FormatterLocaleTest {
       // a harmless one.
       // val os = new PipedOutputStream()
       val os = new ByteArrayOutputStream
-      assertThrows(classOf[UnsupportedEncodingException],
-                   new Formatter(os, "TMP-1111"))
+      assertThrows(
+        classOf[UnsupportedEncodingException],
+        new Formatter(os, "TMP-1111")
+      )
     }
 
     locally {
       val os = new FileOutputStream(fileWithContent)
-      val f  = new Formatter(os, "UTF-16BE")
+      val f = new Formatter(os, "UTF-16BE")
       assertEquals(Locale.getDefault, f.locale())
       f.close()
     }
@@ -359,14 +404,18 @@ class FormatterLocaleTest {
 
   @Test def constructorOutputStreamStringLocale(): Unit = {
 
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[OutputStream],
-                               Charset.defaultCharset().name(),
-                               Locale.getDefault))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(
+        null.asInstanceOf[OutputStream],
+        Charset.defaultCharset().name(),
+        Locale.getDefault
+      )
+    )
 
     locally {
       val os = new FileOutputStream(notExist)
-      val f  = new Formatter(os, Charset.defaultCharset().name(), null)
+      val f = new Formatter(os, Charset.defaultCharset().name(), null)
       f.close()
     }
 
@@ -376,13 +425,15 @@ class FormatterLocaleTest {
       // a harmless one.
       // val os = new PipedOutputStream()
       val os = new ByteArrayOutputStream
-      assertThrows(classOf[UnsupportedEncodingException],
-                   new Formatter(os, "TMP-1111", Locale.getDefault))
+      assertThrows(
+        classOf[UnsupportedEncodingException],
+        new Formatter(os, "TMP-1111", Locale.getDefault)
+      )
     }
 
     locally {
       val os = new FileOutputStream(fileWithContent)
-      val f  = new Formatter(os, "UTF-16BE", Locale.US)
+      val f = new Formatter(os, "UTF-16BE", Locale.US)
       assertEquals(Locale.US, f.locale())
       f.close()
     }

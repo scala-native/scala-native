@@ -17,8 +17,10 @@ object ScalaNativeCrossVersion {
     case _                               => full
   }
 
-  private[this] def crossVersionAddPlatformPart(cross: CrossVersion,
-                                                part: String): CrossVersion = {
+  private[this] def crossVersionAddPlatformPart(
+      cross: CrossVersion,
+      part: String
+  ): CrossVersion = {
     cross match {
       // .Disabled reference https://github.com/sbt/librarymanagement/pull/316
       case _: sbt.librarymanagement.Disabled =>

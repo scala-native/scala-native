@@ -29,9 +29,9 @@ class IdentityHashMapTest extends MapTest {
 
   // tests from Harmony
   // tests with null keys and values
-  val map                  = factory.empty[AnyRef, AnyRef]
-  var result: AnyRef       = _
-  var value: AnyRef        = _
+  val map = factory.empty[AnyRef, AnyRef]
+  var result: AnyRef = _
+  var value: AnyRef = _
   var anothervalue: AnyRef = _
 
   @Test def nullKeyAndValue(): Unit = {
@@ -78,7 +78,7 @@ class IdentityHashMapTest extends MapTest {
   }
 
   @Test def checkPutNullKeyNullValue(): Unit = {
-    val map   = factory.empty[AnyRef, AnyRef]
+    val map = factory.empty[AnyRef, AnyRef]
     val value = "Some value"
     map.put(null, value)
     assertEquals(value, map.get(null))
@@ -93,11 +93,11 @@ class IdentityHashMapTest extends MapTest {
     map.put("key1", "value1")
     map.put("key2", "value2")
     map.remove("key1")
-    assertTrue(!map.containsKey("key1"))     // Did not remove key1
+    assertTrue(!map.containsKey("key1")) // Did not remove key1
     assertTrue(!map.containsValue("value1")) // Did not remove the value for key
     assertTrue(
       map.get("key2") != null && (map.get("key2") eq "value2")
-    )                         // Modified key2
+    ) // Modified key2
     assertNull(map.get(null)) // Modified null entry
   }
 
@@ -126,8 +126,8 @@ class IdentityHashMapFactory extends MapFactory {
   override def empty[K: ClassTag, V: ClassTag]: IdentityHashMap[K, V] =
     new IdentityHashMap[K, V]
 
-  def allowsNullKeys: Boolean           = true
-  def allowsNullValues: Boolean         = true
+  def allowsNullKeys: Boolean = true
+  def allowsNullValues: Boolean = true
   override def isIdentityBased: Boolean = true
 
 }

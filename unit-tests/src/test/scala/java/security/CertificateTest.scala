@@ -10,8 +10,7 @@ import org.junit.Assert._
 
 class CertificateTest {
 
-  /**
-   * Meaningless cert encoding just for testing purposes
+  /** Meaningless cert encoding just for testing purposes
    */
   private val testEncoding =
     Array[Byte](1.toByte, 2.toByte, 3.toByte, 4.toByte, 5.toByte)
@@ -34,8 +33,7 @@ class CertificateTest {
     assertFalse(c1.equals("TEST_TYPE"))
   }
 
-  /**
-   * Helper Stub class ported from Harmony.
+  /** Helper Stub class ported from Harmony.
    */
   class MyCertificate(val `type`: String, val encoding: Array[Byte])
       extends java.security.cert.Certificate(`type`) {

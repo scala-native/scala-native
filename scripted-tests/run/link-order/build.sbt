@@ -7,18 +7,19 @@ scalaVersion := {
   if (scalaVersion == null)
     throw new RuntimeException(
       """|The system property 'scala.version' is not defined.
-         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+    )
   else scalaVersion
 }
 
 Compile / nativeLinkingOptions += s"-L${target.value.getAbsoluteFile}"
 
 Compile / compile := {
-  val log            = streams.value.log
-  val cwd            = target.value
+  val log = streams.value.log
+  val cwd = target.value
   val compileOptions = nativeCompileOptions.value
-  val cpaths         = (baseDirectory.value.getAbsoluteFile * "*.c").get
-  val clangPath      = nativeClang.value.toPath.toAbsolutePath.toString
+  val cpaths = (baseDirectory.value.getAbsoluteFile * "*.c").get
+  val clangPath = nativeClang.value.toPath.toAbsolutePath.toString
 
   cwd.mkdirs()
 
@@ -47,7 +48,7 @@ Compile / compile := {
   }
 
   val archivePath = cwd / "liblink-order-test.a"
-  val archive     = Seq("ar", "cr", abs(archivePath)) ++ opaths
+  val archive = Seq("ar", "cr", abs(archivePath)) ++ opaths
   if (run(archive) != 0) {
     sys.error(s"Failed to create archive $archivePath")
   }

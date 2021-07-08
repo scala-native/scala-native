@@ -114,23 +114,27 @@ class RE2ReplaceTest {
   )
 
   @Test def replaceTest(): Unit = {
-    for (Array(pattern, replacement, source, expected, _replaceFirst) <- REPLACE_TESTS) {
+    for (Array(pattern, replacement, source, expected, _replaceFirst) <-
+          REPLACE_TESTS) {
       val replaceFirst = java.lang.Boolean.parseBoolean(_replaceFirst)
-      var re: RE2      = null
+      var re: RE2 = null
       try re = RE2.compile(pattern)
       catch {
         case e: PatternSyntaxException =>
           fail(
-            "Unexpected error compiling %s: %s".format(pattern, e.getMessage))
+            "Unexpected error compiling %s: %s".format(pattern, e.getMessage)
+          )
       }
 
       val actual =
         if (replaceFirst) re.replaceFirst(source, replacement)
         else re.replaceAll(source, replacement)
 
-      assertTrue("%s.replaceAll(%s,%s) = %s; want %s"
-                   .format(pattern, source, replacement, actual, expected),
-                 actual == expected)
+      assertTrue(
+        "%s.replaceAll(%s,%s) = %s; want %s"
+          .format(pattern, source, replacement, actual, expected),
+        actual == expected
+      )
     }
   }
 }

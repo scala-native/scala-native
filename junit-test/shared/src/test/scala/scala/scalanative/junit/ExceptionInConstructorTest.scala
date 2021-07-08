@@ -8,7 +8,8 @@ import scala.scalanative.junit.utils.JUnitTest
 
 class ExceptionInConstructorTest {
   throw new UnsupportedOperationException(
-    "Exception while constructing the test class")
+    "Exception while constructing the test class"
+  )
 
   @Before def before(): Unit =
     throw new IllegalStateException("before() must not be called")

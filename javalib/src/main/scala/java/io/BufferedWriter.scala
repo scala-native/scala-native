@@ -7,8 +7,8 @@ class BufferedWriter(out: Writer, sz: Int) extends Writer {
   def this(out: Writer) = this(out, 4096)
 
   private val buffer: Array[Char] = new Array[Char](sz)
-  private var pos: Int            = 0
-  private var closed: Boolean     = false
+  private var pos: Int = 0
+  private var closed: Boolean = false
 
   def close(): Unit = if (!closed) {
     flush()

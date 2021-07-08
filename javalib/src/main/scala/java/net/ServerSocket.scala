@@ -2,16 +2,17 @@ package java.net
 
 import java.io.{InputStream, OutputStream, IOException, Closeable}
 
-class ServerSocket(private var port: Int,
-                   private var backlog: Int,
-                   private var bindAddr: InetAddress)
-    extends Closeable {
+class ServerSocket(
+    private var port: Int,
+    private var backlog: Int,
+    private var bindAddr: InetAddress
+) extends Closeable {
 
   private val impl = new PlainSocketImpl()
 
   private var created = false
-  private var bound   = false
-  private var closed  = false
+  private var bound = false
+  private var closed = false
 
   if (bindAddr == null) {
     bindAddr = InetAddress.wildcard
@@ -73,7 +74,8 @@ class ServerSocket(private var port: Int,
     if (endpoint != null && !endpoint.isInstanceOf[InetSocketAddress]) {
       throw new IllegalArgumentException(
         "Endpoint is of unsupported " +
-          "SocketAddress subclass")
+          "SocketAddress subclass"
+      )
     }
 
     val addr =
@@ -114,7 +116,7 @@ class ServerSocket(private var port: Int,
     impl.getOption(SocketOptions.SO_TIMEOUT).asInstanceOf[Int]
   }
 
-  def isBound: Boolean  = bound
+  def isBound: Boolean = bound
   def isClosed: Boolean = closed
 
   //def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit

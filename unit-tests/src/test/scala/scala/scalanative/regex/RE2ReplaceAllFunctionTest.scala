@@ -10,7 +10,7 @@ class RE2ReplaceAllFunctionTest {
 
   def REPLACE_XSY = new RE2.ReplaceFunc() {
     override def replace(s: String): String = "x" + s + "y"
-    override def toString                   = "REPLACE_XSY"
+    override def toString = "REPLACE_XSY"
   }
 
   // Each row is (String pattern, input, output, ReplaceFunc replacement).
@@ -29,14 +29,17 @@ class RE2ReplaceAllFunctionTest {
       catch {
         case e: PatternSyntaxException =>
           fail(
-            "Unexpected error compiling %s: %s".format(pattern, e.getMessage))
+            "Unexpected error compiling %s: %s".format(pattern, e.getMessage)
+          )
       }
 
       val actual = re.replaceAllFunc(input, input.length)(REPLACE_XSY.replace)
 
-      assertTrue("%s.replaceAllFunc(%s,%s) = %s; want %s"
-                   .format(pattern, input, REPLACE_XSY, actual, expected),
-                 actual == expected)
+      assertTrue(
+        "%s.replaceAllFunc(%s,%s) = %s; want %s"
+          .format(pattern, input, REPLACE_XSY, actual, expected),
+        actual == expected
+      )
     }
   }
 }

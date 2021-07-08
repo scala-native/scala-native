@@ -23,7 +23,7 @@ class TimeTest {
   // In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to
   // posix.time.time method.
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
-  val epoch: time_t      = 0L
+  val epoch: time_t = 0L
 
   // Some of the tests (the ones that call localtime) need
   // for the standard time to be in effect. This is because
@@ -50,7 +50,7 @@ class TimeTest {
       anno_zero_ptr.tm_mday = 1
       anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime(anno_zero_ptr)
-      val str: String   = fromCString(cstr)
+      val str: String = fromCString(cstr)
       assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
   }
@@ -61,7 +61,7 @@ class TimeTest {
       anno_zero_ptr.tm_mday = 1
       anno_zero_ptr.tm_wday = 1
       val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
-      val str: String   = fromCString(cstr)
+      val str: String = fromCString(cstr)
       assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
   }
@@ -69,12 +69,13 @@ class TimeTest {
     assumeTrue("time is not standard, test will not execute", timeIsStandard)
     assumeFalse(
       "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
-      Platform.isFreeBSD)
+      Platform.isFreeBSD
+    )
     val time_ptr = stackalloc[time_t]
     !time_ptr = epoch + timezone
     val time: Ptr[tm] = localtime(time_ptr)
     val cstr: CString = asctime(time)
-    val str: String   = fromCString(cstr)
+    val str: String = fromCString(cstr)
 
     assertEquals("Thu Jan  1 00:00:00 1970\n", str)
   }
@@ -84,12 +85,13 @@ class TimeTest {
       assumeTrue("time is not standard, test will not execute", timeIsStandard)
       assumeFalse(
         "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
-        Platform.isFreeBSD)
+        Platform.isFreeBSD
+      )
       val time_ptr = stackalloc[time_t]
       !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
       val cstr: CString = asctime_r(time, alloc[Byte](26))
-      val str: String   = fromCString(cstr)
+      val str: String = fromCString(cstr)
 
       assertEquals("Thu Jan  1 00:00:00 1970\n", str)
     }
@@ -127,9 +129,11 @@ class TimeTest {
       //
       // Review the logic of this test thoroughly if size of "tm" changes.
       // This test may no longer be needed or need updating.
-      assertEquals("Review test! sizeof[Scala Native struct tm] changed",
-                   sizeof[tm],
-                   36.toULong)
+      assertEquals(
+        "Review test! sizeof[Scala Native struct tm] changed",
+        sizeof[tm],
+        36.toULong
+      )
 
       val ttPtr = alloc[time_t]
       !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
@@ -154,7 +158,7 @@ class TimeTest {
 
         // grossly over-provision rather than chase fencepost bugs.
         val bufSize = 70.toULong
-        val buf     = alloc[Byte](bufSize)
+        val buf = alloc[Byte](bufSize)
 
         val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
@@ -162,7 +166,7 @@ class TimeTest {
         assertNotEquals("unexpected zero from strftime", n, 0)
 
         val result = fromCString(buf)
-        val len    = "Fri Mar 31 14:47:44 ".length
+        val len = "Fri Mar 31 14:47:44 ".length
 
         // time.scala @name caused structure copy-in/copy-out.
         assertEquals("strftime failed", result.indexOf(unexpected, len), -1)
@@ -171,8 +175,10 @@ class TimeTest {
           "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 2017"
 
         // time.c strftime() zeroed excess bytes in BSD/glibc struct tm.
-        assertTrue(s"result: '${result}' does not match regex: '${regex}'",
-                   result.matches(regex))
+        assertTrue(
+          s"result: '${result}' does not match regex: '${regex}'",
+          result.matches(regex)
+        )
       }
     }
   }
@@ -180,7 +186,7 @@ class TimeTest {
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = {
     Zone { implicit z =>
       val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
-      val timePtr                = alloc[tm]
+      val timePtr = alloc[tm]
 
       timePtr.tm_mday = 1
 
@@ -194,7 +200,7 @@ class TimeTest {
 
   @Test def strftimeForMondayJanOne1990ZeroTime(): Unit = {
     Zone { implicit z =>
-      val timePtr             = alloc[tm]
+      val timePtr = alloc[tm]
       val datePtr: Ptr[CChar] = alloc[CChar](70)
 
       timePtr.tm_mday = 1
@@ -272,12 +278,14 @@ class TimeTest {
 
       // Review logic of this test thoroughly if size of "tm" changes.
       // This test may no longer be needed or need updating.
-      assertEquals("Review test! sizeof[Scala Native struct tm] changed",
-                   sizeof[tm],
-                   36.toULong)
+      assertEquals(
+        "Review test! sizeof[Scala Native struct tm] changed",
+        sizeof[tm],
+        36.toULong
+      )
 
       val tmBufSize = 56.toULong
-      val tmBuf     = alloc[Byte](tmBufSize)
+      val tmBuf = alloc[Byte](tmBufSize)
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
@@ -324,7 +332,7 @@ class TimeTest {
       assertEquals("tm_gmtoff", expectedGmtOff, tm_gmtoff)
 
       val tmZoneIndex = (gmtIndex + sizeof[CLong])
-      val tm_zone     = (tmBuf + tmZoneIndex).asInstanceOf[CString]
+      val tm_zone = (tmBuf + tmZoneIndex).asInstanceOf[CString]
       assertNull("tm_zone", null)
 
       // Major concerning conditions passed. Sanity check the tm proper.
@@ -368,28 +376,40 @@ class TimeTest {
       assertTrue(s"error: unexpected null returned", result != null)
 
       val expectedYear = 116
-      assertTrue(s"tm_year: ${tmPtr.tm_year} != expected: ${expectedYear}",
-                 tmPtr.tm_year == expectedYear)
+      assertTrue(
+        s"tm_year: ${tmPtr.tm_year} != expected: ${expectedYear}",
+        tmPtr.tm_year == expectedYear
+      )
 
       val expectedMonth = 11
-      assertTrue(s"tm_mon: ${tmPtr.tm_mon} != expected: ${expectedMonth}",
-                 tmPtr.tm_mon == expectedMonth)
+      assertTrue(
+        s"tm_mon: ${tmPtr.tm_mon} != expected: ${expectedMonth}",
+        tmPtr.tm_mon == expectedMonth
+      )
 
       val expectedMday = 31
-      assertTrue(s"tm_mon: ${tmPtr.tm_mday} != expected: ${expectedMday}",
-                 tmPtr.tm_mday == expectedMday)
+      assertTrue(
+        s"tm_mon: ${tmPtr.tm_mday} != expected: ${expectedMday}",
+        tmPtr.tm_mday == expectedMday
+      )
 
       val expectedHour = 23
-      assertTrue(s"tm_mon: ${tmPtr.tm_hour} != expected: ${expectedHour}",
-                 tmPtr.tm_hour == expectedHour)
+      assertTrue(
+        s"tm_mon: ${tmPtr.tm_hour} != expected: ${expectedHour}",
+        tmPtr.tm_hour == expectedHour
+      )
 
       val expectedMin = 59
-      assertTrue(s"tm_min: ${tmPtr.tm_min} != expected: ${expectedMin}",
-                 tmPtr.tm_min == expectedMin)
+      assertTrue(
+        s"tm_min: ${tmPtr.tm_min} != expected: ${expectedMin}",
+        tmPtr.tm_min == expectedMin
+      )
 
       val expectedSec = 60
-      assertTrue(s"tm_sec: ${tmPtr.tm_sec} != expected: ${expectedSec}",
-                 tmPtr.tm_sec == expectedSec)
+      assertTrue(
+        s"tm_sec: ${tmPtr.tm_sec} != expected: ${expectedSec}",
+        tmPtr.tm_sec == expectedSec
+      )
 
     // Per posix specification, contents of tm_isdst are not reliable.
     }
@@ -405,8 +425,10 @@ class TimeTest {
       assertTrue(s"error: null returned", result != null)
 
       val expected = 'U'
-      assertTrue(s"character: ${!result} != expected: ${expected}",
-                 !result == expected)
+      assertTrue(
+        s"character: ${!result} != expected: ${expected}",
+        !result == expected
+      )
     }
   }
 

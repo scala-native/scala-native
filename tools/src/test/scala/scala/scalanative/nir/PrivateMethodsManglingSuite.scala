@@ -5,7 +5,7 @@ import scala.scalanative.LinkerSpec
 class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
   "Nested mangling" should "distinguish private methods from different classes" in {
     val sources = Map(
-      "A.scala"    -> """
+      "A.scala" -> """
 		|package xyz
 		|abstract class A {
 		|  protected def encodeLoop(arg1: Int, arg2: String): String
@@ -20,7 +20,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
 		|  def bar(x: Int): Int         = foo(x)
 		|}
 		|""".stripMargin,
-      "B.scala"    -> """
+      "B.scala" -> """
   		|package xyz
   		|object B extends A {
   		|  def encodeLoop(arg1: Int, arg2: String): String = {
@@ -35,7 +35,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
   		|  def baz(x: Int): Int         = foo(x)
   		|}
 		|""".stripMargin,
-      "C.scala"    -> """
+      "C.scala" -> """
   		|package foo
   		|object B extends xyz.A {
   		|  def encodeLoop(arg1: Int, arg2: String): String = {
@@ -79,7 +79,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
           .toSet
 
         val loopType = Seq(Type.Int, Rt.String, Type.Bool, Rt.String)
-        val fooType  = Seq(Type.Int, Type.Int)
+        val fooType = Seq(Type.Int, Type.Int)
 
         def privateMethodSig(method: String, tpe: Seq[Type], in: String) = {
           Sig.Method(method, tpe, Sig.Scope.Private(Global.Top(in)))

@@ -17,18 +17,24 @@ import scalanative.junit.utils.AssertThrows.assertThrows
 
 class URLEncoderTest {
   @Test def nullInputString(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 URLEncoder.encode(null: String, "ignored"))
+    assertThrows(
+      classOf[NullPointerException],
+      URLEncoder.encode(null: String, "ignored")
+    )
   }
 
   @Test def nullEncodingName(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 URLEncoder.encode("any", null: String))
+    assertThrows(
+      classOf[NullPointerException],
+      URLEncoder.encode("any", null: String)
+    )
   }
 
   @Test def earlyThrowOfUnsupportedEncodingException(): Unit = {
-    assertThrows(classOf[java.io.UnsupportedEncodingException],
-                 URLEncoder.encode("any", "invalid encoding"))
+    assertThrows(
+      classOf[java.io.UnsupportedEncodingException],
+      URLEncoder.encode("any", "invalid encoding")
+    )
   }
 
   private def assertIsoEncoded(original: String): Unit = {
@@ -54,15 +60,15 @@ class URLEncoderTest {
   }
 
   @Test def spaceCharacterIsConvertedToThePlusCharacter(): Unit = {
-    val inStr  = " "
+    val inStr = " "
     val outStr = URLEncoder.encode(inStr, "UTF-8")
     assertTrue(outStr == "+")
   }
 
   @Test def allOtherCharactersAreEncodedUsingPercentEscapes(): Unit = {
-    val ex0         = "The string ü@foo-bar"
+    val ex0 = "The string ü@foo-bar"
     val expectedEx0 = "The+string+%C3%BC%40foo-bar"
-    val actualEx0   = URLEncoder.encode(ex0, "UTF-8")
+    val actualEx0 = URLEncoder.encode(ex0, "UTF-8")
     assertTrue(actualEx0 == expectedEx0)
   }
 }

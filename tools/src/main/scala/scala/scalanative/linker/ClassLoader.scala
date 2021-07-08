@@ -41,7 +41,7 @@ object ClassLoader {
       val out = mutable.Map.empty[Global, mutable.UnrolledBuffer[Defn]]
       defns.foreach { defn =>
         val owner = defn.name.top
-        val buf   = out.getOrElseUpdate(owner, mutable.UnrolledBuffer.empty[Defn])
+        val buf = out.getOrElseUpdate(owner, mutable.UnrolledBuffer.empty[Defn])
         buf += defn
       }
       out

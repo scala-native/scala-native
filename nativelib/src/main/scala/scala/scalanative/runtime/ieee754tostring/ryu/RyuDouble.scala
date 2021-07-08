@@ -694,8 +694,10 @@ object RyuDouble {
 
   // format: on
 
-  @noinline def doubleToString(value: Double,
-                               roundingMode: RyuRoundingMode): String = {
+  @noinline def doubleToString(
+      value: Double,
+      roundingMode: RyuRoundingMode
+  ): String = {
 
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.
@@ -712,8 +714,8 @@ object RyuDouble {
     val ieeeExponent =
       ((bits >>> DOUBLE_MANTISSA_BITS) & DOUBLE_EXPONENT_MASK).toInt
     val ieeeMantissa = bits & DOUBLE_MANTISSA_MASK
-    var e2           = 0
-    var m2           = 0L
+    var e2 = 0
+    var m2 = 0L
     if (ieeeExponent == 0) {
       // Denormal number - no implicit leading 1, and the exponent is 1, not 0.
       e2 = 1 - DOUBLE_EXPONENT_BIAS - DOUBLE_MANTISSA_BITS
@@ -727,8 +729,8 @@ object RyuDouble {
 
     // Step 2: Determine the interval of legal decimal representations.
     val even = (m2 & 1) == 0
-    val mv   = 4 * m2
-    val mp   = 4 * m2 + 2
+    val mv = 4 * m2
+    val mp = 4 * m2 + 2
     val mmShift =
       if (((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1))) 1
       else 0
@@ -737,10 +739,10 @@ object RyuDouble {
 
     // Step 3: Convert to a decimal power base using 128-bit arithmetic.
     // -1077 = 1 - 1023 - 53 - 2 <= e_2 - 2 <= 2046 - 1023 - 53 - 2 = 968
-    var dv                = 0L
-    var dp                = 0L
-    var dm                = 0L
-    var e10               = 0
+    var dv = 0L
+    var dp = 0L
+    var dm = 0L
+    var e10 = 0
     var dmIsTrailingZeros = false
     var dvIsTrailingZeros = false
     if (e2 >= 0) {
@@ -796,13 +798,13 @@ object RyuDouble {
     // need to count digits to
     // figure out the correct exponent for scientific notation.
     val vplength = decimalLength(dp)
-    var exp      = e10 + vplength - 1
+    var exp = e10 + vplength - 1
     // Double.toString semantics requires using scientific notation if and
     // only if outside this range.
     val scientificNotation = !((exp >= -3) && (exp < 7))
-    var removed            = 0
-    var lastRemovedDigit   = 0
-    var output             = 0L
+    var removed = 0
+    var lastRemovedDigit = 0
+    var output = 0L
     if (dmIsTrailingZeros || dvIsTrailingZeros) {
       var done = false // workaround break in .java source
       while ((dp / 10 > dm / 10) && !done) {
@@ -842,7 +844,7 @@ object RyuDouble {
       }
       output = dv +
         (if ((dv == dm &&
-             !(dmIsTrailingZeros && roundingMode.acceptLowerBound(even))) ||
+               !(dmIsTrailingZeros && roundingMode.acceptLowerBound(even))) ||
              (lastRemovedDigit >= 5)) 1
          else 0)
     } else {
@@ -867,7 +869,7 @@ object RyuDouble {
     // Step 5: Print the decimal representation.
     // We follow Double.toString semantics here.
     val result = new scala.Array[Char](24)
-    var index  = 0
+    var index = 0
     if (sign) {
       result(index) = '-'
       index += 1
@@ -1007,24 +1009,22 @@ object RyuDouble {
     throw new IllegalArgumentException("" + value)
   }
 
-  /**
-   * Compute the high digits of
-   * m * 5^p / 10^q = m * 5^(p - q) / 2^q = m * 5^i / 2^j, with q chosen
-   * such that m * 5^i / 2^j has sufficiently many decimal digits to
-   * represent the original floating point number.
+  /** Compute the high digits of m * 5^p / 10^q = m * 5^(p - q) / 2^q = m * 5^i
+   *  / 2^j, with q chosen such that m * 5^i / 2^j has sufficiently many decimal
+   *  digits to represent the original floating point number.
    */
   private def mulPow5divPow2(m: Long, i: Int, j: Int) = {
     // m has at most 55 bits.
-    val mHigh       = m >>> 31
-    val mLow        = m & 0x7fffffff // 124
-    val bits13      = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 0) // 93
-    val bits03      = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 0) // 93
-    val bits12      = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 1) // 62
-    val bits02      = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 1) // 62
-    val bits11      = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 2) // 31
-    val bits01      = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 2) // 31
-    val bits10      = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 3) // 0
-    val bits00      = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 3)
+    val mHigh = m >>> 31
+    val mLow = m & 0x7fffffff // 124
+    val bits13 = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 0) // 93
+    val bits03 = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 0) // 93
+    val bits12 = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 1) // 62
+    val bits02 = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 1) // 62
+    val bits11 = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 2) // 31
+    val bits01 = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 2) // 31
+    val bits10 = mHigh * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 3) // 0
+    val bits00 = mLow * POW5_SPLIT((i * POW5_ARRAY_NCOL) + 3)
     val actualShift = j - 3 * 31 - 21
     if (actualShift < 0) {
       throw new IllegalArgumentException("" + actualShift)
@@ -1039,23 +1039,21 @@ object RyuDouble {
       actualShift
   }
 
-  /**
-   * Compute the high digits of
-   * m / 5^i / 2^j such that the result is accurate to at least 9
-   * decimal digits. i and j are already chosen appropriately.
+  /** Compute the high digits of m / 5^i / 2^j such that the result is accurate
+   *  to at least 9 decimal digits. i and j are already chosen appropriately.
    */
   private def mulPow5InvDivPow2(m: Long, i: Int, j: Int) = {
     // m has at most 55 bits.
-    val mHigh       = m >>> 31
-    val mLow        = m & 0x7fffffff
-    val bits13      = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 0)
-    val bits03      = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 0)
-    val bits12      = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 1)
-    val bits02      = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 1)
-    val bits11      = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 2)
-    val bits01      = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 2)
-    val bits10      = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 3)
-    val bits00      = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 3)
+    val mHigh = m >>> 31
+    val mLow = m & 0x7fffffff
+    val bits13 = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 0)
+    val bits03 = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 0)
+    val bits12 = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 1)
+    val bits02 = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 1)
+    val bits11 = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 2)
+    val bits01 = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 2)
+    val bits10 = mHigh * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 3)
+    val bits00 = mLow * POW5_INV_SPLIT((i * POW5_ARRAY_NCOL) + 3)
     val actualShift = j - 3 * 31 - 21
     if (actualShift < 0) {
       throw new IllegalArgumentException("" + actualShift)

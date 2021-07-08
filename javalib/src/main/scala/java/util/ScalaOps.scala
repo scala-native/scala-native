@@ -16,8 +16,8 @@ package java.util
 private[java] object ScalaOps {
 
   implicit class ToJavaIterableOps[A] private[ScalaOps] (
-      val __self: java.lang.Iterable[A])
-      extends AnyVal {
+      val __self: java.lang.Iterable[A]
+  ) extends AnyVal {
     def scalaOps: JavaIterableOps[A] = new JavaIterableOps[A](__self)
   }
 
@@ -74,8 +74,8 @@ private[java] object ScalaOps {
   }
 
   implicit class ToJavaIteratorOps[A] private[ScalaOps] (
-      val __self: Iterator[A])
-      extends AnyVal {
+      val __self: Iterator[A]
+  ) extends AnyVal {
     def scalaOps: JavaIteratorOps[A] = new JavaIteratorOps[A](__self)
   }
 
@@ -89,7 +89,7 @@ private[java] object ScalaOps {
 
     @inline def map[U](f: A => U): Iterator[U] = new Iterator[U] {
       override def hasNext(): Boolean = __self.hasNext()
-      override def next(): U          = f(__self.next())
+      override def next(): U = f(__self.next())
     }
 
     @inline def count(f: A => Boolean): Int =
@@ -140,7 +140,7 @@ private[java] object ScalaOps {
 
     @inline def mkString(start: String, sep: String, end: String): String = {
       var result: String = start
-      var first          = true
+      var first = true
       while (__self.hasNext()) {
         if (first)
           first = false
@@ -190,8 +190,8 @@ private[java] object ScalaOps {
   }
 
   implicit class ToJavaEnumerationOps[A] private[ScalaOps] (
-      val __self: Enumeration[A])
-      extends AnyVal {
+      val __self: Enumeration[A]
+  ) extends AnyVal {
     def scalaOps: JavaEnumerationOps[A] = new JavaEnumerationOps[A](__self)
   }
 

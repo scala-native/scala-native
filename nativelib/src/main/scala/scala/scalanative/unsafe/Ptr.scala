@@ -7,7 +7,8 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
 
 final class Ptr[T] private[scalanative] (
-    private[scalanative] val rawptr: RawPtr) {
+    private[scalanative] val rawptr: RawPtr
+) {
   @alwaysinline override def hashCode: Int =
     java.lang.Long.hashCode(castRawPtrToLong(rawptr))
 
@@ -47,7 +48,7 @@ final class Ptr[T] private[scalanative] (
     new Ptr(elemRawPtr(rawptr, -(offset * sizeof[T]).toLong))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
-    val left  = castRawPtrToLong(rawptr)
+    val left = castRawPtrToLong(rawptr)
     val right = castRawPtrToLong(other.rawptr)
     (left - right) / sizeof[T].toLong
   }
@@ -60,16 +61,19 @@ final class Ptr[T] private[scalanative] (
   @alwaysinline def update(offset: Word, value: T)(implicit tag: Tag[T]): Unit =
     (this + offset).`unary_!_=`(value)
 
-  @alwaysinline def update(offset: UWord, value: T)(
-      implicit tag: Tag[T]): Unit =
+  @alwaysinline def update(offset: UWord, value: T)(implicit
+      tag: Tag[T]
+  ): Unit =
     (this + offset).`unary_!_=`(value)
 
 }
 
 object Ptr {
   @alwaysinline implicit def ptrToCArray[T <: CArray[_, _]](ptr: Ptr[T])(
-      implicit tag: Tag[T]): T = !ptr
+      implicit tag: Tag[T]
+  ): T = !ptr
 
-  @alwaysinline implicit def ptrToCStruct[T <: CStruct](ptr: Ptr[T])(
-      implicit tag: Tag[T]): T = !ptr
+  @alwaysinline implicit def ptrToCStruct[T <: CStruct](ptr: Ptr[T])(implicit
+      tag: Tag[T]
+  ): T = !ptr
 }

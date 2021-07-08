@@ -58,8 +58,8 @@ class TagTest {
     assertTrue(tagof[CStruct1[Int]].size == sizeof[CStruct1[Int]])
     assertTrue(tagof[CStruct2[Byte, Int]].size == sizeof[CStruct2[Byte, Int]])
     assertTrue(
-      tagof[CStruct3[Byte, Byte, Int]].size == sizeof[
-        CStruct3[Byte, Byte, Int]])
+      tagof[CStruct3[Byte, Byte, Int]].size == sizeof[CStruct3[Byte, Byte, Int]]
+    )
   }
 
   @Test def tagAlignment(): Unit = {
@@ -106,18 +106,24 @@ class TagTest {
     assertTrue(tagof[Float].alignment == alignmentof[Float])
     assertTrue(tagof[Double].alignment == alignmentof[Double])
     assertTrue(
-      tagof[CArray[Int, Nat._0]].alignment == alignmentof[CArray[Int, Nat._0]])
+      tagof[CArray[Int, Nat._0]].alignment == alignmentof[CArray[Int, Nat._0]]
+    )
     assertTrue(
-      tagof[CArray[Int, Nat._3]].alignment == alignmentof[CArray[Int, Nat._3]])
+      tagof[CArray[Int, Nat._3]].alignment == alignmentof[CArray[Int, Nat._3]]
+    )
     assertTrue(
-      tagof[CArray[Int, Nat._9]].alignment == alignmentof[CArray[Int, Nat._9]])
+      tagof[CArray[Int, Nat._9]].alignment == alignmentof[CArray[Int, Nat._9]]
+    )
     assertTrue(tagof[CStruct0].alignment == alignmentof[CStruct0])
     assertTrue(tagof[CStruct1[Int]].alignment == alignmentof[CStruct1[Int]])
     assertTrue(
-      tagof[CStruct2[Byte, Int]].alignment == alignmentof[CStruct2[Byte, Int]])
+      tagof[CStruct2[Byte, Int]].alignment == alignmentof[CStruct2[Byte, Int]]
+    )
     assertTrue(
       tagof[CStruct3[Byte, Byte, Int]].alignment == alignmentof[
-        CStruct3[Byte, Byte, Int]])
+        CStruct3[Byte, Byte, Int]
+      ]
+    )
   }
 
   @Test def tagOffset(): Unit = {
@@ -127,7 +133,8 @@ class TagTest {
     assertTrue(tagof[CArray[Int, Nat._0]].offset(0.toULong) == 0.toULong)
     assertTrue(tagof[CArray[Int, Nat._0]].offset(1.toULong) == 4.toULong)
     assertTrue(
-      tagof[CArray[Int, Nat._0]].offset(42.toULong) == (4 * 42).toULong)
+      tagof[CArray[Int, Nat._0]].offset(42.toULong) == (4 * 42).toULong
+    )
     assertTrue(tagof[CStruct1[Int]].offset(0.toULong) == 0.toULong)
     assertTrue(tagof[CStruct2[Byte, Int]].offset(0.toULong) == 0.toULong)
     assertTrue(tagof[CStruct2[Byte, Int]].offset(1.toULong) == 4.toULong)
@@ -135,57 +142,74 @@ class TagTest {
     assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1.toULong) == 1.toULong)
     assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2.toULong) == 4.toULong)
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0.toULong) == 0.toULong)
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0.toULong) == 0.toULong
+    )
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1.toULong) == 4.toULong)
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1.toULong) == 4.toULong
+    )
   }
 
-  type uint8_t  = UByte
+  type uint8_t = UByte
   type uint16_t = UShort
   type uint32_t = UInt
   type uint64_t = ULong
 
-  type iovec = CStruct2[Ptr[Byte], // iov_base
-                        CSize] // iov_len
+  type iovec = CStruct2[
+    Ptr[Byte], // iov_base
+    CSize // iov_len
+  ]
 
-  type socklen_t   = CUnsignedInt
+  type socklen_t = CUnsignedInt
   type sa_family_t = CUnsignedShort
-  type _14         = Nat.Digit2[Nat._1, Nat._4]
-  type sockaddr =
-    CStruct2[sa_family_t,        // sa_family
-             CArray[CChar, _14]] // sa_data, size = 14 in OS X and Linux
+  type _14 = Nat.Digit2[Nat._1, Nat._4]
+  type sockaddr = CStruct2[
+    sa_family_t, // sa_family
+    CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
+  ]
   type sockaddr_storage = CStruct1[sa_family_t] // ss_family
-  type msghdr = CStruct7[Ptr[Byte], // msg_name
-                         socklen_t,  // msg_namelen
-                         Ptr[iovec], // msg_iov
-                         CInt,       // msg_iovlen
-                         Ptr[Byte],  // msg_control
-                         socklen_t,  // msg_crontrollen
-                         CInt]       // msg_flags
-  type cmsghdr = CStruct3[socklen_t, // cmsg_len
-                          CInt, // cmsg_level
-                          CInt] // cmsg_type
-  type linger = CStruct2[CInt, // l_onoff
-                         CInt] // l_linger
+  type msghdr = CStruct7[
+    Ptr[Byte], // msg_name
+    socklen_t, // msg_namelen
+    Ptr[iovec], // msg_iov
+    CInt, // msg_iovlen
+    Ptr[Byte], // msg_control
+    socklen_t, // msg_crontrollen
+    CInt // msg_flags
+  ]
+  type cmsghdr = CStruct3[
+    socklen_t, // cmsg_len
+    CInt, // cmsg_level
+    CInt // cmsg_type
+  ]
+  type linger = CStruct2[
+    CInt, // l_onoff
+    CInt // l_linger
+  ]
 
   type in_port_t = uint16_t
   type in_addr_t = uint32_t
-  type _16       = Nat.Digit2[Nat._1, Nat._6]
+  type _16 = Nat.Digit2[Nat._1, Nat._6]
 
   type in_addr = CStruct1[in_addr_t] // s_addr
-  type sockaddr_in = CStruct3[sa_family_t, // sin_family
-                              in_port_t, // sin_port
-                              in_addr]   // sin_addr
+  type sockaddr_in = CStruct3[
+    sa_family_t, // sin_family
+    in_port_t, // sin_port
+    in_addr // sin_addr
+  ]
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
-  type sockaddr_in6 = CStruct5[in6_addr, // sin6_addr
-                               sa_family_t, // sin6_family
-                               in_port_t,   // sin6_port
-                               uint32_t,    // sin6_flowinfo
-                               uint32_t]    // sin6_scope_id
+  type sockaddr_in6 = CStruct5[
+    in6_addr, // sin6_addr
+    sa_family_t, // sin6_family
+    in_port_t, // sin6_port
+    uint32_t, // sin6_flowinfo
+    uint32_t // sin6_scope_id
+  ]
 
-  type ipv6_mreq = CStruct2[in6_addr, // ipv6mr_multiaddr
-                            CUnsignedInt] // ipv6mr_interface
+  type ipv6_mreq = CStruct2[
+    in6_addr, // ipv6mr_multiaddr
+    CUnsignedInt // ipv6mr_interface
+  ]
 
   @Test def socketSize(): Unit = {
     assertTrue(tagof[uint8_t].size == sizeof[uint8_t])

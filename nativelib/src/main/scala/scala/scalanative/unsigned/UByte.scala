@@ -3,90 +3,78 @@ package unsigned
 
 /** `UByte`, a 8-bit unsigned integer. */
 final class UByte private[scalanative] (
-    private[scalanative] val underlying: Byte)
-    extends java.io.Serializable
+    private[scalanative] val underlying: Byte
+) extends java.io.Serializable
     with Comparable[UByte] {
 
-  @inline final def toByte: Byte     = underlying
-  @inline final def toShort: Short   = toInt.toShort
-  @inline final def toChar: Char     = toInt.toChar
-  @inline final def toInt: Int       = underlying & 0xff
-  @inline final def toLong: Long     = toInt.toLong
-  @inline final def toFloat: Float   = toInt.toFloat
+  @inline final def toByte: Byte = underlying
+  @inline final def toShort: Short = toInt.toShort
+  @inline final def toChar: Char = toInt.toChar
+  @inline final def toInt: Int = underlying & 0xff
+  @inline final def toLong: Long = toInt.toLong
+  @inline final def toFloat: Float = toInt.toFloat
   @inline final def toDouble: Double = toInt.toDouble
 
-  @inline final def toUByte: UByte   = this
+  @inline final def toUByte: UByte = this
   @inline final def toUShort: UShort = new UShort(toShort)
-  @inline final def toUInt: UInt     = new UInt(toInt)
-  @inline final def toULong: ULong   = new ULong(toLong)
+  @inline final def toUInt: UInt = new UInt(toInt)
+  @inline final def toULong: ULong = new ULong(toLong)
 
-  /**
-   * Returns the bitwise negation of this value.
-   * @example {{{
-   * ~5 == -6
-   * // in binary: ~00000101 ==
-   * //             11111010
-   * }}}
+  /** Returns the bitwise negation of this value.
+   *  @example
+   *    {{{~5 == -6 // in binary: ~00000101 == // 11111010}}}
    */
   @inline final def unary_~ : UInt = ~toUInt
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the new right bits with zeroes.
+   *  @example
+   *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline final def <<(x: Int): UInt = toUInt << x
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the new right bits with zeroes.
+   *  @example
+   *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline final def <<(x: Long): UInt = toUInt << x
 
-  /**
-   * Returns this value bit-shifted right by the specified number of bits,
-   *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
-   * 4294967275 >>> 3 == 536870909
-   * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
-   * //            00011111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted right by the specified number of bits,
+   *  filling the new left bits with zeroes.
+   *  @example
+   *    {{{21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010}}}
+   *  @example
+   *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
+   *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline final def >>>(x: Int): UInt = toUInt >>> x
 
-  /**
-   * Returns this value bit-shifted right by the specified number of bits,
-   *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
-   * 4294967275 >>> 3 == 536870909
-   * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
-   * //            00011111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted right by the specified number of bits,
+   *  filling the new left bits with zeroes.
+   *  @example
+   *    {{{21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010}}}
+   *  @example
+   *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
+   *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline final def >>>(x: Long): UInt = toUInt >>> x
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
-   * 4294967275 >> 3 == 4294967293
-   * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
-   * //            11111111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the right bits with the same value as the left-most bit of
+   *  this.
+   *  @example
+   *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
+   *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Int): UInt = toUInt >> x
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
-   * 4294967275 >> 3 == 4294967293
-   * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
-   * //            11111111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the right bits with the same value as the left-most bit of
+   *  this.
+   *  @example
+   *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
+   *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Long): UInt = toUInt >> x
 
@@ -129,16 +117,24 @@ final class UByte private[scalanative] (
   /** Returns `true` if this value is less than x, `false` otherwise. */
   @inline final def <(x: ULong): Boolean = toULong < x
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def <=(x: UByte): Boolean = toUInt <= x.toUInt
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def <=(x: UShort): Boolean = toUInt <= x.toUInt
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def <=(x: UInt): Boolean = toUInt <= x
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def <=(x: ULong): Boolean = toULong <= x
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
@@ -153,16 +149,24 @@ final class UByte private[scalanative] (
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @inline final def >(x: ULong): Boolean = toULong > x
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def >=(x: UByte): Boolean = toUInt >= x.toUInt
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def >=(x: UShort): Boolean = toUInt >= x.toUInt
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def >=(x: UInt): Boolean = toUInt >= x
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline final def >=(x: ULong): Boolean = toULong >= x
 
   /** Returns the bitwise OR of this value and `x`. */
@@ -278,8 +282,8 @@ final class UByte private[scalanative] (
     this.toUInt.min(that.toUInt).toUByte
 
   @inline final def toBinaryString: String = toUInt.toBinaryString
-  @inline final def toHexString: String    = toUInt.toHexString
-  @inline final def toOctalString: String  = toUInt.toOctalString
+  @inline final def toHexString: String = toUInt.toHexString
+  @inline final def toOctalString: String = toUInt.toOctalString
 }
 
 object UByte {
@@ -296,6 +300,6 @@ object UByte {
   /** Language mandated coercions from UByte to "wider" types. */
   import scala.language.implicitConversions
   implicit def ubyte2ushort(x: UByte): UShort = x.toUShort
-  implicit def ubyte2uint(x: UByte): UInt     = x.toUInt
-  implicit def ubyte2ulong(x: UByte): ULong   = x.toULong
+  implicit def ubyte2uint(x: UByte): UInt = x.toUInt
+  implicit def ubyte2ulong(x: UByte): ULong = x.toULong
 }

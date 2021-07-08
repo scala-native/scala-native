@@ -8,13 +8,13 @@ import scala.scalanative.junit.utils.JUnitTest
 
 object BeforeAndAfterTest {
   @BeforeClass def beforeClass(): Unit = ()
-  @AfterClass def afterClass(): Unit   = ()
+  @AfterClass def afterClass(): Unit = ()
 }
 
 class BeforeAndAfterTest {
   @Before def before(): Unit = ()
-  @After def after(): Unit   = ()
-  @Test def test(): Unit     = ()
+  @After def after(): Unit = ()
+  @Test def test(): Unit = ()
 }
 
 class BeforeAndAfterTestAssertions extends JUnitTest

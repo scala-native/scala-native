@@ -242,7 +242,7 @@ abstract class BaseBufferTest {
 
   @Test def relativeBulkGet(): Unit = {
     val buf = withContent(10, elemRange(0, 10): _*)
-    val a   = new Array[ElementType](4)
+    val a = new Array[ElementType](4)
     buf.get(a)
     (boxedElemsFromInt(0, 1, 2, 3) zip boxed(a))
       .foreach { case (a, b) => assertEquals(a, b) }
@@ -271,20 +271,26 @@ abstract class BaseBufferTest {
       buf.position(2)
       buf.put(Array[ElementType](44, 55, 66, 77, 88), 2, 2)
       (boxedElemsFromInt(6, 7, 66, 77, 0) zip boxed(
-        (0 to 4).map(buf.get).toArray))
+        (0 to 4).map(buf.get).toArray
+      ))
         .foreach { case (a, b) => assertEquals(a, b) }
       assertEquals(4, buf.position())
 
-      assertThrows(classOf[BufferOverflowException],
-                   buf.put(Array.fill[ElementType](10)(0)))
+      assertThrows(
+        classOf[BufferOverflowException],
+        buf.put(Array.fill[ElementType](10)(0))
+      )
 
       assertEquals(4, buf.position())
       (boxedElemsFromInt(6, 7, 66, 77, 0) zip boxed(
-        (0 to 4).map(buf.get).toArray))
+        (0 to 4).map(buf.get).toArray
+      ))
         .foreach { case (a, b) => assertEquals(a, b) }
     } else {
-      assertThrows(classOf[ReadOnlyBufferException],
-                   buf.put(Array[ElementType](6, 7, 12)))
+      assertThrows(
+        classOf[ReadOnlyBufferException],
+        buf.put(Array[ElementType](6, 7, 12))
+      )
       assertEquals(0, buf.position())
       assertEquals(elemFromInt(0), buf.get(0))
 

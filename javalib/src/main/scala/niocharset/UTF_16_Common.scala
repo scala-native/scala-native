@@ -19,8 +19,8 @@ private[niocharset] abstract class UTF_16_Common protected (
     // scalastyle:ignore
     name: String,
     aliases: Array[String],
-    private val endianness: Int)
-    extends Charset(name, aliases) {
+    private val endianness: Int
+) extends Charset(name, aliases) {
 
   import UTF_16_Common._
 
@@ -120,7 +120,8 @@ private[niocharset] abstract class UTF_16_Common protected (
         2.0f,
         2.0f,
         // Character 0xfffd
-        if (endianness == LittleEndian) Array(-3, -1) else Array(-1, -3)) {
+        if (endianness == LittleEndian) Array(-3, -1) else Array(-1, -3)
+      ) {
 
     private var needToWriteBOM: Boolean = endianness == AutoEndian
 
@@ -204,7 +205,7 @@ private[niocharset] abstract class UTF_16_Common protected (
 
 private[niocharset] object UTF_16_Common {
   // scalastyle:ignore
-  final val AutoEndian   = 0
-  final val BigEndian    = 1
+  final val AutoEndian = 0
+  final val BigEndian = 1
   final val LittleEndian = 2
 }

@@ -4,48 +4,48 @@ package nir
 import Type._
 
 object Rt {
-  val Object  = Ref(Global.Top("java.lang.Object"))
-  val Class   = Ref(Global.Top("java.lang.Class"))
-  val String  = Ref(Global.Top("java.lang.String"))
+  val Object = Ref(Global.Top("java.lang.Object"))
+  val Class = Ref(Global.Top("java.lang.Class"))
+  val String = Ref(Global.Top("java.lang.String"))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
 
-  val BoxedPtr        = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))
-  val BoxedNull       = Ref(Global.Top("scala.runtime.Null$"))
-  val BoxedUnit       = Ref(Global.Top("scala.runtime.BoxedUnit"))
+  val BoxedPtr = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))
+  val BoxedNull = Ref(Global.Top("scala.runtime.Null$"))
+  val BoxedUnit = Ref(Global.Top("scala.runtime.BoxedUnit"))
   val BoxedUnitModule = Ref(Global.Top("scala.scalanative.runtime.BoxedUnit$"))
 
-  val GetClassSig      = Sig.Method("getClass", Seq(Rt.Class)).mangled
-  val JavaEqualsSig    = Sig.Method("equals", Seq(Object, Bool)).mangled
-  val JavaHashCodeSig  = Sig.Method("hashCode", Seq(Int)).mangled
-  val ScalaEqualsSig   = Sig.Method("scala_==", Seq(Object, Bool)).mangled
+  val GetClassSig = Sig.Method("getClass", Seq(Rt.Class)).mangled
+  val JavaEqualsSig = Sig.Method("equals", Seq(Object, Bool)).mangled
+  val JavaHashCodeSig = Sig.Method("hashCode", Seq(Int)).mangled
+  val ScalaEqualsSig = Sig.Method("scala_==", Seq(Object, Bool)).mangled
   val ScalaHashCodeSig = Sig.Method("scala_##", Seq(Int)).mangled
-  val IsArraySig       = Sig.Method("isArray", Seq(Bool)).mangled
+  val IsArraySig = Sig.Method("isArray", Seq(Bool)).mangled
   val IsAssignableFromSig =
     Sig.Method("isAssignableFrom", Seq(Class, Bool)).mangled
-  val GetNameSig      = Sig.Method("getName", Seq(String)).mangled
-  val BitCountSig     = Sig.Method("bitCount", Seq(Int, Int)).mangled
+  val GetNameSig = Sig.Method("getName", Seq(String)).mangled
+  val BitCountSig = Sig.Method("bitCount", Seq(Int, Int)).mangled
   val ReverseBytesSig = Sig.Method("reverseBytes", Seq(Int, Int)).mangled
   val NumberOfLeadingZerosSig =
     Sig.Method("numberOfLeadingZeros", Seq(Int, Int)).mangled
-  val CosSig        = Sig.Method("cos", Seq(Double, Double)).mangled
-  val SinSig        = Sig.Method("sin", Seq(Double, Double)).mangled
-  val PowSig        = Sig.Method("pow", Seq(Double, Double, Double)).mangled
-  val MaxSig        = Sig.Method("max", Seq(Double, Double, Double)).mangled
-  val SqrtSig       = Sig.Method("sqrt", Seq(Double, Double)).mangled
+  val CosSig = Sig.Method("cos", Seq(Double, Double)).mangled
+  val SinSig = Sig.Method("sin", Seq(Double, Double)).mangled
+  val PowSig = Sig.Method("pow", Seq(Double, Double, Double)).mangled
+  val MaxSig = Sig.Method("max", Seq(Double, Double, Double)).mangled
+  val SqrtSig = Sig.Method("sqrt", Seq(Double, Double)).mangled
   val FromRawPtrSig = Sig.Method("fromRawPtr", Seq(Ptr, BoxedPtr)).mangled
-  val ToRawPtrSig   = Sig.Method("toRawPtr", Seq(BoxedPtr, Ptr)).mangled
+  val ToRawPtrSig = Sig.Method("toRawPtr", Seq(BoxedPtr, Ptr)).mangled
 
-  val ClassName             = Class.name
-  val ClassIdName           = ClassName member Sig.Field("id")
-  val ClassTraitIdName      = ClassName member Sig.Field("traitId")
-  val ClassNameName         = ClassName member Sig.Field("name")
-  val ClassSizeName         = ClassName member Sig.Field("size")
+  val ClassName = Class.name
+  val ClassIdName = ClassName member Sig.Field("id")
+  val ClassTraitIdName = ClassName member Sig.Field("traitId")
+  val ClassNameName = ClassName member Sig.Field("name")
+  val ClassSizeName = ClassName member Sig.Field("size")
   val ClassIdRangeUntilName = ClassName member Sig.Field("idRangeUntil")
 
-  val StringName               = String.name
-  val StringValueName          = StringName member Sig.Field("value")
-  val StringOffsetName         = StringName member Sig.Field("offset")
-  val StringCountName          = StringName member Sig.Field("count")
+  val StringName = String.name
+  val StringValueName = StringName member Sig.Field("value")
+  val StringOffsetName = StringName member Sig.Field("offset")
+  val StringCountName = StringName member Sig.Field("count")
   val StringCachedHashCodeName = StringName member Sig.Field("cachedHashCode")
 
   val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))

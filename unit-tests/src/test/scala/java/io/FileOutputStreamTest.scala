@@ -27,12 +27,15 @@ class FileOutputStreamTest {
         new SimpleFileVisitor[Path]() {
           override def visitFile(
               file: Path,
-              attrs: BasicFileAttributes): FileVisitResult = {
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
             Files.delete(file)
             FileVisitResult.CONTINUE
           }
-          override def postVisitDirectory(dir: Path,
-                                          exc: IOException): FileVisitResult = {
+          override def postVisitDirectory(
+              dir: Path,
+              exc: IOException
+          ): FileVisitResult = {
             Files.delete(dir)
             FileVisitResult.CONTINUE
           }
@@ -94,8 +97,10 @@ class FileOutputStreamTest {
   @Test def attemptToCreateFileInReadonlyDirectory(): Unit = {
     withTempDirectory { ro =>
       ro.setReadOnly()
-      assertThrows(classOf[FileNotFoundException],
-                   new FileOutputStream(new File(ro, "child")))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new FileOutputStream(new File(ro, "child"))
+      )
     }
 
   }

@@ -31,7 +31,7 @@ abstract class LinkedHashMapTest extends HashMapTest {
   override def factory: LinkedHashMapFactory =
     new LinkedHashMapFactory(accessOrder = false, withSizeLimit = None)
 
-  val accessOrder   = factory.accessOrder
+  val accessOrder = factory.accessOrder
   val withSizeLimit = factory.withSizeLimit
 
   @Test def shouldIterateInInsertionOrderAfterBuilding(): Unit = {
@@ -151,10 +151,10 @@ abstract class LinkedHashMapTest extends HashMapTest {
       if (accessOrder) {
         // elements ordered by insertion order except for those accessed
         if (withSizeLimit.isEmpty) {
-          if (index < 5) index               // no elements removed in this range
+          if (index < 5) index // no elements removed in this range
           else if (index + 1 < 42) index + 1 // shifted by 1 removed element
           else if (index + 2 < 52) index + 2 // shifted by 2 removed element
-          else if (index < 97) index + 3     // shifted by 3 removed element
+          else if (index < 97) index + 3 // shifted by 3 removed element
           // elements reordered by accesses
           else if (index == 97) 42
           else if (index == 98) 52
@@ -162,7 +162,7 @@ abstract class LinkedHashMapTest extends HashMapTest {
         } else {
           // note that 5 and 42 are not accessed because they where dropped
           // due to the size limit
-          if (index < 2) index + 50       // no elements removed in this range
+          if (index < 2) index + 50 // no elements removed in this range
           else if (index < 49) index + 51 // shifted by 1 removed element
           // element reordered by accesses
           else 52
@@ -194,9 +194,10 @@ abstract class LinkedHashMapTest extends HashMapTest {
   }
 }
 
-class LinkedHashMapFactory(val accessOrder: Boolean,
-                           override val withSizeLimit: Option[Int])
-    extends HashMapFactory {
+class LinkedHashMapFactory(
+    val accessOrder: Boolean,
+    override val withSizeLimit: Option[Int]
+) extends HashMapFactory {
   def orderName: String =
     if (accessOrder) "access-order"
     else "insertion-order"
@@ -211,7 +212,8 @@ class LinkedHashMapFactory(val accessOrder: Boolean,
       case Some(limit) =>
         new ju.LinkedHashMap[K, V](16, 0.75f, accessOrder) {
           override protected def removeEldestEntry(
-              eldest: ju.Map.Entry[K, V]): Boolean =
+              eldest: ju.Map.Entry[K, V]
+          ): Boolean =
             size() > limit
         }
 

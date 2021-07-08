@@ -122,8 +122,8 @@ class Compiler private () {
   // flags : parser flags
   private def rune(runes: Array[Int], _flags: Int): Frag = {
     var flags = _flags
-    val f     = newInst(IOP.RUNE)
-    val i     = prog.getInst(f.i)
+    val f = newInst(IOP.RUNE)
+    val i = prog.getInst(f.i)
     i.runes = runes
     flags &= RE2.FOLD_CASE // only relevant flag is FoldCase
     if (runes.length != 1 || Unicode.simpleFold(runes(0)) == runes(0)) {
@@ -137,14 +137,14 @@ class Compiler private () {
         runes(0) == runes(1)) {
       i.op = IOP.RUNE1
     } else if (runes.length == 2 &&
-               runes(0) == 0 &&
-               runes(1) == Unicode.MAX_RUNE) {
+        runes(0) == 0 &&
+        runes(1) == Unicode.MAX_RUNE) {
       i.op = IOP.RUNE_ANY
     } else if (runes.length == 4 &&
-               runes(0) == 0 &&
-               runes(1) == '\n' - 1 &&
-               runes(2) == '\n' + 1 &&
-               runes(3) == Unicode.MAX_RUNE) {
+        runes(0) == 0 &&
+        runes(1) == '\n' - 1 &&
+        runes(2) == '\n' + 1 &&
+        runes(3) == Unicode.MAX_RUNE) {
       i.op = IOP.RUNE_ANY_NOT_NL
     }
     f
@@ -160,11 +160,11 @@ class Compiler private () {
         if (re.runes.length == 0) {
           nop()
         } else {
-          val runes   = re.runes
+          val runes = re.runes
           var f: Frag = null
-          var i       = 0
+          var i = 0
           while (i < runes.length) {
-            val r  = runes(i)
+            val r = runes(i)
             val f1 = rune(r, re.flags)
             f = if (f == null) f1 else cat(f, f1)
             i += 1
@@ -204,12 +204,12 @@ class Compiler private () {
         if (re.subs.length == 0) {
           nop()
         } else {
-          val subs    = re.subs
+          val subs = re.subs
           var f: Frag = null
-          var i       = 0
+          var i = 0
           while (i < subs.length) {
             val sub = subs(i)
-            val f1  = compile(sub)
+            val f1 = compile(sub)
             f = if (f == null) f1 else cat(f, f1)
             i += 1
           }
@@ -219,12 +219,12 @@ class Compiler private () {
         if (re.subs.length == 0) {
           nop()
         } else {
-          val subs    = re.subs
+          val subs = re.subs
           var f: Frag = null
-          var i       = 0
+          var i = 0
           while (i < subs.length) {
             val sub = subs(i)
-            val f1  = compile(sub)
+            val f1 = compile(sub)
             f = if (f == null) f1 else alt(f, f1)
             i += 1
           }
@@ -241,7 +241,7 @@ object Compiler {
   // A fragment of a compiled regular expression program.
   // @see http://swtch.com/~rsc/regexp/regexp1.html
   private class Frag(
-      val i: Int,  // an instruction address (pc).
+      val i: Int, // an instruction address (pc).
       var out: Int // a patch list see explanation in Prog.java
   ) {
     def this() = this(0, 0)

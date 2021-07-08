@@ -21,7 +21,7 @@ trait DataInputStreamTest {
     new DataInputStream(inFromBytes(data.map(_.toByte)))
 
   @Test def readBoolean(): Unit = {
-    val data   = Seq(0x00, 0x01, 0xF1, 0x00, 0x01)
+    val data = Seq(0x00, 0x01, 0xf1, 0x00, 0x01)
     val stream = newStream(data: _*)
 
     for (d <- data)
@@ -31,7 +31,7 @@ trait DataInputStreamTest {
   }
 
   @Test def readByte(): Unit = {
-    val data   = Seq(0x00, 0x01, 0xF1, 0x7D, 0x35)
+    val data = Seq(0x00, 0x01, 0xf1, 0x7d, 0x35)
     val stream = newStream(data: _*)
 
     for (d <- data)
@@ -43,17 +43,17 @@ trait DataInputStreamTest {
   @Test def readChar(): Unit = {
     val stream = newStream(
       0x00, 0x48, // H
-      0x00, 0xF6, // ö
-      0x00, 0x6C, // l
-      0x00, 0x6C, // l
-      0x00, 0xF6, // ö
+      0x00, 0xf6, // ö
+      0x00, 0x6c, // l
+      0x00, 0x6c, // l
+      0x00, 0xf6, // ö
       0x00, 0x20, // [space]
       0x00, 0x57, // W
       0x01, 0x03, // ă
       0x00, 0x72, // r
       0x02, 0x34, // ȴ
       0x01, 0x11, // đ
-      0x56        // dangling
+      0x56 // dangling
     )
     var res = ""
 
@@ -157,7 +157,7 @@ trait DataInputStreamTest {
   }
 
   @Test def readUnsignedByte(): Unit = {
-    val data   = Seq(0x00, 0x01, 0xF1, 0x7D, 0x35)
+    val data = Seq(0x00, 0x01, 0xf1, 0x7d, 0x35)
     val stream = newStream(data: _*)
 
     for (d <- data)
@@ -185,7 +185,7 @@ trait DataInputStreamTest {
 
   @Test def readFullyOneArgThreeArg(): Unit = {
     val stream = newStream(-100 to 99: _*)
-    val buf    = new Array[Byte](50)
+    val buf = new Array[Byte](50)
 
     stream.readFully(buf)
     assertArrayEquals(toByteArray(-100 to -51), buf)
@@ -231,7 +231,7 @@ trait DataInputStreamTest {
     }
 
     val stream = new DataInputStream(new BurstyStream(100, 5))
-    val buf    = new Array[Byte](50)
+    val buf = new Array[Byte](50)
 
     stream.readFully(buf)
     assertArrayEquals(toByteArray(1 to 50), buf)
@@ -252,7 +252,7 @@ trait DataInputStreamTest {
     assertEquals("poo -> 💩", stream.readUTF)
     assertEquals("愛", stream.readUTF)
 
-    val badStream = newStream(0x00, 0x01, 0xC0, 0x82)
+    val badStream = newStream(0x00, 0x01, 0xc0, 0x82)
     assertThrows(classOf[UTFDataFormatException], badStream.readUTF)
   }
 
@@ -266,12 +266,12 @@ trait DataInputStreamTest {
     assertEquals("poo -> 💩", stream.readUTF)
     assertEquals("愛", stream.readUTF)
 
-    val badStream = newStream(0x00, 0x01, 0xC0, 0x82)
+    val badStream = newStream(0x00, 0x01, 0xc0, 0x82)
     assertThrows(classOf[UTFDataFormatException], badStream.readUTF)
   }
 
   @Test def readUTFWithVeryLongString(): Unit = {
-    val length     = 40000
+    val length = 40000
     val inputBytes = new Array[Byte](2 + length)
     inputBytes(0) = (length >> 8).toByte
     inputBytes(1) = length.toByte
@@ -287,7 +287,8 @@ trait DataInputStreamTest {
 
   @Test def readLine(): Unit = {
     val stream = newStream(
-      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*)
+      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*
+    )
 
     assertEquals("Hello World", stream.readLine())
     assertEquals("UNIX", stream.readLine())
@@ -301,7 +302,8 @@ trait DataInputStreamTest {
     assumeFalse("Not supported on JDK", executingInJVM)
 
     val stream = newStream(
-      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*)
+      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*
+    )
 
     assertEquals("Hello World", stream.readLine())
     stream.mark(1000)

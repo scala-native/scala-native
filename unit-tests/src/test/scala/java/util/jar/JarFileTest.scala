@@ -22,12 +22,12 @@ class JarFileTest {
   private def getJAR4() = getJarFile(hyts_signedBytes)
   private def getJAR5() = getJarFile(integrateBytes)
 
-  private final val JAR1_ENTRY1       = "foo/bar/A.class"
+  private final val JAR1_ENTRY1 = "foo/bar/A.class"
   private final val JAR5_SIGNED_ENTRY = "Test.class"
   private final val JAR4_SIGNED_ENTRY = "coucou/FileAccess.class"
-  private final val emptyEntry1       = "subfolder/internalSubset01.js";
-  private final val emptyEntry2       = "svgtest.js";
-  private final val emptyEntry3       = "svgunit.js";
+  private final val emptyEntry1 = "subfolder/internalSubset01.js";
+  private final val emptyEntry2 = "svgtest.js";
+  private final val emptyEntry3 = "svgunit.js";
 
   @Test def constructor(): Unit = {
     assertTrue(getJAR1().getEntry(JAR1_ENTRY1).getName() == JAR1_ENTRY1)
@@ -35,8 +35,8 @@ class JarFileTest {
 
   @Test def entries(): Unit = {
     val jarFile = getJAR1()
-    val e       = jarFile.entries()
-    var i       = 0
+    val e = jarFile.entries()
+    var i = 0
     while (e.hasMoreElements()) {
       e.nextElement()
       i += 1
@@ -47,7 +47,7 @@ class JarFileTest {
   }
 
   @Test def entriesIterator(): Unit = {
-    var jarFile     = getJAR1()
+    var jarFile = getJAR1()
     var enumeration = jarFile.entries()
     jarFile.close()
     assertThrows(classOf[IllegalStateException], enumeration.hasMoreElements())
@@ -91,13 +91,15 @@ class JarFileTest {
     assertTrue(enumeration.hasMoreElements())
     val je = enumeration.nextElement()
     jarFile.close()
-    assertThrows(classOf[IllegalStateException],
-                 jarFile.getJarEntry(je.getName))
+    assertThrows(
+      classOf[IllegalStateException],
+      jarFile.getJarEntry(je.getName)
+    )
   }
 
   @Test def getManifest(): Unit = {
     var jarFile = getJAR1()
-    val is      = jarFile.getInputStream(jarFile.getEntry(JAR1_ENTRY1))
+    val is = jarFile.getInputStream(jarFile.getEntry(JAR1_ENTRY1))
     assertTrue(is.available() > 0)
     assertTrue(jarFile.getManifest() != null)
     jarFile.close()
@@ -110,13 +112,13 @@ class JarFileTest {
     assertTrue(jarFile.getManifest() != null)
     jarFile.close()
 
-    val manifest   = new Manifest()
+    val manifest = new Manifest()
     val attributes = manifest.getMainAttributes()
     attributes.put(new Attributes.Name("Manifest-Version"), "1.0")
     val manOut = new ByteArrayOutputStream()
     manifest.write(manOut)
     val manBytes = manOut.toByteArray()
-    val file     = Files.createTempFile("hyts_manifest1", ".jar")
+    val file = Files.createTempFile("hyts_manifest1", ".jar")
     val jarOut =
       new JarOutputStream(new FileOutputStream(file.toFile.getAbsolutePath()))
     var entry = new ZipEntry("META-INF/")
@@ -153,17 +155,17 @@ class JarFileTest {
     val b = new Array[Byte](1024)
     is.read(b, 0, 1024)
     jf.close()
-    assertTrue(b(0) == 0xCA.toByte)
-    assertTrue(b(1) == 0xFE.toByte)
-    assertTrue(b(2) == 0xBA.toByte)
-    assertTrue(b(3) == 0xBE.toByte)
+    assertTrue(b(0) == 0xca.toByte)
+    assertTrue(b(1) == 0xfe.toByte)
+    assertTrue(b(2) == 0xba.toByte)
+    assertTrue(b(3) == 0xbe.toByte)
   }
 
   @Ignore("#956")
   @Test def inputStreamOperationsWithSignedFiles(): Unit = {
-    var jar   = getJAR4()
+    var jar = getJAR4()
     var entry = new JarEntry(JAR4_SIGNED_ENTRY)
-    var in    = jar.getInputStream(entry)
+    var in = jar.getInputStream(entry)
     in.read()
 
     // RI verifies only entries which appear via getJarEntry method
@@ -208,7 +210,7 @@ class JarFileTest {
   @Ignore("#956")
   @Test def jarVerificationModifiedEntry(): Unit = {
     // The jar is instact, but the entry object is modified.
-    var jarFile  = getJAR5()
+    var jarFile = getJAR5()
     var zipEntry = jarFile.getJarEntry(JAR5_SIGNED_ENTRY)
     zipEntry.setSize(zipEntry.getSize() + 1)
     jarFile.getInputStream(zipEntry).skip(Long.MaxValue)
@@ -219,7 +221,8 @@ class JarFileTest {
 
     assertThrows(
       classOf[SecurityException],
-      jarFile.getInputStream(zipEntry).read(new Array[Byte](5000), 0, 5000))
+      jarFile.getInputStream(zipEntry).read(new Array[Byte](5000), 0, 5000)
+    )
   }
 
   @Test def jarFileInsertEntryInManifestJar(): Unit = {
@@ -227,7 +230,7 @@ class JarFileTest {
     // thrown out.
     val jarFile = getJarFile(insertedEntryManifestBytes)
     val entries = jarFile.entries()
-    var count   = 0
+    var count = 0
     while (entries.hasMoreElements()) {
       val zipEntry = entries.nextElement()
       jarFile.getInputStream(zipEntry)
@@ -251,11 +254,14 @@ class JarFileTest {
     }
     // The content of Test.class has been tampered.
     val zipEntry = jarFile.getEntry("Test.class")
-    val in       = jarFile.getInputStream(zipEntry)
-    val buffer   = new Array[Byte](1024)
-    assertThrows(classOf[SecurityException], while (in.available() > 0) {
-      in.read(buffer)
-    })
+    val in = jarFile.getInputStream(zipEntry)
+    val buffer = new Array[Byte](1024)
+    assertThrows(
+      classOf[SecurityException],
+      while (in.available() > 0) {
+        in.read(buffer)
+      }
+    )
   }
 
   @Ignore("#956")
@@ -273,11 +279,14 @@ class JarFileTest {
     }
     // The content of Test.class has been tampered.
     val zipEntry = jarFile.getEntry("Test.class")
-    val in       = jarFile.getInputStream(zipEntry)
-    val buffer   = new Array[Byte](1024)
-    assertThrows(classOf[SecurityException], while (in.available() > 0) {
-      in.read(buffer)
-    })
+    val in = jarFile.getInputStream(zipEntry)
+    val buffer = new Array[Byte](1024)
+    assertThrows(
+      classOf[SecurityException],
+      while (in.available() > 0) {
+        in.read(buffer)
+      }
+    )
   }
 
   @Ignore("#956")
@@ -315,22 +324,24 @@ class JarFileTest {
     assertTrue(is.available() > 0)
 
     val buffer = new Array[Byte](1024)
-    val r      = is.read(buffer, 0, 1024)
+    val r = is.read(buffer, 0, 1024)
     jf.close()
     is.close()
 
     val sb = new StringBuilder()
-    var i  = 0
+    var i = 0
     while (i < r) {
-      sb.append((buffer(i) & 0xFF).toChar)
+      sb.append((buffer(i) & 0xff).toChar)
       i += 1
     }
     val contents = sb.toString()
     assertTrue(contents.indexOf("foo") > 0)
     assertTrue(contents.indexOf("bar") > 0)
 
-    assertThrows(classOf[IllegalStateException],
-                 jf.getInputStream(jf.getEntry(JAR1_ENTRY1)))
+    assertThrows(
+      classOf[IllegalStateException],
+      jf.getInputStream(jf.getEntry(JAR1_ENTRY1))
+    )
 
     jf = getJAR1()
     is = jf.getInputStream(new JarEntry("invalid"))
@@ -368,7 +379,7 @@ class JarFileTest {
 
   private def readExactly(in: InputStream, _numBytes: Int): Unit = {
     var numBytes = _numBytes
-    val buffer   = new Array[Byte](1024)
+    val buffer = new Array[Byte](1024)
     while (numBytes > 0) {
       val read = in.read(buffer, 0, Math.min(numBytes, 1024))
       assertTrue(read != -1)

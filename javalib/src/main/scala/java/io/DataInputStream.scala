@@ -19,7 +19,7 @@ class DataInputStream(in: InputStream)
   //      as only optionally thread-safe and requiring external
   //      synchronization. A buffer per instance does not introduce a
   //      concern.
-  private final val inBasket  = new Array[Byte](sizeof[Long].toInt)
+  private final val inBasket = new Array[Byte](sizeof[Long].toInt)
   private final val outBasket = ByteBuffer.wrap(inBasket) // default: BigEndian
 
   private final def rebuffer(n: Int): ByteBuffer = {
@@ -43,7 +43,8 @@ class DataInputStream(in: InputStream)
           // Any nRead == 0, either from n == 0 passed in or from a short read
           // of the underlying stream is a blivet.
           throw new java.io.IOException(
-            s"error in rebuffer: expected to read ${n} > 0 bytes, got: 0")
+            s"error in rebuffer: expected to read ${n} > 0 bytes, got: 0"
+          )
 
         case nRead =>
           rebufferImpl(n - nRead, runningTotal + nRead)
@@ -51,7 +52,7 @@ class DataInputStream(in: InputStream)
     }
 
     rebufferImpl(n, 0) // 3rd arg is something other than 0.
-    outBasket.clear()  // tricky here: contents preserved, bookkeeping reset.
+    outBasket.clear() // tricky here: contents preserved, bookkeeping reset.
   }
 
   // Notes on End of File (EOF) handling.
@@ -124,7 +125,7 @@ class DataInputStream(in: InputStream)
     if (v == -1) null
     else {
       val builder = new StringBuilder
-      var c       = v.toChar
+      var c = v.toChar
       while (v != -1 && c != '\n' && c != '\r') {
         builder.append(c)
         v = in.read()
@@ -145,10 +146,10 @@ class DataInputStream(in: InputStream)
     rebuffer(sizeof[Short].toInt).getShort()
 
   override final def readUnsignedByte(): Int =
-    readByte() & 0xFF
+    readByte() & 0xff
 
   override final def readUnsignedShort(): Int =
-    rebuffer(sizeof[Short].toInt).getShort() & 0xFFFF
+    rebuffer(sizeof[Short].toInt).getShort() & 0xffff
 
   def readUTF(): String =
     DataInputStream.readUTF(this)

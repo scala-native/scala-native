@@ -75,9 +75,9 @@ object Utils {
   def stringToRunes(str: String): Array[Int] = {
     val charlen = str.length()
     val runelen = str.codePointCount(0, charlen)
-    val runes   = new Array[Int](runelen)
-    var r       = 0
-    var c       = 0
+    val runes = new Array[Int](runelen)
+    var r = 0
+    var c = 0
     while (c < charlen) {
       val rune = str.codePointAt(c)
       runes(r) = rune
@@ -121,9 +121,11 @@ object Utils {
 
   // Returns the index of the first occurrence of array |target| within
   // array |source| after |fromIndex|, or -1 if not found.
-  def indexOf(source: Array[Byte],
-              target: Array[Byte],
-              _fromIndex: Int): Int = {
+  def indexOf(
+      source: Array[Byte],
+      target: Array[Byte],
+      _fromIndex: Int
+  ): Int = {
     var fromIndex = _fromIndex
     if (fromIndex >= source.length) {
       return (if (target.length == 0) source.length else -1)
@@ -136,8 +138,8 @@ object Utils {
     }
 
     val first = target(0)
-    val max   = source.length - target.length
-    var i     = fromIndex
+    val max = source.length - target.length
+    var i = fromIndex
     while (i <= max) {
       // Look for first byte.
       if (source(i) != first) {
@@ -147,9 +149,9 @@ object Utils {
 
       // Found first byte, now look at the rest of v2.
       if (i <= max) {
-        var j   = i + 1
+        var j = i + 1
         val end = j + target.length - 1
-        var k   = 1
+        var k = 1
         while (j < end && source(j) == target(k)) { j += 1; k += 1 }
 
         if (j == end) {
@@ -173,13 +175,13 @@ object Utils {
 
   //// EMPTY_* flags
 
-  final val EMPTY_BEGIN_LINE       = 0x01
-  final val EMPTY_END_LINE         = 0x02
-  final val EMPTY_BEGIN_TEXT       = 0x04
-  final val EMPTY_END_TEXT         = 0x08
-  final val EMPTY_WORD_BOUNDARY    = 0x10
+  final val EMPTY_BEGIN_LINE = 0x01
+  final val EMPTY_END_LINE = 0x02
+  final val EMPTY_BEGIN_TEXT = 0x04
+  final val EMPTY_END_TEXT = 0x08
+  final val EMPTY_WORD_BOUNDARY = 0x10
   final val EMPTY_NO_WORD_BOUNDARY = 0x20
-  final val EMPTY_ALL              = -1 // (impossible)
+  final val EMPTY_ALL = -1 // (impossible)
 
   // emptyOpContext returns the zero-width assertions satisfied at the position
   // between the runes r1 and r2, a bitmask of EMPTY_* flags.

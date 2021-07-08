@@ -15,13 +15,13 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
-    val defns   = linked.defns
+    val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
     implicit val meta: Metadata = new Metadata(linked, proxies)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
-    val lowered   = lower(generated)
+    val lowered = lower(generated)
     dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }
@@ -41,10 +41,11 @@ object CodeGen {
   }
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[Defn])(
-      implicit meta: Metadata): Seq[Path] =
+  private def emit(config: build.Config, assembly: Seq[Defn])(implicit
+      meta: Metadata
+  ): Seq[Path] =
     Scope { implicit in =>
-      val env     = assembly.map(defn => defn.name -> defn).toMap
+      val env = assembly.map(defn => defn.name -> defn).toMap
       val workdir = VirtualDirectory.real(config.workdir)
 
       // Partition into multiple LLVM IR files proportional to number
@@ -79,8 +80,9 @@ object CodeGen {
     import scala.scalanative.codegen.AbstractCodeGen
     import scala.scalanative.codegen.compat.os._
 
-    def apply(config: Config, env: Map[Global, Defn], defns: Seq[Defn])(
-        implicit meta: Metadata): AbstractCodeGen = {
+    def apply(config: Config, env: Map[Global, Defn], defns: Seq[Defn])(implicit
+        meta: Metadata
+    ): AbstractCodeGen = {
       new AbstractCodeGen(config, env, defns) {
         override val os: OsCompat = {
           if (config.targetsWindows) new WindowsCompat(this)

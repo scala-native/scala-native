@@ -24,17 +24,19 @@ class AtomicReferenceTest {
   @Test def get(): Unit = {
 
     val expected = -1
-    val ar       = new AtomicReference(expected)
+    val ar = new AtomicReference(expected)
 
     val result = ar.get()
 
-    assertTrue(s"result: ${result} != expected: ${expected}",
-               result == expected)
+    assertTrue(
+      s"result: ${result} != expected: ${expected}",
+      result == expected
+    )
   }
 
   @Test def getAndUpdateUpdateFunction(): Unit = {
 
-    val expectedValue    = 100
+    val expectedValue = 100
     val expectedNewValue = expectedValue / 2
 
     val tax = new UnaryOperator[Int] {
@@ -47,19 +49,22 @@ class AtomicReferenceTest {
 
     assertTrue(
       s"result before function: ${value} != expected: ${expectedValue}",
-      value == expectedValue)
+      value == expectedValue
+    )
 
     val newValue = ar.get()
 
-    assertTrue(s"newValue after function: ${newValue} != " +
-                 s"expected: ${expectedNewValue}",
-               newValue == expectedNewValue)
+    assertTrue(
+      s"newValue after function: ${newValue} != " +
+        s"expected: ${expectedNewValue}",
+      newValue == expectedNewValue
+    )
   }
 
   @Test def updateAndGetUpdateFunction(): Unit = {
 
     val initialValue = 100
-    val expected     = initialValue * 3
+    val expected = initialValue * 3
 
     val reward = new UnaryOperator[Int] {
       override def apply(t: Int): Int = t * 3
@@ -69,8 +74,10 @@ class AtomicReferenceTest {
 
     val result = ar.updateAndGet(reward)
 
-    assertTrue(s"result after function: ${result} != expected: ${expected}",
-               result == expected)
+    assertTrue(
+      s"result after function: ${result} != expected: ${expected}",
+      result == expected
+    )
   }
 
 }

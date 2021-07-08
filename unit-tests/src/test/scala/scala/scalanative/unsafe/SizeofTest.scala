@@ -70,7 +70,8 @@ class SizeofTest {
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
     assertTrue(
-      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toULong)
+      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toULong
+    )
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntCStruct4ByteIntShortByte()
@@ -79,11 +80,13 @@ class SizeofTest {
       sizeof[CStruct3[
         Byte,
         Long,
-        CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]]] == 40.toULong)
+        CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]
+      ]] == 40.toULong
+    )
   }
 
-  type _32   = Nat.Digit2[Nat._3, Nat._2]
-  type _128  = Nat.Digit3[Nat._1, Nat._2, Nat._8]
+  type _32 = Nat.Digit2[Nat._3, Nat._2]
+  type _128 = Nat.Digit3[Nat._1, Nat._2, Nat._8]
   type _1024 = Nat.Digit4[Nat._1, Nat._0, Nat._2, Nat._4]
 
   @Test def testCArrayByteNat32(): Unit = {
@@ -100,6 +103,7 @@ class SizeofTest {
 
   @Test def testCArrayCStruct3ByteIntByteNat32(): Unit = {
     assertTrue(
-      sizeof[CArray[CStruct3[Byte, Int, Byte], _32]] == (12 * 32).toULong)
+      sizeof[CArray[CStruct3[Byte, Int, Byte], _32]] == (12 * 32).toULong
+    )
   }
 }

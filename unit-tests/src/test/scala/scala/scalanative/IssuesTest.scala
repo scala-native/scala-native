@@ -9,7 +9,7 @@ import scalanative.unsafe._
 
 class IssuesTest {
 
-  def foo(arg: Int): Unit                    = ()
+  def foo(arg: Int): Unit = ()
   def crash(arg: CFuncPtr1[Int, Unit]): Unit = ()
   def lifted208Test(): Unit =
     crash((_: Int) => ())
@@ -24,7 +24,7 @@ class IssuesTest {
   @Test def test_Issue253(): Unit = {
     class Cell(val value: Int)
 
-    val arr     = Array(new Cell(1), new Cell(2))
+    val arr = Array(new Cell(1), new Cell(2))
     val reverse = arr.reverse
 
     assertTrue(reverse(0).value == 2)
@@ -106,10 +106,10 @@ class IssuesTest {
   }
 
   def bar(i: Int): String = i.toString
-  def bar_i32(): String   = "bar"
+  def bar_i32(): String = "bar"
 
   @Test def test_Issue376(): Unit = {
-    val m     = scala.collection.mutable.Map.empty[String, String]
+    val m = scala.collection.mutable.Map.empty[String, String]
     val hello = "hello"
     val world = "world"
     m(hello) = world
@@ -117,11 +117,11 @@ class IssuesTest {
     assertTrue(h equals world)
   }
 
-  val fptrBoxed: CFuncPtr0[Integer]  = () => new Integer(1)
-  val fptr: CFuncPtr0[CInt]          = () => 1
-  val fptrFloat: CFuncPtr0[CFloat]   = () => 1.0f
+  val fptrBoxed: CFuncPtr0[Integer] = () => new Integer(1)
+  val fptr: CFuncPtr0[CInt] = () => 1
+  val fptrFloat: CFuncPtr0[CFloat] = () => 1.0f
   val fptrDouble: CFuncPtr0[CDouble] = () => 1.0
-  def intIdent(x: Int): Int          = x
+  def intIdent(x: Int): Int = x
 
   @Test def test_Issue382(): Unit = {
     /// that gave NPE
@@ -153,12 +153,12 @@ class IssuesTest {
   }
 
   @Test def test_Issue445(): Unit = {
-    val char: Any   = 66.toChar
-    val byte: Any   = 66.toByte
-    val short: Any  = 66.toShort
-    val int: Any    = 66.toInt
-    val long: Any   = 66.toLong
-    val float: Any  = 66.toFloat
+    val char: Any = 66.toChar
+    val byte: Any = 66.toByte
+    val short: Any = 66.toShort
+    val int: Any = 66.toInt
+    val long: Any = 66.toLong
+    val float: Any = 66.toFloat
     val double: Any = 66.toDouble
     assertTrue(char == char)
     assertTrue(char == byte)
@@ -275,7 +275,7 @@ class IssuesTest {
   }
 
   @Test def test_Issue695(): Unit = {
-    val a   = List(1, 2, 3)
+    val a = List(1, 2, 3)
     var eff = List.empty[(Int, Int)]
 
     val result = a.corresponds(a) { (x, y) =>
@@ -287,22 +287,22 @@ class IssuesTest {
   }
 
   @Test def test_Issue762(): Unit = {
-    val byte         = 1.toByte
+    val byte = 1.toByte
     val negbyte: Any = -byte
     assertTrue(negbyte.isInstanceOf[Int])
     assertTrue(negbyte.toString == "-1")
 
-    val short         = 1.toByte
+    val short = 1.toByte
     val negshort: Any = -short
     assertTrue(negshort.isInstanceOf[Int])
     assertTrue(negshort.toString == "-1")
 
-    val int         = 1
+    val int = 1
     val negint: Any = -int
     assertTrue(negint.isInstanceOf[Int])
     assertTrue(negint.toString == "-1")
 
-    val long         = 1L
+    val long = 1L
     val neglong: Any = -long
     assertTrue(neglong.isInstanceOf[Long])
     assertTrue(neglong.toString == "-1")
@@ -313,8 +313,8 @@ class IssuesTest {
     val hashmap = new HashMap[String, String]()
     hashmap.put("a", "b")
     val frozen = Collections.unmodifiableMap[String, String](hashmap)
-    val iter   = frozen.entrySet().iterator()
-    val ab     = iter.next()
+    val iter = frozen.entrySet().iterator()
+    val ab = iter.next()
     assertTrue(ab.getKey() == "a")
     assertTrue(ab.getValue() == "b")
     assertFalse(iter.hasNext())
@@ -337,7 +337,7 @@ class IssuesTest {
     val x8: AnyRef = new { override def toString = "custom" }
     assertTrue(x7 + x8 == "nullcustom")
 
-    val x9: String  = null
+    val x9: String = null
     val x10: String = null
     assertTrue(x9 + x10 == "nullnull")
 
@@ -378,7 +378,7 @@ class IssuesTest {
 
   @Test def test_Issue1239(): Unit = {
     val ulong = java.lang.Long.parseUnsignedLong("9223372036854775808").toULong
-    assertTrue(ulong.toDouble == 9223372036854775808.0D)
+    assertTrue(ulong.toDouble == 9223372036854775808.0d)
   }
 
   @Test def test_Issue1359(): Unit = {
@@ -493,6 +493,6 @@ package issue1909 {
 }
 
 package issue1950 {
-  final class ValueClass(val value: Float)     extends AnyVal
+  final class ValueClass(val value: Float) extends AnyVal
   final case class ValueClass2(string: String) extends AnyVal
 }

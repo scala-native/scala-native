@@ -92,10 +92,12 @@ object Assert {
     assertNotEquals(null, unexpected, actual)
 
   @noinline
-  def assertNotEquals(message: String,
-                      unexpected: Double,
-                      actual: Double,
-                      delta: Double): Unit = {
+  def assertNotEquals(
+      message: String,
+      unexpected: Double,
+      actual: Double,
+      delta: Double
+  ): Unit = {
     if (!doubleIsDifferent(unexpected, actual, delta))
       failEquals(message, actual)
   }
@@ -108,24 +110,30 @@ object Assert {
   def assertNotEquals(unexpected: Float, actual: Float, delta: Float): Unit =
     assertNotEquals(null, unexpected, actual, delta)
 
-  @deprecated("Use assertEquals(double expected, double actual, double " +
-                "epsilon) instead",
-              "")
+  @deprecated(
+    "Use assertEquals(double expected, double actual, double " +
+      "epsilon) instead",
+    ""
+  )
   @noinline
   def assertEquals(expected: Double, actual: Double): Unit = {
     fail(
       "Use assertEquals(expected, actual, delta) to compare " +
-        "floating-point numbers")
+        "floating-point numbers"
+    )
   }
 
-  @deprecated("Use assertEquals(String message, double expected, double " +
-                "actual, double epsilon) instead",
-              "")
+  @deprecated(
+    "Use assertEquals(String message, double expected, double " +
+      "actual, double epsilon) instead",
+    ""
+  )
   @noinline
   def assertEquals(message: String, expected: Double, actual: Double): Unit = {
     fail(
       "Use assertEquals(expected, actual, delta) to compare " +
-        "floating-point numbers")
+        "floating-point numbers"
+    )
   }
 
   @noinline
@@ -137,35 +145,45 @@ object Assert {
     assertEquals(message, expected: Any, actual: Any)
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[AnyRef],
-                        actuals: Array[AnyRef]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[AnyRef],
+      actuals: Array[AnyRef]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(expecteds: Array[AnyRef],
-                        actuals: Array[AnyRef]): Unit = {
+  def assertArrayEquals(
+      expecteds: Array[AnyRef],
+      actuals: Array[AnyRef]
+  ): Unit = {
     assertArrayEquals(null, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Boolean],
-                        actuals: Array[Boolean]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Boolean],
+      actuals: Array[Boolean]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(expecteds: Array[Boolean],
-                        actuals: Array[Boolean]): Unit = {
+  def assertArrayEquals(
+      expecteds: Array[Boolean],
+      actuals: Array[Boolean]
+  ): Unit = {
     assertArrayEquals(null, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Byte],
-                        actuals: Array[Byte]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Byte],
+      actuals: Array[Byte]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
@@ -174,9 +192,11 @@ object Assert {
     assertArrayEquals(null, expecteds, actuals)
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Char],
-                        actuals: Array[Char]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Char],
+      actuals: Array[Char]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
@@ -185,22 +205,28 @@ object Assert {
     assertArrayEquals(null, expecteds, actuals)
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Short],
-                        actuals: Array[Short]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Short],
+      actuals: Array[Short]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(expecteds: Array[Short],
-                        actuals: Array[Short]): Unit = {
+  def assertArrayEquals(
+      expecteds: Array[Short],
+      actuals: Array[Short]
+  ): Unit = {
     assertArrayEquals(null, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Int],
-                        actuals: Array[Int]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Int],
+      actuals: Array[Int]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
@@ -209,9 +235,11 @@ object Assert {
     assertArrayEquals(null, expecteds, actuals)
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Long],
-                        actuals: Array[Long]): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Long],
+      actuals: Array[Long]
+  ): Unit = {
     internalArrayEquals(message, expecteds, actuals)
   }
 
@@ -220,75 +248,93 @@ object Assert {
     assertArrayEquals(null, expecteds, actuals)
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Double],
-                        actuals: Array[Double],
-                        delta: Double): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Double],
+      actuals: Array[Double],
+      delta: Double
+  ): Unit = {
     new InexactComparisonCriteria(delta)
       .arrayEquals(message, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(expecteds: Array[Double],
-                        actuals: Array[Double],
-                        delta: Double): Unit = {
+  def assertArrayEquals(
+      expecteds: Array[Double],
+      actuals: Array[Double],
+      delta: Double
+  ): Unit = {
     assertArrayEquals(null, expecteds, actuals, delta)
   }
 
   @noinline
-  def assertArrayEquals(message: String,
-                        expecteds: Array[Float],
-                        actuals: Array[Float],
-                        delta: Float): Unit = {
+  def assertArrayEquals(
+      message: String,
+      expecteds: Array[Float],
+      actuals: Array[Float],
+      delta: Float
+  ): Unit = {
     new InexactComparisonCriteria(delta)
       .arrayEquals(message, expecteds, actuals)
   }
 
   @noinline
-  def assertArrayEquals(expecteds: Array[Float],
-                        actuals: Array[Float],
-                        delta: Float): Unit = {
+  def assertArrayEquals(
+      expecteds: Array[Float],
+      actuals: Array[Float],
+      delta: Float
+  ): Unit = {
     assertArrayEquals(null, expecteds, actuals, delta)
   }
 
-  private def internalArrayEquals(message: String,
-                                  expecteds: AnyRef,
-                                  actuals: AnyRef): Unit = {
+  private def internalArrayEquals(
+      message: String,
+      expecteds: AnyRef,
+      actuals: AnyRef
+  ): Unit = {
     new ExactComparisonCriteria().arrayEquals(message, expecteds, actuals)
   }
 
   @noinline
-  def assertEquals(message: String,
-                   expected: Double,
-                   actual: Double,
-                   delta: Double): Unit = {
+  def assertEquals(
+      message: String,
+      expected: Double,
+      actual: Double,
+      delta: Double
+  ): Unit = {
     if (doubleIsDifferent(expected, actual, delta)) {
       failNotEquals(message, expected, actual)
     }
   }
 
   @noinline
-  def assertEquals(message: String,
-                   expected: Float,
-                   actual: Float,
-                   delta: Float): Unit = {
+  def assertEquals(
+      message: String,
+      expected: Float,
+      actual: Float,
+      delta: Float
+  ): Unit = {
     if (floatIsDifferent(expected, actual, delta)) {
       failNotEquals(message, expected, actual)
     }
   }
 
   @noinline
-  def assertNotEquals(message: String,
-                      unexpected: Float,
-                      actual: Float,
-                      delta: Float): Unit = {
+  def assertNotEquals(
+      message: String,
+      unexpected: Float,
+      actual: Float,
+      delta: Float
+  ): Unit = {
     if (!floatIsDifferent(unexpected, actual, delta))
       failEquals(message, actual)
   }
 
-  private def doubleIsDifferent(d1: Double,
-                                d2: Double,
-                                delta: Double): Boolean = {
+  private def doubleIsDifferent(
+      d1: Double,
+      d2: Double,
+      delta: Double
+  ): Boolean = {
     java.lang.Double.compare(d1, d2) != 0 && Math.abs(d1 - d2) > delta
   }
 
@@ -364,15 +410,17 @@ object Assert {
   private def failNotEquals(message: String, expected: Any, actual: Any): Unit =
     fail(format(message, expected, actual))
 
-  private[junit] def format(message: String,
-                            expected: Any,
-                            actual: Any): String = {
-    val formatted      = if (message != null && message != "") message + " " else ""
+  private[junit] def format(
+      message: String,
+      expected: Any,
+      actual: Any
+  ): String = {
+    val formatted = if (message != null && message != "") message + " " else ""
     val expectedString = String.valueOf(expected)
-    val actualString   = String.valueOf(actual)
+    val actualString = String.valueOf(actual)
     if (expectedString == actualString) {
       val expectedFormatted = formatClassAndValue(expected, expectedString)
-      val actualFormatted   = formatClassAndValue(actual, actualString)
+      val actualFormatted = formatClassAndValue(actual, actualString)
       s"${formatted}expected: $expectedFormatted but was: $actualFormatted"
     } else {
       s"${formatted}expected:<$expectedString> but was:<$actualString>"
@@ -396,15 +444,19 @@ object Assert {
     MatcherAssert.assertThat(reason, actual, matcher)
 
   @noinline
-  def assertThrows[T <: Throwable](expectedThrowable: Class[T],
-                                   runnable: ThrowingRunnable): T = {
+  def assertThrows[T <: Throwable](
+      expectedThrowable: Class[T],
+      runnable: ThrowingRunnable
+  ): T = {
     assertThrows(null, expectedThrowable, runnable)
   }
 
   @noinline
-  def assertThrows[T <: Throwable](message: String,
-                                   expectedThrowable: Class[T],
-                                   runnable: ThrowingRunnable): T = {
+  def assertThrows[T <: Throwable](
+      message: String,
+      expectedThrowable: Class[T],
+      runnable: ThrowingRunnable
+  ): T = {
 
     def buildPrefix: String =
       if (message != null) message + ": " else ""
@@ -418,7 +470,7 @@ object Assert {
 
       case actualThrown: Throwable =>
         val expected: String = formatClass(expectedThrowable);
-        val actual: String   = formatClass(actualThrown.getClass());
+        val actual: String = formatClass(actualThrown.getClass());
 
         val mismatchMessage = buildPrefix +
           format("unexpected exception type thrown;", expected, actual)

@@ -7,14 +7,14 @@ import scala.scalanative.util.ShowBuilder
 
 private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
     extends OsCompat {
-  val ehWrapperTy       = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
-  val ehWrapperName     = "c\".?AVExceptionWrapper@scalanative@@\\00\""
-  val ehClass           = "%\"class.scalanative::ExceptionWrapper\""
-  val typeInfo          = "\"??_7type_info@@6B@\""
+  val ehWrapperTy = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
+  val ehWrapperName = "c\".?AVExceptionWrapper@scalanative@@\\00\""
+  val ehClass = "%\"class.scalanative::ExceptionWrapper\""
+  val typeInfo = "\"??_7type_info@@6B@\""
   val stdExceptionClass = "\"class.std::exception\""
-  val stdExceptionData  = "struct.__std_exception_data"
-  val typeDescriptor    = "%rtti.TypeDescriptor34"
-  val ehVar             = "%eslot"
+  val stdExceptionData = "struct.__std_exception_data"
+  val typeDescriptor = "%rtti.TypeDescriptor34"
+  val ehVar = "%eslot"
 
   override protected val osPersonalityType: String = "@__CxxFrameHandler3"
 
@@ -37,20 +37,21 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
     line(s"@$typeInfo = external constant i8*")
     line(s"$$$ehWrapperTy = comdat any")
     line(
-      s"@$ehWrapperTy = linkonce_odr global $typeDescriptor { i8** @$typeInfo, i8* null, [35 x i8] $ehWrapperName }, comdat")
+      s"@$ehWrapperTy = linkonce_odr global $typeDescriptor { i8** @$typeInfo, i8* null, [35 x i8] $ehWrapperName }, comdat"
+    )
   }
 
-  override def genLandingPad(unwind: Next.Unwind)(implicit fresh: Fresh,
-                                                  pos: Position,
-                                                  sb: ShowBuilder): Unit = {
+  override def genLandingPad(
+      unwind: Next.Unwind
+  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder): Unit = {
     import codegen._
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind
 
-    val excpad  = s"_${excname.id}.landingpad"
+    val excpad = s"_${excname.id}.landingpad"
     val excsucc = excpad + ".succ"
 
-    val exc               = "%_" + excname.id
+    val exc = "%_" + excname.id
     val rec, w1, w2, cpad = "%_" + fresh().id
 
     def line(s: String) = { newline(); str(s) }
@@ -63,7 +64,8 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
     line(s"$excsucc:")
     indent()
     line(
-      s"$cpad = catchpad within $rec [$typeDescriptor* @$ehWrapperTy, i32 8, $ehClass** $ehVar]")
+      s"$cpad = catchpad within $rec [$typeDescriptor* @$ehWrapperTy, i32 8, $ehClass** $ehVar]"
+    )
     line(s"$w1 = load $ehClass*, $ehClass** $ehVar, align 8")
     line(s"$w2 = getelementptr inbounds $ehClass, $ehClass* $w1, i32 0, i32 1")
     line(s"$exc = load i8*, i8** $w2, align 8")

@@ -6,10 +6,10 @@ import org.junit.Assert._
 import scalanative.junit.utils.AssertThrows.assertThrows
 
 class FileDescriptorTest {
-  val in  = FileDescriptor.in
+  val in = FileDescriptor.in
   val out = FileDescriptor.out
   val err = FileDescriptor.err
-  val fd  = new FileDescriptor()
+  val fd = new FileDescriptor()
 
   @Test def validDescriptors(): Unit = {
     assertTrue(in.valid())

@@ -4,9 +4,11 @@ import scala.annotation.{switch, tailrec}
 
 import java.nio._
 
-abstract class CharsetDecoder protected (cs: Charset,
-                                         _averageCharsPerByte: Float,
-                                         _maxCharsPerByte: Float) {
+abstract class CharsetDecoder protected (
+    cs: Charset,
+    _averageCharsPerByte: Float,
+    _maxCharsPerByte: Float
+) {
 
   import CharsetDecoder._
 
@@ -31,10 +33,12 @@ abstract class CharsetDecoder protected (cs: Charset,
   final def replaceWith(newReplacement: String): CharsetDecoder = {
     if (newReplacement == null || newReplacement == "")
       throw new IllegalArgumentException(
-        "Invalid replacement: " + newReplacement)
+        "Invalid replacement: " + newReplacement
+      )
     if (newReplacement.length > maxCharsPerByte())
       throw new IllegalArgumentException(
-        "Replacement string cannot be longer than maxCharsPerByte")
+        "Replacement string cannot be longer than maxCharsPerByte"
+      )
     _replacement = newReplacement
     implReplaceWith(newReplacement)
     this
@@ -58,7 +62,8 @@ abstract class CharsetDecoder protected (cs: Charset,
     _unmappableCharacterAction
 
   final def onUnmappableCharacter(
-      newAction: CodingErrorAction): CharsetDecoder = {
+      newAction: CodingErrorAction
+  ): CharsetDecoder = {
     if (newAction == null)
       throw new IllegalArgumentException("null CodingErrorAction")
     _unmappableCharacterAction = newAction
@@ -70,11 +75,13 @@ abstract class CharsetDecoder protected (cs: Charset,
     ()
 
   final def averageCharsPerByte(): Float = _averageCharsPerByte
-  final def maxCharsPerByte(): Float     = _maxCharsPerByte
+  final def maxCharsPerByte(): Float = _maxCharsPerByte
 
-  final def decode(in: ByteBuffer,
-                   out: CharBuffer,
-                   endOfInput: Boolean): CoderResult = {
+  final def decode(
+      in: ByteBuffer,
+      out: CharBuffer,
+      endOfInput: Boolean
+  ): CoderResult = {
 
     if (status == FLUSHED || (!endOfInput && status == END))
       throw new IllegalStateException
@@ -202,7 +209,7 @@ abstract class CharsetDecoder protected (cs: Charset,
 
     reset()
     val initLength = (in.remaining().toDouble * averageCharsPerByte()).toInt
-    val out        = loopFlush(loopDecode(CharBuffer.allocate(initLength)))
+    val out = loopFlush(loopDecode(CharBuffer.allocate(initLength)))
     out.flip()
     out
   }
@@ -217,8 +224,8 @@ abstract class CharsetDecoder protected (cs: Charset,
 }
 
 object CharsetDecoder {
-  private final val INIT    = 1
+  private final val INIT = 1
   private final val ONGOING = 2
-  private final val END     = 3
+  private final val END = 3
   private final val FLUSHED = 4
 }

@@ -8,14 +8,12 @@ object Test {
       println("future 1")
       1 + 2
     }.map { x =>
-        println("future 2")
-        x + 3
-      }
-      .map { x =>
-        println("future 3")
-        x + 4
-      }
-      .foreach { res => println("result: " + res) }
+      println("future 2")
+      x + 3
+    }.map { x =>
+      println("future 3")
+      x + 4
+    }.foreach { res => println("result: " + res) }
     println("end main")
   }
 }

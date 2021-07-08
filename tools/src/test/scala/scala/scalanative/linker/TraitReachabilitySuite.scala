@@ -20,17 +20,17 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val ParentFoo: Global =
     g("Parent", Sig.Method("foo", Seq(Type.Unit)))
 
-  val Child: Global          = g("Child")
-  val ChildInit: Global      = g("Child", Sig.Ctor(Seq.empty))
-  val ChildFoo: Global       = g("Child", Sig.Method("foo", Seq(Type.Unit)))
-  val GrandChild: Global     = g("GrandChild")
+  val Child: Global = g("Child")
+  val ChildInit: Global = g("Child", Sig.Ctor(Seq.empty))
+  val ChildFoo: Global = g("Child", Sig.Method("foo", Seq(Type.Unit)))
+  val GrandChild: Global = g("GrandChild")
   val GrandChildInit: Global = g("GrandChild", Sig.Ctor(Seq.empty))
-  val GrandChildFoo: Global  = g("GrandChild", Sig.Method("foo", Seq(Type.Unit)))
-  val Object: Global         = g("java.lang.Object")
-  val ObjectInit: Global     = g("java.lang.Object", Sig.Ctor(Seq.empty))
-  val Test: Global           = g("Test$")
-  val TestInit: Global       = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain: Global       = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val GrandChildFoo: Global = g("GrandChild", Sig.Method("foo", Seq(Type.Unit)))
+  val Object: Global = g("java.lang.Object")
+  val ObjectInit: Global = g("java.lang.Object", Sig.Ctor(Seq.empty))
+  val Test: Global = g("Test$")
+  val TestInit: Global = g("Test$", Sig.Ctor(Seq.empty))
+  val TestMain: Global = g("Test$", Sig.Method("main", Seq(Type.Unit)))
   val TestCallFoo: Global =
     g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
@@ -43,7 +43,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         def main: Unit = ()
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -63,7 +63,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         def main: Unit = new Child
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -78,7 +78,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on trait includes an impl of all implementors (1)") {
+    "calling a method on trait includes an impl of all implementors (1)"
+  ) {
     val source = """
       trait Parent {
         def foo: Unit
@@ -94,7 +95,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           callFoo(new Child)
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -111,7 +112,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on trait includes an impl of all implementors (2)") {
+    "calling a method on trait includes an impl of all implementors (2)"
+  ) {
     val source = """
       trait Parent {
         def foo: Unit
@@ -132,7 +134,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         }
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -152,7 +154,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on a trait with default implementation includes impl class") {
+    "calling a method on a trait with default implementation includes impl class"
+  ) {
     val source = """
       trait Parent {
         def foo: Unit = ()
@@ -166,7 +169,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           callFoo(new Child)
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,
@@ -197,7 +200,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   testReachable(
-    "calling a method on a trait with default implementation discards impl class") {
+    "calling a method on a trait with default implementation discards impl class"
+  ) {
     val source = """
       trait Parent {
         def foo: Unit = ()
@@ -213,7 +217,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           callFoo(new Child)
       }
     """
-    val entry  = TestMain
+    val entry = TestMain
     val reachable = Seq(
       Test,
       TestInit,

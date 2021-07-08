@@ -56,10 +56,14 @@ class ObjectsTest {
     assertEquals(ju.Arrays.hashCode(Array.empty[AnyRef]), ju.Objects.hash())
     assertEquals(ju.Arrays.hashCode(Array[AnyRef](null)), ju.Objects.hash(null))
     assertEquals(ju.Arrays.hashCode(Array[AnyRef]("1")), ju.Objects.hash("1"))
-    assertEquals(ju.Arrays.hashCode(Array[AnyRef]("1", "2")),
-                 ju.Objects.hash("1", "2"))
-    assertEquals(ju.Arrays.hashCode(Array[AnyRef]("1", null)),
-                 ju.Objects.hash("1", null))
+    assertEquals(
+      ju.Arrays.hashCode(Array[AnyRef]("1", "2")),
+      ju.Objects.hash("1", "2")
+    )
+    assertEquals(
+      ju.Arrays.hashCode(Array[AnyRef]("1", null)),
+      ju.Objects.hash("1", null)
+    )
   }
 
   @Test def testToString(): Unit = {
@@ -86,8 +90,10 @@ class ObjectsTest {
 
   @Test def requireNonNull(): Unit = {
     assertThrows(classOf[NullPointerException], ju.Objects.requireNonNull(null))
-    assertThrows(classOf[NullPointerException],
-                 ju.Objects.requireNonNull(null, "message"))
+    assertThrows(
+      classOf[NullPointerException],
+      ju.Objects.requireNonNull(null, "message")
+    )
     assertEquals("abc", ju.Objects.requireNonNull("abc"))
     assertEquals("abc", ju.Objects.requireNonNull("abc", ""))
   }
@@ -102,12 +108,15 @@ class ObjectsTest {
     val failureSupplier = new ju.function.Supplier[String] {
       def get(): String = {
         throw new AssertionError(
-          "Objects.requireNonNull() should not have called Supplier")
+          "Objects.requireNonNull() should not have called Supplier"
+        )
       }
     }
 
-    val e = assertThrows(classOf[NullPointerException],
-                         ju.Objects.requireNonNull(null, successSupplier))
+    val e = assertThrows(
+      classOf[NullPointerException],
+      ju.Objects.requireNonNull(null, successSupplier)
+    )
     assertEquals(message, e.getMessage())
 
     assertEquals("abc", ju.Objects.requireNonNull("abc", failureSupplier))

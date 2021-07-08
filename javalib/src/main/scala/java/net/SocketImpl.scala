@@ -7,7 +7,7 @@ abstract class SocketImpl extends SocketOptions {
   protected[net] var port: Int
   protected[net] var address: InetAddress
   protected[net] var fd: FileDescriptor
-  protected[net] var shutInput  = false
+  protected[net] var shutInput = false
   protected[net] var shutOutput = false
 
   protected[net] def accept(s: SocketImpl): Unit

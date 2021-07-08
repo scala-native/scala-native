@@ -15,10 +15,10 @@ abstract class MessageDigestSpi {
   protected def engineUpdate(input: ByteBuffer): Unit = {
     if (input.hasRemaining()) {
       if (input.hasArray()) {
-        val tmp      = input.array()
-        val offset   = input.arrayOffset()
+        val tmp = input.array()
+        val offset = input.arrayOffset()
         val position = input.position()
-        val limit    = input.limit()
+        val limit = input.limit()
         engineUpdate(tmp, offset + position, limit - position)
         input.position(limit)
       } else {
@@ -35,7 +35,8 @@ abstract class MessageDigestSpi {
     if (len < engineGetDigestLength()) {
       engineReset()
       throw new DigestException(
-        "The value of len parameter is less than the actual digest length.")
+        "The value of len parameter is less than the actual digest length."
+      )
     } else if (offset < 0) {
       engineReset()
       throw new DigestException("Invalid negative offset")
@@ -46,7 +47,8 @@ abstract class MessageDigestSpi {
       val tmp = engineDigest()
       if (len < tmp.length) {
         throw new DigestException(
-          "The value of len parameter is less than the actual digest length.")
+          "The value of len parameter is less than the actual digest length."
+        )
       } else {
         System.arraycopy(tmp, 0, buf, offset, tmp.length)
         tmp.length

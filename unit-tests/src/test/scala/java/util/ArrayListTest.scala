@@ -48,8 +48,8 @@ class ArrayListTest {
   }
 
   @Test def equalsForEmptyLists(): Unit = {
-    val e1  = new ArrayList()
-    val e2  = new ArrayList()
+    val e1 = new ArrayList()
+    val e2 = new ArrayList()
     val ne1 = new ArrayList(Seq(1).toJavaList)
     assertTrue(e1 == e2)
     assertTrue(e2 == e1)
@@ -60,7 +60,7 @@ class ArrayListTest {
   @Test def equalsForNonEmptyLists(): Unit = {
     val ne1a = new ArrayList(Seq(1, 2, 3).toJavaList)
     val ne1b = new ArrayList(Seq(1, 2, 3).toJavaList)
-    val ne2  = new ArrayList(Seq(1).toJavaList)
+    val ne2 = new ArrayList(Seq(1).toJavaList)
     assertTrue(ne1a == ne1b)
     assertTrue(ne1b == ne1a)
     assertTrue(ne1a != ne2)
@@ -158,42 +158,47 @@ class ArrayListTest {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).toJavaList)
     assertTrue(
       (Array(1, 2, 3, 2).map(_.asInstanceOf[AnyRef])) sameElements
-        (al1.toArray()))
+        (al1.toArray())
+    )
   }
 
   @Test def toArrayDefaultInitialCapacityThenAddElements(): Unit = {
     // Issue #1500 discovered by re2s ExecTestSuite.
 
-    val al1          = new ArrayList[String]()
-    val data         = Array("alpha", "omega")
+    val al1 = new ArrayList[String]()
+    val data = Array("alpha", "omega")
     val expectedSize = data.size
 
     for (d <- data) al1.add(d)
 
-    val arr1     = al1.toArray
+    val arr1 = al1.toArray
     val arr1Size = arr1.size
 
-    assertTrue(s"toArray.size: $arr1Size != expected: $expectedSize",
-               arr1Size == expectedSize)
+    assertTrue(
+      s"toArray.size: $arr1Size != expected: $expectedSize",
+      arr1Size == expectedSize
+    )
 
     // Discovering code in re2s ExecTestSuite used .deep not sameElements.
     // Should have same result as sameElements, but via different path.
 
-    assertTrue("a1.toArray.deep != data.deep",
-               Arrays.deepEquals(arr1, data.asInstanceOf[Array[AnyRef]]))
+    assertTrue(
+      "a1.toArray.deep != data.deep",
+      Arrays.deepEquals(arr1, data.asInstanceOf[Array[AnyRef]])
+    )
   }
 
   @Test def toArrayArrayWhenArrayIsShorter(): Unit = {
-    val al1  = new ArrayList[String](Seq("apple", "banana", "cherry").toJavaList)
-    val ain  = Array.empty[String]
+    val al1 = new ArrayList[String](Seq("apple", "banana", "cherry").toJavaList)
+    val ain = Array.empty[String]
     val aout = al1.toArray(ain)
     assertTrue(ain ne aout)
     assertTrue(Array("apple", "banana", "cherry") sameElements aout)
   }
 
   @Test def toArrayArrayWhenArrayIsWithTheSameLengthOrLonger(): Unit = {
-    val al1  = new ArrayList[String](Seq("apple", "banana", "cherry").toJavaList)
-    val ain  = Array.fill(4)("foo")
+    val al1 = new ArrayList[String](Seq("apple", "banana", "cherry").toJavaList)
+    val ain = Array.fill(4)("foo")
     val aout = al1.toArray(ain)
     assertTrue(ain eq aout)
     assertTrue(Array("apple", "banana", "cherry", null) sameElements aout)
@@ -202,8 +207,8 @@ class ArrayListTest {
   @Test def arrayEToArrayTWhenTSubE(): Unit = {
     class SuperClass
     class SubClass extends SuperClass
-    val in   = Seq.fill(2)(new SubClass)
-    val al1  = new ArrayList[SubClass](in.toJavaList)
+    val in = Seq.fill(2)(new SubClass)
+    val al1 = new ArrayList[SubClass](in.toJavaList)
     val aout = al1.toArray(Array.empty[SuperClass])
     assertTrue(in.toArray sameElements aout)
   }
@@ -216,7 +221,8 @@ class ArrayListTest {
     assertTrue(
       al1
         .toArray(Array.empty[NotSuperClass])
-        .isInstanceOf[Array[NotSuperClass]])
+        .isInstanceOf[Array[NotSuperClass]]
+    )
   }
 
   @Test def toArrayNullThrowsNull(): Unit = {
@@ -297,7 +303,7 @@ class ArrayListTest {
   }
 
   @Test def removeRangeFromToIndenticalInvalidIndices(): Unit = {
-    val aList    = new ArrayList[Int](Seq(-175, 24, 7, 44).toJavaList)
+    val aList = new ArrayList[Int](Seq(-175, 24, 7, 44).toJavaList)
     val expected = new ArrayList[Int](Seq(-175, 24, 7, 44).toJavaList) // ibid.
 
     // Yes, the indices are invalid but no exception is expected because
@@ -312,8 +318,10 @@ class ArrayListTest {
   @Test def removeRangeFromToInvalidIndices(): Unit = {
     val aList = new ArrayList[Int](Seq(175, -24, -7, -44).toJavaList)
 
-    assertThrows(classOf[java.lang.ArrayIndexOutOfBoundsException],
-                 aList.removeRange(-1, 2)) // fromIndex < 0
+    assertThrows(
+      classOf[java.lang.ArrayIndexOutOfBoundsException],
+      aList.removeRange(-1, 2)
+    ) // fromIndex < 0
 
     assertThrows(
       classOf[java.lang.ArrayIndexOutOfBoundsException],
@@ -322,15 +330,19 @@ class ArrayListTest {
       aList.removeRange(aList.size, aList.size + 2)
     ) // fromIndex >= _size
 
-    assertThrows(classOf[java.lang.ArrayIndexOutOfBoundsException],
-                 aList.removeRange(0, aList.size + 1)) // toIndex > size
+    assertThrows(
+      classOf[java.lang.ArrayIndexOutOfBoundsException],
+      aList.removeRange(0, aList.size + 1)
+    ) // toIndex > size
 
-    assertThrows(classOf[java.lang.ArrayIndexOutOfBoundsException],
-                 aList.removeRange(2, -1)) // toIndex < fromIndex
+    assertThrows(
+      classOf[java.lang.ArrayIndexOutOfBoundsException],
+      aList.removeRange(2, -1)
+    ) // toIndex < fromIndex
   }
 
   @Test def removeRangeFromToFirstTwoElements(): Unit = {
-    val aList    = new ArrayList[Int](Seq(284, -27, 995, 500, 267, 904).toJavaList)
+    val aList = new ArrayList[Int](Seq(284, -27, 995, 500, 267, 904).toJavaList)
     val expected = new ArrayList[Int](Seq(995, 500, 267, 904).toJavaList)
 
     aList.removeRange(0, 2)
@@ -339,7 +351,7 @@ class ArrayListTest {
   }
 
   @Test def removeRangeFromToFirstTwoElementsAtHead(): Unit = {
-    val aList    = new ArrayList[Int](Seq(284, -27, 995, 500, 267, 904).toJavaList)
+    val aList = new ArrayList[Int](Seq(284, -27, 995, 500, 267, 904).toJavaList)
     val expected = new ArrayList[Int](Seq(995, 500, 267, 904).toJavaList)
 
     aList.removeRange(0, 2)
@@ -348,7 +360,7 @@ class ArrayListTest {
   }
 
   @Test def removeRangeFromToTwoElementsFromMiddle(): Unit = {
-    val aList    = new ArrayList[Int](Seq(7, 9, -1, 20).toJavaList)
+    val aList = new ArrayList[Int](Seq(7, 9, -1, 20).toJavaList)
     val expected = new ArrayList[Int](Seq(7, 20).toJavaList)
 
     aList.removeRange(1, 3)
@@ -357,7 +369,7 @@ class ArrayListTest {
   }
 
   @Test def removeRangeFromToLastTwoElementsAtTail(): Unit = {
-    val aList    = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).toJavaList)
+    val aList = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).toJavaList)
     val expected = new ArrayList[Int](Seq(50, 72, 650, 12, 7).toJavaList)
 
     aList.removeRange(aList.size - 2, aList.size)
@@ -366,7 +378,7 @@ class ArrayListTest {
   }
 
   @Test def removeRangeFromToEntireListAllElements(): Unit = {
-    val aList    = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).toJavaList)
+    val aList = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).toJavaList)
     val expected = new ArrayList[Int](Seq().toJavaList)
 
     aList.removeRange(0, aList.size)
@@ -399,8 +411,10 @@ class ArrayListTest {
     val expected = "[1, 2, 3, 2]"
 
     val result = al.toString
-    assertTrue(s"result: ${result} != expected: ${expected}",
-               result == expected)
+    assertTrue(
+      s"result: ${result} != expected: ${expected}",
+      result == expected
+    )
   }
 
 }

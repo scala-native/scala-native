@@ -8,9 +8,9 @@ import scalanative.nir._
 import scalanative.linker._
 
 trait Intrinsics { self: Interflow =>
-  val arrayApplyIntrinsics  = Lower.arrayApply.values.toSet[Global]
+  val arrayApplyIntrinsics = Lower.arrayApply.values.toSet[Global]
   val arrayUpdateIntrinsics = Lower.arrayUpdate.values.toSet[Global]
-  val arrayLengthIntrinsic  = Lower.arrayLength
+  val arrayLengthIntrinsic = Lower.arrayLength
   val arrayIntrinsics =
     arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
 
@@ -31,16 +31,18 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Rt.Runtime.name, Rt.ToRawPtrSig)
   ) ++ arrayIntrinsics
 
-  def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(
-      implicit state: State,
-      origPos: Position): Option[Val] = {
+  def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(implicit
+      state: State,
+      origPos: Position
+  ): Option[Val] = {
     val Global.Member(_, sig) = name
 
     val args = rawArgs.map(eval)
 
     def emit =
       state.emit(
-        Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_))))
+        Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_)))
+      )
 
     sig match {
       case Rt.GetClassSig =>
@@ -70,9 +72,10 @@ trait Intrinsics { self: Interflow =>
         }
       case Rt.IsAssignableFromSig =>
         args match {
-          case Seq(Val.Global(ScopeRef(linfo), lty),
-                   Val.Global(ScopeRef(rinfo), rty))
-              if lty == Rt.Class && rty == Rt.Class =>
+          case Seq(
+                Val.Global(ScopeRef(linfo), lty),
+                Val.Global(ScopeRef(rinfo), rty)
+              ) if lty == Rt.Class && rty == Rt.Class =>
             Some(Val.Bool(rinfo.is(linfo)))
           case _ =>
             None
@@ -141,11 +144,11 @@ trait Intrinsics { self: Interflow =>
             None
         }
       case _ if arrayApplyIntrinsics.contains(name) =>
-        val Seq(arr, idx)            = rawArgs
+        val Seq(arr, idx) = rawArgs
         val Type.Function(_, elemty) = ty
         Some(eval(Op.Arrayload(elemty, arr, idx)))
       case _ if arrayUpdateIntrinsics.contains(name) =>
-        val Seq(arr, idx, value)                = rawArgs
+        val Seq(arr, idx, value) = rawArgs
         val Type.Function(Seq(_, _, elemty), _) = ty
         Some(eval(Op.Arraystore(elemty, arr, idx, value)))
       case _ if name == arrayLengthIntrinsic =>

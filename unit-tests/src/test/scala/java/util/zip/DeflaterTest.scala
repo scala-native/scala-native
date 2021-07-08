@@ -9,7 +9,7 @@ class DeflaterTest {
 
   @Test def deflaterSetInputDoesNotThrowAnException(): Unit = {
     val deflater = new Deflater()
-    val bytes    = Array[Byte](1, 2, 3)
+    val bytes = Array[Byte](1, 2, 3)
     deflater.setInput(bytes, 0, 3)
   }
 
@@ -20,7 +20,7 @@ class DeflaterTest {
 
   @Test def deflaterDoesNotNeedInputAfterInputHasBeenSet(): Unit = {
     val deflater = new Deflater()
-    val bytes    = Array[Byte](1, 2, 3)
+    val bytes = Array[Byte](1, 2, 3)
     assertTrue(deflater.needsInput())
     deflater.setInput(bytes)
     assertTrue(!deflater.needsInput())
@@ -31,7 +31,7 @@ class DeflaterTest {
     val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
       0, 0, 6, 120, 4, 1)
     val deflater = new Deflater()
-    val bos      = new ByteArrayOutputStream()
+    val bos = new ByteArrayOutputStream()
     deflater.setInput(bytes)
     deflater.finish()
 
@@ -53,12 +53,12 @@ class DeflaterTest {
     val expected = Array[Byte](120, -38, 99, 100, 28, 5, -93, 96, 20, -116, 84,
       0, 0, 6, 120, 4, 1)
     val deflater = new Deflater(Deflater.BEST_COMPRESSION)
-    val bos      = new ByteArrayOutputStream()
+    val bos = new ByteArrayOutputStream()
     deflater.setInput(bytes)
     deflater.finish()
 
     val buf = new Array[Byte](1024)
-    var h   = 0
+    var h = 0
     while (!deflater.finished()) {
       val count = deflater.deflate(buf)
       bos.write(buf, 0, count)
@@ -78,12 +78,12 @@ class DeflaterTest {
     val expected = Array[Byte](120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84,
       0, 0, 6, 120, 4, 1)
     val deflater = new Deflater()
-    val bos      = new ByteArrayOutputStream()
+    val bos = new ByteArrayOutputStream()
     deflater.setInput(bytes)
     deflater.finish()
 
     val buf = new Array[Byte](5)
-    var h   = 0
+    var h = 0
     while (!deflater.finished()) {
       val count = deflater.deflate(buf)
       bos.write(buf, 0, count)

@@ -15,6 +15,6 @@ class LongFloatPrimitiveTest {
 
   @Test def scalaBugIssue11253(): Unit = {
     assertEquals(noinlineLong % noinlineFloat, 2.3242621f, 0.0f)
-    assertEquals(inlineLong   % inlineFloat, 2.3242621f, 0.0f)
+    assertEquals(inlineLong % inlineFloat, 2.3242621f, 0.0f)
   }
 }

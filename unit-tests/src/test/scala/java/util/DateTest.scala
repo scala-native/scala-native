@@ -5,13 +5,13 @@ import org.junit.Assert._
 
 class DateTest {
   // now : java.util.Date = Fri Mar 31 14:47:44 EDT 2017
-  val nowUt    = 1490986064740L
+  val nowUt = 1490986064740L
   val beforeUt = 1490986059300L
-  val afterUt  = 1490986090620L
-  val now      = new Date(nowUt)
-  val before   = new Date(beforeUt)
-  val after    = new Date(afterUt)
-  val now2     = new Date(nowUt)
+  val afterUt = 1490986090620L
+  val now = new Date(nowUt)
+  val before = new Date(beforeUt)
+  val after = new Date(afterUt)
+  val now2 = new Date(nowUt)
 
   @Test def testAfter(): Unit = {
     assertTrue(after.after(now))
@@ -57,7 +57,9 @@ class DateTest {
     val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
       "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[2-3]\\d"
 
-    assertTrue(s"""Result "${result}" does not match regex "${expected}"""",
-               result.matches(expected))
+    assertTrue(
+      s"""Result "${result}" does not match regex "${expected}"""",
+      result.matches(expected)
+    )
   }
 }

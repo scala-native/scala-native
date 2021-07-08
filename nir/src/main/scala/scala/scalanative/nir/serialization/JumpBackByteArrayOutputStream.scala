@@ -2,20 +2,19 @@ package scala.scalanative.nir.serialization
 
 // ported from Scala.js
 
-/** A ByteArrayOutput stream that allows to jump back to a given
- *  position and complete some bytes. Methods must be called in the
- *  following one of two orders:
- *  - [[markJump]]
- *  - [[jumpBack]]
- *  - [[continue]]
- *  or
- *  - [[jumpTo(pos)]]
- *  - [[continue]]
+/** A ByteArrayOutput stream that allows to jump back to a given position and
+ *  complete some bytes. Methods must be called in the following one of two
+ *  orders:
+ *    - [[markJump]]
+ *    - [[jumpBack]]
+ *    - [[continue]] or
+ *    - [[jumpTo(pos)]]
+ *    - [[continue]]
  */
 private[serialization] class JumpBackByteArrayOutputStream
     extends java.io.ByteArrayOutputStream {
   protected var jumpBackPos: Int = -1
-  protected var headPos: Int     = -1
+  protected var headPos: Int = -1
 
   /** Marks the current location for a jumpback */
   def markJump(): Unit = {

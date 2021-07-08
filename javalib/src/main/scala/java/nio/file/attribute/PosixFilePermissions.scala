@@ -3,17 +3,18 @@ package java.nio.file.attribute
 import java.util.{HashSet, Set}
 
 object PosixFilePermissions {
-  def asFileAttribute(perms: Set[PosixFilePermission])
-      : FileAttribute[Set[PosixFilePermission]] =
+  def asFileAttribute(
+      perms: Set[PosixFilePermission]
+  ): FileAttribute[Set[PosixFilePermission]] =
     new FileAttribute[Set[PosixFilePermission]] {
-      override def name(): String                    = "posix:permissions"
+      override def name(): String = "posix:permissions"
       override def value(): Set[PosixFilePermission] = perms
     }
 
   def fromString(perms: String): Set[PosixFilePermission] =
     if (perms.length == 9) {
       val set = new HashSet[PosixFilePermission]()
-      var i   = 0
+      var i = 0
       while (i < 3) {
         if (isR(perms, i)) set.add(PosixFilePermission.values()(3 * i))
         if (isW(perms, i)) set.add(PosixFilePermission.values()(3 * i + 1))

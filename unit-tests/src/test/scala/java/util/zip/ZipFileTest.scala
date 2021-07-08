@@ -15,34 +15,38 @@ class ZipFileTest {
 
   @Test def constructorFile(): Unit = {
     val file = getFile(zipFile)
-    val zip  = new ZipFile(file)
+    val zip = new ZipFile(file)
     assertTrue(file.exists())
     zip.close()
   }
 
   @Test def constructorFileInt(): Unit = {
     val file = getFile(zipFile)
-    val zip  = new ZipFile(file, ZipFile.OPEN_DELETE | ZipFile.OPEN_READ)
+    val zip = new ZipFile(file, ZipFile.OPEN_DELETE | ZipFile.OPEN_READ)
     zip.close()
     assertTrue(!file.exists())
 
-    assertThrows(classOf[IllegalArgumentException], {
-      val error = 3
-      new ZipFile(file, error)
-    })
+    assertThrows(
+      classOf[IllegalArgumentException], {
+        val error = 3
+        new ZipFile(file, error)
+      }
+    )
   }
 
   @Test def close(): Unit = {
     val zip = getZipFile(zipFile)
     zip.close()
-    assertThrows(classOf[IllegalStateException],
-                 zip.getInputStream(zip.getEntry("ztest/file1.txt")))
+    assertThrows(
+      classOf[IllegalStateException],
+      zip.getInputStream(zip.getEntry("ztest/file1.txt"))
+    )
   }
 
   @Test def entries(): Unit = {
-    val zip    = getZipFile(zipFile)
+    val zip = getZipFile(zipFile)
     val enumer = zip.entries()
-    var c      = 0
+    var c = 0
     while (enumer.hasMoreElements()) {
       c += 1
       enumer.nextElement()
@@ -55,14 +59,14 @@ class ZipFileTest {
   }
 
   @Test def getEntryString(): Unit = {
-    val zip    = getZipFile(zipFile)
+    val zip = getZipFile(zipFile)
     var zentry = zip.getEntry("File1.txt")
     assertTrue(zentry != null)
 
     zentry = zip.getEntry("testdir1/File1.txt")
     assertTrue(zentry != null)
 
-    var r               = 0
+    var r = 0
     var in: InputStream = null
     zentry = zip.getEntry("testdir1/")
     assertTrue(zentry != null)
@@ -88,7 +92,7 @@ class ZipFileTest {
   }
 
   @Test def getEntryStringThrowsAnExceptionWhenTheZipIsClosed(): Unit = {
-    val zip    = getZipFile(zipFile)
+    val zip = getZipFile(zipFile)
     val zentry = zip.getEntry("File1.txt")
     assertTrue(zentry != null)
 
@@ -97,14 +101,14 @@ class ZipFileTest {
   }
 
   @Test def getInputStreamZipEntry(): Unit = {
-    val zip             = getZipFile(zipFile)
+    val zip = getZipFile(zipFile)
     var is: InputStream = null
 
     try {
       val zentry = zip.getEntry("File1.txt")
       is = zip.getInputStream(zentry)
       val rbuf = new Array[Byte](1000)
-      var r    = zentry.getSize().toInt
+      var r = zentry.getSize().toInt
       is.read(rbuf, 0, r)
       assertTrue(new String(rbuf, 0, r, "UTF-8") == "This is text")
     } finally {

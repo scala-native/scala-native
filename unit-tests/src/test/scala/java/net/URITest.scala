@@ -18,13 +18,15 @@ class URITest {
       query: String = null,
       scheme: String = null,
       userInfo: String = null,
-      schemeSpecificPart: String = null)(rawAuthority: String = authority,
-                                         rawFragment: String = fragment,
-                                         rawPath: String = path,
-                                         rawQuery: String = query,
-                                         rawUserInfo: String = userInfo,
-                                         rawSchemeSpecificPart: String =
-                                           schemeSpecificPart): Unit = {
+      schemeSpecificPart: String = null
+  )(
+      rawAuthority: String = authority,
+      rawFragment: String = fragment,
+      rawPath: String = path,
+      rawQuery: String = query,
+      rawUserInfo: String = userInfo,
+      rawSchemeSpecificPart: String = schemeSpecificPart
+  ): Unit = {
 
     assertEquals(authority, uri.getAuthority())
     assertEquals(fragment, uri.getFragment())
@@ -51,15 +53,17 @@ class URITest {
       host = "java.sun.com",
       path = "/j2se/1.3/",
       authority = "java.sun.com",
-      schemeSpecificPart = "//java.sun.com/j2se/1.3/")()
+      schemeSpecificPart = "//java.sun.com/j2se/1.3/"
+    )()
   }
 
   @Test def shouldParseAbsoluteURIsWithEmptyPath(): Unit = {
-    expectURI(new URI("http://foo:bar"), true, false)(authority = "foo:bar",
-                                                      path = "",
-                                                      scheme = "http",
-                                                      schemeSpecificPart =
-                                                        "//foo:bar")()
+    expectURI(new URI("http://foo:bar"), true, false)(
+      authority = "foo:bar",
+      path = "",
+      scheme = "http",
+      schemeSpecificPart = "//foo:bar"
+    )()
   }
 
   @Test def shouldParseAbsoluteURIsWithIPv6(): Unit = {
@@ -76,45 +80,56 @@ class URITest {
   }
 
   @Test def shouldParseAbsoluteURIsWithoutAuthority(): Unit = {
-    expectURI(new URI("file:/~/calendar"), true, false)(scheme = "file",
-                                                        path = "/~/calendar",
-                                                        schemeSpecificPart =
-                                                          "/~/calendar")()
+    expectURI(new URI("file:/~/calendar"), true, false)(
+      scheme = "file",
+      path = "/~/calendar",
+      schemeSpecificPart = "/~/calendar"
+    )()
   }
 
   @Test def shouldParseAbsoluteURIswithEmptyAuthority(): Unit = {
-    expectURI(new URI("file:///~/calendar"), true, false)(scheme = "file",
-                                                          path = "/~/calendar",
-                                                          schemeSpecificPart =
-                                                            "///~/calendar")()
+    expectURI(new URI("file:///~/calendar"), true, false)(
+      scheme = "file",
+      path = "/~/calendar",
+      schemeSpecificPart = "///~/calendar"
+    )()
   }
 
   @Test def shouldParseOpaqueURIs(): Unit = {
     expectURI(new URI("mailto:java-net@java.sun.com"), true, true)(
       scheme = "mailto",
-      schemeSpecificPart = "java-net@java.sun.com")()
+      schemeSpecificPart = "java-net@java.sun.com"
+    )()
 
-    expectURI(new URI("news:comp.lang.java"), true, true)(scheme = "news",
-                                                          schemeSpecificPart =
-                                                            "comp.lang.java")()
+    expectURI(new URI("news:comp.lang.java"), true, true)(
+      scheme = "news",
+      schemeSpecificPart = "comp.lang.java"
+    )()
 
-    expectURI(new URI("urn:isbn:096139210x"), true, true)(scheme = "urn",
-                                                          schemeSpecificPart =
-                                                            "isbn:096139210x")()
+    expectURI(new URI("urn:isbn:096139210x"), true, true)(
+      scheme = "urn",
+      schemeSpecificPart = "isbn:096139210x"
+    )()
   }
 
   @Test def shouldParseRelativeURIs(): Unit = {
-    expectURI(new URI("docs/guide/collections/designfaq.html#28"),
-              false,
-              false)(path = "docs/guide/collections/designfaq.html",
-                     fragment = "28",
-                     schemeSpecificPart =
-                       "docs/guide/collections/designfaq.html")()
-    expectURI(new URI("../../../demo/jfc/SwingSet2/src/SwingSet2.java"),
-              false,
-              false)(path = "../../../demo/jfc/SwingSet2/src/SwingSet2.java",
-                     schemeSpecificPart =
-                       "../../../demo/jfc/SwingSet2/src/SwingSet2.java")()
+    expectURI(
+      new URI("docs/guide/collections/designfaq.html#28"),
+      false,
+      false
+    )(
+      path = "docs/guide/collections/designfaq.html",
+      fragment = "28",
+      schemeSpecificPart = "docs/guide/collections/designfaq.html"
+    )()
+    expectURI(
+      new URI("../../../demo/jfc/SwingSet2/src/SwingSet2.java"),
+      false,
+      false
+    )(
+      path = "../../../demo/jfc/SwingSet2/src/SwingSet2.java",
+      schemeSpecificPart = "../../../demo/jfc/SwingSet2/src/SwingSet2.java"
+    )()
   }
 
   @Test def shouldFailOnBadURIs(): Unit = {
@@ -125,11 +140,11 @@ class URITest {
       // octet form, should throw an
       // exception
       "http://host/a%path#frag", // invalid escape sequence in path
-      "http://host/a%#frag",     // incomplete escape sequence in path
-      "http://host#a frag",      // space char in fragment, not in
+      "http://host/a%#frag", // incomplete escape sequence in path
+      "http://host#a frag", // space char in fragment, not in
       // escaped octet form, no path
       "http://host/a#fr#ag", // illegal char in fragment
-      "http:///path#fr%ag",  // invalid escape sequence in fragment,
+      "http:///path#fr%ag", // invalid escape sequence in fragment,
       // with no host
       "http://host/path#frag%", // incomplete escape sequence in
       // fragment
@@ -144,8 +159,8 @@ class URITest {
       "http://user@[3ffe:2x00:100:7031::1]:80/test", // malformed
       // IPv6 authority
       "http://[ipv6address]/apath#frag", // malformed ipv6 address
-      "http://[ipv6address/apath#frag",  // malformed ipv6 address
-      "http://ipv6address]/apath#frag",  // illegal char in host name
+      "http://[ipv6address/apath#frag", // malformed ipv6 address
+      "http://ipv6address]/apath#frag", // illegal char in host name
       "http://ipv6[address/apath#frag",
       "http://ipv6addr]ess/apath#frag",
       "http://ipv6address[]/apath#frag",
@@ -154,14 +169,14 @@ class URITest {
       "http://host name/path", // illegal
       // char in authority
       "http://host^name#fragment", // illegal char in authority
-      "telnet://us er@hostname/",  // illegal char in authority
+      "telnet://us er@hostname/", // illegal char in authority
       // missing components
-      "//",         // Authority expected
+      "//", // Authority expected
       "ascheme://", // Authority expected
-      "ascheme:",   // Scheme-specific part expected
+      "ascheme:", // Scheme-specific part expected
       // scheme validation
-      "a scheme://reg/",   // illegal char
-      "1scheme://reg/",    // non alpha char as 1st char
+      "a scheme://reg/", // illegal char
+      "1scheme://reg/", // non alpha char as 1st char
       "asche\u00dfme:ssp", // unicode char , not USASCII
       "asc%20heme:ssp"
     )
@@ -175,25 +190,25 @@ class URITest {
     val uris = Array(
       "http://user@www.google.com:45/search?q=helpinfo#somefragment",
       // http with authority, query and fragment
-      "ftp://ftp.is.co.za/rfc/rfc1808.txt",                                   // ftp
+      "ftp://ftp.is.co.za/rfc/rfc1808.txt", // ftp
       "gopher://spinaltap.micro.umn.edu/00/Weather/California/Los%20Angeles", // gopher
-      "mailto:mduerst@ifi.unizh.ch",                                          // mailto
-      "news:comp.infosystems.www.servers.unix",                               // news
-      "telnet://melvyl.ucop.edu/",                                            // telnet
-      "http://123.24.17.98/test",                                             // IPv4 authority
-      "http://www.google.com:80/test",                                        // domain name authority
+      "mailto:mduerst@ifi.unizh.ch", // mailto
+      "news:comp.infosystems.www.servers.unix", // news
+      "telnet://melvyl.ucop.edu/", // telnet
+      "http://123.24.17.98/test", // IPv4 authority
+      "http://www.google.com:80/test", // domain name authority
       "http://joe@[3ffe:2a00:100:7031::1]:80/test",
       // IPv6 authority, with userinfo and port
-      "/relative",           // relative starting with /
-      "//relative",          // relative starting with //
-      "relative",            // relative with no /
-      "#fragment",           // relative just with fragment
+      "/relative", // relative starting with /
+      "//relative", // relative starting with //
+      "relative", // relative with no /
+      "#fragment", // relative just with fragment
       "http://user@host:80", // UI, host,port
-      "http://user@host",    // ui, host
-      "http://host",         // host
-      "http://host:80",      // host,port
-      "http://joe@:80",      // ui, port (becomes registry-based)
-      "file:///foo/bar",     // empty authority, non empty path
+      "http://user@host", // ui, host
+      "http://host", // host
+      "http://host:80", // host,port
+      "http://joe@:80", // ui, port (becomes registry-based)
+      "file:///foo/bar", // empty authority, non empty path
       "ht?tp://hoe@host:80", // miscellaneous tests
       "mai/lto:hey?joe#man",
       "http://host/a%20path#frag",

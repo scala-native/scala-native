@@ -18,26 +18,38 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsInvalidFlag(): Unit = {
-    assertThrows(classOf[IllegalArgumentException],
-                 Pattern.compile(":", 0xA0000000))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Pattern.compile(":", 0xa0000000)
+    )
   }
 
   @Test def compileRegexFlagsUnsupportedFlags(): Unit = {
 
-    assertThrows(classOf[UnsupportedOperationException],
-                 Pattern.compile("m", Pattern.CANON_EQ))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      Pattern.compile("m", Pattern.CANON_EQ)
+    )
 
-    assertThrows(classOf[UnsupportedOperationException],
-                 Pattern.compile("n", Pattern.COMMENTS))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      Pattern.compile("n", Pattern.COMMENTS)
+    )
 
-    assertThrows(classOf[UnsupportedOperationException],
-                 Pattern.compile("o", Pattern.UNICODE_CASE))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      Pattern.compile("o", Pattern.UNICODE_CASE)
+    )
 
-    assertThrows(classOf[UnsupportedOperationException],
-                 Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS)
+    )
 
-    assertThrows(classOf[UnsupportedOperationException],
-                 Pattern.compile("q", Pattern.UNIX_LINES))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      Pattern.compile("q", Pattern.UNIX_LINES)
+    )
   }
 
   @Test def exerciseMatcherMethodsBeforeUsingThem(): Unit = {
@@ -47,14 +59,14 @@ class PatternTest {
     // Check that at least the simple case of using them with no
     // Pattern#compile flags works.  If that does not work, every test
     // using these methods is suspect.
-    val needle   = "needle"
+    val needle = "needle"
     val haystack = "haystack & needle"
-    val m        = Pattern.compile(needle).matcher(haystack)
+    val m = Pattern.compile(needle).matcher(haystack)
     assertTrue(s"should have found ${needle} in ${haystack}", m.find())
   }
 
   @Test def compileRegexFlagsPatternCaseInsensitive(): Unit = {
-    val needle   = "hubble telescope"
+    val needle = "hubble telescope"
     val haystack = "Hubble Telescope"
     val m = Pattern
       .compile(needle, Pattern.CASE_INSENSITIVE)
@@ -63,7 +75,7 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsPatternCaseDotall(): Unit = {
-    val needle   = "Four score.*Units"
+    val needle = "Four score.*Units"
     val haystack = "Four score and seven years ago\nOur Parental Units"
 
     val m = Pattern.compile(needle).matcher(haystack)
@@ -74,7 +86,7 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsPatternLiteral(): Unit = {
-    val needle   = "(a)(b$)?(b)?"
+    val needle = "(a)(b$)?(b)?"
     val haystack = "(a)(b$)?(b)?"
     val m = Pattern
       .compile(needle, Pattern.LITERAL)
@@ -83,7 +95,7 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsCaseInsensitiveLiteral(): Unit = {
-    val needle   = "(a)(b$)?(b)?"
+    val needle = "(a)(b$)?(b)?"
     val haystack = "(a)(B$)?(b)?"
     val m = Pattern
       .compile(needle, Pattern.CASE_INSENSITIVE | Pattern.LITERAL)
@@ -93,14 +105,16 @@ class PatternTest {
 
   @Test def testAsPredicate(): Unit = {
 
-    val needle   = "needle"
+    val needle = "needle"
     val haystack = needle
-    val p        = Pattern.compile(needle)
+    val p = Pattern.compile(needle)
 
     val pred = p.asPredicate()
 
-    assertTrue(s"should have found '${needle}' in '${haystack}'",
-               pred.test(haystack))
+    assertTrue(
+      s"should have found '${needle}' in '${haystack}'",
+      pred.test(haystack)
+    )
 
     // Let's get complicated to show that asPredicate() uses
     // full 'matches' not partial 'find'.
@@ -111,22 +125,26 @@ class PatternTest {
     // '\Z' is currently unsupported in Scala Native.
 
     val needle2 = "\\AL\\w\\w+\\z"
-    val p2      = Pattern.compile(needle2)
-    val pred2   = p2.asPredicate()
+    val p2 = Pattern.compile(needle2)
+    val pred2 = p2.asPredicate()
 
     val shouldNotFind = Array("L9", "Life ", "LovePotion#9", "funny")
 
-    assertTrue(s"should not have found '${needle2}' in" +
-                 s" '${shouldNotFind.toString}'",
-               shouldNotFind.filter(pred2.test).length == 0)
+    assertTrue(
+      s"should not have found '${needle2}' in" +
+        s" '${shouldNotFind.toString}'",
+      shouldNotFind.filter(pred2.test).length == 0
+    )
 
     val shouldFind = Array("Life", "Liberty", "Love")
 
     val expectedLength = shouldFind.length
-    val resultLength   = shouldFind.filter(pred2.test).length
+    val resultLength = shouldFind.filter(pred2.test).length
 
-    assertTrue(s"number found: ${resultLength} != expected: ${expectedLength}",
-               resultLength == expectedLength)
+    assertTrue(
+      s"number found: ${resultLength} != expected: ${expectedLength}",
+      resultLength == expectedLength
+    )
   }
 
   @Test def splitSplitN(): Unit = {
@@ -140,10 +158,14 @@ class PatternTest {
 
     val p2 = Pattern.compile("o")
     assertTrue(s"A5", p2.split(input).toList == List("b", "", ":and:f"))
-    assertTrue(s"A6",
-               p2.split(input, 5).toList == List("b", "", ":and:f", "", ""))
-    assertTrue(s"A7",
-               p2.split(input, -2).toList == List("b", "", ":and:f", "", ""))
+    assertTrue(
+      s"A6",
+      p2.split(input, 5).toList == List("b", "", ":and:f", "", "")
+    )
+    assertTrue(
+      s"A7",
+      p2.split(input, -2).toList == List("b", "", ":and:f", "", "")
+    )
     assertTrue(s"A8", p2.split(input, 0).toList == List("b", "", ":and:f"))
   }
 
@@ -152,9 +174,11 @@ class PatternTest {
 
     val p1 = Pattern.compile(":")
 
-    essaySplitAsStream(p1.splitAsStream(input),
-                       Array("boo", "and", "foo"),
-                       "A_1")
+    essaySplitAsStream(
+      p1.splitAsStream(input),
+      Array("boo", "and", "foo"),
+      "A_1"
+    )
 
     val p2 = Pattern.compile("o")
 
@@ -178,10 +202,10 @@ class PatternTest {
     // hex
     pass("\\x10", "\u0010")
 
-    pass("\\t", "\t")     // tab
-    pass("\\n", "\n")     // newline
-    pass("\\r", "\r")     // carriage-return
-    pass("\\f", "\f")     // form-feed
+    pass("\\t", "\t") // tab
+    pass("\\n", "\n") // newline
+    pass("\\r", "\r") // carriage-return
+    pass("\\f", "\f") // form-feed
     pass("\\a", "\u0007") // alert (bell)
   }
 
@@ -201,7 +225,7 @@ class PatternTest {
   @Test def notSupportedCharacterClasses(): Unit = {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
     pass("\\uBEEF", "\uBEEF")
-    pass("\\e", "\u001B")  // escape
+    pass("\\e", "\u001B") // escape
     pass("\\cZ", s"\\x1A") // Control-Z
   }
 
@@ -294,36 +318,40 @@ class PatternTest {
   @Ignore("no issue")
   @Test def boundaryMatchersRegion(): Unit = {
     locally {
-      val needle   = "^a"
+      val needle = "^a"
       val haystack = "01234abcabc"
 
       val m = Pattern.compile(needle).matcher(haystack)
 
-      val regionBegin  = 5
-      val regionEnd    = 9
+      val regionBegin = 5
+      val regionEnd = 9
       val regionString = haystack.slice(regionBegin, regionEnd)
 
       m.region(5, 9)
 
       assertTrue(s"should have found ${needle} in ${regionString}", m.find())
 
-      val foundPos    = m.start
+      val foundPos = m.start
       val expectedPos = 5
 
-      assertTrue(s"found position: ${foundPos} != expected: ${expectedPos}",
-                 foundPos == expectedPos)
+      assertTrue(
+        s"found position: ${foundPos} != expected: ${expectedPos}",
+        foundPos == expectedPos
+      )
     }
 
     locally {
-      val needle   = "^a"
+      val needle = "^a"
       val haystack = "01234abcabc"
-      val m        = Pattern.compile(needle).matcher(haystack)
+      val m = Pattern.compile(needle).matcher(haystack)
 
       m.region(4, 9)
 
-      assertFalse(s"should not have found ${needle} at " +
-                    s"position: ${m.start} in ${haystack}",
-                  m.find())
+      assertFalse(
+        s"should not have found ${needle} at " +
+          s"position: ${m.start} in ${haystack}",
+        m.find()
+      )
     }
   }
 
@@ -532,7 +560,7 @@ class PatternTest {
   }
 
   @Test def groupNotContainingMultibyteCharacters(): Unit = {
-    val pat   = "abcdef(ghi)jkl"
+    val pat = "abcdef(ghi)jkl"
     val input = "abcdefghijkl"
 
     val m = Pattern.compile(pat).matcher(input)
@@ -544,9 +572,9 @@ class PatternTest {
   }
 
   @Test def groupContainingMultibyteCharacters(): Unit = {
-    val pat   = "abcあいう(えお)def"
+    val pat = "abcあいう(えお)def"
     val input = "abcあいうえおdef"
-    val m     = Pattern.compile(pat).matcher(input)
+    val m = Pattern.compile(pat).matcher(input)
     assertTrue(m.matches())
     assertEquals(input, m.group(0))
     assertEquals("えお", m.group(1))
@@ -558,13 +586,13 @@ class PatternTest {
     // pick a newer pattern (likely in cache).
     locally {
       val pat = pats(198)
-      val m   = pat.matcher("198")
+      val m = pat.matcher("198")
       assertTrue(m.matches())
     }
     // pick an older pattern (likely out of cache).
     locally {
       val pat = pats(1)
-      val m   = pat.matcher("1")
+      val m = pat.matcher("1")
       assertTrue(m.matches())
     }
   }
@@ -573,13 +601,14 @@ class PatternTest {
     assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile("foo\\L"))(
       e => {
         e.getDescription == "Illegal/unsupported escape sequence" &&
-          e.getIndex == 4 &&
-          e.getPattern == "foo\\L" &&
-          e.getMessage ==
-            """|Illegal/unsupported escape sequence near index 4
+        e.getIndex == 4 &&
+        e.getPattern == "foo\\L" &&
+        e.getMessage ==
+          """|Illegal/unsupported escape sequence near index 4
              |foo\L
              |    ^""".stripMargin
-      })
+      }
+    )
 
     /// Ordered alphabetical by description (second arg).
     /// Helps ensuring that each scalanative/regex Parser description
@@ -621,9 +650,10 @@ class PatternTest {
     assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile(pattern))(
       e => {
         (e.getDescription == description) &&
-          (e.getPattern == pattern) &&
-          (e.getIndex == index)
-      })
+        (e.getPattern == pattern) &&
+        (e.getIndex == index)
+      }
+    )
   }
 
   private def pass(pattern: String, input: String): Unit =
@@ -632,18 +662,22 @@ class PatternTest {
   private def fail(pattern: String, input: String): Unit =
     matches(pattern, input, pass = false)
 
-  private def passAndFail(pattern: String,
-                          passInput: String,
-                          failInput: String): Unit = {
+  private def passAndFail(
+      pattern: String,
+      passInput: String,
+      failInput: String
+  ): Unit = {
     pass(pattern, passInput)
     fail(pattern, failInput)
   }
 
-  private def assertRegex(pass: Boolean,
-                          ret: Boolean,
-                          mid: String,
-                          pattern: String,
-                          input: String): Unit = {
+  private def assertRegex(
+      pass: Boolean,
+      ret: Boolean,
+      mid: String,
+      pattern: String,
+      input: String
+  ): Unit = {
     val ret0 =
       if (pass) ret
       else !ret
@@ -662,9 +696,11 @@ class PatternTest {
     assertRegex(pass, ret, mid, pattern, input)
   }
 
-  private def find(pattern: String,
-                   input: String,
-                   pass: Boolean = true): Unit = {
+  private def find(
+      pattern: String,
+      input: String,
+      pass: Boolean = true
+  ): Unit = {
     val ret = Pattern.compile(pattern).matcher(input).find()
 
     val mid =
@@ -674,19 +710,25 @@ class PatternTest {
     assertRegex(pass, ret, mid, pattern, input)
   }
 
-  private def essaySplitAsStream(st: jStream[String],
-                                 expected: Array[String],
-                                 marker: String): Unit = {
+  private def essaySplitAsStream(
+      st: jStream[String],
+      expected: Array[String],
+      marker: String
+  ): Unit = {
 
     val result = st.iterator.toScalaSeq.toArray
 
-    assertTrue(s"${marker} result.size: ${result.size} != ${expected.size}",
-               result.size == expected.size)
+    assertTrue(
+      s"${marker} result.size: ${result.size} != ${expected.size}",
+      result.size == expected.size
+    )
 
     for (i <- 0 until result.size) {
-      assertTrue(s"${marker} result(${i}): ${result(i)} != " +
-                   s"expected: ${expected(i)}",
-                 result(i) == expected(i))
+      assertTrue(
+        s"${marker} result(${i}): ${result(i)} != " +
+          s"expected: ${expected(i)}",
+        result(i) == expected(i)
+      )
     }
   }
 

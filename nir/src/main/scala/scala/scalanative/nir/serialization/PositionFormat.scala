@@ -18,18 +18,18 @@ private[serialization] object PositionFormat {
    * Underscores are irrelevant and must be set to 0.
    */
 
-  final val Format1Mask      = 0x01
+  final val Format1Mask = 0x01
   final val Format1MaskValue = 0x00
-  final val Format1Shift     = 1
+  final val Format1Shift = 1
 
-  final val Format2Mask      = 0x03
+  final val Format2Mask = 0x03
   final val Format2MaskValue = 0x01
-  final val Format2Shift     = 2
+  final val Format2Shift = 2
 
-  final val Format3Mask      = 0x0f
+  final val Format3Mask = 0x0f
   final val Format3MaskValue = 0x03
 
-  final val FormatFullMask      = 0x0f
+  final val FormatFullMask = 0x0f
   final val FormatFullMaskValue = 0x7
 
   final val FormatNoPositionValue = -1

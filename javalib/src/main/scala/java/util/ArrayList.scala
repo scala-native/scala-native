@@ -7,9 +7,10 @@ import java.io.Serializable
 // We use an Array[Any] as an underlying storage and box/unbox AnyVals when needed.
 // inner: The underlying array
 // _size: Keeps the track of the effective size of the underlying array. a.k.a. end index exclusive
-class ArrayList[E] private (private[this] var inner: Array[Any],
-                            private[this] var _size: Int)
-    extends AbstractList[E]
+class ArrayList[E] private (
+    private[this] var inner: Array[Any],
+    private[this] var _size: Int
+) extends AbstractList[E]
     with List[E]
     with RandomAccess
     with Cloneable
@@ -19,16 +20,19 @@ class ArrayList[E] private (private[this] var inner: Array[Any],
       {
         if (initialCapacity < 0) {
           throw new IllegalArgumentException(
-            "Illegal Capacity: " + initialCapacity)
+            "Illegal Capacity: " + initialCapacity
+          )
         }
         val initialArr =
           Array.ofDim[Any](initialCollection.size().max(initialCapacity))
 
-        System.arraycopy(initialCollection.toArray(),
-                         0,
-                         initialArr,
-                         0,
-                         initialCollection.size())
+        System.arraycopy(
+          initialCollection.toArray(),
+          0,
+          initialArr,
+          0,
+          initialCollection.size()
+        )
         initialArr
       },
       initialCollection.size()

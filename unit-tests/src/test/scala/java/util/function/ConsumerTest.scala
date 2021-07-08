@@ -15,7 +15,7 @@ class ConsumerTest {
   @Test def accept(): Unit = {
     // Side-effects
     var current: Int = 0
-    val add          = makeConsumer[Int](num => current += num)
+    val add = makeConsumer[Int](num => current += num)
 
     add.accept(1)
     assertTrue(current == 1)
@@ -26,9 +26,9 @@ class ConsumerTest {
 
   @Test def andThen(): Unit = {
     // Side-effects
-    var current: Int   = 0
-    val add            = makeConsumer[Int](num => current += num)
-    val multiply       = makeConsumer[Int](num => current *= num)
+    var current: Int = 0
+    val add = makeConsumer[Int](num => current += num)
+    val multiply = makeConsumer[Int](num => current *= num)
     val addAndMultiply = add.andThen(multiply)
 
     addAndMultiply.accept(2)
@@ -42,13 +42,18 @@ class ConsumerTest {
       makeConsumer[Any](x => throw new ThrowingConsumerException(x))
     val dontCallConsumer =
       makeConsumer[Any](x =>
-        throw new AssertionError(s"dontCallConsumer.accept($x)"))
+        throw new AssertionError(s"dontCallConsumer.accept($x)")
+      )
 
-    assertThrows(classOf[ThrowingConsumerException],
-                 throwingConsumer.andThen(dontCallConsumer).accept(0))
+    assertThrows(
+      classOf[ThrowingConsumerException],
+      throwingConsumer.andThen(dontCallConsumer).accept(0)
+    )
 
-    assertThrows(classOf[ThrowingConsumerException],
-                 add.andThen(throwingConsumer).accept(1))
+    assertThrows(
+      classOf[ThrowingConsumerException],
+      add.andThen(throwingConsumer).accept(1)
+    )
     assertTrue(current == 22)
   }
 }

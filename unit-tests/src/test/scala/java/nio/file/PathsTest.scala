@@ -31,14 +31,17 @@ class PathsTest {
   }
 
   @Test def pathsGetUriThrowsExceptionWhenSchemeIsMissing(): Unit = {
-    assertThrows(classOf[IllegalArgumentException],
-                 Paths.get(new URI(null, null, null, 0, "foo", null, null)))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Paths.get(new URI(null, null, null, 0, "foo", null, null))
+    )
   }
 
   @Test def pathsGetUriThrowsExceptionWhenSchemeIsNotFile(): Unit = {
     assertThrows(
       classOf[FileSystemNotFoundException],
-      Paths.get(new URI("http", null, "google.com", 0, "/", null, null)))
+      Paths.get(new URI("http", null, "google.com", 0, "/", null, null))
+    )
   }
 
   @Test def pathsGetUriReturnsPathIfSchemeIsFile(): Unit = {

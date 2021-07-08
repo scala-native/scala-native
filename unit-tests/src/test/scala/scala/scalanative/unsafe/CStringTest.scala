@@ -51,14 +51,16 @@ class CStringTest {
     assertEquals("\u0065", fromCString(c"\x65"))
     assertEquals("\\x65", fromCString(c"\\x65"))
 
-    assertEquals("""
+    assertEquals(
+      """
     {
       "greeting": "Hello world!"
     }""",
-                 fromCString(c"""
+      fromCString(c"""
     {
       "greeting": "Hello world!"
-    }"""))
+    }""")
+    )
 
     assertEquals("\u0020\\X20\u006a\u006b", fromCString(c"\x20\X20\x6a\x6B"))
 
@@ -72,7 +74,7 @@ class CStringTest {
 
   @Test def testFromCString(): Unit = {
     val cstrFrom = c"1234"
-    val szTo     = fromCString(cstrFrom)
+    val szTo = fromCString(cstrFrom)
 
     assertTrue(szTo.size == 4)
     assertTrue(szTo.charAt(0) == '1')

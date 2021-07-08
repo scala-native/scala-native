@@ -15,18 +15,18 @@ package regex
 object Unicode {
 
   // The highest legal rune value.
-  final val MAX_RUNE = 0x10FFFF
+  final val MAX_RUNE = 0x10ffff
 
   // The highest legal ASCII value.
   final val MAX_ASCII = 0x7f
 
   // The highest legal Latin-1 value.
-  final val MAX_LATIN1 = 0xFF
+  final val MAX_LATIN1 = 0xff
 
   private final val MAX_CASE = 3
 
   // Represents invalid code points.
-  private final val REPLACEMENT_CHAR = 0xFFFD
+  private final val REPLACEMENT_CHAR = 0xfffd
 
   // Minimum and maximum runes involved in folding.
   // Checked during test.
@@ -62,9 +62,9 @@ object Unicode {
     var found = false
 
     while (lo < hi) {
-      val m           = midpoint(lo, hi, indexStep)
-      val rangeLow    = ranges(m)
-      val rangeHigh   = ranges(m + 1)
+      val m = midpoint(lo, hi, indexStep)
+      val rangeLow = ranges(m)
+      val rangeHigh = ranges(m + 1)
       val rangeStride = ranges(m + 2)
 
       if (rangeLow <= r && r <= rangeHigh) {
@@ -131,8 +131,8 @@ object Unicode {
   // isPrint reports whether the rune is printable (Unicode L/M/N/P/S or ' ').
   private[regex] def isPrint(r: Int): Boolean = {
     if (r <= MAX_LATIN1) {
-      r >= 0x20 && r < 0x7F ||
-      r >= 0xA1 && r != 0xAD
+      r >= 0x20 && r < 0x7f ||
+      r >= 0xa1 && r != 0xad
     } else {
       is(UnicodeTables.L, r) ||
       is(UnicodeTables.M, r) ||
@@ -156,7 +156,7 @@ object Unicode {
       var found = -1
 
       while (lo < hi) {
-        val m    = midpoint(lo, hi, indexStep)
+        val m = midpoint(lo, hi, indexStep)
         val crlo = caseRange(m)
         val crhi = caseRange(m + 1)
 

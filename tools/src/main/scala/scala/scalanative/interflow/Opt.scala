@@ -20,10 +20,10 @@ trait Opt { self: Interflow =>
   }
 
   def opt(name: Global): Defn.Define = in(s"visit ${name.show}") {
-    val orig         = originalName(name)
-    val origtys      = argumentTypes(orig)
-    val origdefn     = getOriginal(orig)
-    val argtys       = argumentTypes(name)
+    val orig = originalName(name)
+    val origtys = argumentTypes(orig)
+    val origdefn = getOriginal(orig)
+    val argtys = argumentTypes(name)
     implicit val pos = origdefn.pos
     // Wrap up the result.
     def result(retty: Type, rawInsts: Seq[Inst]) =
@@ -51,7 +51,8 @@ trait Opt { self: Interflow =>
       case (argty, origty) =>
         val ty = if (!Sub.is(argty, origty)) {
           log(
-            s"using original argument type ${origty.show} instead of ${argty.show}")
+            s"using original argument type ${origty.show} instead of ${argty.show}"
+          )
           origty
         } else {
           argty
@@ -70,11 +71,13 @@ trait Opt { self: Interflow =>
     val blocks =
       try {
         pushBlockFresh(fresh)
-        process(origdefn.insts.toArray,
-                args,
-                state,
-                doInline = false,
-                origRetTy)
+        process(
+          origdefn.insts.toArray,
+          args,
+          state,
+          doInline = false,
+          origRetTy
+        )
       } finally {
         popBlockFresh()
       }
@@ -105,12 +108,14 @@ trait Opt { self: Interflow =>
     result(retty, insts)
   }
 
-  def process(insts: Array[Inst],
-              args: Seq[Val],
-              state: State,
-              doInline: Boolean,
-              retTy: Type)(
-      implicit originDefnPos: nir.Position
+  def process(
+      insts: Array[Inst],
+      args: Seq[Val],
+      state: State,
+      doInline: Boolean,
+      retTy: Type
+  )(implicit
+      originDefnPos: nir.Position
   ): Seq[MergeBlock] = {
     val processor =
       MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)

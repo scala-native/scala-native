@@ -15,16 +15,20 @@ final class JUnitFramework extends Framework {
 
   def fingerprints(): Array[Fingerprint] = f.fingerprints()
 
-  def runner(args: Array[String],
-             remoteArgs: Array[String],
-             testClassLoader: ClassLoader): Runner = {
+  def runner(
+      args: Array[String],
+      remoteArgs: Array[String],
+      testClassLoader: ClassLoader
+  ): Runner = {
     f.runner(args, remoteArgs, testClassLoader)
   }
 
-  def slaveRunner(args: Array[String],
-                  remoteArgs: Array[String],
-                  testClassLoader: ClassLoader,
-                  send: String => Unit): Runner = {
+  def slaveRunner(
+      args: Array[String],
+      remoteArgs: Array[String],
+      testClassLoader: ClassLoader,
+      send: String => Unit
+  ): Runner = {
     f.slaveRunner(args, remoteArgs, testClassLoader, send)
   }
 }

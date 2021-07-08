@@ -18,9 +18,9 @@ class JarInputStreamTest {
   private val entryName = "foo/bar/A.class"
 
   @Test def constructorInputStream(): Unit = {
-    val is              = new ByteArrayInputStream(hyts_patchBytes)
+    val is = new ByteArrayInputStream(hyts_patchBytes)
     var hasCorrectEntry = false
-    val jis             = new JarInputStream(is)
+    val jis = new JarInputStream(is)
     assertTrue(jis.getManifest() != null)
     var je = jis.getNextJarEntry()
     while (je != null) {
@@ -33,7 +33,7 @@ class JarInputStreamTest {
   }
 
   @Test def closeAfterException(): Unit = {
-    val is  = new ByteArrayInputStream(brokenEntryBytes)
+    val is = new ByteArrayInputStream(brokenEntryBytes)
     val jis = new JarInputStream(is, false)
     jis.getNextEntry()
     assertThrows(classOf[ZipException], jis.getNextEntry())
@@ -43,10 +43,10 @@ class JarInputStreamTest {
 
   @Test def getNextJarEntryEx(): Unit = {
     val desired = Set("foo/", "foo/bar/", "foo/bar/A.class", "Blah.txt")
-    val actual  = scala.collection.mutable.Set.empty[String]
-    var is      = new ByteArrayInputStream(hyts_patchBytes)
-    var jis     = new JarInputStream(is)
-    var je      = jis.getNextJarEntry()
+    val actual = scala.collection.mutable.Set.empty[String]
+    var is = new ByteArrayInputStream(hyts_patchBytes)
+    var jis = new JarInputStream(is)
+    var je = jis.getNextJarEntry()
     while (je != null) {
       actual.add(je.toString())
       je = jis.getNextJarEntry()
@@ -63,9 +63,9 @@ class JarInputStreamTest {
   }
 
   @Test def getManifest(): Unit = {
-    var is  = new ByteArrayInputStream(hyts_patch2Bytes)
+    var is = new ByteArrayInputStream(hyts_patch2Bytes)
     var jis = new JarInputStream(is)
-    var m   = jis.getManifest()
+    var m = jis.getManifest()
     assertTrue(m == null)
 
     is = new ByteArrayInputStream(hyts_patchBytes)
@@ -76,10 +76,10 @@ class JarInputStreamTest {
 
   @Test def getNextJarEntry(): Unit = {
     val desired = Set("foo/", "foo/bar/", "foo/bar/A.class", "Blah.txt")
-    val actual  = scala.collection.mutable.Set.empty[String]
-    val is      = new ByteArrayInputStream(hyts_patchBytes)
-    val jis     = new JarInputStream(is)
-    var je      = jis.getNextJarEntry()
+    val actual = scala.collection.mutable.Set.empty[String]
+    val is = new ByteArrayInputStream(hyts_patchBytes)
+    val jis = new JarInputStream(is)
+    var je = jis.getNextJarEntry()
     while (je != null) {
       actual.add(je.toString())
       je = jis.getNextJarEntry()
@@ -88,10 +88,10 @@ class JarInputStreamTest {
   }
 
   @Test def getNextEntryOnIntegrateJar(): Unit = {
-    val is              = new ByteArrayInputStream(integrateBytes)
-    val jis             = new JarInputStream(is, true)
+    val is = new ByteArrayInputStream(integrateBytes)
+    val jis = new JarInputStream(is, true)
     var entry: ZipEntry = null
-    var count           = 0
+    var count = 0
     while (count == 0 || entry != null) {
       count += 1
       entry = jis.getNextEntry()
@@ -102,11 +102,11 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def getNextEntryOnModifiedClassJar(): Unit = {
-    val is                 = new ByteArrayInputStream(modifiedClassBytes)
-    val jis                = new JarInputStream(is, true)
+    val is = new ByteArrayInputStream(modifiedClassBytes)
+    val jis = new JarInputStream(is, true)
     var zipEntry: ZipEntry = null
-    val indexOfTestClass   = 4
-    var count              = 0
+    val indexOfTestClass = 4
+    var count = 0
     while (count == 0 || zipEntry != null) {
       count += 1
       try {
@@ -125,7 +125,7 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def getNextEntryOnModifiedMainAttributesJar(): Unit = {
-    val is  = new ByteArrayInputStream(modifiedManifestMainAttributesBytes)
+    val is = new ByteArrayInputStream(modifiedManifestMainAttributesBytes)
     val jis = new JarInputStream(is, true)
     assertTrue(jis.getNextEntry().getName() == "META-INF/TESTROOT.SF")
     assertTrue(jis.getNextEntry().getName() == "META-INF/TESTROOT.DSA")
@@ -137,11 +137,11 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def getNextEntryOnModifiedManifestEntryAttributesJar(): Unit = {
-    val is                 = new ByteArrayInputStream(modifiedManifestEntryAttributesBytes)
-    val jis                = new JarInputStream(is, true)
+    val is = new ByteArrayInputStream(modifiedManifestEntryAttributesBytes)
+    val jis = new JarInputStream(is, true)
     var zipEntry: ZipEntry = null
-    var count              = 0
-    val indexofDSA         = 2
+    var count = 0
+    val indexofDSA = 2
     while (count == 0 || zipEntry != null) {
       count += 1
       try {
@@ -160,11 +160,11 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def getNextEntryOnModifiedSfEntryAttributesJar(): Unit = {
-    val is                 = new ByteArrayInputStream(modifiedSFEntryAttributesBytes)
-    val jis                = new JarInputStream(is, true)
+    val is = new ByteArrayInputStream(modifiedSFEntryAttributesBytes)
+    val jis = new JarInputStream(is, true)
     var zipEntry: ZipEntry = null
-    var count              = 0
-    val indexofDSA         = 2
+    var count = 0
+    val indexofDSA = 2
     while (count == 0 || zipEntry != null) {
       count += 1
       try {
@@ -183,10 +183,10 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def readModifiedClassJar(): Unit = {
-    val is                 = new ByteArrayInputStream(modifiedClassBytes)
-    val jis                = new JarInputStream(is, true)
-    val indexOfTestClass   = 4
-    var count              = 0
+    val is = new ByteArrayInputStream(modifiedClassBytes)
+    val jis = new JarInputStream(is, true)
+    val indexOfTestClass = 4
+    var count = 0
     var zipEntry: ZipEntry = null
     while (count == 0 || zipEntry != null) {
       count += 1
@@ -210,9 +210,9 @@ class JarInputStreamTest {
   }
 
   @Test def readIntegrateJar(): Unit = {
-    val is                 = new ByteArrayInputStream(integrateBytes)
-    val jis                = new JarInputStream(is)
-    var count              = 0
+    val is = new ByteArrayInputStream(integrateBytes)
+    val jis = new JarInputStream(is)
+    var count = 0
     var zipEntry: ZipEntry = null
     while (count == 0 || zipEntry != null) {
       count += 1
@@ -229,10 +229,10 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def readModifiedManifestMainAttributesJar(): Unit = {
-    val is                 = new ByteArrayInputStream(modifiedManifestMainAttributesBytes)
-    val jis                = new JarInputStream(is)
-    val indexofDSA         = 2
-    var count              = 0
+    val is = new ByteArrayInputStream(modifiedManifestMainAttributesBytes)
+    val jis = new JarInputStream(is)
+    val indexofDSA = 2
+    var count = 0
     var zipEntry: ZipEntry = null
     while (count == 0 || zipEntry != null) {
       count += 1
@@ -257,10 +257,10 @@ class JarInputStreamTest {
 
   @Ignore("#956")
   @Test def readModifiedSfEntryAttributesJar(): Unit = {
-    val is                 = new ByteArrayInputStream(modifiedSFEntryAttributesBytes)
-    val jis                = new JarInputStream(is)
-    val indexofDSA         = 2
-    var count              = 0
+    val is = new ByteArrayInputStream(modifiedSFEntryAttributesBytes)
+    val jis = new JarInputStream(is)
+    val indexofDSA = 2
+    var count = 0
     var zipEntry: ZipEntry = null
     while (count == 0 || zipEntry != null) {
       count += 1
@@ -284,15 +284,17 @@ class JarInputStreamTest {
   }
 
   @Test def getNextEntryOnBrokenEntryJar(): Unit = {
-    val is  = new ByteArrayInputStream(brokenEntryBytes)
+    val is = new ByteArrayInputStream(brokenEntryBytes)
     val jis = new JarInputStream(is)
     jis.getNextEntry()
     assertThrows(classOf[ZipException], jis.getNextEntry())
 
-    assertThrows(classOf[IOException], {
-      jis.close()        // Android throws exception here, already!
-      jis.getNextEntry() // But RI here, only!
-    })
+    assertThrows(
+      classOf[IOException], {
+        jis.close() // Android throws exception here, already!
+        jis.getNextEntry() // But RI here, only!
+      }
+    )
   }
 
 }

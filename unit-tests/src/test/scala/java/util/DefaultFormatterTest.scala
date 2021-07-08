@@ -13,10 +13,10 @@ import org.scalanative.testsuite.utils.Platform.executingInJVM
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 class DefaultFormatterTest {
-  private var root: Boolean         = false
-  private var notExist: File        = _
+  private var root: Boolean = false
+  private var notExist: File = _
   private var fileWithContent: File = _
-  private var readOnly: File        = _
+  private var readOnly: File = _
 
   // setup resource files for testing
   @Before
@@ -53,16 +53,20 @@ class DefaultFormatterTest {
   }
 
   private class MockFormattable extends Formattable {
-    def formatTo(formatter: Formatter,
-                 flags: Int,
-                 width: Int,
-                 precision: Int): Unit = {
+    def formatTo(
+        formatter: Formatter,
+        flags: Int,
+        width: Int,
+        precision: Int
+    ): Unit = {
       if ((flags & FormattableFlags.UPPERCASE) != 0)
         formatter.format(
-          "CUSTOMIZED FORMAT FUNCTION" + " WIDTH: " + width + " PRECISION: " + precision)
+          "CUSTOMIZED FORMAT FUNCTION" + " WIDTH: " + width + " PRECISION: " + precision
+        )
       else
         formatter.format(
-          "customized format function" + " width: " + width + " precision: " + precision)
+          "customized format function" + " width: " + width + " precision: " + precision
+        )
     }
 
     override def toString(): String = "formattable object"
@@ -109,8 +113,10 @@ class DefaultFormatterTest {
     assertNotNull(f2.toString())
   }
   @Test def constructorString(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[String]))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(null.asInstanceOf[String])
+    )
 
     locally {
       val f = new Formatter(notExist.getPath())
@@ -124,18 +130,23 @@ class DefaultFormatterTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly.getPath()))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(readOnly.getPath())
+      )
     }
   }
 
   @Test def constructorStringString(): Unit = {
     assertThrows(
       classOf[NullPointerException],
-      new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name()))
+      new Formatter(null.asInstanceOf[String], Charset.defaultCharset().name())
+    )
 
-    assertThrows(classOf[UnsupportedEncodingException],
-                 new Formatter(notExist.getPath(), "ISO 111-1"))
+    assertThrows(
+      classOf[UnsupportedEncodingException],
+      new Formatter(notExist.getPath(), "ISO 111-1")
+    )
 
     locally {
       val f = new Formatter(fileWithContent.getPath(), "UTF-16BE")
@@ -144,8 +155,10 @@ class DefaultFormatterTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly.getPath(), "UTF-16BE"))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(readOnly.getPath(), "UTF-16BE")
+      )
     }
   }
 
@@ -170,13 +183,17 @@ class DefaultFormatterTest {
     }
 
     if (!root) {
-      assertThrows(classOf[FileNotFoundException],
-                   new Formatter(readOnly, Charset.defaultCharset().name()))
+      assertThrows(
+        classOf[FileNotFoundException],
+        new Formatter(readOnly, Charset.defaultCharset().name())
+      )
     }
 
     try {
-      assertThrows(classOf[UnsupportedEncodingException],
-                   new Formatter(notExist, "ISO 1111-1"))
+      assertThrows(
+        classOf[UnsupportedEncodingException],
+        new Formatter(notExist, "ISO 1111-1")
+      )
     } finally if (notExist.exists()) {
       // Fail on RI on Windows, because output stream is created and
       // not closed when exception thrown
@@ -185,30 +202,38 @@ class DefaultFormatterTest {
   }
 
   @Test def constructorPrintStream(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[PrintStream]))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(null.asInstanceOf[PrintStream])
+    )
 
     val ps = new PrintStream(notExist, "UTF-16BE")
-    val f  = new Formatter(ps)
+    val f = new Formatter(ps)
     assertNotNull(f)
     f.close()
   }
 
   @Test def constructorOutputStream(): Unit = {
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[OutputStream]))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(null.asInstanceOf[OutputStream])
+    )
 
     val os = new FileOutputStream(notExist)
-    val f  = new Formatter(os)
+    val f = new Formatter(os)
     assertNotNull(f)
     f.close()
   }
 
   @Test def constructorOutputStreamString(): Unit = {
 
-    assertThrows(classOf[NullPointerException],
-                 new Formatter(null.asInstanceOf[OutputStream],
-                               Charset.defaultCharset().name()))
+    assertThrows(
+      classOf[NullPointerException],
+      new Formatter(
+        null.asInstanceOf[OutputStream],
+        Charset.defaultCharset().name()
+      )
+    )
 
     locally {
       // Porting note: PipedOutputStream is not essential to this test.
@@ -216,13 +241,15 @@ class DefaultFormatterTest {
       // a harmless one.
       // val os = new PipedOutputStream()
       val os = new ByteArrayOutputStream
-      assertThrows(classOf[UnsupportedEncodingException],
-                   new Formatter(os, "TMP-1111"))
+      assertThrows(
+        classOf[UnsupportedEncodingException],
+        new Formatter(os, "TMP-1111")
+      )
     }
 
     locally {
       val os = new FileOutputStream(fileWithContent)
-      val f  = new Formatter(os, "UTF-16BE")
+      val f = new Formatter(os, "UTF-16BE")
       assertNotNull(f)
       f.close()
     }
@@ -280,7 +307,7 @@ class DefaultFormatterTest {
 
     locally {
       val md = new MockDestination()
-      val f  = new Formatter(md)
+      val f = new Formatter(md)
       f.format("%s%s", "1", "2")
       // format stop working after IOException
       assertNotNull(f.ioException())
@@ -299,18 +326,20 @@ class DefaultFormatterTest {
   @Test def formatForArgumentIndex(): Unit = {
     locally {
       val f = new Formatter()
-      f.format("%1$s%2$s%3$s%4$s%5$s%6$s%7$s%8$s%9$s%11$s%10$s",
-               "1",
-               "2",
-               "3",
-               "4",
-               "5",
-               "6",
-               "7",
-               "8",
-               "9",
-               "10",
-               "11")
+      f.format(
+        "%1$s%2$s%3$s%4$s%5$s%6$s%7$s%8$s%9$s%11$s%10$s",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      )
       assertEquals("1234567891110", f.toString())
     }
 
@@ -322,78 +351,98 @@ class DefaultFormatterTest {
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%-1$s", "1", "2"))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%-1$s", "1", "2")
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%$s", "hello", "2"))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%$s", "hello", "2")
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%", "string"))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%", "string")
+      )
     }
 
     locally {
       val f = new Formatter()
-      f.format("%1$s%2$s%3$s%4$s%5$s%6$s%7$s%8$s%<s%s%s%<s",
-               "1",
-               "2",
-               "3",
-               "4",
-               "5",
-               "6",
-               "7",
-               "8",
-               "9",
-               "10",
-               "11")
+      f.format(
+        "%1$s%2$s%3$s%4$s%5$s%6$s%7$s%8$s%<s%s%s%<s",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      )
       assertEquals("123456788122", f.toString())
     }
 
     locally {
       val f = new Formatter()
-      f.format("xx%1$s22%2$s%s%<s%5$s%<s&%7$h%2$s%8$s%<s%s%s%<ssuffix",
-               "1",
-               "2",
-               "3",
-               "4",
-               "5",
-               "6",
-               7.asInstanceOf[Object], // this is intended
-               "8",
-               "9",
-               "10",
-               "11")
+      f.format(
+        "xx%1$s22%2$s%s%<s%5$s%<s&%7$h%2$s%8$s%<s%s%s%<ssuffix",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        7.asInstanceOf[Object], // this is intended
+        "8",
+        "9",
+        "10",
+        "11"
+      )
       assertEquals("xx12221155&7288233suffix", f.toString())
-      assertThrows(classOf[MissingFormatArgumentException],
-                   f.format("%<s", "hello"))
+      assertThrows(
+        classOf[MissingFormatArgumentException],
+        f.format("%<s", "hello")
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[MissingFormatArgumentException],
-                   f.format("%123$s", "hello"))
+      assertThrows(
+        classOf[MissingFormatArgumentException],
+        f.format("%123$s", "hello")
+      )
     }
 
     locally {
       val f = new Formatter()
       // 2147483648 is the value of Integer.MAX_VALUE + 1
-      assertThrows(classOf[MissingFormatArgumentException],
-                   f.format("%2147483648$s", "hello"))
+      assertThrows(
+        classOf[MissingFormatArgumentException],
+        f.format("%2147483648$s", "hello")
+      )
       // 2147483647 is the value of Integer.MAX_VALUE
-      assertThrows(classOf[MissingFormatArgumentException],
-                   f.format("%2147483647$s", "hello"))
+      assertThrows(
+        classOf[MissingFormatArgumentException],
+        f.format("%2147483647$s", "hello")
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[MissingFormatArgumentException],
-                   f.format("%s%s", "hello"))
+      assertThrows(
+        classOf[MissingFormatArgumentException],
+        f.format("%s%s", "hello")
+      )
     }
 
     locally {
@@ -458,20 +507,26 @@ class DefaultFormatterTest {
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%.s", "hello", "2"))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%.s", "hello", "2")
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%.-5s", "123456"))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%.-5s", "123456")
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%1.s", "hello", "2"))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%1.s", "hello", "2")
+      )
     }
 
     locally {
@@ -608,22 +663,27 @@ class DefaultFormatterTest {
     }
   }
 
-  private def assertIllegalFormatFlagsExceptionException(f: Formatter,
-                                                         str: String): Unit = {
+  private def assertIllegalFormatFlagsExceptionException(
+      f: Formatter,
+      str: String
+  ): Unit = {
     assertThrows(classOf[IllegalFormatFlagsException], f.format(str))
   }
 
   private def assertFormatFlagsConversionMismatchException(
       f: Formatter,
-      str: String): Unit = {
+      str: String
+  ): Unit = {
     assertThrows(classOf[FormatFlagsConversionMismatchException], f.format(str))
   }
 
   @Test def formatForFlag(): Unit = {
     locally {
       val f = new Formatter()
-      assertThrows(classOf[DuplicateFormatFlagsException],
-                   f.format("%1$-#-8s", "something"))
+      assertThrows(
+        classOf[DuplicateFormatFlagsException],
+        f.format("%1$-#-8s", "something")
+      )
     }
 
     locally {
@@ -632,13 +692,15 @@ class DefaultFormatterTest {
       val f = new Formatter()
       for (i <- (0 to 256).map(_.toChar)) {
         // test 8 bit character
-        if (Arrays.binarySearch(chars, i) >= 0 || Character.isDigit(i) || Character
-              .isLetter(i)) {
+        if (Arrays.binarySearch(chars, i) >= 0 || Character.isDigit(i)
+            || Character.isLetter(i)) {
           // Do not test 0-9, a-z, A-Z and characters in the chars array.
           // They are characters used as flags, width or conversions
         } else {
-          assertThrows(classOf[UnknownFormatConversionException],
-                       f.format("%" + i + "s", 1.asInstanceOf[Object]))
+          assertThrows(
+            classOf[UnknownFormatConversionException],
+            f.format("%" + i + "s", 1.asInstanceOf[Object])
+          )
         }
       }
     }
@@ -684,9 +746,9 @@ class DefaultFormatterTest {
       Array(null.asInstanceOf[Object], "%.2b", "fa")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until triple.length) {
       locally {
         val f = new Formatter()
@@ -696,10 +758,14 @@ class DefaultFormatterTest {
 
       locally {
         val f = new Formatter()
-        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 triple(i)(input))
-        assertEquals(triple(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString())
+        f.format(
+          triple(i)(pattern).asInstanceOf[String].toUpperCase(),
+          triple(i)(input)
+        )
+        assertEquals(
+          triple(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString()
+        )
       }
     }
   }
@@ -713,23 +779,29 @@ class DefaultFormatterTest {
       Array(1.1d, "%.5s", "1.1")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- (0 until triple.length)) {
       locally {
         val f = new Formatter()
-        f.format(triple(i)(pattern).asInstanceOf[String],
-                 triple(i)(input).asInstanceOf[Object])
+        f.format(
+          triple(i)(pattern).asInstanceOf[String],
+          triple(i)(input).asInstanceOf[Object]
+        )
         assertEquals(triple(i)(output), f.toString())
       }
 
       locally {
         val f = new Formatter()
-        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 triple(i)(input).asInstanceOf[Object])
-        assertEquals(triple(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString())
+        f.format(
+          triple(i)(pattern).asInstanceOf[String].toUpperCase(),
+          triple(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          triple(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString()
+        )
       }
     }
   }
@@ -766,23 +838,29 @@ class DefaultFormatterTest {
       Array("string content", "%2.3s", "str"),
       Array("string content", "%-6.4s", "stri  "),
       Array("string content", "%.5s", "strin"),
-      Array(new MockFormattable(),
-            "%2.3s",
-            "customized format function width: 2 precision: 3"),
-      Array(new MockFormattable(),
-            "%-6.4s",
-            "customized format function width: 6 precision: 4"),
-      Array(new MockFormattable(),
-            "%.5s",
-            "customized format function width: -1 precision: 5"),
+      Array(
+        new MockFormattable(),
+        "%2.3s",
+        "customized format function width: 2 precision: 3"
+      ),
+      Array(
+        new MockFormattable(),
+        "%-6.4s",
+        "customized format function width: 6 precision: 4"
+      ),
+      Array(
+        new MockFormattable(),
+        "%.5s",
+        "customized format function width: -1 precision: 5"
+      ),
       Array(null.asInstanceOf[Object], "%2.3s", "nul"),
       Array(null.asInstanceOf[Object], "%-6.4s", "null  "),
       Array(null.asInstanceOf[Object], "%.5s", "null")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- (0 until triple.length)) {
       locally {
         val f = new Formatter()
@@ -792,10 +870,14 @@ class DefaultFormatterTest {
 
       locally {
         val f = new Formatter()
-        f.format(triple(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 triple(i)(input))
-        assertEquals(triple(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString())
+        f.format(
+          triple(i)(pattern).asInstanceOf[String].toUpperCase(),
+          triple(i)(input)
+        )
+        assertEquals(
+          triple(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString()
+        )
       }
     }
   }
@@ -826,8 +908,10 @@ class DefaultFormatterTest {
       locally {
         val f = new Formatter()
         f.format("%H", input(i))
-        assertEquals(Integer.toHexString(input(i).hashCode()).toUpperCase(),
-                     f.toString())
+        assertEquals(
+          Integer.toHexString(input(i).hashCode()).toUpperCase(),
+          f.toString()
+        )
       }
     }
   }
@@ -855,13 +939,16 @@ class DefaultFormatterTest {
          * argument is not a Formattable , then a
          * FormatFlagsConversionMismatchException will be thrown.
          */
-        assertThrows(classOf[FormatFlagsConversionMismatchException],
-                     f.format("%#s", input(i)))
+        assertThrows(
+          classOf[FormatFlagsConversionMismatchException],
+          f.format("%#s", input(i))
+        )
       } else {
         f.format("%#s%<-#8s", input(i))
         assertEquals(
           "customized format function width: -1 precision: -1customized format function width: 8 precision: -1",
-          f.toString())
+          f.toString()
+        )
       }
     }
   }
@@ -908,50 +995,66 @@ class DefaultFormatterTest {
       val f = new Formatter()
 
       for (i <- 0 until flagMismatch.length) {
-        assertThrows(classOf[FormatFlagsConversionMismatchException],
-                     f.format(flagMismatch(i), "something"))
+        assertThrows(
+          classOf[FormatFlagsConversionMismatchException],
+          f.format(flagMismatch(i), "something")
+        )
       }
 
       val missingWidth = Array("%-b", "%-B", "%-h", "%-H", "%-s", "%-S")
       for (i <- 0 until missingWidth.length) {
-        assertThrows(classOf[MissingFormatWidthException],
-                     f.format(missingWidth(i), "something"))
+        assertThrows(
+          classOf[MissingFormatWidthException],
+          f.format(missingWidth(i), "something")
+        )
       }
     }
 
     // Regression test
     locally {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatCodePointException],
-                   f.format("%c", -0x0001.toByte.asInstanceOf[Object]))
+      assertThrows(
+        classOf[IllegalFormatCodePointException],
+        f.format("%c", -0x0001.toByte.asInstanceOf[Object])
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatCodePointException],
-                   f.format("%c", -0x0001.toShort.asInstanceOf[Object]))
+      assertThrows(
+        classOf[IllegalFormatCodePointException],
+        f.format("%c", -0x0001.toShort.asInstanceOf[Object])
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatCodePointException],
-                   f.format("%c", -0x0001.asInstanceOf[Object]))
+      assertThrows(
+        classOf[IllegalFormatCodePointException],
+        f.format("%c", -0x0001.asInstanceOf[Object])
+      )
     }
   }
 
   @Test def formatForCharacterConversion(): Unit = {
-    val f       = new Formatter()
+    val f = new Formatter()
     val illArgs = Array(true, 1.1f, 1.1d, "string content", 1.1f, new Date())
     for (i <- (0 until illArgs.length)) {
-      assertThrows(classOf[IllegalFormatConversionException],
-                   f.format("%c", illArgs(i).asInstanceOf[Object]))
+      assertThrows(
+        classOf[IllegalFormatConversionException],
+        f.format("%c", illArgs(i).asInstanceOf[Object])
+      )
     }
 
-    assertThrows(classOf[IllegalFormatCodePointException],
-                 f.format("%c", Integer.MAX_VALUE.asInstanceOf[Object]))
+    assertThrows(
+      classOf[IllegalFormatCodePointException],
+      f.format("%c", Integer.MAX_VALUE.asInstanceOf[Object])
+    )
 
-    assertThrows(classOf[FormatFlagsConversionMismatchException],
-                 f.format("%#c", 'c'.asInstanceOf[Object]))
+    assertThrows(
+      classOf[FormatFlagsConversionMismatchException],
+      f.format("%#c", 'c'.asInstanceOf[Object])
+    )
 
     val triple = Array(
       Array('c', "%c", "c"),
@@ -966,13 +1069,15 @@ class DefaultFormatterTest {
       Array(0x11, "%-2c", "\u0011 ")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until triple.length) {
       val f = new Formatter()
-      f.format(triple(i)(pattern).asInstanceOf[String],
-               triple(i)(input).asInstanceOf[Object])
+      f.format(
+        triple(i)(pattern).asInstanceOf[String],
+        triple(i)(input).asInstanceOf[Object]
+      )
       assertEquals(triple(i)(output), f.toString())
     }
 
@@ -981,8 +1086,10 @@ class DefaultFormatterTest {
       f.format("%c", 0x10000.asInstanceOf[Object])
       assertEquals(0x10000, f.toString().codePointAt(0))
 
-      assertThrows(classOf[IllegalFormatPrecisionException],
-                   f.format("%2.2c", 'c'.asInstanceOf[Object]))
+      assertThrows(
+        classOf[IllegalFormatPrecisionException],
+        f.format("%2.2c", 'c'.asInstanceOf[Object])
+      )
     }
 
     locally {
@@ -1076,13 +1183,15 @@ class DefaultFormatterTest {
       Array(-1L, "%0 ,(11d", "(000000001)")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until triple.length) {
       val f = new Formatter()
-      f.format(triple(i)(pattern).asInstanceOf[String],
-               triple(i)(input).asInstanceOf[Object])
+      f.format(
+        triple(i)(pattern).asInstanceOf[String],
+        triple(i)(input).asInstanceOf[Object]
+      )
       assertEquals(triple(i)(output), f.toString())
     }
   }
@@ -1133,13 +1242,15 @@ class DefaultFormatterTest {
       Array(-1L, "%-#9o", "01777777777777777777777")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until triple.length) {
       val f = new Formatter()
-      f.format(triple(i)(pattern).asInstanceOf[String],
-               triple(i)(input).asInstanceOf[Object])
+      f.format(
+        triple(i)(pattern).asInstanceOf[String],
+        triple(i)(input).asInstanceOf[Object]
+      )
       assertEquals(triple(i)(output), f.toString())
     }
   }
@@ -1190,21 +1301,25 @@ class DefaultFormatterTest {
       Array(-1L, "%-#9x", "0xffffffffffffffff")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until triple.length) {
       locally {
         val f = new Formatter()
-        f.format(triple(i)(pattern).asInstanceOf[String],
-                 triple(i)(input).asInstanceOf[Object])
+        f.format(
+          triple(i)(pattern).asInstanceOf[String],
+          triple(i)(input).asInstanceOf[Object]
+        )
         assertEquals(triple(i)(output), f.toString())
       }
 
       locally {
         val f = new Formatter()
-        f.format(triple(i)(pattern).asInstanceOf[String],
-                 triple(i)(input).asInstanceOf[Object])
+        f.format(
+          triple(i)(pattern).asInstanceOf[String],
+          triple(i)(input).asInstanceOf[Object]
+        )
         assertEquals(triple(i)(output), f.toString())
       }
     }
@@ -1245,71 +1360,111 @@ class DefaultFormatterTest {
 
   @Test def formatForLegalBigIntegerConversionType_d(): Unit = {
     val tripleD = Array(
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%d",
-            "123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%10d",
-            "123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%-1d",
-            "123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%+d",
-            "+123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "% d",
-            " 123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%,d",
-            "123,456,789,012,345,678,901,234,567,890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%(d",
-            "123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%08d",
-            "123456789012345678901234567890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%-+,(11d",
-            "+123,456,789,012,345,678,901,234,567,890"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%0 ,(11d",
-            " 123,456,789,012,345,678,901,234,567,890"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%d",
-            "-9876543210987654321098765432100000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%10d",
-            "-9876543210987654321098765432100000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%-1d",
-            "-9876543210987654321098765432100000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%+d",
-            "-9876543210987654321098765432100000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "% d",
-            "-9876543210987654321098765432100000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%,d",
-            "-9,876,543,210,987,654,321,098,765,432,100,000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%(d",
-            "(9876543210987654321098765432100000)"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%08d",
-            "-9876543210987654321098765432100000"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%-+,(11d",
-            "(9,876,543,210,987,654,321,098,765,432,100,000)"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%0 ,(11d",
-            "(9,876,543,210,987,654,321,098,765,432,100,000)")
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%d",
+        "123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%10d",
+        "123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%-1d",
+        "123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%+d",
+        "+123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "% d",
+        " 123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%,d",
+        "123,456,789,012,345,678,901,234,567,890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%(d",
+        "123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%08d",
+        "123456789012345678901234567890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%-+,(11d",
+        "+123,456,789,012,345,678,901,234,567,890"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%0 ,(11d",
+        " 123,456,789,012,345,678,901,234,567,890"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%d",
+        "-9876543210987654321098765432100000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%10d",
+        "-9876543210987654321098765432100000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%-1d",
+        "-9876543210987654321098765432100000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%+d",
+        "-9876543210987654321098765432100000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "% d",
+        "-9876543210987654321098765432100000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%,d",
+        "-9,876,543,210,987,654,321,098,765,432,100,000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%(d",
+        "(9876543210987654321098765432100000)"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%08d",
+        "-9876543210987654321098765432100000"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%-+,(11d",
+        "(9,876,543,210,987,654,321,098,765,432,100,000)"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%0 ,(11d",
+        "(9,876,543,210,987,654,321,098,765,432,100,000)"
+      )
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until tripleD.length) {
       val f = new Formatter()
       f.format(tripleD(i)(pattern).asInstanceOf[String], tripleD(i)(input))
@@ -1317,42 +1472,66 @@ class DefaultFormatterTest {
     }
 
     val tripleO = Array(
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%o",
-            "143564417755415637016711617605322"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%-6o",
-            "143564417755415637016711617605322"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%08o",
-            "143564417755415637016711617605322"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%#o",
-            "0143564417755415637016711617605322"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%0#11o",
-            "0143564417755415637016711617605322"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%-#9o",
-            "0143564417755415637016711617605322"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%o",
-            "-36336340043453651353467270113157312240"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%-6o",
-            "-36336340043453651353467270113157312240"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%08o",
-            "-36336340043453651353467270113157312240"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%#o",
-            "-036336340043453651353467270113157312240"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%0#11o",
-            "-036336340043453651353467270113157312240"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%-#9o",
-            "-036336340043453651353467270113157312240")
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%o",
+        "143564417755415637016711617605322"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%-6o",
+        "143564417755415637016711617605322"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%08o",
+        "143564417755415637016711617605322"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%#o",
+        "0143564417755415637016711617605322"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%0#11o",
+        "0143564417755415637016711617605322"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%-#9o",
+        "0143564417755415637016711617605322"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%o",
+        "-36336340043453651353467270113157312240"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%-6o",
+        "-36336340043453651353467270113157312240"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%08o",
+        "-36336340043453651353467270113157312240"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%#o",
+        "-036336340043453651353467270113157312240"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%0#11o",
+        "-036336340043453651353467270113157312240"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%-#9o",
+        "-036336340043453651353467270113157312240"
+      )
     )
 
     for (i <- 0 until tripleO.length) {
@@ -1362,42 +1541,66 @@ class DefaultFormatterTest {
     }
 
     val tripleX = Array(
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%x",
-            "18ee90ff6c373e0ee4e3f0ad2"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%-8x",
-            "18ee90ff6c373e0ee4e3f0ad2"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%06x",
-            "18ee90ff6c373e0ee4e3f0ad2"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%#x",
-            "0x18ee90ff6c373e0ee4e3f0ad2"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%0#12x",
-            "0x18ee90ff6c373e0ee4e3f0ad2"),
-      Array(new BigInteger("123456789012345678901234567890"),
-            "%-#9x",
-            "0x18ee90ff6c373e0ee4e3f0ad2"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%x",
-            "-1e6f380472bd4bae6eb8259bd94a0"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%-8x",
-            "-1e6f380472bd4bae6eb8259bd94a0"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%06x",
-            "-1e6f380472bd4bae6eb8259bd94a0"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%#x",
-            "-0x1e6f380472bd4bae6eb8259bd94a0"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%0#12x",
-            "-0x1e6f380472bd4bae6eb8259bd94a0"),
-      Array(new BigInteger("-9876543210987654321098765432100000"),
-            "%-#9x",
-            "-0x1e6f380472bd4bae6eb8259bd94a0")
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%x",
+        "18ee90ff6c373e0ee4e3f0ad2"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%-8x",
+        "18ee90ff6c373e0ee4e3f0ad2"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%06x",
+        "18ee90ff6c373e0ee4e3f0ad2"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%#x",
+        "0x18ee90ff6c373e0ee4e3f0ad2"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%0#12x",
+        "0x18ee90ff6c373e0ee4e3f0ad2"
+      ),
+      Array(
+        new BigInteger("123456789012345678901234567890"),
+        "%-#9x",
+        "0x18ee90ff6c373e0ee4e3f0ad2"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%x",
+        "-1e6f380472bd4bae6eb8259bd94a0"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%-8x",
+        "-1e6f380472bd4bae6eb8259bd94a0"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%06x",
+        "-1e6f380472bd4bae6eb8259bd94a0"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%#x",
+        "-0x1e6f380472bd4bae6eb8259bd94a0"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%0#12x",
+        "-0x1e6f380472bd4bae6eb8259bd94a0"
+      ),
+      Array(
+        new BigInteger("-9876543210987654321098765432100000"),
+        "%-#9x",
+        "-0x1e6f380472bd4bae6eb8259bd94a0"
+      )
     )
 
     for (i <- 0 until tripleX.length) {
@@ -1414,7 +1617,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForPaddingOfBigIntegerConversion(): Unit = {
-    val bigInt    = new BigInteger("123456789012345678901234567890")
+    val bigInt = new BigInteger("123456789012345678901234567890")
     val negBigInt = new BigInteger("-1234567890123456789012345678901234567890")
 
     locally {
@@ -1444,8 +1647,10 @@ class DefaultFormatterTest {
     locally {
       val f = new Formatter()
       f.format("%+(045d", negBigInt)
-      assertEquals("(0001234567890123456789012345678901234567890)",
-                   f.toString())
+      assertEquals(
+        "(0001234567890123456789012345678901234567890)",
+        f.toString()
+      )
     }
 
     locally {
@@ -1453,7 +1658,8 @@ class DefaultFormatterTest {
       f.format("%+,-(60d", negBigInt)
       assertEquals(
         "(1,234,567,890,123,456,789,012,345,678,901,234,567,890)     ",
-        f.toString())
+        f.toString()
+      )
     }
   }
 
@@ -1461,60 +1667,75 @@ class DefaultFormatterTest {
     val flagsConversionMismatches = Array("%#d", "%,o", "%,x", "%,X")
     for (i <- 0 until flagsConversionMismatches.length) {
       val f = new Formatter()
-      assertThrows(classOf[FormatFlagsConversionMismatchException],
-                   f.format(flagsConversionMismatches(i), new BigInteger("1")))
+      assertThrows(
+        classOf[FormatFlagsConversionMismatchException],
+        f.format(flagsConversionMismatches(i), new BigInteger("1"))
+      )
     }
 
-    val missingFormatWidths = Array("%-0d",
-                                    "%0d",
-                                    "%-d",
-                                    "%-0o",
-                                    "%0o",
-                                    "%-o",
-                                    "%-0x",
-                                    "%0x",
-                                    "%-x",
-                                    "%-0X",
-                                    "%0X",
-                                    "%-X")
+    val missingFormatWidths = Array(
+      "%-0d",
+      "%0d",
+      "%-d",
+      "%-0o",
+      "%0o",
+      "%-o",
+      "%-0x",
+      "%0x",
+      "%-x",
+      "%-0X",
+      "%0X",
+      "%-X"
+    )
     for (i <- 0 until missingFormatWidths.length) {
       val f = new Formatter()
-      assertThrows(classOf[MissingFormatWidthException],
-                   f.format(missingFormatWidths(i), new BigInteger("1")))
+      assertThrows(
+        classOf[MissingFormatWidthException],
+        f.format(missingFormatWidths(i), new BigInteger("1"))
+      )
     }
 
     val illFlags =
       Array("%+ d", "%-08d", "%+ o", "%-08o", "%+ x", "%-08x", "%+ X", "%-08X")
     for (i <- 0 until illFlags.length) {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatFlagsException],
-                   f.format(illFlags(i), new BigInteger("1")))
+      assertThrows(
+        classOf[IllegalFormatFlagsException],
+        f.format(illFlags(i), new BigInteger("1"))
+      )
     }
 
     val precisionExceptions = Array("%.4d", "%2.5o", "%8.6x", "%11.17X")
     for (i <- 0 until precisionExceptions.length) {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatPrecisionException],
-                   f.format(precisionExceptions(i), new BigInteger("1")))
+      assertThrows(
+        classOf[IllegalFormatPrecisionException],
+        f.format(precisionExceptions(i), new BigInteger("1"))
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%D", new BigInteger("1")))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%D", new BigInteger("1"))
+      )
     }
 
     locally {
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%O", new BigInteger("1")))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%O", new BigInteger("1"))
+      )
     }
 
     locally {
       val f = new Formatter()
       assertThrows(
         classOf[MissingFormatWidthException],
-        f.format("%010000000000000000000000000000000001d", new BigInteger("1")))
+        f.format("%010000000000000000000000000000000001d", new BigInteger("1"))
+      )
     }
   }
 
@@ -1531,13 +1752,17 @@ class DefaultFormatterTest {
     val f = new Formatter()
     // compare IllegalFormatConversionException and
     // FormatFlagsConversionMismatchException
-    assertThrows(classOf[IllegalFormatConversionException],
-                 f.format("%(o", false.asInstanceOf[Object]))
+    assertThrows(
+      classOf[IllegalFormatConversionException],
+      f.format("%(o", false.asInstanceOf[Object])
+    )
 
     // compare IllegalFormatPrecisionException and
     // IllegalFormatConversionException
-    assertThrows(classOf[IllegalFormatPrecisionException],
-                 f.format("%.4o", false.asInstanceOf[Object]))
+    assertThrows(
+      classOf[IllegalFormatPrecisionException],
+      f.format("%.4o", false.asInstanceOf[Object])
+    )
 
     // compare IllegalFormatFlagsException and
     // IllegalFormatPrecisionException
@@ -1549,8 +1774,10 @@ class DefaultFormatterTest {
 
     // compare UnknownFormatConversionException and
     // MissingFormatWidthException
-    assertThrows(classOf[UnknownFormatConversionException],
-                 f.format("%-O", big))
+    assertThrows(
+      classOf[UnknownFormatConversionException],
+      f.format("%-O", big)
+    )
   }
 
   @Test def formatForFloatDoubleConversionType_eE(): Unit = {
@@ -1719,24 +1946,30 @@ class DefaultFormatterTest {
       Array(java.lang.Double.POSITIVE_INFINITY, "% 0(12e", "    Infinity")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until tripleE.length) {
       locally {
         val f = new Formatter()
-        f.format(tripleE(i)(pattern).asInstanceOf[String],
-                 tripleE(i)(input).asInstanceOf[Object])
+        f.format(
+          tripleE(i)(pattern).asInstanceOf[String],
+          tripleE(i)(input).asInstanceOf[Object]
+        )
         assertEquals(tripleE(i)(output), f.toString())
       }
 
       // test for conversion type 'E'
       locally {
         val f = new Formatter()
-        f.format(tripleE(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleE(i)(input).asInstanceOf[Object])
-        assertEquals(tripleE(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString())
+        f.format(
+          tripleE(i)(pattern).asInstanceOf[String].toUpperCase(),
+          tripleE(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          tripleE(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString()
+        )
       }
     }
 
@@ -1880,24 +2113,30 @@ class DefaultFormatterTest {
       Array(java.lang.Double.POSITIVE_INFINITY, "% 0(,12.0g", "    Infinity")
     )
 
-    val input   = 0
+    val input = 0
     val pattern = 1
-    val output  = 2
+    val output = 2
     for (i <- 0 until tripleG.length) {
       locally {
         val f = new Formatter()
-        f.format(tripleG(i)(pattern).asInstanceOf[String],
-                 tripleG(i)(input).asInstanceOf[Object])
+        f.format(
+          tripleG(i)(pattern).asInstanceOf[String],
+          tripleG(i)(input).asInstanceOf[Object]
+        )
         assertEquals(tripleG(i)(output), f.toString())
       }
 
       // test for conversion type 'G'
       locally {
         val f = new Formatter()
-        f.format(tripleG(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleG(i)(input).asInstanceOf[Object])
-        assertEquals(tripleG(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString())
+        f.format(
+          tripleG(i)(pattern).asInstanceOf[String].toUpperCase(),
+          tripleG(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          tripleG(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString()
+        )
       }
     }
 
@@ -2020,36 +2259,52 @@ class DefaultFormatterTest {
         "% 0#(9.8f",
         " 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.00000000"
       ),
-      Array(java.lang.Float.MAX_VALUE,
-            "%f",
-            "340282346638528860000000000000000000000.000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%#.3f",
-            "340282346638528860000000000000000000000.000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%,5f",
-            "340,282,346,638,528,860,000,000,000,000,000,000,000.000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%- (12.0f",
-            " 340282346638528860000000000000000000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%#+0(1.6f",
-            "+340282346638528860000000000000000000000.000000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "%-+(8.4f",
-            "+340282346638528860000000000000000000000.0000"),
-      Array(java.lang.Float.MAX_VALUE,
-            "% 0#(9.8f",
-            " 340282346638528860000000000000000000000.00000000")
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "%f",
+        "340282346638528860000000000000000000000.000000"
+      ),
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "%#.3f",
+        "340282346638528860000000000000000000000.000"
+      ),
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "%,5f",
+        "340,282,346,638,528,860,000,000,000,000,000,000,000.000000"
+      ),
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "%- (12.0f",
+        " 340282346638528860000000000000000000000"
+      ),
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "%#+0(1.6f",
+        "+340282346638528860000000000000000000000.000000"
+      ),
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "%-+(8.4f",
+        "+340282346638528860000000000000000000000.0000"
+      ),
+      Array(
+        java.lang.Float.MAX_VALUE,
+        "% 0#(9.8f",
+        " 340282346638528860000000000000000000000.00000000"
+      )
     )
 
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     for (i <- 0 until tripleF.length) {
       val f = new Formatter()
-      f.format(tripleF(i)(pattern).asInstanceOf[String],
-               tripleF(i)(input).asInstanceOf[Object])
+      f.format(
+        tripleF(i)(pattern).asInstanceOf[String],
+        tripleF(i)(input).asInstanceOf[Object]
+      )
       assertEquals(tripleF(i)(output), f.toString)
     }
   }
@@ -2231,13 +2486,15 @@ class DefaultFormatterTest {
       Array(java.lang.Double.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
       Array(java.lang.Double.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)")
     )
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     for (i <- 0 until tripleF.length) {
       val f = new Formatter()
-      f.format(tripleF(i)(pattern).asInstanceOf[String],
-               tripleF(i)(input).asInstanceOf[Object])
+      f.format(
+        tripleF(i)(pattern).asInstanceOf[String],
+        tripleF(i)(input).asInstanceOf[Object]
+      )
       assertEquals(tripleF(i)(output), f.toString)
     }
   }
@@ -2248,23 +2505,29 @@ class DefaultFormatterTest {
       Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
     )
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     for (i <- 0 until tripleA.length) {
       locally {
         val f = new Formatter()
-        f.format(tripleA(i)(pattern).asInstanceOf[String],
-                 tripleA(i)(input).asInstanceOf[Object])
+        f.format(
+          tripleA(i)(pattern).asInstanceOf[String],
+          tripleA(i)(input).asInstanceOf[Object]
+        )
         assertEquals(tripleA(i)(output), f.toString)
       }
       // test for conversion type 'A'
       locally {
         val f = new Formatter()
-        f.format(tripleA(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleA(i)(input).asInstanceOf[Object])
-        assertEquals(tripleA(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString)
+        f.format(
+          tripleA(i)(pattern).asInstanceOf[String].toUpperCase(),
+          tripleA(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          tripleA(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString
+        )
       }
     }
   }
@@ -2400,23 +2663,29 @@ class DefaultFormatterTest {
       Array(java.lang.Double.POSITIVE_INFINITY, "%#+01.6a", "+Infinity"),
       Array(java.lang.Double.POSITIVE_INFINITY, "%-+8.4a", "+Infinity")
     )
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     for (i <- 0 until tripleA.length) {
       locally {
         val f = new Formatter()
-        f.format(tripleA(i)(pattern).asInstanceOf[String],
-                 tripleA(i)(input).asInstanceOf[Object])
+        f.format(
+          tripleA(i)(pattern).asInstanceOf[String],
+          tripleA(i)(input).asInstanceOf[Object]
+        )
         assertEquals(tripleA(i)(output), f.toString)
       }
       // test for conversion type 'A'
       locally {
         val f = new Formatter()
-        f.format(tripleA(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleA(i)(input).asInstanceOf[Object])
-        assertEquals(tripleA(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString)
+        f.format(
+          tripleA(i)(pattern).asInstanceOf[String].toUpperCase(),
+          tripleA(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          tripleA(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString
+        )
       }
     }
   }
@@ -2460,23 +2729,29 @@ class DefaultFormatterTest {
       Array(new BigDecimal("-5.000E999"), "%-+17.6e", "-5.000000e+999   "),
       Array(new BigDecimal("-5.000E999"), "% 0(20e", "(000005.000000e+999)")
     )
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     for (i <- 0 until tripleE.length) {
       locally {
         val f = new Formatter()
-        f.format(tripleE(i)(pattern).asInstanceOf[String],
-                 tripleE(i)(input).asInstanceOf[Object])
+        f.format(
+          tripleE(i)(pattern).asInstanceOf[String],
+          tripleE(i)(input).asInstanceOf[Object]
+        )
         assertEquals(tripleE(i)(output), f.toString)
       }
       // test for conversion type 'E'
       locally {
         val f = new Formatter()
-        f.format(tripleE(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleE(i)(input).asInstanceOf[Object])
-        assertEquals(tripleE(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString)
+        f.format(
+          tripleE(i)(pattern).asInstanceOf[String].toUpperCase(),
+          tripleE(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          tripleE(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString
+        )
       }
     }
   }
@@ -2532,23 +2807,29 @@ class DefaultFormatterTest {
       Array(new BigDecimal("-5.000E999"), "%-+10.6g", "-5.00000e+999"),
       Array(new BigDecimal("-5.000E999"), "% 0(,12.0g", "(00005e+999)")
     )
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     for (i <- 0 until tripleG.length) {
       locally {
         val f = new Formatter()
-        f.format(tripleG(i)(pattern).asInstanceOf[String],
-                 tripleG(i)(input).asInstanceOf[Object])
+        f.format(
+          tripleG(i)(pattern).asInstanceOf[String],
+          tripleG(i)(input).asInstanceOf[Object]
+        )
         assertEquals(tripleG(i)(output), f.toString)
       }
       // test for conversion type 'G'
       locally {
         val f = new Formatter()
-        f.format(tripleG(i)(pattern).asInstanceOf[String].toUpperCase(),
-                 tripleG(i)(input).asInstanceOf[Object])
-        assertEquals(tripleG(i)(output).asInstanceOf[String].toUpperCase(),
-                     f.toString)
+        f.format(
+          tripleG(i)(pattern).asInstanceOf[String].toUpperCase(),
+          tripleG(i)(input).asInstanceOf[Object]
+        )
+        assertEquals(
+          tripleG(i)(output).asInstanceOf[String].toUpperCase(),
+          f.toString
+        )
       }
     }
     val f = new Formatter()
@@ -2563,9 +2844,9 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForBigDecimalConversionType_f(): Unit = {
-    val input: Int   = 0
+    val input: Int = 0
     val pattern: Int = 1
-    val output: Int  = 2
+    val output: Int = 2
     val tripleF: Array[Array[Any]] = Array(
       Array(BigDecimal.ZERO, "%f", "0.000000"),
       Array(BigDecimal.ZERO, "%#.3f", "0.000"),
@@ -2595,54 +2876,83 @@ class DefaultFormatterTest {
       Array(new BigDecimal(-1), "%#+0(1.6f", "(1.000000)"),
       Array(new BigDecimal(-1), "%-+(8.4f", "(1.0000)"),
       Array(new BigDecimal(-1), "% 0#(9.8f", "(1.00000000)"),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "%f",
-            "9999999999999999999999999999999999999999999.000000"),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "%#.3f",
-            "9999999999999999999999999999999999999999999.000"),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "%#,5f",
-            "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "%- #(12.0f",
-            " 9999999999999999999999999999999999999999999."),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "%#+0(1.6f",
-            "+9999999999999999999999999999999999999999999.000000"),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "%-+(8.4f",
-            "+9999999999999999999999999999999999999999999.0000"),
-      Array(new BigDecimal("9999999999999999999999999999999999999999999"),
-            "% 0#(9.8f",
-            " 9999999999999999999999999999999999999999999.00000000"),
-      Array(new BigDecimal("-9999999999999999999999999999999999999999999"),
-            "%f",
-            "-9999999999999999999999999999999999999999999.000000"),
-      Array(new BigDecimal("-9999999999999999999999999999999999999999999"),
-            "%#.3f",
-            "-9999999999999999999999999999999999999999999.000"),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "%f",
+        "9999999999999999999999999999999999999999999.000000"
+      ),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "%#.3f",
+        "9999999999999999999999999999999999999999999.000"
+      ),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "%#,5f",
+        "9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"
+      ),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "%- #(12.0f",
+        " 9999999999999999999999999999999999999999999."
+      ),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "%#+0(1.6f",
+        "+9999999999999999999999999999999999999999999.000000"
+      ),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "%-+(8.4f",
+        "+9999999999999999999999999999999999999999999.0000"
+      ),
+      Array(
+        new BigDecimal("9999999999999999999999999999999999999999999"),
+        "% 0#(9.8f",
+        " 9999999999999999999999999999999999999999999.00000000"
+      ),
+      Array(
+        new BigDecimal("-9999999999999999999999999999999999999999999"),
+        "%f",
+        "-9999999999999999999999999999999999999999999.000000"
+      ),
+      Array(
+        new BigDecimal("-9999999999999999999999999999999999999999999"),
+        "%#.3f",
+        "-9999999999999999999999999999999999999999999.000"
+      ),
       Array(
         new BigDecimal("-9999999999999999999999999999999999999999999"),
         "%#,5f",
-        "-9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"),
-      Array(new BigDecimal("-9999999999999999999999999999999999999999999"),
-            "%- #(12.0f",
-            "(9999999999999999999999999999999999999999999.)"),
-      Array(new BigDecimal("-9999999999999999999999999999999999999999999"),
-            "%#+0(1.6f",
-            "(9999999999999999999999999999999999999999999.000000)"),
-      Array(new BigDecimal("-9999999999999999999999999999999999999999999"),
-            "%-+(8.4f",
-            "(9999999999999999999999999999999999999999999.0000)"),
-      Array(new BigDecimal("-9999999999999999999999999999999999999999999"),
-            "% 0#(9.8f",
-            "(9999999999999999999999999999999999999999999.00000000)")
+        "-9,999,999,999,999,999,999,999,999,999,999,999,999,999,999.000000"
+      ),
+      Array(
+        new BigDecimal("-9999999999999999999999999999999999999999999"),
+        "%- #(12.0f",
+        "(9999999999999999999999999999999999999999999.)"
+      ),
+      Array(
+        new BigDecimal("-9999999999999999999999999999999999999999999"),
+        "%#+0(1.6f",
+        "(9999999999999999999999999999999999999999999.000000)"
+      ),
+      Array(
+        new BigDecimal("-9999999999999999999999999999999999999999999"),
+        "%-+(8.4f",
+        "(9999999999999999999999999999999999999999999.0000)"
+      ),
+      Array(
+        new BigDecimal("-9999999999999999999999999999999999999999999"),
+        "% 0#(9.8f",
+        "(9999999999999999999999999999999999999999999.00000000)"
+      )
     )
     for (i <- 0 until tripleF.length) {
       val f = new Formatter()
-      f.format(tripleF(i)(pattern).asInstanceOf[String],
-               tripleF(i)(input).asInstanceOf[Object])
+      f.format(
+        tripleF(i)(pattern).asInstanceOf[String],
+        tripleF(i)(input).asInstanceOf[Object]
+      )
       assertEquals(tripleF(i)(output), f.toString)
     }
     val f = new Formatter()
@@ -2655,15 +2965,17 @@ class DefaultFormatterTest {
   @Test def formatForExceptionsInFloatDoubleBigDecimalConversionType_eEgGfaA()
       : Unit = {
     val conversions: Array[Char] = Array('e', 'E', 'g', 'G', 'f', 'a', 'A')
-    val illArgs: Array[Any] = Array(false,
-                                    1.toByte,
-                                    2.toShort,
-                                    3,
-                                    4.toLong,
-                                    new BigInteger("5"),
-                                    java.lang.Character.valueOf('c'),
-                                    new Object(),
-                                    new Date())
+    val illArgs: Array[Any] = Array(
+      false,
+      1.toByte,
+      2.toShort,
+      3,
+      4.toLong,
+      new BigInteger("5"),
+      java.lang.Character.valueOf('c'),
+      new Object(),
+      new Date()
+    )
     for {
       i <- 0 until illArgs.length
       j <- 0 until conversions.length
@@ -2671,18 +2983,23 @@ class DefaultFormatterTest {
       val f = new Formatter()
       assertThrows(
         classOf[IllegalFormatConversionException],
-        f.format("%" + conversions(j), illArgs(i).asInstanceOf[Object]))
+        f.format("%" + conversions(j), illArgs(i).asInstanceOf[Object])
+      )
 
     }
     locally {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatConversionException],
-                   f.format("%a", new BigDecimal(1)))
+      assertThrows(
+        classOf[IllegalFormatConversionException],
+        f.format("%a", new BigDecimal(1))
+      )
     }
     locally {
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatConversionException],
-                   f.format("%A", new BigDecimal(1)))
+      assertThrows(
+        classOf[IllegalFormatConversionException],
+        f.format("%A", new BigDecimal(1))
+      )
     }
 
     val flagsConversionMismatches: Array[String] =
@@ -2690,81 +3007,97 @@ class DefaultFormatterTest {
     for (i <- 0 until flagsConversionMismatches.length) {
       locally {
         val f = new Formatter()
-        assertThrows(classOf[FormatFlagsConversionMismatchException],
-                     f.format(flagsConversionMismatches(i), new BigDecimal(1)))
+        assertThrows(
+          classOf[FormatFlagsConversionMismatchException],
+          f.format(flagsConversionMismatches(i), new BigDecimal(1))
+        )
       }
       locally {
         val f = new Formatter()
         assertThrows(
           classOf[FormatFlagsConversionMismatchException],
-          f.format(flagsConversionMismatches(i), null.asInstanceOf[BigDecimal]))
+          f.format(flagsConversionMismatches(i), null.asInstanceOf[BigDecimal])
+        )
       }
     }
 
-    val missingFormatWidths: Array[String] = Array("%-0e",
-                                                   "%0e",
-                                                   "%-e",
-                                                   "%-0E",
-                                                   "%0E",
-                                                   "%-E",
-                                                   "%-0g",
-                                                   "%0g",
-                                                   "%-g",
-                                                   "%-0G",
-                                                   "%0G",
-                                                   "%-G",
-                                                   "%-0f",
-                                                   "%0f",
-                                                   "%-f",
-                                                   "%-0a",
-                                                   "%0a",
-                                                   "%-a",
-                                                   "%-0A",
-                                                   "%0A",
-                                                   "%-A")
+    val missingFormatWidths: Array[String] = Array(
+      "%-0e",
+      "%0e",
+      "%-e",
+      "%-0E",
+      "%0E",
+      "%-E",
+      "%-0g",
+      "%0g",
+      "%-g",
+      "%-0G",
+      "%0G",
+      "%-G",
+      "%-0f",
+      "%0f",
+      "%-f",
+      "%-0a",
+      "%0a",
+      "%-a",
+      "%-0A",
+      "%0A",
+      "%-A"
+    )
     for (i <- 0 until missingFormatWidths.length) {
       locally {
         val f = new Formatter()
-        assertThrows(classOf[MissingFormatWidthException],
-                     f.format(missingFormatWidths(i), 1f.asInstanceOf[Object]))
+        assertThrows(
+          classOf[MissingFormatWidthException],
+          f.format(missingFormatWidths(i), 1f.asInstanceOf[Object])
+        )
       }
       locally {
         val f = new Formatter()
         assertThrows(
           classOf[MissingFormatWidthException],
-          f.format(missingFormatWidths(i), null.asInstanceOf[java.lang.Float]))
+          f.format(missingFormatWidths(i), null.asInstanceOf[java.lang.Float])
+        )
       }
     }
 
-    val illFlags: Array[String] = Array("%+ e",
-                                        "%+ E",
-                                        "%+ g",
-                                        "%+ G",
-                                        "%+ f",
-                                        "%+ a",
-                                        "%+ A",
-                                        "%-03e",
-                                        "%-03E",
-                                        "%-03g",
-                                        "%-03G",
-                                        "%-03f",
-                                        "%-03a",
-                                        "%-03A")
+    val illFlags: Array[String] = Array(
+      "%+ e",
+      "%+ E",
+      "%+ g",
+      "%+ G",
+      "%+ f",
+      "%+ a",
+      "%+ A",
+      "%-03e",
+      "%-03E",
+      "%-03g",
+      "%-03G",
+      "%-03f",
+      "%-03a",
+      "%-03A"
+    )
     for (i <- 0 until illFlags.length) {
       locally {
         val f = new Formatter()
-        assertThrows(classOf[IllegalFormatFlagsException],
-                     f.format(illFlags(i), 1.23d.asInstanceOf[Object]))
+        assertThrows(
+          classOf[IllegalFormatFlagsException],
+          f.format(illFlags(i), 1.23d.asInstanceOf[Object])
+        )
       }
       locally {
         val f = new Formatter()
-        assertThrows(classOf[IllegalFormatFlagsException],
-                     f.format(illFlags(i), null.asInstanceOf[java.lang.Double]))
+        assertThrows(
+          classOf[IllegalFormatFlagsException],
+          f.format(illFlags(i), null.asInstanceOf[java.lang.Double])
+        )
       }
     }
     val f = new Formatter()
-    assertThrows(classOf[UnknownFormatConversionException],
-                 f.format("%F", 1.asInstanceOf[Object]))
+    assertThrows(
+      classOf[UnknownFormatConversionException],
+      f.format("%F", 1.asInstanceOf[Object])
+    )
   }
 
   @Test def formatForFloatDoubleBigDecimalExceptionThrowingOrder(): Unit = {
@@ -2779,32 +3112,40 @@ class DefaultFormatterTest {
       // compare FormatFlagsConversionMismatchException and
       // IllegalFormatConversionException
       val f = new Formatter()
-      assertThrows(classOf[FormatFlagsConversionMismatchException],
-                   f.format("%,e", 1.toByte.asInstanceOf[Object]))
+      assertThrows(
+        classOf[FormatFlagsConversionMismatchException],
+        f.format("%,e", 1.toByte.asInstanceOf[Object])
+      )
     }
 
     locally {
       // compare IllegalFormatFlagsException and
       // FormatFlagsConversionMismatchException
       val f = new Formatter()
-      assertThrows(classOf[IllegalFormatFlagsException],
-                   f.format("%+ ,e", 1f.asInstanceOf[Object]))
+      assertThrows(
+        classOf[IllegalFormatFlagsException],
+        f.format("%+ ,e", 1f.asInstanceOf[Object])
+      )
     }
 
     locally {
       // compare MissingFormatWidthException and
       // IllegalFormatFlagsException
       val f = new Formatter()
-      assertThrows(classOf[MissingFormatWidthException],
-                   f.format("%+ -e", 1f.asInstanceOf[Object]))
+      assertThrows(
+        classOf[MissingFormatWidthException],
+        f.format("%+ -e", 1f.asInstanceOf[Object])
+      )
     }
 
     locally {
       // compare UnknownFormatConversionException and
       // MissingFormatWidthException
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%-F", 1f.asInstanceOf[Object]))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%-F", 1f.asInstanceOf[Object])
+      )
     }
   }
 
@@ -2821,8 +3162,10 @@ class DefaultFormatterTest {
       // compare FormatFlagsConversionMismatchException and
       // IllegalFormatConversionException
       val f = new Formatter()
-      assertThrows(classOf[FormatFlagsConversionMismatchException],
-                   f.format("%,e", 1.toByte.asInstanceOf[Object]))
+      assertThrows(
+        classOf[FormatFlagsConversionMismatchException],
+        f.format("%,e", 1.toByte.asInstanceOf[Object])
+      )
     }
 
     locally {
@@ -2843,8 +3186,10 @@ class DefaultFormatterTest {
       // compare UnknownFormatConversionException and
       // MissingFormatWidthException
       val f = new Formatter()
-      assertThrows(classOf[UnknownFormatConversionException],
-                   f.format("%-F", bd))
+      assertThrows(
+        classOf[UnknownFormatConversionException],
+        f.format("%-F", bd)
+      )
     }
   }
 
@@ -3056,12 +3401,12 @@ class DefaultFormatterTest {
    * test scientific notation to follow RI's behavior
    */
   @Test def scientificNotation(): Unit = {
-    val f: Formatter      = new Formatter()
-    val mc: MathContext   = new MathContext(30)
+    val f: Formatter = new Formatter()
+    val mc: MathContext = new MathContext(30)
     val value: BigDecimal = new BigDecimal(0.1, mc)
     f.format("%.30G", value)
 
-    val result: String   = f.toString
+    val result: String = f.toString
     val expected: String = "0.100000000000000005551115123126"
     assertEquals(expected, result)
   }

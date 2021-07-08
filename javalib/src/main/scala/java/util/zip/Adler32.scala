@@ -30,13 +30,17 @@ class Adler32 extends Checksum {
     }
   }
 
-  private def updateImpl(buf: Array[Byte],
-                         off: Int,
-                         nbytes: Int,
-                         adler1: Long): Long =
+  private def updateImpl(
+      buf: Array[Byte],
+      off: Int,
+      nbytes: Int,
+      adler1: Long
+  ): Long =
     zlib
-      .adler32(adler1.toULong,
-               buf.asInstanceOf[ByteArray].at(off),
-               nbytes.toUInt)
+      .adler32(
+        adler1.toULong,
+        buf.asInstanceOf[ByteArray].at(off),
+        nbytes.toUInt
+      )
       .toLong
 }

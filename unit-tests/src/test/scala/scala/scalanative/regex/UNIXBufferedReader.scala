@@ -5,7 +5,7 @@ import java.io.Reader
 
 class UNIXBufferedReader(r: Reader) extends Reader {
 //  private var r: Reader = null
-  private val buf    = new Array[Char](4096)
+  private val buf = new Array[Char](4096)
   private var buflen = 0 // length prefix of |buf| that is filled
 
   private var inext = 0 // index in buf of next char

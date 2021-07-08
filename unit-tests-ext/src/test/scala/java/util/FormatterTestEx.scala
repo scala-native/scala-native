@@ -6,8 +6,8 @@ import java.math.BigInteger
 import org.junit.Test
 import org.junit.Assert._
 
-/** Additional tests for java.lang.String that require `java.util.Locale`
- *  as well as classes in `java.text.*`.
+/** Additional tests for java.lang.String that require `java.util.Locale` as
+ *  well as classes in `java.text.*`.
  */
 class FormatterTestEx {
 
@@ -15,7 +15,7 @@ class FormatterTestEx {
    * not find any locale for which it would be different from 3.
    */
 
-  val French  = new Locale("fr") // decimal sep ','  grouping sep '\u00A0'
+  val French = new Locale("fr") // decimal sep ','  grouping sep '\u00A0'
   val Turkish = new Locale("tr") // special uppercase behavior
 
   // non-ASCII digits
@@ -26,10 +26,12 @@ class FormatterTestEx {
       .build()
   }
 
-  def assertF(locale: Locale,
-              expected: String,
-              format: String,
-              args: Any*): Unit = {
+  def assertF(
+      locale: Locale,
+      expected: String,
+      format: String,
+      args: Any*
+  ): Unit = {
     // Locale passed as constructor parameter
     val fmt1 = new Formatter(locale)
     val res1 =
@@ -47,7 +49,8 @@ class FormatterTestEx {
     // String.format
     assertEquals(
       expected,
-      String.format(locale, format, args.asInstanceOf[Seq[AnyRef]]: _*))
+      String.format(locale, format, args.asInstanceOf[Seq[AnyRef]]: _*)
+    )
   }
 
   @Test def testLocale(): Unit = {

@@ -23,8 +23,10 @@ class StringBuilderTest {
     assertEquals("true", newBuilder.append(true).toString)
     assertEquals("a", newBuilder.append('a').toString)
     assertEquals("abcd", newBuilder.append(Array('a', 'b', 'c', 'd')).toString)
-    assertEquals("bc",
-                 newBuilder.append(Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals(
+      "bc",
+      newBuilder.append(Array('a', 'b', 'c', 'd'), 1, 2).toString
+    )
     assertEquals("4", newBuilder.append(4.toByte).toString)
     assertEquals("304", newBuilder.append(304.toShort).toString)
     assertEquals("100000", newBuilder.append(100000).toString)
@@ -42,29 +44,43 @@ class StringBuilderTest {
     assertEquals("nu", newBuilder.insert(0, null: CharSequence, 0, 2).toString)
     assertEquals("true", newBuilder.insert(0, true).toString)
     assertEquals("a", newBuilder.insert(0, 'a').toString)
-    assertEquals("abcd",
-                 newBuilder.insert(0, Array('a', 'b', 'c', 'd')).toString)
-    assertEquals("bc",
-                 newBuilder.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString)
+    assertEquals(
+      "abcd",
+      newBuilder.insert(0, Array('a', 'b', 'c', 'd')).toString
+    )
+    assertEquals(
+      "bc",
+      newBuilder.insert(0, Array('a', 'b', 'c', 'd'), 1, 2).toString
+    )
     assertEquals("4", newBuilder.insert(0, 4.toByte).toString)
     assertEquals("304", newBuilder.insert(0, 304.toShort).toString)
     assertEquals("100000", newBuilder.insert(0, 100000).toString)
 
     assertEquals("abcdef", initBuilder("adef").insert(1, "bc").toString)
     assertEquals("abcdef", initBuilder("abcd").insert(4, "ef").toString)
-    assertEquals("abcdef",
-                 initBuilder("adef").insert(1, Array('b', 'c')).toString)
-    assertEquals("abcdef",
-                 initBuilder("adef").insert(1, initBuilder("bc")).toString)
-    assertEquals("abcdef",
-                 initBuilder("abef")
-                   .insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2)
-                   .toString)
+    assertEquals(
+      "abcdef",
+      initBuilder("adef").insert(1, Array('b', 'c')).toString
+    )
+    assertEquals(
+      "abcdef",
+      initBuilder("adef").insert(1, initBuilder("bc")).toString
+    )
+    assertEquals(
+      "abcdef",
+      initBuilder("abef")
+        .insert(2, Array('a', 'b', 'c', 'd', 'e'), 2, 2)
+        .toString
+    )
 
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("abcd").insert(-1, "whatever"))
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("abcd").insert(5, "whatever"))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuilder("abcd").insert(-1, "whatever")
+    )
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuilder("abcd").insert(5, "whatever")
+    )
   }
 
   @Test def insertFloat(): Unit = {
@@ -75,7 +91,8 @@ class StringBuilderTest {
   @Test def insertStringBuilder(): Unit = {
     assertEquals(
       "abcdef",
-      initBuilder("abef").insert(2, initBuilder("abcde"), 2, 4).toString)
+      initBuilder("abef").insert(2, initBuilder("abcde"), 2, 4).toString
+    )
   }
 
   @Test def shouldAllowStringInterpolationToSurviveNullAndUndefined(): Unit = {
@@ -86,10 +103,14 @@ class StringBuilderTest {
     assertEquals("023", initBuilder("0123").deleteCharAt(1).toString)
     assertEquals("123", initBuilder("0123").deleteCharAt(0).toString)
     assertEquals("012", initBuilder("0123").deleteCharAt(3).toString)
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("0123").deleteCharAt(-1))
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("0123").deleteCharAt(4))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuilder("0123").deleteCharAt(-1)
+    )
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuilder("0123").deleteCharAt(4)
+    )
   }
 
   @Test def replace(): Unit = {
@@ -101,8 +122,10 @@ class StringBuilderTest {
     assertEquals("0xxxx123", initBuilder("0123").replace(1, 1, "xxxx").toString)
     assertEquals("0123x", initBuilder("0123").replace(4, 5, "x").toString)
 
-    assertThrows(classOf[StringIndexOutOfBoundsException],
-                 initBuilder("0123").replace(-1, 3, "x"))
+    assertThrows(
+      classOf[StringIndexOutOfBoundsException],
+      initBuilder("0123").replace(-1, 3, "x")
+    )
   }
 
   @Test def setCharAt(): Unit = {
@@ -141,7 +164,7 @@ class StringBuilderTest {
     b.appendCodePoint(0x10000)
     assertEquals("a\uD800\uDC00", b.toString)
     b.append("fixture")
-    b.appendCodePoint(0x00010FFFF)
+    b.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", b.toString)
   }
 }

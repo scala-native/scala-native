@@ -31,53 +31,65 @@ private[scalanative] object IO {
 
   /** Finds all files starting in `base` that match `pattern`. */
   def getAll(base: Path, pattern: String): Seq[Path] = {
-    val out     = collection.mutable.ArrayBuffer.empty[Path]
+    val out = collection.mutable.ArrayBuffer.empty[Path]
     val matcher = FileSystems.getDefault.getPathMatcher(pattern)
     val visitor = new SimpleFileVisitor[Path] {
       override def preVisitDirectory(
           directory: Path,
-          attributes: BasicFileAttributes): FileVisitResult =
+          attributes: BasicFileAttributes
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
 
-      override def postVisitDirectory(directory: Path,
-                                      exception: IOException): FileVisitResult =
+      override def postVisitDirectory(
+          directory: Path,
+          exception: IOException
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
 
       override def visitFile(
           file: Path,
-          attributes: BasicFileAttributes): FileVisitResult = {
+          attributes: BasicFileAttributes
+      ): FileVisitResult = {
         if (matcher.matches(file)) out += file
         FileVisitResult.CONTINUE
       }
 
-      override def visitFileFailed(file: Path,
-                                   exception: IOException): FileVisitResult =
+      override def visitFileFailed(
+          file: Path,
+          exception: IOException
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
     }
-    Files.walkFileTree(base,
-                       EnumSet.of(FileVisitOption.FOLLOW_LINKS),
-                       Int.MaxValue,
-                       visitor)
+    Files.walkFileTree(
+      base,
+      EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+      Int.MaxValue,
+      visitor
+    )
     out.toSeq
   }
 
   /** Does a `pattern` match starting at base */
   def existsInDir(base: Path, pattern: String): Boolean = {
-    var out     = false
+    var out = false
     val matcher = FileSystems.getDefault.getPathMatcher(pattern)
     val visitor = new SimpleFileVisitor[Path] {
       override def preVisitDirectory(
           directory: Path,
-          attributes: BasicFileAttributes): FileVisitResult =
+          attributes: BasicFileAttributes
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
 
-      override def postVisitDirectory(directory: Path,
-                                      exception: IOException): FileVisitResult =
+      override def postVisitDirectory(
+          directory: Path,
+          exception: IOException
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
 
       override def visitFile(
           file: Path,
-          attributes: BasicFileAttributes): FileVisitResult = {
+          attributes: BasicFileAttributes
+      ): FileVisitResult = {
         if (matcher.matches(file)) {
           out = true
           FileVisitResult.TERMINATE
@@ -86,14 +98,18 @@ private[scalanative] object IO {
         }
       }
 
-      override def visitFileFailed(file: Path,
-                                   exception: IOException): FileVisitResult =
+      override def visitFileFailed(
+          file: Path,
+          exception: IOException
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
     }
-    Files.walkFileTree(base,
-                       EnumSet.of(FileVisitOption.FOLLOW_LINKS),
-                       Int.MaxValue,
-                       visitor)
+    Files.walkFileTree(
+      base,
+      EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+      Int.MaxValue,
+      visitor
+    )
     out
   }
 
@@ -117,12 +133,15 @@ private[scalanative] object IO {
         new SimpleFileVisitor[Path]() {
           override def visitFile(
               file: Path,
-              attrs: BasicFileAttributes): FileVisitResult = {
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
             Files.delete(file)
             FileVisitResult.CONTINUE
           }
-          override def postVisitDirectory(dir: Path,
-                                          exc: IOException): FileVisitResult = {
+          override def postVisitDirectory(
+              dir: Path,
+              exc: IOException
+          ): FileVisitResult = {
             Files.delete(dir)
             FileVisitResult.CONTINUE
           }
@@ -133,8 +152,8 @@ private[scalanative] object IO {
 
   /** Compute a SHA-1 hash of `path`. */
   def sha1(path: Path, bufSize: Int = 1024): Array[Byte] = {
-    val digest       = MessageDigest.getInstance("SHA-1")
-    val stream       = Files.newInputStream(path)
+    val digest = MessageDigest.getInstance("SHA-1")
+    val stream = Files.newInputStream(path)
     val digestStream = new DigestInputStream(stream, digest)
     try {
       val buf = new Array[Byte](bufSize)
@@ -149,9 +168,9 @@ private[scalanative] object IO {
   def sha1files(files: Seq[Path], bufSize: Int = 1024): Array[Byte] = {
     val digest = MessageDigest.getInstance("SHA-1")
     files.foreach { file =>
-      val stream       = Files.newInputStream(file)
+      val stream = Files.newInputStream(file)
       val digestStream = new DigestInputStream(stream, digest)
-      val buf          = new Array[Byte](bufSize)
+      val buf = new Array[Byte](bufSize)
       try {
         while (digestStream.read(buf, 0, bufSize) != -1) {}
       } finally {
@@ -180,21 +199,21 @@ private[scalanative] object IO {
     copyRecursive(source, target)
   }
 
-  /**
-   * Copy recursively to existing target directory
+  /** Copy recursively to existing target directory
    *
-   * Note: We need source.relativize(file) for copying
-   * to and from UNIX FS to get a relative path. We can't
-   * use the following code because you can't resolve
-   * across filesystems like UNIX FS to ZIP FS:
-   * val dest = target.resolve(source.relativize(file))
+   *  Note: We need source.relativize(file) for copying to and from UNIX FS to
+   *  get a relative path. We can't use the following code because you can't
+   *  resolve across filesystems like UNIX FS to ZIP FS: val dest =
+   *  target.resolve(source.relativize(file))
    */
   private def copyRecursive(source: Path, target: Path): Path = {
     Files.walkFileTree(
       source,
       new SimpleFileVisitor[Path]() {
-        override def visitFile(file: Path,
-                               attrs: BasicFileAttributes): FileVisitResult = {
+        override def visitFile(
+            file: Path,
+            attrs: BasicFileAttributes
+        ): FileVisitResult = {
           val dest =
             Paths.get(target.toString, source.relativize(file).toString())
           Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
@@ -203,7 +222,8 @@ private[scalanative] object IO {
 
         override def preVisitDirectory(
             dir: Path,
-            attrs: BasicFileAttributes): FileVisitResult = {
+            attrs: BasicFileAttributes
+        ): FileVisitResult = {
           val dest =
             Paths.get(target.toString, source.relativize(dir).toString())
           Files.createDirectories(dest)

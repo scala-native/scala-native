@@ -5,12 +5,13 @@ package scala.scalanative.testinterface.adapter
 import scala.scalanative.testinterface.common._
 import sbt.testing._
 
-private[adapter] final class TaskAdapter(taskInfo: TaskInfo,
-                                         runID: RunMux.RunID,
-                                         runnerGetter: () => RunMuxRPC)
-    extends Task {
+private[adapter] final class TaskAdapter(
+    taskInfo: TaskInfo,
+    runID: RunMux.RunID,
+    runnerGetter: () => RunMuxRPC
+) extends Task {
 
-  def taskDef: TaskDef    = taskInfo.taskDef
+  def taskDef: TaskDef = taskInfo.taskDef
   def tags: Array[String] = taskInfo.tags.toArray
 
   def execute(handler: EventHandler, loggers: Array[Logger]): Array[Task] = {
@@ -28,7 +29,7 @@ private[adapter] final class TaskAdapter(taskInfo: TaskInfo,
 
     try {
       val colorSupport = loggers.map(_.ansiCodesSupported).toList
-      val req          = new ExecuteRequest(taskInfo, colorSupport)
+      val req = new ExecuteRequest(taskInfo, colorSupport)
 
       runner
         .call(NativeEndpoints.execute, runID)(req)

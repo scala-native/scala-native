@@ -19,7 +19,7 @@ trait IterableTest {
 
   @Test def empty(): Unit = {
     val iter = factory.fromElements[Int]()
-    var hit  = false
+    var hit = false
     iter.forEach(new Consumer[Int] {
       def accept(x: Int): Unit = hit = true
     })
@@ -28,7 +28,7 @@ trait IterableTest {
 
   @Test def simpleSum(): Unit = {
     val iter = factory.fromElements[Int](42, 50, 12, 0, -45, 102, 32, 75)
-    var sum  = 0
+    var sum = 0
     iter.forEach(new Consumer[Int] {
       def accept(x: Int): Unit = sum = sum + x
     })
@@ -45,7 +45,7 @@ class IterableDefaultTest extends IterableTest {
         override def iterator(): ju.Iterator[E] = {
           new ju.Iterator[E] {
             override def hasNext(): Boolean = false
-            override def next(): E          = throw new NoSuchElementException()
+            override def next(): E = throw new NoSuchElementException()
           }
         }
       }
@@ -57,7 +57,7 @@ class IterableDefaultTest extends IterableTest {
           val l: Iterator[E] = elems.toIterator
           new ju.Iterator[E] {
             override def hasNext(): Boolean = l.hasNext
-            override def next(): E          = l.next
+            override def next(): E = l.next
           }
         }
       }
