@@ -10,6 +10,7 @@ private[build] object BuildPluginFactory {
       case "javalib" => new JavalibBuildPlugin
       case _ =>
         throw new BuildException(
-          s"Build plugin not found: ${Filter.buildPluginKey}=${name}")
+          s"Build plugin not found: ${Filter.buildPluginKey}=${name}"
+        )
     }
 }

@@ -10,10 +10,12 @@ import scalanative.linker.Result
 
 /** If used, includes the C code used for `java.util.zip` */
 private[build] class JavalibBuildPlugin extends BuildPlugin {
-  override def filterNativelib(config: Config,
-                               linkerResult: Result,
-                               nativeCodePath: Path,
-                               allPaths: Seq[Path]): (Seq[Path], Config) = {
+  override def filterNativelib(
+      config: Config,
+      linkerResult: Result,
+      nativeCodePath: Path,
+      allPaths: Seq[Path]
+  ): (Seq[Path], Config) = {
     // predicate to check if given file path shall be compiled and exclude
     // all optional (javalib zlib) dependencies if they are not necessary
     val optPath = nativeCodePath.resolve("optional").abs
