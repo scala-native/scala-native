@@ -188,3 +188,8 @@ scala/concurrent/impl/DefaultPromiseTest.scala
 ## Tests fail
 
 scala/collection/immutable/StreamTest.scala
+
+#=====
+## Assumes JUnit 4.12
+scala/collection/immutable/RangeTest.scala
+scala/util/matching/RegexTest.scala

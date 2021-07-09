@@ -68,3 +68,7 @@ scala/tools/testing/AssertUtilTest.scala
 
 ## Tests fail
 
+#=====
+## Assumes JUnit 4.12
+scala/util/matching/RegexTest.scala
+scala/util/SpecVersionTest.scala
