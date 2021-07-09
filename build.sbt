@@ -125,7 +125,8 @@ addCommandAlias(
     "tests/test",
     "testsExt/test",
     "junitTestOutputsJVM/test",
-    "junitTestOutputsNative/test"
+    "junitTestOutputsNative/test",
+    "scalaPartestJunitTests/test"
   ).mkString(";")
 )
 
@@ -908,3 +909,242 @@ lazy val junitAsyncJVM =
       nameSettings,
       publishArtifact := false
     )
+
+lazy val shouldPartest = settingKey[Boolean](
+  "Whether we should partest the current scala version (or skip if we can't)"
+)
+
+def shouldPartestSetting: Seq[Def.Setting[_]] = {
+  Def.settings(
+    shouldPartest := {
+      baseDirectory.value.getParentFile / "scala-partest-tests" / "src" / "test" / "resources" /
+        "scala" / "tools" / "partest" / "scalanative" / scalaVersion.value
+    }.exists()
+  )
+}
+
+lazy val scalaPartest = project
+  .in(file("scala-partest"))
+  .settings(
+    noPublishSettings,
+    shouldPartestSetting,
+    resolvers += Resolver.typesafeIvyRepo("releases"),
+    fetchScalaSource / artifactPath :=
+      baseDirectory.value / "fetchedSources" / scalaVersion.value,
+    fetchScalaSource := {
+      import org.eclipse.jgit.api._
+
+      val s = streams.value
+      val ver = scalaVersion.value
+      val trgDir = (fetchScalaSource / artifactPath).value
+
+      if (!trgDir.exists) {
+        s.log.info(s"Fetching Scala source version $ver")
+
+        // Make parent dirs and stuff
+        IO.createDirectory(trgDir)
+
+        // Clone scala source code
+        new CloneCommand()
+          .setDirectory(trgDir)
+          .setURI("https://github.com/scala/scala.git")
+          .call()
+      }
+
+      // Checkout proper ref. We do this anyway so we fail if
+      // something is wrong
+      val git = Git.open(trgDir)
+      s.log.info(s"Checking out Scala source version $ver")
+      git.checkout().setName(s"v$ver").call()
+
+      trgDir
+    },
+    Compile / unmanagedSourceDirectories ++= {
+      if (!shouldPartest.value) Nil
+      else {
+        Seq(CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11)) =>
+            sourceDirectory.value / "main" / "legacy-partest"
+          case _ => sourceDirectory.value / "main" / "new-partest"
+        })
+      }
+    },
+    libraryDependencies ++= {
+      if (!shouldPartest.value) Nil
+      else
+        Seq(
+          "org.scala-sbt" % "test-interface" % "1.0",
+          CrossVersion.partialVersion(scalaVersion.value) match {
+            case Some((2, 11)) =>
+              "org.scala-lang.modules" %% "scala-partest" % "1.0.16"
+            case _ => "org.scala-lang" % "scala-partest" % scalaVersion.value
+          }
+        )
+    },
+    Compile / sources := {
+      if (!shouldPartest.value) Nil
+      else (Compile / sources).value
+    }
+  )
+  .dependsOn(nscplugin, tools)
+
+lazy val scalaPartestTests: Project = project
+  .in(file("scala-partest-tests"))
+  .settings(
+    noPublishSettings,
+    shouldPartestSetting,
+    Test / fork := true,
+    Test / javaOptions += "-Xmx1G",
+    Test / definedTests ++= Def
+      .taskDyn[Seq[sbt.TestDefinition]] {
+        if (shouldPartest.value) Def.task {
+          val _ = (scalaPartest / fetchScalaSource).value
+          Seq(
+            new sbt.TestDefinition(
+              s"partest-${scalaVersion.value}",
+              // marker fingerprint since there are no test classes
+              // to be discovered by sbt:
+              new sbt.testing.AnnotatedFingerprint {
+                def isModule = true
+                def annotationName = "partest"
+              },
+              true,
+              Array()
+            )
+          )
+        }
+        else {
+          Def.task(Seq())
+        }
+      }
+      .value,
+    testOptions += {
+      val nativeCp = Seq(
+        (auxlib / Compile / packageBin).value,
+        (scalalib / Compile / packageBin).value,
+        (scalaPartestRuntime / Compile / packageBin).value
+      ).map(_.absolutePath).mkString(":")
+
+      Tests.Argument(s"--nativeClasspath=$nativeCp")
+    },
+    // Override the dependency of partest - see Scala.js issue #1889
+    dependencyOverrides += "org.scala-lang" % "scala-library" % scalaVersion.value % "test",
+    testFrameworks ++= {
+      if (shouldPartest.value)
+        Seq(new TestFramework("scala.tools.partest.scalanative.Framework"))
+      else Seq()
+    }
+  )
+  .dependsOn(scalaPartest % "test", javalib)
+
+lazy val scalaPartestRuntime = project
+  .in(file("scala-partest-runtime"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(noPublishSettings)
+  .settings(
+    Compile / unmanagedSources ++= {
+      if (!(scalaPartest / shouldPartest).value) Nil
+      else {
+        val upstreamDir = (scalaPartest / fetchScalaSource).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Seq.empty[File]
+          case _ =>
+            val testkit = upstreamDir / "src/testkit/scala/tools/testkit"
+            val partest = upstreamDir / "src/partest/scala/tools/partest"
+            Seq(
+              testkit / "AssertUtil.scala",
+              partest / "Util.scala"
+            )
+        }
+      }
+    },
+    Compile / unmanagedSourceDirectories ++= {
+      if (!(scalaPartest / shouldPartest).value) Nil
+      else
+        Seq(
+          (junitRuntime / Compile / scalaSource).value / "org"
+        )
+    }
+  )
+  .dependsOn(nscplugin % "plugin", scalalib)
+
+lazy val scalaPartestJunitTests = project
+  .in(file("scala-partest-junit-tests"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(
+    noPublishSettings,
+    scalacOptions ++= Seq(
+      "-language:higherKinds"
+    ),
+    scalacOptions ++= {
+      // Suppress deprecation warnings for Scala partest sources
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 11)) => Nil
+        case _ =>
+          Seq("-Wconf:cat=deprecation:s")
+      }
+    },
+    scalacOptions --= Seq(
+      "-Xfatal-warnings"
+    ),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
+    shouldPartest := {
+      (Test / resourceDirectory).value / scalaVersion.value
+    }.exists(),
+    Compile / unmanagedSources ++= {
+      if (!shouldPartest.value) Nil
+      else {
+        val upstreamDir = (scalaPartest / fetchScalaSource).value
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 11 | 12)) => Seq.empty[File]
+          case _ =>
+            Seq(
+              upstreamDir / "src/testkit/scala/tools/testkit/AssertUtil.scala"
+            )
+        }
+      }
+    },
+    Test / unmanagedSources ++= {
+      if (!shouldPartest.value) Nil
+      else {
+        val blacklist: Set[String] = {
+          val file =
+            (Test / resourceDirectory).value / scalaVersion.value / "BlacklistedTests.txt"
+          IO.readLines(file)
+            .filter(l => l.nonEmpty && !l.startsWith("#"))
+            .toSet
+        }
+
+        val jUnitTestsPath =
+          (scalaPartest / fetchScalaSource).value / "test" / "junit"
+
+        val scalaScalaJUnitSources = {
+          (jUnitTestsPath ** "*.scala").get.flatMap { file =>
+            file.relativeTo(jUnitTestsPath) match {
+              case Some(rel) => List((rel.toString.replace('\\', '/'), file))
+              case None      => Nil
+            }
+          }
+        }
+
+        // Check the coherence of the lists against the files found.
+        val allClasses = scalaScalaJUnitSources.map(_._1).toSet
+        val nonexistentBlacklisted = blacklist.diff(allClasses)
+        if (nonexistentBlacklisted.nonEmpty) {
+          throw new AssertionError(
+            s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted"
+          )
+        }
+
+        scalaScalaJUnitSources.collect {
+          case (rel, file) if !blacklist.contains(rel) => file
+        }
+      }
+    }
+  )
+  .dependsOn(
+    nscplugin % "plugin",
+    junitPlugin % "plugin",
+    junitRuntime,
+    testInterface % "test"
+  )
