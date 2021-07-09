@@ -45,31 +45,35 @@ class ScalaNativeSBTRunner(
   System.setProperty("partest.timeout", "10 hours")
 
   override val suiteRunner =
-    new SuiteRunner(testSourcePath = config.optSourcePath orElse Option(
-                      "test/files") getOrElse PartestDefaults.sourcePath,
-                    fileManager = new FileManager(
-                      testClassLoader = testClassLoader),
-                    updateCheck = config.optUpdateCheck,
-                    failed = config.optFailed,
-                    nestUI = nestUI,
-                    javaCmdPath = Option(javaCmd)
-                      .map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
-                    javacCmdPath = Option(javacCmd)
-                      .map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
-                    scalacExtraArgs = scalacArgs,
-                    javaOpts = javaOpts) with ScalaNativeSuiteRunner {
+    new SuiteRunner(
+      testSourcePath = config.optSourcePath orElse Option(
+        "test/files"
+      ) getOrElse PartestDefaults.sourcePath,
+      fileManager = new FileManager(testClassLoader = testClassLoader),
+      updateCheck = config.optUpdateCheck,
+      failed = config.optFailed,
+      nestUI = nestUI,
+      javaCmdPath = Option(javaCmd)
+        .map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
+      javacCmdPath = Option(javacCmd)
+        .map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
+      scalacExtraArgs = scalacArgs,
+      javaOpts = javaOpts
+    ) with ScalaNativeSuiteRunner {
 
       val options: ScalaNativePartestOptions = ScalaNativeSBTRunner.this.options
-      val scalaVersion: String               = ScalaNativeSBTRunner.this.scalaVersion
+      val scalaVersion: String = ScalaNativeSBTRunner.this.scalaVersion
 
-      override def onFinishTest(testFile: File,
-                                result: TestState): TestState = {
+      override def onFinishTest(
+          testFile: File,
+          result: TestState
+      ): TestState = {
         eventHandler.handle(new Event {
           def fullyQualifiedName: String = testFile.testIdent
-          def fingerprint: Fingerprint   = partestFingerprint
-          def selector: Selector         = new TestSelector(testFile.testIdent)
-          val (status, throwable)        = makeStatus(result)
-          def duration: Long             = -1L
+          def fingerprint: Fingerprint = partestFingerprint
+          def selector: Selector = new TestSelector(testFile.testIdent)
+          val (status, throwable) = makeStatus(result)
+          def duration: Long = -1L
         })
         result
       }

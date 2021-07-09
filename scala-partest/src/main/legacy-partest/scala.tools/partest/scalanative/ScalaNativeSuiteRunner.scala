@@ -49,8 +49,10 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
     onFinishTest(testFile, state)
   }
 
-  override def runTestsForFiles(kindFiles: Array[File],
-                                kind: String): Array[TestState] = {
+  override def runTestsForFiles(
+      kindFiles: Array[File],
+      kind: String
+  ): Array[TestState] = {
     super.runTestsForFiles(kindFiles.filter(testFilter), kind)
   }
 

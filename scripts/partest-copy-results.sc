@@ -37,7 +37,7 @@ def main(
              |""".stripMargin)
 
   val failedNotBlacklisted = collection.mutable.Set.empty[String]
-  val failed               = collection.mutable.Set.empty[String]
+  val failed = collection.mutable.Set.empty[String]
   val blacklisted = read
     .lines(partestTestsDir / "BlacklistedTests.txt")
     .filterNot(_.startsWith("#"))
@@ -48,12 +48,13 @@ def main(
   for {
     kind <- kinds
     outputDir = resultsDir / kind
-    _ = if (!(exists(outputDir))) mkdir(outputDir)
-    else ls(outputDir).foreach(rm)
+    _ =
+      if (!(exists(outputDir))) mkdir(outputDir)
+      else ls(outputDir).foreach(rm)
     logFile <- ls(testFiles / kind) if logFile.ext == "log"
 
     relPath = logFile.relativeTo(testFiles)
-    name    = relPath.toString.stripSuffix(s"-$kind.log")
+    name = relPath.toString.stripSuffix(s"-$kind.log")
 
     _ = cp.over(logFile, resultsDir / relPath)
     _ = {

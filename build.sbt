@@ -911,7 +911,8 @@ lazy val junitAsyncJVM =
     )
 
 lazy val shouldPartest = settingKey[Boolean](
-  "Whether we should partest the current scala version (or skip if we can't)")
+  "Whether we should partest the current scala version (or skip if we can't)"
+)
 
 def shouldPartestSetting: Seq[Def.Setting[_]] = {
   Def.settings(
@@ -933,8 +934,8 @@ lazy val scalaPartest = project
     fetchScalaSource := {
       import org.eclipse.jgit.api._
 
-      val s      = streams.value
-      val ver    = scalaVersion.value
+      val s = streams.value
+      val ver = scalaVersion.value
       val trgDir = (fetchScalaSource / artifactPath).value
 
       if (!trgDir.exists) {
@@ -1004,12 +1005,13 @@ lazy val scalaPartestTests: Project = project
               // marker fingerprint since there are no test classes
               // to be discovered by sbt:
               new sbt.testing.AnnotatedFingerprint {
-                def isModule       = true
+                def isModule = true
                 def annotationName = "partest"
               },
               true,
               Array()
-            ))
+            )
+          )
         }
         else {
           Def.task(Seq())
@@ -1126,11 +1128,12 @@ lazy val scalaPartestJunitTests = project
         }
 
         // Check the coherence of the lists against the files found.
-        val allClasses             = scalaScalaJUnitSources.map(_._1).toSet
+        val allClasses = scalaScalaJUnitSources.map(_._1).toSet
         val nonexistentBlacklisted = blacklist.diff(allClasses)
         if (nonexistentBlacklisted.nonEmpty) {
           throw new AssertionError(
-            s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted")
+            s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted"
+          )
         }
 
         scalaScalaJUnitSources.collect {
@@ -1139,7 +1142,9 @@ lazy val scalaPartestJunitTests = project
       }
     }
   )
-  .dependsOn(nscplugin   % "plugin",
-             junitPlugin % "plugin",
-             junitRuntime,
-             testInterface % "test")
+  .dependsOn(
+    nscplugin % "plugin",
+    junitPlugin % "plugin",
+    junitRuntime,
+    testInterface % "test"
+  )

@@ -1,15 +1,15 @@
 import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
 import java.io.File
 
-@main(
-  doc = """" +
+@main(doc = """" +
   "Tool used to check integrity of files defined in partest tests and thoose 
   actually defined in Scala (partest) repository. 
   It allows to check which blacklisted files are not existing and can suggest correct blacklisted item name.
   Also checks for duplicates in blacklisted items.""")
 def main(
     @arg(doc = "Scala version used for fetching sources")
-    scalaVersion: String) = {
+    scalaVersion: String
+) = {
   implicit val wd: os.Path = pwd
 
   val partestTestsDir = pwd / "scala-partest-tests" /
@@ -38,20 +38,22 @@ def main(
   val testNames = collection.mutable.Set.empty[String]
 
   for {
-    (blacklisted, line) <- (read.lines ! partestTestsDir / "BlacklistedTests.txt").zipWithIndex
+    (blacklisted, line) <-
+      (read.lines ! partestTestsDir / "BlacklistedTests.txt").zipWithIndex
     if blacklisted.nonEmpty && !blacklisted.startsWith("#")
     testName = {
       val lastDot = blacklisted.lastIndexOf(".")
       if (lastDot > 0) blacklisted.substring(0, lastDot)
       else blacklisted
     }
-    _ = if (testNames.contains(testName)) {
-      println(s"Duplicated blacklisted test $testName at line $line")
-    } else {
-      testNames += testName
-    }
+    _ =
+      if (testNames.contains(testName)) {
+        println(s"Duplicated blacklisted test $testName at line $line")
+      } else {
+        testNames += testName
+      }
     source = testFiles / RelPath(blacklisted) if !exists(source)
-    asDir  = testFiles / RelPath(testName)
+    asDir = testFiles / RelPath(testName)
     asFile = testFiles / RelPath(testName + ".scala")
   } {
     println {
@@ -67,7 +69,7 @@ def main(
 
   for {
     kindDir <- ls ! partestTestsDir if kindDir.isDir
-    file    <- ls ! kindDir
+    file <- ls ! kindDir
     relativePath = file.relativeTo(partestTestsDir)
     if !exists(testFiles / relativePath)
   } {

@@ -7,8 +7,10 @@ import scala.tools.nsc.reporters.Reporter
 import scala.tools.partest.nest.{DirectCompiler, PartestGlobal}
 
 trait ScalaNativeDirectCompiler extends DirectCompiler {
-  override def newGlobal(settings: Settings,
-                         reporter: Reporter): PartestGlobal = {
+  override def newGlobal(
+      settings: Settings,
+      reporter: Reporter
+  ): PartestGlobal = {
     new PartestGlobal(settings, reporter) {
       override protected def loadRoughPluginsList(): List[Plugin] = {
         super.loadRoughPluginsList() :+

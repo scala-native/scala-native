@@ -23,24 +23,29 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   // Get scala version through test name
   val scalaVersion = taskDef.fullyQualifiedName.stripPrefix("partest-")
 
-  /** Executes this task, possibly returning to the client new tasks to execute. */
-  def execute(eventHandler: EventHandler,
-              loggers: Array[Logger]): Array[Task] = {
+  /** Executes this task, possibly returning to the client new tasks to execute.
+   */
+  def execute(
+      eventHandler: EventHandler,
+      loggers: Array[Logger]
+  ): Array[Task] = {
     val forkedCp = scala.util.Properties.javaClassPath
       .split(java.io.File.pathSeparator)
     val classLoader = new URLClassLoader(forkedCp.map(new File(_).toURI.toURL))
 
     if (Runtime.getRuntime().maxMemory() / (1024 * 1024) < 800)
-      loggers foreach (_.warn(s"""Low heap size detected (~ ${Runtime
-        .getRuntime()
-        .maxMemory() / (1024 * 1024)}M). Please add the following to your build.sbt: javaOptions in Test += "-Xmx1G""""))
+      loggers foreach (_.warn(
+        s"""Low heap size detected (~ ${Runtime
+          .getRuntime()
+          .maxMemory() / (1024 * 1024)}M). Please add the following to your build.sbt: javaOptions in Test += "-Xmx1G""""
+      ))
 
     val maybeOptions =
       ScalaNativePartestOptions(args, str => loggers.foreach(_.error(str)))
         .map { opts =>
           if (opts.shouldPrecompileLibraries) {
             val forkedClasspath = forkedCp.map(java.nio.file.Paths.get(_)).toSeq
-            val paths           = precompileLibs(opts, forkedClasspath)
+            val paths = precompileLibs(opts, forkedClasspath)
             opts.copy(precompiledLibrariesPaths = paths)
           } else opts
         }
@@ -65,7 +70,8 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
         case ex: ClassNotFoundException =>
           loggers foreach { l =>
             l.error(
-              "Please make sure partest is running in a forked VM by including the following line in build.sbt:\nfork in Test := true")
+              "Please make sure partest is running in a forked VM by including the following line in build.sbt:\nfork in Test := true"
+            )
           }
           throw ex
       }
@@ -78,17 +84,19 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
 
   // use reflection to instantiate scala.tools.partest.scalanative.ScalaNativeSBTRunner,
   // casting to the structural type SBTRunner above so that method calls on the result will be invoked reflectively as well
-  private def SBTRunner(partestFingerprint: Fingerprint,
-                        eventHandler: EventHandler,
-                        loggers: Array[Logger],
-                        testRoot: File,
-                        testClassLoader: URLClassLoader,
-                        javaCmd: File,
-                        javacCmd: File,
-                        scalacArgs: Array[String],
-                        args: Array[String],
-                        options: ScalaNativePartestOptions,
-                        scalaVersion: String): SBTRunner = {
+  private def SBTRunner(
+      partestFingerprint: Fingerprint,
+      eventHandler: EventHandler,
+      loggers: Array[Logger],
+      testRoot: File,
+      testClassLoader: URLClassLoader,
+      javaCmd: File,
+      javacCmd: File,
+      scalacArgs: Array[String],
+      args: Array[String],
+      options: ScalaNativePartestOptions,
+      scalaVersion: String
+  ): SBTRunner = {
     val runnerClass =
       Class.forName("scala.tools.partest.scalanative.ScalaNativeSBTRunner")
 
@@ -104,17 +112,19 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
     System.setProperty("partest.timeout", "10 hours")
 
     runnerClass.getConstructors.head
-      .newInstance(partestFingerprint,
-                   eventHandler,
-                   loggers,
-                   testRoot,
-                   testClassLoader,
-                   javaCmd,
-                   javacCmd,
-                   scalacArgs,
-                   args,
-                   options,
-                   scalaVersion)
+      .newInstance(
+        partestFingerprint,
+        eventHandler,
+        loggers,
+        testRoot,
+        testClassLoader,
+        javaCmd,
+        javacCmd,
+        scalacArgs,
+        args,
+        options,
+        scalaVersion
+      )
       .asInstanceOf[SBTRunner]
   }
 
@@ -123,7 +133,8 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
 
   def precompileLibs(
       options: ScalaNativePartestOptions,
-      forkedClasspath: Seq[java.nio.file.Path]): Seq[java.nio.file.Path] = {
+      forkedClasspath: Seq[java.nio.file.Path]
+  ): Seq[java.nio.file.Path] = {
     val config = Defaults.config
       .withWorkdir(Defaults.workdir())
       .withClassPath(options.nativeClasspath ++ forkedClasspath)
@@ -135,15 +146,17 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       }
 
     import scala.collection.mutable
-    val linkerResult = new Result(infos = mutable.Map.empty,
-                                  entries = Nil,
-                                  unavailable = Nil,
-                                  referencedFrom = mutable.Map.empty,
-                                  links = Defaults.links,
-                                  defns = Nil,
-                                  dynsigs = Nil,
-                                  dynimpls = Nil,
-                                  resolvedVals = mutable.Map.empty)
+    val linkerResult = new Result(
+      infos = mutable.Map.empty,
+      entries = Nil,
+      unavailable = Nil,
+      referencedFrom = mutable.Map.empty,
+      links = Defaults.links,
+      defns = Nil,
+      dynsigs = Nil,
+      dynimpls = Nil,
+      resolvedVals = mutable.Map.empty
+    )
 
     Build.findAndCompileNativeSources(config, linkerResult)
   }

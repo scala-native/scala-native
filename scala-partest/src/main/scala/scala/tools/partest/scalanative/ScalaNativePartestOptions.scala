@@ -57,18 +57,19 @@ object ScalaNativePartestOptions {
 
   def apply(
       args: Array[String],
-      errorReporter: String => Unit): Option[ScalaNativePartestOptions] = {
+      errorReporter: String => Unit
+  ): Option[ScalaNativePartestOptions] = {
 
-    var failed                     = false
+    var failed = false
     var filter: Option[TestFilter] = None
-    var showDiff: Boolean          = false
-    var parallelism: Option[Int]   = None
-    var mode: build.Mode           = build.Mode.default
-    var gc: build.GC               = build.GC.default
-    var lto: build.LTO             = build.LTO.default
-    var optimize: Boolean          = true
-    var precompileLibs: Boolean    = true
-    val nativeClassPath            = Seq.newBuilder[Path]
+    var showDiff: Boolean = false
+    var parallelism: Option[Int] = None
+    var mode: build.Mode = build.Mode.default
+    var gc: build.GC = build.GC.default
+    var lto: build.LTO = build.LTO.default
+    var optimize: Boolean = true
+    var precompileLibs: Boolean = true
+    val nativeClassPath = Seq.newBuilder[Path]
 
     def error(msg: String) = {
       failed = true
@@ -81,7 +82,8 @@ object ScalaNativePartestOptions {
         filter = Some(SomeTests(oldNames ++ newNames))
       case (Some(fil), newFilter) =>
         error(
-          s"You cannot specify twice what tests to use (already specified: $fil, new: $newFilter)")
+          s"You cannot specify twice what tests to use (already specified: $fil, new: $newFilter)"
+        )
       case (None, newFilter) =>
         filter = Some(newFilter)
     }
@@ -130,17 +132,18 @@ object ScalaNativePartestOptions {
     if (failed) None
     else
       Some {
-        new ScalaNativePartestOptions(filter.getOrElse(WhitelistedTests),
-                                      nativeClassPath.result(),
-                                      showDiff = showDiff,
-                                      parallelism = parallelism,
-                                      optimize = optimize,
-                                      buildMode = mode,
-                                      shouldPrecompileLibraries =
-                                        precompileLibs,
-                                      precompiledLibrariesPaths = Seq(),
-                                      gc = gc,
-                                      lto = lto)
+        new ScalaNativePartestOptions(
+          filter.getOrElse(WhitelistedTests),
+          nativeClassPath.result(),
+          showDiff = showDiff,
+          parallelism = parallelism,
+          optimize = optimize,
+          buildMode = mode,
+          shouldPrecompileLibraries = precompileLibs,
+          precompiledLibrariesPaths = Seq(),
+          gc = gc,
+          lto = lto
+        )
       }
   }
 

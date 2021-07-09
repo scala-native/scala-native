@@ -19,8 +19,10 @@ class Framework extends sbt.testing.Framework {
     Array[Fingerprint](Framework.fingerprint)
   def name: String = "partest"
 
-  def runner(args: Array[String],
-             remoteArgs: Array[String],
-             testClassLoader: ClassLoader): sbt.testing.Runner =
+  def runner(
+      args: Array[String],
+      remoteArgs: Array[String],
+      testClassLoader: ClassLoader
+  ): sbt.testing.Runner =
     Runner(args, remoteArgs, testClassLoader)
 }

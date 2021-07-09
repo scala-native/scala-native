@@ -15,11 +15,13 @@ object Defaults {
     false
   }
 
-  val logger: Logger = Logger(traceFn = _ => (),
-                              debugFn = _ => (),
-                              infoFn = _ => (),
-                              warnFn = errorFn,
-                              errorFn = errorFn)
+  val logger: Logger = Logger(
+    traceFn = _ => (),
+    debugFn = _ => (),
+    infoFn = _ => (),
+    warnFn = errorFn,
+    errorFn = errorFn
+  )
 
   lazy val config: Config =
     Config.empty

@@ -60,9 +60,9 @@ class ScalaNativeSBTRunner(
 
   override def runTest(testFile: File): TestState = {
     // Mostly copy-pasted from SuiteRunner.runTest(), unfortunately :-(
-    val start                           = System.nanoTime()
-    val info                            = new NativeTestInfo(testFile, listDir)
-    val runner                          = new ScalaNativeRunner(info, this, options)
+    val start = System.nanoTime()
+    val info = new NativeTestInfo(testFile, listDir)
+    val runner = new ScalaNativeRunner(info, this, options)
     var stopwatchDuration: Option[Long] = None
 
     // when option "--failed" is provided execute test only if log
@@ -83,7 +83,8 @@ class ScalaNativeSBTRunner(
           info,
           durationMs,
           diffOnFail = config.optShowDiff || options.showDiff,
-          logOnFail = config.optShowLog)
+          logOnFail = config.optShowLog
+        )
         runner.cleanup(state)
         if (more.isEmpty) state
         else {
@@ -99,8 +100,10 @@ class ScalaNativeSBTRunner(
     onFinishTest(testFile, state, durationMs)
   }
 
-  override def runTestsForFiles(kindFiles: Array[File],
-                                kind: String): Array[TestState] = {
+  override def runTestsForFiles(
+      kindFiles: Array[File],
+      kind: String
+  ): Array[TestState] = {
     super.runTestsForFiles(kindFiles.filter(testFilter), kind)
   }
 

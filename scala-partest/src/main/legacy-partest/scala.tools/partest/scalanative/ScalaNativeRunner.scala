@@ -6,14 +6,16 @@ import java.io.File
 import scala.tools.partest.nest.{DirectCompiler, SuiteRunner}
 import scala.tools.partest.{FileOps, nest}
 
-class ScalaNativeRunner(testFile: File,
-                        suiteRunner: SuiteRunner,
-                        scalaNativeOverridePath: String,
-                        options: ScalaNativePartestOptions)
-    extends nest.Runner(
+class ScalaNativeRunner(
+    testFile: File,
+    suiteRunner: SuiteRunner,
+    scalaNativeOverridePath: String,
+    options: ScalaNativePartestOptions
+) extends nest.Runner(
       testFile,
       suiteRunner,
-      new nest.NestUI(diffOnFail = options.showDiff, colorEnabled = true)) {
+      new nest.NestUI(diffOnFail = options.showDiff, colorEnabled = true)
+    ) {
 
   override val checkFile: File = {
     scalaNativeConfigFile("check") getOrElse {
@@ -24,7 +26,7 @@ class ScalaNativeRunner(testFile: File,
 
   private def scalaNativeConfigFile(ext: String): Option[File] = {
     val overrideFile = s"$scalaNativeOverridePath/$kind/$fileBase.$ext"
-    val url          = getClass.getResource(overrideFile)
+    val url = getClass.getResource(overrideFile)
     Option(url).map(url => new File(url.toURI))
   }
 

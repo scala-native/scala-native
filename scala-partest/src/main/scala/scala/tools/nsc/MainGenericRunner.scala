@@ -23,7 +23,8 @@ class MainGenericRunner {
     if (!command.ok) return errorFn("\n" + command.shortUsageMsg)
     else if (command.settings.version)
       return errorFn(
-        "Scala code runner %s -- %s".format(versionString, copyrightString))
+        "Scala code runner %s -- %s".format(versionString, copyrightString)
+      )
     else if (command.shouldStopWithInfo) return errorFn("shouldStopWithInfo")
 
     if (command.howToRun != AsObject)
@@ -37,9 +38,11 @@ class MainGenericRunner {
       val config = Defaults.config
         .withCompilerConfig {
           _.withOptimize(
-            loadSetting("optimize", Discover.optimize())(_.toBoolean))
+            loadSetting("optimize", Discover.optimize())(_.toBoolean)
+          )
             .withMode(
-              loadSetting("mode", Discover.mode())(scalanative.build.Mode(_)))
+              loadSetting("mode", Discover.mode())(scalanative.build.Mode(_))
+            )
             .withGC(loadSetting("gc", Discover.GC())(GC.apply))
             .withLTO(loadSetting("lto", Discover.LTO())(LTO(_)))
             .withLinkingOptions {
