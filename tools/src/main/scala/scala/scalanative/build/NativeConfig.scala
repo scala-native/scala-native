@@ -43,7 +43,7 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
-  /** Shall be compiled with multithreading support  */
+  /** Shall be compiled with multithreading support */
   def multithreadingSupport: Boolean
 
   /** Map of properties resolved at linktime */
@@ -178,7 +178,8 @@ object NativeConfig {
         .withLinktimeProperties(
           linktimeProperties.updated(
             "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled",
-            enabled)
+            enabled
+          )
         )
     }
 
@@ -214,7 +215,7 @@ object NativeConfig {
         if (linktimeProperties.isEmpty) ""
         else {
           val maxKeyLength = linktimeProperties.keys.map(_.length).max
-          val keyPadSize   = maxKeyLength.min(20)
+          val keyPadSize = maxKeyLength.min(20)
           "\n" + linktimeProperties.toSeq
             .sortBy(_._1)
             .map {

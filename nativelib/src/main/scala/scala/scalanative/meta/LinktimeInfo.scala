@@ -10,6 +10,7 @@ object LinktimeInfo {
   def isWindows: Boolean = resolved
 
   @resolvedAtLinktime(
-    "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled")
+    "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
+  )
   def isMultithreadingEnabled: Boolean = resolved
 }
