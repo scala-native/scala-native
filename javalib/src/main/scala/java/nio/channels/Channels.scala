@@ -20,7 +20,7 @@ object Channels {
         buffer.position(0)
         val read = channel.read(buffer)
         if (read <= 0) read
-        else buffer.get(0) & 0xFF
+        else buffer.get(0) & 0xff
       }
 
       override def close(): Unit =

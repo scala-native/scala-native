@@ -1539,8 +1539,8 @@ class FilesTest {
   }
 
   @Test def setPosition(): Unit = {
-    val offset    = 42
-    val target    = Files.createTempFile("", "")
+    val offset = 42
+    val target = Files.createTempFile("", "")
     val openAttrs = new java.util.HashSet[OpenOption]
 
     val out = Files.newByteChannel(target, openAttrs)
