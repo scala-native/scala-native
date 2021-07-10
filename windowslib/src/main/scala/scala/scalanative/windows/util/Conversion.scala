@@ -5,8 +5,8 @@ import scala.scalanative.windows.{Word => WinWord}
 
 private[windows] object Conversion {
   def wordToBytes(word: WinWord): (Byte, Byte) = {
-    val lowByte  = (word.toInt & 0xFF).toByte
-    val highByte = ((word.toInt >> 8) & 0xFF).toByte
+    val lowByte = (word.toInt & 0xff).toByte
+    val highByte = ((word.toInt >> 8) & 0xff).toByte
     (lowByte, highByte)
   }
 

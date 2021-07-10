@@ -50,15 +50,18 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
 
       case 0 =>
         throw new SocketTimeoutException(
-          s"connect timed out, SO_TIMEOUT: ${timeout}")
+          s"connect timed out, SO_TIMEOUT: ${timeout}"
+        )
 
       case _ =>
         if ((revents & POLLNVAL) != 0) {
           throw new ConnectException(
-            s"connect failed, invalid poll request: ${revents}")
+            s"connect failed, invalid poll request: ${revents}"
+          )
         } else if ((revents & (POLLERR | POLLHUP)) != 0) {
           throw new ConnectException(
-            s"connect failed, POLLERR or POLLHUP set: ${revents}")
+            s"connect failed, POLLERR or POLLHUP set: ${revents}"
+          )
         }
     }
   }
@@ -80,7 +83,8 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
 
       case 0 =>
         throw new SocketTimeoutException(
-          s"accept timed out, SO_TIMEOUT: ${timeout}")
+          s"accept timed out, SO_TIMEOUT: ${timeout}"
+        )
 
       case _ => // success, carry on
     }
@@ -89,16 +93,20 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
       throw new SocketException("Accept poll failed, POLLERR or POLLHUP")
     } else if ((revents & POLLNVAL) != 0) {
       throw new SocketException(
-        s"accept failed, invalid poll request: ${revents}")
+        s"accept failed, invalid poll request: ${revents}"
+      )
     } else if (((revents & POLLIN) | (revents & POLLOUT)) == 0) {
       throw new SocketException(
         "accept failed, neither POLLIN nor POLLOUT set, " +
-          s"revents, ${revents}")
+          s"revents, ${revents}"
+      )
     }
   }
 
-  protected def setSocketFdBlocking(fd: FileDescriptor,
-                                    blocking: Boolean): Unit = {
+  protected def setSocketFdBlocking(
+      fd: FileDescriptor,
+      blocking: Boolean
+  ): Unit = {
     val mode = stackalloc[Int]
     if (blocking)
       !mode = 1

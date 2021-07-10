@@ -31,13 +31,14 @@ private[java] object WindowsHelperMethods {
     }
   }
 
-  def withFileOpen[T](path: String,
-                      access: DWord,
-                      shareMode: DWord = FILE_SHARE_ALL,
-                      disposition: DWord = OPEN_EXISTING,
-                      attributes: DWord = FILE_ATTRIBUTE_NORMAL,
-                      allowInvalidHandle: Boolean = false)(fn: Handle => T)(
-      implicit z: Zone): T = {
+  def withFileOpen[T](
+      path: String,
+      access: DWord,
+      shareMode: DWord = FILE_SHARE_ALL,
+      disposition: DWord = OPEN_EXISTING,
+      attributes: DWord = FILE_ATTRIBUTE_NORMAL,
+      allowInvalidHandle: Boolean = false
+  )(fn: Handle => T)(implicit z: Zone): T = {
     val handle = FileApi.CreateFileW(
       toCWideStringUTF16LE(path),
       desiredAccess = access,
@@ -52,7 +53,8 @@ private[java] object WindowsHelperMethods {
       finally CloseHandle(handle)
     } else {
       throw new IOException(
-        s"Cannot open file ${path}: ${ErrorHandlingApi.GetLastError()}")
+        s"Cannot open file ${path}: ${ErrorHandlingApi.GetLastError()}"
+      )
     }
   }
 }

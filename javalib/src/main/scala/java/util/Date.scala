@@ -9,8 +9,8 @@ import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 /** Ported from Scala JS and Apache Harmony
- * - omits deprecated methods
- * - toString code created ab ovo for Scala Native.
+ *    - omits deprecated methods
+ *    - toString code created ab ovo for Scala Native.
  */
 class Date(var milliseconds: Long)
     extends Object
@@ -75,7 +75,7 @@ object Date {
         // Most result strings should be about 28 + 1 for terminal NULL
         // + 2 because some IANA timezone abbreviation can have 5 characters.
         val bufSize = 40.toULong // no toSize_t() yet
-        val buf     = alloc[Byte](bufSize)
+        val buf = alloc[Byte](bufSize)
 
         val n = {
           // %Z on Windows might produce long, localized names of variable length

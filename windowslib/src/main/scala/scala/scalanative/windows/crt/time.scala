@@ -10,9 +10,9 @@ object time {
    * For compat with existing POSIX structures we use 32bit variant of methods whenever possible
    */
   type clock_t = CLong
-  type time_t  = CLong
-  type uid_t   = CUnsignedInt
-  type tm      = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+  type time_t = CLong
+  type uid_t = CUnsignedInt
+  type tm = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
   type errno_t = CInt
 
   def asctime(time_ptr: Ptr[tm]): CString = extern
@@ -27,10 +27,12 @@ object time {
   @name("_localtime32_s")
   def localtime_s(tm: Ptr[tm], time: Ptr[time_t]): errno_t = extern
 
-  def strftime(str: Ptr[CChar],
-               count: CSize,
-               format: CString,
-               time: Ptr[tm]): CSize = extern
+  def strftime(
+      str: Ptr[CChar],
+      count: CSize,
+      format: CString,
+      time: Ptr[tm]
+  ): CSize = extern
 
   @name("_time32")
   def time(arg: Ptr[time_t]): time_t = extern
