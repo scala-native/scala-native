@@ -4,6 +4,7 @@ package channels
 import java.io.{InputStream, OutputStream, Reader, Writer}
 import java.nio.charset.{Charset, CharsetDecoder, CharsetEncoder}
 import java.util.Objects
+import scalanative.annotation.stub
 
 object Channels {
   def newInputStream(channel: ReadableByteChannel): InputStream = {
@@ -44,22 +45,24 @@ object Channels {
     }
   }
 
-  @scalanative.annotation.stub
+  @stub
   def newInputStream(ch: AsynchronousByteChannel): InputStream = ???
 
-  @scalanative.annotation.stub
+  @stub
   def newOutputStream(ch: AsynchronousByteChannel): OutputStream = ???
 
-  @scalanative.annotation.stub
+  @stub
   def newChannel(in: InputStream): ReadableByteChannel = ???
 
-  @scalanative.annotation.stub
+  @stub
   def newChannel(out: OutputStream): WritableByteChannel = ???
 
-  @scalanative.annotation.stub
-  def newReader(ch: ReadableByteChannel,
-                dec: CharsetDecoder,
-                minBufferCap: Int): Reader = ???
+  @stub
+  def newReader(
+      ch: ReadableByteChannel,
+      dec: CharsetDecoder,
+      minBufferCap: Int
+  ): Reader = ???
 
   def newReader(ch: ReadableByteChannel, csName: String): Reader = {
     Objects.requireNonNull(csName, "csName")
@@ -71,10 +74,12 @@ object Channels {
     newReader(ch, charset.newDecoder(), -1)
   }
 
-  @scalanative.annotation.stub
-  def newWriter(ch: WritableByteChannel,
-                enc: CharsetEncoder,
-                minBufferCap: Int): Writer = ???
+  @stub
+  def newWriter(
+      ch: WritableByteChannel,
+      enc: CharsetEncoder,
+      minBufferCap: Int
+  ): Writer = ???
 
   def newWriter(ch: WritableByteChannel, csName: String): Writer = {
     Objects.requireNonNull(csName, "csName")
