@@ -704,6 +704,13 @@ lazy val tests =
         "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
         "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
       ),
+      Test / unmanagedSourceDirectories ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 12 =>
+            Seq((Test / sourceDirectory).value / "scala-2.12+")
+          case _ => Nil
+        }
+      },
       nativeLinkStubs := true
     )
     .dependsOn(
