@@ -106,7 +106,8 @@ static inline void Marker_giveFullPacket(Heap *heap, Stats *stats,
     assert(packet->type == grey_packet_refrange || packet->size > 0);
     // make all the contents visible to other threads
     atomic_thread_fence(memory_order_acquire);
-    assert(GreyList_Size(&heap->mark.full) <= heap->mark.total);
+    uint32_t greyListSize = GreyList_Size(&heap->mark.full);
+    assert(greyListSize <= heap->mark.total);
     Stats_RecordTimeSync(stats, start_ns);
     GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
     Stats_RecordTimeSync(stats, end_ns);
@@ -332,7 +333,8 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
         GreyPacket *next = Marker_takeFullPacket(heap, stats);
         if (next != NULL) {
             Marker_giveEmptyPacket(heap, stats, in);
-            uint32_t remainingFullPackets = next->next.sep.size;
+            uint32_t remainingFullPackets =
+                UInt24_toUInt32(next->next.sep.size);
             // Make sure than enough worker threads are running
             // given the number of packets available.
             // They will automatically stop if they run out of full packets.
@@ -409,5 +411,6 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
 }
 
 bool Marker_IsMarkDone(Heap *heap) {
-    return GreyList_Size(&heap->mark.empty) == heap->mark.total;
+    uint32_t size = GreyList_Size(&heap->mark.empty);
+    return size == heap->mark.total;
 }
