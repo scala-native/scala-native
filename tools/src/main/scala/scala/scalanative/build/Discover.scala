@@ -19,6 +19,9 @@ object Discover {
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
 
+  def multithreadingSupport(): Boolean =
+    getenv("SCALANATIVE_MULTITHREADING").exists(_.toBoolean)
+
   /** LTO variant used for release mode from SCALANATIVE_LTO env var or default.
    */
   def LTO(): LTO =

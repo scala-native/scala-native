@@ -43,6 +43,9 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
+  /** Shall be compiled with multithreading support */
+  def multithreadingSupport: Boolean
+
   /** Map of properties resolved at linktime */
   def linktimeProperties: Map[String, Any]
 
@@ -87,6 +90,9 @@ sealed trait NativeConfig {
 
   /** Create a new config with given linktime properites */
   def withLinktimeProperties(value: Map[String, Any]): NativeConfig
+
+  /** Create a new config with support for multithreading */
+  def withMultithreadingSupport(enabled: Boolean): NativeConfig
 }
 
 object NativeConfig {
@@ -106,6 +112,7 @@ object NativeConfig {
       dump = false,
       linkStubs = false,
       optimize = false,
+      multithreadingSupport = false,
       linktimeProperties = Map.empty
     )
 
@@ -122,6 +129,7 @@ object NativeConfig {
       check: Boolean,
       dump: Boolean,
       optimize: Boolean,
+      multithreadingSupport: Boolean,
       linktimeProperties: Map[String, Any]
   ) extends NativeConfig {
 
@@ -164,6 +172,16 @@ object NativeConfig {
 
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
+
+    def withMultithreadingSupport(enabled: Boolean): NativeConfig = {
+      copy(multithreadingSupport = enabled)
+        .withLinktimeProperties(
+          linktimeProperties.updated(
+            "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled",
+            enabled
+          )
+        )
+    }
 
     override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
       def isNumberOrString(value: Any) = {
