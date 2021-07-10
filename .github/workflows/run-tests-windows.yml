@@ -81,8 +81,8 @@ jobs:
           $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
           $cppSources | ForEach-Object {clang++ -std=c++14 -c "$_"}
 
-  run-sandbox:
-    name: Run sandbox project
+  run-tests:
+    name: Run tests
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -121,8 +121,11 @@ jobs:
         run: clang --version
 
       - name: Run sandbox
-        # Set heap limits manually, there seams to be bug in detection of available memory
-        # which results in undefined behavior at runtime
         run: |
           sbt ++${{matrix.scala}};sandbox/run
+        shell: cmd
+
+      - name: Run testsExt tests
+        run: |
+          sbt ++${{matrix.scala}};testsExt/test
         shell: cmd

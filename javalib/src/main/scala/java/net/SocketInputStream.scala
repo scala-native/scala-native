@@ -3,12 +3,12 @@ package java.net
 import java.io.InputStream
 
 // Ported from Apache Harmony
-private[net] class SocketInputStream(socket: PlainSocketImpl)
+private[net] class SocketInputStream(socket: AbstractPlainSocketImpl)
     extends InputStream {
 
   override def close(): Unit = socket.close()
 
-  override def available(): Int = socket.available
+  override def available(): Int = socket.available()
 
   override def read(): Int = {
     val buffer = new Array[Byte](1)
