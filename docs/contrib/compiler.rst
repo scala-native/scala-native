@@ -34,7 +34,7 @@ After compiling the sandbox project you can inspect the ``.ll`` files inside
 ``sandbox/target/scala-<version>/ll``. The files are grouped by the package name.
 By default the ``Test.scala`` file doesn't define a package, so the resulting file
 will be ``__empty.ll``. Locating the code you are interested in might require that
-you get more familiar with the `LLVM assembly language <http://llvm.org/docs/LangRef.html>`_.
+you get more familiar with the `LLVM assembly language <https://llvm.org/docs/LangRef.html>`_.
 
 When working on the compiler plugin you'll need to clean the sandbox (or other
 Scala Native projects) if you want it to be recompiled with the newer version

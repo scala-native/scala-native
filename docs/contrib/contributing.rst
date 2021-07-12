@@ -6,7 +6,8 @@ Contributing guidelines
 Very important notice about Javalib
 -----------------------------------
 
-Scala Native contains a re-implementation of part of the JDK.
+Scala Native contains a re-implementation of part of the
+JDK (Java Development Kit).
 
 Although the `GPL and Scala License are compatible`_ and the `GPL and
 Scala CLA are compatible`_, EPFL wish to distribute scala native
@@ -28,9 +29,9 @@ relevant copyright / license information.
 Coding style
 ------------
 
-Scala Native is formatted via `./scripts/scalafmt` and `./scripts/clangfmt`.
-Make sure that all of your contributions are properly formatted before
-suggesting any changes.
+Scala Native source code is formatted via `./scripts/scalafmt` and
+`./scripts/clangfmt`. Make sure that all of your contributions are properly
+formatted before suggesting any changes.
 
 Formatting Scala via `scalafmt` downloads and runs the correct version and
 uses the `.scalafmt.conf` file at the root of the project. No configuration
@@ -121,8 +122,8 @@ This the general workflow for contributing to Scala Native.
 
 5.  After the review, you should resolve issues brought up by the reviewers as
     needed (amending or adding commits to address reviewers' comments),
-    iterating until the reviewers give their thumbs up, the "LGTM" (acronym for
-    "Looks Good To Me").
+    iterating until the reviewers give their thumbs up, the "LGTM"
+    (acronym for "Looks Good To Me").
 
 6.  Once the code has passed review the Pull Request can be merged into
     the distribution.
@@ -158,18 +159,31 @@ In order for a Pull Request to be considered, it has to meet these requirements:
 
 2.  Be accompanied by appropriate tests.
 
-3.  Be issued from a branch *other than master* (PRs coming from master will not
+3.  Be accompanied by appropriate
+    :ref:`documentation <project-documentation>`.
+
+4.  Be issued from a branch *other than master* (PRs coming from master will not
     be accepted.)
 
 If not *all* of these requirements are met then the code should **not** be
 merged into the distribution, and need not even be reviewed.
 
+
+.. _project-documentation:
+
 Documentation
 -------------
 
-All code contributed to the user-facing standard library (the `nativelib/`
-directory) should come accompanied with documentation.
-Pull requests containing undocumented code will not be accepted.
+Pull requests without documentation will not be accepted, unless they are
+trivial. Imagine yourself as the person merging trying
+to understand, use, merge, or maintain the contribution.
+
+All code containing changes to user-facing standard libraries (nativelib,
+clib, javalib [#]_, etc.) should come accompanied with corresponding
+user-facing documentation, as described in the :ref:`docbuild`.
+Such documentation should be manually built, checked for the absence
+of build errors, warnings, or broken links, and visually inspected
+before submission.
 
 Code contributed to the internals (nscplugin, tools, etc.)
 should come accompanied by internal documentation if the code is not
@@ -218,10 +232,17 @@ followed by details of the commit, in the form of free text, or bulleted list.
 
 .. _Scala.js: https://github.com/scala-js/scala-js/tree/master/javalib/src/main/scala/java
 .. _Apache Harmony project: https://github.com/apache/harmony
-.. _Scala CLA: http://typesafe.com/contribute/cla/scala
-.. _Pull Request: https://help.github.com/articles/using-pull-requests
-.. _DRY: http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself
-.. _Boy Scout Rule: http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule
-.. _Git Workflow: http://sandofsky.com/blog/git-workflow.html
+.. _Scala CLA: https://www.lightbend.com/contribute/cla/scala
+.. _Pull Request: https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests
+.. _DRY: https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
+.. _Boy Scout Rule: https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html
+.. _Git Workflow: https://sandofsky.com/workflow/git-workflow/
 .. _GPL and Scala License are compatible: https://www.gnu.org/licenses/license-list.html#ModifiedBSD
 .. _GPL and Scala CLA are compatible: https://www.gnu.org/licenses/license-list.html#apache2
+
+.. rubric:: Footnotes
+
+.. [#] Scala Native :ref:`javalib` documents only where the
+       implementation differs from the
+       `Java API documentation <https://docs.oracle.com/javase/8/docs/api/>`_.
+

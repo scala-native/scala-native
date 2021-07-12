@@ -75,7 +75,7 @@ Var
 
     ..$attrs var @$name: $ty = $value
 
-Corresponds to LLVM's `global variables <http://llvm.org/docs/LangRef.html#global-variables>`_
+Corresponds to LLVM's `global variables <https://llvm.org/docs/LangRef.html#global-variables>`_
 when used in the top-level scope and to fields, when used as a member of
 classes and modules.
 
@@ -85,7 +85,7 @@ Const
 
     ..$attrs const @$name: $type = $value
 
-Corresponds to LLVM's `global constant <http://llvm.org/docs/LangRef.html#global-variables>`_.
+Corresponds to LLVM's `global constant <https://llvm.org/docs/LangRef.html#global-variables>`_.
 Constants may only reside on the top-level and can not be members of classes and
 modules.
 
@@ -96,7 +96,7 @@ Declare
     ..$attrs def @$name: $type
 
 Correspond to LLVM's
-`declare <http://llvm.org/docs/LangRef.html#functions>`_
+`declare <https://llvm.org/docs/LangRef.html#functions>`_
 when used on the top-level of the compilation unit and
 to abstract methods when used inside classes and traits.
 
@@ -107,7 +107,7 @@ Define
     ..$attrs def @$name: $type { ..$blocks }
 
 Corresponds to LLVM's
-`define <http://llvm.org/docs/LangRef.html#functions>`_
+`define <https://llvm.org/docs/LangRef.html#functions>`_
 when used on the top-level of the compilation unit and
 to normal methods when used inside classes, traits and modules.
 
@@ -118,7 +118,7 @@ Struct
     ..$attrs struct @$name { ..$types }
 
 Corresponds to LLVM's
-`named struct <http://llvm.org/docs/LangRef.html#structure-types>`_.
+`named struct <https://llvm.org/docs/LangRef.html#structure-types>`_.
 
 Trait
 `````
@@ -154,7 +154,7 @@ Void
 
     void
 
-Corresponds to LLVM's `void <http://llvm.org/docs/LangRef.html#void-type>`_.
+Corresponds to LLVM's `void <https://llvm.org/docs/LangRef.html#void-type>`_.
 
 Vararg
 ``````
@@ -162,7 +162,7 @@ Vararg
 
     ...
 
-Corresponds to LLVM's `varargs <http://www.llvm.org/docs/LangRef.html#function-type>`_.
+Corresponds to LLVM's `varargs <https://www.llvm.org/docs/LangRef.html#function-type>`_.
 May only be nested inside function types.
 
 Pointer
@@ -171,7 +171,7 @@ Pointer
 
     ptr
 
-Corresponds to LLVM's `pointer type <http://llvm.org/docs/LangRef.html#pointer-type>`_
+Corresponds to LLVM's `pointer type <https://llvm.org/docs/LangRef.html#pointer-type>`_
 with a major distinction of not preserving the type of memory that's being
 pointed at. Pointers are going to become untyped in LLVM in near future too.
 
@@ -181,7 +181,7 @@ Boolean
 
     bool
 
-Corresponds to LLVM's `i1 <http://llvm.org/docs/LangRef.html#integer-type>`_.
+Corresponds to LLVM's `i1 <https://llvm.org/docs/LangRef.html#integer-type>`_.
 
 Integer
 ```````
@@ -192,7 +192,7 @@ Integer
     i32
     i64
 
-Corresponds to LLVM `integer types <http://llvm.org/docs/LangRef.html#integer-type>`_.
+Corresponds to LLVM `integer types <https://llvm.org/docs/LangRef.html#integer-type>`_.
 Unlike LLVM we do not support arbitrary width integer types at the moment.
 
 Float
@@ -202,7 +202,7 @@ Float
     f32
     f64
 
-Corresponds to LLVM's `floating point types <http://llvm.org/docs/LangRef.html#floating-point-types>`_.
+Corresponds to LLVM's `floating point types <https://llvm.org/docs/LangRef.html#floating-point-types>`_.
 
 Array
 `````
@@ -210,7 +210,7 @@ Array
 
     [$type x N]
 
-Corresponds to LLVM's `aggregate array type <http://llvm.org/docs/LangRef.html#array-type>`_.
+Corresponds to LLVM's `aggregate array type <https://llvm.org/docs/LangRef.html#array-type>`_.
 
 Function
 ````````
@@ -218,7 +218,7 @@ Function
 
     (..$args) => $ret
 
-Corresponds to LLVM's `function type <http://llvm.org/docs/LangRef.html#function-type>`_.
+Corresponds to LLVM's `function type <https://llvm.org/docs/LangRef.html#function-type>`_.
 
 Struct
 ``````
@@ -228,7 +228,7 @@ Struct
     struct { ..$types }
 
 Has two forms: named and anonymous. Corresponds to LLVM's
-`aggregate structure type <http://www.llvm.org/docs/LangRef.html#t-struct>`_.
+`aggregate structure type <https://www.llvm.org/docs/LangRef.html#t-struct>`_.
 
 Unit
 ````
@@ -281,7 +281,7 @@ unreachable
 
 If execution reaches undefined instruction the behaviour of execution is undefined
 starting from that point. Corresponds to LLVM's
-`unreachable <http://llvm.org/docs/LangRef.html#unreachable-instruction>`_.
+`unreachable <https://llvm.org/docs/LangRef.html#unreachable-instruction>`_.
 
 ret
 ```
@@ -290,7 +290,7 @@ ret
    ret $value
 
 Returns a value. Corresponds to LLVM's
-`ret <http://llvm.org/docs/LangRef.html#ret-instruction>`_.
+`ret <https://llvm.org/docs/LangRef.html#ret-instruction>`_.
 
 jump
 ````
@@ -300,7 +300,7 @@ jump
 
 Jumps to the next basic block with provided values for the parameters.
 Corresponds to LLVM's unconditional version of
-`br <http://llvm.org/docs/LangRef.html#br-instruction>`_.
+`br <https://llvm.org/docs/LangRef.html#br-instruction>`_.
 
 if
 ``
@@ -310,7 +310,7 @@ if
 
 Conditionally jumps to one of the basic blocks.
 Corresponds to LLVM's conditional form of
-`br <http://llvm.org/docs/LangRef.html#br-instruction>`_.
+`br <https://llvm.org/docs/LangRef.html#br-instruction>`_.
 
 switch
 ``````
@@ -324,7 +324,7 @@ switch
 
 Jumps to one of the basic blocks if ``$value`` is equal to
 corresponding ``$valueN``. Corresponds to LLVM's
-`switch <http://llvm.org/docs/LangRef.html#switch-instruction>`_.
+`switch <https://llvm.org/docs/LangRef.html#switch-instruction>`_.
 
 invoke
 ``````
@@ -334,7 +334,7 @@ invoke
 
 Invoke function pointer, jump to success in case value is returned,
 unwind to failure if exception was thrown. Corresponds to LLVM's
-`invoke <http://llvm.org/docs/LangRef.html#invoke-instruction>`_.
+`invoke <https://llvm.org/docs/LangRef.html#invoke-instruction>`_.
 
 throw
 `````
@@ -365,7 +365,7 @@ call
 
 Calls given function of given function type and argument values.
 Corresponds to LLVM's
-`call <http://llvm.org/docs/LangRef.html#call-instruction>`_.
+`call <https://llvm.org/docs/LangRef.html#call-instruction>`_.
 
 load
 ````
@@ -374,7 +374,7 @@ load
     load[$type] $ptr
 
 Load value of given type from memory. Corresponds to LLVM's
-`load <http://llvm.org/docs/LangRef.html#load-instruction>`_.
+`load <https://llvm.org/docs/LangRef.html#load-instruction>`_.
 
 store
 `````
@@ -383,7 +383,7 @@ store
     store[$type] $ptr, $value
 
 Store value of given type to memory. Corresponds to LLVM's
-`store <http://llvm.org/docs/LangRef.html#store-instruction>`_.
+`store <https://llvm.org/docs/LangRef.html#store-instruction>`_.
 
 elem
 ````
@@ -392,7 +392,7 @@ elem
     elem[$type] $ptr, ..$indexes
 
 Compute derived pointer starting from given pointer. Corresponds to LLVM's
-`getelementptr <http://llvm.org/docs/LangRef.html#getelementptr-instruction>`_.
+`getelementptr <https://llvm.org/docs/LangRef.html#getelementptr-instruction>`_.
 
 extract
 ```````
@@ -402,7 +402,7 @@ extract
 
 Extract element from aggregate value.
 Corresponds to LLVM's
-`extractvalue <http://llvm.org/docs/LangRef.html#extractvalue-instruction>`_.
+`extractvalue <https://llvm.org/docs/LangRef.html#extractvalue-instruction>`_.
 
 insert
 ``````
@@ -412,7 +412,7 @@ insert
 
 Create a new aggregate value based on existing one with element at index
 replaced with new value. Corresponds to LLVM's
-`insertvalue <http://llvm.org/docs/LangRef.html#insertvalue-instruction>`_.
+`insertvalue <https://llvm.org/docs/LangRef.html#insertvalue-instruction>`_.
 
 stackalloc
 ``````````
@@ -422,7 +422,7 @@ stackalloc
 
 Stack allocate a slot of memory big enough to store given type.
 Corresponds to LLVM's
-`alloca <http://llvm.org/docs/LangRef.html#alloca-instruction>`_.
+`alloca <https://llvm.org/docs/LangRef.html#alloca-instruction>`_.
 
 bin
 ```
@@ -436,7 +436,7 @@ Where ``$bin`` is one of the following:
 ``sdiv``, ``udiv``, ``fdiv``, ``srem``, ``urem``, ``frem``,
 ``shl``, ``lshr``, ``ashr`` , ``and``, ``or``, ``xor``.
 Depending on the type and signedness, maps to either integer or floating point
-`binary operations <http://llvm.org/docs/LangRef.html#binary-operations>`_ in LLVM.
+`binary operations <https://llvm.org/docs/LangRef.html#binary-operations>`_ in LLVM.
 
 comp
 ````
@@ -446,8 +446,8 @@ comp
 
 Where ``$comp`` is one of the following: ``eq``, ``neq``, ``lt``, ``lte``,
 ``gt``, ``gte``. Depending on the type, maps to either
-`icmp <http://llvm.org/docs/LangRef.html#icmp-instruction>`_ or
-`fcmp <http://llvm.org/docs/LangRef.html#fcmp-instruction>`_ with
+`icmp <https://llvm.org/docs/LangRef.html#icmp-instruction>`_ or
+`fcmp <https://llvm.org/docs/LangRef.html#fcmp-instruction>`_ with
 corresponding comparison flags in LLVM.
 
 conv
@@ -460,7 +460,7 @@ Where ``$conv`` is one of the following: ``trunc``, ``zext``, ``sext``, ``fptrun
 ``fpext``, ``fptoui``, ``fptosi``, ``uitofp``, ``sitofp``, ``ptrtoint``, ``inttoptr``,
 ``bitcast``.
 Corresponds to LLVM
-`conversion instructions <http://llvm.org/docs/LangRef.html#conversion-operations>`_
+`conversion instructions <https://llvm.org/docs/LangRef.html#conversion-operations>`_
 with the same name.
 
 sizeof
