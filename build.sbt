@@ -704,7 +704,16 @@ lazy val tests =
         "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
         "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
       ),
-      nativeLinkStubs := true
+      nativeLinkStubs := true,
+      Test / unmanagedSourceDirectories ++= {
+        val javaVersion = System.getProperty("java.specification.version")
+        val majorVersion =
+          javaVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
+        if (majorVersion >= 11)
+          Seq(baseDirectory.value / "src/test/require-jdk11")
+        else
+          Seq.empty
+      }
     )
     .dependsOn(
       nscplugin % "plugin",

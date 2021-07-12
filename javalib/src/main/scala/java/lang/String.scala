@@ -10,6 +10,7 @@ import java.util.regex._
 import java.nio._
 import java.nio.charset._
 import java.util.Objects
+import java.util.stream.Stream
 import scala.annotation.{switch, tailrec}
 
 final class _String()
@@ -1261,6 +1262,38 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     val r =
       Character.offsetByCodePoints(value, offset, count, s, codePointOffset)
     r - offset
+  }
+
+  // Added in JDK 11.
+  def strip(): _String = {
+    this.stripTrailing().stripLeading()
+  }
+
+  // Added in JDK 11.
+  def stripLeading(): _String = {
+    (this: String).dropWhile(_.isWhitespace)
+  }
+
+  // Added in JDK 11.
+  def stripTrailing(): _String = {
+    val thisString: String = this
+    thisString.substring(0, thisString.lastIndexWhere(!_.isWhitespace) + 1)
+  }
+
+  // Added in JDK 11.
+  def isBlank: scala.Boolean = {
+    value.forall(_.isWhitespace)
+  }
+
+  // Added in JDK 11.
+  def lines(): Stream[_String] = {
+    val split = this.split("\r\n?|\n")
+    Stream.of(split.asInstanceOf[Array[AnyRef]])
+  }
+
+  // Added in JDK 11.
+  def repeat(count: Int): _String = {
+    (this: String) * count
   }
 
   def getValue(): Array[Char] = value
