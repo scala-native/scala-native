@@ -262,6 +262,10 @@ runtime system, one has to be extra careful when working with unmanaged memory.
    It's idiomatic to use implicit zone parameters to abstract over code that
    has to zone allocate.
 
+   Thus, you can use ``ZonedHandle[T]`` to trac reference counters to
+   your dynamic object to prevent it from removing by GC when it has links
+   inside C-level callbacks for example.
+
    One typical example of this are C strings that are created from
    Scala strings using ``unsafe.toCString``. The conversion takes implicit
    zone parameter and allocates the result in that zone.
