@@ -19,9 +19,11 @@
 package scala.scalanative
 package regex
 
+import java.util.ArrayDeque
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
+import java.util.Queue
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -53,7 +55,9 @@ class RE2 private {
 
   // Cache of machines for running regexp.
   // Accesses must be serialized using |this| monitor.
-  private val machine = new ArrayList[Machine]()
+  // @GuardedBy("this")
+
+  private val machine: Queue[Machine] = new ArrayDeque[Machine]()
 
   // This is visible for testing.
   def this(expr: String) = {
@@ -98,25 +102,39 @@ class RE2 private {
 
   // get() returns a machine to use for matching |this|.  It uses |this|'s
   // machine cache if possible, to avoid unnecessary allocation.
-  def get(): Machine = synchronized {
-    val n = machine.size()
-    if (n > 0) {
-      return machine.remove(n - 1)
+
+  def get(): Machine = {
+    /// Scala Native: Having a return statement in the middle of the code is an
+    /// eyesore that comes directly from the re2j base code.
+    /// Its saving grace is that it _vastly_ simplifies the mutual
+    /// exclusion logic.
+
+    this.synchronized {
+      if (!machine.isEmpty()) {
+        return machine.remove()
+      }
     }
-    return new Machine(this)
+
+    new Machine(this)
   }
 
   // Clears the memory associated with this machine.
-  def reset(): Unit = synchronized {
-    machine.clear()
+  def reset(): Unit = {
+    // Interior synchronized block to work around SN Issue #1091
+    this.synchronized {
+      machine.clear()
+    }
   }
 
   // put() returns a machine to |this|'s machine cache.  There is no attempt to
   // limit the size of the cache, so it will grow to the maximum number of
   // simultaneous matches run using |this|.  (The cache empties when |this|
   // gets garbage collected.)
-  def put(m: Machine): Unit = synchronized {
-    machine.add(m)
+  def put(m: Machine): Unit = {
+    // Interior synchronized block to work around SN Issue #1091
+    this.synchronized {
+      machine.add(m)
+    }
   }
 
   override def toString: String = expr
