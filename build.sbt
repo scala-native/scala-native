@@ -682,17 +682,7 @@ lazy val scalalib =
 lazy val allCoreLibs: Project =
   scalalib // scalalib transitively depends on all the other core libraries
 
-lazy val tests =
-  project
-    .in(file("unit-tests"))
-    .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
-    .settings(buildInfoSettings)
-    .settings(
-      scalacOptions -= "-deprecation",
-      scalacOptions += "-deprecation:false"
-    )
-    .settings(noPublishSettings)
-    .settings(
+lazy val testsCommonSettings = Def.settings(
       Test / testOptions ++= Seq(
         Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
       ),
@@ -704,7 +694,24 @@ lazy val tests =
         "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
         "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
       ),
-      nativeLinkStubs := true
+      Test / unmanagedSourceDirectories ++= {
+        val sharedTestDir = baseDirectory.value.getParentFile / "shared/src/test"
+        println(sharedTestDir)
+        List(sharedTestDir)
+      }
+    )
+
+lazy val tests =
+  project
+    .in(file("unit-tests/native"))
+    .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
+    .settings(buildInfoSettings)
+    .settings(
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false",
+      noPublishSettings,
+      nativeLinkStubs := true,
+      testsCommonSettings
     )
     .dependsOn(
       nscplugin % "plugin",
@@ -713,6 +720,19 @@ lazy val tests =
       testInterface,
       junitRuntime
     )
+
+lazy val testsJVM =
+  project
+    .in(file("unit-tests/jvm"))
+    .settings(
+      scalacOptions -= "-deprecation",
+      scalacOptions += "-deprecation:false",
+      Test / parallelExecution := false,
+      noPublishSettings,
+      testsCommonSettings,
+      libraryDependencies ++= jUnitJVMDependencies
+    )
+    .dependsOn(junitAsyncJVM % "test")
 
 lazy val testsExt = project
   .in(file("unit-tests-ext"))
