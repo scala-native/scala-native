@@ -28,16 +28,16 @@ object Discover {
   def GC(): GC =
     getenv("SCALANATIVE_GC").map(build.GC(_)).getOrElse(build.GC.default)
 
-  /** Use the clang binary on the path or via CLANG_PATH env var. */
+  /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
-    val path = discover("clang", "CLANG_PATH")
+    val path = discover("clang", "LLVM_BIN")
     checkClangVersion(path)
     path
   }
 
   /** Use the clang++ binary on the path or via CLANGPP_PATH env var. */
   def clangpp(): Path = {
-    val path = discover("clang++", "CLANGPP_PATH")
+    val path = discover("clang++", "LLVM_BIN")
     checkClangVersion(path)
     path
   }
@@ -146,16 +146,28 @@ object Discover {
       binaryName: String,
       envPath: String
   ): Path = {
-    val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
-    val locateCmd = if (Platform.isWindows) "where" else "which"
-    val path = Process(Seq(locateCmd, binaryNameOrPath))
+    val binPath = sys.env.get(envPath)
+
+    val command: Seq[String] = {
+      if (Platform.isWindows) {
+        val arg = binPath.fold(binaryName)(p => s"$p:$binaryName")
+        Seq("where", arg)
+      } else {
+        val arg = binPath.fold(binaryName) { p =>
+          Paths.get(p, binaryName).toString()
+        }
+        Seq("which", arg)
+      }
+    }
+
+    val path = Process(command)
       .lineStream_!(silentLogger())
       .map { p => Paths.get(p) }
       .headOption
       .getOrElse {
         throw new BuildException(
-          s"""No '$binaryNameOrPath' found in PATH or via '$envPath' environment variable.
-             |Please refer to ($docSetup)""".stripMargin
+          s"""'$binaryName' not found in PATH or via '$envPath' environment variable.
+            |Please refer to ($docSetup)""".stripMargin
         )
       }
     path
