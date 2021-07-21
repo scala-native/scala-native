@@ -35,7 +35,7 @@ object Discover {
     path
   }
 
-  /** Use the clang++ binary on the path or via CLANGPP_PATH env var. */
+  /** Use the clang++ binary on the path or via LLVM_BIN env var. */
   def clangpp(): Path = {
     val path = discover("clang++", "LLVM_BIN")
     checkClangVersion(path)
