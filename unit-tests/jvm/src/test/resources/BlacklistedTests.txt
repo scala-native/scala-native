@@ -32,3 +32,9 @@ scala/javalib/util/zip/ZipEntryTest.scala
 scala/javalib/nio/file/FileSystemExceptionTest.scala
 scala/javalib/nio/file/FilesTest.scala
 scala/javalib/nio/file/DirectoryStreamTest.scala
+
+# Tests that work on java 8, but fail on java 16
+scala/javalib/nio/file/PathTest.scala
+scala/javalib/net/URLEncoderTest.scala
+scala/javalib/util/jar/JarFileTest.scala
+scala/javalib/util/zip/ZipFileTest.scala
