@@ -123,6 +123,7 @@ addCommandAlias(
   Seq(
     "sandbox/run",
     "tests/test",
+    "testsJVM/test",
     "testsExt/test",
     "junitTestOutputsJVM/test",
     "junitTestOutputsNative/test",
@@ -682,24 +683,66 @@ lazy val scalalib =
 lazy val allCoreLibs: Project =
   scalalib // scalalib transitively depends on all the other core libraries
 
-lazy val testsCommonSettings = Def.settings(
-      Test / testOptions ++= Seq(
-        Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
-      ),
-      Test / test / envVars ++= Map(
-        "USER" -> "scala-native",
-        "HOME" -> System.getProperty("user.home"),
-        "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
-        "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
-        "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
-        "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
-      ),
-      Test / unmanagedSourceDirectories ++= {
-        val sharedTestDir = baseDirectory.value.getParentFile / "shared/src/test"
-        println(sharedTestDir)
-        List(sharedTestDir)
-      }
+// Get all blacklisted tests from a file
+def blacklistedFromFile(file: File) =
+  IO.readLines(file)
+    .filter(l => l.nonEmpty && !l.startsWith("#"))
+    .toSet
+
+// Get all scala sources from a directory
+def allScalaFromDir(dir: File): Seq[(String, java.io.File)] =
+  (dir ** "*.scala").get.flatMap { file =>
+    file.relativeTo(dir) match {
+      case Some(rel) => List((rel.toString.replace('\\', '/'), file))
+      case None      => Nil
+    }
+  }
+
+// Check the coherence of the blacklist against the files found.
+def checkBlacklistCoherency(
+    blacklist: Set[String],
+    sources: Seq[(String, File)]
+) = {
+  val allClasses = sources.map(_._1).toSet
+  val nonexistentBlacklisted = blacklist.diff(allClasses)
+  if (nonexistentBlacklisted.nonEmpty) {
+    throw new AssertionError(
+      s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted"
     )
+  }
+}
+
+def testsCommonSettings(withBlacklist: Boolean) = Def.settings(
+  Test / testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+  ),
+  Test / test / envVars ++= Map(
+    "USER" -> "scala-native",
+    "HOME" -> System.getProperty("user.home"),
+    "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
+    "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
+    "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
+    "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
+  ),
+  Test / unmanagedSources ++= {
+    val blacklist: Set[String] =
+      if (withBlacklist)
+        blacklistedFromFile(
+          (Test / resourceDirectory).value / "BlacklistedTests.txt"
+        )
+      else Set.empty
+
+    val sharedSources = allScalaFromDir(
+      baseDirectory.value.getParentFile / "shared/src/test"
+    )
+
+    checkBlacklistCoherency(blacklist, sharedSources)
+
+    sharedSources.collect {
+      case (path, file) if !blacklist.contains(path) => file
+    }
+  }
+)
 
 lazy val tests =
   project
@@ -711,7 +754,7 @@ lazy val tests =
       scalacOptions += "-deprecation:false",
       noPublishSettings,
       nativeLinkStubs := true,
-      testsCommonSettings
+      testsCommonSettings(withBlacklist = false)
     )
     .dependsOn(
       nscplugin % "plugin",
@@ -729,7 +772,7 @@ lazy val testsJVM =
       scalacOptions += "-deprecation:false",
       Test / parallelExecution := false,
       noPublishSettings,
-      testsCommonSettings,
+      testsCommonSettings(withBlacklist = true),
       libraryDependencies ++= jUnitJVMDependencies
     )
     .dependsOn(junitAsyncJVM % "test")
@@ -1127,34 +1170,17 @@ lazy val scalaPartestJunitTests = project
     Test / unmanagedSources ++= {
       if (!shouldPartest.value) Nil
       else {
-        val blacklist: Set[String] = {
-          val file =
+        val blacklist: Set[String] =
+          blacklistedFromFile(
             (Test / resourceDirectory).value / scalaVersion.value / "BlacklistedTests.txt"
-          IO.readLines(file)
-            .filter(l => l.nonEmpty && !l.startsWith("#"))
-            .toSet
-        }
+          )
 
         val jUnitTestsPath =
           (scalaPartest / fetchScalaSource).value / "test" / "junit"
 
-        val scalaScalaJUnitSources = {
-          (jUnitTestsPath ** "*.scala").get.flatMap { file =>
-            file.relativeTo(jUnitTestsPath) match {
-              case Some(rel) => List((rel.toString.replace('\\', '/'), file))
-              case None      => Nil
-            }
-          }
-        }
+        val scalaScalaJUnitSources = allScalaFromDir(jUnitTestsPath)
 
-        // Check the coherence of the lists against the files found.
-        val allClasses = scalaScalaJUnitSources.map(_._1).toSet
-        val nonexistentBlacklisted = blacklist.diff(allClasses)
-        if (nonexistentBlacklisted.nonEmpty) {
-          throw new AssertionError(
-            s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted"
-          )
-        }
+        checkBlacklistCoherency(blacklist, scalaScalaJUnitSources)
 
         scalaScalaJUnitSources.collect {
           case (rel, file) if !blacklist.contains(rel) => file

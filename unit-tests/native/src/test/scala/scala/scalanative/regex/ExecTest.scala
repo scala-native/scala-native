@@ -85,7 +85,9 @@ class ExecTest {
   def testRE2(_file: String) = {
     var file = _file
     var in: java.io.InputStream =
-      new FileInputStream(new File("unit-tests/native/src/test/resources/" + file))
+      new FileInputStream(
+        new File("unit-tests/native/src/test/resources/" + file)
+      )
     // TODO(adonovan): call in.close() on all paths.
     if (file.endsWith(".gz")) {
       in = new GZIPInputStream(in)
@@ -359,7 +361,9 @@ class ExecTest {
   def testFowler(file: String): Unit = {
 
     var in: java.io.InputStream =
-      new FileInputStream(new File("unit-tests/native/src/test/resources/" + file))
+      new FileInputStream(
+        new File("unit-tests/native/src/test/resources/" + file)
+      )
 
     val r = new UNIXBufferedReader(new InputStreamReader(in, "UTF-8"))
     var lineno = 0

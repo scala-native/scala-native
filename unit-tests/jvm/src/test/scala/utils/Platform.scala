@@ -11,7 +11,7 @@ object Platform {
   final val executingInScalaNative = false
 
   final val hasCompliantArrayIndexOutOfBounds = true
-  
+
   final val executingInJVMOnJDK8OrLower = jdkVersion <= 8
 
   private lazy val jdkVersion = {

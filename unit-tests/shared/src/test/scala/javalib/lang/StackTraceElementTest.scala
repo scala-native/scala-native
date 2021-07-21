@@ -40,7 +40,9 @@ class StackTraceElementTest {
   @Test def getClassName(): Unit = {
     assertTrue(dummy1.getClassName == "javalib.lang.StackTraceDummy1")
     assertTrue(dummy2.getClassName == "javalib.lang.StackTraceDummy1")
-    assertTrue(dummy3.getClassName == "javalib.lang.StackTraceDummy3_$colon$colon")
+    assertTrue(
+      dummy3.getClassName == "javalib.lang.StackTraceDummy3_$colon$colon"
+    )
     assertTrue(dummy4.getClassName == "javalib.lang.StackTraceDummy4")
   }
 

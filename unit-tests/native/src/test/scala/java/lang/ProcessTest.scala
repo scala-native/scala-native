@@ -97,7 +97,10 @@ class ProcessTest {
   @Test def inputAndErrorStream(): Unit = {
     val pb = new ProcessBuilder("err.sh")
     val cwd = System.getProperty("user.dir")
-    pb.environment.put("PATH", s"$cwd/unit-tests/shared/src/test/resources/process")
+    pb.environment.put(
+      "PATH",
+      s"$cwd/unit-tests/shared/src/test/resources/process"
+    )
     val proc = pb.start()
 
     assertProcessExitOrTimeout(proc)
@@ -150,7 +153,10 @@ class ProcessTest {
   @Test def redirectErrorStream(): Unit = {
     val pb = new ProcessBuilder("err.sh")
     val cwd = System.getProperty("user.dir")
-    pb.environment.put("PATH", s"$cwd/unit-tests/shared/src/test/resources/process")
+    pb.environment.put(
+      "PATH",
+      s"$cwd/unit-tests/shared/src/test/resources/process"
+    )
     pb.redirectErrorStream(true)
     val proc = pb.start()
 
