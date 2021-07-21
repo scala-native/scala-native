@@ -13,6 +13,7 @@ scala/javalib/lang/IntegerTest.scala
 scala/javalib/lang/ShortTest.scala
 scala/javalib/lang/LongTest.scala
 scala/javalib/lang/StringTest.scala
+scala/javalib/lang/ThrowablesTest.scala
 
 scala/javalib/net/ServerSocketTest.scala
 
