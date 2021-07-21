@@ -19,7 +19,7 @@ These are only required if you use the corresponding feature.
 Installing sbt
 --------------
 
-**macOS and Linux**
+**macOS, Linux, and Windows**
 
 Please refer to `this link <https://www.scala-sbt.org/release/docs/Setup.html>`_
 for instructions for your operating system.
@@ -109,6 +109,49 @@ installation of FreeBSD.
 
     $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/scala-native.nix
     $ nix-shell scala-native.nix -A clangEnv
+
+**Windows**
+
+There are perhaps many different possible ways to setup an environment on
+Windows but this way works and is not too difficult. Powershell was used
+for installing and running Scala Native.
+
+1. Download and install Visual Studio Community 2019
+
+https://visualstudio.microsoft.com/
+
+You may install it via the command line if needed.
+
+.. code-block:: shell
+
+    > .\vs_community__<version>.exe
+
+Select the *Workloads* tab and then *Desktop development with C++* checkbox.
+The defaults are fine. The *C++ Clang tools for Windows* does not work so
+the next step details installing LLVM.
+
+2. Download and install LLVM
+
+https://github.com/llvm/llvm-project/releases/tag/llvmorg-12.0.1
+
+Select *LLVM-12.0.1-win64.exe* or newer. Digital signatures are provided.
+
+You may also install LLVM via the command line, and if needed, install it into
+your *C:\\Users\\<login>\\AppData\\Local* directory. The installer
+will add *LLVM* and the associated directories and files.
+
+.. code-block:: shell
+
+    > .\LLVM-12.0.1-win64.exe
+
+3. Add the binary location to your PATH
+
+Using the install path above, you would add the following:
+
+.. code-block:: shell
+
+    C:\Users\<login>\AppData\Local\LLVM\bin
+
 
 Continue to :ref:`sbt`.
 

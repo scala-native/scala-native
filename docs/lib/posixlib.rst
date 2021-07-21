@@ -199,6 +199,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.pwd: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/pwd.scala
 .. _scala.scalanative.posix.regex: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/regex.scala
 .. _scala.scalanative.posix.sched: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sched.scala
+.. _scala.scalanative.posix.signal: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/signal.scala
 .. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/stdlib.scala
 .. _scala.scalanative.posix.sys.resource: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/resource.scala
 .. _scala.scalanative.posix.sys.select: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/sys/select.scala

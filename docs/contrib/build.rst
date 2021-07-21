@@ -219,7 +219,7 @@ The build has roughly five groups of sub-projects as follows:
 7. JUnit plugin, its tests and dependencies. Following sources define JUnit compiler
    for Scala Native and its runtime, as well as compliance tests and internal stubs.
 
-    - ``junitPlugin (junit-plugin) ``
+    - ``junitPlugin (junit-plugin)``
 
     - ``junitRuntime (junit-runtime)``
 
