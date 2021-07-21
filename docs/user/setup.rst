@@ -130,6 +130,10 @@ Select the *Workloads* tab and then *Desktop development with C++* checkbox.
 The defaults are fine. The *C++ Clang tools for Windows* does not work so
 the next step details installing LLVM.
 
+.. figure:: vs-install.png
+
+   Visual Studio install dialog showing options.
+
 2. Download and install LLVM
 
 https://github.com/llvm/llvm-project/releases/tag/llvmorg-12.0.1
