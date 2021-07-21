@@ -1,5 +1,7 @@
 // Ported from Scala.js, commit: 54648372, dated: 2020-09-24
-package java.time
+package javalib.time
+
+import java.time._
 
 import org.junit.Test
 import org.junit.Assert._

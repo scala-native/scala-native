@@ -1,4 +1,6 @@
-package java.util
+package javalib.util
+
+import java.util._
 
 // Extracted from port of Apache Harmony tests.
 // All actual formatting tests are in core `DefaultFormatterTest` and `FormatterExtTest`

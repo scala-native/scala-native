@@ -1,5 +1,7 @@
 // Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
-package java.util
+package javalib.util
+
+import java.util._
 
 import org.junit.Assert._
 import org.junit.Test

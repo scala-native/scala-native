@@ -1,6 +1,8 @@
 // Ported from Scala.js, commit: 00915e8, dated: 2020-09-29
 
-package java.util
+package javalib.util
+
+import java.util._
 
 import java.math.BigInteger
 import org.junit.Test

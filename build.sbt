@@ -125,6 +125,7 @@ addCommandAlias(
     "tests/test",
     "testsJVM/test",
     "testsExt/test",
+    "testsExtJVM/test",
     "junitTestOutputsJVM/test",
     "junitTestOutputsNative/test",
     "scalaPartestJunitTests/test"
@@ -711,19 +712,7 @@ def checkBlacklistCoherency(
     )
   }
 }
-
-def testsCommonSettings(withBlacklist: Boolean) = Def.settings(
-  Test / testOptions ++= Seq(
-    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
-  ),
-  Test / test / envVars ++= Map(
-    "USER" -> "scala-native",
-    "HOME" -> System.getProperty("user.home"),
-    "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
-    "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
-    "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
-    "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
-  ),
+def sharedTestSource(withBlacklist: Boolean) = Def.settings(
   Test / unmanagedSources ++= {
     val blacklist: Set[String] =
       if (withBlacklist)
@@ -744,17 +733,32 @@ def testsCommonSettings(withBlacklist: Boolean) = Def.settings(
   }
 )
 
+lazy val testsCommonSettings = Def.settings(
+  Test / testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+  ),
+  Test / test / envVars ++= Map(
+    "USER" -> "scala-native",
+    "HOME" -> System.getProperty("user.home"),
+    "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
+    "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
+    "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
+    "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
+  )
+)
+
 lazy val tests =
   project
     .in(file("unit-tests/native"))
     .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
     .settings(buildInfoSettings)
+    .settings(noPublishSettings)
     .settings(
       scalacOptions -= "-deprecation",
       scalacOptions += "-deprecation:false",
-      noPublishSettings,
       nativeLinkStubs := true,
-      testsCommonSettings(withBlacklist = false)
+      testsCommonSettings,
+      sharedTestSource(withBlacklist = false)
     )
     .dependsOn(
       nscplugin % "plugin",
@@ -767,25 +771,31 @@ lazy val tests =
 lazy val testsJVM =
   project
     .in(file("unit-tests/jvm"))
+    .settings(noPublishSettings)
     .settings(
       scalacOptions -= "-deprecation",
       scalacOptions += "-deprecation:false",
       Test / parallelExecution := false,
-      noPublishSettings,
-      testsCommonSettings(withBlacklist = true),
+      testsCommonSettings,
+      sharedTestSource(withBlacklist = true),
       libraryDependencies ++= jUnitJVMDependencies
     )
     .dependsOn(junitAsyncJVM % "test")
 
+lazy val testsExtCommonSettings = Def.settings(
+  Test / testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+  ),
+  nativeLinkStubs := true
+)
+
 lazy val testsExt = project
-  .in(file("unit-tests-ext"))
+  .in(file("unit-tests-ext/native"))
   .enablePlugins(MyScalaNativePlugin)
   .settings(noPublishSettings)
   .settings(
-    Test / testOptions ++= Seq(
-      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
-    ),
-    nativeLinkStubs := true
+    testsExtCommonSettings,
+    sharedTestSource(withBlacklist = false)
   )
   .dependsOn(
     nscplugin % "plugin",
@@ -795,6 +805,16 @@ lazy val testsExt = project
     junitRuntime,
     javalibExtDummies
   )
+
+lazy val testsExtJVM = project
+  .in(file("unit-tests-ext/jvm"))
+  .settings(noPublishSettings)
+  .settings(
+    testsExtCommonSettings,
+    sharedTestSource(withBlacklist = true),
+    libraryDependencies ++= jUnitJVMDependencies
+  )
+  .dependsOn(junitAsyncJVM % "test")
 
 lazy val sandbox =
   project

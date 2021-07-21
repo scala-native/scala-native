@@ -1,4 +1,6 @@
-package java.nio.file.attribute
+package javalib.nio.file.attribute
+
+import java.nio.file.attribute._
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
