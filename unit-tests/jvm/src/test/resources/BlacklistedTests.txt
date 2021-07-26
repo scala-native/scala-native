@@ -14,6 +14,8 @@ scala/javalib/lang/ShortTest.scala
 scala/javalib/lang/LongTest.scala
 scala/javalib/lang/StringTest.scala
 scala/javalib/lang/ThrowablesTest.scala
+scala/javalib/lang/ExceptionTest.scala
+scala/javalib/lang/ProcessTest.scala
 
 scala/javalib/net/ServerSocketTest.scala
 
@@ -33,6 +35,16 @@ scala/javalib/util/zip/ZipEntryTest.scala
 scala/javalib/nio/file/FileSystemExceptionTest.scala
 scala/javalib/nio/file/FilesTest.scala
 scala/javalib/nio/file/DirectoryStreamTest.scala
+
+scala/scala/ObjectCloneTest.scala
+scala/scala/ReflectiveProxyTest.scala
+scala/scala/ExecutionContextTest.scala
+
+# Tests that fail for scala 2.11 on JVM
+scala/scala/PrimitiveTest.scala
+
+# Tests that fail for scala 2.13 on JVM
+scala/scala/bugcompat/LongFloatPrimitiveTest.scala
 
 # Tests that work on java 8, but fail on java 16
 scala/javalib/nio/file/PathTest.scala

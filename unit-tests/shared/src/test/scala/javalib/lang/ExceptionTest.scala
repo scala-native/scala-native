@@ -1,4 +1,4 @@
-package java.lang
+package javalib.lang
 
 import org.junit.Test
 import org.junit.Assert._
@@ -21,7 +21,7 @@ class ExceptionTest {
     (new DummyNoStackTraceException).printStackTrace(pw)
     val trace = sw.toString
     val expected = Seq(
-      "java.lang.DummyNoStackTraceException",
+      "javalib.lang.DummyNoStackTraceException",
       "\t<no stack trace available>"
     ).mkString("\n")
     assertTrue(trace.startsWith(expected))
