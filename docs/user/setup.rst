@@ -39,7 +39,7 @@ provided that it works with Scala Native. The Scala Native sbt
 plugin checks to ensure that `clang` is at least the minimum version
 shown above.
 
-Scala Native uses the `immix`_ garbage collector by default.
+Scala Native uses the `Immix`_ garbage collector by default.
 You can use the `Boehm`_ garbage collector instead.
 If you chose to use that alternate garbage collector both the native library
 and header files must be provided at build time.
@@ -112,9 +112,13 @@ installation of FreeBSD.
 
 **Windows**
 
-There are perhaps many different possible ways to setup an environment on
-Windows but this way works and is not too difficult. Powershell was used
-for installing and running Scala Native.
+Corporate environments and Windows policies can affect the method
+used to setup your environment. The following procedure involves downloading
+installers and running the installers using Powershell (Administrative)
+to avoid some of these issues. If you have full access to your machine
+then you can install using your favorite method. `Chocolatey`_ or `Scoop`_
+can be substituted as needed or desired and are also mentioned above in the
+installing `sbt` documentation.
 
 1. Download and install Visual Studio Community 2019
 
@@ -128,7 +132,7 @@ You may install it via the command line if needed.
 
 Select the *Workloads* tab and then *Desktop development with C++* checkbox.
 The defaults are fine. The *C++ Clang tools for Windows* does not work so
-the next step details installing LLVM.
+use the next step for details on installing LLVM.
 
 .. figure:: vs-install.png
 
@@ -162,6 +166,8 @@ Continue to :ref:`sbt`.
 .. Comment - Sphinx linkcheck fails both http: and https://www.hboehm.info/gc 
 .. Comment - so use the roughly equivalent GitHub URL.
 .. _Boehm: https://github.com/ivmai/bdwgc
-.. _immix: https://www.cs.utexas.edu/users/speedway/DaCapo/papers/immix-pldi-2008.pdf
+.. _Immix: https://www.cs.utexas.edu/users/speedway/DaCapo/papers/immix-pldi-2008.pdf
 .. _LLVM: https://llvm.org
+.. _Chocolatey: https://chocolatey.org/
+.. _Scoop: https://scoop.sh/
 .. _here: :ref:`Sbt settings and tasks`
