@@ -712,6 +712,7 @@ def checkBlacklistCoherency(
     )
   }
 }
+
 def sharedTestSource(withBlacklist: Boolean) = Def.settings(
   Test / unmanagedSources ++= {
     val blacklist: Set[String] =
@@ -734,6 +735,8 @@ def sharedTestSource(withBlacklist: Boolean) = Def.settings(
 )
 
 lazy val testsCommonSettings = Def.settings(
+  scalacOptions -= "-deprecation",
+  scalacOptions += "-deprecation:false",
   Test / testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
   ),
@@ -754,8 +757,6 @@ lazy val tests =
     .settings(buildInfoSettings)
     .settings(noPublishSettings)
     .settings(
-      scalacOptions -= "-deprecation",
-      scalacOptions += "-deprecation:false",
       nativeLinkStubs := true,
       testsCommonSettings,
       sharedTestSource(withBlacklist = false)
@@ -773,8 +774,6 @@ lazy val testsJVM =
     .in(file("unit-tests/jvm"))
     .settings(noPublishSettings)
     .settings(
-      scalacOptions -= "-deprecation",
-      scalacOptions += "-deprecation:false",
       Test / parallelExecution := false,
       testsCommonSettings,
       sharedTestSource(withBlacklist = true),
@@ -785,8 +784,7 @@ lazy val testsJVM =
 lazy val testsExtCommonSettings = Def.settings(
   Test / testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
-  ),
-  nativeLinkStubs := true
+  )
 )
 
 lazy val testsExt = project
@@ -794,6 +792,7 @@ lazy val testsExt = project
   .enablePlugins(MyScalaNativePlugin)
   .settings(noPublishSettings)
   .settings(
+    nativeLinkStubs := true,
     testsExtCommonSettings,
     sharedTestSource(withBlacklist = false)
   )
