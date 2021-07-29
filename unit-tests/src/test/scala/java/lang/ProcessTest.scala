@@ -134,11 +134,11 @@ class ProcessTest {
     pb.redirectInput(file)
 
     try {
-      val proc = pb.start()
       val os = new FileOutputStream(file)
       os.write("hello\n".getBytes)
       os.write("quit\n".getBytes)
 
+      val proc = pb.start()
       assertProcessExitOrTimeout(proc)
 
       assertEquals("hello", readInputStream(proc.getInputStream))
