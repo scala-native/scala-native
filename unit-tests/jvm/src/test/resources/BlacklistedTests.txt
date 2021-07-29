@@ -39,6 +39,7 @@ scala/javalib/nio/file/DirectoryStreamTest.scala
 scala/scala/ObjectCloneTest.scala
 scala/scala/ReflectiveProxyTest.scala
 scala/scala/ExecutionContextTest.scala
+scala/scala/AsInstanceOfTest.scala
 
 # Tests that fail for scala 2.11 on JVM
 scala/scala/PrimitiveTest.scala

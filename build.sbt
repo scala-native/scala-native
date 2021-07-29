@@ -242,16 +242,22 @@ lazy val toolSettings: Seq[Setting[_]] =
     javacOptions ++= Seq("-encoding", "utf8")
   )
 
-lazy val buildInfoSettings: Seq[Setting[_]] =
+lazy val buildInfoJVMSettings: Seq[Setting[_]] =
   Def.settings(
     buildInfoPackage := "scala.scalanative.buildinfo",
     buildInfoObject := "ScalaNativeBuildInfo",
     buildInfoKeys := Seq[BuildInfoKey](
       version,
       sbtVersion,
-      scalaVersion,
-      "nativeScalaVersion" -> (nativelib / scalaVersion).value
+      scalaVersion
     )
+  )
+
+lazy val buildInfoSettings: Seq[Setting[_]] =
+  Def.settings(
+    buildInfoJVMSettings,
+    buildInfoKeys +=
+      "nativeScalaVersion" -> (nativelib / scalaVersion).value
   )
 
 lazy val disabledTestsSettings: Seq[Setting[_]] = {
@@ -772,6 +778,8 @@ lazy val tests =
 lazy val testsJVM =
   project
     .in(file("unit-tests/jvm"))
+    .enablePlugins(BuildInfoPlugin)
+    .settings(buildInfoJVMSettings)
     .settings(noPublishSettings)
     .settings(
       Test / parallelExecution := false,
