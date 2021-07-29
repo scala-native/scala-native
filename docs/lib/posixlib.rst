@@ -10,7 +10,7 @@ Scala Native provides bindings for a core subset of the
 C Header          Scala Native Module
 ================= ==================================
 `aio.h`_          N/A - *indicates binding not available*
-`arpa/inet.h`_    scala.scalanative.posix.arpa.inet_
+`arpa/inet.h`_    scala.scalanative.posix.arpa.inet_ [#inet_ntoa]_
 `assert.h`_       N/A
 `complex.h`_      scala.scalanative.libc.complex_
 `cpio.h`_         scala.scalanative.posix.cpio_
@@ -215,5 +215,11 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.time: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/time.scala
 .. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/unistd.scala
 .. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/master/posixlib/src/main/scala/scala/scalanative/posix/utime.scala
+
+.. rubric Footnotes
+.. [#inet_ntoa] The argument to inet_ntoa() differs from the POSIX
+                specification because Scala Native supports only
+                passing structures by reference.  See code for details
+		and usage.
 
 Continue to :ref:`communitylib`.
