@@ -16,6 +16,7 @@ scala/javalib/lang/StringTest.scala
 scala/javalib/lang/ThrowablesTest.scala
 scala/javalib/lang/ExceptionTest.scala
 scala/javalib/lang/ProcessTest.scala
+scala/javalib/lang/SystemTest.scala
 
 scala/javalib/net/ServerSocketTest.scala
 

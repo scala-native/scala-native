@@ -746,7 +746,7 @@ lazy val testsCommonSettings = Def.settings(
   Test / testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
   ),
-  Test / test / envVars ++= Map(
+  Test / envVars ++= Map(
     "USER" -> "scala-native",
     "HOME" -> System.getProperty("user.home"),
     "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
@@ -782,6 +782,7 @@ lazy val testsJVM =
     .settings(buildInfoJVMSettings)
     .settings(noPublishSettings)
     .settings(
+      Test / fork := true,
       Test / parallelExecution := false,
       testsCommonSettings,
       sharedTestSource(withBlacklist = true),
