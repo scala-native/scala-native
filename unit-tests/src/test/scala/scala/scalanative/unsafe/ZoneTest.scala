@@ -69,4 +69,25 @@ class ZoneTest {
     )
     assertThrows(classOf[IllegalStateException], zone.close())
   }
+
+  @Test def zoneReferencesCounters(): Unit = {
+    implicit val zone: Zone = Zone.open()
+
+    class SomeObject(implicit val zone: Zone) extends ZonedHandle[SomeObject]
+
+    val someObject = new SomeObject()
+
+    // it should mark itself automatically
+    assertFalse(zone.ref(someObject))
+
+    assertFalse(zone.unref(someObject))
+    assertTrue(zone.unref(someObject))
+
+    // unref not related object should return true
+    assertTrue(zone.unref(someObject))
+
+    // proof that ref works as expected
+    assertTrue(zone.ref(someObject))
+    assertTrue(zone.unref(someObject))
+  }
 }
