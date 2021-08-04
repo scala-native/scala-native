@@ -2,6 +2,7 @@ package scala.scalanative
 package testinterface
 
 import java.net.Socket
+import signalhandling.SignalConfig
 
 object TestMain {
 
@@ -33,6 +34,8 @@ object TestMain {
     val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()
+
+    SignalConfig.setDefaultHandlers()
 
     val exitCode = nativeRPC.loop()
     sys.exit(exitCode)
