@@ -5,6 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
+import scalanative.nir.Attr.Link
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -93,7 +94,10 @@ private[scalanative] object LLVM {
       outpath: Path
   ): Path = {
     val links = {
-      val srclinks = linkerResult.links.map(_.name)
+      val srclinks = linkerResult.links.collect {
+        case Link("z") if config.targetsWindows => "zlib"
+        case Link(name)                         => name
+      }
       val gclinks = config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.

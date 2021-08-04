@@ -11,7 +11,7 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
-      
+
       #Prepare environment, clang needs to be installed
       #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
       - name: Cache LLVM
@@ -102,6 +102,8 @@ jobs:
           echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
           echo "::set-output name=LocalAppData::${env:LocalAppData}"
           echo "::set-output name=UserProfile::${env:UserProfile}"
+          echo "::set-output name=VcpkgLibs::${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static"
+
       - name: Cache dependencies
         id: cache-deps
         uses: actions/cache@v2
@@ -121,8 +123,17 @@ jobs:
       - name: Assert clang installed and on path
         run: clang --version
 
+      - name: Install libs
+        run: vcpkg install zlib --triplet=x64-windows-static
+
       - name: Test runtime
-        run: |
-          set SCALANATIVE_GC=${{matrix.gc}}
-          sbt ++${{matrix.scala}};sandbox/run;testsExt/test
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\lib&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          sandbox/run
+          "tests/testOnly javalib.math.* javalib.security.*"
+          testsExt/test
         shell: cmd
