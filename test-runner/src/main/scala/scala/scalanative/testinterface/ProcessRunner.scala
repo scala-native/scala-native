@@ -42,7 +42,7 @@ private[testinterface] class ProcessRunner(
         // than 128 signify program end by fatal signal
         if (exitCode > 128)
           logger.error(
-            s"Test runner interrupted by fatal signal: ${exitCode - 128}"
+            s"Test runner interrupted by fatal signal ${exitCode - 128}"
           )
       }
     }
