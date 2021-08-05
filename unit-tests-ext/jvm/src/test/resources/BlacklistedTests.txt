@@ -1,0 +1,5 @@
+# Tests that do not yet pass on JVM
+# In most cases, both javalib implementation 
+# and tests have to be changed
+
+scala/javalib/util/FormatterTestEx.scala

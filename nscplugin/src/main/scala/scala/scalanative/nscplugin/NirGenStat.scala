@@ -624,6 +624,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case EmptyTree =>
             buf += Defn.Declare(attrs, name, sig)
 
+          case Apply(TypeApply(Select(retBlock, _), _), _)
+              if retBlock.tpe == NoType && isScala211 =>
+            // Fix issue #2305 Compile error on macro using Scala 2.11.12
+            buf += Defn.Declare(attrs, name, sig)
+
           case _ if dd.name == nme.CONSTRUCTOR && owner.isExternModule =>
             validateExternCtor(dd.rhs)
             ()
