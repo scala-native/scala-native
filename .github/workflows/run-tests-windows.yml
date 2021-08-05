@@ -89,6 +89,7 @@ jobs:
       matrix:
         os: [ windows-2019 ]
         scala: [ 2.13.6, 2.12.14, 2.11.12 ]
+        gc: [none, immix, commix]
     steps:
       - uses: actions/checkout@v2
 
@@ -120,12 +121,8 @@ jobs:
       - name: Assert clang installed and on path
         run: clang --version
 
-      - name: Run sandbox
+      - name: Test runtime
         run: |
-          sbt ++${{matrix.scala}};sandbox/run
-        shell: cmd
-
-      - name: Run testsExt tests
-        run: |
-          sbt ++${{matrix.scala}};testsExt/test
+          set SCALANATIVE_GC=${{matrix.gc}}
+          sbt ++${{matrix.scala}};sandbox/run;testsExt/test
         shell: cmd
