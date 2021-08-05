@@ -836,20 +836,23 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val sig = genMethodSig(sym)
           val res = buf.call(sig, method, values, Next.None)
 
-          // Get the result type of the lambda after erasure, when entering posterasure.
-          // This allows to recover the correct type in case value classes are involved.
-          // In that case, the type will be an ErasedValueType.
-          val resTyEnteringPosterasure =
-            enteringPhase(currentRun.posterasurePhase) {
-              targetTree.symbol.tpe.resultType
-            }
+          val retValue =
+            if (retType == res.ty) res
+            else {
+              // Get the result type of the lambda after erasure, when entering posterasure.
+              // This allows to recover the correct type in case value classes are involved.
+              // In that case, the type will be an ErasedValueType.
+              val resTyEnteringPosterasure =
+                enteringPhase(currentRun.posterasurePhase) {
+                  targetTree.symbol.tpe.resultType
+                }
 
-          val boxedRes = ensureBoxed(
-            res,
-            resTyEnteringPosterasure,
-            callTree.tpe
-          )(buf, callTree.pos)
-          buf.ret(boxedRes)
+              ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(
+                buf,
+                callTree.pos
+              )
+            }
+          buf.ret(retValue)
           buf.toSeq
         }
 

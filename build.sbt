@@ -765,7 +765,14 @@ lazy val tests =
     .settings(
       nativeLinkStubs := true,
       testsCommonSettings,
-      sharedTestSource(withBlacklist = false)
+      sharedTestSource(withBlacklist = false),
+      Test / unmanagedSourceDirectories ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, n)) if n >= 12 =>
+            Seq((Test / sourceDirectory).value / "scala-2.12+")
+          case _ => Nil
+        }
+      }
     )
     .dependsOn(
       nscplugin % "plugin",
