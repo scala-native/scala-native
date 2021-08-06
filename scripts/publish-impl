@@ -6,8 +6,8 @@ set -ex
 
 sbt clean
 
-# lowest versions supported
-for v in 2.11.12 2.12.13 2.13.4; do
+# use the latest versions
+for v in 2.11.12 2.12.14 2.13.6; do
   sbt -Dsbt.supershell=false \
     ++$v \
     nscplugin/$publish \

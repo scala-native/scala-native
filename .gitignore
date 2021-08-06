@@ -8,7 +8,6 @@ _build/
 _build/
 scripts/.coursier
 scripts/.scalafmt*
-scripts/project/
 sbt-crossproject/
 local.sbt
 
