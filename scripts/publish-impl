@@ -15,6 +15,7 @@ for v in 2.11.12 2.12.13 2.13.4; do
     nativelib/$publish \
     clib/$publish \
     posixlib/$publish \
+    windowslib/$publish \
     javalib/$publish \
     auxlib/$publish \
     scalalib/$publish \
