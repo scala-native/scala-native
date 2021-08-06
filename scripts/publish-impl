@@ -1,0 +1,31 @@
+#!/bin/bash
+# publishSigned or publishLocal
+publish=$1
+
+set -ex
+
+sbt clean
+
+# lowest versions supported
+for v in 2.11.12 2.12.13 2.13.4; do
+  sbt -Dsbt.supershell=false \
+    ++$v \
+    nscplugin/$publish \
+    junitPlugin/$publish \
+    nativelib/$publish \
+    clib/$publish \
+    posixlib/$publish \
+    javalib/$publish \
+    auxlib/$publish \
+    scalalib/$publish \
+    testInterfaceSbtDefs/$publish \
+    testInterface/$publish \
+    junitRuntime/$publish
+done
+
+sbt -Dsbt.supershell=false \
+  util/$publish \
+  nir/$publish \
+  tools/$publish \
+  testRunner/$publish \
+  sbtScalaNative/$publish
