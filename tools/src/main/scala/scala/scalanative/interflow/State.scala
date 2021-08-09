@@ -141,8 +141,8 @@ final class State(block: Local) {
       addr <- closure
       // Ignore keys no longer existing in other state
       obj <- other.heap.get(addr)
-      clone = obj.clone
     } {
+      val clone = obj.clone()
       clone match {
         case DelayedInstance(op) =>
           delayed(op) = Val.Virtual(addr)
