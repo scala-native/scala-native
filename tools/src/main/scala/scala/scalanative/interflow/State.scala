@@ -137,8 +137,12 @@ final class State(block: Local) {
   def inherit(other: State, roots: Seq[Val]): Unit = {
     val closure = heapClosure(roots) ++ other.heapClosure(roots)
 
-    closure.foreach { addr =>
-      val clone = other.heap(addr).clone()
+    for {
+      addr <- closure
+      // Ignore keys no longer existing in other state
+      obj <- other.heap.get(addr)
+      clone = obj.clone
+    } {
       clone match {
         case DelayedInstance(op) =>
           delayed(op) = Val.Virtual(addr)
