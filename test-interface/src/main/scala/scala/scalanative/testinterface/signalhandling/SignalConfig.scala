@@ -1,43 +1,254 @@
 package scala.scalanative.testinterface.signalhandling
 
-import scalanative.runtime.Platform._
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.signal._
+import scala.scalanative.libc.string._
+import scala.scalanative.posix.unistd._
+import scala.scalanative.runtime.unwind
 import scala.scalanative.unsafe._
+import scalanative.unsigned._
+import scala.scalanative.windows._
 
 private[testinterface] object SignalConfig {
+
+  /* StackTrace.currentStackTrace had to be rewritten to accomodate using
+   * only async-signal-safe methods. Because of that, printf was replaced
+   * with write/WriteFile, and only stack allocations were used.
+   * While it is unknown if WriteFile is async-signal-safe here,
+   * the fact that the function is called synchronously suggests so.
+   * Unfortunately, Windows does not provide specification on
+   * async-signal-safe methods the way POSIX does.
+   */
+  private def asyncSafePrintStackTrace(sig: CInt): Unit = {
+    val errorTag = c"[\u001b[0;31merror\u001b[0;0m]"
+
+    def printError(str: CString): Unit =
+      if (isWindows) {
+        val written = stackalloc[DWord]
+        FileApi.WriteFile(
+          ConsoleApiExt.stdErr,
+          str,
+          (sizeof[CChar] * strlen(str).toULong).toUInt,
+          written,
+          null
+        )
+      } else {
+        write(
+          STDERR_FILENO,
+          str,
+          sizeof[CChar] * strlen(str)
+        )
+      }
+
+    /* Adapted from StackTraceElement.fromSymbol */
+    def asyncSafePrintSymbol(sym: Ptr[CChar], symMaxLen: Int): Unit = {
+      val len = strlen(sym)
+      var pos = 0
+
+      val ident = stackalloc[CChar](symMaxLen.toUInt)
+      val className = stackalloc[CChar](symMaxLen.toUInt)
+      className(0) = 0.toByte
+      val methodName = stackalloc[CChar](symMaxLen.toUInt)
+      methodName(0) = 0.toByte
+
+      def readSymbol(): Boolean = {
+        if (read() != '_') {
+          false
+        } else if (read() != 'S') {
+          false
+        } else {
+          readGlobal()
+        }
+      }
+
+      def readGlobal(): Boolean = read() match {
+        case 'M' =>
+          readIdent()
+          if (strlen(ident) == 0) {
+            false
+          } else {
+            strcpy(className, ident)
+            readSig()
+          }
+        case _ =>
+          false
+      }
+
+      def readSig(): Boolean = read() match {
+        case 'R' =>
+          strcpy(methodName, c"<init>")
+          true
+        case 'D' | 'P' | 'C' | 'G' =>
+          readIdent()
+          if (strlen(ident) == 0) {
+            false
+          } else {
+            strcpy(methodName, ident)
+            true
+          }
+        case 'K' =>
+          readSig()
+        case _ =>
+          false
+      }
+
+      def readIdent(): Unit = {
+        val n = readNumber()
+        if (n <= 0) {
+          ident(0) = 0.toByte
+        } else if (!inBounds(pos) || !inBounds(pos + n)) {
+          ident(0) = 0.toByte
+        } else {
+          var i = 0
+          while (i < n) {
+            ident(i) = sym(pos + i)
+            i += 1
+          }
+          ident(i) = 0.toByte
+          pos += n
+        }
+      }
+
+      def readNumber(): Int = {
+        val start = pos
+        var number = 0
+        while ('0' <= at(pos) && at(pos) <= '9') {
+          number = number * 10 + (at(pos) - '0').toInt
+          pos += 1
+        }
+        if (start == pos) {
+          -1
+        } else {
+          number
+        }
+      }
+
+      def read(): Char = {
+        if (inBounds(pos)) {
+          val res = sym(pos).toChar
+          pos += 1
+          res
+        } else {
+          -1.toChar
+        }
+      }
+
+      def at(pos: Int): Char = {
+        if (inBounds(pos)) {
+          sym(pos).toChar
+        } else {
+          -1.toChar
+        }
+      }
+
+      def inBounds(pos: Int) =
+        pos >= 0 && pos < len.toLong
+
+      if (!readSymbol()) {
+        strcpy(className, c"<none>")
+        strcpy(methodName, sym)
+      }
+
+      val formattedSymbol = stackalloc[CChar](516.toUInt)
+      formattedSymbol(0) = 0.toByte
+      strcat(formattedSymbol, errorTag)
+      strcat(formattedSymbol, c"   at ")
+      strcat(formattedSymbol, className)
+      strcat(formattedSymbol, c".")
+      strcat(formattedSymbol, methodName)
+      strcat(formattedSymbol, c"(Unknown Source)\n")
+      printError(formattedSymbol)
+    }
+
+    // itoa / snprintf are not async-signal-safe
+    // Custom method has to be used.
+    def signalToCString(str: CString, signal: Int): Unit = {
+      val reversedStr = stackalloc[CChar](8.toUInt)
+      var index = 0
+      var signalPart = signal
+      while (signalPart > 0) {
+        val digit = signalPart % 10
+        reversedStr(index) = (digit + '0').toByte
+        index += 1
+        signalPart = signalPart / 10
+      }
+      reversedStr(index) = 0.toByte
+      for (i <- 0 until index) {
+        str(i) = reversedStr(index - 1 - i)
+      }
+      str(index) = 0.toByte
+    }
+
+    val signalNumberStr = stackalloc[CChar](8.toUInt)
+    signalToCString(signalNumberStr, sig)
+
+    val stackTraceHeader = stackalloc[CChar](2048.toUInt)
+    stackTraceHeader(0.toUInt) = 0.toByte
+    strcat(stackTraceHeader, errorTag)
+    strcat(stackTraceHeader, c" Fatal signal ")
+    strcat(stackTraceHeader, signalNumberStr)
+    strcat(stackTraceHeader, c" caught\n")
+    printError(stackTraceHeader)
+
+    val cursor = stackalloc[scala.Byte](2048.toUInt)
+    val context = stackalloc[scala.Byte](2048.toUInt)
+    unwind.get_context(context)
+    unwind.init_local(cursor, context)
+
+    while (unwind.step(cursor) > 0) {
+      val offset = stackalloc[scala.Byte](8.toUInt)
+      val pc = stackalloc[CUnsignedLongLong]
+      unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
+      if (pc == 0)
+        return
+      val symMax = 1024
+      val sym = stackalloc[CChar](symMax.toUInt)
+      if (unwind.get_proc_name(
+            cursor,
+            sym,
+            sizeof[CChar] * symMax.toUInt,
+            offset
+          ) == 0) {
+        sym(symMax - 1) = 0.toByte
+        asyncSafePrintSymbol(sym, symMax)
+      }
+    }
+  }
+
   def setDefaultHandlers(): Unit = {
 
     /* Default handler for signals like SIGSEGV etc.
-     * Since it needs to be able to handle segmentation faults, it has to
-     * exit the program on call, otherwise it will keep being called indefinetely.
-     * This and IO operations in handlers leading to unspecified behavior mean we
-     * can only communicate through exitcode values. In bash programs,
+     * Only async-signal-safe methods can be used here.
+     * Since it needs to be able to handle segmentation faults,
+     * it has to exit the program on call, otherwise it will
+     * keep being called indefinetely. In bash programs,
      * exitcode > 128 signifies a fatal signal n, where n = exitcode - 128.
      * This is the convention used here.
      */
     val defaultHandler = CFuncPtr1.fromScalaFunction { (sig: CInt) =>
+      asyncSafePrintStackTrace(sig)
       exit(128 + sig)
     }
 
-    def YELLOW = "\u001b[0;33m"
-    def RESET = "\u001b[0;0m"
+    val YELLOW = "\u001b[0;33m"
+    val RESET = "\u001b[0;0m"
 
     def setHandler(sig: CInt): Unit = {
       if (signal(sig, defaultHandler) == SIG_ERR)
-        println(
+        Console.err.println(
           s"[${YELLOW}warn${RESET}] Could not set default handler for signal ${sig}"
         )
     }
 
-    // Only these select "signals" can work on Windows
+    // Only these select signals can work on Windows
     setHandler(SIGABRT)
     setHandler(SIGFPE)
     setHandler(SIGILL)
     setHandler(SIGSEGV)
     setHandler(SIGTERM)
 
-    if (isLinux() || isMac()) {
+    if (!isWindows) {
       import scala.scalanative.posix.signal._
       setHandler(SIGALRM)
       setHandler(SIGBUS)
