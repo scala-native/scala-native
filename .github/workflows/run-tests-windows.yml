@@ -11,7 +11,6 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
-
       #Prepare environment, clang needs to be installed
       #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
       - name: Cache LLVM

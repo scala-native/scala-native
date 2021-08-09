@@ -66,9 +66,9 @@ class ResourceTest {
   @Test def testGetpriority() = if (!isWindows) {
     // format: off
     val cases = Array(TestInfo("PRIO_PROCESS", PRIO_PROCESS),
-      TestInfo("PRIO_PGRP",    PRIO_PGRP),
-      TestInfo("PRIO_USER",    PRIO_USER)
-    )
+                      TestInfo("PRIO_PGRP",    PRIO_PGRP),
+                      TestInfo("PRIO_USER",    PRIO_USER)
+                     )
     // format: on
 
     for (c <- cases) {
@@ -102,13 +102,13 @@ class ResourceTest {
     Zone { implicit z =>
       // format: off
       val cases = Array(TestInfo("RLIMIT_AS",     RLIMIT_AS),
-        TestInfo("RLIMIT_CORE",   RLIMIT_CORE),
-        TestInfo("RLIMIT_CPU",    RLIMIT_CPU),
-        TestInfo("RLIMIT_DATA",   RLIMIT_DATA),
-        TestInfo("RLIMIT_FSIZE",  RLIMIT_FSIZE),
-        TestInfo("RLIMIT_NOFILE", RLIMIT_NOFILE),
-        TestInfo("RLIMIT_STACK",  RLIMIT_STACK)
-      )
+                        TestInfo("RLIMIT_CORE",   RLIMIT_CORE),
+                        TestInfo("RLIMIT_CPU",    RLIMIT_CPU),
+                        TestInfo("RLIMIT_DATA",   RLIMIT_DATA),
+                        TestInfo("RLIMIT_FSIZE",  RLIMIT_FSIZE),
+                        TestInfo("RLIMIT_NOFILE", RLIMIT_NOFILE),
+                        TestInfo("RLIMIT_STACK",  RLIMIT_STACK)
+                        )
       // format: on
 
       for (c <- cases) {
