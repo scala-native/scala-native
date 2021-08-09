@@ -1,11 +1,11 @@
 package scala.scalanative.linker
 
 import org.scalatest.matchers.should.Matchers
-import scala.scalanative.LinkerSpec
+import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
 import scala.scalanative.nir.{Global, Sig, Type, Val}
 
-class LinktimeConditionsSpec extends LinkerSpec with Matchers {
+class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   val entry = "Main$"
   private val props =
     s"""package scala.scalanative
@@ -370,6 +370,31 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     }
   }
 
+  it should "allow to inline linktime property" in {
+    optimizeWithProps(
+      "props.scala" ->
+        """package scala.scalanative
+          |
+          |object props{
+          |   @scalanative.unsafe.resolvedAtLinktime("prop")
+          |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+          |}
+          |""".stripMargin,
+      "main.scala" -> """
+                        |import scala.scalanative.props._
+                        |object Main {
+                        |  @scalanative.annotation.alwaysinline
+                        |  def prop() = linktimeProperty
+                        |  def main(args: Array[String]): Unit = {
+                        |    println(prop())
+                        |  }
+                        |}""".stripMargin
+    )("prop" -> true) { (_, result) =>
+      // Check if compiles and does not fail to optimize
+      result.unavailable.isEmpty
+    }
+  }
+
   private def shouldContainAll[T](expected: Iterable[T], given: Iterable[T]) = {
     val left = given.toSet
     val right = expected.toSet
@@ -419,5 +444,18 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
         .withLinkStubs(false)
     }
     link(entry, sources.toMap, setupConfig = setupConfig)(body)
+  }
+
+  private def optimizeWithProps(
+      sources: (String, String)*
+  )(props: (String, Any)*)(body: (Config, Result) => Unit): Unit = {
+    def setupConfig(config: NativeConfig): NativeConfig = {
+      config
+        .withLinktimeProperties(props.toMap)
+        .withLinkStubs(false)
+        .withOptimize(true)
+        .withMode(scalanative.build.Mode.releaseFull)
+    }
+    optimize(entry, sources.toMap, setupConfig = setupConfig)(body)
   }
 }

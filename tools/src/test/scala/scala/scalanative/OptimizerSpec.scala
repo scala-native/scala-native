@@ -1,6 +1,6 @@
 package scala.scalanative
 
-import build.{ScalaNative, Config, Mode}
+import build.{ScalaNative, Config, NativeConfig, Mode}
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {
@@ -18,10 +18,14 @@ abstract class OptimizerSpec extends LinkerSpec {
    *  @return
    *    The result of applying `fn` to the resulting definitions.
    */
-  def optimize[T](entry: String, sources: Map[String, String])(
+  def optimize[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: NativeConfig => NativeConfig = identity
+  )(
       fn: (Config, linker.Result) => T
   ): T =
-    link(entry, sources) {
+    link(entry, sources, setupConfig) {
       case (config, linked) =>
         val optimized = ScalaNative.optimize(config, linked)
         fn(config, optimized)

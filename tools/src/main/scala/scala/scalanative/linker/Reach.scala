@@ -809,7 +809,7 @@ class Reach(
   protected def addMissing(global: Global, pos: Position): Unit = {
     val prev = missing.getOrElse(global, Set.empty)
     val position = NonReachablePosition(
-      path = Paths.get(pos.source.getPath),
+      path = Paths.get(pos.source),
       line = pos.line + 1
     )
     missing(global) = prev + position
