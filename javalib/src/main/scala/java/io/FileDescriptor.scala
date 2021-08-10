@@ -54,9 +54,9 @@ final class FileDescriptor private[java] (
     def isStdOrInvalidFileDescriptor: Boolean = {
       if (isWindows) {
         handle == INVALID_HANDLE_VALUE ||
-          this == FileDescriptor.in ||
-          this == FileDescriptor.out ||
-          this == FileDescriptor.err
+        this == FileDescriptor.in ||
+        this == FileDescriptor.out ||
+        this == FileDescriptor.err
 
       } else fd <= 2
     }

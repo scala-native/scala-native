@@ -5,7 +5,6 @@
 // Needed to find symbols from UCRT - Windows Universal C Runtime
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 
-
 size_t scalanative_win32_winnt_empty_priviliges_size() {
     PRIVILEGE_SET privileges = {0};
     return sizeof(privileges);

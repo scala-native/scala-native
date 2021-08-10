@@ -63,7 +63,7 @@ object WinBaseApiExt {
   final val WT_EXECUTELONGFUNCTION = 0x00000010.toUInt
   final val WT_EXECUTEONLYONCE = 0x00000008.toUInt
   final val WT_TRANSFER_IMPERSONATION = 0x00000100.toUInt
-    
+
   final val MOVEFILE_REPLACE_EXISTING = 0x1.toUInt
   final val MOVEFILE_COPY_ALLOWED = 0x2.toUInt
   final val MOVEFILE_DELAY_UNTIL_REBOOT = 0x4.toUInt
