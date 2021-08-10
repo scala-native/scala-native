@@ -7,32 +7,34 @@ import scala.util.Try
 import org.junit.Test
 import org.junit.Assert._
 
+import org.scalanative.testsuite.utils.Platform.isWindows
 import scalanative.junit.utils.AssertThrows.assertThrows
 
 class FileInputStreamTest {
+  // On Windows new File(".") is not valid input file
+  val file =
+    if (isWindows) new File("NUL")
+    else new File(".")
+
   @Test def readNull(): Unit = {
-    val file = new File(".")
     val fis = new FileInputStream(file)
     assertThrows(classOf[NullPointerException], fis.read(null))
     assertThrows(classOf[NullPointerException], fis.read(null, 0, 0))
   }
 
   @Test def readOutOfBoundsNegativeCount(): Unit = {
-    val file = new File(".")
     val fis = new FileInputStream(file)
     val arr = new Array[Byte](8)
     assertThrows(classOf[IndexOutOfBoundsException], fis.read(arr, 0, -1))
   }
 
   @Test def readOutOfBoundsNegativeOffset(): Unit = {
-    val file = new File(".")
     val fis = new FileInputStream(file)
     val arr = new Array[Byte](8)
     assertThrows(classOf[IndexOutOfBoundsException], fis.read(arr, -1, 0))
   }
 
   @Test def readOutOfBoundsArrayTooSmall(): Unit = {
-    val file = new File(".")
     val fis = new FileInputStream(file)
     val arr = new Array[Byte](8)
     assertThrows(classOf[IndexOutOfBoundsException], fis.read(arr, 0, 16))
