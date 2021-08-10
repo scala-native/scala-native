@@ -9,13 +9,14 @@ import scala.scalanative.runtime.unwind
 import scala.scalanative.unsafe._
 import scalanative.unsigned._
 import scala.scalanative.windows._
+import scala.scalanative.runtime.SymbolFormatter
 
 private[testinterface] object SignalConfig {
 
   /* StackTrace.currentStackTrace had to be rewritten to accomodate using
    * only async-signal-safe methods. Because of that, printf was replaced
    * with write/WriteFile, and only stack allocations were used.
-   * While it is unknown if WriteFile is async-signal-safe here,
+   * While it is unknown if windows' WriteFile is async-signal-safe here,
    * the fact that the function is called synchronously suggests so.
    * Unfortunately, Windows does not provide specification on
    * async-signal-safe methods the way POSIX does.
@@ -41,128 +42,6 @@ private[testinterface] object SignalConfig {
         )
       }
 
-    /* Adapted from StackTraceElement.fromSymbol */
-    def asyncSafePrintSymbol(sym: Ptr[CChar], symMaxLen: Int): Unit = {
-      val len = strlen(sym)
-      var pos = 0
-
-      val ident = stackalloc[CChar](symMaxLen.toUInt)
-      val className = stackalloc[CChar](symMaxLen.toUInt)
-      className(0) = 0.toByte
-      val methodName = stackalloc[CChar](symMaxLen.toUInt)
-      methodName(0) = 0.toByte
-
-      def readSymbol(): Boolean = {
-        if (read() != '_') {
-          false
-        } else if (read() != 'S') {
-          false
-        } else {
-          readGlobal()
-        }
-      }
-
-      def readGlobal(): Boolean = read() match {
-        case 'M' =>
-          readIdent()
-          if (strlen(ident) == 0) {
-            false
-          } else {
-            strcpy(className, ident)
-            readSig()
-          }
-        case _ =>
-          false
-      }
-
-      def readSig(): Boolean = read() match {
-        case 'R' =>
-          strcpy(methodName, c"<init>")
-          true
-        case 'D' | 'P' | 'C' | 'G' =>
-          readIdent()
-          if (strlen(ident) == 0) {
-            false
-          } else {
-            strcpy(methodName, ident)
-            true
-          }
-        case 'K' =>
-          readSig()
-        case _ =>
-          false
-      }
-
-      def readIdent(): Unit = {
-        val n = readNumber()
-        if (n <= 0) {
-          ident(0) = 0.toByte
-        } else if (!inBounds(pos) || !inBounds(pos + n)) {
-          ident(0) = 0.toByte
-        } else {
-          var i = 0
-          while (i < n) {
-            ident(i) = sym(pos + i)
-            i += 1
-          }
-          ident(i) = 0.toByte
-          pos += n
-        }
-      }
-
-      def readNumber(): Int = {
-        val start = pos
-        var number = 0
-        while ('0' <= at(pos) && at(pos) <= '9') {
-          number = number * 10 + (at(pos) - '0').toInt
-          pos += 1
-        }
-        if (start == pos) {
-          -1
-        } else {
-          number
-        }
-      }
-
-      def read(): Char = {
-        if (inBounds(pos)) {
-          val res = sym(pos).toChar
-          pos += 1
-          res
-        } else {
-          -1.toChar
-        }
-      }
-
-      def at(pos: Int): Char = {
-        if (inBounds(pos)) {
-          sym(pos).toChar
-        } else {
-          -1.toChar
-        }
-      }
-
-      def inBounds(pos: Int) =
-        pos >= 0 && pos < len.toLong
-
-      if (!readSymbol()) {
-        strcpy(className, c"<none>")
-        strcpy(methodName, sym)
-      }
-
-      val formattedSymbol = stackalloc[CChar](516.toUInt)
-      formattedSymbol(0) = 0.toByte
-      strcat(formattedSymbol, errorTag)
-      strcat(formattedSymbol, c"   at ")
-      strcat(formattedSymbol, className)
-      strcat(formattedSymbol, c".")
-      strcat(formattedSymbol, methodName)
-      strcat(formattedSymbol, c"(Unknown Source)\n")
-      printError(formattedSymbol)
-    }
-
-    // itoa / snprintf are not async-signal-safe
-    // Custom method has to be used.
     def signalToCString(str: CString, signal: Int): Unit = {
       val reversedStr = stackalloc[CChar](8.toUInt)
       var index = 0
@@ -211,7 +90,19 @@ private[testinterface] object SignalConfig {
             offset
           ) == 0) {
         sym(symMax - 1) = 0.toByte
-        asyncSafePrintSymbol(sym, symMax)
+        val className = stackalloc[CChar](1024.toUInt)
+        val methodName = stackalloc[CChar](1024.toUInt)
+        SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
+
+        val formattedSymbol = stackalloc[CChar](2048.toUInt)
+        formattedSymbol(0) = 0.toByte
+        strcat(formattedSymbol, errorTag)
+        strcat(formattedSymbol, c"   at ")
+        strcat(formattedSymbol, className)
+        strcat(formattedSymbol, c".")
+        strcat(formattedSymbol, methodName)
+        strcat(formattedSymbol, c"(Unknown Source)\n")
+        printError(formattedSymbol)
       }
     }
   }
