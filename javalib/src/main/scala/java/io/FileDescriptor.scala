@@ -50,15 +50,18 @@ final class FileDescriptor private[java] (
     def throwSyncFailed(): Unit = {
       throw new SyncFailedException("sync failed")
     }
-    def isStdFileDescriptor: Boolean = {
+
+    def isStdOrInvalidFileDescriptor: Boolean = {
       if (isWindows) {
-        this == FileDescriptor.in ||
-        this == FileDescriptor.out ||
-        this == FileDescriptor.err
+        handle == INVALID_HANDLE_VALUE ||
+          this == FileDescriptor.in ||
+          this == FileDescriptor.out ||
+          this == FileDescriptor.err
+
       } else fd <= 2
     }
 
-    if (isStdFileDescriptor) throwSyncFailed()
+    if (isStdOrInvalidFileDescriptor) throwSyncFailed()
     else {
       if (!readOnly) {
         val hasSucceded =

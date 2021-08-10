@@ -1,12 +1,14 @@
 package java.io
 
 import java.{lang => jl}
-
-import scalanative.unsafe.{toCString, Zone}
+import scalanative.unsafe.{Zone, stackalloc, toCString, toCWideStringUTF16LE}
 import scalanative.libc.stdio
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
 import scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.windows
+import windows._
+import windows.FileApiExt._
 
 class RandomAccessFile private (
     file: File,
@@ -31,18 +33,27 @@ class RandomAccessFile private (
 
   override def close(): Unit = {
     closed = true
-    if (isWindows) ???
+    if (isWindows) HandleApi.CloseHandle(fd.handle)
     else unistd.close(fd.fd)
   }
-
   // final def getChannel(): FileChannel
 
   def getFD(): FileDescriptor =
     fd
 
   def getFilePointer(): Long = {
-    if (isWindows) ???
-    else unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
+    if (isWindows) {
+      val filePointer = stackalloc[LargeInteger]
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        0,
+        filePointer,
+        FILE_CURRENT
+      )
+      !filePointer
+    } else {
+      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+    }
   }
 
   def length(): Long =
@@ -137,7 +148,13 @@ class RandomAccessFile private (
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    if (isWindows) ???
+    if (isWindows)
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        pos,
+        null,
+        FILE_BEGIN
+      )
     else unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
 
   def setLength(newLength: Long): Unit =
@@ -146,8 +163,15 @@ class RandomAccessFile private (
     } else {
       val currentPosition = getFilePointer()
       val hasSucceded =
-        if (isWindows) ???
-        else {
+        if (isWindows) {
+          FileApi.SetFilePointerEx(
+            fd.handle,
+            newLength,
+            null,
+            FILE_BEGIN
+          ) &&
+          FileApi.SetEndOfFile(fd.handle)
+        } else {
           unistd.ftruncate(fd.fd, newLength) == 0
         }
       if (!hasSucceded) {
@@ -266,7 +290,31 @@ private object RandomAccessFile {
       new FileDescriptor(FileDescriptor.FileHandle(fd), readOnly = false)
     }
 
-    if (isWindows) ???
+    def windowsFileDescriptor() = Zone { implicit z =>
+      import windows.winnt.AccessRights._
+      val (access, dispostion) = _flags match {
+        case "r" => FILE_GENERIC_READ -> OPEN_EXISTING
+        case "rw" | "rws" | "rwd" =>
+          (FILE_GENERIC_READ | FILE_GENERIC_WRITE).toUInt -> OPEN_ALWAYS
+        case _ => invalidFlags()
+      }
+
+      val handle = FileApi.CreateFileW(
+        toCWideStringUTF16LE(file.getPath()),
+        desiredAccess = access,
+        shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+        securityAttributes = null,
+        creationDisposition = dispostion,
+        flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+        templateFile = null
+      )
+      new FileDescriptor(
+        FileDescriptor.FileHandle(handle),
+        readOnly = _flags == "r"
+      )
+    }
+
+    if (isWindows) windowsFileDescriptor()
     else unixFileDescriptor()
   }
 

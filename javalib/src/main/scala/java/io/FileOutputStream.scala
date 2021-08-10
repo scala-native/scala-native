@@ -82,7 +82,7 @@ object FileOutputStream {
       if (isWindows) {
         val handle = CreateFileW(
           toCWideStringUTF16LE(file.getPath()),
-          desiredAccess = FILE_GENERIC_WRITE,
+          desiredAccess = if (append) FILE_APPEND_DATA else FILE_GENERIC_WRITE,
           shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
           securityAttributes = null,
           creationDisposition =
@@ -91,8 +91,9 @@ object FileOutputStream {
           flagsAndAttributes = 0.toUInt,
           templateFile = null
         )
+
         if (handle == INVALID_HANDLE_VALUE) {
-          throw new FileNotFoundException(s"$file (${GetLastError()})")
+          throw new FileNotFoundException(file.toString())
         }
         new FileDescriptor(FileDescriptor.FileHandle(handle), readOnly = false)
       } else {
