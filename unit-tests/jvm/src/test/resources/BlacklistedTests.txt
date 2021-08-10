@@ -28,7 +28,6 @@ scala/javalib/util/zip/ZipInputStreamTest.scala
 scala/javalib/util/zip/InflaterTest.scala
 scala/javalib/util/zip/ZipEntryTest.scala
 
-scala/javalib/nio/file/FileSystemExceptionTest.scala
 scala/javalib/nio/file/FilesTest.scala
 scala/javalib/nio/file/DirectoryStreamTest.scala
 
