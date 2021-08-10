@@ -11,12 +11,17 @@ import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
 import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets
-import scala.scalanative.windows.ErrorHandlingApi._
+import scala.scalanative.windows._
+import scala.scalanative.windows.HandleApiExt.INVALID_HANDLE_VALUE
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.HandleApiExt._
+import scala.scalanative.windows.FileApiOps._
+import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.winnt.AccessRights._
-import scala.scalanative.windows._
+
+import java.nio.file.WindowsException
+import scala.scalanative.nio.fs.unix.UnixException
+import java.nio.file.attribute.FileAttribute
 
 object FileHelpers {
   sealed trait FileType
@@ -82,7 +87,36 @@ object FileHelpers {
       }
     }
 
-    def listWindows() = ???
+    def listWindows() = Zone { implicit z =>
+      val searchPath = path + raw"\*"
+      if (searchPath.length.toUInt > FileApiExt.MAX_PATH)
+        throw new IOException("File name to long")
+
+      val fileData = stackalloc[Win32FindDataW]
+      val searchHandle =
+        FindFirstFileW(toCWideStringUTF16LE(searchPath), fileData)
+      if (searchHandle == INVALID_HANDLE_VALUE) {
+        if (allowEmpty) Array.empty[T]
+        else throw WindowsException.onPath(path)
+      } else {
+        try {
+          while ({
+            collectFile(
+              fromCWideString(fileData.fileName, StandardCharsets.UTF_16LE),
+              FileType.windowsFileType(fileData.fileAttributes)
+            )
+            FileApi.FindNextFileW(searchHandle, fileData)
+          }) ()
+        } finally {
+          FileApi.FindClose(searchHandle)
+        }
+
+        GetLastError() match {
+          case ErrorCodes.ERROR_NO_MORE_FILES => buffer.toArray
+          case err => throw WindowsException.onPath(path)
+        }
+      }
+    }
 
     if (isWindows) listWindows()
     else listUnix()
@@ -101,14 +135,21 @@ object FileHelpers {
             desiredAccess = FILE_GENERIC_WRITE,
             shareMode = FILE_SHARE_ALL,
             securityAttributes = null,
-            creationDisposition = CREATE_NEW,
+            creationDisposition = CREATE_ALWAYS,
             flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
             templateFile = null
           )
           HandleApi.CloseHandle(handle)
           GetLastError() match {
             case ErrorCodes.ERROR_FILE_EXISTS => false
-            case _                            => handle != INVALID_HANDLE_VALUE
+            case errCode =>
+              if (handle != INVALID_HANDLE_VALUE) true
+              else if (throwOnError)
+                throw WindowsException(
+                  s"Cannot create new file $path",
+                  errorCode = errCode
+                )
+              else false
           }
         } else {
           fopen(toCString(path), c"w") match {
