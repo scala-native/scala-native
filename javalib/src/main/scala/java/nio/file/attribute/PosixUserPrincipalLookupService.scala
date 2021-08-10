@@ -5,7 +5,7 @@ import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
 import scalanative.posix.sys.stat
-import scala.scalanative.nio.fs.UnixException
+import scala.scalanative.nio.fs.unix.UnixException
 
 final case class PosixUserPrincipal(uid: stat.uid_t)(name: Option[String])
     extends UserPrincipal {

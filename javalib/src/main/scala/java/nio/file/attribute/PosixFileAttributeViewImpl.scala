@@ -2,7 +2,6 @@ package java.nio.file.attribute
 
 import java.{util => ju}
 import java.util.{HashMap, HashSet, Set}
-
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path, PosixException}
 import java.nio.file.attribute._
