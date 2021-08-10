@@ -193,7 +193,7 @@ private[linker] object LinktimeValueResolver {
             )
           }
 
-        case _ => None
+        case null => None
       }
     }.map(_.asInstanceOf[ComparableTupleType])
   }

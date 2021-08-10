@@ -85,7 +85,7 @@ object CodeGen {
     ): AbstractCodeGen = {
       new AbstractCodeGen(config, env, defns) {
         override val os: OsCompat = {
-          if (config.targetsWindows) new WindowsCompat(this)
+          if (this.config.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)
         }
       }
