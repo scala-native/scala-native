@@ -43,7 +43,7 @@ scala/scala/PrimitiveTest.scala
 scala/scala/bugcompat/LongFloatPrimitiveTest.scala
 
 # Tests that work on java 8, but fail on java 16
-scala/javalib/nio/file/PathTest.scala
+#scala/javalib/nio/file/UnixPathTest.scala
 scala/javalib/net/URLEncoderTest.scala
 scala/javalib/util/jar/JarFileTest.scala
 scala/javalib/util/zip/ZipFileTest.scala
