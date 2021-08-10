@@ -11,10 +11,10 @@ import org.scalanative.testsuite.utils.Platform.isWindows
 import scalanative.junit.utils.AssertThrows.assertThrows
 
 class FileInputStreamTest {
-  // On Windows new File(".") is not valid input file
+  // On JVM new File(".") is not valid input file
   val file =
     if (isWindows) new File("NUL")
-    else new File(".")
+    else new File("/dev/null")
 
   @Test def readNull(): Unit = {
     val fis = new FileInputStream(file)
