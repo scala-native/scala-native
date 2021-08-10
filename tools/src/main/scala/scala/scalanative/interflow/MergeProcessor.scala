@@ -466,7 +466,7 @@ final class MergeProcessor(
 }
 
 object MergeProcessor {
-  final case object Restart
+  case object Restart
       extends Exception
       with scala.util.control.NoStackTrace
 

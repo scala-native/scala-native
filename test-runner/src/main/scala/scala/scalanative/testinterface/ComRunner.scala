@@ -199,7 +199,7 @@ private[testinterface] object ComRunner {
       native2jvm: DataInputStream
   ) extends State
 
-  private final case object Closing extends State
+  private case object Closing extends State
 
   private def writeMsg(s: DataOutputStream, msg: String): Unit = {
     s.writeInt(msg.length)
