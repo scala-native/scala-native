@@ -1,7 +1,8 @@
 package scala.scalanative.windows.util
 
+import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.windows.{Word => WinWord}
+import scala.scalanative.windows.{Word => WinWord, _}
 
 private[windows] object Conversion {
   def wordToBytes(word: WinWord): (Byte, Byte) = {
@@ -12,5 +13,20 @@ private[windows] object Conversion {
 
   def wordFromBytes(low: Byte, high: Byte): WinWord = {
     ((low & 0xff) | ((high & 0xff) << 8)).toUShort
+  }
+
+  def dwordPairToULargeInteger(high: DWord, low: DWord): ULargeInteger = {
+    if (high == 0.toUInt) low
+    else (high.toULong << 32) | low
+  }
+
+  def uLargeIntegerToDWordPair(
+      v: ULargeInteger,
+      high: Ptr[DWord],
+      low: Ptr[DWord]
+  ): Unit = {
+    val mask = 0xffffffff.toUInt
+    !high = ((v >> 32) & mask).toUInt
+    !low = (v & mask).toUInt
   }
 }

@@ -19,17 +19,4 @@ package object windows {
     Ptr[WChar] // In Windows wide string are always encoded using UTF-16LE
   type CTString =
     CWString // if UNICODE is defined equals to CWString, otherwise its CString
-
-  type SecurityAttributes = CStruct3[DWord, Ptr[Byte], Boolean]
-  implicit class SecurityAttributesOps(val ref: Ptr[SecurityAttributes])
-      extends AnyVal {
-    def length: DWord = ref._1
-    def securityDescriptor: Ptr[Byte] = ref._2
-    def inheritHandle: Boolean = ref._3
-
-    def length_=(v: DWord): Unit = ref._1 = v
-    def securityDescriptor_=(v: Ptr[Byte]): Unit = ref._2 = v
-    def inheritHandle_=(v: Boolean): Unit = ref._3 = v
-  }
-
 }
