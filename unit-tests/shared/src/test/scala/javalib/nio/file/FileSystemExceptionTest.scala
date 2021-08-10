@@ -24,15 +24,19 @@ class FileSystemExceptionTest {
       new FileSystemException(null, "other", "reason")
         .getMessage() == " -> other: reason"
     )
-    assertEquals("reason"    ,
-      new FileSystemException(null, null, "reason").getMessage() )
-    assertEquals(" -> other",
+    assertEquals(
+      "reason",
+      new FileSystemException(null, null, "reason").getMessage()
+    )
+    assertEquals(
+      " -> other",
       new FileSystemException(null, "other", null).getMessage()
     )
-    assertEquals("file",
+    assertEquals(
+      "file",
       new FileSystemException("file", null, null).getMessage()
     )
-    assertEquals(null,new FileSystemException(null, null, null).getMessage())
+    assertEquals(null, new FileSystemException(null, null, null).getMessage())
 
     assertEquals("file", new FileSystemException("file").getMessage())
     assertEquals(null, new FileSystemException(null).getMessage())

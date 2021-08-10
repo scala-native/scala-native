@@ -19,12 +19,12 @@ class FileSystemException(file: String, other: String, reason: String)
         case (f1, null)   => s"$f1"
         case (f1, f2)     => s"$f1 -> $f2"
       }
-      (files, reason) match {
-        case (null, null) => null
-        case (null, reason) => reason
-        case (files, null) => files
-        case (files, reason) => s"$files: $reason"
-      }
+    (files, reason) match {
+      case (null, null)    => null
+      case (null, reason)  => reason
+      case (files, null)   => files
+      case (files, reason) => s"$files: $reason"
+    }
   }
 
   def getOtherFile(): String =
