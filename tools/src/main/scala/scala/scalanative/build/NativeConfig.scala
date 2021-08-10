@@ -173,15 +173,15 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    def withMultithreadingSupport(enabled: Boolean): NativeConfig = 
+    def withMultithreadingSupport(enabled: Boolean): NativeConfig =
       copy(multithreadingSupport = enabled)
 
-    def linktimeProperties: Map[String,Any] = {
+    def linktimeProperties: Map[String, Any] = {
       val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
       val predefined = Map(
         s"$linktimeInfo.isMultithreadingEnabled" -> multithreadingSupport,
         s"$linktimeInfo.isWindows" -> Platform.isWindows
-        )
+      )
       predefined ++ customLinktimeProperties
     }
 
