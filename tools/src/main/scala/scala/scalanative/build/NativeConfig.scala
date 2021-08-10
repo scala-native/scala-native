@@ -113,7 +113,7 @@ object NativeConfig {
       linkStubs = false,
       optimize = false,
       multithreadingSupport = false,
-      linktimeProperties = Map.empty
+      customLinktimeProperties = Map.empty
     )
 
   private final case class Impl(
@@ -130,7 +130,7 @@ object NativeConfig {
       dump: Boolean,
       optimize: Boolean,
       multithreadingSupport: Boolean,
-      linktimeProperties: Map[String, Any]
+      customLinktimeProperties: Map[String, Any]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -173,14 +173,16 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    def withMultithreadingSupport(enabled: Boolean): NativeConfig = {
+    def withMultithreadingSupport(enabled: Boolean): NativeConfig = 
       copy(multithreadingSupport = enabled)
-        .withLinktimeProperties(
-          linktimeProperties.updated(
-            "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled",
-            enabled
-          )
+
+    def linktimeProperties: Map[String,Any] = {
+      val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
+      val predefined = Map(
+        s"$linktimeInfo.isMultithreadingEnabled" -> multithreadingSupport,
+        s"$linktimeInfo.isWindows" -> Platform.isWindows
         )
+      predefined ++ customLinktimeProperties
     }
 
     override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
@@ -207,7 +209,7 @@ object NativeConfig {
         )
       }
 
-      copy(linktimeProperties = v)
+      copy(customLinktimeProperties = v)
     }
 
     override def toString: String = {
