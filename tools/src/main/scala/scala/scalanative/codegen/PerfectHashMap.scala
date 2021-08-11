@@ -193,7 +193,7 @@ object DynmethodPerfectHashMap {
           List(
             Val.Int(perfectHashMap.size),
             Val.Const(
-              Val.ArrayValue(Type.Int, perfectHashMap.keys.map(Val.Int))
+              Val.ArrayValue(Type.Int, perfectHashMap.keys.map(Val.Int(_)))
             ),
             Val.Const(Val.ArrayValue(Type.Int, keys)),
             Val.Const(Val.ArrayValue(Type.Ptr, values))

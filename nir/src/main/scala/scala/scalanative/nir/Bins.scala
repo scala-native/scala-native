@@ -6,22 +6,22 @@ sealed abstract class Bin {
 }
 
 object Bin {
-  final case object Iadd extends Bin
-  final case object Fadd extends Bin
-  final case object Isub extends Bin
-  final case object Fsub extends Bin
-  final case object Imul extends Bin
-  final case object Fmul extends Bin
-  final case object Sdiv extends Bin
-  final case object Udiv extends Bin
-  final case object Fdiv extends Bin
-  final case object Srem extends Bin
-  final case object Urem extends Bin
-  final case object Frem extends Bin
-  final case object Shl extends Bin
-  final case object Lshr extends Bin
-  final case object Ashr extends Bin
-  final case object And extends Bin
-  final case object Or extends Bin
-  final case object Xor extends Bin
+  case object Iadd extends Bin
+  case object Fadd extends Bin
+  case object Isub extends Bin
+  case object Fsub extends Bin
+  case object Imul extends Bin
+  case object Fmul extends Bin
+  case object Sdiv extends Bin
+  case object Udiv extends Bin
+  case object Fdiv extends Bin
+  case object Srem extends Bin
+  case object Urem extends Bin
+  case object Frem extends Bin
+  case object Shl extends Bin
+  case object Lshr extends Bin
+  case object Ashr extends Bin
+  case object And extends Bin
+  case object Or extends Bin
+  case object Xor extends Bin
 }

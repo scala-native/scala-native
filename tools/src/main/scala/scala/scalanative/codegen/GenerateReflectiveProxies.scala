@@ -7,7 +7,7 @@ import scala.collection.mutable
 /** Created by lukaskellenberger on 17.12.16.
  */
 object GenerateReflectiveProxies {
-  implicit val fresh = Fresh()
+  implicit val fresh: Fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
     val Global.Member(owner, sig) = defn.name

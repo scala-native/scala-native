@@ -154,14 +154,14 @@ final class Check(implicit linked: linker.Result) {
     case Op.Extract(aggr, indexes) =>
       aggr.ty match {
         case ty: Type.AggregateKind =>
-          checkAggregateOp(ty, indexes.map(Val.Int), None)
+          checkAggregateOp(ty, indexes.map(Val.Int(_)), None)
         case _ =>
           error(s"extract is only defined on aggregate types, not ${aggr.ty}")
       }
     case Op.Insert(aggr, value, indexes) =>
       aggr.ty match {
         case ty: Type.AggregateKind =>
-          checkAggregateOp(ty, indexes.map(Val.Int), Some(value.ty))
+          checkAggregateOp(ty, indexes.map(Val.Int(_)), Some(value.ty))
         case _ =>
           error(s"insert is only defined on aggregate types, not ${aggr.ty}")
       }
