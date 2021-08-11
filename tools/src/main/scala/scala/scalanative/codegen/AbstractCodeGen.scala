@@ -13,13 +13,13 @@ import scala.scalanative.{build, linker, nir}
 
 private[codegen] abstract class AbstractCodeGen(
     val config: build.Config,
-    is32: Boolean,
     env: Map[Global, Defn],
     defns: Seq[Defn]
 )(implicit meta: Metadata) {
   val os: OsCompat
 
   private val targetTriple: Option[String] = config.compilerConfig.targetTriple
+  private val is32: Boolean = config.is32
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _

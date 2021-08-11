@@ -27,7 +27,7 @@ object CodeGen {
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered = lower(generated)
     dumpDefns(config, "lowered", lowered)
-    emit(config, lowered, is32)
+    emit(config, lowered)
   }
 
   private def lower(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] = {
@@ -45,8 +45,8 @@ object CodeGen {
   }
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[Defn], is32: Boolean)(
-      implicit meta: Metadata
+  private def emit(config: build.Config, assembly: Seq[Defn])(implicit
+      meta: Metadata
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -60,7 +60,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              Impl(config, is32, env, sorted).gen(id.toString, workdir)
+              Impl(config, env, sorted).gen(id.toString, workdir)
           }
           .toSeq
           .seq
@@ -70,7 +70,7 @@ object CodeGen {
       // Clang's LTO is not available.
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
-        Impl(config, is32, env, sorted).gen(id = "out", workdir) :: Nil
+        Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
       (config.mode, config.LTO) match {
@@ -86,13 +86,12 @@ object CodeGen {
 
     def apply(
         config: Config,
-        is32: Boolean,
         env: Map[Global, Defn],
         defns: Seq[Defn]
     )(implicit
         meta: Metadata
     ): AbstractCodeGen = {
-      new AbstractCodeGen(config, is32, env, defns) {
+      new AbstractCodeGen(config, env, defns) {
         override val os: OsCompat = {
           if (this.config.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)
