@@ -520,6 +520,9 @@ private[net] trait InetAddressBase {
             buffer.append('0')
           buffer.append(':')
         }
+        if ((i & 1) != 0 && (i + 1) == ipByteArray.length && isFirst) {
+          buffer.append('0')
+        }
       }
       return buffer.toString
     }
