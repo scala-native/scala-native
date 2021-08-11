@@ -14,8 +14,10 @@ import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{ConsoleApiExt, DWord}
 
-final class FileDescriptor private[java] (fileHandle: FileHandle,
-                                          readOnly: Boolean) {
+final class FileDescriptor private[java] (
+    fileHandle: FileHandle,
+    readOnly: Boolean
+) {
   def this() = {
     this(
       fileHandle =
@@ -93,7 +95,7 @@ object FileDescriptor {
   private[java] type FileHandle = Long
   private[java] object FileHandle {
     def apply(handle: Handle): FileHandle = handle.toLong
-    def apply(unixFd: Int): FileHandle    = unixFd.toLong
+    def apply(unixFd: Int): FileHandle = unixFd.toLong
   }
 
   val in: FileDescriptor = {

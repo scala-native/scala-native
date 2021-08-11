@@ -60,6 +60,7 @@ C Type                    Scala Type
 ``long long``             ``unsafe.CLongLong``
 ``unsigned long long``    ``unsafe.CUnsignedLongLong`` [1]_
 ``size_t``                ``unsafe.CSize``
+``ssize_t``               ``unsafe.CSSize``
 ``ptrdiff_t``             ``unsafe.CPtrDiff`` [2]_
 ``wchar_t``               ``unsafe.CWideChar``
 ``char16_t``              ``unsafe.CChar16``
@@ -428,7 +429,7 @@ It can also be used to obtain the size of a structure:
     type TwoBytes = unsafe.CStruct2[Byte, Byte]
     println(unsafe.sizeof[TwoBytes])  // 2
 
-Aditionally you can also use ``alignmentof`` to find alignment of a given type:
+Additionally, you can also use ``alignmentof`` to find the alignment of a given type:
 
 .. code-block:: scala
 

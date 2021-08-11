@@ -20,10 +20,10 @@ object rtti {
 import rtti._
 
 final class _Class[A] {
-  var id: Int           = _
-  var traitId: Int      = _
-  var name: String      = _
-  var size: Int         = _
+  var id: Int = _
+  var traitId: Int = _
+  var name: String = _
+  var size: Int = _
   var idRangeUntil: Int = _
 
   def cast(obj: Object): A =
@@ -74,8 +74,8 @@ final class _Class[A] {
     if (!left.isInterface()) {
       if (!right.isInterface()) {
         val rightFrom = right.id
-        val rightTo   = right.idRangeUntil
-        val leftId    = left.id
+        val rightTo = right.idRangeUntil
+        val leftId = left.id
         leftId >= rightFrom && leftId <= rightTo
       } else {
         __check_class_has_trait(left.id, -right.id - 1)
@@ -114,7 +114,7 @@ final class _Class[A] {
     Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(this)).##
 
   override def toString = {
-    val name   = getName()
+    val name = getName()
     val prefix = if (isInterface()) "interface " else "class "
     prefix + name
   }
@@ -138,8 +138,10 @@ final class _Class[A] {
   @stub
   def getDeclaredFields(): Array[Field] = ???
   @stub
-  def getMethod(name: java.lang.String,
-                args: Array[Class[_]]): java.lang.reflect.Method = ???
+  def getMethod(
+      name: java.lang.String,
+      args: Array[Class[_]]
+  ): java.lang.reflect.Method = ???
   @stub
   def getMethods(): Array[Method] = ???
   @stub
@@ -148,16 +150,20 @@ final class _Class[A] {
 
 object _Class {
   @alwaysinline private[java] implicit def _class2class[A](
-      cls: _Class[A]): Class[A] =
+      cls: _Class[A]
+  ): Class[A] =
     cls.asInstanceOf[Class[A]]
   @alwaysinline private[java] implicit def class2_class[A](
-      cls: Class[A]): _Class[A] =
+      cls: Class[A]
+  ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
   @stub
   def forName(name: String): Class[_] = ???
   @stub
-  def forName(name: String,
-              init: scala.Boolean,
-              loader: ClassLoader): Class[_] = ???
+  def forName(
+      name: String,
+      init: scala.Boolean,
+      loader: ClassLoader
+  ): Class[_] = ???
 }

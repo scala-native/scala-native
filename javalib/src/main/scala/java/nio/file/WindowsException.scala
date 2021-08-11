@@ -20,7 +20,7 @@ private[java] object WindowsException {
   }
 
   def onPath(file: String): IOException = {
-    lazy val e   = stdErrno.errno
+    lazy val e = stdErrno.errno
     val winError = GetLastError()
     winError match {
       case _ if e == ENOTDIR   => new NotDirectoryException(file)

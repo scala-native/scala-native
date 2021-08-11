@@ -7,28 +7,30 @@ import scalanative.posix.time._
 
 @extern
 object stat {
-  type dev_t     = CUnsignedLong
-  type ino_t     = CUnsignedLongLong
-  type mode_t    = CUnsignedInt
-  type nlink_t   = CUnsignedLong
-  type uid_t     = CUnsignedInt
-  type gid_t     = CUnsignedInt
-  type off_t     = CLongLong
+  type dev_t = CUnsignedLong
+  type ino_t = CUnsignedLongLong
+  type mode_t = CUnsignedInt
+  type nlink_t = CUnsignedLong
+  type uid_t = CUnsignedInt
+  type gid_t = CUnsignedInt
+  type off_t = CLongLong
   type blksize_t = CLong
-  type blkcnt_t  = CLongLong
-  type stat = CStruct13[dev_t, // st_dev
-                        dev_t,     // st_rdev
-                        ino_t,     // st_ino
-                        uid_t,     // st_uid
-                        gid_t,     // st_gid
-                        off_t,     // st_size
-                        time_t,    // st_atime
-                        time_t,    // st_mtime
-                        time_t,    // st_ctime
-                        blkcnt_t,  // st_blocks
-                        blksize_t, // st_blksize
-                        nlink_t,   // st_nlink
-                        mode_t]    // st_mode
+  type blkcnt_t = CLongLong
+  type stat = CStruct13[
+    dev_t, // st_dev
+    dev_t, // st_rdev
+    ino_t, // st_ino
+    uid_t, // st_uid
+    gid_t, // st_gid
+    off_t, // st_size
+    time_t, // st_atime
+    time_t, // st_mtime
+    time_t, // st_ctime
+    blkcnt_t, // st_blocks
+    blksize_t, // st_blksize
+    nlink_t, // st_nlink
+    mode_t // st_mode
+  ]
 
   @name("scalanative_stat")
   def stat(path: CString, buf: Ptr[stat]): CInt = extern

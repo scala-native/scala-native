@@ -7,9 +7,9 @@ import scalanative.linker._
 import scalanative.util.ScopedVar
 import java.util.function.Supplier
 
-class Interflow(val mode: build.Mode, val is32: Boolean)(
-    implicit val linked: linker.Result)
-    extends Visit
+class Interflow(val mode: build.Mode, val is32: Boolean)(implicit
+    val linked: linker.Result
+) extends Visit
     with Opt
     with NoOpt
     with Eval
@@ -24,10 +24,10 @@ class Interflow(val mode: build.Mode, val is32: Boolean)(
     out
   }
 
-  private val todo         = mutable.Queue.empty[Global]
-  private val done         = mutable.Map.empty[Global, Defn.Define]
-  private val started      = mutable.Set.empty[Global]
-  private val blacklist    = mutable.Set.empty[Global]
+  private val todo = mutable.Queue.empty[Global]
+  private val done = mutable.Map.empty[Global, Defn.Define]
+  private val started = mutable.Set.empty[Global]
+  private val blacklist = mutable.Set.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
   private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
@@ -145,9 +145,11 @@ class Interflow(val mode: build.Mode, val is32: Boolean)(
 }
 
 object Interflow {
-  def apply(config: build.Config,
-            linked: linker.Result,
-            is32: Boolean): Seq[Defn] = {
+  def apply(
+      config: build.Config,
+      linked: linker.Result,
+      is32: Boolean
+  ): Seq[Defn] = {
     val interflow = new Interflow(config.mode, is32)(linked)
     interflow.visitEntries()
     interflow.visitLoop()

@@ -11,7 +11,7 @@ object ServerTest {
 
   def func: Unit = {
     val clientSocket = echoServer.accept
-    val out          = new PrintWriter(clientSocket.getOutputStream, true)
+    val out = new PrintWriter(clientSocket.getOutputStream, true)
     val in =
       new BufferedReader(new InputStreamReader(clientSocket.getInputStream))
 

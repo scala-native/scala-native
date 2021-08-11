@@ -8,7 +8,7 @@ class DataOutputStream(out: OutputStream)
   // Capacity is a guess: Balance memory use & execution speed.
   // Allow small to moderate sized Strings to be written as Chars in one shot.
   private val bufferCapacity = 1024 * 2
-  private val buffer         = new Array[Byte](bufferCapacity)
+  private val buffer = new Array[Byte](bufferCapacity)
 
   protected var written: Int = 0
 

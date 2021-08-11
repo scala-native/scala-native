@@ -11,8 +11,8 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   // Normal implementation of Buffer
 
-  private var _limit: Int     = capacity()
-  private var _position: Int  = 0
+  private var _limit: Int = capacity()
+  private var _position: Int = 0
   private[nio] var _mark: Int = -1
 
   final def capacity(): Int = _capacity
@@ -110,16 +110,20 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   private[nio] def store(index: Int, elem: ElementType): Unit
 
   /** Loads a range of elements with absolute, unchecked indices. */
-  private[nio] def load(startIndex: Int,
-                        dst: Array[ElementType],
-                        offset: Int,
-                        length: Int): Unit
+  private[nio] def load(
+      startIndex: Int,
+      dst: Array[ElementType],
+      offset: Int,
+      length: Int
+  ): Unit
 
   /** Stores a range of elements with absolute, unchecked indices. */
-  private[nio] def store(startIndex: Int,
-                         src: Array[ElementType],
-                         offset: Int,
-                         length: Int): Unit
+  private[nio] def store(
+      startIndex: Int,
+      src: Array[ElementType],
+      offset: Int,
+      length: Int
+  ): Unit
 
   /* Only for HeapByteBufferViews -- but that's the only place we can put it.
    * For all other types, it will be dce'ed.
@@ -138,9 +142,11 @@ abstract class Buffer private[nio] (val _capacity: Int) {
       throw new ReadOnlyBufferException
   }
 
-  @inline private[nio] def validateArrayIndexRange(array: Array[_],
-                                                   offset: Int,
-                                                   length: Int): Unit = {
+  @inline private[nio] def validateArrayIndexRange(
+      array: Array[_],
+      offset: Int,
+      length: Int
+  ): Unit = {
     if (offset < 0 || length < 0 || offset > array.length - length)
       throw new IndexOutOfBoundsException
   }
@@ -154,7 +160,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   }
 
   @inline private[nio] def getPosAndAdvanceRead(length: Int): Int = {
-    val p      = _position
+    val p = _position
     val newPos = p + length
     if (newPos > limit())
       throw new BufferUnderflowException
@@ -171,7 +177,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   }
 
   @inline private[nio] def getPosAndAdvanceWrite(length: Int): Int = {
-    val p      = _position
+    val p = _position
     val newPos = p + length
     if (newPos > limit())
       throw new BufferOverflowException

@@ -17,14 +17,14 @@ import java.util.Arrays
 class Regexp {
   import Regexp._
 
-  var op: Op              = _ // operator
-  var flags: Int          = _ // bitmap of parse flags
+  var op: Op = _ // operator
+  var flags: Int = _ // bitmap of parse flags
   var subs: Array[Regexp] = _ // subexpressions, if any.  Never null.
   // subs[0] is used as the freelist.
   var runes: Array[Int] = _ // matched runes, for LITERAL, CHAR_CLASS
-  var min, max: Int     = _ // min, max for REPEAT
-  var cap: Int          = _ // capturing index, for CAPTURE
-  var name: String      = _ // capturing name, for CAPTURE
+  var min, max: Int = _ // min, max for REPEAT
+  var cap: Int = _ // capturing index, for CAPTURE
+  var name: String = _ // capturing name, for CAPTURE
 
   def this(op: Regexp.Op) = {
     this()
@@ -112,7 +112,7 @@ class Regexp {
         }
       case Op.ALTERNATE =>
         var sep = ""
-        var i   = 0
+        var i = 0
         while (i < subs.length) {
           val sub = subs(i)
           out.append(sep)
@@ -173,7 +173,7 @@ class Regexp {
           if (runes.length == 0) {
             out.append("^\\x00-\\x{10FFFF}")
           } else if (runes(0) == 0 &&
-                     runes(runes.length - 1) == Unicode.MAX_RUNE) {
+              runes(runes.length - 1) == Unicode.MAX_RUNE) {
             // Contains 0 and MAX_RUNE.  Probably a negated class.
             // Print the gaps.
             out.append('^')
@@ -222,7 +222,7 @@ class Regexp {
       var i = 0
       while (i < subs.length) {
         val sub = subs(i)
-        val n   = sub.maxCap()
+        val n = sub.maxCap()
         if (m < n) {
           m = n
         }
@@ -262,28 +262,30 @@ class Regexp {
 object Regexp {
   type Op = Int
   object Op {
-    final val NO_MATCH         = 0  // Matches no strings.
-    final val EMPTY_MATCH      = 1  // Matches empty string.
-    final val LITERAL          = 2  // Matches runes[] sequence
-    final val CHAR_CLASS       = 3  // Matches Runes interpreted as range pair list
-    final val ANY_CHAR_NOT_NL  = 4  // Matches any character except '\n'
-    final val ANY_CHAR         = 5  // Matches any character
-    final val BEGIN_LINE       = 6  // Matches empty string at end of line
-    final val END_LINE         = 7  // Matches empty string at end of line
-    final val BEGIN_TEXT       = 8  // Matches empty string at beginning of text
-    final val END_TEXT         = 9  // Matches empty string at end of text
-    final val WORD_BOUNDARY    = 10 // Matches word boundary `\b`
+    final val NO_MATCH = 0 // Matches no strings.
+    final val EMPTY_MATCH = 1 // Matches empty string.
+    final val LITERAL = 2 // Matches runes[] sequence
+    final val CHAR_CLASS = 3 // Matches Runes interpreted as range pair list
+    final val ANY_CHAR_NOT_NL = 4 // Matches any character except '\n'
+    final val ANY_CHAR = 5 // Matches any character
+    final val BEGIN_LINE = 6 // Matches empty string at end of line
+    final val END_LINE = 7 // Matches empty string at end of line
+    final val BEGIN_TEXT = 8 // Matches empty string at beginning of text
+    final val END_TEXT = 9 // Matches empty string at end of text
+    final val WORD_BOUNDARY = 10 // Matches word boundary `\b`
     final val NO_WORD_BOUNDARY = 11 // Matches word non-boundary `\B`
-    final val CAPTURE          = 12 // Capturing subexpr with index cap, optional name name
-    final val STAR             = 13 // Matches subs[0] zero or more times.
-    final val PLUS             = 14 // Matches subs[0] one or more times.
-    final val QUEST            = 15 // Matches subs[0] zero or one times.
-    final val REPEAT           = 16 // Matches subs[0] [min, max] times max=-1 => no limit.
-    final val CONCAT           = 17 // Matches concatenation of subs[]
-    final val ALTERNATE        = 18 // Matches union of subs[]
+    final val CAPTURE =
+      12 // Capturing subexpr with index cap, optional name name
+    final val STAR = 13 // Matches subs[0] zero or more times.
+    final val PLUS = 14 // Matches subs[0] one or more times.
+    final val QUEST = 15 // Matches subs[0] zero or one times.
+    final val REPEAT =
+      16 // Matches subs[0] [min, max] times max=-1 => no limit.
+    final val CONCAT = 17 // Matches concatenation of subs[]
+    final val ALTERNATE = 18 // Matches union of subs[]
 
     // Pseudo ops, used internally by Parser for parsing stack:
-    final val LEFT_PAREN   = 19
+    final val LEFT_PAREN = 19
     final val VERTICAL_BAR = 20
 
     def isPseudo(op: Op): Boolean = op >= LEFT_PAREN

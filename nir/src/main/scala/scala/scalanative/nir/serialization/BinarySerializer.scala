@@ -11,10 +11,10 @@ import scala.scalanative.nir.serialization.{Tags => T}
 
 final class BinarySerializer {
   private[this] val bufferUnderyling = new JumpBackByteArrayOutputStream
-  private[this] val buffer           = new DataOutputStream(bufferUnderyling)
+  private[this] val buffer = new DataOutputStream(bufferUnderyling)
 
   private[this] var lastPosition: Position = Position.NoPosition
-  private[this] val fileIndexMap           = mutable.Map.empty[URI, Int]
+  private[this] val fileIndexMap = mutable.Map.empty[URI, Int]
 
   // Methods were renamed in order to not pollute git blame history.
   // Original implementation used ByteBuffers
@@ -30,15 +30,19 @@ final class BinarySerializer {
   import bufferUnderyling.currentPosition
 
   def serialize(defns: Seq[Defn], outputStream: OutputStream): Unit = {
-    val names     = defns.map(_.name)
+    val names = defns.map(_.name)
     val filenames = initFiles(defns)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    Prelude.writeTo(buffer,
-                    Prelude(Versions.magic,
-                            Versions.compat,
-                            Versions.revision,
-                            Defn.existsEntryPoint(defns)))
+    Prelude.writeTo(
+      buffer,
+      Prelude(
+        Versions.magic,
+        Versions.compat,
+        Versions.revision,
+        Defn.existsEntryPoint(defns)
+      )
+    )
 
     putSeq(filenames)(putUTF8String)
 
@@ -564,14 +568,14 @@ final class BinarySerializer {
     if (pos == Position.NoPosition) {
       put(FormatNoPositionValue.toByte)
     } else if (lastPosition == Position.NoPosition ||
-               pos.source != lastPosition.source) {
+        pos.source != lastPosition.source) {
       writeFull()
       lastPosition = pos
     } else {
-      val line         = pos.line
-      val column       = pos.column
-      val lineDiff     = line - lastPosition.line
-      val columnDiff   = column - lastPosition.column
+      val line = pos.line
+      val column = pos.column
+      val lineDiff = line - lastPosition.line
+      val columnDiff = column - lastPosition.column
       val columnIsByte = column >= 0 && column < 256
 
       if (lineDiff == 0 && columnDiff >= -64 && columnDiff < 64) {
@@ -597,11 +601,13 @@ final class BinarySerializer {
     def initFile(pos: Position): Unit = {
       val file = pos.source
       if (pos.isDefined)
-        fileIndexMap.getOrElseUpdate(file, {
-          val idx = filesList.size
-          filesList += file.toString
-          idx
-        })
+        fileIndexMap.getOrElseUpdate(
+          file, {
+            val idx = filesList.size
+            filesList += file.toString
+            idx
+          }
+        )
     }
     defns.foreach {
       case defn @ Defn.Define(_, _, _, insts) =>

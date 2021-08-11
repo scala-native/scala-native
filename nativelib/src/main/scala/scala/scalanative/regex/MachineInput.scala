@@ -56,7 +56,8 @@ object MachineInput {
       extends MachineInput {
     if (end > b.length) {
       throw new ArrayIndexOutOfBoundsException(
-        "end is greater than length: " + end + " > " + b.length)
+        "end is greater than length: " + end + " > " + b.length
+      )
     }
 
     override def step(_i: Int): Int = {
@@ -77,22 +78,22 @@ object MachineInput {
       i += 1
       if ((x & 0x80) == 0) {
         return x << 3 | 1
-      } else if ((x & 0xE0) == 0xC0) { // 110xxxxx
-        x = x & 0x1F
+      } else if ((x & 0xe0) == 0xc0) { // 110xxxxx
+        x = x & 0x1f
         if (i >= end) {
           return EOF
         }
-        x = x << 6 | b(i) & 0x3F
+        x = x << 6 | b(i) & 0x3f
         i += 1
         return x << 3 | 2
-      } else if ((x & 0xF0) == 0xE0) { // 1110xxxx
-        x = x & 0x0F
+      } else if ((x & 0xf0) == 0xe0) { // 1110xxxx
+        x = x & 0x0f
         if (i + 1 >= end) {
           return EOF
         }
-        x = x << 6 | b(i) & 0x3F
+        x = x << 6 | b(i) & 0x3f
         i += 1
-        x = x << 6 | b(i) & 0x3F
+        x = x << 6 | b(i) & 0x3f
         i += 1
         return x << 3 | 3
       } else { // 11110xxx
@@ -100,11 +101,11 @@ object MachineInput {
         if (i + 2 >= end) {
           return EOF
         }
-        x = x << 6 | b(i) & 0x3F
+        x = x << 6 | b(i) & 0x3f
         i += 1
-        x = x << 6 | b(i) & 0x3F
+        x = x << 6 | b(i) & 0x3f
         i += 1
-        x = x << 6 | b(i) & 0x3F
+        x = x << 6 | b(i) & 0x3f
         i += 1
         return x << 3 | 4
       }
@@ -133,7 +134,7 @@ object MachineInput {
           if (lim < this.start) {
             lim = this.start
           }
-          while (start >= lim && (b(start) & 0xC0) == 0x80) { // 10xxxxxx
+          while (start >= lim && (b(start) & 0xc0) == 0x80) { // 10xxxxxx
             start -= 1
           }
           if (start < this.start) {
@@ -157,9 +158,9 @@ object MachineInput {
       var pos = _pos
       pos += start
       if (pos < end) {
-        val rune    = Character.codePointAt(str, pos)
+        val rune = Character.codePointAt(str, pos)
         val nextPos = pos + Character.charCount(rune)
-        val width   = nextPos - pos
+        val width = nextPos - pos
         rune << 3 | width
       } else {
         EOF
@@ -198,9 +199,11 @@ object MachineInput {
       }
 
     // Modified version of {@link String#indexOf(String) that allows a CharSequence.
-    private def indexOfFallback(hayStack: CharSequence,
-                                needle: String,
-                                _fromIndex: Int): Int = {
+    private def indexOfFallback(
+        hayStack: CharSequence,
+        needle: String,
+        _fromIndex: Int
+    ): Int = {
       var fromIndex = _fromIndex
 
       if (fromIndex >= hayStack.length()) {
@@ -214,8 +217,8 @@ object MachineInput {
       }
 
       val first = needle.charAt(0)
-      val max   = hayStack.length() - needle.length()
-      var i     = fromIndex
+      val max = hayStack.length() - needle.length()
+      var i = fromIndex
 
       while (i <= max) {
         // Look for first character.
@@ -226,9 +229,9 @@ object MachineInput {
 
         // Found first character, now look at the rest of v2
         if (i <= max) {
-          var j   = i + 1
+          var j = i + 1
           val end = j + needle.length() - 1
-          var k   = 1
+          var k = 1
           while (j < end && hayStack.charAt(j) == needle.charAt(k)) {
             j += 1
             k += 1

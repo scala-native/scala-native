@@ -1,11 +1,11 @@
 package scala.scalanative.linker
 
 import org.scalatest.matchers.should.Matchers
-import scala.scalanative.LinkerSpec
+import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
 import scala.scalanative.nir.{Global, Sig, Type, Val}
 
-class LinktimeConditionsSpec extends LinkerSpec with Matchers {
+class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   val entry = "Main$"
   private val props =
     s"""package scala.scalanative
@@ -68,17 +68,19 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   "Linktime properties" should "exist in linking results" in {
     linkWithProps(
       "props.scala" -> props,
-      "main.scala"  -> allPropsUsage
+      "main.scala" -> allPropsUsage
     )(defaultProperties: _*) { (_, result) =>
-      shouldContainAll(defaultEntries.map(_.propertyName).toSet,
-                       result.resolvedVals.keys)
+      shouldContainAll(
+        defaultEntries.map(_.propertyName).toSet,
+        result.resolvedVals.keys
+      )
     }
   }
 
   it should "resolve values from native config" in {
     linkWithProps(
       "props.scala" -> props,
-      "main.scala"  -> allPropsUsage
+      "main.scala" -> allPropsUsage
     )(defaultProperties: _*) { (_, result) =>
       val expected =
         for (e <- defaultEntries) yield e.propertyName -> e.lintimeValue
@@ -117,7 +119,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
              |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
              |}
              |""".stripMargin,
-        "main.scala"  -> """
+        "main.scala" -> """
             |import scala.scalanative.props._
             |object Main {
             |  def main(args: Array[String]): Unit = {
@@ -182,7 +184,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     for (n <- pathsRange)
       linkWithProps(
         "props.scala" -> props,
-        "main.scala"  -> s"""
+        "main.scala" -> s"""
                           |import scala.scalanative.linktime
                           |object Main {
                           |  ${pathStrings(pathsRange)}
@@ -199,7 +201,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
   }
 
   it should "allow to use inequality comparsion" in {
-    val property   = "scala.scalanative.linktime.float"
+    val property = "scala.scalanative.linktime.float"
     val pathsRange = 0.until(6)
 
     for (n <- pathsRange.init)
@@ -227,11 +229,11 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
 
   it should "allow to use complex conditions" in {
     val doubleField = "linktime.inner.performanceMultiplier"
-    val longField   = "linktime.inner.countFrom"
+    val longField = "linktime.inner.countFrom"
     val stringField = "stringProp"
-    val pathsRange  = 1.to(6)
+    val pathsRange = 1.to(6)
     val compilationUnit = Map(
-      "props.scala"  -> props,
+      "props.scala" -> props,
       "props2.scala" -> """
           |package scala.scalanative
           |object props2{
@@ -257,33 +259,33 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     )
 
     val cases: List[((Double, String, Long), Int)] = List(
-      (-0.0, "none", 1L)              -> 1,
-      (1.5, "2", 2L)                  -> 2,
-      (3.0, "tri", -1L)               -> 3,
-      (3.0, "None", 3L)               -> 3,
-      (4.0, "four", 4L)               -> 4,
-      (4.0, "three", 4L)              -> 4,
-      (5.0, "None", 1234567889L)      -> 5,
+      (-0.0, "none", 1L) -> 1,
+      (1.5, "2", 2L) -> 2,
+      (3.0, "tri", -1L) -> 3,
+      (3.0, "None", 3L) -> 3,
+      (4.0, "four", 4L) -> 4,
+      (4.0, "three", 4L) -> 4,
+      (5.0, "None", 1234567889L) -> 5,
       (654321.0, "None", 1234567891L) -> 6
     )
 
     for (((doubleValue, stringValue, longValue), pathNumber) <- cases)
       linkWithProps(compilationUnit.toSeq: _*)(
         "secret.performance.multiplier" -> doubleValue,
-        "prop.string"                   -> stringValue,
-        "inner.countFrom"               -> longValue
+        "prop.string" -> stringValue,
+        "inner.countFrom" -> longValue
       ) { (_, result) =>
         result.unavailable should contain only pathForNumber(pathNumber)
       }
   }
 
   it should "handle boolean properties in conditions" in {
-    val bool1      = "boolOne"
-    val bool2      = "bool2"
+    val bool1 = "boolOne"
+    val bool2 = "bool2"
     val pathsRange = 1.to(5)
 
     val cases: List[((Boolean, Boolean), Int)] = List(
-      (true, true)  -> 1,
+      (true, true) -> 1,
       (true, false) -> 2,
       (false, true) -> 3
     )
@@ -298,7 +300,7 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
            |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.2")
            |   def $bool2: Boolean = scala.scalanative.unsafe.resolved
            |}""".stripMargin,
-      "main.scala"  -> s"""
+      "main.scala" -> s"""
         |import scala.scalanative.props._
         |object Main {
         |
@@ -368,28 +370,58 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
     }
   }
 
+  it should "allow to inline linktime property" in {
+    optimizeWithProps(
+      "props.scala" ->
+        """package scala.scalanative
+          |
+          |object props{
+          |   @scalanative.unsafe.resolvedAtLinktime("prop")
+          |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+          |}
+          |""".stripMargin,
+      "main.scala" -> """
+                        |import scala.scalanative.props._
+                        |object Main {
+                        |  @scalanative.annotation.alwaysinline
+                        |  def prop() = linktimeProperty
+                        |  def main(args: Array[String]): Unit = {
+                        |    println(prop())
+                        |  }
+                        |}""".stripMargin
+    )("prop" -> true) { (_, result) =>
+      // Check if compiles and does not fail to optimize
+      result.unavailable.isEmpty
+    }
+  }
+
   private def shouldContainAll[T](expected: Iterable[T], given: Iterable[T]) = {
-    val left  = given.toSet
+    val left = given.toSet
     val right = expected.toSet
     assert((left -- right).isEmpty, "underapproximation")
     assert((right -- left).isEmpty, "overapproximation")
   }
 
-  private def link[T](sources: Map[String, String])(
-      fn: (Method, Result) => T): T = {
+  private def link[T](
+      sources: Map[String, String]
+  )(fn: (Method, Result) => T): T = {
     link(entry, sources) { (_, result) =>
       implicit val linkerResult: Result = result
       val mainSig =
-        Sig.Method("main",
-                   Seq(Type.Array(scalanative.nir.Rt.String), Type.Unit))
+        Sig.Method(
+          "main",
+          Seq(Type.Array(scalanative.nir.Rt.String), Type.Unit)
+        )
       val MethodRef(_, mainMethod) = Global.Member(Global.Top(entry), mainSig)
       fn(mainMethod, result)
     }
   }
 
   private def pathForNumber(n: Int) = {
-    Global.Member(owner = Global.Top(entry),
-                  sig = Sig.Method(s"path$n", Seq(Type.Unit)))
+    Global.Member(
+      owner = Global.Top(entry),
+      sig = Sig.Method(s"path$n", Seq(Type.Unit))
+    )
   }
 
   private def pathStrings(range: Range) = {
@@ -403,13 +435,27 @@ class LinktimeConditionsSpec extends LinkerSpec with Matchers {
       .mkString("\n")
   }
 
-  private def linkWithProps(sources: (String, String)*)(props: (String, Any)*)(
-      body: (Config, Result) => Unit): Unit = {
+  private def linkWithProps(
+      sources: (String, String)*
+  )(props: (String, Any)*)(body: (Config, Result) => Unit): Unit = {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)
         .withLinkStubs(false)
     }
     link(entry, sources.toMap, setupConfig = setupConfig)(body)
+  }
+
+  private def optimizeWithProps(
+      sources: (String, String)*
+  )(props: (String, Any)*)(body: (Config, Result) => Unit): Unit = {
+    def setupConfig(config: NativeConfig): NativeConfig = {
+      config
+        .withLinktimeProperties(props.toMap)
+        .withLinkStubs(false)
+        .withOptimize(true)
+        .withMode(scalanative.build.Mode.releaseFull)
+    }
+    optimize(entry, sources.toMap, setupConfig = setupConfig)(body)
   }
 }

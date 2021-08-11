@@ -3,9 +3,9 @@ package java.util.regex
 class PatternSyntaxException(desc: String, regex: String, index: Int)
     extends IllegalArgumentException() {
 
-  def getPattern: String     = regex
+  def getPattern: String = regex
   def getDescription: String = desc
-  def getIndex: Int          = index
+  def getIndex: Int = index
   override def getMessage(): String = {
     val cursor = (" " * index) + "^"
 

@@ -48,12 +48,12 @@ class Character(val _value: scala.Char)
    * we use the true javalib to lookup symbols, this file contains only
    * implementations.
    */
-  protected def toByte: scala.Byte     = _value.toByte
-  protected def toShort: scala.Short   = _value.toShort
-  protected def toChar: scala.Char     = _value.toChar
-  protected def toInt: scala.Int       = _value
-  protected def toLong: scala.Long     = _value.toLong
-  protected def toFloat: scala.Float   = _value.toFloat
+  protected def toByte: scala.Byte = _value.toByte
+  protected def toShort: scala.Short = _value.toShort
+  protected def toChar: scala.Char = _value.toChar
+  protected def toInt: scala.Int = _value
+  protected def toLong: scala.Long = _value.toLong
+  protected def toFloat: scala.Float = _value.toFloat
   protected def toDouble: scala.Double = _value.toDouble
 
   // scalastyle:off disallow.space.before.token
@@ -64,173 +64,173 @@ class Character(val _value: scala.Char)
 
   protected def +(x: String): String = "" + _value + x
 
-  protected def <<(x: scala.Int): scala.Int   = _value << x
-  protected def <<(x: scala.Long): scala.Int  = _value << x.toInt
-  protected def >>>(x: scala.Int): scala.Int  = _value >>> x
+  protected def <<(x: scala.Int): scala.Int = _value << x
+  protected def <<(x: scala.Long): scala.Int = _value << x.toInt
+  protected def >>>(x: scala.Int): scala.Int = _value >>> x
   protected def >>>(x: scala.Long): scala.Int = _value >>> x.toInt
-  protected def >>(x: scala.Int): scala.Int   = _value >> x
-  protected def >>(x: scala.Long): scala.Int  = _value >> x.toInt
+  protected def >>(x: scala.Int): scala.Int = _value >> x
+  protected def >>(x: scala.Long): scala.Int = _value >> x.toInt
 
-  protected def ==(x: scala.Byte): scala.Boolean   = _value == x
-  protected def ==(x: scala.Short): scala.Boolean  = _value == x
-  protected def ==(x: scala.Char): scala.Boolean   = _value == x
-  protected def ==(x: scala.Int): scala.Boolean    = _value == x
-  protected def ==(x: scala.Long): scala.Boolean   = _value == x
-  protected def ==(x: scala.Float): scala.Boolean  = _value == x
+  protected def ==(x: scala.Byte): scala.Boolean = _value == x
+  protected def ==(x: scala.Short): scala.Boolean = _value == x
+  protected def ==(x: scala.Char): scala.Boolean = _value == x
+  protected def ==(x: scala.Int): scala.Boolean = _value == x
+  protected def ==(x: scala.Long): scala.Boolean = _value == x
+  protected def ==(x: scala.Float): scala.Boolean = _value == x
   protected def ==(x: scala.Double): scala.Boolean = _value == x
 
-  protected def !=(x: scala.Byte): scala.Boolean   = _value != x
-  protected def !=(x: scala.Short): scala.Boolean  = _value != x
-  protected def !=(x: scala.Char): scala.Boolean   = _value != x
-  protected def !=(x: scala.Int): scala.Boolean    = _value != x
-  protected def !=(x: scala.Long): scala.Boolean   = _value != x
-  protected def !=(x: scala.Float): scala.Boolean  = _value != x
+  protected def !=(x: scala.Byte): scala.Boolean = _value != x
+  protected def !=(x: scala.Short): scala.Boolean = _value != x
+  protected def !=(x: scala.Char): scala.Boolean = _value != x
+  protected def !=(x: scala.Int): scala.Boolean = _value != x
+  protected def !=(x: scala.Long): scala.Boolean = _value != x
+  protected def !=(x: scala.Float): scala.Boolean = _value != x
   protected def !=(x: scala.Double): scala.Boolean = _value != x
 
-  protected def <(x: scala.Byte): scala.Boolean   = _value < x
-  protected def <(x: scala.Short): scala.Boolean  = _value < x
-  protected def <(x: scala.Char): scala.Boolean   = _value < x
-  protected def <(x: scala.Int): scala.Boolean    = _value < x
-  protected def <(x: scala.Long): scala.Boolean   = _value < x
-  protected def <(x: scala.Float): scala.Boolean  = _value < x
+  protected def <(x: scala.Byte): scala.Boolean = _value < x
+  protected def <(x: scala.Short): scala.Boolean = _value < x
+  protected def <(x: scala.Char): scala.Boolean = _value < x
+  protected def <(x: scala.Int): scala.Boolean = _value < x
+  protected def <(x: scala.Long): scala.Boolean = _value < x
+  protected def <(x: scala.Float): scala.Boolean = _value < x
   protected def <(x: scala.Double): scala.Boolean = _value < x
 
-  protected def <=(x: scala.Byte): scala.Boolean   = _value <= x
-  protected def <=(x: scala.Short): scala.Boolean  = _value <= x
-  protected def <=(x: scala.Char): scala.Boolean   = _value <= x
-  protected def <=(x: scala.Int): scala.Boolean    = _value <= x
-  protected def <=(x: scala.Long): scala.Boolean   = _value <= x
-  protected def <=(x: scala.Float): scala.Boolean  = _value <= x
+  protected def <=(x: scala.Byte): scala.Boolean = _value <= x
+  protected def <=(x: scala.Short): scala.Boolean = _value <= x
+  protected def <=(x: scala.Char): scala.Boolean = _value <= x
+  protected def <=(x: scala.Int): scala.Boolean = _value <= x
+  protected def <=(x: scala.Long): scala.Boolean = _value <= x
+  protected def <=(x: scala.Float): scala.Boolean = _value <= x
   protected def <=(x: scala.Double): scala.Boolean = _value <= x
 
-  protected def >(x: scala.Byte): scala.Boolean   = _value > x
-  protected def >(x: scala.Short): scala.Boolean  = _value > x
-  protected def >(x: scala.Char): scala.Boolean   = _value > x
-  protected def >(x: scala.Int): scala.Boolean    = _value > x
-  protected def >(x: scala.Long): scala.Boolean   = _value > x
-  protected def >(x: scala.Float): scala.Boolean  = _value > x
+  protected def >(x: scala.Byte): scala.Boolean = _value > x
+  protected def >(x: scala.Short): scala.Boolean = _value > x
+  protected def >(x: scala.Char): scala.Boolean = _value > x
+  protected def >(x: scala.Int): scala.Boolean = _value > x
+  protected def >(x: scala.Long): scala.Boolean = _value > x
+  protected def >(x: scala.Float): scala.Boolean = _value > x
   protected def >(x: scala.Double): scala.Boolean = _value > x
 
-  protected def >=(x: scala.Byte): scala.Boolean   = _value >= x
-  protected def >=(x: scala.Short): scala.Boolean  = _value >= x
-  protected def >=(x: scala.Char): scala.Boolean   = _value >= x
-  protected def >=(x: scala.Int): scala.Boolean    = _value >= x
-  protected def >=(x: scala.Long): scala.Boolean   = _value >= x
-  protected def >=(x: scala.Float): scala.Boolean  = _value >= x
+  protected def >=(x: scala.Byte): scala.Boolean = _value >= x
+  protected def >=(x: scala.Short): scala.Boolean = _value >= x
+  protected def >=(x: scala.Char): scala.Boolean = _value >= x
+  protected def >=(x: scala.Int): scala.Boolean = _value >= x
+  protected def >=(x: scala.Long): scala.Boolean = _value >= x
+  protected def >=(x: scala.Float): scala.Boolean = _value >= x
   protected def >=(x: scala.Double): scala.Boolean = _value >= x
 
-  protected def |(x: scala.Byte): scala.Int  = _value | x
+  protected def |(x: scala.Byte): scala.Int = _value | x
   protected def |(x: scala.Short): scala.Int = _value | x
-  protected def |(x: scala.Char): scala.Int  = _value | x
-  protected def |(x: scala.Int): scala.Int   = _value | x
+  protected def |(x: scala.Char): scala.Int = _value | x
+  protected def |(x: scala.Int): scala.Int = _value | x
   protected def |(x: scala.Long): scala.Long = _value | x
 
-  protected def &(x: scala.Byte): scala.Int  = _value & x
+  protected def &(x: scala.Byte): scala.Int = _value & x
   protected def &(x: scala.Short): scala.Int = _value & x
-  protected def &(x: scala.Char): scala.Int  = _value & x
-  protected def &(x: scala.Int): scala.Int   = _value & x
+  protected def &(x: scala.Char): scala.Int = _value & x
+  protected def &(x: scala.Int): scala.Int = _value & x
   protected def &(x: scala.Long): scala.Long = _value & x
 
-  protected def ^(x: scala.Byte): scala.Int  = _value ^ x
+  protected def ^(x: scala.Byte): scala.Int = _value ^ x
   protected def ^(x: scala.Short): scala.Int = _value ^ x
-  protected def ^(x: scala.Char): scala.Int  = _value ^ x
-  protected def ^(x: scala.Int): scala.Int   = _value ^ x
+  protected def ^(x: scala.Char): scala.Int = _value ^ x
+  protected def ^(x: scala.Int): scala.Int = _value ^ x
   protected def ^(x: scala.Long): scala.Long = _value ^ x
 
-  protected def +(x: scala.Byte): scala.Int      = _value + x
-  protected def +(x: scala.Short): scala.Int     = _value + x
-  protected def +(x: scala.Char): scala.Int      = _value + x
-  protected def +(x: scala.Int): scala.Int       = _value + x
-  protected def +(x: scala.Long): scala.Long     = _value + x
-  protected def +(x: scala.Float): scala.Float   = _value + x
+  protected def +(x: scala.Byte): scala.Int = _value + x
+  protected def +(x: scala.Short): scala.Int = _value + x
+  protected def +(x: scala.Char): scala.Int = _value + x
+  protected def +(x: scala.Int): scala.Int = _value + x
+  protected def +(x: scala.Long): scala.Long = _value + x
+  protected def +(x: scala.Float): scala.Float = _value + x
   protected def +(x: scala.Double): scala.Double = _value + x
 
-  protected def -(x: scala.Byte): scala.Int      = _value - x
-  protected def -(x: scala.Short): scala.Int     = _value - x
-  protected def -(x: scala.Char): scala.Int      = _value - x
-  protected def -(x: scala.Int): scala.Int       = _value - x
-  protected def -(x: scala.Long): scala.Long     = _value - x
-  protected def -(x: scala.Float): scala.Float   = _value - x
+  protected def -(x: scala.Byte): scala.Int = _value - x
+  protected def -(x: scala.Short): scala.Int = _value - x
+  protected def -(x: scala.Char): scala.Int = _value - x
+  protected def -(x: scala.Int): scala.Int = _value - x
+  protected def -(x: scala.Long): scala.Long = _value - x
+  protected def -(x: scala.Float): scala.Float = _value - x
   protected def -(x: scala.Double): scala.Double = _value - x
 
-  protected def *(x: scala.Byte): scala.Int      = _value * x
-  protected def *(x: scala.Short): scala.Int     = _value * x
-  protected def *(x: scala.Char): scala.Int      = _value * x
-  protected def *(x: scala.Int): scala.Int       = _value * x
-  protected def *(x: scala.Long): scala.Long     = _value * x
-  protected def *(x: scala.Float): scala.Float   = _value * x
+  protected def *(x: scala.Byte): scala.Int = _value * x
+  protected def *(x: scala.Short): scala.Int = _value * x
+  protected def *(x: scala.Char): scala.Int = _value * x
+  protected def *(x: scala.Int): scala.Int = _value * x
+  protected def *(x: scala.Long): scala.Long = _value * x
+  protected def *(x: scala.Float): scala.Float = _value * x
   protected def *(x: scala.Double): scala.Double = _value * x
 
-  protected def /(x: scala.Byte): scala.Int      = _value / x
-  protected def /(x: scala.Short): scala.Int     = _value / x
-  protected def /(x: scala.Char): scala.Int      = _value / x
-  protected def /(x: scala.Int): scala.Int       = _value / x
-  protected def /(x: scala.Long): scala.Long     = _value / x
-  protected def /(x: scala.Float): scala.Float   = _value / x
+  protected def /(x: scala.Byte): scala.Int = _value / x
+  protected def /(x: scala.Short): scala.Int = _value / x
+  protected def /(x: scala.Char): scala.Int = _value / x
+  protected def /(x: scala.Int): scala.Int = _value / x
+  protected def /(x: scala.Long): scala.Long = _value / x
+  protected def /(x: scala.Float): scala.Float = _value / x
   protected def /(x: scala.Double): scala.Double = _value / x
 
-  protected def %(x: scala.Byte): scala.Int      = _value % x
-  protected def %(x: scala.Short): scala.Int     = _value % x
-  protected def %(x: scala.Char): scala.Int      = _value % x
-  protected def %(x: scala.Int): scala.Int       = _value % x
-  protected def %(x: scala.Long): scala.Long     = _value % x
-  protected def %(x: scala.Float): scala.Float   = _value % x
+  protected def %(x: scala.Byte): scala.Int = _value % x
+  protected def %(x: scala.Short): scala.Int = _value % x
+  protected def %(x: scala.Char): scala.Int = _value % x
+  protected def %(x: scala.Int): scala.Int = _value % x
+  protected def %(x: scala.Long): scala.Long = _value % x
+  protected def %(x: scala.Float): scala.Float = _value % x
   protected def %(x: scala.Double): scala.Double = _value % x
 }
 
 object Character {
-  final val TYPE      = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveChar]
+  final val TYPE = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveChar]
   final val MIN_VALUE = '\u0000'
   final val MAX_VALUE = '\uffff'
-  final val SIZE      = 16
-  final val BYTES     = 2
+  final val SIZE = 16
+  final val BYTES = 2
 
   /* These are supposed to be final vals of type Byte, but that's not possible.
    * So we implement them as def's, which are binary compatible with final vals.
    */
-  @inline def UNASSIGNED: scala.Byte                = 0
-  @inline def UPPERCASE_LETTER: scala.Byte          = 1
-  @inline def LOWERCASE_LETTER: scala.Byte          = 2
-  @inline def TITLECASE_LETTER: scala.Byte          = 3
-  @inline def MODIFIER_LETTER: scala.Byte           = 4
-  @inline def OTHER_LETTER: scala.Byte              = 5
-  @inline def NON_SPACING_MARK: scala.Byte          = 6
-  @inline def ENCLOSING_MARK: scala.Byte            = 7
-  @inline def COMBINING_SPACING_MARK: scala.Byte    = 8
-  @inline def DECIMAL_DIGIT_NUMBER: scala.Byte      = 9
-  @inline def LETTER_NUMBER: scala.Byte             = 10
-  @inline def OTHER_NUMBER: scala.Byte              = 11
-  @inline def SPACE_SEPARATOR: scala.Byte           = 12
-  @inline def LINE_SEPARATOR: scala.Byte            = 13
-  @inline def PARAGRAPH_SEPARATOR: scala.Byte       = 14
-  @inline def CONTROL: scala.Byte                   = 15
-  @inline def FORMAT: scala.Byte                    = 16
-  @inline def PRIVATE_USE: scala.Byte               = 18
-  @inline def SURROGATE: scala.Byte                 = 19
-  @inline def DASH_PUNCTUATION: scala.Byte          = 20
-  @inline def START_PUNCTUATION: scala.Byte         = 21
-  @inline def END_PUNCTUATION: scala.Byte           = 22
-  @inline def CONNECTOR_PUNCTUATION: scala.Byte     = 23
-  @inline def OTHER_PUNCTUATION: scala.Byte         = 24
-  @inline def MATH_SYMBOL: scala.Byte               = 25
-  @inline def CURRENCY_SYMBOL: scala.Byte           = 26
-  @inline def MODIFIER_SYMBOL: scala.Byte           = 27
-  @inline def OTHER_SYMBOL: scala.Byte              = 28
+  @inline def UNASSIGNED: scala.Byte = 0
+  @inline def UPPERCASE_LETTER: scala.Byte = 1
+  @inline def LOWERCASE_LETTER: scala.Byte = 2
+  @inline def TITLECASE_LETTER: scala.Byte = 3
+  @inline def MODIFIER_LETTER: scala.Byte = 4
+  @inline def OTHER_LETTER: scala.Byte = 5
+  @inline def NON_SPACING_MARK: scala.Byte = 6
+  @inline def ENCLOSING_MARK: scala.Byte = 7
+  @inline def COMBINING_SPACING_MARK: scala.Byte = 8
+  @inline def DECIMAL_DIGIT_NUMBER: scala.Byte = 9
+  @inline def LETTER_NUMBER: scala.Byte = 10
+  @inline def OTHER_NUMBER: scala.Byte = 11
+  @inline def SPACE_SEPARATOR: scala.Byte = 12
+  @inline def LINE_SEPARATOR: scala.Byte = 13
+  @inline def PARAGRAPH_SEPARATOR: scala.Byte = 14
+  @inline def CONTROL: scala.Byte = 15
+  @inline def FORMAT: scala.Byte = 16
+  @inline def PRIVATE_USE: scala.Byte = 18
+  @inline def SURROGATE: scala.Byte = 19
+  @inline def DASH_PUNCTUATION: scala.Byte = 20
+  @inline def START_PUNCTUATION: scala.Byte = 21
+  @inline def END_PUNCTUATION: scala.Byte = 22
+  @inline def CONNECTOR_PUNCTUATION: scala.Byte = 23
+  @inline def OTHER_PUNCTUATION: scala.Byte = 24
+  @inline def MATH_SYMBOL: scala.Byte = 25
+  @inline def CURRENCY_SYMBOL: scala.Byte = 26
+  @inline def MODIFIER_SYMBOL: scala.Byte = 27
+  @inline def OTHER_SYMBOL: scala.Byte = 28
   @inline def INITIAL_QUOTE_PUNCTUATION: scala.Byte = 29
-  @inline def FINAL_QUOTE_PUNCTUATION: scala.Byte   = 30
+  @inline def FINAL_QUOTE_PUNCTUATION: scala.Byte = 30
 
   final val MIN_RADIX = 2
   final val MAX_RADIX = 36
 
   final val MIN_HIGH_SURROGATE = '\uD800'
   final val MAX_HIGH_SURROGATE = '\uDBFF'
-  final val MIN_LOW_SURROGATE  = '\uDC00'
-  final val MAX_LOW_SURROGATE  = '\uDFFF'
-  final val MIN_SURROGATE      = MIN_HIGH_SURROGATE
-  final val MAX_SURROGATE      = MAX_LOW_SURROGATE
+  final val MIN_LOW_SURROGATE = '\uDC00'
+  final val MAX_LOW_SURROGATE = '\uDFFF'
+  final val MIN_SURROGATE = MIN_HIGH_SURROGATE
+  final val MAX_SURROGATE = MAX_LOW_SURROGATE
 
-  final val MIN_CODE_POINT               = 0
-  final val MAX_CODE_POINT               = 0x10ffff
+  final val MIN_CODE_POINT = 0
+  final val MAX_CODE_POINT = 0x10ffff
   final val MIN_SUPPLEMENTARY_CODE_POINT = 0x10000
 
   @inline def charCount(codePoint: Int): Int =
@@ -240,15 +240,17 @@ object Character {
     codePointAt(seq, _index, seq.length)
   }
 
-  def codePointAt(seq: Array[scala.Char],
-                  index: scala.Int,
-                  limit: scala.Int): scala.Int = {
+  def codePointAt(
+      seq: Array[scala.Char],
+      index: scala.Int,
+      limit: scala.Int
+  ): scala.Int = {
 
     if (index < 0 || index >= limit || limit < 0 || limit > seq.length) {
       throw new StringIndexOutOfBoundsException()
     }
 
-    val high      = seq(index)
+    val high = seq(index)
     val nextIndex = index + 1
 
     if (nextIndex >= limit) {
@@ -270,9 +272,11 @@ object Character {
     codePointBefore(seq, index, seq.length)
   }
 
-  def codePointBefore(seq: Array[scala.Char],
-                      index: scala.Int,
-                      limit: scala.Int): scala.Int = {
+  def codePointBefore(
+      seq: Array[scala.Char],
+      index: scala.Int,
+      limit: scala.Int
+  ): scala.Int = {
     val len = limit
     if (index < 1 || index > len) {
       throw new StringIndexOutOfBoundsException(index)
@@ -298,17 +302,19 @@ object Character {
     codePointBefore(seq.toString.toArray[scala.Char], index)
   }
 
-  def codePointCount(seq: Array[scala.Char],
-                     offset: scala.Int,
-                     count: scala.Int): scala.Int = {
-    val len      = seq.length
+  def codePointCount(
+      seq: Array[scala.Char],
+      offset: scala.Int,
+      count: scala.Int
+  ): scala.Int = {
+    val len = seq.length
     val endIndex = offset + count
     if (offset < 0 || count < 0 || endIndex > len) {
       throw new StringIndexOutOfBoundsException()
     }
 
     var result = 0
-    var i      = offset
+    var i = offset
     while (i < endIndex) {
       var c = seq(i)
       if (isHighSurrogate(c)) {
@@ -328,11 +334,13 @@ object Character {
     result
   }
 
-  def offsetByCodePoints(seq: Array[scala.Char],
-                         start: scala.Int,
-                         count: scala.Int,
-                         index: scala.Int,
-                         codePointOffset: scala.Int): scala.Int = {
+  def offsetByCodePoints(
+      seq: Array[scala.Char],
+      start: scala.Int,
+      count: scala.Int,
+      index: scala.Int,
+      codePointOffset: scala.Int
+  ): scala.Int = {
     val end = start + count
     if (start < 0 || count < 0 || end > seq.length || index < start
         || index > end) {
@@ -343,7 +351,7 @@ object Character {
       index
     } else if (codePointOffset > 0) {
       var codePoints = codePointOffset
-      var i          = index
+      var i = index
       while (codePoints > 0) {
         codePoints -= 1
         if (i >= end) {
@@ -360,7 +368,7 @@ object Character {
       i
     } else {
       var codePoints = -codePointOffset
-      var i          = index
+      var i = index
       while (codePoints > 0) {
         codePoints -= 1
         i -= 1
@@ -386,7 +394,7 @@ object Character {
     if (charValue > 127) {
       new Character(charValue)
     } else {
-      val idx    = charValue.toInt
+      val idx = charValue.toInt
       val cached = cache(idx)
       if (cached != null) {
         cached
@@ -413,7 +421,8 @@ object Character {
   // Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
   private[this] def getTypeGE256(codePoint: Int): scala.Byte = {
     charTypes(
-      findIndexOfRange(charTypeIndices, codePoint, hasEmptyRanges = false))
+      findIndexOfRange(charTypeIndices, codePoint, hasEmptyRanges = false)
+    )
   }
 
   // Two digit() constructors, digitWithValidRadix(), and
@@ -469,7 +478,7 @@ object Character {
         // Maybe it is a digit in a non-ASCII script
 
         // Find the position of the 0 digit corresponding to this code point
-        val p                  = Arrays.binarySearch(nonASCIIZeroDigitCodePoints, codePoint)
+        val p = Arrays.binarySearch(nonASCIIZeroDigitCodePoints, codePoint)
         val zeroCodePointIndex = if (p < 0) -2 - p else p
 
         /* If the index is below 0, it cannot be a digit. Otherwise, the value
@@ -495,7 +504,7 @@ object Character {
       0
     } else {
       val overBaseTen = digit - 10
-      val result      = if (overBaseTen < 0) '0' + digit else 'a' + overBaseTen
+      val result = if (overBaseTen < 0) '0' + digit else 'a' + overBaseTen
       result.toChar
     }
   }
@@ -503,7 +512,7 @@ object Character {
   def isISOControl(c: scala.Char): scala.Boolean = isISOControl(c.toInt)
 
   def isISOControl(codePoint: Int): scala.Boolean = {
-    (0x00 <= codePoint && codePoint <= 0x1F) || (0x7F <= codePoint && codePoint <= 0x9F)
+    (0x00 <= codePoint && codePoint <= 0x1f) || (0x7f <= codePoint && codePoint <= 0x9f)
   }
 
   @deprecated("Replaced by isWhitespace(char)", "")
@@ -539,10 +548,10 @@ object Character {
   // --- UTF-16 surrogate pairs handling ---
   // See http://en.wikipedia.org/wiki/UTF-16
 
-  private final val HighSurrogateMask       = 0xfc00 // 111111 00  00000000
-  private final val HighSurrogateID         = 0xd800 // 110110 00  00000000
-  private final val LowSurrogateMask        = 0xfc00 // 111111 00  00000000
-  private final val LowSurrogateID          = 0xdc00 // 110111 00  00000000
+  private final val HighSurrogateMask = 0xfc00 // 111111 00  00000000
+  private final val HighSurrogateID = 0xd800 // 110110 00  00000000
+  private final val LowSurrogateMask = 0xfc00 // 111111 00  00000000
+  private final val LowSurrogateID = 0xdc00 // 110111 00  00000000
   private final val SurrogateUsefulPartMask = 0x03ff // 000000 11  11111111
 
   @inline def isHighSurrogate(c: scala.Char): scala.Boolean =
@@ -656,8 +665,10 @@ object Character {
   def isJavaLetterOrDigit(ch: scala.Char): scala.Boolean =
     isJavaLetterOrDigitImpl(ch, getType(ch))
 
-  @inline private[this] def isJavaLetterOrDigitImpl(codePoint: Int,
-                                                    tpe: Int): scala.Boolean = {
+  @inline private[this] def isJavaLetterOrDigitImpl(
+      codePoint: Int,
+      tpe: Int
+  ): scala.Boolean = {
     isJavaLetterImpl(tpe) || tpe == COMBINING_SPACING_MARK ||
     tpe == NON_SPACING_MARK || isIdentifierIgnorableImpl(codePoint, tpe)
   }
@@ -698,7 +709,8 @@ object Character {
 
   @inline private[this] def isJavaIdentifierPartImpl(
       codePoint: Int,
-      tpe: Int): scala.Boolean = {
+      tpe: Int
+  ): scala.Boolean = {
     isLetterImpl(tpe) || tpe == CURRENCY_SYMBOL ||
     tpe == CONNECTOR_PUNCTUATION || tpe == DECIMAL_DIGIT_NUMBER ||
     tpe == LETTER_NUMBER || tpe == COMBINING_SPACING_MARK ||
@@ -736,7 +748,8 @@ object Character {
 
   @inline private[this] def isIdentifierIgnorableImpl(
       codePoint: Int,
-      tpe: Int): scala.Boolean = {
+      tpe: Int
+  ): scala.Boolean = {
     ('\u0000' <= codePoint && codePoint <= '\u0008') ||
     ('\u000E' <= codePoint && codePoint <= '\u001B') ||
     ('\u007F' <= codePoint && codePoint <= '\u009F') ||
@@ -797,12 +810,14 @@ object Character {
     }
   }
 
-  @inline private[this] def toSurrogate(codePoint: Int,
-                                        dst: Array[Char],
-                                        dstIndex: Int): Unit = {
+  @inline private[this] def toSurrogate(
+      codePoint: Int,
+      dst: Array[Char],
+      dstIndex: Int
+  ): Unit = {
     val cpPrime = codePoint - 0x10000
-    val high    = 0xD800 | ((cpPrime >> 10) & 0x3FF)
-    val low     = 0xDC00 | (cpPrime & 0x3FF)
+    val high = 0xd800 | ((cpPrime >> 10) & 0x3ff)
+    val low = 0xdc00 | (cpPrime & 0x3ff)
     dst(dstIndex) = high.toChar
     dst(dstIndex + 1) = low.toChar
   }
@@ -1302,15 +1317,18 @@ object Character {
   // format: on
 
   @noinline private[this] def uncompressDeltas(
-      deltas: Array[Int]): Array[Int] = {
+      deltas: Array[Int]
+  ): Array[Int] = {
     for (i <- 1 until deltas.length)
       deltas(i) += deltas(i - 1)
     deltas
   }
 
-  private[this] def findIndexOfRange(startOfRangesArray: Array[Int],
-                                     value: Int,
-                                     hasEmptyRanges: scala.Boolean): Int = {
+  private[this] def findIndexOfRange(
+      startOfRangesArray: Array[Int],
+      value: Int,
+      hasEmptyRanges: scala.Boolean
+  ): Int = {
     val i = Arrays.binarySearch(startOfRangesArray, value)
     if (i >= 0) {
       /* `value` is at the start of a range. Its range index is therefore
@@ -1458,22 +1476,24 @@ object Character {
     lazy val A = upperRanges(0)
     lazy val Z = upperRanges(1)
     // other low char optimization whitespace, punctuation, etc.
-    lazy val upperMu                        = upperRanges(2)
-    lazy val lowerBeta                      = lowerRanges(2)
-    def insertionPoint(idx: Int)            = (-(idx) - 1)
+    lazy val upperMu = upperRanges(2)
+    lazy val lowerBeta = lowerRanges(2)
+    def insertionPoint(idx: Int) = (-(idx) - 1)
     def convert(codePoint: Int, delta: Int) = codePoint - delta
   }
 
-  private[this] def toCase(codePoint: Int,
-                           asciiLow: Int,
-                           asciiHigh: Int,
-                           lowFilter: Int,
-                           ranges: Array[scala.Int],
-                           deltas: Array[scala.Int],
-                           steps: Array[scala.Byte]): Int = {
+  private[this] def toCase(
+      codePoint: Int,
+      asciiLow: Int,
+      asciiHigh: Int,
+      lowFilter: Int,
+      ranges: Array[scala.Int],
+      deltas: Array[scala.Int],
+      steps: Array[scala.Byte]
+  ): Int = {
     import CaseUtil._
     if (asciiLow <= codePoint && codePoint <= asciiHigh)
-      convert(codePoint, deltas(0))           // ascii
+      convert(codePoint, deltas(0)) // ascii
     else if (codePoint < lowFilter) codePoint // whitespace, punctuation, etc.
     else {
       val idx = Arrays.binarySearch(ranges, codePoint)
@@ -1489,7 +1509,7 @@ object Character {
             // no range involved
             codePoint
           } else {
-            val delta      = deltas(ip)
+            val delta = deltas(ip)
             val upperBound = ranges(ip)
             if (step == 1) {
               convert(codePoint, delta)
@@ -1656,13 +1676,13 @@ object Character {
       throw new NullPointerException()
     }
     override def equals(that: Any): scala.Boolean = super.equals(that)
-    override def hashCode: scala.Int              = super.hashCode
-    override def toString                         = name
+    override def hashCode: scala.Int = super.hashCode
+    override def toString = name
   }
 
   final class UnicodeBlock private (name: String) extends Subset(name) {
     private var start: Int = _
-    private var end: Int   = _
+    private var end: Int = _
     private def this(name: String, start: Int, end: Int) = {
       this(name)
       this.start = start
@@ -1671,55 +1691,55 @@ object Character {
   }
 
   object UnicodeBlock {
-    val SURROGATES_AREA    = new UnicodeBlock("SURROGATES_AREA", 0x0, 0x0)
-    val BASIC_LATIN        = new UnicodeBlock("BASIC_LATIN", 0x0, 0x7f)
+    val SURROGATES_AREA = new UnicodeBlock("SURROGATES_AREA", 0x0, 0x0)
+    val BASIC_LATIN = new UnicodeBlock("BASIC_LATIN", 0x0, 0x7f)
     val LATIN_1_SUPPLEMENT = new UnicodeBlock("LATIN_1_SUPPLEMENT", 0x80, 0xff)
-    val LATIN_EXTENDED_A   = new UnicodeBlock("LATIN_EXTENDED_A", 0x100, 0x17f)
-    val LATIN_EXTENDED_B   = new UnicodeBlock("LATIN_EXTENDED_B", 0x180, 0x24f)
-    val IPA_EXTENSIONS     = new UnicodeBlock("IPA_EXTENSIONS", 0x250, 0x2af)
+    val LATIN_EXTENDED_A = new UnicodeBlock("LATIN_EXTENDED_A", 0x100, 0x17f)
+    val LATIN_EXTENDED_B = new UnicodeBlock("LATIN_EXTENDED_B", 0x180, 0x24f)
+    val IPA_EXTENSIONS = new UnicodeBlock("IPA_EXTENSIONS", 0x250, 0x2af)
     val SPACING_MODIFIER_LETTERS =
       new UnicodeBlock("SPACING_MODIFIER_LETTERS", 0x2b0, 0x2ff)
     val COMBINING_DIACRITICAL_MARKS =
       new UnicodeBlock("COMBINING_DIACRITICAL_MARKS", 0x300, 0x36f)
-    val GREEK    = new UnicodeBlock("GREEK", 0x370, 0x3ff)
+    val GREEK = new UnicodeBlock("GREEK", 0x370, 0x3ff)
     val CYRILLIC = new UnicodeBlock("CYRILLIC", 0x400, 0x4ff)
     val CYRILLIC_SUPPLEMENTARY =
       new UnicodeBlock("CYRILLIC_SUPPLEMENTARY", 0x500, 0x52f)
-    val ARMENIAN    = new UnicodeBlock("ARMENIAN", 0x530, 0x58f)
-    val HEBREW      = new UnicodeBlock("HEBREW", 0x590, 0x5ff)
-    val ARABIC      = new UnicodeBlock("ARABIC", 0x600, 0x6ff)
-    val SYRIAC      = new UnicodeBlock("SYRIAC", 0x700, 0x74f)
-    val THAANA      = new UnicodeBlock("THAANA", 0x780, 0x7bf)
-    val DEVANAGARI  = new UnicodeBlock("DEVANAGARI", 0x900, 0x97f)
-    val BENGALI     = new UnicodeBlock("BENGALI", 0x980, 0x9ff)
-    val GURMUKHI    = new UnicodeBlock("GURMUKHI", 0xa00, 0xa7f)
-    val GUJARATI    = new UnicodeBlock("GUJARATI", 0xa80, 0xaff)
-    val ORIYA       = new UnicodeBlock("ORIYA", 0xb00, 0xb7f)
-    val TAMIL       = new UnicodeBlock("TAMIL", 0xb80, 0xbff)
-    val TELUGU      = new UnicodeBlock("TELUGU", 0xc00, 0xc7f)
-    val KANNADA     = new UnicodeBlock("KANNADA", 0xc80, 0xcff)
-    val MALAYALAM   = new UnicodeBlock("MALAYALAM", 0xd00, 0xd7f)
-    val SINHALA     = new UnicodeBlock("SINHALA", 0xd80, 0xdff)
-    val THAI        = new UnicodeBlock("THAI", 0xe00, 0xe7f)
-    val LAO         = new UnicodeBlock("LAO", 0xe80, 0xeff)
-    val TIBETAN     = new UnicodeBlock("TIBETAN", 0xf00, 0xfff)
-    val MYANMAR     = new UnicodeBlock("MYANMAR", 0x1000, 0x109f)
-    val GEORGIAN    = new UnicodeBlock("GEORGIAN", 0x10a0, 0x10ff)
+    val ARMENIAN = new UnicodeBlock("ARMENIAN", 0x530, 0x58f)
+    val HEBREW = new UnicodeBlock("HEBREW", 0x590, 0x5ff)
+    val ARABIC = new UnicodeBlock("ARABIC", 0x600, 0x6ff)
+    val SYRIAC = new UnicodeBlock("SYRIAC", 0x700, 0x74f)
+    val THAANA = new UnicodeBlock("THAANA", 0x780, 0x7bf)
+    val DEVANAGARI = new UnicodeBlock("DEVANAGARI", 0x900, 0x97f)
+    val BENGALI = new UnicodeBlock("BENGALI", 0x980, 0x9ff)
+    val GURMUKHI = new UnicodeBlock("GURMUKHI", 0xa00, 0xa7f)
+    val GUJARATI = new UnicodeBlock("GUJARATI", 0xa80, 0xaff)
+    val ORIYA = new UnicodeBlock("ORIYA", 0xb00, 0xb7f)
+    val TAMIL = new UnicodeBlock("TAMIL", 0xb80, 0xbff)
+    val TELUGU = new UnicodeBlock("TELUGU", 0xc00, 0xc7f)
+    val KANNADA = new UnicodeBlock("KANNADA", 0xc80, 0xcff)
+    val MALAYALAM = new UnicodeBlock("MALAYALAM", 0xd00, 0xd7f)
+    val SINHALA = new UnicodeBlock("SINHALA", 0xd80, 0xdff)
+    val THAI = new UnicodeBlock("THAI", 0xe00, 0xe7f)
+    val LAO = new UnicodeBlock("LAO", 0xe80, 0xeff)
+    val TIBETAN = new UnicodeBlock("TIBETAN", 0xf00, 0xfff)
+    val MYANMAR = new UnicodeBlock("MYANMAR", 0x1000, 0x109f)
+    val GEORGIAN = new UnicodeBlock("GEORGIAN", 0x10a0, 0x10ff)
     val HANGUL_JAMO = new UnicodeBlock("HANGUL_JAMO", 0x1100, 0x11ff)
-    val ETHIOPIC    = new UnicodeBlock("ETHIOPIC", 0x1200, 0x137f)
-    val CHEROKEE    = new UnicodeBlock("CHEROKEE", 0x13a0, 0x13ff)
+    val ETHIOPIC = new UnicodeBlock("ETHIOPIC", 0x1200, 0x137f)
+    val CHEROKEE = new UnicodeBlock("CHEROKEE", 0x13a0, 0x13ff)
     val UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS =
       new UnicodeBlock("UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS", 0x1400, 0x167f)
-    val OGHAM         = new UnicodeBlock("OGHAM", 0x1680, 0x169f)
-    val RUNIC         = new UnicodeBlock("RUNIC", 0x16a0, 0x16ff)
-    val TAGALOG       = new UnicodeBlock("TAGALOG", 0x1700, 0x171f)
-    val HANUNOO       = new UnicodeBlock("HANUNOO", 0x1720, 0x173f)
-    val BUHID         = new UnicodeBlock("BUHID", 0x1740, 0x175f)
-    val TAGBANWA      = new UnicodeBlock("TAGBANWA", 0x1760, 0x177f)
-    val KHMER         = new UnicodeBlock("KHMER", 0x1780, 0x17ff)
-    val MONGOLIAN     = new UnicodeBlock("MONGOLIAN", 0x1800, 0x18af)
-    val LIMBU         = new UnicodeBlock("LIMBU", 0x1900, 0x194f)
-    val TAI_LE        = new UnicodeBlock("TAI_LE", 0x1950, 0x197f)
+    val OGHAM = new UnicodeBlock("OGHAM", 0x1680, 0x169f)
+    val RUNIC = new UnicodeBlock("RUNIC", 0x16a0, 0x16ff)
+    val TAGALOG = new UnicodeBlock("TAGALOG", 0x1700, 0x171f)
+    val HANUNOO = new UnicodeBlock("HANUNOO", 0x1720, 0x173f)
+    val BUHID = new UnicodeBlock("BUHID", 0x1740, 0x175f)
+    val TAGBANWA = new UnicodeBlock("TAGBANWA", 0x1760, 0x177f)
+    val KHMER = new UnicodeBlock("KHMER", 0x1780, 0x17ff)
+    val MONGOLIAN = new UnicodeBlock("MONGOLIAN", 0x1800, 0x18af)
+    val LIMBU = new UnicodeBlock("LIMBU", 0x1900, 0x194f)
+    val TAI_LE = new UnicodeBlock("TAI_LE", 0x1950, 0x197f)
     val KHMER_SYMBOLS = new UnicodeBlock("KHMER_SYMBOLS", 0x19e0, 0x19ff)
     val PHONETIC_EXTENSIONS =
       new UnicodeBlock("PHONETIC_EXTENSIONS", 0x1d00, 0x1d7f)
@@ -1736,7 +1756,7 @@ object Character {
     val LETTERLIKE_SYMBOLS =
       new UnicodeBlock("LETTERLIKE_SYMBOLS", 0x2100, 0x214f)
     val NUMBER_FORMS = new UnicodeBlock("NUMBER_FORMS", 0x2150, 0x218f)
-    val ARROWS       = new UnicodeBlock("ARROWS", 0x2190, 0x21ff)
+    val ARROWS = new UnicodeBlock("ARROWS", 0x2190, 0x21ff)
     val MATHEMATICAL_OPERATORS =
       new UnicodeBlock("MATHEMATICAL_OPERATORS", 0x2200, 0x22ff)
     val MISCELLANEOUS_TECHNICAL =
@@ -1746,8 +1766,8 @@ object Character {
       new UnicodeBlock("OPTICAL_CHARACTER_RECOGNITION", 0x2440, 0x245f)
     val ENCLOSED_ALPHANUMERICS =
       new UnicodeBlock("ENCLOSED_ALPHANUMERICS", 0x2460, 0x24ff)
-    val BOX_DRAWING      = new UnicodeBlock("BOX_DRAWING", 0x2500, 0x257f)
-    val BLOCK_ELEMENTS   = new UnicodeBlock("BLOCK_ELEMENTS", 0x2580, 0x259f)
+    val BOX_DRAWING = new UnicodeBlock("BOX_DRAWING", 0x2500, 0x257f)
+    val BLOCK_ELEMENTS = new UnicodeBlock("BLOCK_ELEMENTS", 0x2580, 0x259f)
     val GEOMETRIC_SHAPES = new UnicodeBlock("GEOMETRIC_SHAPES", 0x25a0, 0x25ff)
     val MISCELLANEOUS_SYMBOLS =
       new UnicodeBlock("MISCELLANEOUS_SYMBOLS", 0x2600, 0x26ff)
@@ -1792,13 +1812,13 @@ object Character {
       new UnicodeBlock("YIJING_HEXAGRAM_SYMBOLS", 0x4dc0, 0x4dff)
     val CJK_UNIFIED_IDEOGRAPHS =
       new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS", 0x4e00, 0x9fff)
-    val YI_SYLLABLES     = new UnicodeBlock("YI_SYLLABLES", 0xa000, 0xa48f)
-    val YI_RADICALS      = new UnicodeBlock("YI_RADICALS", 0xa490, 0xa4cf)
+    val YI_SYLLABLES = new UnicodeBlock("YI_SYLLABLES", 0xa000, 0xa48f)
+    val YI_RADICALS = new UnicodeBlock("YI_RADICALS", 0xa490, 0xa4cf)
     val HANGUL_SYLLABLES = new UnicodeBlock("HANGUL_SYLLABLES", 0xac00, 0xd7af)
-    val HIGH_SURROGATES  = new UnicodeBlock("HIGH_SURROGATES", 0xd800, 0xdb7f)
+    val HIGH_SURROGATES = new UnicodeBlock("HIGH_SURROGATES", 0xd800, 0xdb7f)
     val HIGH_PRIVATE_USE_SURROGATES =
       new UnicodeBlock("HIGH_PRIVATE_USE_SURROGATES", 0xdb80, 0xdbff)
-    val LOW_SURROGATES   = new UnicodeBlock("LOW_SURROGATES", 0xdc00, 0xdfff)
+    val LOW_SURROGATES = new UnicodeBlock("LOW_SURROGATES", 0xdc00, 0xdfff)
     val PRIVATE_USE_AREA = new UnicodeBlock("PRIVATE_USE_AREA", 0xe000, 0xf8ff)
     val CJK_COMPATIBILITY_IDEOGRAPHS =
       new UnicodeBlock("CJK_COMPATIBILITY_IDEOGRAPHS", 0xf900, 0xfaff)
@@ -1824,12 +1844,12 @@ object Character {
     val LINEAR_B_IDEOGRAMS =
       new UnicodeBlock("LINEAR_B_IDEOGRAMS", 0x10080, 0x100ff)
     val AEGEAN_NUMBERS = new UnicodeBlock("AEGEAN_NUMBERS", 0x10100, 0x1013f)
-    val OLD_ITALIC     = new UnicodeBlock("OLD_ITALIC", 0x10300, 0x1032f)
-    val GOTHIC         = new UnicodeBlock("GOTHIC", 0x10330, 0x1034f)
-    val UGARITIC       = new UnicodeBlock("UGARITIC", 0x10380, 0x1039f)
-    val DESERET        = new UnicodeBlock("DESERET", 0x10400, 0x1044f)
-    val SHAVIAN        = new UnicodeBlock("SHAVIAN", 0x10450, 0x1047f)
-    val OSMANYA        = new UnicodeBlock("OSMANYA", 0x10480, 0x104af)
+    val OLD_ITALIC = new UnicodeBlock("OLD_ITALIC", 0x10300, 0x1032f)
+    val GOTHIC = new UnicodeBlock("GOTHIC", 0x10330, 0x1034f)
+    val UGARITIC = new UnicodeBlock("UGARITIC", 0x10380, 0x1039f)
+    val DESERET = new UnicodeBlock("DESERET", 0x10400, 0x1044f)
+    val SHAVIAN = new UnicodeBlock("SHAVIAN", 0x10450, 0x1047f)
+    val OSMANYA = new UnicodeBlock("OSMANYA", 0x10480, 0x104af)
     val CYPRIOT_SYLLABARY =
       new UnicodeBlock("CYPRIOT_SYLLABARY", 0x10800, 0x1083f)
     val BYZANTINE_MUSICAL_SYMBOLS =
@@ -1844,7 +1864,8 @@ object Character {
     val CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT = new UnicodeBlock(
       "CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT",
       0x2f800,
-      0x2fa1f)
+      0x2fa1f
+    )
     val TAGS = new UnicodeBlock("TAGS", 0xe0000, 0xe007f)
     val VARIATION_SELECTORS_SUPPLEMENT =
       new UnicodeBlock("VARIATION_SELECTORS_SUPPLEMENT", 0xe0100, 0xe01ef)
@@ -2002,12 +2023,18 @@ object Character {
     BLOCKS_BY_NAME.update("Spacing Modifier Letters", SPACING_MODIFIER_LETTERS)
     BLOCKS_BY_NAME.update("SpacingModifierLetters", SPACING_MODIFIER_LETTERS)
     BLOCKS_BY_NAME.update("SPACING_MODIFIER_LETTERS", SPACING_MODIFIER_LETTERS)
-    BLOCKS_BY_NAME.update("Combining Diacritical Marks",
-                          COMBINING_DIACRITICAL_MARKS)
-    BLOCKS_BY_NAME.update("CombiningDiacriticalMarks",
-                          COMBINING_DIACRITICAL_MARKS)
-    BLOCKS_BY_NAME.update("COMBINING_DIACRITICAL_MARKS",
-                          COMBINING_DIACRITICAL_MARKS)
+    BLOCKS_BY_NAME.update(
+      "Combining Diacritical Marks",
+      COMBINING_DIACRITICAL_MARKS
+    )
+    BLOCKS_BY_NAME.update(
+      "CombiningDiacriticalMarks",
+      COMBINING_DIACRITICAL_MARKS
+    )
+    BLOCKS_BY_NAME.update(
+      "COMBINING_DIACRITICAL_MARKS",
+      COMBINING_DIACRITICAL_MARKS
+    )
     BLOCKS_BY_NAME.update("Greek and Coptic", GREEK)
     BLOCKS_BY_NAME.update("GreekandCoptic", GREEK)
     BLOCKS_BY_NAME.update("GREEK", GREEK)
@@ -2044,12 +2071,18 @@ object Character {
     BLOCKS_BY_NAME.update("HANGUL_JAMO", HANGUL_JAMO)
     BLOCKS_BY_NAME.update("Ethiopic", ETHIOPIC)
     BLOCKS_BY_NAME.update("Cherokee", CHEROKEE)
-    BLOCKS_BY_NAME.update("Unified Canadian Aboriginal Syllabics",
-                          UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS)
-    BLOCKS_BY_NAME.update("UnifiedCanadianAboriginalSyllabics",
-                          UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS)
-    BLOCKS_BY_NAME.update("UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS",
-                          UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS)
+    BLOCKS_BY_NAME.update(
+      "Unified Canadian Aboriginal Syllabics",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS
+    )
+    BLOCKS_BY_NAME.update(
+      "UnifiedCanadianAboriginalSyllabics",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS
+    )
+    BLOCKS_BY_NAME.update(
+      "UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS
+    )
     BLOCKS_BY_NAME.update("Ogham", OGHAM)
     BLOCKS_BY_NAME.update("Runic", RUNIC)
     BLOCKS_BY_NAME.update("Tagalog", TAGALOG)
@@ -2068,36 +2101,56 @@ object Character {
     BLOCKS_BY_NAME.update("Phonetic Extensions", PHONETIC_EXTENSIONS)
     BLOCKS_BY_NAME.update("PhoneticExtensions", PHONETIC_EXTENSIONS)
     BLOCKS_BY_NAME.update("PHONETIC_EXTENSIONS", PHONETIC_EXTENSIONS)
-    BLOCKS_BY_NAME.update("Latin Extended Additional",
-                          LATIN_EXTENDED_ADDITIONAL)
+    BLOCKS_BY_NAME.update(
+      "Latin Extended Additional",
+      LATIN_EXTENDED_ADDITIONAL
+    )
     BLOCKS_BY_NAME.update("LatinExtendedAdditional", LATIN_EXTENDED_ADDITIONAL)
-    BLOCKS_BY_NAME.update("LATIN_EXTENDED_ADDITIONAL",
-                          LATIN_EXTENDED_ADDITIONAL)
+    BLOCKS_BY_NAME.update(
+      "LATIN_EXTENDED_ADDITIONAL",
+      LATIN_EXTENDED_ADDITIONAL
+    )
     BLOCKS_BY_NAME.update("Greek Extended", GREEK_EXTENDED)
     BLOCKS_BY_NAME.update("GreekExtended", GREEK_EXTENDED)
     BLOCKS_BY_NAME.update("GREEK_EXTENDED", GREEK_EXTENDED)
     BLOCKS_BY_NAME.update("General Punctuation", GENERAL_PUNCTUATION)
     BLOCKS_BY_NAME.update("GeneralPunctuation", GENERAL_PUNCTUATION)
     BLOCKS_BY_NAME.update("GENERAL_PUNCTUATION", GENERAL_PUNCTUATION)
-    BLOCKS_BY_NAME.update("Superscripts and Subscripts",
-                          SUPERSCRIPTS_AND_SUBSCRIPTS)
-    BLOCKS_BY_NAME.update("SuperscriptsandSubscripts",
-                          SUPERSCRIPTS_AND_SUBSCRIPTS)
-    BLOCKS_BY_NAME.update("SUPERSCRIPTS_AND_SUBSCRIPTS",
-                          SUPERSCRIPTS_AND_SUBSCRIPTS)
+    BLOCKS_BY_NAME.update(
+      "Superscripts and Subscripts",
+      SUPERSCRIPTS_AND_SUBSCRIPTS
+    )
+    BLOCKS_BY_NAME.update(
+      "SuperscriptsandSubscripts",
+      SUPERSCRIPTS_AND_SUBSCRIPTS
+    )
+    BLOCKS_BY_NAME.update(
+      "SUPERSCRIPTS_AND_SUBSCRIPTS",
+      SUPERSCRIPTS_AND_SUBSCRIPTS
+    )
     BLOCKS_BY_NAME.update("Currency Symbols", CURRENCY_SYMBOLS)
     BLOCKS_BY_NAME.update("CurrencySymbols", CURRENCY_SYMBOLS)
     BLOCKS_BY_NAME.update("CURRENCY_SYMBOLS", CURRENCY_SYMBOLS)
-    BLOCKS_BY_NAME.update("Combining Diacritical Marks for Symbols",
-                          COMBINING_MARKS_FOR_SYMBOLS)
-    BLOCKS_BY_NAME.update("CombiningDiacriticalMarksforSymbols",
-                          COMBINING_MARKS_FOR_SYMBOLS)
-    BLOCKS_BY_NAME.update("COMBINING_MARKS_FOR_SYMBOLS",
-                          COMBINING_MARKS_FOR_SYMBOLS)
-    BLOCKS_BY_NAME.update("Combining Marks for Symbols",
-                          COMBINING_MARKS_FOR_SYMBOLS)
-    BLOCKS_BY_NAME.update("CombiningMarksforSymbols",
-                          COMBINING_MARKS_FOR_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "Combining Diacritical Marks for Symbols",
+      COMBINING_MARKS_FOR_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "CombiningDiacriticalMarksforSymbols",
+      COMBINING_MARKS_FOR_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "COMBINING_MARKS_FOR_SYMBOLS",
+      COMBINING_MARKS_FOR_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "Combining Marks for Symbols",
+      COMBINING_MARKS_FOR_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "CombiningMarksforSymbols",
+      COMBINING_MARKS_FOR_SYMBOLS
+    )
     BLOCKS_BY_NAME.update("Letterlike Symbols", LETTERLIKE_SYMBOLS)
     BLOCKS_BY_NAME.update("LetterlikeSymbols", LETTERLIKE_SYMBOLS)
     BLOCKS_BY_NAME.update("LETTERLIKE_SYMBOLS", LETTERLIKE_SYMBOLS)
@@ -2114,12 +2167,18 @@ object Character {
     BLOCKS_BY_NAME.update("Control Pictures", CONTROL_PICTURES)
     BLOCKS_BY_NAME.update("ControlPictures", CONTROL_PICTURES)
     BLOCKS_BY_NAME.update("CONTROL_PICTURES", CONTROL_PICTURES)
-    BLOCKS_BY_NAME.update("Optical Character Recognition",
-                          OPTICAL_CHARACTER_RECOGNITION)
-    BLOCKS_BY_NAME.update("OpticalCharacterRecognition",
-                          OPTICAL_CHARACTER_RECOGNITION)
-    BLOCKS_BY_NAME.update("OPTICAL_CHARACTER_RECOGNITION",
-                          OPTICAL_CHARACTER_RECOGNITION)
+    BLOCKS_BY_NAME.update(
+      "Optical Character Recognition",
+      OPTICAL_CHARACTER_RECOGNITION
+    )
+    BLOCKS_BY_NAME.update(
+      "OpticalCharacterRecognition",
+      OPTICAL_CHARACTER_RECOGNITION
+    )
+    BLOCKS_BY_NAME.update(
+      "OPTICAL_CHARACTER_RECOGNITION",
+      OPTICAL_CHARACTER_RECOGNITION
+    )
     BLOCKS_BY_NAME.update("Enclosed Alphanumerics", ENCLOSED_ALPHANUMERICS)
     BLOCKS_BY_NAME.update("EnclosedAlphanumerics", ENCLOSED_ALPHANUMERICS)
     BLOCKS_BY_NAME.update("ENCLOSED_ALPHANUMERICS", ENCLOSED_ALPHANUMERICS)
@@ -2136,12 +2195,18 @@ object Character {
     BLOCKS_BY_NAME.update("MiscellaneousSymbols", MISCELLANEOUS_SYMBOLS)
     BLOCKS_BY_NAME.update("MISCELLANEOUS_SYMBOLS", MISCELLANEOUS_SYMBOLS)
     BLOCKS_BY_NAME.update("Dingbats", DINGBATS)
-    BLOCKS_BY_NAME.update("Miscellaneous Mathematical Symbols-A",
-                          MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A)
-    BLOCKS_BY_NAME.update("MiscellaneousMathematicalSymbols-A",
-                          MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A)
-    BLOCKS_BY_NAME.update("MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A",
-                          MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A)
+    BLOCKS_BY_NAME.update(
+      "Miscellaneous Mathematical Symbols-A",
+      MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A
+    )
+    BLOCKS_BY_NAME.update(
+      "MiscellaneousMathematicalSymbols-A",
+      MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A
+    )
+    BLOCKS_BY_NAME.update(
+      "MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A",
+      MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A
+    )
     BLOCKS_BY_NAME.update("Supplemental Arrows-A", SUPPLEMENTAL_ARROWS_A)
     BLOCKS_BY_NAME.update("SupplementalArrows-A", SUPPLEMENTAL_ARROWS_A)
     BLOCKS_BY_NAME.update("SUPPLEMENTAL_ARROWS_A", SUPPLEMENTAL_ARROWS_A)
@@ -2151,75 +2216,127 @@ object Character {
     BLOCKS_BY_NAME.update("Supplemental Arrows-B", SUPPLEMENTAL_ARROWS_B)
     BLOCKS_BY_NAME.update("SupplementalArrows-B", SUPPLEMENTAL_ARROWS_B)
     BLOCKS_BY_NAME.update("SUPPLEMENTAL_ARROWS_B", SUPPLEMENTAL_ARROWS_B)
-    BLOCKS_BY_NAME.update("Miscellaneous Mathematical Symbols-B",
-                          MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B)
-    BLOCKS_BY_NAME.update("MiscellaneousMathematicalSymbols-B",
-                          MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B)
-    BLOCKS_BY_NAME.update("MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B",
-                          MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B)
-    BLOCKS_BY_NAME.update("Supplemental Mathematical Operators",
-                          SUPPLEMENTAL_MATHEMATICAL_OPERATORS)
-    BLOCKS_BY_NAME.update("SupplementalMathematicalOperators",
-                          SUPPLEMENTAL_MATHEMATICAL_OPERATORS)
-    BLOCKS_BY_NAME.update("SUPPLEMENTAL_MATHEMATICAL_OPERATORS",
-                          SUPPLEMENTAL_MATHEMATICAL_OPERATORS)
-    BLOCKS_BY_NAME.update("Miscellaneous Symbols and Arrows",
-                          MISCELLANEOUS_SYMBOLS_AND_ARROWS)
-    BLOCKS_BY_NAME.update("MiscellaneousSymbolsandArrows",
-                          MISCELLANEOUS_SYMBOLS_AND_ARROWS)
-    BLOCKS_BY_NAME.update("MISCELLANEOUS_SYMBOLS_AND_ARROWS",
-                          MISCELLANEOUS_SYMBOLS_AND_ARROWS)
+    BLOCKS_BY_NAME.update(
+      "Miscellaneous Mathematical Symbols-B",
+      MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B
+    )
+    BLOCKS_BY_NAME.update(
+      "MiscellaneousMathematicalSymbols-B",
+      MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B
+    )
+    BLOCKS_BY_NAME.update(
+      "MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B",
+      MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B
+    )
+    BLOCKS_BY_NAME.update(
+      "Supplemental Mathematical Operators",
+      SUPPLEMENTAL_MATHEMATICAL_OPERATORS
+    )
+    BLOCKS_BY_NAME.update(
+      "SupplementalMathematicalOperators",
+      SUPPLEMENTAL_MATHEMATICAL_OPERATORS
+    )
+    BLOCKS_BY_NAME.update(
+      "SUPPLEMENTAL_MATHEMATICAL_OPERATORS",
+      SUPPLEMENTAL_MATHEMATICAL_OPERATORS
+    )
+    BLOCKS_BY_NAME.update(
+      "Miscellaneous Symbols and Arrows",
+      MISCELLANEOUS_SYMBOLS_AND_ARROWS
+    )
+    BLOCKS_BY_NAME.update(
+      "MiscellaneousSymbolsandArrows",
+      MISCELLANEOUS_SYMBOLS_AND_ARROWS
+    )
+    BLOCKS_BY_NAME.update(
+      "MISCELLANEOUS_SYMBOLS_AND_ARROWS",
+      MISCELLANEOUS_SYMBOLS_AND_ARROWS
+    )
     BLOCKS_BY_NAME.update("CJK Radicals Supplement", CJK_RADICALS_SUPPLEMENT)
     BLOCKS_BY_NAME.update("CJKRadicalsSupplement", CJK_RADICALS_SUPPLEMENT)
     BLOCKS_BY_NAME.update("CJK_RADICALS_SUPPLEMENT", CJK_RADICALS_SUPPLEMENT)
     BLOCKS_BY_NAME.update("Kangxi Radicals", KANGXI_RADICALS)
     BLOCKS_BY_NAME.update("KangxiRadicals", KANGXI_RADICALS)
     BLOCKS_BY_NAME.update("KANGXI_RADICALS", KANGXI_RADICALS)
-    BLOCKS_BY_NAME.update("Ideographic Description Characters",
-                          IDEOGRAPHIC_DESCRIPTION_CHARACTERS)
-    BLOCKS_BY_NAME.update("IdeographicDescriptionCharacters",
-                          IDEOGRAPHIC_DESCRIPTION_CHARACTERS)
-    BLOCKS_BY_NAME.update("IDEOGRAPHIC_DESCRIPTION_CHARACTERS",
-                          IDEOGRAPHIC_DESCRIPTION_CHARACTERS)
-    BLOCKS_BY_NAME.update("CJK Symbols and Punctuation",
-                          CJK_SYMBOLS_AND_PUNCTUATION)
-    BLOCKS_BY_NAME.update("CJKSymbolsandPunctuation",
-                          CJK_SYMBOLS_AND_PUNCTUATION)
-    BLOCKS_BY_NAME.update("CJK_SYMBOLS_AND_PUNCTUATION",
-                          CJK_SYMBOLS_AND_PUNCTUATION)
+    BLOCKS_BY_NAME.update(
+      "Ideographic Description Characters",
+      IDEOGRAPHIC_DESCRIPTION_CHARACTERS
+    )
+    BLOCKS_BY_NAME.update(
+      "IdeographicDescriptionCharacters",
+      IDEOGRAPHIC_DESCRIPTION_CHARACTERS
+    )
+    BLOCKS_BY_NAME.update(
+      "IDEOGRAPHIC_DESCRIPTION_CHARACTERS",
+      IDEOGRAPHIC_DESCRIPTION_CHARACTERS
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Symbols and Punctuation",
+      CJK_SYMBOLS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKSymbolsandPunctuation",
+      CJK_SYMBOLS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_SYMBOLS_AND_PUNCTUATION",
+      CJK_SYMBOLS_AND_PUNCTUATION
+    )
     BLOCKS_BY_NAME.update("Hiragana", HIRAGANA)
     BLOCKS_BY_NAME.update("Katakana", KATAKANA)
     BLOCKS_BY_NAME.update("Bopomofo", BOPOMOFO)
-    BLOCKS_BY_NAME.update("Hangul Compatibility Jamo",
-                          HANGUL_COMPATIBILITY_JAMO)
+    BLOCKS_BY_NAME.update(
+      "Hangul Compatibility Jamo",
+      HANGUL_COMPATIBILITY_JAMO
+    )
     BLOCKS_BY_NAME.update("HangulCompatibilityJamo", HANGUL_COMPATIBILITY_JAMO)
-    BLOCKS_BY_NAME.update("HANGUL_COMPATIBILITY_JAMO",
-                          HANGUL_COMPATIBILITY_JAMO)
+    BLOCKS_BY_NAME.update(
+      "HANGUL_COMPATIBILITY_JAMO",
+      HANGUL_COMPATIBILITY_JAMO
+    )
     BLOCKS_BY_NAME.update("Kanbun", KANBUN)
     BLOCKS_BY_NAME.update("Bopomofo Extended", BOPOMOFO_EXTENDED)
     BLOCKS_BY_NAME.update("BopomofoExtended", BOPOMOFO_EXTENDED)
     BLOCKS_BY_NAME.update("BOPOMOFO_EXTENDED", BOPOMOFO_EXTENDED)
-    BLOCKS_BY_NAME.update("Katakana Phonetic Extensions",
-                          KATAKANA_PHONETIC_EXTENSIONS)
-    BLOCKS_BY_NAME.update("KatakanaPhoneticExtensions",
-                          KATAKANA_PHONETIC_EXTENSIONS)
-    BLOCKS_BY_NAME.update("KATAKANA_PHONETIC_EXTENSIONS",
-                          KATAKANA_PHONETIC_EXTENSIONS)
-    BLOCKS_BY_NAME.update("Enclosed CJK Letters and Months",
-                          ENCLOSED_CJK_LETTERS_AND_MONTHS)
-    BLOCKS_BY_NAME.update("EnclosedCJKLettersandMonths",
-                          ENCLOSED_CJK_LETTERS_AND_MONTHS)
-    BLOCKS_BY_NAME.update("ENCLOSED_CJK_LETTERS_AND_MONTHS",
-                          ENCLOSED_CJK_LETTERS_AND_MONTHS)
+    BLOCKS_BY_NAME.update(
+      "Katakana Phonetic Extensions",
+      KATAKANA_PHONETIC_EXTENSIONS
+    )
+    BLOCKS_BY_NAME.update(
+      "KatakanaPhoneticExtensions",
+      KATAKANA_PHONETIC_EXTENSIONS
+    )
+    BLOCKS_BY_NAME.update(
+      "KATAKANA_PHONETIC_EXTENSIONS",
+      KATAKANA_PHONETIC_EXTENSIONS
+    )
+    BLOCKS_BY_NAME.update(
+      "Enclosed CJK Letters and Months",
+      ENCLOSED_CJK_LETTERS_AND_MONTHS
+    )
+    BLOCKS_BY_NAME.update(
+      "EnclosedCJKLettersandMonths",
+      ENCLOSED_CJK_LETTERS_AND_MONTHS
+    )
+    BLOCKS_BY_NAME.update(
+      "ENCLOSED_CJK_LETTERS_AND_MONTHS",
+      ENCLOSED_CJK_LETTERS_AND_MONTHS
+    )
     BLOCKS_BY_NAME.update("CJK Compatibility", CJK_COMPATIBILITY)
     BLOCKS_BY_NAME.update("CJKCompatibility", CJK_COMPATIBILITY)
     BLOCKS_BY_NAME.update("CJK_COMPATIBILITY", CJK_COMPATIBILITY)
-    BLOCKS_BY_NAME.update("CJK Unified Ideographs Extension A",
-                          CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A)
-    BLOCKS_BY_NAME.update("CJKUnifiedIdeographsExtensionA",
-                          CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A)
-    BLOCKS_BY_NAME.update("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A",
-                          CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A)
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension A",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionA",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+    )
     BLOCKS_BY_NAME.update("Yijing Hexagram Symbols", YIJING_HEXAGRAM_SYMBOLS)
     BLOCKS_BY_NAME.update("YijingHexagramSymbols", YIJING_HEXAGRAM_SYMBOLS)
     BLOCKS_BY_NAME.update("YIJING_HEXAGRAM_SYMBOLS", YIJING_HEXAGRAM_SYMBOLS)
@@ -2238,36 +2355,60 @@ object Character {
     BLOCKS_BY_NAME.update("High Surrogates", HIGH_SURROGATES)
     BLOCKS_BY_NAME.update("HighSurrogates", HIGH_SURROGATES)
     BLOCKS_BY_NAME.update("HIGH_SURROGATES", HIGH_SURROGATES)
-    BLOCKS_BY_NAME.update("High Private Use Surrogates",
-                          HIGH_PRIVATE_USE_SURROGATES)
-    BLOCKS_BY_NAME.update("HighPrivateUseSurrogates",
-                          HIGH_PRIVATE_USE_SURROGATES)
-    BLOCKS_BY_NAME.update("HIGH_PRIVATE_USE_SURROGATES",
-                          HIGH_PRIVATE_USE_SURROGATES)
+    BLOCKS_BY_NAME.update(
+      "High Private Use Surrogates",
+      HIGH_PRIVATE_USE_SURROGATES
+    )
+    BLOCKS_BY_NAME.update(
+      "HighPrivateUseSurrogates",
+      HIGH_PRIVATE_USE_SURROGATES
+    )
+    BLOCKS_BY_NAME.update(
+      "HIGH_PRIVATE_USE_SURROGATES",
+      HIGH_PRIVATE_USE_SURROGATES
+    )
     BLOCKS_BY_NAME.update("Low Surrogates", LOW_SURROGATES)
     BLOCKS_BY_NAME.update("LowSurrogates", LOW_SURROGATES)
     BLOCKS_BY_NAME.update("LOW_SURROGATES", LOW_SURROGATES)
     BLOCKS_BY_NAME.update("Private Use Area", PRIVATE_USE_AREA)
     BLOCKS_BY_NAME.update("PrivateUseArea", PRIVATE_USE_AREA)
     BLOCKS_BY_NAME.update("PRIVATE_USE_AREA", PRIVATE_USE_AREA)
-    BLOCKS_BY_NAME.update("CJK Compatibility Ideographs",
-                          CJK_COMPATIBILITY_IDEOGRAPHS)
-    BLOCKS_BY_NAME.update("CJKCompatibilityIdeographs",
-                          CJK_COMPATIBILITY_IDEOGRAPHS)
-    BLOCKS_BY_NAME.update("CJK_COMPATIBILITY_IDEOGRAPHS",
-                          CJK_COMPATIBILITY_IDEOGRAPHS)
-    BLOCKS_BY_NAME.update("Alphabetic Presentation Forms",
-                          ALPHABETIC_PRESENTATION_FORMS)
-    BLOCKS_BY_NAME.update("AlphabeticPresentationForms",
-                          ALPHABETIC_PRESENTATION_FORMS)
-    BLOCKS_BY_NAME.update("ALPHABETIC_PRESENTATION_FORMS",
-                          ALPHABETIC_PRESENTATION_FORMS)
-    BLOCKS_BY_NAME.update("Arabic Presentation Forms-A",
-                          ARABIC_PRESENTATION_FORMS_A)
-    BLOCKS_BY_NAME.update("ArabicPresentationForms-A",
-                          ARABIC_PRESENTATION_FORMS_A)
-    BLOCKS_BY_NAME.update("ARABIC_PRESENTATION_FORMS_A",
-                          ARABIC_PRESENTATION_FORMS_A)
+    BLOCKS_BY_NAME.update(
+      "CJK Compatibility Ideographs",
+      CJK_COMPATIBILITY_IDEOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKCompatibilityIdeographs",
+      CJK_COMPATIBILITY_IDEOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_COMPATIBILITY_IDEOGRAPHS",
+      CJK_COMPATIBILITY_IDEOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "Alphabetic Presentation Forms",
+      ALPHABETIC_PRESENTATION_FORMS
+    )
+    BLOCKS_BY_NAME.update(
+      "AlphabeticPresentationForms",
+      ALPHABETIC_PRESENTATION_FORMS
+    )
+    BLOCKS_BY_NAME.update(
+      "ALPHABETIC_PRESENTATION_FORMS",
+      ALPHABETIC_PRESENTATION_FORMS
+    )
+    BLOCKS_BY_NAME.update(
+      "Arabic Presentation Forms-A",
+      ARABIC_PRESENTATION_FORMS_A
+    )
+    BLOCKS_BY_NAME.update(
+      "ArabicPresentationForms-A",
+      ARABIC_PRESENTATION_FORMS_A
+    )
+    BLOCKS_BY_NAME.update(
+      "ARABIC_PRESENTATION_FORMS_A",
+      ARABIC_PRESENTATION_FORMS_A
+    )
     BLOCKS_BY_NAME.update("Variation Selectors", VARIATION_SELECTORS)
     BLOCKS_BY_NAME.update("VariationSelectors", VARIATION_SELECTORS)
     BLOCKS_BY_NAME.update("VARIATION_SELECTORS", VARIATION_SELECTORS)
@@ -2280,18 +2421,30 @@ object Character {
     BLOCKS_BY_NAME.update("Small Form Variants", SMALL_FORM_VARIANTS)
     BLOCKS_BY_NAME.update("SmallFormVariants", SMALL_FORM_VARIANTS)
     BLOCKS_BY_NAME.update("SMALL_FORM_VARIANTS", SMALL_FORM_VARIANTS)
-    BLOCKS_BY_NAME.update("Arabic Presentation Forms-B",
-                          ARABIC_PRESENTATION_FORMS_B)
-    BLOCKS_BY_NAME.update("ArabicPresentationForms-B",
-                          ARABIC_PRESENTATION_FORMS_B)
-    BLOCKS_BY_NAME.update("ARABIC_PRESENTATION_FORMS_B",
-                          ARABIC_PRESENTATION_FORMS_B)
-    BLOCKS_BY_NAME.update("Halfwidth and Fullwidth Forms",
-                          HALFWIDTH_AND_FULLWIDTH_FORMS)
-    BLOCKS_BY_NAME.update("HalfwidthandFullwidthForms",
-                          HALFWIDTH_AND_FULLWIDTH_FORMS)
-    BLOCKS_BY_NAME.update("HALFWIDTH_AND_FULLWIDTH_FORMS",
-                          HALFWIDTH_AND_FULLWIDTH_FORMS)
+    BLOCKS_BY_NAME.update(
+      "Arabic Presentation Forms-B",
+      ARABIC_PRESENTATION_FORMS_B
+    )
+    BLOCKS_BY_NAME.update(
+      "ArabicPresentationForms-B",
+      ARABIC_PRESENTATION_FORMS_B
+    )
+    BLOCKS_BY_NAME.update(
+      "ARABIC_PRESENTATION_FORMS_B",
+      ARABIC_PRESENTATION_FORMS_B
+    )
+    BLOCKS_BY_NAME.update(
+      "Halfwidth and Fullwidth Forms",
+      HALFWIDTH_AND_FULLWIDTH_FORMS
+    )
+    BLOCKS_BY_NAME.update(
+      "HalfwidthandFullwidthForms",
+      HALFWIDTH_AND_FULLWIDTH_FORMS
+    )
+    BLOCKS_BY_NAME.update(
+      "HALFWIDTH_AND_FULLWIDTH_FORMS",
+      HALFWIDTH_AND_FULLWIDTH_FORMS
+    )
     BLOCKS_BY_NAME.update("Specials", SPECIALS)
     BLOCKS_BY_NAME.update("Linear B Syllabary", LINEAR_B_SYLLABARY)
     BLOCKS_BY_NAME.update("LinearBSyllabary", LINEAR_B_SYLLABARY)
@@ -2313,54 +2466,94 @@ object Character {
     BLOCKS_BY_NAME.update("Cypriot Syllabary", CYPRIOT_SYLLABARY)
     BLOCKS_BY_NAME.update("CypriotSyllabary", CYPRIOT_SYLLABARY)
     BLOCKS_BY_NAME.update("CYPRIOT_SYLLABARY", CYPRIOT_SYLLABARY)
-    BLOCKS_BY_NAME.update("Byzantine Musical Symbols",
-                          BYZANTINE_MUSICAL_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "Byzantine Musical Symbols",
+      BYZANTINE_MUSICAL_SYMBOLS
+    )
     BLOCKS_BY_NAME.update("ByzantineMusicalSymbols", BYZANTINE_MUSICAL_SYMBOLS)
-    BLOCKS_BY_NAME.update("BYZANTINE_MUSICAL_SYMBOLS",
-                          BYZANTINE_MUSICAL_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "BYZANTINE_MUSICAL_SYMBOLS",
+      BYZANTINE_MUSICAL_SYMBOLS
+    )
     BLOCKS_BY_NAME.update("Musical Symbols", MUSICAL_SYMBOLS)
     BLOCKS_BY_NAME.update("MusicalSymbols", MUSICAL_SYMBOLS)
     BLOCKS_BY_NAME.update("MUSICAL_SYMBOLS", MUSICAL_SYMBOLS)
     BLOCKS_BY_NAME.update("Tai Xuan Jing Symbols", TAI_XUAN_JING_SYMBOLS)
     BLOCKS_BY_NAME.update("TaiXuanJingSymbols", TAI_XUAN_JING_SYMBOLS)
     BLOCKS_BY_NAME.update("TAI_XUAN_JING_SYMBOLS", TAI_XUAN_JING_SYMBOLS)
-    BLOCKS_BY_NAME.update("Mathematical Alphanumeric Symbols",
-                          MATHEMATICAL_ALPHANUMERIC_SYMBOLS)
-    BLOCKS_BY_NAME.update("MathematicalAlphanumericSymbols",
-                          MATHEMATICAL_ALPHANUMERIC_SYMBOLS)
-    BLOCKS_BY_NAME.update("MATHEMATICAL_ALPHANUMERIC_SYMBOLS",
-                          MATHEMATICAL_ALPHANUMERIC_SYMBOLS)
-    BLOCKS_BY_NAME.update("CJK Unified Ideographs Extension B",
-                          CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B)
-    BLOCKS_BY_NAME.update("CJKUnifiedIdeographsExtensionB",
-                          CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B)
-    BLOCKS_BY_NAME.update("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B",
-                          CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B)
-    BLOCKS_BY_NAME.update("CJK Compatibility Ideographs Supplement",
-                          CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT)
-    BLOCKS_BY_NAME.update("CJKCompatibilityIdeographsSupplement",
-                          CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT)
-    BLOCKS_BY_NAME.update("CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT",
-                          CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT)
+    BLOCKS_BY_NAME.update(
+      "Mathematical Alphanumeric Symbols",
+      MATHEMATICAL_ALPHANUMERIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "MathematicalAlphanumericSymbols",
+      MATHEMATICAL_ALPHANUMERIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "MATHEMATICAL_ALPHANUMERIC_SYMBOLS",
+      MATHEMATICAL_ALPHANUMERIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension B",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionB",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Compatibility Ideographs Supplement",
+      CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKCompatibilityIdeographsSupplement",
+      CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT",
+      CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT
+    )
     BLOCKS_BY_NAME.update("Tags", TAGS)
-    BLOCKS_BY_NAME.update("Variation Selectors Supplement",
-                          VARIATION_SELECTORS_SUPPLEMENT)
-    BLOCKS_BY_NAME.update("VariationSelectorsSupplement",
-                          VARIATION_SELECTORS_SUPPLEMENT)
-    BLOCKS_BY_NAME.update("VARIATION_SELECTORS_SUPPLEMENT",
-                          VARIATION_SELECTORS_SUPPLEMENT)
-    BLOCKS_BY_NAME.update("Supplementary Private Use Area-A",
-                          SUPPLEMENTARY_PRIVATE_USE_AREA_A)
-    BLOCKS_BY_NAME.update("SupplementaryPrivateUseArea-A",
-                          SUPPLEMENTARY_PRIVATE_USE_AREA_A)
-    BLOCKS_BY_NAME.update("SUPPLEMENTARY_PRIVATE_USE_AREA_A",
-                          SUPPLEMENTARY_PRIVATE_USE_AREA_A)
-    BLOCKS_BY_NAME.update("Supplementary Private Use Area-B",
-                          SUPPLEMENTARY_PRIVATE_USE_AREA_B)
-    BLOCKS_BY_NAME.update("SupplementaryPrivateUseArea-B",
-                          SUPPLEMENTARY_PRIVATE_USE_AREA_B)
-    BLOCKS_BY_NAME.update("SUPPLEMENTARY_PRIVATE_USE_AREA_B",
-                          SUPPLEMENTARY_PRIVATE_USE_AREA_B)
+    BLOCKS_BY_NAME.update(
+      "Variation Selectors Supplement",
+      VARIATION_SELECTORS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "VariationSelectorsSupplement",
+      VARIATION_SELECTORS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "VARIATION_SELECTORS_SUPPLEMENT",
+      VARIATION_SELECTORS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "Supplementary Private Use Area-A",
+      SUPPLEMENTARY_PRIVATE_USE_AREA_A
+    )
+    BLOCKS_BY_NAME.update(
+      "SupplementaryPrivateUseArea-A",
+      SUPPLEMENTARY_PRIVATE_USE_AREA_A
+    )
+    BLOCKS_BY_NAME.update(
+      "SUPPLEMENTARY_PRIVATE_USE_AREA_A",
+      SUPPLEMENTARY_PRIVATE_USE_AREA_A
+    )
+    BLOCKS_BY_NAME.update(
+      "Supplementary Private Use Area-B",
+      SUPPLEMENTARY_PRIVATE_USE_AREA_B
+    )
+    BLOCKS_BY_NAME.update(
+      "SupplementaryPrivateUseArea-B",
+      SUPPLEMENTARY_PRIVATE_USE_AREA_B
+    )
+    BLOCKS_BY_NAME.update(
+      "SUPPLEMENTARY_PRIVATE_USE_AREA_B",
+      SUPPLEMENTARY_PRIVATE_USE_AREA_B
+    )
 
     def forName(blockName: String): UnicodeBlock = {
       if (blockName == null) {
@@ -2379,8 +2572,8 @@ object Character {
       if (!Character.isValidCodePoint(codePoint)) {
         throw new IllegalArgumentException()
       }
-      var low  = 0
-      var mid  = -1
+      var low = 0
+      var mid = -1
       var high = BLOCKS.length - 1
       while (low <= high) {
         mid = (low + high) >>> 1

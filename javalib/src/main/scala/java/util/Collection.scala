@@ -22,7 +22,7 @@ trait Collection[E] extends java.lang.Iterable[E] {
   @JavaDefaultMethod
   def removeIf(filter: Predicate[_ >: E]): Boolean = {
     var result = false
-    val iter   = iterator()
+    val iter = iterator()
     while (iter.hasNext()) {
       if (filter.test(iter.next())) {
         iter.remove()

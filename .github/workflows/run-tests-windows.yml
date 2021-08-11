@@ -81,14 +81,15 @@ jobs:
           $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
           $cppSources | ForEach-Object {clang++ -std=c++14 -c "$_"}
 
-  run-sandbox:
-    name: Run sandbox project
+  run-tests:
+    name: Run tests
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
       matrix:
         os: [ windows-2019 ]
         scala: [ 2.13.6, 2.12.14, 2.11.12 ]
+        gc: [none, immix, commix]
     steps:
       - uses: actions/checkout@v2
 
@@ -120,9 +121,8 @@ jobs:
       - name: Assert clang installed and on path
         run: clang --version
 
-      - name: Run sandbox
-        # Set heap limits manually, there seams to be bug in detection of available memory
-        # which results in undefined behavior at runtime
+      - name: Test runtime
         run: |
-          sbt ++${{matrix.scala}};sandbox/run
+          set SCALANATIVE_GC=${{matrix.gc}}
+          sbt ++${{matrix.scala}};sandbox/run;testsExt/test
         shell: cmd

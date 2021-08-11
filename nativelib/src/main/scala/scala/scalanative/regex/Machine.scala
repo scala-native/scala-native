@@ -116,21 +116,23 @@ class Machine(re2: RE2) {
       flag: Int
   )
 
-  private def matchEngine(originalArgs: MatchOriginalArgs,
-                          implArgs: MatchImplArgs,
-                          nextqByRef: Array[Queue]): Unit = {
+  private def matchEngine(
+      originalArgs: MatchOriginalArgs,
+      implArgs: MatchImplArgs,
+      nextqByRef: Array[Queue]
+  ): Unit = {
 
-    val in     = originalArgs.in
-    var pos    = originalArgs.pos
+    val in = originalArgs.in
+    var pos = originalArgs.pos
     val anchor = originalArgs.anchor
 
-    var runq   = implArgs.runq
-    var r      = implArgs.r
-    var rune   = implArgs.rune
-    var width  = implArgs.width
-    var rune1  = implArgs.rune1
+    var runq = implArgs.runq
+    var r = implArgs.r
+    var rune = implArgs.rune
+    var width = implArgs.width
+    var rune1 = implArgs.rune1
     var width1 = implArgs.width1
-    var flag   = implArgs.flag
+    var flag = implArgs.flag
 
     val startCond = re2.cond
 
@@ -175,14 +177,16 @@ class Machine(re2: RE2) {
 
       flag = Utils.emptyOpContext(rune, rune1)
 
-      step(runq,
-           nextqByRef(0),
-           pos,
-           pos + width,
-           rune,
-           flag,
-           anchor,
-           pos == in.endPos())
+      step(
+        runq,
+        nextqByRef(0),
+        pos,
+        pos + width,
+        rune,
+        flag,
+        anchor,
+        pos == in.endPos()
+      )
 
       if (width == 0) { // EOF
         return
@@ -225,12 +229,12 @@ class Machine(re2: RE2) {
     matched = false
     Arrays.fill(matchcap, -1)
 
-    val runq   = q0
-    val nextq  = q1
-    var r      = in.step(pos)
-    val rune   = r >> 3
-    val width  = r & 7
-    var rune1  = -1
+    val runq = q0
+    val nextq = q1
+    var r = in.step(pos)
+    val rune = r >> 3
+    val width = r & 7
+    var rune1 = -1
     var width1 = 0
 
     if (r != MachineInput.EOF) {
@@ -248,9 +252,11 @@ class Machine(re2: RE2) {
       else
         in.context(pos)
 
-    matchEngine(MatchOriginalArgs(in, pos, anchor),
-                MatchImplArgs(runq, r, rune, width, rune1, width1, flag),
-                nextqByRef)
+    matchEngine(
+      MatchOriginalArgs(in, pos, anchor),
+      MatchImplArgs(runq, r, rune, width, rune1, width1, flag),
+      nextqByRef
+    )
 
     nextqByRef(0).clear(pool)
 
@@ -264,16 +270,18 @@ class Machine(re2: RE2) {
   // |nextCond| gives the setting for the EMPTY_* flags after |c|.
   // |anchor| is the anchoring flag and |atEnd| signals if we are at the end of
   // the input string.
-  private def step(runq: Queue,
-                   nextq: Queue,
-                   pos: Int,
-                   nextPos: Int,
-                   c: Int,
-                   nextCond: Int,
-                   anchor: Int,
-                   atEnd: Boolean): Unit = {
+  private def step(
+      runq: Queue,
+      nextq: Queue,
+      pos: Int,
+      nextPos: Int,
+      c: Int,
+      nextCond: Int,
+      anchor: Int,
+      atEnd: Boolean
+  ): Unit = {
     val longest = re2.longest
-    var j       = 0
+    var j = 0
     while (j < runq.size) {
       val entry = runq.dense(j)
       if (entry == null) {
@@ -283,12 +291,13 @@ class Machine(re2: RE2) {
         if (t == null) {
           () //continue
         } else {
-          if (longest && matched && t.cap.length > 0 && matchcap(0) < t.cap(0)) {
+          if (longest && matched && t.cap.length > 0 &&
+              matchcap(0) < t.cap(0)) {
             // free(t)
             pool.add(t)
             () // continue
           } else {
-            val i   = t.inst
+            val i = t.inst
             var add = false
             (i.op: @scala.annotation.switch) match {
               case IOP.MATCH =>
@@ -297,7 +306,8 @@ class Machine(re2: RE2) {
                   // expectations aren't met.
                   () // break switch
                 } else {
-                  if (t.cap.length > 0 && (!longest || !matched || matchcap(1) < pos)) {
+                  if (t.cap.length > 0 &&
+                      (!longest || !matched || matchcap(1) < pos)) {
                     t.cap(1) = pos
                     System.arraycopy(t.cap, 0, matchcap, 0, t.cap.length)
                   }
@@ -347,12 +357,14 @@ class Machine(re2: RE2) {
   // from |pc| by following empty-width conditions satisfied by |cond|.  |pos|
   // gives the current position in the input.  |cond| is a bitmask of EMPTY_*
   // flags.
-  private def add(q: Queue,
-                  pc: Int,
-                  pos: Int,
-                  cap: Array[Int],
-                  cond: Int,
-                  _t: Thread): Thread = {
+  private def add(
+      q: Queue,
+      pc: Int,
+      pos: Int,
+      cap: Array[Int],
+      cond: Int,
+      _t: Thread
+  ): Thread = {
     var t = _t
     if (pc == 0) {
       return t
@@ -360,7 +372,7 @@ class Machine(re2: RE2) {
     if (q.contains(pc)) {
       return t
     }
-    val d    = q.add(pc)
+    val d = q.add(pc)
     val inst = prog.getInst(pc)
     (inst.runeOp(): @scala.annotation.switch) match {
       case IOP.FAIL =>
@@ -407,15 +419,17 @@ object Machine {
   // A logical thread in the NFA.
   private class Thread(n: Int) {
     var cap: Array[Int] = new Array[Int](n)
-    var inst: Inst      = _
+    var inst: Inst = _
   }
 
   // A queue is a 'sparse array' holding pending threads of execution.  See:
   // research.swtch.com/2008/03/using-uninitialized-memory-for-fun-and.html
   private class Queue(n: Int) {
-    val dense: Array[Entry] = new Array[Entry](n) // may contain stale Entries in slots >= size
-    val sparse: Array[Int]  = new Array[Int](n)   // may contain stale but in-bounds values.
-    var size: Int           = _                   // of prefix of |dense| that is logically populated
+    val dense: Array[Entry] =
+      new Array[Entry](n) // may contain stale Entries in slots >= size
+    val sparse: Array[Int] =
+      new Array[Int](n) // may contain stale but in-bounds values.
+    var size: Int = _ // of prefix of |dense| that is logically populated
 
     def contains(pc: Int): Boolean = {
       val j = sparse(pc) // (non-negative)
@@ -475,7 +489,7 @@ object Machine {
   }
 
   private class Entry {
-    var pc: Int        = _
+    var pc: Int = _
     var thread: Thread = _
   }
 }

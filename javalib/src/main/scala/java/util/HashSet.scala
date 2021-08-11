@@ -31,14 +31,14 @@ class HashSet[E]
     c.iterator().scalaOps.forall(contains)
 
   override def removeAll(c: Collection[_]): Boolean = {
-    val iter    = c.iterator()
+    val iter = c.iterator()
     var changed = false
     while (iter.hasNext()) changed = remove(iter.next()) || changed
     changed
   }
 
   override def retainAll(c: Collection[_]): Boolean = {
-    val iter    = iterator()
+    val iter = iterator()
     var changed = false
     while (iter.hasNext()) {
       val value = iter.next()
@@ -52,7 +52,7 @@ class HashSet[E]
     inner.add(Box(e))
 
   override def addAll(c: Collection[_ <: E]): Boolean = {
-    val iter    = c.iterator()
+    val iter = c.iterator()
     var changed = false
     while (iter.hasNext()) changed = add(iter.next()) || changed
     changed

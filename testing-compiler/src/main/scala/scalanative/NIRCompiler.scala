@@ -9,8 +9,7 @@ import java.nio.file.{Files, Path}
 import java.io.File
 import scala.scalanative.compiler.CompatReporter
 
-/**
- * Helper class to compile snippets of code.
+/** Helper class to compile snippets of code.
  */
 class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
@@ -38,21 +37,20 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
     getFiles(outputDir.toFile, _ => true).map(_.toPath)
   }
 
-  /**
-   * List of the files contained in `base` that sastisfy `filter`
+  /** List of the files contained in `base` that sastisfy `filter`
    */
   private def getFiles(base: File, filter: File => Boolean): Seq[File] =
     (if (filter(base)) Seq(base) else Seq()) ++
       (Option(base.listFiles()) getOrElse Array.empty flatMap (getFiles(
         _,
-        filter)))
+        filter
+      )))
 
   private def reportError(error: String) =
     throw new api.CompilationFailedException(error)
 
-  /**
-   * Reporter that ignores INFOs and WARNINGs, but directly aborts the compilation
-   * on ERRORs.
+  /** Reporter that ignores INFOs and WARNINGs, but directly aborts the
+   *  compilation on ERRORs.
    */
   private class TestReporter(override val settings: Settings)
       extends CompatReporter {
@@ -63,34 +61,32 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
       }
   }
 
-  /**
-   * Represents a basic compiler option (the string given to the command line invocation
-   * of scalac)
+  /** Represents a basic compiler option (the string given to the command line
+   *  invocation of scalac)
    */
   private implicit class CompilerOption(s: String) {
     override def toString: String = s
   }
 
-  /**
-   * An option to add a compiler plugin
+  /** An option to add a compiler plugin
    */
   private class CompilerPlugin(val jarPath: String, val classpath: List[String])
       extends CompilerOption(
         s"-Xplugin:$jarPath" + (if (classpath.nonEmpty)
                                   classpath
                                     .mkString(" -cp ", File.pathSeparator, "")
-                                else ""))
+                                else "")
+      )
 
-  /**
-   * Option to add the scala-native compiler plugin
+  /** Option to add the scala-native compiler plugin
    */
   private case object ScalaNative
-      extends CompilerPlugin(jarPath = sys props "scalanative.nscplugin.jar",
-                             classpath = List(
-                               sys props "scalanative.nativeruntime.cp"))
+      extends CompilerPlugin(
+        jarPath = sys props "scalanative.nscplugin.jar",
+        classpath = List(sys props "scalanative.nativeruntime.cp")
+      )
 
-  /**
-   * Returns an instance of `Global` configured according to the given options.
+  /** Returns an instance of `Global` configured according to the given options.
    */
   private def getCompiler(options: CompilerOption*): Global = {
     // I don't really know how I can reset the compiler after a run, nor what else
@@ -102,7 +98,7 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
     val outPath = outputDir.toAbsolutePath
     val arguments =
       CommandLineParser.tokenize(s"-d $outPath " + (options mkString " "))
-    val command  = new CompilerCommand(arguments.toList, reportError _)
+    val command = new CompilerCommand(arguments.toList, reportError _)
     val reporter = new TestReporter(command.settings)
 
     new Global(command.settings, reporter)

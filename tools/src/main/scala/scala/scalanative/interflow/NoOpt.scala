@@ -86,7 +86,7 @@ trait NoOpt { self: Interflow =>
       noOptVal(obj)
       obj.ty match {
         case refty: Type.RefKind =>
-          val name  = refty.className
+          val name = refty.className
           val scope = linked.infos(name).asInstanceOf[ScopeInfo]
           scope.targets(sig).foreach(visitEntry)
         case _ =>

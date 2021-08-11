@@ -14,8 +14,9 @@ import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 
-class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
+class FileOutputStream(fd: FileDescriptor, file: Option[File])
     extends OutputStream {
+  def this(fd: FileDescriptor) = this(fd, None)
   def this(file: File, append: Boolean) =
     this(FileOutputStream.fileDescriptor(file, append), Some(file))
   def this(file: File) = this(file, false)
@@ -55,7 +56,8 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File] = None)
         WriteFile(fd.handle, buf, count.toUInt, null, null)
       if (!hasSucceded) {
         throw WindowsException.onPath(
-          file.fold("<file descriptor>")(_.toString))
+          file.fold("<file descriptor>")(_.toString)
+        )
       }
     } else {
       val writeCount = unistd.write(fd.fd, buf, count.toUInt)
@@ -97,11 +99,12 @@ object FileOutputStream {
         import scala.scalanative.posix.sys.stat._
         import scala.scalanative.posix.fcntl._
         val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else O_TRUNC)
-        val mode  = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-        val fd    = open(toCString(file.getPath()), flags, mode)
+        val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+        val fd = open(toCString(file.getPath()), flags, mode)
         if (fd == -1)
           throw new FileNotFoundException(
-            s"$file (${fromCString(string.strerror(errno.errno))})")
+            s"$file (${fromCString(string.strerror(errno.errno))})"
+          )
         else
           new FileDescriptor(fd, readOnly = false)
       }

@@ -8,9 +8,9 @@ package regex
 import scala.collection.immutable.TreeMap
 
 object UnicodeTables extends UnicodeTableData {
-  final val UpperCase  = 0
-  final val LowerCase  = 1
-  final val TitleCase  = 2
+  final val UpperCase = 0
+  final val LowerCase = 1
+  final val TitleCase = 2
   final val UpperLower = 0x110000
 
 // format: off

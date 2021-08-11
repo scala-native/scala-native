@@ -7,7 +7,8 @@ import scalanative.runtime.RawPtr
 import scalanative.runtime.Intrinsics._
 
 final class CArray[T, N <: Nat] private[scalanative] (
-    private[scalanative] val rawptr: RawPtr) {
+    private[scalanative] val rawptr: RawPtr
+) {
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
       case other: CArray[_, _] =>

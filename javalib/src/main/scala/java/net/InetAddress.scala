@@ -20,8 +20,8 @@ private[net] trait InetAddressBase {
     var address: InetAddress = null
     if (isValidIPv4Address(host)) {
       val byteAddress: Array[Byte] = Array.ofDim[Byte](4)
-      val parts: Array[String]     = host.split("\\.")
-      val length: Int              = parts.length
+      val parts: Array[String] = host.split("\\.")
+      val length: Int = parts.length
       if (length == 1) {
         val value: Long = java.lang.Long.parseLong(parts(0))
         for (i <- 0.until(4)) {
@@ -49,11 +49,11 @@ private[net] trait InetAddressBase {
       }
       val tokenizer: StringTokenizer =
         new StringTokenizer(ipAddressString, ":.%", true)
-      val hexStrings            = new ArrayBuffer[String]()
-      val decStrings            = new ArrayBuffer[String]()
-      var scopeString: String   = null
-      var token: String         = ""
-      var prevToken: String     = ""
+      val hexStrings = new ArrayBuffer[String]()
+      val decStrings = new ArrayBuffer[String]()
+      var scopeString: String = null
+      var token: String = ""
+      var prevToken: String = ""
       var prevPrevToken: String = ""
       var doubleColonIndex: Int = -1
       while (tokenizer.hasMoreTokens()) {
@@ -135,7 +135,8 @@ private[net] trait InetAddressBase {
     } else {
       val ip = SocketHelpers.hostToIp(host).getOrElse {
         throw new UnknownHostException(
-          "No IP address could be found for the specified host: " + host)
+          "No IP address could be found for the specified host: " + host
+        )
       }
       if (isValidIPv4Address(ip))
         address = new Inet4Address(byteArrayFromIPString(ip), host)
@@ -160,7 +161,8 @@ private[net] trait InetAddressBase {
     val ips: Array[String] = SocketHelpers.hostToIpArray(host)
     if (ips.isEmpty) {
       throw new UnknownHostException(
-        "No IP address could be found for the specified host: " + host)
+        "No IP address could be found for the specified host: " + host
+      )
     }
 
     ips.map(ip => {
@@ -182,7 +184,8 @@ private[net] trait InetAddressBase {
       return new Inet6Address(addr.clone, host)
     else
       throw new UnknownHostException(
-        "IP address is of illegal length: " + addr.length)
+        "IP address is of illegal length: " + addr.length
+      )
   }
 
   private def isValidIPv4Address(addr: String): Boolean = {
@@ -195,7 +198,7 @@ private[net] trait InetAddressBase {
 
     if (parts.length == 1) {
       val longValue = parts(0).toLong
-      longValue >= 0 && longValue <= 0xFFFFFFFFL
+      longValue >= 0 && longValue <= 0xffffffffL
     } else {
       parts.forall(part => {
         part.length <= 3 || Integer.parseInt(part) <= 255
@@ -204,14 +207,14 @@ private[net] trait InetAddressBase {
   }
 
   private[net] def isValidIPv6Address(ipAddress: String): Boolean = {
-    val length: Int          = ipAddress.length
+    val length: Int = ipAddress.length
     var doubleColon: Boolean = false
-    var numberOfColons: Int  = 0
+    var numberOfColons: Int = 0
     var numberOfPeriods: Int = 0
     var numberOfPercent: Int = 0
-    var word: String         = ""
-    var c: Char              = 0
-    var prevChar: Char       = 0
+    var word: String = ""
+    var c: Char = 0
+    var prevChar: Char = 0
     // offset for [] IP addresses
     var offset: Int = 0
     if (length < 2) {
@@ -358,11 +361,11 @@ private[net] trait InetAddressBase {
     if (ipAddr.charAt(0) == '[')
       ipAddr = ipAddr.substring(1, ipAddr.length - 1)
 
-    val tokenizer        = new StringTokenizer(ipAddr, ":.", true)
-    val hexStrings       = new ArrayBuffer[String]()
-    val decStrings       = new ArrayBuffer[String]()
-    var token            = ""
-    var prevToken        = ""
+    val tokenizer = new StringTokenizer(ipAddr, ":.", true)
+    val hexStrings = new ArrayBuffer[String]()
+    val decStrings = new ArrayBuffer[String]()
+    var token = ""
+    var prevToken = ""
     var doubleColonIndex = -1
 
     /*
@@ -436,34 +439,36 @@ private[net] trait InetAddressBase {
     return ipByteArray
   }
 
-  private def convertToBytes(hexSize: String,
-                             ipByteArray: Array[Byte],
-                             byteIndex: Int): Unit = {
-    val hexSizeLength = hexSize.length
-    var hexSizeIndex  = 0
+  private def convertToBytes(
+      hexWord: String,
+      ipByteArray: Array[Byte],
+      byteIndex: Int
+  ): Unit = {
+    val hexWordLength = hexWord.length
+    var hexWordIndex = 0
     ipByteArray(byteIndex) = 0
     ipByteArray(byteIndex + 1) = 0
 
     var charValue = 0
-    if (hexSizeLength > 3) {
-      charValue = getIntValue(hexSize.charAt(hexSizeIndex))
-      hexSizeIndex += 1
+    if (hexWordLength > 3) {
+      charValue = getIntValue(hexWord.charAt(hexWordIndex))
+      hexWordIndex += 1
       ipByteArray(byteIndex) =
         (ipByteArray(byteIndex) | (charValue << 4)).toByte
     }
-    if (hexSizeLength > 2) {
-      charValue = getIntValue(hexSize.charAt(hexSizeIndex))
-      hexSizeIndex += 1
+    if (hexWordLength > 2) {
+      charValue = getIntValue(hexWord.charAt(hexWordIndex))
+      hexWordIndex += 1
       ipByteArray(byteIndex) = (ipByteArray(byteIndex) | charValue).toByte
     }
-    if (hexSizeLength > 1) {
-      charValue = getIntValue(hexSize.charAt(hexSizeIndex))
-      hexSizeIndex += 1
+    if (hexWordLength > 1) {
+      charValue = getIntValue(hexWord.charAt(hexWordIndex))
+      hexWordIndex += 1
       ipByteArray(byteIndex + 1) =
         (ipByteArray(byteIndex + 1) | (charValue << 4)).toByte
     }
 
-    charValue = getIntValue(hexSize.charAt(hexSizeIndex))
+    charValue = getIntValue(hexWord.charAt(hexWordIndex))
     ipByteArray(byteIndex + 1) =
       (ipByteArray(byteIndex + 1) | charValue & 15).toByte
   }
@@ -481,7 +486,8 @@ private[net] trait InetAddressBase {
   private val hexCharacters = "0123456789ABCDEF"
 
   private[net] def createIPStringFromByteArray(
-      ipByteArray: Array[Byte]): String = {
+      ipByteArray: Array[Byte]
+  ): String = {
     if (ipByteArray.length == 4)
       return addressToString(bytesToInt(ipByteArray, 0))
 
@@ -493,7 +499,7 @@ private[net] trait InetAddressBase {
 
         return addressToString(bytesToInt(ipv4ByteArray, 0))
       }
-      val buffer  = new StringBuilder()
+      val buffer = new StringBuilder()
       var isFirst = true
       for (i <- 0 until ipByteArray.length) {
         if ((i & 1) == 0)
@@ -513,6 +519,9 @@ private[net] trait InetAddressBase {
           if (isFirst)
             buffer.append('0')
           buffer.append(':')
+        }
+        if ((i & 1) != 0 && (i + 1) == ipByteArray.length && isFirst) {
+          buffer.append('0')
         }
       }
       return buffer.toString
@@ -557,9 +566,10 @@ private[net] trait InetAddressBase {
 
 object InetAddress extends InetAddressBase
 
-class InetAddress private[net] (ipAddress: Array[Byte],
-                                private var host: String)
-    extends Serializable {
+class InetAddress private[net] (
+    ipAddress: Array[Byte],
+    private var host: String
+) extends Serializable {
   import InetAddress._
 
   private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
@@ -601,7 +611,8 @@ class InetAddress private[net] (ipAddress: Array[Byte],
   def isReachable(timeout: Int): Boolean = {
     if (timeout < 0) {
       throw new IllegalArgumentException(
-        "Argument 'timeout' in method 'isReachable' is negative")
+        "Argument 'timeout' in method 'isReachable' is negative"
+      )
     } else {
       val ipString = createIPStringFromByteArray(ipAddress)
       SocketHelpers.isReachableByEcho(ipString, timeout, 7)

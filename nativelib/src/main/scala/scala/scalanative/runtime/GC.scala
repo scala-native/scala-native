@@ -3,10 +3,10 @@ package runtime
 
 import scalanative.unsafe._
 
-/**
- * The Boehm GC conservative garbage collector
+/** The Boehm GC conservative garbage collector
  *
- * @see [[http://hboehm.info/gc/gcinterface.html C Interface]]
+ *  @see
+ *    [[http://hboehm.info/gc/gcinterface.html C Interface]]
  */
 @extern
 object GC {

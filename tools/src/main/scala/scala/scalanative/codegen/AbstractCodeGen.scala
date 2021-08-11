@@ -15,17 +15,18 @@ private[codegen] abstract class AbstractCodeGen(
     val config: build.Config,
     is32: Boolean,
     env: Map[Global, Defn],
-    defns: Seq[Defn])(implicit meta: Metadata) {
+    defns: Seq[Defn]
+)(implicit meta: Metadata) {
   val os: OsCompat
 
   private val targetTriple: Option[String] = config.compilerConfig.targetTriple
 
   private var currentBlockName: Local = _
-  private var currentBlockSplit: Int  = _
+  private var currentBlockSplit: Int = _
 
-  private val copies           = mutable.Map.empty[Local, Val]
-  private val deps             = mutable.Set.empty[Global]
-  private val generated        = mutable.Set.empty[String]
+  private val copies = mutable.Map.empty[Local, Val]
+  private val deps = mutable.Set.empty[Global]
+  private val generated = mutable.Set.empty[String]
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
   def gen(id: String, dir: VirtualDirectory): Path = {
@@ -49,7 +50,7 @@ private[codegen] abstract class AbstractCodeGen(
     if (!generated.contains(mn)) {
       sb.newline()
       genDefn {
-        val defn             = env(n)
+        val defn = env(n)
         implicit val rootPos = defn.pos
         defn match {
           case defn @ Defn.Var(attrs, _, _, _) =>
@@ -143,7 +144,8 @@ private[codegen] abstract class AbstractCodeGen(
       name: nir.Global,
       isConst: Boolean,
       ty: nir.Type,
-      rhs: nir.Val)(implicit sb: ShowBuilder): Unit = {
+      rhs: nir.Val
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     str("@")
     genGlobal(name)
@@ -163,7 +165,8 @@ private[codegen] abstract class AbstractCodeGen(
       name: Global,
       sig: Type,
       insts: Seq[Inst],
-      fresh: Fresh)(implicit sb: ShowBuilder): Unit = {
+      fresh: Fresh
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
     val Type.Function(argtys, retty) = sig
@@ -220,8 +223,9 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genFunctionReturnType(retty: Type)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genFunctionReturnType(
+      retty: Type
+  )(implicit sb: ShowBuilder): Unit = {
     retty match {
       case refty: Type.RefKind =>
         genReferenceTypeAttribute(refty)
@@ -231,8 +235,9 @@ private[codegen] abstract class AbstractCodeGen(
     genType(retty)
   }
 
-  private[codegen] def genReferenceTypeAttribute(refty: Type.RefKind)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genReferenceTypeAttribute(
+      refty: Type.RefKind
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     val (nonnull, deref, size) = toDereferenceable(refty)
 
@@ -246,7 +251,8 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def toDereferenceable(
-      refty: Type.RefKind): (Boolean, String, Long) = {
+      refty: Type.RefKind
+  ): (Boolean, String, Long) = {
     val size = meta.linked.infos(refty.className) match {
       case info: linker.Trait =>
         meta.layout(meta.linked.ObjectClass).size
@@ -264,7 +270,8 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genBlock(
-      block: Block)(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
+      block: Block
+  )(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     val Block(name, params, insts, isEntry) = block
     currentBlockName = name
@@ -293,7 +300,8 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genBlockPrologue(
-      block: Block)(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
+      block: Block
+  )(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     if (!block.isEntry) {
       val params = block.params
@@ -340,7 +348,8 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genBlockLandingPads(
-      block: Block)(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
+      block: Block
+  )(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
         import inst.pos
@@ -355,7 +364,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Vararg                                           => str("...")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
       case Type.Bool                                             => str("i1")
-      case i: Type.FixedSizeI                                    => str("i"); str(i.width)
+      case i: Type.FixedSizeI => str("i"); str(i.width)
       case Type.Size =>
         if (is32) {
           str("i32")
@@ -385,7 +394,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private val constMap = mutable.Map.empty[Val, Global]
-  private val constTy  = mutable.Map.empty[Global, Type]
+  private val constTy = mutable.Map.empty[Global, Type]
   private[codegen] def constFor(v: Val): Global =
     if (constMap.contains(v)) {
       constMap(v)
@@ -456,8 +465,9 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genChars(bytes: Array[Byte])(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genChars(
+      bytes: Array[Byte]
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
     str("c\"")
@@ -474,15 +484,17 @@ private[codegen] abstract class AbstractCodeGen(
     str("\\00\"")
   }
 
-  private[codegen] def genFloatHex(value: Float)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genFloatHex(
+      value: Float
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     str("0x")
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value.toDouble)))
   }
 
-  private[codegen] def genDoubleHex(value: Double)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genDoubleHex(
+      value: Double
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     str("0x")
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value)))
@@ -512,8 +524,9 @@ private[codegen] abstract class AbstractCodeGen(
     str("\"")
   }
 
-  private[codegen] def genLocal(local: Local)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genLocal(
+      local: Local
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     local match {
       case Local(id) =>
@@ -522,8 +535,9 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genInst(inst: Inst)(implicit fresh: Fresh,
-                                           sb: ShowBuilder): Unit = {
+  private[codegen] def genInst(
+      inst: Inst
+  )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     inst match {
       case inst: Inst.Let =>
@@ -547,10 +561,11 @@ private[codegen] abstract class AbstractCodeGen(
       // LLVM Phis can not express two different if branches pointing at the
       // same target basic block. In those cases we replace branching with
       // select instruction.
-      case Inst.If(cond,
-                   thenNext @ Next.Label(thenName, thenArgs),
-                   elseNext @ Next.Label(elseName, elseArgs))
-          if thenName == elseName =>
+      case Inst.If(
+            cond,
+            thenNext @ Next.Label(thenName, thenArgs),
+            elseNext @ Next.Label(elseName, elseArgs)
+          ) if thenName == elseName =>
         if (thenArgs == elseArgs) {
           genInst(Inst.Jump(thenNext)(inst.pos))
         } else {
@@ -601,14 +616,15 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genLet(inst: Inst.Let)(implicit fresh: Fresh,
-                                              sb: ShowBuilder): Unit = {
+  private[codegen] def genLet(
+      inst: Inst.Let
+  )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     def isVoid(ty: Type): Boolean =
       ty == Type.Unit || ty == Type.Nothing
 
-    val op     = inst.op
-    val name   = inst.name
+    val op = inst.op
+    val name = inst.name
     val unwind = inst.unwind
 
     def genBind() =
@@ -763,7 +779,8 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genCall(
       genBind: () => Unit,
       call: Op.Call,
-      unwind: Next)(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
+      unwind: Next
+  )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
@@ -831,8 +848,9 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genCallFunctionType(ty: Type)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genCallFunctionType(
+      ty: Type
+  )(implicit sb: ShowBuilder): Unit = {
     ty match {
       case Type.Function(argtys, retty) =>
         val hasVarArgs = argtys.contains(Type.Vararg)
@@ -846,8 +864,9 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genCallArgument(v: Val)(
-      implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genCallArgument(
+      v: Val
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     v match {
       case Val.Local(_, refty: Type.RefKind) =>
@@ -950,7 +969,8 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genConv(conv: Conv, fromType: Type, toType: Type)(
-      implicit sb: ShowBuilder): Unit = conv match {
+      implicit sb: ShowBuilder
+  ): Unit = conv match {
     case Conv.ZSizeCast | Conv.SSizeCast =>
       val fromSize = fromType match {
         case Type.Size =>

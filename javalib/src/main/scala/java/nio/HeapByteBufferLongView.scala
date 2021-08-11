@@ -8,8 +8,8 @@ private[nio] final class HeapByteBufferLongView private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
-    override private[nio] val isBigEndian: Boolean)
-    extends LongBuffer(_capacity, null, -1) {
+    override private[nio] val isBigEndian: Boolean
+) extends LongBuffer(_capacity, null, -1) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -81,20 +81,24 @@ private[nio] object HeapByteBufferLongView {
       extends GenHeapBufferView.NewHeapBufferView[LongBuffer] {
     def bytesPerElem: Int = 8
 
-    def apply(capacity: Int,
-              byteArray: Array[Byte],
-              byteArrayOffset: Int,
-              initialPosition: Int,
-              initialLimit: Int,
-              readOnly: Boolean,
-              isBigEndian: Boolean): LongBuffer = {
-      new HeapByteBufferLongView(capacity,
-                                 byteArray,
-                                 byteArrayOffset,
-                                 initialPosition,
-                                 initialLimit,
-                                 readOnly,
-                                 isBigEndian)
+    def apply(
+        capacity: Int,
+        byteArray: Array[Byte],
+        byteArrayOffset: Int,
+        initialPosition: Int,
+        initialLimit: Int,
+        readOnly: Boolean,
+        isBigEndian: Boolean
+    ): LongBuffer = {
+      new HeapByteBufferLongView(
+        capacity,
+        byteArray,
+        byteArrayOffset,
+        initialPosition,
+        initialLimit,
+        readOnly,
+        isBigEndian
+      )
     }
   }
 

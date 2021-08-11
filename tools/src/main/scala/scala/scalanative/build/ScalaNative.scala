@@ -9,25 +9,27 @@ import scala.scalanative.linker.Link
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
 
-/** Internal utilities to instrument Scala Native linker, optimizer and codegen. */
+/** Internal utilities to instrument Scala Native linker, optimizer and codegen.
+ */
 private[scalanative] object ScalaNative {
 
-  /** Compute all globals that must be reachable
-   *  based on given configuration.
+  /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
     val mainClass = Global.Top(config.mainClass)
     val entry =
       mainClass.member(
-        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
+        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
+      )
     entry +: CodeGen.depends
   }
 
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config, entries: Seq[Global])(
-      implicit scope: Scope): linker.Result =
+  def link(config: Config, entries: Seq[Global])(implicit
+      scope: Scope
+  ): linker.Result =
     dump(config, "linked") {
       check(config) {
         config.logger.time("Linking")(Link(config, entries))
@@ -40,7 +42,7 @@ private[scalanative] object ScalaNative {
       config.logger.error("missing symbols:")
       linked.unavailable.sortBy(_.show).foreach { name =>
         config.logger.error("* " + name.mangle)
-        val from    = linked.referencedFrom
+        val from = linked.referencedFrom
         var current = from(name)
         while (from.contains(current) && current != Global.None) {
           config.logger.error("  - from " + current.mangle)
@@ -57,7 +59,8 @@ private[scalanative] object ScalaNative {
       }
       val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
       config.logger.info(
-        s"Discovered ${classCount} classes and ${methodCount} methods")
+        s"Discovered ${classCount} classes and ${methodCount} methods"
+      )
     }
 
     if (linked.unavailable.nonEmpty) {
@@ -68,9 +71,11 @@ private[scalanative] object ScalaNative {
   }
 
   /** Optimizer high-level NIR under closed-world assumption. */
-  def optimize(config: Config,
-               linked: linker.Result,
-               is32: Boolean): linker.Result =
+  def optimize(
+      config: Config,
+      linked: linker.Result,
+      is32: Boolean
+  ): linker.Result =
     dump(config, "optimized") {
       check(config) {
         if (config.compilerConfig.optimize) {
@@ -87,9 +92,11 @@ private[scalanative] object ScalaNative {
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config,
-              linked: linker.Result,
-              is32: Boolean): Seq[Path] = {
+  def codegen(
+      config: Config,
+      linked: linker.Result,
+      is32: Boolean
+  ): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
       // currently, always clean ll files
       IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
@@ -100,12 +107,13 @@ private[scalanative] object ScalaNative {
   }
 
   /** Run NIR checker on the linker result. */
-  def check(config: Config)(
-      linked: scalanative.linker.Result): scalanative.linker.Result = {
+  def check(
+      config: Config
+  )(linked: scalanative.linker.Result): scalanative.linker.Result = {
     if (config.check) {
       config.logger.time("Checking intermediate code") {
         def warn(s: String) = config.logger.warn(s)
-        val errors          = Check(linked)
+        val errors = Check(linked)
         if (errors.nonEmpty) {
           val grouped =
             mutable.Map.empty[Global, mutable.UnrolledBuffer[Check.Error]]
@@ -124,12 +132,17 @@ private[scalanative] object ScalaNative {
                   case defn if defn != null && defn.name == name => defn
                 }
                 .foreach { defn =>
-                  val str   = defn.show
+                  val str = defn.show
                   val lines = str.split("\n")
                   lines.zipWithIndex.foreach {
                     case (line, idx) =>
-                      warn(String
-                        .format("  %04d  ", java.lang.Integer.valueOf(idx)) + line)
+                      warn(
+                        String
+                          .format(
+                            "  %04d  ",
+                            java.lang.Integer.valueOf(idx)
+                          ) + line
+                      )
                   }
                 }
               warn("")
@@ -149,7 +162,8 @@ private[scalanative] object ScalaNative {
   }
 
   def dump(config: Config, phase: String)(
-      linked: scalanative.linker.Result): scalanative.linker.Result = {
+      linked: scalanative.linker.Result
+  ): scalanative.linker.Result = {
     dumpDefns(config, phase, linked.defns)
     linked
   }

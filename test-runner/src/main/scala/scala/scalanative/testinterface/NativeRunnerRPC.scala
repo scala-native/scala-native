@@ -21,11 +21,13 @@ private[testinterface] final class NativeRunnerRPC(
     /* port = */ 0,
     /* backlog = */ 1
   )
-  val processRunner = new ProcessRunner(executableFile,
-                                        envVars,
-                                        args,
-                                        logger,
-                                        serverSocket.getLocalPort)
+  val processRunner = new ProcessRunner(
+    executableFile,
+    envVars,
+    args,
+    logger,
+    serverSocket.getLocalPort
+  )
   val runner = new ComRunner(processRunner, serverSocket, logger, handleMessage)
 
   /* Once the com closes, ensure all still pending calls are failing.

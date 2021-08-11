@@ -4,17 +4,19 @@ package nir
 import java.nio.ByteBuffer
 import java.io.DataOutputStream
 
-case class Prelude(magic: Int,
-                   compat: Int,
-                   revision: Int,
-                   hasEntryPoints: Boolean)
+case class Prelude(
+    magic: Int,
+    compat: Int,
+    revision: Int,
+    hasEntryPoints: Boolean
+)
 
 object Prelude {
   val length = 13
 
   def readFrom(buffer: ByteBuffer, bufferName: String): Prelude = {
-    val magic    = buffer.getInt()
-    val compat   = buffer.getInt()
+    val magic = buffer.getInt()
+    val compat = buffer.getInt()
     val revision = buffer.getInt()
 
     assert(magic == Versions.magic, "Can't read non-NIR file.")

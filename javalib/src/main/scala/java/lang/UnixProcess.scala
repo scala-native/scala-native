@@ -44,7 +44,8 @@ private[lang] class UnixProcess private (
     checkResult() match {
       case -1 =>
         throw new IllegalThreadStateException(
-          s"Process $pid has not exited yet")
+          s"Process $pid has not exited yet"
+        )
       case v => v
     }
   }
@@ -135,7 +136,7 @@ object UnixProcess {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    val infds  = stackalloc[CInt](2.toUInt)
+    val infds = stackalloc[CInt](2.toUInt)
     val outfds = stackalloc[CInt](2.toUInt)
     val errfds =
       if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
@@ -144,10 +145,10 @@ object UnixProcess {
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
     if (!builder.redirectErrorStream())
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-    val cmd      = builder.command().scalaOps.toSeq
+    val cmd = builder.command().scalaOps.toSeq
     val binaries = binaryPaths(builder.environment(), cmd.head)
-    val dir      = builder.directory()
-    val argv     = nullTerminate(cmd)
+    val dir = builder.directory()
+    val argv = nullTerminate(cmd)
     val envp = nullTerminate {
       builder
         .environment()
@@ -180,13 +181,17 @@ object UnixProcess {
         def invokeChildProcess(): Process = {
           if (dir != null) unistd.chdir(toCString(dir.toString))
           setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
-          setupChildFDS(!(outfds + 1),
-                        builder.redirectOutput(),
-                        unistd.STDOUT_FILENO)
-          setupChildFDS(!(errfds + 1),
-                        if (builder.redirectErrorStream()) Redirect.PIPE
-                        else builder.redirectError(),
-                        unistd.STDERR_FILENO)
+          setupChildFDS(
+            !(outfds + 1),
+            builder.redirectOutput(),
+            unistd.STDOUT_FILENO
+          )
+          setupChildFDS(
+            !(errfds + 1),
+            if (builder.redirectErrorStream()) Redirect.PIPE
+            else builder.redirectError(),
+            unistd.STDERR_FILENO
+          )
           unistd.close(!infds)
           unistd.close(!(infds + 1))
           unistd.close(!outfds)
@@ -221,41 +226,48 @@ object UnixProcess {
     }
   }
 
-  @inline private def nullTerminate(seq: collection.Seq[String])(
-      implicit z: Zone) = {
+  @inline private def nullTerminate(
+      seq: collection.Seq[String]
+  )(implicit z: Zone) = {
     val res = alloc[CString]((seq.size + 1).toUInt)
     seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
     res
   }
 
-  @inline private def setupChildFDS(childFd: CInt,
-                                    redirect: ProcessBuilder.Redirect,
-                                    procFd: CInt): Unit = {
+  @inline private def setupChildFDS(
+      childFd: CInt,
+      redirect: ProcessBuilder.Redirect,
+      procFd: CInt
+  ): Unit = {
     import fcntl.{open => _, _}
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE =>
         if (unistd.dup2(childFd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate pipe file descriptor $errno")
+            s"Couldn't duplicate pipe file descriptor $errno"
+          )
         }
       case r @ ProcessBuilder.Redirect.Type.READ =>
         val fd = open(redirect.file(), O_RDONLY)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate read file descriptor $errno")
+            s"Couldn't duplicate read file descriptor $errno"
+          )
         }
       case r @ ProcessBuilder.Redirect.Type.WRITE =>
         val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate write file descriptor $errno")
+            s"Couldn't duplicate write file descriptor $errno"
+          )
         }
       case r @ ProcessBuilder.Redirect.Type.APPEND =>
         val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate append file descriptor $errno")
+            s"Couldn't duplicate append file descriptor $errno"
+          )
         }
     }
   }
@@ -268,8 +280,10 @@ object UnixProcess {
   }
 
   // The execvpe function isn't available on all platforms so find the possible binaries to exec.
-  private def binaryPaths(environment: java.util.Map[String, String],
-                          bin: String): Seq[String] = {
+  private def binaryPaths(
+      environment: java.util.Map[String, String],
+      bin: String
+  ): Seq[String] = {
     if ((bin startsWith "/") || (bin startsWith ".")) {
       Seq(bin)
     } else {

@@ -2,18 +2,22 @@ package java.nio
 
 // Ported from Scala.js
 private[nio] object ByteArrayBits {
-  def apply(array: Array[Byte],
-            arrayOffset: Int,
-            isBigEndian: Boolean,
-            indexMultiplier: Int = 1): ByteArrayBits =
+  def apply(
+      array: Array[Byte],
+      arrayOffset: Int,
+      isBigEndian: Boolean,
+      indexMultiplier: Int = 1
+  ): ByteArrayBits =
     new ByteArrayBits(array, arrayOffset, isBigEndian, indexMultiplier)
 }
 
 @inline
-private[nio] final class ByteArrayBits(array: Array[Byte],
-                                       arrayOffset: Int,
-                                       isBigEndian: Boolean,
-                                       indexMultiplier: Int) {
+private[nio] final class ByteArrayBits(
+    array: Array[Byte],
+    arrayOffset: Int,
+    isBigEndian: Boolean,
+    indexMultiplier: Int
+) {
 
   /* We use tuples of bytes instead of, say, arrays, because they can be
    * completely stack-allocated.
@@ -24,17 +28,17 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
 
   // API
 
-  def loadChar(index: Int): Char     = makeChar(load2Bytes(index))
-  def loadShort(index: Int): Short   = makeShort(load2Bytes(index))
-  def loadInt(index: Int): Int       = makeInt(load4Bytes(index))
-  def loadLong(index: Int): Long     = makeLong(load8Bytes(index))
-  def loadFloat(index: Int): Float   = makeFloat(load4Bytes(index))
+  def loadChar(index: Int): Char = makeChar(load2Bytes(index))
+  def loadShort(index: Int): Short = makeShort(load2Bytes(index))
+  def loadInt(index: Int): Int = makeInt(load4Bytes(index))
+  def loadLong(index: Int): Long = makeLong(load8Bytes(index))
+  def loadFloat(index: Int): Float = makeFloat(load4Bytes(index))
   def loadDouble(index: Int): Double = makeDouble(load8Bytes(index))
 
   def storeChar(index: Int, v: Char): Unit = store2Bytes(index, unmakeChar(v))
   def storeShort(index: Int, v: Short): Unit =
     store2Bytes(index, unmakeShort(v))
-  def storeInt(index: Int, v: Int): Unit   = store4Bytes(index, unmakeInt(v))
+  def storeInt(index: Int, v: Int): Unit = store4Bytes(index, unmakeInt(v))
   def storeLong(index: Int, v: Long): Unit = store8Bytes(index, unmakeLong(v))
   def storeFloat(index: Int, v: Float): Unit =
     store4Bytes(index, unmakeFloat(v))
@@ -84,30 +88,35 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
 
   @inline
   private def makeLong(
-      bs: (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte)): Long =
+      bs: (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte)
+  ): Long =
     makeLong(bs._1, bs._2, bs._3, bs._4, bs._5, bs._6, bs._7, bs._8)
 
   @inline
-  private def makeLong(b0: Byte,
-                       b1: Byte,
-                       b2: Byte,
-                       b3: Byte,
-                       b4: Byte,
-                       b5: Byte,
-                       b6: Byte,
-                       b7: Byte): Long =
+  private def makeLong(
+      b0: Byte,
+      b1: Byte,
+      b2: Byte,
+      b3: Byte,
+      b4: Byte,
+      b5: Byte,
+      b6: Byte,
+      b7: Byte
+  ): Long =
     if (isBigEndian) makeLongBE(b0, b1, b2, b3, b4, b5, b6, b7)
     else makeLongBE(b7, b6, b5, b4, b3, b2, b1, b0)
 
   @inline
-  private def makeLongBE(b0: Byte,
-                         b1: Byte,
-                         b2: Byte,
-                         b3: Byte,
-                         b4: Byte,
-                         b5: Byte,
-                         b6: Byte,
-                         b7: Byte): Long = {
+  private def makeLongBE(
+      b0: Byte,
+      b1: Byte,
+      b2: Byte,
+      b3: Byte,
+      b4: Byte,
+      b5: Byte,
+      b6: Byte,
+      b7: Byte
+  ): Long = {
     (makeIntBE(b0, b1, b2, b3).toLong << 32) |
       (makeIntBE(b4, b5, b6, b7).toLong & 0xffffffffL)
   }
@@ -122,18 +131,21 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
 
   @inline
   private def makeDouble(
-      bs: (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte)): Double =
+      bs: (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte)
+  ): Double =
     makeDouble(bs._1, bs._2, bs._3, bs._4, bs._5, bs._6, bs._7, bs._8)
 
   @inline
-  private def makeDouble(b0: Byte,
-                         b1: Byte,
-                         b2: Byte,
-                         b3: Byte,
-                         b4: Byte,
-                         b5: Byte,
-                         b6: Byte,
-                         b7: Byte): Double =
+  private def makeDouble(
+      b0: Byte,
+      b1: Byte,
+      b2: Byte,
+      b3: Byte,
+      b4: Byte,
+      b5: Byte,
+      b6: Byte,
+      b7: Byte
+  ): Double =
     java.lang.Double.longBitsToDouble(makeLong(b0, b1, b2, b3, b4, b5, b6, b7))
 
   @inline
@@ -171,7 +183,8 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
 
   @inline
   private def unmakeLong(
-      l: Long): (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte) = {
+      l: Long
+  ): (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte) = {
     val bs0 = unmakeIntBE((l >>> 32).toInt)
     val bs1 = unmakeIntBE(l.toInt)
     if (isBigEndian)
@@ -185,7 +198,8 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
 
   @inline
   private def unmakeDouble(
-      d: Double): (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte) =
+      d: Double
+  ): (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte) =
     unmakeLong(java.lang.Double.doubleToLongBits(d))
 
   // Loading and storing bytes
@@ -204,16 +218,19 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
 
   @inline
   private def load8Bytes(
-      index: Int): (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte) = {
+      index: Int
+  ): (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte) = {
     val idx = indexMultiplier * index + arrayOffset
-    (array(idx),
-     array(idx + 1),
-     array(idx + 2),
-     array(idx + 3),
-     array(idx + 4),
-     array(idx + 5),
-     array(idx + 6),
-     array(idx + 7))
+    (
+      array(idx),
+      array(idx + 1),
+      array(idx + 2),
+      array(idx + 3),
+      array(idx + 4),
+      array(idx + 5),
+      array(idx + 6),
+      array(idx + 7)
+    )
   }
 
   @inline
@@ -235,7 +252,8 @@ private[nio] final class ByteArrayBits(array: Array[Byte],
   @inline
   private def store8Bytes(
       index: Int,
-      bs: (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte)): Unit = {
+      bs: (Byte, Byte, Byte, Byte, Byte, Byte, Byte, Byte)
+  ): Unit = {
     val idx = indexMultiplier * index + arrayOffset
     array(idx) = bs._1
     array(idx + 1) = bs._2

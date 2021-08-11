@@ -65,7 +65,8 @@ object VirtualDirectory {
       jar(file)
     } else {
       throw new UnsupportedOperationException(
-        "Neither a jar, nor a directory: " + file)
+        "Neither a jar, nor a directory: " + file
+      )
     }
 
   /** Empty directory that contains no files. */
@@ -75,13 +76,15 @@ object VirtualDirectory {
     protected def resolve(path: Path): Path = path
 
     protected def open(path: Path) =
-      FileChannel.open(path,
-                       StandardOpenOption.CREATE,
-                       StandardOpenOption.WRITE,
-                       StandardOpenOption.TRUNCATE_EXISTING)
+      FileChannel.open(
+        path,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.TRUNCATE_EXISTING
+      )
 
     override def read(path: Path): ByteBuffer = {
-      val bytes  = Files.readAllBytes(resolve(path))
+      val bytes = Files.readAllBytes(resolve(path))
       val buffer = ByteBuffer.wrap(bytes)
       buffer
     }
@@ -90,14 +93,14 @@ object VirtualDirectory {
       val stream = Files.newInputStream(resolve(path))
       try {
         val bytes = new Array[Byte](len)
-        val read  = stream.read(bytes)
+        val read = stream.read(bytes)
         ByteBuffer.wrap(bytes, 0, read)
       } finally stream.close()
     }
 
     override def write(path: Path)(fn: Writer => Unit): Path = {
       val fullPath = resolve(path)
-      val writer   = Files.newBufferedWriter(fullPath)
+      val writer = Files.newBufferedWriter(fullPath)
       try fn(writer)
       finally writer.close()
       fullPath
@@ -110,15 +113,19 @@ object VirtualDirectory {
     }
 
     override def merge(sources: Seq[Path], target: Path): Unit = {
-      val output = FileChannel.open(resolve(target),
-                                    StandardOpenOption.CREATE,
-                                    StandardOpenOption.WRITE,
-                                    StandardOpenOption.APPEND)
+      val output = FileChannel.open(
+        resolve(target),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.APPEND
+      )
       try {
         sources.foreach { path =>
-          val input = FileChannel.open(resolve(path),
-                                       StandardOpenOption.READ,
-                                       StandardOpenOption.DELETE_ON_CLOSE)
+          val input = FileChannel.open(
+            resolve(path),
+            StandardOpenOption.READ,
+            StandardOpenOption.DELETE_ON_CLOSE
+          )
           try {
             input.transferTo(0, input.size(), output)
           } finally input.close()
@@ -171,7 +178,7 @@ object VirtualDirectory {
     }
   }
 
-  private final object EmptyDirectory extends VirtualDirectory {
+  private object EmptyDirectory extends VirtualDirectory {
 
     val uri: URI = URI.create("")
 
@@ -179,7 +186,8 @@ object VirtualDirectory {
 
     override def read(path: Path): ByteBuffer =
       throw new UnsupportedOperationException(
-        "Can't read from empty directory.")
+        "Can't read from empty directory."
+      )
 
     override def read(path: Path, len: Int): ByteBuffer = read(path)
 

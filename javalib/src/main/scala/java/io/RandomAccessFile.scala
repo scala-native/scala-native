@@ -7,23 +7,26 @@ import scalanative.libc.stdio
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
 
-class RandomAccessFile private (file: File,
-                                fd: FileDescriptor,
-                                flush: Boolean,
-                                mode: String)
-    extends DataOutput
+class RandomAccessFile private (
+    file: File,
+    fd: FileDescriptor,
+    flush: Boolean,
+    mode: String
+) extends DataOutput
     with DataInput
     with Closeable {
   def this(file: File, mode: String) =
-    this(file,
-         RandomAccessFile.fileDescriptor(file, mode),
-         RandomAccessFile.flush(mode),
-         mode)
+    this(
+      file,
+      RandomAccessFile.fileDescriptor(file, mode),
+      RandomAccessFile.flush(mode),
+      mode
+    )
   def this(name: String, mode: String) = this(new File(name), mode)
 
   private var closed: Boolean = false
-  private lazy val in         = new DataInputStream(new FileInputStream(fd))
-  private lazy val out        = new DataOutputStream(new FileOutputStream(fd))
+  private lazy val in = new DataInputStream(new FileInputStream(fd))
+  private lazy val out = new DataOutputStream(new FileOutputStream(fd))
 
   override def close(): Unit = {
     closed = true
@@ -86,7 +89,7 @@ class RandomAccessFile private (file: File,
       null // JDK 8 specification requires null here.
     } else {
       val builder = new jl.StringBuilder
-      var done    = false
+      var done = false
 
       while (!done && (pos < end)) {
         val c = readByte().toChar
@@ -147,7 +150,7 @@ class RandomAccessFile private (file: File,
     if (n <= 0) 0
     else {
       val currentPosition = getFilePointer()
-      val fileLength      = length()
+      val fileLength = length()
       val toSkip =
         if (currentPosition + n > fileLength) fileLength - currentPosition
         else n
@@ -241,10 +244,11 @@ private object RandomAccessFile {
         case "rw" | "rws" | "rwd" => O_RDWR | O_CREAT
         case _ =>
           throw new IllegalArgumentException(
-            s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd"""")
+            s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd""""
+          )
       }
       val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
-      val fd   = open(toCString(file.getPath()), flags, mode)
+      val fd = open(toCString(file.getPath()), flags, mode)
       new FileDescriptor(fd)
     }
 

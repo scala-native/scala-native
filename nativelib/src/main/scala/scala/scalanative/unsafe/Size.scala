@@ -13,17 +13,17 @@ import scalanative.runtime.Boxes._
 import scalanative.unsigned._
 
 final class Size(private[scalanative] val rawSize: RawSize) {
-  @inline def toByte: Byte   = castRawSizeToInt(rawSize).toByte
-  @inline def toChar: Char   = castRawSizeToInt(rawSize).toChar
+  @inline def toByte: Byte = castRawSizeToInt(rawSize).toByte
+  @inline def toChar: Char = castRawSizeToInt(rawSize).toChar
   @inline def toShort: Short = castRawSizeToInt(rawSize).toShort
-  @inline def toInt: Int     = castRawSizeToInt(rawSize)
-  @inline def toLong: Long   = castRawSizeToLong(rawSize)
+  @inline def toInt: Int = castRawSizeToInt(rawSize)
+  @inline def toLong: Long = castRawSizeToLong(rawSize)
 
-  @inline def toUByte: UByte   = toUSize.toUByte
+  @inline def toUByte: UByte = toUSize.toUByte
   @inline def toUShort: UShort = toUSize.toUShort
-  @inline def toUInt: UInt     = toUSize.toUInt
-  @inline def toULong: ULong   = toUSize.toULong
-  @inline def toUSize: USize   = new USize(rawSize)
+  @inline def toUInt: UInt = toUSize.toUInt
+  @inline def toULong: ULong = toUSize.toULong
+  @inline def toUSize: USize = new USize(rawSize)
 
   // TODO(shadaj): intrinsify
   @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
@@ -40,13 +40,9 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   @inline override def toString(): String = toLong.toString
 
-  /**
-   * Returns the bitwise negation of this value.
-   * @example {{{
-   * ~5 == 4294967290
-   * // in binary: ~00000101 ==
-   * //             11111010
-   * }}}
+  /** Returns the bitwise negation of this value.
+   *  @example
+   *    {{{~5 == 4294967290 // in binary: ~00000101 == // 11111010}}}
    */
   @inline def unary_~ : Size =
     (~toLong).toSize // TODO(shadaj): intrinsify
@@ -54,67 +50,59 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   /** Returns the negated version of this value. */
   @inline def unary_- : Size = 0 - this // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the new right bits with zeroes.
+   *  @example
+   *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Int): Size =
     (toLong << x).toSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the new right bits with zeroes.
+   *  @example
+   *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Long): Size =
     (toLong << x).toSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted right by the specified number of bits,
-   *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
-   * 4294967275 >>> 3 == 536870909
-   * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
-   * //            00011111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted right by the specified number of bits,
+   *  filling the new left bits with zeroes.
+   *  @example
+   *    {{{21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010}}}
+   *  @example
+   *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
+   *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Int): Size =
     (toLong >>> x).toSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted right by the specified number of bits,
-   *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
-   * 4294967275 >>> 3 == 536870909
-   * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
-   * //            00011111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted right by the specified number of bits,
+   *  filling the new left bits with zeroes.
+   *  @example
+   *    {{{21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010}}}
+   *  @example
+   *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
+   *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Long): Size =
     (toLong >>> x).toSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
-   * 4294967275 >> 3 == 4294967293
-   * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
-   * //            11111111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the right bits with the same value as the left-most bit of
+   *  this.
+   *  @example
+   *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
+   *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Int): Size = (toLong >> x).toSize
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
-   * 4294967275 >> 3 == 4294967293
-   * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
-   * //            11111111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the right bits with the same value as the left-most bit of
+   *  this.
+   *  @example
+   *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
+   *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Long): Size = (toLong >> x).toSize
 
@@ -166,19 +154,29 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def <(other: Size): Boolean =
     this.toLong < other.toLong // TODO(shadaj): intrinsify
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: Byte): Boolean = this <= x.toSize
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: Short): Boolean = this <= x.toSize
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: Int): Boolean = this <= x.toSize
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: Long): Boolean = this.toLong <= x
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(other: Size): Boolean =
     this.toLong <= other.toLong // TODO(shadaj): intrinsify
 
@@ -198,19 +196,29 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def >(other: Size): Boolean =
     this.toLong > other.toLong // TODO(shadaj): intrinsify
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: Byte): Boolean = this >= x.toSize
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: Short): Boolean = this >= x.toSize
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: Int): Boolean = this >= x.toSize
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: Long): Boolean = this.toLong >= x
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(other: Size): Boolean =
     this.toLong >= other.toLong // TODO(shadaj): intrinsify
 

@@ -10,10 +10,12 @@ abstract class ComparisonCriteria {
   def arrayEquals(message: String, expecteds: AnyRef, actuals: AnyRef): Unit =
     arrayEquals(message, expecteds, actuals, outer = true)
 
-  private def arrayEquals(message: String,
-                          expecteds: AnyRef,
-                          actuals: AnyRef,
-                          outer: Boolean): Unit = {
+  private def arrayEquals(
+      message: String,
+      expecteds: AnyRef,
+      actuals: AnyRef,
+      outer: Boolean
+  ): Unit = {
     if (expecteds != actuals &&
         !java.util.Arrays.deepEquals(Array(expecteds), Array(actuals))) {
 
@@ -25,7 +27,7 @@ abstract class ComparisonCriteria {
 
       for (i <- 0 until expectedsLength) {
         val expected = get(expecteds, i)
-        val actual   = get(actuals, i)
+        val actual = get(actuals, i)
 
         if (isArray(expected) && isArray(actual)) {
           try {
@@ -52,20 +54,23 @@ abstract class ComparisonCriteria {
   private def isArray(expected: AnyRef): Boolean =
     expected.isInstanceOf[Array[_]]
 
-  private def assertArraysAreSameLength(expecteds: AnyRef,
-                                        actuals: AnyRef,
-                                        header: String): Int = {
+  private def assertArraysAreSameLength(
+      expecteds: AnyRef,
+      actuals: AnyRef,
+      header: String
+  ): Int = {
     if (expecteds == null)
       Assert.fail(header + "expected array was null")
     if (actuals == null)
       Assert.fail(header + "actual array was null")
-    val actualsLength   = actuals.asInstanceOf[Array[_]].length
+    val actualsLength = actuals.asInstanceOf[Array[_]].length
     val expectedsLength = expecteds.asInstanceOf[Array[_]].length
     if (actualsLength != expectedsLength) {
       Assert.fail(
         header +
           "array lengths differed, expected.length=" + expectedsLength +
-          " actual.length=" + actualsLength)
+          " actual.length=" + actualsLength
+      )
     }
     expectedsLength
   }

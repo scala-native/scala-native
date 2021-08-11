@@ -1,28 +1,6 @@
 #!/bin/bash
 
-set -ex
+# Locally publishSigned won't work because sbt-pgp isn't in project/build.sbt.
+# It's in the global plugins.sbt of the machine running the publishing.
 
-sbt clean
-
-for v in 2.11.12 2.12.13 2.13.4; do
-  sbt -Dsbt.supershell=false \
-    ++$v \
-    nscplugin/publishSigned \
-    junitPlugin/publishSigned \
-    nativelib/publishSigned \
-    clib/publishSigned \
-    posixlib/publishSigned \
-    javalib/publishSigned \
-    auxlib/publishSigned \
-    scalalib/publishSigned \
-    testInterfaceSbtDefs/publishSigned \
-    testInterface/publishSigned \
-    junitRuntime/publishSigned
-done
-
-sbt -Dsbt.supershell=false \
-  util/publishSigned \
-  nir/publishSigned \
-  tools/publishSigned \
-  testRunner/publishSigned \
-  sbtScalaNative/publishSigned
+scripts/publish-impl publishSigned

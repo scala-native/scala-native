@@ -9,7 +9,8 @@ abstract class DiagnosingMatcher[T <: AnyRef] extends BaseMatcher[T] {
 
   override final def describeMismatch(
       item: AnyRef,
-      mismatchDescription: Description): Unit = {
+      mismatchDescription: Description
+  ): Unit = {
     matches(item, mismatchDescription)
   }
 

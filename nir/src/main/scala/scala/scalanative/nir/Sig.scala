@@ -11,7 +11,8 @@ final class Sig(val mangle: String) {
       Sig.Proxy(id, types.init).mangled
     } else {
       util.unsupported(
-        s"can't convert non-method sig ${this.mangle} to proxy sig")
+        s"can't convert non-method sig ${this.mangle} to proxy sig"
+      )
     }
   final def show: String =
     Show(this)
@@ -26,17 +27,17 @@ final class Sig(val mangle: String) {
     mangle
   final def unmangled: Sig.Unmangled = Unmangle.unmangleSig(mangle)
 
-  final def isField: Boolean     = mangle(0) == 'F'
-  final def isCtor: Boolean      = mangle(0) == 'R'
-  final def isClinit: Boolean    = mangle(0) == 'I'
-  final def isImplCtor: Boolean  = mangle.startsWith("M6$init$")
-  final def isMethod: Boolean    = mangle(0) == 'D'
-  final def isProxy: Boolean     = mangle(0) == 'P'
-  final def isExtern: Boolean    = mangle(0) == 'C'
+  final def isField: Boolean = mangle(0) == 'F'
+  final def isCtor: Boolean = mangle(0) == 'R'
+  final def isClinit: Boolean = mangle(0) == 'I'
+  final def isImplCtor: Boolean = mangle.startsWith("M6$init$")
+  final def isMethod: Boolean = mangle(0) == 'D'
+  final def isProxy: Boolean = mangle(0) == 'P'
+  final def isExtern: Boolean = mangle(0) == 'C'
   final def isGenerated: Boolean = mangle(0) == 'G'
   final def isDuplicate: Boolean = mangle(0) == 'K'
 
-  final def isVirtual          = !(isCtor || isClinit || isImplCtor || isExtern)
+  final def isVirtual = !(isCtor || isClinit || isImplCtor || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
   final lazy val privateIn: Option[Global.Top] = {
     unmangled.sigScope match {
@@ -48,7 +49,7 @@ final class Sig(val mangle: String) {
 object Sig {
   sealed trait Scope
   object Scope {
-    case object Public             extends Scope
+    case object Public extends Scope
     case class Private(in: Global) extends Scope
   }
 
@@ -65,16 +66,17 @@ object Sig {
   final case class Field(id: String, scope: Scope = Scope.Public)
       extends Unmangled
 
-  final case class Method(id: String,
-                          types: Seq[Type],
-                          scope: Scope = Scope.Public)
-      extends Unmangled
+  final case class Method(
+      id: String,
+      types: Seq[Type],
+      scope: Scope = Scope.Public
+  ) extends Unmangled
 
-  final case class Ctor(types: Seq[Type])               extends Unmangled
-  final case class Clinit()                             extends Unmangled
-  final case class Proxy(id: String, types: Seq[Type])  extends Unmangled
-  final case class Extern(id: String)                   extends Unmangled
-  final case class Generated(id: String)                extends Unmangled
+  final case class Ctor(types: Seq[Type]) extends Unmangled
+  final case class Clinit() extends Unmangled
+  final case class Proxy(id: String, types: Seq[Type]) extends Unmangled
+  final case class Extern(id: String) extends Unmangled
+  final case class Generated(id: String) extends Unmangled
   final case class Duplicate(of: Sig, types: Seq[Type]) extends Unmangled
 
   implicit def unmangledToMangled(sig: Sig.Unmangled): Sig = sig.mangled

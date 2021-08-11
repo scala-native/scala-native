@@ -15,7 +15,7 @@ import scalanative.unsigned._
 
 package object unsafe {
   val ptrSize = new USize(sizeOfPtr)
-  val is32    = ptrSize.toInt == 4
+  val is32 = ptrSize.toInt == 4
 
   /** The C 'char' type. */
   type CChar = Byte
@@ -101,26 +101,26 @@ package object unsafe {
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
 
-  /** Heap allocate and zero-initialize a value
-   *  using current implicit allocator.
+  /** Heap allocate and zero-initialize a value using current implicit
+   *  allocator.
    */
   def alloc[T](implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.alloc1[T]
 
-  /** Heap allocate and zero-initialize n values
-   *  using current implicit allocator.
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
    */
   def alloc[T](n: CSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.allocN[T]
 
-  /** Heap allocate and zero-initialize n values
-   *  using current implicit allocator.
-   *  This method takes argument of type `CSSize` for easier interop,
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator. This method takes argument of type `CSSize` for easier interop,
    *  but it' always converted into `CSize`
    */
   @deprecated(
     "alloc with signed type is deprecated, convert size to unsigned value",
-    "0.4.0")
+    "0.4.0"
+  )
   def alloc[T](n: CSSize)(implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.allocN[T]
 
@@ -140,13 +140,14 @@ package object unsafe {
 
   /** Stack allocate n values of given type.
    *
-   *  Note: unlike alloc, the memory is not zero-initialized.
-   *  This method takes argument of type `CSSize` for easier interop,
-   *  but it's always converted into `CSize`
+   *  Note: unlike alloc, the memory is not zero-initialized. This method takes
+   *  argument of type `CSSize` for easier interop, but it's always converted
+   *  into `CSize`
    */
   @deprecated(
     "alloc with signed type is deprecated, convert size to unsigned value",
-    "0.4.0")
+    "0.4.0"
+  )
   def stackalloc[T](n: CSSize)(implicit tag: Tag[T]): Ptr[T] =
     macro MacroImpl.stackallocN[T]
 
@@ -174,22 +175,24 @@ package object unsafe {
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
-    @inline def toSize: Size     = new Size(castIntToRawSize(value))
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
-    @inline def toSize: Size     = new Size(castLongToRawSize(value))
+    @inline def toSize: Size = new Size(castLongToRawSize(value))
   }
 
   /** Convert a CString to a String using given charset. */
-  def fromCString(cstr: CString,
-                  charset: Charset = Charset.defaultCharset()): String = {
+  def fromCString(
+      cstr: CString,
+      charset: Charset = Charset.defaultCharset()
+  ): String = {
     if (cstr == null) {
       null
     } else {
-      val len   = libc.strlen(cstr).toInt
+      val len = libc.strlen(cstr).toInt
       val bytes = new Array[Byte](len)
 
       var c = 0
@@ -202,8 +205,8 @@ package object unsafe {
     }
   }
 
-  /** Convert a java.lang.String to a CString using default charset and
-   *  given allocator.
+  /** Convert a java.lang.String to a CString using default charset and given
+   *  allocator.
    */
   def toCString(str: String)(implicit z: Zone): CString =
     toCString(str, Charset.defaultCharset())(z)
@@ -215,7 +218,7 @@ package object unsafe {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc((bytes.length + 1).toUSize)
+      val cstr = z.alloc((bytes.length + 1).toUSize)
 
       var c = 0
       while (c < bytes.length) {
@@ -232,14 +235,18 @@ package object unsafe {
   // wchar_t size may vary across platforms from 2 to 4 bytes.
   private final val WideCharSize = Platform.SizeOfWChar.toInt
 
-  /** Convert a java.lang.String to a CWideString using given charset and allocator.*/
+  /** Convert a java.lang.String to a CWideString using given charset and
+   *  allocator.
+   */
   @alwaysinline
   def toCWideString(str: String, charset: Charset = StandardCharsets.UTF_16LE)(
-      implicit z: Zone): Ptr[CWideString] = {
+      implicit z: Zone
+  ): Ptr[CWideString] = {
     toCWideStringImpl(str, charset, WideCharSize)
   }
 
-  /** Convert a java.lang.String to a CWideString using given UTF-16 LE charset.*/
+  /** Convert a java.lang.String to a CWideString using given UTF-16 LE charset.
+   */
   @alwaysinline
   def toCWideStringUTF16LE(str: String)(implicit z: Zone): Ptr[CChar16] = {
     toCWideStringImpl(str, StandardCharsets.UTF_16LE, 2)
@@ -247,12 +254,13 @@ package object unsafe {
   }
 
   private def toCWideStringImpl(str: String, charset: Charset, charSize: CInt)(
-      implicit z: Zone) = {
+      implicit z: Zone
+  ) = {
     if (str == null) {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr  = z.alloc((bytes.length + charSize).toUSize)
+      val cstr = z.alloc((bytes.length + charSize).toUSize)
 
       var c = 0
       while (c < bytes.length) {
@@ -271,31 +279,42 @@ package object unsafe {
     }
   }
 
-  /** Convert a CWideString to a String using given charset, assumes platform default wchar_t size */
+  /** Convert a CWideString to a String using given charset, assumes platform
+   *  default wchar_t size
+   */
   @alwaysinline
   def fromCWideString(cwstr: CWideString, charset: Charset): String =
-    fromCWideStringImpl(bytes = cwstr.asInstanceOf[Ptr[Byte]],
-                        charset = charset,
-                        charSize = WideCharSize)
+    fromCWideStringImpl(
+      bytes = cwstr.asInstanceOf[Ptr[Byte]],
+      charset = charset,
+      charSize = WideCharSize
+    )
 
-  /** Convert a CWideString based on Ptr[CChar16] to a String using given charset */
+  /** Convert a CWideString based on Ptr[CChar16] to a String using given
+   *  charset
+   */
   @alwaysinline
-  def fromCWideString(cwstr: Ptr[CChar16], charset: Charset)(
-      implicit d: DummyImplicit): String = {
-    fromCWideStringImpl(bytes = cwstr.asInstanceOf[Ptr[Byte]],
-                        charset = charset,
-                        charSize = 2)
+  def fromCWideString(cwstr: Ptr[CChar16], charset: Charset)(implicit
+      d: DummyImplicit
+  ): String = {
+    fromCWideStringImpl(
+      bytes = cwstr.asInstanceOf[Ptr[Byte]],
+      charset = charset,
+      charSize = 2
+    )
   }
 
-  private def fromCWideStringImpl(bytes: Ptr[Byte],
-                                  charset: Charset,
-                                  charSize: Int): String = {
+  private def fromCWideStringImpl(
+      bytes: Ptr[Byte],
+      charset: Charset,
+      charSize: Int
+  ): String = {
     if (bytes == null) {
       null
     } else {
       val cwstr = bytes.asInstanceOf[CWideString]
-      val len   = charSize * libc.wcslen(cwstr).toInt
-      val buf   = new Array[Byte](len)
+      val len = charSize * libc.wcslen(cwstr).toInt
+      val buf = new Array[Byte](len)
 
       var c = 0
       while (c < len) {
@@ -312,8 +331,9 @@ package object unsafe {
     toCVarArgList(Seq.empty)
 
   /** Convert given CVarArgs into a c CVarArgList. */
-  def toCVarArgList(vararg: CVarArg, varargs: CVarArg*)(
-      implicit z: Zone): CVarArgList =
+  def toCVarArgList(vararg: CVarArg, varargs: CVarArg*)(implicit
+      z: Zone
+  ): CVarArgList =
     toCVarArgList(vararg +: varargs)
 
   /** Convert a sequence of CVarArg into a c CVarArgList. */
@@ -340,8 +360,9 @@ package object unsafe {
       }"""
     }
 
-    def allocN[T: c.WeakTypeTag](c: Context)(n: c.Tree)(tag: c.Tree,
-                                                        z: c.Tree): c.Tree = {
+    def allocN[T: c.WeakTypeTag](
+        c: Context
+    )(n: c.Tree)(tag: c.Tree, z: c.Tree): c.Tree = {
       import c.universe._
 
       val T = weakTypeOf[T]
@@ -371,14 +392,15 @@ package object unsafe {
 
       q"""{
         val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
-        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUSize($size))
+        val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""
     }
 
-    def stackallocN[T: c.WeakTypeTag](c: Context)(n: c.Tree)(
-        tag: c.Tree): c.Tree = {
+    def stackallocN[T: c.WeakTypeTag](
+        c: Context
+    )(n: c.Tree)(tag: c.Tree): c.Tree = {
       import c.universe._
 
       val T = weakTypeOf[T]
@@ -390,7 +412,7 @@ package object unsafe {
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
         val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
-        val $rawptr = $runtime.Intrinsics.stackalloc(_root_.scala.scalanative.runtime.Boxes.unboxToUSize($size))
+        val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
       }"""

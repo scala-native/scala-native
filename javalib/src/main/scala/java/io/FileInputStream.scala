@@ -25,23 +25,29 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   override def available(): Int = {
     if (isWindows) {
       val currentPosition, lastPosition = stackalloc[windows.LargeInteger]
-      SetFilePointerEx(fd.handle,
-                       distanceToMove = 0,
-                       newFilePointer = currentPosition,
-                       moveMethod = FILE_CURRENT)
-      SetFilePointerEx(fd.handle,
-                       distanceToMove = 0,
-                       newFilePointer = lastPosition,
-                       moveMethod = FILE_END)
-      SetFilePointerEx(fd.handle,
-                       distanceToMove = !currentPosition,
-                       newFilePointer = null,
-                       moveMethod = FILE_BEGIN)
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = currentPosition,
+        moveMethod = FILE_CURRENT
+      )
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = lastPosition,
+        moveMethod = FILE_END
+      )
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = !currentPosition,
+        newFilePointer = null,
+        moveMethod = FILE_BEGIN
+      )
 
       (!lastPosition - !currentPosition).toInt
     } else {
       val currentPosition = lseek(fd.fd, 0, SEEK_CUR)
-      val lastPosition    = lseek(fd.fd, 0, SEEK_END)
+      val lastPosition = lseek(fd.fd, 0, SEEK_END)
       lseek(fd.fd, currentPosition, SEEK_SET)
       (lastPosition - currentPosition).toInt
     }
@@ -130,10 +136,12 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
     } else {
       val bytesToSkip = Math.min(n, available())
       if (isWindows) {
-        SetFilePointerEx(fd.handle,
-                         distanceToMove = bytesToSkip,
-                         newFilePointer = null,
-                         moveMethod = FILE_CURRENT)
+        SetFilePointerEx(
+          fd.handle,
+          distanceToMove = bytesToSkip,
+          newFilePointer = null,
+          moveMethod = FILE_CURRENT
+        )
       } else
         lseek(fd.fd, bytesToSkip.toSize, SEEK_CUR)
       bytesToSkip

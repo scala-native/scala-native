@@ -14,17 +14,17 @@ import unsafe._
 import java.lang.{Long => JLong}
 
 final class USize(private[scalanative] val rawSize: RawSize) {
-  @inline def toByte: Byte        = castRawSizeToLongUnsigned(rawSize).toByte
-  @inline def toChar: Char        = castRawSizeToLongUnsigned(rawSize).toChar
-  @inline def toShort: Short      = castRawSizeToLongUnsigned(rawSize).toShort
-  @inline def toInt: Int          = castRawSizeToLongUnsigned(rawSize).toInt
-  @inline def toLong: Long        = castRawSizeToLongUnsigned(rawSize)
+  @inline def toByte: Byte = castRawSizeToLongUnsigned(rawSize).toByte
+  @inline def toChar: Char = castRawSizeToLongUnsigned(rawSize).toChar
+  @inline def toShort: Short = castRawSizeToLongUnsigned(rawSize).toShort
+  @inline def toInt: Int = castRawSizeToLongUnsigned(rawSize).toInt
+  @inline def toLong: Long = castRawSizeToLongUnsigned(rawSize)
   @inline def toSize: unsafe.Size = new unsafe.Size(rawSize)
 
-  @inline def toUByte: UByte   = toByte.toUByte
+  @inline def toUByte: UByte = toByte.toUByte
   @inline def toUShort: UShort = toShort.toUShort
-  @inline def toUInt: UInt     = toInt.toUInt
-  @inline def toULong: ULong   = new ULong(castRawSizeToLongUnsigned(rawSize))
+  @inline def toUInt: UInt = toInt.toUInt
+  @inline def toULong: ULong = new ULong(castRawSizeToLongUnsigned(rawSize))
 
   // TODO(shadaj): intrinsify
   @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
@@ -41,78 +41,66 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   @inline override def toString(): String = JLong.toUnsignedString(toLong)
 
-  /**
-   * Returns the bitwise negation of this value.
-   * @example {{{
-   * ~5 == 4294967290
-   * // in binary: ~00000101 ==
-   * //             11111010
-   * }}}
+  /** Returns the bitwise negation of this value.
+   *  @example
+   *    {{{~5 == 4294967290 // in binary: ~00000101 == // 11111010}}}
    */
   @inline def unary_~ : USize =
     (~toLong).toUSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the new right bits with zeroes.
+   *  @example
+   *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Int): USize =
     (toLong << x).toUSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the new right bits with zeroes.
-   * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the new right bits with zeroes.
+   *  @example
+   *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Long): USize =
     (toLong << x).toUSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted right by the specified number of bits,
-   *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
-   * 4294967275 >>> 3 == 536870909
-   * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
-   * //            00011111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted right by the specified number of bits,
+   *  filling the new left bits with zeroes.
+   *  @example
+   *    {{{21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010}}}
+   *  @example
+   *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
+   *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Int): USize =
     (toLong >>> x).toUSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted right by the specified number of bits,
-   *         filling the new left bits with zeroes.
-   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
-   * @example {{{
-   * 4294967275 >>> 3 == 536870909
-   * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
-   * //            00011111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted right by the specified number of bits,
+   *  filling the new left bits with zeroes.
+   *  @example
+   *    {{{21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010}}}
+   *  @example
+   *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
+   *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Long): USize =
     (toLong >>> x).toUSize // TODO(shadaj): intrinsify
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
-   * 4294967275 >> 3 == 4294967293
-   * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
-   * //            11111111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the right bits with the same value as the left-most bit of
+   *  this.
+   *  @example
+   *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
+   *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Int): USize = (toLong >> x).toUSize
 
-  /**
-   * Returns this value bit-shifted left by the specified number of bits,
-   *         filling in the right bits with the same value as the left-most bit of this.
-   * @example {{{
-   * 4294967275 >> 3 == 4294967293
-   * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
-   * //            11111111 11111111 11111111 11111101
-   * }}}
+  /** Returns this value bit-shifted left by the specified number of bits,
+   *  filling in the right bits with the same value as the left-most bit of
+   *  this.
+   *  @example
+   *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
+   *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Long): USize = (toLong >> x).toUSize
 
@@ -164,19 +152,29 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def <(other: USize): Boolean =
     this.toULong < other.toULong // TODO(shadaj): intrinsify
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: UByte): Boolean = this <= x.toUSize
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: UShort): Boolean = this <= x.toUSize
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: UInt): Boolean = this <= x.toUSize
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(x: ULong): Boolean = this.toULong <= x
 
-  /** Returns `true` if this value is less than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is less than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def <=(other: USize): Boolean =
     this.toULong <= other.toULong // TODO(shadaj): intrinsify
 
@@ -196,19 +194,29 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def >(other: USize): Boolean =
     this.toULong > other.toULong // TODO(shadaj): intrinsify
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: UByte): Boolean = this >= x.toUSize
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: UShort): Boolean = this >= x.toUSize
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: UInt): Boolean = this >= x.toUSize
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(x: ULong): Boolean = this.toULong >= x
 
-  /** Returns `true` if this value is greater than or equal to x, `false` otherwise. */
+  /** Returns `true` if this value is greater than or equal to x, `false`
+   *  otherwise.
+   */
   @inline def >=(other: USize): Boolean =
     this.toULong >= other.toULong // TODO(shadaj): intrinsify
 
@@ -349,7 +357,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 }
 
 object USize {
-  @inline implicit def ubyteToUSize(x: UByte): USize   = x.toUSize
+  @inline implicit def ubyteToUSize(x: UByte): USize = x.toUSize
   @inline implicit def ushortToUSize(x: UShort): USize = x.toUSize
-  @inline implicit def uintToUSize(x: UInt): USize     = x.toUSize
+  @inline implicit def uintToUSize(x: UInt): USize = x.toUSize
 }

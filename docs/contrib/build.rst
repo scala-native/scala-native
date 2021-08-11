@@ -140,11 +140,11 @@ If you need to test your copy of Scala Native in the larger context of a
 separate build, you will need to locally publish all the artifacts of Scala
 Native.
 
-You can do this with:
+Use the special script that publishes all the cross versions:
 
 .. code-block:: text
 
-    > publishLocal
+    $ scripts/publish-local
 
 Afterwards, set the version of `sbt-scala-native` in the target project's
 `project/plugins.sbt` to the current SNAPSHOT version of Scala Native, and use
@@ -203,6 +203,33 @@ The build has roughly five groups of sub-projects as follows:
     - ``tools`` This has tests within the project (JVM project)
 
     - ``(scripted-tests)`` (JVM project)
+
+6. External tests and its dependencies. Sources of these tests are not stored
+   in this project, but fetched from external sources, e.g.: Scala compiler repository.
+   Sources in this project define interface used by Scala Native and tests filters.
+
+    - ``scalaPartest (scala-partest)`` (JVM project, uses Scala Native artifacts)
+
+    - ``scalaPartestRuntime (scala-partest-runtime)`` (Scala native project)
+
+    - ``scalaPartestTests (scala-partest-tests)`` (JVM project)
+
+    - ``scalaPartestJunitTests (scala-partest-junit-tests)`` (Scala Native project)
+
+7. JUnit plugin, its tests and dependencies. Following sources define JUnit compiler
+   for Scala Native and its runtime, as well as compliance tests and internal stubs.
+
+    - ``junitPlugin (junit-plugin)``
+
+    - ``junitRuntime (junit-runtime)``
+
+    - ``junitTestOutputsJVM (junit-test/output-jvm)``
+
+    - ``junitTestOutputsNative (junit-test/output-native)``
+
+    - ``junitAsyncJVM (junit-async/jvm)``
+
+    - ``junitAsyncNative (junit-async/native)``
 
 Apart from those mentioned sub-projects it is possible to notice project-like directory ``testInterfaceCommon (test-interface-common)``.
 Its content is shared as unmanaged source dependency between JVM and Native sides of test interface.

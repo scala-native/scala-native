@@ -9,9 +9,9 @@ private[codegen] trait OsCompat {
   protected def osPersonalityType: String
 
   def genPrelude()(implicit sb: ShowBuilder): Unit
-  def genLandingPad(unwind: Next.Unwind)(implicit fresh: Fresh,
-                                         pos: Position,
-                                         sb: ShowBuilder): Unit
+  def genLandingPad(
+      unwind: Next.Unwind
+  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 
   final lazy val gxxPersonality =

@@ -74,7 +74,7 @@ class Properties(protected val defaults: Properties)
     def format(s: String): String =
       if (s.length > 40) s"${s.substring(0, 37)}..." else s
 
-    val key: String   = entry.getKey().asInstanceOf[String]
+    val key: String = entry.getKey().asInstanceOf[String]
     val value: String = entry.getValue().asInstanceOf[String]
 
     s"${key}=${format(value)}"
@@ -100,9 +100,11 @@ class Properties(protected val defaults: Properties)
   def store(writer: Writer, comments: String): Unit =
     storeImpl(writer, comments, toHex = false)
 
-  private def storeImpl(writer: Writer,
-                        comments: String,
-                        toHex: Boolean): Unit = {
+  private def storeImpl(
+      writer: Writer,
+      comments: String,
+      toHex: Boolean
+  ): Unit = {
     if (comments != null) {
       writeComments(writer, comments, toHex)
     }
@@ -113,12 +115,16 @@ class Properties(protected val defaults: Properties)
 
     entrySet().scalaOps.foreach { entry =>
       writer.write(
-        encodeString(entry.getKey().asInstanceOf[String], isKey = true, toHex))
+        encodeString(entry.getKey().asInstanceOf[String], isKey = true, toHex)
+      )
       writer.write('=')
       writer.write(
-        encodeString(entry.getValue().asInstanceOf[String],
-                     isKey = false,
-                     toHex))
+        encodeString(
+          entry.getValue().asInstanceOf[String],
+          isKey = false,
+          toHex
+        )
+      )
       writer.write(System.lineSeparator())
     }
     writer.flush()
@@ -129,15 +135,15 @@ class Properties(protected val defaults: Properties)
     store(out, comments)
 
   private def loadImpl(reader: Reader): Unit = {
-    val br                = new BufferedReader(reader)
-    val valBuf            = new jl.StringBuilder()
+    val br = new BufferedReader(reader)
+    val valBuf = new jl.StringBuilder()
     var prevValueContinue = false
-    var isKeyParsed       = false
-    var key: String       = null
-    var line: String      = null
+    var isKeyParsed = false
+    var key: String = null
+    var line: String = null
 
     while ({ line = br.readLine(); line != null }) {
-      var i: Int   = -1
+      var i: Int = -1
       var ch: Char = Char.MinValue
 
       def getNextChar(): Char = {
@@ -270,9 +276,11 @@ class Properties(protected val defaults: Properties)
     }
   }
 
-  private def writeComments(writer: Writer,
-                            comments: String,
-                            toHex: Boolean): Unit = {
+  private def writeComments(
+      writer: Writer,
+      comments: String,
+      toHex: Boolean
+  ): Unit = {
     writer.write('#')
     val chars = comments.toCharArray
     var index = 0
@@ -311,11 +319,13 @@ class Properties(protected val defaults: Properties)
     writer.write(System.lineSeparator())
   }
 
-  private def encodeString(string: String,
-                           isKey: Boolean,
-                           toHex: Boolean): String = {
+  private def encodeString(
+      string: String,
+      isKey: Boolean,
+      toHex: Boolean
+  ): String = {
     val buffer = new jl.StringBuilder(200)
-    var index  = 0
+    var index = 0
     val length = string.length
     // leading element (value) spaces are escaped
     if (!isKey) {
@@ -358,12 +368,14 @@ class Properties(protected val defaults: Properties)
       if (x > 9) (x - 10 + 'A').toChar
       else (x + '0').toChar
 
-    Array('\\',
-          'u',
-          hexChar((ch >>> 12) & 15),
-          hexChar((ch >>> 8) & 15),
-          hexChar((ch >>> 4) & 15),
-          hexChar(ch & 15))
+    Array(
+      '\\',
+      'u',
+      hexChar((ch >>> 12) & 15),
+      hexChar((ch >>> 8) & 15),
+      hexChar((ch >>> 4) & 15),
+      hexChar(ch & 15)
+    )
   }
 
   // TODO:

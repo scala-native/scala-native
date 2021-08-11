@@ -18,7 +18,7 @@ class _Object {
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
   @inline def __getClass(): _Class[_] = {
-    val ptr  = castObjectToRawPtr(this)
+    val ptr = castObjectToRawPtr(this)
     val rtti = loadRawPtr(ptr)
     castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
   }
@@ -54,10 +54,10 @@ class _Object {
   }
 
   protected def __clone(): _Object = {
-    val cls   = __getClass()
-    val size  = cls.size.toUSize
+    val cls = __getClass()
+    val size = cls.size.toUSize
     val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
-    val src   = castObjectToRawPtr(this)
+    val src = castObjectToRawPtr(this)
     libc.memcpy(clone, src, size)
     castRawPtrToObject(clone).asInstanceOf[_Object]
   }

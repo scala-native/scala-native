@@ -27,17 +27,17 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
 
   val phaseName = "nir"
 
-  protected val curClassSym       = new util.ScopedVar[Symbol]
-  protected val curClassFresh     = new util.ScopedVar[nir.Fresh]
-  protected val curMethodSym      = new util.ScopedVar[Symbol]
-  protected val curMethodSig      = new util.ScopedVar[nir.Type]
-  protected val curMethodInfo     = new util.ScopedVar[CollectMethodInfo]
-  protected val curMethodEnv      = new util.ScopedVar[MethodEnv]
-  protected val curMethodThis     = new util.ScopedVar[Option[Val]]
+  protected val curClassSym = new util.ScopedVar[Symbol]
+  protected val curClassFresh = new util.ScopedVar[nir.Fresh]
+  protected val curMethodSym = new util.ScopedVar[Symbol]
+  protected val curMethodSig = new util.ScopedVar[nir.Type]
+  protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
+  protected val curMethodEnv = new util.ScopedVar[MethodEnv]
+  protected val curMethodThis = new util.ScopedVar[Option[Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
-  protected val curFresh          = new util.ScopedVar[nir.Fresh]
-  protected val curUnwindHandler  = new util.ScopedVar[Option[nir.Local]]
-  protected val curStatBuffer     = new util.ScopedVar[StatBuffer]
+  protected val curFresh = new util.ScopedVar[nir.Fresh]
+  protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
+  protected val curStatBuffer = new util.ScopedVar[StatBuffer]
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>
@@ -122,7 +122,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
 
   private[this] object nirPositionCachedConverter {
     import scala.reflect.internal.util._
-    private[this] var lastNscSource: SourceFile              = _
+    private[this] var lastNscSource: SourceFile = _
     private[this] var lastNIRSource: nir.Position.SourceFile = _
 
     def toNIRSource(nscSource: SourceFile): nir.Position.SourceFile = {
@@ -134,13 +134,14 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     }
 
     private[this] def convert(
-        nscSource: SourceFile): nir.Position.SourceFile = {
+        nscSource: SourceFile
+    ): nir.Position.SourceFile = {
       nscSource.file.file match {
         case null =>
           new java.net.URI(
-            "virtualfile",       // Pseudo-Scheme
+            "virtualfile", // Pseudo-Scheme
             nscSource.file.path, // Scheme specific part
-            null                 // Fragment
+            null // Fragment
           )
         case file => file.toURI
       }

@@ -67,8 +67,8 @@ final class Pattern(val pattern: String, val flags: Int, val re2: RE2) {
   // Helper: run split on m's input.
   private def split(m: Matcher, limit: Int): Array[String] = {
     var matchCount = 0
-    var arraySize  = 0
-    var last       = 0
+    var arraySize = 0
+    var last = 0
     while (m.find()) {
       matchCount += 1
       if (limit != 0 || last < m.start()) {
@@ -87,7 +87,7 @@ final class Pattern(val pattern: String, val flags: Int, val re2: RE2) {
       trunc = 1
     }
     val array = new Array[String](arraySize)
-    var i     = 0
+    var i = 0
     last = 0
     m.reset()
     while (m.find() && i < arraySize - trunc) {
@@ -156,7 +156,8 @@ object Pattern {
     if ((flags & ~(MULTILINE | DOTALL | CASE_INSENSITIVE | DISABLE_UNICODE_GROUPS)) != 0) {
       throw new IllegalArgumentException(
         "Flags should only be a combination " +
-          "of MULTILINE, DOTALL, CASE_INSENSITIVE, DISABLE_UNICODE_GROUPS")
+          "of MULTILINE, DOTALL, CASE_INSENSITIVE, DISABLE_UNICODE_GROUPS"
+      )
     }
     compile(flregex, regex, flags)
   }
@@ -168,9 +169,11 @@ object Pattern {
     if ((flags & DISABLE_UNICODE_GROUPS) != 0) {
       re2Flags &= ~RE2.UNICODE_GROUPS
     }
-    new Pattern(regex,
-                flags,
-                RE2.compileImpl(flregex, re2Flags, /*longest=*/ false))
+    new Pattern(
+      regex,
+      flags,
+      RE2.compileImpl(flregex, re2Flags, /*longest=*/ false)
+    )
   }
 
   // Matches a string against a regular expression.

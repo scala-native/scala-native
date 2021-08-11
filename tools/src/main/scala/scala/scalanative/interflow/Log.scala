@@ -11,9 +11,9 @@ trait Log { self: Interflow =>
     try {
       if (show) {
         val start = System.nanoTime
-        val res   = f
-        val end   = System.nanoTime
-        log(s"done $msg (${(end - start) / 1000000D})")
+        val res = f
+        val end = System.nanoTime
+        log(s"done $msg (${(end - start) / 1000000d})")
         res
       } else f
     } catch {

@@ -1,7 +1,6 @@
 package scala.scalanative.build
 
-/**
- * Link Time Optimization (LTO) mode to be used when during a release build.
+/** Link Time Optimization (LTO) mode to be used when during a release build.
  */
 sealed abstract class LTO private (val name: String) {
   override def toString: String = name
@@ -10,13 +9,13 @@ sealed abstract class LTO private (val name: String) {
 object LTO {
 
   /** LTO disabled */
-  private[scalanative] final case object None extends LTO("none")
+  private[scalanative] case object None extends LTO("none")
 
   /** LTO mode uses ThinLTO */
-  private[scalanative] final case object Thin extends LTO("thin")
+  private[scalanative] case object Thin extends LTO("thin")
 
   /** LTO mode uses standard LTO compilation */
-  private[scalanative] final case object Full extends LTO("full")
+  private[scalanative] case object Full extends LTO("full")
 
   def none: LTO = None
   def thin: LTO = Thin

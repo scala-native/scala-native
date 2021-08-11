@@ -7,9 +7,9 @@ import scala.scalanative.util.ShowBuilder
 
 private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
-  val excRecTy    = "{ i8*, i32 }"
-  val beginCatch  = "@__cxa_begin_catch"
-  val endCatch    = "@__cxa_end_catch"
+  val excRecTy = "{ i8*, i32 }"
+  val beginCatch = "@__cxa_begin_catch"
+  val endCatch = "@__cxa_end_catch"
   val landingpad =
     s"landingpad $excRecTy catch i8* bitcast ({ i8*, i8*, i8* }* $ehWrapperTy to i8*)"
   val typeid =
@@ -20,19 +20,19 @@ private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
   override def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit =
     ()
 
-  def genLandingPad(unwind: Next.Unwind)(implicit fresh: Fresh,
-                                         pos: Position,
-                                         sb: ShowBuilder): Unit = {
+  def genLandingPad(
+      unwind: Next.Unwind
+  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind
 
-    val excpad  = "_" + excname.id + ".landingpad"
+    val excpad = "_" + excname.id + ".landingpad"
     val excsucc = excpad + ".succ"
     val excfail = excpad + ".fail"
 
-    val exc                  = "%_" + excname.id
+    val exc = "%_" + excname.id
     val rec, r0, r1, id, cmp = "%_" + fresh().id
-    val w0, w1, w2           = "%_" + fresh().id
+    val w0, w1, w2 = "%_" + fresh().id
 
     def line(s: String) = { newline(); str(s) }
 

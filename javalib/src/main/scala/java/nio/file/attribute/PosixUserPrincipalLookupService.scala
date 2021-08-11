@@ -68,8 +68,9 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
       }
   }
 
-  private def getGroup(name: CString)(
-      implicit z: Zone): Option[Ptr[grp.group]] = {
+  private def getGroup(
+      name: CString
+  )(implicit z: Zone): Option[Ptr[grp.group]] = {
     val buf = alloc[grp.group]
 
     errno.errno = 0
@@ -98,8 +99,9 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
       PosixUserPrincipal(uid)(Some(name))
   }
 
-  private def getPasswd(name: CString)(
-      implicit z: Zone): Option[Ptr[pwd.passwd]] = {
+  private def getPasswd(
+      name: CString
+  )(implicit z: Zone): Option[Ptr[pwd.passwd]] = {
     val buf = alloc[pwd.passwd]
 
     errno.errno = 0

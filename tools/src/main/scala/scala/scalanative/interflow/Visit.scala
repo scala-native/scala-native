@@ -12,9 +12,9 @@ trait Visit { self: Interflow =>
     if (!hasOriginal(orig)) {
       false
     } else {
-      val defn     = getOriginal(orig)
+      val defn = getOriginal(orig)
       val hasInsts = defn.insts.size > 0
-      val hasSema  = linked.infos.contains(defn.name)
+      val hasSema = linked.infos.contains(defn.name)
 
       hasInsts && hasSema
     }
@@ -132,7 +132,8 @@ trait Visit { self: Interflow =>
           log(s"failed to expand ${name.show}: $msg")
           val baildefn =
             origdefn.copy(attrs = origdefn.attrs.copy(opt = Attr.BailOpt(msg)))(
-              origdefn.pos)
+              origdefn.pos
+            )
           noOpt(origdefn)
           setDone(name, baildefn)
           setDone(origname, baildefn)

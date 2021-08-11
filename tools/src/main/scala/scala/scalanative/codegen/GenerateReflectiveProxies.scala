@@ -4,26 +4,25 @@ package codegen
 import nir._
 import scala.collection.mutable
 
-/**
- * Created by lukaskellenberger on 17.12.16.
+/** Created by lukaskellenberger on 17.12.16.
  */
 object GenerateReflectiveProxies {
-  implicit val fresh = Fresh()
+  implicit val fresh: Fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
     val Global.Member(owner, sig) = defn.name
-    val defnType                  = defn.ty.asInstanceOf[Type.Function]
-    implicit val pos: Position    = defn.pos
+    val defnType = defn.ty.asInstanceOf[Type.Function]
+    implicit val pos: Position = defn.pos
 
     val proxyArgs = genProxyArgs(defnType)
-    val proxyTy   = genProxyTy(defnType, proxyArgs)
+    val proxyTy = genProxyTy(defnType, proxyArgs)
 
-    val label      = genProxyLabel(proxyArgs)
+    val label = genProxyLabel(proxyArgs)
     val unboxInsts = genArgUnboxes(label)
-    val method     = Inst.Let(Op.Method(label.params.head, sig), Next.None)
-    val call       = genCall(defnType, method, label.params, unboxInsts)
-    val box        = genRetValBox(call.name, defnType.ret, proxyTy.ret)
-    val retInst    = genRet(box.name, proxyTy.ret)
+    val method = Inst.Let(Op.Method(label.params.head, sig), Next.None)
+    val call = genCall(defnType, method, label.params, unboxInsts)
+    val box = genRetValBox(call.name, defnType.ret, proxyTy.ret)
+    val retInst = genRet(box.name, proxyTy.ret)
 
     Defn.Define(
       Attrs.fromSeq(Seq(Attr.Dyn)),
@@ -41,10 +40,13 @@ object GenerateReflectiveProxies {
     defnTy.args.map(argty => Type.box.getOrElse(argty, argty))
 
   private def genProxyTy(defnTy: Type.Function, args: Seq[Type]) =
-    Type.Function(args, defnTy.ret match {
-      case Type.Unit => Type.Unit
-      case _         => Type.Ref(Global.Top("java.lang.Object"))
-    })
+    Type.Function(
+      args,
+      defnTy.ret match {
+        case Type.Unit => Type.Unit
+        case _         => Type.Ref(Global.Top("java.lang.Object"))
+      }
+    )
 
   private def genProxyLabel(args: Seq[Type])(implicit pos: nir.Position) = {
     val argLabels = Val.Local(fresh(), args.head) ::
@@ -63,10 +65,12 @@ object GenerateReflectiveProxies {
     }
   }
 
-  private def genCall(defnTy: Type.Function,
-                      method: Inst.Let,
-                      params: Seq[Val.Local],
-                      unboxes: Seq[Inst.Let]) = {
+  private def genCall(
+      defnTy: Type.Function,
+      method: Inst.Let,
+      params: Seq[Val.Local],
+      unboxes: Seq[Inst.Let]
+  ) = {
     import method.pos
     val callParams =
       params.head ::
@@ -78,12 +82,15 @@ object GenerateReflectiveProxies {
           }
           .toList
 
-    Inst.Let(Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams),
-             Next.None)
+    Inst.Let(
+      Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams),
+      Next.None
+    )
   }
 
   private def genRetValBox(callName: Local, defnRetTy: Type, proxyRetTy: Type)(
-      implicit pos: nir.Position) =
+      implicit pos: nir.Position
+  ) =
     Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
         Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)), Next.None)
@@ -91,8 +98,9 @@ object GenerateReflectiveProxies {
         Inst.Let(Op.Copy(Val.Local(callName, defnRetTy)), Next.None)
     }
 
-  private def genRet(retValBoxName: Local, proxyRetTy: Type)(
-      implicit pos: nir.Position) =
+  private def genRet(retValBoxName: Local, proxyRetTy: Type)(implicit
+      pos: nir.Position
+  ) =
     proxyRetTy match {
       case Type.Unit => Inst.Ret(Val.Unit)
       case _         => Inst.Ret(Val.Local(retValBoxName, proxyRetTy))

@@ -10,15 +10,16 @@ import scala.scalanative.build.Logger
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
-/**
- * Represents a distant program with whom we communicate over the network.
- * @param logger Logger to log to.
+/** Represents a distant program with whom we communicate over the network.
+ *  @param logger
+ *    Logger to log to.
  */
-private[testinterface] class ComRunner(processRunner: ProcessRunner,
-                                       serverSocket: ServerSocket,
-                                       logger: Logger,
-                                       handleMessage: String => Unit)
-    extends AutoCloseable {
+private[testinterface] class ComRunner(
+    processRunner: ProcessRunner,
+    serverSocket: ServerSocket,
+    logger: Logger,
+    handleMessage: String => Unit
+) extends AutoCloseable {
   import ComRunner._
   implicit val executionContext: ExecutionContext = ExecutionContext.global
 
@@ -55,7 +56,7 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
                 ()
               case Connected(_, _, native2jvm) =>
                 try {
-                  val len  = native2jvm.readInt()
+                  val len = native2jvm.readInt()
                   val carr = Array.fill(len)(native2jvm.readChar())
                   handleMessage(String.valueOf(carr))
                 } catch {
@@ -104,7 +105,8 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
 
   def close(): Unit = synchronized {
     val oldState = state
-    state = Closing // Signal receiver thread that it is OK if socket read fails.
+    state =
+      Closing // Signal receiver thread that it is OK if socket read fails.
     oldState match {
       case c: Connected =>
         // Interrupts the receiver thread and signals the VM to terminate.
@@ -141,18 +143,20 @@ private[testinterface] class ComRunner(processRunner: ProcessRunner,
   }
 
   private def awaitConnection(): Unit = {
-    var comSocket: Socket            = null
+    var comSocket: Socket = null
     var jvm2native: DataOutputStream = null
-    var native2jvm: DataInputStream  = null
+    var native2jvm: DataInputStream = null
 
     try {
       serverSocket.setSoTimeout(40 * 1000)
       comSocket = serverSocket.accept()
       serverSocket.close() // we don't need it anymore.
       jvm2native = new DataOutputStream(
-        new BufferedOutputStream(comSocket.getOutputStream))
+        new BufferedOutputStream(comSocket.getOutputStream)
+      )
       native2jvm = new DataInputStream(
-        new BufferedInputStream(comSocket.getInputStream))
+        new BufferedInputStream(comSocket.getInputStream)
+      )
 
       onConnected(Connected(comSocket, jvm2native, native2jvm))
     } catch {
@@ -189,12 +193,13 @@ private[testinterface] object ComRunner {
   private final case class AwaitingConnection(sendQueue: List[String])
       extends State
 
-  private final case class Connected(comSocket: Socket,
-                                     jvm2native: DataOutputStream,
-                                     native2jvm: DataInputStream)
-      extends State
+  private final case class Connected(
+      comSocket: Socket,
+      jvm2native: DataOutputStream,
+      native2jvm: DataInputStream
+  ) extends State
 
-  private final case object Closing extends State
+  private case object Closing extends State
 
   private def writeMsg(s: DataOutputStream, msg: String): Unit = {
     s.writeInt(msg.length)

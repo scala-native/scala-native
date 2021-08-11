@@ -5,7 +5,9 @@ import scala.scalanative.unsafe._
 @extern
 object AccessToken {
 
-  /** Required to change the default owner, primary group, or DACL of an access token. */
+  /** Required to change the default owner, primary group, or DACL of an access
+   *  token.
+   */
   @name("scalanative_winnt_access_token_adjust_default")
   def TOKEN_ADJUST_DEFAULT: AccessToken = extern
 
@@ -17,11 +19,16 @@ object AccessToken {
   @name("scalanative_winnt_access_token_adjust_privileges")
   def TOKEN_ADJUST_PRIVILEGES: AccessToken = extern
 
-  /** Required to adjust the session ID of an access token. The SE_TCB_NAME privilege is required. */
+  /** Required to adjust the session ID of an access token. The SE_TCB_NAME
+   *  privilege is required.
+   */
   @name("scalanative_winnt_access_token_adjust_sessionid")
   def TOKEN_ADJUST_SESSIONID: AccessToken = extern
 
-  /** Required to attach a primary token to a process. The SE_ASSIGNPRIMARYTOKEN_NAME privilege is also required to accomplish this task. */
+  /** Required to attach a primary token to a process. The
+   *  SE_ASSIGNPRIMARYTOKEN_NAME privilege is also required to accomplish this
+   *  task.
+   */
   @name("scalanative_winnt_access_token_assign_primary")
   def TOKEN_ASSIGN_PRIMARY: AccessToken = extern
 
@@ -49,7 +56,9 @@ object AccessToken {
   @name("scalanative_winnt_access_token_read")
   def TOKEN_READ: AccessToken = extern
 
-  /** Combines STANDARD_RIGHTS_WRITE, TOKEN_ADJUST_PRIVILEGES, TOKEN_ADJUST_GROUPS, and TOKEN_ADJUST_DEFAULT. */
+  /** Combines STANDARD_RIGHTS_WRITE, TOKEN_ADJUST_PRIVILEGES,
+   *  TOKEN_ADJUST_GROUPS, and TOKEN_ADJUST_DEFAULT.
+   */
   @name("scalanative_winnt_access_token_write")
   def TOKEN_WRITE: AccessToken = extern
 

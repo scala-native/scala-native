@@ -2,11 +2,14 @@ package java.lang
 
 import scalanative.unsafe.{CString, fromCString}
 import scalanative.libc.string.strlen
+import scalanative.runtime.Platform.isWindows
 
-final class StackTraceElement(val getClassName: String,
-                              val getMethodName: String,
-                              val getFileName: String,
-                              val getLineNumber: Int) {
+final class StackTraceElement(
+    val getClassName: String,
+    val getMethodName: String,
+    val getFileName: String,
+    val getLineNumber: Int
+) {
 
   if (getClassName == null) {
     throw new NullPointerException("Declaring class is null")
@@ -44,13 +47,16 @@ private[lang] object StackTraceElement {
   object Fail extends scala.util.control.NoStackTrace
 
   def fromSymbol(sym: CString): StackTraceElement = {
-    val len        = strlen(sym).toInt
-    var pos        = 0
-    var className  = ""
+    val len = strlen(sym).toInt
+    var pos = 0
+    var className = ""
     var methodName = ""
 
     def readSymbol(): Boolean = {
-      if (read() != '_') {
+      // On Windows symbol names are different then on Unix platforms.
+      // Due to differences in implementation between WinDbg and libUnwind used
+      // on each platform, symbols on Windows do not contain '_' prefix.
+      if (!isWindows() && read() != '_') {
         false
       } else if (read() != 'S') {
         false
@@ -98,7 +104,7 @@ private[lang] object StackTraceElement {
         ""
       } else {
         val chars = new Array[Char](n)
-        var i     = 0
+        var i = 0
         while (i < n) {
           chars(i) = sym(pos + i).toChar
           i += 1
@@ -109,7 +115,7 @@ private[lang] object StackTraceElement {
     }
 
     def readNumber(): Int = {
-      val start  = pos
+      val start = pos
       var number = 0
       while ('0' <= at(pos) && at(pos) <= '9') {
         number = number * 10 + (at(pos) - '0').toInt

@@ -12,10 +12,13 @@ class BufferedInputStream(_in: InputStream, size: Int)
   /** The internal buffer array where the data is stored. */
   protected[this] var buf = new Array[Byte](size)
 
-  /** The index one greater than the index of the last valid byte in the buffer. */
+  /** The index one greater than the index of the last valid byte in the buffer.
+   */
   protected[this] var count = 0
 
-  /** The maximum read ahead allowed after a call to the mark method before subsequent calls to the reset method fail.. */
+  /** The maximum read ahead allowed after a call to the mark method before
+   *  subsequent calls to the reset method fail..
+   */
   private[this] var markLimit = 0
 
   /** The value of the pos field at the time the last mark method was called. */

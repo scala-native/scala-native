@@ -28,8 +28,9 @@ private[java] object IEEE754Helpers {
 
   private def exceptionMsg(s: String) = "For input string \"" + s + "\""
 
-  private def bytesToCString(bytes: Array[scala.Byte], n: Int)(
-      implicit z: Zone): CString = {
+  private def bytesToCString(bytes: Array[scala.Byte], n: Int)(implicit
+      z: Zone
+  ): CString = {
     val cStr = z.alloc((n + 1).toUInt) // z.alloc() does not clear bytes.
 
     var c = 0
@@ -45,7 +46,7 @@ private[java] object IEEE754Helpers {
 
   def parseIEEE754[T](s: String, f: (CString, Ptr[CString]) => T): T = {
     Zone { implicit z =>
-      val bytes    = s.getBytes(java.nio.charset.Charset.defaultCharset())
+      val bytes = s.getBytes(java.nio.charset.Charset.defaultCharset())
       val bytesLen = bytes.length
 
       val cStr = bytesToCString(bytes, bytesLen)

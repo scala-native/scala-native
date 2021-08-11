@@ -2,13 +2,13 @@ package scala.scalanative
 package nir
 
 object Unmangle {
-  def unmangleGlobal(s: String): Global     = (new Impl(s)).readGlobal()
-  def unmangleType(s: String): Type         = (new Impl(s)).readType()
+  def unmangleGlobal(s: String): Global = (new Impl(s)).readGlobal()
+  def unmangleType(s: String): Type = (new Impl(s)).readType()
   def unmangleSig(s: String): Sig.Unmangled = (new Impl(s)).readUnmangledSig()
 
   private class Impl(s: String) {
     val chars = s.toArray
-    var pos   = 0
+    var pos = 0
 
     def readGlobal(): Global = read() match {
       case 'T' =>
@@ -158,7 +158,7 @@ object Unmangle {
 
     def readNumber(): Int = {
       val start = pos
-      var char  = peek()
+      var char = peek()
       while ('0' <= char && char <= '9') {
         next()
         char = peek()

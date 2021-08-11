@@ -10,9 +10,11 @@ object regex {
   def compile(regex: Ptr[CInt], str: CString, num: CInt): CInt = extern
 
   @name("regexec")
-  def execute(regex: Ptr[CInt],
-              str: CString,
-              num: CInt,
-              ptr: Ptr[CInt],
-              num2: CInt): CInt = extern
+  def execute(
+      regex: Ptr[CInt],
+      str: CString,
+      num: CInt,
+      ptr: Ptr[CInt],
+      num2: CInt
+  ): CInt = extern
 }

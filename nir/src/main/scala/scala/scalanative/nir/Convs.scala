@@ -6,18 +6,18 @@ sealed abstract class Conv {
 }
 
 object Conv {
-  final case object ZSizeCast extends Conv
-  final case object SSizeCast extends Conv
-  final case object Trunc     extends Conv
-  final case object Zext      extends Conv
-  final case object Sext      extends Conv
-  final case object Fptrunc   extends Conv
-  final case object Fpext     extends Conv
-  final case object Fptoui    extends Conv
-  final case object Fptosi    extends Conv
-  final case object Uitofp    extends Conv
-  final case object Sitofp    extends Conv
-  final case object Ptrtoint  extends Conv
-  final case object Inttoptr  extends Conv
-  final case object Bitcast   extends Conv
+  case object ZSizeCast extends Conv
+  case object SSizeCast extends Conv
+  case object Trunc extends Conv
+  case object Zext extends Conv
+  case object Sext extends Conv
+  case object Fptrunc extends Conv
+  case object Fpext extends Conv
+  case object Fptoui extends Conv
+  case object Fptosi extends Conv
+  case object Uitofp extends Conv
+  case object Sitofp extends Conv
+  case object Ptrtoint extends Conv
+  case object Inttoptr extends Conv
+  case object Bitcast extends Conv
 }

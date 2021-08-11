@@ -6,18 +6,22 @@ sealed trait LinktimeCondition {
 
 object LinktimeCondition {
 
-  case class SimpleCondition(propertyName: String, comparison: Comp, value: Val)(
-      implicit val position: Position)
+  case class SimpleCondition(
+      propertyName: String,
+      comparison: Comp,
+      value: Val
+  )(implicit val position: Position)
       extends LinktimeCondition
 
   case class ComplexCondition(
       op: Bin,
       left: LinktimeCondition,
-      right: LinktimeCondition)(implicit val position: Position)
+      right: LinktimeCondition
+  )(implicit val position: Position)
       extends LinktimeCondition
 
   object Tag {
-    final val SimpleCondition  = 1
+    final val SimpleCondition = 1
     final val ComplexCondition = 2
   }
 

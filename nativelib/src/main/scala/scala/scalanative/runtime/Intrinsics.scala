@@ -2,11 +2,12 @@ package scala.scalanative
 package runtime
 
 import scalanative.unsafe._
+import scalanative.unsigned.USize
 
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: RawSize): RawPtr = intrinsic
+  def stackalloc(size: USize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -166,7 +167,9 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets long as a raw size. */
   def castLongToRawSize(long: Long): RawSize = intrinsic
 
-  /** Intrinsic to get the size of a size in bytes, resolved to a constant in the linker */
+  /** Intrinsic to get the size of a size in bytes, resolved to a constant in
+   *  the linker
+   */
   def sizeOfPtr: RawSize = intrinsic
 
   /** Intrinsified bitwise and on raw sizes. */

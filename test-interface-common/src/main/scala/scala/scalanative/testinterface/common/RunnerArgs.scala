@@ -2,10 +2,12 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
-private[testinterface] final class RunnerArgs(val runID: RunMux.RunID,
-                                              val frameworkImpl: String,
-                                              val args: List[String],
-                                              val remoteArgs: List[String])
+private[testinterface] final class RunnerArgs(
+    val runID: RunMux.RunID,
+    val frameworkImpl: String,
+    val args: List[String],
+    val remoteArgs: List[String]
+)
 
 private[testinterface] object RunnerArgs {
   implicit object RunnerArgsSerializer extends Serializer[RunnerArgs] {
@@ -17,10 +19,12 @@ private[testinterface] object RunnerArgs {
     }
 
     def deserialize(in: Serializer.DeserializeState): RunnerArgs = {
-      new RunnerArgs(in.read[Int](),
-                     in.read[String](),
-                     in.read[List[String]](),
-                     in.read[List[String]]())
+      new RunnerArgs(
+        in.read[Int](),
+        in.read[String](),
+        in.read[List[String]](),
+        in.read[List[String]]()
+      )
     }
   }
 }

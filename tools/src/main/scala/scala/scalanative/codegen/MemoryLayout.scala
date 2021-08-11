@@ -7,10 +7,12 @@ import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
 
-final case class MemoryLayout(size: Long,
-                              tys: Seq[MemoryLayout.PositionedType],
-                              is32: Boolean) {
-  lazy val offsetArray: Seq[Val.Long] = {
+final case class MemoryLayout(
+    size: Long,
+    tys: Seq[MemoryLayout.PositionedType],
+    is32: Boolean
+) {
+  lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
       tys.collect {
         // offset in words without rtti
@@ -66,7 +68,7 @@ object MemoryLayout {
   }
 
   def apply(tys: Seq[Type], is32: Boolean): MemoryLayout = {
-    val pos    = mutable.UnrolledBuffer.empty[PositionedType]
+    val pos = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
     tys.foreach { ty =>

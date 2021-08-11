@@ -7,8 +7,8 @@ import scala.util.Try
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 
-/** Utilities for discovery of command-line tools and settings required
- *  to build Scala Native applications.
+/** Utilities for discovery of command-line tools and settings required to build
+ *  Scala Native applications.
  */
 object Discover {
 
@@ -19,7 +19,8 @@ object Discover {
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
 
-  /** LTO variant used for release mode from SCALANATIVE_LTO env var or default. */
+  /** LTO variant used for release mode from SCALANATIVE_LTO env var or default.
+   */
   def LTO(): LTO =
     getenv("SCALANATIVE_LTO").map(build.LTO(_)).getOrElse(build.LTO.None)
 
@@ -27,16 +28,16 @@ object Discover {
   def GC(): GC =
     getenv("SCALANATIVE_GC").map(build.GC(_)).getOrElse(build.GC.default)
 
-  /** Use the clang binary on the path or via CLANG_PATH env var. */
+  /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
-    val path = discover("clang", "CLANG_PATH")
+    val path = discover("clang", "LLVM_BIN")
     checkClangVersion(path)
     path
   }
 
-  /** Use the clang++ binary on the path or via CLANGPP_PATH env var. */
+  /** Use the clang++ binary on the path or via LLVM_BIN env var. */
   def clangpp(): Path = {
-    val path = discover("clang++", "CLANGPP_PATH")
+    val path = discover("clang++", "LLVM_BIN")
     checkClangVersion(path)
     path
   }
@@ -55,7 +56,8 @@ object Discover {
         getenv("SCALANATIVE_INCLUDE_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
           .getOrElse(
-            filterExisting(Seq("/usr/local/include", "/opt/local/include")))
+            filterExisting(Seq("/usr/local/include", "/opt/local/include"))
+          )
 
       (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
     }
@@ -87,8 +89,8 @@ object Discover {
     )
   }
 
-  /** Tests whether the clang compiler is greater or equal to the
-   *  minumum version required.
+  /** Tests whether the clang compiler is greater or equal to the minumum
+   *  version required.
    */
   private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
     def versionMajorFull(clang: String): (Int, String) = {
@@ -97,9 +99,8 @@ object Discover {
         .lineStream_!(silentLogger())
         .headOption
         .getOrElse {
-          throw new BuildException(
-            s"""Problem running '${versionCommand
-                 .mkString(" ")}'. Please check clang setup.
+          throw new BuildException(s"""Problem running '${versionCommand
+            .mkString(" ")}'. Please check clang setup.
                |Refer to ($docSetup)""".stripMargin)
         }
       // Apple macOS clang is different vs brew installed or Linux
@@ -108,7 +109,7 @@ object Discover {
       try {
         val versionArray = versionString.split(" ")
         val versionIndex = versionArray.indexWhere(_.equals("version"))
-        val version      = versionArray(versionIndex + 1)
+        val version = versionArray(versionIndex + 1)
         val majorVersion = version.split("\\.").head
         (majorVersion.toInt, version)
       } catch {
@@ -126,7 +127,8 @@ object Discover {
       throw new BuildException(
         s"""Minimum version of clang is '$clangMinVersion'.
              |Discovered version '$version'.
-             |Please refer to ($docSetup)""".stripMargin)
+             |Please refer to ($docSetup)""".stripMargin
+      )
     }
   }
 
@@ -137,34 +139,52 @@ object Discover {
   private[scalanative] val docSetup =
     "http://www.scala-native.org/en/latest/user/setup.html"
 
-  /** Discover the binary path using environment
-   *  variables or the command from the path.
+  /** Discover the binary path using environment variables or the command from
+   *  the path.
    */
-  private[scalanative] def discover(binaryName: String,
-                                    envPath: String): Path = {
-    val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
-    val locateCmd        = if (Platform.isWindows) "where" else "which"
-    val path = Process(Seq(locateCmd, binaryNameOrPath))
+  private[scalanative] def discover(
+      binaryName: String,
+      envPath: String
+  ): Path = {
+    val binPath = sys.env.get(envPath)
+
+    val command: Seq[String] = {
+      if (Platform.isWindows) {
+        val arg = binPath.fold(binaryName)(p => s"$p:$binaryName")
+        Seq("where", arg)
+      } else {
+        val arg = binPath.fold(binaryName) { p =>
+          Paths.get(p, binaryName).toString()
+        }
+        Seq("which", arg)
+      }
+    }
+
+    val path = Process(command)
       .lineStream_!(silentLogger())
       .map { p => Paths.get(p) }
       .headOption
       .getOrElse {
         throw new BuildException(
-          s"""No '$binaryNameOrPath' found in PATH or via '$envPath' environment variable.
-             |Please refer to ($docSetup)""".stripMargin)
+          s"""'$binaryName' not found in PATH or via '$envPath' environment variable.
+            |Please refer to ($docSetup)""".stripMargin
+        )
       }
     path
   }
 
   /** Detect the target architecture.
    *
-   *  @param clang   A path to the executable `clang`.
-   *  @param workdir A working directory where the compilation will take place.
-   *  @return The detected target triple describing the target architecture.
+   *  @param clang
+   *    A path to the executable `clang`.
+   *  @param workdir
+   *    A working directory where the compilation will take place.
+   *  @return
+   *    The detected target triple describing the target architecture.
    */
   def targetTriple(clang: Path, workdir: Path): String = {
     // Use non-standard extension to not include the ll file when linking (#639)
-    val targetc  = workdir.resolve("target").resolve("c.probe")
+    val targetc = workdir.resolve("target").resolve("c.probe")
     val targetll = workdir.resolve("target").resolve("ll.probe")
     val compilec =
       Seq(clang.abs, "-S", "-xc", "-emit-llvm", "-o", targetll.abs, targetc.abs)

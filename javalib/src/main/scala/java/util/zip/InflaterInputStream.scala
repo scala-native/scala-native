@@ -4,10 +4,11 @@ package java.util.zip
 
 import java.io.{EOFException, FilterInputStream, IOException, InputStream}
 
-class InflaterInputStream private (in: InputStream,
-                                   protected var inf: Inflater,
-                                   protected var buf: Array[Byte])
-    extends FilterInputStream(in) {
+class InflaterInputStream private (
+    in: InputStream,
+    protected var inf: Inflater,
+    protected var buf: Array[Byte]
+) extends FilterInputStream(in) {
   def this(in: InputStream, inf: Inflater, len: Int) =
     this(in, inf, new Array[Byte](len))
   def this(in: InputStream, inf: Inflater) =
@@ -18,16 +19,16 @@ class InflaterInputStream private (in: InputStream,
     throw new IllegalArgumentException()
   }
 
-  protected var len: Int           = 0
+  protected var len: Int = 0
   private[zip] var closed: Boolean = false
-  private[zip] var eof: Boolean    = false
+  private[zip] var eof: Boolean = false
 
   override def read(): Int = {
     val b = new Array[Byte](1)
     if (read(b, 0, 1) == -1) {
       -1
     } else {
-      b(0) & 0xFF
+      b(0) & 0xff
     }
   }
 
@@ -108,12 +109,14 @@ class InflaterInputStream private (in: InputStream,
       }
       var count, rem: Long = 0L
       while (count < nbytes) {
-        val x = read(buf,
-                     0,
-                     if ({ rem = nbytes - count; rem > buf.length })
-                       buf.length
-                     else
-                       rem.toInt)
+        val x = read(
+          buf,
+          0,
+          if ({ rem = nbytes - count; rem > buf.length })
+            buf.length
+          else
+            rem.toInt
+        )
         if (x == -1) {
           return count
         }

@@ -25,7 +25,7 @@ class SigManglingSuite extends AnyFunSuite {
 
   val methods = for {
     scope <- scopes
-    args  <- methodArgs
+    args <- methodArgs
   } yield Sig.Method("bar", args, scope)
 
   val proxies = methodArgs.map(Sig.Proxy("bar", _))

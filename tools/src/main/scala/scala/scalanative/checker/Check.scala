@@ -11,10 +11,10 @@ final class Check(implicit linked: linker.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]
 
   val labels = mutable.Map.empty[Local, Seq[Type]]
-  val env    = mutable.Map.empty[Local, Type]
+  val env = mutable.Map.empty[Local, Type]
 
-  var name: Global      = Global.None
-  var retty: Type       = Type.Unit
+  var name: Global = Global.None
+  var retty: Type = Type.Unit
   var ctx: List[String] = Nil
 
   def in[T](entry: String)(f: => T): T = {
@@ -154,14 +154,14 @@ final class Check(implicit linked: linker.Result) {
     case Op.Extract(aggr, indexes) =>
       aggr.ty match {
         case ty: Type.AggregateKind =>
-          checkAggregateOp(ty, indexes.map(Val.Int), None)
+          checkAggregateOp(ty, indexes.map(Val.Int(_)), None)
         case _ =>
           error(s"extract is only defined on aggregate types, not ${aggr.ty}")
       }
     case Op.Insert(aggr, value, indexes) =>
       aggr.ty match {
         case ty: Type.AggregateKind =>
-          checkAggregateOp(ty, indexes.map(Val.Int), Some(value.ty))
+          checkAggregateOp(ty, indexes.map(Val.Int(_)), Some(value.ty))
         case _ =>
           error(s"insert is only defined on aggregate types, not ${aggr.ty}")
       }
@@ -182,7 +182,8 @@ final class Check(implicit linked: linker.Result) {
           case info: Class =>
             if (info.isModule) {
               error(
-                s"can't instantiate module class ${info.name.show} with classalloc")
+                s"can't instantiate module class ${info.name.show} with classalloc"
+              )
             } else if (info.attrs.isAbstract) {
               error(s"can't instantiate abstract class ${info.name.show}")
             } else {
@@ -239,7 +240,8 @@ final class Check(implicit linked: linker.Result) {
           case info: Class =>
             if (!info.isModule) {
               error(
-                s"can't instantiate non-module class ${info.name.show} as module")
+                s"can't instantiate non-module class ${info.name.show} as module"
+              )
             } else if (info.attrs.isAbstract) {
               error(s"can't instantiate abstract class ${info.name.show}")
             } else {
@@ -314,9 +316,11 @@ final class Check(implicit linked: linker.Result) {
       expect(Rt.GenericArray, arr)
   }
 
-  def checkAggregateOp(ty: Type.AggregateKind,
-                       indexes: Seq[Val],
-                       stores: Option[Type]): Unit = {
+  def checkAggregateOp(
+      ty: Type.AggregateKind,
+      indexes: Seq[Val],
+      stores: Option[Type]
+  ): Unit = {
     if (indexes.isEmpty) {
       error("index path must contain at least one index")
     }
@@ -399,10 +403,12 @@ final class Check(implicit linked: linker.Result) {
     }
   }
 
-  def checkFieldOp(ty: Type,
-                   obj: Val,
-                   name: Global,
-                   value: Option[Val]): Unit = {
+  def checkFieldOp(
+      ty: Type,
+      obj: Val,
+      name: Global,
+      value: Option[Val]
+  ): Unit = {
 
     obj.ty match {
       case ScopeRef(scope) =>
@@ -473,7 +479,8 @@ final class Check(implicit linked: linker.Result) {
         case (Type.Size, rty: Type.FixedSizeI) => ok
         case _ =>
           error(
-            s"can't word cast (unsigned) from ${value.ty.show} to ${ty.show}")
+            s"can't word cast (unsigned) from ${value.ty.show} to ${ty.show}"
+          )
       }
 
     case Conv.SSizeCast =>
@@ -613,7 +620,8 @@ final class Check(implicit linked: linker.Result) {
         expect(Rt.Object, r)
       case _ =>
         error(
-          s"$op is only defined on integer types, bool and reference types, not ${ty.show}")
+          s"$op is only defined on integer types, bool and reference types, not ${ty.show}"
+        )
     }
   }
 
@@ -656,7 +664,8 @@ final class Check(implicit linked: linker.Result) {
         } { tys =>
           if (tys.length != args.length) {
             error(
-              s"expected ${tys.length} label arguments but got ${args.length}")
+              s"expected ${tys.length} label arguments but got ${args.length}"
+            )
           } else {
             tys.zip(args).zipWithIndex.foreach {
               case ((expected, v), idx) =>

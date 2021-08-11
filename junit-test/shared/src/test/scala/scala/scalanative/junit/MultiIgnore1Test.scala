@@ -8,10 +8,10 @@ import scala.scalanative.junit.utils.JUnitTest
 
 class MultiIgnore1Test {
   @Ignore @Test def multiTest1(): Unit = ()
-  @Test def multiTest2(): Unit         = ()
-  @Test def multiTest3(): Unit         = ()
-  @Test def multiTest4(): Unit         = ()
-  @Test def multiTest5(): Unit         = ()
+  @Test def multiTest2(): Unit = ()
+  @Test def multiTest3(): Unit = ()
+  @Test def multiTest4(): Unit = ()
+  @Test def multiTest5(): Unit = ()
 }
 
 class MultiIgnore1TestAssertions extends JUnitTest

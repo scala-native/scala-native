@@ -58,7 +58,7 @@ abstract class JUnitTest {
           JUnitTestPlatformImpl.writeLines(lines, file)
         } else {
           val lines = JUnitTestPlatformImpl.readLines(file)
-          val want  = lines.map(Output.deserialize)
+          val want = lines.map(Output.deserialize)
 
           if (want != out) {
             fail(s"Bad output (args: $args)\n\nWant:\n${want
@@ -72,15 +72,19 @@ abstract class JUnitTest {
   }
 
   private def runTests(args: List[String]): Future[List[Output]] = {
-    val recorder  = new JUnitTestRecorder
+    val recorder = new JUnitTestRecorder
     val framework = new com.novocode.junit.JUnitFramework()
-    val runner    = framework.runner(args.toArray, Array.empty, classLoader)
+    val runner = framework.runner(args.toArray, Array.empty, classLoader)
     val tasks = runner.tasks(
       Array(
-        new TaskDef(suiteUnderTestName,
-                    framework.fingerprints.head,
-                    true,
-                    Array.empty)))
+        new TaskDef(
+          suiteUnderTestName,
+          framework.fingerprints.head,
+          true,
+          Array.empty
+        )
+      )
+    )
 
     // run all tasks and the tasks they generate, needs platform extension
     for {
@@ -92,7 +96,7 @@ abstract class JUnitTest {
   }
 
   private def postprocessOutput(out: List[Output]): List[Output] = {
-    val noTime  = out.map(replaceTime)
+    val noTime = out.map(replaceTime)
     val noStack = noTime.filterNot(isStackTrace)
     orderByTestName(noStack)
   }
@@ -104,23 +108,18 @@ abstract class JUnitTest {
 
   /** Orders test output by test (method) name.
    *
-   *  This assumes the total output is of the following form:
-   *  <no test> ...
-   *  <test 1>
-   *  <no test | test 1> ...
-   *  <test 1>
-   *  <test 2>
-   *  <no test | test 2> ...
-   *  <test 2>
-   *  ...
-   *  <no test> ...
+   *  This assumes the total output is of the following form: <no test> ...
+   *  <test 1> <no test | test 1> ... <test 1> <test 2> <no test | test 2> ...
+   *  <test 2> ... <no test> ...
    */
   private def orderByTestName(out: List[Output]): List[Output] = {
     val (prefix, rem) = out.span(o => testName(o).isEmpty)
 
     @tailrec
-    def makeChunks(rem: List[Output], chunks: Map[String, List[Output]])
-        : (Map[String, List[Output]], List[Output]) = {
+    def makeChunks(
+        rem: List[Output],
+        chunks: Map[String, List[Output]]
+    ): (Map[String, List[Output]], List[Output]) = {
       if (rem.isEmpty) {
         (chunks, rem)
       } else {
@@ -128,11 +127,13 @@ abstract class JUnitTest {
           case Some(name) =>
             require(!chunks.contains(name), s"Got chunks for test $name twice")
 
-            val i               = rem.lastIndexWhere(o => testName(o) == Some(name))
+            val i = rem.lastIndexWhere(o => testName(o) == Some(name))
             val (chunk, newRem) = rem.splitAt(i + 1)
 
-            require(chunk.forall(o => testName(o).forall(_ == name)),
-                    s"Test chunks interleaved: $chunk")
+            require(
+              chunk.forall(o => testName(o).forall(_ == name)),
+              s"Test chunks interleaved: $chunk"
+            )
 
             makeChunks(newRem, chunks + (name -> chunk))
 
@@ -144,8 +145,10 @@ abstract class JUnitTest {
 
     val (chunks, suffix) = makeChunks(rem, Map.empty)
 
-    require(suffix.forall(o => testName(o).isEmpty),
-            s"Got unhandlable suffix:\n${suffix.mkString("\n")}")
+    require(
+      suffix.forall(o => testName(o).isEmpty),
+      s"Got unhandlable suffix:\n${suffix.mkString("\n")}"
+    )
 
     prefix ++ chunks.toSeq.sortBy(_._1).flatMap(_._2) ++ suffix
   }
@@ -169,7 +172,8 @@ abstract class JUnitTest {
         val e = msg.indexOf(' ', s)
         if (e == -1) {
           throw new AssertionError(
-            "Unknown message format, cannot extract testName: " + msg)
+            "Unknown message format, cannot extract testName: " + msg
+          )
         }
 
         Some(msg.substring(s + testNamePrefix.length, e))
@@ -185,7 +189,7 @@ abstract class JUnitTest {
   }
 
   private val colorRE = """\u001B\[\d\d?m""".r
-  private val timeRE  = """\d+(\.\d+)?(E\-\d+)?( sec|s)\b""".r
+  private val timeRE = """\d+(\.\d+)?(E\-\d+)?( sec|s)\b""".r
 
   def replaceTime(out: Output): Output = out match {
     case Log(level, msg) =>
@@ -232,9 +236,9 @@ abstract class JUnitTest {
 
 object JUnitTest {
   sealed trait Output
-  final case class Log(level: Char, msg: String)           extends Output
+  final case class Log(level: Char, msg: String) extends Output
   final case class Event(status: Status, testName: String) extends Output
-  final case class Done(msg: String)                       extends Output
+  final case class Done(msg: String) extends Output
 
   object Output {
     def deserialize(line: String): Output = line.toList match {
@@ -242,7 +246,7 @@ object JUnitTest {
       case 'e' :: s :: testName =>
         Event(Status.values()(s - '0'), testName.mkString(""))
       case 'd' :: msg => Done(msg.mkString(""))
-      case _          => throw new RuntimeException("unexpected token in deserialize")
+      case _ => throw new RuntimeException("unexpected token in deserialize")
     }
 
     def serialize(o: Output): String = o match {

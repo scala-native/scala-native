@@ -1,4 +1,5 @@
 scalalib/src/
+scala-partest/fetchedSources/
 target/
 _build/
 *.dot

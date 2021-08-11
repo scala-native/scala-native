@@ -11,8 +11,10 @@ import nir.Conv._
 
 trait Combine { self: Interflow =>
 
-  def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit state: State,
-                                                  origPos: Position): Val = {
+  def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit
+      state: State,
+      origPos: Position
+  ): Val = {
     import state.{materialize, delay, emit}
 
     def fallback = {
@@ -385,8 +387,9 @@ trait Combine { self: Interflow =>
     }
   }
 
-  def combine(comp: Comp, ty: Type, l: Val, r: Val)(
-      implicit state: State): Val = {
+  def combine(comp: Comp, ty: Type, l: Val, r: Val)(implicit
+      state: State
+  ): Val = {
     import state.{materialize, delay, emit}
 
     (comp, l, r) match {
@@ -438,15 +441,19 @@ trait Combine { self: Interflow =>
 
       // Comparing two non-null module references will
       // yield true only if it's the same module.
-      case (Ieq,
+      case (
+            Ieq,
             l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-            r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
+            r @ Of(And(rty: Type.RefKind, ClassRef(rcls)))
+          )
           if !lty.isNullable && lty.isExact && lcls.isModule
             && !rty.isNullable && rty.isExact && rcls.isModule =>
         Val.Bool(lcls.name == rcls.name)
-      case (Ine,
+      case (
+            Ine,
             l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-            r @ Of(And(rty: Type.RefKind, ClassRef(rcls))))
+            r @ Of(And(rty: Type.RefKind, ClassRef(rcls)))
+          )
           if !lty.isNullable && lty.isExact && lcls.isModule
             && !rty.isNullable && rty.isExact && rcls.isModule =>
         Val.Bool(lcls.name != rcls.name)
@@ -555,21 +562,27 @@ trait Combine { self: Interflow =>
 
     (conv, ty, value) match {
       // trunc[iN] (trunc[iM] x) ==> trunc[iN] x if N < M
-      case (Trunc,
+      case (
+            Trunc,
             Type.FixedSizeI(n, _),
-            ConvRef(Trunc, Type.FixedSizeI(m, _), x)) if n < m =>
+            ConvRef(Trunc, Type.FixedSizeI(m, _), x)
+          ) if n < m =>
         combine(Trunc, ty, x)
 
       // sext[iN] (sext[iM] x) ==> sext[iN] x if N > M
-      case (Sext,
+      case (
+            Sext,
             Type.FixedSizeI(n, _),
-            ConvRef(Sext, Type.FixedSizeI(m, _), x)) if n > m =>
+            ConvRef(Sext, Type.FixedSizeI(m, _), x)
+          ) if n > m =>
         combine(Sext, ty, x)
 
       // zext[iN] (zext[iM] x) ==> zext[iN] x if N > M
-      case (Zext,
+      case (
+            Zext,
             Type.FixedSizeI(n, _),
-            ConvRef(Zext, Type.FixedSizeI(m, _), x)) if n > m =>
+            ConvRef(Zext, Type.FixedSizeI(m, _), x)
+          ) if n > m =>
         combine(Zext, ty, x)
 
       // ptrtoint[long] (inttoptr[long] x) ==> x

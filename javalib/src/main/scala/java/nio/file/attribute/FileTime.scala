@@ -3,9 +3,10 @@ package java.nio.file.attribute
 import java.util.concurrent.TimeUnit
 import java.time.Instant
 
-final class FileTime private (private val epochDays: Long,
-                              private val dayNanos: Long)
-    extends Comparable[FileTime] {
+final class FileTime private (
+    private val epochDays: Long,
+    private val dayNanos: Long
+) extends Comparable[FileTime] {
   import FileTime._
 
   assert(dayNanos <= FileTime.NanosInDay)
@@ -31,7 +32,7 @@ final class FileTime private (private val epochDays: Long,
    * or Long.MAX_VALUE if positive.
    */
   def to(unit: TimeUnit): Long = {
-    val fromDays  = unit.convert(epochDays, TimeUnit.DAYS)
+    val fromDays = unit.convert(epochDays, TimeUnit.DAYS)
     val fromNanos = unit.convert(dayNanos, TimeUnit.NANOSECONDS)
 
     // TimeUnit conversion returns -Long.MaxValue in case of negative overflow instead of Long.MinValue
@@ -71,13 +72,13 @@ final class FileTime private (private val epochDays: Long,
 }
 
 object FileTime {
-  private final val SecondsInDay  = 86400L
-  private final val NanosInDay    = 86400000000000L
+  private final val SecondsInDay = 86400L
+  private final val NanosInDay = 86400000000000L
   private final val NanosToSecond = 1000000000L
 
   def from(value: Long, unit: TimeUnit): FileTime = {
-    val div   = unit.convert(NanosInDay, TimeUnit.NANOSECONDS)
-    val days  = Math.floorDiv(value, div)
+    val div = unit.convert(NanosInDay, TimeUnit.NANOSECONDS)
+    val days = Math.floorDiv(value, div)
     val nanos = unit.toNanos(Math.floorMod(value, div))
     new FileTime(days, nanos)
   }
@@ -85,10 +86,10 @@ object FileTime {
   def fromMillis(value: Long): FileTime = from(value, TimeUnit.MILLISECONDS)
 
   def from(instant: Instant): FileTime = {
-    val s          = instant.getEpochSecond
-    val days       = Math.floorDiv(s, SecondsInDay)
+    val s = instant.getEpochSecond
+    val days = Math.floorDiv(s, SecondsInDay)
     val daySeconds = Math.floorMod(s, SecondsInDay)
-    val dayNanos   = (daySeconds * NanosToSecond) + instant.getNano
+    val dayNanos = (daySeconds * NanosToSecond) + instant.getNano
     new FileTime(days, dayNanos)
   }
 }

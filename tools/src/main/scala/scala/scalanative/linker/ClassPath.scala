@@ -52,12 +52,16 @@ object ClassPath {
         .toString
 
     def load(name: Global): Option[Seq[Defn]] =
-      cache.getOrElseUpdate(name, {
-        files.get(name.top).map { file =>
-          deserializeBinary(directory.read(file),
-                            makeBufferName(directory, file))
+      cache.getOrElseUpdate(
+        name, {
+          files.get(name.top).map { file =>
+            deserializeBinary(
+              directory.read(file),
+              makeBufferName(directory, file)
+            )
+          }
         }
-      })
+      )
 
     lazy val classesWithEntryPoints: Iterable[Global.Top] = {
       files.filter {

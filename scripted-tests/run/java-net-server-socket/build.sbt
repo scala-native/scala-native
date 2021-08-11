@@ -9,7 +9,8 @@ scalaVersion := {
   if (scalaVersion == null)
     throw new RuntimeException(
       """|The system property 'scala.version' is not defined.
-         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+    )
   else scalaVersion
 }
 
@@ -20,8 +21,8 @@ launchClient := {
     new java.util.TimerTask() {
       def run = {
         val portFile = Paths.get("server-port.txt")
-        val lines    = Files.readAllLines(portFile)
-        val port     = lines.get(0).toInt
+        val lines = Files.readAllLines(portFile)
+        val port = lines.get(0).toInt
 
         val socket = new Socket
         socket.connect(new InetSocketAddress("127.0.0.1", port), 1000)

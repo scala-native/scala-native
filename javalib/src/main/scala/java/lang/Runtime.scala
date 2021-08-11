@@ -7,8 +7,8 @@ import scala.scalanative.libc.stdlib
 class Runtime private () {
   import Runtime.ProcessBuilderOps
   def availableProcessors(): Int = 1
-  def exit(status: Int): Unit    = stdlib.exit(status)
-  def gc(): Unit                 = ()
+  def exit(status: Int): Unit = stdlib.exit(status)
+  def gc(): Unit = ()
 
   @stub
   def addShutdownHook(thread: java.lang.Thread): Unit = ???
@@ -19,7 +19,7 @@ class Runtime private () {
     new ProcessBuilder(cmdarray).setEnv(envp).start()
   def exec(cmdarray: Array[String], envp: Array[String], dir: File): Process =
     new ProcessBuilder(cmdarray).setEnv(envp).directory(dir).start()
-  def exec(cmd: String): Process                      = exec(Array(cmd))
+  def exec(cmd: String): Process = exec(Array(cmd))
   def exec(cmd: String, envp: Array[String]): Process = exec(Array(cmd), envp)
   def exec(cmd: String, envp: Array[String], dir: File): Process =
     exec(Array(cmd), envp, dir)
