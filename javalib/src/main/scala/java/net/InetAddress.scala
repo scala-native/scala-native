@@ -254,7 +254,7 @@ private[net] trait InetAddressBase {
           if (numberOfPeriods > 3) {
             return false
           }
-          if (!isValidIP4Size(word)) {
+          if (!isValidIP4Word(word)) {
             return false
           }
           if (numberOfColons != 6 && !doubleColon) {
@@ -311,7 +311,7 @@ private[net] trait InetAddressBase {
     }
     // Check if we have an IPv4 ending
     if (numberOfPeriods > 0) {
-      if (numberOfPeriods != 3 || !isValidIP4Size(word)) {
+      if (numberOfPeriods != 3 || !isValidIP4Word(word)) {
         return false
       }
     } else {
@@ -331,7 +331,7 @@ private[net] trait InetAddressBase {
   private def isValidHexChar(c: Char): Boolean =
     (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
 
-  private def isValidIP4Size(word: String): Boolean = {
+  private def isValidIP4Word(word: String): Boolean = {
     if (word.length < 1 || word.length > 3) {
       return false
     }

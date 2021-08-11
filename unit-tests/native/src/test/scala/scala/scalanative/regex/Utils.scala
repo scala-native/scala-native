@@ -164,10 +164,10 @@ object Utils {
     return -1
   }
 
-  // isSizeRune reports whether r is consider a ``word character''
+  // isWordRune reports whether r is consider a ``word character''
   // during the evaluation of the \b and \B zero-width assertions.
   // These assertions are ASCII-only: the word characters are [A-Za-z0-9_].
-  def isSizeRune(r: Int): Boolean =
+  def isWordRune(r: Int): Boolean =
     ('A' <= r && r <= 'Z' ||
       'a' <= r && r <= 'z' ||
       '0' <= r && r <= '9' ||
@@ -202,7 +202,7 @@ object Utils {
     if (r2 == '\n') {
       op |= EMPTY_END_LINE
     }
-    if (isSizeRune(r1) != isSizeRune(r2)) {
+    if (isWordRune(r1) != isWordRune(r2)) {
       op |= EMPTY_WORD_BOUNDARY
     } else {
       op |= EMPTY_NO_WORD_BOUNDARY

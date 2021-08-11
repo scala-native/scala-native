@@ -1532,9 +1532,9 @@ object Character {
    *
    * Definition of case-ignorable character form Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):
    * A character C is defined to be case-ignorable if C has the value MidLetter (ML),
-   * MidNumLet (MB), or Single_Quote (SQ) for the Size_Break property or its General_Category is one of Nonspacing_Mark (Mn),
+   * MidNumLet (MB), or Single_Quote (SQ) for the Word_Break property or its General_Category is one of Nonspacing_Mark (Mn),
    * Enclosing_Mark (Me), Format (Cf), Modifier_Letter (Lm), or Modifier_Symbol (Sk).
-   * - The Size_Break property is defined in the data file SizeBreakProperty.txt in the Unicode Character Database.
+   * - The Word_Break property is defined in the data file SizeBreakProperty.txt in the Unicode Character Database.
    * - The derived property Case_Ignorable is listed in the data file DerivedCoreProperties.txt in the Unicode Character Database.
    *
    * Deltas were generated based on DerivedCoreProperties.txt reference document using following code

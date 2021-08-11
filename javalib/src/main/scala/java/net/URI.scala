@@ -573,7 +573,7 @@ final class URI private () extends Comparable[URI] with Serializable {
             if (numberOfPeriods > 3) {
               return false
             }
-            if (!isValidIP4Size(word)) {
+            if (!isValidIP4Word(word)) {
               return false
             }
             if (numberOfColons != 6 && !doubleColon) {
@@ -611,7 +611,7 @@ final class URI private () extends Comparable[URI] with Serializable {
         }
       }
       if (numberOfPeriods > 0) {
-        if (numberOfPeriods != 3 || !isValidIP4Size(word)) {
+        if (numberOfPeriods != 3 || !isValidIP4Word(word)) {
           return false
         }
       } else {
@@ -626,7 +626,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       true
     }
 
-    def isValidIP4Size(word: String): Boolean = {
+    def isValidIP4Word(word: String): Boolean = {
       var c: Char = 0
       if (word.length() < 1 || word.length() > 3) {
         return false
