@@ -146,7 +146,7 @@ trait Eval { self: Interflow =>
 
           dtarget match {
             case Val.Global(name, _) if shallInline(name, eargs) =>
-             `inline`(name, eargs)
+              `inline`(name, eargs)
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
               polyInline(op, eargs)
             case _ =>

@@ -86,7 +86,7 @@ object ControlFlow {
             // first control-flow instruction after the label
             val body = mutable.UnrolledBuffer.empty[Inst]
             var i = k
-            while({
+            while ({
               i += 1
               body += insts(i)
               !insts(i).isInstanceOf[Inst.Cf]
