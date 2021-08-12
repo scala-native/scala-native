@@ -109,16 +109,14 @@ private[scalanative] object LLVM {
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
         if (config.targetsWindows) Seq("Dbghelp")
-        else
-          (Seq("pthread", "dl") ++ (if (config.is32) Seq("compiler_rt-extras")
-                                    else Seq()))
+        else Seq("pthread", "dl")
       platformsLinks ++ srclinks ++ gclinks
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags = {
       val platformFlags =
         if (config.targetsWindows) Seq("-g")
-        else Seq("-rdynamic")
+        else Seq("-rdynamic", "--rtlib=compiler-rt")
       flto(config) ++ platformFlags ++ Seq(
         "-o",
         outpath.abs
