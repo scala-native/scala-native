@@ -27,7 +27,7 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
-import scala.scalanative.unsafe.is32
+import org.scalanative.testsuite.utils.Platform.is32
 
 class DoubleTest {
   @Test def testEquals(): Unit = {

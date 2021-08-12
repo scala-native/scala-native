@@ -2,7 +2,7 @@ package javalib.util
 
 import java.util._
 
-import scala.scalanative.unsafe.is32
+import org.scalanative.testsuite.utils.Platform.is32
 
 import org.junit.Test
 import org.junit.Assert._

@@ -21,4 +21,6 @@ object Platform {
   final val hasCompliantAsInstanceOfs = true
 
   final val isFreeBSD = System.getProperty("os.name").equals("FreeBSD")
+
+  final val is32 = scala.scalanative.unsafe.is32
 }
