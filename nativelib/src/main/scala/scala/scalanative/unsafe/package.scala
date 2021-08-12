@@ -14,7 +14,6 @@ import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
 
 package object unsafe {
-  val ptrSize = if (LinktimeInfo.is32) 4.toUSize else 8.toUSize
   val is32 = LinktimeInfo.is32
 
   /** The C 'char' type. */
