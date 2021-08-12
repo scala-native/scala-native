@@ -536,7 +536,6 @@ final class BinarySerializer {
       v.foreach(putChar(_))
     case Val.Virtual(v)   => putInt(T.VirtualVal); putLong(v)
     case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
-    case Val.SizeOfPtr    => putInt(T.SizeOfPtrVal)
   }
 
   private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {

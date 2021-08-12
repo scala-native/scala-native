@@ -167,11 +167,6 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets long as a raw size. */
   def castLongToRawSize(long: Long): RawSize = intrinsic
 
-  /** Intrinsic to get the size of a size in bytes, resolved to a constant in
-   *  the linker
-   */
-  def sizeOfPtr: RawSize = intrinsic
-
   /** Intrinsified bitwise and on raw sizes. */
   def andRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
 

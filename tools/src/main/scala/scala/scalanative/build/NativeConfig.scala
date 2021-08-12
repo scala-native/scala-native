@@ -2,6 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Paths}
+import scala.scalanative.nir.Val
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
@@ -166,10 +167,10 @@ object NativeConfig {
       copy(optimize = value)
 
     override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
-      def isNumberOrString(value: Any) = {
+      def isSupportedPropertyKind(value: Any) = {
         def hasSupportedType = value match {
           case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
-              _: Float | _: Double | _: String =>
+              _: Val.Size | _: Float | _: Double | _: String =>
             true
           case _ => false
         }
@@ -178,7 +179,7 @@ object NativeConfig {
       }
 
       val invalid = v.collect {
-        case (key, value) if !isNumberOrString(value) => key
+        case (key, value) if !isSupportedPropertyKind(value) => key
       }
       if (invalid.nonEmpty) {
         System.err.println(

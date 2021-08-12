@@ -39,10 +39,5 @@ object Defaults {
           .withLTO(Discover.LTO())
           .withLinkingOptions(Discover.linkingOptions())
           .withCompileOptions(Discover.compileOptions())
-          .withLinktimeProperties {
-            Map(
-              "scala.scalanative.meta.linktimeinfo.isWindows" -> Platform.isWindows
-            )
-          }
       )
 }

@@ -27,6 +27,7 @@ package runtime
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.sizeOfPtr
 
 sealed abstract class Array[T]
     extends java.io.Serializable

@@ -28,6 +28,7 @@ package runtime
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.sizeOfPtr
 
 % sizePtr = 'sizeOfPtr'
 % sizeHeader = 'addRawSizes(sizeOfPtr, castIntToRawSize(8))'

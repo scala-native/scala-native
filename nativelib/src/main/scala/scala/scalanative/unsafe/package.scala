@@ -8,14 +8,14 @@ import scalanative.runtime.Intrinsics.{
   castIntToRawPtr,
   castIntToRawSize,
   castLongToRawPtr,
-  castLongToRawSize,
-  sizeOfPtr
+  castLongToRawSize
 }
 import scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo
 
 package object unsafe {
-  val ptrSize = new USize(sizeOfPtr)
-  val is32 = ptrSize.toInt == 4
+  val ptrSize = if (LinktimeInfo.is32) 4.toUSize else 8.toUSize
+  val is32 = LinktimeInfo.is32
 
   /** The C 'char' type. */
   type CChar = Byte

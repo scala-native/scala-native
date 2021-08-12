@@ -2,6 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Paths}
+import scala.scalanative.nir.Val
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
@@ -98,6 +99,9 @@ sealed trait Config {
       customTriple.contains("windows")
     }
   }
+
+  /** Map of properties resolved at linktime */
+  def linktimeProperties: Map[String, Any]
 }
 
 object Config {
@@ -141,5 +145,24 @@ object Config {
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
+
+    override def linktimeProperties: Map[String, Any] = {
+      val base = compilerConfig.linktimeProperties
+      val isWindows = compilerConfig.linktimeProperties
+        .get("scala.scalanative.meta.linktimeinfo.isWindows")
+        .getOrElse(targetsWindows)
+        .asInstanceOf[Boolean]
+      val is32 = compilerConfig.linktimeProperties
+        .get("scala.scalanative.meta.linktimeinfo.is32")
+        .getOrElse(this.is32)
+        .asInstanceOf[Boolean]
+      Map(
+        "scala.scalanative.meta.linktimeinfo.isWindows" -> isWindows,
+        "scala.scalanative.meta.linktimeinfo.is32" -> is32,
+        "scala.scalanative.meta.linktimeinfo.sizeOfPtr" -> Val.Size(
+          if (is32) 4 else 8
+        )
+      ) ++ compilerConfig.linktimeProperties
+    }
   }
 }
