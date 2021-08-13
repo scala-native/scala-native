@@ -9,7 +9,8 @@ package object linker {
     Map(
       s"$linktimeInfoProperties.isWindows" -> false,
       s"$linktimeInfoProperties.is32" -> false,
-      s"$linktimeInfoProperties.sizeOfPtr" -> Val.Size(8)
+      s"$linktimeInfoProperties.sizeOfPtr" -> Val.Size(8),
+      s"$linktimeInfoProperties.asanEnabled" -> false
     )
   }
 }

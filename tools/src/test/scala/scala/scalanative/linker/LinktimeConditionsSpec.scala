@@ -63,7 +63,8 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     // Always required linktime properties
     Entry(s"$linktimeInfoProperties.isWindows", false, Val.False),
     Entry(s"$linktimeInfoProperties.is32", false, Val.False),
-    Entry(s"$linktimeInfoProperties.sizeOfPtr", Val.Size(8), Val.Size(8))
+    Entry(s"$linktimeInfoProperties.sizeOfPtr", Val.Size(8), Val.Size(8)),
+    Entry(s"$linktimeInfoProperties.asanEnabled", false, Val.False)
   )
   val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
 

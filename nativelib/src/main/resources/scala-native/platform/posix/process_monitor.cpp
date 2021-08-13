@@ -42,8 +42,8 @@ static void *wait_loop(void *arg) {
                 WIFSIGNALED(status) ? 0x80 + status : status;
             const auto monitor = waiting_procs.find(pid);
             if (monitor != waiting_procs.end()) {
-                waiting_procs.erase(monitor);
                 auto m = monitor->second;
+                waiting_procs.erase(monitor);
                 *m->res = last_result;
                 pthread_cond_broadcast(m->cond);
             } else {
@@ -60,8 +60,9 @@ static void *wait_loop(void *arg) {
 static int check_result(const int pid, pthread_mutex_t *lock) {
     const auto result = finished_procs.find(pid);
     if (result != finished_procs.end()) {
+        const auto exit_code = result->second;
         finished_procs.erase(result);
-        return result->second;
+        return exit_code;
     }
     return -1;
 }

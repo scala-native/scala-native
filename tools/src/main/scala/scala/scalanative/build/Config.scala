@@ -159,12 +159,17 @@ object Config {
         .get("scala.scalanative.meta.linktimeinfo.is32")
         .getOrElse(this.is32)
         .asInstanceOf[Boolean]
+      val asanEnabled = compilerConfig.linktimeProperties
+        .get("scala.scalanative.meta.linktimeinfo.asanEnabled")
+        .getOrElse(compilerConfig.asan)
+        .asInstanceOf[Boolean]
       Map(
         "scala.scalanative.meta.linktimeinfo.isWindows" -> isWindows,
         "scala.scalanative.meta.linktimeinfo.is32" -> is32,
         "scala.scalanative.meta.linktimeinfo.sizeOfPtr" -> Val.Size(
           if (is32) 4 else 8
-        )
+        ),
+        "scala.scalanative.meta.linktimeinfo.asanEnabled" -> asanEnabled
       ) ++ compilerConfig.linktimeProperties
     }
   }

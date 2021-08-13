@@ -15,4 +15,7 @@ object LinktimeInfo {
 
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.sizeOfPtr")
   def sizeOfPtr: RawSize = resolved
+
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.asanEnabled")
+  def asanEnabled: Boolean = resolved
 }

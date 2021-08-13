@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.unwind
+import scala.scalanative.meta.LinktimeInfo
 
 private[lang] object StackTrace {
   private val cache =
@@ -37,17 +38,21 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor = stackalloc[scala.Byte](2048.toUSize)
-    val context = stackalloc[scala.Byte](2048.toUSize)
-    val offset = stackalloc[scala.Byte](8.toUSize)
-    val ip = stackalloc[CUnsignedLong]
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+    if (!LinktimeInfo.asanEnabled) {
+      Zone { implicit z =>
+        val cursor = alloc[scala.Byte](2048.toUSize)
+        val context = alloc[scala.Byte](2048.toUSize)
+        val offset = alloc[scala.Byte](8.toUSize)
+        val ip = alloc[CUnsignedLong]
 
-    unwind.get_context(context)
-    unwind.init_local(cursor, context)
-    while (unwind.step(cursor) > 0) {
-      unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-      buffer += cachedStackTraceElement(cursor, !ip)
+        unwind.get_context(context)
+        unwind.init_local(cursor, context)
+        while (unwind.step(cursor) > 0) {
+          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+          buffer += cachedStackTraceElement(cursor, !ip)
+        }
+      }
     }
 
     buffer.toArray
