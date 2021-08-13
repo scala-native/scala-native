@@ -175,7 +175,7 @@ class TimeTest {
           "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 2017"
 
         // time.c strftime() zeroed excess bytes in BSD/glibc struct tm.
-        if (!is32) { // TODO(shadaj): check
+        if (!is32) {
           assertTrue(
             s"result: '${result}' does not match regex: '${regex}'",
             result.matches(regex)

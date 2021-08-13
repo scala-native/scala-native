@@ -71,11 +71,11 @@ class USizeTest {
 
   @Test def division: Unit = {
     assertTrue((123.toUSize / 2.toUSize).toInt == 61)
-    if (!is32) {
-      assertTrue((-1L.toUSize / 2.toUSize).toLong == 9223372036854775807L)
-    } else {
-      // TODO(shadaj)
-    }
+    assertTrue((-1L.toUSize / 2.toUSize).toLong == (if (!is32) {
+                                                      ~(1L << 63)
+                                                    } else {
+                                                      (~(1 << 31)).toLong
+                                                    }))
   }
 
   @Test def modulo: Unit = {

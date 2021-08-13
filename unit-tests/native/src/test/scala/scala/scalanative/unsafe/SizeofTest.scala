@@ -65,32 +65,36 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
-    if (!is32) {
-      assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == 24.toUSize)
-    } else {
-      // TODO(shadaj)
-    }
+    assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == (if (!is32) {
+                                                                  24
+                                                                } else {
+                                                                  16
+                                                                }).toUSize)
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
-    if (!is32) { // TODO(shadaj)
-      assertTrue(
-        sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == 32.toUSize
-      )
-    }
+    assertTrue(
+      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == (if (!is32) {
+                                                                   32
+                                                                 } else {
+                                                                   24
+                                                                 }).toUSize
+    )
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntCStruct4ByteIntShortByte()
       : Unit = {
-    if (!is32) { // TODO(shadaj)
-      assertTrue(
-        sizeof[CStruct3[
-          Byte,
-          Long,
-          CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]
-        ]] == 40.toUSize
-      )
-    }
+    assertTrue(
+      sizeof[CStruct3[
+        Byte,
+        Long,
+        CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]
+      ]] == (if (!is32) {
+               40
+             } else {
+               32
+             }).toUSize
+    )
   }
 
   type _32 = Nat.Digit2[Nat._3, Nat._2]
