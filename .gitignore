@@ -1,3 +1,5 @@
+# vim
+*.swp
 scalalib/src/
 scala-partest/fetchedSources/
 target/
