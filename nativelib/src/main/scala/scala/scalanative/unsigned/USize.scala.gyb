@@ -50,7 +50,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def unary_~ : USize =
-    (~toLong).toUSize // TODO(shadaj): intrinsify
+    if (is32) (~toInt).toUSize
+    else (~toLong).toUSize
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -137,18 +138,19 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): Boolean =
-    this.toULong ${op} other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt ${op} other.toUInt
+    else this.toULong ${op} other.toULong
 
   % end
-  % binOps = [('&', 'andRawSizes', 'Returns the bitwise AND of this value and `x`.'),
-  %           ('|', 'orRawSizes', 'Returns the bitwise OR of this value and `x`.'),
-  %           ('^', 'xorRawSizes', 'Returns the bitwise XOR of this value and `x`.'),
-  %           ('+', 'addRawSizes', 'Returns the sum of this value and `x`.'),
-  %           ('-', 'subRawSizes', 'Returns the difference of this value and `x`.'),
-  %           ('*', 'multRawSizes', 'Returns the product of this value and `x`.'),
-  %           ('/', 'divRawSizesUnsigned', 'Returns the quotient of this value and `x`.'),
-  %           ('%', 'modRawSizesUnsigned', 'Returns the remainder of the division of this value by `x`.')]
-  % for (op, intrinsic, doc) in binOps:
+  % binOps = [('&', 'Returns the bitwise AND of this value and `x`.'),
+  %           ('|', 'Returns the bitwise OR of this value and `x`.'),
+  %           ('^', 'Returns the bitwise XOR of this value and `x`.'),
+  %           ('+', 'Returns the sum of this value and `x`.'),
+  %           ('-', 'Returns the difference of this value and `x`.'),
+  %           ('*', 'Returns the product of this value and `x`.'),
+  %           ('/', 'Returns the quotient of this value and `x`.'),
+  %           ('%', 'Returns the remainder of the division of this value by `x`.')]
+  % for (op, doc) in binOps:
   /** ${doc} */
   @inline def ${op}(x: UByte): USize = this ${op} x.toUSize
 
@@ -163,7 +165,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): USize =
-    new USize(${intrinsic}(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt ${op} other.toUInt)
+    else (this.toULong ${op} other.toULong).toUSize
 
   % end
 

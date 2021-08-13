@@ -30,8 +30,8 @@ import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 import scala.scalanative.meta.LinktimeInfo.sizeOfPtr
 
-% sizePtr = 'sizeOfPtr'
-% sizeHeader = 'addRawSizes(sizeOfPtr, castIntToRawSize(8))'
+% sizePtr = 'sizeof[Ptr[Byte]]'
+% sizeHeader = 'sizeof[Ptr[Byte]] + 8.toUSize'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -40,7 +40,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, ${sizePtr})
+    val lenptr = elemRawPtr(rawptr, ${sizePtr}.rawSize)
     loadInt(lenptr)
   }
 
@@ -156,7 +156,7 @@ object Array {
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(sizeOfPtr)'}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'sizeof[Ptr[Byte]].toInt'}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.
@@ -183,30 +183,16 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(i))))
+      elemRawPtr(rawptr, (${sizeHeader} + (${sizeT} * i).toUSize).rawSize)
     }
 
-  @inline def apply(i: Int): ${T} =
-    if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
-    } else {
-      val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(i))))
-      load${T}(ith)
-    }
+  @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
 
-  @inline def update(i: Int, value: ${T}): Unit =
-    if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
-    } else {
-      val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(i))))
-      store${T}(ith, value)
-    }
+  @inline def update(i: Int, value: ${T}): Unit = store${T}(atRaw(i), value)
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = new USize(addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(length))))
+    val arrsize = ${sizeHeader} + (${sizeT} * length).toUSize
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -218,10 +204,10 @@ object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = new USize(addRawSizes(${sizeHeader}, multRawSizes(castIntToRawSize(${sizeT}), castIntToRawSize(length))))
+    val arrsize = ${sizeHeader} + (${sizeT} * length).toUSize
     val arr     = ${alloc}(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, ${sizePtr}), length)
-    storeInt(elemRawPtr(arr, addRawSizes(${sizePtr}, castIntToRawSize(4))), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, ${sizePtr}.rawSize), length)
+    storeInt(elemRawPtr(arr, (${sizePtr} + 4.toUSize).rawSize), ${sizeT}.toInt)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 

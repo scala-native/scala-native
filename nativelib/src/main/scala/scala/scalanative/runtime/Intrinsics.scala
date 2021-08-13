@@ -166,34 +166,4 @@ object Intrinsics {
 
   /** Intrinsified cast that reinterprets long as a raw size. */
   def castLongToRawSize(long: Long): RawSize = intrinsic
-
-  /** Intrinsified bitwise and on raw sizes. */
-  def andRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified bitwise or on raw sizes. */
-  def orRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified bitwise xor on raw sizes. */
-  def xorRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified addition on raw sizes. */
-  def addRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified subtraction on raw sizes. */
-  def subRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified multiplication on raw sizes. */
-  def multRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified division on raw sizes. */
-  def divRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified division on unsigned raw sizes. */
-  def divRawSizesUnsigned(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified modulo on raw sizes. */
-  def modRawSizes(a: RawSize, b: RawSize): RawSize = intrinsic
-
-  /** Intrinsified modulo on unsignedraw sizes. */
-  def modRawSizesUnsigned(a: RawSize, b: RawSize): RawSize = intrinsic
 }

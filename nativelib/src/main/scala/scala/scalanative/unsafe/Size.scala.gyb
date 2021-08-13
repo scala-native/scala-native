@@ -49,10 +49,11 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def unary_~ : Size =
-    (~toLong).toSize // TODO(shadaj): intrinsify
+    if (is32) (~toInt).toSize
+    else (~toLong).toSize
 
   /** Returns the negated version of this value. */
-  @inline def unary_- : Size = 0 - this // TODO(shadaj): intrinsify
+  @inline def unary_- : Size = 0 - this
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -139,18 +140,19 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: Size): Boolean =
-    this.toLong ${op} other.toLong // TODO(shadaj): intrinsify
+    if (is32) this.toInt ${op} other.toInt
+    else this.toLong ${op} other.toLong
 
   % end
-  % binOps = [('&', 'andRawSizes', 'Returns the bitwise AND of this value and `x`.'),
-  %           ('|', 'orRawSizes', 'Returns the bitwise OR of this value and `x`.'),
-  %           ('^', 'xorRawSizes', 'Returns the bitwise XOR of this value and `x`.'),
-  %           ('+', 'addRawSizes', 'Returns the sum of this value and `x`.'),
-  %           ('-', 'subRawSizes', 'Returns the difference of this value and `x`.'),
-  %           ('*', 'multRawSizes', 'Returns the product of this value and `x`.'),
-  %           ('/', 'divRawSizes', 'Returns the quotient of this value and `x`.'),
-  %           ('%', 'modRawSizes', 'Returns the remainder of the division of this value by `x`.')]
-  % for (op, intrinsic, doc) in binOps:
+  % binOps = [('&', 'Returns the bitwise AND of this value and `x`.'),
+  %           ('|', 'Returns the bitwise OR of this value and `x`.'),
+  %           ('^', 'Returns the bitwise XOR of this value and `x`.'),
+  %           ('+', 'Returns the sum of this value and `x`.'),
+  %           ('-', 'Returns the difference of this value and `x`.'),
+  %           ('*', 'Returns the product of this value and `x`.'),
+  %           ('/', 'Returns the quotient of this value and `x`.'),
+  %           ('%', 'Returns the remainder of the division of this value by `x`.')]
+  % for (op, doc) in binOps:
   /** ${doc} */
   @inline def ${op}(x: Byte): Size = this ${op} x.toSize
 
@@ -165,7 +167,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: Size): Size =
-    new Size(${intrinsic}(rawSize, other.rawSize))
+    if (is32) Size.intToSize(this.toInt ${op} other.toInt)
+    else (this.toLong ${op} other.toLong).toSize
 
   % end
 

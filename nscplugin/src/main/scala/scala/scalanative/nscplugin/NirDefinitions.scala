@@ -259,28 +259,6 @@ trait NirDefinitions {
     lazy val CastLongToRawSize =
       getMember(IntrinsicsModule, TermName("castLongToRawSize"))
 
-    lazy val AndRawSizes =
-      getMember(IntrinsicsModule, TermName("andRawSizes"))
-    lazy val OrRawSizes =
-      getMember(IntrinsicsModule, TermName("orRawSizes"))
-    lazy val XorRawSizes =
-      getMember(IntrinsicsModule, TermName("xorRawSizes"))
-
-    lazy val AddRawSizes =
-      getMember(IntrinsicsModule, TermName("addRawSizes"))
-    lazy val SubRawSizes =
-      getMember(IntrinsicsModule, TermName("subRawSizes"))
-    lazy val MultRawSizes =
-      getMember(IntrinsicsModule, TermName("multRawSizes"))
-    lazy val DivRawSizes =
-      getMember(IntrinsicsModule, TermName("divRawSizes"))
-    lazy val DivRawSizesUnsigned =
-      getMember(IntrinsicsModule, TermName("divRawSizesUnsigned"))
-    lazy val ModRawSizes =
-      getMember(IntrinsicsModule, TermName("modRawSizes"))
-    lazy val ModRawSizesUnsigned =
-      getMember(IntrinsicsModule, TermName("modRawSizesUnsigned"))
-
     lazy val ResolvedAtLinktimeClass = getRequiredClass(
       "scala.scalanative.unsafe.resolvedAtLinktime"
     )

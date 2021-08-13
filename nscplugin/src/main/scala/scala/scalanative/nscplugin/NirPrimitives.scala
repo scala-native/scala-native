@@ -73,17 +73,6 @@ object NirPrimitives {
 
   final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
-
-  final val AND_RAW_SIZES = 1 + CFUNCPTR_APPLY
-  final val OR_RAW_SIZES = 1 + AND_RAW_SIZES
-  final val XOR_RAW_SIZES = 1 + OR_RAW_SIZES
-  final val ADD_RAW_SIZES = 1 + XOR_RAW_SIZES
-  final val SUB_RAW_SIZES = 1 + ADD_RAW_SIZES
-  final val MULT_RAW_SIZES = 1 + SUB_RAW_SIZES
-  final val DIV_RAW_SIZES = 1 + MULT_RAW_SIZES
-  final val DIV_RAW_SIZES_UNSIGNED = 1 + DIV_RAW_SIZES
-  final val MOD_RAW_SIZES = 1 + DIV_RAW_SIZES_UNSIGNED
-  final val MOD_RAW_SIZES_UNSIGNED = 1 + MOD_RAW_SIZES
 }
 
 abstract class NirPrimitives {
@@ -131,9 +120,6 @@ abstract class NirPrimitives {
 
   def isRawSizeCastOp(code: Int): Boolean =
     code >= CAST_RAWSIZE_TO_INT && code <= CAST_LONG_TO_RAWSIZE
-
-  def isRawSizeOp(code: Int): Boolean =
-    code >= AND_RAW_SIZES && code <= MOD_RAW_SIZES_UNSIGNED
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
@@ -209,16 +195,5 @@ abstract class NirPrimitives {
     addPrimitive(CastIntToRawSize, CAST_INT_TO_RAWSIZE)
     addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
     addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWSIZE)
-
-    addPrimitive(AndRawSizes, AND_RAW_SIZES)
-    addPrimitive(OrRawSizes, OR_RAW_SIZES)
-    addPrimitive(XorRawSizes, XOR_RAW_SIZES)
-    addPrimitive(AddRawSizes, ADD_RAW_SIZES)
-    addPrimitive(SubRawSizes, SUB_RAW_SIZES)
-    addPrimitive(MultRawSizes, MULT_RAW_SIZES)
-    addPrimitive(DivRawSizes, DIV_RAW_SIZES)
-    addPrimitive(DivRawSizesUnsigned, DIV_RAW_SIZES_UNSIGNED)
-    addPrimitive(ModRawSizes, MOD_RAW_SIZES)
-    addPrimitive(ModRawSizesUnsigned, MOD_RAW_SIZES_UNSIGNED)
   }
 }

@@ -46,7 +46,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{~5 == 4294967290 // in binary: ~00000101 == // 11111010}}}
    */
   @inline def unary_~ : USize =
-    (~toLong).toUSize // TODO(shadaj): intrinsify
+    if (is32) (~toInt).toUSize
+    else (~toLong).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the new right bits with zeroes.
@@ -118,7 +119,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline def ==(other: USize): Boolean =
-    this.toULong == other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt == other.toUInt
+    else this.toULong == other.toULong
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline def !=(x: UByte): Boolean = this != x.toUSize
@@ -134,7 +136,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline def !=(other: USize): Boolean =
-    this.toULong != other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt != other.toUInt
+    else this.toULong != other.toULong
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
   @inline def <(x: UByte): Boolean = this < x.toUSize
@@ -150,7 +153,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
   @inline def <(other: USize): Boolean =
-    this.toULong < other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt < other.toUInt
+    else this.toULong < other.toULong
 
   /** Returns `true` if this value is less than or equal to x, `false`
    *  otherwise.
@@ -176,7 +180,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *  otherwise.
    */
   @inline def <=(other: USize): Boolean =
-    this.toULong <= other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt <= other.toUInt
+    else this.toULong <= other.toULong
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @inline def >(x: UByte): Boolean = this > x.toUSize
@@ -192,7 +197,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @inline def >(other: USize): Boolean =
-    this.toULong > other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt > other.toUInt
+    else this.toULong > other.toULong
 
   /** Returns `true` if this value is greater than or equal to x, `false`
    *  otherwise.
@@ -218,7 +224,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *  otherwise.
    */
   @inline def >=(other: USize): Boolean =
-    this.toULong >= other.toULong // TODO(shadaj): intrinsify
+    if (is32) this.toUInt >= other.toUInt
+    else this.toULong >= other.toULong
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(x: UByte): USize = this & x.toUSize
@@ -234,7 +241,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(other: USize): USize =
-    new USize(andRawSizes(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt & other.toUInt)
+    else (this.toULong & other.toULong).toUSize
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(x: UByte): USize = this | x.toUSize
@@ -250,7 +258,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(other: USize): USize =
-    new USize(orRawSizes(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt | other.toUInt)
+    else (this.toULong | other.toULong).toUSize
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(x: UByte): USize = this ^ x.toUSize
@@ -266,7 +275,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(other: USize): USize =
-    new USize(xorRawSizes(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt ^ other.toUInt)
+    else (this.toULong ^ other.toULong).toUSize
 
   /** Returns the sum of this value and `x`. */
   @inline def +(x: UByte): USize = this + x.toUSize
@@ -282,7 +292,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the sum of this value and `x`. */
   @inline def +(other: USize): USize =
-    new USize(addRawSizes(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt + other.toUInt)
+    else (this.toULong + other.toULong).toUSize
 
   /** Returns the difference of this value and `x`. */
   @inline def -(x: UByte): USize = this - x.toUSize
@@ -298,7 +309,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the difference of this value and `x`. */
   @inline def -(other: USize): USize =
-    new USize(subRawSizes(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt - other.toUInt)
+    else (this.toULong - other.toULong).toUSize
 
   /** Returns the product of this value and `x`. */
   @inline def *(x: UByte): USize = this * x.toUSize
@@ -314,7 +326,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the product of this value and `x`. */
   @inline def *(other: USize): USize =
-    new USize(multRawSizes(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt * other.toUInt)
+    else (this.toULong * other.toULong).toUSize
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(x: UByte): USize = this / x.toUSize
@@ -330,7 +343,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(other: USize): USize =
-    new USize(divRawSizesUnsigned(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt / other.toUInt)
+    else (this.toULong / other.toULong).toUSize
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(x: UByte): USize = this % x.toUSize
@@ -346,7 +360,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(other: USize): USize =
-    new USize(modRawSizesUnsigned(rawSize, other.rawSize))
+    if (is32) USize.uintToUSize(this.toUInt % other.toUInt)
+    else (this.toULong % other.toULong).toUSize
 
   // "Rich" API
 

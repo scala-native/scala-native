@@ -1138,8 +1138,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genCFuncPtrApply(app, code)
       } else if (code == CFUNCPTR_FROM_FUNCTION) {
         genCFuncFromScalaFunction(app)
-      } else if (nirPrimitives.isRawSizeOp(code)) {
-        genRawSizeOp(app, code)
       } else if (nirPrimitives.isRawSizeCastOp(code)) {
         genRawSizeCastOp(app, args.head, code)
       } else if (isCoercion(code)) {
@@ -1820,35 +1818,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val value = genExpr(argp)
 
       genCastOp(fromty, toty, value)(app.pos)
-    }
-
-    def genRawSizeOp(app: Apply, code: Int): Val = {
-      code match {
-        case _ => // just a binary op
-          val Apply(_, Seq(leftp, rightp)) = app
-
-          val bin = code match {
-            case AND_RAW_SIZES          => Bin.And
-            case OR_RAW_SIZES           => Bin.Or
-            case XOR_RAW_SIZES          => Bin.Xor
-            case ADD_RAW_SIZES          => Bin.Iadd
-            case SUB_RAW_SIZES          => Bin.Isub
-            case MULT_RAW_SIZES         => Bin.Imul
-            case DIV_RAW_SIZES          => Bin.Sdiv
-            case DIV_RAW_SIZES_UNSIGNED => Bin.Udiv
-            case MOD_RAW_SIZES          => Bin.Srem
-            case MOD_RAW_SIZES_UNSIGNED => Bin.Urem
-            case _ =>
-              abort(
-                s"Unknown word operation #$code : " + app +
-                  " at: " + app.pos
-              )
-          }
-
-          buf.bin(bin, Type.Size, genExpr(leftp), genExpr(rightp), unwind)(
-            app.pos
-          )
-      }
     }
 
     def genRawSizeCastOp(app: Apply, receiver: Tree, code: Int): Val = {
