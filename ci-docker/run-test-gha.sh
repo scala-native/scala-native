@@ -46,9 +46,10 @@ docker run --mount type=bind,source=$HOME/.cache/coursier,target=/home/scala-nat
            --mount type=bind,source=$HOME/.sbt,target=/home/scala-native/.sbt \
            --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
            -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
+           -e SCALANATIVE_ASAN="$SCALANATIVE_ASAN" \
+           -e ASAN_OPTIONS="$ASAN_OPTIONS" \
            -e SCALANATIVE_GC="$SCALANATIVE_GC" \
            -e SCALANATIVE_OPTIMIZE="$SCALANATIVE_OPTIMIZE" \
            -e TEST_COMMAND="$TEST_COMMAND" \
            -e SCALA_VERSION="$SCALA_VERSION" \
-           -e ASAN_OPTIONS="detect_leaks=0" \
            -i "${FULL_IMAGE_NAME}"

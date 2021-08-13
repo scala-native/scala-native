@@ -38,17 +38,7 @@ RUN \
   dpkg -i $SBT_INSTALL_FILE && \
   rm $SBT_INSTALL_FILE
 
-RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y clang-11 zlib1g-dev git autoconf make libtool gdb
-
-ENV CC "clang-11"
-ENV CXX "clang++-11"
-
-RUN git clone --depth=1 git://github.com/ivmai/bdwgc.git && \
-    cd bdwgc && \
-    ./autogen.sh && \
-    ./configure --enable-gc-assertions && \
-    make check && \
-    make install
+RUN apt-get install -y clang-10 zlib1g-dev libgc-dev
 
 ENV LD_LIBRARY_PATH "/usr/local/lib"
 
@@ -56,7 +46,7 @@ ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
 
-ENV PATH=/usr/lib/llvm-11/bin:${PATH}
+ENV PATH=/usr/lib/llvm-10/bin:${PATH}
 
 RUN useradd -ms /bin/bash scala-native
 
