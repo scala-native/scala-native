@@ -41,6 +41,9 @@ sealed trait NativeConfig {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
+  /** Should address sanitizer be used? */
+  def asan: Boolean
+
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
@@ -83,6 +86,9 @@ sealed trait NativeConfig {
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
 
+  /** Create a new config with given asan value. */
+  def withASAN(value: Boolean): NativeConfig
+
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
 
@@ -105,6 +111,7 @@ object NativeConfig {
       mode = Mode.default,
       check = false,
       dump = false,
+      asan = false,
       linkStubs = false,
       optimize = false,
       linktimeProperties = Map.empty
@@ -122,6 +129,7 @@ object NativeConfig {
       linkStubs: Boolean,
       check: Boolean,
       dump: Boolean,
+      asan: Boolean,
       optimize: Boolean,
       linktimeProperties: Map[String, Any]
   ) extends NativeConfig {
@@ -162,6 +170,9 @@ object NativeConfig {
 
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
+
+    def withASAN(value: Boolean): NativeConfig =
+      copy(asan = value)
 
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
@@ -220,6 +231,7 @@ object NativeConfig {
         | - linkStubs:       $linkStubs
         | - check:           $check
         | - dump:            $dump
+        | - asan:            $asan
         | - optimize         $optimize
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin

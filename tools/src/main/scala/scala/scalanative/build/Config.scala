@@ -75,6 +75,9 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
 
+  /** Should address sanitizer be used? */
+  def asan: Boolean = compilerConfig.asan
+
   def is32: Boolean =
     compilerConfig.targetTriple
       .getOrElse(

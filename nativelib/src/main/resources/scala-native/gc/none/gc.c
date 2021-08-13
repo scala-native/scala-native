@@ -61,13 +61,13 @@ void Prealloc_Or_Default() {
 }
 
 void scalanative_init() {
+#ifdef _WIN32
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     if (current == NULL) {
         exitWithOutOfMemory();
     }
     end = current + CHUNK;
-#ifdef _WIN32
     if (!memoryCommit(current, CHUNK)) {
         exitWithOutOfMemory();
     };
@@ -76,6 +76,7 @@ void scalanative_init() {
 
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
+#ifdef _WIN32
     if (current + size < end) {
         void **alloc = current;
         *alloc = info;
@@ -85,6 +86,11 @@ void *scalanative_alloc(void *info, size_t size) {
         scalanative_init();
         return scalanative_alloc(info, size);
     }
+#else
+    void **alloc = calloc(size, 1);
+    *alloc = info;
+    return alloc;
+#endif
 }
 
 void *scalanative_alloc_small(void *info, size_t size) {

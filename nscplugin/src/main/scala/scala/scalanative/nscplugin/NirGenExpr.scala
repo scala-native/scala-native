@@ -1707,7 +1707,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def boxValue(st: SimpleType, value: Val)(implicit pos: nir.Position): Val =
       st.sym match {
-        case UByteClass | UShortClass | UIntClass | ULongClass =>
+        case UByteClass | UShortClass | UIntClass | ULongClass | USizeClass =>
           genApplyModuleMethod(
             RuntimeBoxesModule,
             BoxUnsignedMethod(st.sym),
@@ -1724,7 +1724,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def unboxValue(st: SimpleType, partial: Boolean, value: Val)(implicit
         pos: nir.Position
     ): Val = st.sym match {
-      case UByteClass | UShortClass | UIntClass | ULongClass =>
+      case UByteClass | UShortClass | UIntClass | ULongClass | USizeClass =>
         // Results of asInstanceOfs are partially unboxed, meaning
         // that non-standard value types remain to be boxed.
         if (partial) {

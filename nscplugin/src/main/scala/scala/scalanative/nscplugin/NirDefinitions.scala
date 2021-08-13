@@ -372,7 +372,8 @@ trait NirDefinitions {
       UByteClass -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
       UShortClass -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
       UIntClass -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
-      ULongClass -> getDecl(RuntimeBoxesModule, TermName("boxToULong"))
+      ULongClass -> getDecl(RuntimeBoxesModule, TermName("boxToULong")),
+      USizeClass -> getDecl(RuntimeBoxesModule, TermName("boxToUSize"))
     )
 
     lazy val HashMethods = Seq(
@@ -398,7 +399,8 @@ trait NirDefinitions {
       UByteClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
       UShortClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
       UIntClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
-      ULongClass -> getDecl(RuntimeBoxesModule, TermName("unboxToULong"))
+      ULongClass -> getDecl(RuntimeBoxesModule, TermName("unboxToULong")),
+      USizeClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUSize"))
     )
 
     lazy val ClassTagModule = getRequiredModule("scala.reflect.ClassTag")
