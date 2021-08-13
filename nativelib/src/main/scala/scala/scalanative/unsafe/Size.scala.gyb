@@ -25,8 +25,9 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toULong: ULong   = toUSize.toULong
   @inline def toUSize: USize   = new USize(rawSize)
 
-  // TODO(shadaj): intrinsify
-  @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
+  @inline def toPtr[T]: Ptr[T] =
+    if (is32) fromRawPtr[T](castIntToRawPtr(toInt))
+    else fromRawPtr[T](castLongToRawPtr(toLong))
 
   @inline override def hashCode: Int = toLong.hashCode
 
@@ -61,7 +62,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
   @inline def <<(x: Int): Size =
-    (toLong << x).toSize // TODO(shadaj): intrinsify
+    if (is32) (toInt << x).toSize
+    else (toLong << x).toSize
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -69,7 +71,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
   @inline def <<(x: Long): Size =
-    (toLong << x).toSize // TODO(shadaj): intrinsify
+    if (is32) (toInt << x.toInt).toSize
+    else (toLong << x).toSize
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -82,7 +85,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def >>>(x: Int): Size =
-    (toLong >>> x).toSize // TODO(shadaj): intrinsify
+    if (is32) (toInt >>> x).toSize
+    else (toLong >>> x).toSize
 
   /**
    * Returns this value bit-shifted right by the specified number of bits,
@@ -95,7 +99,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def >>>(x: Long): Size =
-    (toLong >>> x).toSize // TODO(shadaj): intrinsify
+    if (is32) (toInt >>> x.toInt).toSize
+    else (toLong >>> x).toSize
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -106,7 +111,9 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Int): Size = (toLong >> x).toSize
+  @inline final def >>(x: Int): Size =
+    if (is32) (toInt >> x).toSize
+    else (toLong >> x).toSize
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,
@@ -117,7 +124,9 @@ final class Size(private[scalanative] val rawSize: RawSize) {
    * //            11111111 11111111 11111111 11111101
    * }}}
    */
-  @inline final def >>(x: Long): Size = (toLong >> x).toSize
+  @inline final def >>(x: Long): Size =
+    if (is32) (toInt >> x.toInt).toSize
+    else (toLong >> x).toSize
 
   % cmpOps = [('==', 'Returns `true` if this value is equal to x, `false` otherwise.'),
   %           ('!=', 'Returns `true` if this value is not equal to x, `false` otherwise.'),

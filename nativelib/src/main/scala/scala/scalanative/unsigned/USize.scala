@@ -14,10 +14,10 @@ import unsafe._
 import java.lang.{Long => JLong}
 
 final class USize(private[scalanative] val rawSize: RawSize) {
-  @inline def toByte: Byte = castRawSizeToLongUnsigned(rawSize).toByte
-  @inline def toChar: Char = castRawSizeToLongUnsigned(rawSize).toChar
-  @inline def toShort: Short = castRawSizeToLongUnsigned(rawSize).toShort
-  @inline def toInt: Int = castRawSizeToLongUnsigned(rawSize).toInt
+  @inline def toByte: Byte = castRawSizeToInt(rawSize).toByte
+  @inline def toChar: Char = castRawSizeToInt(rawSize).toChar
+  @inline def toShort: Short = castRawSizeToInt(rawSize).toShort
+  @inline def toInt: Int = castRawSizeToInt(rawSize)
   @inline def toLong: Long = castRawSizeToLongUnsigned(rawSize)
   @inline def toSize: unsafe.Size = new unsafe.Size(rawSize)
 
@@ -26,8 +26,9 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def toUInt: UInt = toInt.toUInt
   @inline def toULong: ULong = new ULong(castRawSizeToLongUnsigned(rawSize))
 
-  // TODO(shadaj): intrinsify
-  @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(toLong))
+  @inline def toPtr[T]: Ptr[T] =
+    if (is32) fromRawPtr[T](castIntToRawPtr(toInt))
+    else fromRawPtr[T](castLongToRawPtr(toLong))
 
   @inline override def hashCode: Int = toULong.hashCode
 
@@ -55,7 +56,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Int): USize =
-    (toLong << x).toUSize // TODO(shadaj): intrinsify
+    if (is32) (toInt << x).toUSize
+    else (toLong << x).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the new right bits with zeroes.
@@ -63,7 +65,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Long): USize =
-    (toLong << x).toUSize // TODO(shadaj): intrinsify
+    if (is32) (toInt << x.toInt).toUSize
+    else (toLong << x).toUSize
 
   /** Returns this value bit-shifted right by the specified number of bits,
    *  filling the new left bits with zeroes.
@@ -74,7 +77,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Int): USize =
-    (toLong >>> x).toUSize // TODO(shadaj): intrinsify
+    if (is32) (toInt >>> x).toUSize
+    else (toLong >>> x).toUSize
 
   /** Returns this value bit-shifted right by the specified number of bits,
    *  filling the new left bits with zeroes.
@@ -85,7 +89,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Long): USize =
-    (toLong >>> x).toUSize // TODO(shadaj): intrinsify
+    if (is32) (toInt >>> x.toInt).toUSize
+    else (toLong >>> x).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the right bits with the same value as the left-most bit of
@@ -94,7 +99,9 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
    *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
-  @inline final def >>(x: Int): USize = (toLong >> x).toUSize
+  @inline final def >>(x: Int): USize =
+    if (is32) (toInt >> x).toUSize
+    else (toLong >> x).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the right bits with the same value as the left-most bit of
@@ -103,7 +110,9 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
    *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
-  @inline final def >>(x: Long): USize = (toLong >> x).toUSize
+  @inline final def >>(x: Long): USize =
+    if (is32) (toInt >> x.toInt).toUSize
+    else (toLong >> x).toUSize
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline def ==(x: UByte): Boolean = this == x.toUSize
