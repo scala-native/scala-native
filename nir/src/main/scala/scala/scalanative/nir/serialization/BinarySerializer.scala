@@ -513,7 +513,7 @@ final class BinarySerializer {
     case Val.False           => putInt(T.FalseVal)
     case Val.Null            => putInt(T.NullVal)
     case Val.Zero(ty)        => putInt(T.ZeroVal); putType(ty)
-    case Val.Size(v)         => putInt(T.SizeVal); putInt(v)
+    case Val.Size(v)         => putInt(T.SizeVal); putLong(v)
     case Val.Char(v)         => putInt(T.CharVal); putShort(v.toShort)
     case Val.Byte(v)         => putInt(T.ByteVal); put(v)
     case Val.Short(v)        => putInt(T.ShortVal); putShort(v)

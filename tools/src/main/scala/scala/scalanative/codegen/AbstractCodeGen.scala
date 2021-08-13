@@ -423,12 +423,22 @@ private[codegen] abstract class AbstractCodeGen(
     import sb._
 
     deconstify(v) match {
-      case Val.True      => str("true")
-      case Val.False     => str("false")
-      case Val.Null      => str("null")
-      case Val.Zero(ty)  => str("zeroinitializer")
-      case Val.Byte(v)   => str(v)
-      case Val.Size(v)   => str(v)
+      case Val.True     => str("true")
+      case Val.False    => str("false")
+      case Val.Null     => str("null")
+      case Val.Zero(ty) => str("zeroinitializer")
+      case Val.Byte(v)  => str(v)
+      case Val.Size(v) => {
+        if (is32) {
+          if (v.toInt != v) {
+            unsupported("Emitting size values that exceed the platform bounds")
+          } else {
+            str(v.toInt)
+          }
+        } else {
+          str(v)
+        }
+      }
       case Val.Char(v)   => str(v.toInt)
       case Val.Short(v)  => str(v)
       case Val.Int(v)    => str(v)

@@ -479,13 +479,13 @@ trait Combine { self: Interflow =>
         Val.False
       case (Ule, lhs, v) if v.isUnsignedMaxValue =>
         Val.True
-      case (Sgt, lhs, v) if v.isSignedMaxValue =>
+      case (Sgt, lhs, v) if v.isSignedMaxValue(is32) =>
         Val.False
-      case (Sge, lhs, v) if v.isSignedMinValue =>
+      case (Sge, lhs, v) if v.isSignedMinValue(is32) =>
         Val.True
-      case (Slt, lhs, v) if v.isSignedMinValue =>
+      case (Slt, lhs, v) if v.isSignedMinValue(is32) =>
         Val.False
-      case (Sle, lhs, v) if v.isSignedMaxValue =>
+      case (Sle, lhs, v) if v.isSignedMaxValue(is32) =>
         Val.True
 
       // ((x xor y) == 0) ==> (x == y)

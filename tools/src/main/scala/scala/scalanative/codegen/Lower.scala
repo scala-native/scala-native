@@ -748,8 +748,7 @@ object Lower {
       val Op.Sizeof(ty) = op
 
       val memorySize = MemoryLayout.sizeOf(ty, is32)
-      assert(memorySize == memorySize.toInt)
-      buf.let(n, Op.Copy(Val.Size(memorySize.toInt)), unwind)
+      buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
@@ -917,14 +916,16 @@ object Lower {
         val minus1 = ty match {
           case Type.Int  => Val.Int(-1)
           case Type.Long => Val.Long(-1L)
-          case Type.Size => Val.Size(-1)
+          case Type.Size => Val.Size(-1L)
           case _         => util.unreachable
         }
         val minValue = ty match {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
-          case Type.Size => Val.Size(java.lang.Integer.MIN_VALUE)
-          case _         => util.unreachable
+          case Type.Size =>
+            if (is32) Val.Size(java.lang.Integer.MIN_VALUE)
+            else Val.Size(java.lang.Long.MIN_VALUE)
+          case _ => util.unreachable
         }
 
         val divisorIsMinus1 =

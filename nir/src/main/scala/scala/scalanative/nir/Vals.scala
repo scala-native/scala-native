@@ -90,8 +90,8 @@ sealed abstract class Val {
     case _               => false
   }
 
-  final def isSignedMinValue: Boolean = this match {
-    case Val.Size(v)  => v == Int.MinValue
+  final def isSignedMinValue(is32: Boolean): Boolean = this match {
+    case Val.Size(v)  => if (is32) v == Int.MinValue else v == Long.MinValue
     case Val.Byte(v)  => v == Byte.MinValue
     case Val.Short(v) => v == Short.MinValue
     case Val.Int(v)   => v == Int.MinValue
@@ -99,8 +99,8 @@ sealed abstract class Val {
     case _            => false
   }
 
-  final def isSignedMaxValue: Boolean = this match {
-    case Val.Size(v)  => v == Int.MaxValue
+  final def isSignedMaxValue(is32: Boolean): Boolean = this match {
+    case Val.Size(v)  => if (is32) v == Int.MaxValue else v == Long.MaxValue
     case Val.Byte(v)  => v == Byte.MaxValue
     case Val.Short(v) => v == Short.MaxValue
     case Val.Int(v)   => v == Int.MaxValue
@@ -157,7 +157,7 @@ object Val {
   }
   case object Null extends Val
   final case class Zero(of: nir.Type) extends Val
-  final case class Size(value: scala.Int) extends Val
+  final case class Size(value: scala.Long) extends Val
   final case class Char(value: scala.Char) extends Val
   final case class Byte(value: scala.Byte) extends Val
   final case class Short(value: scala.Short) extends Val

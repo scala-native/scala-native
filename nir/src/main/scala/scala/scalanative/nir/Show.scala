@@ -397,8 +397,8 @@ object Show {
     }
 
     def conv_(conv: Conv): Unit = conv match {
-      case Conv.SSizeCast => str("swordcast")
-      case Conv.ZSizeCast => str("zwordcast")
+      case Conv.SSizeCast => str("ssizecast")
+      case Conv.ZSizeCast => str("zsizecast")
       case Conv.Trunc     => str("trunc")
       case Conv.Zext      => str("zext")
       case Conv.Sext      => str("sext")
@@ -425,7 +425,7 @@ object Show {
         type_(ty)
         str("]")
       case Val.Size(value) =>
-        str("word ")
+        str("size ")
         str(value)
       case Val.Char(value) =>
         str("char ")
