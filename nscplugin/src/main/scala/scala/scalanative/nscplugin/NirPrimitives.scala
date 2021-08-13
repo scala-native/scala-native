@@ -61,8 +61,7 @@ object NirPrimitives {
   final val CAST_DOUBLE_TO_LONG = 1 + CAST_LONG_TO_DOUBLE
   final val CAST_RAWPTR_TO_INT = 1 + CAST_DOUBLE_TO_LONG
   final val CAST_RAWPTR_TO_LONG = 1 + CAST_RAWPTR_TO_INT
-  final val CAST_RAWPTR_TO_RAWSIZE = 1 + CAST_RAWPTR_TO_LONG
-  final val CAST_INT_TO_RAWPTR = 1 + CAST_RAWPTR_TO_RAWSIZE
+  final val CAST_INT_TO_RAWPTR = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR = 1 + CAST_INT_TO_RAWPTR
   final val CAST_RAWSIZE_TO_INT = 1 + CAST_LONG_TO_RAWPTR
   final val CAST_RAWSIZE_TO_LONG = 1 + CAST_RAWSIZE_TO_INT
@@ -183,7 +182,6 @@ abstract class NirPrimitives {
     addPrimitive(CastDoubleToLongMethod, CAST_DOUBLE_TO_LONG)
     addPrimitive(CastRawPtrToIntMethod, CAST_RAWPTR_TO_INT)
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
-    addPrimitive(CastRawPtrToRawSizeMethod, CAST_RAWPTR_TO_RAWSIZE)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
     CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))

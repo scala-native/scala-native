@@ -49,8 +49,8 @@ final class Ptr[T] private[scalanative] (
     new Ptr(elemRawPtr(rawptr, (-((offset * sizeof[T]).toSize)).rawSize))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
-    val left = new Size(castRawPtrToRawSize(rawptr))
-    val right = new Size(castRawPtrToRawSize(other.rawptr))
+    val left = if (is32) this.toInt.toSize else this.toLong.toSize
+    val right = if (is32) other.toInt.toSize else other.toLong.toSize
     (left - right) / sizeof[T].toSize
   }
 

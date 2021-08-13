@@ -227,8 +227,6 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castRawPtrToInt"))
     lazy val CastRawPtrToLongMethod =
       getMember(IntrinsicsModule, TermName("castRawPtrToLong"))
-    lazy val CastRawPtrToRawSizeMethod =
-      getMember(IntrinsicsModule, TermName("castRawPtrToRawSize"))
     lazy val CastIntToRawPtrMethod =
       getMember(IntrinsicsModule, TermName("castIntToRawPtr"))
     lazy val CastLongToRawPtrMethod =
