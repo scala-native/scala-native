@@ -18,7 +18,7 @@ object Discover {
 
   /** Whether address sanitizer is enabled */
   def asan(): Boolean =
-    getenv("SCALANATIVE_ASAN").exists(_.toBoolean)
+    getenv("SCALANATIVE_ASAN").filter(_.nonEmpty).exists(_.toBoolean)
 
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
