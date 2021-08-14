@@ -250,7 +250,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt & other.toUInt)
+    if (is32) (this.toUInt & other.toUInt).toUSize
     else (this.toULong & other.toULong).toUSize
 
   /** Returns the bitwise OR of this value and `x`. */
@@ -267,7 +267,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt | other.toUInt)
+    if (is32) (this.toUInt | other.toUInt).toUSize
     else (this.toULong | other.toULong).toUSize
 
   /** Returns the bitwise XOR of this value and `x`. */
@@ -284,7 +284,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt ^ other.toUInt)
+    if (is32) (this.toUInt ^ other.toUInt).toUSize
     else (this.toULong ^ other.toULong).toUSize
 
   /** Returns the sum of this value and `x`. */
@@ -301,7 +301,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the sum of this value and `x`. */
   @inline def +(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt + other.toUInt)
+    if (is32) (this.toUInt + other.toUInt).toUSize
     else (this.toULong + other.toULong).toUSize
 
   /** Returns the difference of this value and `x`. */
@@ -318,7 +318,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the difference of this value and `x`. */
   @inline def -(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt - other.toUInt)
+    if (is32) (this.toUInt - other.toUInt).toUSize
     else (this.toULong - other.toULong).toUSize
 
   /** Returns the product of this value and `x`. */
@@ -335,7 +335,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the product of this value and `x`. */
   @inline def *(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt * other.toUInt)
+    if (is32) (this.toUInt * other.toUInt).toUSize
     else (this.toULong * other.toULong).toUSize
 
   /** Returns the quotient of this value and `x`. */
@@ -352,7 +352,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt / other.toUInt)
+    if (is32) (this.toUInt / other.toUInt).toUSize
     else (this.toULong / other.toULong).toUSize
 
   /** Returns the remainder of the division of this value by `x`. */
@@ -369,7 +369,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt % other.toUInt)
+    if (is32) (this.toUInt % other.toUInt).toUSize
     else (this.toULong % other.toULong).toUSize
 
   // "Rich" API

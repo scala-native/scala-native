@@ -174,7 +174,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): USize =
-    if (is32) USize.uintToUSize(this.toUInt ${op} other.toUInt)
+    if (is32) (this.toUInt ${op} other.toUInt).toUSize
     else (this.toULong ${op} other.toULong).toUSize
 
   % end

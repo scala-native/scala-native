@@ -30,8 +30,13 @@ import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 import scala.scalanative.meta.LinktimeInfo.sizeOfPtr
 
-% sizePtr = 'sizeof[Ptr[Byte]]'
-% sizeHeader = 'sizeof[Ptr[Byte]] + 8.toUSize'
+private[runtime] object ArraysUtil {
+  val sizePtr = sizeof[Ptr[Byte]]
+  val sizeHeader = sizePtr + 8.toUSize
+}
+
+% sizePtr = 'ArraysUtil.sizePtr'
+% sizeHeader = 'ArraysUtil.sizeHeader'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
