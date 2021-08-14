@@ -1,5 +1,3 @@
-# vim
-*.swp
 scalalib/src/
 scala-partest/fetchedSources/
 target/
@@ -34,3 +32,6 @@ bin/
 
 # vscode
 /.vscode/
+
+# vim
+*.swp
