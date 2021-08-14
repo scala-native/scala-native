@@ -210,8 +210,6 @@ jobs:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_OPTIMIZE: true
-          SCALANATIVE_ASAN: ${{ matrix.gc == 'boehm' }}
-          ASAN_OPTIONS: "detect_stack_use_after_return=1:detect_leaks=0:abort_on_error=1"
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-runtime
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
