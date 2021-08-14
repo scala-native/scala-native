@@ -54,4 +54,4 @@ USER scala-native
 
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt "++ $SCALA_VERSION -v" -no-colors -J-Xmx5G "set scriptedBufferLog in sbtScalaNative := false" "set parallelExecution in Global := false" "$TEST_COMMAND"
+CMD sbt "++ $SCALA_VERSION -v" -no-colors -J-Xmx5G "set sbtScalaNative/scriptedBufferLog := false" "set Global/parallelExecution := false" "$TEST_COMMAND"

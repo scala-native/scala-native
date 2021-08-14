@@ -188,7 +188,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, (${sizeHeader} + (${sizeT} * i).toUSize).rawSize)
+      elemRawPtr(rawptr, (${sizeHeader} + ${sizeT}.toUSize * i.toUSize).rawSize)
     }
 
   @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
@@ -197,7 +197,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = ${sizeHeader} + (${sizeT} * length).toUSize
+    val arrsize = ${sizeHeader} + ${sizeT}.toUSize * length.toUSize
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -208,8 +208,12 @@ final class ${T}Array private () extends Array[${T}] {
 object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+
     val arrcls  = classOf[${T}Array]
-    val arrsize = ${sizeHeader} + (${sizeT} * length).toUSize
+    val arrsize = ${sizeHeader} + ${sizeT}.toUSize * length.toUSize
     val arr     = ${alloc}(arrcls, arrsize)
     storeInt(elemRawPtr(arr, ${sizePtr}.rawSize), length)
     storeInt(elemRawPtr(arr, (${sizePtr} + 4.toUSize).rawSize), ${sizeT}.toInt)

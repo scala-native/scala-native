@@ -23,7 +23,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   @inline def toUByte: UByte   = toByte.toUByte
   @inline def toUShort: UShort = toShort.toUShort
-  @inline def toUInt: UInt     = toInt.toUInt
+  @inline def toUInt: UInt     = new UInt(castRawSizeToInt(rawSize))
   @inline def toULong: ULong   = new ULong(castRawSizeToLongUnsigned(rawSize))
 
   @inline def toPtr[T]: Ptr[T] =
