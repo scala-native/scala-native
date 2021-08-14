@@ -176,8 +176,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: Size): Size =
-    if (is32) Size.intToSize(this.toInt ${op} other.toInt)
-    else (this.toLong ${op} other.toLong).toSize
+    if (is32) new Size(castIntToRawSize(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
+    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) ${op} castRawSizeToLong(other.rawSize)))
 
   % end
 
