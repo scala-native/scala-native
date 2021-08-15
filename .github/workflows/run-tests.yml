@@ -213,7 +213,6 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: test-runtime
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
-        continue-on-error: ${{ matrix.docker_arch == 'i386' }}
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
