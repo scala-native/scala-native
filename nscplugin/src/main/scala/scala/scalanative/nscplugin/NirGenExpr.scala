@@ -1354,6 +1354,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       case Type.Short | Type.Char => Val.Short(num.toShort)
       case Type.Int               => Val.Int(num)
       case Type.Long              => Val.Long(num.toLong)
+      case Type.Size              => Val.Size(num.toLong)
       case Type.Float             => Val.Float(num.toFloat)
       case Type.Double            => Val.Double(num.toDouble)
       case _                      => unsupported(s"num = $num, ty = ${ty.show}")

@@ -1,11 +1,8 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- UnwindCursor.hpp ---------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //
 // C++ interface to lower levels of libunwind
@@ -14,14 +11,54 @@
 #ifndef __UNWINDCURSOR_HPP__
 #define __UNWINDCURSOR_HPP__
 
-#include <algorithm>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "include-libunwind/unwind.h"
+#include "unwind.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#include <ntverp.h>
+#endif
 #ifdef __APPLE__
-#include <mach-o/dyld.h>
+#include "mach-o/dyld.h"
+#endif
+
+#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
+// Provide a definition for the DISPATCHER_CONTEXT struct for old (Win7 and
+// earlier) SDKs.
+// MinGW-w64 has always provided this struct.
+#if defined(_WIN32) && defined(_LIBUNWIND_TARGET_X86_64) &&                    \
+    !defined(__MINGW32__) && VER_PRODUCTBUILD < 8000
+struct _DISPATCHER_CONTEXT {
+    ULONG64 ControlPc;
+    ULONG64 ImageBase;
+    PRUNTIME_FUNCTION FunctionEntry;
+    ULONG64 EstablisherFrame;
+    ULONG64 TargetIp;
+    PCONTEXT ContextRecord;
+    PEXCEPTION_ROUTINE LanguageHandler;
+    PVOID HandlerData;
+    PUNWIND_HISTORY_TABLE HistoryTable;
+    ULONG ScopeIndex;
+    ULONG Fill0;
+};
+#endif
+
+struct UNWIND_INFO {
+    uint8_t Version : 3;
+    uint8_t Flags : 5;
+    uint8_t SizeOfProlog;
+    uint8_t CountOfCodes;
+    uint8_t FrameRegister : 4;
+    uint8_t FrameOffset : 4;
+    uint16_t UnwindCodes[2];
+};
+
+extern "C" _Unwind_Reason_Code
+__libunwind_seh_personality(int, _Unwind_Action, uint64_t, _Unwind_Exception *,
+                            struct _Unwind_Context *);
+
 #endif
 
 #include "config.h"
@@ -31,7 +68,7 @@
 #include "config.h"
 #include "DwarfInstructions.hpp"
 #include "EHHeaderParser.hpp"
-#include "include-libunwind/libunwind.h"
+#include "libunwind.h"
 #include "Registers.hpp"
 #include "RWMutex.hpp"
 #include "Unwind-EHABI.h"
@@ -44,6 +81,7 @@ template <typename A> class _LIBUNWIND_HIDDEN DwarfFDECache {
     typedef typename A::pint_t pint_t;
 
   public:
+    static constexpr pint_t kSearchAll = static_cast<pint_t>(-1);
     static pint_t findFDE(pint_t mh, pint_t pc);
     static void add(pint_t mh, pint_t ip_start, pint_t ip_end, pint_t fde);
     static void removeAllIn(pint_t mh);
@@ -66,7 +104,6 @@ template <typename A> class _LIBUNWIND_HIDDEN DwarfFDECache {
     static void dyldUnloadHook(const struct mach_header *mh, intptr_t slide);
     static bool _registeredForDyldUnloads;
 #endif
-    // Can't use std::vector<> here because this code is below libc++.
     static entry *_buffer;
     static entry *_bufferUsed;
     static entry *_bufferEnd;
@@ -98,7 +135,7 @@ typename A::pint_t DwarfFDECache<A>::findFDE(pint_t mh, pint_t pc) {
     pint_t result = 0;
     _LIBUNWIND_LOG_IF_FALSE(_lock.lock_shared());
     for (entry *p = _buffer; p < _bufferUsed; ++p) {
-        if ((mh == p->mh) || (mh == 0)) {
+        if ((mh == p->mh) || (mh == kSearchAll)) {
             if ((p->ip_start <= pc) && (pc < p->ip_end)) {
                 result = p->fde;
                 break;
@@ -414,6 +451,542 @@ class _LIBUNWIND_HIDDEN AbstractUnwindCursor {
 #endif
 };
 
+#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) && defined(_WIN32)
+
+/// \c UnwindCursor contains all state (including all register values) during
+/// an unwind.  This is normally stack-allocated inside a unw_cursor_t.
+template <typename A, typename R>
+class UnwindCursor : public AbstractUnwindCursor {
+    typedef typename A::pint_t pint_t;
+
+  public:
+    UnwindCursor(unw_context_t *context, A &as);
+    UnwindCursor(CONTEXT *context, A &as);
+    UnwindCursor(A &as, void *threadArg);
+    virtual ~UnwindCursor() {}
+    virtual bool validReg(int);
+    virtual unw_word_t getReg(int);
+    virtual void setReg(int, unw_word_t);
+    virtual bool validFloatReg(int);
+    virtual unw_fpreg_t getFloatReg(int);
+    virtual void setFloatReg(int, unw_fpreg_t);
+    virtual int step();
+    virtual void getInfo(unw_proc_info_t *);
+    virtual void jumpto();
+    virtual bool isSignalFrame();
+    virtual bool getFunctionName(char *buf, size_t len, unw_word_t *off);
+    virtual void setInfoBasedOnIPRegister(bool isReturnAddress = false);
+    virtual const char *getRegisterName(int num);
+#ifdef __arm__
+    virtual void saveVFPAsX();
+#endif
+
+    DISPATCHER_CONTEXT *getDispatcherContext() { return &_dispContext; }
+    void setDispatcherContext(DISPATCHER_CONTEXT *disp) {
+        _dispContext = *disp;
+    }
+
+    // libunwind does not and should not depend on C++ library which means that
+    // we need our own defition of inline placement new.
+    static void *operator new(size_t, UnwindCursor<A, R> *p) { return p; }
+
+  private:
+    pint_t getLastPC() const { return _dispContext.ControlPc; }
+    void setLastPC(pint_t pc) { _dispContext.ControlPc = pc; }
+    RUNTIME_FUNCTION *lookUpSEHUnwindInfo(pint_t pc, pint_t *base) {
+        _dispContext.FunctionEntry = RtlLookupFunctionEntry(
+            pc, &_dispContext.ImageBase, _dispContext.HistoryTable);
+        *base = _dispContext.ImageBase;
+        return _dispContext.FunctionEntry;
+    }
+    bool getInfoFromSEH(pint_t pc);
+    int stepWithSEHData() {
+        _dispContext.LanguageHandler = RtlVirtualUnwind(
+            UNW_FLAG_UHANDLER, _dispContext.ImageBase, _dispContext.ControlPc,
+            _dispContext.FunctionEntry, _dispContext.ContextRecord,
+            &_dispContext.HandlerData, &_dispContext.EstablisherFrame, NULL);
+        // Update some fields of the unwind info now, since we have them.
+        _info.lsda = reinterpret_cast<unw_word_t>(_dispContext.HandlerData);
+        if (_dispContext.LanguageHandler) {
+            _info.handler =
+                reinterpret_cast<unw_word_t>(__libunwind_seh_personality);
+        } else
+            _info.handler = 0;
+        return UNW_STEP_SUCCESS;
+    }
+
+    A &_addressSpace;
+    unw_proc_info_t _info;
+    DISPATCHER_CONTEXT _dispContext;
+    CONTEXT _msContext;
+    UNWIND_HISTORY_TABLE _histTable;
+    bool _unwindInfoMissing;
+};
+
+template <typename A, typename R>
+UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)
+    : _addressSpace(as), _unwindInfoMissing(false) {
+    static_assert((check_fit<UnwindCursor<A, R>, unw_cursor_t>::does_fit),
+                  "UnwindCursor<> does not fit in unw_cursor_t");
+    static_assert((alignof(UnwindCursor<A, R>) <= alignof(unw_cursor_t)),
+                  "UnwindCursor<> requires more alignment than unw_cursor_t");
+    memset(&_info, 0, sizeof(_info));
+    memset(&_histTable, 0, sizeof(_histTable));
+    _dispContext.ContextRecord = &_msContext;
+    _dispContext.HistoryTable = &_histTable;
+    // Initialize MS context from ours.
+    R r(context);
+    _msContext.ContextFlags =
+        CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+#if defined(_LIBUNWIND_TARGET_X86_64)
+    _msContext.Rax = r.getRegister(UNW_X86_64_RAX);
+    _msContext.Rcx = r.getRegister(UNW_X86_64_RCX);
+    _msContext.Rdx = r.getRegister(UNW_X86_64_RDX);
+    _msContext.Rbx = r.getRegister(UNW_X86_64_RBX);
+    _msContext.Rsp = r.getRegister(UNW_X86_64_RSP);
+    _msContext.Rbp = r.getRegister(UNW_X86_64_RBP);
+    _msContext.Rsi = r.getRegister(UNW_X86_64_RSI);
+    _msContext.Rdi = r.getRegister(UNW_X86_64_RDI);
+    _msContext.R8 = r.getRegister(UNW_X86_64_R8);
+    _msContext.R9 = r.getRegister(UNW_X86_64_R9);
+    _msContext.R10 = r.getRegister(UNW_X86_64_R10);
+    _msContext.R11 = r.getRegister(UNW_X86_64_R11);
+    _msContext.R12 = r.getRegister(UNW_X86_64_R12);
+    _msContext.R13 = r.getRegister(UNW_X86_64_R13);
+    _msContext.R14 = r.getRegister(UNW_X86_64_R14);
+    _msContext.R15 = r.getRegister(UNW_X86_64_R15);
+    _msContext.Rip = r.getRegister(UNW_REG_IP);
+    union {
+        v128 v;
+        M128A m;
+    } t;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM0);
+    _msContext.Xmm0 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM1);
+    _msContext.Xmm1 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM2);
+    _msContext.Xmm2 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM3);
+    _msContext.Xmm3 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM4);
+    _msContext.Xmm4 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM5);
+    _msContext.Xmm5 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM6);
+    _msContext.Xmm6 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM7);
+    _msContext.Xmm7 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM8);
+    _msContext.Xmm8 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM9);
+    _msContext.Xmm9 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM10);
+    _msContext.Xmm10 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM11);
+    _msContext.Xmm11 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM12);
+    _msContext.Xmm12 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM13);
+    _msContext.Xmm13 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM14);
+    _msContext.Xmm14 = t.m;
+    t.v = r.getVectorRegister(UNW_X86_64_XMM15);
+    _msContext.Xmm15 = t.m;
+#elif defined(_LIBUNWIND_TARGET_ARM)
+    _msContext.R0 = r.getRegister(UNW_ARM_R0);
+    _msContext.R1 = r.getRegister(UNW_ARM_R1);
+    _msContext.R2 = r.getRegister(UNW_ARM_R2);
+    _msContext.R3 = r.getRegister(UNW_ARM_R3);
+    _msContext.R4 = r.getRegister(UNW_ARM_R4);
+    _msContext.R5 = r.getRegister(UNW_ARM_R5);
+    _msContext.R6 = r.getRegister(UNW_ARM_R6);
+    _msContext.R7 = r.getRegister(UNW_ARM_R7);
+    _msContext.R8 = r.getRegister(UNW_ARM_R8);
+    _msContext.R9 = r.getRegister(UNW_ARM_R9);
+    _msContext.R10 = r.getRegister(UNW_ARM_R10);
+    _msContext.R11 = r.getRegister(UNW_ARM_R11);
+    _msContext.R12 = r.getRegister(UNW_ARM_R12);
+    _msContext.Sp = r.getRegister(UNW_ARM_SP);
+    _msContext.Lr = r.getRegister(UNW_ARM_LR);
+    _msContext.Pc = r.getRegister(UNW_ARM_IP);
+    for (int i = UNW_ARM_D0; i <= UNW_ARM_D31; ++i) {
+        union {
+            uint64_t w;
+            double d;
+        } d;
+        d.d = r.getFloatRegister(i);
+        _msContext.D[i - UNW_ARM_D0] = d.w;
+    }
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    for (int i = UNW_ARM64_X0; i <= UNW_ARM64_X30; ++i)
+        _msContext.X[i - UNW_ARM64_X0] = r.getRegister(i);
+    _msContext.Sp = r.getRegister(UNW_REG_SP);
+    _msContext.Pc = r.getRegister(UNW_REG_IP);
+    for (int i = UNW_ARM64_D0; i <= UNW_ARM64_D31; ++i)
+        _msContext.V[i - UNW_ARM64_D0].D[0] = r.getFloatRegister(i);
+#endif
+}
+
+template <typename A, typename R>
+UnwindCursor<A, R>::UnwindCursor(CONTEXT *context, A &as)
+    : _addressSpace(as), _unwindInfoMissing(false) {
+    static_assert((check_fit<UnwindCursor<A, R>, unw_cursor_t>::does_fit),
+                  "UnwindCursor<> does not fit in unw_cursor_t");
+    memset(&_info, 0, sizeof(_info));
+    memset(&_histTable, 0, sizeof(_histTable));
+    _dispContext.ContextRecord = &_msContext;
+    _dispContext.HistoryTable = &_histTable;
+    _msContext = *context;
+}
+
+template <typename A, typename R>
+bool UnwindCursor<A, R>::validReg(int regNum) {
+    if (regNum == UNW_REG_IP || regNum == UNW_REG_SP)
+        return true;
+#if defined(_LIBUNWIND_TARGET_X86_64)
+    if (regNum >= UNW_X86_64_RAX && regNum <= UNW_X86_64_R15)
+        return true;
+#elif defined(_LIBUNWIND_TARGET_ARM)
+    if (regNum >= UNW_ARM_R0 && regNum <= UNW_ARM_R15)
+        return true;
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    if (regNum >= UNW_ARM64_X0 && regNum <= UNW_ARM64_X30)
+        return true;
+#endif
+    return false;
+}
+
+template <typename A, typename R>
+unw_word_t UnwindCursor<A, R>::getReg(int regNum) {
+    switch (regNum) {
+#if defined(_LIBUNWIND_TARGET_X86_64)
+    case UNW_REG_IP:
+        return _msContext.Rip;
+    case UNW_X86_64_RAX:
+        return _msContext.Rax;
+    case UNW_X86_64_RDX:
+        return _msContext.Rdx;
+    case UNW_X86_64_RCX:
+        return _msContext.Rcx;
+    case UNW_X86_64_RBX:
+        return _msContext.Rbx;
+    case UNW_REG_SP:
+    case UNW_X86_64_RSP:
+        return _msContext.Rsp;
+    case UNW_X86_64_RBP:
+        return _msContext.Rbp;
+    case UNW_X86_64_RSI:
+        return _msContext.Rsi;
+    case UNW_X86_64_RDI:
+        return _msContext.Rdi;
+    case UNW_X86_64_R8:
+        return _msContext.R8;
+    case UNW_X86_64_R9:
+        return _msContext.R9;
+    case UNW_X86_64_R10:
+        return _msContext.R10;
+    case UNW_X86_64_R11:
+        return _msContext.R11;
+    case UNW_X86_64_R12:
+        return _msContext.R12;
+    case UNW_X86_64_R13:
+        return _msContext.R13;
+    case UNW_X86_64_R14:
+        return _msContext.R14;
+    case UNW_X86_64_R15:
+        return _msContext.R15;
+#elif defined(_LIBUNWIND_TARGET_ARM)
+    case UNW_ARM_R0:
+        return _msContext.R0;
+    case UNW_ARM_R1:
+        return _msContext.R1;
+    case UNW_ARM_R2:
+        return _msContext.R2;
+    case UNW_ARM_R3:
+        return _msContext.R3;
+    case UNW_ARM_R4:
+        return _msContext.R4;
+    case UNW_ARM_R5:
+        return _msContext.R5;
+    case UNW_ARM_R6:
+        return _msContext.R6;
+    case UNW_ARM_R7:
+        return _msContext.R7;
+    case UNW_ARM_R8:
+        return _msContext.R8;
+    case UNW_ARM_R9:
+        return _msContext.R9;
+    case UNW_ARM_R10:
+        return _msContext.R10;
+    case UNW_ARM_R11:
+        return _msContext.R11;
+    case UNW_ARM_R12:
+        return _msContext.R12;
+    case UNW_REG_SP:
+    case UNW_ARM_SP:
+        return _msContext.Sp;
+    case UNW_ARM_LR:
+        return _msContext.Lr;
+    case UNW_REG_IP:
+    case UNW_ARM_IP:
+        return _msContext.Pc;
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    case UNW_REG_SP:
+        return _msContext.Sp;
+    case UNW_REG_IP:
+        return _msContext.Pc;
+    default:
+        return _msContext.X[regNum - UNW_ARM64_X0];
+#endif
+    }
+    _LIBUNWIND_ABORT("unsupported register");
+}
+
+template <typename A, typename R>
+void UnwindCursor<A, R>::setReg(int regNum, unw_word_t value) {
+    switch (regNum) {
+#if defined(_LIBUNWIND_TARGET_X86_64)
+    case UNW_REG_IP:
+        _msContext.Rip = value;
+        break;
+    case UNW_X86_64_RAX:
+        _msContext.Rax = value;
+        break;
+    case UNW_X86_64_RDX:
+        _msContext.Rdx = value;
+        break;
+    case UNW_X86_64_RCX:
+        _msContext.Rcx = value;
+        break;
+    case UNW_X86_64_RBX:
+        _msContext.Rbx = value;
+        break;
+    case UNW_REG_SP:
+    case UNW_X86_64_RSP:
+        _msContext.Rsp = value;
+        break;
+    case UNW_X86_64_RBP:
+        _msContext.Rbp = value;
+        break;
+    case UNW_X86_64_RSI:
+        _msContext.Rsi = value;
+        break;
+    case UNW_X86_64_RDI:
+        _msContext.Rdi = value;
+        break;
+    case UNW_X86_64_R8:
+        _msContext.R8 = value;
+        break;
+    case UNW_X86_64_R9:
+        _msContext.R9 = value;
+        break;
+    case UNW_X86_64_R10:
+        _msContext.R10 = value;
+        break;
+    case UNW_X86_64_R11:
+        _msContext.R11 = value;
+        break;
+    case UNW_X86_64_R12:
+        _msContext.R12 = value;
+        break;
+    case UNW_X86_64_R13:
+        _msContext.R13 = value;
+        break;
+    case UNW_X86_64_R14:
+        _msContext.R14 = value;
+        break;
+    case UNW_X86_64_R15:
+        _msContext.R15 = value;
+        break;
+#elif defined(_LIBUNWIND_TARGET_ARM)
+    case UNW_ARM_R0:
+        _msContext.R0 = value;
+        break;
+    case UNW_ARM_R1:
+        _msContext.R1 = value;
+        break;
+    case UNW_ARM_R2:
+        _msContext.R2 = value;
+        break;
+    case UNW_ARM_R3:
+        _msContext.R3 = value;
+        break;
+    case UNW_ARM_R4:
+        _msContext.R4 = value;
+        break;
+    case UNW_ARM_R5:
+        _msContext.R5 = value;
+        break;
+    case UNW_ARM_R6:
+        _msContext.R6 = value;
+        break;
+    case UNW_ARM_R7:
+        _msContext.R7 = value;
+        break;
+    case UNW_ARM_R8:
+        _msContext.R8 = value;
+        break;
+    case UNW_ARM_R9:
+        _msContext.R9 = value;
+        break;
+    case UNW_ARM_R10:
+        _msContext.R10 = value;
+        break;
+    case UNW_ARM_R11:
+        _msContext.R11 = value;
+        break;
+    case UNW_ARM_R12:
+        _msContext.R12 = value;
+        break;
+    case UNW_REG_SP:
+    case UNW_ARM_SP:
+        _msContext.Sp = value;
+        break;
+    case UNW_ARM_LR:
+        _msContext.Lr = value;
+        break;
+    case UNW_REG_IP:
+    case UNW_ARM_IP:
+        _msContext.Pc = value;
+        break;
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    case UNW_REG_SP:
+        _msContext.Sp = value;
+        break;
+    case UNW_REG_IP:
+        _msContext.Pc = value;
+        break;
+    case UNW_ARM64_X0:
+    case UNW_ARM64_X1:
+    case UNW_ARM64_X2:
+    case UNW_ARM64_X3:
+    case UNW_ARM64_X4:
+    case UNW_ARM64_X5:
+    case UNW_ARM64_X6:
+    case UNW_ARM64_X7:
+    case UNW_ARM64_X8:
+    case UNW_ARM64_X9:
+    case UNW_ARM64_X10:
+    case UNW_ARM64_X11:
+    case UNW_ARM64_X12:
+    case UNW_ARM64_X13:
+    case UNW_ARM64_X14:
+    case UNW_ARM64_X15:
+    case UNW_ARM64_X16:
+    case UNW_ARM64_X17:
+    case UNW_ARM64_X18:
+    case UNW_ARM64_X19:
+    case UNW_ARM64_X20:
+    case UNW_ARM64_X21:
+    case UNW_ARM64_X22:
+    case UNW_ARM64_X23:
+    case UNW_ARM64_X24:
+    case UNW_ARM64_X25:
+    case UNW_ARM64_X26:
+    case UNW_ARM64_X27:
+    case UNW_ARM64_X28:
+    case UNW_ARM64_FP:
+    case UNW_ARM64_LR:
+        _msContext.X[regNum - UNW_ARM64_X0] = value;
+        break;
+#endif
+    default:
+        _LIBUNWIND_ABORT("unsupported register");
+    }
+}
+
+template <typename A, typename R>
+bool UnwindCursor<A, R>::validFloatReg(int regNum) {
+#if defined(_LIBUNWIND_TARGET_ARM)
+    if (regNum >= UNW_ARM_S0 && regNum <= UNW_ARM_S31)
+        return true;
+    if (regNum >= UNW_ARM_D0 && regNum <= UNW_ARM_D31)
+        return true;
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    if (regNum >= UNW_ARM64_D0 && regNum <= UNW_ARM64_D31)
+        return true;
+#else
+    (void)regNum;
+#endif
+    return false;
+}
+
+template <typename A, typename R>
+unw_fpreg_t UnwindCursor<A, R>::getFloatReg(int regNum) {
+#if defined(_LIBUNWIND_TARGET_ARM)
+    if (regNum >= UNW_ARM_S0 && regNum <= UNW_ARM_S31) {
+        union {
+            uint32_t w;
+            float f;
+        } d;
+        d.w = _msContext.S[regNum - UNW_ARM_S0];
+        return d.f;
+    }
+    if (regNum >= UNW_ARM_D0 && regNum <= UNW_ARM_D31) {
+        union {
+            uint64_t w;
+            double d;
+        } d;
+        d.w = _msContext.D[regNum - UNW_ARM_D0];
+        return d.d;
+    }
+    _LIBUNWIND_ABORT("unsupported float register");
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    return _msContext.V[regNum - UNW_ARM64_D0].D[0];
+#else
+    (void)regNum;
+    _LIBUNWIND_ABORT("float registers unimplemented");
+#endif
+}
+
+template <typename A, typename R>
+void UnwindCursor<A, R>::setFloatReg(int regNum, unw_fpreg_t value) {
+#if defined(_LIBUNWIND_TARGET_ARM)
+    if (regNum >= UNW_ARM_S0 && regNum <= UNW_ARM_S31) {
+        union {
+            uint32_t w;
+            float f;
+        } d;
+        d.f = value;
+        _msContext.S[regNum - UNW_ARM_S0] = d.w;
+    }
+    if (regNum >= UNW_ARM_D0 && regNum <= UNW_ARM_D31) {
+        union {
+            uint64_t w;
+            double d;
+        } d;
+        d.d = value;
+        _msContext.D[regNum - UNW_ARM_D0] = d.w;
+    }
+    _LIBUNWIND_ABORT("unsupported float register");
+#elif defined(_LIBUNWIND_TARGET_AARCH64)
+    _msContext.V[regNum - UNW_ARM64_D0].D[0] = value;
+#else
+    (void)regNum;
+    (void)value;
+    _LIBUNWIND_ABORT("float registers unimplemented");
+#endif
+}
+
+template <typename A, typename R> void UnwindCursor<A, R>::jumpto() {
+    RtlRestoreContext(&_msContext, nullptr);
+}
+
+#ifdef __arm__
+template <typename A, typename R> void UnwindCursor<A, R>::saveVFPAsX() {}
+#endif
+
+template <typename A, typename R>
+const char *UnwindCursor<A, R>::getRegisterName(int regNum) {
+    return R::getRegisterName(regNum);
+}
+
+template <typename A, typename R> bool UnwindCursor<A, R>::isSignalFrame() {
+    return false;
+}
+
+#else // !defined(_LIBUNWIND_SUPPORT_SEH_UNWIND) || !defined(_WIN32)
+
 /// UnwindCursor contains all state (including all register values) during
 /// an unwind.  This is normally stack allocated inside a unw_cursor_t.
 template <typename A, typename R>
@@ -441,7 +1014,12 @@ class UnwindCursor : public AbstractUnwindCursor {
     virtual void saveVFPAsX();
 #endif
 
+    // libunwind does not and should not depend on C++ library which means that
+    // we need our own defition of inline placement new.
+    static void *operator new(size_t, UnwindCursor<A, R> *p) { return p; }
+
   private:
+
 #if defined(_LIBUNWIND_ARM_EHABI)
     bool getInfoFromEHABISection(pint_t pc, const UnwindInfoSections &sects);
 
@@ -459,13 +1037,35 @@ class UnwindCursor : public AbstractUnwindCursor {
     }
 #endif
 
+#if defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
+    bool setInfoForSigReturn() {
+        R dummy;
+        return setInfoForSigReturn(dummy);
+    }
+    int stepThroughSigReturn() {
+        R dummy;
+        return stepThroughSigReturn(dummy);
+    }
+    bool setInfoForSigReturn(Registers_arm64 &);
+    int stepThroughSigReturn(Registers_arm64 &);
+    template <typename Registers> bool setInfoForSigReturn(Registers &) {
+        return false;
+    }
+    template <typename Registers> int stepThroughSigReturn(Registers &) {
+        return UNW_STEP_END;
+    }
+#endif
+
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+    bool getInfoFromFdeCie(const typename CFI_Parser<A>::FDE_Info &fdeInfo,
+                           const typename CFI_Parser<A>::CIE_Info &cieInfo,
+                           pint_t pc, uintptr_t dso_base);
     bool getInfoFromDwarfSection(pint_t pc, const UnwindInfoSections &sects,
                                  uint32_t fdeSectionOffsetHint = 0);
     int stepWithDwarfFDE() {
         return DwarfInstructions<A, R>::stepWithDwarf(
             _addressSpace, (pint_t)this->getReg(UNW_REG_IP),
-            (pint_t)_info.unwind_info, _registers);
+            (pint_t)_info.unwind_info, _registers, _isSignalFrame);
     }
 #endif
 
@@ -516,6 +1116,14 @@ class UnwindCursor : public AbstractUnwindCursor {
 
 #if defined(_LIBUNWIND_TARGET_MIPS_NEWABI)
     int stepWithCompactEncoding(Registers_mips_newabi &) { return UNW_EINVAL; }
+#endif
+
+#if defined(_LIBUNWIND_TARGET_SPARC)
+    int stepWithCompactEncoding(Registers_sparc &) { return UNW_EINVAL; }
+#endif
+
+#if defined(_LIBUNWIND_TARGET_RISCV)
+    int stepWithCompactEncoding(Registers_riscv &) { return UNW_EINVAL; }
 #endif
 
     bool compactSaysUseDwarf(uint32_t *offset = NULL) const {
@@ -579,6 +1187,19 @@ class UnwindCursor : public AbstractUnwindCursor {
         return true;
     }
 #endif
+
+#if defined(_LIBUNWIND_TARGET_SPARC)
+    bool compactSaysUseDwarf(Registers_sparc &, uint32_t *) const {
+        return true;
+    }
+#endif
+
+#if defined(_LIBUNWIND_TARGET_RISCV)
+    bool compactSaysUseDwarf(Registers_riscv &, uint32_t *) const {
+        return true;
+    }
+#endif
+
 #endif // defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
 
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
@@ -625,6 +1246,12 @@ class UnwindCursor : public AbstractUnwindCursor {
     }
 #endif
 
+#if defined(_LIBUNWIND_TARGET_HEXAGON)
+    compact_unwind_encoding_t dwarfEncoding(Registers_hexagon &) const {
+        return 0;
+    }
+#endif
+
 #if defined(_LIBUNWIND_TARGET_MIPS_O32)
     compact_unwind_encoding_t dwarfEncoding(Registers_mips_o32 &) const {
         return 0;
@@ -636,13 +1263,48 @@ class UnwindCursor : public AbstractUnwindCursor {
         return 0;
     }
 #endif
+
+#if defined(_LIBUNWIND_TARGET_SPARC)
+    compact_unwind_encoding_t dwarfEncoding(Registers_sparc &) const {
+        return 0;
+    }
+#endif
+
+#if defined(_LIBUNWIND_TARGET_RISCV)
+    compact_unwind_encoding_t dwarfEncoding(Registers_riscv &) const {
+        return 0;
+    }
+#endif
+
 #endif // defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+
+#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
+    // For runtime environments using SEH unwind data without Windows runtime
+    // support.
+    pint_t getLastPC() const { /* FIXME: Implement */
+        return 0;
+    }
+    void setLastPC(pint_t pc) { /* FIXME: Implement */
+    }
+    RUNTIME_FUNCTION *lookUpSEHUnwindInfo(pint_t pc, pint_t *base) {
+        /* FIXME: Implement */
+        *base = 0;
+        return nullptr;
+    }
+    bool getInfoFromSEH(pint_t pc);
+    int stepWithSEHData() { /* FIXME: Implement */
+        return 0;
+    }
+#endif // defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
 
     A &_addressSpace;
     R _registers;
     unw_proc_info_t _info;
     bool _unwindInfoMissing;
     bool _isSignalFrame;
+#if defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
+    bool _isSigReturn = false;
+#endif
 };
 
 template <typename A, typename R>
@@ -651,6 +1313,8 @@ UnwindCursor<A, R>::UnwindCursor(unw_context_t *context, A &as)
       _isSignalFrame(false) {
     static_assert((check_fit<UnwindCursor<A, R>, unw_cursor_t>::does_fit),
                   "UnwindCursor<> does not fit in unw_cursor_t");
+    static_assert((alignof(UnwindCursor<A, R>) <= alignof(unw_cursor_t)),
+                  "UnwindCursor<> requires more alignment than unw_cursor_t");
     memset(&_info, 0, sizeof(_info));
 }
 
@@ -711,16 +1375,12 @@ template <typename A, typename R> bool UnwindCursor<A, R>::isSignalFrame() {
     return _isSignalFrame;
 }
 
-#if defined(_LIBUNWIND_ARM_EHABI)
-struct EHABIIndexEntry {
-    uint32_t functionOffset;
-    uint32_t data;
-};
+#endif // defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
 
+#if defined(_LIBUNWIND_ARM_EHABI)
 template <typename A> struct EHABISectionIterator {
     typedef EHABISectionIterator _Self;
 
-    typedef std::random_access_iterator_tag iterator_category;
     typedef typename A::pint_t value_type;
     typedef typename A::pint_t *pointer;
     typedef typename A::pint_t &reference;
@@ -770,12 +1430,18 @@ template <typename A> struct EHABISectionIterator {
         return out;
     }
 
-    size_t operator-(const _Self &other) { return _i - other._i; }
+    size_t operator-(const _Self &other) const { return _i - other._i; }
 
     bool operator==(const _Self &other) const {
         assert(_addressSpace == other._addressSpace);
         assert(_sects == other._sects);
         return _i == other._i;
+    }
+
+    bool operator!=(const _Self &other) const {
+        assert(_addressSpace == other._addressSpace);
+        assert(_sects == other._sects);
+        return _i != other._i;
     }
 
     typename A::pint_t operator*() const { return functionAddress(); }
@@ -799,6 +1465,28 @@ template <typename A> struct EHABISectionIterator {
     const UnwindInfoSections *_sects;
 };
 
+namespace {
+
+template <typename A>
+EHABISectionIterator<A> EHABISectionUpperBound(EHABISectionIterator<A> first,
+                                               EHABISectionIterator<A> last,
+                                               typename A::pint_t value) {
+    size_t len = last - first;
+    while (len > 0) {
+        size_t l2 = len / 2;
+        EHABISectionIterator<A> m = first + l2;
+        if (value < *m) {
+            len = l2;
+        } else {
+            first = ++m;
+            len -= l2 + 1;
+        }
+    }
+    return first;
+}
+
+} // namespace
+
 template <typename A, typename R>
 bool UnwindCursor<A, R>::getInfoFromEHABISection(
     pint_t pc, const UnwindInfoSections &sects) {
@@ -809,7 +1497,7 @@ bool UnwindCursor<A, R>::getInfoFromEHABISection(
     if (begin == end)
         return false;
 
-    EHABISectionIterator<A> itNextPC = std::upper_bound(begin, end, pc);
+    EHABISectionIterator<A> itNextPC = EHABISectionUpperBound(begin, end, pc);
     if (itNextPC == begin)
         return false;
     EHABISectionIterator<A> itThisPC = itNextPC - 1;
@@ -819,8 +1507,8 @@ bool UnwindCursor<A, R>::getInfoFromEHABISection(
     // entry in the table, we don't really know the function extent and have to
     // choose a value for nextPC. Choosing max() will allow the range check
     // during trace to succeed.
-    pint_t nextPC = (itNextPC == end) ? std::numeric_limits<pint_t>::max()
-                                      : itNextPC.functionAddress();
+    pint_t nextPC =
+        (itNextPC == end) ? UINTPTR_MAX : itNextPC.functionAddress();
     pint_t indexDataAddr = itThisPC.dataAddress();
 
     if (indexDataAddr == 0)
@@ -933,13 +1621,39 @@ bool UnwindCursor<A, R>::getInfoFromEHABISection(
     _info.unwind_info = exceptionTableAddr;
     _info.lsda = lsda;
     // flags is pr_cache.additional. See EHABI #7.2 for definition of bit 0.
-    _info.flags = isSingleWordEHT ? 1 : 0 | scope32 ? 0x2 : 0; // Use enum?
+    _info.flags = (isSingleWordEHT ? 1 : 0) | (scope32 ? 0x2 : 0); // Use enum?
 
     return true;
 }
 #endif
 
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
+template <typename A, typename R>
+bool UnwindCursor<A, R>::getInfoFromFdeCie(
+    const typename CFI_Parser<A>::FDE_Info &fdeInfo,
+    const typename CFI_Parser<A>::CIE_Info &cieInfo, pint_t pc,
+    uintptr_t dso_base) {
+    typename CFI_Parser<A>::PrologInfo prolog;
+    if (CFI_Parser<A>::parseFDEInstructions(_addressSpace, fdeInfo, cieInfo, pc,
+                                            R::getArch(), &prolog)) {
+        // Save off parsed FDE info
+        _info.start_ip = fdeInfo.pcStart;
+        _info.end_ip = fdeInfo.pcEnd;
+        _info.lsda = fdeInfo.lsda;
+        _info.handler = cieInfo.personality;
+        // Some frameless functions need SP altered when resuming in function,
+        // so propagate spExtraArgSize.
+        _info.gp = prolog.spExtraArgSize;
+        _info.flags = 0;
+        _info.format = dwarfEncoding();
+        _info.unwind_info = fdeInfo.fdeStart;
+        _info.unwind_info_size = static_cast<uint32_t>(fdeInfo.fdeLength);
+        _info.extra = static_cast<unw_word_t>(dso_base);
+        return true;
+    }
+    return false;
+}
+
 template <typename A, typename R>
 bool UnwindCursor<A, R>::getInfoFromDwarfSection(
     pint_t pc, const UnwindInfoSections &sects, uint32_t fdeSectionOffsetHint) {
@@ -951,8 +1665,7 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(
     // there
     if (fdeSectionOffsetHint != 0) {
         foundFDE = CFI_Parser<A>::findFDE(
-            _addressSpace, pc, sects.dwarf_section,
-            (uint32_t)sects.dwarf_section_length,
+            _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length,
             sects.dwarf_section + fdeSectionOffsetHint, &fdeInfo, &cieInfo);
     }
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
@@ -966,35 +1679,20 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(
         // otherwise, search cache of previously found FDEs.
         pint_t cachedFDE = DwarfFDECache<A>::findFDE(sects.dso_base, pc);
         if (cachedFDE != 0) {
-            foundFDE =
-                CFI_Parser<A>::findFDE(_addressSpace, pc, sects.dwarf_section,
-                                       (uint32_t)sects.dwarf_section_length,
-                                       cachedFDE, &fdeInfo, &cieInfo);
+            foundFDE = CFI_Parser<A>::findFDE(
+                _addressSpace, pc, sects.dwarf_section,
+                sects.dwarf_section_length, cachedFDE, &fdeInfo, &cieInfo);
             foundInCache = foundFDE;
         }
     }
     if (!foundFDE) {
         // Still not found, do full scan of __eh_frame section.
         foundFDE = CFI_Parser<A>::findFDE(
-            _addressSpace, pc, sects.dwarf_section,
-            (uint32_t)sects.dwarf_section_length, 0, &fdeInfo, &cieInfo);
+            _addressSpace, pc, sects.dwarf_section, sects.dwarf_section_length,
+            0, &fdeInfo, &cieInfo);
     }
     if (foundFDE) {
-        typename CFI_Parser<A>::PrologInfo prolog;
-        if (CFI_Parser<A>::parseFDEInstructions(_addressSpace, fdeInfo, cieInfo,
-                                                pc, &prolog)) {
-            // Save off parsed FDE info
-            _info.start_ip = fdeInfo.pcStart;
-            _info.end_ip = fdeInfo.pcEnd;
-            _info.lsda = fdeInfo.lsda;
-            _info.handler = cieInfo.personality;
-            _info.gp = prolog.spExtraArgSize;
-            _info.flags = 0;
-            _info.format = dwarfEncoding();
-            _info.unwind_info = fdeInfo.fdeStart;
-            _info.unwind_info_size = (uint32_t)fdeInfo.fdeLength;
-            _info.extra = (unw_word_t)sects.dso_base;
-
+        if (getInfoFromFdeCie(fdeInfo, cieInfo, pc, sects.dso_base)) {
             // Add to cache (to make next lookup faster) if we had no hint
             // and there was no index.
             if (!foundInCache && (fdeSectionOffsetHint == 0)) {
@@ -1168,17 +1866,17 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
         else
             funcEnd = firstLevelNextPageFunctionOffset + sects.dso_base;
         if (pc < funcStart) {
-            _LIBUNWIND_DEBUG_LOG(
-                "malformed __unwind_info, pc=0x%llX not in second  "
-                "level compressed unwind table. funcStart=0x%llX",
-                (uint64_t)pc, (uint64_t)funcStart);
+            _LIBUNWIND_DEBUG_LOG("malformed __unwind_info, pc=0x%llX "
+                                 "not in second level compressed unwind table. "
+                                 "funcStart=0x%llX",
+                                 (uint64_t)pc, (uint64_t)funcStart);
             return false;
         }
         if (pc > funcEnd) {
-            _LIBUNWIND_DEBUG_LOG(
-                "malformed __unwind_info, pc=0x%llX not in second  "
-                "level compressed unwind table. funcEnd=0x%llX",
-                (uint64_t)pc, (uint64_t)funcEnd);
+            _LIBUNWIND_DEBUG_LOG("malformed __unwind_info, pc=0x%llX "
+                                 "not in second level compressed unwind table. "
+                                 "funcEnd=0x%llX",
+                                 (uint64_t)pc, (uint64_t)funcEnd);
             return false;
         }
         uint16_t encodingIndex = pageIndex.encodingIndex(low);
@@ -1198,9 +1896,9 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
                 pageEncodingIndex * sizeof(uint32_t));
         }
     } else {
-        _LIBUNWIND_DEBUG_LOG("malformed __unwind_info at 0x%0llX bad second "
-                             "level page",
-                             (uint64_t)sects.compact_unwind_section);
+        _LIBUNWIND_DEBUG_LOG(
+            "malformed __unwind_info at 0x%0llX bad second level page",
+            (uint64_t)sects.compact_unwind_section);
         return false;
     }
 
@@ -1237,15 +1935,15 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
         }
     }
 
-    // extact personality routine, if encoding says function has one
+    // extract personality routine, if encoding says function has one
     uint32_t personalityIndex = (encoding & UNWIND_PERSONALITY_MASK) >>
                                 (__builtin_ctz(UNWIND_PERSONALITY_MASK));
     if (personalityIndex != 0) {
         --personalityIndex; // change 1-based to zero-based index
-        if (personalityIndex > sectionHeader.personalityArrayCount()) {
+        if (personalityIndex >= sectionHeader.personalityArrayCount()) {
             _LIBUNWIND_DEBUG_LOG(
                 "found encoding 0x%08X with personality index %d,  "
-                "but personality table has only %d entires",
+                "but personality table has only %d entries",
                 encoding, personalityIndex,
                 sectionHeader.personalityArrayCount());
             return false;
@@ -1282,14 +1980,75 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
 }
 #endif // defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
 
+#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
+template <typename A, typename R>
+bool UnwindCursor<A, R>::getInfoFromSEH(pint_t pc) {
+    pint_t base;
+    RUNTIME_FUNCTION *unwindEntry = lookUpSEHUnwindInfo(pc, &base);
+    if (!unwindEntry) {
+        _LIBUNWIND_DEBUG_LOG("\tpc not in table, pc=0x%llX", (uint64_t)pc);
+        return false;
+    }
+    _info.gp = 0;
+    _info.flags = 0;
+    _info.format = 0;
+    _info.unwind_info_size = sizeof(RUNTIME_FUNCTION);
+    _info.unwind_info = reinterpret_cast<unw_word_t>(unwindEntry);
+    _info.extra = base;
+    _info.start_ip = base + unwindEntry->BeginAddress;
+#ifdef _LIBUNWIND_TARGET_X86_64
+    _info.end_ip = base + unwindEntry->EndAddress;
+    // Only fill in the handler and LSDA if they're stale.
+    if (pc != getLastPC()) {
+        UNWIND_INFO *xdata =
+            reinterpret_cast<UNWIND_INFO *>(base + unwindEntry->UnwindData);
+        if (xdata->Flags & (UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER)) {
+            // The personality is given in the UNWIND_INFO itself. The LSDA
+            // immediately follows the UNWIND_INFO. (This follows how both Clang
+            // and MSVC emit these structures.) N.B. UNWIND_INFO structs are
+            // DWORD-aligned.
+            uint32_t lastcode = (xdata->CountOfCodes + 1) & ~1;
+            const uint32_t *handler =
+                reinterpret_cast<uint32_t *>(&xdata->UnwindCodes[lastcode]);
+            _info.lsda = reinterpret_cast<unw_word_t>(handler + 1);
+            if (*handler) {
+                _info.handler =
+                    reinterpret_cast<unw_word_t>(__libunwind_seh_personality);
+            } else
+                _info.handler = 0;
+        } else {
+            _info.lsda = 0;
+            _info.handler = 0;
+        }
+    }
+#elif defined(_LIBUNWIND_TARGET_ARM)
+    _info.end_ip = _info.start_ip + unwindEntry->FunctionLength;
+    _info.lsda = 0;    // FIXME
+    _info.handler = 0; // FIXME
+#endif
+    setLastPC(pc);
+    return true;
+}
+#endif
+
 template <typename A, typename R>
 void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
-    pint_t pc = (pint_t)this->getReg(UNW_REG_IP);
+#if defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
+    _isSigReturn = false;
+#endif
+
+    pint_t pc = static_cast<pint_t>(this->getReg(UNW_REG_IP));
 #if defined(_LIBUNWIND_ARM_EHABI)
     // Remove the thumb bit so the IP represents the actual instruction address.
     // This matches the behaviour of _Unwind_GetIP on arm.
     pc &= (pint_t)~0x1;
 #endif
+
+    // Exit early if at the top of the stack.
+    if (pc == 0) {
+        _unwindInfoMissing = true;
+        return;
+    }
 
     // If the last line of a function is a "throw" the compiler sometimes
     // emits no instructions after the call to __cxa_throw.  This means
@@ -1326,6 +2085,12 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
         }
 #endif // defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
 
+#if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
+        // If there is SEH unwind info, look there next.
+        if (this->getInfoFromSEH(pc))
+            return;
+#endif
+
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
         // If there is dwarf unwind info, look there next.
         if (sects.dwarf_section != 0) {
@@ -1346,67 +2111,105 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
     // There is no static unwind info for this pc. Look to see if an FDE was
     // dynamically registered for it.
-    pint_t cachedFDE = DwarfFDECache<A>::findFDE(0, pc);
+    pint_t cachedFDE =
+        DwarfFDECache<A>::findFDE(DwarfFDECache<A>::kSearchAll, pc);
     if (cachedFDE != 0) {
-        CFI_Parser<LocalAddressSpace>::FDE_Info fdeInfo;
-        CFI_Parser<LocalAddressSpace>::CIE_Info cieInfo;
-        const char *msg = CFI_Parser<A>::decodeFDE(_addressSpace, cachedFDE,
-                                                   &fdeInfo, &cieInfo);
-        if (msg == NULL) {
-            typename CFI_Parser<A>::PrologInfo prolog;
-            if (CFI_Parser<A>::parseFDEInstructions(_addressSpace, fdeInfo,
-                                                    cieInfo, pc, &prolog)) {
-                // save off parsed FDE info
-                _info.start_ip = fdeInfo.pcStart;
-                _info.end_ip = fdeInfo.pcEnd;
-                _info.lsda = fdeInfo.lsda;
-                _info.handler = cieInfo.personality;
-                _info.gp = prolog.spExtraArgSize;
-                // Some frameless functions need SP
-                // altered when resuming in function.
-                _info.flags = 0;
-                _info.format = dwarfEncoding();
-                _info.unwind_info = fdeInfo.fdeStart;
-                _info.unwind_info_size = (uint32_t)fdeInfo.fdeLength;
-                _info.extra = 0;
+        typename CFI_Parser<A>::FDE_Info fdeInfo;
+        typename CFI_Parser<A>::CIE_Info cieInfo;
+        if (!CFI_Parser<A>::decodeFDE(_addressSpace, cachedFDE, &fdeInfo,
+                                      &cieInfo))
+            if (getInfoFromFdeCie(fdeInfo, cieInfo, pc, 0))
                 return;
-            }
-        }
     }
 
     // Lastly, ask AddressSpace object about platform specific ways to locate
     // other FDEs.
     pint_t fde;
     if (_addressSpace.findOtherFDE(pc, fde)) {
-        CFI_Parser<LocalAddressSpace>::FDE_Info fdeInfo;
-        CFI_Parser<LocalAddressSpace>::CIE_Info cieInfo;
+        typename CFI_Parser<A>::FDE_Info fdeInfo;
+        typename CFI_Parser<A>::CIE_Info cieInfo;
         if (!CFI_Parser<A>::decodeFDE(_addressSpace, fde, &fdeInfo, &cieInfo)) {
             // Double check this FDE is for a function that includes the pc.
-            if ((fdeInfo.pcStart <= pc) && (pc < fdeInfo.pcEnd)) {
-                typename CFI_Parser<A>::PrologInfo prolog;
-                if (CFI_Parser<A>::parseFDEInstructions(_addressSpace, fdeInfo,
-                                                        cieInfo, pc, &prolog)) {
-                    // save off parsed FDE info
-                    _info.start_ip = fdeInfo.pcStart;
-                    _info.end_ip = fdeInfo.pcEnd;
-                    _info.lsda = fdeInfo.lsda;
-                    _info.handler = cieInfo.personality;
-                    _info.gp = prolog.spExtraArgSize;
-                    _info.flags = 0;
-                    _info.format = dwarfEncoding();
-                    _info.unwind_info = fdeInfo.fdeStart;
-                    _info.unwind_info_size = (uint32_t)fdeInfo.fdeLength;
-                    _info.extra = 0;
+            if ((fdeInfo.pcStart <= pc) && (pc < fdeInfo.pcEnd))
+                if (getInfoFromFdeCie(fdeInfo, cieInfo, pc, 0))
                     return;
-                }
-            }
         }
     }
 #endif // #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
 
+#if defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
+    if (setInfoForSigReturn())
+        return;
+#endif
+
     // no unwind info, flag that we can't reliably unwind
     _unwindInfoMissing = true;
 }
+
+#if defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
+template <typename A, typename R>
+bool UnwindCursor<A, R>::setInfoForSigReturn(Registers_arm64 &) {
+    // Look for the sigreturn trampoline. The trampoline's body is two
+    // specific instructions (see below). Typically the trampoline comes from
+    // the vDSO[1] (i.e. the __kernel_rt_sigreturn function). A libc might
+    // provide its own restorer function, though, or user-mode QEMU might write
+    // a trampoline onto the stack.
+    //
+    // This special code path is a fallback that is only used if the trampoline
+    // lacks proper (e.g. DWARF) unwind info. On AArch64, a new DWARF register
+    // constant for the PC needs to be defined before DWARF can handle a signal
+    // trampoline. This code may segfault if the target PC is unreadable, e.g.:
+    //  - The PC points at a function compiled without unwind info, and which is
+    //    part of an execute-only mapping (e.g. using -Wl,--execute-only).
+    //  - The PC is invalid and happens to point to unreadable or unmapped
+    //  memory.
+    //
+    // [1]
+    // https://github.com/torvalds/linux/blob/master/arch/arm64/kernel/vdso/sigreturn.S
+    const pint_t pc = static_cast<pint_t>(this->getReg(UNW_REG_IP));
+    // Look for instructions: mov x8, #0x8b; svc #0x0
+    if (_addressSpace.get32(pc) == 0xd2801168 &&
+        _addressSpace.get32(pc + 4) == 0xd4000001) {
+        _info = {};
+        _isSigReturn = true;
+        return true;
+    }
+    return false;
+}
+
+template <typename A, typename R>
+int UnwindCursor<A, R>::stepThroughSigReturn(Registers_arm64 &) {
+    // In the signal trampoline frame, sp points to an rt_sigframe[1], which is:
+    //  - 128-byte siginfo struct
+    //  - ucontext struct:
+    //     - 8-byte long (uc_flags)
+    //     - 8-byte pointer (uc_link)
+    //     - 24-byte stack_t
+    //     - 128-byte signal set
+    //     - 8 bytes of padding because sigcontext has 16-byte alignment
+    //     - sigcontext/mcontext_t
+    // [1]
+    // https://github.com/torvalds/linux/blob/master/arch/arm64/kernel/signal.c
+    const pint_t kOffsetSpToSigcontext = (128 + 8 + 8 + 24 + 128 + 8); // 304
+
+    // Offsets from sigcontext to each register.
+    const pint_t kOffsetGprs = 8; // offset to "__u64 regs[31]" field
+    const pint_t kOffsetSp = 256; // offset to "__u64 sp" field
+    const pint_t kOffsetPc = 264; // offset to "__u64 pc" field
+
+    pint_t sigctx = _registers.getSP() + kOffsetSpToSigcontext;
+
+    for (int i = 0; i <= 30; ++i) {
+        uint64_t value = _addressSpace.get64(sigctx + kOffsetGprs +
+                                             static_cast<pint_t>(i * 8));
+        _registers.setRegister(UNW_ARM64_X0 + i, value);
+    }
+    _registers.setSP(_addressSpace.get64(sigctx + kOffsetSp));
+    _registers.setIP(_addressSpace.get64(sigctx + kOffsetPc));
+    _isSignalFrame = true;
+    return UNW_STEP_SUCCESS;
+}
+#endif // defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
 
 template <typename A, typename R> int UnwindCursor<A, R>::step() {
     // Bottom of stack is defined is when unwind info cannot be found.
@@ -1415,25 +2218,33 @@ template <typename A, typename R> int UnwindCursor<A, R>::step() {
 
     // Use unwinding info to modify register set as if function returned.
     int result;
+#if defined(_LIBUNWIND_TARGET_LINUX) && defined(_LIBUNWIND_TARGET_AARCH64)
+    if (_isSigReturn) {
+        result = this->stepThroughSigReturn();
+    } else
+#endif
+    {
 #if defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
-    result = this->stepWithCompactEncoding();
+        result = this->stepWithCompactEncoding();
+#elif defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
+        result = this->stepWithSEHData();
 #elif defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
-    result = this->stepWithDwarfFDE();
+        result = this->stepWithDwarfFDE();
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    result = this->stepWithEHABI();
+        result = this->stepWithEHABI();
 #else
 #error Need _LIBUNWIND_SUPPORT_COMPACT_UNWIND or \
+              _LIBUNWIND_SUPPORT_SEH_UNWIND or \
               _LIBUNWIND_SUPPORT_DWARF_UNWIND or \
               _LIBUNWIND_ARM_EHABI
 #endif
+    }
 
     // update info based on new PC
     if (result == UNW_STEP_SUCCESS) {
         this->setInfoBasedOnIPRegister(true);
         if (_unwindInfoMissing)
             return UNW_STEP_END;
-        if (_info.gp)
-            setReg(UNW_REG_SP, getReg(UNW_REG_SP) + _info.gp);
     }
 
     return result;
@@ -1441,7 +2252,10 @@ template <typename A, typename R> int UnwindCursor<A, R>::step() {
 
 template <typename A, typename R>
 void UnwindCursor<A, R>::getInfo(unw_proc_info_t *info) {
-    *info = _info;
+    if (_unwindInfoMissing)
+        memset(info, 0, sizeof(*info));
+    else
+        *info = _info;
 }
 
 template <typename A, typename R>
@@ -1454,4 +2268,3 @@ bool UnwindCursor<A, R>::getFunctionName(char *buf, size_t bufLen,
 } // namespace libunwind
 
 #endif // __UNWINDCURSOR_HPP__
-#endif // Unix or Mac OS)

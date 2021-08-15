@@ -1,11 +1,8 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
 //===-------------------------- CompactUnwinder.hpp -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //
 //  Does runtime stack unwinding using compact unwind encodings.
@@ -18,8 +15,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "include-libunwind/libunwind.h"
-#include "include-libunwind/mach-o/compact_unwind_encoding.h"
+#include "libunwind.h"
+#include "mach-o/compact_unwind_encoding.h"
 
 #include "Registers.hpp"
 
@@ -713,4 +710,3 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
 } // namespace libunwind
 
 #endif // __COMPACT_UNWINDER_HPP__
-#endif // Unix or Mac OS)

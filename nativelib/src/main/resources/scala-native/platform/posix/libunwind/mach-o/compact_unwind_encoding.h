@@ -1,11 +1,8 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
 //===------------------ mach-o/compact_unwind_encoding.h ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //
 // Darwin's alternative to DWARF based unwind encodings.
@@ -458,4 +455,3 @@ struct unwind_info_compressed_second_level_page_header {
     ((entry >> 24) & 0xFF)
 
 #endif
-#endif // Unix or Mac OS)

@@ -1,11 +1,8 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
 //===---------------------------- libunwind.h -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is dual licensed under the MIT and the University of Illinois Open
-// Source Licenses. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //
 // Compatible with libunwind API documented at:
@@ -46,6 +43,12 @@
 #define LIBUNWIND_AVAIL
 #endif
 
+#if defined(_WIN32) && defined(__SEH__)
+#define LIBUNWIND_CURSOR_ALIGNMENT_ATTR __attribute__((__aligned__(16)))
+#else
+#define LIBUNWIND_CURSOR_ALIGNMENT_ATTR
+#endif
+
 /* error codes */
 enum {
     UNW_ESUCCESS = 0,         /* no error */
@@ -59,6 +62,10 @@ enum {
     UNW_EINVAL = -6547,       /* unsupported operation or bad value */
     UNW_EBADVERSION = -6548,  /* unwind info has unsupported version */
     UNW_ENOINFO = -6549       /* no unwind info found */
+#if defined(_LIBUNWIND_TARGET_AARCH64) && !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+    ,
+    UNW_ECROSSRASIGNING = -6550 /* cross unwind with return address signing */
+#endif
 };
 
 struct unw_context_t {
@@ -68,14 +75,14 @@ typedef struct unw_context_t unw_context_t;
 
 struct unw_cursor_t {
     uint64_t data[_LIBUNWIND_CURSOR_SIZE];
-};
+} LIBUNWIND_CURSOR_ALIGNMENT_ATTR;
 typedef struct unw_cursor_t unw_cursor_t;
 
 typedef struct unw_addr_space *unw_addr_space_t;
 
 typedef int unw_regnum_t;
 typedef uintptr_t unw_word_t;
-#if defined(__arm__)
+#if defined(__arm__) && !defined(__ARM_DWARF_EH__)
 typedef uint64_t unw_fpreg_t;
 #else
 typedef double unw_fpreg_t;
@@ -127,32 +134,6 @@ extern int unw_get_proc_name(unw_cursor_t *, char *, size_t,
 // extern int       unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*);
 
 extern unw_addr_space_t unw_local_addr_space;
-
-#ifdef UNW_REMOTE
-/*
- * Mac OS X "remote" API for unwinding other processes on same machine
- *
- */
-extern unw_addr_space_t unw_create_addr_space_for_task(task_t);
-extern void unw_destroy_addr_space(unw_addr_space_t);
-extern int unw_init_remote_thread(unw_cursor_t *, unw_addr_space_t, thread_t *);
-#endif /* UNW_REMOTE */
-
-/*
- * traditional libunwind "remote" API
- *   NOT IMPLEMENTED on Mac OS X
- *
- * extern int               unw_init_remote(unw_cursor_t*, unw_addr_space_t,
- *                                          thread_t*);
- * extern unw_accessors_t   unw_get_accessors(unw_addr_space_t);
- * extern unw_addr_space_t  unw_create_addr_space(unw_accessors_t, int);
- * extern void              unw_flush_cache(unw_addr_space_t, unw_word_t,
- *                                          unw_word_t);
- * extern int               unw_set_caching_policy(unw_addr_space_t,
- *                                                 unw_caching_policy_t);
- * extern void              _U_dyn_register(unw_dyn_info_t*);
- * extern void              _U_dyn_cancel(unw_dyn_info_t*);
- */
 
 #ifdef __cplusplus
 }
@@ -551,6 +532,9 @@ enum {
     UNW_ARM64_LR = 30,
     UNW_ARM64_X31 = 31,
     UNW_ARM64_SP = 31,
+    UNW_ARM64_PC = 32,
+    // reserved block
+    UNW_ARM64_RA_SIGN_STATE = 34,
     // reserved block
     UNW_ARM64_D0 = 64,
     UNW_ARM64_D1 = 65,
@@ -750,6 +734,7 @@ enum {
     UNW_OR1K_R29 = 29,
     UNW_OR1K_R30 = 30,
     UNW_OR1K_R31 = 31,
+    UNW_OR1K_EPCR = 32,
 };
 
 // MIPS registers
@@ -786,9 +771,337 @@ enum {
     UNW_MIPS_R29 = 29,
     UNW_MIPS_R30 = 30,
     UNW_MIPS_R31 = 31,
+    UNW_MIPS_F0 = 32,
+    UNW_MIPS_F1 = 33,
+    UNW_MIPS_F2 = 34,
+    UNW_MIPS_F3 = 35,
+    UNW_MIPS_F4 = 36,
+    UNW_MIPS_F5 = 37,
+    UNW_MIPS_F6 = 38,
+    UNW_MIPS_F7 = 39,
+    UNW_MIPS_F8 = 40,
+    UNW_MIPS_F9 = 41,
+    UNW_MIPS_F10 = 42,
+    UNW_MIPS_F11 = 43,
+    UNW_MIPS_F12 = 44,
+    UNW_MIPS_F13 = 45,
+    UNW_MIPS_F14 = 46,
+    UNW_MIPS_F15 = 47,
+    UNW_MIPS_F16 = 48,
+    UNW_MIPS_F17 = 49,
+    UNW_MIPS_F18 = 50,
+    UNW_MIPS_F19 = 51,
+    UNW_MIPS_F20 = 52,
+    UNW_MIPS_F21 = 53,
+    UNW_MIPS_F22 = 54,
+    UNW_MIPS_F23 = 55,
+    UNW_MIPS_F24 = 56,
+    UNW_MIPS_F25 = 57,
+    UNW_MIPS_F26 = 58,
+    UNW_MIPS_F27 = 59,
+    UNW_MIPS_F28 = 60,
+    UNW_MIPS_F29 = 61,
+    UNW_MIPS_F30 = 62,
+    UNW_MIPS_F31 = 63,
     UNW_MIPS_HI = 64,
     UNW_MIPS_LO = 65,
 };
 
+// SPARC registers
+enum {
+    UNW_SPARC_G0 = 0,
+    UNW_SPARC_G1 = 1,
+    UNW_SPARC_G2 = 2,
+    UNW_SPARC_G3 = 3,
+    UNW_SPARC_G4 = 4,
+    UNW_SPARC_G5 = 5,
+    UNW_SPARC_G6 = 6,
+    UNW_SPARC_G7 = 7,
+    UNW_SPARC_O0 = 8,
+    UNW_SPARC_O1 = 9,
+    UNW_SPARC_O2 = 10,
+    UNW_SPARC_O3 = 11,
+    UNW_SPARC_O4 = 12,
+    UNW_SPARC_O5 = 13,
+    UNW_SPARC_O6 = 14,
+    UNW_SPARC_O7 = 15,
+    UNW_SPARC_L0 = 16,
+    UNW_SPARC_L1 = 17,
+    UNW_SPARC_L2 = 18,
+    UNW_SPARC_L3 = 19,
+    UNW_SPARC_L4 = 20,
+    UNW_SPARC_L5 = 21,
+    UNW_SPARC_L6 = 22,
+    UNW_SPARC_L7 = 23,
+    UNW_SPARC_I0 = 24,
+    UNW_SPARC_I1 = 25,
+    UNW_SPARC_I2 = 26,
+    UNW_SPARC_I3 = 27,
+    UNW_SPARC_I4 = 28,
+    UNW_SPARC_I5 = 29,
+    UNW_SPARC_I6 = 30,
+    UNW_SPARC_I7 = 31,
+};
+
+// Hexagon register numbers
+enum {
+    UNW_HEXAGON_R0,
+    UNW_HEXAGON_R1,
+    UNW_HEXAGON_R2,
+    UNW_HEXAGON_R3,
+    UNW_HEXAGON_R4,
+    UNW_HEXAGON_R5,
+    UNW_HEXAGON_R6,
+    UNW_HEXAGON_R7,
+    UNW_HEXAGON_R8,
+    UNW_HEXAGON_R9,
+    UNW_HEXAGON_R10,
+    UNW_HEXAGON_R11,
+    UNW_HEXAGON_R12,
+    UNW_HEXAGON_R13,
+    UNW_HEXAGON_R14,
+    UNW_HEXAGON_R15,
+    UNW_HEXAGON_R16,
+    UNW_HEXAGON_R17,
+    UNW_HEXAGON_R18,
+    UNW_HEXAGON_R19,
+    UNW_HEXAGON_R20,
+    UNW_HEXAGON_R21,
+    UNW_HEXAGON_R22,
+    UNW_HEXAGON_R23,
+    UNW_HEXAGON_R24,
+    UNW_HEXAGON_R25,
+    UNW_HEXAGON_R26,
+    UNW_HEXAGON_R27,
+    UNW_HEXAGON_R28,
+    UNW_HEXAGON_R29,
+    UNW_HEXAGON_R30,
+    UNW_HEXAGON_R31,
+    UNW_HEXAGON_P3_0,
+    UNW_HEXAGON_PC,
+};
+
+// RISC-V registers. These match the DWARF register numbers defined by section
+// 4 of the RISC-V ELF psABI specification, which can be found at:
+//
+// https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md
+enum {
+    UNW_RISCV_X0 = 0,
+    UNW_RISCV_X1 = 1,
+    UNW_RISCV_X2 = 2,
+    UNW_RISCV_X3 = 3,
+    UNW_RISCV_X4 = 4,
+    UNW_RISCV_X5 = 5,
+    UNW_RISCV_X6 = 6,
+    UNW_RISCV_X7 = 7,
+    UNW_RISCV_X8 = 8,
+    UNW_RISCV_X9 = 9,
+    UNW_RISCV_X10 = 10,
+    UNW_RISCV_X11 = 11,
+    UNW_RISCV_X12 = 12,
+    UNW_RISCV_X13 = 13,
+    UNW_RISCV_X14 = 14,
+    UNW_RISCV_X15 = 15,
+    UNW_RISCV_X16 = 16,
+    UNW_RISCV_X17 = 17,
+    UNW_RISCV_X18 = 18,
+    UNW_RISCV_X19 = 19,
+    UNW_RISCV_X20 = 20,
+    UNW_RISCV_X21 = 21,
+    UNW_RISCV_X22 = 22,
+    UNW_RISCV_X23 = 23,
+    UNW_RISCV_X24 = 24,
+    UNW_RISCV_X25 = 25,
+    UNW_RISCV_X26 = 26,
+    UNW_RISCV_X27 = 27,
+    UNW_RISCV_X28 = 28,
+    UNW_RISCV_X29 = 29,
+    UNW_RISCV_X30 = 30,
+    UNW_RISCV_X31 = 31,
+    UNW_RISCV_F0 = 32,
+    UNW_RISCV_F1 = 33,
+    UNW_RISCV_F2 = 34,
+    UNW_RISCV_F3 = 35,
+    UNW_RISCV_F4 = 36,
+    UNW_RISCV_F5 = 37,
+    UNW_RISCV_F6 = 38,
+    UNW_RISCV_F7 = 39,
+    UNW_RISCV_F8 = 40,
+    UNW_RISCV_F9 = 41,
+    UNW_RISCV_F10 = 42,
+    UNW_RISCV_F11 = 43,
+    UNW_RISCV_F12 = 44,
+    UNW_RISCV_F13 = 45,
+    UNW_RISCV_F14 = 46,
+    UNW_RISCV_F15 = 47,
+    UNW_RISCV_F16 = 48,
+    UNW_RISCV_F17 = 49,
+    UNW_RISCV_F18 = 50,
+    UNW_RISCV_F19 = 51,
+    UNW_RISCV_F20 = 52,
+    UNW_RISCV_F21 = 53,
+    UNW_RISCV_F22 = 54,
+    UNW_RISCV_F23 = 55,
+    UNW_RISCV_F24 = 56,
+    UNW_RISCV_F25 = 57,
+    UNW_RISCV_F26 = 58,
+    UNW_RISCV_F27 = 59,
+    UNW_RISCV_F28 = 60,
+    UNW_RISCV_F29 = 61,
+    UNW_RISCV_F30 = 62,
+    UNW_RISCV_F31 = 63,
+};
+
+// VE register numbers
+enum {
+    UNW_VE_S0 = 0,
+    UNW_VE_S1 = 1,
+    UNW_VE_S2 = 2,
+    UNW_VE_S3 = 3,
+    UNW_VE_S4 = 4,
+    UNW_VE_S5 = 5,
+    UNW_VE_S6 = 6,
+    UNW_VE_S7 = 7,
+    UNW_VE_S8 = 8,
+    UNW_VE_S9 = 9,
+    UNW_VE_S10 = 10,
+    UNW_VE_S11 = 11,
+    UNW_VE_S12 = 12,
+    UNW_VE_S13 = 13,
+    UNW_VE_S14 = 14,
+    UNW_VE_S15 = 15,
+    UNW_VE_S16 = 16,
+    UNW_VE_S17 = 17,
+    UNW_VE_S18 = 18,
+    UNW_VE_S19 = 19,
+    UNW_VE_S20 = 20,
+    UNW_VE_S21 = 21,
+    UNW_VE_S22 = 22,
+    UNW_VE_S23 = 23,
+    UNW_VE_S24 = 24,
+    UNW_VE_S25 = 25,
+    UNW_VE_S26 = 26,
+    UNW_VE_S27 = 27,
+    UNW_VE_S28 = 28,
+    UNW_VE_S29 = 29,
+    UNW_VE_S30 = 30,
+    UNW_VE_S31 = 31,
+    UNW_VE_S32 = 32,
+    UNW_VE_S33 = 33,
+    UNW_VE_S34 = 34,
+    UNW_VE_S35 = 35,
+    UNW_VE_S36 = 36,
+    UNW_VE_S37 = 37,
+    UNW_VE_S38 = 38,
+    UNW_VE_S39 = 39,
+    UNW_VE_S40 = 40,
+    UNW_VE_S41 = 41,
+    UNW_VE_S42 = 42,
+    UNW_VE_S43 = 43,
+    UNW_VE_S44 = 44,
+    UNW_VE_S45 = 45,
+    UNW_VE_S46 = 46,
+    UNW_VE_S47 = 47,
+    UNW_VE_S48 = 48,
+    UNW_VE_S49 = 49,
+    UNW_VE_S50 = 50,
+    UNW_VE_S51 = 51,
+    UNW_VE_S52 = 52,
+    UNW_VE_S53 = 53,
+    UNW_VE_S54 = 54,
+    UNW_VE_S55 = 55,
+    UNW_VE_S56 = 56,
+    UNW_VE_S57 = 57,
+    UNW_VE_S58 = 58,
+    UNW_VE_S59 = 59,
+    UNW_VE_S60 = 60,
+    UNW_VE_S61 = 61,
+    UNW_VE_S62 = 62,
+    UNW_VE_S63 = 63,
+    UNW_VE_V0 = 64 + 0,
+    UNW_VE_V1 = 64 + 1,
+    UNW_VE_V2 = 64 + 2,
+    UNW_VE_V3 = 64 + 3,
+    UNW_VE_V4 = 64 + 4,
+    UNW_VE_V5 = 64 + 5,
+    UNW_VE_V6 = 64 + 6,
+    UNW_VE_V7 = 64 + 7,
+    UNW_VE_V8 = 64 + 8,
+    UNW_VE_V9 = 64 + 9,
+    UNW_VE_V10 = 64 + 10,
+    UNW_VE_V11 = 64 + 11,
+    UNW_VE_V12 = 64 + 12,
+    UNW_VE_V13 = 64 + 13,
+    UNW_VE_V14 = 64 + 14,
+    UNW_VE_V15 = 64 + 15,
+    UNW_VE_V16 = 64 + 16,
+    UNW_VE_V17 = 64 + 17,
+    UNW_VE_V18 = 64 + 18,
+    UNW_VE_V19 = 64 + 19,
+    UNW_VE_V20 = 64 + 20,
+    UNW_VE_V21 = 64 + 21,
+    UNW_VE_V22 = 64 + 22,
+    UNW_VE_V23 = 64 + 23,
+    UNW_VE_V24 = 64 + 24,
+    UNW_VE_V25 = 64 + 25,
+    UNW_VE_V26 = 64 + 26,
+    UNW_VE_V27 = 64 + 27,
+    UNW_VE_V28 = 64 + 28,
+    UNW_VE_V29 = 64 + 29,
+    UNW_VE_V30 = 64 + 30,
+    UNW_VE_V31 = 64 + 31,
+    UNW_VE_V32 = 64 + 32,
+    UNW_VE_V33 = 64 + 33,
+    UNW_VE_V34 = 64 + 34,
+    UNW_VE_V35 = 64 + 35,
+    UNW_VE_V36 = 64 + 36,
+    UNW_VE_V37 = 64 + 37,
+    UNW_VE_V38 = 64 + 38,
+    UNW_VE_V39 = 64 + 39,
+    UNW_VE_V40 = 64 + 40,
+    UNW_VE_V41 = 64 + 41,
+    UNW_VE_V42 = 64 + 42,
+    UNW_VE_V43 = 64 + 43,
+    UNW_VE_V44 = 64 + 44,
+    UNW_VE_V45 = 64 + 45,
+    UNW_VE_V46 = 64 + 46,
+    UNW_VE_V47 = 64 + 47,
+    UNW_VE_V48 = 64 + 48,
+    UNW_VE_V49 = 64 + 49,
+    UNW_VE_V50 = 64 + 50,
+    UNW_VE_V51 = 64 + 51,
+    UNW_VE_V52 = 64 + 52,
+    UNW_VE_V53 = 64 + 53,
+    UNW_VE_V54 = 64 + 54,
+    UNW_VE_V55 = 64 + 55,
+    UNW_VE_V56 = 64 + 56,
+    UNW_VE_V57 = 64 + 57,
+    UNW_VE_V58 = 64 + 58,
+    UNW_VE_V59 = 64 + 59,
+    UNW_VE_V60 = 64 + 60,
+    UNW_VE_V61 = 64 + 61,
+    UNW_VE_V62 = 64 + 62,
+    UNW_VE_V63 = 64 + 63,
+    UNW_VE_VM0 = 128 + 0,
+    UNW_VE_VM1 = 128 + 1,
+    UNW_VE_VM2 = 128 + 2,
+    UNW_VE_VM3 = 128 + 3,
+    UNW_VE_VM4 = 128 + 4,
+    UNW_VE_VM5 = 128 + 5,
+    UNW_VE_VM6 = 128 + 6,
+    UNW_VE_VM7 = 128 + 7,
+    UNW_VE_VM8 = 128 + 8,
+    UNW_VE_VM9 = 128 + 9,
+    UNW_VE_VM10 = 128 + 10,
+    UNW_VE_VM11 = 128 + 11,
+    UNW_VE_VM12 = 128 + 12,
+    UNW_VE_VM13 = 128 + 13,
+    UNW_VE_VM14 = 128 + 14,
+    UNW_VE_VM15 = 128 + 15, // = 143
+
+    // Following registers don't have DWARF register numbers.
+    UNW_VE_VIXR = 144,
+    UNW_VE_VL = 145,
+};
+
 #endif
-#endif // Unix or Mac OS)

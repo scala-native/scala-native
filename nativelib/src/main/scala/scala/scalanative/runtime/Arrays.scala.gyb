@@ -28,15 +28,10 @@ package runtime
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
-import scala.scalanative.meta.LinktimeInfo.sizeOfPtr
+import scala.scalanative.meta.LinktimeInfo.{is32, sizeOfPtr}
 
-private[runtime] object ArraysUtil {
-  val sizePtr = sizeof[Ptr[Byte]]
-  val sizeHeader = sizePtr + 8.toUSize
-}
-
-% sizePtr = 'ArraysUtil.sizePtr'
-% sizeHeader = 'ArraysUtil.sizeHeader'
+% sizePtr = 'sizeOfPtr'
+% sizeHeader = 'if (is32) castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8) else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -45,7 +40,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, ${sizePtr}.rawSize)
+    val lenptr = elemRawPtr(rawptr, ${sizePtr})
     loadInt(lenptr)
   }
 
@@ -161,7 +156,7 @@ object Array {
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'sizeof[Ptr[Byte]].toInt'}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(sizeOfPtr)'}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.
@@ -188,7 +183,11 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, (${sizeHeader} + ${sizeT}.toUSize * i.toUSize).rawSize)
+      elemRawPtr(
+        rawptr,
+        if (is32) castIntToRawSize(castRawSizeToInt(${sizeHeader}) + ${sizeT} * i)
+        else castLongToRawSize(castRawSizeToLong(${sizeHeader}) + ${sizeT}.toLong * i.toLong)
+      )
     }
 
   @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
@@ -197,7 +196,10 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = ${sizeHeader} + ${sizeT}.toUSize * length.toUSize
+    val arrsize = new USize(
+      if (is32) castIntToRawSize(castRawSizeToInt(${sizeHeader}) + ${sizeT} * length)
+      else castLongToRawSize(castRawSizeToLong(${sizeHeader}) + ${sizeT}.toLong * length.toLong)
+    )
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -213,10 +215,17 @@ object ${T}Array {
     }
 
     val arrcls  = classOf[${T}Array]
-    val arrsize = ${sizeHeader} + ${sizeT}.toUSize * length.toUSize
+    val arrsize = new USize(
+      if (is32) castIntToRawSize(castRawSizeToInt(${sizeHeader}) + ${sizeT} * length)
+      else castLongToRawSize(castRawSizeToLong(${sizeHeader}) + ${sizeT}.toLong * length.toLong)
+    )
     val arr     = ${alloc}(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, ${sizePtr}.rawSize), length)
-    storeInt(elemRawPtr(arr, (${sizePtr} + 4.toUSize).rawSize), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, ${sizePtr}), length)
+    storeInt(elemRawPtr(
+      arr,
+      if (is32) castIntToRawSize(castRawSizeToInt(${sizePtr}) + 4)
+      else castLongToRawSize(castRawSizeToLong(${sizePtr}) + 4L)
+    ), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -224,7 +233,10 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (${sizeT} * length).toUSize
+    val size = new USize(
+      if (is32) castIntToRawSize(${sizeT} * length)
+      else castLongToRawSize(${sizeT}.toLong * length.toLong)
+    )
     libc.memcpy(dst, src, size)
     arr
   }
