@@ -51,7 +51,7 @@ final class Ptr[T] private[scalanative] (
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
     val left = if (is32) this.toInt.toSize else this.toLong.toSize
     val right = if (is32) other.toInt.toSize else other.toLong.toSize
-    (left - right) / sizeof[T].toSize
+    (left - right) / ssizeof[T]
   }
 
   @alwaysinline def apply(offset: USize)(implicit tag: Tag[T]): T =

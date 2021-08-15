@@ -63,15 +63,16 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR = 1 + CAST_INT_TO_RAWPTR
-  final val CAST_RAWSIZE_TO_INT = 1 + CAST_LONG_TO_RAWPTR
+
+  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
+  final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
+
+  final val CAST_RAWSIZE_TO_INT = 1 + CFUNCPTR_APPLY
   final val CAST_RAWSIZE_TO_LONG = 1 + CAST_RAWSIZE_TO_INT
   final val CAST_RAWSIZE_TO_LONG_UNSIGNED = 1 + CAST_RAWSIZE_TO_LONG
   final val CAST_INT_TO_RAWSIZE = 1 + CAST_RAWSIZE_TO_LONG_UNSIGNED
   final val CAST_INT_TO_RAWSIZE_UNSIGNED = 1 + CAST_INT_TO_RAWSIZE
   final val CAST_LONG_TO_RAWSIZE = 1 + CAST_INT_TO_RAWSIZE_UNSIGNED
-
-  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
-  final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
 }
 
 abstract class NirPrimitives {
@@ -161,6 +162,7 @@ abstract class NirPrimitives {
     addPrimitive(LoadDoubleMethod, LOAD_DOUBLE)
     addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
     addPrimitive(LoadObjectMethod, LOAD_OBJECT)
+
     addPrimitive(StoreBoolMethod, STORE_BOOL)
     addPrimitive(StoreSizeMethod, STORE_SIZE)
     addPrimitive(StoreCharMethod, STORE_CHAR)
@@ -172,6 +174,7 @@ abstract class NirPrimitives {
     addPrimitive(StoreDoubleMethod, STORE_DOUBLE)
     addPrimitive(StoreRawPtrMethod, STORE_RAW_PTR)
     addPrimitive(StoreObjectMethod, STORE_OBJECT)
+
     addPrimitive(ElemRawPtrMethod, ELEM_RAW_PTR)
 
     addPrimitive(CastRawPtrToObjectMethod, CAST_RAW_PTR_TO_OBJECT)

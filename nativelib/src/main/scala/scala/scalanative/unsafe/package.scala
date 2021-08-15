@@ -372,7 +372,7 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size   = (_root_.scala.scalanative.unsafe.sizeof[$T]($tag): _root_.scala.scalanative.unsigned.USize) * $n
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
         val $ptr    = $z.alloc($size)
         val $rawptr = $runtime.toRawPtr($ptr)
         $runtime.libc.memset($rawptr, 0, $size)
@@ -390,7 +390,7 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
+        val $size    = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
         val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
@@ -410,7 +410,7 @@ package object unsafe {
 
       q"""{
         import _root_.scala.scalanative.unsigned.UnsignedRichLong
-        val $size: _root_.scala.scalanative.unsigned.USize = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
         val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)

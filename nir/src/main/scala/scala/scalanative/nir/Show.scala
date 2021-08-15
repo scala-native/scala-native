@@ -570,7 +570,7 @@ object Show {
       case Type.Vararg => str("...")
       case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")
-      case Type.Size   => str("word")
+      case Type.Size   => str("size")
       case Type.Char   => str("char")
       case Type.Byte   => str("byte")
       case Type.Short  => str("short")
