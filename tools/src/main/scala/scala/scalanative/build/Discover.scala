@@ -154,7 +154,8 @@ object Discover {
 
     val command: Seq[String] = {
       if (Platform.isWindows) {
-        val arg = binPath.fold(binaryName)(p => s"$p:$binaryName")
+        val binName = s"${binaryName}.exe"
+        val arg = binPath.fold(binName)(p => s"$p:$binName")
         Seq("where", arg)
       } else {
         val arg = binPath.fold(binaryName) { p =>
