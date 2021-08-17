@@ -16,7 +16,7 @@ cp -r $LIBUNWIND_FOLDER/include/* $TARGET_FOLDER/
 nl='
 '
 
-for source in $TARGET_FOLDER/**/*.{c,cpp,h,hpp}; do
+for source in $TARGET_FOLDER/**/*.{c,cpp,h,hpp,S}; do
   sed -i '1i\// clang-format off'"\\${nl}"'#if defined(__unix__) || defined(__unix) || defined(unix) || \\'"\\${nl}"'    (defined(__APPLE__) && defined(__MACH__))' "$source"
   echo "#endif" >> "$source"
 

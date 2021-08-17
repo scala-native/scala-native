@@ -1,3 +1,6 @@
+// clang-format off
+#if defined(__unix__) || defined(__unix) || defined(unix) || \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------ UnwindRegistersSave.S -----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -1112,3 +1115,4 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 #endif /* !defined(__USING_SJLJ_EXCEPTIONS__) */
 
 NO_EXEC_STACK_DIRECTIVE
+#endif
