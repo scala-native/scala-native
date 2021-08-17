@@ -1,3 +1,9 @@
+// clang-format off
+#if defined(__unix__) || defined(__unix) || defined(unix) || \
+    (defined(__APPLE__) && defined(__MACH__))
+// clang-format off
+#if defined(__unix__) || defined(__unix) || defined(unix) || \
+    (defined(__APPLE__) && defined(__MACH__))
 /* ===-- assembly.h - libUnwind assembler support macros -------------------===
  *
  * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -11,8 +17,6 @@
  *
  * ===----------------------------------------------------------------------===
  */
-
-// clang-format off
 
 #ifndef UNWIND_ASSEMBLY_H
 #define UNWIND_ASSEMBLY_H
@@ -223,3 +227,5 @@
 #endif
 
 #endif /* UNWIND_ASSEMBLY_H */
+#endif
+#endif

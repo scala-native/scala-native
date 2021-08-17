@@ -1,3 +1,9 @@
+// clang-format off
+#if defined(__unix__) || defined(__unix) || defined(unix) || \
+    (defined(__APPLE__) && defined(__MACH__))
+// clang-format off
+#if defined(__unix__) || defined(__unix) || defined(unix) || \
+    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------------- unwind.h -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -18,25 +24,25 @@ struct _Unwind_Exception; // forward declaration
 typedef struct _Unwind_Exception _Unwind_Exception;
 
 struct _Unwind_Exception {
-    uint64_t exception_class;
-    void (*exception_cleanup)(_Unwind_Reason_Code reason,
-                              _Unwind_Exception *exc);
+  uint64_t exception_class;
+  void (*exception_cleanup)(_Unwind_Reason_Code reason,
+                            _Unwind_Exception *exc);
 #if defined(__SEH__) && !defined(__USING_SJLJ_EXCEPTIONS__)
-    uintptr_t private_[6];
+  uintptr_t private_[6];
 #else
-    uintptr_t private_1; // non-zero means forced unwind
-    uintptr_t private_2; // holds sp that phase1 found for phase2 to use
+  uintptr_t private_1; // non-zero means forced unwind
+  uintptr_t private_2; // holds sp that phase1 found for phase2 to use
 #endif
 #if __SIZEOF_POINTER__ == 4
-    // The implementation of _Unwind_Exception uses an attribute mode on the
-    // above fields which has the side effect of causing this whole struct to
-    // round up to 32 bytes in size (48 with SEH). To be more explicit, we add
-    // pad fields added for binary compatibility.
-    uint32_t reserved[3];
+  // The implementation of _Unwind_Exception uses an attribute mode on the
+  // above fields which has the side effect of causing this whole struct to
+  // round up to 32 bytes in size (48 with SEH). To be more explicit, we add
+  // pad fields added for binary compatibility.
+  uint32_t reserved[3];
 #endif
-    // The Itanium ABI requires that _Unwind_Exception objects are "double-word
-    // aligned".  GCC has interpreted this to mean "use the maximum useful
-    // alignment for the target"; so do we.
+  // The Itanium ABI requires that _Unwind_Exception objects are "double-word
+  // aligned".  GCC has interpreted this to mean "use the maximum useful
+  // alignment for the target"; so do we.
 } __attribute__((__aligned__));
 
 typedef _Unwind_Reason_Code (*_Unwind_Personality_Fn)(
@@ -52,14 +58,15 @@ extern "C" {
 //
 #ifdef __USING_SJLJ_EXCEPTIONS__
 extern _Unwind_Reason_Code
-_Unwind_SjLj_RaiseException(_Unwind_Exception *exception_object);
+    _Unwind_SjLj_RaiseException(_Unwind_Exception *exception_object);
 extern void _Unwind_SjLj_Resume(_Unwind_Exception *exception_object);
 #else
 extern _Unwind_Reason_Code
-_Unwind_RaiseException(_Unwind_Exception *exception_object);
+    _Unwind_RaiseException(_Unwind_Exception *exception_object);
 extern void _Unwind_Resume(_Unwind_Exception *exception_object);
 #endif
 extern void _Unwind_DeleteException(_Unwind_Exception *exception_object);
+
 
 extern uintptr_t _Unwind_GetGR(struct _Unwind_Context *context, int index);
 extern void _Unwind_SetGR(struct _Unwind_Context *context, int index,
@@ -72,3 +79,5 @@ extern void _Unwind_SetIP(struct _Unwind_Context *, uintptr_t new_value);
 #endif
 
 #endif // __ITANIUM_UNWIND_H__
+#endif
+#endif
