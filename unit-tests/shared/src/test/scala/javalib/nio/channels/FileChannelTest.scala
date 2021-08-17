@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import java.io.{FileInputStream, FileOutputStream}
 
 class FileChannelTest {
   @Test def fileChannelCanReadBufferFromFile(): Unit = {
@@ -163,6 +164,50 @@ class FileChannelTest {
       assertTrue(newLines.get(0) == "hello, world")
     }
   }
+
+  // @Test def getChannelFromFileInputStreamCoherency(): Unit = {
+  //   withTemporaryDirectory { dir =>
+  //     val f = dir.resolve("f")
+  //     val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+  //     Files.write(f, bytes)
+  //     val in = new FileInputStream(f.toString())
+  //     val channel = in.getChannel()
+  //     val read345 = ByteBuffer.allocate(3)
+
+  //     in.read()
+  //     in.read()
+  //     channel.read(read345)
+
+  //     var i = 2
+  //     while (i < bytes.length) {
+  //       assertEquals(f"Byte#$i", read345.get(i - 2), bytes(i))
+  //       i += 1
+  //     }
+  //   }
+  // }
+
+  // @Test def getChannelFromFileOutputStreamCoherency(): Unit = {
+  //   withTemporaryDirectory { dir =>
+  //     val f = dir.resolve("f")
+  //     val out = new FileOutputStream(f.toString())
+  //     val channel = out.getChannel()
+
+  //     val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+
+  //     var i = 0
+  //     while (i < 3) {
+  //       out.write(bytes(i))
+  //       i += 1
+  //     }
+  //     while (i < bytes.length) {
+  //       channel.write(ByteBuffer.wrap(Array[Byte](bytes(i))))
+  //       i += 1
+  //     }
+  //     val readb = Files.readAllBytes(f)
+  //     println(new String(readb))
+  //     assertTrue(bytes sameElements readb)
+  //   }
+  // }
 
   def withTemporaryDirectory(fn: Path => Unit) {
     val file = File.createTempFile("test", ".tmp")

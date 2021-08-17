@@ -14,6 +14,7 @@ import scala.scalanative.{runtime, windows}
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.{ErrorCodes, ErrorHandlingApi}
+import java.nio.channels.{FileChannel, FileChannelImpl}
 
 class FileInputStream(fd: FileDescriptor, file: Option[File])
     extends InputStream {
@@ -22,38 +23,17 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   def this(file: File) = this(FileDescriptor.openReadOnly(file), Some(file))
   def this(str: String) = this(new File(str))
 
-  override def available(): Int = {
-    if (isWindows) {
-      val currentPosition, lastPosition = stackalloc[windows.LargeInteger]
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = 0,
-        newFilePointer = currentPosition,
-        moveMethod = FILE_CURRENT
-      )
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = 0,
-        newFilePointer = lastPosition,
-        moveMethod = FILE_END
-      )
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = !currentPosition,
-        newFilePointer = null,
-        moveMethod = FILE_BEGIN
-      )
+  private val channel: FileChannelImpl =
+    new FileChannelImpl(fd, file, deleteOnClose = false)
 
-      (!lastPosition - !currentPosition).toInt
-    } else {
-      val currentPosition = lseek(fd.fd, 0, SEEK_CUR)
-      val lastPosition = lseek(fd.fd, 0, SEEK_END)
-      lseek(fd.fd, currentPosition, SEEK_SET)
-      (lastPosition - currentPosition).toInt
+  override def available(): Int = channel.available()
+
+  override def close(): Unit = {
+    if (channel.isOpen()) {
+      channel.close()
     }
+    fd.close()
   }
-
-  override def close(): Unit = fd.close()
 
   override protected def finalize(): Unit =
     close()
@@ -74,61 +54,8 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
     read(buffer, 0, buffer.length)
   }
 
-  override def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
-    if (buffer == null) {
-      throw new NullPointerException
-    }
-    if (offset < 0 || count < 0 || count > buffer.length - offset) {
-      throw new IndexOutOfBoundsException
-    }
-    if (count == 0) {
-      return 0
-    }
-
-    // we use the runtime knowledge of the array layout to avoid
-    // intermediate buffer, and write straight into the array memory
-    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
-    if (isWindows) {
-      def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
-
-      def tryRead(count: Int)(fallback: => Int) = {
-        val readBytes = stackalloc[windows.DWord]
-        if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
-          (!readBytes).toInt match {
-            case 0     => -1 // EOF
-            case bytes => bytes
-          }
-        } else fallback
-      }
-
-      tryRead(count)(fallback = {
-        ErrorHandlingApi.GetLastError() match {
-          case ErrorCodes.ERROR_BROKEN_PIPE =>
-            // Pipe was closed, but it still can contain some unread data
-            available() match {
-              case 0     => -1 //EOF
-              case count => tryRead(count)(fallback = fail())
-            }
-
-          case _ =>
-            fail()
-        }
-      })
-
-    } else {
-      val readCount = unistd.read(fd.fd, buf, count.toUInt)
-      if (readCount == 0) {
-        // end of file
-        -1
-      } else if (readCount < 0) {
-        // negative value (typically -1) indicates that read failed
-        throw UnixException(file.fold("")(_.toString), errno.errno)
-      } else {
-        // successfully read readCount bytes
-        readCount
-      }
-    }
-  }
+  override def read(buffer: Array[Byte], offset: Int, count: Int): Int =
+    channel.read(buffer, offset, count)
 
   override def skip(n: Long): Long =
     if (n < 0) {
@@ -147,6 +74,5 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
       bytesToSkip
     }
 
-  @stub
-  def getChannel: java.nio.channels.FileChannel = ???
+  def getChannel: FileChannel = channel
 }
