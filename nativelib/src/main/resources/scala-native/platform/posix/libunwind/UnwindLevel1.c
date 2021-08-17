@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- UnwindLevel1.c -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -74,7 +71,6 @@ unwind_phase1(unw_context_t *uc, unw_cursor_t *cursor, _Unwind_Exception *except
       return _URC_FATAL_PHASE1_ERROR;
     }
 
-#ifndef NDEBUG
     // When tracing, print state information.
     if (_LIBUNWIND_TRACING_UNWINDING) {
       char functionBuf[512];
@@ -92,7 +88,6 @@ unwind_phase1(unw_context_t *uc, unw_cursor_t *cursor, _Unwind_Exception *except
           (void *)exception_object, pc, frameInfo.start_ip, functionName,
           frameInfo.lsda, frameInfo.handler);
     }
-#endif
 
     // If there is a personality routine, ask it if it will want to stop at
     // this frame.
@@ -175,7 +170,6 @@ unwind_phase2(unw_context_t *uc, unw_cursor_t *cursor, _Unwind_Exception *except
       return _URC_FATAL_PHASE2_ERROR;
     }
 
-#ifndef NDEBUG
     // When tracing, print state information.
     if (_LIBUNWIND_TRACING_UNWINDING) {
       char functionBuf[512];
@@ -192,7 +186,6 @@ unwind_phase2(unw_context_t *uc, unw_cursor_t *cursor, _Unwind_Exception *except
                                  functionName, sp, frameInfo.lsda,
                                  frameInfo.handler);
     }
-#endif
 
     // If there is a personality routine, tell it we are unwinding.
     if (frameInfo.handler != 0) {
@@ -268,7 +261,6 @@ unwind_phase2_forced(unw_context_t *uc, unw_cursor_t *cursor,
       return _URC_FATAL_PHASE2_ERROR;
     }
 
-#ifndef NDEBUG
     // When tracing, print state information.
     if (_LIBUNWIND_TRACING_UNWINDING) {
       char functionBuf[512];
@@ -284,7 +276,6 @@ unwind_phase2_forced(unw_context_t *uc, unw_cursor_t *cursor,
           (void *)exception_object, frameInfo.start_ip, functionName,
           frameInfo.lsda, frameInfo.handler);
     }
-#endif
 
     // Call stop function at each frame.
     _Unwind_Action action =
@@ -523,5 +514,4 @@ _LIBUNWIND_EXPORT void _Unwind_SetIP(struct _Unwind_Context *context,
 }
 
 #endif // !defined(_LIBUNWIND_ARM_EHABI) && !defined(__USING_SJLJ_EXCEPTIONS__)
-#endif
 #endif

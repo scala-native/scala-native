@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- __libunwind_config.h -----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -137,19 +134,12 @@
   #define _LIBUNWIND_CONTEXT_SIZE 16
   #define _LIBUNWIND_CURSOR_SIZE 23
 # elif defined(__riscv)
-#  define _LIBUNWIND_TARGET_RISCV 1
-#  if defined(__riscv_flen)
-#   define RISCV_FLEN __riscv_flen
+#  if __riscv_xlen == 64
+#    define _LIBUNWIND_TARGET_RISCV 1
+#    define _LIBUNWIND_CONTEXT_SIZE 64
+#    define _LIBUNWIND_CURSOR_SIZE 76
 #  else
-#   define RISCV_FLEN 0
-#  endif
-#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64)
-#  if __riscv_xlen == 32
-#   define _LIBUNWIND_CURSOR_SIZE (_LIBUNWIND_CONTEXT_SIZE + 7)
-#  elif __riscv_xlen == 64
-#   define _LIBUNWIND_CURSOR_SIZE (_LIBUNWIND_CONTEXT_SIZE + 12)
-#  else
-#   error "Unsupported RISC-V ABI"
+#    error "Unsupported RISC-V ABI"
 #  endif
 # define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV
 # elif defined(__ve__)
@@ -180,5 +170,4 @@
 #endif // _LIBUNWIND_IS_NATIVE_ONLY
 
 #endif // ____LIBUNWIND_CONFIG_H__
-#endif
 #endif

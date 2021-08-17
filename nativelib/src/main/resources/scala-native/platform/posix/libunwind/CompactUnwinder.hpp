@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===-------------------------- CompactUnwinder.hpp -----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -701,5 +698,4 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
 } // namespace libunwind
 
 #endif // __COMPACT_UNWINDER_HPP__
-#endif
 #endif

@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===--------------------- Unwind_AppleExtras.cpp -------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -117,5 +114,4 @@ NOT_HERE_BEFORE_5_0(_Unwind_SjLj_Resume_or_Rethrow)
 NOT_HERE_BEFORE_5_0(_Unwind_SjLj_Unregister)
 
 #endif // defined(_LIBUNWIND_BUILD_SJLJ_APIS)
-#endif
 #endif

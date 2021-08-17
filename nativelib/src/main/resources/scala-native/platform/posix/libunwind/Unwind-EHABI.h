@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------- Unwind-EHABI.hpp ---------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -54,5 +51,4 @@ extern _Unwind_Reason_Code __aeabi_unwind_cpp_pr2(
 #endif // defined(_LIBUNWIND_ARM_EHABI)
 
 #endif  // __UNWIND_EHABI_H__
-#endif
 #endif

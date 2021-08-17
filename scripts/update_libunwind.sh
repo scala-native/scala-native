@@ -16,7 +16,7 @@ cp -r $LIBUNWIND_FOLDER/include/* $TARGET_FOLDER/
 nl='
 '
 
-for source in $TARGET_FOLDER/{**,.}/*.{c,cpp,h,hpp}; do
+for source in $TARGET_FOLDER/**/*.{c,cpp,h,hpp}; do
   sed -i '1i\// clang-format off'"\\${nl}"'#if defined(__unix__) || defined(__unix) || defined(unix) || \\'"\\${nl}"'    (defined(__APPLE__) && defined(__MACH__))' "$source"
   echo "#endif" >> "$source"
 
@@ -26,3 +26,11 @@ for source in $TARGET_FOLDER/{**,.}/*.{c,cpp,h,hpp}; do
   sed -i 's/<libunwind.h>/"libunwind.h"/g' "$source"
   sed -i 's/<unwind.h>/"unwind.h"/g' "$source"
 done
+
+SN_FOLDER=$(pwd)
+
+cd $LIBUNWIND_FOLDER
+REV=$(git describe --tags)
+cd $SN_FOLDER
+
+echo $REV > $TARGET_FOLDER/rev.txt

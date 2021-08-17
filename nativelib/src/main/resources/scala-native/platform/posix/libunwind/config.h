@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===----------------------------- config.h -------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -58,8 +55,7 @@
   #endif
 #endif
 
-#if defined(_LIBUNWIND_HIDE_SYMBOLS)
-  // The CMake file passes -fvisibility=hidden to control ELF/Mach-O visibility.
+#if defined(_LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS)
   #define _LIBUNWIND_EXPORT
   #define _LIBUNWIND_HIDDEN
 #else
@@ -77,15 +73,11 @@
 #define SYMBOL_NAME(name) XSTR(__USER_LABEL_PREFIX__) #name
 
 #if defined(__APPLE__)
-#if defined(_LIBUNWIND_HIDE_SYMBOLS)
-#define _LIBUNWIND_ALIAS_VISIBILITY(name) __asm__(".private_extern " name);
-#else
-#define _LIBUNWIND_ALIAS_VISIBILITY(name)
-#endif
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   __asm__(".globl " SYMBOL_NAME(aliasname));                                   \
   __asm__(SYMBOL_NAME(aliasname) " = " SYMBOL_NAME(name));                     \
-  _LIBUNWIND_ALIAS_VISIBILITY(SYMBOL_NAME(aliasname))
+  extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
+      __attribute__((weak_import));
 #elif defined(__ELF__)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
@@ -245,5 +237,4 @@ struct check_fit {
 #endif // __cplusplus
 
 #endif // LIBUNWIND_CONFIG_H
-#endif
 #endif

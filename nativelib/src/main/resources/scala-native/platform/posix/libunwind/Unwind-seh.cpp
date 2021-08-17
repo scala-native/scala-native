@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===--------------------------- Unwind-seh.cpp ---------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -250,7 +247,6 @@ unwind_phase2_forced(unw_context_t *uc,
       return _URC_FATAL_PHASE2_ERROR;
     }
 
-#ifndef NDEBUG
     // When tracing, print state information.
     if (_LIBUNWIND_TRACING_UNWINDING) {
       char functionBuf[512];
@@ -266,7 +262,6 @@ unwind_phase2_forced(unw_context_t *uc,
           (void *)exception_object, frameInfo.start_ip, functionName,
           frameInfo.lsda, frameInfo.handler);
     }
-#endif
 
     // Call stop function at each frame.
     _Unwind_Action action =
@@ -495,5 +490,4 @@ static void __unw_seh_set_disp_ctx(unw_cursor_t *cursor,
 }
 
 #endif // defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
-#endif
 #endif

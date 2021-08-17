@@ -1,9 +1,6 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-// clang-format off
-#if defined(__unix__) || defined(__unix) || defined(unix) || \
-    (defined(__APPLE__) && defined(__MACH__))
 //===------------------------ libunwind_ext.h -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -69,5 +66,4 @@ extern _Unwind_Reason_Code _Unwind_VRS_Interpret(_Unwind_Context *context,
 #endif
 
 #endif // __LIBUNWIND_EXT__
-#endif
 #endif
