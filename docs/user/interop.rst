@@ -252,7 +252,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
       import scala.scalanative.unsafe._
 
       Zone { implicit z =>
-        val buffer = alloc[Byte](n)
+        val buffer = alloc[Byte](n.toUSize)
       }
 
    ``alloc`` requests memory sufficient to contain `n` values of a given type.
@@ -278,7 +278,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    .. code-block:: scala
 
-       val buffer = unsafe.stackalloc[Byte](256)
+       val buffer = unsafe.stackalloc[Byte](256.toUSize)
 
    This code will allocate 256 bytes that are going to be available until
    the enclosing method returns. Number of elements to be allocated is optional
@@ -403,8 +403,8 @@ type instead of throwing a NullPointerException.
 Platform-specific types
 -----------------------
 
-Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
-A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
+Scala Native defines the type ``Size`` and its unsigned counterpart, ``USize``.
+A size corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
 ones.
 
 Size and alignment of types
@@ -445,6 +445,7 @@ Scala Native provides support for four unsigned integer types:
 2. ``unsigned.UShort``
 3. ``unsigned.UInt``
 4. ``unsigned.ULong``
+5. ``unsigned.USize``
 
 They share the same primitive operations as signed integer types.
 Primitive operation between two integer values are supported only
@@ -453,6 +454,6 @@ if they have the same signedness (they must both signed or both unsigned.)
 Conversions between signed and unsigned integers must be done explicitly
 using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``longValue.toULong``
 and conversely ``unsignedByteValue.toByte``, ``unsignedShortValue.toShort``, ``unsignedIntValue.toInt``,
-``unsignedLongValue.toLong``.
+``unsignedLongValue.toLong``, ``unsignedSizeValue.toSize``.
 
 Continue to :ref:`lib`.
