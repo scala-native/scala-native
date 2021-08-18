@@ -196,7 +196,7 @@ object Discover {
     def fail =
       throw new BuildException("Failed to detect native target.")
 
-    IO.write(targetc, "int probe;".getBytes("UTF-8"))
+    IO.write(targetc, "int probe;".getBytes("ASCII"))
     val exit = Process(compilec, workdir.toFile).!
     if (exit != 0) {
       fail

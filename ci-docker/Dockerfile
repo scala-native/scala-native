@@ -1,10 +1,10 @@
 ARG TARGET_DOCKER_PLATFORM
 
-FROM ubuntu:20.04
+FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install -y qemu-user-static
 
-FROM $TARGET_DOCKER_PLATFORM/ubuntu:20.04
+FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
 
 ARG HOST_ARCHITECTURE
 
@@ -38,15 +38,13 @@ RUN \
   dpkg -i $SBT_INSTALL_FILE && \
   rm $SBT_INSTALL_FILE
 
-RUN apt-get install -y clang-10 zlib1g-dev libgc-dev
-
-ENV LD_LIBRARY_PATH "/usr/local/lib"
+RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev
 
 ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
 
-ENV PATH=/usr/lib/llvm-10/bin:${PATH}
+ENV PATH=/usr/lib/llvm-6.0/bin:${PATH}
 
 RUN useradd -ms /bin/bash scala-native
 

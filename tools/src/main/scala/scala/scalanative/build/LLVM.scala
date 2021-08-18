@@ -117,7 +117,7 @@ private[scalanative] object LLVM {
     val flags = {
       val platformFlags =
         if (config.targetsWindows) Seq("-g")
-        else Seq("-rdynamic", "--rtlib=compiler-rt", "--unwindlib=none")
+        else Seq("-rdynamic", "--rtlib=compiler-rt")
       flto(config) ++ platformFlags ++ Seq(
         "-o",
         outpath.abs
