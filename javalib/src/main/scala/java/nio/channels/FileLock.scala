@@ -21,6 +21,8 @@ abstract class FileLock private (
   ) =
     this(channel: Channel, position, size, shared)
 
+  require(position >= 0 && size >= 0, "position and size must be non negative")
+
   final def channel(): FileChannel =
     channel match {
       case fc: FileChannel => fc
@@ -34,7 +36,7 @@ abstract class FileLock private (
     shared
 
   final def overlaps(pos: Long, siz: Long): Boolean =
-    (pos + siz) >= position || (position + size) >= pos
+    (pos + siz) > position && (position + size) > pos
 
   def isValid(): Boolean
 

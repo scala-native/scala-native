@@ -36,8 +36,7 @@ class RandomAccessFile private (
 
   override def close(): Unit = {
     closed = true
-    if (isWindows) HandleApi.CloseHandle(fd.handle)
-    else unistd.close(fd.fd)
+    channel.close()
   }
 
   final def getChannel(): FileChannel = channel

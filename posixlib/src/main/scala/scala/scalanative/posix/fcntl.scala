@@ -3,6 +3,8 @@ package posix
 
 import scalanative.unsafe._
 import scalanative.posix.sys.stat.mode_t
+import scala.scalanative.posix.unistd.off_t
+import scala.scalanative.posix.sys.types.pid_t
 
 @extern
 object fcntl {
@@ -12,6 +14,17 @@ object fcntl {
   def open(pathname: CString, flags: CInt, mode: mode_t): CInt = extern
 
   def fcntl(fd: CInt, cmd: CInt, flags: CInt): CInt = extern
+
+  @name("scalanative_fcntl")
+  def fcntl(fd: CInt, cmd: CInt, flock_struct: Ptr[flock]): CInt = extern
+
+  type flock = CStruct5[
+    off_t, // l_start starting offset
+    off_t, // l_len len = 0 means until end of file
+    pid_t, // l_pid lock owner
+    CInt, // l_type lock type: read/write, etc.
+    CInt // l_whence type of l_start
+  ]
 
   @name("scalanative_f_dupfd")
   def F_DUPFD: CInt = extern
@@ -87,4 +100,22 @@ object fcntl {
 
   @name("scalanative_o_wronly")
   def O_WRONLY: CInt = extern
+}
+
+object fcntlOps {
+  import fcntl._
+
+  implicit class flockOps(val ptr: Ptr[flock]) extends AnyVal {
+    def l_start: off_t = ptr._1
+    def l_start_=(value: off_t): Unit = ptr._1 = value
+    def l_len: off_t = ptr._2
+    def l_len_=(value: off_t): Unit = ptr._2 = value
+    def l_pid: pid_t = ptr._3
+    def l_pid_=(value: pid_t): Unit = ptr._3 = value
+    def l_type: CInt = ptr._4
+    def l_type_=(value: CInt): Unit = ptr._4 = value
+    def l_whence: CInt = ptr._5
+    def l_whence_=(value: CInt): Unit = ptr._5 = value
+  }
+
 }

@@ -29,10 +29,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   override def available(): Int = channel.available()
 
   override def close(): Unit = {
-    if (channel.isOpen()) {
-      channel.close()
-    }
-    fd.close()
+    channel.close()
   }
 
   override protected def finalize(): Unit =

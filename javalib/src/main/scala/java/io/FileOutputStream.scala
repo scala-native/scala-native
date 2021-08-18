@@ -27,7 +27,7 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File])
   private val channel: FileChannelImpl =
     new FileChannelImpl(fd, file, deleteOnClose = false)
 
-  override def close(): Unit = fd.close()
+  override def close(): Unit = channel.close()
 
   override protected def finalize(): Unit = close()
 

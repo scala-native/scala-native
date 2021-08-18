@@ -52,4 +52,23 @@ int scalanative_o_rdwr() { return O_RDWR; }
 
 int scalanative_o_wronly() { return O_WRONLY; }
 
+struct scalanative_flock {
+    off_t l_start;  /* starting offset */
+    off_t l_len;    /* len = 0 means until end of file */
+    pid_t l_pid;    /* lock owner */
+    short l_type;   /* lock type: read/write, etc. */
+    short l_whence; /* type of l_start */
+};
+
+int scalanative_fcntl(int fd, int cmd, struct scalanative_flock *flock_struct) {
+    struct flock *flock_buf;
+    flock_buf->l_start = flock_struct->l_start;
+    flock_buf->l_len = flock_struct->l_len;
+    flock_buf->l_pid = flock_struct->l_pid;
+    flock_buf->l_type = flock_struct->l_type;
+    flock_buf->l_whence = flock_struct->l_whence;
+
+    return fcntl(fd, cmd, flock_buf);
+}
+
 #endif // Unix or Mac OS

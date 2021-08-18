@@ -21,7 +21,8 @@ import java.util.Set
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import java.io.IOException
 
-import scala.scalanative.posix.fcntl
+import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.libc.stdio
 import scala.scalanative.unsafe._
 import java.io.File
@@ -45,63 +46,56 @@ private[java] final class FileChannelImpl(
     deleteOnClose: Boolean
 ) extends FileChannel {
 
-  // private val lockManager = Array[FileLock]()
+  override def force(metadata: Boolean): Unit = ()
+  override def tryLock(
+      position: Long,
+      size: Long,
+      shared: Boolean
+  ): FileLock = {
+    val lock =
+      if (!isWindows) lockUnix(position, size, shared, F_SETLK)
+      else lockWindows(position, size)
 
-  // override def force(metadata: Boolean): Unit = ()
+    lock
+  }
 
-  // override def tryLock(
-  //     position: Long,
-  //     size: Long,
-  //     shared: Boolean
-  // ): FileLock = {
-  //   val lock =
-  //     if (!isWindows)
-  //       lockUnix(position, size, shared, fcntl.F_SETLK)
-  //     else
-  //       lockWindows(position, size)
-  //   lockManager :+ lock
-  //   lock
-  // }
+  override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
+    val lock =
+      if (!isWindows) lockUnix(position, size, shared, F_SETLKW)
+      else lockWindows(position, size)
 
-  // override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
-  //   val lock = if (!isWindows) {
-  //     lockUnix(position, size, shared, fcntl.F_SETLKW)
-  //   } else {
-  //     lockWindows(position, size)
-  //   }
-  //   lockManager :+ lock
-  //   lock
-  // }
+    lock
+  }
 
-  // @inline def lockUnix(
-  //     position: Long,
-  //     size: Long,
-  //     shared: Boolean,
-  //     command: CInt
-  // ): FileLock = {
-  //   val fl = stackalloc[fcntl.flock]
-  //   fl._1 = position
-  //   fl._2 = size
-  //   fl._3 = 0
-  //   fl._4 = fcntl.F_WRLCK
-  //   fl._5 = stdio.SEEK_SET
-  //   if (fcntl.fcntl(fd.fd, command, fl) == -1) {
-  //     throw new IOException()
-  //   }
-  //   new FileLockImpl(this, position, size, shared, fd)
-  // }
+  @inline def lockUnix(
+      position: Long,
+      size: Long,
+      shared: Boolean,
+      command: CInt
+  ): FileLock = {
+    val fl = stackalloc[flock]
+    fl.l_start = position
+    fl.l_len = size
+    fl.l_pid = 0
+    fl.l_type = F_WRLCK
+    fl.l_whence = stdio.SEEK_SET
+    if (fcntl(fd.fd, command, fl) == -1) {
+      throw new IOException()
+    }
+    new FileLockImpl(this, position, size, shared, fd)
+  }
 
-  // @inline def lockWindows(position: Long, size: Long): FileLock = {
-  //   if (!LockFile(
-  //         fd.handle,
-  //         position.toInt.toUInt,
-  //         (position >> 32).toInt.toUInt,
-  //         size.toInt.toUInt,
-  //         (size >> 32).toInt.toUInt
-  //       ))
-  //     throw new IOException()
-  //   new FileLockImpl(this, position, size, true, fd)
-  // }
+  @inline def lockWindows(position: Long, size: Long): FileLock = {
+    if (!LockFile(
+          fd.handle,
+          position.toInt.toUInt,
+          (position >> 32).toInt.toUInt,
+          size.toInt.toUInt,
+          (size >> 32).toInt.toUInt
+        ))
+      throw new IOException()
+    new FileLockImpl(this, position, size, true, fd)
+  }
 
   override protected def implCloseChannel(): Unit = {
     fd.close()
@@ -115,8 +109,14 @@ private[java] final class FileChannelImpl(
   ): MappedByteBuffer = {
     var total = 0
     var copied = 0
+    if (mode != FileChannel.MapMode.READ_ONLY) ???
     val buffer =
-      new MappedByteBuffer(mode, size.toInt, new Array(size.toInt), 0) {}
+      new MappedByteBuffer(
+        mode,
+        size.toInt,
+        new Array(size.toInt),
+        0
+      ) {} //readonly
     while (copied < size && { copied = read(buffer); copied > 0 }) {
       total += copied
     }

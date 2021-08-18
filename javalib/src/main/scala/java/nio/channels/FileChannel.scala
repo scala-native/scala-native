@@ -23,15 +23,15 @@ abstract class FileChannel protected ()
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  // def force(metadata: Boolean): Unit
+  def force(metadata: Boolean): Unit
 
-  // final def lock(): FileLock = lock(0L, Long.MaxValue, false)
+  final def lock(): FileLock = lock(0L, Long.MaxValue, false)
 
-  // def lock(position: Long, size: Long, shared: Boolean): FileLock
+  def lock(position: Long, size: Long, shared: Boolean): FileLock
 
-  // final def tryLock(): FileLock = tryLock(0L, Long.MaxValue, false)
+  final def tryLock(): FileLock = tryLock(0L, Long.MaxValue, false)
 
-  // def tryLock(position: Long, size: Long, shared: Boolean): FileLock
+  def tryLock(position: Long, size: Long, shared: Boolean): FileLock
 
   def map(
       mode: FileChannel.MapMode,
