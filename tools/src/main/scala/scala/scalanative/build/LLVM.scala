@@ -5,9 +5,8 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.IO.RichPath
-import scala.scalanative.build.Mode.Debug
-import scala.scalanative.build.Mode.ReleaseFast
-import scala.scalanative.build.Mode.ReleaseFull
+import scalanative.compat.CompatParColls.Converters._
+import scala.scalanative.build.Mode._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
