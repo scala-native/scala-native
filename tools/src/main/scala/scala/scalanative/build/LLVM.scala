@@ -5,8 +5,6 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.IO.RichPath
-import scalanative.compat.CompatParColls.Converters._
-import scala.collection.concurrent.TrieMap
 import scala.scalanative.build.Mode.Debug
 import scala.scalanative.build.Mode.ReleaseFast
 import scala.scalanative.build.Mode.ReleaseFull
@@ -60,12 +58,14 @@ private[scalanative] object LLVM {
 
       for {
         CompilationContext(cmd, output) <- compilationCtx
-        _ = config.logger.running(cmd)
-        proc = Process(cmd, config.workdir.toFile)
-        result = proc ! Logger.toProcessLogger(config.logger)
       } yield {
-        if (result != 0) {
-          sys.error(s"Failed to compile ${inpath}")
+        if(cmd.nonEmpty) {
+          config.logger.running(cmd)
+          val proc = Process(cmd, config.workdir.toFile)
+          val result = proc ! Logger.toProcessLogger(config.logger)
+          if (result != 0) {
+            sys.error(s"Failed to compile ${inpath}")
+          }
         }
         output
       }
@@ -163,9 +163,9 @@ private[scalanative] object LLVM {
     val isCpp = inpath.toString.endsWith(cppExt)
     val isLl = inpath.toString.endsWith(llExt)
     val outpath = Paths.get(inpath.abs + oExt)
-
+    val alreadyExists = Files.exists(outpath)
     // LL is generated so always rebuild
-    if (isLl || !Files.exists(outpath)) Some {
+    if (isLl || !alreadyExists) Some {
       val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
       val stdflag = {
         if (isLl) Seq()
@@ -192,6 +192,7 @@ private[scalanative] object LLVM {
         result = ObjectFile(outpath)
       )
     }
+    else if(alreadyExists) Some(CompilationContext(Nil, ObjectFile(outpath)))
     else None
   }
 
