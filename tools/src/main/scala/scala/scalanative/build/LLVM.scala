@@ -59,7 +59,7 @@ private[scalanative] object LLVM {
       for {
         CompilationContext(cmd, output) <- compilationCtx
       } yield {
-        if(cmd.nonEmpty) {
+        if (cmd.nonEmpty) {
           config.logger.running(cmd)
           val proc = Process(cmd, config.workdir.toFile)
           val result = proc ! Logger.toProcessLogger(config.logger)
@@ -192,7 +192,7 @@ private[scalanative] object LLVM {
         result = ObjectFile(outpath)
       )
     }
-    else if(alreadyExists) Some(CompilationContext(Nil, ObjectFile(outpath)))
+    else if (alreadyExists) Some(CompilationContext(Nil, ObjectFile(outpath)))
     else None
   }
 

@@ -8,6 +8,5 @@ object RustLib {
   @name("rust_hello2")
   def hello2(): Unit = extern
 
-  
   def isEven(v: Int): Boolean = extern
 }

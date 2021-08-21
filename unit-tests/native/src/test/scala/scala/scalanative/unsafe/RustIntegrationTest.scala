@@ -31,7 +31,10 @@ class RustIntegrationTest {
 
     Zone { implicit z: Zone =>
       assertTrue("allocated", checkTestString(toCString("Hello Rust")))
-      assertFalse("fail allocated", checkTestString(toCString("Oter not correct")))
+      assertFalse(
+        "fail allocated",
+        checkTestString(toCString("Oter not correct"))
+      )
     }
   }
 }

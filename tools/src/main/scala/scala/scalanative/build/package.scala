@@ -8,5 +8,5 @@ package object build {
   }
   case class ObjectFile(path: Path) extends CompilationResult
   case class Library(path: Path) extends CompilationResult
-  
+
 }
