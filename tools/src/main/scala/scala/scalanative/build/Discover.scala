@@ -42,6 +42,9 @@ object Discover {
     path
   }
 
+  lazy val rustc: Path = discover("rustc", "RUSTC")
+  lazy val cargo: Path = discover("cargo", "CARGO_HOME")
+
   private def filterExisting(paths: Seq[String]): Seq[String] =
     paths.filter(new File(_).exists())
 

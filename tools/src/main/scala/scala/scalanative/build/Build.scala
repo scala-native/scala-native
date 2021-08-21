@@ -91,7 +91,7 @@ object Build {
   def findAndCompileNativeSources(
       config: Config,
       linkerResult: linker.Result
-  ): Seq[CompilationOutput] = {
+  ): Seq[CompilationResult] = {
     import NativeLib._
     findNativeLibs(config.classPath, config.workdir)
       .map(unpackNativeCode)
