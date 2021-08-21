@@ -15,11 +15,13 @@ private[scalanative] object LLVM {
   /** C++ file extension: ".cpp" */
   val cppExt = ".cpp"
 
+  val rustExt = ".rs"
+
   /** LLVM intermediate file extension: ".ll" */
   val llExt = ".ll"
 
   /** List of source patterns used: ".c, .cpp, .S" */
-  val srcExtensions = Seq(".c", cppExt, ".S")
+  val srcExtensions = Seq(".c", cppExt, ".S", rustExt)
 
   /** Compile the given files to object files
    *
@@ -30,45 +32,93 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+  def compile(
+      config: Config,
+      paths: Seq[Path]
+  ): Seq[CompilationOutput] = {
     // generate .o files for all included source files in parallel
-    paths.par.map { path =>
-      val inpath = path.abs
-      val outpath = inpath + oExt
-      val isCpp = inpath.endsWith(cppExt)
-      val isLl = inpath.endsWith(llExt)
-      val objPath = Paths.get(outpath)
-      // LL is generated so always rebuild
-      if (isLl || !Files.exists(objPath)) {
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag = {
-          if (isLl) Seq()
-          else if (isCpp) {
-            // C++14 or newer standard is needed to compile code using Windows API
-            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-            if (config.targetsWindows) Seq("-std=c++14")
-            else Seq("-std=c++11")
-          } else Seq("-std=gnu11")
-        }
-        val platformFlags = {
-          if (config.targetsWindows) Seq("-g")
-          else Nil
-        }
-        val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
-            Seq("-c", inpath, "-o", outpath)
+    paths.par.flatMap { path =>
+      val inpath = path.toAbsolutePath()
+      val isRust = inpath.toString.endsWith(rustExt)
+      val outpath =
+        if (isRust)
+          Paths.get(inpath.abs.stripSuffix(rustExt) + ".a")
+        else
+          Paths.get(inpath + oExt)
 
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) ! Logger
+      val compileCmd =
+        if (isRust)
+          compileWithRustc(config, inpath, outpath)
+        else
+          compileWithClangCmd(config, inpath, outpath)
+
+      if (compileCmd.isEmpty) None
+      else {
+        config.logger.running(compileCmd)
+        val result = Process(compileCmd, config.workdir.toFile) ! Logger
           .toProcessLogger(config.logger)
         if (result != 0) {
           sys.error(s"Failed to compile ${inpath}")
         }
+        Some(
+          if (isRust) Library(outpath)
+          else ObjectFile(outpath)
+        )
       }
-      objPath
     }.seq
+  }
+
+  private def compileWithRustc(
+      config: Config,
+      inPath: Path,
+      outPath: Path
+  ): Seq[String] = {
+    val optional = List(
+      config.compilerConfig.targetTriple.map("--target=" + _)
+    ).collect {
+      case Some(config) => config
+    }
+
+    "/bin/rustc" ::
+      inPath.abs ::
+      "-o" + outPath.abs ::
+      "--crate-type=staticlib" :: // Need to be compiled as staticlib to include rust stdlib
+      // "--emit=obj" ::
+      optional
+  }
+
+  private def compileWithClangCmd(
+      config: Config,
+      inpath: Path,
+      outpath: Path
+  ): Seq[String] = {
+    val isCpp = inpath.toString.endsWith(cppExt)
+    val isLl = inpath.toString.endsWith(llExt)
+    // LL is generated so always rebuild
+    if (isLl || !Files.exists(outpath)) {
+      val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+      val stdflag = {
+        if (isLl) Seq()
+        else if (isCpp) {
+          // C++14 or newer standard is needed to compile code using Windows API
+          // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+          if (config.targetsWindows) Seq("-std=c++14")
+          else Seq("-std=c++11")
+        } else Seq("-std=gnu11")
+      }
+      val platformFlags = {
+        if (config.targetsWindows) Seq("-g")
+        else Nil
+      }
+      val flags = opt(config) +: "-fvisibility=hidden" +:
+        stdflag ++: platformFlags ++: config.compileOptions
+
+      Seq(compiler) ++
+        flto(config) ++
+        flags ++
+        target(config) ++
+        Seq("-c", inpath.abs, "-o", outpath.abs)
+    } else Nil
   }
 
   /** Links a collection of `.ll.o` files and the `.o` files from the
@@ -89,7 +139,7 @@ private[scalanative] object LLVM {
   def link(
       config: Config,
       linkerResult: linker.Result,
-      objectsPaths: Seq[Path],
+      compilationOutput: Seq[CompilationOutput],
       outpath: Path
   ): Path = {
     val links = {
@@ -111,7 +161,12 @@ private[scalanative] object LLVM {
         else Seq("-rdynamic")
       flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
     }
-    val paths = objectsPaths.map(_.abs)
+    // Make sure that libraries are linked as the last ones
+    val paths = {
+      compilationOutput.filter(_.isInstanceOf[ObjectFile]) ++ 
+      compilationOutput.filter(_.isInstanceOf[Library])
+    }.map(_.path.abs)
+
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
     val ltoName = lto(config).getOrElse("none")
 
@@ -119,9 +174,8 @@ private[scalanative] object LLVM {
       s"Linking native code (${config.gc.name} gc, $ltoName lto)"
     ) {
       config.logger.running(compile)
-      Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
-        config.logger
-      )
+      Process(compile, config.workdir.toFile) !
+        Logger.toProcessLogger(config.logger)
     }
     outpath
   }
