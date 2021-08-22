@@ -52,7 +52,7 @@ USER scala-native
 
 # Install Rust for integration tests
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-ENV PATH="${HOME}.cargo/bin:${PATH}"
+ENV PATH="${HOME}/.cargo/bin:${PATH}"
 
 WORKDIR /home/scala-native/scala-native
 
