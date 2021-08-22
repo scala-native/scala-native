@@ -41,7 +41,8 @@ RUN \
 RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev
 
 # Install Rust for integration tests
-RUN curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh 
+RUN curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -o rustup.sh && \
+  sh rustup.sh -y
 
 ENV LC_ALL "C.UTF-8"
 
