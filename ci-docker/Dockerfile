@@ -40,10 +40,6 @@ RUN \
 
 RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev
 
-# Install Rust for integration tests
-RUN curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf -o rustup.sh && \
-  sh rustup.sh -y
-
 ENV LC_ALL "C.UTF-8"
 
 ENV LANG "C.UTF-8"
@@ -53,6 +49,10 @@ ENV PATH=/usr/lib/llvm-6.0/bin:${PATH}
 RUN useradd -ms /bin/bash scala-native
 
 USER scala-native
+
+# Install Rust for integration tests
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH="${HOME}.cargo/bin:${PATH}"
 
 WORKDIR /home/scala-native/scala-native
 
