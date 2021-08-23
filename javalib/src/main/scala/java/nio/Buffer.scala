@@ -100,7 +100,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
    * We only declare the methods we need somewhere.
    */
 
-  private[nio] def _array: Array[ElementType]
+  private[nio] def _array: GenArray[ElementType]
   private[nio] def _arrayOffset: Int
 
   /** Loads an element at the given absolute, unchecked index. */
@@ -112,7 +112,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   /** Loads a range of elements with absolute, unchecked indices. */
   private[nio] def load(
       startIndex: Int,
-      dst: Array[ElementType],
+      dst: GenArray[ElementType],
       offset: Int,
       length: Int
   ): Unit
@@ -120,7 +120,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   /** Stores a range of elements with absolute, unchecked indices. */
   private[nio] def store(
       startIndex: Int,
-      src: Array[ElementType],
+      src: GenArray[ElementType],
       offset: Int,
       length: Int
   ): Unit
@@ -128,7 +128,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   /* Only for HeapByteBufferViews -- but that's the only place we can put it.
    * For all other types, it will be dce'ed.
    */
-  private[nio] def _byteArray: Array[Byte] =
+  private[nio] def _byteArray: GenArray[Byte] =
     throw new UnsupportedOperationException
   private[nio] def _byteArrayOffset: Int =
     throw new UnsupportedOperationException
@@ -143,7 +143,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   }
 
   @inline private[nio] def validateArrayIndexRange(
-      array: Array[_],
+      array: GenArray[_],
       offset: Int,
       length: Int
   ): Unit = {

@@ -59,7 +59,7 @@ private[nio] final class StringCharBuffer private (
 
   @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   override def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
     throw new ReadOnlyBufferException
@@ -87,7 +87,7 @@ private[nio] final class StringCharBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: Array[Char],
+      dst: GenArray[Char],
       offset: Int,
       length: Int
   ): Unit =
@@ -96,7 +96,7 @@ private[nio] final class StringCharBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: Array[Char],
+      src: GenArray[Char],
       offset: Int,
       length: Int
   ): Unit =

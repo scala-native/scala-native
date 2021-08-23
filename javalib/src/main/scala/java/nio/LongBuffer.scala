@@ -16,7 +16,7 @@ object LongBuffer {
 
 abstract class LongBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Long],
+    private[nio] val _array: GenArray[Long],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[LongBuffer] {
@@ -42,7 +42,7 @@ abstract class LongBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   def get(dst: Array[Long]): LongBuffer =
     get(dst, 0, dst.length)
@@ -53,7 +53,7 @@ abstract class LongBuffer private[nio] (
 
   @noinline
   def put(src: Array[Long], offset: Int, length: Int): LongBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   final def put(src: Array[Long]): LongBuffer =
     put(src, 0, src.length)
@@ -132,7 +132,7 @@ abstract class LongBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: Array[Long],
+      dst: GenArray[Long],
       offset: Int,
       length: Int
   ): Unit =
@@ -141,7 +141,7 @@ abstract class LongBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: Array[Long],
+      src: GenArray[Long],
       offset: Int,
       length: Int
   ): Unit =

@@ -16,7 +16,7 @@ object DoubleBuffer {
 
 abstract class DoubleBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Double],
+    private[nio] val _array: GenArray[Double],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[DoubleBuffer] {
@@ -42,7 +42,7 @@ abstract class DoubleBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   def get(dst: Array[Double]): DoubleBuffer =
     get(dst, 0, dst.length)
@@ -53,7 +53,7 @@ abstract class DoubleBuffer private[nio] (
 
   @noinline
   def put(src: Array[Double], offset: Int, length: Int): DoubleBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   final def put(src: Array[Double]): DoubleBuffer =
     put(src, 0, src.length)
@@ -132,7 +132,7 @@ abstract class DoubleBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: Array[Double],
+      dst: GenArray[Double],
       offset: Int,
       length: Int
   ): Unit =
@@ -141,7 +141,7 @@ abstract class DoubleBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: Array[Double],
+      src: GenArray[Double],
       offset: Int,
       length: Int
   ): Unit =

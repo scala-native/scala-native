@@ -3,7 +3,7 @@ package java.nio
 // Ported from Scala.js
 private[nio] final class HeapByteBufferCharView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
+    override private[nio] val _byteArray: GenArray[Byte],
     override private[nio] val _byteArrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
@@ -65,11 +65,11 @@ private[nio] final class HeapByteBufferCharView private (
 
   @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   @noinline
   override def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   @noinline
   def compact(): CharBuffer =
@@ -97,7 +97,7 @@ private[nio] object HeapByteBufferCharView {
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        byteArray: GenArray[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,

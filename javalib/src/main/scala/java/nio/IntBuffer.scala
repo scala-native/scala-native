@@ -16,7 +16,7 @@ object IntBuffer {
 
 abstract class IntBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Int],
+    private[nio] val _array: GenArray[Int],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[IntBuffer] {
@@ -42,7 +42,7 @@ abstract class IntBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   def get(dst: Array[Int]): IntBuffer =
     get(dst, 0, dst.length)
@@ -53,7 +53,7 @@ abstract class IntBuffer private[nio] (
 
   @noinline
   def put(src: Array[Int], offset: Int, length: Int): IntBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   final def put(src: Array[Int]): IntBuffer =
     put(src, 0, src.length)
@@ -135,7 +135,7 @@ abstract class IntBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: Array[Int],
+      dst: GenArray[Int],
       offset: Int,
       length: Int
   ): Unit =
@@ -144,7 +144,7 @@ abstract class IntBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: Array[Int],
+      src: GenArray[Int],
       offset: Int,
       length: Int
   ): Unit =

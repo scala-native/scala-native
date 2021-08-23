@@ -4,7 +4,7 @@ package java.nio
 
 private[nio] final class HeapCharBuffer private (
     _capacity: Int,
-    _array0: Array[Char],
+    _array0: GenArray[Char],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
@@ -64,11 +64,11 @@ private[nio] final class HeapCharBuffer private (
 
   @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   @noinline
   override def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   @noinline
   def compact(): CharBuffer =
@@ -89,7 +89,7 @@ private[nio] final class HeapCharBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: Array[Char],
+      dst: GenArray[Char],
       offset: Int,
       length: Int
   ): Unit =
@@ -98,7 +98,7 @@ private[nio] final class HeapCharBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: Array[Char],
+      src: GenArray[Char],
       offset: Int,
       length: Int
   ): Unit =
@@ -110,7 +110,7 @@ private[nio] object HeapCharBuffer {
       extends GenHeapBuffer.NewHeapBuffer[CharBuffer, Char] {
     def apply(
         capacity: Int,
-        array: Array[Char],
+        array: GenArray[Char],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -136,7 +136,7 @@ private[nio] object HeapCharBuffer {
       isReadOnly: Boolean
   ): CharBuffer = {
     GenHeapBuffer.generic_wrap(
-      array,
+      ScalaArray(array),
       arrayOffset,
       capacity,
       initialPosition,

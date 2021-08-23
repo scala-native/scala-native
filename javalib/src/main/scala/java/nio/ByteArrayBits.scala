@@ -1,9 +1,11 @@
 package java.nio
 
+import scala.scalanative.unsafe.Ptr
+
 // Ported from Scala.js
 private[nio] object ByteArrayBits {
   def apply(
-      array: Array[Byte],
+      array: Ptr[Byte],
       arrayOffset: Int,
       isBigEndian: Boolean,
       indexMultiplier: Int = 1
@@ -13,7 +15,7 @@ private[nio] object ByteArrayBits {
 
 @inline
 private[nio] final class ByteArrayBits(
-    array: Array[Byte],
+    array: Ptr[Byte],
     arrayOffset: Int,
     isBigEndian: Boolean,
     indexMultiplier: Int

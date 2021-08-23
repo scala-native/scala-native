@@ -34,7 +34,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
 
   @inline
   def generic_get(
-      dst: Array[ElementType],
+      dst: GenArray[ElementType],
       offset: Int,
       length: Int
   ): BufferType = {
@@ -70,7 +70,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
 
   @inline
   def generic_put(
-      src: Array[ElementType],
+      src: GenArray[ElementType],
       offset: Int,
       length: Int
   ): BufferType = {
@@ -86,7 +86,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
 
   @inline
   def generic_array(): Array[ElementType] = {
-    val a = _array
+    val a = _array.toArray()
     if (a == null)
       throw new UnsupportedOperationException
     if (isReadOnly())
@@ -148,7 +148,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
   @inline
   def generic_load(
       startIndex: Int,
-      dst: Array[ElementType],
+      dst: GenArray[ElementType],
       offset: Int,
       length: Int
   ): Unit = {
@@ -165,7 +165,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
   @inline
   def generic_store(
       startIndex: Int,
-      src: Array[ElementType],
+      src: GenArray[ElementType],
       offset: Int,
       length: Int
   ): Unit = {

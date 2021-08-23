@@ -4,7 +4,7 @@ package java.nio
 
 private[nio] final class HeapByteBuffer private (
     _capacity: Int,
-    _array0: Array[Byte],
+    _array0: GenArray[Byte],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
@@ -51,11 +51,11 @@ private[nio] final class HeapByteBuffer private (
 
   @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   @noinline
   override def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   @noinline
   def compact(): ByteBuffer =
@@ -64,7 +64,7 @@ private[nio] final class HeapByteBuffer private (
   // Here begins the stuff specific to ByteArrays
 
   @inline private def arrayBits: ByteArrayBits =
-    ByteArrayBits(_array, _arrayOffset, isBigEndian)
+    ByteArrayBits(_array.toPtr(), _arrayOffset, isBigEndian)
 
   @noinline def getChar(): Char =
     arrayBits.loadChar(getPosAndAdvanceRead(2))
@@ -175,7 +175,7 @@ private[nio] final class HeapByteBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: Array[Byte],
+      dst: GenArray[Byte],
       offset: Int,
       length: Int
   ): Unit =
@@ -184,7 +184,7 @@ private[nio] final class HeapByteBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: Array[Byte],
+      src: GenArray[Byte],
       offset: Int,
       length: Int
   ): Unit =
@@ -196,7 +196,7 @@ private[nio] object HeapByteBuffer {
       extends GenHeapBuffer.NewHeapBuffer[ByteBuffer, Byte] {
     def apply(
         capacity: Int,
-        array: Array[Byte],
+        array: GenArray[Byte],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -215,7 +215,7 @@ private[nio] object HeapByteBuffer {
 
   @noinline
   private[nio] def wrap(
-      array: Array[Byte],
+      array: GenArray[Byte],
       arrayOffset: Int,
       capacity: Int,
       initialPosition: Int,

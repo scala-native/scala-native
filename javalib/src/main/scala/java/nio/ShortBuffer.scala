@@ -16,7 +16,7 @@ object ShortBuffer {
 
 abstract class ShortBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Short],
+    private[nio] val _array: GenArray[Short],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[ShortBuffer] {
@@ -42,7 +42,7 @@ abstract class ShortBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   def get(dst: Array[Short]): ShortBuffer =
     get(dst, 0, dst.length)
@@ -53,7 +53,7 @@ abstract class ShortBuffer private[nio] (
 
   @noinline
   def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   final def put(src: Array[Short]): ShortBuffer =
     put(src, 0, src.length)
@@ -132,7 +132,7 @@ abstract class ShortBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: Array[Short],
+      dst: GenArray[Short],
       offset: Int,
       length: Int
   ): Unit =
@@ -141,7 +141,7 @@ abstract class ShortBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: Array[Short],
+      src: GenArray[Short],
       offset: Int,
       length: Int
   ): Unit =

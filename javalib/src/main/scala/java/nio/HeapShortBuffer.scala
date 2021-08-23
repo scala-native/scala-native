@@ -3,7 +3,7 @@ package java.nio
 // Ported from Scala.js
 private[nio] final class HeapShortBuffer private (
     _capacity: Int,
-    _array0: Array[Short],
+    _array0: GenArray[Short],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
@@ -50,11 +50,11 @@ private[nio] final class HeapShortBuffer private (
 
   @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   @noinline
   override def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   @noinline
   def compact(): ShortBuffer =
@@ -75,7 +75,7 @@ private[nio] final class HeapShortBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: Array[Short],
+      dst: GenArray[Short],
       offset: Int,
       length: Int
   ): Unit =
@@ -84,7 +84,7 @@ private[nio] final class HeapShortBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: Array[Short],
+      src: GenArray[Short],
       offset: Int,
       length: Int
   ): Unit =
@@ -96,7 +96,7 @@ private[nio] object HeapShortBuffer {
       extends GenHeapBuffer.NewHeapBuffer[ShortBuffer, Short] {
     def apply(
         capacity: Int,
-        array: Array[Short],
+        array: GenArray[Short],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -123,7 +123,7 @@ private[nio] object HeapShortBuffer {
       isReadOnly: Boolean
   ): ShortBuffer = {
     GenHeapBuffer.generic_wrap(
-      array,
+      ScalaArray(array),
       arrayOffset,
       capacity,
       initialPosition,

@@ -21,7 +21,7 @@ object CharBuffer {
 
 abstract class CharBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Char],
+    private[nio] val _array: GenArray[Char],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[CharBuffer]
@@ -40,7 +40,7 @@ abstract class CharBuffer private[nio] (
     if (n == 0) -1
     else if (_array != null) {
       // even if read-only
-      target.put(_array, _arrayOffset, n)
+      GenBuffer(target).generic_put(_array, _arrayOffset, n)
       n
     } else {
       val savedPos = position()
@@ -66,7 +66,7 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
 
   def get(dst: Array[Char]): CharBuffer =
     get(dst, 0, dst.length)
@@ -77,7 +77,7 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
 
   final def put(src: Array[Char]): CharBuffer =
     put(src, 0, src.length)
@@ -152,7 +152,7 @@ abstract class CharBuffer private[nio] (
   override def toString(): String = {
     if (_array != null) {
       // even if read-only
-      new String(_array, position() + _arrayOffset, remaining())
+      new String(_array.toArray, position() + _arrayOffset, remaining())
     } else {
       val chars = new Array[Char](remaining())
       val savedPos = position()
@@ -188,7 +188,7 @@ abstract class CharBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: Array[Char],
+      dst: GenArray[Char],
       offset: Int,
       length: Int
   ): Unit =
@@ -197,7 +197,7 @@ abstract class CharBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: Array[Char],
+      src: GenArray[Char],
       offset: Int,
       length: Int
   ): Unit =
