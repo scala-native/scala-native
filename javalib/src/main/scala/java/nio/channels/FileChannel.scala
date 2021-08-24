@@ -134,7 +134,9 @@ object FileChannel {
     new FileChannelImpl(
       raf.getFD(),
       Some(file),
-      deleteOnClose = options.contains(StandardOpenOption.DELETE_ON_CLOSE)
+      deleteFileOnClose = options.contains(StandardOpenOption.DELETE_ON_CLOSE),
+      openForReading = true,
+      openForWriting = writing
     )
   }
 

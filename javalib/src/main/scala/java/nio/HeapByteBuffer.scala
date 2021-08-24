@@ -2,7 +2,7 @@ package java.nio
 
 // Ported from Scala.js
 
-private[nio] final class HeapByteBuffer private (
+private[nio] class HeapByteBuffer(
     _capacity: Int,
     _array0: GenArray[Byte],
     _arrayOffset0: Int,

@@ -9,12 +9,12 @@ import java.nio.file.{
   StandardOpenOption
 }
 import java.nio.file.attribute.FileAttribute
-import java.nio.{ByteBuffer, MappedByteBuffer}
+import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.nio.file.WindowsException
 import scala.scalanative.nio.fs.UnixException
 
-import java.io.RandomAccessFile
 import java.io.FileDescriptor
+import java.io.File
 
 import java.util.Set
 
@@ -25,7 +25,6 @@ import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.libc.stdio
 import scala.scalanative.unsafe._
-import java.io.File
 
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsigned._
@@ -43,7 +42,9 @@ import scala.scalanative.windows.ErrorCodes
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
     file: Option[File],
-    deleteOnClose: Boolean
+    deleteFileOnClose: Boolean,
+    openForReading: Boolean,
+    openForWriting: Boolean
 ) extends FileChannel {
 
   override def force(metadata: Boolean): Unit = ()
@@ -99,7 +100,7 @@ private[java] final class FileChannelImpl(
 
   override protected def implCloseChannel(): Unit = {
     fd.close()
-    if (deleteOnClose && !file.isEmpty) Files.delete(file.get.toPath())
+    if (deleteFileOnClose && !file.isEmpty) Files.delete(file.get.toPath())
   }
 
   override def map(
@@ -107,20 +108,11 @@ private[java] final class FileChannelImpl(
       position: Long,
       size: Long
   ): MappedByteBuffer = {
-    var total = 0
-    var copied = 0
-    if (mode != FileChannel.MapMode.READ_ONLY) ???
-    val buffer =
-      new MappedByteBuffer(
-        mode,
-        size.toInt,
-        new Array(size.toInt),
-        0
-      ) {} //readonly
-    while (copied < size && { copied = read(buffer); copied > 0 }) {
-      total += copied
-    }
-    buffer
+    if ((mode eq FileChannel.MapMode.READ_ONLY) && !openForReading)
+      throw new NonReadableChannelException
+    if ((mode eq FileChannel.MapMode.READ_WRITE) && (!openForReading || !openForWriting))
+      throw new NonWritableChannelException
+    MappedByteBufferImpl.map(mode, position, size.toInt, fd, this)
   }
 
   override def position(offset: Long): FileChannel = {
@@ -233,7 +225,6 @@ private[java] final class FileChannelImpl(
   }
 
   override def size(): Long = {
-    // rewind ???
     val size = unistd.lseek(fd.fd, 0L, stdio.SEEK_END);
     unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
     size

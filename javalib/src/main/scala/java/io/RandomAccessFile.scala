@@ -32,7 +32,12 @@ class RandomAccessFile private (
   private lazy val in = new DataInputStream(new FileInputStream(fd))
   private lazy val out = new DataOutputStream(new FileOutputStream(fd))
   private lazy val channel =
-    new FileChannelImpl(fd, Some(file), deleteOnClose = false)
+    new FileChannelImpl(
+      fd, 
+      Some(file), 
+      deleteFileOnClose = false, 
+      openForReading = true,
+      openForWriting = mode.contains('w'))
 
   override def close(): Unit = {
     closed = true
