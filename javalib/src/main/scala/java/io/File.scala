@@ -3,6 +3,7 @@ package java.io
 import java.nio.file.{FileSystems, Path}
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.nio.file.WindowsException
 import scala.annotation.tailrec
 import scalanative.annotation.{alwaysinline, stub}
 import scalanative.posix.{limits, unistd, utime}
@@ -147,8 +148,12 @@ class File(_path: String) extends Serializable with Comparable[File] {
    *  non-existing file.
    */
   private def simplifyExistingPath(path: CString)(implicit z: Zone): CString = {
-    val resolvedName = alloc[Byte](limits.PATH_MAX.toUInt)
-    realpath(path, resolvedName)
+    val resolvedName = alloc[Byte](limits.PATH_MAX)
+    if (realpath(path, resolvedName) == null) {
+      throw new IOException(
+        s"realpath can't resolve: ${fromCString(resolvedName)}"
+      )
+    }
     resolvedName
   }
 
@@ -392,6 +397,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
 object File {
 
+  private val `1U` = 1.toUInt
+  private val `4096U` = 4096.toUInt
+  private val `4095U` = 4095.toUInt
+
   private val random = new java.util.Random()
 
   private def octal(v: String): UInt =
@@ -402,11 +411,18 @@ object File {
       if (isWindows) {
         val buffSize = GetCurrentDirectoryW(0.toUInt, null)
         val buff = alloc[windows.WChar](buffSize + 1.toUInt)
-        GetCurrentDirectoryW(buffSize, buff)
+        if (GetCurrentDirectoryW(buffSize, buff) == 0) {
+          throw WindowsException("error in trying to get user directory")
+        }
         fromCWideString(buff, StandardCharsets.UTF_16LE)
       } else {
         val buff: CString = alloc[CChar](4096.toUInt)
-        getcwd(buff, 4095.toUInt)
+        if (getcwd(buff, 4095.toUInt) == 0) {
+          val errMsg = fromCString(string.strerror(errno.errno))
+          throw new IOException(
+            s"error in trying to get user directory - $errMsg"
+          )
+        }
         fromCString(buff)
       }
     }
@@ -490,14 +506,7 @@ object File {
       fromCWideString(buf, StandardCharsets.UTF_16LE)
     }
     else {
-      val userdir =
-        Option(getUserDir())
-          .getOrElse(
-            throw new IOException(
-              "getcwd() error in trying to get user directory."
-            )
-          )
-
+      val userdir = getUserDir()
       if (path.isEmpty()) userdir
       else if (userdir.endsWith(separator)) userdir + path
       else userdir + separator + path
@@ -594,8 +603,8 @@ object File {
    *  Otherwise, returns `None`.
    */
   private def readLink(link: CString)(implicit z: Zone): CString = {
-    val buffer: CString = alloc[Byte](limits.PATH_MAX.toUInt)
-    readlink(link, buffer, (limits.PATH_MAX - 1).toUInt) match {
+    val buffer: CString = alloc[Byte](limits.PATH_MAX)
+    readlink(link, buffer, limits.PATH_MAX - `1U`) match {
       case -1 =>
         null
       case read =>

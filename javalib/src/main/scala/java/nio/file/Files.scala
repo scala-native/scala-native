@@ -43,6 +43,8 @@ import StandardCopyOption._
 
 object Files {
 
+  private val `1U` = 1.toUInt
+
   // def getFileStore(path: Path): FileStore
   // def probeContentType(path: Path): String
 
@@ -568,7 +570,7 @@ object Files {
         if (unistd.readlink(
               toCString(link.toString),
               buf,
-              limits.PATH_MAX.toUInt
+              limits.PATH_MAX - `1U`
             ) == -1) {
           throw UnixException(link.toString, errno.errno)
         } else {
