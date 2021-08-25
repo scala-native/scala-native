@@ -84,7 +84,7 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
         fillBuffer(buf, in) match {
           case None => -1
           case Some(nextBuffer) =>
-            val res = nextBuffer(pos).toInt
+            val res = nextBuffer(pos).toInt & 0xff
             pos += 1
             res
         }
