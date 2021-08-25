@@ -2,11 +2,12 @@ package java.nio
 
 import java.nio.channels.{FileChannel, NonWritableChannelException}
 
-abstract class MappedByteBuffer(mode: FileChannel.MapMode,
-                                _capacity: Int,
-                                _array: Array[Byte],
-                                _arrayOffset: Int)
-    extends ByteBuffer(_capacity, _array, _arrayOffset) {
+abstract class MappedByteBuffer(
+    mode: FileChannel.MapMode,
+    _capacity: Int,
+    _array: Array[Byte],
+    _arrayOffset: Int
+) extends ByteBuffer(_capacity, _array, _arrayOffset) {
 
   private val underlying = ByteBuffer.wrap(_array, _arrayOffset, _capacity)
 
@@ -166,5 +167,5 @@ abstract class MappedByteBuffer(mode: FileChannel.MapMode,
     underlying.store(index, elem)
 
   private def ensureWritable(): Unit =
-    if (isReadOnly) throw new NonWritableChannelException()
+    if (isReadOnly()) throw new NonWritableChannelException()
 }

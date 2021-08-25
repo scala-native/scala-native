@@ -9,32 +9,32 @@ object unistd {
 
   type off_t = CLongLong
 
-  def _exit(status: CInt): Unit                   = extern
+  def _exit(status: CInt): Unit = extern
   def access(pathname: CString, mode: CInt): CInt = extern
-  def chdir(path: CString): CInt                  = extern
-  def close(fildes: CInt): CInt                   = extern
-  def dup(fildes: CInt): CInt                     = extern
-  def dup2(fildes: CInt, fildesnew: CInt): CInt   = extern
+  def chdir(path: CString): CInt = extern
+  def close(fildes: CInt): CInt = extern
+  def dup(fildes: CInt): CInt = extern
+  def dup2(fildes: CInt, fildesnew: CInt): CInt = extern
   def execve(path: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
     extern
-  def fork(): CInt                                                = extern
-  def fsync(fildes: CInt): CInt                                   = extern
-  def ftruncate(fildes: CInt, length: off_t): CInt                = extern
-  def getcwd(buf: CString, size: CSize): CString                  = extern
-  def gethostname(name: CString, len: CSize): CInt                = extern
-  def getpid(): CInt                                              = extern
-  def getuid(): uid_t                                             = extern
-  def lseek(fildes: CInt, offset: off_t, whence: CInt): off_t     = extern
-  def pipe(fildes: Ptr[CInt]): CInt                               = extern
-  def read(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt         = extern
+  def fork(): CInt = extern
+  def fsync(fildes: CInt): CInt = extern
+  def ftruncate(fildes: CInt, length: off_t): CInt = extern
+  def getcwd(buf: CString, size: CSize): CString = extern
+  def gethostname(name: CString, len: CSize): CInt = extern
+  def getpid(): CInt = extern
+  def getuid(): uid_t = extern
+  def lseek(fildes: CInt, offset: off_t, whence: CInt): off_t = extern
+  def pipe(fildes: Ptr[CInt]): CInt = extern
+  def read(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt = extern
   def readlink(path: CString, buf: CString, bufsize: CSize): CInt = extern
-  def sethostname(name: CString, len: CSize): CInt                = extern
-  def sleep(seconds: CUnsignedInt): CUnsignedInt                  = extern
-  def truncate(path: CString, length: off_t): CInt                = extern
-  def unlink(path: CString): CInt                                 = extern
-  def usleep(usecs: CUnsignedInt): CInt                           = extern
-  def vfork(): CInt                                               = extern
-  def write(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt        = extern
+  def sethostname(name: CString, len: CSize): CInt = extern
+  def sleep(seconds: CUnsignedInt): CUnsignedInt = extern
+  def truncate(path: CString, length: off_t): CInt = extern
+  def unlink(path: CString): CInt = extern
+  def usleep(usecs: CUnsignedInt): CInt = extern
+  def vfork(): CInt = extern
+  def write(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt = extern
 
   @name("scalanative_chown")
   def chown(path: CString, owner: uid_t, group: gid_t): CInt = extern
@@ -43,11 +43,41 @@ object unistd {
   def link(path1: CString, path2: CString): CInt = extern
 
   @name("scalanative_linkat")
-  def linkat(fd1: CInt,
-             path1: CString,
-             fd2: CInt,
-             path2: CString,
-             flag: CInt): CInt = extern
+  def linkat(
+      fd1: CInt,
+      path1: CString,
+      fd2: CInt,
+      path2: CString,
+      flag: CInt
+  ): CInt = extern
+
+  // NULL, see POSIX stddef
+
+  @name("scalanative_f_ok")
+  def F_OK: CInt = extern
+
+  @name("scalanative_r_ok")
+  def R_OK: CInt = extern
+
+  @name("scalanative_w_ok")
+  def W_OK: CInt = extern
+
+  @name("scalanative_x_ok")
+  def X_OK: CInt = extern
+
+  // SEEK_CUR, SEEK_END, SEEK_SET, see clib stdio
+
+  @name("scalanative_f_lock")
+  def F_LOCK: CInt = extern
+
+  @name("scalanative_f_test")
+  def F_TEST: CInt = extern
+
+  @name("scalanative_f_tlock")
+  def F_TLOCK: CInt = extern
+
+  @name("scalanative_f_ulock")
+  def F_ULOCK: CInt = extern
 
   @name("scalanative_stderr_fileno")
   def STDERR_FILENO: CInt = extern

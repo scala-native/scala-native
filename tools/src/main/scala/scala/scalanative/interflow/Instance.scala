@@ -38,10 +38,11 @@ final case class EscapedInstance(val escapedValue: Val) extends Instance
 
 final case class DelayedInstance(val delayedOp: Op) extends Instance
 
-final case class VirtualInstance(val kind: Kind,
-                                 val cls: Class,
-                                 var values: Array[Val])
-    extends Instance {
+final case class VirtualInstance(
+    val kind: Kind,
+    val cls: Class,
+    var values: Array[Val]
+) extends Instance {
 
   // We can't use case class generated equals, due to the fact
   // that equals on arrays does reference equality by default.
@@ -49,8 +50,10 @@ final case class VirtualInstance(val kind: Kind,
     case other: VirtualInstance =>
       kind == other.kind &&
         cls == other.cls &&
-        Arrays.equals(values.asInstanceOf[Array[Object]],
-                      other.values.asInstanceOf[Array[Object]])
+        Arrays.equals(
+          values.asInstanceOf[Array[Object]],
+          other.values.asInstanceOf[Array[Object]]
+        )
     case _ =>
       false
   }

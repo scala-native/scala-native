@@ -41,7 +41,7 @@ object ClassLoader {
       val out = mutable.Map.empty[Global, mutable.UnrolledBuffer[Defn]]
       defns.foreach { defn =>
         val owner = defn.name.top
-        val buf   = out.getOrElseUpdate(owner, mutable.UnrolledBuffer.empty[Defn])
+        val buf = out.getOrElseUpdate(owner, mutable.UnrolledBuffer.empty[Defn])
         buf += defn
       }
       out
@@ -49,11 +49,11 @@ object ClassLoader {
 
     lazy val classesWithEntryPoints: Iterable[Global] = {
       scopes.filter {
-        case (_, defns) => Defn.existsEntryPoint(defns)
+        case (_, defns) => Defn.existsEntryPoint(defns.toSeq)
       }.keySet
     }
 
     def load(global: Global): Option[Seq[Defn]] =
-      scopes.get(global)
+      scopes.get(global).map(_.toSeq)
   }
 }

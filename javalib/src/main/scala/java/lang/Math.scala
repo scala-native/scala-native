@@ -9,7 +9,7 @@ private[lang] object MathRand {
 }
 
 object Math {
-  final val E  = 2.718281828459045
+  final val E = 2.718281828459045
   final val PI = 3.141592653589793
 
   @alwaysinline def abs(a: scala.Double): scala.Double =
@@ -135,10 +135,10 @@ object Math {
     cmath.log1p(a)
 
   @alwaysinline def max(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN || b.isNaN) Double.NaN else `llvm.maxnum.f64`(a, b)
+    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.maxnum.f64`(a, b)
 
   @alwaysinline def max(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN || b.isNaN) Float.NaN else `llvm.maxnum.f32`(a, b)
+    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.maxnum.f32`(a, b)
 
   @alwaysinline def max(a: scala.Int, b: scala.Int): scala.Int =
     if (a > b) a else b
@@ -147,10 +147,10 @@ object Math {
     if (a > b) a else b
 
   @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN || b.isNaN) Double.NaN else `llvm.minnum.f64`(a, b)
+    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
 
   @alwaysinline def min(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN || b.isNaN) Float.NaN else `llvm.minnum.f32`(a, b)
+    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.minnum.f32`(a, b)
 
   @alwaysinline def min(a: scala.Int, b: scala.Int): scala.Int =
     if (a < b) a else b
@@ -238,7 +238,7 @@ object Math {
     `llvm.rint.f64`(a)
 
   @inline def round(a: scala.Float): scala.Int = {
-    if (a.isNaN) {
+    if (a.isNaN()) {
       0
     } else if (a >= scala.Int.MaxValue.toFloat - 0.5f) {
       scala.Int.MaxValue
@@ -253,7 +253,7 @@ object Math {
   }
 
   @inline def round(a: scala.Double): scala.Long = {
-    if (a.isNaN) {
+    if (a.isNaN()) {
       0L
     } else if (a >= scala.Long.MaxValue.toDouble - 0.5d) {
       scala.Long.MaxValue
@@ -270,8 +270,10 @@ object Math {
   @alwaysinline def scalb(a: scala.Float, scaleFactor: scala.Int): scala.Float =
     cmath.scalbnf(a, scaleFactor)
 
-  @alwaysinline def scalb(a: scala.Double,
-                          scaleFactor: scala.Int): scala.Double =
+  @alwaysinline def scalb(
+      a: scala.Double,
+      scaleFactor: scala.Int
+  ): scala.Double =
     cmath.scalbn(a, scaleFactor)
 
   @alwaysinline def signum(a: scala.Float): scala.Float = {
@@ -327,7 +329,7 @@ object Math {
     } else if (Float.isInfinite(a)) {
       Float.POSITIVE_INFINITY
     } else if (abs(a) == Float.MAX_VALUE) {
-      2.028241E31F // pow(2, 104).toFloat
+      2.028241e31f // pow(2, 104).toFloat
     } else {
       val f = abs(a)
       cmath.nextafterf(f, Float.MAX_VALUE) - f
@@ -338,7 +340,7 @@ object Math {
     if (Double.isInfinite(a)) {
       scala.Double.PositiveInfinity
     } else if (a == scala.Double.MaxValue || a == -Double.MAX_VALUE) {
-      1.9958403095347198E292D // pow(2, 971)
+      1.9958403095347198e292d // pow(2, 971)
     } else {
       val d = abs(a)
       cmath.nextafter(d, scala.Double.MaxValue) - d

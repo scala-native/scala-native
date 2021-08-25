@@ -3,7 +3,6 @@ package nir
 
 import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
-import scala.annotation.tailrec
 
 sealed abstract class Val {
   final def ty: Type = this match {
@@ -28,6 +27,7 @@ sealed abstract class Val {
     case Val.String(_) =>
       Type.Ref(Rt.String.name, exact = true, nullable = false)
     case Val.Virtual(_) => Type.Virtual
+    case Val.ClassOf(n) => Rt.Class
   }
 
   final def show: String = nir.Show(this)
@@ -58,8 +58,8 @@ sealed abstract class Val {
     case Val.Short(0)       => true
     case Val.Int(0)         => true
     case Val.Long(0L)       => true
-    case Val.Float(0F)      => true
-    case Val.Double(0D)     => true
+    case Val.Float(0f)      => true
+    case Val.Double(0d)     => true
     case Val.Null           => true
     case _                  => false
   }
@@ -71,8 +71,8 @@ sealed abstract class Val {
     case Val.Short(1)                => true
     case Val.Int(1)                  => true
     case Val.Long(1L)                => true
-    case Val.Float(1F)               => true
-    case Val.Double(1D)              => true
+    case Val.Float(1f)               => true
+    case Val.Double(1d)              => true
     case _                           => false
   }
 
@@ -81,8 +81,8 @@ sealed abstract class Val {
     case Val.Short(-1)   => true
     case Val.Int(-1)     => true
     case Val.Long(-1L)   => true
-    case Val.Float(-1F)  => true
-    case Val.Double(-1D) => true
+    case Val.Float(-1f)  => true
+    case Val.Double(-1d) => true
     case _               => false
   }
 
@@ -125,9 +125,9 @@ sealed abstract class Val {
     case Val.Zero(Type.Long) =>
       Val.Long(0L)
     case Val.Zero(Type.Float) =>
-      Val.Float(0F)
+      Val.Float(0f)
     case Val.Zero(Type.Double) =>
-      Val.Double(0D)
+      Val.Double(0d)
     case Val.Zero(Type.Ptr) | Val.Zero(_: Type.RefKind) =>
       Val.Null
     case _ =>
@@ -136,8 +136,8 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object True  extends Val
-  final case object False extends Val
+  case object True extends Val
+  case object False extends Val
   object Bool extends (Boolean => Val) {
     def apply(value: Boolean): Val =
       if (value) True else False
@@ -147,13 +147,13 @@ object Val {
       case _     => scala.None
     }
   }
-  final case object Null                     extends Val
-  final case class Zero(of: nir.Type)        extends Val
-  final case class Char(value: scala.Char)   extends Val
-  final case class Byte(value: scala.Byte)   extends Val
+  case object Null extends Val
+  final case class Zero(of: nir.Type) extends Val
+  final case class Char(value: scala.Char) extends Val
+  final case class Byte(value: scala.Byte) extends Val
   final case class Short(value: scala.Short) extends Val
-  final case class Int(value: scala.Int)     extends Val
-  final case class Long(value: scala.Long)   extends Val
+  final case class Int(value: scala.Int) extends Val
+  final case class Long(value: scala.Long) extends Val
   final case class Float(value: scala.Float) extends Val {
     override def equals(that: Any): Boolean = that match {
       case Float(thatValue) =>
@@ -172,69 +172,19 @@ object Val {
       case _ => false
     }
   }
-  final case class StructValue(values: Seq[Val])                  extends Val
+  final case class StructValue(values: Seq[Val]) extends Val
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
-  final case class Chars(value: java.lang.String) extends Val {
-    lazy val byteCount: scala.Int = {
-      import Character.isDigit
-
-      def isOct(c: scala.Char): Boolean =
-        isDigit(c) && c != '8' && c != '9'
-      def isHex(c: scala.Char): Boolean =
-        isDigit(c) ||
-          c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
-          c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
-      def malformed() =
-        throw new IllegalArgumentException("malformed C string: " + value)
-
-      // Subtracts from the length of the bytes for each escape sequence
-      // uses String, not Seq[Byte], but should be okay since we handle ASCII only
-      val chars = value.toArray
-      var accum = chars.length + 1
-      var idx   = 0
-
-      while (idx < chars.length) {
-        if (chars(idx) == '\\') {
-          if (idx == chars.length - 1) {
-            malformed()
-          } else {
-            chars(idx + 1) match {
-              case d if isOct(d) =>
-                // octal ("\O", "\OO", "\OOO")
-                val digitNum =
-                  chars.drop(idx + 1).take(3).takeWhile(isOct).length
-                idx += digitNum
-                accum -= digitNum
-              case 'x' =>
-                // hexademical ("\xH", "\xHH")
-                val digitNum = chars.drop(idx + 2).takeWhile(isHex).length
-                // mimic clang, which reports compilation error against too many hex digits
-                if (digitNum >= 3) {
-                  malformed()
-                }
-                idx += digitNum + 1
-                accum -= digitNum + 1
-              // TODO: support unicode?
-              // case 'u' =>
-              // case 'U' =>
-              case _ =>
-                idx += 1
-                accum -= 1
-            }
-          }
-        }
-        idx += 1
-      }
-
-      accum
-    }
+  final case class Chars(value: Seq[scala.Byte]) extends Val {
+    lazy val byteCount: scala.Int = value.length + 1
+    lazy val bytes: Array[scala.Byte] = value.toArray
   }
-  final case class Local(name: nir.Local, valty: nir.Type)   extends Val
+  final case class Local(name: nir.Local, valty: nir.Type) extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level
-  final case object Unit                           extends Val
-  final case class Const(value: Val)               extends Val
+  case object Unit extends Val
+  final case class Const(value: Val) extends Val
   final case class String(value: java.lang.String) extends Val
-  final case class Virtual(key: scala.Long)        extends Val
+  final case class Virtual(key: scala.Long) extends Val
+  final case class ClassOf(name: nir.Global) extends Val
 }

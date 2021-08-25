@@ -12,9 +12,10 @@ object Matcher {
   def quoteReplacement(s: String): String = rMatcher.quoteReplacement(s)
 }
 
-final class Matcher private[regex] (var _pattern: Pattern,
-                                    var _inputSequence: CharSequence)
-    extends MatchResult {
+final class Matcher private[regex] (
+    var _pattern: Pattern,
+    var _inputSequence: CharSequence
+) extends MatchResult {
 
   private val underlying = new rMatcher(_pattern.compiled, _inputSequence)
 
@@ -35,7 +36,8 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   private def noLookAhead(methodName: String): Nothing =
     throw new UnsupportedOperationException(
-      s"$methodName is not supported due to unsupported lookaheads.")
+      s"$methodName is not supported due to unsupported lookaheads."
+    )
 
 // Public interface
 
@@ -62,7 +64,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   def group(name: String): String = underlying.group(name)
 
-  def groupCount: Int = underlying.groupCount
+  def groupCount(): Int = underlying.groupCount()
 
   def hasAnchoringBounds(): Boolean = anchoringBoundsInUse
 
@@ -121,7 +123,7 @@ final class Matcher private[regex] (var _pattern: Pattern,
   override def toString = {
 
     val regStart = regionStart()
-    val regEnd   = regionEnd()
+    val regEnd = regionEnd()
 
     val last =
       try {
@@ -141,7 +143,8 @@ final class Matcher private[regex] (var _pattern: Pattern,
 
   def useAnchoringBounds(b: Boolean): Matcher =
     throw new UnsupportedOperationException(
-      "useAnchoringBounds is not supported.")
+      "useAnchoringBounds is not supported."
+    )
 
   def usePattern(newPattern: Pattern): Matcher = {
 

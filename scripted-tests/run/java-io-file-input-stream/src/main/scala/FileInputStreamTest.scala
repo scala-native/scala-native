@@ -5,9 +5,9 @@ import java.io.IOException;
 object FileInputStreamTest {
 
   def main(args: Array[String]): Unit = {
-    val file: File           = new File("test.txt")
+    val file: File = new File("test.txt")
     val fip: FileInputStream = new FileInputStream(file)
-    val nbytes               = fip.available()
+    val nbytes = fip.available()
     assert(nbytes == 4)
     val bytes = new Array[Byte](nbytes)
     fip.read(bytes)

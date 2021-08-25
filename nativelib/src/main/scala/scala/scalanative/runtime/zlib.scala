@@ -5,48 +5,52 @@ import scala.scalanative.unsafe._
 @link("z")
 @extern
 object zlib {
-  type voidpf     = Ptr[Byte]
-  type voidp      = Ptr[Byte]
-  type voidpc     = Ptr[Byte]
-  type uInt       = CUnsignedInt
-  type uLong      = CUnsignedLong
-  type uLongf     = CUnsignedLong
+  type voidpf = Ptr[Byte]
+  type voidp = Ptr[Byte]
+  type voidpc = Ptr[Byte]
+  type uInt = CUnsignedInt
+  type uLong = CUnsignedLong
+  type uLongf = CUnsignedLong
   type alloc_func = CFuncPtr3[voidpf, uInt, uInt, voidpf]
-  type free_func  = CFuncPtr2[voidpf, voidpf, Void]
-  type Bytef      = Byte
-  type z_size_t   = CUnsignedLong
-  type z_off_t    = CLong
+  type free_func = CFuncPtr2[voidpf, voidpf, Void]
+  type Bytef = Byte
+  type z_size_t = CUnsignedLong
+  type z_off_t = CLong
 
-  type z_stream = CStruct14[Ptr[Bytef], // next_in
-                            uInt,       // avail_in
-                            uLong,      // total_in,
-                            Ptr[Bytef], // next_out
-                            uInt,       // avail_out
-                            uLong,      // total_out
-                            CString,    // msg
-                            voidpf,     // (internal) state
-                            alloc_func, // zalloc
-                            free_func,  // zfree
-                            voidpf,     // opaque
-                            CInt,       // data_type
-                            uLong,      // adler
-                            uLong]      // future
+  type z_stream = CStruct14[
+    Ptr[Bytef], // next_in
+    uInt, // avail_in
+    uLong, // total_in,
+    Ptr[Bytef], // next_out
+    uInt, // avail_out
+    uLong, // total_out
+    CString, // msg
+    voidpf, // (internal) state
+    alloc_func, // zalloc
+    free_func, // zfree
+    voidpf, // opaque
+    CInt, // data_type
+    uLong, // adler
+    uLong // future
+  ]
 
   type z_streamp = Ptr[z_stream]
 
-  type gz_header = CStruct13[CInt, // text
-                             uLong,      // time
-                             CInt,       // xflags
-                             CInt,       // os
-                             Ptr[Bytef], // extra
-                             uInt,       // extra_len
-                             uInt,       // extra_max
-                             Ptr[Bytef], // name
-                             uInt,       // name_max
-                             Ptr[Bytef], // comment
-                             uInt,       // comm_max
-                             CInt,       // gcrc
-                             CInt]       // done
+  type gz_header = CStruct13[
+    CInt, // text
+    uLong, // time
+    CInt, // xflags
+    CInt, // os
+    Ptr[Bytef], // extra
+    uInt, // extra_len
+    uInt, // extra_max
+    Ptr[Bytef], // name
+    uInt, // name_max
+    Ptr[Bytef], // comment
+    uInt, // comm_max
+    CInt, // gcrc
+    CInt // done
+  ]
 
   type gz_headerp = Ptr[gz_header]
 
@@ -56,97 +60,97 @@ object zlib {
     CFuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
   type gzFile = Ptr[Byte]
 
-  @name("scalanative_Z_NO_FLUSH")
+  @name("scalanative_z_no_flush")
   def Z_NO_FLUSH: CInt = extern
 
-  @name("scalanative_Z_PARTIAL_FLUSH")
+  @name("scalanative_z_partial_flush")
   def Z_PARTIAL_FLUSH: CInt = extern
 
-  @name("scalanative_Z_SYNC_FLUSH")
+  @name("scalanative_z_sync_flush")
   def Z_SYNC_FLUSH: CInt = extern
 
-  @name("scalanative_Z_FULL_FLUSH")
+  @name("scalanative_z_full_flush")
   def Z_FULL_FLUSH: CInt = extern
 
-  @name("scalanative_Z_FINISH")
+  @name("scalanative_z_finish")
   def Z_FINISH: CInt = extern
 
-  @name("scalanative_Z_BLOCK")
+  @name("scalanative_z_block")
   def Z_BLOCK: CInt = extern
 
-  @name("scalanative_Z_TREES")
+  @name("scalanative_z_trees")
   def Z_TREES: CInt = extern
 
-  @name("scalanative_Z_OK")
+  @name("scalanative_z_ok")
   def Z_OK: CInt = extern
 
-  @name("scalanative_Z_STREAM_END")
+  @name("scalanative_z_stream_end")
   def Z_STREAM_END: CInt = extern
 
-  @name("scalanative_Z_NEED_DICT")
+  @name("scalanative_z_need_dict")
   def Z_NEED_DICT: CInt = extern
 
-  @name("scalanative_Z_ERRNO")
+  @name("scalanative_z_errno")
   def Z_ERRNO: CInt = extern
 
-  @name("scalanative_Z_STREAM_ERROR")
+  @name("scalanative_z_stream_error")
   def Z_STREAM_ERROR: CInt = extern
 
-  @name("scalanative_Z_DATA_ERROR")
+  @name("scalanative_z_data_error")
   def Z_DATA_ERROR: CInt = extern
 
-  @name("scalanative_Z_MEM_ERROR")
+  @name("scalanative_z_mem_error")
   def Z_MEM_ERROR: CInt = extern
 
-  @name("scalanative_Z_BUF_ERROR")
+  @name("scalanative_z_buf_error")
   def Z_BUF_ERROR: CInt = extern
 
-  @name("scalanative_Z_VERSION_ERROR")
+  @name("scalanative_z_version_error")
   def Z_VERSION_ERROR: CInt = extern
 
-  @name("scalanative_Z_NO_COMPRESSION")
+  @name("scalanative_z_no_compression")
   def Z_NO_COMPRESSION: CInt = extern
 
-  @name("scalanative_Z_BEST_SPEED")
+  @name("scalanative_z_best_speed")
   def Z_BEST_SPEED: CInt = extern
 
-  @name("scalanative_Z_BEST_COMPRESSION")
+  @name("scalanative_z_best_compression")
   def Z_BEST_COMPRESSION: CInt = extern
 
-  @name("scalanative_Z_DEFAULT_COMPRESSION")
+  @name("scalanative_z_default_compression")
   def Z_DEFAULT_COMPRESSION: CInt = extern
 
-  @name("scalanative_Z_FILTERED")
+  @name("scalanative_z_filtered")
   def Z_FILTERED: CInt = extern
 
-  @name("scalanative_Z_HUFFMAN_ONLY")
+  @name("scalanative_z_huffman_only")
   def Z_HUFFMAN_ONLY: CInt = extern
 
-  @name("scalanative_Z_RLE")
+  @name("scalanative_z_rle")
   def Z_RLE: CInt = extern
 
-  @name("scalanative_Z_FIXED")
+  @name("scalanative_z_fixed")
   def Z_FIXED: CInt = extern
 
-  @name("scalanative_Z_DEFAULT_STRATEGY")
+  @name("scalanative_z_default_strategy")
   def Z_DEFAULT_STRATEGY: CInt = extern
 
-  @name("scalanative_Z_BINARY")
+  @name("scalanative_z_binary")
   def Z_BINARY: CInt = extern
 
-  @name("scalanative_Z_TEXT")
+  @name("scalanative_z_text")
   def Z_TEXT: CInt = extern
 
-  @name("scalanative_Z_ASCII")
+  @name("scalanative_z_ascii")
   def Z_ASCII: CInt = extern
 
-  @name("scalanative_Z_UNKNOWN")
+  @name("scalanative_z_unknown")
   def Z_UNKNOWN: CInt = extern
 
-  @name("scalanative_Z_DEFLATED")
+  @name("scalanative_z_deflated")
   def Z_DEFLATED: CInt = extern
 
-  @name("scalanative_Z_NULL")
+  @name("scalanative_z_null")
   def Z_NULL: CInt = extern
 
   // Basic Functions
@@ -173,17 +177,21 @@ object zlib {
 
   // Advanced Functions
   @name("scalanative_deflateInit2")
-  def deflateInit2(strm: z_streamp,
-                   level: CInt,
-                   method: CInt,
-                   windowBits: CInt,
-                   memLevel: CInt,
-                   strategy: CInt): CInt = extern
+  def deflateInit2(
+      strm: z_streamp,
+      level: CInt,
+      method: CInt,
+      windowBits: CInt,
+      memLevel: CInt,
+      strategy: CInt
+  ): CInt = extern
 
   @name("scalanative_deflateSetDictionary")
-  def deflateSetDictionary(strm: z_streamp,
-                           dictionary: Ptr[Bytef],
-                           dictLength: uInt): CInt = extern
+  def deflateSetDictionary(
+      strm: z_streamp,
+      dictionary: Ptr[Bytef],
+      dictLength: uInt
+  ): CInt = extern
 
   @name("scalanative_deflateCopy")
   def deflateCopy(dest: z_streamp, source: z_streamp): CInt = extern
@@ -196,11 +204,13 @@ object zlib {
     extern
 
   @name("scalanative_deflateTune")
-  def deflateTune(strm: z_streamp,
-                  good_length: CInt,
-                  max_lazy: CInt,
-                  nice_length: CInt,
-                  max_chain: CInt): CInt = extern
+  def deflateTune(
+      strm: z_streamp,
+      good_length: CInt,
+      max_lazy: CInt,
+      nice_length: CInt,
+      max_chain: CInt
+  ): CInt = extern
 
   @name("scalanative_deflateBound")
   def deflateBound(strm: z_streamp, sourceLen: uLong): uLong = extern
@@ -215,9 +225,11 @@ object zlib {
   def inflateInit2(strm: z_streamp, windowBits: CInt): CInt = extern
 
   @name("scalanative_inflateSetDictionary")
-  def inflateSetDictionary(strm: z_streamp,
-                           dictionary: Ptr[Bytef],
-                           dictLength: uInt): CInt = extern
+  def inflateSetDictionary(
+      strm: z_streamp,
+      dictionary: Ptr[Bytef],
+      dictLength: uInt
+  ): CInt = extern
 
   @name("scalanative_inflateSync")
   def inflateSync(strm: z_streamp): CInt = extern
@@ -241,16 +253,20 @@ object zlib {
   def inflateGetHeader(strm: z_streamp, head: gz_headerp): CInt = extern
 
   @name("scalanative_inflateBackInit")
-  def inflateBackInit(strm: z_streamp,
-                      windowBits: CInt,
-                      window: Ptr[CUnsignedChar]): CInt = extern
+  def inflateBackInit(
+      strm: z_streamp,
+      windowBits: CInt,
+      window: Ptr[CUnsignedChar]
+  ): CInt = extern
 
   @name("scalanative_inflateBack")
-  def inflateBack(strm: z_streamp,
-                  in: in_func,
-                  in_desc: Ptr[Byte],
-                  out: out_func,
-                  out_desc: Ptr[Byte]): CInt = extern
+  def inflateBack(
+      strm: z_streamp,
+      in: in_func,
+      in_desc: Ptr[Byte],
+      out: out_func,
+      out_desc: Ptr[Byte]
+  ): CInt = extern
 
   @name("scalanative_inflateBackEnd")
   def inflateBackEnd(strm: z_streamp): CInt = extern
@@ -260,26 +276,32 @@ object zlib {
 
   // Utility functions
   @name("scalanative_compress")
-  def compress(dest: Ptr[Bytef],
-               destLen: Ptr[uLongf],
-               source: Ptr[Bytef],
-               sourceLength: uLong): CInt = extern
+  def compress(
+      dest: Ptr[Bytef],
+      destLen: Ptr[uLongf],
+      source: Ptr[Bytef],
+      sourceLength: uLong
+  ): CInt = extern
 
   @name("scalanative_compress2")
-  def compress2(dest: Ptr[Bytef],
-                destLen: Ptr[uLongf],
-                source: Ptr[Byte],
-                sourceLength: uLong,
-                level: CInt): CInt = extern
+  def compress2(
+      dest: Ptr[Bytef],
+      destLen: Ptr[uLongf],
+      source: Ptr[Byte],
+      sourceLength: uLong,
+      level: CInt
+  ): CInt = extern
 
   @name("scalanative_compressBound")
   def compressBound(sourceLen: uLong): uLong = extern
 
   @name("scalanative_uncompress")
-  def uncompress(dest: Ptr[Bytef],
-                 destLen: Ptr[uLongf],
-                 source: Ptr[Bytef],
-                 sourceLen: uLong): CInt = extern
+  def uncompress(
+      dest: Ptr[Bytef],
+      destLen: Ptr[uLongf],
+      source: Ptr[Bytef],
+      sourceLen: uLong
+  ): CInt = extern
 
   // gzip File Access Functions
   @name("scalanative_gzopen")

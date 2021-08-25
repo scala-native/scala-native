@@ -7,8 +7,8 @@ import scala.util.control.Breaks._
 abstract class AbstractStringBuilder private (unit: Unit) {
   import AbstractStringBuilder._
 
-  protected var value: Array[Char]    = _
-  protected var count: scala.Int      = _
+  protected var value: Array[Char] = _
+  protected var count: scala.Int = _
   protected var shared: scala.Boolean = _
 
   final def getValue(): Array[scala.Char] = value
@@ -78,9 +78,11 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(chars: Array[Char],
-                    offset: scala.Int,
-                    length: scala.Int): Unit = {
+  final def append0(
+      chars: Array[Char],
+      offset: scala.Int,
+      length: scala.Int
+  ): Unit = {
     if (offset > chars.length || offset < 0) {
       throw new ArrayIndexOutOfBoundsException("")
     }
@@ -109,7 +111,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       appendNull()
       return
     }
-    val adding  = string.length()
+    val adding = string.length()
     val newSize = count + adding
     if (newSize > value.length) {
       enlargeBuffer(newSize)
@@ -118,9 +120,11 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(chars: CharSequence,
-                    start: scala.Int,
-                    end: scala.Int): Unit = {
+  final def append0(
+      chars: CharSequence,
+      start: scala.Int,
+      end: scala.Int
+  ): Unit = {
     val chars0 = if (chars != null) chars else "null"
     if (start < 0 || end < 0 || start > end || end > chars0.length()) {
       throw new IndexOutOfBoundsException()
@@ -192,17 +196,19 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  def getChars(start: scala.Int,
-               end: scala.Int,
-               dest: Array[Char],
-               destStart: scala.Int): Unit = {
+  def getChars(
+      start: scala.Int,
+      end: scala.Int,
+      dest: Array[Char],
+      destStart: scala.Int
+  ): Unit = {
     if (start > count || end > count || start > end) {
       throw new StringIndexOutOfBoundsException()
     }
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 
-  final def insert0(index: scala.Int, chars: Array[Char]) {
+  final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
     if (0 > index || index > count) {
       throw new StringIndexOutOfBoundsException(index)
     }
@@ -213,10 +219,12 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  final def insert0(index: scala.Int,
-                    chars: Array[Char],
-                    start: scala.Int,
-                    length: scala.Int): Unit = {
+  final def insert0(
+      index: scala.Int,
+      chars: Array[Char],
+      start: scala.Int,
+      length: scala.Int
+  ): Unit = {
     if (0 <= index && index <= count) {
       if (start >= 0 && 0 <= length && length <= chars.length - start) {
         if (length != 0) {
@@ -228,7 +236,8 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       }
       throw new StringIndexOutOfBoundsException(
         "offset " + start + ", length " + length + ", char[].length" +
-          chars.length)
+          chars.length
+      )
     }
     throw new StringIndexOutOfBoundsException(index)
   }
@@ -245,7 +254,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   final def insert0(index: scala.Int, string: String): Unit = {
     if (0 <= index && index <= count) {
       val string0 = if (string != null) string else "null"
-      val min     = string0.length
+      val min = string0.length
       if (min != 0) {
         move(min, index)
         string0.getChars(0, min, value, index)
@@ -256,10 +265,12 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  final def insert0(index: scala.Int,
-                    chars: CharSequence,
-                    start: scala.Int,
-                    end: scala.Int): Unit = {
+  final def insert0(
+      index: scala.Int,
+      chars: CharSequence,
+      start: scala.Int,
+      end: scala.Int
+  ): Unit = {
     val chars0 = if (chars != null) chars else "null"
     if (index < 0 || index > count || start < 0 || end < 0 || start > end ||
         end > chars0.length()) {
@@ -290,9 +301,11 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     shared = false
   }
 
-  final def replace0(start: scala.Int,
-                     _end: scala.Int,
-                     string: String): Unit = {
+  final def replace0(
+      start: scala.Int,
+      _end: scala.Int,
+      string: String
+  ): Unit = {
     var end = _end
     if (start >= 0) {
       if (end > count) {
@@ -300,7 +313,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       }
       if (end > start) {
         val stringLength = string.length()
-        val diff         = end - start - stringLength
+        val diff = end - start - stringLength
         if (diff > 0) {
           if (!shared) {
             System
@@ -308,11 +321,13 @@ abstract class AbstractStringBuilder private (unit: Unit) {
           } else {
             val newData = new Array[scala.Char](value.length)
             System.arraycopy(value, 0, newData, 0, start)
-            System.arraycopy(value,
-                             end,
-                             newData,
-                             start + stringLength,
-                             count - end)
+            System.arraycopy(
+              value,
+              end,
+              newData,
+              start + stringLength,
+              count - end
+            )
             value = newData
             shared = false
           }
@@ -341,16 +356,16 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     if (count < 2)
       return
     if (!shared) {
-      var end           = count - 1
-      var frontHigh     = value(0)
-      var endLow        = value(end)
+      var end = count - 1
+      var frontHigh = value(0)
+      var endLow = value(end)
       var allowFrontSur = true
-      var allowEndSur   = true
-      var i             = 0
-      var mid           = count / 2
+      var allowEndSur = true
+      var i = 0
+      var mid = count / 2
       while (i < mid) {
         var frontLow = value(i + 1)
-        val endHigh  = value(end - 1)
+        val endHigh = value(end - 1)
         val surAtFront =
           allowFrontSur && frontLow >= 0xdc00 && frontLow <= 0xdfff &&
             frontHigh >= 0xd800 && frontHigh <= 0xdbff
@@ -400,8 +415,8 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       }
     } else {
       val newData = new Array[scala.Char](value.length)
-      var i       = 0
-      var end     = count
+      var i = 0
+      var end = count
       while (i < count) {
         val high = value(i)
         if ((i + 1) < count && high >= 0xd800 && high <= 0xdbff) {
@@ -505,12 +520,12 @@ abstract class AbstractStringBuilder private (unit: Unit) {
       val firstChar = subString.charAt(0)
       while (true) {
         var found = false
-        var i     = start
+        var i = start
         breakable {
           while (!found && i < count) {
             if (value(i) == firstChar) {
               found = true
-              break
+              break()
             }
             i += 1
           }
@@ -523,9 +538,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         breakable {
           while (true) {
             o2 += 1
-            if (!(o2 < subCount)) break
+            if (!(o2 < subCount)) break()
             o1 += 1
-            if (!(value(o1) == subString.charAt(o2))) break
+            if (!(value(o1) == subString.charAt(o2))) break()
           }
         }
         if (o2 == subCount) {
@@ -541,7 +556,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     lastIndexOf(string, count)
 
   def lastIndexOf(subString: String, _start: scala.Int): scala.Int = {
-    var start    = _start
+    var start = _start
     val subCount = subString.length
     if (subCount <= count && start >= 0) {
       if (subCount > 0) {
@@ -550,13 +565,13 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         }
         val firstChar = subString.charAt(0)
         while (true) {
-          var i     = start
+          var i = start
           var found = false
           breakable {
             while (!found && i >= 0) {
               if (value(i) == firstChar) {
                 found = true
-                break
+                break()
               }
               i -= 1
             }
@@ -569,9 +584,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
           breakable {
             while (true) {
               o2 += 1
-              if (!(o2 < subCount)) break
+              if (!(o2 < subCount)) break()
               o1 += 1
-              if (!(value(o1) == subString.charAt(o2))) break
+              if (!(value(o1) == subString.charAt(o2))) break()
             }
           }
           if (o2 == subCount) {
@@ -615,8 +630,10 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     return Character.codePointCount(value, beginIndex, endIndex - beginIndex)
   }
 
-  def offsetByCodePoints(index: scala.Int,
-                         codePointOffset: scala.Int): scala.Int = {
+  def offsetByCodePoints(
+      index: scala.Int,
+      codePointOffset: scala.Int
+  ): scala.Int = {
     return Character
       .offsetByCodePoints(value, 0, count, index, codePointOffset)
   }

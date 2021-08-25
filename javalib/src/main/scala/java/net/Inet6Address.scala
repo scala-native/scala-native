@@ -1,10 +1,11 @@
 package java.net
 
 // Ported from Apache Harmony
-final class Inet6Address private[net] (ipAddress: Array[Byte],
-                                       host: String,
-                                       scopeId: Int)
-    extends InetAddress(ipAddress, host) {
+final class Inet6Address private[net] (
+    ipAddress: Array[Byte],
+    host: String,
+    scopeId: Int
+) extends InetAddress(ipAddress, host) {
 
   private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null, 0)
 
@@ -51,9 +52,11 @@ final class Inet6Address private[net] (ipAddress: Array[Byte],
 
 object Inet6Address extends InetAddressBase {
 
-  def getByAddress(host: String,
-                   addr: Array[Byte],
-                   scope_id: Int): Inet6Address = {
+  def getByAddress(
+      host: String,
+      addr: Array[Byte],
+      scope_id: Int
+  ): Inet6Address = {
     if (addr == null || addr.length != 16) {
       throw new UnknownHostException("Illegal IPv6 address")
     }

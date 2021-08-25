@@ -55,7 +55,7 @@ object RoundingMode {
   def values(): Array[RoundingMode] = _values.clone()
 
   def valueOf(name: String): RoundingMode = {
-    _values.find(_.name == name).getOrElse {
+    _values.find(_.name() == name).getOrElse {
       throw new IllegalArgumentException("No enum const RoundingMode." + name)
     }
   }

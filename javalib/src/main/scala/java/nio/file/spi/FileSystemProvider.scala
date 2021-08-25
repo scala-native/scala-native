@@ -50,7 +50,7 @@ abstract class FileSystemProvider protected () {
         buffer.position(0)
         val read = channel.read(buffer)
         if (read <= 0) read
-        else buffer.get(0) & 0xFF
+        else buffer.get(0) & 0xff
       }
       override def close(): Unit =
         channel.close()
@@ -60,9 +60,11 @@ abstract class FileSystemProvider protected () {
   def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
     val options =
       if (_options.isEmpty)
-        Array[OpenOption](StandardOpenOption.CREATE,
-                          StandardOpenOption.TRUNCATE_EXISTING,
-                          StandardOpenOption.WRITE)
+        Array[OpenOption](
+          StandardOpenOption.CREATE,
+          StandardOpenOption.TRUNCATE_EXISTING,
+          StandardOpenOption.WRITE
+        )
       else _options :+ StandardOpenOption.WRITE
     val channel = Files.newByteChannel(path, options)
     new OutputStream {
@@ -80,32 +82,40 @@ abstract class FileSystemProvider protected () {
     }
   }
 
-  def newFileChannel(path: Path,
-                     options: Set[_ <: OpenOption],
-                     attrs: Array[FileAttribute[_]]): FileChannel =
+  def newFileChannel(
+      path: Path,
+      options: Set[_ <: OpenOption],
+      attrs: Array[FileAttribute[_]]
+  ): FileChannel =
     throw new UnsupportedOperationException
 
   def newAsynchronousFileChannel(
       path: Path,
       options: Set[_ <: OpenOption],
       executor: ExecutorService,
-      attrs: Array[FileAttribute[_]]): AsynchronousFileChannel =
+      attrs: Array[FileAttribute[_]]
+  ): AsynchronousFileChannel =
     throw new UnsupportedOperationException
 
-  def newByteChannel(path: Path,
-                     options: Set[_ <: OpenOption],
-                     attrs: Array[FileAttribute[_]]): SeekableByteChannel =
+  def newByteChannel(
+      path: Path,
+      options: Set[_ <: OpenOption],
+      attrs: Array[FileAttribute[_]]
+  ): SeekableByteChannel =
     FileChannel.open(path, options, attrs)
 
   def newDirectoryStream(
       dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path]
+      filter: DirectoryStream.Filter[_ >: Path]
+  ): DirectoryStream[Path]
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Unit
 
-  def createSymbolicLink(link: Path,
-                         target: Path,
-                         attrs: Array[FileAttribute[_]]): Unit =
+  def createSymbolicLink(
+      link: Path,
+      target: Path,
+      attrs: Array[FileAttribute[_]]
+  ): Unit =
     throw new UnsupportedOperationException()
 
   def createLink(link: Path, existing: Path): Unit =
@@ -135,20 +145,27 @@ abstract class FileSystemProvider protected () {
   def getFileAttributeView[V <: FileAttributeView](
       path: Path,
       tpe: Class[V],
-      options: Array[LinkOption]): V
+      options: Array[LinkOption]
+  ): V
 
-  def readAttributes[A <: BasicFileAttributes](path: Path,
-                                               tpe: Class[A],
-                                               options: Array[LinkOption]): A
+  def readAttributes[A <: BasicFileAttributes](
+      path: Path,
+      tpe: Class[A],
+      options: Array[LinkOption]
+  ): A
 
-  def readAttributes(path: Path,
-                     attributes: String,
-                     options: Array[LinkOption]): Map[String, Object]
+  def readAttributes(
+      path: Path,
+      attributes: String,
+      options: Array[LinkOption]
+  ): Map[String, Object]
 
-  def setAttribute(path: Path,
-                   attribute: String,
-                   value: Object,
-                   options: Array[LinkOption]): Unit
+  def setAttribute(
+      path: Path,
+      attribute: String,
+      value: Object,
+      options: Array[LinkOption]
+  ): Unit
 
 }
 

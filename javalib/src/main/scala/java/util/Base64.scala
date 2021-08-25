@@ -26,10 +26,10 @@ object Base64 {
     decode
   }
 
-  private val basicDecodeTable   = decodeTable(basicEncodeTable)
+  private val basicDecodeTable = decodeTable(basicEncodeTable)
   private val urlSafeDecodeTable = decodeTable(urlSafeEncodeTable)
 
-  private val mimeLineSeparators   = Array[Byte]('\r', '\n')
+  private val mimeLineSeparators = Array[Byte]('\r', '\n')
   private final val mimeLineLength = 76
 
   private val basicEncoder =
@@ -62,7 +62,8 @@ object Base64 {
     for (b <- lineSeparator) {
       if (basicDecodeTable(b & 0xff) != -1) {
         throw new IllegalArgumentException(
-          "Illegal base64 line separator character 0x" + (b & 0xff).toHexString)
+          "Illegal base64 line separator character 0x" + (b & 0xff).toHexString
+        )
       }
     }
     new Encoder(basicEncodeTable, lineLength / 4 * 4, lineSeparator)
@@ -89,9 +90,10 @@ object Base64 {
 
     def decode(src: Array[Byte], dst: Array[Byte]): Int = {
       if (dst.length < dstMaxLength(src.length) && // dst is possibly too small
-          dst.length < dstRequiredLength(src)) {   // dst is actually too small
+          dst.length < dstRequiredLength(src)) { // dst is actually too small
         throw new IllegalArgumentException(
-          "Output byte array is too small for decoding all input bytes")
+          "Output byte array is too small for decoding all input bytes"
+        )
       }
 
       doDecode(new Wrapper(src), new Wrapper(dst))
@@ -102,7 +104,7 @@ object Base64 {
       try {
         val src = new Array[Byte](buffer.remaining())
         buffer.get(src)
-        val dst     = new Array[Byte](dstRequiredLength(src))
+        val dst = new Array[Byte](dstRequiredLength(src))
         val written = doDecode(new Wrapper(src), new Wrapper(dst))
         ByteBuffer.wrap(dst, 0, written)
       } catch {
@@ -126,7 +128,7 @@ object Base64 {
       def inputData(): Unit = {
         srcBuffer.position = 0
         var shift = 18
-        var i     = 0
+        var i = 0
         while (srcBuffer.hasRemaining) {
           i |= ((srcBuffer.get() & 0xff) << shift)
           shift -= 6
@@ -134,7 +136,8 @@ object Base64 {
 
         if (shift == 12) {
           throw new IllegalArgumentException(
-            "Last unit does not have enough valid bits")
+            "Last unit does not have enough valid bits"
+          )
         }
 
         if (shift <= 6)
@@ -156,7 +159,8 @@ object Base64 {
               case -1 =>
                 if (!ignoreInvalid) {
                   throw new IllegalArgumentException(
-                    "Illegal base64 character " + int.toHexString)
+                    "Illegal base64 character " + int.toHexString
+                  )
                 }
                 iterate()
 
@@ -177,11 +181,12 @@ object Base64 {
       srcBuffer.flip()
       inputData()
       while (src.hasRemaining) {
-        val int   = src.get() & 0xff
+        val int = src.get() & 0xff
         val value = table(int)
         if (value != -2 && (!ignoreInvalid || value > 0)) {
           throw new IllegalArgumentException(
-            s"Input byte array has incorrect ending byte at $int")
+            s"Input byte array has incorrect ending byte at $int"
+          )
         }
       }
 
@@ -213,7 +218,8 @@ object Base64 {
 
         if (src.length >= 1 && validBytes == 0) {
           throw new IllegalArgumentException(
-            "Input byte array has wrong 4-byte ending unit")
+            "Input byte array has wrong 4-byte ending unit"
+          )
         }
       }
 
@@ -224,7 +230,7 @@ object Base64 {
      *  without knowing about padding.
      */
     private def dstMaxLength(srcLength: Int): Int =
-      (srcLength + 3) / 4 * 3 - (if (srcLength       % 4 == 0) 0
+      (srcLength + 3) / 4 * 3 - (if (srcLength % 4 == 0) 0
                                  else 4 - (srcLength % 4))
 
   }
@@ -236,19 +242,20 @@ object Base64 {
     private final val DecodeState16 = 3
   }
 
-  private class DecodingInputStream(in: InputStream,
-                                    table: Array[Int],
-                                    ignoreInvalid: Boolean)
-      extends FilterInputStream(in) {
+  private class DecodingInputStream(
+      in: InputStream,
+      table: Array[Int],
+      ignoreInvalid: Boolean
+  ) extends FilterInputStream(in) {
 
     import DecodingInputStream._
 
     private val oneBuf = new Array[Byte](1)
 
     private var closed = false
-    private var eof    = false
-    private var out    = 0
-    private var shift  = DecodeState18
+    private var eof = false
+    private var out = 0
+    private var shift = DecodeState18
 
     override def read(): Int =
       if (read(oneBuf, 0, 1) == -1) -1
@@ -269,7 +276,8 @@ object Base64 {
             case -1 =>
               if (!ignoreInvalid) {
                 throw new IOException(
-                  "Illegal base64 character " + i.toHexString)
+                  "Illegal base64 character " + i.toHexString
+                )
               }
               0
 
@@ -313,7 +321,8 @@ object Base64 {
             0 // nothing
           case DecodeState12 =>
             throw new IOException(
-              "Base64 stream has one un-decoded dangling byte.")
+              "Base64 stream has one un-decoded dangling byte."
+            )
           case _ =>
             writeValue(Int.MaxValue)
         }
@@ -358,7 +367,8 @@ object Base64 {
         -1
       } else {
         iterate()
-        written
+        if (written == 0 && eof) -1
+        else written
       }
     }
 
@@ -370,10 +380,12 @@ object Base64 {
 
   // --------------------------------------------------------------------------
 
-  class Encoder private[Base64] (table: Array[Byte],
-                                 lineLength: Int = 0,
-                                 lineSeparator: Array[Byte] = Array.empty,
-                                 withPadding: Boolean = true) {
+  class Encoder private[Base64] (
+      table: Array[Byte],
+      lineLength: Int = 0,
+      lineSeparator: Array[Byte] = Array.empty,
+      withPadding: Boolean = true
+  ) {
 
     def encode(src: Array[Byte]): Array[Byte] = {
       val dst = new Array[Byte](dstLength(src.length))
@@ -385,7 +397,8 @@ object Base64 {
       val dstLen = dstLength(src.length)
       if (dst.length < dstLen) {
         throw new IllegalArgumentException(
-          "Output byte array is too small for encoding all input bytes")
+          "Output byte array is too small for encoding all input bytes"
+        )
       }
       doEncode(src, dst, dstLen)
     }
@@ -395,18 +408,20 @@ object Base64 {
 
     def encode(buffer: ByteBuffer): ByteBuffer = {
       val result = new Array[Byte](dstLength(buffer.remaining()))
-      val src    = new Array[Byte](buffer.remaining())
+      val src = new Array[Byte](buffer.remaining())
       buffer.get(src)
       val written = doEncode(new Wrapper(src), new Wrapper(result))
       ByteBuffer.wrap(result, 0, written)
     }
 
     def wrap(os: OutputStream): OutputStream =
-      new EncodingOutputStream(os,
-                               table,
-                               lineLength,
-                               lineSeparator,
-                               withPadding)
+      new EncodingOutputStream(
+        os,
+        table,
+        lineLength,
+        lineSeparator,
+        withPadding
+      )
 
     def withoutPadding(): Encoder =
       if (withPadding) new Encoder(table, lineLength, lineSeparator, false)
@@ -416,15 +431,17 @@ object Base64 {
     // PRIVATE
     // ------------------------------------------------------------------------
 
-    private def doEncode(src: Array[Byte],
-                         dst: Array[Byte],
-                         dstLength: Int): Int = {
+    private def doEncode(
+        src: Array[Byte],
+        dst: Array[Byte],
+        dstLength: Int
+    ): Int = {
       doEncode(new Wrapper(src), new Wrapper(dst, 0, dstLength))
     }
 
     // dst position must always be 0 here
     private def doEncode(src: Wrapper, dst: Wrapper): Int = {
-      val length      = src.remaining
+      val length = src.remaining
       var currentLine = 0
 
       @inline
@@ -440,7 +457,7 @@ object Base64 {
         currentLine += 4
         if (lineSeparator.length > 0 && lineLength > 0 &&
             currentLine == lineLength && dst.hasRemaining) {
-          lineSeparator.foreach(dst.put(_))
+          lineSeparator.foreach(dst.put)
           currentLine = 0
         }
       }
@@ -468,8 +485,8 @@ object Base64 {
     }
 
     private def dstLength(srcLength: Int): Int = {
-      val withPad         = ((srcLength + 2) / 3) * 4
-      val toRemove        = if (withPadding) 0 else (3 - (srcLength % 3)) % 3
+      val withPad = ((srcLength + 2) / 3) * 4
+      val toRemove = if (withPadding) 0 else (3 - (srcLength % 3)) % 3
       val withoutEndLines = withPad - toRemove
       val endLines =
         if (lineLength <= 0) 0
@@ -480,16 +497,17 @@ object Base64 {
 
   // --------------------------------------------------------------------------
 
-  private class EncodingOutputStream(out: OutputStream,
-                                     table: Array[Byte],
-                                     lineLength: Int,
-                                     lineSeparator: Array[Byte],
-                                     withPadding: Boolean)
-      extends FilterOutputStream(out) {
+  private class EncodingOutputStream(
+      out: OutputStream,
+      table: Array[Byte],
+      lineLength: Int,
+      lineSeparator: Array[Byte],
+      withPadding: Boolean
+  ) extends FilterOutputStream(out) {
 
-    private val inputBuf          = new Wrapper(new Array[Byte](3))
+    private val inputBuf = new Wrapper(new Array[Byte](3))
     private var currentLineLength = 0
-    private var closed            = false
+    private var closed = false
 
     override def write(b: Int): Unit =
       write(Array(b.toByte), 0, 1)

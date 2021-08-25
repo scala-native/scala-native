@@ -5,11 +5,12 @@ package org.junit.internal
 
 import org.hamcrest.{Description, Matcher, SelfDescribing, StringDescription}
 
-class AssumptionViolatedException protected (fAssumption: String,
-                                             fValueMatcher: Boolean,
-                                             fMatcher: Matcher[_],
-                                             fValue: AnyRef)
-    extends RuntimeException
+class AssumptionViolatedException protected (
+    fAssumption: String,
+    fValueMatcher: Boolean,
+    fMatcher: Matcher[_],
+    fValue: AnyRef
+) extends RuntimeException
     with SelfDescribing {
 
   override def getMessage: String =

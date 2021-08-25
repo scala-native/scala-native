@@ -19,6 +19,6 @@ class FilterInputStream protected (protected var in: InputStream)
   override def close(): Unit = in.close()
 
   override def mark(readlimit: Int): Unit = in.mark(readlimit)
-  override def markSupported(): Boolean   = in.markSupported()
-  override def reset(): Unit              = in.reset()
+  override def markSupported(): Boolean = in.markSupported()
+  override def reset(): Unit = in.reset()
 }

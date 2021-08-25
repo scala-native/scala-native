@@ -7,7 +7,7 @@ class BufferedOutputStream(out: OutputStream, size: Int)
   if (size <= 0) throw new IllegalArgumentException("Buffer size <= 0")
 
   protected var buf: Array[Byte] = new Array[Byte](size)
-  protected var count: Int       = 0
+  protected var count: Int = 0
 
   def this(out: OutputStream) = this(out, 8192)
 
@@ -29,12 +29,14 @@ class BufferedOutputStream(out: OutputStream, size: Int)
 
       if (offset < 0 || offset > buffer.length - length) {
         throw new ArrayIndexOutOfBoundsException(
-          s"Offset out of bounds: $offset")
+          s"Offset out of bounds: $offset"
+        )
       }
 
       if (length < 0) {
         throw new ArrayIndexOutOfBoundsException(
-          s"Length out of bounds: $length")
+          s"Length out of bounds: $length"
+        )
       }
 
       if (internalBuffer == null) {
@@ -73,7 +75,7 @@ class BufferedOutputStream(out: OutputStream, size: Int)
     count += 1
   }
 
-  private def flushInternal() {
+  private def flushInternal(): Unit = {
     if (count > 0) {
       out.write(buf, 0, count)
       count = 0

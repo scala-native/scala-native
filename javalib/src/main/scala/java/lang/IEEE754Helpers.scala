@@ -1,6 +1,7 @@
 package java.lang
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.libc.errno
 
 import scalanative.posix.errno.ERANGE
@@ -27,9 +28,10 @@ private[java] object IEEE754Helpers {
 
   private def exceptionMsg(s: String) = "For input string \"" + s + "\""
 
-  private def bytesToCString(bytes: Array[scala.Byte], n: Int)(
-      implicit z: Zone): CString = {
-    val cStr = z.alloc(n + 1) // z.alloc() does not clear bytes.
+  private def bytesToCString(bytes: Array[scala.Byte], n: Int)(implicit
+      z: Zone
+  ): CString = {
+    val cStr = z.alloc((n + 1).toUInt) // z.alloc() does not clear bytes.
 
     var c = 0
     while (c < n) {
@@ -44,7 +46,7 @@ private[java] object IEEE754Helpers {
 
   def parseIEEE754[T](s: String, f: (CString, Ptr[CString]) => T): T = {
     Zone { implicit z =>
-      val bytes    = s.getBytes(java.nio.charset.Charset.defaultCharset())
+      val bytes = s.getBytes(java.nio.charset.Charset.defaultCharset())
       val bytesLen = bytes.length
 
       val cStr = bytesToCString(bytes, bytesLen)

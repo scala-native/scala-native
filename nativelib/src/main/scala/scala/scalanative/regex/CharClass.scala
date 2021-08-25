@@ -25,7 +25,7 @@ class CharClass private (unit: Unit) {
 
   // Constructs a CharClass with initial ranges |r|.
   // The right to mutate |r| is passed to the callee.
-  def this(r: Array[Int]) {
+  def this(r: Array[Int]) = {
     this(())
     this.r = r
     this.len = r.length
@@ -36,7 +36,7 @@ class CharClass private (unit: Unit) {
   // 16 bytes is a best guess. See commit mesage for details on its derivation.
 
   // Constructs an empty CharClass.
-  def this() {
+  def this() = {
     this(())
     val initialCapacity = 16
     this.r = new Array[Int](initialCapacity)
@@ -122,7 +122,7 @@ class CharClass private (unit: Unit) {
     var coalesced = false
 
     if (len > 0) {
-      var i   = 2
+      var i = 2
       val end = 4
       while (i <= end) {
         if (len >= i) {
@@ -225,7 +225,7 @@ class CharClass private (unit: Unit) {
   // CharClass.	 It assumes |x| is clean.  Does not mutate |x|.
   def appendNegatedClass(x: Array[Int]): CharClass = {
     var nextLo = 0
-    var i      = 0
+    var i = 0
     while (i < x.length) {
       val lo = x(i)
       val hi = x(i + 1)
@@ -251,8 +251,8 @@ class CharClass private (unit: Unit) {
     var i = 0
 
     while (i < table.length) {
-      val lo     = table(i + 0)
-      val hi     = table(i + 1)
+      val lo = table(i + 0)
+      val hi = table(i + 1)
       val stride = table(i + 2)
 
       if (stride == 1) {
@@ -277,11 +277,11 @@ class CharClass private (unit: Unit) {
     val indexStep = 3 // Number of column in a logical row.
 
     var mark = 0 // character space
-    var i    = 0 // array row
+    var i = 0 // array row
 
     while (i < table.length) {
-      val lo     = table(i + 0)
-      val hi     = table(i + 1)
+      val lo = table(i + 0)
+      val hi = table(i + 1)
       val stride = table(i + 2)
 
       if (mark < lo) {
@@ -328,8 +328,8 @@ class CharClass private (unit: Unit) {
   // negateClass() negates this CharClass, which must already be clean.
   def negateClass(): CharClass = {
     var nextLo = 0 // lo end of next class to add
-    var w      = 0 // write index
-    var i      = 0
+    var w = 0 // write index
+    var i = 0
     while (i < len) {
       val lo = r(i)
       val hi = r(i + 1)
@@ -386,10 +386,12 @@ object CharClass {
   // cmp() returns the ordering of the pair (a(i), a(i+1)) relative to
   // (pivotFrom, pivotTo), where the first component of the pair (lo) is
   // ordered naturally and the second component (hi) is in reverse order.
-  @inline private def cmp(array: Array[Int],
-                          i: Int,
-                          pivotFrom: Int,
-                          pivotTo: Int): Int = {
+  @inline private def cmp(
+      array: Array[Int],
+      i: Int,
+      pivotFrom: Int,
+      pivotTo: Int
+  ): Int = {
     val cmp = array(i) - pivotFrom
 
     if (cmp != 0) cmp else pivotTo - array(i + 1)
@@ -399,10 +401,10 @@ object CharClass {
   // Precondition: |left|, |right|, |this.len| must all be even |this.len > 1|.
   private def qsortIntPair(array: Array[Int], left: Int, right: Int): Unit = {
     val pivotIndex = ((left + right) / 2) & ~1
-    val pivotFrom  = array(pivotIndex)
-    val pivotTo    = array(pivotIndex + 1)
-    var i          = left
-    var j          = right
+    val pivotFrom = array(pivotIndex)
+    val pivotTo = array(pivotIndex + 1)
+    var i = left
+    var j = right
 
     while (i <= j) {
       while (i < right && cmp(array, i, pivotFrom, pivotTo) < 0) {

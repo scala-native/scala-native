@@ -19,24 +19,28 @@ final class JUnitFramework extends Framework {
     Array(JUnitFingerprint)
   }
 
-  def runner(args: Array[String],
-             remoteArgs: Array[String],
-             testClassLoader: ClassLoader): Runner = {
+  def runner(
+      args: Array[String],
+      remoteArgs: Array[String],
+      testClassLoader: ClassLoader
+  ): Runner = {
     new JUnitRunner(args, remoteArgs, parseRunSettings(args))
   }
 
-  def slaveRunner(args: Array[String],
-                  remoteArgs: Array[String],
-                  testClassLoader: ClassLoader,
-                  send: String => Unit): Runner = {
+  def slaveRunner(
+      args: Array[String],
+      remoteArgs: Array[String],
+      testClassLoader: ClassLoader,
+      send: String => Unit
+  ): Runner = {
     new JUnitRunner(args, remoteArgs, parseRunSettings(args))
   }
 
   private def parseRunSettings(args: Array[String]): RunSettings = {
-    var verbose              = false
-    var noColor              = false
-    var decodeScalaNames     = false
-    var logAssert            = false
+    var verbose = false
+    var noColor = false
+    var decodeScalaNames = false
+    var logAssert = false
     var notLogExceptionClass = false
     for (str <- args) {
       str match {
@@ -83,10 +87,12 @@ final class JUnitFramework extends Framework {
         case _    =>
       }
     }
-    new RunSettings(!noColor,
-                    decodeScalaNames,
-                    verbose,
-                    logAssert,
-                    notLogExceptionClass)
+    new RunSettings(
+      !noColor,
+      decodeScalaNames,
+      verbose,
+      logAssert,
+      notLogExceptionClass
+    )
   }
 }

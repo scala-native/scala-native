@@ -2,43 +2,69 @@ package scala.scalanative
 package nir
 package serialization
 
-import java.nio.ByteBuffer
-
+import java.net.URI
+import java.io.{DataOutputStream, OutputStream}
+import java.nio.charset.StandardCharsets
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
-final class BinarySerializer(buffer: ByteBuffer) {
-  import buffer._
+final class BinarySerializer {
+  private[this] val bufferUnderyling = new JumpBackByteArrayOutputStream
+  private[this] val buffer = new DataOutputStream(bufferUnderyling)
 
-  final def serialize(defns: Seq[Defn]): Unit = {
-    val names     = defns.map(_.name)
+  private[this] var lastPosition: Position = Position.NoPosition
+  private[this] val fileIndexMap = mutable.Map.empty[URI, Int]
+
+  // Methods were renamed in order to not pollute git blame history.
+  // Original implementation used ByteBuffers
+  import buffer.{
+    write => put,
+    writeDouble => putDouble,
+    writeFloat => putFloat,
+    writeInt => putInt,
+    writeChar => putChar,
+    writeLong => putLong,
+    writeShort => putShort
+  }
+  import bufferUnderyling.currentPosition
+
+  def serialize(defns: Seq[Defn], outputStream: OutputStream): Unit = {
+    val names = defns.map(_.name)
+    val filenames = initFiles(defns)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    Prelude.writeTo(buffer,
-                    Prelude(Versions.magic,
-                            Versions.compat,
-                            Versions.revision,
-                            Defn.existsEntryPoint(defns)))
+    Prelude.writeTo(
+      buffer,
+      Prelude(
+        Versions.magic,
+        Versions.compat,
+        Versions.revision,
+        Defn.existsEntryPoint(defns)
+      )
+    )
+
+    putSeq(filenames)(putUTF8String)
 
     putSeq(names) { n =>
       putGlobal(n)
-      positions += buffer.position()
+      positions += currentPosition()
       putInt(0)
     }
 
-    val offsets = defns.map { defn =>
-      val pos: Int = buffer.position()
-      putDefn(defn)
-      pos
-    }
-    val end = buffer.position()
+    defns
+      .zip(positions)
+      .foreach {
+        case (defn, marker) =>
+          val offset: Int = currentPosition()
+          bufferUnderyling.jumpTo(marker)
+          putInt(offset)
+          bufferUnderyling.continue()
+          putDefn(defn)
+      }
 
-    positions.zip(offsets).map {
-      case (pos, offset) =>
-        buffer.position(pos)
-        putInt(offset)
-    }
-    buffer.position(end)
+    buffer.flush()
+    bufferUnderyling.writeTo(outputStream)
   }
 
   private def putSeq[T](seq: Seq[T])(putT: T => Unit) = {
@@ -51,11 +77,13 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Some(t) => put(1.toByte); putT(t)
   }
 
-  private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt(_))
+  private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt)
 
-  private def putStrings(vs: Seq[String]) = putSeq(vs)(putString)
-  private def putString(v: String) = {
-    val bytes = v.getBytes("UTF-8")
+  private def putUTF8String(v: String) = putBytes {
+    v.getBytes(StandardCharsets.UTF_8)
+  }
+
+  private def putBytes(bytes: Array[Byte]) = {
     putInt(bytes.length); put(bytes)
   }
 
@@ -74,12 +102,12 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Attr.UnOpt        => putInt(T.UnOptAttr)
     case Attr.NoOpt        => putInt(T.NoOptAttr)
     case Attr.DidOpt       => putInt(T.DidOptAttr)
-    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putString(msg)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putUTF8String(msg)
 
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
-    case Attr.Link(s)  => putInt(T.LinkAttr); putString(s)
+    case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
   }
 
@@ -105,51 +133,60 @@ final class BinarySerializer(buffer: ByteBuffer) {
   }
 
   private def putInsts(insts: Seq[Inst]) = putSeq(insts)(putInst)
-  private def putInst(cf: Inst) = cf match {
-    case Inst.Label(name, params) =>
-      putInt(T.LabelInst)
-      putLocal(name)
-      putParams(params)
+  private def putInst(cf: Inst) = {
+    putPosition(cf.pos)
+    cf match {
+      case Inst.Label(name, params) =>
+        putInt(T.LabelInst)
+        putLocal(name)
+        putParams(params)
 
-    case Inst.Let(name, op, Next.None) =>
-      putInt(T.LetInst)
-      putLocal(name)
-      putOp(op)
+      case Inst.Let(name, op, Next.None) =>
+        putInt(T.LetInst)
+        putLocal(name)
+        putOp(op)
 
-    case Inst.Let(name, op, unwind) =>
-      putInt(T.LetUnwindInst)
-      putLocal(name)
-      putOp(op)
-      putNext(unwind)
+      case Inst.Let(name, op, unwind) =>
+        putInt(T.LetUnwindInst)
+        putLocal(name)
+        putOp(op)
+        putNext(unwind)
 
-    case Inst.Ret(v) =>
-      putInt(T.RetInst)
-      putVal(v)
+      case Inst.Ret(v) =>
+        putInt(T.RetInst)
+        putVal(v)
 
-    case Inst.Jump(next) =>
-      putInt(T.JumpInst)
-      putNext(next)
+      case Inst.Jump(next) =>
+        putInt(T.JumpInst)
+        putNext(next)
 
-    case Inst.If(v, thenp, elsep) =>
-      putInt(T.IfInst)
-      putVal(v)
-      putNext(thenp)
-      putNext(elsep)
+      case Inst.If(v, thenp, elsep) =>
+        putInt(T.IfInst)
+        putVal(v)
+        putNext(thenp)
+        putNext(elsep)
 
-    case Inst.Switch(v, default, cases) =>
-      putInt(T.SwitchInst)
-      putVal(v)
-      putNext(default)
-      putNexts(cases)
+      case Inst.LinktimeIf(v, thenp, elsep) =>
+        putInt(T.LinktimeIfInst)
+        putLinktimeCondition(v)
+        putNext(thenp)
+        putNext(elsep)
 
-    case Inst.Throw(v, unwind) =>
-      putInt(T.ThrowInst)
-      putVal(v)
-      putNext(unwind)
+      case Inst.Switch(v, default, cases) =>
+        putInt(T.SwitchInst)
+        putVal(v)
+        putNext(default)
+        putNexts(cases)
 
-    case Inst.Unreachable(unwind) =>
-      putInt(T.UnreachableInst)
-      putNext(unwind)
+      case Inst.Throw(v, unwind) =>
+        putInt(T.ThrowInst)
+        putVal(v)
+        putNext(unwind)
+
+      case Inst.Unreachable(unwind) =>
+        putInt(T.UnreachableInst)
+        putNext(unwind)
+    }
   }
 
   private def putComp(comp: Comp) = comp match {
@@ -187,53 +224,56 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Conv.Bitcast  => putInt(T.BitcastConv)
   }
 
-  private def putDefn(value: Defn): Unit = value match {
-    case Defn.Var(attrs, name, ty, value) =>
-      putInt(T.VarDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putType(ty)
-      putVal(value)
+  private def putDefn(value: Defn): Unit = {
+    putPosition(value.pos)
+    value match {
+      case Defn.Var(attrs, name, ty, value) =>
+        putInt(T.VarDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putType(ty)
+        putVal(value)
 
-    case Defn.Const(attrs, name, ty, value) =>
-      putInt(T.ConstDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putType(ty)
-      putVal(value)
+      case Defn.Const(attrs, name, ty, value) =>
+        putInt(T.ConstDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putType(ty)
+        putVal(value)
 
-    case Defn.Declare(attrs, name, ty) =>
-      putInt(T.DeclareDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putType(ty)
+      case Defn.Declare(attrs, name, ty) =>
+        putInt(T.DeclareDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putType(ty)
 
-    case Defn.Define(attrs, name, ty, insts) =>
-      putInt(T.DefineDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putType(ty)
-      putInsts(insts)
+      case Defn.Define(attrs, name, ty, insts) =>
+        putInt(T.DefineDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putType(ty)
+        putInsts(insts)
 
-    case Defn.Trait(attrs, name, ifaces) =>
-      putInt(T.TraitDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putGlobals(ifaces)
+      case Defn.Trait(attrs, name, ifaces) =>
+        putInt(T.TraitDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putGlobals(ifaces)
 
-    case Defn.Class(attrs, name, parent, ifaces) =>
-      putInt(T.ClassDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putGlobalOpt(parent)
-      putGlobals(ifaces)
+      case Defn.Class(attrs, name, parent, ifaces) =>
+        putInt(T.ClassDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putGlobalOpt(parent)
+        putGlobals(ifaces)
 
-    case Defn.Module(attrs, name, parent, ifaces) =>
-      putInt(T.ModuleDefn)
-      putAttrs(attrs)
-      putGlobal(name)
-      putGlobalOpt(parent)
-      putGlobals(ifaces)
+      case Defn.Module(attrs, name, parent, ifaces) =>
+        putInt(T.ModuleDefn)
+        putAttrs(attrs)
+        putGlobal(name)
+        putGlobalOpt(parent)
+        putGlobals(ifaces)
+    }
   }
 
   private def putGlobals(globals: Seq[Global]): Unit =
@@ -245,17 +285,17 @@ final class BinarySerializer(buffer: ByteBuffer) {
       putInt(T.NoneGlobal)
     case Global.Top(id) =>
       putInt(T.TopGlobal)
-      putString(id)
+      putUTF8String(id)
     case Global.Member(Global.Top(owner), sig) =>
       putInt(T.MemberGlobal)
-      putString(owner)
+      putUTF8String(owner)
       putSig(sig)
     case _ =>
       util.unreachable
   }
 
   private def putSig(sig: Sig): Unit =
-    putString(sig.mangle)
+    putUTF8String(sig.mangle)
 
   private def putLocal(local: Local): Unit =
     putLong(local.id)
@@ -480,13 +520,96 @@ final class BinarySerializer(buffer: ByteBuffer) {
     case Val.StructValue(vs) => putInt(T.StructValueVal); putVals(vs)
     case Val.ArrayValue(ty, vs) =>
       putInt(T.ArrayValueVal); putType(ty); putVals(vs)
-    case Val.Chars(s)      => putInt(T.CharsVal); putString(s)
+    case v: Val.Chars      => putInt(T.CharsVal); putBytes(v.bytes)
     case Val.Local(n, ty)  => putInt(T.LocalVal); putLocal(n); putType(ty)
     case Val.Global(n, ty) => putInt(T.GlobalVal); putGlobal(n); putType(ty)
 
-    case Val.Unit       => putInt(T.UnitVal)
-    case Val.Const(v)   => putInt(T.ConstVal); putVal(v)
-    case Val.String(v)  => putInt(T.StringVal); putString(v)
-    case Val.Virtual(v) => putInt(T.VirtualVal); putLong(v)
+    case Val.Unit     => putInt(T.UnitVal)
+    case Val.Const(v) => putInt(T.ConstVal); putVal(v)
+    case Val.String(v) =>
+      putInt(T.StringVal)
+      putInt(v.length)
+      v.foreach(putChar(_))
+    case Val.Virtual(v)   => putInt(T.VirtualVal); putLong(v)
+    case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
+  }
+
+  private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {
+    case LinktimeCondition.SimpleCondition(propertyName, comparison, value) =>
+      putInt(LinktimeCondition.Tag.SimpleCondition)
+      putUTF8String(propertyName)
+      putComp(comparison)
+      putVal(value)
+      putPosition(cond.position)
+
+    case LinktimeCondition.ComplexCondition(op, left, right) =>
+      putInt(LinktimeCondition.Tag.ComplexCondition)
+      putBin(op)
+      putLinktimeCondition(left)
+      putLinktimeCondition(right)
+      putPosition(cond.position)
+  }
+
+  // Ported from Scala.js
+  def putPosition(pos: Position): Unit = {
+    import PositionFormat._
+    def writeFull(): Unit = {
+      put(FormatFullMaskValue.toByte)
+      putInt(fileIndexMap(pos.source))
+      putInt(pos.line)
+      putInt(pos.column)
+    }
+
+    if (pos == Position.NoPosition) {
+      put(FormatNoPositionValue.toByte)
+    } else if (lastPosition == Position.NoPosition ||
+        pos.source != lastPosition.source) {
+      writeFull()
+      lastPosition = pos
+    } else {
+      val line = pos.line
+      val column = pos.column
+      val lineDiff = line - lastPosition.line
+      val columnDiff = column - lastPosition.column
+      val columnIsByte = column >= 0 && column < 256
+
+      if (lineDiff == 0 && columnDiff >= -64 && columnDiff < 64) {
+        put(((columnDiff << Format1Shift) | Format1MaskValue).toByte)
+      } else if (lineDiff >= -32 && lineDiff < 32 && columnIsByte) {
+        put(((lineDiff << Format2Shift) | Format2MaskValue).toByte)
+        put(column.toByte)
+      } else if (lineDiff >= Short.MinValue && lineDiff <= Short.MaxValue && columnIsByte) {
+        put(Format3MaskValue.toByte)
+        putShort(lineDiff.toShort)
+        put(column.toByte)
+      } else {
+        writeFull()
+      }
+
+      lastPosition = pos
+    }
+  }
+
+  private def initFiles(defns: Seq[Defn]): Seq[String] = {
+    val filesList = mutable.UnrolledBuffer.empty[String]
+
+    def initFile(pos: Position): Unit = {
+      val file = pos.source
+      if (pos.isDefined)
+        fileIndexMap.getOrElseUpdate(
+          file, {
+            val idx = filesList.size
+            filesList += file.toString
+            idx
+          }
+        )
+    }
+    defns.foreach {
+      case defn @ Defn.Define(_, _, _, insts) =>
+        initFile(defn.pos)
+        insts.foreach(inst => initFile(inst.pos))
+      case defn => initFile(defn.pos)
+    }
+    filesList.toSeq
   }
 }

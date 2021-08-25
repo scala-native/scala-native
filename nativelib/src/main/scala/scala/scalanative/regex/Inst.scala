@@ -13,8 +13,8 @@ package regex
 class Inst(var op: Inst.Op) {
   import Inst._, Op._
 
-  var out: Int          = _ // all but MATCH, FAIL
-  var arg: Int          = _ // ALT, ALT_MATCH, CAPTURE, EMPTY_WIDTH
+  var out: Int = _ // all but MATCH, FAIL
+  var arg: Int = _ // ALT, ALT_MATCH, CAPTURE, EMPTY_WIDTH
   var runes: Array[Int] = _ // length==1 => exact match
   // otherwise a list of [lo,hi] pairs.  hi is *inclusive*.
 
@@ -121,16 +121,16 @@ class Inst(var op: Inst.Op) {
 object Inst {
   type Op = Int
   object Op {
-    final val ALT             = 0
-    final val ALT_MATCH       = 1
-    final val CAPTURE         = 2
-    final val EMPTY_WIDTH     = 3
-    final val FAIL            = 4
-    final val MATCH           = 5
-    final val NOP             = 6
-    final val RUNE            = 7
-    final val RUNE1           = 8
-    final val RUNE_ANY        = 9
+    final val ALT = 0
+    final val ALT_MATCH = 1
+    final val CAPTURE = 2
+    final val EMPTY_WIDTH = 3
+    final val FAIL = 4
+    final val MATCH = 5
+    final val NOP = 6
+    final val RUNE = 7
+    final val RUNE1 = 8
+    final val RUNE_ANY = 9
     final val RUNE_ANY_NOT_NL = 10
   }
 

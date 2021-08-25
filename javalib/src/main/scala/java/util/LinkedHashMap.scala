@@ -2,9 +2,10 @@ package java.util
 
 import scala.collection.mutable
 
-class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[AnyRef, V],
-                                   accessOrder: Boolean)
-    extends HashMap[K, V](inner) { self =>
+class LinkedHashMap[K, V] private (
+    inner: mutable.LinkedHashMap[AnyRef, V],
+    accessOrder: Boolean
+) extends HashMap[K, V](inner) { self =>
 
   override protected def boxKey(key: K): AnyRef =
     Box(key)
@@ -56,7 +57,7 @@ class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[AnyRef, V],
       }
     }
     val iter = entrySet().iterator()
-    if (iter.hasNext && removeEldestEntry(iter.next()))
+    if (iter.hasNext() && removeEldestEntry(iter.next()))
       iter.remove()
     oldValue
   }
@@ -71,5 +72,5 @@ class LinkedHashMap[K, V] private (inner: mutable.LinkedHashMap[AnyRef, V],
 object LinkedHashMap {
 
   private[LinkedHashMap] final val DEFAULT_INITIAL_CAPACITY = 16
-  private[LinkedHashMap] final val DEFAULT_LOAD_FACTOR      = 0.75f
+  private[LinkedHashMap] final val DEFAULT_LOAD_FACTOR = 0.75f
 }

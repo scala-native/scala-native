@@ -19,8 +19,8 @@ class JarFile(file: File, verify: Boolean, mode: Int)
   def this(name: String, verify: Boolean) = this(new File(name), verify)
   def this(name: String) = this(new File(name))
 
-  private var manifest: Manifest         = null
-  private var manifestEntry: ZipEntry    = null
+  private var manifest: Manifest = null
+  private var manifestEntry: ZipEntry = null
   private[jar] var verifier: JarVerifier = null
 
   private var closed: Boolean = false
@@ -54,8 +54,10 @@ class JarFile(file: File, verify: Boolean, mode: Int)
       try {
         var is = super.getInputStream(manifestEntry)
         if (verifier != null) {
-          verifier.addMetaEntry(manifestEntry.getName(),
-                                JarFile.readFullyAndClose(is))
+          verifier.addMetaEntry(
+            manifestEntry.getName(),
+            JarFile.readFullyAndClose(is)
+          )
           is = super.getInputStream(manifestEntry)
         }
         try manifest = new Manifest(is, verifier != null)
@@ -73,15 +75,16 @@ class JarFile(file: File, verify: Boolean, mode: Int)
       verifier = null
     } else {
       var signed = false
-      var i      = 0
-      var done   = false
+      var i = 0
+      var done = false
       while (!done && i < metaEntries.length) {
-        val entry     = metaEntries(i)
+        val entry = metaEntries(i)
         val entryName = entry.getName()
         // Is this the entry for META-INF/MANIFEST.MF ?
         if (manifestEntry == null && JarFile.asciiEqualsIgnoreCase(
               JarFile.MANIFEST_NAME,
-              entryName)) {
+              entryName
+            )) {
           manifestEntry = entry
           // If there is no verifier then we don't need to look any further,
           if (verifier == null) {
@@ -91,10 +94,11 @@ class JarFile(file: File, verify: Boolean, mode: Int)
           // Is this an entry that the verifier needs?
           if (verifier != null && (JarFile.asciiEndsWithIgnoreCase(
                 entryName,
-                ".SF") || JarFile.asciiEndsWithIgnoreCase(entryName, ".DSA") || JarFile
+                ".SF"
+              ) || JarFile.asciiEndsWithIgnoreCase(entryName, ".DSA") || JarFile
                 .asciiEndsWithIgnoreCase(entryName, ".RSA"))) {
             signed = true
-            val is  = super.getInputStream(entry)
+            val is = super.getInputStream(entry)
             val buf = JarFile.readFullyAndClose(is)
             verifier.addMetaEntry(entryName, buf)
           }
@@ -158,7 +162,7 @@ class JarFile(file: File, verify: Boolean, mode: Int)
   }
 
   private def getMetaEntriesImpl(): Array[ZipEntry] = {
-    val list       = scala.collection.mutable.Buffer.empty[ZipEntry]
+    val list = scala.collection.mutable.Buffer.empty[ZipEntry]
     val allEntries = entries()
     while (allEntries.hasMoreElements()) {
       val ze = allEntries.nextElement()
@@ -173,14 +177,14 @@ class JarFile(file: File, verify: Boolean, mode: Int)
 }
 
 object JarFile extends ZipConstants {
-  final val MANIFEST_NAME         = "META-INF/MANIFEST.MF"
+  final val MANIFEST_NAME = "META-INF/MANIFEST.MF"
   private[jar] final val META_DIR = "META-INF/"
 
   private def readFullyAndClose(is: InputStream): Array[Byte] =
     try {
       // Initial read
-      val buffer   = new Array[Byte](1024)
-      val count    = is.read(buffer)
+      val buffer = new Array[Byte](1024)
+      val count = is.read(buffer)
       val nextByte = is.read()
 
       // Did we get it all in one read?
@@ -206,14 +210,16 @@ object JarFile extends ZipConstants {
       }
     } finally is.close()
 
-  private def asciiEndsWithIgnoreCase(source: String,
-                                      suffix: String): Boolean = {
+  private def asciiEndsWithIgnoreCase(
+      source: String,
+      suffix: String
+  ): Boolean = {
     val length = suffix.length()
     if (length > source.length()) {
       false
     } else {
       val offset = source.length() - length
-      var i      = 0
+      var i = 0
       var result = true
       while (result && i < length) {
         val c1 = source.charAt(i + offset)
@@ -236,7 +242,7 @@ object JarFile extends ZipConstants {
     } else if (s1.length != s2.length) {
       false
     } else {
-      var i      = 0
+      var i = 0
       var result = true
       while (result && i < s1.length) {
         val b1 = s1.charAt(i)
@@ -256,11 +262,12 @@ object JarFile extends ZipConstants {
       c
     }
 
-  private[jar] final class JarFileInputStream(is: InputStream,
-                                              zipEntry: ZipEntry,
-                                              entry: JarVerifier#VerifierEntry)
-      extends FilterInputStream(is) {
-    private var count: Long   = zipEntry.getSize()
+  private[jar] final class JarFileInputStream(
+      is: InputStream,
+      zipEntry: ZipEntry,
+      entry: JarVerifier#VerifierEntry
+  ) extends FilterInputStream(is) {
+    private var count: Long = zipEntry.getSize()
     private var done: Boolean = false
 
     override def read(): Int =
@@ -318,14 +325,17 @@ object JarFile extends ZipConstants {
       else super.available()
 
     override def skip(nbytes: Long): Long = {
-      var cnt  = 0L
-      var rem  = 0L
+      var cnt = 0L
+      var rem = 0L
       var done = false
-      val buf  = new Array[Byte](Math.min(nbytes, 2048L).toInt)
+      val buf = new Array[Byte](Math.min(nbytes, 2048L).toInt)
       while (!done && cnt < nbytes) {
-        val x = read(buf, 0, {
-          rem = nbytes - cnt; if (rem > buf.length) buf.length else rem.toInt
-        })
+        val x = read(
+          buf,
+          0, {
+            rem = nbytes - cnt; if (rem > buf.length) buf.length else rem.toInt
+          }
+        )
         if (x == -1) {
           done = true
         } else {

@@ -7,7 +7,7 @@ import scalanative.libc.errno
 class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
 
-  private var interruptedState   = false
+  private var interruptedState = false
   private[this] var name: String = "main" // default name of the main thread
 
   def run(): Unit = ()
@@ -24,8 +24,9 @@ class Thread private (runnable: Runnable) extends Runnable {
   final def getName(): String =
     this.name
 
-  @stub
-  def getStackTrace(): Array[StackTraceElement] = ???
+  // Stub implementation
+  def getStackTrace(): Array[StackTraceElement] =
+    new Array[StackTraceElement](0) // Do not use scala collections.
 
   def getId(): scala.Long = 1
 
@@ -61,13 +62,13 @@ class Thread private (runnable: Runnable) extends Runnable {
 
 object Thread {
   private val MainRunnable = new Runnable { def run(): Unit = () }
-  private val MainThread   = new Thread(MainRunnable)
+  private val MainThread = new Thread(MainRunnable)
 
   def currentThread(): Thread = MainThread
 
   def interrupted(): scala.Boolean = {
-    val ret = currentThread.isInterrupted
-    currentThread.interruptedState = false
+    val ret = currentThread().isInterrupted()
+    currentThread().interruptedState = false
     ret
   }
 
@@ -88,7 +89,7 @@ object Thread {
       throw new IllegalArgumentException("nanos value out of range")
     }
 
-    val secs  = millis / 1000
+    val secs = millis / 1000
     val usecs = (millis % 1000) * 1000 + nanos / 1000
     if (secs > 0 && unistd.sleep(secs.toUInt) != 0.toUInt) checkErrno()
     if (usecs > 0 && unistd.usleep(usecs.toUInt) != 0) checkErrno()

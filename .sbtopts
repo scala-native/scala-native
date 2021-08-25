@@ -5,7 +5,7 @@
 # plugin after a fresh "git clone".
 #
 # The "test-tools" and "test-all" commands in build.sbt
-# require a soft lower limit of 3 Gigabytes of virtual memory.
+# require a soft lower limit of 5 Gigabytes of virtual memory.
 # The scala-sbt.org runner sets a limit of 1GB for maximum heap size
 # ("-Xmx") even when more physical memory is available.
 #
@@ -19,14 +19,18 @@
 #
 #   -Xmx is equivalent to -XXMaxHeapSize
 #   -Xms is equivalent to -XXInitialHeapSize
+#   -Xss is equivalent to -XXThreadStackSize
 #
 # The arguably more useful "-J-XX:GCTimeRatio" is not passed by the
 # scala-sbt.org runner.
 
--J-Xmx3G
-
+-J-Xmx5G
 -J-Xms1G
 # -J-Xms1G is the upper bound supplied by scala-sbt.org runner, lower may work.
+
+# Compilation on Scala 2.11 in Release mode might require larger
+# thread stack size while performing optimizations. (#2156)
+-J-Xss2M
 
 # On systems with more physical memory, one can experiment with locally
 # increasing -Xmx to up to 1/4th of physical memory or more.

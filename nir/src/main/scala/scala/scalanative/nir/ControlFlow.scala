@@ -12,19 +12,21 @@ import nir._
  *  * What are the successors of given block?
  */
 object ControlFlow {
-  final case class Edge(val from: Block, val to: Block, val next: Next)
+  final case class Edge(from: Block, to: Block, next: Next)
 
-  final case class Block(name: Local,
-                         params: Seq[Val.Local],
-                         insts: Seq[Inst],
-                         isEntry: Boolean) {
-    val inEdges  = mutable.UnrolledBuffer.empty[Edge]
+  final case class Block(
+      name: Local,
+      params: Seq[Val.Local],
+      insts: Seq[Inst],
+      isEntry: Boolean
+  )(implicit val pos: Position) {
+    val inEdges = mutable.UnrolledBuffer.empty[Edge]
     val outEdges = mutable.UnrolledBuffer.empty[Edge]
 
     lazy val splitCount: Int = {
       var count = 0
       insts.foreach {
-        case Inst.Let(_, call: Op.Call, unwind) if unwind ne Next.None =>
+        case Inst.Let(_, _: Op.Call, unwind) if unwind ne Next.None =>
           count += 1
         case _ =>
           ()
@@ -32,15 +34,17 @@ object ControlFlow {
       count
     }
 
-    def pred  = inEdges.map(_.from)
-    def succ  = outEdges.map(_.to)
+    def pred = inEdges.map(_.from)
+    def succ = outEdges.map(_.to)
     def label = Inst.Label(name, params)
-    def show  = name.show
+    def show = name.show
   }
 
-  final class Graph(val entry: Block,
-                    val all: Seq[Block],
-                    val find: mutable.Map[Local, Block])
+  final class Graph(
+      val entry: Block,
+      val all: Seq[Block],
+      val find: mutable.Map[Local, Block]
+  )
 
   object Graph {
     def apply(insts: Seq[Inst]): Graph = {
@@ -48,7 +52,7 @@ object ControlFlow {
 
       val locations = {
         val entries = mutable.Map.empty[Local, Int]
-        var i       = 0
+        var i = 0
 
         insts.foreach { inst =>
           inst match {
@@ -64,48 +68,56 @@ object ControlFlow {
       }
 
       val blocks = mutable.Map.empty[Local, Block]
-      val todo   = mutable.Stack.empty[Block]
+      var todo = List.empty[Block]
 
       def edge(from: Block, to: Block, next: Next) = {
-        val e = new Edge(from, to, next)
+        val e = Edge(from, to, next)
         from.outEdges += e
         to.inEdges += e
       }
 
-      def block(local: Local): Block =
-        blocks.get(local).getOrElse {
-          val k                     = locations(local)
-          val Inst.Label(n, params) = insts(k)
+      def block(local: Local)(implicit pos: Position): Block =
+        blocks.getOrElse(
+          local, {
+            val k = locations(local)
+            val Inst.Label(n, params) = insts(k)
 
-          // copy all instruction up until and including
-          // first control-flow instruction after the label
-          val body = mutable.UnrolledBuffer.empty[Inst]
-          var i    = k
-          do {
-            i += 1
-            body += insts(i)
-          } while (!insts(i).isInstanceOf[Inst.Cf])
+            // copy all instruction up until and including
+            // first control-flow instruction after the label
+            val body = mutable.UnrolledBuffer.empty[Inst]
+            var i = k
+            while ({
+              i += 1
+              body += insts(i)
+              !insts(i).isInstanceOf[Inst.Cf]
+            }) ()
 
-          val block = new Block(n, params, body, isEntry = k == 0)
-          blocks(local) = block
-          todo.push(block)
-          block
-        }
+            val block = Block(n, params, body.toSeq, isEntry = k == 0)
+            blocks(local) = block
+            todo ::= block
+            block
+          }
+        )
 
       def visit(node: Block): Unit = {
         val insts :+ cf = node.insts
         insts.foreach {
-          case Inst.Let(_, op, unwind) if unwind ne Next.None =>
-            edge(node, block(unwind.name), unwind)
+          case inst @ Inst.Let(_, op, unwind) if unwind ne Next.None =>
+            edge(node, block(unwind.name)(inst.pos), unwind)
           case _ =>
             ()
         }
+        implicit val pos: Position = cf.pos
+
         cf match {
           case _: Inst.Ret =>
             ()
           case Inst.Jump(next) =>
             edge(node, block(next.name), next)
           case Inst.If(_, next1, next2) =>
+            edge(node, block(next1.name), next1)
+            edge(node, block(next2.name), next2)
+          case Inst.LinktimeIf(_, next1, next2) =>
             edge(node, block(next1.name), next1)
             edge(node, block(next2.name), next2)
           case Inst.Switch(_, default, cases) =>
@@ -124,12 +136,14 @@ object ControlFlow {
         }
       }
 
-      val entry   = block(insts.head.asInstanceOf[Inst.Label].name)
+      val entryInst = insts.head.asInstanceOf[Inst.Label]
+      val entry = block(entryInst.name)(entryInst.pos)
       val visited = mutable.Set.empty[Local]
 
       while (todo.nonEmpty) {
-        val block = todo.pop()
-        val name  = block.name
+        val block = todo.head
+        todo = todo.tail
+        val name = block.name
         if (!visited(name)) {
           visited += name
           visit(block)

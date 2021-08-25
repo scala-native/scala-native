@@ -3,23 +3,27 @@ package lang
 
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.util.concurrent.TimeUnit
-
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import java.util.ScalaOps._
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.{errno => err, signal => sig, _}
-import sig._
+import scala.scalanative.libc.{errno => err}
 import err.errno
-import scala.scalanative.posix.{fcntl, pthread, sys, unistd, errno => e, time}
+import scala.scalanative.posix.{
+  fcntl,
+  pthread,
+  signal,
+  sys,
+  time,
+  unistd,
+  errno => e
+}
 import time._
 import sys.time._
 import e.ETIMEDOUT
 import UnixProcess._
 import java.lang.ProcessBuilder.Redirect
-
 import pthread._
-import scala.collection.mutable
+import scala.collection.mutable.ArraySeq
 import scala.scalanative.posix.sys.types.{pthread_cond_t, pthread_mutex_t}
 
 private[lang] class UnixProcess private (
@@ -29,7 +33,7 @@ private[lang] class UnixProcess private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends Process {
-  override def destroy(): Unit = kill(pid, 9)
+  override def destroy(): Unit = signal.kill(pid, signal.SIGKILL)
 
   override def destroyForcibly(): Process = {
     destroy()
@@ -40,7 +44,8 @@ private[lang] class UnixProcess private (
     checkResult() match {
       case -1 =>
         throw new IllegalThreadStateException(
-          s"Process $pid has not exited yet")
+          s"Process $pid has not exited yet"
+        )
       case v => v
     }
   }
@@ -70,7 +75,7 @@ private[lang] class UnixProcess private (
         val tv = stackalloc[timeval]
         throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
         val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2)
-        val sec  = TimeUnit.NANOSECONDS.toSeconds(nsec)
+        val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
         ts._1 = tv._1 + sec
         ts._2 = if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec
         waitImpl(() => waitFor(ts)) == 0
@@ -84,11 +89,11 @@ private[lang] class UnixProcess private (
   }
 
   private[this] val _inputStream =
-    PipeIO[PipeIO.Stream](this, !outfds, builder.redirectOutput)
+    PipeIO[PipeIO.Stream](this, !outfds, builder.redirectOutput())
   private[this] val _errorStream =
-    PipeIO[PipeIO.Stream](this, !errfds, builder.redirectError)
+    PipeIO[PipeIO.Stream](this, !errfds, builder.redirectError())
   private[this] val _outputStream =
-    PipeIO[OutputStream](this, !(infds + 1), builder.redirectInput)
+    PipeIO[OutputStream](this, !(infds + 1), builder.redirectInput())
 
   private[this] var _exitValue = -1
   private[lang] def checkResult(): CInt = {
@@ -129,22 +134,27 @@ object UnixProcess {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    val infds  = stackalloc[CInt](2)
-    val outfds = stackalloc[CInt](2)
+    val infds = stackalloc[CInt](2.toUInt)
+    val outfds = stackalloc[CInt](2.toUInt)
     val errfds =
-      if (builder.redirectErrorStream) outfds else stackalloc[CInt](2)
+      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
 
     throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
-    if (!builder.redirectErrorStream)
+    if (!builder.redirectErrorStream())
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-    val cmd      = builder.command.asScala
-    val binaries = binaryPaths(builder.environment, cmd.head)
-    val dir      = builder.directory
-    val argv     = nullTerminate(cmd)
-    val envp = nullTerminate(builder.environment.asScala.map {
-      case (k, v) => s"$k=$v"
-    }.toSeq)
+    val cmd = builder.command().scalaOps.toSeq
+    val binaries = binaryPaths(builder.environment(), cmd.head)
+    val dir = builder.directory()
+    val argv = nullTerminate(cmd)
+    val envp = nullTerminate {
+      builder
+        .environment()
+        .entrySet()
+        .scalaOps
+        .toSeq
+        .map(e => s"${e.getKey()}=${e.getValue()}")
+    }
 
     /*
      * Use vfork rather than fork to avoid copying the parent process memory to the child. It also
@@ -168,14 +178,18 @@ object UnixProcess {
          */
         def invokeChildProcess(): Process = {
           if (dir != null) unistd.chdir(toCString(dir.toString))
-          setupChildFDS(!infds, builder.redirectInput, unistd.STDIN_FILENO)
-          setupChildFDS(!(outfds + 1),
-                        builder.redirectOutput,
-                        unistd.STDOUT_FILENO)
-          setupChildFDS(!(errfds + 1),
-                        if (builder.redirectErrorStream) Redirect.PIPE
-                        else builder.redirectError,
-                        unistd.STDERR_FILENO)
+          setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+          setupChildFDS(
+            !(outfds + 1),
+            builder.redirectOutput(),
+            unistd.STDOUT_FILENO
+          )
+          setupChildFDS(
+            !(errfds + 1),
+            if (builder.redirectErrorStream()) Redirect.PIPE
+            else builder.redirectError(),
+            unistd.STDERR_FILENO
+          )
           unistd.close(!infds)
           unistd.close(!(infds + 1))
           unistd.close(!outfds)
@@ -210,54 +224,64 @@ object UnixProcess {
     }
   }
 
-  @inline private def nullTerminate(seq: Seq[String])(implicit z: Zone) = {
-    val res = alloc[CString](seq.length + 1)
+  @inline private def nullTerminate(
+      seq: collection.Seq[String]
+  )(implicit z: Zone) = {
+    val res = alloc[CString]((seq.size + 1).toUInt)
     seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
     res
   }
 
-  @inline private def setupChildFDS(childFd: CInt,
-                                    redirect: ProcessBuilder.Redirect,
-                                    procFd: CInt): Unit = {
+  @inline private def setupChildFDS(
+      childFd: CInt,
+      redirect: ProcessBuilder.Redirect,
+      procFd: CInt
+  ): Unit = {
     import fcntl.{open => _, _}
-    redirect.`type` match {
+    redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE =>
         if (unistd.dup2(childFd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate pipe file descriptor $errno")
+            s"Couldn't duplicate pipe file descriptor $errno"
+          )
         }
       case r @ ProcessBuilder.Redirect.Type.READ =>
-        val fd = open(redirect.file, O_RDONLY)
+        val fd = open(redirect.file(), O_RDONLY)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate read file descriptor $errno")
+            s"Couldn't duplicate read file descriptor $errno"
+          )
         }
       case r @ ProcessBuilder.Redirect.Type.WRITE =>
-        val fd = open(redirect.file, O_CREAT | O_WRONLY | O_TRUNC)
+        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate write file descriptor $errno")
+            s"Couldn't duplicate write file descriptor $errno"
+          )
         }
       case r @ ProcessBuilder.Redirect.Type.APPEND =>
-        val fd = open(redirect.file, O_CREAT | O_WRONLY | O_APPEND)
+        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
         if (unistd.dup2(fd, procFd) == -1) {
           throw new IOException(
-            s"Couldn't duplicate append file descriptor $errno")
+            s"Couldn't duplicate append file descriptor $errno"
+          )
         }
     }
   }
 
   @inline def open(f: File, flags: CInt) = Zone { implicit z =>
-    fcntl.open(toCString(f.getAbsolutePath), flags, 0.toUInt) match {
+    fcntl.open(toCString(f.getAbsolutePath()), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd
     }
   }
 
   // The execvpe function isn't available on all platforms so find the possible binaries to exec.
-  private def binaryPaths(environment: java.util.Map[String, String],
-                          bin: String): Seq[String] = {
+  private def binaryPaths(
+      environment: java.util.Map[String, String],
+      bin: String
+  ): Seq[String] = {
     if ((bin startsWith "/") || (bin startsWith ".")) {
       Seq(bin)
     } else {
@@ -265,11 +289,14 @@ object UnixProcess {
         case null => "/bin:/usr/bin:/usr/local/bin"
         case p    => p
       }
-      path split ":" map { absPath =>
-        new File(s"$absPath/$bin")
-      } collect {
-        case f if f.canExecute => f.toString
-      }
+
+      path
+        .split(':')
+        .toIndexedSeq
+        .map { absPath => new File(s"$absPath/$bin") }
+        .collect {
+          case f if f.canExecute() => f.toString
+        }
     }
   }
 }

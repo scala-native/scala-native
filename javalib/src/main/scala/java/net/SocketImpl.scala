@@ -7,13 +7,13 @@ abstract class SocketImpl extends SocketOptions {
   protected[net] var port: Int
   protected[net] var address: InetAddress
   protected[net] var fd: FileDescriptor
-  protected[net] var shutInput  = false
+  protected[net] var shutInput = false
   protected[net] var shutOutput = false
 
   protected[net] def accept(s: SocketImpl): Unit
-  protected[net] def available: Int
+  protected[net] def available(): Int
   protected[net] def bind(host: InetAddress, port: Int): Unit
-  protected[net] def close: Unit
+  protected[net] def close(): Unit
   protected[net] def connect(address: InetAddress, port: Int): Unit
   protected[net] def connect(address: SocketAddress, timeout: Int): Unit
   protected[net] def connect(host: String, port: Int): Unit
@@ -27,8 +27,8 @@ abstract class SocketImpl extends SocketOptions {
   protected[net] def listen(backlog: Int): Unit
   //protected[net] def sendUrgentData(data: Int): Unit
   //protected[net] def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
-  protected[net] def shutdownInput: Unit
-  protected[net] def shutdownOutput: Unit
+  protected[net] def shutdownInput(): Unit
+  protected[net] def shutdownOutput(): Unit
   //protected[net] def supportsUrgentData: Boolean
 
   override def toString: String =

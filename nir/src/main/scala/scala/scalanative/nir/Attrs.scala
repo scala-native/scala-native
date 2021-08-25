@@ -9,41 +9,43 @@ sealed abstract class Attr {
 }
 
 object Attr {
-  sealed abstract class Inline   extends Attr
-  final case object MayInline    extends Inline // no information
-  final case object InlineHint   extends Inline // user hinted at inlining
-  final case object NoInline     extends Inline // should never inline
-  final case object AlwaysInline extends Inline // should always inline
+  sealed abstract class Inline extends Attr
+  case object MayInline extends Inline // no information
+  case object InlineHint extends Inline // user hinted at inlining
+  case object NoInline extends Inline // should never inline
+  case object AlwaysInline extends Inline // should always inline
 
   sealed abstract class Specialize extends Attr
-  final case object MaySpecialize  extends Specialize
-  final case object NoSpecialize   extends Specialize
+  case object MaySpecialize extends Specialize
+  case object NoSpecialize extends Specialize
 
-  sealed abstract class Opt             extends Attr
-  final case object UnOpt               extends Opt
-  final case object NoOpt               extends Opt
-  final case object DidOpt              extends Opt
+  sealed abstract class Opt extends Attr
+  case object UnOpt extends Opt
+  case object NoOpt extends Opt
+  case object DidOpt extends Opt
   final case class BailOpt(msg: String) extends Opt
 
-  final case object Dyn               extends Attr
-  final case object Stub              extends Attr
-  final case object Extern            extends Attr
+  case object Dyn extends Attr
+  case object Stub extends Attr
+  case object Extern extends Attr
   final case class Link(name: String) extends Attr
-  final case object Abstract          extends Attr
+  case object Abstract extends Attr
 }
 
-final case class Attrs(inline: Inline = MayInline,
-                       specialize: Specialize = MaySpecialize,
-                       opt: Opt = UnOpt,
-                       isExtern: Boolean = false,
-                       isDyn: Boolean = false,
-                       isStub: Boolean = false,
-                       isAbstract: Boolean = false,
-                       links: Seq[Attr.Link] = Seq()) {
+final case class Attrs(
+    inlineHint: Inline = MayInline,
+    specialize: Specialize = MaySpecialize,
+    opt: Opt = UnOpt,
+    isExtern: Boolean = false,
+    isDyn: Boolean = false,
+    isStub: Boolean = false,
+    isAbstract: Boolean = false,
+    links: Seq[Attr.Link] = Seq()
+) {
   def toSeq: Seq[Attr] = {
-    val out = mutable.UnrolledBuffer.empty[Attr]
+    val out = Seq.newBuilder[Attr]
 
-    if (inline != MayInline) out += inline
+    if (inlineHint != MayInline) out += inlineHint
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
     if (isExtern) out += Extern
@@ -52,22 +54,21 @@ final case class Attrs(inline: Inline = MayInline,
     if (isAbstract) out += Abstract
     out ++= links
 
-    out
+    out.result()
   }
 }
 object Attrs {
   val None = new Attrs()
 
-  def fromSeq(attrs: Seq[Attr]) = {
-    var inline     = None.inline
+  def fromSeq(attrs: Seq[Attr]): Attrs = {
+    var inline = None.inlineHint
     var specialize = None.specialize
-    var opt        = None.opt
-    var isExtern   = false
-    var isDyn      = false
-    var isStub     = false
+    var opt = None.opt
+    var isExtern = false
+    var isDyn = false
+    var isStub = false
     var isAbstract = false
-    val overrides  = mutable.UnrolledBuffer.empty[Global]
-    val links      = mutable.UnrolledBuffer.empty[Attr.Link]
+    val links = Seq.newBuilder[Attr.Link]
 
     attrs.foreach {
       case attr: Inline     => inline = attr
@@ -80,13 +81,15 @@ object Attrs {
       case Abstract         => isAbstract = true
     }
 
-    new Attrs(inline,
-              specialize,
-              opt,
-              isExtern,
-              isDyn,
-              isStub,
-              isAbstract,
-              links)
+    new Attrs(
+      inline,
+      specialize,
+      opt,
+      isExtern,
+      isDyn,
+      isStub,
+      isAbstract,
+      links.result()
+    )
   }
 }

@@ -8,14 +8,14 @@ import scalanative.nir._
 import scalanative.linker._
 
 trait Intrinsics { self: Interflow =>
-  val arrayApplyIntrinsics  = Lower.arrayApply.values.toSet[Global]
+  val arrayApplyIntrinsics = Lower.arrayApply.values.toSet[Global]
   val arrayUpdateIntrinsics = Lower.arrayUpdate.values.toSet[Global]
-  val arrayLengthIntrinsic  = Lower.arrayLength
+  val arrayLengthIntrinsic = Lower.arrayLength
   val arrayIntrinsics =
     arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
 
   val intrinsics = Set[Global](
-    Rt.GetRawTypeName,
+    Global.Member(Global.Top("java.lang.Object"), Rt.GetClassSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsArraySig),
     Global.Member(Global.Top("java.lang.Class"), Rt.IsAssignableFromSig),
     Global.Member(Global.Top("java.lang.Class"), Rt.GetNameSig),
@@ -31,29 +31,32 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Rt.Runtime.name, Rt.ToRawPtrSig)
   ) ++ arrayIntrinsics
 
-  def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(
-      implicit state: State): Option[Val] = {
+  def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(implicit
+      state: State,
+      origPos: Position
+  ): Option[Val] = {
     val Global.Member(_, sig) = name
 
     val args = rawArgs.map(eval)
 
     def emit =
       state.emit(
-        Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_))))
+        Op.Call(ty, Val.Global(name, Type.Ptr), args.map(state.materialize(_)))
+      )
 
     sig match {
-      case Rt.GetRawTypeSig =>
+      case Rt.GetClassSig =>
         args match {
-          case Seq(_, VirtualRef(_, cls, _)) =>
-            Some(Val.Global(cls.name, Type.Ptr))
-          case Seq(_, value) =>
+          case Seq(VirtualRef(_, cls, _)) =>
+            Some(Val.Global(cls.name, Rt.Class))
+          case Seq(value) =>
             val ty = value match {
               case InstanceRef(ty) => ty
               case _               => value.ty
             }
             ty match {
               case refty: Type.RefKind if refty.isExact =>
-                Some(Val.Global(refty.className, Type.Ptr))
+                Some(Val.Global(refty.className, Rt.Class))
               case _ =>
                 Some(emit)
             }
@@ -62,23 +65,25 @@ trait Intrinsics { self: Interflow =>
         }
       case Rt.IsArraySig =>
         args match {
-          case Seq(VirtualRef(_, _, Array(Val.Global(clsName, _)))) =>
+          case Seq(Val.Global(clsName, ty)) if ty == Rt.Class =>
             Some(Val.Bool(Type.isArray(clsName)))
           case _ =>
             None
         }
       case Rt.IsAssignableFromSig =>
         args match {
-          case Seq(VirtualRef(_, _, Array(Val.Global(ScopeRef(linfo), _))),
-                   VirtualRef(_, _, Array(Val.Global(ScopeRef(rinfo), _)))) =>
+          case Seq(
+                Val.Global(ScopeRef(linfo), lty),
+                Val.Global(ScopeRef(rinfo), rty)
+              ) if lty == Rt.Class && rty == Rt.Class =>
             Some(Val.Bool(rinfo.is(linfo)))
           case _ =>
             None
         }
       case Rt.GetNameSig =>
         args match {
-          case Seq(VirtualRef(_, _, Array(Val.Global(name: Global.Top, _)))) =>
-            Some(eval(Val.String(name.id))(state))
+          case Seq(Val.Global(name: Global.Top, ty)) if ty == Rt.Class =>
+            Some(eval(Val.String(name.id)))
           case _ =>
             None
         }
@@ -139,11 +144,11 @@ trait Intrinsics { self: Interflow =>
             None
         }
       case _ if arrayApplyIntrinsics.contains(name) =>
-        val Seq(arr, idx)            = rawArgs
+        val Seq(arr, idx) = rawArgs
         val Type.Function(_, elemty) = ty
         Some(eval(Op.Arrayload(elemty, arr, idx)))
       case _ if arrayUpdateIntrinsics.contains(name) =>
-        val Seq(arr, idx, value)                = rawArgs
+        val Seq(arr, idx, value) = rawArgs
         val Type.Function(Seq(_, _, elemty), _) = ty
         Some(eval(Op.Arraystore(elemty, arr, idx, value)))
       case _ if name == arrayLengthIntrinsic =>

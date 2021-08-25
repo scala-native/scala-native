@@ -1,12 +1,19 @@
 package java.io
 
-import scalanative.annotation.stub
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.libc._, stdlib._, stdio._, string._
-import scalanative.nio.fs.UnixException
-import scalanative.posix.{fcntl, unistd}, unistd._
-import scalanative.runtime
+import java.nio.file.WindowsException
+import scala.scalanative.annotation.stub
+import scala.scalanative.libc._
+import scala.scalanative.libc.stdio._
+import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.posix.unistd
+import scala.scalanative.posix.unistd.lseek
+import scala.scalanative.nio.fs.UnixException
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+import scala.scalanative.{runtime, windows}
+import scala.scalanative.windows.FileApi._
+import scala.scalanative.windows.FileApiExt._
+import scala.scalanative.windows.{ErrorCodes, ErrorHandlingApi}
 
 class FileInputStream(fd: FileDescriptor, file: Option[File])
     extends InputStream {
@@ -16,14 +23,37 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   def this(str: String) = this(new File(str))
 
   override def available(): Int = {
-    val currentPosition = lseek(fd.fd, 0, SEEK_CUR)
-    val lastPosition    = lseek(fd.fd, 0, SEEK_END)
-    lseek(fd.fd, currentPosition, SEEK_SET)
-    (lastPosition - currentPosition).toInt
+    if (isWindows) {
+      val currentPosition, lastPosition = stackalloc[windows.LargeInteger]
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = currentPosition,
+        moveMethod = FILE_CURRENT
+      )
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = lastPosition,
+        moveMethod = FILE_END
+      )
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = !currentPosition,
+        newFilePointer = null,
+        moveMethod = FILE_BEGIN
+      )
+
+      (!lastPosition - !currentPosition).toInt
+    } else {
+      val currentPosition = lseek(fd.fd, 0, SEEK_CUR)
+      val lastPosition = lseek(fd.fd, 0, SEEK_END)
+      lseek(fd.fd, currentPosition, SEEK_SET)
+      (lastPosition - currentPosition).toInt
+    }
   }
 
-  override def close(): Unit =
-    fcntl.close(fd.fd)
+  override def close(): Unit = fd.close()
 
   override protected def finalize(): Unit =
     close()
@@ -57,18 +87,46 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
-    val buf       = buffer.asInstanceOf[runtime.ByteArray].at(offset)
-    val readCount = unistd.read(fd.fd, buf, count)
+    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    if (isWindows) {
+      def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
 
-    if (readCount == 0) {
-      // end of file
-      -1
-    } else if (readCount < 0) {
-      // negative value (typically -1) indicates that read failed
-      throw UnixException(file.fold("")(_.toString), errno.errno)
+      def tryRead(count: Int)(fallback: => Int) = {
+        val readBytes = stackalloc[windows.DWord]
+        if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
+          (!readBytes).toInt match {
+            case 0     => -1 // EOF
+            case bytes => bytes
+          }
+        } else fallback
+      }
+
+      tryRead(count)(fallback = {
+        ErrorHandlingApi.GetLastError() match {
+          case ErrorCodes.ERROR_BROKEN_PIPE =>
+            // Pipe was closed, but it still can contain some unread data
+            available() match {
+              case 0     => -1 //EOF
+              case count => tryRead(count)(fallback = fail())
+            }
+
+          case _ =>
+            fail()
+        }
+      })
+
     } else {
-      // successfully read readCount bytes
-      readCount
+      val readCount = unistd.read(fd.fd, buf, count.toUInt)
+      if (readCount == 0) {
+        // end of file
+        -1
+      } else if (readCount < 0) {
+        // negative value (typically -1) indicates that read failed
+        throw UnixException(file.fold("")(_.toString), errno.errno)
+      } else {
+        // successfully read readCount bytes
+        readCount
+      }
     }
   }
 
@@ -77,7 +135,15 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
       throw new IOException()
     } else {
       val bytesToSkip = Math.min(n, available())
-      lseek(fd.fd, bytesToSkip, SEEK_CUR)
+      if (isWindows) {
+        SetFilePointerEx(
+          fd.handle,
+          distanceToMove = bytesToSkip,
+          newFilePointer = null,
+          moveMethod = FILE_CURRENT
+        )
+      } else
+        lseek(fd.fd, bytesToSkip, SEEK_CUR)
       bytesToSkip
     }
 

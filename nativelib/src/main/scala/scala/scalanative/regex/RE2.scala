@@ -39,24 +39,24 @@ class RE2 private {
   import RE2._
 
   var expr: String = _ // as passed to Compile
-  var prog: Prog   = _ // compiled program
-  var cond: Int    = _ // EMPTY_* bitmask: empty-width conditions
+  var prog: Prog = _ // compiled program
+  var cond: Int = _ // EMPTY_* bitmask: empty-width conditions
   // required at start of match
-  var numSubexp: Int              = _
-  var longest: Boolean            = _
+  var numSubexp: Int = _
+  var longest: Boolean = _
   var namedCaps: Map[String, Int] = _
 
-  var prefix: String          = _ // required UTF-16 prefix in unanchored matches
+  var prefix: String = _ // required UTF-16 prefix in unanchored matches
   var prefixUTF8: Array[Byte] = _ // required UTF-8 prefix in unanchored matches
   var prefixComplete: Boolean = _ // true iff prefix is the entire regexp
-  var prefixRune: Int         = _ // first rune in prefix
+  var prefixRune: Int = _ // first rune in prefix
 
   // Cache of machines for running regexp.
   // Accesses must be serialized using |this| monitor.
   private val machine = new ArrayList[Machine]()
 
   // This is visible for testing.
-  def this(expr: String) {
+  def this(expr: String) = {
     this()
     val re2 = RE2.compile(expr)
     // Copy everything.
@@ -72,11 +72,13 @@ class RE2 private {
     this.prefixRune = re2.prefixRune
   }
 
-  def this(expr: String,
-           prog: Prog,
-           numSubexp: Int,
-           longest: Boolean,
-           namedCaps: Map[String, Int]) {
+  def this(
+      expr: String,
+      prog: Prog,
+      numSubexp: Int,
+      longest: Boolean,
+      namedCaps: Map[String, Int]
+  ) = {
     this()
     this.expr = expr
     this.prog = prog
@@ -122,10 +124,12 @@ class RE2 private {
   // doExecute() finds the leftmost match in the input and returns
   // the position of its subexpressions.
   // Derived from exec.go.
-  private def doExecute(in: MachineInput,
-                        pos: Int,
-                        anchor: Int,
-                        ncap: Int): Array[Int] = {
+  private def doExecute(
+      in: MachineInput,
+      pos: Int,
+      anchor: Int,
+      ncap: Int
+  ): Array[Int] = {
     val m = get()
     m.init(ncap)
     val cap = if (m.match_(in, pos, anchor)) m.submatches() else null
@@ -151,20 +155,24 @@ class RE2 private {
   // @param group the array to fill with submatch positions
   // @param ngroup the number of array pairs to fill in
   // @return true if a match was found
-  def match_(input: CharSequence,
-             start: Int,
-             end: Int,
-             anchor: Int,
-             group: Array[Int],
-             ngroup: Int): Boolean = {
+  def match_(
+      input: CharSequence,
+      start: Int,
+      end: Int,
+      anchor: Int,
+      group: Array[Int],
+      ngroup: Int
+  ): Boolean = {
     if (start > end) {
       return false
     }
 
-    val groupMatch = doExecute(MachineInput.fromUTF16(input, 0, end),
-                               start,
-                               anchor,
-                               2 * ngroup)
+    val groupMatch = doExecute(
+      MachineInput.fromUTF16(input, 0, end),
+      start,
+      anchor,
+      2 * ngroup
+    )
 
     if (groupMatch == null) {
       return false
@@ -209,13 +217,14 @@ class RE2 private {
   //
   // This is visible for testing.
   def replaceAllFunc(src: String, maxReplaces: Int)(
-      f: String => String): String = {
+      f: String => String
+  ): String = {
     var lastMatchEnd = 0 // end position of the most recent match
-    var searchPos    = 0 // position where we next look for a match
-    val buf          = new java.lang.StringBuilder()
-    val input        = MachineInput.fromUTF16(src)
-    var numReplaces  = 0
-    var break        = false
+    var searchPos = 0 // position where we next look for a match
+    val buf = new java.lang.StringBuilder()
+    val input = MachineInput.fromUTF16(src)
+    var numReplaces = 0
+    var break = false
 
     while (!break && searchPos <= src.length()) {
       val a = doExecute(input, searchPos, UNANCHORED, 2)
@@ -282,16 +291,17 @@ class RE2 private {
 
   // Find matches in input.
   private def allMatches(input: MachineInput, _n: Int)(
-      f: Array[Int] => Unit): Unit = {
-    var n   = _n
+      f: Array[Int] => Unit
+  ): Unit = {
+    var n = _n
     val end = input.endPos()
     if (n < 0) {
       n = end + 1
     }
-    var pos          = 0
-    var i            = 0
+    var pos = 0
+    var i = 0
     var prevMatchEnd = -1
-    var break        = false
+    var break = false
     while (!break && i < n && pos <= end) {
       val matches = doExecute(input, pos, UNANCHORED, prog.numCap)
       if (matches == null || matches.length == 0) {
@@ -436,7 +446,7 @@ class RE2 private {
       return null
     }
     val ret = new Array[Array[Byte]](1 + numSubexp)
-    var i   = 0
+    var i = 0
     while (i < ret.length) {
       if (2 * i < a.length && a(2 * i) >= 0) {
         ret(i) = Utils.subarray(b, a(2 * i), a(2 * i + 1))
@@ -472,7 +482,7 @@ class RE2 private {
       return null
     }
     val ret = new Array[String](1 + numSubexp)
-    var i   = 0
+    var i = 0
     while (i < ret.length) {
       if (2 * i < a.length && a(2 * i) >= 0) {
         ret(i) = s.substring(a(2 * i), a(2 * i + 1))
@@ -584,7 +594,7 @@ class RE2 private {
     val result = new ArrayList[Array[Array[Byte]]]()
     allMatches(MachineInput.fromUTF8(b), n) { _match =>
       val slice = new Array[Array[Byte]](_match.length / 2)
-      var j     = 0
+      var j = 0
       while (j < slice.length) {
         if (_match(2 * j) >= 0) {
           slice(j) = Utils.subarray(b, _match(2 * j), _match(2 * j + 1))
@@ -628,7 +638,7 @@ class RE2 private {
     val result = new ArrayList[Array[String]]()
     allMatches(MachineInput.fromUTF16(s), n) { _match =>
       val slice = new Array[String](_match.length / 2)
-      var j     = 0
+      var j = 0
       while (j < slice.length) {
         if (_match(2 * j) >= 0) {
           slice(j) = s.substring(_match(2 * j), _match(2 * j + 1))
@@ -716,9 +726,9 @@ object RE2 {
 
   type anchor_t = Int
 
-  final val UNANCHORED   = 0
+  final val UNANCHORED = 0
   final val ANCHOR_START = 1
-  final val ANCHOR_BOTH  = 2
+  final val ANCHOR_BOTH = 2
 
   // Parses a regular expression and returns, if successful, an
   // {@code RE2} instance that can be used to match against text.
@@ -757,18 +767,18 @@ object RE2 {
 
   // Exposed to ExecTests.
   def compileImpl(expr: String, mode: Int, longest: Boolean): RE2 = {
-    var re        = Parser.parse(expr, mode)
-    val maxCap    = re.maxCap() // (may shrink during simplify)
-    val namedCaps = re.namedCaps
+    var re = Parser.parse(expr, mode)
+    val maxCap = re.maxCap() // (may shrink during simplify)
+    val namedCaps = re.namedCaps()
     re = Simplify.simplify(re)
-    val prog          = Compiler.compileRegexp(re)
-    val re2           = new RE2(expr, prog, maxCap, longest, namedCaps)
+    val prog = Compiler.compileRegexp(re)
+    val re2 = new RE2(expr, prog, maxCap, longest, namedCaps)
     val prefixBuilder = new java.lang.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
-    re2.prefix = prefixBuilder.toString()
+    re2.prefix = prefixBuilder.toString
     re2.prefixUTF8 = re2.prefix.getBytes("UTF-8")
 
-    if (!re2.prefix.isEmpty()) {
+    if (!re2.prefix.isEmpty) {
       re2.prefixRune = re2.prefix.codePointAt(0)
     }
     re2
@@ -797,7 +807,7 @@ object RE2 {
   def quoteMeta(s: String): String = {
     val b = new java.lang.StringBuilder(2 * s.length())
     // A char loop is correct because all metacharacters fit in one UTF-16 code.
-    var i   = 0
+    var i = 0
     var len = s.length()
     while (i < len) {
       val c = s.charAt(i)

@@ -1,8 +1,67 @@
 package java.io
 
+import java.nio.ByteBuffer
+
+import scala.annotation.tailrec
+
+import scalanative.unsafe.sizeof
+
 class DataInputStream(in: InputStream)
     extends FilterInputStream(in)
     with DataInput {
+  // Design notes:
+  //   1) Using ByteBuffer.get* methods results in a slightly longer code
+  //      path than open coding BigEndian byte order, bit shifts, and
+  //      logical Ors. This approach greatly simplifies the code and makes
+  //      it easier to trace; increasing the likelihood of correctness.
+  //
+  //   2) Both the Java 8 and 15 APIs describe the methods of this class
+  //      as only optionally thread-safe and requiring external
+  //      synchronization. A buffer per instance does not introduce a
+  //      concern.
+  private final val inBasket = new Array[Byte](sizeof[Long].toInt)
+  private final val outBasket = ByteBuffer.wrap(inBasket) // default: BigEndian
+
+  private final def rebuffer(n: Int): ByteBuffer = {
+    @tailrec
+    def rebufferImpl(n: Int, runningTotal: Int): Int = {
+      in.read(inBasket, 0, n) match {
+        case `n` => n
+
+        case -1 => throw new java.io.EOFException()
+
+        case 0 =>
+          // Much ado about nothing. In a correct system, this case
+          // should never happen, yet here we are.
+          //
+          // rebuffer() is private, so all its possible callers are known
+          // In that closed world, it should always be called with n > 0.
+          // The specification states that, given a positive count,
+          // a read from the underlying stream should return either at
+          // least 1 byte or throw an Exception.
+          //
+          // Any nRead == 0, either from n == 0 passed in or from a short read
+          // of the underlying stream is a blivet.
+          throw new java.io.IOException(
+            s"error in rebuffer: expected to read ${n} > 0 bytes, got: 0"
+          )
+
+        case nRead =>
+          rebufferImpl(n - nRead, runningTotal + nRead)
+      }
+    }
+
+    rebufferImpl(n, 0) // 3rd arg is something other than 0.
+    outBasket.clear() // tricky here: contents preserved, bookkeeping reset.
+  }
+
+  // Notes on End of File (EOF) handling.
+  //
+  // The Java 8 API describes/defines the first two read routines as returning
+  // an Int. At EOF this is the -1 bubbled up by the underlying InputStream.
+  //
+  // The other read*() routines are expected/defined to throw EOFException
+  // if the underlying InputStream has returned EOF (-1).
 
   override final def read(b: Array[Byte]): Int =
     in.read(b)
@@ -11,33 +70,26 @@ class DataInputStream(in: InputStream)
     in.read(b, off, len)
 
   override final def readBoolean(): Boolean =
-    read() != 0
+    readByte() != 0
 
   override final def readByte(): Byte =
-    read().toByte
+    rebuffer(sizeof[Byte].toInt).get()
 
-  override final def readChar(): Char = {
-    val b1, b2 = readUnsignedByte()
-    ((b1 << 8) | b2).asInstanceOf[Char]
-  }
+  override final def readChar(): Char =
+    rebuffer(sizeof[Char].toInt).getChar()
 
-  override final def readDouble(): Double = {
-    val long = readLong()
-    java.lang.Double.longBitsToDouble(long)
-  }
+  override final def readDouble(): Double =
+    rebuffer(sizeof[Double].toInt).getDouble()
 
-  override final def readFloat(): Float = {
-    val int = readInt()
-    java.lang.Float.intBitsToFloat(int)
-  }
+  override final def readFloat(): Float =
+    rebuffer(sizeof[Float].toInt).getFloat()
 
   override final def readFully(b: Array[Byte]): Unit =
     readFully(b, 0, b.length)
 
   override final def readFully(b: Array[Byte], off: Int, len: Int): Unit = {
-    if (b == null) {
+    if (b == null)
       throw new NullPointerException
-    }
 
     // Use the same message texts as the JVM for all 3 cases. Yes, 3rd differs.
     if ((off < 0) || ((off + len) > b.length)) {
@@ -46,9 +98,8 @@ class DataInputStream(in: InputStream)
       throw new IndexOutOfBoundsException(msg)
     }
 
-    if (len < 0) {
+    if (len < 0)
       throw new IndexOutOfBoundsException()
-    }
 
     var offset = off
     var length = len
@@ -65,98 +116,127 @@ class DataInputStream(in: InputStream)
     }
   }
 
-  override final def readInt(): Int = {
-    val b1, b2, b3, b4 = readUnsignedByte()
-    (b1 << 24) | (b2 << 16) + (b3 << 8) + b4
-  }
+  override final def readInt(): Int =
+    rebuffer(sizeof[Int].toInt).getInt()
 
+  @deprecated("BufferedReader.readLine() is preferred", "JDK 1.1")
   override final def readLine(): String = {
-    var v = read()
+    var v = in.read()
     if (v == -1) null
     else {
       val builder = new StringBuilder
-      var c       = v.toChar
+      var c = v.toChar
       while (v != -1 && c != '\n' && c != '\r') {
         builder.append(c)
-        v = read()
+        v = in.read()
         c = v.toChar
       }
 
       if (c == '\r') {
         mark(1)
-        if (read().toChar != '\n') reset()
+        if (in.read().toChar != '\n') reset()
       }
       builder.toString
     }
   }
+  override final def readLong(): Long =
+    rebuffer(sizeof[Long].toInt).getLong()
 
-  override final def readLong(): Long = {
-    val b1, b2, b3, b4, b5, b6, b7, b8 = readUnsignedByte()
-    (b1.toLong << 56) + (b2.toLong << 48) +
-      (b3.toLong << 40) + (b4.toLong << 32) +
-      (b5.toLong << 24) + (b6.toLong << 16) +
-      (b7.toLong << 8) + b8
-  }
-
-  override final def readShort(): Short = {
-    val b1, b2 = readUnsignedByte()
-    ((b1 << 8) | b2).asInstanceOf[Short]
-  }
+  override final def readShort(): Short =
+    rebuffer(sizeof[Short].toInt).getShort()
 
   override final def readUnsignedByte(): Int =
-    readByte() & 0xFF
+    readByte() & 0xff
 
-  override final def readUnsignedShort(): Int = {
-    val b1, b2 = readUnsignedByte()
-    (b1 << 8) | b2
-  }
+  override final def readUnsignedShort(): Int =
+    rebuffer(sizeof[Short].toInt).getShort() & 0xffff
 
-  override final def readUTF(): String =
+  def readUTF(): String =
     DataInputStream.readUTF(this)
 
-  override def skipBytes(n: Int): Int = {
-    var i = 0
-    var v = 0
-    while (i < n && v != -1) {
-      v = read()
-      i += 1
-    }
-    i
-  }
-
+  override def skipBytes(n: Int): Int =
+    in.skip(n.toLong).toInt
 }
 
 object DataInputStream {
+  // Retain Scala.js formatting for readUTF().
+  // The Scala.js original uses  long (> 80 char) lines as the
+  // argument for badFormat(). scalafmt inserts line breaks at odd places,
+  // and makes the code unreadable.
+  //
+  // format: off
 
   def readUTF(in: DataInput): String = {
-    val nbBytes  = in.readUnsignedShort()
-    val utfBytes = new Array[Byte](nbBytes)
-    in.readFully(utfBytes)
-    fromModifiedUTF(utfBytes)
-  }
+    // Ported from Scala.js commit: 1337656 dated: 2020-06-04
+    // Then modified to operate as a static, not class, method.
 
-  private def fromModifiedUTF(b: Array[Byte]): String = {
-    val builder = new StringBuilder
-    var i       = 0
-    while (i < b.length) {
-      if ((b(i) & 0x80) == 0) {
-        builder.append(b(i).toChar)
-        i += 1
-      } else if ((b(i) & 0xE0) == 0xC0) {
-        val b1 = (b(i) & 0x1F) << 6
-        val b2 = (b(i + 1) & 0x3F)
-        val c  = (b1 | b2).toChar
-        builder.append(c)
-        i += 2
-      } else {
-        val b1 = (b(i) & 0x0F) << 12
-        val b2 = (b(i + 1) & 0x3F) << 6
-        val b3 = (b(i + 2) & 0x3F)
-        val c  = (b1 | b2 | b3).toChar
-        builder.append(c)
-        i += 3
+    val length = in.readUnsignedShort()
+    var res    = ""
+    var i      = 0
+
+    def hex(x: Int): String =
+      (if (x < 0x10) "0" else "") + Integer.toHexString(x)
+
+    def badFormat(msg: String) = throw new UTFDataFormatException(msg)
+
+    // Minimize changes to ported code by using "EOF returns -1" contract of
+    // InputStream not the "EOFException" of provided DataInput 'in' argument.
+    def read(): Int =
+      try {
+        in.readUnsignedByte()
+      } catch {
+        case _: EOFException => -1
       }
+
+    while (i < length) {
+      val a = read()
+
+      if (a == -1)
+        badFormat("Unexpected EOF: " + (length - i) + " bytes to go")
+
+      i += 1
+
+      val char = {
+        if ((a & 0x80) == 0x00) { // 0xxxxxxx
+          a.toChar
+        } else if ((a & 0xE0) == 0xC0 && i < length) { // 110xxxxx
+          val b = read()
+          i += 1
+
+          if (b == -1)
+            badFormat("Expected 2 bytes, found: EOF (init: " + hex(a) + ")")
+          if ((b & 0xC0) != 0x80) // 10xxxxxx
+            badFormat("Expected 2 bytes, found: " + hex(b) + " (init: " + hex(a) + ")")
+
+          (((a & 0x1F) << 6) | (b & 0x3F)).toChar
+        } else if ((a & 0xF0) == 0xE0 && i < length - 1) { // 1110xxxx
+          val b = read()
+          val c = read()
+          i += 2
+
+          if (b == -1)
+            badFormat("Expected 3 bytes, found: EOF (init: " + hex(a) + ")")
+
+          if ((b & 0xC0) != 0x80)   // 10xxxxxx
+            badFormat("Expected 3 bytes, found: " + hex(b) + " (init: " + hex(a) + ")")
+
+          if (c == -1)
+            badFormat("Expected 3 bytes, found: " + hex(b) + ", EOF (init: " + hex(a) + ")")
+
+          if ((c & 0xC0) != 0x80)   // 10xxxxxx
+            badFormat("Expected 3 bytes, found: " + hex(b) + ", " + hex(c) + " (init: " + hex(a) + ")")
+
+          (((a & 0x0F) << 12) | ((b & 0x3F) << 6) | (c & 0x3F)).toChar
+        } else {
+          val rem = length - i
+          badFormat("Unexpected start of char: " + hex(a) + " (" + rem + " bytes to go)")
+        }
+      }
+
+      res += char
     }
-    builder.toString
+
+    res
   }
+  // format: on
 }

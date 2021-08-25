@@ -5,47 +5,54 @@ trait Transform {
   def onDefns(assembly: Seq[Defn]): Seq[Defn] =
     assembly.map(onDefn)
 
-  def onDefn(defn: Defn): Defn = defn match {
-    case defn @ Defn.Var(_, _, ty, value) =>
-      defn.copy(ty = onType(ty), rhs = onVal(value))
-    case defn @ Defn.Const(_, _, ty, value) =>
-      defn.copy(ty = onType(ty), rhs = onVal(value))
-    case defn @ Defn.Declare(_, _, ty) =>
-      defn.copy(ty = onType(ty))
-    case defn @ Defn.Define(_, _, ty, insts) =>
-      defn.copy(ty = onType(ty), insts = onInsts(insts))
-    case defn @ Defn.Trait(_, _, _) =>
-      defn
-    case defn @ Defn.Class(_, _, _, _) =>
-      defn
-    case defn @ Defn.Module(_, _, _, _) =>
-      defn
+  def onDefn(defn: Defn): Defn = {
+    implicit val rootPos: Position = defn.pos
+    defn match {
+      case defn @ Defn.Var(_, _, ty, value) =>
+        defn.copy(ty = onType(ty), rhs = onVal(value))
+      case defn @ Defn.Const(_, _, ty, value) =>
+        defn.copy(ty = onType(ty), rhs = onVal(value))
+      case defn @ Defn.Declare(_, _, ty) =>
+        defn.copy(ty = onType(ty))
+      case defn @ Defn.Define(_, _, ty, insts) =>
+        defn.copy(ty = onType(ty), insts = onInsts(insts))
+      case defn @ Defn.Trait(_, _, _) =>
+        defn
+      case defn @ Defn.Class(_, _, _, _) =>
+        defn
+      case defn @ Defn.Module(_, _, _, _) =>
+        defn
+    }
   }
 
   def onInsts(insts: Seq[Inst]): Seq[Inst] =
     insts.map(onInst)
 
-  def onInst(inst: Inst): Inst = inst match {
-    case Inst.Label(n, params) =>
-      val newparams = params.map { param =>
-        Val.Local(param.name, onType(param.ty))
-      }
-      Inst.Label(n, newparams)
-    case Inst.Let(n, op, unwind) =>
-      Inst.Let(n, onOp(op), onNext(unwind))
+  def onInst(inst: Inst): Inst = {
+    implicit val pos = inst.pos
+    inst match {
+      case Inst.Label(n, params) =>
+        val newparams = params.map { param =>
+          Val.Local(param.name, onType(param.ty))
+        }
+        Inst.Label(n, newparams)
+      case Inst.Let(n, op, unwind) =>
+        Inst.Let(n, onOp(op), onNext(unwind))
 
-    case Inst.Ret(v) =>
-      Inst.Ret(onVal(v))
-    case Inst.Jump(next) =>
-      Inst.Jump(onNext(next))
-    case Inst.If(v, thenp, elsep) =>
-      Inst.If(onVal(v), onNext(thenp), onNext(elsep))
-    case Inst.Switch(v, default, cases) =>
-      Inst.Switch(onVal(v), onNext(default), cases.map(onNext))
-    case Inst.Throw(v, unwind) =>
-      Inst.Throw(onVal(v), onNext(unwind))
-    case Inst.Unreachable(unwind) =>
-      Inst.Unreachable(onNext(unwind))
+      case Inst.Ret(v) =>
+        Inst.Ret(onVal(v))
+      case Inst.Jump(next) =>
+        Inst.Jump(onNext(next))
+      case Inst.If(v, thenp, elsep) =>
+        Inst.If(onVal(v), onNext(thenp), onNext(elsep))
+      case Inst.Switch(v, default, cases) =>
+        Inst.Switch(onVal(v), onNext(default), cases.map(onNext))
+      case Inst.Throw(v, unwind) =>
+        Inst.Throw(onVal(v), onNext(unwind))
+      case Inst.Unreachable(unwind) =>
+        Inst.Unreachable(onNext(unwind))
+      case _: Inst.LinktimeCf => util.unreachable
+    }
   }
 
   def onOp(op: Op): Op = op match {

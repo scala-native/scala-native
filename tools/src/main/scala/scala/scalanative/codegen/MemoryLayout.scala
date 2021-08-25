@@ -7,8 +7,10 @@ import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
 
-final case class MemoryLayout(size: Long,
-                              tys: Seq[MemoryLayout.PositionedType]) {
+final case class MemoryLayout(
+    size: Long,
+    tys: Seq[MemoryLayout.PositionedType]
+) {
   lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
       tys.collect {
@@ -63,7 +65,7 @@ object MemoryLayout {
   }
 
   def apply(tys: Seq[Type]): MemoryLayout = {
-    val pos    = mutable.UnrolledBuffer.empty[PositionedType]
+    val pos = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
     tys.foreach { ty =>
@@ -74,6 +76,6 @@ object MemoryLayout {
 
     val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf).max
 
-    MemoryLayout(align(offset, alignment), pos)
+    MemoryLayout(align(offset, alignment), pos.toSeq)
   }
 }

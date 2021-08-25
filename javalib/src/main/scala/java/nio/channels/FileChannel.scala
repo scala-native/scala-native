@@ -21,9 +21,11 @@ abstract class FileChannel protected ()
   //   tryLock(0L, Long.MaxValue, false)
   // def tryLock(position: Long, size: Long, shared: Boolean): FileLock
 
-  def map(mode: FileChannel.MapMode,
-          position: Long,
-          size: Long): MappedByteBuffer
+  def map(
+      mode: FileChannel.MapMode,
+      position: Long,
+      size: Long
+  ): MappedByteBuffer
 
   def position(): Long
 
@@ -60,18 +62,20 @@ abstract class FileChannel protected ()
 object FileChannel {
   sealed abstract class MapMode
   object MapMode {
-    final val PRIVATE    = new MapMode {}
-    final val READ_ONLY  = new MapMode {}
+    final val PRIVATE = new MapMode {}
+    final val READ_ONLY = new MapMode {}
     final val READ_WRITE = new MapMode {}
   }
 
-  def open(path: Path,
-           options: Set[_ <: OpenOption],
-           attrs: Array[FileAttribute[_]]): FileChannel =
+  def open(
+      path: Path,
+      options: Set[_ <: OpenOption],
+      attrs: Array[FileAttribute[_]]
+  ): FileChannel =
     new FileChannelImpl(path, options, attrs)
 
   def open(path: Path, options: Array[OpenOption]): FileChannel = {
-    var i   = 0
+    var i = 0
     val set = new HashSet[OpenOption]()
     while (i < options.length) {
       set.add(options(i))

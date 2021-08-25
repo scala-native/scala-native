@@ -1,34 +1,35 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Files}
 import scala.collection.mutable
-import scala.sys.process.Process
-import scalanative.build.IO.RichPath
-import scalanative.nir.{Type, Rt, Sig, Global, Defn}
-import scalanative.linker.Link
-import scalanative.codegen.CodeGen
-import scalanative.interflow.Interflow
-import scalanative.checker.Check
+import scala.scalanative.checker.Check
+import scala.scalanative.codegen.CodeGen
+import scala.scalanative.linker.Link
+import scala.scalanative.nir._
+import scala.scalanative.util.Scope
 
-/** Internal utilities to instrument Scala Native linker, otimizer and codegen. */
+/** Internal utilities to instrument Scala Native linker, optimizer and codegen.
+ */
 private[scalanative] object ScalaNative {
 
-  /** Compute all globals that must be reachable
-   *  based on given configuration.
+  /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
     val mainClass = Global.Top(config.mainClass)
     val entry =
       mainClass.member(
-        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
+        Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
+      )
     entry +: CodeGen.depends
   }
 
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config, entries: Seq[Global]): linker.Result =
+  def link(config: Config, entries: Seq[Global])(implicit
+      scope: Scope
+  ): linker.Result =
     dump(config, "linked") {
       check(config) {
         config.logger.time("Linking")(Link(config, entries))
@@ -41,7 +42,7 @@ private[scalanative] object ScalaNative {
       config.logger.error("missing symbols:")
       linked.unavailable.sortBy(_.show).foreach { name =>
         config.logger.error("* " + name.mangle)
-        val from    = linked.referencedFrom
+        val from = linked.referencedFrom
         var current = from(name)
         while (from.contains(current) && current != Global.None) {
           config.logger.error("  - from " + current.mangle)
@@ -58,7 +59,8 @@ private[scalanative] object ScalaNative {
       }
       val methodCount = linked.defns.count(_.isInstanceOf[nir.Defn.Define])
       config.logger.info(
-        s"Discovered ${classCount} classes and ${methodCount} methods")
+        s"Discovered ${classCount} classes and ${methodCount} methods"
+      )
     }
 
     if (linked.unavailable.nonEmpty) {
@@ -72,32 +74,38 @@ private[scalanative] object ScalaNative {
   def optimize(config: Config, linked: linker.Result): linker.Result =
     dump(config, "optimized") {
       check(config) {
-        config.logger.time(s"Optimizing (${config.mode} mode)") {
-          val optimized =
-            interflow.Interflow(config, linked)
+        if (config.compilerConfig.optimize) {
+          config.logger.time(s"Optimizing (${config.mode} mode)") {
+            val optimized =
+              interflow.Interflow(config, linked)
 
-          linker.Link(config, linked.entries, optimized)
+            linker.Link(config, linked.entries, optimized)
+          }
+        } else {
+          linked
         }
       }
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, linked: linker.Result): Seq[Path] = {
-    config.logger.time("Generating intermediate code") {
+    val llPaths = config.logger.time("Generating intermediate code") {
+      // currently, always clean ll files
+      IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
       CodeGen(config, linked)
     }
-    val produced = IO.getAll(config.workdir, "glob:**.ll")
-    config.logger.info(s"Produced ${produced.length} files")
-    produced
+    config.logger.info(s"Produced ${llPaths.length} files")
+    llPaths
   }
 
   /** Run NIR checker on the linker result. */
-  def check(config: Config)(
-      linked: scalanative.linker.Result): scalanative.linker.Result = {
+  def check(
+      config: Config
+  )(linked: scalanative.linker.Result): scalanative.linker.Result = {
     if (config.check) {
       config.logger.time("Checking intermediate code") {
         def warn(s: String) = config.logger.warn(s)
-        val errors          = Check(linked)
+        val errors = Check(linked)
         if (errors.nonEmpty) {
           val grouped =
             mutable.Map.empty[Global, mutable.UnrolledBuffer[Check.Error]]
@@ -116,12 +124,17 @@ private[scalanative] object ScalaNative {
                   case defn if defn != null && defn.name == name => defn
                 }
                 .foreach { defn =>
-                  val str   = defn.show
+                  val str = defn.show
                   val lines = str.split("\n")
                   lines.zipWithIndex.foreach {
                     case (line, idx) =>
-                      warn(String
-                        .format("  %04d  ", java.lang.Integer.valueOf(idx)) + line)
+                      warn(
+                        String
+                          .format(
+                            "  %04d  ",
+                            java.lang.Integer.valueOf(idx)
+                          ) + line
+                      )
                   }
                 }
               warn("")
@@ -141,7 +154,8 @@ private[scalanative] object ScalaNative {
   }
 
   def dump(config: Config, phase: String)(
-      linked: scalanative.linker.Result): scalanative.linker.Result = {
+      linked: scalanative.linker.Result
+  ): scalanative.linker.Result = {
     dumpDefns(config, phase, linked.defns)
     linked
   }

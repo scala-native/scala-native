@@ -172,8 +172,10 @@ object RyuFloat {
 
 // format: on
 
-  @noinline def floatToString(value: Float,
-                              roundingMode: RyuRoundingMode): String = {
+  @noinline def floatToString(
+      value: Float,
+      roundingMode: RyuRoundingMode
+  ): String = {
 
     // Step 1: Decode the floating point number, and unify normalized and
     // subnormal cases.
@@ -203,8 +205,8 @@ object RyuFloat {
 
     // Step 2: Determine the interval of legal decimal representations.
     val even = (m2 & 1) == 0
-    val mv   = 4 * m2
-    val mp   = 4 * m2 + 2
+    val mv = 4 * m2
+    val mp = 4 * m2 + 2
     val mm = 4 * m2 -
       (if ((m2 != (1L << FLOAT_MANTISSA_BITS)) || (ieeeExponent <= 1)) 2
        else 1)
@@ -212,14 +214,14 @@ object RyuFloat {
 
     // Step 3: Convert to a decimal power base using 128-bit arithmetic.
     // -151 = 1 - 127 - 23 - 2 <= e_2 - 2 <= 254 - 127 - 23 - 2 = 102
-    var dp                = 0
-    var dv                = 0
-    var dm                = 0
-    var e10               = 0
+    var dp = 0
+    var dv = 0
+    var dm = 0
+    var e10 = 0
     var dpIsTrailingZeros = false
     var dvIsTrailingZeros = false
     var dmIsTrailingZeros = false
-    var lastRemovedDigit  = 0
+    var lastRemovedDigit = 0
     if (e2 >= 0) {
       // Compute m * 2^e_2 / 10^q = m * 2^(e_2 - q) / 5^q
       val q = (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt
@@ -275,11 +277,11 @@ object RyuFloat {
     // need to count digits to
     // figure out the correct exponent for scientific notation.
     val dplength = decimalLength(dp)
-    var exp      = e10 + dplength - 1
+    var exp = e10 + dplength - 1
     // Float.toString semantics requires using scientific notation if and
     // only if outside this range.
     val scientificNotation = !((exp >= -3) && (exp < 7))
-    var removed            = 0
+    var removed = 0
     if (dpIsTrailingZeros && !roundingMode.acceptUpperBound(even)) {
       dp -= 1
     }
@@ -320,7 +322,7 @@ object RyuFloat {
     }
     var output = dv +
       (if ((dv == dm &&
-           !(dmIsTrailingZeros && roundingMode.acceptLowerBound(even))) ||
+             !(dmIsTrailingZeros && roundingMode.acceptLowerBound(even))) ||
            (lastRemovedDigit >= 5)) 1
        else 0)
     val olength = dplength - removed
@@ -328,7 +330,7 @@ object RyuFloat {
     // Step 5: Print the decimal representation.
     // We follow Float.toString semantics here.
     val result = new scala.Array[Char](15)
-    var index  = 0
+    var index = 0
     if (sign) {
       result(index) = '-'
       index += 1
@@ -418,9 +420,8 @@ object RyuFloat {
       ((e * LOG2_5_NUMERATOR + LOG2_5_DENOMINATOR - 1)
         / LOG2_5_DENOMINATOR).toInt
 
-  /**
-   * Returns the exponent of the largest power of 5 that divides the given
-   * value, i.e., returns i such that value = 5^i * x, where x is an integer.
+  /** Returns the exponent of the largest power of 5 that divides the given
+   *  value, i.e., returns i such that value = 5^i * x, where x is an integer.
    */
   private def pow5Factor(_value: Int): Int = {
     var value = _value
@@ -435,10 +436,9 @@ object RyuFloat {
     throw new IllegalArgumentException("" + value)
   }
 
-  /**
-   * Compute the exact result of:
-   *   [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) / 2^q]
-   *   = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
+  /** Compute the exact result of: [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) /
+   *  2^q]
+   *  = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
    */
   private def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
     if (j - POW5_HALF_BITCOUNT < 0) {
@@ -449,10 +449,8 @@ object RyuFloat {
     (bits0 + (bits1 >> POW5_HALF_BITCOUNT)) >> (j - POW5_HALF_BITCOUNT)
   }
 
-  /**
-   * Compute the exact result of:
-   *   [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
-   *   = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
+  /** Compute the exact result of: [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
+   *  = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
    */
   private def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
     if (j - POW5_INV_HALF_BITCOUNT < 0) {
@@ -466,7 +464,7 @@ object RyuFloat {
   private def decimalLength(v: Int): Int = {
     var length = 10
     var factor = 1000000000
-    var done   = false
+    var done = false
 
     while ((length > 0) && !done) {
       if (v >= factor) {

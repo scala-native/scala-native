@@ -7,6 +7,9 @@ import scala.sys.process.ProcessLogger
 /** Interface to report and/or collect messages given by the toolchain. */
 trait Logger {
 
+  /** Logs `msg` at the trace level. */
+  def trace(msg: Throwable): Unit
+
   /** Logs `msg` at the debug level. */
   def debug(msg: String): Unit
 
@@ -21,7 +24,7 @@ trait Logger {
 
   /** Logs at the debug level that the command `cmd` will start running. */
   def running(cmd: Seq[String]): Unit = {
-    val msg = "running" + nl + cmd.mkString(nl + "\t")
+    val msg = "Running" + nl + cmd.mkString(nl + "\t")
     debug(msg)
   }
 
@@ -29,8 +32,8 @@ trait Logger {
   def time[T](msg: String)(f: => T): T = {
     import java.lang.System.nanoTime
     val start = nanoTime()
-    val res   = f
-    val end   = nanoTime()
+    val res = f
+    val end = nanoTime()
     info(s"$msg (${(end - start) / 1000000} ms)")
     res
   }
@@ -38,35 +41,56 @@ trait Logger {
 
 object Logger {
 
-  /**
-   * A `Logger` that writes `info` and `warn` messages to `stdout`,
-   * and `error` and `debug` messages to `stderr`.
+  /** A `Logger` that writes `info` and `warn` messages to `stdout`, and
+   *  `error`, `debug` and `trace` messages to `stderr`.
    */
   def default: Logger = new Logger {
+
+    /** Logs `msg` at the trace level. */
+    def trace(msg: Throwable): Unit = err.println(s"[trace] $msg")
     def debug(msg: String): Unit = err.println(s"[debug] $msg")
-    def info(msg: String): Unit  = out.println(s"[info] $msg")
-    def warn(msg: String): Unit  = out.println(s"[warn] $msg")
+    def info(msg: String): Unit = out.println(s"[info] $msg")
+    def warn(msg: String): Unit = out.println(s"[warn] $msg")
     def error(msg: String): Unit = err.println(s"[error] $msg")
   }
 
-  /**
-   * A logger that uses the supplied functions as implementations
-   * for `debug`, `info`, `warn` and `error`.
-   *
-   * @param debugFn The function to call when `debug` is called.
-   * @param infoFn  The function to call when `info` is called.
-   * @param warnFn  The function to call when `warn` is called.
-   * @param errorFn The function to call when `error` is called.
-   * @return A logger that uses the supplied functions as implementations
-   *         for `debug`, `info`, `warn` and `error`.
+  /** A 'Logger' that discards all messagess
    */
-  def apply(debugFn: String => Unit,
-            infoFn: String => Unit,
-            warnFn: String => Unit,
-            errorFn: String => Unit): Logger = new Logger {
+  def nullLogger: Logger = new Logger {
+    override def trace(msg: Throwable): Unit = ()
+    override def debug(msg: String): Unit = ()
+    override def info(msg: String): Unit = ()
+    override def warn(msg: String): Unit = ()
+    override def error(msg: String): Unit = ()
+  }
+
+  /** A logger that uses the supplied functions as implementations for `debug`,
+   *  `info`, `warn` and `error`.
+   *
+   *  @param debugFn
+   *    The function to call when `debug` is called.
+   *  @param infoFn
+   *    The function to call when `info` is called.
+   *  @param warnFn
+   *    The function to call when `warn` is called.
+   *  @param errorFn
+   *    The function to call when `error` is called.
+   *  @return
+   *    A logger that uses the supplied functions as implementations for
+   *    `debug`, `info`, `warn` and `error`.
+   */
+  def apply(
+      traceFn: Throwable => Unit,
+      debugFn: String => Unit,
+      infoFn: String => Unit,
+      warnFn: String => Unit,
+      errorFn: String => Unit
+  ): Logger = new Logger {
+
+    override def trace(msg: Throwable): Unit = traceFn(msg)
     override def debug(msg: String): Unit = debugFn(msg)
-    override def info(msg: String): Unit  = infoFn(msg)
-    override def warn(msg: String): Unit  = warnFn(msg)
+    override def info(msg: String): Unit = infoFn(msg)
+    override def warn(msg: String): Unit = warnFn(msg)
     override def error(msg: String): Unit = errorFn(msg)
   }
 

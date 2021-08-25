@@ -23,42 +23,106 @@ private[scalanative] object IO {
     def abs: String = path.toAbsolutePath.toString
   }
 
-  /** Write byts to given file. */
+  /** Write bytes to given file. */
   def write(file: Path, bytes: Array[Byte]): Unit = {
     Files.createDirectories(file.getParent)
     Files.write(file, bytes)
   }
 
-  /** Finds all files in `base` that match `pattern`. */
+  /** Finds all files starting in `base` that match `pattern`. */
   def getAll(base: Path, pattern: String): Seq[Path] = {
-    val out     = collection.mutable.ArrayBuffer.empty[Path]
+    val out = collection.mutable.ArrayBuffer.empty[Path]
     val matcher = FileSystems.getDefault.getPathMatcher(pattern)
     val visitor = new SimpleFileVisitor[Path] {
       override def preVisitDirectory(
           directory: Path,
-          attributes: BasicFileAttributes): FileVisitResult =
+          attributes: BasicFileAttributes
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
 
-      override def postVisitDirectory(directory: Path,
-                                      exception: IOException): FileVisitResult =
+      override def postVisitDirectory(
+          directory: Path,
+          exception: IOException
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
 
       override def visitFile(
           file: Path,
-          attributes: BasicFileAttributes): FileVisitResult = {
+          attributes: BasicFileAttributes
+      ): FileVisitResult = {
         if (matcher.matches(file)) out += file
         FileVisitResult.CONTINUE
       }
 
-      override def visitFileFailed(file: Path,
-                                   exception: IOException): FileVisitResult =
+      override def visitFileFailed(
+          file: Path,
+          exception: IOException
+      ): FileVisitResult =
         FileVisitResult.CONTINUE
     }
-    Files.walkFileTree(base,
-                       EnumSet.of(FileVisitOption.FOLLOW_LINKS),
-                       Int.MaxValue,
-                       visitor)
+    Files.walkFileTree(
+      base,
+      EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+      Int.MaxValue,
+      visitor
+    )
+    out.toSeq
+  }
+
+  /** Does a `pattern` match starting at base */
+  def existsInDir(base: Path, pattern: String): Boolean = {
+    var out = false
+    val matcher = FileSystems.getDefault.getPathMatcher(pattern)
+    val visitor = new SimpleFileVisitor[Path] {
+      override def preVisitDirectory(
+          directory: Path,
+          attributes: BasicFileAttributes
+      ): FileVisitResult =
+        FileVisitResult.CONTINUE
+
+      override def postVisitDirectory(
+          directory: Path,
+          exception: IOException
+      ): FileVisitResult =
+        FileVisitResult.CONTINUE
+
+      override def visitFile(
+          file: Path,
+          attributes: BasicFileAttributes
+      ): FileVisitResult = {
+        if (matcher.matches(file)) {
+          out = true
+          FileVisitResult.TERMINATE
+        } else {
+          FileVisitResult.CONTINUE
+        }
+      }
+
+      override def visitFileFailed(
+          file: Path,
+          exception: IOException
+      ): FileVisitResult =
+        FileVisitResult.CONTINUE
+    }
+    Files.walkFileTree(
+      base,
+      EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+      Int.MaxValue,
+      visitor
+    )
     out
+  }
+
+  /** Look for a zip entry path string using a matcher function */
+  def existsInJar(path: Path, matcher: String => Boolean): Boolean = {
+    import java.util.zip.ZipFile
+    val zf = new ZipFile(path.toFile)
+    val it = zf.entries()
+    while (it.hasMoreElements()) {
+      if (matcher(it.nextElement().getName()))
+        return true
+    }
+    false
   }
 
   /** Deletes recursively `directory` and all its content. */
@@ -69,12 +133,15 @@ private[scalanative] object IO {
         new SimpleFileVisitor[Path]() {
           override def visitFile(
               file: Path,
-              attrs: BasicFileAttributes): FileVisitResult = {
+              attrs: BasicFileAttributes
+          ): FileVisitResult = {
             Files.delete(file)
             FileVisitResult.CONTINUE
           }
-          override def postVisitDirectory(dir: Path,
-                                          exc: IOException): FileVisitResult = {
+          override def postVisitDirectory(
+              dir: Path,
+              exc: IOException
+          ): FileVisitResult = {
             Files.delete(dir)
             FileVisitResult.CONTINUE
           }
@@ -85,44 +152,84 @@ private[scalanative] object IO {
 
   /** Compute a SHA-1 hash of `path`. */
   def sha1(path: Path, bufSize: Int = 1024): Array[Byte] = {
-    val digest       = MessageDigest.getInstance("SHA-1")
-    val stream       = Files.newInputStream(path)
+    val digest = MessageDigest.getInstance("SHA-1")
+    val stream = Files.newInputStream(path)
     val digestStream = new DigestInputStream(stream, digest)
-    val buf          = new Array[Byte](bufSize)
-    while (digestStream.read(buf, 0, bufSize) == 1024) {}
+    try {
+      val buf = new Array[Byte](bufSize)
+      while (digestStream.read(buf, 0, bufSize) != -1) {}
+      digest.digest()
+    } finally {
+      digestStream.close()
+    }
+  }
+
+  /** Compute a SHA-1 hash of `files`. */
+  def sha1files(files: Seq[Path], bufSize: Int = 1024): Array[Byte] = {
+    val digest = MessageDigest.getInstance("SHA-1")
+    files.foreach { file =>
+      val stream = Files.newInputStream(file)
+      val digestStream = new DigestInputStream(stream, digest)
+      val buf = new Array[Byte](bufSize)
+      try {
+        while (digestStream.read(buf, 0, bufSize) != -1) {}
+      } finally {
+        digestStream.close()
+      }
+    }
     digest.digest()
   }
 
   /** Unzip all members of the ZIP archive `archive` to `target`. */
   def unzip(archive: Path, target: Path): Unit = {
     Files.createDirectories(target)
-
-    val zipFS = FileSystems.newFileSystem(archive, null)
+    val zipFS = FileSystems.newFileSystem(archive, null: ClassLoader)
     try {
       val rootDirectories = zipFS.getRootDirectories().iterator
       while (rootDirectories.hasNext) {
         val root = rootDirectories.next()
-        Files.walkFileTree(
-          root,
-          new SimpleFileVisitor[Path]() {
-            override def visitFile(
-                file: Path,
-                attrs: BasicFileAttributes): FileVisitResult = {
-              val dest = Paths.get(target.toString, file.toString)
-              Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
-              FileVisitResult.CONTINUE
-            }
-
-            override def preVisitDirectory(
-                dir: Path,
-                attrs: BasicFileAttributes): FileVisitResult = {
-              val dest = Paths.get(target.toString, dir.toString)
-              Files.createDirectories(dest)
-              FileVisitResult.CONTINUE
-            }
-          }
-        )
+        copyRecursive(root, target)
       }
     } finally zipFS.close()
+  }
+
+  /** Copy source directory and contents to target directory. */
+  def copyDirectory(source: Path, target: Path): Unit = {
+    Files.createDirectories(target)
+    copyRecursive(source, target)
+  }
+
+  /** Copy recursively to existing target directory
+   *
+   *  Note: We need source.relativize(file) for copying to and from UNIX FS to
+   *  get a relative path. We can't use the following code because you can't
+   *  resolve across filesystems like UNIX FS to ZIP FS: val dest =
+   *  target.resolve(source.relativize(file))
+   */
+  private def copyRecursive(source: Path, target: Path): Path = {
+    Files.walkFileTree(
+      source,
+      new SimpleFileVisitor[Path]() {
+        override def visitFile(
+            file: Path,
+            attrs: BasicFileAttributes
+        ): FileVisitResult = {
+          val dest =
+            Paths.get(target.toString, source.relativize(file).toString())
+          Files.copy(file, dest, StandardCopyOption.REPLACE_EXISTING)
+          FileVisitResult.CONTINUE
+        }
+
+        override def preVisitDirectory(
+            dir: Path,
+            attrs: BasicFileAttributes
+        ): FileVisitResult = {
+          val dest =
+            Paths.get(target.toString, source.relativize(dir).toString())
+          Files.createDirectories(dest)
+          FileVisitResult.CONTINUE
+        }
+      }
+    )
   }
 }

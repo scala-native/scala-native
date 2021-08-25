@@ -5,39 +5,42 @@ import java.nio._
 import java.nio.charset._
 import java.util.Objects
 
-class OutputStreamWriter(private[this] var out: OutputStream,
-                         private[this] var enc: CharsetEncoder)
-    extends Writer {
+class OutputStreamWriter(
+    private[this] var out: OutputStream,
+    private[this] var enc: CharsetEncoder
+) extends Writer {
 
   Objects.requireNonNull(out)
   Objects.requireNonNull(enc)
 
   private[this] var closed: Boolean = false
 
-  /** Incoming buffer: pending Chars that have been written to this instance
-   *  of OutputStreamWriter, but not yet encoded.
-   *  Normally, this should always be at most 1 Char, if it is a high surrogate
-   *  which ended up alone at the end of the input of a write().
+  /** Incoming buffer: pending Chars that have been written to this instance of
+   *  OutputStreamWriter, but not yet encoded. Normally, this should always be
+   *  at most 1 Char, if it is a high surrogate which ended up alone at the end
+   *  of the input of a write().
    */
   private[this] var inBuf: String = ""
 
-  /** Outgoing buffer: Bytes that have been decoded (from `inBuf`), but not
-   *  yet written to the underlying output stream.
-   *  The valid bytes are between 0 and outBuf.position.
+  /** Outgoing buffer: Bytes that have been decoded (from `inBuf`), but not yet
+   *  written to the underlying output stream. The valid bytes are between 0 and
+   *  outBuf.position.
    */
   private[this] var outBuf: ByteBuffer = ByteBuffer.allocate(4096)
 
   def this(out: OutputStream, cs: Charset) = {
-    this(out,
-         Objects
-           .requireNonNull(cs)
-           .newEncoder
-           .onMalformedInput(CodingErrorAction.REPLACE)
-           .onUnmappableCharacter(CodingErrorAction.REPLACE))
+    this(
+      out,
+      Objects
+        .requireNonNull(cs)
+        .newEncoder()
+        .onMalformedInput(CodingErrorAction.REPLACE)
+        .onUnmappableCharacter(CodingErrorAction.REPLACE)
+    )
   }
 
   def this(out: OutputStream) =
-    this(out, Charset.defaultCharset)
+    this(out, Charset.defaultCharset())
 
   def this(out: OutputStream, charsetName: String) =
     this(
@@ -51,7 +54,7 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     )
 
   def getEncoding(): String =
-    if (closed) null else enc.charset.name
+    if (closed) null else enc.charset().name()
 
   override def write(c: Int): Unit =
     write(c.toChar.toString, 0, 1)
@@ -75,8 +78,8 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     @tailrec
     def loopEncode(): Unit = {
       val result = enc.encode(cbuf1, outBuf, false)
-      if (result.isUnderflow) ()
-      else if (result.isOverflow) {
+      if (result.isUnderflow()) ()
+      else if (result.isOverflow()) {
         makeRoomInOutBuf()
         loopEncode()
       } else {
@@ -86,7 +89,7 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     }
 
     loopEncode()
-    if (cbuf1.hasRemaining)
+    if (cbuf1.hasRemaining())
       inBuf = cbuf1.toString
   }
 
@@ -101,16 +104,16 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     @inline
     @tailrec
     def loopEncode(): Unit = {
-      val cbuf   = CharBuffer.wrap(inBuf)
+      val cbuf = CharBuffer.wrap(inBuf)
       val result = enc.encode(cbuf, outBuf, true)
-      if (result.isUnderflow) {
+      if (result.isUnderflow()) {
         assert(
-          !cbuf.hasRemaining,
+          !cbuf.hasRemaining(),
           "CharsetEncoder.encode() should not have returned UNDERFLOW when " +
-            "both endOfInput and inBuf.hasRemaining are true. It should have " +
+            "both endOfInput and inBuf.hasRemaining() are true. It should have " +
             "returned a MalformedInput error instead."
         )
-      } else if (result.isOverflow) {
+      } else if (result.isOverflow()) {
         makeRoomInOutBuf()
         loopEncode()
       } else {
@@ -122,7 +125,7 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     @inline
     @tailrec
     def loopFlush(): Unit = {
-      if (enc.flush(outBuf).isOverflow) {
+      if (enc.flush(outBuf).isOverflow()) {
         makeRoomInOutBuf()
         loopFlush()
       }
@@ -154,23 +157,23 @@ class OutputStreamWriter(private[this] var out: OutputStream,
     if (outBuf.position() != 0) {
       flushBuffer()
     } else {
-      // Very unlikely (outBuf.capacity is not enough to encode a single code point)
+      // Very unlikely (outBuf.capacity() is not enough to encode a single code point)
       outBuf.flip()
-      val newBuf = ByteBuffer.allocate(outBuf.capacity * 2)
+      val newBuf = ByteBuffer.allocate(outBuf.capacity() * 2)
       newBuf.put(outBuf)
       outBuf = newBuf
     }
   }
 
-  /** Flushes the internal buffer of this writer, but not the underlying
-   *  output stream.
+  /** Flushes the internal buffer of this writer, but not the underlying output
+   *  stream.
    */
   private[io] def flushBuffer(): Unit = {
     ensureOpen()
 
     // Don't use outBuf.flip() first, in case out.write() throws
     // Hence, use 0 instead of position, and position instead of limit
-    out.write(outBuf.array, outBuf.arrayOffset, outBuf.position)
+    out.write(outBuf.array(), outBuf.arrayOffset(), outBuf.position())
     outBuf.clear()
   }
 }

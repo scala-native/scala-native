@@ -12,9 +12,11 @@ object poll {
 
   type pollEvent_t = CShort
 
-  type struct_pollfd = CStruct3[CInt, // file descriptor
-                                pollEvent_t, // requested events
-                                pollEvent_t] // returned events
+  type struct_pollfd = CStruct3[
+    CInt, // file descriptor
+    pollEvent_t, // requested events
+    pollEvent_t // returned events
+  ]
 
   def poll(fds: Ptr[struct_pollfd], nfds: nfds_t, timeout: CInt): CInt = extern
 
@@ -64,7 +66,7 @@ object poll {
 
 object pollEvents {
 
-  final val POLLIN  = 0x001 // Data ready to be read
+  final val POLLIN = 0x001 // Data ready to be read
   final val POLLPRI = 0x002 // Urgent data ready to be read
   final val POLLOUT = 0x004 // Writing now will not block
 
@@ -75,8 +77,8 @@ object pollEvents {
   final val POLLWRBAND = 0x200 // Priority data may be written
 
   // Always checked in revents
-  final val POLLERR  = 0x008 // Error condition
-  final val POLLHUP  = 0x010 // Hung up
+  final val POLLERR = 0x008 // Error condition
+  final val POLLHUP = 0x010 // Hung up
   final val POLLNVAL = 0x020 // Invalid polling request
 }
 
@@ -84,11 +86,11 @@ object pollOps {
   import poll._
 
   implicit class pollOps(val ptr: Ptr[struct_pollfd]) extends AnyVal {
-    def fd: CInt                        = ptr._1
-    def events: pollEvent_t             = ptr._2
-    def revents: pollEvent_t            = ptr._3
-    def fd_=(v: CInt): Unit             = ptr._1 = v
-    def events_=(v: pollEvent_t): Unit  = ptr._2 = v
+    def fd: CInt = ptr._1
+    def events: pollEvent_t = ptr._2
+    def revents: pollEvent_t = ptr._3
+    def fd_=(v: CInt): Unit = ptr._1 = v
+    def events_=(v: pollEvent_t): Unit = ptr._2 = v
     def revents_=(v: pollEvent_t): Unit = ptr._3 = v
   }
 }

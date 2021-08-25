@@ -1,31 +1,6 @@
 #!/bin/bash
 
-set -ex
+# Locally publishSigned won't work because sbt-pgp isn't in project/build.sbt.
+# It's in the global plugins.sbt of the machine running the publishing.
 
-sbt test-all
-sbt "tools/mimaReportBinaryIssues"
-sbt \
-    nativelib/publishSigned \
-    auxlib/publishSigned \
-    clib/publishSigned \
-    posixlib/publishSigned \
-    javalib/publishSigned \
-    scalalib/publishSigned \
-    testInterface/publishSigned \
-    testInterfaceSbtDefs/publishSigned \
-    testInterfaceSerialization/publishSigned \
-    testRunner/publishSigned \
-    nscplugin/publishSigned \
-    nir/publishSigned \
-    tools/publishSigned \
-    util/publishSigned \
-    sbtScalaNative/publishSigned
-sbt ++2.11.12 nscplugin/publishSigned
-sbt ++2.11.11 nscplugin/publishSigned
-sbt ++2.11.8 nscplugin/publishSigned
-sbt ^^1.0.4 \
-    testRunner/publishSigned \
-    nir/publishSigned \
-    tools/publishSigned \
-    util/publishSigned \
-    sbtScalaNative/publishSigned
+scripts/publish-impl publishSigned

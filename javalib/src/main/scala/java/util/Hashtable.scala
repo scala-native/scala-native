@@ -3,7 +3,7 @@ package java.util
 import java.{util => ju}
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
+import ScalaOps._
 
 class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     extends ju.Dictionary[K, V]
@@ -26,14 +26,13 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   def size(): Int =
     inner.size
 
-  def isEmpty: Boolean =
+  def isEmpty(): Boolean =
     inner.isEmpty
 
-  def keys(): ju.Enumeration[K] =
-    inner.keysIterator.map(_.inner.asInstanceOf[K]).asJavaEnumeration
+  def keys(): ju.Enumeration[K] = Collections.enumeration(keySet())
 
   def elements(): ju.Enumeration[V] =
-    inner.valuesIterator.asJavaEnumeration
+    Collections.enumeration(values())
 
   def contains(value: Any): Boolean =
     containsValue(value)
@@ -71,8 +70,9 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   }
 
   def putAll(m: ju.Map[_ <: K, _ <: V]): Unit =
-    m.asScala.iterator.foreach(kv =>
-      inner.put(Box(kv._1.asInstanceOf[AnyRef]), kv._2))
+    m.entrySet().scalaOps.foreach { e =>
+      inner.put(Box(e.getKey()), e.getValue())
+    }
 
   def clear(): Unit =
     inner.clear()
@@ -82,18 +82,21 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
 
   override def toString(): String =
     inner.iterator
-      .map(kv => kv._1.inner + "=" + kv._2)
+      .map(kv => "" + kv._1.inner + "=" + kv._2)
       .mkString("{", ", ", "}")
 
-  def keySet(): ju.Set[K] =
-    inner.keySet.map(_.inner.asInstanceOf[K]).asJava
+  def keySet(): ju.Set[K] = {
+    val b = new LinkedHashSet[K]()
+    inner.keySet.foreach { key => b.add(key.inner.asInstanceOf[K]) }
+    b
+  }
 
   def entrySet(): ju.Set[ju.Map.Entry[K, V]] = {
     class UnboxedEntry(
-        private[UnboxedEntry] val boxedEntry: ju.Map.Entry[Box[Any], V])
-        extends ju.Map.Entry[K, V] {
-      def getKey(): K           = boxedEntry.getKey.inner.asInstanceOf[K]
-      def getValue(): V         = boxedEntry.getValue
+        private[UnboxedEntry] val boxedEntry: ju.Map.Entry[Box[Any], V]
+    ) extends ju.Map.Entry[K, V] {
+      def getKey(): K = boxedEntry.getKey().inner.asInstanceOf[K]
+      def getValue(): V = boxedEntry.getValue()
       def setValue(value: V): V = boxedEntry.setValue(value)
       override def equals(o: Any): Boolean = o match {
         case o: UnboxedEntry => boxedEntry.equals(o.boxedEntry)
@@ -101,13 +104,21 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
       }
       override def hashCode(): Int = boxedEntry.hashCode()
     }
-    inner.asJava
-      .entrySet()
-      .asScala
-      .map(new UnboxedEntry(_): ju.Map.Entry[K, V])
-      .asJava
+
+    val entries = new LinkedHashSet[ju.Map.Entry[K, V]]
+    inner.foreach {
+      case (key, value) =>
+        val entry = new UnboxedEntry(
+          new ju.AbstractMap.SimpleEntry[Box[Any], V](key, value)
+        )
+        entries.add(entry)
+    }
+    entries
   }
 
-  def values(): ju.Collection[V] =
-    inner.asJava.values
+  def values(): ju.Collection[V] = {
+    val b = new LinkedList[V]()
+    inner.values.foreach(b.add)
+    b
+  }
 }

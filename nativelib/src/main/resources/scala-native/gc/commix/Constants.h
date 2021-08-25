@@ -1,0 +1,59 @@
+#ifndef IMMIX_CONSTANTS_H
+#define IMMIX_CONSTANTS_H
+
+#include "CommonConstants.h"
+
+#define DEFAULT_MARK_TIME_RATIO 0.05
+#define DEFAULT_FREE_RATIO 0.5
+#define MAX_UNAVAILABLE_RATIO 0.25
+#define METADATA_PER_BLOCK                                                     \
+    (sizeof(BlockMeta) + LINE_COUNT * LINE_METADATA_SIZE +                     \
+     WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS)
+#define SPACE_USED_PER_BLOCK (BLOCK_TOTAL_SIZE + METADATA_PER_BLOCK)
+#define MAX_HEAP_SIZE ((uint64_t)SPACE_USED_PER_BLOCK * MAX_BLOCK_COUNT)
+
+#define MIN_HEAP_SIZE (1 * 1024 * 1024ULL)
+#define DEFAULT_MIN_HEAP_SIZE (128 * SPACE_USED_PER_BLOCK)
+#define UNLIMITED_HEAP_SIZE (~((size_t)0))
+
+#define STATS_MEASUREMENTS 2000
+
+#define GREY_PACKET_RATIO 0.01
+
+#ifndef GREY_PACKET_SIZE
+#define GREY_PACKET_SIZE (2 * 1024)
+#endif
+
+#define GREY_PACKET_ITEMS ((GREY_PACKET_SIZE / WORD_SIZE) - 2)
+
+#ifndef ARRAY_SPLIT_THRESHOLD
+#define ARRAY_SPLIT_THRESHOLD 512
+#endif
+#define ARRAY_SPLIT_BATCH ARRAY_SPLIT_THRESHOLD
+
+#ifndef SWEEP_BATCH_SIZE
+#define SWEEP_BATCH_SIZE 32
+#endif
+
+#ifndef LAZY_SWEEP_MIN_BATCH
+#define LAZY_SWEEP_MIN_BATCH 16
+#endif
+
+#define MIN_SWEEP_BATCHES_PER_THREAD 3
+
+#ifndef SWEEP_RESERVE_BLOCKS
+#define SWEEP_RESERVE_BLOCKS 4
+#endif
+
+#ifndef MARK_MIN_PACKETS_PER_THREAD
+#define MARK_MIN_PACKETS_PER_THREAD 3
+#endif
+
+// one for current thread other for mutator thread
+#define MARK_SPAWN_THREADS_MIN_PACKETS (2 * MARK_MIN_PACKETS_PER_THREAD)
+
+#ifndef MARK_MAX_WORK_PER_PACKET
+#define MARK_MAX_WORK_PER_PACKET 512
+#endif
+
+#endif // IMMIX_CONSTANTS_H

@@ -5,9 +5,9 @@ package java.io
 class LineNumberReader(in: Reader, sz: Int) extends BufferedReader(in, sz) {
   def this(in: Reader) = this(in, 4096)
 
-  private[this] var lineNumber: Int          = 0
-  private[this] var lastWasCR: Boolean       = false
-  private[this] var markedLineNumber: Int    = -1
+  private[this] var lineNumber: Int = 0
+  private[this] var lastWasCR: Boolean = false
+  private[this] var markedLineNumber: Int = -1
   private[this] var markedLastWasCR: Boolean = false
 
   override def mark(readAheadLimit: Int): Unit = {
@@ -83,7 +83,7 @@ class LineNumberReader(in: Reader, sz: Int) extends BufferedReader(in, sz) {
 
   override def skip(n: Long): Long = {
     if (n < 0) throw new IllegalArgumentException()
-    var i   = 0
+    var i = 0
     var eof = false
     while (i < n && !eof) {
       if (read() == -1) eof = true

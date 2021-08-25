@@ -1,10 +1,9 @@
 package java.util
 
-import java.lang.Comparable
 import scala.collection.mutable
 import scala.math.Ordering
-
-import scala.collection.JavaConverters._
+import ScalaOps._
+import ScalaCompatOps._
 
 class TreeSet[E](_comparator: Comparator[_ >: E])
     extends AbstractSet[E]
@@ -50,7 +49,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
         last.get
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (last.isEmpty) {
           throw new IllegalStateException()
         } else {
@@ -75,7 +74,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
         nxt
       }
 
-      def remove(): Unit = {
+      override def remove(): Unit = {
         if (last.isEmpty) {
           throw new IllegalStateException()
         } else {
@@ -107,7 +106,7 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
   override def add(e: E): Boolean = {
     val boxed = Box(e)
 
-    if (isEmpty)
+    if (isEmpty())
       BoxOrdering.compare(boxed, boxed)
 
     inner.add(boxed)
@@ -120,46 +119,49 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
     inner.clear()
 
   override def addAll(c: Collection[_ <: E]): Boolean = {
-    val iter    = c.iterator()
+    val iter = c.iterator()
     var changed = false
-    while (iter.hasNext) changed = add(iter.next()) || changed
+    while (iter.hasNext()) changed = add(iter.next()) || changed
     changed
   }
 
   override def removeAll(c: Collection[_]): Boolean = {
-    val iter    = c.iterator()
+    val iter = c.iterator()
     var changed = false
-    while (iter.hasNext)
-      changed =
-        inner.remove(Box(iter.next).asInstanceOf[Box[E]]) || changed
+    while (iter.hasNext())
+      changed = inner.remove(Box(iter.next()).asInstanceOf[Box[E]]) || changed
     changed
   }
 
-  def subSet(fromElement: E,
-             fromInclusive: Boolean,
-             toElement: E,
-             toInclusive: Boolean): NavigableSet[E] = {
+  def subSet(
+      fromElement: E,
+      fromInclusive: Boolean,
+      toElement: E,
+      toInclusive: Boolean
+  ): NavigableSet[E] = {
     val boxedFrom = Box(fromElement)
-    val boxedTo   = Box(toElement)
+    val boxedTo = Box(toElement)
     val subSetFun = { () =>
       // the creation of a new TreeSet is to avoid a mysterious bug with scala 2.10
       var base = new mutable.TreeSet[Box[E]]
       base ++= inner.range(boxedFrom, boxedTo)
       if (!fromInclusive)
-        base = base - boxedFrom
+        base = base.diff(Set(boxedFrom))
 
       if (toInclusive && inner.contains(boxedTo))
-        base = base + boxedTo
+        base = base.diff(Set(boxedTo))
 
       base
     }
 
-    new NavigableView(this,
-                      subSetFun,
-                      Some(fromElement),
-                      fromInclusive,
-                      Some(toElement),
-                      toInclusive)
+    new NavigableView(
+      this,
+      subSetFun,
+      Some(fromElement),
+      fromInclusive,
+      Some(toElement),
+      toInclusive
+    )
   }
 
   def headSet(toElement: E, inclusive: Boolean): NavigableSet[E] = {
@@ -168,9 +170,9 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
       // the creation of a new TreeSet is to avoid a mysterious bug with scala 2.10
       var base = new mutable.TreeSet[Box[E]]
       if (inclusive)
-        base ++= inner.to(boxed)
+        base ++= inner.compatOps.rangeTo(boxed)
       else
-        base ++= inner.until(boxed)
+        base ++= inner.compatOps.rangeUntil(boxed)
 
       base
     }
@@ -183,19 +185,21 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
     val tailSetFun = { () =>
       // the creation of a new TreeSet is to avoid a mysterious bug with scala 2.10
       var base = new mutable.TreeSet[Box[E]]
-      base ++= inner.from(boxed)
+      base ++= inner.compatOps.rangeFrom(boxed)
       if (!inclusive)
         base -= boxed
 
       base
     }
 
-    new NavigableView(this,
-                      tailSetFun,
-                      Some(fromElement),
-                      inclusive,
-                      None,
-                      true)
+    new NavigableView(
+      this,
+      tailSetFun,
+      Some(fromElement),
+      inclusive,
+      None,
+      true
+    )
   }
 
   def subSet(fromElement: E, toElement: E): SortedSet[E] =
@@ -216,16 +220,16 @@ class TreeSet[E](_comparator: Comparator[_ >: E])
     inner.last.inner
 
   def lower(e: E): E =
-    headSet(e, false).asScala.lastOption.getOrElse(null.asInstanceOf[E])
+    headSet(e, false).scalaOps.lastOption.getOrElse(null.asInstanceOf[E])
 
   def floor(e: E): E =
-    headSet(e, true).asScala.lastOption.getOrElse(null.asInstanceOf[E])
+    headSet(e, true).scalaOps.lastOption.getOrElse(null.asInstanceOf[E])
 
   def ceiling(e: E): E =
-    tailSet(e, true).asScala.headOption.getOrElse(null.asInstanceOf[E])
+    tailSet(e, true).scalaOps.headOption.getOrElse(null.asInstanceOf[E])
 
   def higher(e: E): E =
-    tailSet(e, false).asScala.headOption.getOrElse(null.asInstanceOf[E])
+    tailSet(e, false).scalaOps.headOption.getOrElse(null.asInstanceOf[E])
 
   def pollFirst(): E = {
     val polled = inner.headOption

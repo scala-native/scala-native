@@ -1,4 +1,5 @@
 scalalib/src/
+scala-partest/fetchedSources/
 target/
 _build/
 *.dot
@@ -24,4 +25,13 @@ bin/
 # metals
 /.bloop/
 /.metals/
-/project/metals.sbt
+/project/**/metals.sbt
+
+# Build Server Protocol, used by sbt
+/.bsp/
+
+# vscode
+/.vscode/
+
+# vim
+*.swp

@@ -34,14 +34,13 @@ object Zone {
   /** Create a new zone allocator. Use Zone#close to free allocations. */
   final def open(): Zone = new ZoneImpl
 
-  /** Minimalistic zone allocator that uses underlying
-   *  system allocator for allocations, and frees all of
-   *  the allocations once the zone is closed.
+  /** Minimalistic zone allocator that uses underlying system allocator for
+   *  allocations, and frees all of the allocations once the zone is closed.
    */
   private class ZoneImpl extends Zone {
     final class Node(val head: RawPtr, val tail: Node)
 
-    private var node: Node      = null
+    private var node: Node = null
     private var closed: Boolean = false
 
     final override def isClosed: Boolean = closed
@@ -51,16 +50,23 @@ object Zone {
         throw new IllegalStateException("zone allocator is closed")
       }
       val rawptr = libc.malloc(size)
+      if (rawptr == null) {
+        throw new OutOfMemoryError(s"Unable to allocate $size bytes")
+      }
       node = new Node(rawptr, node)
       fromRawPtr[Byte](rawptr)
     }
 
     final override def close(): Unit = {
-      while (node != null) {
-        libc.free(node.head)
-        node = node.tail
+      if (closed) {
+        throw new IllegalStateException("zone allocator is closed")
       }
       closed = true
+      while (node != null) {
+        val head = node.head
+        node = node.tail
+        libc.free(head)
+      }
     }
   }
 }

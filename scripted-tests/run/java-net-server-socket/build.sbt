@@ -1,10 +1,18 @@
 import java.net.{Socket, InetSocketAddress}
-import java.io.{PrintWriter, BufferedReader, InputStreamReader, File}
+import java.io.{PrintWriter, BufferedReader, InputStreamReader}
 import java.nio.file.{Files, Paths}
 
 enablePlugins(ScalaNativePlugin)
 
-scalaVersion := "2.11.12"
+scalaVersion := {
+  val scalaVersion = System.getProperty("scala.version")
+  if (scalaVersion == null)
+    throw new RuntimeException(
+      """|The system property 'scala.version' is not defined.
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+    )
+  else scalaVersion
+}
 
 lazy val launchClient = taskKey[Unit]("Launching a client for tests")
 
@@ -13,8 +21,8 @@ launchClient := {
     new java.util.TimerTask() {
       def run = {
         val portFile = Paths.get("server-port.txt")
-        val lines    = Files.readAllLines(portFile)
-        val port     = lines.get(0).toInt
+        val lines = Files.readAllLines(portFile)
+        val port = lines.get(0).toInt
 
         val socket = new Socket
         socket.connect(new InetSocketAddress("127.0.0.1", port), 1000)

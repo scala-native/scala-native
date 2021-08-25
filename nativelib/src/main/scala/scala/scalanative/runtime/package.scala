@@ -1,49 +1,19 @@
 package scala.scalanative
 
-import scala.reflect.ClassTag
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
-import scalanative.runtime.LLVMIntrinsics._
 
 package object runtime {
-
-  /** Runtime Type Information. */
-  type Type = CStruct2[Int, String]
-
-  implicit class TypeOps(val self: Ptr[Type]) extends AnyVal {
-    @alwaysinline def id: Int          = self._1
-    @alwaysinline def name: String     = self._2
-    @alwaysinline def isClass: Boolean = id >= 0
-  }
-
-  /** Class runtime type information. */
-  type ClassType = CStruct3[Type, Int, Int]
-
-  implicit class ClassTypeOps(val self: Ptr[ClassType]) extends AnyVal {
-    @alwaysinline def id: Int            = self._1._1
-    @alwaysinline def name: String       = self._1._2
-    @alwaysinline def size: Int          = self._2
-    @alwaysinline def idRangeUntil: Long = self._3
-  }
 
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
 
-  @alwaysinline def toRawType(cls: Class[_]): RawPtr =
-    cls.asInstanceOf[java.lang._Class[_]].rawty
-
-  /** Read type information of given object. */
-  @alwaysinline def getRawType(obj: Object): RawPtr = {
-    val rawptr = Intrinsics.castObjectToRawPtr(obj)
-    Intrinsics.loadRawPtr(rawptr)
-  }
-
   /** Get monitor for given object. */
   @alwaysinline def getMonitor(obj: Object): Monitor = Monitor.dummy
 
-  /** Initialize runtime with given arguments and return the
-   *  rest as Java-style array.
+  /** Initialize runtime with given arguments and return the rest as Java-style
+   *  array.
    */
   def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
     val argv = fromRawPtr[CString](rawargv)
@@ -66,8 +36,8 @@ package object runtime {
   @alwaysinline def toRawPtr[T](ptr: Ptr[T]): RawPtr =
     Boxes.unboxToPtr(ptr)
 
-  /** Run the runtime's event loop. The method is called from the
-   *  generated C-style after the application's main method terminates.
+  /** Run the runtime's event loop. The method is called from the generated
+   *  C-style after the application's main method terminates.
    */
   @noinline def loop(): Unit =
     ExecutionContext.loop()
@@ -78,10 +48,11 @@ package object runtime {
 
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
-    val fromName = loadObject(elemRawPtr(from, 8))
-    val toName   = loadObject(elemRawPtr(to, 8))
+    val fromName = loadObject(elemRawPtr(from, 16))
+    val toName = loadObject(elemRawPtr(to, 16))
     throw new java.lang.ClassCastException(
-      s"$fromName cannot be cast to $toName")
+      s"$fromName cannot be cast to $toName"
+    )
   }
 
   /** Called by the generated code in case of operations on null. */
@@ -94,9 +65,10 @@ package object runtime {
 
   /** Called by the generated code in case of out of bounds on array access. */
   @noinline def throwOutOfBounds(i: Int): Nothing =
-    throw new IndexOutOfBoundsException(i.toString)
+    throw new ArrayIndexOutOfBoundsException(i.toString)
 
-  /** Called by the generated code in case of missing method on reflective call. */
+  /** Called by the generated code in case of missing method on reflective call.
+   */
   @noinline def throwNoSuchMethod(sig: String): Nothing =
     throw new NoSuchMethodException(sig)
 }

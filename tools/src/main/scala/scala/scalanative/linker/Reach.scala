@@ -1,58 +1,85 @@
 package scala.scalanative
 package linker
 
+import java.nio.file.{Path, Paths}
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.codegen.Metadata
 
-class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
+class Reach(
+    protected val config: build.Config,
+    entries: Seq[Global],
+    loader: ClassLoader
+) extends LinktimeValueResolver {
+  import Reach._
+
   val unavailable = mutable.Set.empty[Global]
-  val loaded      = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
-  val enqueued    = mutable.Set.empty[Global]
-  val todo        = mutable.Stack.empty[Global]
-  val done        = mutable.Map.empty[Global, Defn]
-  val stack       = mutable.Stack.empty[Global]
-  val links       = mutable.Set.empty[Attr.Link]
-  val infos       = mutable.Map.empty[Global, Info]
-  val from        = mutable.Map.empty[Global, Global]
+  val loaded = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
+  val enqueued = mutable.Set.empty[Global]
+  var todo = List.empty[Global]
+  val done = mutable.Map.empty[Global, Defn]
+  var stack = List.empty[Global]
+  val links = mutable.Set.empty[Attr.Link]
+  val infos = mutable.Map.empty[Global, Info]
+  val from = mutable.Map.empty[Global, Global]
+  val missing = mutable.Map.empty[Global, Set[NonReachablePosition]]
 
   val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global]]
-  val dynsigs       = mutable.Set.empty[Sig]
-  val dynimpls      = mutable.Set.empty[Global]
+  val dynsigs = mutable.Set.empty[Sig]
+  val dynimpls = mutable.Set.empty[Global]
+
+  private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
+  private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   entries.foreach(reachEntry)
   loader.classesWithEntryPoints.foreach(reachClinit)
 
   def result(): Result = {
+    reportMissing()
     cleanup()
 
     val defns = mutable.UnrolledBuffer.empty[Defn]
-    defns ++= done.valuesIterator
 
-    new Result(infos,
-               entries,
-               unavailable.toSeq,
-               from,
-               links.toSeq,
-               defns,
-               dynsigs.toSeq,
-               dynimpls.toSeq)
+    // drop the null values that have been introduced
+    // in reachUnavailable
+    defns ++= done.valuesIterator.filter(_ != null)
+
+    new Result(
+      infos,
+      entries,
+      unavailable.toSeq,
+      from,
+      links.toSeq,
+      defns.toSeq,
+      dynsigs.toSeq,
+      dynimpls.toSeq,
+      resolvedNirValues
+    )
   }
 
   def cleanup(): Unit = {
     // Remove all unreachable methods from the
-    // responds map of every class. Optimizer and
-    // codegen may never increase reachability past
-    // what's known now, so it's safe to do this.
+    // responds and defaultResponds of every class.
+    // Optimizer and codegen may never increase reachability
+    // past what's known now, so it's safe to do this.
     infos.values.foreach {
       case cls: Class =>
-        val entries = cls.responds.toArray
-        entries.foreach {
+        val responds = cls.responds.toArray
+        responds.foreach {
           case (sig, name) =>
             if (!done.contains(name)) {
               cls.responds -= sig
             }
         }
+
+        val defaultResponds = cls.defaultResponds.toArray
+        defaultResponds.foreach {
+          case (sig, name) =>
+            if (!done.contains(name)) {
+              cls.defaultResponds -= sig
+            }
+        }
+
       case _ =>
         ()
     }
@@ -76,24 +103,59 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def process(): Unit =
     while (todo.nonEmpty) {
-      val name = todo.pop()
+      val name = todo.head
+      todo = todo.tail
       if (!done.contains(name)) {
         reachDefn(name)
       }
     }
 
+  @tailrec
+  final def processDelayed(): Unit = {
+    // Recursively iterate delayed methods - processing delayed method that has existing implementation
+    // might result in calling other delayed method. Loop until no more delayedMethods are found
+    if (delayedMethods.nonEmpty) {
+      /*  Check methods that were marked to not have any defined targets yet when processing loop.
+       *  At this stage they should define at least 1 target, or should be marked as a missing symbol.
+       */
+      delayedMethods.foreach {
+        case DelayedMethod(top, sig, position) =>
+          scopeInfo(top).foreach { info =>
+            val wasAllocated = info match {
+              case value: Trait => value.implementors.exists(_.allocated)
+              case clazz: Class => clazz.allocated
+            }
+            val targets = info.targets(sig)
+            if (targets.isEmpty && wasAllocated) {
+              addMissing(top.member(sig), position)
+            } else {
+              todo ++= targets
+            }
+          }
+      }
+
+      delayedMethods.clear()
+      process()
+      processDelayed()
+    }
+  }
+
   def reachDefn(name: Global): Unit = {
-    stack.push(name)
+    stack ::= name
     lookup(name).fold[Unit] {
       reachUnavailable(name)
     } { defn =>
       if (defn.attrs.isStub && !config.linkStubs) {
         reachUnavailable(name)
       } else {
-        reachDefn(defn)
+        val maybeResolvedDefn = defn match {
+          case defn: Defn.Define => resolveLinktimeDefine(defn)
+          case _                 => defn
+        }
+        reachDefn(maybeResolvedDefn)
       }
     }
-    stack.pop()
+    stack = stack.tail
   }
 
   def reachDefn(defn: Defn): Unit = {
@@ -109,7 +171,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         if (Rt.arrayAlloc.contains(sig)) {
           classInfo(Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
-        reachDefine(defn)
+        reachDefine(resolveLinktimeDefine(defn))
       case defn: Defn.Trait =>
         reachTrait(defn)
       case defn: Defn.Class =>
@@ -156,7 +218,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     if (!enqueued.contains(name) && name.ne(Global.None)) {
       enqueued += name
       from(name) = if (stack.isEmpty) Global.None else stack.head
-      todo.push(name)
+      todo ::= name
     }
 
   def reachGlobalNow(name: Global): Unit =
@@ -183,11 +245,31 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
             ()
         }
       case info: Trait =>
+        // Register given trait as a subtrait of
+        // all its transitive parent traits.
         def loopTraits(traitInfo: Trait): Unit = {
           traitInfo.subtraits += info
           traitInfo.traits.foreach(loopTraits)
         }
         info.traits.foreach(loopTraits)
+
+        // Initialize default method implementations that
+        // can be resolved on a given trait. It includes both
+        // all of its parent default methods and any of the
+        // non-abstract method declared directly in this trait.
+        info.linearized.foreach {
+          case parentTraitInfo: Trait =>
+            info.responds ++= parentTraitInfo.responds
+          case _ =>
+            util.unreachable
+        }
+        loaded(info.name).foreach {
+          case (_, defn: Defn.Define) =>
+            val Global.Member(_, sig) = defn.name
+            info.responds(sig) = defn.name
+          case _ =>
+            ()
+        }
       case info: Class =>
         // Register given class as a subclass of all
         // transitive parents and as an implementation
@@ -217,7 +299,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
-              info.responds(sig) = resolve(info, sig).get
+              info.responds(sig) = lookup(info, sig).get
             }
             sig match {
               case Rt.JavaEqualsSig =>
@@ -232,6 +314,16 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
               case _ =>
                 ()
             }
+          case _ =>
+            ()
+        }
+
+        // Initialize the scope of the default methods that can
+        // be used as a fallback if no method implementation is given
+        // in a given class.
+        info.linearized.foreach {
+          case traitInfo: Trait =>
+            info.defaultResponds ++= traitInfo.responds
           case _ =>
             ()
         }
@@ -261,7 +353,13 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       }
       info.parent.foreach(loopParent)
       info.traits.foreach(loopTraits)
-      calls.foreach { sig => info.responds.get(sig).foreach(reachGlobal) }
+      calls.foreach { sig =>
+        def respondImpl = info.responds.get(sig)
+        def defaultImpl = info.defaultResponds.get(sig)
+        respondImpl
+          .orElse(defaultImpl)
+          .foreach(reachGlobal)
+      }
 
       // 1. Handle all dynamic methods on this class.
       //    Any method that implements a known dynamic
@@ -358,13 +456,17 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachVar(defn: Defn.Var): Unit = {
     val Defn.Var(attrs, name, ty, rhs) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Field(attrs,
-                scopeInfoOrUnavailable(name.top),
-                name,
-                isConst = false,
-                ty,
-                rhs))
+      new Field(
+        attrs,
+        scopeInfoOrUnavailable(name.top),
+        name,
+        isConst = false,
+        ty,
+        rhs
+      )
+    )
     reachAttrs(attrs)
     reachType(ty)
     reachVal(rhs)
@@ -372,13 +474,17 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachConst(defn: Defn.Const): Unit = {
     val Defn.Const(attrs, name, ty, rhs) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Field(attrs,
-                scopeInfoOrUnavailable(name.top),
-                name,
-                isConst = true,
-                ty,
-                rhs))
+      new Field(
+        attrs,
+        scopeInfoOrUnavailable(name.top),
+        name,
+        isConst = true,
+        ty,
+        rhs
+      )
+    )
     reachAttrs(attrs)
     reachType(ty)
     reachVal(rhs)
@@ -386,20 +492,26 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachDeclare(defn: Defn.Declare): Unit = {
     val Defn.Declare(attrs, name, ty) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array()))
+      new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array())
+    )
     reachAttrs(attrs)
     reachType(ty)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
     val Defn.Define(attrs, name, ty, insts) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Method(attrs,
-                 scopeInfoOrUnavailable(name.top),
-                 name,
-                 ty,
-                 insts.toArray))
+      new Method(
+        attrs,
+        scopeInfoOrUnavailable(name.top),
+        name,
+        ty,
+        insts.toArray
+      )
+    )
     reachAttrs(attrs)
     reachType(ty)
     reachInsts(insts)
@@ -407,29 +519,38 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
 
   def reachTrait(defn: Defn.Trait): Unit = {
     val Defn.Trait(attrs, name, traits) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(new Trait(attrs, name, traits.flatMap(traitInfo)))
     reachAttrs(attrs)
   }
 
   def reachClass(defn: Defn.Class): Unit = {
     val Defn.Class(attrs, name, parent, traits) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Class(attrs,
-                name,
-                parent.map(classInfoOrObject),
-                traits.flatMap(traitInfo),
-                isModule = false))
+      new Class(
+        attrs,
+        name,
+        parent.map(classInfoOrObject),
+        traits.flatMap(traitInfo),
+        isModule = false
+      )
+    )
     reachAttrs(attrs)
   }
 
   def reachModule(defn: Defn.Module): Unit = {
     val Defn.Module(attrs, name, parent, traits) = defn
+    implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Class(attrs,
-                name,
-                parent.map(classInfoOrObject),
-                traits.flatMap(traitInfo),
-                isModule = true))
+      new Class(
+        attrs,
+        name,
+        parent.map(classInfoOrObject),
+        traits.flatMap(traitInfo),
+        isModule = true
+      )
+    )
     reachAttrs(attrs)
   }
 
@@ -468,6 +589,8 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachGlobal(n); reachType(ty)
     case Val.Const(v) =>
       reachVal(v)
+    case Val.ClassOf(cls) =>
+      reachGlobal(cls)
     case _ =>
       ()
   }
@@ -479,7 +602,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Inst.Label(n, params) =>
       params.foreach(p => reachType(p.ty))
     case Inst.Let(n, op, unwind) =>
-      reachOp(op)
+      reachOp(op)(inst.pos)
       reachNext(unwind)
     case Inst.Ret(v) =>
       reachVal(v)
@@ -498,9 +621,11 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       reachNext(unwind)
     case Inst.Unreachable(unwind) =>
       reachNext(unwind)
+    case _: Inst.LinktimeIf =>
+      util.unreachable
   }
 
-  def reachOp(op: Op): Unit = op match {
+  def reachOp(op: Op)(implicit pos: Position): Unit = op match {
     case Op.Call(ty, ptrv, argvs) =>
       reachType(ty)
       reachVal(ptrv)
@@ -556,8 +681,10 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     case Op.Module(n) =>
       classInfo(n).foreach(reachAllocation)
       val init = n.member(Sig.Ctor(Seq()))
-      if (loaded(n).contains(init)) {
-        reachGlobal(init)
+      loaded.get(n).fold(addMissing(n, pos)) { defn =>
+        if (defn.contains(init)) {
+          reachGlobal(init)
+        }
       }
     case Op.As(ty, v) =>
       reachType(ty)
@@ -604,19 +731,26 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       ()
   }
 
-  def reachMethodTargets(ty: Type, sig: Sig): Unit = ty match {
-    case Type.Array(ty, _) =>
-      reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
-    case Type.Ref(name, _, _) =>
-      scopeInfo(name).foreach { scope =>
-        if (!scope.calls.contains(sig)) {
-          scope.calls += sig
-          scope.targets(sig).foreach(reachGlobal)
+  def reachMethodTargets(ty: Type, sig: Sig)(implicit pos: Position): Unit =
+    ty match {
+      case Type.Array(ty, _) =>
+        reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
+      case Type.Ref(name, _, _) =>
+        scopeInfo(name).foreach { scope =>
+          if (!scope.calls.contains(sig)) {
+            scope.calls += sig
+            val targets = scope.targets(sig)
+            if (targets.nonEmpty) targets.foreach(reachGlobal)
+            else {
+              // At this stage we cannot tell if method target is not defined or not yet reached
+              // We're delaying resolving targets to the end of Reach phase to check if this method is never defined in NIR
+              delayedMethods += DelayedMethod(name.top, sig, pos)
+            }
+          }
         }
-      }
-    case _ =>
-      ()
-  }
+      case _ =>
+        ()
+    }
 
   def reachDynamicMethodTargets(dynsig: Sig) = {
     if (!dynsigs.contains(dynsig)) {
@@ -631,7 +765,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
     }
   }
 
-  def resolve(cls: Class, sig: Sig): Option[Global] = {
+  def lookup(cls: Class, sig: Sig): Option[Global] = {
     assert(loaded.contains(cls.name))
 
     def lookupSig(cls: Class, sig: Sig): Option[Global] = {
@@ -651,7 +785,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
       // called on classes which don't overrider java_==.
       case Rt.ScalaEqualsSig =>
         val scalaImpl = lookupSig(cls, Rt.ScalaEqualsSig).get
-        val javaImpl  = lookupSig(cls, Rt.JavaEqualsSig).get
+        val javaImpl = lookupSig(cls, Rt.JavaEqualsSig).get
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -660,7 +794,7 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         }
       case Rt.ScalaHashCodeSig =>
         val scalaImpl = lookupSig(cls, Rt.ScalaHashCodeSig).get
-        val javaImpl  = lookupSig(cls, Rt.JavaHashCodeSig).get
+        val javaImpl = lookupSig(cls, Rt.JavaHashCodeSig).get
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -671,14 +805,47 @@ class Reach(config: build.Config, entries: Seq[Global], loader: ClassLoader) {
         lookupSig(cls, sig)
     }
   }
+
+  protected def addMissing(global: Global, pos: Position): Unit = {
+    val prev = missing.getOrElse(global, Set.empty)
+    val position = NonReachablePosition(
+      path = Paths.get(pos.source),
+      line = pos.line + 1
+    )
+    missing(global) = prev + position
+  }
+
+  private def reportMissing(): Unit = {
+    if (missing.nonEmpty) {
+      val log = config.logger
+      log.error(s"Found ${missing.size} missing definitions while linking")
+      missing.foreach {
+        case (global, positions) =>
+          log.error(s"Not found $global")
+          positions.toList
+            .sortBy(p => (p.path, p.line))
+            .foreach { pos =>
+              log.error(s"\tat ${pos.path.toString}:${pos.line}")
+            }
+      }
+      throw new LinkingException(
+        "Undefined definitions found in reachability phase"
+      )
+    }
+  }
 }
 
 object Reach {
-  def apply(config: build.Config,
-            entries: Seq[Global],
-            loader: ClassLoader): Result = {
+  def apply(
+      config: build.Config,
+      entries: Seq[Global],
+      loader: ClassLoader
+  ): Result = {
     val reachability = new Reach(config, entries, loader)
     reachability.process()
+    reachability.processDelayed()
     reachability.result()
   }
+
+  private[scalanative] case class NonReachablePosition(path: Path, line: Int)
 }

@@ -1,7 +1,10 @@
+// Ported from Scala.js commit: 1337656 dated: 2020-06-04
+
 package java.util
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+
+import ScalaOps._
 
 import java.lang.{reflect => jlr}
 
@@ -9,26 +12,27 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   def iterator(): Iterator[E]
   def size(): Int
 
-  def isEmpty(): Boolean = size == 0
+  def isEmpty(): Boolean = size() == 0
 
   def contains(o: Any): Boolean =
-    iterator.asScala.exists(o === _)
+    this.scalaOps.exists(Objects.equals(o, _))
 
   def toArray(): Array[AnyRef] =
-    toArray(new Array[AnyRef](size))
+    toArray(new Array[AnyRef](size()))
 
   def toArray[T <: AnyRef](a: Array[T]): Array[T] = {
     val toFill: Array[T] =
-      if (a.size >= size) a
+      if (a.length >= size()) a
       else
         jlr.Array
-          .newInstance(a.getClass.getComponentType, size)
+          .newInstance(a.getClass.getComponentType, size())
           .asInstanceOf[Array[T]]
 
-    val iter = iterator
-    for (i <- 0 until size) toFill(i) = iter.next().asInstanceOf[T]
-    if (toFill.size > size)
-      toFill(size) = null.asInstanceOf[T]
+    val iter = iterator()
+    for (i <- 0 until size())
+      toFill(i) = iter.next().asInstanceOf[T]
+    if (toFill.length > size())
+      toFill(size()) = null.asInstanceOf[T]
     toFill
   }
 
@@ -38,23 +42,25 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   def remove(o: Any): Boolean = {
     @tailrec
     def findAndRemove(iter: Iterator[E]): Boolean = {
-      if (iter.hasNext) {
-        if (iter.next() === o) {
+      if (iter.hasNext()) {
+        if (Objects.equals(iter.next(), o)) {
           iter.remove()
           true
-        } else
+        } else {
           findAndRemove(iter)
-      } else
+        }
+      } else {
         false
+      }
     }
     findAndRemove(iterator())
   }
 
   def containsAll(c: Collection[_]): Boolean =
-    c.iterator.asScala.forall(this.contains(_))
+    c.scalaOps.forall(this.contains(_))
 
   def addAll(c: Collection[_ <: E]): Boolean =
-    c.asScala.foldLeft(false)((prev, elem) => add(elem) || prev)
+    c.scalaOps.foldLeft(false)((prev, elem) => add(elem) || prev)
 
   def removeAll(c: Collection[_]): Boolean =
     removeWhere(c.contains(_))
@@ -66,9 +72,9 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
     removeWhere(_ => true)
 
   private def removeWhere(p: Any => Boolean): Boolean = {
-    val iter    = iterator()
+    val iter = iterator()
     var changed = false
-    while (iter.hasNext) {
+    while (iter.hasNext()) {
       if (p(iter.next())) {
         iter.remove()
         changed = true
@@ -78,5 +84,5 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   }
 
   override def toString(): String =
-    iterator.asScala.mkString("[", ", ", "]")
+    this.scalaOps.mkString("[", ", ", "]")
 }

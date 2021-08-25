@@ -20,12 +20,12 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
   def this(je: JarEntry) = this(je.ze)
   def this(name: String) = this(new ZipEntry(name))
 
-  private var attributes: Attributes            = null
-  protected[jar] var parentJar: JarFile         = null
+  private var attributes: Attributes = null
+  protected[jar] var parentJar: JarFile = null
   protected[jar] var signers: Array[CodeSigner] = null
 
   private var factory: CertificateFactory = null
-  private var isFactoryChecked: Boolean   = false
+  private var isFactoryChecked: Boolean = false
 
   def getAttributes(): Attributes =
     if (attributes != null || parentJar == null) {
@@ -70,8 +70,8 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
       null
     } else {
       var prevIssuer: X500Principal = null
-      val list                      = new ArrayList[Certificate](certs.length)
-      val asigners                  = new ArrayList[CodeSigner]()
+      val list = new ArrayList[Certificate](certs.length)
+      val asigners = new ArrayList[CodeSigner]()
 
       certs.foreach {
         case x509: X509Certificate =>
@@ -93,14 +93,16 @@ class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {
       if (asigners.isEmpty()) {
         null
       } else {
-        val tmp = new Array[CodeSigner](asigners.size)
-        System.arraycopy(asigners, 0, tmp, 0, asigners.size)
+        val tmp = new Array[CodeSigner](asigners.size())
+        System.arraycopy(asigners, 0, tmp, 0, asigners.size())
         tmp
       }
     }
 
-  def addCodeSigner(asigners: ArrayList[CodeSigner],
-                    list: ArrayList[Certificate]): Unit = {
+  def addCodeSigner(
+      asigners: ArrayList[CodeSigner],
+      list: ArrayList[Certificate]
+  ): Unit = {
     if (!isFactoryChecked) {
       try {
         factory = CertificateFactory.getInstance("X.509")

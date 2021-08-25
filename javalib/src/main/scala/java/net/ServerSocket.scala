@@ -1,24 +1,25 @@
 package java.net
 
-import java.io.{InputStream, OutputStream, IOException, Closeable}
+import java.io.Closeable
 
-class ServerSocket(private var port: Int,
-                   private var backlog: Int,
-                   private var bindAddr: InetAddress)
-    extends Closeable {
+class ServerSocket(
+    private var port: Int,
+    private var backlog: Int,
+    private var bindAddr: InetAddress
+) extends Closeable {
 
-  private val impl = new PlainSocketImpl()
+  private val impl = AbstractPlainSocketImpl()
 
   private var created = false
-  private var bound   = false
-  private var closed  = false
+  private var bound = false
+  private var closed = false
 
   if (bindAddr == null) {
     bindAddr = InetAddress.wildcard
   }
 
   if (port >= 0) {
-    startup
+    startup()
   }
 
   def startup(): Unit = {
@@ -73,13 +74,14 @@ class ServerSocket(private var port: Int,
     if (endpoint != null && !endpoint.isInstanceOf[InetSocketAddress]) {
       throw new IllegalArgumentException(
         "Endpoint is of unsupported " +
-          "SocketAddress subclass")
+          "SocketAddress subclass"
+      )
     }
 
     val addr =
       if (endpoint == null ||
           endpoint.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
+        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
       else {
         endpoint.asInstanceOf[InetSocketAddress]
       }
@@ -114,7 +116,7 @@ class ServerSocket(private var port: Int,
     impl.getOption(SocketOptions.SO_TIMEOUT).asInstanceOf[Int]
   }
 
-  def isBound: Boolean  = bound
+  def isBound: Boolean = bound
   def isClosed: Boolean = closed
 
   //def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
@@ -134,8 +136,8 @@ class ServerSocket(private var port: Int,
     impl.setOption(SocketOptions.SO_TIMEOUT, Integer.valueOf(timeout))
   }
 
-  override def close: Unit = {
-    impl.close
+  override def close(): Unit = {
+    impl.close()
     closed = true
   }
 

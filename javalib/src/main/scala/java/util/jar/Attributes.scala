@@ -14,7 +14,8 @@ class Attributes private (protected var map: Map[Object, Object])
       attributes.map
         .asInstanceOf[HashMap[_, _]]
         .clone()
-        .asInstanceOf[Map[Object, Object]])
+        .asInstanceOf[Map[Object, Object]]
+    )
 
   override def clear(): Unit =
     map.clear()
@@ -109,19 +110,21 @@ object Attributes {
     override def equals(obj: Any): Boolean =
       obj match {
         case other: Name =>
-          JarFile.asciiEqualsIgnoreCase(new String(name),
-                                        new String(other.name))
+          JarFile.asciiEqualsIgnoreCase(
+            new String(name),
+            new String(other.name)
+          )
         case _ => false
       }
 
     override def hashCode(): Int = {
       if (hc == 0) {
-        var hash       = 0
+        var hash = 0
         var multiplier = 1
-        var i          = name.length - 1
+        var i = name.length - 1
         while (i >= 0) {
           // 'A' & 0xDF == 'a' & 0xDF, ..., 'Z' & 0xDF == 'z' & 0xDF
-          hash += (name(i) & 0xDF) * multiplier
+          hash += (name(i) & 0xdf) * multiplier
           val shifted = multiplier << 5
           multiplier = shifted - multiplier
           i -= 1
@@ -132,25 +135,26 @@ object Attributes {
     }
   }
   object Name {
-    final val CLASS_PATH: Name             = new Name("Class-Path")
-    final val MANIFEST_VERSION: Name       = new Name("Manifest-Version")
-    final val MAIN_CLASS: Name             = new Name("Main-Class")
-    final val SIGNATURE_VERSION: Name      = new Name("Signature-Version")
-    final val CONTENT_TYPE: Name           = new Name("Content-Type")
-    final val SEALED: Name                 = new Name("Sealed")
-    final val IMPLEMENTATION_TITLE: Name   = new Name("Implementation-Title")
+    final val CLASS_PATH: Name = new Name("Class-Path")
+    final val MANIFEST_VERSION: Name = new Name("Manifest-Version")
+    final val MAIN_CLASS: Name = new Name("Main-Class")
+    final val SIGNATURE_VERSION: Name = new Name("Signature-Version")
+    final val CONTENT_TYPE: Name = new Name("Content-Type")
+    final val SEALED: Name = new Name("Sealed")
+    final val IMPLEMENTATION_TITLE: Name = new Name("Implementation-Title")
     final val IMPLEMENTATION_VERSION: Name = new Name("Implementation-Version")
-    final val IMPLEMENTATION_VENDOR: Name  = new Name("Implementation-Vendor")
-    final val SPECIFICATION_TITLE: Name    = new Name("Specification-Title")
-    final val SPECIFICATION_VERSION: Name  = new Name("Specification-Version")
-    final val SPECIFICATION_VENDOR: Name   = new Name("Specification-Vendor")
-    final val EXTENSION_LIST: Name         = new Name("Extension-List")
-    final val EXTENSION_NAME: Name         = new Name("Extension-Name")
+    final val IMPLEMENTATION_VENDOR: Name = new Name("Implementation-Vendor")
+    final val SPECIFICATION_TITLE: Name = new Name("Specification-Title")
+    final val SPECIFICATION_VERSION: Name = new Name("Specification-Version")
+    final val SPECIFICATION_VENDOR: Name = new Name("Specification-Vendor")
+    final val EXTENSION_LIST: Name = new Name("Extension-List")
+    final val EXTENSION_NAME: Name = new Name("Extension-Name")
     final val EXTENSION_INSTALLATION: Name = new Name("Extension-Installation")
     final val IMPLEMENTATION_VENDOR_ID: Name = new Name(
-      "Implementation-Vendor-Id")
+      "Implementation-Vendor-Id"
+    )
     final val IMPLEMENTATION_URL: Name = new Name("Implementation-URL")
-    private[jar] final val NAME: Name  = new Name("Name")
+    private[jar] final val NAME: Name = new Name("Name")
 
     private def toByteArray(s: String): Array[Byte] = {
       var i = s.length()

@@ -6,28 +6,30 @@ import scalanative.{regex => snRegex}
 import java.util.function.Predicate
 import java.util.stream.Stream
 import java.util.stream.WrappedScalaStream
+import scala.scalanative.compat.StreamsCompat._
 
 // Inspired & informed by:
 // https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
 
 object Pattern {
 
-  def CANON_EQ: Int                = 128
-  def CASE_INSENSITIVE: Int        = 2
-  def COMMENTS: Int                = 4
-  def DOTALL: Int                  = 32
-  def LITERAL: Int                 = 16
-  def MULTILINE: Int               = 8
-  def UNICODE_CASE: Int            = 64
+  def CANON_EQ: Int = 128
+  def CASE_INSENSITIVE: Int = 2
+  def COMMENTS: Int = 4
+  def DOTALL: Int = 32
+  def LITERAL: Int = 16
+  def MULTILINE: Int = 8
+  def UNICODE_CASE: Int = 64
   def UNICODE_CHARACTER_CLASS: Int = 256
-  def UNIX_LINES: Int              = 1
+  def UNIX_LINES: Int = 1
 
   private def validateJavaFlags(flags: Int): Unit = {
 
     def notSupported(flag: Int, flagName: String): Unit = {
       if ((flags & flag) == flag) {
         throw new UnsupportedOperationException(
-          s"regex flag $flagName is not supported.")
+          s"regex flag $flagName is not supported."
+        )
       }
     }
 
@@ -100,7 +102,7 @@ object Pattern {
   }
 
   def matches(regex: String, input: CharSequence): Boolean =
-    compile(regex).matcher(input).matches
+    compile(regex).matcher(input).matches()
 
   def quote(s: String): String = s"\\Q${s}\\E"
 }
@@ -131,7 +133,7 @@ final class Pattern private[regex] (_regex: String, _flags: Int) {
     compiled.split(input, limit)
 
   def splitAsStream(input: CharSequence): Stream[String] =
-    new WrappedScalaStream(split(input).toStream, None)
+    new WrappedScalaStream(split(input).toScalaStream, None)
 
   override def toString: String = _regex
 }

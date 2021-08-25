@@ -5,6 +5,7 @@ import scalanative.nir._
 import scalanative.linker._
 
 trait Opt { self: Interflow =>
+
   def shallOpt(name: Global): Boolean = {
     val defn =
       getOriginal(originalName(name))
@@ -19,21 +20,28 @@ trait Opt { self: Interflow =>
   }
 
   def opt(name: Global): Defn.Define = in(s"visit ${name.show}") {
-    val orig     = originalName(name)
-    val origtys  = argumentTypes(orig)
+    val orig = originalName(name)
+    val origtys = argumentTypes(orig)
     val origdefn = getOriginal(orig)
-    val argtys   = argumentTypes(name)
-
+    val argtys = argumentTypes(name)
+    implicit val pos = origdefn.pos
     // Wrap up the result.
     def result(retty: Type, rawInsts: Seq[Inst]) =
-      origdefn.copy(name = name,
-                    attrs = origdefn.attrs.copy(opt = Attr.DidOpt),
-                    ty = Type.Function(argtys, retty),
-                    insts = ControlFlow.removeDeadBlocks(rawInsts))
+      origdefn.copy(
+        name = name,
+        attrs = origdefn.attrs.copy(opt = Attr.DidOpt),
+        ty = Type.Function(argtys, retty),
+        insts = ControlFlow.removeDeadBlocks(rawInsts)
+      )(origdefn.pos)
 
     // Create new fresh and state for the first basic block.
     val fresh = Fresh(0)
     val state = new State(Local(0))
+
+    // Interflow usually infers better types on our erased type system
+    // than scalac, yet we live it as a benefit of the doubt and make sure
+    // that if original return type is more specific, we keep it as is.
+    val Type.Function(_, origRetTy) = origdefn.ty
 
     // Compute opaque fresh locals for the arguments. Argument types
     // are always a subtype of the original declared type, but in
@@ -43,7 +51,8 @@ trait Opt { self: Interflow =>
       case (argty, origty) =>
         val ty = if (!Sub.is(argty, origty)) {
           log(
-            s"using original argument type ${origty.show} instead of ${argty.show}")
+            s"using original argument type ${origty.show} instead of ${argty.show}"
+          )
           origty
         } else {
           argty
@@ -62,7 +71,13 @@ trait Opt { self: Interflow =>
     val blocks =
       try {
         pushBlockFresh(fresh)
-        process(origdefn.insts.toArray, args, state, inline = false)
+        process(
+          origdefn.insts.toArray,
+          args,
+          state,
+          doInline = false,
+          origRetTy
+        )
       } finally {
         popBlockFresh()
       }
@@ -71,10 +86,10 @@ trait Opt { self: Interflow =>
     // and compute the result type.
     val insts = blocks.flatMap { block =>
       block.cf = block.cf match {
-        case Inst.Ret(retv) =>
-          Inst.Ret(block.end.materialize(retv))
-        case Inst.Throw(excv, unwind) =>
-          Inst.Throw(block.end.materialize(excv), unwind)
+        case inst @ Inst.Ret(retv) =>
+          Inst.Ret(block.end.materialize(retv))(inst.pos)
+        case inst @ Inst.Throw(excv, unwind) =>
+          Inst.Throw(block.end.materialize(excv), unwind)(inst.pos)
         case cf =>
           cf
       }
@@ -83,37 +98,27 @@ trait Opt { self: Interflow =>
     val rets = insts.collect {
       case Inst.Ret(v) => v.ty
     }
+
     val retty = rets match {
       case Seq()   => Type.Nothing
       case Seq(ty) => ty
-      case tys     => Sub.lub(tys)
+      case tys     => Sub.lub(tys, Some(origRetTy))
     }
 
-    // Interflow usually infers better types on our erased type system
-    // than scalac, yet we live it a benefit of the doubt and make sure
-    // that if original return type is more specific, we keep it as is.
-    val origRetty = {
-      val Type.Function(_, ty) = origdefn.ty
-      ty
-    }
-    val resRetty =
-      if (!Sub.is(retty, origRetty)) {
-        log(
-          s"inferred type ${retty.show} is less precise than ${origRetty.show}")
-        origRetty
-      } else {
-        retty
-      }
-
-    result(resRetty, insts)
+    result(retty, insts)
   }
 
-  def process(insts: Array[Inst],
-              args: Seq[Val],
-              state: State,
-              inline: Boolean): Seq[MergeBlock] = {
+  def process(
+      insts: Array[Inst],
+      args: Seq[Val],
+      state: State,
+      doInline: Boolean,
+      retTy: Type
+  )(implicit
+      originDefnPos: nir.Position
+  ): Seq[MergeBlock] = {
     val processor =
-      MergeProcessor.fromEntry(insts, args, state, inline, blockFresh, this)
+      MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)
 
     try {
       pushMergeProcessor(processor)
@@ -125,6 +130,6 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq()
+    processor.toSeq(retTy)
   }
 }

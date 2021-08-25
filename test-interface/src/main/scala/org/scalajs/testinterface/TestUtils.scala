@@ -3,16 +3,20 @@ package testinterface
 
 import scala.scalanative.reflect.Reflect
 
-@deprecated(message = "Use scala.scalanative.reflect.Reflect instead.",
-            since = "0.4.0")
+@deprecated(
+  message = "Use scala.scalanative.reflect.Reflect instead.",
+  since = "0.4.0"
+)
 object TestUtils {
 
   def newInstance(fqcn: String, loader: ClassLoader)(
-      args: Seq[AnyRef]): AnyRef =
+      args: Seq[AnyRef]
+  ): AnyRef =
     newInstance(fqcn, loader, Seq.fill(args.length)(null))(args)
 
   def newInstance(fqcn: String, loader: ClassLoader, paramTypes: Seq[Class[_]])(
-      args: Seq[Any]): AnyRef = {
+      args: Seq[Any]
+  ): AnyRef = {
     require(args.size == paramTypes.size, "argument count mismatch")
 
     Reflect

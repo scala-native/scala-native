@@ -1,10 +1,12 @@
 package scala.scalanative
 package util
+import java.util.concurrent.atomic.AtomicReference
+import java.util.function.UnaryOperator
 
 /** Scoped implicit lifetime.
  *
- *  The main idea behind the Scope is to encode resource lifetimes through
- *  a concept of an implicit scope. Scopes are necessary to acquire resources.
+ *  The main idea behind the Scope is to encode resource lifetimes through a
+ *  concept of an implicit scope. Scopes are necessary to acquire resources.
  *  They are responsible for disposal of the resources once the evaluation exits
  *  the demarkated block in the source code.
  *
@@ -31,29 +33,40 @@ object Scope {
     finally scope.close()
   }
 
-  /** Scope that never closes. Resources allocated in this scope are
-   *  going to be acquired as long as application is running.
+  /** Scope that never closes. Resources allocated in this scope are going to be
+   *  acquired as long as application is running.
    */
   val forever: Scope = new Impl {
     override def close(): Unit =
       throw new UnsupportedOperationException("Can't close forever Scope.")
   }
 
+  /** Unsafe manually managed scope. */
+  def unsafe(): Scope = new Impl {}
+
   private sealed class Impl extends Scope {
-    private[this] var resources: List[Resource] = Nil
+    type Resources = List[Resource]
+
+    private[this] val resources = new AtomicReference[Resources](Nil)
 
     def acquire(res: Resource): Unit = {
-      resources ::= res
+      resources.getAndUpdate {
+        new UnaryOperator[Resources] {
+          override def apply(t: Resources): Resources = res :: t
+        }
+      }
     }
 
-    def close(): Unit = resources match {
-      case Nil =>
-        ()
-
-      case first :: rest =>
-        resources = rest
-        try first.close()
-        finally close()
+    def close(): Unit = {
+      def loop(resources: Resources): Unit = resources match {
+        case Nil =>
+          ()
+        case first :: rest =>
+          try first.close()
+          finally loop(rest)
+      }
+      loop(resources.getAndSet(Nil))
     }
   }
+
 }

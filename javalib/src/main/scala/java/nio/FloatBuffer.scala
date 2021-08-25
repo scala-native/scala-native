@@ -14,14 +14,15 @@ object FloatBuffer {
     wrap(array, 0, array.length)
 }
 
-abstract class FloatBuffer private[nio] (_capacity: Int,
-                                         private[nio] val _array: Array[Float],
-                                         private[nio] val _arrayOffset: Int)
-    extends Buffer(_capacity)
+abstract class FloatBuffer private[nio] (
+    _capacity: Int,
+    private[nio] val _array: Array[Float],
+    private[nio] val _arrayOffset: Int
+) extends Buffer(_capacity)
     with Comparable[FloatBuffer] {
 
   private[nio] type ElementType = Float
-  private[nio] type BufferType  = FloatBuffer
+  private[nio] type BufferType = FloatBuffer
 
   def this(_capacity: Int) = this(_capacity, null, -1)
 
@@ -129,16 +130,20 @@ abstract class FloatBuffer private[nio] (_capacity: Int,
   private[nio] def store(index: Int, elem: Float): Unit
 
   @inline
-  private[nio] def load(startIndex: Int,
-                        dst: Array[Float],
-                        offset: Int,
-                        length: Int): Unit =
+  private[nio] def load(
+      startIndex: Int,
+      dst: Array[Float],
+      offset: Int,
+      length: Int
+  ): Unit =
     GenBuffer(this).generic_load(startIndex, dst, offset, length)
 
   @inline
-  private[nio] def store(startIndex: Int,
-                         src: Array[Float],
-                         offset: Int,
-                         length: Int): Unit =
+  private[nio] def store(
+      startIndex: Int,
+      src: Array[Float],
+      offset: Int,
+      length: Int
+  ): Unit =
     GenBuffer(this).generic_store(startIndex, src, offset, length)
 }

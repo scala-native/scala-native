@@ -128,12 +128,12 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
     protected def getNextForm(key: Box[K]): E
 
-    final override def next: E = {
+    final override def next(): E = {
       lastKey = Some(innerIterator.next())
       getNextForm(lastKey.get)
     }
 
-    final override def hasNext: Boolean =
+    final override def hasNext(): Boolean =
       innerIterator.hasNext
 
     final override def remove(): Unit = {
@@ -150,5 +150,5 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
 object WeakHashMap {
   private[WeakHashMap] final val DEFAULT_INITIAL_CAPACITY = 16
-  private[WeakHashMap] final val DEFAULT_LOAD_FACTOR      = 0.75f
+  private[WeakHashMap] final val DEFAULT_LOAD_FACTOR = 0.75f
 }

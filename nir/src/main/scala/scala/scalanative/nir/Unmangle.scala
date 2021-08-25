@@ -2,13 +2,13 @@ package scala.scalanative
 package nir
 
 object Unmangle {
-  def unmangleGlobal(s: String): Global     = (new Impl(s)).readGlobal()
-  def unmangleType(s: String): Type         = (new Impl(s)).readType()
+  def unmangleGlobal(s: String): Global = (new Impl(s)).readGlobal()
+  def unmangleType(s: String): Type = (new Impl(s)).readType()
   def unmangleSig(s: String): Sig.Unmangled = (new Impl(s)).readUnmangledSig()
 
   private class Impl(s: String) {
     val chars = s.toArray
-    var pos   = 0
+    var pos = 0
 
     def readGlobal(): Global = read() match {
       case 'T' =>
@@ -19,15 +19,20 @@ object Unmangle {
         error(s"expected global, but got $ch")
     }
 
+    def readSigScope(): Sig.Scope = read() match {
+      case 'O' => Sig.Scope.Public
+      case 'P' => Sig.Scope.Private(readGlobal())
+    }
+
     def readUnmangledSig(): Sig.Unmangled = read() match {
       case 'F' =>
-        Sig.Field(readIdent())
+        Sig.Field(readIdent(), readSigScope())
       case 'R' =>
         Sig.Ctor(readTypes())
       case 'I' =>
         Sig.Clinit()
       case 'D' =>
-        Sig.Method(readIdent(), readTypes())
+        Sig.Method(readIdent(), readTypes(), readSigScope())
       case 'P' =>
         Sig.Proxy(readIdent(), readTypes())
       case 'C' =>
@@ -132,12 +137,12 @@ object Unmangle {
     }
 
     def readTypes(): Seq[Type] = {
-      val buf = collection.mutable.UnrolledBuffer.empty[Type]
+      val buf = Seq.newBuilder[Type]
       while (peek() != 'E') {
         buf += readType()
       }
       next()
-      buf
+      buf.result()
     }
 
     def readIdent(): String = {
@@ -150,7 +155,7 @@ object Unmangle {
 
     def readNumber(): Int = {
       val start = pos
-      var char  = peek()
+      var char = peek()
       while ('0' <= char && char <= '9') {
         next()
         char = peek()

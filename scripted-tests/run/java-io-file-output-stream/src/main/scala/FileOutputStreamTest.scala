@@ -13,17 +13,17 @@ object FileOutputStreamTest {
 
   //when passing only a file, it is in mode WRONLY, so overwriting.
   def constructorWithFileTest(): Unit = {
-    val file: File            = new File("test.txt")
+    val file: File = new File("test.txt")
     val fop: FileOutputStream = new FileOutputStream(file)
-    val content               = "Hello World"
+    val content = "Hello World"
     fop.write(content.getBytes())
     fop.close()
   }
 
   def constructWithAppendTrueTest(): Unit = {
-    val file: File            = new File("test.txt")
+    val file: File = new File("test.txt")
     val fop: FileOutputStream = new FileOutputStream(file, true)
-    val content               = " Hello World"
+    val content = " Hello World"
     fop.write(content.getBytes())
     fop.close()
   }

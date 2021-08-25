@@ -2,6 +2,7 @@ package java.lang
 
 import scala.collection.mutable
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.runtime.unwind
 
 private[lang] object StackTrace {
@@ -9,35 +10,38 @@ private[lang] object StackTrace {
     collection.mutable.HashMap.empty[CUnsignedLong, StackTraceElement]
 
   private def makeStackTraceElement(
-      cursor: Ptr[scala.Byte]): StackTraceElement = {
+      cursor: Ptr[scala.Byte]
+  ): StackTraceElement = {
     val nameMax = 1024
-    val name    = stackalloc[CChar](nameMax)
-    val offset  = stackalloc[scala.Byte](8)
+    val name = stackalloc[CChar](nameMax.toUInt)
+    val offset = stackalloc[scala.Byte](8.toUInt)
 
-    unwind.get_proc_name(cursor, name, nameMax, offset)
+    unwind.get_proc_name(cursor, name, nameMax.toUInt, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
-    name(nameMax - 1) = 0
+    name(nameMax - 1) = 0.toByte
 
     StackTraceElement.fromSymbol(name)
   }
 
-  /** Creates a stack trace element in given unwind context.
-   *  Finding a name of the symbol for current function is expensive,
-   *  so we cache stack trace elements based on current instruction pointer.
+  /** Creates a stack trace element in given unwind context. Finding a name of
+   *  the symbol for current function is expensive, so we cache stack trace
+   *  elements based on current instruction pointer.
    */
-  private def cachedStackTraceElement(cursor: Ptr[scala.Byte],
-                                      ip: CUnsignedLong): StackTraceElement =
+  private def cachedStackTraceElement(
+      cursor: Ptr[scala.Byte],
+      ip: CUnsignedLong
+  ): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor  = stackalloc[scala.Byte](2048)
-    val context = stackalloc[scala.Byte](2048)
-    val offset  = stackalloc[scala.Byte](8)
-    val ip      = stackalloc[CUnsignedLongLong]
-    var buffer  = mutable.ArrayBuffer.empty[StackTraceElement]
+    val cursor = stackalloc[scala.Byte](2048.toUInt)
+    val context = stackalloc[scala.Byte](2048.toUInt)
+    val offset = stackalloc[scala.Byte](8.toUInt)
+    val ip = stackalloc[CUnsignedLongLong]
+    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
 
     unwind.get_context(context)
     unwind.init_local(cursor, context)
@@ -50,11 +54,12 @@ private[lang] object StackTrace {
   }
 }
 
-class Throwable protected (s: String,
-                           private[this] var e: Throwable,
-                           enableSuppression: scala.Boolean,
-                           writableStackTrace: scala.Boolean)
-    extends Object
+class Throwable protected (
+    s: String,
+    private[this] var e: Throwable,
+    enableSuppression: scala.Boolean,
+    writableStackTrace: scala.Boolean
+) extends Object
     with java.io.Serializable {
 
   def this(message: String, cause: Throwable) =
@@ -78,19 +83,21 @@ class Throwable protected (s: String,
   final def addSuppressed(exception: Throwable): Unit = {
     if (exception eq null) {
       throw new java.lang.NullPointerException(
-        "Cannot suppress a null exception.")
+        "Cannot suppress a null exception."
+      )
     }
 
     if (exception eq this) {
       throw new java.lang.IllegalArgumentException(
-        "Self-suppression not permitted")
+        "Self-suppression not permitted"
+      )
     }
 
     if (enableSuppression) this.synchronized {
       if (suppressed eq null) {
         suppressed = Array(exception)
       } else {
-        val length        = suppressed.length
+        val length = suppressed.length
         val newSuppressed = new Array[Throwable](length + 1)
         System.arraycopy(suppressed, 0, newSuppressed, 0, length)
         newSuppressed(length) = exception
@@ -153,14 +160,16 @@ class Throwable protected (s: String,
     // where implied use in a constructor counts.
     if (cause eq this) {
       throw new java.lang.IllegalArgumentException(
-        "Self-causation not permitted")
+        "Self-causation not permitted"
+      )
     }
 
     this.synchronized {
       if (e != null) {
         val msg = if (cause eq null) "a null" else cause.toString
         throw new java.lang.IllegalStateException(
-          s"Can't overwrite cause with ${msg}")
+          s"Can't overwrite cause with ${msg}"
+        )
       } else {
         e = cause
       }
@@ -195,14 +204,14 @@ class Throwable protected (s: String,
 
     // Print causes
     var parentStack = trace
-    var throwable   = getCause()
+    var throwable = getCause()
     while (throwable != null) {
       println("Caused by: " + throwable)
 
-      val currentStack = throwable.getStackTrace
+      val currentStack = throwable.getStackTrace()
       if (currentStack.nonEmpty) {
         val duplicates = countDuplicates(currentStack, parentStack)
-        var i          = 0
+        var i = 0
         while (i < currentStack.length - duplicates) {
           println("\tat " + currentStack(i))
           i += 1
@@ -215,15 +224,17 @@ class Throwable protected (s: String,
       }
 
       parentStack = currentStack
-      throwable = throwable.getCause
+      throwable = throwable.getCause()
     }
   }
 
-  private def countDuplicates(currentStack: Array[StackTraceElement],
-                              parentStack: Array[StackTraceElement]): Int = {
-    var duplicates  = 0
+  private def countDuplicates(
+      currentStack: Array[StackTraceElement],
+      parentStack: Array[StackTraceElement]
+  ): Int = {
+    var duplicates = 0
     var parentIndex = parentStack.length - 1
-    var i           = currentStack.length - 1
+    var i = currentStack.length - 1
     while (i >= 0 && parentIndex >= 0) {
       val parentFrame = parentStack(parentIndex)
       if (parentFrame == currentStack(i)) {
@@ -251,7 +262,7 @@ class Throwable protected (s: String,
 
   override def toString(): String = {
     val className = getClass.getName
-    val message   = getMessage()
+    val message = getMessage()
     if (message eq null) className
     else className + ": " + message
   }
@@ -301,7 +312,7 @@ class ExceptionInInitializerError private (s: String, private val e: Throwable)
   def this(thrown: Throwable) = this(null, thrown)
   def this(s: String) = this(s, null)
   def this() = this(null, null)
-  def getException(): Throwable      = e
+  def getException(): Throwable = e
   override def getCause(): Throwable = e
 }
 
@@ -389,7 +400,7 @@ class ClassNotFoundException(s: String, e: Throwable)
     extends ReflectiveOperationException(s) {
   def this(s: String) = this(s, null)
   def this() = this(null, null)
-  def getException(): Throwable      = e
+  def getException(): Throwable = e
   override def getCause(): Throwable = e
 }
 
@@ -400,7 +411,7 @@ class CloneNotSupportedException(s: String) extends Exception(s) {
 class EnumConstantNotPresentException(e: Class[_ <: Enum[_]], c: String)
     extends RuntimeException(e.getName() + "." + c) {
   def enumType(): Class[_ <: Enum[_]] = e
-  def constantName(): String          = c
+  def constantName(): String = c
 }
 
 class Exception(s: String, e: Throwable) extends Throwable(s, e) {

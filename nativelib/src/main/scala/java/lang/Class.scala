@@ -19,63 +19,69 @@ object rtti {
 }
 import rtti._
 
-final class _Class[A](val rawty: RawPtr) {
-  @alwaysinline private def ty: Ptr[Type] =
-    fromRawPtr[Type](rawty)
+final class _Class[A] {
+  var id: Int = _
+  var traitId: Int = _
+  var name: String = _
+  var size: Int = _
+  var idRangeUntil: Int = _
 
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
 
   def getComponentType(): _Class[_] = {
-    if (rawty == toRawType(classOf[BooleanArray])) classOf[scala.Boolean]
-    else if (rawty == toRawType(classOf[CharArray])) classOf[scala.Char]
-    else if (rawty == toRawType(classOf[ByteArray])) classOf[scala.Byte]
-    else if (rawty == toRawType(classOf[ShortArray])) classOf[scala.Short]
-    else if (rawty == toRawType(classOf[IntArray])) classOf[scala.Int]
-    else if (rawty == toRawType(classOf[LongArray])) classOf[scala.Long]
-    else if (rawty == toRawType(classOf[FloatArray])) classOf[scala.Float]
-    else if (rawty == toRawType(classOf[DoubleArray])) classOf[scala.Double]
+    if (is(classOf[BooleanArray])) classOf[scala.Boolean]
+    else if (is(classOf[CharArray])) classOf[scala.Char]
+    else if (is(classOf[ByteArray])) classOf[scala.Byte]
+    else if (is(classOf[ShortArray])) classOf[scala.Short]
+    else if (is(classOf[IntArray])) classOf[scala.Int]
+    else if (is(classOf[LongArray])) classOf[scala.Long]
+    else if (is(classOf[FloatArray])) classOf[scala.Float]
+    else if (is(classOf[DoubleArray])) classOf[scala.Double]
     else classOf[java.lang.Object]
   }
 
   def getName(): String =
-    ty.name
+    name
 
   def getSimpleName(): String =
-    getName.split('.').last.split('$').last
+    getName().split('.').last.split('$').last
 
   def isArray(): scala.Boolean =
-    (rawty == toRawType(classOf[BooleanArray]) ||
-      rawty == toRawType(classOf[CharArray]) ||
-      rawty == toRawType(classOf[ByteArray]) ||
-      rawty == toRawType(classOf[ShortArray]) ||
-      rawty == toRawType(classOf[IntArray]) ||
-      rawty == toRawType(classOf[LongArray]) ||
-      rawty == toRawType(classOf[FloatArray]) ||
-      rawty == toRawType(classOf[DoubleArray]) ||
-      rawty == toRawType(classOf[ObjectArray]))
+    is(classOf[BooleanArray]) ||
+      is(classOf[CharArray]) ||
+      is(classOf[ByteArray]) ||
+      is(classOf[ShortArray]) ||
+      is(classOf[IntArray]) ||
+      is(classOf[LongArray]) ||
+      is(classOf[FloatArray]) ||
+      is(classOf[DoubleArray]) ||
+      is(classOf[ObjectArray])
+
   def isAssignableFrom(that: Class[_]): scala.Boolean =
-    is(that.asInstanceOf[_Class[_]].ty, ty)
+    is(that.asInstanceOf[_Class[_]], this)
 
   def isInstance(obj: Object): scala.Boolean =
-    is(obj.getClass.asInstanceOf[_Class[_]].ty, ty)
+    is(obj.getClass.asInstanceOf[_Class[_]], this)
 
-  private def is(left: Ptr[Type], right: Ptr[Type]): Boolean =
+  @alwaysinline private def is(cls: Class[_]): Boolean =
+    this eq cls.asInstanceOf[_Class[A]]
+
+  private def is(left: _Class[_], right: _Class[_]): Boolean =
     // This replicates the logic of the compiler-generated instance check
     // that you would normally get if you do (obj: L).isInstanceOf[R],
     // where rtti for L and R are `left` and `right`.
-    if (left.isClass) {
-      if (right.isClass) {
-        val rightCls  = right.asInstanceOf[Ptr[ClassType]]
-        val rightFrom = rightCls.id
-        val rightTo   = rightCls.idRangeUntil
-        val leftId    = left.id
+    if (!left.isInterface()) {
+      if (!right.isInterface()) {
+        val rightFrom = right.id
+        val rightTo = right.idRangeUntil
+        val leftId = left.id
         leftId >= rightFrom && leftId <= rightTo
       } else {
         __check_class_has_trait(left.id, -right.id - 1)
       }
     } else {
-      if (right.isClass) {
+      if (!right.isInterface()) {
         false
       } else {
         __check_trait_has_trait(-left.id - 1, -right.id - 1)
@@ -83,33 +89,33 @@ final class _Class[A](val rawty: RawPtr) {
     }
 
   def isInterface(): scala.Boolean =
-    !ty.isClass
+    id < 0
 
   def isPrimitive(): scala.Boolean =
-    (rawty == toRawType(classOf[PrimitiveBoolean]) ||
-      rawty == toRawType(classOf[PrimitiveChar]) ||
-      rawty == toRawType(classOf[PrimitiveByte]) ||
-      rawty == toRawType(classOf[PrimitiveShort]) ||
-      rawty == toRawType(classOf[PrimitiveInt]) ||
-      rawty == toRawType(classOf[PrimitiveLong]) ||
-      rawty == toRawType(classOf[PrimitiveFloat]) ||
-      rawty == toRawType(classOf[PrimitiveDouble]) ||
-      rawty == toRawType(classOf[PrimitiveUnit]))
+    is(classOf[PrimitiveBoolean]) ||
+      is(classOf[PrimitiveChar]) ||
+      is(classOf[PrimitiveByte]) ||
+      is(classOf[PrimitiveShort]) ||
+      is(classOf[PrimitiveInt]) ||
+      is(classOf[PrimitiveLong]) ||
+      is(classOf[PrimitiveFloat]) ||
+      is(classOf[PrimitiveDouble]) ||
+      is(classOf[PrimitiveUnit])
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
       case other: _Class[_] =>
-        rawty == other.rawty
+        this eq other
       case _ =>
         false
     }
 
   @inline override def hashCode: Int =
-    Intrinsics.castRawPtrToLong(rawty).##
+    Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(this)).##
 
   override def toString = {
-    val name   = getName
-    val prefix = if (ty.isClass) "class " else "interface "
+    val name = getName()
+    val prefix = if (isInterface()) "interface " else "class "
     prefix + name
   }
 
@@ -132,8 +138,10 @@ final class _Class[A](val rawty: RawPtr) {
   @stub
   def getDeclaredFields(): Array[Field] = ???
   @stub
-  def getMethod(name: java.lang.String,
-                args: Array[Class[_]]): java.lang.reflect.Method = ???
+  def getMethod(
+      name: java.lang.String,
+      args: Array[Class[_]]
+  ): java.lang.reflect.Method = ???
   @stub
   def getMethods(): Array[Method] = ???
   @stub
@@ -142,16 +150,20 @@ final class _Class[A](val rawty: RawPtr) {
 
 object _Class {
   @alwaysinline private[java] implicit def _class2class[A](
-      cls: _Class[A]): Class[A] =
+      cls: _Class[A]
+  ): Class[A] =
     cls.asInstanceOf[Class[A]]
   @alwaysinline private[java] implicit def class2_class[A](
-      cls: Class[A]): _Class[A] =
+      cls: Class[A]
+  ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
   @stub
   def forName(name: String): Class[_] = ???
   @stub
-  def forName(name: String,
-              init: scala.Boolean,
-              loader: ClassLoader): Class[_] = ???
+  def forName(
+      name: String,
+      init: scala.Boolean,
+      loader: ClassLoader
+  ): Class[_] = ???
 }

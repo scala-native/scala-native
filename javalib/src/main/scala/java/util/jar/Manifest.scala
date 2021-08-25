@@ -13,8 +13,8 @@ class Manifest() extends Cloneable {
   private var entries: Map[String, Attributes] =
     new HashMap[String, Attributes]
   private var chunks: Map[String, Manifest.Chunk] = null
-  private var im: InitManifest                    = null
-  private var mainEnd: Int                        = 0
+  private var im: InitManifest = null
+  private var mainEnd: Int = 0
 
   def this(is: InputStream) = {
     this()
@@ -104,42 +104,46 @@ class Manifest() extends Cloneable {
 object Manifest {
   private[jar] class Chunk(val start: Int, val end: Int)
 
-  private[jar] final val LINE_LENGTH_LIMIT: Int  = 72
-  private final val LINE_SEPARATOR: Array[Byte]  = Array[Byte]('\r', '\n')
+  private[jar] final val LINE_LENGTH_LIMIT: Int = 72
+  private final val LINE_SEPARATOR: Array[Byte] = Array[Byte]('\r', '\n')
   private final val VALUE_SEPARATOR: Array[Byte] = Array[Byte](':', ' ')
   private final val NAME_ATTRIBUTE: Attributes.Name =
     new Attributes.Name("Name")
 
   private[jar] def write(manifest: Manifest, out: OutputStream): Unit = {
     val encoder = StandardCharsets.UTF_8.newEncoder()
-    val buffer  = ByteBuffer.allocate(4096)
+    val buffer = ByteBuffer.allocate(4096)
 
     val version =
       manifest.mainAttributes.getValue(Attributes.Name.MANIFEST_VERSION)
     if (version != null) {
-      writeEntry(out,
-                 Attributes.Name.MANIFEST_VERSION,
-                 version,
-                 encoder,
-                 buffer)
+      writeEntry(
+        out,
+        Attributes.Name.MANIFEST_VERSION,
+        version,
+        encoder,
+        buffer
+      )
       val entries = manifest.mainAttributes.keySet().iterator()
       while (entries.hasNext()) {
         val name = entries.next().asInstanceOf[Attributes.Name]
         if (name != Attributes.Name.MANIFEST_VERSION) {
-          writeEntry(out,
-                     name,
-                     manifest.mainAttributes.getValue(name),
-                     encoder,
-                     buffer)
+          writeEntry(
+            out,
+            name,
+            manifest.mainAttributes.getValue(name),
+            encoder,
+            buffer
+          )
         }
       }
     }
     out.write(LINE_SEPARATOR)
-    val i = manifest.getEntries.keySet.iterator
-    while (i.hasNext) {
+    val i = manifest.getEntries().keySet().iterator()
+    while (i.hasNext()) {
       val key = i.next()
       writeEntry(out, NAME_ATTRIBUTE, key, encoder, buffer)
-      val attrib  = manifest.entries.get(key)
+      val attrib = manifest.entries.get(key)
       val entries = attrib.keySet().iterator()
       while (entries.hasNext()) {
         val name = entries.next().asInstanceOf[Attributes.Name]
@@ -149,15 +153,18 @@ object Manifest {
     }
   }
 
-  private def writeEntry(os: OutputStream,
-                         name: Attributes.Name,
-                         value: String,
-                         encoder: CharsetEncoder,
-                         bBuf: ByteBuffer): Unit = {
+  private def writeEntry(
+      os: OutputStream,
+      name: Attributes.Name,
+      value: String,
+      encoder: CharsetEncoder,
+      bBuf: ByteBuffer
+  ): Unit = {
     val out = name.getBytes()
     if (out.length > LINE_LENGTH_LIMIT) {
       throw new IOException(
-        s"""A length of the encoded header name "$name" exceeded maximum length $LINE_LENGTH_LIMIT""")
+        s"""A length of the encoded header name "$name" exceeded maximum length $LINE_LENGTH_LIMIT"""
+      )
     } else {
       os.write(out)
       os.write(VALUE_SEPARATOR)
@@ -186,8 +193,8 @@ object Manifest {
 
   private def readFully(is: InputStream): Array[Byte] = {
     // Initial read
-    val buffer   = new Array[Byte](4096)
-    var count    = is.read(buffer)
+    val buffer = new Array[Byte](4096)
+    var count = is.read(buffer)
     val nextByte = is.read()
 
     // Did we get it all in one read?
@@ -218,10 +225,10 @@ object Manifest {
   }
 
   private def containsLine(buffer: Array[Byte], length: Int) = {
-    var i      = 0
+    var i = 0
     var result = false
     while (!result && i < length) {
-      if (buffer(i) == 0x0A || buffer(i) == 0x0D) {
+      if (buffer(i) == 0x0a || buffer(i) == 0x0d) {
         result = true
       }
       i += 1

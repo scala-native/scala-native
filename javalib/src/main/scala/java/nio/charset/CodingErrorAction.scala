@@ -5,7 +5,7 @@ class CodingErrorAction private (name: String) {
 }
 
 object CodingErrorAction {
-  val IGNORE  = new CodingErrorAction("IGNORE")
+  val IGNORE = new CodingErrorAction("IGNORE")
   val REPLACE = new CodingErrorAction("REPLACE")
-  val REPORT  = new CodingErrorAction("REPORT")
+  val REPORT = new CodingErrorAction("REPORT")
 }
