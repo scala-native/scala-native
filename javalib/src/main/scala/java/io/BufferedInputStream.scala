@@ -24,13 +24,14 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   /** The internal buffer array where the data is stored. */
   protected[this] var buf = new Array[Byte](initialSize)
 
-  /** The index one greater than the index of the last valid byte in the buffer. */
+  /** The index one greater than the index of the last valid byte in the buffer.
+   */
   protected[this] var count: Int = 0
 
   private[this] var closed: Boolean = false
 
-  /** The maximum read ahead allowed after a call to the mark method before subsequent calls to the
-   *  reset method fail.
+  /** The maximum read ahead allowed after a call to the mark method before*
+   *  subsequent calls to the reset method fail.
    */
   protected[this] var marklimit: Int = 0
 
@@ -61,92 +62,12 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
     }
   }
 
-  // https://github.com/scala-native/scala-native/pull/1767#discussion_r423120768
-  private def ensureOpen(): (Array[Byte], InputStream) = {
-    /* First read `in` and `buf`, then `closed`. Since `closed` is the first thing
-     *  that is set to `true` in `close()`, we know that if `closed` is false, the
-     *  `in` and `buf` are non-null.
-     */
-    val in  = this.in
-    val buf = this.buf
-    if (closed)
-      throw new IOException("Operation on closed stream")
-    (buf, in)
-  }
-
   override def mark(readLimit: Int): Unit = synchronized {
     marklimit = readLimit
     markpos = pos
   }
 
   override def markSupported(): Boolean = true
-
-  /* Reads up to sourceBuffer.length bytes from the source input stream.
-   * This will also replace `buf` if a larger buffer is required to handle mark.
-   *
-   * postcondition: markpos invalidated if pos - markpos exceeds marklimit. Not exactly at the
-   * boundary tho as this is only a "may" in spec.
-   *
-   * @returns buf
-   */
-  private def fillBuffer(sourceBuffer: Array[Byte],
-                         source: InputStream): Option[Array[Byte]] = {
-    if (markpos != -1 && (pos - markpos <= marklimit))
-      fillMarkedBuffer(sourceBuffer, source)
-    else
-      fillUnmarkedBuffer(sourceBuffer, source)
-  }
-
-  private def fillUnmarkedBuffer(sourceBuffer: Array[Byte],
-                                 source: InputStream): Option[Array[Byte]] = {
-    // mark is always invalidated in this case
-    marklimit = 0
-    markpos = -1
-
-    val bytesRead = source.read(sourceBuffer)
-
-    if (bytesRead == -1) {
-      pos = 0
-      count = 0
-      None
-    } else {
-      pos = 0
-      count = bytesRead
-      Some(sourceBuffer)
-    }
-  }
-
-  /* For mark (markpos == -1) the logic is:
-   * If there is space in the current buffer: read into buffer starting at `count`
-   *
-   * If there is no space in the current buffer: create a larger buffer, copy old, read into larger
-   * buffer starting at `count`.
-   *
-   * The mark is not invalidated in this method: Per spec there is no requirement to invalidate mark
-   * *exactly* when pos - markpos exceeds marklimit. This is "generous" and migh permit a reset
-   * beyond marklimit.
-   */
-  private def fillMarkedBuffer(sourceBuffer: Array[Byte],
-                               source: InputStream): Option[Array[Byte]] = {
-    val buffer = if (count < sourceBuffer.length) {
-      sourceBuffer
-    } else {
-      val newBuffer = new Array[Byte](sourceBuffer.length * 2)
-      sourceBuffer.copyToArray(newBuffer)
-      buf = newBuffer
-      if (closed)
-        buf = null
-      newBuffer
-    }
-
-    val bytesRead = source.read(buffer, count, buffer.length - count)
-    if (bytesRead == -1)
-      None
-    else {
-      count += bytesRead
-      Some(buffer)
-    }
-  }
 
   // can block
   // returns -1 on end of stream
@@ -157,7 +78,7 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
 
     synchronized {
       if (pos < count) {
-        val res = buf(pos).toInt
+        val res = buf(pos).toInt & 0xff
         pos += 1
         res
       } else {
@@ -187,35 +108,154 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
     }
   }
 
-  private def unsafeRead(targetBuffer: Array[Byte],
-                         initialOffset: Int,
-                         requested: Int,
-                         initialBuffer: Array[Byte],
-                         source: InputStream): Int = {
+  override def reset(): Unit = {
+    ensureOpen()
+
+    synchronized {
+      if (markpos == -1) throw new IOException("Mark invalid")
+
+      pos = markpos
+    }
+  }
+
+  // TODO: inefficient
+  // per spec: if n is < 0 then no bytes are skipped and the return value is 0
+  override def skip(n: Long): Long =
+    if (n <= 0) 0
+    else {
+      var actual = 0
+      var eos = false
+      while (!eos && actual < n) {
+        if (read() == -1) {
+          eos = true
+        } else {
+          actual += 1
+        }
+      }
+      actual
+    }
+
+  // https://github.com/scala-native/scala-native/pull/1767#discussion_r423120768
+  private def ensureOpen(): (Array[Byte], InputStream) = {
+    /* First read `in` and `buf`, then `closed`. Since `closed` is the first thing
+     *  that is set to `true` in `close()`, we know that if `closed` is false, the
+     *  `in` and `buf` are non-null.
+     */
+    val in = this.in
+    val buf = this.buf
+    if (closed)
+      throw new IOException("Operation on closed stream")
+    (buf, in)
+  }
+
+  /* Reads up to sourceBuffer.length bytes from the source input stream.
+   * This will also replace `buf` if a larger buffer is required to handle mark.
+   *
+   * postcondition: markpos invalidated if pos - markpos exceeds marklimit. Not exactly at the
+   * boundary tho as this is only a "may" in spec.
+   *
+   * @returns buf
+   */
+  private def fillBuffer(
+      sourceBuffer: Array[Byte],
+      source: InputStream
+  ): Option[Array[Byte]] = {
+    if (markpos != -1 && (pos - markpos <= marklimit))
+      fillMarkedBuffer(sourceBuffer, source)
+    else
+      fillUnmarkedBuffer(sourceBuffer, source)
+  }
+
+  private def fillUnmarkedBuffer(
+      sourceBuffer: Array[Byte],
+      source: InputStream
+  ): Option[Array[Byte]] = {
+    // mark is always invalidated in this case
+    marklimit = 0
+    markpos = -1
+
+    val bytesRead = source.read(sourceBuffer)
+
+    if (bytesRead == -1) {
+      pos = 0
+      count = 0
+      None
+    } else {
+      pos = 0
+      count = bytesRead
+      Some(sourceBuffer)
+    }
+  }
+
+  /* For mark (markpos == -1) the logic is:
+   * If there is space in the current buffer: read into buffer starting at `count`
+   *
+   * If there is no space in the current buffer: create a larger buffer, copy old, read into larger
+   * buffer starting at `count`.
+   *
+   * The mark is not invalidated in this method: Per spec there is no requirement to invalidate mark
+   * *exactly* when pos - markpos exceeds marklimit. This is "generous" and migh permit a reset
+   * beyond marklimit.
+   */
+  private def fillMarkedBuffer(
+      sourceBuffer: Array[Byte],
+      source: InputStream
+  ): Option[Array[Byte]] = {
+    val buffer = if (count < sourceBuffer.length) {
+      sourceBuffer
+    } else {
+      val newBuffer = new Array[Byte](sourceBuffer.length * 2)
+      sourceBuffer.copyToArray(newBuffer)
+      buf = newBuffer
+      if (closed)
+        buf = null
+      newBuffer
+    }
+
+    val bytesRead = source.read(buffer, count, buffer.length - count)
+    if (bytesRead == -1)
+      None
+    else {
+      count += bytesRead
+      Some(buffer)
+    }
+  }
+
+  private def unsafeRead(
+      targetBuffer: Array[Byte],
+      initialOffset: Int,
+      requested: Int,
+      initialBuffer: Array[Byte],
+      source: InputStream
+  ): Int = {
     var sourceBuffer: Array[Byte] = initialBuffer
-    var remaining: Int            = requested
-    var targetOffset: Int         = initialOffset
-    var bytesRead: Int            = 0
+    var remaining: Int = requested
+    var targetOffset: Int = initialOffset
+    var bytesRead: Int = 0
 
     while (remaining > 0) {
       if (pos + remaining <= count) {
         // all remaining can be read from the source buffer
-        System.arraycopy(sourceBuffer,
-                         pos,
-                         targetBuffer,
-                         targetOffset,
-                         remaining)
+        System.arraycopy(
+          sourceBuffer,
+          pos,
+          targetBuffer,
+          targetOffset,
+          remaining
+        )
         pos += remaining
         bytesRead += remaining
         remaining = 0
       } else {
         val available = count - pos
         if (available > 0) {
-          System.arraycopy(sourceBuffer,
-                           pos,
-                           targetBuffer,
-                           targetOffset,
-                           available)
+          System.arraycopy(
+            sourceBuffer,
+            pos,
+            targetBuffer,
+            targetOffset,
+            available
+          )
         }
 
         // fill source buffer from source stream
@@ -243,31 +283,4 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
 
     bytesRead
   }
-
-  override def reset(): Unit = {
-    ensureOpen()
-
-    synchronized {
-      if (markpos == -1) throw new IOException("Mark invalid")
-
-      pos = markpos
-    }
-  }
-
-  // TODO: inefficient
-  // per spec: if n is < 0 then no bytes are skipped and the return value is 0
-  override def skip(n: Long): Long =
-    if (n <= 0) 0
-    else {
-      var actual = 0
-      var eos    = false
-      while (!eos && actual < n) {
-        if (read() == -1) {
-          eos = true
-        } else {
-          actual += 1
-        }
-      }
-      actual
-    }
 }
