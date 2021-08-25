@@ -22,36 +22,41 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
 
   /** Multiplexer map.
    *
-   *  Access to the outer map needs to synchronized.
-   *  Access to the inner map only needs to be synchronize for writing.
+   *  Access to the outer map needs to synchronized. Access to the inner map
+   *  only needs to be synchronize for writing.
    */
   private[this] val mux =
     mutable.Map.empty[RPCCore.OpCode, java.util.HashMap[RunID, _]]
 
   def call[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
-      req: Req): Future[ep.Resp] =
+      req: Req
+  ): Future[ep.Resp] =
     rpc.call(ep)(new RunMux(runId, req))
 
   def send[Msg](ep: MuxMsgEndpoint[Msg], runId: RunID)(msg: Msg): Unit =
     rpc.send(ep)(new RunMux(runId, msg))
 
   def attach[Msg](ep: MuxMsgEndpoint[Msg], runId: RunID)(
-      ex: Msg => Unit): Unit =
+      ex: Msg => Unit
+  ): Unit =
     attachMux(ep.opCode, runId, ex)(rpc.attach(ep))
 
   def attach[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
-      ex: Req => ep.Resp): Unit =
+      ex: Req => ep.Resp
+  ): Unit =
     attachAsync(ep, runId)(x => Future.fromTry(Try(ex(x))))
 
   def attachAsync[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
-      ex: Req => Future[ep.Resp]): Unit = {
+      ex: Req => Future[ep.Resp]
+  ): Unit = {
     attachMux(ep.opCode, runId, ex)(rpc.attachAsync(ep))
   }
 
   private def attachMux[Req, Resp](
       opCode: RPCCore.OpCode,
       runId: RunID,
-      ex: Req => Resp)(attach: (RunMux[Req] => Resp) => Unit): Unit =
+      ex: Req => Resp
+  )(attach: (RunMux[Req] => Resp) => Unit): Unit =
     synchronized {
       type DispatchMap = java.util.HashMap[RunID, Req => Resp]
 
@@ -68,16 +73,19 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
       }
 
       val dispatch = mux.getOrElseUpdate(opCode, newDispatchMap())
-      val old      = dispatch.asInstanceOf[DispatchMap].put(runId, ex)
+      val old = dispatch.asInstanceOf[DispatchMap].put(runId, ex)
       require(old == null, s"Duplicate endpoint for opcode $opCode run $runId")
     }
 
   def detach(ep: Endpoint, runId: RunID): Unit = synchronized {
     val opCode = ep.opCode
 
-    val dispatch = mux.getOrElse(opCode,
-                                 throw new IllegalArgumentException(
-                                   s"No endpoint attached for opCode $opCode"))
+    val dispatch = mux.getOrElse(
+      opCode,
+      throw new IllegalArgumentException(
+        s"No endpoint attached for opCode $opCode"
+      )
+    )
 
     val old = dispatch.remove(runId)
     require(old != null, s"No endpoint attached for opCode $opCode run $runId")

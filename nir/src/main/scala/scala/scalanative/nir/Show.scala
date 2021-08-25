@@ -5,8 +5,6 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
-import java.util.stream.{Stream => JStream}
-import java.util.function.{Function => JFunction, Consumer => JConsumer}
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
@@ -16,24 +14,24 @@ object Show {
     value
   }
 
-  def apply(v: Attr): String  = { val b = newBuilder; b.attr_(v); b.toString }
+  def apply(v: Attr): String = { val b = newBuilder; b.attr_(v); b.toString }
   def apply(v: Attrs): String = { val b = newBuilder; b.attrs_(v); b.toString }
-  def apply(v: Bin): String   = { val b = newBuilder; b.bin_(v); b.toString }
-  def apply(v: Comp): String  = { val b = newBuilder; b.comp_(v); b.toString }
-  def apply(v: Conv): String  = { val b = newBuilder; b.conv_(v); b.toString }
-  def apply(v: Defn): String  = { val b = newBuilder; b.defn_(v); b.toString }
+  def apply(v: Bin): String = { val b = newBuilder; b.bin_(v); b.toString }
+  def apply(v: Comp): String = { val b = newBuilder; b.comp_(v); b.toString }
+  def apply(v: Conv): String = { val b = newBuilder; b.conv_(v); b.toString }
+  def apply(v: Defn): String = { val b = newBuilder; b.defn_(v); b.toString }
   def apply(v: Global): String = {
     val b = newBuilder; b.global_(v); b.toString
   }
   def apply(v: Sig): String = {
     val b = newBuilder; b.sig_(v); b.toString
   }
-  def apply(v: Inst): String  = { val b = newBuilder; b.inst_(v); b.toString }
+  def apply(v: Inst): String = { val b = newBuilder; b.inst_(v); b.toString }
   def apply(v: Local): String = { val b = newBuilder; b.local_(v); b.toString }
-  def apply(v: Next): String  = { val b = newBuilder; b.next_(v); b.toString }
-  def apply(v: Op): String    = { val b = newBuilder; b.op_(v); b.toString }
-  def apply(v: Type): String  = { val b = newBuilder; b.type_(v); b.toString }
-  def apply(v: Val): String   = { val b = newBuilder; b.val_(v); b.toString }
+  def apply(v: Next): String = { val b = newBuilder; b.next_(v); b.toString }
+  def apply(v: Op): String = { val b = newBuilder; b.op_(v); b.toString }
+  def apply(v: Type): String = { val b = newBuilder; b.type_(v); b.toString }
+  def apply(v: Val): String = { val b = newBuilder; b.val_(v); b.toString }
 
   type DefnString = (Global, String)
 
@@ -123,6 +121,7 @@ object Show {
         str("(")
         rep(args, sep = ", ")(val_)
         str(")")
+      case Next.None => ()
     }
 
     def inst_(inst: Inst): Unit = inst match {
@@ -186,6 +185,7 @@ object Show {
           str(" ")
           next_(unwind)
         }
+      case _ => util.unsupported(s"Show does not support ${inst}")
     }
 
     def op_(op: Op): Unit = op match {
@@ -629,15 +629,18 @@ object Show {
     }
 
     private def escapeNewLine(s: String): String =
-      """([^\\]|^)\n""".r.replaceAllIn(s, _.matched.toSeq match {
-        case Seq(sngl)     => s"""\\\\n"""
-        case Seq(fst, snd) => s"""${fst}\\\\n"""
-      })
+      """([^\\]|^)\n""".r.replaceAllIn(
+        s,
+        _.matched.toSeq match {
+          case Seq(sngl)     => s"""\\\\n"""
+          case Seq(fst, snd) => s"""${fst}\\\\n"""
+        }
+      )
 
     private def escapeQuotes(s: String): String = {
-      val chars   = s.toArray
-      val out     = mutable.UnrolledBuffer.empty[Char]
-      var i       = 0
+      val chars = s.toArray
+      val out = mutable.UnrolledBuffer.empty[Char]
+      var i = 0
       var escaped = false
       while (i < chars.length) {
         val char = chars(i)

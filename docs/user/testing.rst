@@ -9,10 +9,20 @@ you would do for a Java project.
 
 To enable JUnit support, add the following lines to your `build.sbt` file:
 
-.. code-block:: scala
+.. Note: Using parsed-literal here instead of code-block:: scala
+..       allows this file to reference the Single Point of Truth in
+..       docs/config.py for the Scala Version. That is a big reduction
+..       in the likelihood of version skew.
+..       A user can "cut & paste" from the output but the SN Release Manager
+..       need not change this source.
+..
+..       parsed-literal does not allow scala highlighting, so there is a
+..       slight visual change in the output. Can you even detect it?
 
-    libraryDependencies += "org.scala-native" %%% "junit-runtime" % "0.4.0-SNAPSHOT"
-    addCompilerPlugin("org.scala-native" % "junit-plugin" % "0.4.0-SNAPSHOT" cross CrossVersion.full)
+.. parsed-literal::
+
+    libraryDependencies += "org.scala-native" %%% "junit-runtime" % |release|
+    addCompilerPlugin("org.scala-native" % "junit-plugin" % |release| cross CrossVersion.full)
 
 If you want to get more detailed output from the JUnit runtime, also include the following line:
 

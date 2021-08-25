@@ -20,18 +20,19 @@ import java.util.{Map, HashMap, Iterator, StringTokenizer}
 import scala.collection.mutable.ArrayBuffer
 
 private[jar] class JarVerifier(jarName: String) {
-  private var man: Manifest                                    = null
-  private var metaEntries: Map[String, Array[Byte]]            = new HashMap
+  private var man: Manifest = null
+  private var metaEntries: Map[String, Array[Byte]] = new HashMap
   private val signatures: Map[String, Map[String, Attributes]] = new HashMap
-  private val certificates: Map[String, Array[Certificate]]    = new HashMap
+  private val certificates: Map[String, Array[Certificate]] = new HashMap
   private val verifiedEntries: Map[String, Array[Certificate]] = new HashMap
-  private[jar] var mainAttributesEnd: Int                      = 0
+  private[jar] var mainAttributesEnd: Int = 0
 
-  private[jar] class VerifierEntry(private var name: String,
-                                   private var digest: MessageDigest,
-                                   private var hash: Array[Byte],
-                                   private var certificates: Array[Certificate])
-      extends OutputStream {
+  private[jar] class VerifierEntry(
+      private var name: String,
+      private var digest: MessageDigest,
+      private var hash: Array[Byte],
+      private var certificates: Array[Certificate]
+  ) extends OutputStream {
     override def write(value: Int): Unit =
       digest.update(value.toByte)
 
@@ -42,7 +43,8 @@ private[jar] class JarVerifier(jarName: String) {
       val d = digest.digest()
       if (!MessageDigest.isEqual(d, JarVerifier.base64Decode(hash))) {
         throw new SecurityException(
-          s"${JarFile.MANIFEST_NAME} has invalid digest for $name in $jarName")
+          s"${JarFile.MANIFEST_NAME} has invalid digest for $name in $jarName"
+        )
       } else {
         verifiedEntries.put(name, certificates)
       }
@@ -58,11 +60,11 @@ private[jar] class JarVerifier(jarName: String) {
         null
       } else {
         val certs = ArrayBuffer.empty[Certificate]
-        val it    = signatures.entrySet().iterator()
+        val it = signatures.entrySet().iterator()
         while (it.hasNext()) {
-          val entry         = it.next()
+          val entry = it.next()
           val signatureFile = entry.getKey()
-          val hm            = entry.getValue()
+          val hm = entry.getValue()
           if (hm.get(name) != null) {
             // Found an entry for entry name in .SF file
             val newCerts =
@@ -79,18 +81,19 @@ private[jar] class JarVerifier(jarName: String) {
           if (algorithms == null) {
             algorithms = "SHA SHA1"
           }
-          val tokens                = new StringTokenizer(algorithms)
+          val tokens = new StringTokenizer(algorithms)
           var result: VerifierEntry = null
           while (result == null && tokens.hasMoreTokens()) {
             val algorithm = tokens.nextToken()
-            val hash      = attributes.getValue(algorithm + "-Digest")
+            val hash = attributes.getValue(algorithm + "-Digest")
             if (hash != null) {
               val hashBytes = hash.getBytes("ISO-8859-1")
               try result = new VerifierEntry(
                 name,
                 MessageDigest.getInstance(algorithm),
                 hashBytes,
-                certs.toArray)
+                certs.toArray
+              )
               catch {
                 case _: NoSuchAlgorithmException => // ignored
               }
@@ -109,7 +112,7 @@ private[jar] class JarVerifier(jarName: String) {
       false
     } else {
       var result = true
-      val it     = metaEntries.keySet().iterator()
+      val it = metaEntries.keySet().iterator()
       while (result && it.hasNext()) {
         val key = it.next()
         if (key.endsWith(".DSA") || key.endsWith(".RSA")) {
@@ -127,7 +130,10 @@ private[jar] class JarVerifier(jarName: String) {
 
   private def verifyCertificate(certFile: String): Unit = {
     val signatureFile = certFile.substring(0, certFile.lastIndexOf('.')) + ".SF"
-    (metaEntries.get(signatureFile), metaEntries.get(JarFile.MANIFEST_NAME)) match {
+    (
+      metaEntries.get(signatureFile),
+      metaEntries.get(JarFile.MANIFEST_NAME)
+    ) match {
       case (null, _) | (_, null) =>
         ()
       case (sfBytes, manifest) =>
@@ -152,23 +158,26 @@ private[jar] class JarVerifier(jarName: String) {
           case _: IOException => return
           case g: GeneralSecurityException =>
             throw new SecurityException(
-              s"$jarName failedt verification of $signatureFile")
+              s"$jarName failedt verification of $signatureFile"
+            )
         }
 
         // Verify manifest hash in .sf file
         val attributes = new Attributes()
-        val entries    = new HashMap[String, Attributes]
+        val entries = new HashMap[String, Attributes]
         try {
-          val im = new InitManifest(sfBytes,
-                                    attributes,
-                                    Attributes.Name.SIGNATURE_VERSION)
+          val im = new InitManifest(
+            sfBytes,
+            attributes,
+            Attributes.Name.SIGNATURE_VERSION
+          )
           im.initEntries(entries, null)
         } catch {
           case _: IOException => return
         }
 
         var createdBySigntool = false
-        val createdBy         = attributes.getValue("Created-By")
+        val createdBy = attributes.getValue("Created-By")
         if (createdBy != null) {
           createdBySigntool = createdBy.indexOf("signtool") != -1
         }
@@ -179,46 +188,54 @@ private[jar] class JarVerifier(jarName: String) {
         // such verification
         if (mainAttributesEnd > 0 && !createdBySigntool) {
           val digestAttribute = "-Digest-Manifest-Main-Attributes"
-          if (!verify(attributes,
-                      digestAttribute,
-                      manifest,
-                      0,
-                      mainAttributesEnd,
-                      false,
-                      true)) {
+          if (!verify(
+                attributes,
+                digestAttribute,
+                manifest,
+                0,
+                mainAttributesEnd,
+                false,
+                true
+              )) {
             throw new SecurityException(
-              s"$jarName failedx verification of $signatureFile")
+              s"$jarName failedx verification of $signatureFile"
+            )
           }
         }
 
         // Use .SF to verify the whole manifest.
         val digestAttribute =
           if (createdBySigntool) "-Digest" else "-Digest-Manifest"
-        if (!verify(attributes,
-                    digestAttribute,
-                    manifest,
-                    0,
-                    manifest.length,
-                    false,
-                    false)) {
+        if (!verify(
+              attributes,
+              digestAttribute,
+              manifest,
+              0,
+              manifest.length,
+              false,
+              false
+            )) {
           val it = entries.entrySet().iterator()
           while (it.hasNext()) {
             val entry = it.next()
-            val key   = entry.getKey()
+            val key = entry.getKey()
             val value = entry.getValue()
             val chunk = man.getChunk(key)
             if (chunk == null) {
               return
             } else {
-              if (!verify(value,
-                          "-Digest",
-                          manifest,
-                          chunk.start,
-                          chunk.end,
-                          createdBySigntool,
-                          false)) {
+              if (!verify(
+                    value,
+                    "-Digest",
+                    manifest,
+                    chunk.start,
+                    chunk.end,
+                    createdBySigntool,
+                    false
+                  )) {
                 throw new SecurityException(
-                  s"$signatureFile has invalid digest for $key in $jarName")
+                  s"$signatureFile has invalid digest for $key in $jarName"
+                )
               }
             }
           }
@@ -235,32 +252,35 @@ private[jar] class JarVerifier(jarName: String) {
   private[jar] def isSignedJar(): Boolean =
     certificates.size() > 0
 
-  private def verify(attributes: Attributes,
-                     entry: String,
-                     data: Array[Byte],
-                     start: Int,
-                     end: Int,
-                     ignoreSecondEndline: Boolean,
-                     ignorable: Boolean): Boolean = {
+  private def verify(
+      attributes: Attributes,
+      entry: String,
+      data: Array[Byte],
+      start: Int,
+      end: Int,
+      ignoreSecondEndline: Boolean,
+      ignorable: Boolean
+  ): Boolean = {
     var algorithms = attributes.getValue("Digest-Algorithms")
     if (algorithms == null) {
       algorithms = "SHA SHA1"
     }
     val tokens = new StringTokenizer(algorithms)
-    var done   = false
+    var done = false
     var result = false
     while (!done && tokens.hasMoreTokens()) {
       val algorithm = tokens.nextToken()
-      val hash      = attributes.getValue(algorithm + entry)
+      val hash = attributes.getValue(algorithm + entry)
       if (hash != null) {
         try {
           val md = MessageDigest.getInstance(algorithm)
-          if (ignoreSecondEndline && data(end - 1) == '\n' && data(end - 2) == '\n') {
+          if (ignoreSecondEndline && data(end - 1) == '\n' &&
+              data(end - 2) == '\n') {
             md.update(data, start, end - 1 - start)
           } else {
             md.update(data, start, end - start)
           }
-          val b         = md.digest()
+          val b = md.digest()
           val hashBytes = hash.getBytes("ISO-8859-1")
           done = true
           result = MessageDigest.isEqual(b, JarVerifier.base64Decode(hashBytes))
@@ -284,9 +304,10 @@ private[jar] class JarVerifier(jarName: String) {
 }
 
 private[jar] object JarVerifier {
-  def getSignerCertificates(signatureFileName: String,
-                            certificates: Map[String, Array[Certificate]])
-      : ArrayBuffer[Certificate] = {
+  def getSignerCertificates(
+      signatureFileName: String,
+      certificates: Map[String, Array[Certificate]]
+  ): ArrayBuffer[Certificate] = {
     val result = ArrayBuffer.empty[Certificate]
     certificates.get(signatureFileName) match {
       case null => result
@@ -307,7 +328,7 @@ private[jar] object JarVerifier {
       // temporay array
       val out = new Array[Byte](length)
       // number of padding characters ('=')
-      var pad       = 0
+      var pad = 0
       var chr: Byte = 0
       // compute the number of the padding characters
       // and adjust the length of the input
@@ -332,7 +353,7 @@ private[jar] object JarVerifier {
       var bits = 0
       // holds the value of the input quantum
       var quantum = 0
-      var i       = 0
+      var i = 0
       while (i < len) {
         chr = in(i)
         // skip the neutral characters
@@ -365,11 +386,11 @@ private[jar] object JarVerifier {
           quantum = (quantum << 6) | bits.toByte
           if (in_index % 4 == 3) {
             // 4 characters were read, so make the output:
-            out(out_index) = ((quantum & 0x00FF0000) >> 16).toByte
+            out(out_index) = ((quantum & 0x00ff0000) >> 16).toByte
             out_index += 1
-            out(out_index) = ((quantum & 0x0000FF00) >> 8).toByte
+            out(out_index) = ((quantum & 0x0000ff00) >> 8).toByte
             out_index += 1
-            out(out_index) = (quantum & 0x000000FF).toByte
+            out(out_index) = (quantum & 0x000000ff).toByte
             out_index += 1
           }
           in_index += 1
@@ -380,10 +401,10 @@ private[jar] object JarVerifier {
         // adjust the quantum value according to the padding
         quantum = quantum << (6 * pad)
         // make output
-        out(out_index) = ((quantum & 0x00FF0000) >> 16).toByte
+        out(out_index) = ((quantum & 0x00ff0000) >> 16).toByte
         out_index += 1
         if (pad == 1) {
-          out(out_index) = ((quantum & 0x0000FF00) >> 8).toByte
+          out(out_index) = ((quantum & 0x0000ff00) >> 8).toByte
           out_index += 1
         }
       }

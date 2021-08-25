@@ -1,8 +1,10 @@
 #include "../netinet/in.h"
 #include "socket_conversions.h"
-#include <sys/socket.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifndef _WIN32
+#include <sys/socket.h>
+#endif
 
 int scalanative_convert_sockaddr_in(struct scalanative_sockaddr_in *in,
                                     struct sockaddr_in **out, socklen_t *size) {

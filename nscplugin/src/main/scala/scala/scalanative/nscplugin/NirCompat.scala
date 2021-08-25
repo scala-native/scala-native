@@ -4,7 +4,7 @@ package nscplugin
 import scala.reflect.internal.Flags
 import scala.tools.nsc._
 
-trait NirCompat[G <: Global with Singleton] { self: NirGenPhase[G] =>
+trait NirCompat[G <: Global with Singleton] { self: NirPhase[G] =>
   import NirCompat.{infiniteLoop, noImplClasses}
   import global._
 
@@ -32,6 +32,17 @@ trait NirCompat[G <: Global with Singleton] { self: NirGenPhase[G] =>
   implicit final class SAMFunctionCompatOps(self: SAMFunctionCompat) {
     // Introduced in 2.12.5 to synthesize bridges in LMF classes
     def synthCls: Symbol = NoSymbol
+  }
+
+  implicit final class TyperCompatOps(self: NirCompat.this.global.typer.type) {
+    def checkClassTypeOrModule(tpt: Tree): Boolean = {
+      import typer._
+      checkClassType(tpt)
+    }
+
+    object typer {
+      def checkClassType(tpt: Tree): Boolean = infiniteLoop()
+    }
   }
 
   implicit final class SymbolCompat(self: Symbol) {

@@ -2,8 +2,10 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
-private[testinterface] final class RunMux[+T](val runId: RunMux.RunID,
-                                              val value: T)
+private[testinterface] final class RunMux[+T](
+    val runId: RunMux.RunID,
+    val value: T
+)
 
 private[testinterface] object RunMux {
   type RunID = Int

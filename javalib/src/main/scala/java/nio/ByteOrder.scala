@@ -9,7 +9,7 @@ final class ByteOrder private (name: String) {
 }
 
 object ByteOrder {
-  val BIG_ENDIAN: ByteOrder    = new ByteOrder("BIG_ENDIAN")
+  val BIG_ENDIAN: ByteOrder = new ByteOrder("BIG_ENDIAN")
   val LITTLE_ENDIAN: ByteOrder = new ByteOrder("LITTLE_ENDIAN")
 
   def nativeOrder(): ByteOrder = {

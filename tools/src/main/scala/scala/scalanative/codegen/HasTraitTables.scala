@@ -7,14 +7,14 @@ import scalanative.linker.{Trait, Class}
 class HasTraitTables(meta: Metadata) {
   private implicit val pos: Position = Position.NoPosition
 
-  val classHasTraitName       = Global.Top("__class_has_trait")
-  val classHasTraitVal        = Val.Global(classHasTraitName, Type.Ptr)
-  var classHasTraitTy: Type   = _
+  val classHasTraitName = Global.Top("__class_has_trait")
+  val classHasTraitVal = Val.Global(classHasTraitName, Type.Ptr)
+  var classHasTraitTy: Type = _
   var classHasTraitDefn: Defn = _
 
-  val traitHasTraitName       = Global.Top("__trait_has_trait")
-  val traitHasTraitVal        = Val.Global(traitHasTraitName, Type.Ptr)
-  var traitHasTraitTy: Type   = _
+  val traitHasTraitName = Global.Top("__trait_has_trait")
+  val traitHasTraitVal = Val.Global(traitHasTraitName, Type.Ptr)
+  var traitHasTraitTy: Type = _
   var traitHasTraitDefn: Defn = _
 
   initClassHasTrait()
@@ -35,7 +35,7 @@ class HasTraitTables(meta: Metadata) {
     val columns = meta.classes.map { cls =>
       val row = new Array[Boolean](meta.traits.length)
       markTraits(row, cls)
-      Val.ArrayValue(Type.Bool, row.map(Val.Bool))
+      Val.ArrayValue(Type.Bool, row.toSeq.map(Val.Bool))
     }
     val table =
       Val.ArrayValue(Type.ArrayValue(Type.Bool, meta.traits.length), columns)
@@ -50,7 +50,7 @@ class HasTraitTables(meta: Metadata) {
       val row = new Array[Boolean](meta.traits.length)
       markTraits(row, left)
       row(meta.ids(left)) = true
-      Val.ArrayValue(Type.Bool, row.map(Val.Bool))
+      Val.ArrayValue(Type.Bool, row.toSeq.map(Val.Bool))
     }
     val table =
       Val.ArrayValue(Type.ArrayValue(Type.Bool, meta.traits.length), columns)

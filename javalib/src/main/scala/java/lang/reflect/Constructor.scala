@@ -10,5 +10,6 @@ class Constructor[T] extends Executable {
 
   @stub
   def newInstance(
-      args: scala.scalanative.runtime.ObjectArray): java.lang.Object = ???
+      args: scala.scalanative.runtime.ObjectArray
+  ): java.lang.Object = ???
 }

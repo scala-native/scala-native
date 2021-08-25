@@ -4,27 +4,76 @@
 #include "Allocator.h"
 #include "BlockAllocator.h"
 #include <stdio.h>
+#include <limits.h>
+#include "util/ThreadUtil.h"
+#include <errno.h>
+#include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
+
+/*
+If in OSX, sem_open cannot create a semaphore whose name is longer than
+PSEMNAMLEN characters. Else, we stick to POSIX compliance:
+
+  The length of the name argument cannot exceed {_POSIX_PATH_MAX} on systems
+  that do not support the XSI option or exceed {_XOPEN_PATH_MAX} on XSI systems.
+  We restrict to _POSIX_PATH_MAX, since it is the most restrictive and
+  _XOPEN_PATH_MAX does not seem to be available in all Linux distros
+
+The +1 accounts for the null char at the end of the name
+*/
+#ifdef __APPLE__
+#include <sys/posix_sem.h>
+#define SEM_MAX_LENGTH PSEMNAMLEN + 1
+#elif defined(_WIN32)
+#define SEM_MAX_LENGTH MAX_PATH + 1
+#define SEM_FAILED NULL
+#else
+#define SEM_MAX_LENGTH _POSIX_PATH_MAX + 1
+#endif
 
 void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
-    pid_t pid = getpid();
-    // size = static part + 32 bit int as string
-    char startWorkersName[32 + 10];
-    char startMasterName[31 + 10];
-    snprintf(startWorkersName, 32 + 10, "scalanative_commix_startWorkers_%d",
-             pid);
-    snprintf(startMasterName, 31 + 10, "scalanative_commix_startMaster_%d",
-             pid);
+    pid_t pid = process_getid();
+    char startWorkersName[SEM_MAX_LENGTH];
+    char startMasterName[SEM_MAX_LENGTH];
+    snprintf(startWorkersName, SEM_MAX_LENGTH, "mt_%d_commix", pid);
+    snprintf(startMasterName, SEM_MAX_LENGTH, "wk_%d_commix", pid);
     // only reason for using named semaphores here is for compatibility with
     // MacOs we do not share them across processes
-    heap->gcThreads.startWorkers =
-        sem_open(startWorkersName, O_CREAT | O_EXCL, 0644, 0);
-    heap->gcThreads.startMaster =
-        sem_open(startMasterName, O_CREAT | O_EXCL, 0644, 0);
+    // We open the semaphores and try to check the call succeeded,
+    // if not, we exit the process
+    heap->gcThreads.startWorkers = semaphore_open(startWorkersName, 0U);
+    if (heap->gcThreads.startWorkers == SEM_FAILED) {
+        fprintf(stderr,
+                "Opening worker semaphore failed in commix Phase_Init\n");
+        exit(errno);
+    }
+
+    heap->gcThreads.startMaster = semaphore_open(startMasterName, 0U);
+    if (heap->gcThreads.startMaster == SEM_FAILED) {
+        fprintf(stderr,
+                "Opening master semaphore failed in commix Phase_Init\n");
+        exit(errno);
+    }
     // clean up when process closes
     // also prevents any other process from `sem_open`ing it
-    sem_unlink(startWorkersName);
-    sem_unlink(startMasterName);
+    // On Windows we don't have equivalent of `sem_unlink` - semaphore would be
+    // removed automatically after all its handles would be closed. In our case
+    // it happens at process exit, since we do never explicitly close
+    // semaphores.
+#ifndef _WIN32
+    if (sem_unlink(startWorkersName) != 0) {
+        fprintf(stderr,
+                "Unlinking worker semaphore failed in commix Phase_Init\n");
+        exit(errno);
+    }
+    if (sem_unlink(startMasterName) != 0) {
+        fprintf(stderr,
+                "Unlinking master semaphore failed in commix Phase_Init\n");
+        exit(errno);
+    }
+#endif
 
     heap->sweep.cursor = initialBlockCount;
     heap->lazySweep.cursorDone = initialBlockCount;

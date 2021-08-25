@@ -24,6 +24,10 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
+  /** Optional target triple that defines current OS, ABI and CPU architecture.
+   */
+  def targetTriple: Option[String]
+
   /** Should stubs be linked? */
   def linkStubs: Boolean
 
@@ -38,6 +42,9 @@ sealed trait NativeConfig {
 
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
+
+  /** Map of properties resolved at linktime */
+  def linktimeProperties: Map[String, Any]
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
@@ -57,6 +64,12 @@ sealed trait NativeConfig {
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): NativeConfig
 
+  /** Create a new config given a target triple. */
+  def withTargetTriple(value: Option[String]): NativeConfig
+
+  /** Create a new config given a target triple. */
+  def withTargetTriple(value: String): NativeConfig
+
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): NativeConfig
 
@@ -71,6 +84,9 @@ sealed trait NativeConfig {
 
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
+
+  /** Create a new config with given linktime properites */
+  def withLinktimeProperties(value: Map[String, Any]): NativeConfig
 }
 
 object NativeConfig {
@@ -82,27 +98,32 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
+      targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
       check = false,
       dump = false,
       linkStubs = false,
-      optimize = false
+      optimize = false,
+      linktimeProperties = Map.empty
     )
 
-  private final case class Impl(clang: Path,
-                                clangPP: Path,
-                                linkingOptions: Seq[String],
-                                compileOptions: Seq[String],
-                                gc: GC,
-                                mode: Mode,
-                                lto: LTO,
-                                linkStubs: Boolean,
-                                check: Boolean,
-                                dump: Boolean,
-                                optimize: Boolean)
-      extends NativeConfig {
+  private final case class Impl(
+      clang: Path,
+      clangPP: Path,
+      linkingOptions: Seq[String],
+      compileOptions: Seq[String],
+      targetTriple: Option[String],
+      gc: GC,
+      mode: Mode,
+      lto: LTO,
+      linkStubs: Boolean,
+      check: Boolean,
+      dump: Boolean,
+      optimize: Boolean,
+      linktimeProperties: Map[String, Any]
+  ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
       copy(clang = value)
@@ -115,6 +136,13 @@ object NativeConfig {
 
     def withCompileOptions(value: Seq[String]): NativeConfig =
       copy(compileOptions = value)
+
+    def withTargetTriple(value: Option[String]): NativeConfig =
+      copy(targetTriple = value)
+
+    def withTargetTriple(value: String): NativeConfig = {
+      withTargetTriple(Some(value))
+    }
 
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
@@ -134,15 +162,57 @@ object NativeConfig {
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
 
-    override def withOptimize(value: Boolean): NativeConfig =
+    def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    override def toString: String =
+    override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
+      def isNumberOrString(value: Any) = {
+        def hasSupportedType = value match {
+          case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
+              _: Float | _: Double | _: String =>
+            true
+          case _ => false
+        }
+
+        value != null && hasSupportedType
+      }
+
+      val invalid = v.collect {
+        case (key, value) if !isNumberOrString(value) => key
+      }
+      if (invalid.nonEmpty) {
+        System.err.println(
+          s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}"
+        )
+        throw new BuildException(
+          "Link-time properties needs to be non-null primitives or non-empty string"
+        )
+      }
+
+      copy(linktimeProperties = v)
+    }
+
+    override def toString: String = {
+      val listLinktimeProperties = {
+        if (linktimeProperties.isEmpty) ""
+        else {
+          val maxKeyLength = linktimeProperties.keys.map(_.length).max
+          val keyPadSize = maxKeyLength.min(20)
+          "\n" + linktimeProperties.toSeq
+            .sortBy(_._1)
+            .map {
+              case (key, value) =>
+                s"   * ${key.padTo(keyPadSize, ' ')} : $value"
+            }
+            .mkString("\n")
+        }
+      }
       s"""NativeConfig(
         | - clang:           $clang
         | - clangPP:         $clangPP
         | - linkingOptions:  $linkingOptions
         | - compileOptions:  $compileOptions
+        | - targetTriple:    $targetTriple
         | - GC:              $gc
         | - mode:            $mode
         | - LTO:             $lto
@@ -150,7 +220,9 @@ object NativeConfig {
         | - check:           $check
         | - dump:            $dump
         | - optimize         $optimize
+        | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
+    }
   }
 
 }

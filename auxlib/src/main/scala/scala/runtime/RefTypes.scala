@@ -8,7 +8,7 @@ class BooleanRef(var elem: Boolean) extends Serializable {
 }
 object BooleanRef {
   @inline def create(elem: Boolean): BooleanRef = new BooleanRef(elem)
-  @inline def zero(): BooleanRef                = new BooleanRef(false)
+  @inline def zero(): BooleanRef = new BooleanRef(false)
 }
 
 @inline
@@ -27,7 +27,7 @@ class CharRef(var elem: Char) extends Serializable {
 }
 object CharRef {
   @inline def create(elem: Char): CharRef = new CharRef(elem)
-  @inline def zero(): CharRef             = new CharRef(0.toChar)
+  @inline def zero(): CharRef = new CharRef(0.toChar)
 }
 
 @inline
@@ -36,7 +36,7 @@ class VolatileCharRef(var elem: Char) extends Serializable {
 }
 object VolatileCharRef {
   @inline def create(elem: Char): VolatileCharRef = new VolatileCharRef(elem)
-  @inline def zero(): VolatileCharRef             = new VolatileCharRef(0.toChar)
+  @inline def zero(): VolatileCharRef = new VolatileCharRef(0.toChar)
 }
 
 @inline
@@ -45,7 +45,7 @@ class ByteRef(var elem: Byte) extends Serializable {
 }
 object ByteRef {
   @inline def create(elem: Byte): ByteRef = new ByteRef(elem)
-  @inline def zero(): ByteRef             = new ByteRef(0)
+  @inline def zero(): ByteRef = new ByteRef(0)
 }
 
 @inline
@@ -54,7 +54,7 @@ class VolatileByteRef(var elem: Byte) extends Serializable {
 }
 object VolatileByteRef {
   @inline def create(elem: Byte): VolatileByteRef = new VolatileByteRef(elem)
-  @inline def zero(): VolatileByteRef             = new VolatileByteRef(0)
+  @inline def zero(): VolatileByteRef = new VolatileByteRef(0)
 }
 
 @inline
@@ -63,7 +63,7 @@ class ShortRef(var elem: Short) extends Serializable {
 }
 object ShortRef {
   @inline def create(elem: Short): ShortRef = new ShortRef(elem)
-  @inline def zero(): ShortRef              = new ShortRef(0)
+  @inline def zero(): ShortRef = new ShortRef(0)
 }
 
 @inline
@@ -72,7 +72,7 @@ class VolatileShortRef(var elem: Short) extends Serializable {
 }
 object VolatileShortRef {
   @inline def create(elem: Short): VolatileShortRef = new VolatileShortRef(elem)
-  @inline def zero(): VolatileShortRef              = new VolatileShortRef(0)
+  @inline def zero(): VolatileShortRef = new VolatileShortRef(0)
 }
 
 @inline
@@ -81,7 +81,7 @@ class IntRef(var elem: Int) extends Serializable {
 }
 object IntRef {
   @inline def create(elem: Int): IntRef = new IntRef(elem)
-  @inline def zero(): IntRef            = new IntRef(0)
+  @inline def zero(): IntRef = new IntRef(0)
 }
 
 @inline
@@ -90,7 +90,7 @@ class VolatileIntRef(var elem: Int) extends Serializable {
 }
 object VolatileIntRef {
   @inline def create(elem: Int): VolatileIntRef = new VolatileIntRef(elem)
-  @inline def zero(): VolatileIntRef            = new VolatileIntRef(0)
+  @inline def zero(): VolatileIntRef = new VolatileIntRef(0)
 }
 
 @inline
@@ -99,7 +99,7 @@ class LongRef(var elem: Long) extends Serializable {
 }
 object LongRef {
   @inline def create(elem: Long): LongRef = new LongRef(elem)
-  @inline def zero(): LongRef             = new LongRef(0)
+  @inline def zero(): LongRef = new LongRef(0)
 }
 
 @inline
@@ -108,7 +108,7 @@ class VolatileLongRef(var elem: Long) extends Serializable {
 }
 object VolatileLongRef {
   @inline def create(elem: Long): VolatileLongRef = new VolatileLongRef(elem)
-  @inline def zero(): VolatileLongRef             = new VolatileLongRef(0)
+  @inline def zero(): VolatileLongRef = new VolatileLongRef(0)
 }
 
 @inline
@@ -117,7 +117,7 @@ class FloatRef(var elem: Float) extends Serializable {
 }
 object FloatRef {
   @inline def create(elem: Float): FloatRef = new FloatRef(elem)
-  @inline def zero(): FloatRef              = new FloatRef(0)
+  @inline def zero(): FloatRef = new FloatRef(0)
 }
 
 @inline
@@ -126,7 +126,7 @@ class VolatileFloatRef(var elem: Float) extends Serializable {
 }
 object VolatileFloatRef {
   @inline def create(elem: Float): VolatileFloatRef = new VolatileFloatRef(elem)
-  @inline def zero(): VolatileFloatRef              = new VolatileFloatRef(0)
+  @inline def zero(): VolatileFloatRef = new VolatileFloatRef(0)
 }
 
 @inline
@@ -135,7 +135,7 @@ class DoubleRef(var elem: Double) extends Serializable {
 }
 object DoubleRef {
   @inline def create(elem: Double): DoubleRef = new DoubleRef(elem)
-  @inline def zero(): DoubleRef               = new DoubleRef(0)
+  @inline def zero(): DoubleRef = new DoubleRef(0)
 }
 
 @inline
@@ -154,7 +154,7 @@ class ObjectRef[A](var elem: A) extends Serializable {
 }
 object ObjectRef {
   @inline def create[A](elem: A): ObjectRef[A] = new ObjectRef(elem)
-  @inline def zero(): ObjectRef[Object]        = new ObjectRef(null)
+  @inline def zero(): ObjectRef[Object] = new ObjectRef(null)
 }
 
 @inline

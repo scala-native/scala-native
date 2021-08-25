@@ -29,9 +29,9 @@ object Simplify {
       case ROP.CAPTURE | ROP.CONCAT | ROP.ALTERNATE =>
         // Simplify children, building new Regexp if children change.
         var nre = re
-        var i   = 0
+        var i = 0
         while (i < re.subs.length) {
-          val sub  = re.subs(i)
+          val sub = re.subs(i)
           val nsub = simplify(sub)
           if (nre == re && nsub != sub) {
             // Start a copy.
@@ -71,9 +71,9 @@ object Simplify {
           }
 
           // General case: x{4,} is xxxx+.
-          val nre  = new Regexp(ROP.CONCAT)
+          val nre = new Regexp(ROP.CONCAT)
           val subs = new ArrayList[Regexp]()
-          var i    = 0
+          var i = 0
           while (i < re.min - 1) {
             subs.add(sub)
             i += 1
@@ -108,7 +108,7 @@ object Simplify {
         // Build and attach suffix: (x(x(x)?)?)?
         if (re.max > re.min) {
           var suffix = simplify1(ROP.QUEST, re.flags, sub, null)
-          var i      = re.min + 1
+          var i = re.min + 1
           while (i < re.max) {
             val nre2 = new Regexp(ROP.CONCAT)
             nre2.subs = Array[Regexp](sub, suffix)
@@ -149,10 +149,12 @@ object Simplify {
   // for other operators generates these unary expressions.
   // Letting them call simplify1 makes sure the expressions they
   // generate are simple.
-  private def simplify1(op: ROP,
-                        flags: Int,
-                        sub: Regexp,
-                        _re: Regexp): Regexp = {
+  private def simplify1(
+      op: ROP,
+      flags: Int,
+      sub: Regexp,
+      _re: Regexp
+  ): Regexp = {
     var re = _re
 
     // Special case: repeat the empty string as much as

@@ -7,7 +7,7 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
   if (size <= 0) throw new IllegalArgumentException("size <= 0")
 
   private var buf: Array[Char] = new Array[Char](size)
-  private var pos: Int         = size
+  private var pos: Int = size
 
   def this(in: Reader) = this(in, 1)
 
@@ -47,8 +47,8 @@ class PushbackReader(in: Reader, size: Int) extends FilterReader(in) {
       }
 
       var copiedChars = 0
-      var newOffset   = offset
-      var copyLength  = 0
+      var newOffset = offset
+      var copyLength = 0
 
       if (pos < buf.length) {
         copyLength = if (buf.length - pos >= count) count else buf.length - pos

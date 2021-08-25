@@ -31,15 +31,17 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
 
   def this(file: File, csn: String) =
     this(
-      new OutputStreamWriter(new BufferedOutputStream(
-                               new FileOutputStream(file)),
-                             csn))
+      new OutputStreamWriter(
+        new BufferedOutputStream(new FileOutputStream(file)),
+        csn
+      )
+    )
 
   def this(fileName: String) = this(new File(fileName))
 
   def this(fileName: String, csn: String) = this(new File(fileName), csn)
 
-  private var closed: Boolean    = false
+  private var closed: Boolean = false
   private var errorFlag: Boolean = false
 
   def flush(): Unit =
@@ -74,7 +76,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
     }
   }
 
-  protected[io] def setError(): Unit   = errorFlag = true
+  protected[io] def setError(): Unit = errorFlag = true
   protected[io] def clearError(): Unit = errorFlag = false
 
   override def write(c: Int): Unit =
@@ -92,15 +94,15 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   override def write(s: String): Unit =
     ensureOpenAndTrapIOExceptions(out.write(s))
 
-  def print(b: Boolean): Unit     = write(String.valueOf(b))
-  def print(c: Char): Unit        = write(c)
-  def print(i: Int): Unit         = write(String.valueOf(i))
-  def print(l: Long): Unit        = write(String.valueOf(l))
-  def print(f: Float): Unit       = write(String.valueOf(f))
-  def print(d: Double): Unit      = write(String.valueOf(d))
+  def print(b: Boolean): Unit = write(String.valueOf(b))
+  def print(c: Char): Unit = write(c)
+  def print(i: Int): Unit = write(String.valueOf(i))
+  def print(l: Long): Unit = write(String.valueOf(l))
+  def print(f: Float): Unit = write(String.valueOf(f))
+  def print(d: Double): Unit = write(String.valueOf(d))
   def print(s: Array[Char]): Unit = write(s)
-  def print(s: String): Unit      = write(if (s == null) "null" else s)
-  def print(obj: AnyRef): Unit    = write(String.valueOf(obj))
+  def print(s: String): Unit = write(if (s == null) "null" else s)
+  def print(obj: AnyRef): Unit = write(String.valueOf(obj))
 
   def println(): Unit = {
     write('\n') // In Scala.js the line separator is always LF
@@ -108,15 +110,15 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
       flush()
   }
 
-  def println(b: Boolean): Unit     = { print(b); println() }
-  def println(c: Char): Unit        = { print(c); println() }
-  def println(i: Int): Unit         = { print(i); println() }
-  def println(l: Long): Unit        = { print(l); println() }
-  def println(f: Float): Unit       = { print(f); println() }
-  def println(d: Double): Unit      = { print(d); println() }
+  def println(b: Boolean): Unit = { print(b); println() }
+  def println(c: Char): Unit = { print(c); println() }
+  def println(i: Int): Unit = { print(i); println() }
+  def println(l: Long): Unit = { print(l); println() }
+  def println(f: Float): Unit = { print(f); println() }
+  def println(d: Double): Unit = { print(d); println() }
   def println(s: Array[Char]): Unit = { print(s); println() }
-  def println(s: String): Unit      = { print(s); println() }
-  def println(obj: AnyRef): Unit    = { print(obj); println() }
+  def println(s: String): Unit = { print(s); println() }
+  def println(obj: AnyRef): Unit = { print(obj); println() }
 
   def printf(fmt: String, args: Array[Object]): PrintWriter =
     format(fmt, args)
@@ -158,7 +160,8 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   }
 
   @inline private[this] def ensureOpenAndTrapIOExceptions(
-      body: => Unit): Unit = {
+      body: => Unit
+  ): Unit = {
     if (closed) setError()
     else trapIOExceptions(body)
   }

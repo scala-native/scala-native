@@ -5,25 +5,35 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "../Constants.h"
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "BlockRange.h"
-#include "../Log.h"
-#include "../headers/ObjectHeader.h"
+#include "Log.h"
+#include "headers/ObjectHeader.h"
+#include "UInt24.h"
 
 typedef Object *Stack_Type;
 
+// UInt24 used instead of uint_32 bitset for cross-platform compatiblity, mainly
+// due the lack of support for 3-byte alignment in MSVC
+// https://docs.microsoft.com/en-us/cpp/c-language/padding-and-alignment-of-structure-members?redirectedfrom=MSDN&view=msvc-160
+// It would result in size of 16 bytes on Windows and 8 on Unix
 typedef union {
     struct __attribute__((packed)) {
-        uint32_t idx : BLOCK_COUNT_BITS;
+        UInt24 idx;
         // Size is kept in the reference it is in sync with the grey list.
-        // Otherwise the updates can get reordered causing the number temporarily
-        // appearing larger than it is which will trigger Marker_IsMarkDone
-        // prematurely.
-        uint32_t size : BLOCK_COUNT_BITS;
+        // Otherwise the updates can get reordered causing the number
+        // temporarily appearing larger than it is which will trigger
+        // Marker_IsMarkDone prematurely.
+        UInt24 size;
         uint16_t timesPoped; // used to avoid ABA problems when popping
     } sep;
     atomic_uint_least64_t atom;
 } GreyPacketRef;
+
+#define sizeof_field(s, m) (sizeof((((s *)0)->m)))
+static_assert(sizeof_field(GreyPacketRef, sep) ==
+                  sizeof_field(GreyPacketRef, atom),
+              "GreyPacketRef sep and atom value should have the same size");
 
 typedef enum {
     grey_packet_reflist = 0x0,
@@ -38,8 +48,8 @@ typedef struct {
     Stack_Type items[GREY_PACKET_ITEMS];
 } GreyPacket;
 
-#define GREYLIST_NEXT ((uint32_t)0)
-#define GREYLIST_LAST ((uint32_t)1)
+#define GREYLIST_NEXT (UInt24_fromUInt32(0))
+#define GREYLIST_LAST (UInt24_fromUInt32(1))
 
 typedef struct {
     GreyPacketRef head;
@@ -58,23 +68,24 @@ void GreyList_PushAll(GreyList *list, word_t *greyPacketsStart,
                       GreyPacket *first, uint_fast32_t size);
 GreyPacket *GreyList_Pop(GreyList *list, word_t *greyPacketsStart);
 
-static inline uint32_t GreyPacket_IndexOf(word_t *greyPacketsStart,
-                                          GreyPacket *packet) {
+static inline UInt24 GreyPacket_IndexOf(word_t *greyPacketsStart,
+                                        GreyPacket *packet) {
     assert(packet != NULL);
     assert((void *)packet >= (void *)greyPacketsStart);
-    return (uint32_t)(packet - (GreyPacket *)greyPacketsStart) + 2;
+    return UInt24_fromUInt32((packet - (GreyPacket *)greyPacketsStart) + 2);
 }
 
 static inline GreyPacket *GreyPacket_FromIndex(word_t *greyPacketsStart,
-                                               uint32_t idx) {
-    assert(idx >= 2);
-    return (GreyPacket *)greyPacketsStart + (idx - 2);
+                                               UInt24 idx) {
+    uint32_t idxValue = UInt24_toUInt32(idx);
+    assert(idxValue >= 2);
+    return (GreyPacket *)greyPacketsStart + (idxValue - 2);
 }
 
 static inline uint64_t GreyPacketRef_Empty() {
     GreyPacketRef initial;
     initial.sep.idx = GREYLIST_LAST;
-    initial.sep.size = 0;
+    initial.sep.size = UInt24_fromUInt32(0);
     initial.sep.timesPoped = 0;
     return initial.atom;
 }

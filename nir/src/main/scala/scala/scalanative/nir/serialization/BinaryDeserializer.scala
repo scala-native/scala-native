@@ -8,17 +8,17 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
-final class BinaryDeserializer(buffer: ByteBuffer) {
+final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
+
   import buffer._
 
   private[this] var lastPosition: Position = Position.NoPosition
 
-  private val (prelude, header, files): (Prelude,
-                                         Seq[(Global, Int)],
-                                         Array[URI]) = {
+  private val (prelude, header, files)
+      : (Prelude, Seq[(Global, Int)], Array[URI]) = {
     buffer.position(0)
 
-    val prelude = Prelude.readFrom(buffer)
+    val prelude = Prelude.readFrom(buffer, bufferName)
 
     val files = Array.fill(getInt())(new URI(getUTF8String()))
 
@@ -112,6 +112,8 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
       case T.SwitchInst      => Inst.Switch(getVal(), getNext(), getNexts())
       case T.ThrowInst       => Inst.Throw(getVal(), getNext())
       case T.UnreachableInst => Inst.Unreachable(getNext())
+      case T.LinktimeIfInst =>
+        Inst.LinktimeIf(getLinktimeCondition(), getNext(), getNext())
     }
   }
 
@@ -177,7 +179,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     }
   }
 
-  private def getGlobals(): Seq[Global]      = getSeq(getGlobal())
+  private def getGlobals(): Seq[Global] = getSeq(getGlobal())
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal())
   private def getGlobal(): Global = getInt match {
     case T.NoneGlobal =>
@@ -238,7 +240,7 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam())
-  private def getParam(): Val.Local       = Val.Local(getLocal(), getType())
+  private def getParam(): Val.Local = Val.Local(getLocal(), getType())
 
   private def getTypes(): Seq[Type] = getSeq(getType())
   private def getType(): Type = getInt match {
@@ -295,6 +297,24 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
     case T.ClassOfVal => Val.ClassOf(getGlobal())
   }
 
+  private def getLinktimeCondition(): LinktimeCondition = getInt() match {
+    case LinktimeCondition.Tag.SimpleCondition =>
+      LinktimeCondition.SimpleCondition(
+        propertyName = getUTF8String(),
+        comparison = getComp(),
+        value = getVal()
+      )(getPosition())
+
+    case LinktimeCondition.Tag.ComplexCondition =>
+      LinktimeCondition.ComplexCondition(
+        op = getBin(),
+        left = getLinktimeCondition(),
+        right = getLinktimeCondition()
+      )(getPosition())
+
+    case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
+  }
+
   // Ported from Scala.js
   def getPosition(): Position = {
     import PositionFormat._
@@ -305,28 +325,33 @@ final class BinaryDeserializer(buffer: ByteBuffer) {
         Position.NoPosition
       } else {
         val result = if ((first & FormatFullMask) == FormatFullMaskValue) {
-          val file   = files(getInt())
-          val line   = getInt()
+          val file = files(getInt())
+          val line = getInt()
           val column = getInt()
           Position(file, line, column)
         } else {
-          assert(lastPosition != Position.NoPosition,
-                 "Position format error: first position must be full")
+          assert(
+            lastPosition != Position.NoPosition,
+            "Position format error: first position must be full"
+          )
           if ((first & Format1Mask) == Format1MaskValue) {
             val columnDiff = first >> Format1Shift
-            Position(lastPosition.source,
-                     lastPosition.line,
-                     lastPosition.column + columnDiff)
+            Position(
+              lastPosition.source,
+              lastPosition.line,
+              lastPosition.column + columnDiff
+            )
           } else if ((first & Format2Mask) == Format2MaskValue) {
             val lineDiff = first >> Format2Shift
-            val column   = get() & 0xff // unsigned
+            val column = get() & 0xff // unsigned
             Position(lastPosition.source, lastPosition.line + lineDiff, column)
           } else {
             assert(
               (first & Format3Mask) == Format3MaskValue,
-              s"Position format error: first byte $first does not match any format")
+              s"Position format error: first byte $first does not match any format"
+            )
             val lineDiff = getShort()
-            val column   = get() & 0xff // unsigned
+            val column = get() & 0xff // unsigned
             Position(lastPosition.source, lastPosition.line + lineDiff, column)
           }
         }

@@ -12,7 +12,7 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import SimpleType.fromSymbol
 
   def genParamSyms(dd: DefDef, isStatic: Boolean): Seq[Option[Symbol]] = {
-    val vp     = dd.vparamss
+    val vp = dd.vparamss
     val params = if (vp.isEmpty) Nil else vp.head.map(p => Some(p.symbol))
     if (isStatic) params else None +: params
   }

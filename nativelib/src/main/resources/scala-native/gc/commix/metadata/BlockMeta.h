@@ -6,9 +6,10 @@
 #include <stdint.h>
 #include <string.h>
 #include "LineMeta.h"
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "../Constants.h"
-#include "../Log.h"
+#include "Log.h"
+#include "UInt24.h"
 
 typedef enum {
     block_free = 0x0,
@@ -26,9 +27,11 @@ typedef struct {
             uint8_t flags;
             int8_t first;
         } simple;
+        // UInt24 type is used for cross-platform compat, due to Windows
+        // problems with aligment of bitfields. See commix/GreyPackets.h
         struct {
             uint8_t flags;
-            int32_t size : BLOCK_COUNT_BITS;
+            UInt24 size;
         } superblock;
     } block;
 #ifdef DEBUG_ASSERT
@@ -38,6 +41,10 @@ typedef struct {
     int32_t nextBlock;
 #endif
 } BlockMeta;
+
+#define sizeof_field(s, m) (sizeof((((s *)0)->m)))
+static_assert(sizeof_field(BlockMeta, block) == sizeof(uint32_t),
+              "BlockMeta block should have size of uint32");
 
 #ifdef DEBUG_ASSERT
 typedef enum {
@@ -75,7 +82,7 @@ static inline bool BlockMeta_IsSuperblockStartMe(BlockMeta *blockMeta) {
 }
 
 static inline uint32_t BlockMeta_SuperblockSize(BlockMeta *blockMeta) {
-    return blockMeta->block.superblock.size;
+    return UInt24_toUInt32(blockMeta->block.superblock.size);
 }
 
 static inline bool BlockMeta_ContainsLargeObjects(BlockMeta *blockMeta) {
@@ -91,10 +98,10 @@ static inline void BlockMeta_SetFlagAndSuperblockSize(BlockMeta *blockMeta,
     assert(blockFlag != block_simple);
     struct {
         uint8_t flags;
-        int32_t size : BLOCK_COUNT_BITS;
+        UInt24 size;
     } combined;
     combined.flags = blockFlag;
-    combined.size = superblockSize;
+    combined.size = UInt24_fromUInt32(superblockSize);
 
     *((int32_t *)&blockMeta->block.superblock) = *((int32_t *)&combined);
 }

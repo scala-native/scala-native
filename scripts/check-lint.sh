@@ -2,8 +2,6 @@
 
 set -e
 
-if [ -n "$CLANG_FORMAT_PATH" ]; then
-  scripts/clangfmt --test
-fi
+scripts/clangfmt --test
 
 scripts/scalafmt --test

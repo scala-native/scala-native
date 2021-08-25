@@ -1,4 +1,14 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <termios.h>
+#if defined(__FreeBSD__)
+#define COMPAT_43TTY
+#include <sys/ioctl_compat.h>
+#define NLDLY NLDELAY
+#define CRDLY CRDELAY
+#define BSDLY BSDELAY
+#define VTDLY VTDELAY
+#endif
 
 // symbolic constants for use as subscripts for the array c_cc
 
@@ -37,8 +47,20 @@ int scalanative_termios_onlcr() { return ONLCR; }
 int scalanative_termios_ocrnl() { return OCRNL; }
 int scalanative_termios_onocr() { return ONOCR; }
 int scalanative_termios_onlret() { return ONLRET; }
-int scalanative_termios_ofdel() { return OFDEL; }
-int scalanative_termios_ofill() { return OFILL; }
+int scalanative_termios_ofdel() {
+#ifdef OFDEL
+    return OFDEL;
+#else
+    return 0;
+#endif
+}
+int scalanative_termios_ofill() {
+#ifdef OFILL
+    return OFILL;
+#else
+    return 0;
+#endif
+}
 // Masks - Linux [requires _BSD_SOURCE or _SVID_SOURCE or _XOPEN_SOURCE]
 int scalanative_termios_nldly() { return NLDLY; }
 int scalanative_termios_nl0() { return NL0; }
@@ -57,9 +79,27 @@ int scalanative_termios_bsdly() { return BSDLY; }
 int scalanative_termios_bs0() { return BS0; }
 int scalanative_termios_bs1() { return BS1; }
 int scalanative_termios_vtdly() { return VTDLY; }
-int scalanative_termios_vt0() { return VT0; }
-int scalanative_termios_vt1() { return VT1; }
-int scalanative_termios_ffdly() { return FFDLY; }
+int scalanative_termios_vt0() {
+#ifdef VT0
+    return VT0;
+#else
+    return 0;
+#endif
+}
+int scalanative_termios_vt1() {
+#ifdef VT1
+    return VT1;
+#else
+    return 0;
+#endif
+}
+int scalanative_termios_ffdly() {
+#ifdef FFDLY
+    return FFDLY;
+#else
+    return 0;
+#endif
+}
 int scalanative_termios_ff0() { return FF0; }
 int scalanative_termios_ff1() { return FF1; }
 
@@ -126,3 +166,5 @@ int scalanative_termios_tcioff() { return TCIOFF; }
 int scalanative_termios_tcion() { return TCION; }
 int scalanative_termios_tcooff() { return TCOOFF; }
 int scalanative_termios_tcoon() { return TCOON; }
+
+#endif // Unix or Mac OS

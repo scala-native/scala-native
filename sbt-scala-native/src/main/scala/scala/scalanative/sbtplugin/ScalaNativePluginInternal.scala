@@ -15,28 +15,27 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
+import scala.scalanative.build.Platform
 
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  val nativeTarget =
-    taskKey[String]("Target triple.")
-
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib"      % nativeVersion,
-      "org.scala-native" %%% "javalib"        % nativeVersion,
-      "org.scala-native" %%% "auxlib"         % nativeVersion,
-      "org.scala-native" %%% "scalalib"       % nativeVersion,
+      "org.scala-native" %%% "nativelib" % nativeVersion,
+      "org.scala-native" %%% "javalib" % nativeVersion,
+      "org.scala-native" %%% "auxlib" % nativeVersion,
+      "org.scala-native" %%% "scalalib" % nativeVersion,
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
     addCompilerPlugin(
-      "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full)
+      "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full
+    )
   )
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
@@ -63,7 +62,8 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
+      .withOptimize(Discover.optimize())
+      .withLinktimeProperties(Discover.linktimeProperties()),
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -85,13 +85,9 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
-    nativeTarget := interceptBuildException {
-      val cwd   = nativeWorkdir.value.toPath
-      val clang = nativeClang.value.toPath
-      Discover.targetTriple(clang, cwd)
-    },
-    artifactPath in nativeLink := {
-      crossTarget.value / (moduleName.value + "-out")
+    nativeLink / artifactPath := {
+      val ext = if (Platform.isWindows) ".exe" else ""
+      crossTarget.value / (moduleName.value + "-out" + ext)
     },
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
@@ -114,14 +110,14 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
-      val outpath = (artifactPath in nativeLink).value
+      val outpath = (nativeLink / artifactPath).value
       val config = {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
         val classpath = fullClasspath.value.map(_.data.toPath)
-        val maincls   = mainClass + "$"
-        val cwd       = nativeWorkdir.value.toPath
+        val maincls = mainClass + "$"
+        val cwd = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
         build.Config.empty
@@ -129,7 +125,6 @@ object ScalaNativePluginInternal {
           .withMainClass(maincls)
           .withClassPath(classpath)
           .withWorkdir(cwd)
-          .withTargetTriple(nativeTarget.value)
           .withCompilerConfig(nativeConfig.value)
       }
 
@@ -140,10 +135,10 @@ object ScalaNativePluginInternal {
       outpath
     },
     run := {
-      val env    = (envVars in run).value.toSeq
+      val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
-      val args   = spaceDelimited("<arg>").parsed
+      val args = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
       val exitCode = Process(binary +: args, None, env: _*)
@@ -170,15 +165,16 @@ object ScalaNativePluginInternal {
 
           if (fork.value) {
             throw new MessageOnlyException(
-              s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`.")
+              s"`$configName / test` tasks in a Scala Native project require $configName / fork := false`."
+            )
           }
 
-          val frameworks     = testFrameworks.value
+          val frameworks = testFrameworks.value
           val frameworkNames = frameworks.map(_.implClassNames.toList).toList
 
-          val logger     = streams.value.log.toLogger
+          val logger = streams.value.log.toLogger
           val testBinary = nativeLink.value
-          val envVars    = (test / Keys.envVars).value
+          val envVars = (test / Keys.envVars).value
 
           val config = TestAdapter
             .Config()
@@ -186,7 +182,7 @@ object ScalaNativePluginInternal {
             .withEnvVars(envVars)
             .withLogger(logger)
 
-          val adapter           = newTestAdapter(config)
+          val adapter = newTestAdapter(config)
           val frameworkAdapters = adapter.loadFrameworks(frameworkNames)
 
           frameworks
@@ -204,7 +200,7 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
 
-  private var sharedScope  = Scope.unsafe()
+  private var sharedScope = Scope.unsafe()
   private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)
 
   private def newTestAdapter(config: TestAdapter.Config): TestAdapter = {
@@ -221,8 +217,10 @@ object ScalaNativePluginInternal {
   }
 
   @tailrec
-  final private def registerResource[T <: AnyRef](l: AtomicReference[List[T]],
-                                                  r: T): r.type = {
+  final private def registerResource[T <: AnyRef](
+      l: AtomicReference[List[T]],
+      r: T
+  ): r.type = {
     val prev = l.get()
     if (l.compareAndSet(prev, r :: prev)) r
     else registerResource(l, r)

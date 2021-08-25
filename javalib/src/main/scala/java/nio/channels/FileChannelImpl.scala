@@ -15,10 +15,11 @@ import java.io.RandomAccessFile
 
 import java.util.Set
 
-final class FileChannelImpl(path: Path,
-                            options: Set[_ <: OpenOption],
-                            attrs: Array[FileAttribute[_]])
-    extends FileChannel {
+final class FileChannelImpl(
+    path: Path,
+    options: Set[_ <: OpenOption],
+    attrs: Array[FileAttribute[_]]
+) extends FileChannel {
 
   private val deleteOnClose =
     options.contains(StandardOpenOption.DELETE_ON_CLOSE)
@@ -33,10 +34,12 @@ final class FileChannelImpl(path: Path,
     if (deleteOnClose) Files.delete(path)
   }
 
-  override def map(mode: FileChannel.MapMode,
-                   position: Long,
-                   size: Long): MappedByteBuffer = {
-    var total  = 0
+  override def map(
+      mode: FileChannel.MapMode,
+      position: Long,
+      size: Long
+  ): MappedByteBuffer = {
+    var total = 0
     var copied = 0
     val buffer =
       new MappedByteBuffer(mode, size.toInt, new Array(size.toInt), 0) {}
@@ -53,19 +56,21 @@ final class FileChannelImpl(path: Path,
 
   override def position(): Long = raf.getFilePointer()
 
-  override def read(buffers: Array[ByteBuffer],
-                    start: Int,
-                    number: Int): Long = {
+  override def read(
+      buffers: Array[ByteBuffer],
+      start: Int,
+      number: Int
+  ): Long = {
     ensureOpen()
 
     var bytesRead = 0L
-    var i         = 0
+    var i = 0
 
     while (i < number) {
       val startPos = buffers(i).position()
-      val len      = buffers(i).limit() - startPos
-      val dst      = new Array[Byte](len)
-      val nb       = raf.read(dst)
+      val len = buffers(i).limit() - startPos
+      val dst = new Array[Byte](len)
+      val nb = raf.read(dst)
 
       if (nb > 0) {
         buffers(i).put(dst)
@@ -97,22 +102,26 @@ final class FileChannelImpl(path: Path,
 
   override def size(): Long = raf.length()
 
-  override def transferFrom(src: ReadableByteChannel,
-                            position: Long,
-                            count: Long): Long = {
+  override def transferFrom(
+      src: ReadableByteChannel,
+      position: Long,
+      count: Long
+  ): Long = {
     ensureOpen()
     val buf = ByteBuffer.allocate(count.toInt)
     src.read(buf)
     write(buf, position)
   }
 
-  override def transferTo(pos: Long,
-                          count: Long,
-                          target: WritableByteChannel): Long = {
+  override def transferTo(
+      pos: Long,
+      count: Long,
+      target: WritableByteChannel
+  ): Long = {
     ensureOpen()
     position(pos)
     val buf = new Array[Byte](count.toInt)
-    val nb  = raf.read(buf)
+    val nb = raf.read(buf)
     target.write(ByteBuffer.wrap(buf, 0, nb))
     nb
   }
@@ -123,9 +132,11 @@ final class FileChannelImpl(path: Path,
     this
   }
 
-  override def write(buffers: Array[ByteBuffer],
-                     offset: Int,
-                     length: Int): Long = {
+  override def write(
+      buffers: Array[ByteBuffer],
+      offset: Int,
+      length: Int
+  ): Long = {
     ensureOpen()
     var i = 0
     while (i < length) {
@@ -140,7 +151,7 @@ final class FileChannelImpl(path: Path,
     position(pos)
     val srcPos: Int = buffer.position()
     val srcLim: Int = buffer.limit()
-    val lim         = math.abs(srcLim - srcPos)
+    val lim = math.abs(srcLim - srcPos)
     raf.write(buffer.array(), 0, lim)
     buffer.position(srcPos + lim)
     lim
@@ -154,14 +165,17 @@ final class FileChannelImpl(path: Path,
 }
 
 private object FileChannelImpl {
-  def getRAF(path: Path,
-             options: Set[_ <: OpenOption],
-             attrs: Array[FileAttribute[_]]): RandomAccessFile = {
+  def getRAF(
+      path: Path,
+      options: Set[_ <: OpenOption],
+      attrs: Array[FileAttribute[_]]
+  ): RandomAccessFile = {
     import StandardOpenOption._
 
     if (options.contains(APPEND) && options.contains(TRUNCATE_EXISTING)) {
       throw new IllegalArgumentException(
-        "APPEND + TRUNCATE_EXISTING not allowed")
+        "APPEND + TRUNCATE_EXISTING not allowed"
+      )
     }
 
     if (options.contains(APPEND) && options.contains(READ)) {

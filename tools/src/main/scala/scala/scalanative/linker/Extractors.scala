@@ -74,7 +74,8 @@ object ExactClassRef {
         Some((linked.infos(Rt.BoxedUnit.name).asInstanceOf[Class], nullable))
       case Type.Array(ty, nullable) =>
         Some(
-          (linked.infos(Type.toArrayClass(ty)).asInstanceOf[Class], nullable))
+          (linked.infos(Type.toArrayClass(ty)).asInstanceOf[Class], nullable)
+        )
       case _ =>
         None
     }

@@ -58,8 +58,8 @@ sealed abstract class Val {
     case Val.Short(0)       => true
     case Val.Int(0)         => true
     case Val.Long(0L)       => true
-    case Val.Float(0F)      => true
-    case Val.Double(0D)     => true
+    case Val.Float(0f)      => true
+    case Val.Double(0d)     => true
     case Val.Null           => true
     case _                  => false
   }
@@ -71,8 +71,8 @@ sealed abstract class Val {
     case Val.Short(1)                => true
     case Val.Int(1)                  => true
     case Val.Long(1L)                => true
-    case Val.Float(1F)               => true
-    case Val.Double(1D)              => true
+    case Val.Float(1f)               => true
+    case Val.Double(1d)              => true
     case _                           => false
   }
 
@@ -81,8 +81,8 @@ sealed abstract class Val {
     case Val.Short(-1)   => true
     case Val.Int(-1)     => true
     case Val.Long(-1L)   => true
-    case Val.Float(-1F)  => true
-    case Val.Double(-1D) => true
+    case Val.Float(-1f)  => true
+    case Val.Double(-1d) => true
     case _               => false
   }
 
@@ -125,9 +125,9 @@ sealed abstract class Val {
     case Val.Zero(Type.Long) =>
       Val.Long(0L)
     case Val.Zero(Type.Float) =>
-      Val.Float(0F)
+      Val.Float(0f)
     case Val.Zero(Type.Double) =>
-      Val.Double(0D)
+      Val.Double(0d)
     case Val.Zero(Type.Ptr) | Val.Zero(_: Type.RefKind) =>
       Val.Null
     case _ =>
@@ -136,8 +136,8 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object True  extends Val
-  final case object False extends Val
+  case object True extends Val
+  case object False extends Val
   object Bool extends (Boolean => Val) {
     def apply(value: Boolean): Val =
       if (value) True else False
@@ -147,13 +147,13 @@ object Val {
       case _     => scala.None
     }
   }
-  final case object Null                     extends Val
-  final case class Zero(of: nir.Type)        extends Val
-  final case class Char(value: scala.Char)   extends Val
-  final case class Byte(value: scala.Byte)   extends Val
+  case object Null extends Val
+  final case class Zero(of: nir.Type) extends Val
+  final case class Char(value: scala.Char) extends Val
+  final case class Byte(value: scala.Byte) extends Val
   final case class Short(value: scala.Short) extends Val
-  final case class Int(value: scala.Int)     extends Val
-  final case class Long(value: scala.Long)   extends Val
+  final case class Int(value: scala.Int) extends Val
+  final case class Long(value: scala.Long) extends Val
   final case class Float(value: scala.Float) extends Val {
     override def equals(that: Any): Boolean = that match {
       case Float(thatValue) =>
@@ -172,19 +172,19 @@ object Val {
       case _ => false
     }
   }
-  final case class StructValue(values: Seq[Val])                  extends Val
+  final case class StructValue(values: Seq[Val]) extends Val
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
   final case class Chars(value: Seq[scala.Byte]) extends Val {
-    lazy val byteCount: scala.Int     = value.length + 1
+    lazy val byteCount: scala.Int = value.length + 1
     lazy val bytes: Array[scala.Byte] = value.toArray
   }
-  final case class Local(name: nir.Local, valty: nir.Type)   extends Val
+  final case class Local(name: nir.Local, valty: nir.Type) extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level
-  final case object Unit                           extends Val
-  final case class Const(value: Val)               extends Val
+  case object Unit extends Val
+  final case class Const(value: Val) extends Val
   final case class String(value: java.lang.String) extends Val
-  final case class Virtual(key: scala.Long)        extends Val
-  final case class ClassOf(name: nir.Global)       extends Val
+  final case class Virtual(key: scala.Long) extends Val
+  final case class ClassOf(name: nir.Global) extends Val
 }

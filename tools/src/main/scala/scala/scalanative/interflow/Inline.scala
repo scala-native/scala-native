@@ -6,9 +6,10 @@ import scalanative.linker._
 import scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
-  def shallInline(name: Global, args: Seq[Val])(
-      implicit state: State,
-      linked: linker.Result): Boolean = {
+  def shallInline(name: Global, args: Seq[Val])(implicit
+      state: State,
+      linked: linker.Result
+  ): Boolean = {
     val maybeDefn = mode match {
       case build.Mode.Debug =>
         maybeOriginal(name)
@@ -20,17 +21,17 @@ trait Inline { self: Interflow =>
       .fold[Boolean] {
         false
       } { defn =>
-        val isCtor = originalName(name) match {
+        def isCtor = originalName(name) match {
           case Global.Member(_, sig) if sig.isCtor || sig.isImplCtor =>
             true
           case _ =>
             false
         }
-        val isSmall =
+        def isSmall =
           defn.insts.size <= 8
         val isExtern =
           defn.attrs.isExtern
-        val hasVirtualArgs =
+        def hasVirtualArgs =
           args.exists(_.isInstanceOf[Val.Virtual])
         val noOpt =
           defn.attrs.opt == Attr.NoOpt
@@ -40,15 +41,15 @@ trait Inline { self: Interflow =>
           defn.attrs.inlineHint == Attr.AlwaysInline
         val hintInline =
           defn.attrs.inlineHint == Attr.InlineHint
-        val isRecursive =
+        def isRecursive =
           hasContext(s"inlining ${name.show}")
-        val isBlacklisted =
+        def isBlacklisted =
           this.isBlacklisted(name)
-        val calleeTooBig =
+        def calleeTooBig =
           defn.insts.size > 8192
-        val callerTooBig =
+        def callerTooBig =
           mergeProcessor.currentSize() > 8192
-        val hasUnwind = defn.insts.exists {
+        def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
           case Inst.Unreachable(unwind) => unwind ne Next.None
@@ -57,37 +58,39 @@ trait Inline { self: Interflow =>
 
         val shall = mode match {
           case build.Mode.Debug =>
-            isCtor || alwaysInline
+            alwaysInline || isCtor
           case build.Mode.ReleaseFast =>
-            isCtor || alwaysInline || hintInline || isSmall
+            alwaysInline || hintInline || isSmall || isCtor
           case build.Mode.ReleaseFull =>
-            isCtor || alwaysInline || hintInline || isSmall || hasVirtualArgs
+            alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
-        val shallNot =
+        lazy val shallNot =
           noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind
-
-        if (shall) {
-          if (shallNot) {
-            log(s"not inlining ${name.show}, because:")
-            if (noInline) {
-              log("* has noinline attr")
+        withLogger { logger =>
+          if (shall) {
+            if (shallNot) {
+              logger(s"not inlining ${name.show}, because:")
+              if (noInline) {
+                logger("* has noinline attr")
+              }
+              if (isRecursive) {
+                logger("* is recursive")
+              }
+              if (isBlacklisted) {
+                logger("* is blacklisted")
+              }
+              if (callerTooBig) {
+                logger("* caller is too big")
+              }
+              if (calleeTooBig) {
+                logger("* callee is too big")
+              }
             }
-            if (isRecursive) {
-              log("* is recursive")
-            }
-            if (isBlacklisted) {
-              log("* is blacklisted")
-            }
-            if (callerTooBig) {
-              log("* caller is too big")
-            }
-            if (calleeTooBig) {
-              log("* callee is too big")
-            }
+          } else {
+            logger(
+              s"no reason to inline ${name.show}(${args.map(_.show).mkString(",")})"
+            )
           }
-        } else {
-          log(
-            s"no reason to inline ${name.show}(${args.map(_.show).mkString(",")})")
         }
 
         shall && !shallNot
@@ -114,7 +117,7 @@ trait Inline { self: Interflow =>
     val expected = argtys match {
       case inittys :+ Type.Vararg =>
         val nonvarargs = args.take(inittys.size).zip(inittys)
-        val varargs    = args.drop(inittys.size).map { arg => (arg, Type.Vararg) }
+        val varargs = args.drop(inittys.size).map { arg => (arg, Type.Vararg) }
         nonvarargs ++ varargs
       case _ =>
         args.zip(argtys)
@@ -128,9 +131,11 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def inline(name: Global, args: Seq[Val])(implicit state: State,
-                                           linked: linker.Result,
-                                           origPos: Position): Val =
+  def `inline`(name: Global, args: Seq[Val])(implicit
+      state: State,
+      linked: linker.Result,
+      origPos: Position
+  ): Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
         case build.Mode.Debug =>
@@ -140,7 +145,7 @@ trait Inline { self: Interflow =>
       }
       val Type.Function(_, origRetTy) = defn.ty
 
-      val inlineArgs  = adapt(args, defn.ty)
+      val inlineArgs = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks =
         process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
@@ -175,7 +180,7 @@ trait Inline { self: Interflow =>
           }
 
         case first +: rest =>
-          emit ++= first.toInsts.tail
+          emit ++= first.toInsts().tail
 
           rest.foreach { block =>
             block.cf match {
@@ -183,10 +188,10 @@ trait Inline { self: Interflow =>
                 ()
               case Inst.Throw(value, unwind) =>
                 val excv = block.end.materialize(value)
-                emit ++= block.toInsts.init
+                emit ++= block.toInsts().init
                 emit.raise(excv, unwind)
               case _ =>
-                emit ++= block.toInsts
+                emit ++= block.toInsts()
             }
           }
 
@@ -194,7 +199,7 @@ trait Inline { self: Interflow =>
             .collectFirst {
               case block if block.cf.isInstanceOf[Inst.Ret] =>
                 val Inst.Ret(value) = block.cf
-                emit ++= block.toInsts.init
+                emit ++= block.toInsts().init
                 (value, block.end)
             }
             .getOrElse {

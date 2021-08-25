@@ -29,15 +29,15 @@ private[math] object Multiplication {
 
   /** An array of powers of ten.
    *
-   *  An array with powers of ten that fit in the type
-   *  {@code int}.({@code 10^0,10^1,...,10^9})
+   *  An array with powers of ten that fit in the type {@code int}.({@code
+   *  10^0,10^1,...,10^9})
    */
   private val TenPows = newArrayOfPows(10, 10)
 
   /** An array of powers of five.
    *
-   *  An array with powers of five that fit in the type
-   *  {@code int}.({@code 5^0,5^1,...,5^13})
+   *  An array with powers of five that fit in the type {@code int}.({@code
+   *  5^0,5^1,...,5^13})
    */
   private val FivePows = newArrayOfPows(14, 5)
 
@@ -61,31 +61,38 @@ private[math] object Multiplication {
 
   /** Multiplies an array of integers by an integer value.
    *
-   *  @param a the array of integers
-   *  @param aSize the number of elements of intArray to be multiplied
-   *  @param factor the multiplier
-   *  @return the top digit of production
+   *  @param a
+   *    the array of integers
+   *  @param aSize
+   *    the number of elements of intArray to be multiplied
+   *  @param factor
+   *    the multiplier
+   *  @return
+   *    the top digit of production
    */
   def multiplyByInt(a: Array[Int], aSize: Int, factor: Int): Int =
     multiplyByInt(a, a, aSize, factor)
 
   /** Multiplies a number by a positive integer.
    *
-   *  @param bi an arbitrary {@code BigInteger}
-   *  @param factor a positive {@code int} number
-   *  @return {@code val * factor}
+   *  @param bi
+   *    an arbitrary {@code BigInteger}
+   *  @param factor
+   *    a positive {@code int} number
+   *  @return
+   *    {@code val * factor}
    */
   def multiplyByPosInt(bi: BigInteger, factor: Int): BigInteger = {
-    val resSign: Int  = bi.sign
+    val resSign: Int = bi.sign
     val aNumberLength = bi.numberLength
-    val aDigits       = bi.digits
+    val aDigits = bi.digits
 
     if (resSign == 0) {
       BigInteger.ZERO
     } else if (aNumberLength == 1) {
       val res: Long = unsignedMultAddAdd(aDigits(0), factor, 0, 0)
-      val resLo     = res.toInt
-      val resHi     = (res >>> 32).toInt
+      val resLo = res.toInt
+      val resHi = (res >>> 32).toInt
       if (resHi == 0) new BigInteger(resSign, resLo)
       else new BigInteger(resSign, 2, Array(resLo, resHi))
     } else {
@@ -103,9 +110,12 @@ private[math] object Multiplication {
    *
    *  This method is used in {@code BigDecimal} class.
    *
-   *  @param bi the number to be multiplied
-   *  @param exp a positive {@code long} exponent
-   *  @return {@code val * 10<sup>exp</sup>}
+   *  @param bi
+   *    the number to be multiplied
+   *  @param exp
+   *    a positive {@code long} exponent
+   *  @return
+   *    {@code val * 10<sup>exp</sup>}
    */
   def multiplyByTenPow(bi: BigInteger, exp: Long): BigInteger = {
     if (exp < TenPows.length) multiplyByPosInt(bi, TenPows(exp.toInt))
@@ -114,8 +124,10 @@ private[math] object Multiplication {
 
   /** Performs a<sup>2</sup>.
    *
-   *  @param a The number to square.
-   *  @param aLen The length of the number to square.
+   *  @param a
+   *    The number to square.
+   *  @param aLen
+   *    The length of the number to square.
    */
   def square(a: Array[Int], aLen: Int, res: Array[Int]): Array[Int] = {
     var carry = 0
@@ -131,13 +143,13 @@ private[math] object Multiplication {
     }
     BitLevel.shiftLeftOneBit(res, res, aLen << 1)
     carry = 0
-    var i     = 0
+    var i = 0
     var index = 0
     while (i < aLen) {
       val t = unsignedMultAddAdd(a(i), a(i), res(index), carry)
       res(index) = t.toInt
       index += 1
-      val t2 = (t >>> 32) + (res(index) & 0xFFFFFFFFL)
+      val t2 = (t >>> 32) + (res(index) & 0xffffffffL)
       res(index) = t2.toInt
       carry = (t2 >>> 32).toInt
       i += 1
@@ -148,32 +160,39 @@ private[math] object Multiplication {
 
   /** Computes the value unsigned ((uint)a*(uint)b + (uint)c + (uint)d).
    *
-   *  @param a parameter 1
-   *  @param b parameter 2
-   *  @param c parameter 3
-   *  @param d parameter 4
-   *  @return value of expression
+   *  @param a
+   *    parameter 1
+   *  @param b
+   *    parameter 2
+   *  @param c
+   *    parameter 3
+   *  @param d
+   *    parameter 4
+   *  @return
+   *    value of expression
    */
   def unsignedMultAddAdd(a: Int, b: Int, c: Int, d: Int): Long =
-    (a & 0xFFFFFFFFL) * (b & 0xFFFFFFFFL) + (c & 0xFFFFFFFFL) +
-      (d & 0xFFFFFFFFL)
+    (a & 0xffffffffL) * (b & 0xffffffffL) + (c & 0xffffffffL) +
+      (d & 0xffffffffL)
 
   /** Performs the multiplication with the Karatsuba's algorithm.
    *
-   *  <b>Karatsuba's algorithm:</b> <tt>
-   *              u = u<sub>1</sub> * B + u<sub>0</sub><br>
-   *              v = v<sub>1</sub> * B + v<sub>0</sub><br>
+   *  <b>Karatsuba's algorithm:</b> <tt> u = u<sub>1</sub> * B +
+   *  u<sub>0</sub><br> v = v<sub>1</sub> * B + v<sub>0</sub><br>
    *
-   *   u*v = (u<sub>1</sub> * v<sub>1</sub>) * B<sub>2</sub> +
-   *     ((u<sub>1</sub> - u<sub>0</sub>) * (v<sub>0</sub> - v<sub>1</sub>) +
-   *       u<sub>1</sub> * v<sub>1</sub> + u<sub>0</sub> * v<sub>0</sub>) * B +
-   *     u<sub>0</sub> * v<sub>0</sub><br>
-   *  </tt>
+   *  u*v = (u<sub>1</sub> * v<sub>1</sub>) * B<sub>2</sub> + ((u<sub>1</sub> -
+   *  u<sub>0</sub>) * (v<sub>0</sub> - v<sub>1</sub>) + u<sub>1</sub> *
+   *  v<sub>1</sub> + u<sub>0</sub> * v<sub>0</sub>) * B + u<sub>0</sub> *
+   *  v<sub>0</sub><br> </tt>
    *
-   *  @param op1 first factor of the product
-   *  @param op2 second factor of the product
-   *  @return {@code op1 * op2}
-   *  @see #multiply(BigInteger, BigInteger)
+   *  @param op1
+   *    first factor of the product
+   *  @param op2
+   *    second factor of the product
+   *  @return
+   *    {@code op1 * op2}
+   *  @see
+   *    #multiply(BigInteger, BigInteger)
    */
   def karatsuba(val1: BigInteger, val2: BigInteger): BigInteger = {
     val (op1, op2) =
@@ -187,7 +206,7 @@ private[math] object Multiplication {
        * Karatsuba: u = u1*B + u0 v = v1*B + v0 u*v = (u1*v1)*B^2 +
        * ((u1-u0)*(v0-v1) + u1*v1 + u0*v0)*B + u0*v0
        */
-      val ndiv2    = (op1.numberLength & 0xFFFFFFFE) << 4
+      val ndiv2 = (op1.numberLength & 0xfffffffe) << 4
       val upperOp1 = op1.shiftRight(ndiv2)
       val upperOp2 = op2.shiftRight(ndiv2)
       val lowerOp1 = op1.subtract(upperOp1.shiftLeft(ndiv2))
@@ -204,11 +223,13 @@ private[math] object Multiplication {
     }
   }
 
-  def multArraysPAP(aDigits: Array[Int],
-                    aLen: Int,
-                    bDigits: Array[Int],
-                    bLen: Int,
-                    resDigits: Array[Int]): Unit = {
+  def multArraysPAP(
+      aDigits: Array[Int],
+      aLen: Int,
+      bDigits: Array[Int],
+      bLen: Int,
+      resDigits: Array[Int]
+  ): Unit = {
     if (!(aLen == 0 || bLen == 0)) {
       if (aLen == 1)
         resDigits(bLen) = multiplyByInt(resDigits, bDigits, bLen, aDigits(0))
@@ -223,109 +244,68 @@ private[math] object Multiplication {
 
   /** Multiplies two BigIntegers.
    *
-   *  Implements traditional scholar algorithmdescribed by Knuth.
+   *  Implements traditional scholar algorithm described by Knuth.
    *
-   *  <br>
-   *  <tt>
-   *          <table border="0">
-   *  <tbody>
+   *  <br> <tt> <table border="0"> <tbody>
    *
+   *  <tr> <td align="center">A=</td> <td>a<sub>3</sub></td>
+   *  <td>a<sub>2</sub></td> <td>a<sub>1</sub></td> <td>a<sub>0</sub></td>
+   *  <td></td> <td></td> </tr>
    *
-   *  <tr>
-   *  <td align="center">A=</td>
-   *  <td>a<sub>3</sub></td>
-   *  <td>a<sub>2</sub></td>
-   *  <td>a<sub>1</sub></td>
-   *  <td>a<sub>0</sub></td>
-   *  <td></td>
-   *  <td></td>
-   *  </tr>
+   *  <tr> <td align="center">B=</td> <td></td> <td>b<sub>2</sub></td>
+   *  <td>b<sub>1</sub></td> <td>b<sub>1</sub></td> <td></td> <td></td> </tr>
    *
-   *  <tr>
-   *  <td align="center">B=</td>
-   *  <td></td>
-   *  <td>b<sub>2</sub></td>
-   *  <td>b<sub>1</sub></td>
-   *  <td>b<sub>1</sub></td>
-   *  <td></td>
-   *  <td></td>
-   *  </tr>
+   *  <tr> <td></td> <td></td> <td></td> <td>b<sub>0</sub>*a<sub>3</sub></td>
+   *  <td>b<sub>0</sub>*a<sub>2</sub></td> <td>b<sub>0</sub>*a<sub>1</sub></td>
+   *  <td>b<sub>0</sub>*a<sub>0</sub></td> </tr>
    *
-   *  <tr>
-   *  <td></td>
-   *  <td></td>
-   *  <td></td>
-   *  <td>b<sub>0</sub>*a<sub>3</sub></td>
-   *  <td>b<sub>0</sub>*a<sub>2</sub></td>
-   *  <td>b<sub>0</sub>*a<sub>1</sub></td>
-   *  <td>b<sub>0</sub>*a<sub>0</sub></td>
-   *  </tr>
+   *  <tr> <td></td> <td></td> <td>b<sub>1</sub>*a<sub>3</sub></td>
+   *  <td>b<sub>1</sub>*a<sub>2</sub></td> <td>b<sub>1</sub>*a1</td>
+   *  <td>b<sub>1</sub>*a0</td> </tr>
    *
-   *  <tr>
-   *  <td></td>
-   *  <td></td>
-   *  <td>b<sub>1</sub>*a<sub>3</sub></td>
-   *  <td>b<sub>1</sub>*a<sub>2</sub></td>
-   *  <td>b<sub>1</sub>*a1</td>
-   *  <td>b<sub>1</sub>*a0</td>
-   *  </tr>
+   *  <tr> <td>+</td> <td>b<sub>2</sub>*a<sub>3</sub></td>
+   *  <td>b<sub>2</sub>*a<sub>2</sub></td> <td>b<sub>2</sub>*a<sub>1</sub></td>
+   *  <td>b<sub>2</sub>*a<sub>0</sub></td> </tr>
    *
-   *  <tr>
-   *  <td>+</td>
-   *  <td>b<sub>2</sub>*a<sub>3</sub></td>
-   *  <td>b<sub>2</sub>*a<sub>2</sub></td>
-   *  <td>b<sub>2</sub>*a<sub>1</sub></td>
-   *  <td>b<sub>2</sub>*a<sub>0</sub></td>
-   *  </tr>
-   *
-   *  <tr>
-   *  <td></td>
-   *  <td>______</td>
-   *  <td>______</td>
-   *  <td>______</td>
-   *  <td>______</td>
-   *  <td>______</td>
-   *  <td>______</td>
-   *  </tr>
+   *  <tr> <td></td> <td>______</td> <td>______</td> <td>______</td>
+   *  <td>______</td> <td>______</td> <td>______</td> </tr>
    *
    *  <tr>
    *
-   *  <td align="center">A*B=R=</td>
-   *  <td align="center">r<sub>5</sub></td>
-   *  <td align="center">r<sub>4</sub></td>
-   *  <td align="center">r<sub>3</sub></td>
-   *  <td align="center">r<sub>2</sub></td>
-   *  <td align="center">r<sub>1</sub></td>
-   *  <td align="center">r<sub>0</sub></td>
-   *  <td></td>
-   *  </tr>
+   *  <td align="center">A*B=R=</td> <td align="center">r<sub>5</sub></td> <td
+   *  align="center">r<sub>4</sub></td> <td align="center">r<sub>3</sub></td>
+   *  <td align="center">r<sub>2</sub></td> <td
+   *  align="center">r<sub>1</sub></td> <td align="center">r<sub>0</sub></td>
+   *  <td></td> </tr>
    *
-   *  </tbody>
-   *  </table>
+   *  </tbody> </table>
    *
-   * </tt>
+   *  </tt>
    *
-   *  @param op1 first factor of the multiplication {@code op1 >= 0}
-   *  @param op2 second factor of the multiplication {@code op2 >= 0}
-   *  @return a {@code BigInteger} of value {@code op1 * op2}
+   *  @param op1
+   *    first factor of the multiplication {@code op1 >= 0}
+   *  @param op2
+   *    second factor of the multiplication {@code op2 >= 0}
+   *  @return
+   *    a {@code BigInteger} of value {@code op1 * op2}
    */
   def multiplyPAP(a: BigInteger, b: BigInteger): BigInteger = {
-    val aLen      = a.numberLength
-    val bLen      = b.numberLength
+    val aLen = a.numberLength
+    val bLen = b.numberLength
     val resLength = aLen + bLen
     val resSign =
       if (a.sign != b.sign) -1
       else 1
 
     if (resLength == 2) {
-      val v       = unsignedMultAddAdd(a.digits(0), b.digits(0), 0, 0)
+      val v = unsignedMultAddAdd(a.digits(0), b.digits(0), 0, 0)
       val valueLo = v.toInt
       val valueHi = (v >>> 32).toInt
       if (valueHi == 0) new BigInteger(resSign, valueLo)
       else new BigInteger(resSign, 2, Array(valueLo, valueHi))
     } else {
-      val aDigits   = a.digits
-      val bDigits   = b.digits
+      val aDigits = a.digits
+      val bDigits = b.digits
       val resDigits = new Array[Int](resLength)
       multArraysPAP(aDigits, aLen, bDigits, bLen, resDigits)
       val result = new BigInteger(resSign, resLength, resDigits)
@@ -346,7 +326,7 @@ private[math] object Multiplication {
           if (acc.numberLength == 1) {
             acc.multiply(acc)
           } else {
-            val a  = new Array[Int](acc.numberLength << 1)
+            val a = new Array[Int](acc.numberLength << 1)
             val sq = square(acc.digits, acc.numberLength, a)
             new BigInteger(1, sq)
           }
@@ -362,10 +342,12 @@ private[math] object Multiplication {
 
   /** Calculates a power of ten, which exponent could be out of 32-bit range.
    *
-   *  Note that internally this method will be used in the worst case with
-   *  an exponent equals to: {@code Integer.MAX_VALUE - Integer.MIN_VALUE}.
-   *  @param exp the exponent of power of ten, it must be positive.
-   *  @return a {@code BigInteger} with value {@code 10<sup>exp</sup>}.
+   *  Note that internally this method will be used in the worst case with an
+   *  exponent equals to: {@code Integer.MAX_VALUE - Integer.MIN_VALUE}.
+   *  @param exp
+   *    the exponent of power of ten, it must be positive.
+   *  @return
+   *    a {@code BigInteger} with value {@code 10<sup>exp</sup>}.
    */
   def powerOf10(exp: Long): BigInteger = {
     // "SMALL POWERS"
@@ -378,10 +360,10 @@ private[math] object Multiplication {
       BigFivePows(1).pow(exp.toInt).shiftLeft(exp.toInt)
     } else {
       //"HUGE POWERS"
-      val powerOfFive     = BigFivePows(1).pow(Integer.MAX_VALUE)
+      val powerOfFive = BigFivePows(1).pow(Integer.MAX_VALUE)
       var res: BigInteger = powerOfFive
-      var longExp         = exp - Int.MaxValue
-      val intExp          = (exp % Int.MaxValue).toInt
+      var longExp = exp - Int.MaxValue
+      val intExp = (exp % Int.MaxValue).toInt
       while (longExp > Int.MaxValue) {
         res = res.multiply(powerOfFive)
         longExp -= Int.MaxValue
@@ -400,9 +382,12 @@ private[math] object Multiplication {
   /** Multiplies a number by a power of five.
    *
    *  This method is used in {@code BigDecimal} class.
-   *  @param val the number to be multiplied
-   *  @param exp a positive {@code int} exponent
-   *  @return {@code val * 5<sup>exp</sup>}
+   *  @param val
+   *    the number to be multiplied
+   *  @param exp
+   *    a positive {@code int} exponent
+   *  @return
+   *    {@code val * 5<sup>exp</sup>}
    */
   def multiplyByFivePow(bi: BigInteger, exp: Int): BigInteger = {
     if (exp < FivePows.length) multiplyByPosInt(bi, FivePows(exp))
@@ -424,10 +409,12 @@ private[math] object Multiplication {
     }
   }
 
-  private def multiplyByInt(res: Array[Int],
-                            a: Array[Int],
-                            aSize: Int,
-                            factor: Int): Int = {
+  private def multiplyByInt(
+      res: Array[Int],
+      a: Array[Int],
+      aSize: Int,
+      factor: Int
+  ): Int = {
     var carry = 0
     for (i <- 0 until aSize) {
       val t = unsignedMultAddAdd(a(i), factor, carry, 0)
@@ -437,17 +424,19 @@ private[math] object Multiplication {
     carry
   }
 
-  private def multPAP(a: Array[Int],
-                      b: Array[Int],
-                      t: Array[Int],
-                      aLen: Int,
-                      bLen: Int): Unit = {
+  private def multPAP(
+      a: Array[Int],
+      b: Array[Int],
+      t: Array[Int],
+      aLen: Int,
+      bLen: Int
+  ): Unit = {
     if (a == b && aLen == bLen) {
       square(a, aLen, t)
     } else {
       for (i <- 0 until aLen) {
         var carry = 0
-        val aI    = a(i)
+        val aI = a(i)
         for (j <- 0 until bLen) {
           val added = unsignedMultAddAdd(aI, b(j), t(i + j), carry.toInt)
           t(i + j) = added.toInt

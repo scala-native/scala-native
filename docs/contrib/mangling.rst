@@ -59,3 +59,8 @@ that uses a notation inspired by
 
     <name> ::=
         <length number> [-] <chars>    // raw identifier of given length; `-` separator is only used when <chars> starts with digit or `-` itself
+
+
+Mangling identifiers containing special characters follows Scala JVM conventions.
+Each double-quote `"` character is always converted to `$u0022`
+

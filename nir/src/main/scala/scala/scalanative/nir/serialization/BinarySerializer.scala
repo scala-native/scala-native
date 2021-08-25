@@ -11,10 +11,10 @@ import scala.scalanative.nir.serialization.{Tags => T}
 
 final class BinarySerializer {
   private[this] val bufferUnderyling = new JumpBackByteArrayOutputStream
-  private[this] val buffer           = new DataOutputStream(bufferUnderyling)
+  private[this] val buffer = new DataOutputStream(bufferUnderyling)
 
   private[this] var lastPosition: Position = Position.NoPosition
-  private[this] val fileIndexMap           = mutable.Map.empty[URI, Int]
+  private[this] val fileIndexMap = mutable.Map.empty[URI, Int]
 
   // Methods were renamed in order to not pollute git blame history.
   // Original implementation used ByteBuffers
@@ -30,17 +30,21 @@ final class BinarySerializer {
   import bufferUnderyling.currentPosition
 
   def serialize(defns: Seq[Defn], outputStream: OutputStream): Unit = {
-    val names     = defns.map(_.name)
+    val names = defns.map(_.name)
     val filenames = initFiles(defns)
     val positions = mutable.UnrolledBuffer.empty[Int]
 
-    Prelude.writeTo(buffer,
-                    Prelude(Versions.magic,
-                            Versions.compat,
-                            Versions.revision,
-                            Defn.existsEntryPoint(defns)))
+    Prelude.writeTo(
+      buffer,
+      Prelude(
+        Versions.magic,
+        Versions.compat,
+        Versions.revision,
+        Defn.existsEntryPoint(defns)
+      )
+    )
 
-    putSeq(filenames)(putUTF8tring)
+    putSeq(filenames)(putUTF8String)
 
     putSeq(names) { n =>
       putGlobal(n)
@@ -75,7 +79,7 @@ final class BinarySerializer {
 
   private def putInts(ints: Seq[Int]) = putSeq[Int](ints)(putInt)
 
-  private def putUTF8tring(v: String) = putBytes {
+  private def putUTF8String(v: String) = putBytes {
     v.getBytes(StandardCharsets.UTF_8)
   }
 
@@ -98,12 +102,12 @@ final class BinarySerializer {
     case Attr.UnOpt        => putInt(T.UnOptAttr)
     case Attr.NoOpt        => putInt(T.NoOptAttr)
     case Attr.DidOpt       => putInt(T.DidOptAttr)
-    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putUTF8tring(msg)
+    case Attr.BailOpt(msg) => putInt(T.BailOptAttr); putUTF8String(msg)
 
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
-    case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8tring(s)
+    case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
   }
 
@@ -159,6 +163,12 @@ final class BinarySerializer {
       case Inst.If(v, thenp, elsep) =>
         putInt(T.IfInst)
         putVal(v)
+        putNext(thenp)
+        putNext(elsep)
+
+      case Inst.LinktimeIf(v, thenp, elsep) =>
+        putInt(T.LinktimeIfInst)
+        putLinktimeCondition(v)
         putNext(thenp)
         putNext(elsep)
 
@@ -275,17 +285,17 @@ final class BinarySerializer {
       putInt(T.NoneGlobal)
     case Global.Top(id) =>
       putInt(T.TopGlobal)
-      putUTF8tring(id)
+      putUTF8String(id)
     case Global.Member(Global.Top(owner), sig) =>
       putInt(T.MemberGlobal)
-      putUTF8tring(owner)
+      putUTF8String(owner)
       putSig(sig)
     case _ =>
       util.unreachable
   }
 
   private def putSig(sig: Sig): Unit =
-    putUTF8tring(sig.mangle)
+    putUTF8String(sig.mangle)
 
   private def putLocal(local: Local): Unit =
     putLong(local.id)
@@ -524,6 +534,22 @@ final class BinarySerializer {
     case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
   }
 
+  private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {
+    case LinktimeCondition.SimpleCondition(propertyName, comparison, value) =>
+      putInt(LinktimeCondition.Tag.SimpleCondition)
+      putUTF8String(propertyName)
+      putComp(comparison)
+      putVal(value)
+      putPosition(cond.position)
+
+    case LinktimeCondition.ComplexCondition(op, left, right) =>
+      putInt(LinktimeCondition.Tag.ComplexCondition)
+      putBin(op)
+      putLinktimeCondition(left)
+      putLinktimeCondition(right)
+      putPosition(cond.position)
+  }
+
   // Ported from Scala.js
   def putPosition(pos: Position): Unit = {
     import PositionFormat._
@@ -537,14 +563,14 @@ final class BinarySerializer {
     if (pos == Position.NoPosition) {
       put(FormatNoPositionValue.toByte)
     } else if (lastPosition == Position.NoPosition ||
-               pos.source != lastPosition.source) {
+        pos.source != lastPosition.source) {
       writeFull()
       lastPosition = pos
     } else {
-      val line         = pos.line
-      val column       = pos.column
-      val lineDiff     = line - lastPosition.line
-      val columnDiff   = column - lastPosition.column
+      val line = pos.line
+      val column = pos.column
+      val lineDiff = line - lastPosition.line
+      val columnDiff = column - lastPosition.column
       val columnIsByte = column >= 0 && column < 256
 
       if (lineDiff == 0 && columnDiff >= -64 && columnDiff < 64) {
@@ -570,11 +596,13 @@ final class BinarySerializer {
     def initFile(pos: Position): Unit = {
       val file = pos.source
       if (pos.isDefined)
-        fileIndexMap.getOrElseUpdate(file, {
-          val idx = filesList.size
-          filesList += file.toString
-          idx
-        })
+        fileIndexMap.getOrElseUpdate(
+          file, {
+            val idx = filesList.size
+            filesList += file.toString
+            idx
+          }
+        )
     }
     defns.foreach {
       case defn @ Defn.Define(_, _, _, insts) =>

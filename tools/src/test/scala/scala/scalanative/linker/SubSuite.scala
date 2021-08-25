@@ -23,7 +23,8 @@ class SubSuite extends ReachabilitySuite {
 
   val entry = Global.Member(
     Global.Top("Main$"),
-    Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
+    Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
+  )
 
   implicit val linked = link(Seq(entry), Seq(source))(x => x)
 
@@ -47,9 +48,9 @@ class SubSuite extends ReachabilitySuite {
   val valueTypes =
     primitiveTypes ++ aggregateTypes
 
-  val A  = Type.Ref(Global.Top("A"))
-  val B  = Type.Ref(Global.Top("B"))
-  val C  = Type.Ref(Global.Top("C"))
+  val A = Type.Ref(Global.Top("A"))
+  val B = Type.Ref(Global.Top("B"))
+  val C = Type.Ref(Global.Top("C"))
   val T1 = Type.Ref(Global.Top("T1"))
   val T2 = Type.Ref(Global.Top("T2"))
   val T3 = Type.Ref(Global.Top("T3"))

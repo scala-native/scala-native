@@ -11,6 +11,8 @@ package niocharset
 import java.nio.charset._
 
 private[niocharset] object UTF_16
-    extends UTF_16_Common("UTF-16",
-                          Array("utf16", "UTF_16", "UnicodeBig", "unicode"),
-                          endianness = UTF_16_Common.AutoEndian)
+    extends UTF_16_Common(
+      "UTF-16",
+      Array("utf16", "UTF_16", "UnicodeBig", "unicode"),
+      endianness = UTF_16_Common.AutoEndian
+    )

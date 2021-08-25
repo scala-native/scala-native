@@ -79,7 +79,7 @@ class ConcurrentLinkedQueue[E]()
     if (node eq head) {
       poll()
     } else if (head ne null) {
-      var prev             = head
+      var prev = head
       var current: Node[E] = head.next
 
       while ((current ne null) && (current ne node)) {

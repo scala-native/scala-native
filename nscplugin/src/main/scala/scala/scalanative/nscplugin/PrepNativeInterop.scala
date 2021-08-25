@@ -5,33 +5,29 @@ import scala.collection.mutable.Buffer
 import scala.tools.nsc
 import scala.tools.nsc._
 
-/**
- * This phase does:
- * - Rewrite calls to scala.Enumeration.Value (include name string) (Ported from ScalaJS)
- * - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to
- *   be statically determined at compile-time.
+/** This phase does:
+ *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
+ *      from ScalaJS)
+ *    - Rewrite the body `scala.util.PropertiesTrait.scalaProps` to be
+ *      statically determined at compile-time.
  */
-abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
-    extends plugins.PluginComponent
+abstract class PrepNativeInterop[G <: Global with Singleton](
+    override val global: G
+) extends NirPhase[G](global)
     with transform.Transform {
   import PrepNativeInterop._
-
-  /** Not for use in the constructor body: only initialized afterwards. */
-  val nirAddons: NirGlobalAddons {
-    val global: PrepNativeInterop.this.global.type
-  }
 
   import global._
   import definitions._
   import nirAddons.nirDefinitions._
 
-  val phaseName: String            = "nativeinterop"
+  val phaseName: String = "nativeinterop"
   override def description: String = "prepare ASTs for Native interop"
 
   override def newPhase(p: nsc.Phase): StdPhase = new NativeInteropPhase(p)
 
   class NativeInteropPhase(prev: nsc.Phase) extends Phase(prev) {
-    override def name: String        = phaseName
+    override def name: String = phaseName
     override def description: String = PrepNativeInterop.this.description
   }
 
@@ -39,13 +35,13 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
     new NativeInteropTransformer(unit)
 
   private object nativenme {
-    val hasNext      = newTermName("hasNext")
-    val next         = newTermName("next")
-    val nextName     = newTermName("nextName")
-    val x            = newTermName("x")
-    val Value        = newTermName("Value")
-    val Val          = newTermName("Val")
-    val scalaProps   = newTermName("scalaProps")
+    val hasNext = newTermName("hasNext")
+    val next = newTermName("next")
+    val nextName = newTermName("nextName")
+    val x = newTermName("x")
+    val Value = newTermName("Value")
+    val Val = newTermName("Val")
+    val scalaProps = newTermName("scalaProps")
     val propFilename = newTermName("propFilename")
   }
 
@@ -68,7 +64,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
 
     private def enterOwner[A](kind: OwnerKind)(body: => A): A = {
       require(kind.isBaseKind, kind)
-      val oldEnclosingOwner     = enclosingOwner
+      val oldEnclosingOwner = enclosingOwner
       val oldAllEnclosingOwners = allEnclosingOwners
       enclosingOwner = kind
       allEnclosingOwners |= kind
@@ -100,7 +96,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
         case TypeApply(classOfTree @ Select(predef, nme.classOf), List(tpeArg))
             if predef.symbol == PredefModule =>
           // Replace call by literal constant containing type
-          if (typer.checkClassType(tpeArg)) {
+          if (typer.checkClassTypeOrModule(tpeArg)) {
             val widenedTpe = tpeArg.tpe.dealias.widen
             println("rewriting class of for" + widenedTpe)
             typer.typed { Literal(Constant(widenedTpe)) }
@@ -145,7 +141,8 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
         // - Scala 2.12
         case vddef @ ValDef(mods, name, tpt, _)
             if vddef.symbol == PropertiesTrait.info.member(
-              nativenme.scalaProps) =>
+              nativenme.scalaProps
+            ) =>
           val nrhs = prepopulatedScalaProperties(vddef, unit.freshTermName)
           treeCopy.ValDef(tree, mods, name, transform(tpt), nrhs)
 
@@ -213,18 +210,18 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
       res
     }
 
-    protected val noArg    = resolve()
-    protected val nameArg  = resolve(StringClass)
-    protected val intArg   = resolve(IntClass)
+    protected val noArg = resolve()
+    protected val nameArg = resolve(StringClass)
+    protected val intArg = resolve(IntClass)
     protected val fullMeth = resolve(IntClass, StringClass)
 
-    /**
-     * Extractor object for calls to the targeted symbol that do not have an
-     * explicit name in the parameters
+    /** Extractor object for calls to the targeted symbol that do not have an
+     *  explicit name in the parameters
      *
-     * Extracts:
-     * - `sel: Select` where sel.symbol is targeted symbol (no arg)
-     * - Apply(meth, List(param)) where meth.symbol is targeted symbol (i: Int)
+     *  Extracts:
+     *    - `sel: Select` where sel.symbol is targeted symbol (no arg)
+     *    - Apply(meth, List(param)) where meth.symbol is targeted symbol (i:
+     *      Int)
      */
     object NoName {
       def unapply(t: Tree): Option[Option[Tree]] = t match {
@@ -262,17 +259,22 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
         }
       )
 
-  /**
-   * Construct a call to Enumeration.Value
-   * @param thisSym  ClassSymbol of enclosing class
-   * @param nameOrig Symbol of ValDef where this call will be placed
-   *                 (determines the string passed to Value)
-   * @param intParam Optional tree with Int passed to Value
-   * @return Typed tree with appropriate call to Value
+  /** Construct a call to Enumeration.Value
+   *  @param thisSym
+   *    ClassSymbol of enclosing class
+   *  @param nameOrig
+   *    Symbol of ValDef where this call will be placed (determines the string
+   *    passed to Value)
+   *  @param intParam
+   *    Optional tree with Int passed to Value
+   *  @return
+   *    Typed tree with appropriate call to Value
    */
-  private def scalaEnumValName(thisSym: Symbol,
-                               nameOrig: Symbol,
-                               intParam: Option[Tree]) = {
+  private def scalaEnumValName(
+      thisSym: Symbol,
+      nameOrig: Symbol,
+      intParam: Option[Tree]
+  ) = {
 
     val defaultName = nameOrig.asTerm.getterName.encoded
 
@@ -287,10 +289,12 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
     val nullCompTree =
       Apply(Select(nextNameTree, nme.NE), Literal(Constant(null)) :: Nil)
     val hasNextTree = Select(nextNameTree, nativenme.hasNext)
-    val condTree    = Apply(Select(nullCompTree, nme.ZAND), hasNextTree :: Nil)
-    val nameTree = If(condTree,
-                      Apply(Select(nextNameTree, nativenme.next), Nil),
-                      Literal(Constant(defaultName)))
+    val condTree = Apply(Select(nullCompTree, nme.ZAND), hasNextTree :: Nil)
+    val nameTree = If(
+      condTree,
+      Apply(Select(nextNameTree, nativenme.next), Nil),
+      Literal(Constant(defaultName))
+    )
     val params = intParam.toList :+ nameTree
 
     typer.typed {
@@ -298,17 +302,20 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
     }
   }
 
-  /**
-   * Construct a tree that returns an instance of `java.util.Properties`
-   * that is pre-populated with the values of the `scala.util.Properties`
-   * at compile-time.
-   * @param original  The original `DefDef`
-   * @param freshName A function that generates a fresh name
-   * @return The new (typed) rhs of the given `DefDef`.
+  /** Construct a tree that returns an instance of `java.util.Properties` that
+   *  is pre-populated with the values of the `scala.util.Properties` at
+   *  compile-time.
+   *  @param original
+   *    The original `DefDef`
+   *  @param freshName
+   *    A function that generates a fresh name
+   *  @return
+   *    The new (typed) rhs of the given `DefDef`.
    */
   private def prepopulatedScalaProperties(
       original: ValOrDefDef,
-      freshName: String => TermName): Tree = {
+      freshName: String => TermName
+  ): Tree = {
     val libraryFileName = "/library.properties"
 
     // Construct the following tree
@@ -319,18 +326,20 @@ abstract class PrepNativeInterop[G <: Global with Singleton](val global: G)
     //   fresh
     //
     val stream = classOf[Option[_]].getResourceAsStream(libraryFileName)
-    val props  = new java.util.Properties()
+    val props = new java.util.Properties()
     try props.load(stream)
     finally stream.close()
 
     val instanceName = freshName("properties")
-    val keys         = props.stringPropertyNames().iterator()
-    val puts         = Buffer.empty[Tree]
+    val keys = props.stringPropertyNames().iterator()
+    val puts = Buffer.empty[Tree]
     while (keys.hasNext()) {
-      val key   = keys.next()
+      val key = keys.next()
       val value = props.getProperty(key)
-      puts += Apply(Select(Ident(instanceName), newTermName("put")),
-                    List(Literal(Constant(key)), Literal(Constant(value))))
+      puts += Apply(
+        Select(Ident(instanceName), newTermName("put")),
+        List(Literal(Constant(key)), Literal(Constant(value)))
+      )
     }
     val bindTree =
       ValDef(Modifiers(), instanceName, TypeTree(), New(JavaProperties))
@@ -345,7 +354,9 @@ object PrepNativeInterop {
   private final class OwnerKind(val baseKinds: Int) extends AnyVal {
 
     @inline def isBaseKind: Boolean =
-      Integer.lowestOneBit(baseKinds) == baseKinds && baseKinds != 0 // exactly 1 bit on
+      Integer.lowestOneBit(
+        baseKinds
+      ) == baseKinds && baseKinds != 0 // exactly 1 bit on
 
     @inline def |(that: OwnerKind): OwnerKind =
       new OwnerKind(this.baseKinds | that.baseKinds)
@@ -390,7 +401,9 @@ object PrepNativeInterop {
     /** A Scala class, trait or object */
     val ScalaThing = ScalaClass | ScalaMod
 
-    /** A Scala class/trait/object extending Enumeration, but not Enumeration itself. */
+    /** A Scala class/trait/object extending Enumeration, but not Enumeration
+     *  itself.
+     */
     val Enum = EnumClass | EnumMod
 
   }

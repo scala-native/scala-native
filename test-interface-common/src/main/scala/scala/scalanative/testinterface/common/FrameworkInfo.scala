@@ -7,7 +7,8 @@ import sbt.testing._
 private[testinterface] final class FrameworkInfo(
     val implName: String,
     val displayName: String,
-    val fingerprints: List[Fingerprint])
+    val fingerprints: List[Fingerprint]
+)
 
 private[testinterface] object FrameworkInfo {
   implicit object FrameworkInfoSerializer extends Serializer[FrameworkInfo] {
@@ -18,9 +19,11 @@ private[testinterface] object FrameworkInfo {
     }
 
     def deserialize(in: Serializer.DeserializeState): FrameworkInfo = {
-      new FrameworkInfo(in.read[String](),
-                        in.read[String](),
-                        in.read[List[Fingerprint]]())
+      new FrameworkInfo(
+        in.read[String](),
+        in.read[String](),
+        in.read[List[Fingerprint]]()
+      )
     }
   }
 }

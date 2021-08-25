@@ -48,7 +48,8 @@ final class ProcessBuilder(private var _command: List[String]) {
       d.`type`() match {
         case Redirect.Type.READ =>
           throw new IllegalArgumentException(
-            s"Redirect.READ cannot be used for error.")
+            s"Redirect.READ cannot be used for error."
+          )
         case _ =>
           set { _redirectError = destination }
       }
@@ -72,7 +73,8 @@ final class ProcessBuilder(private var _command: List[String]) {
         s.`type`() match {
           case Redirect.Type.READ =>
             throw new IllegalArgumentException(
-              s"Redirect.READ cannot be used for output.")
+              s"Redirect.READ cannot be used for output."
+            )
           case _ =>
             set { _redirectOutput = destination }
         }
@@ -125,9 +127,9 @@ final class ProcessBuilder(private var _command: List[String]) {
     val env = System.getenv()
     new java.util.HashMap[String, String](env)
   }
-  private var _redirectInput       = Redirect.PIPE
-  private var _redirectOutput      = Redirect.PIPE
-  private var _redirectError       = Redirect.PIPE
+  private var _redirectInput = Redirect.PIPE
+  private var _redirectOutput = Redirect.PIPE
+  private var _redirectError = Redirect.PIPE
   private var _redirectErrorStream = false
 }
 
@@ -184,11 +186,11 @@ object ProcessBuilder {
         extends Enum[Type](name, ordinal)
 
     object Type {
-      final val PIPE    = new Type("PIPE", 0)
+      final val PIPE = new Type("PIPE", 0)
       final val INHERIT = new Type("INHERIT", 1)
-      final val READ    = new Type("READ", 2)
-      final val WRITE   = new Type("WRITE", 3)
-      final val APPEND  = new Type("APPEND", 4)
+      final val READ = new Type("READ", 2)
+      final val WRITE = new Type("WRITE", 3)
+      final val APPEND = new Type("APPEND", 4)
 
       def valueOf(name: String): Type = {
         if (name == null) throw new NullPointerException()
@@ -196,7 +198,8 @@ object ProcessBuilder {
           case Some(t) => t
           case None =>
             throw new IllegalArgumentException(
-              s"$name is not a valid Type name")
+              s"$name is not a valid Type name"
+            )
         }
       }
 

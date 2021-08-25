@@ -5,9 +5,10 @@ import java.nio._
 import java.nio.charset._
 import java.util.Objects
 
-class InputStreamReader(private[this] var in: InputStream,
-                        private[this] var decoder: CharsetDecoder)
-    extends Reader {
+class InputStreamReader(
+    private[this] var in: InputStream,
+    private[this] var decoder: CharsetDecoder
+) extends Reader {
 
   Objects.requireNonNull(in)
   Objects.requireNonNull(decoder)
@@ -27,24 +28,25 @@ class InputStreamReader(private[this] var in: InputStream,
    */
   private[this] var endOfInput: Boolean = false
 
-  /** Buffer in which to decode bytes into chars.
-   *  Usually, it is not used, because we try to decode directly to the
-   *  destination array. So as long as we do not really need one, we share
-   *  an empty buffer.
+  /** Buffer in which to decode bytes into chars. Usually, it is not used,
+   *  because we try to decode directly to the destination array. So as long as
+   *  we do not really need one, we share an empty buffer.
    *
-   *  Class invariant: contains chars already decoded but not yet *read* by
-   *  the user of this instance.
+   *  Class invariant: contains chars already decoded but not yet *read* by the
+   *  user of this instance.
    */
   private[this] var outBuf: CharBuffer =
     InputStreamReader.CommonEmptyCharBuffer
 
   def this(in: InputStream, charset: Charset) =
-    this(in,
-         Objects
-           .requireNonNull(charset)
-           .newDecoder()
-           .onMalformedInput(CodingErrorAction.REPLACE)
-           .onUnmappableCharacter(CodingErrorAction.REPLACE))
+    this(
+      in,
+      Objects
+        .requireNonNull(charset)
+        .newDecoder()
+        .onMalformedInput(CodingErrorAction.REPLACE)
+        .onUnmappableCharacter(CodingErrorAction.REPLACE)
+    )
 
   def this(in: InputStream) =
     this(in, Charset.defaultCharset())
@@ -95,7 +97,7 @@ class InputStreamReader(private[this] var in: InputStream,
     } else if (!endOfInput) {
       // Try and decode directly into the destination array
       val directOut = CharBuffer.wrap(cbuf, off, len)
-      val result    = readImpl(directOut)
+      val result = readImpl(directOut)
       if (result != InputStreamReader.Overflow) {
         result
       } else {
@@ -113,9 +115,11 @@ class InputStreamReader(private[this] var in: InputStream,
   }
 
   // In a separate method because this is (hopefully) not a common case
-  private def readMoreThroughOutBuf(cbuf: Array[Char],
-                                    off: Int,
-                                    len: Int): Int = {
+  private def readMoreThroughOutBuf(
+      cbuf: Array[Char],
+      off: Int,
+      len: Int
+  ): Int = {
     // Return outBuf to its full capacity
     outBuf.limit(outBuf.capacity())
     outBuf.position(0)
@@ -146,7 +150,7 @@ class InputStreamReader(private[this] var in: InputStream,
   @tailrec
   private def readImpl(out: CharBuffer): Int = {
     val initPos = out.position()
-    val result  = decoder.decode(inBuf, out, endOfInput)
+    val result = decoder.decode(inBuf, out, endOfInput)
 
     if (out.position() != initPos) {
       /* Good, we made progress, so we can return.
@@ -183,7 +187,8 @@ class InputStreamReader(private[this] var in: InputStream,
               "Scala.js implementation restriction: " +
                 inBuf.capacity() + " bytes do not seem to be enough for " +
                 getEncoding() + " to decode a single code point. " +
-                "Please report this as a bug.")
+                "Please report this as a bug."
+            )
           }
           inBuf.limit(inBuf.position())
           inBuf.position(0)
@@ -194,9 +199,11 @@ class InputStreamReader(private[this] var in: InputStream,
          * according to the specification of InputStreamReader.
          */
         val bytesRead =
-          in.read(inBuf.array(),
-                  inBuf.limit(),
-                  inBuf.capacity() - inBuf.limit())
+          in.read(
+            inBuf.array(),
+            inBuf.limit(),
+            inBuf.capacity() - inBuf.limit()
+          )
 
         if (bytesRead == -1)
           endOfInput = true
@@ -230,11 +237,11 @@ class InputStreamReader(private[this] var in: InputStream,
 object InputStreamReader {
   private final val Overflow = -2
 
-  /** Empty CharBuffer shared by all InputStreamReaders as long as they do
-   *  not really need one.
-   *  Since we do not use `mark()`, it is fine to share them, because `mark()`
-   *  is the only piece of mutable state for an empty buffer. Everything else
-   *  is effectively immutable (e.g., position and limit must always be 0).
+  /** Empty CharBuffer shared by all InputStreamReaders as long as they do not
+   *  really need one. Since we do not use `mark()`, it is fine to share them,
+   *  because `mark()` is the only piece of mutable state for an empty buffer.
+   *  Everything else is effectively immutable (e.g., position and limit must
+   *  always be 0).
    */
   private val CommonEmptyCharBuffer = CharBuffer.allocate(0)
 }

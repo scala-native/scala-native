@@ -4,9 +4,11 @@ package scala.scalanative.testinterface.common
 
 import sbt.testing._
 
-private[testinterface] final class TaskInfo(val serializedTask: String,
-                                            val taskDef: TaskDef,
-                                            val tags: List[String])
+private[testinterface] final class TaskInfo(
+    val serializedTask: String,
+    val taskDef: TaskDef,
+    val tags: List[String]
+)
 
 private[testinterface] object TaskInfo {
   implicit object TaskInfoSerializer extends Serializer[TaskInfo] {
@@ -17,8 +19,10 @@ private[testinterface] object TaskInfo {
     }
 
     def deserialize(in: Serializer.DeserializeState): TaskInfo =
-      new TaskInfo(in.read[String](),
-                   in.read[TaskDef](),
-                   in.read[List[String]]())
+      new TaskInfo(
+        in.read[String](),
+        in.read[TaskDef](),
+        in.read[List[String]]()
+      )
   }
 }

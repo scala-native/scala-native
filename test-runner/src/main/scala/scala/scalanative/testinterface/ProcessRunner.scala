@@ -4,12 +4,13 @@ import java.io.File
 import scala.concurrent.{Future, Promise}
 import scala.scalanative.build.Logger
 
-private[testinterface] class ProcessRunner(executableFile: File,
-                                           envVars: Map[String, String],
-                                           args: Seq[String],
-                                           logger: Logger,
-                                           port: Int)
-    extends AutoCloseable {
+private[testinterface] class ProcessRunner(
+    executableFile: File,
+    envVars: Map[String, String],
+    args: Seq[String],
+    logger: Logger,
+    port: Int
+) extends AutoCloseable {
 
   private[this] val process = {
     val builder =
@@ -34,7 +35,15 @@ private[testinterface] class ProcessRunner(executableFile: File,
       else {
         runnerPromise.tryFailure(
           new RuntimeException(
-            s"Process $executableFile finished with non-zero value $exitCode"))
+            s"Process $executableFile finished with non-zero value $exitCode"
+          )
+        )
+        // Similarly to Bash programs, exitcode values higher
+        // than 128 signify program end by fatal signal
+        if (exitCode > 128)
+          logger.error(
+            s"Test runner interrupted by fatal signal ${exitCode - 128}"
+          )
       }
     }
   }

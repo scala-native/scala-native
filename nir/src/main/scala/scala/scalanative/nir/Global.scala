@@ -14,7 +14,7 @@ sealed abstract class Global {
     Mangle(this)
 }
 object Global {
-  final case object None extends Global {
+  case object None extends Global {
     override def top: Global.Top =
       throw new Exception("None doesn't have a top.")
     override def member(sig: Sig) =

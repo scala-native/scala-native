@@ -2,10 +2,10 @@ package sbt.testing
 
 /** Represents one run of a suite of tests.
  *
- *  The run represented by a <code>Runner</code> has a lifecycle. The run
- *  begins when the <code>Runner</code> is instantiated by the framework and
- *  returned to the client during a <code>Framework.runner</code> invocation.
- *  The run continues until the client invokes <code>done</code> on the
+ *  The run represented by a <code>Runner</code> has a lifecycle. The run begins
+ *  when the <code>Runner</code> is instantiated by the framework and returned
+ *  to the client during a <code>Framework.runner</code> invocation. The run
+ *  continues until the client invokes <code>done</code> on the
  *  <code>Runner</code>. Before invoking <code>done</code>, the client can
  *  invoke the <code>tasks</code> method as many times at it wants, but once
  *  <code>done</code> has been invoked, the <code>Runner</code> enters "spent"
@@ -17,30 +17,27 @@ trait Runner {
   /** Returns an array of tasks that when executed will run tests and suites
    *  determined by the passed <code>TaskDef</code>s.
    *
-   *  <p>
-   *  Each returned task, when executed, will run tests and suites determined by
-   *  the test class name, fingerprints, "explicitly specified" field, and
-   *  selectors of one of the passed <code>TaskDef</code>s.
-   *  </p>
+   *  <p> Each returned task, when executed, will run tests and suites
+   *  determined by the test class name, fingerprints, "explicitly specified"
+   *  field, and selectors of one of the passed <code>TaskDef</code>s. </p>
    *
-   *  <p>
-   *  This <code>tasks</code> method may be called with <code>TaskDef</code>s
-   *  containing the same value for <code>testClassName</code> but different
-   *  fingerprints. For example, if both a class and its companion object were
-   *  test classes, the <code>tasks</code> method could be passed an array
-   *  containing <code>TaskDef</code>s with the same name but with a different
-   *  value for <code>fingerprint.isModule</code>.
-   *  </p>
+   *  <p> This <code>tasks</code> method may be called with
+   *  <code>TaskDef</code>s containing the same value for
+   *  <code>testClassName</code> but different fingerprints. For example, if
+   *  both a class and its companion object were test classes, the
+   *  <code>tasks</code> method could be passed an array containing
+   *  <code>TaskDef</code>s with the same name but with a different value for
+   *  <code>fingerprint.isModule</code>. </p>
    *
-   *  <p>
-   *  A test framework may "reject" a requested task by returning no
-   *  <code>Task</code> for that <code>TaskDef</code>.
-   *  </p>
+   *  <p> A test framework may "reject" a requested task by returning no
+   *  <code>Task</code> for that <code>TaskDef</code>. </p>
    *
-   *  @param taskDefs the <code>TaskDef</code>s for requested tasks
-   *  @return an array of <code>Task</code>s
-   *  @throws java.lang.IllegalStateException if invoked after <code>done</code>
-   *      has been invoked.
+   *  @param taskDefs
+   *    the <code>TaskDef</code>s for requested tasks
+   *  @return
+   *    an array of <code>Task</code>s
+   *  @throws java.lang.IllegalStateException
+   *    if invoked after <code>done</code> has been invoked.
    */
   def tasks(taskDefs: Array[TaskDef]): Array[Task]
 
@@ -79,43 +76,44 @@ trait Runner {
    *  The test framework may return a multi-lines string (<em>i.e.</em>, a
    *  message giving total tests succeeded, failed and so on) to the client.
    *
-   *  @return a possibly multi-line summary string, or the empty string if no
-   *          summary is provided
+   *  @return
+   *    a possibly multi-line summary string, or the empty string if no summary
+   *    is provided
    */
   def done(): String
 
-  /**
-   * Remote args that will be passed to <code>Runner</code> in a sub-process as
-   * <em>remoteArgs</em>.
+  /** Remote args that will be passed to <code>Runner</code> in a sub-process as
+   *  <em>remoteArgs</em>.
    *
-   * @return an array of strings that will be passed to <code>Runner</code> in
-   *         a sub-process as <code>remoteArgs</code>.
+   *  @return
+   *    an array of strings that will be passed to <code>Runner</code> in a
+   *    sub-process as <code>remoteArgs</code>.
    */
   def remoteArgs(): Array[String]
 
   /** Returns the arguments that were used to create this <code>Runner</code>.
    *
-   *  @return an array of argument that is used to create this Runner.
+   *  @return
+   *    an array of argument that is used to create this Runner.
    */
   def args: Array[String]
 
-  /** Ported from Scala.js
-   *  Scala Native specific: Invoked on the controller <code>Runner</code>, if a worker
-   *  sends a message (through the channel provided by the client).
+  /** Ported from Scala.js Scala Native specific: Invoked on the controller
+   *  <code>Runner</code>, if a worker sends a message (through the channel
+   *  provided by the client).
    *
-   *  The controller may send a message back to the sending worker by returning the
-   *  message in a Some.
+   *  The controller may send a message back to the sending worker by returning
+   *  the message in a Some.
    *
    *  Invoked on a worker <code>Runner</code>, if the controller responds to a
    *  message (sent by the worker via the supplied closure in
-   *  <code>slaveRunner</code>). The return value of the call is ignored in
-   *  this case.
+   *  <code>slaveRunner</code>). The return value of the call is ignored in this
+   *  case.
    */
   def receiveMessage(msg: String): Option[String]
 
-  /** Ported from Scala.js
-   *  Scala Native specific: Serialize a task created by <code>tasks</code> or
-   *  returned from <code>execute</code>.
+  /** Ported from Scala.js Scala Native specific: Serialize a task created by
+   *  <code>tasks</code> or returned from <code>execute</code>.
    *
    *  The resulting string will be passed to the <code>deserializeTask</code>
    *  method of another runner. After calling this method, the passed task is
@@ -123,9 +121,9 @@ trait Runner {
    */
   def serializeTask(task: Task, serializer: TaskDef => String): String
 
-  /** Ported from Scala.js
-   *  Scala Native specific: Deserialize a task that has been serialized by
-   *  <code>serializeTask</code> of another or this <code>Runner</code>.
+  /** Ported from Scala.js Scala Native specific: Deserialize a task that has
+   *  been serialized by <code>serializeTask</code> of another or this
+   *  <code>Runner</code>.
    *
    *  The resulting task must associate with this runner.
    */

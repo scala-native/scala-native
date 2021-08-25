@@ -8,29 +8,33 @@ private[nio] object GenHeapBufferView {
   trait NewHeapBufferView[BufferType <: Buffer] {
     def bytesPerElem: Int
 
-    def apply(capacity: Int,
-              byteArray: Array[Byte],
-              byteArrayOffset: Int,
-              initialPosition: Int,
-              initialLimit: Int,
-              readOnly: Boolean,
-              isBigEndian: Boolean): BufferType
+    def apply(
+        capacity: Int,
+        byteArray: Array[Byte],
+        byteArrayOffset: Int,
+        initialPosition: Int,
+        initialLimit: Int,
+        readOnly: Boolean,
+        isBigEndian: Boolean
+    ): BufferType
   }
 
   @inline
   def generic_fromHeapByteBuffer[BufferType <: Buffer](
-      byteBuffer: HeapByteBuffer)(
-      implicit newHeapBufferView: NewHeapBufferView[BufferType]): BufferType = {
+      byteBuffer: HeapByteBuffer
+  )(implicit newHeapBufferView: NewHeapBufferView[BufferType]): BufferType = {
     val byteBufferPos = byteBuffer.position()
     val viewCapacity =
       (byteBuffer.limit() - byteBufferPos) / newHeapBufferView.bytesPerElem
-    newHeapBufferView(viewCapacity,
-                      byteBuffer._array,
-                      byteBuffer._arrayOffset + byteBufferPos,
-                      0,
-                      viewCapacity,
-                      byteBuffer.isReadOnly(),
-                      byteBuffer.isBigEndian)
+    newHeapBufferView(
+      viewCapacity,
+      byteBuffer._array,
+      byteBuffer._arrayOffset + byteBufferPos,
+      0,
+      viewCapacity,
+      byteBuffer.isReadOnly(),
+      byteBuffer.isBigEndian
+    )
   }
 }
 
@@ -41,60 +45,72 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
   type NewThisHeapBufferView = GenHeapBufferView.NewHeapBufferView[BufferType]
 
   @inline
-  def generic_slice()(
-      implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    val newCapacity  = remaining()
+  def generic_slice()(implicit
+      newHeapBufferView: NewThisHeapBufferView
+  ): BufferType = {
+    val newCapacity = remaining()
     val bytesPerElem = newHeapBufferView.bytesPerElem
-    newHeapBufferView(newCapacity,
-                      _byteArray,
-                      _byteArrayOffset + bytesPerElem * position(),
-                      0,
-                      newCapacity,
-                      isReadOnly(),
-                      isBigEndian)
+    newHeapBufferView(
+      newCapacity,
+      _byteArray,
+      _byteArrayOffset + bytesPerElem * position(),
+      0,
+      newCapacity,
+      isReadOnly(),
+      isBigEndian
+    )
   }
 
   @inline
-  def generic_duplicate()(
-      implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    val result = newHeapBufferView(capacity(),
-                                   _byteArray,
-                                   _byteArrayOffset,
-                                   position(),
-                                   limit(),
-                                   isReadOnly(),
-                                   isBigEndian)
+  def generic_duplicate()(implicit
+      newHeapBufferView: NewThisHeapBufferView
+  ): BufferType = {
+    val result = newHeapBufferView(
+      capacity(),
+      _byteArray,
+      _byteArrayOffset,
+      position(),
+      limit(),
+      isReadOnly(),
+      isBigEndian
+    )
     result._mark = _mark
     result
   }
 
   @inline
-  def generic_asReadOnlyBuffer()(
-      implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
-    val result = newHeapBufferView(capacity(),
-                                   _byteArray,
-                                   _byteArrayOffset,
-                                   position(),
-                                   limit(),
-                                   true,
-                                   isBigEndian)
+  def generic_asReadOnlyBuffer()(implicit
+      newHeapBufferView: NewThisHeapBufferView
+  ): BufferType = {
+    val result = newHeapBufferView(
+      capacity(),
+      _byteArray,
+      _byteArrayOffset,
+      position(),
+      limit(),
+      true,
+      isBigEndian
+    )
     result._mark = _mark
     result
   }
 
   @inline
-  def generic_compact()(
-      implicit newHeapBufferView: NewThisHeapBufferView): BufferType = {
+  def generic_compact()(implicit
+      newHeapBufferView: NewThisHeapBufferView
+  ): BufferType = {
     if (isReadOnly())
       throw new ReadOnlyBufferException
 
-    val len          = remaining()
+    val len = remaining()
     val bytesPerElem = newHeapBufferView.bytesPerElem
-    System.arraycopy(_byteArray,
-                     _byteArrayOffset + bytesPerElem * position(),
-                     _byteArray,
-                     _byteArrayOffset,
-                     bytesPerElem * len)
+    System.arraycopy(
+      _byteArray,
+      _byteArrayOffset + bytesPerElem * position(),
+      _byteArray,
+      _byteArrayOffset,
+      bytesPerElem * len
+    )
     _mark = -1
     limit(capacity())
     position(len)
@@ -107,12 +123,15 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
     else ByteOrder.LITTLE_ENDIAN
 
   @inline
-  def byteArrayBits(
-      implicit newHeapBufferView: NewThisHeapBufferView): ByteArrayBits = {
-    ByteArrayBits(_byteArray,
-                  _byteArrayOffset,
-                  isBigEndian,
-                  newHeapBufferView.bytesPerElem)
+  def byteArrayBits(implicit
+      newHeapBufferView: NewThisHeapBufferView
+  ): ByteArrayBits = {
+    ByteArrayBits(
+      _byteArray,
+      _byteArrayOffset,
+      isBigEndian,
+      newHeapBufferView.bytesPerElem
+    )
   }
 
 }

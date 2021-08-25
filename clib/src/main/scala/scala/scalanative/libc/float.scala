@@ -3,9 +3,7 @@ package libc
 
 import scalanative.unsafe._
 
-/**
- * Bindings for float.h
- */
+/** Bindings for float.h */
 @extern
 object float {
 
@@ -37,20 +35,16 @@ object float {
 
   /** Rounding mode for floating point addition.
    *
-   * -1 indeterminable
-   * 0 towards zero
-   * 1 to nearest
-   * 2 towards positive infinity
-   * 3 towards negative infinity
+   *  -1 indeterminable 0 towards zero 1 to nearest 2 towards positive infinity
+   *  3 towards negative infinity
    */
   @name("scalanative_float_flt_rounds")
   def FLT_ROUNDS: CInt = extern
 
   /** The base radix representation of the exponent.
    *
-   * A base-2 is binary,
-   * base-10 is the normal decimal representation
-   * base-16 is Hex.
+   *  A base-2 is binary, base-10 is the normal decimal representation base-16
+   *  is Hex.
    */
   @name("scalanative_float_flt_radix")
   def FLT_RADIX: CInt = extern
@@ -71,11 +65,15 @@ object float {
   @name("scalanative_float_dbl_dig")
   def DBL_DIG: CInt = extern
 
-  /** The minimal exponent of a floating point value expressed in base [[FLT_RADIX]]. */
+  /** The minimal exponent of a floating point value expressed in base
+   *  [[FLT_RADIX]].
+   */
   @name("scalanative_float_flt_min_exp")
   def FLT_MIN_EXP: CInt = extern
 
-  /** The minimal exponent of a floating point value expressed in base [[FLT_RADIX]]. */
+  /** The minimal exponent of a floating point value expressed in base
+   *  [[FLT_RADIX]].
+   */
   @name("scalanative_float_dbl_min_exp")
   def DBL_MIN_EXP: CInt = extern
 
@@ -87,11 +85,15 @@ object float {
   @name("scalanative_float_dbl_min_10_exp")
   def DBL_MIN_10_EXP: CInt = extern
 
-  /** The maximal exponent of a floating point value expressed in base [[FLT_RADIX]]. */
+  /** The maximal exponent of a floating point value expressed in base
+   *  [[FLT_RADIX]].
+   */
   @name("scalanative_float_flt_min_exp")
   def FLT_MAX_EXP: CInt = extern
 
-  /** The maximal exponent of a floating point value expressed in base [[FLT_RADIX]]. */
+  /** The maximal exponent of a floating point value expressed in base
+   *  [[FLT_RADIX]].
+   */
   @name("scalanative_float_dbl_min_exp")
   def DBL_MAX_EXP: CInt = extern
 

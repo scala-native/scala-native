@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"
@@ -10,20 +9,12 @@
 #include "utils/MathUtils.h"
 #include "StackTrace.h"
 #include "Settings.h"
-#include "Memory.h"
-#include <memory.h>
+#include "MemoryInfo.h"
+#include "MemoryMap.h"
 #include <time.h>
 
-// Allow read and write
-#define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
-// Map private anonymous memory, and prevent from reserving swap
-#define HEAP_MEM_FLAGS (MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS)
-// Map anonymous memory (not a file)
-#define HEAP_MEM_FD -1
-#define HEAP_MEM_FD_OFFSET 0
-
 void Heap_exitWithOutOfMemory() {
-    printf("Out of heap space\n");
+    fprintf(stderr, "Out of heap space\n");
     StackTrace_PrintStackTrace();
     exit(1);
 }
@@ -47,9 +38,7 @@ size_t Heap_getMemoryLimit() {
  */
 word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
     assert(alignmentSize % WORD_SIZE == 0);
-    word_t *heapStart = mmap(NULL, memoryLimit, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
-                             HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
-
+    word_t *heapStart = memoryMap(memoryLimit);
     size_t alignmentMask = ~(alignmentSize - 1);
     // Heap start not aligned on
     if (((word_t)heapStart & alignmentMask) != (word_t)heapStart) {
@@ -69,7 +58,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         fprintf(stderr,
                 "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
         fprintf(stderr, "Minimum required: %zum \n",
-                MIN_HEAP_SIZE / 1024 / 1024);
+                (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
         fflush(stderr);
         exit(1);
     }
@@ -120,20 +109,36 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->lineMetaEnd = lineMetaStart + initialBlockCount * LINE_COUNT *
                                             LINE_METADATA_SIZE / WORD_SIZE;
 
-    word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
-
-    BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
-
     // reserve space for bytemap
-    Bytemap *bytemap = (Bytemap *)Heap_mapAndAlign(
-        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap),
-        ALLOCATION_ALIGNMENT);
+    size_t bytemapSpaceSize =
+        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap);
+    Bytemap *bytemap =
+        (Bytemap *)Heap_mapAndAlign(bytemapSpaceSize, ALLOCATION_ALIGNMENT);
     heap->bytemap = bytemap;
 
     // Init heap for small objects
+    word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
     heap->heapSize = minHeapSize;
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+
+#ifdef _WIN32
+    // Commit memory chunks reserved using mapMemory
+    bool commitStatus =
+        memoryCommit(blockMetaStart, blockMetaSpaceSize) &&
+        memoryCommit(lineMetaStart, lineMetaSpaceSize) &&
+        memoryCommit(bytemap, bytemapSpaceSize) &&
+        // Due to lack of over-committing on Windows on Heap init reserve memory
+        // chunk equal to maximal size of heap, but commit only minimal needed
+        // chunk of memory. Additional chunks of heap should be committed on
+        // demand when growing the heap.
+        memoryCommit(heapStart, minHeapSize);
+    if (!commitStatus) {
+        Heap_exitWithOutOfMemory();
+    }
+#endif // _WIN32
+
+    BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
     Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
                    heapStart);
@@ -173,7 +178,7 @@ word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
             return (word_t *)object;
         } else {
             size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-            uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+            uint32_t pow2increment = 1ULL << MathUtils_Log2Ceil(increment);
             Heap_Grow(heap, pow2increment);
 
             object = LargeAllocator_GetBlock(&largeAllocator, size);
@@ -279,10 +284,10 @@ bool Heap_shouldGrow(Heap *heap) {
         blockCount - (freeBlockCount + recycledBlockCount);
 
 #ifdef DEBUG_PRINT
-    printf("\n\nBlock count: %llu\n", blockCount);
-    printf("Unavailable: %llu\n", unavailableBlockCount);
-    printf("Free: %llu\n", freeBlockCount);
-    printf("Recycled: %llu\n", recycledBlockCount);
+    printf("\n\nBlock count: %u\n", blockCount);
+    printf("Unavailable: %u\n", unavailableBlockCount);
+    printf("Free: %u\n", freeBlockCount);
+    printf("Recycled: %u\n", recycledBlockCount);
     fflush(stdout);
 #endif
 
@@ -345,22 +350,33 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
         Heap_exitWithOutOfMemory();
     }
+    size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
 #ifdef DEBUG_PRINT
-    printf("Growing small heap by %zu bytes, to %zu bytes\n",
-           increment * WORD_SIZE,
-           heap->heapSize + incrementInBlocks * SPACE_USED_PER_BLOCK);
+    printf("Growing small heap by %zu bytes, to %zu bytes\n", incrementInBytes,
+           heap->heapSize + incrementInBytes);
     fflush(stdout);
 #endif
 
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;
-    heap->heapSize += incrementInBlocks * SPACE_USED_PER_BLOCK;
+    heap->heapSize += incrementInBytes;
     word_t *blockMetaEnd = heap->blockMetaEnd;
     heap->blockMetaEnd =
         (word_t *)(((BlockMeta *)heap->blockMetaEnd) + incrementInBlocks);
     heap->lineMetaEnd +=
         incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
+
+#ifdef _WIN32
+    // Windows does not allow for over-committing, therefore we commit the
+    // next chunk of memory when growing the heap. Without this, the process
+    // might take over all available memory leading to OutOfMemory errors for
+    // other processes. Also when using UNLIMITED heap size it might try to
+    // commit more memory than is available.
+    if (!memoryCommit(heapEnd, incrementInBytes)) {
+        Heap_exitWithOutOfMemory();
+    };
+#endif // WIN32
 
     BlockAllocator_AddFreeBlocks(&blockAllocator, (BlockMeta *)blockMetaEnd,
                                  incrementInBlocks);

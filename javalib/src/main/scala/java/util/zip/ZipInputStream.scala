@@ -13,23 +13,25 @@ import java.util.jar.{Attributes, JarEntry}
 // Ported from Apache Harmony
 
 class ZipInputStream(_in: InputStream, charset: Charset)
-    extends InflaterInputStream(new PushbackInputStream(_in, 4096),
-                                new Inflater(true))
+    extends InflaterInputStream(
+      new PushbackInputStream(_in, 4096),
+      new Inflater(true)
+    )
     with ZipConstants {
   import ZipInputStream._
 
   def this(in: InputStream) = this(in, StandardCharsets.UTF_8)
 
-  private var entriesEnd: Boolean         = false
-  private var hasDD: Boolean              = false
-  private var entryIn: Int                = 0
-  private var inRead: Int                 = 0
-  private var lastRead: Int               = 0
+  private var entriesEnd: Boolean = false
+  private var hasDD: Boolean = false
+  private var entryIn: Int = 0
+  private var inRead: Int = 0
+  private var lastRead: Int = 0
   private[zip] var currentEntry: ZipEntry = null
-  private final var hdrBuf: Array[Byte]   = new Array[Byte](LOCHDR - LOCVER)
-  private final var crc: CRC32            = new CRC32
-  private var nameBuf: Array[Byte]        = new Array[Byte](256)
-  private var charBuf: Array[Char]        = new Array[Char](256)
+  private final var hdrBuf: Array[Byte] = new Array[Byte](LOCHDR - LOCVER)
+  private final var crc: CRC32 = new CRC32
+  private var nameBuf: Array[Byte] = new Array[Byte](256)
+  private var charBuf: Array[Char] = new Array[Char](256)
 
   override def close(): Unit =
     if (!closed) {
@@ -173,12 +175,12 @@ class ZipInputStream(_in: InputStream, charset: Charset)
       }
       val flags = getShort(hdrBuf, LOCFLG - LOCVER)
       hasDD = ((flags & ZIPDataDescriptorFlag) == ZIPDataDescriptorFlag)
-      val cetime              = getShort(hdrBuf, LOCTIM - LOCVER)
-      val cemodDate           = getShort(hdrBuf, LOCTIM - LOCVER + 2)
+      val cetime = getShort(hdrBuf, LOCTIM - LOCVER)
+      val cemodDate = getShort(hdrBuf, LOCTIM - LOCVER + 2)
       val cecompressionMethod = getShort(hdrBuf, LOCHOW - LOCVER)
-      var cecrc               = 0L
-      var cecompressedSize    = 0L
-      var cesize              = -1L
+      var cecrc = 0L
+      var cecompressedSize = 0L
+      var cesize = -1L
       if (!hasDD) {
         cecrc = getLong(hdrBuf, LOCCRC - LOCVER)
         cecompressedSize = getLong(hdrBuf, LOCSIZ - LOCVER)
@@ -206,7 +208,8 @@ class ZipInputStream(_in: InputStream, charset: Charset)
         }
       }
       currentEntry = createZipEntry(
-        convertUTF8WithBuf(nameBuf, charBuf, 0, flen))
+        convertUTF8WithBuf(nameBuf, charBuf, 0, flen)
+      )
       currentEntry.time = cetime
       currentEntry.modDate = cemodDate
       currentEntry.setMethod(cecompressionMethod)
@@ -299,7 +302,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
     }
 
     var skipped = 0L
-    val b       = new Array[Byte](Math.min(value, 2048L).toInt)
+    val b = new Array[Byte](Math.min(value, 2048L).toInt)
     while (skipped != value) {
       val rem = value - skipped
       val x =
@@ -326,21 +329,23 @@ class ZipInputStream(_in: InputStream, charset: Charset)
     new ZipEntry(name)
 
   private def getShort(buffer: Array[Byte], off: Int): Int =
-    (buffer(off) & 0xFF) | ((buffer(off + 1) & 0xFF) << 8)
+    (buffer(off) & 0xff) | ((buffer(off + 1) & 0xff) << 8)
 
   private def getLong(buffer: Array[Byte], off: Int): Long = {
     var l = 0L
-    l |= (buffer(off) & 0xFF)
-    l |= (buffer(off + 1) & 0xFF) << 8
-    l |= (buffer(off + 2) & 0xFF) << 16
-    l |= (buffer(off + 3) & 0xFF).toLong << 24
+    l |= (buffer(off) & 0xff)
+    l |= (buffer(off + 1) & 0xff) << 8
+    l |= (buffer(off + 2) & 0xff) << 16
+    l |= (buffer(off + 3) & 0xff).toLong << 24
     l
   }
 
-  private def convertUTF8WithBuf(buf: Array[Byte],
-                                 out: Array[Char],
-                                 offset: Int,
-                                 utfSize: Int): String = {
+  private def convertUTF8WithBuf(
+      buf: Array[Byte],
+      out: Array[Char],
+      offset: Int,
+      utfSize: Int
+  ): String = {
     var count, s, a = 0
     while (count < utfSize) {
       count += 1
@@ -350,34 +355,39 @@ class ZipInputStream(_in: InputStream, charset: Charset)
       } else if (({ a = out(s); a } & 0xe0) == 0xc0) {
         if (count >= utfSize)
           throw new UTFDataFormatException(
-            s"Second byte at $count doesn't match UTF8 specification.")
+            s"Second byte at $count doesn't match UTF8 specification."
+          )
 
         val b = buf(count)
         count += 1
-        if ((b & 0xC0) != 0x80)
+        if ((b & 0xc0) != 0x80)
           throw new UTFDataFormatException(
-            s"Second byte at ${count - 1} doesn't match UTF8 specification.")
+            s"Second byte at ${count - 1} doesn't match UTF8 specification."
+          )
 
-        out(s) = (((a & 0x1F) << 6) | (b & 0x3F)).toChar
+        out(s) = (((a & 0x1f) << 6) | (b & 0x3f)).toChar
         s += 1
       } else if ((a & 0xf0) == 0xe0) {
         if (count + 1 >= utfSize)
           throw new UTFDataFormatException(
-            s"Third byte at ${count + 1} doesn't match UTF8 specification.")
+            s"Third byte at ${count + 1} doesn't match UTF8 specification."
+          )
 
         val b = buf(count)
         count += 1
         val c = buf(count)
         count += 1
-        if (((b & 0xC0) != 0x80) || ((c & 0xC0) != 0x80))
+        if (((b & 0xc0) != 0x80) || ((c & 0xc0) != 0x80))
           throw new UTFDataFormatException(
-            s"Second or third byte at ${count - 2} doesnt match UTF8 specification.")
+            s"Second or third byte at ${count - 2} doesnt match UTF8 specification."
+          )
 
-        out(s) = (((a & 0x0F) << 12) | ((b & 0x3F) << 6) | (c & 0x3F)).toChar
+        out(s) = (((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f)).toChar
         s += 1
       } else {
         throw new UTFDataFormatException(
-          s"Input at ${count - 1} doesn't match UTF8 specification")
+          s"Input at ${count - 1} doesn't match UTF8 specification"
+        )
       }
     }
     new String(out, 0, s);
@@ -386,8 +396,8 @@ class ZipInputStream(_in: InputStream, charset: Charset)
 }
 
 object ZipInputStream {
-  final val DEFLATED: Int                    = 8
-  final val STORED: Int                      = 0
-  final val ZIPDataDescriptorFlag: Int       = 8
+  final val DEFLATED: Int = 8
+  final val STORED: Int = 0
+  final val ZIPDataDescriptorFlag: Int = 8
   final val ZIPLocalHeaderVersionNeeded: Int = 20
 }

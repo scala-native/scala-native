@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <cpio.h>
 
 unsigned short scalanative_c_issock() { return C_ISSOCK; }
@@ -22,3 +24,5 @@ unsigned short scalanative_c_iwoth() { return C_IWOTH; }
 unsigned short scalanative_c_ixoth() { return C_IXOTH; }
 
 const char *scalanative_magic() { return MAGIC; }
+
+#endif // Unix or Mac OS

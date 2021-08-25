@@ -2,21 +2,19 @@ package java.util
 
 import scala.annotation.tailrec
 
-/**
- * Ported from Apache Harmony and described by Donald E. Knuth
- * in The Art of Computer Programming, Volume 2:
- * Seminumerical Algorithms, section 3.2.1.
+/** Ported from Apache Harmony and described by Donald E. Knuth in The Art of
+ *  Computer Programming, Volume 2: Seminumerical Algorithms, section 3.2.1.
  */
 class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
   private var seed: Long = calcSeed(seed_in)
 
   // see nextGaussian()
-  private var nextNextGaussian: Double      = _
+  private var nextNextGaussian: Double = _
   private var haveNextNextGaussian: Boolean = false
 
   private def calcSeed(seed_in: Long): Long =
-    (seed_in ^ 0x5DEECE66DL) & ((1L << 48) - 1)
+    (seed_in ^ 0x5deece66dL) & ((1L << 48) - 1)
 
   def this() = {
     this(0) // ensure hashCode is set for this object
@@ -29,7 +27,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
   }
 
   protected def next(bits: Int): Int = {
-    seed = (seed * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1)
+    seed = (seed * 0x5deece66dL + 0xbL) & ((1L << 48) - 1)
     (seed >>> (48 - bits)).toInt
   }
 
@@ -49,7 +47,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
     else {
       @tailrec
       def loop(): Int = {
-        val bits  = next(31)
+        val bits = next(31)
         val value = bits % n
         if (bits - value + (n - 1) < 0) loop()
         else value
@@ -67,7 +65,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
     var i = 0
     while (i < bytes.length) {
       var rnd = nextInt()
-      var n   = Math.min(bytes.length - i, 4)
+      var n = Math.min(bytes.length - i, 4)
       while (n > 0) {
         bytes(i) = rnd.toByte
         rnd >>= 8

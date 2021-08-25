@@ -26,15 +26,15 @@ object URIEncoderDecoder {
             throw new URISyntaxException(
               s,
               "Invalid % sequence (" + s.substring(i, i + 3) + ")",
-              i)
+              i
+            )
           }
           i += 3
         } while (i < s.length && s.charAt(i) == '%')
       } else if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-                   (ch >= '0' && ch <= '9') ||
-                   legal.indexOf(ch) > -1 ||
-                   (ch > 127 && !java.lang.Character.isSpaceChar(ch) && !java.lang.Character
-                     .isISOControl(ch)))) {
+            (ch >= '0' && ch <= '9') || legal.indexOf(ch) > -1 ||
+            (ch > 127 && !java.lang.Character.isSpaceChar(ch) &&
+              !java.lang.Character.isISOControl(ch)))) {
         throw new URISyntaxException(s, "Illegal character", i)
       }
       if (!continue) i += 1
@@ -46,8 +46,7 @@ object URIEncoderDecoder {
     while (i < s.length) {
       val ch: Char = s.charAt(i)
       if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-            (ch >= '0' && ch <= '9') ||
-            legal.indexOf(ch) > -1)) {
+            (ch >= '0' && ch <= '9') || legal.indexOf(ch) > -1)) {
         throw new URISyntaxException(s, "Illegal character", i)
       }
       i += 1
@@ -61,8 +60,8 @@ object URIEncoderDecoder {
       if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
           (ch >= '0' && ch <= '9') ||
           legal.indexOf(ch) > -1 ||
-          (ch > 127 && !java.lang.Character.isSpaceChar(ch) && !java.lang.Character
-            .isISOControl(ch))) {
+          (ch > 127 && !java.lang.Character.isSpaceChar(ch) &&
+            !java.lang.Character.isISOControl(ch))) {
         buf.append(ch)
       } else {
         val bytes: Array[Byte] = new String(Array(ch)).getBytes(encoding)
@@ -95,9 +94,9 @@ object URIEncoderDecoder {
   }
 
   def decode(s: String): String = {
-    val result: StringBuilder      = new StringBuilder()
+    val result: StringBuilder = new StringBuilder()
     val out: ByteArrayOutputStream = new ByteArrayOutputStream()
-    var i: Int                     = 0
+    var i: Int = 0
     while (i < s.length) {
       val c: Char = s.charAt(i)
       if (c == '%') {
@@ -110,7 +109,8 @@ object URIEncoderDecoder {
           val d2: Int = java.lang.Character.digit(s.charAt(i + 2), 16)
           if (d1 == -1 || d2 == -1) {
             throw new IllegalArgumentException(
-              "Invalid % sequence (" + s.substring(i, i + 3) + ") at: " + i)
+              "Invalid % sequence (" + s.substring(i, i + 3) + ") at: " + i
+            )
           }
           out.write(((d1 << 4) + d2).toByte)
           i += 3

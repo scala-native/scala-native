@@ -28,7 +28,7 @@ trait List[E] extends Collection[E] {
         i += 1
       }
     } else {
-      var i    = 0
+      var i = 0
       val iter = listIterator()
       while (i != len) {
         iter.next()

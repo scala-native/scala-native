@@ -174,8 +174,8 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         if (concurrent) {
             superblock = BlockAllocator_pollSuperblock(blockAllocator, &index);
         } else {
-            superblock = BlockAllocator_pollSuperblockOnlyThread(
-                blockAllocator, &index);
+            superblock =
+                BlockAllocator_pollSuperblockOnlyThread(blockAllocator, &index);
         }
         uint32_t receivedSize = 1 << index;
 

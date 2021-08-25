@@ -4,9 +4,9 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../GCTypes.h"
+#include "GCTypes.h"
 #include "../Constants.h"
-#include "../Log.h"
+#include "Log.h"
 #include "../metadata/ObjectMeta.h"
 
 typedef struct {

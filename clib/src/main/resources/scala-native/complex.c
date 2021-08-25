@@ -1,5 +1,13 @@
 #include <complex.h>
 
+#if defined(_WIN32)
+typedef _Fcomplex FloatComplex;
+typedef _Dcomplex DoubleComplex;
+#else
+typedef float complex FloatComplex;
+typedef double complex DoubleComplex;
+#endif // __WIN32
+
 /* C11 specification - http://www.iso-9899.info/n1570.html
  *
  * 6.2.5/13 Each complex type has the same representation and alignment
@@ -9,20 +17,18 @@
  *
  * Helper functions follow.
  */
-float complex toFloatComplex(float snfc[2]) { return *(float complex *)snfc; }
+FloatComplex toFloatComplex(float snfc[2]) { return *(FloatComplex *)snfc; }
 
-double complex toDoubleComplex(double sndc[2]) {
-    return *(double complex *)sndc;
-}
+DoubleComplex toDoubleComplex(double sndc[2]) { return *(DoubleComplex *)sndc; }
 
-float *toNativeFloatComplex(float complex fc, float res[2]) {
+float *toNativeFloatComplex(FloatComplex fc, float res[2]) {
     float *fa = (float *)&fc;
     res[0] = *fa;
     res[1] = *(fa + 1);
     return res;
 }
 
-double *toNativeDoubleComplex(double complex dc, double res[2]) {
+double *toNativeDoubleComplex(DoubleComplex dc, double res[2]) {
     double *da = (double *)&dc;
     res[0] = *da;
     res[1] = *(da + 1);

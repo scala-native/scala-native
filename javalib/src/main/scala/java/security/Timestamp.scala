@@ -5,15 +5,16 @@ package java.security
 import java.security.cert.CertPath
 import java.util.Date
 
-final class Timestamp private (private val signerCertPath: CertPath,
-                               private val timestamp: Date)
-    extends Serializable {
+final class Timestamp private (
+    private val signerCertPath: CertPath,
+    private val timestamp: Date
+) extends Serializable {
 
   if (signerCertPath eq null) {
     throw new NullPointerException("signerCertPath cannot be null")
   }
 
-  /** Constructor overload with null checking and timestamp cloning **/
+  /** Constructor overload with null checking and timestamp cloning * */
   @throws[NullPointerException]
   def this(timestamp: Date, signerCertPath: CertPath) =
     this(

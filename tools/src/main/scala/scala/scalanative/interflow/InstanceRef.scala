@@ -16,11 +16,13 @@ object InstanceRef {
 }
 
 object VirtualRef {
-  def unapply(addr: Addr)(
-      implicit state: State): Option[(Kind, Class, Array[Val])] =
+  def unapply(addr: Addr)(implicit
+      state: State
+  ): Option[(Kind, Class, Array[Val])] =
     unapply(Val.Virtual(addr))
-  def unapply(value: Val)(
-      implicit state: State): Option[(Kind, Class, Array[Val])] = value match {
+  def unapply(
+      value: Val
+  )(implicit state: State): Option[(Kind, Class, Array[Val])] = value match {
     case Val.Virtual(addr) =>
       state.deref(addr) match {
         case VirtualInstance(kind, cls, values) =>
@@ -84,11 +86,13 @@ object ConvRef {
 }
 
 object CompRef {
-  def unapply(addr: Addr)(
-      implicit state: State): Option[(Comp, Type, Val, Val)] =
+  def unapply(addr: Addr)(implicit
+      state: State
+  ): Option[(Comp, Type, Val, Val)] =
     unapply(Val.Virtual(addr))
-  def unapply(value: Val)(
-      implicit state: State): Option[(Comp, Type, Val, Val)] =
+  def unapply(
+      value: Val
+  )(implicit state: State): Option[(Comp, Type, Val, Val)] =
     value match {
       case Val.Virtual(addr) =>
         state.deref(addr) match {

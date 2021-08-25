@@ -23,10 +23,10 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     out
   }
 
-  private val todo         = mutable.Queue.empty[Global]
-  private val done         = mutable.Map.empty[Global, Defn.Define]
-  private val started      = mutable.Set.empty[Global]
-  private val blacklist    = mutable.Set.empty[Global]
+  private val todo = mutable.Queue.empty[Global]
+  private val done = mutable.Map.empty[Global, Defn.Define]
+  private val started = mutable.Set.empty[Global]
+  private val blacklist = mutable.Set.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
   private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {

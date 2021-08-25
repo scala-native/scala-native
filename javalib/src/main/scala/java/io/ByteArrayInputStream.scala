@@ -1,13 +1,14 @@
 package java.io
 
-class ByteArrayInputStream(protected val buf: Array[Byte],
-                           offset: Int,
-                           length: Int)
-    extends InputStream {
+class ByteArrayInputStream(
+    protected val buf: Array[Byte],
+    offset: Int,
+    length: Int
+) extends InputStream {
 
   protected val count: Int = offset + length
-  protected var mark: Int  = offset
-  protected var pos: Int   = offset
+  protected var mark: Int = offset
+  protected var pos: Int = offset
 
   def this(buf: Array[Byte]) = this(buf, 0, buf.length)
 
@@ -15,7 +16,7 @@ class ByteArrayInputStream(protected val buf: Array[Byte],
     if (pos >= count)
       -1
     else {
-      val res = buf(pos) & 0xFF // convert to unsigned int
+      val res = buf(pos) & 0xff // convert to unsigned int
       pos += 1
       res
     }

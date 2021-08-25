@@ -9,8 +9,10 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import nirAddons._
   import nirDefinitions._
 
-  sealed case class SimpleType(sym: Symbol,
-                               targs: Seq[SimpleType] = Seq.empty) {
+  sealed case class SimpleType(
+      sym: Symbol,
+      targs: Seq[SimpleType] = Seq.empty
+  ) {
     def isInterface: Boolean =
       sym.isInterface
 
@@ -155,12 +157,14 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
   def genExternMethodSig(sym: Symbol): nir.Type.Function =
     genMethodSigImpl(sym, isExtern = true)
 
-  private def genMethodSigImpl(sym: Symbol,
-                               isExtern: Boolean): nir.Type.Function = {
+  private def genMethodSigImpl(
+      sym: Symbol,
+      isExtern: Boolean
+  ): nir.Type.Function = {
     require(sym.isMethod || sym.isStaticMember, "symbol is not a method")
 
-    val tpe      = sym.tpe
-    val owner    = sym.owner
+    val tpe = sym.tpe
+    val owner = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
       if (isExtern || owner.isExternModule || isImplClass(owner)) None
@@ -173,12 +177,14 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     nir.Type.Function(selfty ++: paramtys, retty)
   }
 
-  private def genMethodSigParamsImpl(sym: Symbol,
-                                     isExtern: Boolean): Seq[nir.Type] = {
+  private def genMethodSigParamsImpl(
+      sym: Symbol,
+      isExtern: Boolean
+  ): Seq[nir.Type] = {
     val wereRepeated = exitingPhase(currentRun.typerPhase) {
       for {
         params <- sym.tpe.paramss
-        param  <- params
+        param <- params
       } yield {
         param.name -> isScalaRepeatedParamType(param.tpe)
       }

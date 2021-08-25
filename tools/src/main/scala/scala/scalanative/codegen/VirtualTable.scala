@@ -3,7 +3,7 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.nir.Rt.{Type => _, _}
+import scalanative.nir.Rt._
 
 class VirtualTable(meta: Metadata, cls: linker.Class) {
   private val slots: mutable.UnrolledBuffer[Sig] =
@@ -34,7 +34,7 @@ class VirtualTable(meta: Metadata, cls: linker.Class) {
     }
   }
   val value: Val =
-    Val.ArrayValue(Type.Ptr, slots.map(impls))
+    Val.ArrayValue(Type.Ptr, slots.map(impls).toSeq)
   val ty =
     value.ty
   def index(sig: Sig): Int =

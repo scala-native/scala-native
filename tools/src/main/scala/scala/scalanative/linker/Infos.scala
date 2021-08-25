@@ -12,13 +12,13 @@ sealed abstract class Info {
 
 sealed abstract class ScopeInfo extends Info {
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
-  val calls   = mutable.Set.empty[Sig]
+  val calls = mutable.Set.empty[Sig]
 
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Trait]
   def is(info: ScopeInfo): Boolean
   def targets(sig: Sig): mutable.Set[Global]
-  def implementors: mutable.Set[Class]
+  def implementors: mutable.SortedSet[Class]
 
   lazy val linearized: Seq[ScopeInfo] = {
     val out = mutable.UnrolledBuffer.empty[ScopeInfo]
@@ -46,7 +46,7 @@ sealed abstract class ScopeInfo extends Info {
     }
 
     loop(this)
-    overwrite(out)
+    overwrite(out.toSeq)
   }
 }
 
@@ -63,11 +63,11 @@ final class Unavailable(val name: Global) extends Info {
 }
 
 final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
-    implicit val position: Position)
-    extends ScopeInfo {
-  val implementors = mutable.Set.empty[Class]
-  val subtraits    = mutable.Set.empty[Trait]
-  val responds     = mutable.Map.empty[Sig, Global]
+    implicit val position: Position
+) extends ScopeInfo {
+  val implementors = mutable.SortedSet.empty[Class]
+  val subtraits = mutable.Set.empty[Trait]
+  val responds = mutable.Map.empty[Sig, Global]
 
   def targets(sig: Sig): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]
@@ -94,17 +94,19 @@ final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
   }
 }
 
-final class Class(val attrs: Attrs,
-                  val name: Global,
-                  val parent: Option[Class],
-                  val traits: Seq[Trait],
-                  val isModule: Boolean)(implicit val position: Position)
+final class Class(
+    val attrs: Attrs,
+    val name: Global,
+    val parent: Option[Class],
+    val traits: Seq[Trait],
+    val isModule: Boolean
+)(implicit val position: Position)
     extends ScopeInfo {
-  val implementors    = mutable.Set[Class](this)
-  val subclasses      = mutable.Set.empty[Class]
-  val responds        = mutable.Map.empty[Sig, Global]
+  val implementors = mutable.SortedSet[Class](this)
+  val subclasses = mutable.Set.empty[Class]
+  val responds = mutable.Map.empty[Sig, Global]
   val defaultResponds = mutable.Map.empty[Sig, Global]
-  var allocated       = false
+  var allocated = false
 
   lazy val fields: Seq[Field] = {
     val out = mutable.UnrolledBuffer.empty[Field]
@@ -116,7 +118,7 @@ final class Class(val attrs: Attrs,
       }
     }
     add(this)
-    out
+    out.toSeq
   }
 
   val ty: Type =
@@ -177,11 +179,20 @@ final class Class(val attrs: Attrs,
   }
 }
 
-final class Method(val attrs: Attrs,
-                   val owner: Info,
-                   val name: Global,
-                   val ty: Type,
-                   val insts: Array[Inst])(implicit val position: Position)
+object Class {
+  implicit val classOrdering: Ordering[Class] = new Ordering[Class] {
+    override def compare(x: Class, y: Class): Int =
+      Global.globalOrdering.compare(x.name, y.name)
+  }
+}
+
+final class Method(
+    val attrs: Attrs,
+    val owner: Info,
+    val name: Global,
+    val ty: Type,
+    val insts: Array[Inst]
+)(implicit val position: Position)
     extends MemberInfo {
   val value: Val =
     if (isConcrete) {
@@ -193,30 +204,35 @@ final class Method(val attrs: Attrs,
     insts.nonEmpty
 }
 
-final class Field(val attrs: Attrs,
-                  val owner: Info,
-                  val name: Global,
-                  val isConst: Boolean,
-                  val ty: nir.Type,
-                  val init: Val)(implicit val position: Position)
+final class Field(
+    val attrs: Attrs,
+    val owner: Info,
+    val name: Global,
+    val isConst: Boolean,
+    val ty: nir.Type,
+    val init: Val
+)(implicit val position: Position)
     extends MemberInfo {
   lazy val index: Int =
     owner.asInstanceOf[Class].fields.indexOf(this)
 }
 
-final class Result(val infos: mutable.Map[Global, Info],
-                   val entries: Seq[Global],
-                   val unavailable: Seq[Global],
-                   val referencedFrom: mutable.Map[Global, Global],
-                   val links: Seq[Attr.Link],
-                   val defns: Seq[Defn],
-                   val dynsigs: Seq[Sig],
-                   val dynimpls: Seq[Global]) {
-  lazy val ObjectClass       = infos(Rt.Object.name).asInstanceOf[Class]
-  lazy val StringClass       = infos(Rt.StringName).asInstanceOf[Class]
-  lazy val StringValueField  = infos(Rt.StringValueName).asInstanceOf[Field]
+final class Result(
+    val infos: mutable.Map[Global, Info],
+    val entries: Seq[Global],
+    val unavailable: Seq[Global],
+    val referencedFrom: mutable.Map[Global, Global],
+    val links: Seq[Attr.Link],
+    val defns: Seq[Defn],
+    val dynsigs: Seq[Sig],
+    val dynimpls: Seq[Global],
+    val resolvedVals: mutable.Map[String, Val]
+) {
+  lazy val ObjectClass = infos(Rt.Object.name).asInstanceOf[Class]
+  lazy val StringClass = infos(Rt.StringName).asInstanceOf[Class]
+  lazy val StringValueField = infos(Rt.StringValueName).asInstanceOf[Field]
   lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
-  lazy val StringCountField  = infos(Rt.StringCountName).asInstanceOf[Field]
+  lazy val StringCountField = infos(Rt.StringCountName).asInstanceOf[Field]
   lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
     .asInstanceOf[Field]
 }

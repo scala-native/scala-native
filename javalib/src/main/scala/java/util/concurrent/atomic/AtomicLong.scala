@@ -57,8 +57,8 @@ class AtomicLong(private[this] var value: Long)
   override def toString(): String =
     value.toString()
 
-  def intValue(): Int       = value.toInt
-  def longValue(): Long     = value
-  def floatValue(): Float   = value.toFloat
+  def intValue(): Int = value.toInt
+  def longValue(): Long = value
+  def floatValue(): Float = value.toFloat
   def doubleValue(): Double = value.toDouble
 }

@@ -1,3 +1,5 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 #include <sys/utsname.h>
 #include <string.h>
 
@@ -28,3 +30,5 @@ int scalanative_uname(struct scalanative_utsname *scalanative_utsname) {
     }
     return res;
 }
+
+#endif // Unix or Mac OS

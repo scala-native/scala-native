@@ -9,7 +9,6 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
-import java.util.List
 
 import Inst.{Op => IOP}
 
@@ -17,8 +16,8 @@ import Inst.{Op => IOP}
 class Prog {
 
   private val inst = new ArrayList[Inst]()
-  var start        = 0 // index of start instruction
-  var numCap       = 2 // number of CAPTURE insts in re
+  var start = 0 // index of start instruction
+  var numCap = 2 // number of CAPTURE insts in re
   // 2 => implicit ( and ) for whole match $0
 
   // Returns the instruction at the specified pc.
@@ -36,7 +35,7 @@ class Prog {
   // resulting instruction.
   def skipNop(_pc: Int): Inst = {
     var pc = _pc
-    var i  = inst.get(pc)
+    var i = inst.get(pc)
     while (i.op == IOP.NOP || i.op == IOP.CAPTURE) {
       i = inst.get(pc)
       pc = i.out
@@ -57,8 +56,8 @@ class Prog {
 
     // Have prefix gather characters.
     while (i.runeOp() == IOP.RUNE &&
-           i.runes.length == 1 &&
-           (i.arg & RE2.FOLD_CASE) == 0) {
+        i.runes.length == 1 &&
+        (i.arg & RE2.FOLD_CASE) == 0) {
       prefix.appendCodePoint(i.runes(0)) // an int, not a byte.
       i = skipNop(i.out)
     }
@@ -69,8 +68,8 @@ class Prog {
   // startCond() returns the leading empty-width conditions that must be true
   // in any match.  It returns -1 (all bits set) if no matches are possible.
   def startCond(): Int = {
-    var flag  = 0 // bitmask of EMPTY_* flags
-    var pc    = start
+    var flag = 0 // bitmask of EMPTY_* flags
+    var pc = start
     var break = false
     while (!break) {
       val i = inst.get(pc)
@@ -134,7 +133,7 @@ class Prog {
     if (l2 == 0) {
       return l1
     }
-    var last  = l1
+    var last = l1
     var break = false
     while (!break) {
       val next = this.next(last)
@@ -156,8 +155,8 @@ class Prog {
   // ---
 
   override def toString = {
-    val out = new StringBuilder()
-    var pc  = 0
+    val out = new java.lang.StringBuilder()
+    var pc = 0
     while (pc < inst.size()) {
       val len = out.length()
       out.append(pc)

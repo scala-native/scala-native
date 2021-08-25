@@ -1,32 +1,36 @@
 package scala.scalanative
 package nir
 
+import scala.util.hashing.MurmurHash3
 import util.unreachable
 
 sealed abstract class Op {
+  self: Product =>
+  override lazy val hashCode = MurmurHash3.productHash(self)
+
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _) => ret
     case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _)                       => ty
     case Op.Store(_, _, _)                    => Type.Unit
     case Op.Elem(_, _, _)                     => Type.Ptr
-    case Op.Extract(aggr, indexes)            => aggr.ty.elemty(indexes.map(Val.Int(_)))
-    case Op.Insert(aggr, _, _)                => aggr.ty
-    case Op.Stackalloc(ty, _)                 => Type.Ptr
-    case Op.Bin(_, ty, _, _)                  => ty
-    case Op.Comp(_, _, _, _)                  => Type.Bool
-    case Op.Conv(_, ty, _)                    => ty
+    case Op.Extract(aggr, indexes) => aggr.ty.elemty(indexes.map(Val.Int(_)))
+    case Op.Insert(aggr, _, _)     => aggr.ty
+    case Op.Stackalloc(ty, _)      => Type.Ptr
+    case Op.Bin(_, ty, _, _)       => ty
+    case Op.Comp(_, _, _, _)       => Type.Bool
+    case Op.Conv(_, ty, _)         => ty
 
-    case Op.Classalloc(n)           => Type.Ref(n, exact = true, nullable = false)
-    case Op.Fieldload(ty, _, _)     => ty
+    case Op.Classalloc(n)       => Type.Ref(n, exact = true, nullable = false)
+    case Op.Fieldload(ty, _, _) => ty
     case Op.Fieldstore(ty, _, _, _) => Type.Unit
     case Op.Method(_, _)            => Type.Ptr
     case Op.Dynmethod(_, _)         => Type.Ptr
-    case Op.Module(n)               => Type.Ref(n, exact = true, nullable = false)
-    case Op.As(ty, _)               => ty
-    case Op.Is(_, _)                => Type.Bool
-    case Op.Copy(v)                 => v.ty
-    case Op.Sizeof(_)               => Type.Long
+    case Op.Module(n) => Type.Ref(n, exact = true, nullable = false)
+    case Op.As(ty, _) => ty
+    case Op.Is(_, _)  => Type.Bool
+    case Op.Copy(v)   => v.ty
+    case Op.Sizeof(_) => Type.Long
     case Op.Box(refty: Type.RefKind, _) =>
       val nullable = !Type.isPtrBox(refty)
       Type.Ref(refty.className, exact = true, nullable = nullable)
@@ -47,9 +51,8 @@ sealed abstract class Op {
 
   /** Op is pure if it doesn't have any side-effects, including:
    *
-   *  * doesn't throw exceptions
-   *  * doesn't perform any unsafe reads or writes from the memory
-   *  * doesn't call foreign code
+   *  * doesn't throw exceptions * doesn't perform any unsafe reads or writes
+   *  from the memory * doesn't call foreign code
    *
    *  Recomputing pure op will always yield to the same result.
    */
@@ -71,9 +74,9 @@ sealed abstract class Op {
       false
   }
 
-  /** Op is idempotent if re-evaluation of the operation with the same
-   *  arguments is going to produce the same results, without any extra
-   *  side effects as long as previous evaluation did not throw.
+  /** Op is idempotent if re-evaluation of the operation with the same arguments
+   *  is going to produce the same results, without any extra side effects as
+   *  long as previous evaluation did not throw.
    */
   final def isIdempotent: Boolean = this match {
     case op if op.isPure =>
@@ -110,35 +113,35 @@ sealed abstract class Op {
 }
 object Op {
   // low-level
-  final case class Call(ty: Type, ptr: Val, args: Seq[Val])         extends Op
-  final case class Load(ty: Type, ptr: Val)                         extends Op
-  final case class Store(ty: Type, ptr: Val, value: Val)            extends Op
-  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val])      extends Op
-  final case class Extract(aggr: Val, indexes: Seq[Int])            extends Op
+  final case class Call(ty: Type, ptr: Val, args: Seq[Val]) extends Op
+  final case class Load(ty: Type, ptr: Val) extends Op
+  final case class Store(ty: Type, ptr: Val, value: Val) extends Op
+  final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val]) extends Op
+  final case class Extract(aggr: Val, indexes: Seq[Int]) extends Op
   final case class Insert(aggr: Val, value: Val, indexes: Seq[Int]) extends Op
-  final case class Stackalloc(ty: Type, n: Val)                     extends Op
-  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val)      extends Op
-  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val)   extends Op
-  final case class Conv(conv: nir.Conv, ty: Type, value: Val)       extends Op
+  final case class Stackalloc(ty: Type, n: Val) extends Op
+  final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val) extends Op
+  final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val) extends Op
+  final case class Conv(conv: nir.Conv, ty: Type, value: Val) extends Op
 
   // high-level
-  final case class Classalloc(name: Global)                    extends Op
+  final case class Classalloc(name: Global) extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op
-  final case class Method(obj: Val, sig: Sig)              extends Op
-  final case class Dynmethod(obj: Val, sig: Sig)           extends Op
-  final case class Module(name: Global)                    extends Op
-  final case class As(ty: Type, obj: Val)                  extends Op
-  final case class Is(ty: Type, obj: Val)                  extends Op
-  final case class Copy(value: Val)                        extends Op
-  final case class Sizeof(ty: Type)                        extends Op
-  final case class Box(ty: Type, obj: Val)                 extends Op
-  final case class Unbox(ty: Type, obj: Val)               extends Op
-  final case class Var(ty: Type)                           extends Op
-  final case class Varload(slot: Val)                      extends Op
-  final case class Varstore(slot: Val, value: Val)         extends Op
-  final case class Arrayalloc(ty: Type, init: Val)         extends Op
+  final case class Method(obj: Val, sig: Sig) extends Op
+  final case class Dynmethod(obj: Val, sig: Sig) extends Op
+  final case class Module(name: Global) extends Op
+  final case class As(ty: Type, obj: Val) extends Op
+  final case class Is(ty: Type, obj: Val) extends Op
+  final case class Copy(value: Val) extends Op
+  final case class Sizeof(ty: Type) extends Op
+  final case class Box(ty: Type, obj: Val) extends Op
+  final case class Unbox(ty: Type, obj: Val) extends Op
+  final case class Var(ty: Type) extends Op
+  final case class Varload(slot: Val) extends Op
+  final case class Varstore(slot: Val, value: Val) extends Op
+  final case class Arrayalloc(ty: Type, init: Val) extends Op
   final case class Arrayload(ty: Type, arr: Val, idx: Val) extends Op
   final case class Arraystore(ty: Type, arr: Val, idx: Val, value: Val)
       extends Op

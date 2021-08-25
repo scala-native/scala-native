@@ -6,21 +6,26 @@ import scalanative.nir._
 import scalanative.linker.{Trait, Class}
 
 class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
-  val rtti   = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
+  val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
   val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
-  val ids    = mutable.Map.empty[linker.ScopeInfo, Int]
+  val ids = mutable.Map.empty[linker.ScopeInfo, Int]
   val ranges = mutable.Map.empty[linker.Class, Range]
 
-  val classes        = initClassIdsAndRanges()
-  val traits         = initTraitIds()
-  val moduleArray    = new ModuleArray(this)
-  val dispatchTable  = new TraitDispatchTable(this)
+  val classes = initClassIdsAndRanges()
+  val traits = initTraitIds()
+  val moduleArray = new ModuleArray(this)
+  val dispatchTable = new TraitDispatchTable(this)
   val hasTraitTables = new HasTraitTables(this)
 
-  val dynmapIndex = Val.Int(if (linked.dynsigs.isEmpty) -1 else 4)
-  val vtableIndex = Val.Int(if (linked.dynsigs.isEmpty) 4 else 5)
+  val Rtti = Type.StructValue(Seq(Type.Ptr, Type.Int, Type.Int, Type.Ptr))
+  val RttiClassIdIndex = Seq(Val.Int(0), Val.Int(1))
+  val RttiTraitIdIndex = Seq(Val.Int(0), Val.Int(2))
+  val RttiVtableIndex =
+    Seq(Val.Int(0), Val.Int(if (linked.dynsigs.isEmpty) 4 else 5))
+  val RttiDynmapIndex =
+    Seq(Val.Int(0), Val.Int(if (linked.dynsigs.isEmpty) -1 else 4))
 
   initClassMetadata()
   initTraitMetadata()
@@ -29,7 +34,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
     val traits =
       linked.infos.valuesIterator
         .collect { case info: Trait => info }
-        .toArray
+        .toIndexedSeq
         .sortBy(_.name.show)
     traits.zipWithIndex.foreach {
       case (node, id) =>
@@ -40,7 +45,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
 
   def initClassIdsAndRanges(): Seq[Class] = {
     val out = mutable.UnrolledBuffer.empty[Class]
-    var id  = 0
+    var id = 0
 
     def loop(node: Class): Unit = {
       out += node
@@ -56,7 +61,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
 
     loop(linked.infos(Rt.Object.name).asInstanceOf[Class])
 
-    out
+    out.toSeq
   }
 
   def initClassMetadata(): Unit = {

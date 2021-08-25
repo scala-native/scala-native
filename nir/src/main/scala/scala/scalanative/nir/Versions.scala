@@ -21,9 +21,9 @@ object Versions {
    * when 2.3-based release happens all of the code needs to recompiled with
    * new version of the toolchain.
    */
-  final val compat: Int   = 5 // a.k.a. MAJOR version
+  final val compat: Int = 5 // a.k.a. MAJOR version
   final val revision: Int = 8 // a.k.a. MINOR version
 
   /* Current public release version of Scala Native. */
-  final val current: String = "0.4.0-SNAPSHOT"
+  final val current: String = "0.4.1-SNAPSHOT"
 }

@@ -2550,16 +2550,16 @@ trait UnicodeTableData {
 
 // format: on
 
-  final val Digit  = Nd
+  final val Digit = Nd
   final val Letter = L
-  final val Lower  = Ll
-  final val Mark   = M
+  final val Lower = Ll
+  final val Mark = M
   final val Number = N
-  final val Other  = C
-  final val Punct  = P
-  final val Space  = Z
+  final val Other = C
+  final val Punct = P
+  final val Space = Z
   final val Symbol = S
-  final val Title  = Lt
-  final val Upper  = Lu
+  final val Title = Lt
+  final val Upper = Lu
 
 }

@@ -17,6 +17,8 @@ class Method {
   def getReturnType(): java.lang.Class[_] = ???
 
   @stub
-  def invoke(obj: java.lang.Object,
-             args: scala.Array[Object]): java.lang.Object = ???
+  def invoke(
+      obj: java.lang.Object,
+      args: scala.Array[Object]
+  ): java.lang.Object = ???
 }

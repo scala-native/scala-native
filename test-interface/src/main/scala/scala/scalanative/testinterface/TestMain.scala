@@ -2,6 +2,7 @@ package scala.scalanative
 package testinterface
 
 import java.net.Socket
+import signalhandling.SignalConfig
 
 object TestMain {
 
@@ -27,12 +28,14 @@ object TestMain {
       throw new IllegalArgumentException("One argument expected")
     }
 
-    val serverPort   = args(0).toInt
+    val serverPort = args(0).toInt
     val clientSocket = new Socket("127.0.0.1", serverPort)
-    val nativeRPC    = new NativeRPC(clientSocket)
-    val bridge       = new TestAdapterBridge(nativeRPC)
+    val nativeRPC = new NativeRPC(clientSocket)
+    val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()
+
+    SignalConfig.setDefaultHandlers()
 
     val exitCode = nativeRPC.loop()
     sys.exit(exitCode)

@@ -4,7 +4,8 @@ package scala.scalanative.testinterface.common
 
 private[testinterface] final class ExecuteRequest(
     val taskInfo: TaskInfo,
-    val loggerColorSupport: List[Boolean])
+    val loggerColorSupport: List[Boolean]
+)
 
 private[testinterface] object ExecuteRequest {
   implicit object ExecuteRequestSerializer extends Serializer[ExecuteRequest] {
