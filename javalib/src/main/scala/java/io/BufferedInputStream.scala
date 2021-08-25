@@ -75,7 +75,6 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   // or throws IOException
   override def read(): Int = {
     val (buf, in) = ensureOpen()
-
     synchronized {
       if (pos < count) {
         val res = buf(pos).toInt & 0xff
@@ -84,11 +83,10 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
       } else {
         fillBuffer(buf, in) match {
           case None => -1
-          case Some(nextBuffer) => {
+          case Some(nextBuffer) =>
             val res = nextBuffer(pos).toInt
             pos += 1
             res
-          }
         }
       }
     }
@@ -101,19 +99,16 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
       throw new IndexOutOfBoundsException
 
     if (len == 0) 0
-    else {
+    else
       synchronized {
         unsafeRead(b, off, len, buf, in)
       }
-    }
   }
 
   override def reset(): Unit = {
     ensureOpen()
-
     synchronized {
       if (markpos == -1) throw new IOException("Mark invalid")
-
       pos = markpos
     }
   }
@@ -261,22 +256,21 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
         // fill source buffer from source stream
         fillBuffer(sourceBuffer, source) match {
           // end of source stream
-          case None => {
+          case None =>
             if (available == 0)
               bytesRead = -1
             else
               bytesRead += available
 
             remaining = 0
-          }
+
           // source read into nextBuffer
-          case Some(nextBuffer) => {
+          case Some(nextBuffer) =>
             sourceBuffer = nextBuffer
             targetOffset += available
             bytesRead += available
 
             remaining -= available
-          }
         }
       }
     }
