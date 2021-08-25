@@ -118,6 +118,15 @@ object WinBaseApi {
 
   def UnregisterWait(handle: Handle): Boolean = extern
 
+  def CreateFileMappingA(
+      hFile: Handle,
+      lpFileMappingAttributes: SecurityAttributes,
+      flProtect: DWord,
+      dwMaximumSizeHigh: DWord,
+      dwMaximumSizeLow: DWord,
+      lpName: Ptr[Byte]
+  ): Handle = extern
+
   @name("scalanative_lang_user_default")
   final def DefaultLanguageId: DWord = extern
 }
@@ -177,4 +186,9 @@ object WinBaseApiOps {
     def securityDescriptor_=(v: Ptr[Byte]): Unit = ref._2 = v
     def inheritHandle_=(v: Boolean): Unit = ref._3 = v
   }
+
+  final val PAGE_READONLY: DWord = 0x02.toUInt
+  final val PAGE_READWRITE: DWord = 0x04.toUInt
+  final val PAGE_WRITECOPY: DWord = 0x08.toUInt
+
 }
