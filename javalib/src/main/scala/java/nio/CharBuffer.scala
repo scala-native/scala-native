@@ -152,7 +152,7 @@ abstract class CharBuffer private[nio] (
   override def toString(): String = {
     if (_array != null) {
       // even if read-only
-      new String(_array.toArray, position() + _arrayOffset, remaining())
+      new String(_array.toArray(), position() + _arrayOffset, remaining())
     } else {
       val chars = new Array[Char](remaining())
       val savedPos = position()

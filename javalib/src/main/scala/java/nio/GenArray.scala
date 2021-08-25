@@ -10,7 +10,7 @@ private[nio] sealed trait GenArray[T] {
   val length: Int
 }
 private[nio] case class ScalaArray[T](array: Array[T]) extends GenArray[T] {
-  
+
   @inline override def update(index: Int, value: T): Unit =
     array(index) = value
 
@@ -28,7 +28,7 @@ private[nio] case class ScalaArray[T](array: Array[T]) extends GenArray[T] {
 
 private[nio] case class PtrArray(array: Ptr[Byte], val length: Int)
     extends GenArray[Byte] {
-  
+
   @inline override def update(index: Int, value: Byte): Unit =
     array(index) = value
 

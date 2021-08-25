@@ -1,17 +1,23 @@
 package scala.scalanative
 package posix
 package sys
- 
+
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe.extern
 import scala.scalanative.posix.sys.types._
 
 @extern
-object mman{
-  def mmap(addr: Ptr[_], length: size_t, prot: CInt, flags: CInt,
-                  fd: CInt, offset: off_t): Ptr[Byte] = extern
-  
+object mman {
+  def mmap(
+      addr: Ptr[_],
+      length: size_t,
+      prot: CInt,
+      flags: CInt,
+      fd: CInt,
+      offset: off_t
+  ): Ptr[Byte] = extern
+
   def munmap(addr: Ptr[_], length: size_t): CInt = extern
 
   def msync(addr: Ptr[_], length: size_t, flags: CInt): CInt = extern
