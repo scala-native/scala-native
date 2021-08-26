@@ -610,7 +610,7 @@ object Files {
             if (unistd.readlink(
                   toCString(link.toString),
                   buf,
-              limits.PATH_MAX - `1U`
+                  limits.PATH_MAX - `1U`
                 ) == -1) {
               throw UnixException(link.toString, errno.errno)
             }
