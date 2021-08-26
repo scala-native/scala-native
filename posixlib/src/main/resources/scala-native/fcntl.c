@@ -61,14 +61,14 @@ struct scalanative_flock {
 };
 
 int scalanative_fcntl(int fd, int cmd, struct scalanative_flock *flock_struct) {
-    struct flock *flock_buf;
-    flock_buf->l_start = flock_struct->l_start;
-    flock_buf->l_len = flock_struct->l_len;
-    flock_buf->l_pid = flock_struct->l_pid;
-    flock_buf->l_type = flock_struct->l_type;
-    flock_buf->l_whence = flock_struct->l_whence;
+    struct flock flock_buf;
+    flock_buf.l_start = flock_struct->l_start;
+    flock_buf.l_len = flock_struct->l_len;
+    flock_buf.l_pid = flock_struct->l_pid;
+    flock_buf.l_type = flock_struct->l_type;
+    flock_buf.l_whence = flock_struct->l_whence;
 
-    return fcntl(fd, cmd, flock_buf);
+    return fcntl(fd, cmd, &flock_buf);
 }
 
 #endif // Unix or Mac OS

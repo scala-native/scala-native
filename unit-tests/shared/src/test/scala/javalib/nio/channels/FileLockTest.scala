@@ -45,10 +45,7 @@ class FileLockTest {
     }
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#FileLock(FileChannel, long, long, boolean)
-   */
-  @Test def test_Constructor_Ljava_nio_channels_FileChannelJJZ(): Unit = {
+  @Test def testConstructorLjava_nio_channels_FileChannelJJZ(): Unit = {
     val fileLock1 = new MockFileLock(null, 0, 0, false)
     assertNull(fileLock1.channel())
     assertThrows(
@@ -61,19 +58,13 @@ class FileLockTest {
     )
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#channel()
-   */
-  @Test def test_channel(): Unit = {
+  @Test def testChannel(): Unit = {
     assertSame(readWriteChannel, mockLock.channel())
     val lock = new MockFileLock(null, 0, 10, true)
     assertNull(lock.channel())
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#position()
-   */
-  @Test def test_position(): Unit = {
+  @Test def testPosition(): Unit = {
     val fileLock1 = new MockFileLock(readWriteChannel, 20, 100, true)
     assertEquals(20, fileLock1.position())
 
@@ -82,10 +73,7 @@ class FileLockTest {
     assertEquals(position, fileLock2.position())
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#size()
-   */
-  @Test def test_size(): Unit = {
+  @Test def testSize(): Unit = {
     val fileLock1 = new MockFileLock(readWriteChannel, 20, 100, true)
     assertEquals(100, fileLock1.size())
 
@@ -95,19 +83,13 @@ class FileLockTest {
     assertEquals(size, fileLock2.size())
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#isShared()
-   */
-  @Test def test_isShared(): Unit = {
+  @Test def testIsShared(): Unit = {
     assertFalse(mockLock.isShared())
     val lock = new MockFileLock(null, 0, 10, true)
     assertTrue(lock.isShared())
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#overlaps(long, long)
-   */
-  @Test def test_overlaps_JJ(): Unit = {
+  @Test def testOverlapsJJ(): Unit = {
     assertTrue("mockLock.overlaps(0, 11)", mockLock.overlaps(0, 11))
     assertFalse("mockLock.overlaps(0, 10)", mockLock.overlaps(0, 10))
     assertTrue("mockLock.overlaps(100, 110)", mockLock.overlaps(100, 110))
@@ -115,34 +97,11 @@ class FileLockTest {
     assertFalse("mockLock.overlaps(-1, 10)", mockLock.overlaps(-1, 10))
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#isValid()
-   */
-  @Test def test_isValid(): Unit = {
+  @Test def testIsValid(): Unit = {
     val fileLock = readWriteChannel.lock()
     assertTrue(fileLock.isValid())
     fileLock.release()
     assertFalse(fileLock.isValid())
   }
 
-  /** @tests
-   *    java.nio.channels.FileLock#release()
-   */
-//   @Test def test_release(): Unit = {
-//     val file = File.createTempFile("test", "tmp");
-//     file.deleteOnExit();
-//     val fout = new FileOutputStream(file);
-//     val fileChannel = fout.getChannel();
-//     val fileLock = fileChannel.lock();
-//     fileChannel.close();
-//     assertThrows(classOf[ClosedChannelException], fileLock.release())
-
-//     // release after release
-//     val fout2 = new FileOutputStream(file);
-//     val fileChannel2 = fout.getChannel();
-//     val fileLock2 = fileChannel.lock();
-//     fileLock2.release();
-//     fileChannel2.close();
-//     assertThrows(classOf[ClosedChannelException], fileLock2.release())
-//   }
 }

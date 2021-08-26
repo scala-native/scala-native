@@ -68,7 +68,7 @@ private[java] final class FileChannelImpl(
     lock
   }
 
-  @inline def lockUnix(
+  @inline private def lockUnix(
       position: Long,
       size: Long,
       shared: Boolean,
@@ -86,7 +86,7 @@ private[java] final class FileChannelImpl(
     new FileLockImpl(this, position, size, shared, fd)
   }
 
-  @inline def lockWindows(position: Long, size: Long): FileLock = {
+  @inline private def lockWindows(position: Long, size: Long): FileLock = {
     if (!LockFile(
           fd.handle,
           position.toInt.toUInt,
