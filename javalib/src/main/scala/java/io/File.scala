@@ -906,7 +906,7 @@ object File {
    *  Otherwise, returns `None`.
    */
   private def readLink(link: CString)(implicit z: Zone): CString = {
-    val bufferSize =
+    val bufferSize: CSize =
       if (isWindows) FileApiExt.MAX_PATH
       else limits.PATH_MAX - `1U`
     val buffer: CString = alloc[Byte](bufferSize)
@@ -923,7 +923,7 @@ object File {
         def pathLength = GetFinalPathNameByHandleA(
           fileHandle,
           buffer = buffer,
-          bufferSize = bufferSize,
+          bufferSize = bufferSize.toUInt,
           flags = finalPathFlags
         )
 
