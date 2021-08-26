@@ -8,6 +8,7 @@ import org.junit.Assert._
 import scalanative.libc.errno
 import scalanative.posix.errno._
 import scalanative.runtime.Platform
+import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsafe.{CInt, Ptr, Zone, alloc}
 import scalanative.unsigned._
 
@@ -35,7 +36,7 @@ class ResourceTest {
 
   case class TestInfo(name: String, value: CInt)
 
-  @Test def getpriorityInvalidArgWhich {
+  @Test def getpriorityInvalidArgWhich() = if (!isWindows) {
     errno.errno = 0
     val invalidWhich = -1
 
@@ -44,7 +45,7 @@ class ResourceTest {
     assertEquals("unexpected errno", EINVAL, errno.errno)
   }
 
-  @Test def getpriorityInvalidArgWho {
+  @Test def getpriorityInvalidArgWho() = if (!isWindows) {
     errno.errno = 0
 
     getpriority(PRIO_PROCESS, UInt.MaxValue)
@@ -62,13 +63,12 @@ class ResourceTest {
     }
   }
 
-  @Test def testGetpriority {
-    // format: off
-    val cases = Array(TestInfo("PRIO_PROCESS", PRIO_PROCESS),
-                      TestInfo("PRIO_PGRP",    PRIO_PGRP),
-                      TestInfo("PRIO_USER",    PRIO_USER)
-                     )
-    // format: on
+  @Test def testGetpriority() = if (!isWindows) {
+    val cases = Array(
+      TestInfo("PRIO_PROCESS", PRIO_PROCESS),
+      TestInfo("PRIO_PGRP", PRIO_PGRP),
+      TestInfo("PRIO_USER", PRIO_USER)
+    )
 
     for (c <- cases) {
       errno.errno = 0
@@ -86,7 +86,7 @@ class ResourceTest {
     }
   }
 
-  @Test def getrlimitInvalidArgResource {
+  @Test def getrlimitInvalidArgResource() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
       val rlimPtr = alloc[rlimit]
@@ -97,18 +97,17 @@ class ResourceTest {
     }
   }
 
-  @Test def testGetrlimit {
+  @Test def testGetrlimit() = if (!isWindows) {
     Zone { implicit z =>
-      // format: off
-      val cases = Array(TestInfo("RLIMIT_AS",     RLIMIT_AS),
-                        TestInfo("RLIMIT_CORE",   RLIMIT_CORE),
-                        TestInfo("RLIMIT_CPU",    RLIMIT_CPU),
-                        TestInfo("RLIMIT_DATA",   RLIMIT_DATA),
-                        TestInfo("RLIMIT_FSIZE",  RLIMIT_FSIZE),
-                        TestInfo("RLIMIT_NOFILE", RLIMIT_NOFILE),
-                        TestInfo("RLIMIT_STACK",  RLIMIT_STACK)
-                        )
-      // format: on
+      val cases = Array(
+        TestInfo("RLIMIT_AS", RLIMIT_AS),
+        TestInfo("RLIMIT_CORE", RLIMIT_CORE),
+        TestInfo("RLIMIT_CPU", RLIMIT_CPU),
+        TestInfo("RLIMIT_DATA", RLIMIT_DATA),
+        TestInfo("RLIMIT_FSIZE", RLIMIT_FSIZE),
+        TestInfo("RLIMIT_NOFILE", RLIMIT_NOFILE),
+        TestInfo("RLIMIT_STACK", RLIMIT_STACK)
+      )
 
       for (c <- cases) {
         errno.errno = 0
@@ -141,7 +140,7 @@ class ResourceTest {
     }
   }
 
-  @Test def getrusageInvalidArgWho {
+  @Test def getrusageInvalidArgWho() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
       val rusagePtr = alloc[rusage]
@@ -152,7 +151,7 @@ class ResourceTest {
     }
   }
 
-  @Test def getrusageSelf {
+  @Test def getrusageSelf() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
       val rusagePtr = alloc[rusage]
@@ -184,7 +183,7 @@ class ResourceTest {
     }
   }
 
-  @Test def getrusageChildren {
+  @Test def getrusageChildren() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
       val rusagePtr = alloc[rusage]

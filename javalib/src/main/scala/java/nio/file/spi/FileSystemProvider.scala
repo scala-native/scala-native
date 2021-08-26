@@ -19,6 +19,7 @@ import java.nio.channels.{
   SeekableByteChannel
 }
 
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.UnixFileSystemProvider
 
 abstract class FileSystemProvider protected () {
@@ -172,7 +173,8 @@ abstract class FileSystemProvider protected () {
 object FileSystemProvider {
   def installedProviders: List[FileSystemProvider] = {
     val list = new LinkedList[FileSystemProvider]
-    list.add(new UnixFileSystemProvider())
+    if (isWindows) ???
+    else list.add(new UnixFileSystemProvider())
     list
   }
 
