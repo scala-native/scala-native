@@ -1,0 +1,93 @@
+@@ -3389,16 +3389,24 @@
+ ransient
++ @inline
+ %0A  overr
+@@ -3401,35 +3401,35 @@
+ line%0A  override 
+-val
++def
+  hashCode = Syst
+@@ -4613,19 +4613,27 @@
+ e%0A  %7D%0A  
+-val
++@inline def
+  Byte: A
+@@ -5286,19 +5286,27 @@
+ t%0A  %7D%0A  
+-val
++@inline def
+  Short: 
+@@ -5953,19 +5953,27 @@
+ r%0A  %7D%0A  
+-val
++@inline def
+  Char: A
+@@ -6602,19 +6602,27 @@
+ t%0A  %7D%0A  
+-val
++@inline def
+  Int: An
+@@ -7258,19 +7258,27 @@
+ g%0A  %7D%0A  
+-val
++@inline def
+  Long: A
+@@ -7931,19 +7931,27 @@
+ t%0A  %7D%0A  
+-val
++@inline def
+  Float: 
+@@ -8636,19 +8636,27 @@
+ e%0A  %7D%0A  
+-val
++@inline def
+  Double:
+@@ -9343,19 +9343,27 @@
+ n%0A  %7D%0A  
+-val
++@inline def
+  Boolean
+@@ -10217,19 +10217,27 @@
+ t%0A  %7D%0A  
+-val
++@inline def
+  Unit: A
+@@ -10739,27 +10739,35 @@
+ t.Any%0A  %7D%0A  
+-val
++@inline def
+  Any: Manife
+@@ -11138,19 +11138,27 @@
+ t%0A  %7D%0A  
+-val
++@inline def
+  Object:
+@@ -11209,19 +11209,27 @@
+ fest%0A%0A  
+-val
++@inline def
+  AnyRef:
+@@ -11637,19 +11637,27 @@
+ l%0A  %7D%0A  
+-val
++@inline def
+  AnyVal:
+@@ -12060,19 +12060,27 @@
+ l%0A  %7D%0A  
+-val
++@inline def
+  Null: M
+@@ -12439,19 +12439,27 @@
+ g%0A  %7D%0A  
+-val
++@inline def
+  Nothing
+@@ -14320,16 +14320,24 @@
+ ransient
++ @inline
+ %0A    ove
+@@ -14342,19 +14342,19 @@
+ verride 
+-val
++def
+  hashCod
