@@ -9,7 +9,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import scalanative.junit.utils.AssumesHelper._
 
 class BufferedOutputStreamTest {
 
@@ -348,7 +348,7 @@ class BufferedOutputStreamTest {
   }
 
   @Test def writeToClosedBufferThrowsIOException(): Unit = {
-    assumeFalse("Not complient with JDK", executingInJVM)
+    assumeNotJVMCompliant()
     val out = new BufferedOutputStream(new ByteArrayOutputStream())
     out.close()
     assertThrows(classOf[java.io.IOException], out.write(1))
