@@ -688,8 +688,8 @@ lazy val scalalib =
         for {
           srcDir <- sourceDirectories
           normSrcDir = normPath(srcDir)
-          scalaGlob  = srcDir.toGlob / ** / "*.scala"
-          patchGlob  = srcDir.toGlob / ** / "*.scala.patch"
+          scalaGlob = srcDir.toGlob / ** / "*.scala"
+          patchGlob = srcDir.toGlob / ** / "*.scala.patch"
 
           (sourcePath, _) <- fileTreeView.value.list(Seq(scalaGlob, patchGlob))
           path = normPath(sourcePath.toFile).substring(normSrcDir.length)
@@ -706,18 +706,20 @@ lazy val scalalib =
 
           def tryApplyPatch(sourceName: String): Option[File] = {
             val scalaSourcePath = scalaSrcDir / sourceName
-            val outputFile      = crossTarget.value / "patched" / sourceName
-            val outputDir       = outputFile.getParentFile
+            val outputFile = crossTarget.value / "patched" / sourceName
+            val outputDir = outputFile.getParentFile
             if (!outputDir.exists()) {
               IO.createDirectory(outputDir)
             }
 
             val Array(patched: String, results: Array[Boolean]) = {
               type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
-              val diff    = new DiffMatchPatch()
+              val diff = new DiffMatchPatch()
               val patches = diff.patchFromText(IO.read(sourcePath.toFile))
-              diff.patchApply(patches.asInstanceOf[PatchList],
-                              IO.read(scalaSourcePath))
+              diff.patchApply(
+                patches.asInstanceOf[PatchList],
+                IO.read(scalaSourcePath)
+              )
             }
             if (results.forall(_ == true)) {
               IO.write(outputFile, patched)

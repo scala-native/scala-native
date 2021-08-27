@@ -15,8 +15,7 @@ val ignoredFiles = {
   )
 }
 
-@main(
-  doc = """Helper tool created for working with scalalib overrides / patches.
+@main(doc = """Helper tool created for working with scalalib overrides / patches.
      Accepts one of following commands:
      - create   - Create diffs of Scala sources based on version in $overridesDir and fetched Scala sources
      - recreate - Create override files based on created diffs and fetched Scala sources
@@ -28,8 +27,10 @@ def main(
     scalaVersion: String,
     @arg(
       doc =
-        "Path to directory containing overrides, defaults to scalalib/overrides-$scalaBinaryVersion")
-    overridesDir: Option[os.Path] = None) = {
+        "Path to directory containing overrides, defaults to scalalib/overrides-$scalaBinaryVersion"
+    )
+    overridesDir: Option[os.Path] = None
+) = {
   val Array(vMajor, vMinor, _) = scalaVersion.split('.')
 
   implicit val wd: os.Path = pwd
@@ -59,15 +60,16 @@ def main(
         relativePath = overridePath relativeTo overridesDirPath
         if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath if exists ! sourcePath
-        patchPath  = overridePath / up / s"${overridePath.last}.patch"
-        _          = if (exists ! patchPath) rm ! patchPath
+        patchPath = overridePath / up / s"${overridePath.last}.patch"
+        _ = if (exists ! patchPath) rm ! patchPath
 
       } {
-        val diff  = new DiffMatchPatch()
+        val diff = new DiffMatchPatch()
         val diffs = diff.diffMain(read(sourcePath), read(overridePath))
         if (diffs.isEmpty) {
           System.err.println(
-            s"File $relativePath has identical content as original source")
+            s"File $relativePath has identical content as original source"
+          )
         } else {
           diff.diffCleanupSemantic(diffs)
           val patch = diff.patchMake(diffs)
@@ -92,7 +94,7 @@ def main(
       } {
         val Array(patched: String, results: Array[Boolean]) = {
           type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
-          val diff    = new DiffMatchPatch()
+          val diff = new DiffMatchPatch()
           val patches = diff.patchFromText(read(patchPath))
           diff.patchApply(patches.asInstanceOf[PatchList], read(sourcePath))
         }
@@ -122,13 +124,14 @@ def main(
 }
 
 sealed trait Command
-case object CreatePatches     extends Command
-case object PruneOverrides    extends Command
+case object CreatePatches extends Command
+case object PruneOverrides extends Command
 case object RecreateOverrides extends Command
 
 implicit object CommandReader
     extends TokensReader[Command](
-      "command", {
+      "command",
+      {
         case Seq("create")   => Right(CreatePatches)
         case Seq("prune")    => Right(PruneOverrides)
         case Seq("recreate") => Right(RecreateOverrides)
@@ -136,8 +139,9 @@ implicit object CommandReader
       }
     )
 
-def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(
-    implicit wd: os.Path) = {
+def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
+    wd: os.Path
+) = {
   if (!exists(sourcesDir)) {
     println(s"Fetching Scala $scalaVersion sources")
     %("sbt", s"++ $scalaVersion", "scalalib/fetchScalaSource")
