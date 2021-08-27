@@ -4,9 +4,11 @@ package unsafe
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scalanative.meta.LinktimeInfo.isWindows
 
 object ExternTest {
   /* These can be nested inside an object but not a class - see #897
@@ -40,6 +42,12 @@ object ExternTest {
 class ExternTest {
 
   @Test def externVariableReadAndAssign(): Unit = {
+    assumeFalse("No getOpt in Windows", isWindows)
+    if (isWindows) ??? //unsupported extern methods
+    else externVariableReadAndAssignUnix()
+  }
+
+  def externVariableReadAndAssignUnix(): Unit = {
     import scala.scalanative.posix.getopt
 
     val args = Seq("skipped", "skipped", "skipped", "-b", "-f", "farg")
