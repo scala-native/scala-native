@@ -444,6 +444,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)
+        .withTargetTriple("x86_64-unknown-linux-gnu")
         .withLinkStubs(false)
     }
     link(entry, sources.toMap, setupConfig = setupConfig)(body)
@@ -455,6 +456,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)
+        .withTargetTriple("x86_64-unknown-linux-gnu")
         .withLinkStubs(false)
         .withOptimize(true)
         .withMode(scalanative.build.Mode.releaseFull)

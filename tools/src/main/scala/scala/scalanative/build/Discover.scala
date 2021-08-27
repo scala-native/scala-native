@@ -93,39 +93,51 @@ object Discover {
     )
   }
 
+  private def clangVersionMajorFullTarget(
+      clang: String
+  ): (Int, String, String) = {
+    val versionCommand = Seq(clang, "--version")
+    val processLines = Process(versionCommand)
+      .lineStream_!(silentLogger())
+    val versionString = processLines.headOption
+      .getOrElse {
+        throw new BuildException(s"""Problem running '${versionCommand
+          .mkString(" ")}'. Please check clang setup.
+              |Refer to ($docSetup)""".stripMargin)
+      }
+
+    val targetString = processLines.tail.headOption
+      .getOrElse {
+        throw new BuildException(s"""Problem running '${versionCommand
+          .mkString(" ")}'. Please check clang setup.
+              |Refer to ($docSetup)""".stripMargin)
+      }
+
+    // Apple macOS clang is different vs brew installed or Linux
+    // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
+    // clang version 11.0.0
+    try {
+      val versionArray = versionString.split(" ")
+      val versionIndex = versionArray.indexWhere(_.equals("version"))
+      val version = versionArray(versionIndex + 1)
+      val majorVersion = version.split("\\.").head
+      (majorVersion.toInt, version, targetString.drop("Target: ".size))
+    } catch {
+      case t: Throwable =>
+        throw new BuildException(s"""Output from '$versionCommand' unexpected.
+                |Was expecting '... version n.n.n ...'.
+                |Got '$versionString'.
+                |Cause: ${t}""".stripMargin)
+    }
+  }
+
   /** Tests whether the clang compiler is greater or equal to the minumum
    *  version required.
    */
   private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
-    def versionMajorFull(clang: String): (Int, String) = {
-      val versionCommand = Seq(clang, "--version")
-      val versionString = Process(versionCommand)
-        .lineStream_!(silentLogger())
-        .headOption
-        .getOrElse {
-          throw new BuildException(s"""Problem running '${versionCommand
-            .mkString(" ")}'. Please check clang setup.
-               |Refer to ($docSetup)""".stripMargin)
-        }
-      // Apple macOS clang is different vs brew installed or Linux
-      // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
-      // clang version 11.0.0
-      try {
-        val versionArray = versionString.split(" ")
-        val versionIndex = versionArray.indexWhere(_.equals("version"))
-        val version = versionArray(versionIndex + 1)
-        val majorVersion = version.split("\\.").head
-        (majorVersion.toInt, version)
-      } catch {
-        case t: Throwable =>
-          throw new BuildException(s"""Output from '$versionCommand' unexpected.
-                 |Was expecting '... version n.n.n ...'.
-                 |Got '$versionString'.
-                 |Cause: ${t}""".stripMargin)
-      }
-    }
-
-    val (majorVersion, version) = versionMajorFull(pathToClangBinary.abs)
+    val (majorVersion, version, _) = clangVersionMajorFullTarget(
+      pathToClangBinary.abs
+    )
 
     if (majorVersion < clangMinVersion) {
       throw new BuildException(
@@ -182,33 +194,12 @@ object Discover {
    *
    *  @param clang
    *    A path to the executable `clang`.
-   *  @param workdir
-   *    A working directory where the compilation will take place.
    *  @return
    *    The detected target triple describing the target architecture.
    */
-  def targetTriple(clang: Path, workdir: Path): String = {
-    // Use non-standard extension to not include the ll file when linking (#639)
-    val targetc = workdir.resolve("target").resolve("c.probe")
-    val targetll = workdir.resolve("target").resolve("ll.probe")
-    val compilec =
-      Seq(clang.abs, "-S", "-xc", "-emit-llvm", "-o", targetll.abs, targetc.abs)
-    def fail =
-      throw new BuildException("Failed to detect native target.")
-
-    IO.write(targetc, "int probe;".getBytes("ASCII"))
-    val exit = Process(compilec, workdir.toFile).!
-    if (exit != 0) {
-      fail
-    } else {
-      val linesIter = Files.readAllLines(targetll).iterator()
-      while (linesIter.hasNext()) {
-        val line = linesIter.next()
-        if (line.startsWith("target triple"))
-          return line.split("\"").apply(1)
-      }
-      fail
-    }
+  def targetTriple(clang: Path): String = {
+    val (_, _, target) = clangVersionMajorFullTarget(clang.abs)
+    target
   }
 
   private def silentLogger(): ProcessLogger =

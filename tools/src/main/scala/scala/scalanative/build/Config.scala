@@ -81,7 +81,7 @@ sealed trait Config {
   def is32: Boolean =
     compilerConfig.targetTriple
       .getOrElse(
-        Discover.targetTriple(clang, workdir)
+        Discover.targetTriple(clang)
       )
       .split('-')
       .headOption
