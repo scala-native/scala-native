@@ -74,21 +74,29 @@ lazy val docsSettings: Seq[Setting[_]] = {
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set("0.4.0")
 
-def mimaSettings(filters: Seq[ProblemFilter]) = Seq(
+lazy val mimaSettings = Seq(
+  mimaBinaryIssueFilters ++= {
+    if (sbtPlugin.value) Nil
+    else BinaryIncompatibilities.moduleFilters(name.value)
+  },
   mimaPreviousArtifacts := Def.setting {
-    val nativePlugins = Seq(MyScalaNativePlugin, ScalaNativePlugin)
-    val isNativeProject = {
-      thisProject.value.autoPlugins.exists(nativePlugins.contains)
-    }
     if (sbtPlugin.value) Set.empty[ModuleID]
     else {
+      val nativePlugins = Seq(MyScalaNativePlugin, ScalaNativePlugin)
+      val isNativeProject = {
+        thisProject.value.autoPlugins.exists(nativePlugins.contains)
+      }
       binCompatVersions.map { version =>
         if (isNativeProject) organization.value %%% moduleName.value % version
-        else organization.value                 %% moduleName.value  % version
+        else organization.value %% moduleName.value % version
       }
     }
-  }.value,
-  mimaBinaryIssueFilters ++= filters
+  }.value
+)
+
+lazy val noMimaSettings = Seq(
+  mimaBinaryIssueFilters := Nil,
+  mimaPreviousArtifacts := Set.empty
 )
 
 // Common start but individual sub-projects may add or remove scalacOptions.
@@ -148,7 +156,12 @@ addCommandAlias(
 addCommandAlias(
   "test-mima", {
     Seq("util", "nir", "tools") ++
-      Seq("testRunner", "testInterface", "testInerfaceSbtDefs", "junitRuntime") ++
+      Seq(
+        "testRunner",
+        "testInterface",
+        "testInterfaceSbtDefs",
+        "junitRuntime"
+      ) ++
       Seq("clib", "posixlib", "nativelib", "auxlib", "javalib")
   }.map(_ + "/mimaReportBinaryIssues")
     .mkString(";")
@@ -248,7 +261,7 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-) ++ nameSettings
+) ++ nameSettings ++ mimaSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
@@ -385,6 +398,7 @@ lazy val nscplugin =
   project
     .in(file("nscplugin"))
     .settings(mavenPublishSettings)
+    .settings(noMimaSettings)
     .settings(
       crossVersion := CrossVersion.full,
       Compile / unmanagedSourceDirectories ++= Seq(
@@ -462,8 +476,7 @@ lazy val nativelib =
     .settings(docsSettings)
     .settings(
       libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      exportJars := true,
-      mimaSettings(BinaryIncompatibilities.NativeLib)
+      exportJars := true
     )
     .dependsOn(nscplugin % "plugin")
 
@@ -964,6 +977,7 @@ lazy val junitPlugin =
   project
     .in(file("junit-plugin"))
     .settings(mavenPublishSettings)
+    .settings(noMimaSettings)
     .settings(
       crossVersion := CrossVersion.full,
       libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
