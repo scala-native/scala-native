@@ -7,22 +7,22 @@ sealed abstract class Comp {
 
 object Comp {
   sealed abstract class Icmp extends Comp
-  final case object Ieq extends Icmp
-  final case object Ine extends Icmp
-  final case object Ugt extends Icmp
-  final case object Uge extends Icmp
-  final case object Ult extends Icmp
-  final case object Ule extends Icmp
-  final case object Sgt extends Icmp
-  final case object Sge extends Icmp
-  final case object Slt extends Icmp
-  final case object Sle extends Icmp
+  case object Ieq extends Icmp
+  case object Ine extends Icmp
+  case object Ugt extends Icmp
+  case object Uge extends Icmp
+  case object Ult extends Icmp
+  case object Ule extends Icmp
+  case object Sgt extends Icmp
+  case object Sge extends Icmp
+  case object Slt extends Icmp
+  case object Sle extends Icmp
 
   sealed abstract class Fcmp extends Comp
-  final case object Feq extends Fcmp
-  final case object Fne extends Fcmp
-  final case object Fgt extends Fcmp
-  final case object Fge extends Fcmp
-  final case object Flt extends Fcmp
-  final case object Fle extends Fcmp
+  case object Feq extends Fcmp
+  case object Fne extends Fcmp
+  case object Fgt extends Fcmp
+  case object Fge extends Fcmp
+  case object Flt extends Fcmp
+  case object Fle extends Fcmp
 }

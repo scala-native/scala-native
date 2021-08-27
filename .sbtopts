@@ -1,4 +1,43 @@
+# .sbtopts for Java 8
+#
+# This file exists and has the contents it has to provide one of the
+# conditions for interactively building and testing the Scala Native
+# plugin after a fresh "git clone".
+#
+# The "test-tools" and "test-all" commands in build.sbt
+# require a soft lower limit of 5 Gigabytes of virtual memory.
+# The scala-sbt.org runner sets a limit of 1GB for maximum heap size
+# ("-Xmx") even when more physical memory is available.
+#
+# Continuous integration in the Scala Native project is done on a system
+# with 7GB physical memory (RAM). Building on systems with less memory
+# may work but is not exercised.
+#
+# This file assumes the Java 8 default parallel garbage collector
+# for server class machines (at least two cores, at least 2GB RAM) is being
+# used.
+#
+#   -Xmx is equivalent to -XXMaxHeapSize
+#   -Xms is equivalent to -XXInitialHeapSize
+#   -Xss is equivalent to -XXThreadStackSize
+#
+# The arguably more useful "-J-XX:GCTimeRatio" is not passed by the
+# scala-sbt.org runner.
+
 -J-Xmx5G
--J-Xms1024M
-# Needed for Scala 2.11 tools compilation. Failing in CI for test-scripted
--J-Xss2m
+-J-Xms1G
+# -J-Xms1G is the upper bound supplied by scala-sbt.org runner, lower may work.
+
+# Compilation on Scala 2.11 in Release mode might require larger
+# thread stack size while performing optimizations. (#2156)
+-J-Xss2M
+
+# On systems with more physical memory, one can experiment with locally
+# increasing -Xmx to up to 1/4th of physical memory or more.
+# Decreases in elapsed wall clock time from 0 to 10% have been observed
+# on various systems. Your mileage may vary.
+#
+# When tuning memory options, the options below may be useful to visualize
+# what is actually in use:
+#   -J-XX:+PrintCommandLineFlags
+#   -J-XX:+PrintFlagsFinal

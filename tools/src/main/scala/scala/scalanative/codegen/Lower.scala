@@ -12,7 +12,8 @@ import scalanative.linker.{
   ClassRef,
   TraitRef,
   FieldRef,
-  MethodRef
+  MethodRef,
+  Result
 }
 import scalanative.interflow.UseDef.eliminateDeadCode
 
@@ -24,7 +25,7 @@ object Lower {
   private final class Impl(implicit meta: Metadata) extends Transform {
     import meta._
 
-    implicit val linked = meta.linked
+    implicit val linked: Result = meta.linked
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
@@ -1125,7 +1126,7 @@ object Lower {
             rtti(CharArrayCls).const,
             charsLength,
             Val.Int(0), // padding to get next field aligned properly
-            Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char))
+            Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char(_)))
           )
         )
       )

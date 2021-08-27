@@ -86,10 +86,11 @@ object ControlFlow {
             // first control-flow instruction after the label
             val body = mutable.UnrolledBuffer.empty[Inst]
             var i = k
-            do {
+            while ({
               i += 1
               body += insts(i)
-            } while (!insts(i).isInstanceOf[Inst.Cf])
+              !insts(i).isInstanceOf[Inst.Cf]
+            }) ()
 
             val block = Block(n, params, body.toSeq, isEntry = k == 0)
             blocks(local) = block

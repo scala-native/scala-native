@@ -6,10 +6,15 @@ import java.net.URI
 import java.util.{HashMap, Map}
 
 import scala.scalanative.nio.fs.{UnixFileSystem, UnixFileSystemProvider}
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 object FileSystems {
-  private lazy val fs =
-    (new UnixFileSystemProvider).getFileSystem(
+  private lazy val fs = {
+    val provider =
+      if (isWindows) ???
+      else new UnixFileSystemProvider()
+
+    provider.getFileSystem(
       new URI(
         scheme = "file",
         userInfo = null,
@@ -20,8 +25,9 @@ object FileSystems {
         fragment = null
       )
     )
-  def getDefault(): FileSystem =
-    fs
+  }
+
+  def getDefault(): FileSystem = fs
 
   def getFileSystem(uri: URI): FileSystem = {
     val provider = findProvider(uri)

@@ -38,6 +38,12 @@ private[testinterface] class ProcessRunner(
             s"Process $executableFile finished with non-zero value $exitCode"
           )
         )
+        // Similarly to Bash programs, exitcode values higher
+        // than 128 signify program end by fatal signal
+        if (exitCode > 128)
+          logger.error(
+            s"Test runner interrupted by fatal signal ${exitCode - 128}"
+          )
       }
     }
   }

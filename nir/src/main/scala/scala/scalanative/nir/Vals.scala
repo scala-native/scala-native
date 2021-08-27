@@ -136,8 +136,8 @@ sealed abstract class Val {
 }
 object Val {
   // low-level
-  final case object True extends Val
-  final case object False extends Val
+  case object True extends Val
+  case object False extends Val
   object Bool extends (Boolean => Val) {
     def apply(value: Boolean): Val =
       if (value) True else False
@@ -147,7 +147,7 @@ object Val {
       case _     => scala.None
     }
   }
-  final case object Null extends Val
+  case object Null extends Val
   final case class Zero(of: nir.Type) extends Val
   final case class Char(value: scala.Char) extends Val
   final case class Byte(value: scala.Byte) extends Val
@@ -182,7 +182,7 @@ object Val {
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level
-  final case object Unit extends Val
+  case object Unit extends Val
   final case class Const(value: Val) extends Val
   final case class String(value: java.lang.String) extends Val
   final case class Virtual(key: scala.Long) extends Val

@@ -4,8 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class SystemWithPosixTest {
-  @Test def systemCurrentTimeMillisSecondsShouldApproximatePosixTime()()
-      : Unit = {
+  @Test def systemCurrentTimeMillisSecondsShouldApproximatePosixTime(): Unit = {
     // This is a coarse-grain sanity check, primarily to ensure that 64 bit
     // math is being done on 32 bit systems. Only seconds are considered.
 
@@ -26,8 +25,6 @@ class SystemWithPosixTest {
     // Truncate down to keep math simple & reduce number of bits in play.
     val ctmSeconds = ctmMillis / 1000
 
-    val delta = Math.abs(ctmSeconds - cSeconds)
-
-    assert(delta <= tolerance)
+    assertEquals(cSeconds, ctmSeconds, tolerance)
   }
 }

@@ -17,12 +17,12 @@ sealed abstract class Mode private (val name: String) {
   override def toString: String = name
 }
 object Mode {
-  private[scalanative] final case object Debug extends Mode("debug")
+  private[scalanative] case object Debug extends Mode("debug")
   private[scalanative] sealed trait Release
-  private[scalanative] final case object ReleaseFast
+  private[scalanative] case object ReleaseFast
       extends Mode("release-fast")
       with Release
-  private[scalanative] final case object ReleaseFull
+  private[scalanative] case object ReleaseFull
       extends Mode("release-full")
       with Release
 
