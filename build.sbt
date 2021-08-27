@@ -75,28 +75,11 @@ lazy val docsSettings: Seq[Setting[_]] = {
 val binCompatVersions = Set("0.4.0")
 
 lazy val mimaSettings = Seq(
-  mimaBinaryIssueFilters ++= {
-    if (sbtPlugin.value) Nil
-    else BinaryIncompatibilities.moduleFilters(name.value)
-  },
-  mimaPreviousArtifacts := Def.setting {
-    if (sbtPlugin.value) Set.empty[ModuleID]
-    else {
-      val nativePlugins = Seq(MyScalaNativePlugin, ScalaNativePlugin)
-      val isNativeProject = {
-        thisProject.value.autoPlugins.exists(nativePlugins.contains)
-      }
-      binCompatVersions.map { version =>
-        if (isNativeProject) organization.value %%% moduleName.value % version
-        else organization.value %% moduleName.value % version
-      }
-    }
-  }.value
-)
-
-lazy val noMimaSettings = Seq(
-  mimaBinaryIssueFilters := Nil,
-  mimaPreviousArtifacts := Set.empty
+  mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
+  mimaPreviousArtifacts ++= binCompatVersions.map { version =>
+    ModuleID(organization.value, moduleName.value, version)
+      .cross(crossVersion.value)
+  }
 )
 
 // Common start but individual sub-projects may add or remove scalacOptions.
@@ -155,13 +138,9 @@ addCommandAlias(
 
 addCommandAlias(
   "test-mima", {
-    Seq("util", "nir", "tools") ++
-      Seq(
-        "testRunner",
-        "testInterface",
-        "testInterfaceSbtDefs",
-        "junitRuntime"
-      ) ++
+    Seq("util", "nir", "tools", "nscplugin") ++
+      Seq("testRunner", "testInterface", "testInterfaceSbtDefs") ++
+      Seq("junitPlugin", "junitRuntime") ++
       Seq("clib", "posixlib", "nativelib", "auxlib", "javalib")
   }.map(_ + "/mimaReportBinaryIssues")
     .mkString(";")
@@ -398,7 +377,6 @@ lazy val nscplugin =
   project
     .in(file("nscplugin"))
     .settings(mavenPublishSettings)
-    .settings(noMimaSettings)
     .settings(
       crossVersion := CrossVersion.full,
       Compile / unmanagedSourceDirectories ++= Seq(
@@ -977,7 +955,6 @@ lazy val junitPlugin =
   project
     .in(file("junit-plugin"))
     .settings(mavenPublishSettings)
-    .settings(noMimaSettings)
     .settings(
       crossVersion := CrossVersion.full,
       libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,

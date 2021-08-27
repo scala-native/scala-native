@@ -10,6 +10,17 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*")
   )
 
+  final val NscPlugin = Seq(
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*"),
+    exclude[IncompatibleMethTypeProblem](
+      "scala.scalanative.nscplugin.NirCompat*"
+    ),
+    exclude[ReversedMissingMethodProblem](
+      "scala.scalanative.nscplugin.NirGenStat.LinktimeProperty"
+    )
+  )
+  final val JUnitPlugin: Filters = Nil
+
   final val Tools: Filters = Seq(
     exclude[Problem]("scala.scalanative.codegen.*"),
     exclude[Problem]("scala.scalanative.checker.*"),
@@ -18,7 +29,10 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.build.NativeLib.*"),
     exclude[Problem]("scala.scalanative.build.LLVM.*"),
     exclude[Problem]("scala.scalanative.build.NativeConfig*Impl*"),
-    exclude[Problem]("scala.scalanative.build.GC.this")
+    exclude[Problem]("scala.scalanative.build.GC.this"),
+    exclude[ReversedMissingMethodProblem](
+      "scala.scalanative.build.NativeConfig*"
+    )
   )
 
   final val CLib, PosixLib, WindowsLib: Filters = Seq(
@@ -53,6 +67,7 @@ object BinaryIncompatibilities {
     "util" -> Util,
     "nir" -> Nir,
     "tools" -> Tools,
+    "nscplugin" -> NscPlugin,
     "clib" -> CLib,
     "posixlib" -> PosixLib,
     "windowslib" -> WindowsLib,
@@ -63,6 +78,7 @@ object BinaryIncompatibilities {
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,
+    "junit-plugin" -> JUnitPlugin,
     "junit-runtime" -> JUnitRuntime
   )
 }
