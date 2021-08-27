@@ -30,6 +30,7 @@ import java.util.{
 }
 import java.util.stream.{Stream, WrappedScalaStream}
 
+import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
@@ -42,6 +43,8 @@ import scala.collection.immutable.{Map => SMap, Set => SSet}
 import StandardCopyOption._
 
 object Files {
+
+  private val `1U` = 1.toUInt
 
   // def getFileStore(path: Path): FileStore
   // def probeContentType(path: Path): String
@@ -161,38 +164,48 @@ object Files {
       throw new IOException()
     }
 
-  def createLink(link: Path, existing: Path): Path =
-    Zone { implicit z =>
-      if (exists(link, Array.empty)) {
-        throw new FileAlreadyExistsException(link.toString)
-      } else if (unistd.link(
-            toCString(existing.toString),
-            toCString(link.toString)
-          ) == 0) {
-        link
-      } else {
-        throw new IOException()
-      }
+  def createLink(link: Path, existing: Path): Path = {
+    def tryCreateHardLink() = Zone { implicit z =>
+      if (isWindows) ???
+      else
+        unistd.link(
+          toCString(existing.toString()),
+          toCString(link.toString())
+        ) == 0
     }
+    if (exists(link, Array.empty)) {
+      throw new FileAlreadyExistsException(link.toString)
+    } else if (tryCreateHardLink()) {
+      link
+    } else {
+      throw new IOException("Cannot create link")
+    }
+  }
 
   def createSymbolicLink(
       link: Path,
       target: Path,
       attrs: Array[FileAttribute[_]]
-  ): Path =
-    Zone { implicit z =>
-      if (exists(link, Array.empty)) {
-        throw new FileAlreadyExistsException(target.toString)
-      } else if (unistd.symlink(
-            toCString(target.toString),
-            toCString(link.toString)
-          ) == 0) {
-        setAttributes(link, attrs)
-        link
-      } else {
-        throw new IOException()
+  ): Path = {
+
+    def tryCreateLink() = Zone { implicit z =>
+      if (isWindows) ???
+      else {
+        val targetFilename = toCString(target.toString())
+        val linkFilename = toCString(link.toString())
+        unistd.symlink(targetFilename, linkFilename) == 0
       }
     }
+
+    if (exists(link, Array.empty)) {
+      throw new FileAlreadyExistsException(target.toString)
+    } else if (tryCreateLink()) {
+      setAttributes(link, attrs)
+      link
+    } else {
+      throw new IOException("Cannot create symbolic link")
+    }
+  }
 
   private def createTempDirectory(
       dir: File,
@@ -251,13 +264,14 @@ object Files {
   ): Path =
     createTempFile(null: File, prefix, suffix, attrs)
 
-  def delete(path: Path): Unit =
+  def delete(path: Path): Unit = {
     if (!exists(path, Array.empty)) {
       throw new NoSuchFileException(path.toString)
     } else {
       if (path.toFile().delete()) ()
-      else throw new IOException()
+      else throw new IOException(s"Failed to remove $path")
     }
+  }
 
   def deleteIfExists(path: Path): Boolean =
     try {
@@ -337,7 +351,7 @@ object Files {
       .asInstanceOf[Set[PosixFilePermission]]
 
   def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
-    val notALink =
+    def notALink =
       if (options.contains(LinkOption.NOFOLLOW_LINKS)) !isSymbolicLink(path)
       else true
     exists(path, options) && notALink && path.toFile().isDirectory()
@@ -352,24 +366,28 @@ object Files {
   def isReadable(path: Path): Boolean =
     path.toFile().canRead()
 
-  def isRegularFile(path: Path, options: Array[LinkOption]): Boolean =
-    Zone { implicit z =>
-      val buf = alloc[stat.stat]
-      val err =
-        if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-          stat.lstat(toCString(path.toFile().getPath()), buf)
-        } else {
-          stat.stat(toCString(path.toFile().getPath()), buf)
-        }
-      if (err == 0) stat.S_ISREG(buf._13) == 1
-      else false
-    }
+  def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
+    if (isWindows) ???
+    else
+      Zone { implicit z =>
+        val buf = alloc[stat.stat]
+        val err =
+          if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
+            stat.lstat(toCString(path.toFile().getPath()), buf)
+          } else {
+            stat.stat(toCString(path.toFile().getPath()), buf)
+          }
+        if (err == 0) stat.S_ISREG(buf._13) == 1
+        else false
+      }
+  }
 
   def isSameFile(path: Path, path2: Path): Boolean =
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
-  def isSymbolicLink(path: Path): Boolean =
-    Zone { implicit z =>
+  def isSymbolicLink(path: Path): Boolean = Zone { implicit z =>
+    if (isWindows) ???
+    else {
       val buf = alloc[stat.stat]
       if (stat.lstat(toCString(path.toFile().getPath()), buf) == 0) {
         stat.S_ISLNK(buf._13) == 1
@@ -377,6 +395,7 @@ object Files {
         false
       }
     }
+  }
 
   def isWritable(path: Path): Boolean =
     path.toFile().canWrite()
@@ -394,23 +413,38 @@ object Files {
     )
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
+    lazy val replaceExisting = options.contains(REPLACE_EXISTING)
+
     if (!exists(source.toAbsolutePath(), Array.empty)) {
       throw new NoSuchFileException(source.toString)
-    } else if (!exists(target.toAbsolutePath(), Array.empty) ||
-        options.contains(REPLACE_EXISTING)) {
-      Zone { implicit z =>
-        if (stdio.rename(
-              toCString(source.toAbsolutePath().toString),
-              toCString(target.toAbsolutePath().toString)
-            ) != 0) {
-          throw UnixException(target.toString, errno.errno)
-        }
-      }
+    } else if (!exists(
+          target.toAbsolutePath(),
+          Array.empty
+        ) || replaceExisting) {
+      moveImpl(source, target, replaceExisting)
     } else {
       throw new FileAlreadyExistsException(target.toString)
     }
     target
   }
+
+  private def moveImpl(
+      source: Path,
+      target: Path,
+      replaceExisting: => Boolean
+  ) =
+    Zone { implicit z =>
+      val sourceAbs = source.toAbsolutePath().toString
+      val targetAbs = target.toAbsolutePath().toString
+      if (isWindows) ???
+      else {
+        val sourceCString = toCString(sourceAbs)
+        val targetCString = toCString(targetAbs)
+        if (stdio.rename(sourceCString, targetCString) != 0) {
+          throw UnixException(target.toString, errno.errno)
+        }
+      }
+    }
 
   def newBufferedReader(path: Path): BufferedReader =
     newBufferedReader(path, StandardCharsets.UTF_8)
@@ -490,21 +524,26 @@ object Files {
     }
     val len = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
-    val fd = fcntl.open(toCString(path.toString), fcntl.O_RDONLY, 0.toUInt)
-    try {
-      var offset = 0
-      var read = 0
-      while ({
-        read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
-        read != -1 && (offset + read) < len
-      }) {
-        offset += read
+
+    if (isWindows) ???
+    else {
+      val pathCString = toCString(path.toString)
+      val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+      try {
+        var offset = 0
+        var read = 0
+        while ({
+          read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
+          read != -1 && (offset + read) < len
+        }) {
+          offset += read
+        }
+        if (read == -1) throw UnixException(path.toString, errno.errno)
+      } finally {
+        unistd.close(fd)
       }
-      if (read == -1) throw UnixException(path.toString, errno.errno)
-      bytes.asInstanceOf[Array[Byte]]
-    } finally {
-      unistd.close(fd)
     }
+    bytes.asInstanceOf[Array[Byte]]
   }
 
   def readAllLines(path: Path): List[String] =
@@ -564,16 +603,20 @@ object Files {
       throw new NotLinkException(link.toString)
     } else
       Zone { implicit z =>
-        val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
-        if (unistd.readlink(
-              toCString(link.toString),
-              buf,
-              limits.PATH_MAX.toUInt
-            ) == -1) {
-          throw UnixException(link.toString, errno.errno)
-        } else {
-          Paths.get(fromCString(buf), Array.empty)
-        }
+        val name =
+          if (isWindows) ???
+          else {
+            val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+            if (unistd.readlink(
+                  toCString(link.toString),
+                  buf,
+                  limits.PATH_MAX - `1U`
+                ) == -1) {
+              throw UnixException(link.toString, errno.errno)
+            }
+            fromCString(buf)
+          }
+        Paths.get(name, Array.empty)
       }
 
   def setAttribute(
@@ -649,23 +692,24 @@ object Files {
           .list(start.toString, (n, t) => (n, t))
           .toScalaStream
           .flatMap {
-            case (name, tpe)
-                if tpe == DT_LNK() && options.contains(
-                  FileVisitOption.FOLLOW_LINKS
-                ) =>
+            case (name, FileHelpers.FileType.Link)
+                if options.contains(FileVisitOption.FOLLOW_LINKS) =>
               val path = start.resolve(name)
               val newVisited = visited + path
               val target = readSymbolicLink(path)
               if (newVisited.contains(target))
                 throw new FileSystemLoopException(path.toString)
               else walk(path, maxDepth, currentDepth + 1, options, newVisited)
-            case (name, tpe) if tpe == DT_DIR() && currentDepth < maxDepth =>
+
+            case (name, FileHelpers.FileType.Directory)
+                if currentDepth < maxDepth =>
               val path = start.resolve(name)
               val newVisited =
                 if (options.contains(FileVisitOption.FOLLOW_LINKS))
                   visited + path
                 else visited
               walk(path, maxDepth, currentDepth + 1, options, newVisited)
+
             case (name, _) =>
               start.resolve(name) #:: SStream.empty
           }

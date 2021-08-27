@@ -236,7 +236,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def close(): Unit = {
     if (!isClosed) {
-      fd.close()
+      if (isWindows) ???
+      else fd.close()
       fd = InvalidSocketDescriptor
       isClosed = true
     }
@@ -478,10 +479,11 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 }
 
 private[net] object AbstractPlainSocketImpl {
-  final val InvalidSocketDescriptor = new FileDescriptor
+  final val InvalidSocketDescriptor = new FileDescriptor()
 
   def apply(): AbstractPlainSocketImpl = {
-    if (isWindows) new WindowsPlainSocketImpl()
+    if (isWindows)
+      new WindowsPlainSocketImpl()
     else
       new UnixPlainSocketImpl()
   }

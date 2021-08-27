@@ -12,6 +12,7 @@ import scala.scalanative.posix.unistd.close
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.sys.time.timeval
 import scala.scalanative.posix.sys.timeOps._
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
@@ -22,6 +23,13 @@ object SocketHelpers {
    * https://man7.org/linux/man-pages/man2/gethostname.2.html
    */
   val MAXHOSTNAMELEN = 256.toUInt
+
+  private def setSocketNonBlocking(socket: CInt)(implicit z: Zone): CInt = {
+    if (isWindows) ???
+    else {
+      fcntl(socket, F_SETFL, O_NONBLOCK)
+    }
+  }
 
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
     Zone { implicit z =>
@@ -45,13 +53,10 @@ object SocketHelpers {
       val sock = socket(ai.ai_family, SOCK_STREAM, ai.ai_protocol)
 
       try {
-
         if (sock < 0) {
           return false
         }
-
-        fcntl(sock, F_SETFL, O_NONBLOCK)
-
+        setSocketNonBlocking(sock)
         // stackalloc is documented as returning zeroed memory
         val fdsetPtr = stackalloc[fd_set] //  No need to FD_ZERO
         FD_SET(sock, fdsetPtr)
@@ -103,7 +108,8 @@ object SocketHelpers {
       } catch {
         case e: Throwable => e
       } finally {
-        close(sock)
+        if (isWindows) ???
+        else close(sock)
         freeaddrinfo(ai)
       }
       true
