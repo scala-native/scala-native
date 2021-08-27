@@ -25,7 +25,7 @@ object Versions {
   final val revision: Int = 8 // a.k.a. MINOR version
 
   /* Current public release version of Scala Native. */
-  final val current: String              = "0.4.1-SNAPSHOT"
+  final val current: String = "0.4.1-SNAPSHOT"
   final val currentBinaryVersion: String = binaryVersion(current)
 
   private object FullVersion {
@@ -37,10 +37,13 @@ object Versions {
       version match {
         case FullVersionRE(major, minor, patch, preReleaseString) =>
           Some(
-            (major.toInt,
-             minor.toInt,
-             patch.toInt,
-             preRelease(preReleaseString)))
+            (
+              major.toInt,
+              minor.toInt,
+              patch.toInt,
+              preRelease(preReleaseString)
+            )
+          )
         case _ => None
       }
     }
