@@ -27,7 +27,7 @@ abstract class OptimizerSpec extends LinkerSpec {
   ): T =
     link(entry, sources, setupConfig) {
       case (config, linked) =>
-        val optimized = ScalaNative.optimize(config, linked, false)
+        val optimized = ScalaNative.optimize(config, linked)
         fn(config, optimized)
     }
 

@@ -26,7 +26,7 @@ abstract class CodeGenSpec extends OptimizerSpec {
     optimize(entry, sources) {
       case (config, optimized) =>
         Scope { implicit in =>
-          ScalaNative.codegen(config, optimized, false)
+          ScalaNative.codegen(config, optimized)
           val workdir = VirtualDirectory.real(config.workdir)
           val outfile = Paths.get("out.ll")
 
