@@ -3,7 +3,6 @@ package scala.scalanative
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.runtime.Intrinsics._
-import scalanative.unsigned._
 
 package object runtime {
 

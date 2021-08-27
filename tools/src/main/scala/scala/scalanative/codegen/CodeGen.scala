@@ -16,13 +16,12 @@ object CodeGen {
   /** Lower and generate code for given assembly. */
   def apply(
       config: build.Config,
-      linked: linker.Result,
-      is32: Boolean
+      linked: linker.Result
   ): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
-    implicit val meta: Metadata = new Metadata(linked, proxies, is32)
+    implicit val meta: Metadata = new Metadata(linked, proxies, config.is32)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered = lower(generated)

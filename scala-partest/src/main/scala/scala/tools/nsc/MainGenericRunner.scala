@@ -45,7 +45,7 @@ class MainGenericRunner {
             )
             .withGC(loadSetting("gc", Discover.GC())(GC.apply))
             .withLTO(loadSetting("lto", Discover.LTO())(LTO(_)))
-            .withASAN(loadSetting("asan", Discover.asan())(_.toBoolean))
+            .withASAN(Discover.asan())
             .withLinkingOptions {
               // If we precompile libs we need to make sure, that we link libraries needed by Scala Native
               Defaults.config.linkingOptions ++

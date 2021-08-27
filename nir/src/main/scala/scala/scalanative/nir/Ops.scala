@@ -34,9 +34,7 @@ sealed abstract class Op {
     case Op.Box(refty: Type.RefKind, _) =>
       val nullable = !Type.isPtrBox(refty)
       Type.Ref(refty.className, exact = true, nullable = nullable)
-    case Op.Unbox(ty, _) => {
-      Type.unbox(ty)
-    }
+    case Op.Unbox(ty, _)      => Type.unbox(ty)
     case Op.Var(ty)           => Type.Var(ty)
     case Op.Varload(slot)     => val Type.Var(ty) = slot.ty; ty
     case Op.Varstore(slot, _) => Type.Unit

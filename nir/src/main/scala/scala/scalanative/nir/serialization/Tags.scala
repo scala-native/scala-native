@@ -76,9 +76,7 @@ object Tags {
 
   final val Conv = Comp + 32
 
-  final val SSizeCastConv = 1 + Conv
-  final val ZSizeCastConv = 1 + SSizeCastConv
-  final val TruncConv = 1 + ZSizeCastConv
+  final val TruncConv = 1 + Conv
   final val ZextConv = 1 + TruncConv
   final val SextConv = 1 + ZextConv
   final val FptruncConv = 1 + SextConv
@@ -90,6 +88,8 @@ object Tags {
   final val PtrtointConv = 1 + SitofpConv
   final val InttoptrConv = 1 + PtrtointConv
   final val BitcastConv = 1 + InttoptrConv
+  final val SSizeCastConv = 1 + BitcastConv
+  final val ZSizeCastConv = 1 + SSizeCastConv
 
   // Definitions
 
@@ -188,8 +188,7 @@ object Tags {
   final val VarargType = 1 + Type
   final val BoolType = 1 + VarargType
   final val PtrType = 1 + BoolType
-  final val SizeType = 1 + PtrType
-  final val CharType = 1 + SizeType
+  final val CharType = 1 + PtrType
   final val ByteType = 1 + CharType
   final val ShortType = 1 + ByteType
   final val IntType = 1 + ShortType
@@ -206,6 +205,7 @@ object Tags {
   final val UnitType = 1 + VarType
   final val ArrayType = 1 + UnitType
   final val RefType = 1 + ArrayType
+  final val SizeType = 1 + RefType
 
   // Values
 
@@ -215,8 +215,7 @@ object Tags {
   final val FalseVal = 1 + TrueVal
   final val NullVal = 1 + FalseVal
   final val ZeroVal = 1 + NullVal
-  final val SizeVal = 1 + ZeroVal
-  final val CharVal = 1 + SizeVal
+  final val CharVal = 1 + ZeroVal
   final val ByteVal = 1 + CharVal
   final val ShortVal = 1 + ByteVal
   final val IntVal = 1 + ShortVal
@@ -235,4 +234,5 @@ object Tags {
   final val ClassOfVal = 1 + VirtualVal
 
   final val LinktimeConditionVal = 1 + ClassOfVal
+  final val SizeVal = 1 + LinktimeConditionVal
 }

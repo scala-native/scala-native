@@ -8,7 +8,6 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  val is32: Boolean
   def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(implicit
       state: State
   ): Inst.Cf = {

@@ -147,10 +147,9 @@ class Interflow(val mode: build.Mode, val is32: Boolean)(implicit
 object Interflow {
   def apply(
       config: build.Config,
-      linked: linker.Result,
-      is32: Boolean
+      linked: linker.Result
   ): Seq[Defn] = {
-    val interflow = new Interflow(config.mode, is32)(linked)
+    val interflow = new Interflow(config.mode, config.is32)(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

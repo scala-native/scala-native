@@ -59,11 +59,6 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[Boolean](
         "Shall native toolchain dump intermediate NIR to disk during linking?"
       )
-
-    val nativeASAN =
-      taskKey[Boolean](
-        "Shall native toolchain compile with address sanitizer?"
-      )
   }
 
   @deprecated("use autoImport instead", "0.3.7")

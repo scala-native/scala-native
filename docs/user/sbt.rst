@@ -121,7 +121,6 @@ Since Name                     Type             Description
 0.4.0 ``targetTriple``         ``String``       The platform LLVM target triple
 0.4.0 ``nativeCheck``          ``Boolean``      Shall the linker check intermediate results for correctness?
 0.4.0 ``nativeDump``           ``Boolean``      Shall the linker dump intermediate results to disk?
-vNEXT ``nativeASAN``           ``Boolean``      Should address sanitizer be enabled during compilation?
 ===== ======================== ================ =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.

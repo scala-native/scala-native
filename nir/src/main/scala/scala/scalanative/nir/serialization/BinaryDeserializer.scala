@@ -138,8 +138,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   }
 
   private def getConv(): Conv = getInt match {
-    case T.SSizeCastConv => Conv.SSizeCast
-    case T.ZSizeCastConv => Conv.ZSizeCast
     case T.TruncConv     => Conv.Trunc
     case T.ZextConv      => Conv.Zext
     case T.SextConv      => Conv.Sext
@@ -152,6 +150,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.PtrtointConv  => Conv.Ptrtoint
     case T.InttoptrConv  => Conv.Inttoptr
     case T.BitcastConv   => Conv.Bitcast
+    case T.SSizeCastConv => Conv.SSizeCast
+    case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn())
@@ -248,7 +248,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getType(): Type = getInt match {
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
-    case T.SizeType        => Type.Size
     case T.BoolType        => Type.Bool
     case T.CharType        => Type.Char
     case T.ByteType        => Type.Byte
@@ -268,6 +267,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.UnitType    => Type.Unit
     case T.ArrayType   => Type.Array(getType(), getBool())
     case T.RefType     => Type.Ref(getGlobal(), getBool(), getBool())
+    case T.SizeType    => Type.Size
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal())
@@ -276,7 +276,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.FalseVal       => Val.False
     case T.NullVal        => Val.Null
     case T.ZeroVal        => Val.Zero(getType())
-    case T.SizeVal        => Val.Size(getLong)
     case T.CharVal        => Val.Char(getShort.toChar)
     case T.ByteVal        => Val.Byte(get)
     case T.ShortVal       => Val.Short(getShort)
@@ -299,6 +298,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       }
     case T.VirtualVal => Val.Virtual(getLong)
     case T.ClassOfVal => Val.ClassOf(getGlobal())
+    case T.SizeVal    => Val.Size(getLong)
   }
 
   private def getLinktimeCondition(): LinktimeCondition = getInt() match {

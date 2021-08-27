@@ -50,8 +50,7 @@ object ScalaNativePluginInternal {
     nativeLTO := nativeConfig.value.lto.name,
     nativeLinkStubs := nativeConfig.value.linkStubs,
     nativeCheck := nativeConfig.value.check,
-    nativeDump := nativeConfig.value.dump,
-    nativeASAN := nativeConfig.value.asan
+    nativeDump := nativeConfig.value.dump
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -109,7 +108,6 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        .withASAN(nativeASAN.value)
     },
     nativeLink := {
       val outpath = (nativeLink / artifactPath).value

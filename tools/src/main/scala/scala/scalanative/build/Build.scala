@@ -55,14 +55,13 @@ object Build {
     config.logger.time("Total") {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
       val fconfig = config.withClassPath(fclasspath)
-      val is32 = config.is32
 
       // create optimized code and generate ll
       val entries = ScalaNative.entries(fconfig)
       val linked = ScalaNative.link(fconfig, entries)
       ScalaNative.logLinked(fconfig, linked)
-      val optimized = ScalaNative.optimize(fconfig, linked, is32)
-      val generated = ScalaNative.codegen(fconfig, optimized, is32)
+      val optimized = ScalaNative.optimize(fconfig, linked)
+      val generated = ScalaNative.codegen(fconfig, optimized)
 
       val objectPaths = config.logger.time("Compiling to native code") {
         // compile generated LLVM IR

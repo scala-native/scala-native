@@ -71,7 +71,7 @@ class Metadata(
   def initClassMetadata(): Unit = {
     classes.foreach { node =>
       vtable(node) = new VirtualTable(this, node)
-      layout(node) = new FieldLayout(this, node, is32)
+      layout(node) = new FieldLayout(this, node)
       if (linked.dynsigs.nonEmpty) {
         dynmap(node) = new DynamicHashMap(this, node, proxies)
       }
