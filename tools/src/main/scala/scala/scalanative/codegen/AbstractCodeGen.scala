@@ -19,7 +19,7 @@ private[codegen] abstract class AbstractCodeGen(
   val os: OsCompat
 
   private val targetTriple: Option[String] = config.compilerConfig.targetTriple
-  private val is32: Boolean = config.is32
+  private val is32BitPlatform: Boolean = config.is32BitPlatform
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _
@@ -366,7 +366,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Bool                                             => str("i1")
       case i: Type.FixedSizeI => str("i"); str(i.width)
       case Type.Size =>
-        if (is32) {
+        if (is32BitPlatform) {
           str("i32")
         } else {
           str("i64")
@@ -429,7 +429,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.Zero(ty) => str("zeroinitializer")
       case Val.Byte(v)  => str(v)
       case Val.Size(v) => {
-        if (is32) {
+        if (is32BitPlatform) {
           if (v.toInt != v) {
             unsupported("Emitting size values that exceed the platform bounds")
           } else {
@@ -688,7 +688,7 @@ private[codegen] abstract class AbstractCodeGen(
             }
             str(", !")
             str(deref)
-            if (is32) {
+            if (is32BitPlatform) {
               str(" !{i32 ")
             } else {
               str(" !{i64 ")
@@ -763,7 +763,7 @@ private[codegen] abstract class AbstractCodeGen(
         genType(ty)
         str(", ")
         genVal(n)
-        str(if (is32) ", align 4" else ", align 8")
+        str(if (is32BitPlatform) ", align 4" else ", align 8")
 
         newline()
         genBind()
@@ -978,14 +978,14 @@ private[codegen] abstract class AbstractCodeGen(
     case Conv.ZSizeCast | Conv.SSizeCast =>
       val fromSize = fromType match {
         case Type.Size =>
-          if (is32) 32 else 64
+          if (is32BitPlatform) 32 else 64
         case Type.FixedSizeI(s, _) => s
         case o                     => unsupported(o)
       }
 
       val toSize = toType match {
         case Type.Size =>
-          if (is32) 32 else 64
+          if (is32BitPlatform) 32 else 64
         case Type.FixedSizeI(s, _) => s
         case o                     => unsupported(o)
       }

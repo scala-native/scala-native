@@ -10,7 +10,7 @@ import scalanative.codegen.MemoryLayout.PositionedType
 final case class MemoryLayout(
     size: Long,
     tys: Seq[MemoryLayout.PositionedType],
-    is32: Boolean
+    is32BitPlatform: Boolean
 ) {
   lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
@@ -29,32 +29,32 @@ object MemoryLayout {
 
   final case class PositionedType(ty: Type, offset: Long)
 
-  def sizeOf(ty: Type, is32: Boolean): Long = ty match {
+  def sizeOf(ty: Type, is32BitPlatform: Boolean): Long = ty match {
     case primitive: Type.PrimitiveKind =>
       math.max(primitive.width / BITS_IN_BYTE, 1)
     case Type.ArrayValue(ty, n) =>
-      sizeOf(ty, is32) * n
+      sizeOf(ty, is32BitPlatform) * n
     case Type.StructValue(tys) =>
-      MemoryLayout(tys, is32).size
+      MemoryLayout(tys, is32BitPlatform).size
     case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      if (is32) 4 else 8
+      if (is32BitPlatform) 4 else 8
     case _ =>
       unsupported(s"sizeof $ty")
   }
 
-  def alignmentOf(ty: Type, is32: Boolean): Long = ty match {
+  def alignmentOf(ty: Type, is32BitPlatform: Boolean): Long = ty match {
     case Type.Long | Type.Double =>
-      if (is32) 4 else 8
+      if (is32BitPlatform) 4 else 8
     case primitive: Type.PrimitiveKind =>
       math.max(primitive.width / BITS_IN_BYTE, 1)
     case Type.ArrayValue(ty, n) =>
-      alignmentOf(ty, is32)
+      alignmentOf(ty, is32BitPlatform)
     case Type.StructValue(Seq()) =>
       1
     case Type.StructValue(tys) =>
-      tys.map(alignmentOf(_, is32)).max
+      tys.map(alignmentOf(_, is32BitPlatform)).max
     case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      if (is32) 4 else 8
+      if (is32BitPlatform) 4 else 8
     case _ =>
       unsupported(s"alignment $ty")
   }
@@ -67,18 +67,19 @@ object MemoryLayout {
     offset + padding
   }
 
-  def apply(tys: Seq[Type], is32: Boolean): MemoryLayout = {
+  def apply(tys: Seq[Type], is32BitPlatform: Boolean): MemoryLayout = {
     val pos = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
     tys.foreach { ty =>
-      offset = align(offset, alignmentOf(ty, is32))
+      offset = align(offset, alignmentOf(ty, is32BitPlatform))
       pos += PositionedType(ty, offset)
-      offset += sizeOf(ty, is32)
+      offset += sizeOf(ty, is32BitPlatform)
     }
 
-    val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf(_, is32)).max
+    val alignment =
+      if (tys.isEmpty) 1 else tys.map(alignmentOf(_, is32BitPlatform)).max
 
-    MemoryLayout(align(offset, alignment), pos.toSeq, is32)
+    MemoryLayout(align(offset, alignment), pos.toSeq, is32BitPlatform)
   }
 }

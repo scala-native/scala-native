@@ -26,7 +26,7 @@ object Lower {
     import meta._
 
     implicit val linked: Result = meta.linked
-    val is32 = meta.is32
+    val is32BitPlatform = meta.is32BitPlatform
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
@@ -747,7 +747,7 @@ object Lower {
     ): Unit = {
       val Op.Sizeof(ty) = op
 
-      val memorySize = MemoryLayout.sizeOf(ty, is32)
+      val memorySize = MemoryLayout.sizeOf(ty, is32BitPlatform)
       buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
     }
 
@@ -756,7 +756,7 @@ object Lower {
     ): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op
 
-      val size = MemoryLayout.sizeOf(layout(cls).struct, is32)
+      val size = MemoryLayout.sizeOf(layout(cls).struct, is32BitPlatform)
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
@@ -923,7 +923,7 @@ object Lower {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
           case Type.Size =>
-            if (is32) Val.Size(java.lang.Integer.MIN_VALUE)
+            if (is32BitPlatform) Val.Size(java.lang.Integer.MIN_VALUE)
             else Val.Size(java.lang.Long.MIN_VALUE)
           case _ => util.unreachable
         }

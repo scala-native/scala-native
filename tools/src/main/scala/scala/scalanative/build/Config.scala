@@ -78,7 +78,7 @@ sealed trait Config {
   /** Should address sanitizer be used? */
   def asan: Boolean = compilerConfig.asan
 
-  def is32: Boolean =
+  def is32BitPlatform: Boolean =
     compilerConfig.targetTriple
       .getOrElse(
         Discover.targetTriple(clang)
@@ -155,9 +155,9 @@ object Config {
         .get("scala.scalanative.meta.linktimeinfo.isWindows")
         .getOrElse(targetsWindows)
         .asInstanceOf[Boolean]
-      val is32 = compilerConfig.linktimeProperties
-        .get("scala.scalanative.meta.linktimeinfo.is32")
-        .getOrElse(this.is32)
+      val is32BitPlatform = compilerConfig.linktimeProperties
+        .get("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
+        .getOrElse(this.is32BitPlatform)
         .asInstanceOf[Boolean]
       val asanEnabled = compilerConfig.linktimeProperties
         .get("scala.scalanative.meta.linktimeinfo.asanEnabled")
@@ -165,9 +165,9 @@ object Config {
         .asInstanceOf[Boolean]
       Map(
         "scala.scalanative.meta.linktimeinfo.isWindows" -> isWindows,
-        "scala.scalanative.meta.linktimeinfo.is32" -> is32,
+        "scala.scalanative.meta.linktimeinfo.is32BitPlatform" -> is32BitPlatform,
         "scala.scalanative.meta.linktimeinfo.sizeOfPtr" -> Val.Size(
-          if (is32) 4 else 8
+          if (is32BitPlatform) 4 else 8
         ),
         "scala.scalanative.meta.linktimeinfo.asanEnabled" -> asanEnabled
       ) ++ compilerConfig.linktimeProperties

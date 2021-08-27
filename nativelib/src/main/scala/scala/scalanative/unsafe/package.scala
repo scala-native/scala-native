@@ -14,7 +14,7 @@ import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
 
 package object unsafe {
-  val is32 = LinktimeInfo.is32
+  val is32BitPlatform = LinktimeInfo.is32BitPlatform
 
   /** The C 'char' type. */
   type CChar = Byte

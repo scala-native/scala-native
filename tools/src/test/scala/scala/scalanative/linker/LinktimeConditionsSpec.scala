@@ -62,7 +62,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     Entry("secret.performance.multiplier", 9.99, Val.Double(9.99)),
     // Always required linktime properties
     Entry(s"$linktimeInfoProperties.isWindows", false, Val.False),
-    Entry(s"$linktimeInfoProperties.is32", false, Val.False),
+    Entry(s"$linktimeInfoProperties.is32BitPlatform", false, Val.False),
     Entry(s"$linktimeInfoProperties.sizeOfPtr", Val.Size(8), Val.Size(8)),
     Entry(s"$linktimeInfoProperties.asanEnabled", false, Val.False)
   )

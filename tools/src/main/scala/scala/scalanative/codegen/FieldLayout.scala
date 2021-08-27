@@ -18,7 +18,7 @@ class FieldLayout(meta: Metadata, cls: Class) {
     val body = Type.Ptr +: data
     Type.StructValue(body)
   }
-  val layout = MemoryLayout(struct.tys, meta.is32)
+  val layout = MemoryLayout(struct.tys, meta.is32BitPlatform)
   val size = layout.size
   val referenceOffsetsTy =
     Type.StructValue(Seq(Type.Ptr))

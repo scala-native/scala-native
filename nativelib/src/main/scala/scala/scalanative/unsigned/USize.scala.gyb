@@ -27,7 +27,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def toULong: ULong   = new ULong(castRawSizeToLongUnsigned(rawSize))
 
   @inline def toPtr[T]: Ptr[T] =
-    if (is32) fromRawPtr[T](castIntToRawPtr(toInt))
+    if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
     else fromRawPtr[T](castLongToRawPtr(toLong))
 
   @inline override def hashCode: Int = toULong.hashCode
@@ -51,7 +51,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def unary_~ : USize =
-    if (is32) (~toInt).toUSize
+    if (is32BitPlatform) (~toInt).toUSize
     else (~toLong).toUSize
 
   /**
@@ -60,7 +60,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
   @inline def <<(x: Int): USize =
-    if (is32) (toInt << x).toUSize
+    if (is32BitPlatform) (toInt << x).toUSize
     else (toLong << x).toUSize
 
   /**
@@ -69,7 +69,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}
    */
   @inline def <<(x: Long): USize =
-    if (is32) (toInt << x.toInt).toUSize
+    if (is32BitPlatform) (toInt << x.toInt).toUSize
     else (toLong << x).toUSize
 
   /**
@@ -83,7 +83,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def >>>(x: Int): USize =
-    if (is32) (toInt >>> x).toUSize
+    if (is32BitPlatform) (toInt >>> x).toUSize
     else (toLong >>> x).toUSize
 
   /**
@@ -97,7 +97,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline def >>>(x: Long): USize =
-    if (is32) (toInt >>> x.toInt).toUSize
+    if (is32BitPlatform) (toInt >>> x.toInt).toUSize
     else (toLong >>> x).toUSize
 
   /**
@@ -110,7 +110,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline final def >>(x: Int): USize =
-    if (is32) (toInt >> x).toUSize
+    if (is32BitPlatform) (toInt >> x).toUSize
     else (toLong >> x).toUSize
 
   /**
@@ -123,7 +123,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    * }}}
    */
   @inline final def >>(x: Long): USize =
-    if (is32) (toInt >> x.toInt).toUSize
+    if (is32BitPlatform) (toInt >> x.toInt).toUSize
     else (toLong >> x).toUSize
 
   % cmpOps = [('==', 'Returns `true` if this value is equal to x, `false` otherwise.'),
@@ -147,7 +147,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): Boolean =
-    if (is32) this.toUInt ${op} other.toUInt
+    if (is32BitPlatform) this.toUInt ${op} other.toUInt
     else this.toULong ${op} other.toULong
 
   % end
@@ -172,7 +172,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): USize =
-    if (is32) new USize(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
+    if (is32BitPlatform) new USize(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
     else new USize(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) ${op} castRawSizeToLongUnsigned(other.rawSize)))
 
   % end
@@ -194,7 +194,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): USize =
-    if (is32) new USize(castIntToRawSizeUnsigned(${int}(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
+    if (is32BitPlatform) new USize(castIntToRawSizeUnsigned(${int}(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
     else new USize(castLongToRawSize(${long}(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
 
   % end

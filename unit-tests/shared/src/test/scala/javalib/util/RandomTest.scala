@@ -2,7 +2,7 @@ package javalib.util
 
 import java.util._
 
-import org.scalanative.testsuite.utils.Platform.is32
+import org.scalanative.testsuite.utils.Platform.is32BitPlatform
 
 import org.junit.Test
 import org.junit.Assert._
@@ -68,7 +68,7 @@ class RandomTest {
   }
 
   @Test def resetNextGaussian(): Unit = {
-    assumeTrue(!is32)
+    assumeTrue(!is32BitPlatform)
     val random = new Random(-1)
     assertTrue(random.nextGaussian() == 1.7853314409882288)
     random.setSeed(-1)
@@ -211,7 +211,7 @@ class RandomTest {
   }
 
   @Test def nextGaussian(): Unit = {
-    assumeTrue(!is32)
+    assumeTrue(!is32BitPlatform)
     val random = new Random(2446004)
     assertTrue(random.nextGaussian() == -0.5043346938630431)
     assertTrue(random.nextGaussian() == -0.3250983270156675)

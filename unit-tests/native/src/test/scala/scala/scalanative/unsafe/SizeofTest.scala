@@ -65,16 +65,18 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
-    assertTrue(sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == (if (!is32) {
-                                                                  24
-                                                                } else {
-                                                                  16
-                                                                }).toUSize)
+    assertTrue(
+      sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == (if (!is32BitPlatform) {
+                                                         24
+                                                       } else {
+                                                         16
+                                                       }).toUSize
+    )
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
     assertTrue(
-      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == (if (!is32) {
+      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == (if (!is32BitPlatform) {
                                                                    32
                                                                  } else {
                                                                    24
@@ -89,7 +91,7 @@ class SizeofTest {
         Byte,
         Long,
         CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]
-      ]] == (if (!is32) {
+      ]] == (if (!is32BitPlatform) {
                40
              } else {
                32

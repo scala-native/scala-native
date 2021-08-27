@@ -8,7 +8,7 @@ package object linker {
   val linktimeInfoDefaults: Map[String, Any] = {
     Map(
       s"$linktimeInfoProperties.isWindows" -> false,
-      s"$linktimeInfoProperties.is32" -> false,
+      s"$linktimeInfoProperties.is32BitPlatform" -> false,
       s"$linktimeInfoProperties.sizeOfPtr" -> Val.Size(8),
       s"$linktimeInfoProperties.asanEnabled" -> false
     )

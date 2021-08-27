@@ -10,8 +10,8 @@ object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
   def isWindows: Boolean = resolved
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32")
-  def is32: Boolean = resolved
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
+  def is32BitPlatform: Boolean = resolved
 
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.sizeOfPtr")
   def sizeOfPtr: RawSize = resolved

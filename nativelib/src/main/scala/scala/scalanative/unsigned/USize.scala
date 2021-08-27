@@ -27,7 +27,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
   @inline def toULong: ULong = new ULong(castRawSizeToLongUnsigned(rawSize))
 
   @inline def toPtr[T]: Ptr[T] =
-    if (is32) fromRawPtr[T](castIntToRawPtr(toInt))
+    if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
     else fromRawPtr[T](castLongToRawPtr(toLong))
 
   @inline override def hashCode: Int = toULong.hashCode
@@ -47,7 +47,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{~5 == 4294967290 // in binary: ~00000101 == // 11111010}}}
    */
   @inline def unary_~ : USize =
-    if (is32) (~toInt).toUSize
+    if (is32BitPlatform) (~toInt).toUSize
     else (~toLong).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
@@ -56,7 +56,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Int): USize =
-    if (is32) (toInt << x).toUSize
+    if (is32BitPlatform) (toInt << x).toUSize
     else (toLong << x).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
@@ -65,7 +65,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
   @inline def <<(x: Long): USize =
-    if (is32) (toInt << x.toInt).toUSize
+    if (is32BitPlatform) (toInt << x.toInt).toUSize
     else (toLong << x).toUSize
 
   /** Returns this value bit-shifted right by the specified number of bits,
@@ -77,7 +77,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Int): USize =
-    if (is32) (toInt >>> x).toUSize
+    if (is32BitPlatform) (toInt >>> x).toUSize
     else (toLong >>> x).toUSize
 
   /** Returns this value bit-shifted right by the specified number of bits,
@@ -89,7 +89,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
   @inline def >>>(x: Long): USize =
-    if (is32) (toInt >>> x.toInt).toUSize
+    if (is32BitPlatform) (toInt >>> x.toInt).toUSize
     else (toLong >>> x).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
@@ -100,7 +100,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Int): USize =
-    if (is32) (toInt >> x).toUSize
+    if (is32BitPlatform) (toInt >> x).toUSize
     else (toLong >> x).toUSize
 
   /** Returns this value bit-shifted left by the specified number of bits,
@@ -111,7 +111,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
   @inline final def >>(x: Long): USize =
-    if (is32) (toInt >> x.toInt).toUSize
+    if (is32BitPlatform) (toInt >> x.toInt).toUSize
     else (toLong >> x).toUSize
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
@@ -128,7 +128,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline def ==(other: USize): Boolean =
-    if (is32) this.toUInt == other.toUInt
+    if (is32BitPlatform) this.toUInt == other.toUInt
     else this.toULong == other.toULong
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
@@ -145,7 +145,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline def !=(other: USize): Boolean =
-    if (is32) this.toUInt != other.toUInt
+    if (is32BitPlatform) this.toUInt != other.toUInt
     else this.toULong != other.toULong
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
@@ -162,7 +162,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is less than x, `false` otherwise. */
   @inline def <(other: USize): Boolean =
-    if (is32) this.toUInt < other.toUInt
+    if (is32BitPlatform) this.toUInt < other.toUInt
     else this.toULong < other.toULong
 
   /** Returns `true` if this value is less than or equal to x, `false`
@@ -189,7 +189,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *  otherwise.
    */
   @inline def <=(other: USize): Boolean =
-    if (is32) this.toUInt <= other.toUInt
+    if (is32BitPlatform) this.toUInt <= other.toUInt
     else this.toULong <= other.toULong
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
@@ -206,7 +206,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns `true` if this value is greater than x, `false` otherwise. */
   @inline def >(other: USize): Boolean =
-    if (is32) this.toUInt > other.toUInt
+    if (is32BitPlatform) this.toUInt > other.toUInt
     else this.toULong > other.toULong
 
   /** Returns `true` if this value is greater than or equal to x, `false`
@@ -233,7 +233,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
    *  otherwise.
    */
   @inline def >=(other: USize): Boolean =
-    if (is32) this.toUInt >= other.toUInt
+    if (is32BitPlatform) this.toUInt >= other.toUInt
     else this.toULong >= other.toULong
 
   /** Returns the bitwise AND of this value and `x`. */
@@ -250,7 +250,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           castRawSizeToInt(rawSize) & castRawSizeToInt(other.rawSize)
@@ -279,7 +279,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           castRawSizeToInt(rawSize) | castRawSizeToInt(other.rawSize)
@@ -308,7 +308,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           castRawSizeToInt(rawSize) ^ castRawSizeToInt(other.rawSize)
@@ -337,7 +337,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the sum of this value and `x`. */
   @inline def +(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           castRawSizeToInt(rawSize) + castRawSizeToInt(other.rawSize)
@@ -366,7 +366,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the difference of this value and `x`. */
   @inline def -(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           castRawSizeToInt(rawSize) - castRawSizeToInt(other.rawSize)
@@ -395,7 +395,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the product of this value and `x`. */
   @inline def *(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           castRawSizeToInt(rawSize) * castRawSizeToInt(other.rawSize)
@@ -424,7 +424,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           divUInt(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))
@@ -454,7 +454,7 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(other: USize): USize =
-    if (is32)
+    if (is32BitPlatform)
       new USize(
         castIntToRawSizeUnsigned(
           remUInt(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))

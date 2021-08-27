@@ -7,7 +7,7 @@ import scalanative.linker._
 import scalanative.util.ScopedVar
 import java.util.function.Supplier
 
-class Interflow(val mode: build.Mode, val is32: Boolean)(implicit
+class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
     val linked: linker.Result
 ) extends Visit
     with Opt
@@ -149,7 +149,7 @@ object Interflow {
       config: build.Config,
       linked: linker.Result
   ): Seq[Defn] = {
-    val interflow = new Interflow(config.mode, config.is32)(linked)
+    val interflow = new Interflow(config.mode, config.is32BitPlatform)(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

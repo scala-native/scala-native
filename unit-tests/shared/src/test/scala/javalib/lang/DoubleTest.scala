@@ -27,7 +27,7 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
-import org.scalanative.testsuite.utils.Platform.is32
+import org.scalanative.testsuite.utils.Platform.is32BitPlatform
 
 class DoubleTest {
   @Test def testEquals(): Unit = {
@@ -157,7 +157,7 @@ class DoubleTest {
     val bpinf2: java.lang.Double = pinf2
     assertTrue(bpinf1 == bpinf2)
 
-    if (!is32) { // x86 has different float behavior
+    if (!is32BitPlatform) { // x86 has different float behavior
       val ninf1 = scala.Double.NegativeInfinity
       val ninf2 = scala.Double.MinValue + scala.Double.MinValue
       assertTrue(ninf1 == ninf2)

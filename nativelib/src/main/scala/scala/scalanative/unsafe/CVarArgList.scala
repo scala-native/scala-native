@@ -39,7 +39,7 @@ object CVarArgList {
   private[scalanative] def fromSeq(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
-    if (!is32) {
+    if (!is32BitPlatform) {
       var storage = new Array[Long](registerSaveSizes)
       var wordsUsed = storage.size
       var gpRegistersUsed = 0

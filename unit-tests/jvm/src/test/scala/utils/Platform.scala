@@ -24,7 +24,7 @@ object Platform {
 
   final val isFreeBSD = System.getProperty("os.name").equals("FreeBSD")
 
-  final val is32 = false
+  final val is32BitPlatform = false
 
   final val asanEnabled = false
 }

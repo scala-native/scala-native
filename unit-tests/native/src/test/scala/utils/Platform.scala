@@ -22,7 +22,7 @@ object Platform {
 
   final val isFreeBSD = System.getProperty("os.name").equals("FreeBSD")
 
-  final val is32 = scala.scalanative.unsafe.is32
+  final val is32BitPlatform = scala.scalanative.unsafe.is32BitPlatform
 
   final val asanEnabled = scala.scalanative.meta.LinktimeInfo.asanEnabled
 }

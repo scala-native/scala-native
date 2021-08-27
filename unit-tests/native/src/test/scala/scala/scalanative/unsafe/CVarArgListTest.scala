@@ -214,11 +214,11 @@ class CVarArgListTest {
   @Test def longValueMinus1(): Unit =
     vatest(c"%d", Seq(-1L), "-1")
   @Test def longValueMin(): Unit = {
-    assumeTrue(!is32)
+    assumeTrue(!is32BitPlatform)
     vatest(c"%lld", Seq(java.lang.Long.MIN_VALUE), "-9223372036854775808")
   }
   @Test def longValueMax(): Unit = {
-    assumeTrue(!is32)
+    assumeTrue(!is32BitPlatform)
     vatest(c"%lld", Seq(java.lang.Long.MAX_VALUE), "9223372036854775807")
   }
   @Test def longArgs1(): Unit =
@@ -474,11 +474,11 @@ class CVarArgListTest {
     )
 
   @Test def ulongValueMin(): Unit = {
-    assumeTrue(!is32)
+    assumeTrue(!is32BitPlatform)
     vatest(c"%llu", Seq(ULong.MinValue), "0")
   }
   @Test def ulongValueMax(): Unit = {
-    assumeTrue(!is32)
+    assumeTrue(!is32BitPlatform)
     vatest(c"%llu", Seq(ULong.MaxValue), "18446744073709551615")
   }
   @Test def ulongArgs1(): Unit =

@@ -90,8 +90,9 @@ sealed abstract class Val {
     case _               => false
   }
 
-  final def isSignedMinValue(is32: Boolean): Boolean = this match {
-    case Val.Size(v)  => if (is32) v == Int.MinValue else v == Long.MinValue
+  final def isSignedMinValue(is32BitPlatform: Boolean): Boolean = this match {
+    case Val.Size(v) =>
+      if (is32BitPlatform) v == Int.MinValue else v == Long.MinValue
     case Val.Byte(v)  => v == Byte.MinValue
     case Val.Short(v) => v == Short.MinValue
     case Val.Int(v)   => v == Int.MinValue
@@ -99,8 +100,9 @@ sealed abstract class Val {
     case _            => false
   }
 
-  final def isSignedMaxValue(is32: Boolean): Boolean = this match {
-    case Val.Size(v)  => if (is32) v == Int.MaxValue else v == Long.MaxValue
+  final def isSignedMaxValue(is32BitPlatform: Boolean): Boolean = this match {
+    case Val.Size(v) =>
+      if (is32BitPlatform) v == Int.MaxValue else v == Long.MaxValue
     case Val.Byte(v)  => v == Byte.MaxValue
     case Val.Short(v) => v == Short.MaxValue
     case Val.Int(v)   => v == Int.MaxValue
