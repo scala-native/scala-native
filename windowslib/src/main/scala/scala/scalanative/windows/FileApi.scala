@@ -1,13 +1,16 @@
 package scala.scalanative.windows
 
 import scala.language.implicitConversions
-import scala.scalanative.libc.wchar.wcscpy
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi.Handle
+import MinWinBaseApi._
+import WinBaseApi.SecurityAttributes
 
 @extern
 object FileApi {
+  private[windows] type PathMax = Nat.Digit3[Nat._2, Nat._6, Nat._0]
+
   def CreateFileA(
       filename: CString,
       desiredAccess: DWord,
@@ -27,11 +30,37 @@ object FileApi {
       flagsAndAttributes: UInt,
       templateFile: Handle
   ): Handle = extern
+
+  def CreateDirectoryA(
+      filename: CString,
+      securityAttributes: Ptr[SecurityAttributes]
+  ): Boolean =
+    extern
+  def CreateDirectoryW(
+      filename: CWString,
+      securityAttributes: Ptr[SecurityAttributes]
+  ): Boolean =
+    extern
   def DeleteFileA(filename: CString): Boolean = extern
   def DeleteFileW(filename: CWString): Boolean = extern
   def FlushFileBuffers(handle: Handle): Boolean = extern
   def GetFileAttributesA(filename: CString): DWord = extern
   def GetFileAttributesW(filename: CWString): DWord = extern
+
+  def GetFinalPathNameByHandleA(
+      handle: Handle,
+      buffer: CString,
+      bufferSize: DWord,
+      flags: DWord
+  ): DWord = extern
+
+  def GetFinalPathNameByHandleW(
+      handle: Handle,
+      buffer: CWString,
+      bufferSize: DWord,
+      flags: DWord
+  ): DWord = extern
+
   def GetFullPathNameA(
       filename: CString,
       bufferLength: DWord,
@@ -46,6 +75,12 @@ object FileApi {
       filePart: Ptr[CWString]
   ): DWord = extern
   def GetFileSizeEx(file: Handle, fileSize: Ptr[LargeInteger]): Boolean = extern
+  def GetFileTime(
+      file: Handle,
+      creationTime: Ptr[FileTime],
+      lastAccessTime: Ptr[FileTime],
+      lastWriteTime: Ptr[FileTime]
+  ): Boolean = extern
   def GetTempPathA(bufferLength: DWord, buffer: CString): DWord = extern
   def GetTempPathW(bufferLength: DWord, buffer: CWString): DWord = extern
   def ReadFile(
@@ -55,6 +90,9 @@ object FileApi {
       bytesReadPtr: Ptr[DWord],
       overlapped: Ptr[Byte]
   ): Boolean = extern
+
+  def RemoveDirectoryW(filename: CWString): Boolean = extern
+  def SetEndOfFile(file: Handle): Boolean = extern
   def SetFileAttributesA(filename: CString, fileAttributes: DWord): Boolean =
     extern
   def SetFileAttributesW(filename: CWString, fileAttributes: DWord): Boolean =
@@ -64,6 +102,13 @@ object FileApi {
       distanceToMove: LargeInteger,
       newFilePointer: Ptr[LargeInteger],
       moveMethod: DWord
+  ): Boolean = extern
+
+  def SetFileTime(
+      file: Handle,
+      creationTime: Ptr[FileTime],
+      lastAccessTime: Ptr[FileTime],
+      lastWriteTime: Ptr[FileTime]
   ): Boolean = extern
 
   def WriteFile(
@@ -135,4 +180,13 @@ object FileApiExt {
   final val FILE_FLAG_SESSION_AWARE = 0x00800000.toUInt
   final val FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000.toUInt
   final val FILE_FLAG_WRITE_THROUGH = 0x80000000.toUInt
+
+  // Final path flags
+  final val FILE_NAME_NORMALIZED = 0.toUInt
+  final val FILE_NAME_OPENED = 0x8.toUInt
+
+  final val VOLUME_NAME_DOS = 0.toUInt
+  final val VOLUME_NAME_GUID = 0x01.toUInt
+  final val VOLUME_NAME_NT = 0x02.toUInt
+  final val VOLUME_NAME_NONE = 0x04.toUInt
 }

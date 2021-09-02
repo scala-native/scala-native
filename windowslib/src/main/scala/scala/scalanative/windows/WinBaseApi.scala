@@ -10,10 +10,23 @@ import scala.scalanative.windows.winnt._
 object WinBaseApi {
   import SecurityBaseApi._
 
+  type SecurityInformation = DWord
+  type SecurityAttributes = CStruct3[DWord, Ptr[Byte], Boolean]
   type CallbackContext = Ptr[Byte]
   type WaitOrTimerCallback = CFuncPtr2[CallbackContext, Boolean, Unit]
   type LocalHandle = Ptr[_]
 
+  def CreateHardLinkW(
+      linkFileName: CWString,
+      existingFileName: CWString,
+      securityAttributes: SecurityAttributes
+  ): Boolean = extern
+
+  def CreateSymbolicLinkW(
+      symlinkFileName: CWString,
+      targetFileName: CWString,
+      flags: DWord
+  ): Boolean = extern
   def FormatMessageA(
       flags: DWord,
       source: Ptr[Byte],
@@ -36,6 +49,7 @@ object WinBaseApi {
   def GetCurrentDirectoryA(bufferLength: DWord, buffer: CString): DWord = extern
   def GetCurrentDirectoryW(bufferLength: DWord, buffer: CWString): DWord =
     extern
+  def LocalFree(ref: LocalHandle): LocalHandle = extern
 
   @name("scalanative_win32_default_language")
   final def DefaultLanguageId: DWord = extern
@@ -61,11 +75,39 @@ object WinBaseApiExt {
   final val SYMBOLIC_LINK_FLAG_DIRECTORY = 0x01.toUInt
   final val SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = 0x02.toUInt
 
-  final val FORMAT_MESSAGE_ALLOCATE_BUFFER: DWord = 0x00000100.toUInt
-  final val FORMAT_MESSAGE_IGNORE_INSERTS: DWord = 0x00000200.toUInt
-  final val FORMAT_MESSAGE_FROM_STRING: DWord = 0x00000400.toUInt
-  final val FORMAT_MESSAGE_FROM_HMODULE: DWord = 0x00000800.toUInt
-  final val FORMAT_MESSAGE_FROM_SYSTEM: DWord = 0x00001000.toUInt
-  final val FORMAT_MESSAGE_ARGUMENT_ARRAY: DWord = 0x00002000.toUInt
+  final val FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100.toUInt
+  final val FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200.toUInt
+  final val FORMAT_MESSAGE_FROM_STRING = 0x00000400.toUInt
+  final val FORMAT_MESSAGE_FROM_HMODULE = 0x00000800.toUInt
+  final val FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000.toUInt
+  final val FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000.toUInt
 
+  final val OWNER_SECURITY_INFORMATION = 0x00000001L.toUInt
+  final val GROUP_SECURITY_INFORMATION = 0x00000002L.toUInt
+  final val DACL_SECURITY_INFORMATION = 0x00000004L.toUInt
+  final val SACL_SECURITY_INFORMATION = 0x00000008L.toUInt
+  final val LABEL_SECURITY_INFORMATION = 0x00000010L.toUInt
+  final val ATTRIBUTE_SECURITY_INFORMATION = 0x00000020L.toUInt
+  final val SCOPE_SECURITY_INFORMATION = 0x00000040L.toUInt
+  final val PROCESS_TRUST_LABEL_SECURITY_INFORMATION = 0x00000080L.toUInt
+  final val ACCESS_FILTER_SECURITY_INFORMATION = 0x00000100L.toUInt
+  final val BACKUP_SECURITY_INFORMATION = 0x00010000L.toUInt
+  final val PROTECTED_DACL_SECURITY_INFORMATION = 0x80000000L.toUInt
+  final val PROTECTED_SACL_SECURITY_INFORMATION = 0x40000000L.toUInt
+  final val UNPROTECTED_DACL_SECURITY_INFORMATION = 0x20000000L.toUInt
+  final val UNPROTECTED_SACL_SECURITY_INFORMATION = 0x10000000L.toUInt
+}
+
+object WinBaseApiOps {
+  import WinBaseApi._
+  implicit class SecurityAttributesOps(val ref: Ptr[SecurityAttributes])
+      extends AnyVal {
+    def length: DWord = ref._1
+    def securityDescriptor: Ptr[Byte] = ref._2
+    def inheritHandle: Boolean = ref._3
+
+    def length_=(v: DWord): Unit = ref._1 = v
+    def securityDescriptor_=(v: Ptr[Byte]): Unit = ref._2 = v
+    def inheritHandle_=(v: Boolean): Unit = ref._3 = v
+  }
 }

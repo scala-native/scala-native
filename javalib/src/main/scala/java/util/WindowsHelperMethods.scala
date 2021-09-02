@@ -1,12 +1,18 @@
 package java.util
 
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 import java.io.IOException
 import scala.scalanative.windows.ProcessThreadsApi._
 import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.FileApiExt._
+import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows._
+import scala.scalanative.windows.winnt._
+import winnt.AccessToken._
+import scala.scalanative.windows.SecurityBaseApi._
+import java.nio.file.WindowsException
 
 private[java] object WindowsHelperMethods {
   def withUserToken[T](desiredAccess: DWord)(fn: Handle => T): T = {
@@ -31,6 +37,65 @@ private[java] object WindowsHelperMethods {
     }
   }
 
+  def withImpersonatedToken[T](fn: Handle => T): T = {
+    withUserToken(
+      TOKEN_IMPERSONATE | TOKEN_READ | TOKEN_DUPLICATE
+    ) { tokenHandle =>
+      val impersonatedToken = stackalloc[Handle]
+      if (!DuplicateToken(
+            tokenHandle,
+            SecurityImpersonation,
+            impersonatedToken
+          )) {
+        throw new RuntimeException("Cannot impersonate access token")
+      }
+
+      try {
+        fn(!impersonatedToken)
+      } finally HandleApi.CloseHandle(!impersonatedToken)
+    }
+  }
+
+  def withTokenInformation[T, R](
+      token: Handle,
+      informationClass: TokenInformationClass
+  )(fn: Ptr[T] => R)(implicit z: Zone): R = {
+    val dataSize = alloc[DWord]
+    !dataSize = 0.toUInt
+
+    if (!GetTokenInformation(
+          token,
+          informationClass,
+          information = null,
+          informationLength = !dataSize,
+          returnLength = dataSize
+        )) {
+      GetLastError() match {
+        case ErrorCodes.ERROR_INSUFFICIENT_BUFFER => ()
+        case errCode =>
+          throw WindowsException(
+            s"Cannot determinate size for token informaiton $informationClass",
+            errCode
+          )
+      }
+    }
+
+    val data = alloc[Byte](!dataSize)
+    if (!GetTokenInformation(
+          token,
+          informationClass,
+          information = data,
+          informationLength = !dataSize,
+          returnLength = dataSize
+        )) {
+      throw WindowsException(
+        s"Failed to get data for token informaiton $informationClass"
+      )
+    }
+
+    fn(data.asInstanceOf[Ptr[T]])
+  }
+
   def withFileOpen[T](
       path: String,
       access: DWord,
@@ -52,9 +117,7 @@ private[java] object WindowsHelperMethods {
       try { fn(handle) }
       finally CloseHandle(handle)
     } else {
-      throw new IOException(
-        s"Cannot open file ${path}: ${ErrorHandlingApi.GetLastError()}"
-      )
+      throw WindowsException(s"Cannot open file ${path}")
     }
   }
 }

@@ -4,6 +4,8 @@ import java.io._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
+import org.scalanative.testsuite.utils.Platform._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
@@ -91,12 +93,20 @@ class FileOutputStreamTest {
   }
 
   @Test def attemptToOpenDirectory(): Unit = {
+    assumeTrue(
+      "Uses not yet implemented java.nio methods",
+      !isWindows || executingInJVM
+    )
     withTempDirectory { dir =>
       assertThrows(classOf[FileNotFoundException], new FileOutputStream(dir))
     }
   }
 
   @Test def attemptToCreateFileInReadonlyDirectory(): Unit = {
+    assumeFalse(
+      "Setting directory read only in Windows does not have affect on creating new files",
+      isWindows
+    )
     withTempDirectory { ro =>
       ro.setReadOnly()
       assertThrows(

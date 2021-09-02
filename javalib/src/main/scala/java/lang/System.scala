@@ -13,7 +13,7 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt.MAX_PATH
 import scala.scalanative.windows.UserEnvApi._
 import scala.scalanative.windows.WinBaseApi._
-import scala.scalanative.windows.ProcessEnv._
+import scala.scalanative.windows.ProcessEnvApi._
 import scala.scalanative.windows.winnt.AccessToken
 
 final class System private ()

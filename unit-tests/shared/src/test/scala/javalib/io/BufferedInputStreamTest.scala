@@ -4,8 +4,10 @@ import java.io._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import scalanative.junit.utils.AssumesHelper._
 
 class BufferedInputStreamTest {
   private val exampleBytes0 =
@@ -91,6 +93,7 @@ class BufferedInputStreamTest {
   }
 
   @Test def readArrayBehavesCorrectlyWhenAskingForElementsInBuffer(): Unit = {
+    assumeNotJVMCompliant()
     val arrayIn = new ByteArrayInputStream(exampleBytes0, 0, 10)
     // start with buffer of size 2 to force multiple refills of the buffer
     val in = new BufferedInputStream(arrayIn, 2)
