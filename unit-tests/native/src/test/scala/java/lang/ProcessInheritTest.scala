@@ -38,7 +38,57 @@ class ProcessInheritTest {
       }
     }
 
-    def windowsImpl() = ???
+    def windowsImpl() = {
+      import scala.scalanative.windows._
+      import NamedPipeApi._
+      import HandleApi._
+      import HandleApiExt._
+      import ConsoleApi._
+      import ConsoleApiExt._
+      import FileApi._
+      import FileApiExt._
+      import winnt.AccessRights._
+      val f = Files.createTempFile("tmp", "out")
+      val readEnd, writeEnd, stdOutDup = stackalloc[Handle]
+
+      assertEquals(
+        "createPipe",
+        true,
+        CreatePipe(
+          readPipePtr = readEnd,
+          writePipePtr = writeEnd,
+          securityAttributes = null,
+          size = 0.toUInt
+        )
+      )
+
+      Zone { implicit z =>
+        val handle = CreateFileW(
+          toCWideStringUTF16LE(f.toAbsolutePath.toString),
+          desiredAccess = FILE_GENERIC_WRITE | FILE_GENERIC_READ,
+          shareMode = FILE_SHARE_ALL,
+          securityAttributes = null,
+          creationDisposition = CREATE_ALWAYS,
+          flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+          templateFile = null
+        )
+        assertNotEquals("Cannot create file", INVALID_HANDLE_VALUE, handle)
+
+        val savedStdout = GetStdHandle(STD_OUTPUT_HANDLE)
+        SetStdHandle(STD_OUTPUT_HANDLE, handle)
+
+        try {
+          val proc = processForCommand(Scripts.ls, "/b", resourceDir)
+            .inheritIO()
+            .start()
+          proc.waitFor(5, TimeUnit.SECONDS)
+          readInputStream(new FileInputStream(f.toFile))
+        } finally {
+          SetStdHandle(STD_OUTPUT_HANDLE, savedStdout)
+          CloseHandle(handle)
+        }
+      }
+    }
 
     val out =
       if (isWindows) windowsImpl()
@@ -46,4 +96,5 @@ class ProcessInheritTest {
 
     assertEquals(scripts, out.split(System.lineSeparator()).toSet)
   }
+
 }
