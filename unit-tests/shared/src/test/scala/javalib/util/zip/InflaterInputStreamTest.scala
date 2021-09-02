@@ -109,7 +109,7 @@ class InflaterInputStreamTest {
     assertTrue(4 == in.read())
     assertTrue(1 == in.available())
     assertTrue(6 == in.read())
-    assertTrue(0 == in.available())
+    assertEquals(1, in.available())
     assertTrue(-1 == in.read())
     assertTrue(-1 == in.read())
   }
@@ -119,9 +119,11 @@ class InflaterInputStreamTest {
     val deflated =
       Array[Byte](72, -119, 99, 100, 102, 97, 3, 0, 0, 31, 0, 15, 0)
     val in = new InflaterInputStream(new ByteArrayInputStream(deflated))
-    assertTrue(1 == in.available())
-    assertTrue(4 == in.skip(4))
-    assertTrue(0 == in.available())
+    assertEquals(1, in.available())
+    assertEquals(4, in.skip(4))
+    assertEquals(1, in.available()) // EOF remaining
+    assertEquals(0, in.skip(1))
+    assertEquals(0, in.available())
   }
 
   @Test def availableEmptySource(): Unit = {

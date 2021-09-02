@@ -109,7 +109,7 @@ class GZIPInputStreamTest {
     outBuf = new Array[Byte](530)
     val in = new GZIPInputStream(new ByteArrayInputStream(baos.toByteArray()))
     assertThrows(
-      classOf[ArrayIndexOutOfBoundsException],
+      classOf[IndexOutOfBoundsException],
       in.read(outBuf, 530, 1)
     )
 

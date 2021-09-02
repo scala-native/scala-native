@@ -39,7 +39,7 @@ class Inflater(noHeader: Boolean) {
 
   def getAdler(): Int =
     if (stream == null) {
-      throw new IllegalStateException()
+      throw new NullPointerException()
     } else {
       stream.adler.toInt
     }
@@ -63,7 +63,7 @@ class Inflater(noHeader: Boolean) {
 
   def getTotalIn(): Int =
     if (stream == null) {
-      throw new IllegalStateException()
+      throw new NullPointerException()
     } else {
       val totalIn = getBytesRead()
       if (totalIn <= Int.MaxValue) totalIn.toInt
@@ -72,7 +72,7 @@ class Inflater(noHeader: Boolean) {
 
   def getTotalOut(): Int =
     if (stream == null) {
-      throw new IllegalStateException()
+      throw new NullPointerException()
     } else {
       val totalOut = getBytesWritten()
       if (totalOut <= Int.MaxValue) totalOut.toInt
@@ -87,7 +87,7 @@ class Inflater(noHeader: Boolean) {
     if (off > buf.length || nbytes < 0 || off < 0 || buf.length - off < nbytes) {
       throw new ArrayIndexOutOfBoundsException()
     } else if (stream == null) {
-      throw new IllegalStateException()
+      throw new NullPointerException()
     } else if (needsInput()) {
       0
     } else {
@@ -126,7 +126,7 @@ class Inflater(noHeader: Boolean) {
 
   def setDictionary(buf: Array[Byte], off: Int, nbytes: Int): Unit = {
     if (stream == null) {
-      throw new IllegalStateException()
+      throw new NullPointerException()
     } else {
       val bytes = buf.asInstanceOf[ByteArray].at(off)
       val err = zlib.inflateSetDictionary(stream, bytes, nbytes.toUInt)
@@ -141,7 +141,7 @@ class Inflater(noHeader: Boolean) {
 
   def setInput(buf: Array[Byte], off: Int, nbytes: Int): Unit =
     if (stream == null) {
-      throw new IllegalStateException()
+      throw new NullPointerException()
     } else if (off <= buf.length && nbytes >= 0 && off >= 0 && buf.length - off >= nbytes) {
       inRead = 0
       inLength = nbytes

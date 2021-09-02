@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 import ZipBytes.{brokenManifestBytes, zipFile}
 
@@ -112,6 +113,7 @@ class ZipInputStreamTest {
   }
 
   @Test def available(): Unit = {
+    assumeNotJVMCompliant()
     val zis1 = new ZipInputStream(new ByteArrayInputStream(zipFile))
     val entry = zis1.getNextEntry()
     assertTrue(entry != null)
@@ -123,9 +125,9 @@ class ZipInputStreamTest {
       zis1.skip(1)
       i += 1
     }
-    assertTrue(i == entrySize)
-    assertTrue(zis1.skip(1) == 0)
-    assertTrue(zis1.available() == 0)
+    assertEquals(entrySize, i)
+    assertEquals(0, zis1.skip(1))
+    assertEquals(0, zis1.available())
     zis1.closeEntry()
     assertTrue(zis.available() == 1)
     zis1.close()
