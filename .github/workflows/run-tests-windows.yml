@@ -92,7 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      # We need to set proper Pagefile limits in the advance. 
+      # We need to set proper Pagefile limits in advance. 
       - name: Configure Pagefile
         uses: al-cheb/configure-pagefile-action@v1.2
         with:

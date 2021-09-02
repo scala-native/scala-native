@@ -87,7 +87,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def setExecutable(executable: Boolean, ownerOnly: Boolean): Boolean = {
     if (isWindows) {
-      // Windows (JVM) does not allow for setting setting as not executable
+      // Windows (JVM) does not allow for setting a file as not executable
       if (!executable) false
       else {
         val accessRights = FILE_GENERIC_EXECUTE

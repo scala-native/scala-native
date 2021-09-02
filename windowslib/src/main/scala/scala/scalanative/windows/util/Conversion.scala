@@ -25,8 +25,7 @@ private[windows] object Conversion {
       high: Ptr[DWord],
       low: Ptr[DWord]
   ): Unit = {
-    val mask = 0xffffffff.toUInt
-    !high = ((v >> 32) & mask).toUInt
-    !low = (v & mask).toUInt
+    !high = (v >> 32).toUInt
+    !low = v.toUInt
   }
 }
