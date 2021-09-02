@@ -35,11 +35,6 @@ object BinaryIncompatibilities {
     )
   )
 
-  final val CLib, PosixLib, WindowsLib: Filters = Seq(
-    exclude[IncompatibleResultTypeProblem](
-      "scala.scalanative.posix.limits.PATH_MAX"
-    )
-  )
   final val NativeLib = Seq(
     // Internal usage
     exclude[DirectMissingMethodProblem]("java.lang._Class.rawty"),
@@ -53,6 +48,13 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.runtime.ClassInstancesRegistry*"),
     exclude[Problem]("scala.scalanative.runtime.package*TypeOps*")
   )
+  final val CLib: Filters = Nil
+  final val PosixLib: Filters = Seq(
+    exclude[IncompatibleResultTypeProblem](
+      "scala.scalanative.posix.limits.PATH_MAX"
+    )
+  )
+  final val WindowsLib: Filters = Nil
 
   final val AuxLib, JavaLib, ScalaLib: Filters = Nil
   final val TestRunner: Filters = Nil
@@ -67,7 +69,6 @@ object BinaryIncompatibilities {
     "util" -> Util,
     "nir" -> Nir,
     "tools" -> Tools,
-    "nscplugin" -> NscPlugin,
     "clib" -> CLib,
     "posixlib" -> PosixLib,
     "windowslib" -> WindowsLib,
@@ -78,7 +79,6 @@ object BinaryIncompatibilities {
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,
-    "junit-plugin" -> JUnitPlugin,
     "junit-runtime" -> JUnitRuntime
   )
 }
