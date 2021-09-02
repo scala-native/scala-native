@@ -26,4 +26,34 @@ object Versions {
 
   /* Current public release version of Scala Native. */
   final val current: String = "0.4.1-SNAPSHOT"
+  final val currentBinaryVersion: String = binaryVersion(current)
+
+  private object FullVersion {
+    final val FullVersionRE = """^(\d+)\.(\d+)\.(\d+)(-.*)?$""".r
+
+    private def preRelease(s: String) = Option(s).map(_.stripPrefix("-"))
+
+    def unapply(version: String): Option[(Int, Int, Int, Option[String])] = {
+      version match {
+        case FullVersionRE(major, minor, patch, preReleaseString) =>
+          Some(
+            (
+              major.toInt,
+              minor.toInt,
+              patch.toInt,
+              preRelease(preReleaseString)
+            )
+          )
+        case _ => None
+      }
+    }
+  }
+
+  private[nir] def binaryVersion(full: String): String = full match {
+    case FullVersion(0, minor, 0, Some(suffix)) => full
+    case FullVersion(0, minor, _, _)            => s"0.$minor"
+    case FullVersion(major, 0, 0, Some(suffix)) => s"$major.0-$suffix"
+    case FullVersion(major, _, _, _)            => major.toString
+  }
+
 }
