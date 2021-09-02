@@ -73,17 +73,26 @@ lazy val docsSettings: Seq[Setting[_]] = {
 
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set("0.4.0")
-lazy val neverPublishedProjects = Set(windowslib).map(_.id)
+lazy val neverPublishedProjects = Map(
+  "2.11" -> Set(util, tools, nir, windowslib, testRunner),
+  "2.12" -> Set(windowslib),
+  "2.13" -> Set(util, tools, nir, windowslib, testRunner)
+).mapValues(_.map(_.id))
 
 lazy val mimaSettings = Seq(
   mimaFailOnNoPrevious := false,
   mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
-  mimaPreviousArtifacts ++= binCompatVersions
-    .filter(_ => !neverPublishedProjects.contains(thisProject.value.id))
-    .map { version =>
-      ModuleID(organization.value, moduleName.value, version)
-        .cross(crossVersion.value)
-    }
+  mimaPreviousArtifacts ++= {
+    val wasPreviouslyPublished = neverPublishedProjects
+      .get(scalaBinaryVersion.value)
+      .exists(!_.contains(thisProject.value.id))
+    binCompatVersions
+      .filter(_ => wasPreviouslyPublished)
+      .map { version =>
+        ModuleID(organization.value, moduleName.value, version)
+          .cross(crossVersion.value)
+      }
+  }
 )
 
 // Common start but individual sub-projects may add or remove scalacOptions.
