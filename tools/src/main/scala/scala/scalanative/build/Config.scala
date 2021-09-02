@@ -74,6 +74,8 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
 
+  def nirWarnsAsErrors: Boolean = compilerConfig.nirWarnsAsErrors
+
   private[scalanative] def targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||

@@ -19,6 +19,7 @@ object MyScalaNativePlugin extends AutoPlugin {
     nativeConfig ~= {
       _.withCheck(true)
         .withDump(true)
+        .withNirWarnsAsErrors(true)
     }
   )
 }

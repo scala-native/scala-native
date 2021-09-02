@@ -104,7 +104,9 @@ private[scalanative] object ScalaNative {
   )(linked: scalanative.linker.Result): scalanative.linker.Result = {
     if (config.check) {
       config.logger.time("Checking intermediate code") {
-        def warn(s: String) = config.logger.warn(s)
+        def warn(s: String) =
+          if (config.nirWarnsAsErrors) config.logger.error(s)
+          else config.logger.warn(s)
         val errors = Check(linked)
         if (errors.nonEmpty) {
           val grouped =
