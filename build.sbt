@@ -73,13 +73,17 @@ lazy val docsSettings: Seq[Setting[_]] = {
 
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set("0.4.0")
+lazy val neverPublishedProjects = Set(windowslib).map(_.id)
 
 lazy val mimaSettings = Seq(
+  mimaFailOnNoPrevious := false,
   mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
-  mimaPreviousArtifacts ++= binCompatVersions.map { version =>
-    ModuleID(organization.value, moduleName.value, version)
-      .cross(crossVersion.value)
-  }
+  mimaPreviousArtifacts ++= binCompatVersions
+    .filter(_ => !neverPublishedProjects.contains(thisProject.value.id))
+    .map { version =>
+      ModuleID(organization.value, moduleName.value, version)
+        .cross(crossVersion.value)
+    }
 )
 
 // Common start but individual sub-projects may add or remove scalacOptions.
@@ -138,10 +142,11 @@ addCommandAlias(
 
 addCommandAlias(
   "test-mima", {
-    Seq("util", "nir", "tools", "nscplugin") ++
+    Seq("util", "nir", "tools") ++
       Seq("testRunner", "testInterface", "testInterfaceSbtDefs") ++
-      Seq("junitPlugin", "junitRuntime") ++
-      Seq("clib", "posixlib", "nativelib", "auxlib", "javalib")
+      Seq("junitRuntime") ++
+      Seq("nativelib", "clib", "posixlib", "windowslib") ++
+      Seq("auxlib", "javalib", "scalalib")
   }.map(_ + "/mimaReportBinaryIssues")
     .mkString(";")
 )
