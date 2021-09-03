@@ -37,7 +37,7 @@ sealed trait NativeConfig {
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
 
-  /** Shall linker throw NIR check treat warnings as errors? */
+  /** Shall linker NIR check treat warnings as errors? */
   def checkFatalWarnings: Boolean
 
   /** Shall linker dump intermediate NIR after every phase? */
