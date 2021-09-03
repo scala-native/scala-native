@@ -3,6 +3,7 @@ package javalib.lang
 import org.junit.Test
 import org.junit.Assert._
 import org.scalanative.testsuite.utils.Platform._
+import java.nio.file.Paths
 
 class SystemTest {
   @Test def systemNanoTimeIsMonotonicallyIncreasing(): Unit = {
@@ -62,7 +63,7 @@ class SystemTest {
   @Test def propertyUserDirShouldBeSet(): Unit = {
     val expected = {
       val base = System.getenv("SCALA_NATIVE_USER_DIR").toLowerCase()
-      if (executingInJVM) base + "/unit-tests/jvm"
+      if (executingInJVM) Paths.get(base, "unit-tests", "jvm").toString()
       else base
     }
     assertEquals(
