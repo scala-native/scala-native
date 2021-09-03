@@ -348,7 +348,12 @@ object zlibExt {
   import zlib._
 
   sealed trait z_stream
+
   object z_stream {
+    // Depending on the OS zlib can use different types inside z_stream
+    // We can distinguish to layouts using different size of integers:
+    // 64-bit: using uint32 and uint64, it can be found on Unix
+    // 32-bit  using uint15 and uint32, which is present on Windows
     def size: CSize =
       if (isWindows) sizeof[z_stream_32]
       else sizeof[z_stream_64]
@@ -379,6 +384,9 @@ object zlibExt {
 
   sealed trait gz_header
   object gz_header {
+    // Depending on the OS zlib can use different types inside gz_header
+    // For details see comment in z_stream
+
     def size: CSize =
       if (isWindows) sizeof[gz_header_32]
       else sizeof[gz_header_64]
@@ -409,7 +417,7 @@ object zlibExt {
 object zlibOps {
   import zlib._
   import zlibExt._
-  implicit class ZStreamOps(ref: z_streamp) {
+  implicit class ZStreamOps(val ref: z_streamp) extends AnyVal {
     import z_stream._
     @alwaysinline private def asZStream32 = ref.asInstanceOf[Ptr[z_stream_32]]
     @alwaysinline private def asZStream64 = ref.asInstanceOf[Ptr[z_stream_64]]
@@ -462,7 +470,7 @@ object zlibOps {
       if (isWindows) asZStream32._14 = v.toUInt else asZStream64._14 = v
   }
 
-  implicit class GZHeaderOps(ref: gz_headerp) {
+  implicit class GZHeaderOps(val ref: gz_headerp) extends AnyVal {
     import gz_header._
 
     @alwaysinline private def asZStream32 = ref.asInstanceOf[Ptr[gz_header_32]]
