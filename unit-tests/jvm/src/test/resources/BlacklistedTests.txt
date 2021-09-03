@@ -39,4 +39,3 @@ scala/scala/bugcompat/LongFloatPrimitiveTest.scala
 scala/javalib/nio/file/PathTest.scala
 scala/javalib/net/URLEncoderTest.scala
 scala/javalib/util/jar/JarFileTest.scala
-scala/javalib/util/zip/ZipFileTest.scala

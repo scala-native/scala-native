@@ -67,11 +67,12 @@ class InflaterInputStream private (
       // It may also be true if the next read() should return -1.
       try {
         val result = inf.inflate(buffer, off, nbytes)
+        eof = inf.finished()
         if (result > 0) {
           return result
         } else if (eof) {
           return -1
-        } else if (inf.needsDictionary() || inf.finished) {
+        } else if (inf.needsDictionary()) {
           eof = true
           return -1
         } else if (len == -1) {
