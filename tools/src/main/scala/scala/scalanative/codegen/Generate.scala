@@ -35,6 +35,7 @@ object Generate {
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
+      genWeakRefId()
       genArrayIds()
       genStackBottom()
 
@@ -321,6 +322,28 @@ object Generate {
       )
     }
 
+    def genWeakRefId(): Unit = {
+      val key = Global.Top(s"java.lang.ref.WeakReference")
+      val value =
+        if (linked.infos.contains(key)) {
+          val clazz =
+            linked
+              .infos(key)
+              .asInstanceOf[Class]
+
+          meta.ids(clazz)
+        } else {
+          0
+        }
+      buf +=
+        Defn.Var(
+          Attrs.None,
+          weakRefIdName,
+          Type.Int,
+          Val.Int(value)
+        )
+    }
+
     def genArrayIds(): Unit = {
       val tpes = Seq(
         "Boolean",
@@ -409,6 +432,7 @@ object Generate {
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
+    val weakRefIdName = extern("__weak_ref_id")
     val arrayIdsMinName = extern("__array_ids_min")
     val arrayIdsMaxName = extern("__array_ids_max")
 

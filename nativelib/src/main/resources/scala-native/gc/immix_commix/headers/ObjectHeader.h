@@ -11,6 +11,7 @@
 #include "GCTypes.h"
 
 extern int __object_array_id;
+extern int __weak_ref_id;
 extern int __array_ids_min;
 extern int __array_ids_max;
 

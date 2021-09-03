@@ -7,6 +7,7 @@
 #include "datastructures/Stack.h"
 #include "headers/ObjectHeader.h"
 #include "Block.h"
+#include "WeakRefStack.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -18,9 +19,18 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta));
 
-    assert(Object_Size(object) != 0);
-    Object_Mark(heap, object, objectMeta);
-    Stack_Push(stack, object);
+    if (object->rtti->rt.id == __weak_ref_id){
+        assert(Object_Size(object) != 0);
+        Object_Mark(heap, object, objectMeta);
+        // Added to weakreference stack for later visit
+        WeakRefStack_Push(object);
+        // Not added to dfs stack, as we don't
+        // want to mark the held object
+    } else {
+        assert(Object_Size(object) != 0);
+        Object_Mark(heap, object, objectMeta);
+        Stack_Push(stack, object);
+    }
 }
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
@@ -118,4 +128,6 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     Marker_markModules(heap, stack);
 
     Marker_Mark(heap, stack);
+
+    WeakRefStack_Visit(heap);
 }
