@@ -88,7 +88,7 @@ object FileHelpers {
     }
 
     def listWindows() = Zone { implicit z =>
-      val searchPath = path + raw"\*"
+      val searchPath = raw"$path\*"
       if (searchPath.length.toUInt > FileApiExt.MAX_PATH)
         throw new IOException("File name to long")
 
