@@ -120,9 +120,8 @@ object Sub {
       // If bound is not a type of linfo or rinfo
       // it should be ignored. Otherwise java.lang.Object
       // would be returned, which may not be correct
-      val correctedBoundInfo = boundInfo.flatMap { bound =>
-        if (linfo.is(bound) && rinfo.is(bound)) Some(bound)
-        else None
+      val correctedBoundInfo = boundInfo.filterNot { bound =>
+        (!linfo.is(bound) || !rinfo.is(bound))
       }
 
       val candidates =

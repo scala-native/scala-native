@@ -37,11 +37,11 @@ sealed trait NativeConfig {
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
 
+  /** Shall linker throw NIR check treat warnings as errors? */
+  def checkFatalWarnings: Boolean
+
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
-
-  /** Shall linker throw Nir warnings as errors? */
-  def nirWarnsAsErrors: Boolean
 
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
@@ -82,11 +82,11 @@ sealed trait NativeConfig {
   /** Create a new config with given check value. */
   def withCheck(value: Boolean): NativeConfig
 
+  /** Create a new config with given checkFatalWarnings value. */
+  def withCheckFatalWarnings(value: Boolean): NativeConfig
+
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
-
-  /** Create a new config with given errorNirWarns value. */
-  def withNirWarnsAsErrors(value: Boolean): NativeConfig
 
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
@@ -109,8 +109,8 @@ object NativeConfig {
       lto = LTO.default,
       mode = Mode.default,
       check = false,
+      checkFatalWarnings = false,
       dump = false,
-      nirWarnsAsErrors = false,
       linkStubs = false,
       optimize = false,
       linktimeProperties = Map.empty
@@ -127,8 +127,8 @@ object NativeConfig {
       lto: LTO,
       linkStubs: Boolean,
       check: Boolean,
+      checkFatalWarnings: Boolean,
       dump: Boolean,
-      nirWarnsAsErrors: Boolean,
       optimize: Boolean,
       linktimeProperties: Map[String, Any]
   ) extends NativeConfig {
@@ -167,11 +167,11 @@ object NativeConfig {
     def withCheck(value: Boolean): NativeConfig =
       copy(check = value)
 
+    def withCheckFatalWarnings(value: Boolean): NativeConfig =
+      copy(checkFatalWarnings = value)
+
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
-
-    def withNirWarnsAsErrors(value: Boolean): NativeConfig =
-      copy(nirWarnsAsErrors = value)
 
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
@@ -219,19 +219,19 @@ object NativeConfig {
         }
       }
       s"""NativeConfig(
-        | - clang:            $clang
-        | - clangPP:          $clangPP
-        | - linkingOptions:   $linkingOptions
-        | - compileOptions:   $compileOptions
-        | - targetTriple:     $targetTriple
-        | - GC:               $gc
-        | - mode:             $mode
-        | - LTO:              $lto
-        | - linkStubs:        $linkStubs
-        | - check:            $check
-        | - dump:             $dump
-        | - nirWarnsAsErrors: $nirWarnsAsErrors
-        | - optimize          $optimize
+        | - clang:              $clang
+        | - clangPP:            $clangPP
+        | - linkingOptions:     $linkingOptions
+        | - compileOptions:     $compileOptions
+        | - targetTriple:       $targetTriple
+        | - GC:                 $gc
+        | - mode:               $mode
+        | - LTO:                $lto
+        | - linkStubs:          $linkStubs
+        | - check:              $check
+        | - checkFatalWarnings: $checkFatalWarnings
+        | - dump:               $dump
+        | - optimize            $optimize
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
     }

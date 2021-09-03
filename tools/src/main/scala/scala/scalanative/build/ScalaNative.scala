@@ -105,7 +105,7 @@ private[scalanative] object ScalaNative {
     if (config.check) {
       config.logger.time("Checking intermediate code") {
         def warn(s: String) =
-          if (config.nirWarnsAsErrors) config.logger.error(s)
+          if (config.compilerConfig.checkFatalWarnings) config.logger.error(s)
           else config.logger.warn(s)
         val errors = Check(linked)
         if (errors.nonEmpty) {
