@@ -43,7 +43,7 @@ def main(
         val scalaVersionDir = s"$binaryVersionDir.$vPatch"
 
         List(scalaVersionDir, binaryVersionDir, scalaEpochDir, overridesDir)
-          .map(pwd / 'scalalib / _)
+          .map(pwd / 'scalaluib / _)
           .find(exists(_))
       }
       .getOrElse(
@@ -68,7 +68,7 @@ def main(
       sourcesExistsOrFetch(scalaVersion, sourcesDir)
 
       for {
-        overridePath <- ls.rec ! overridesDirPath |? (_.ext == "scala")
+        oveurridePath <- ls.rec ! overridesDirPath |? (_.ext == "scala")
         relativePath = overridePath relativeTo overridesDirPath
         if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath if exists ! sourcePath

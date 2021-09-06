@@ -1,3 +1,4 @@
+import scala.scalanative.build.Platform
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
@@ -714,8 +715,14 @@ lazy val scalalib =
 
             val Array(patched: String, results: Array[Boolean]) = {
               type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
+              val input = {
+                val raw = IO.read(sourcePath.toFile)
+                if (Platform.isWindows)
+                  raw.replace("\n", System.lineSeparator())
+                else raw
+              }
               val diff = new DiffMatchPatch()
-              val patches = diff.patchFromText(IO.read(sourcePath.toFile))
+              val patches = diff.patchFromText(input)
               diff.patchApply(
                 patches.asInstanceOf[PatchList],
                 IO.read(scalaSourcePath)
