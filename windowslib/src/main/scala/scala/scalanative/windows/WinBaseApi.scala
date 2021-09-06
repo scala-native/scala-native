@@ -49,7 +49,74 @@ object WinBaseApi {
   def GetCurrentDirectoryA(bufferLength: DWord, buffer: CString): DWord = extern
   def GetCurrentDirectoryW(bufferLength: DWord, buffer: CWString): DWord =
     extern
+  def GetFileSecurityW(
+      filename: CWString,
+      requestedInformation: SecurityInformation,
+      securityDescriptor: Ptr[SecurityDescriptor],
+      length: DWord,
+      lengthNeeded: Ptr[DWord]
+  ): Boolean =
+    extern
+
   def LocalFree(ref: LocalHandle): LocalHandle = extern
+  def LookupAccountNameA(
+      systemName: CString,
+      accountName: CString,
+      sid: SIDPtr,
+      cbSid: Ptr[DWord],
+      referencedDomainName: CString,
+      referencedDomainNameSize: Ptr[DWord],
+      use: Ptr[SidNameUse]
+  ): Boolean = extern
+  def LookupAccountNameW(
+      systemName: CWString,
+      accountName: CWString,
+      sid: SIDPtr,
+      cbSid: Ptr[DWord],
+      referencedDomainName: CWString,
+      referencedDomainNameSize: Ptr[DWord],
+      use: Ptr[SidNameUse]
+  ): Boolean = extern
+  def LookupAccountSidA(
+      systemName: Ptr[CString],
+      sid: SIDPtr,
+      name: CString,
+      nameSize: Ptr[DWord],
+      referencedDomainName: CString,
+      referencedDomainNameSize: Ptr[DWord],
+      use: Ptr[SidNameUse]
+  ): Boolean = extern
+  def LookupAccountSidW(
+      systemName: CWString,
+      sid: SIDPtr,
+      name: CWString,
+      nameSize: Ptr[DWord],
+      referencedDomainName: CWString,
+      referencedDomainNameSize: Ptr[DWord],
+      use: Ptr[SidNameUse]
+  ): Boolean = extern
+  def MoveFileExA(
+      existingFileName: CString,
+      newFileName: CString,
+      flags: DWord
+  ): Boolean = extern
+
+  def MoveFileExW(
+      existingFileName: CWString,
+      newFileName: CWString,
+      flags: DWord
+  ): Boolean = extern
+
+  def RegisterWaitForSingleObject(
+      retHandle: Ptr[Handle],
+      ref: Handle,
+      callbackFn: WaitOrTimerCallback,
+      context: Ptr[Byte],
+      miliseconds: DWord,
+      flags: DWord
+  ): Boolean = extern
+
+  def UnregisterWait(handle: Handle): Boolean = extern
 
   @name("scalanative_win32_default_language")
   final def DefaultLanguageId: DWord = extern
