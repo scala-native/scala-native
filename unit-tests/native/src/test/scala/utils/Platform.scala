@@ -20,5 +20,7 @@ object Platform {
 
   final val hasCompliantAsInstanceOfs = true
 
-  final val isFreeBSD = System.getProperty("os.name").equals("FreeBSD")
+  private val osNameProp = System.getProperty("os.name")
+  final val isFreeBSD = osNameProp.equals("FreeBSD")
+  final val isWindows = osNameProp.toLowerCase.startsWith("windows")
 }

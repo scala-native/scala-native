@@ -35,7 +35,7 @@ object ScalaNativeCrossVersion {
   }
 
   def scalaNativeMapped(cross: CrossVersion): CrossVersion =
-    crossVersionAddPlatformPart(cross, "native" + currentBinaryVersion)
+    crossVersionAddPlatformPart(cross, "native" + Versions.currentBinaryVersion)
 
   val binary: CrossVersion = scalaNativeMapped(CrossVersion.binary)
 

@@ -1,8 +1,9 @@
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
-
 import build.ScalaVersions._
+import build.BinaryIncompatibilities
+import com.typesafe.tools.mima.core.ProblemFilter
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -71,11 +72,26 @@ lazy val docsSettings: Seq[Setting[_]] = {
 }
 
 // The previous releases of Scala Native with which this version is binary compatible.
-val binCompatVersions = Set()
+val binCompatVersions = Set("0.4.0")
+lazy val neverPublishedProjects = Map(
+  "2.11" -> Set(util, tools, nir, windowslib, testRunner),
+  "2.12" -> Set(windowslib),
+  "2.13" -> Set(util, tools, nir, windowslib, testRunner)
+).mapValues(_.map(_.id))
 
-lazy val mimaSettings: Seq[Setting[_]] = Seq(
-  mimaPreviousArtifacts := binCompatVersions.map { version =>
-    organization.value %% moduleName.value % version
+lazy val mimaSettings = Seq(
+  mimaFailOnNoPrevious := false,
+  mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
+  mimaPreviousArtifacts ++= {
+    val wasPreviouslyPublished = neverPublishedProjects
+      .get(scalaBinaryVersion.value)
+      .exists(!_.contains(thisProject.value.id))
+    binCompatVersions
+      .filter(_ => wasPreviouslyPublished)
+      .map { version =>
+        ModuleID(organization.value, moduleName.value, version)
+          .cross(crossVersion.value)
+      }
   }
 )
 
@@ -104,7 +120,8 @@ addCommandAlias(
   Seq(
     "test-tools",
     "test-runtime",
-    "test-scripted"
+    "test-scripted",
+    "test-mima"
   ).mkString(";")
 )
 
@@ -114,7 +131,7 @@ addCommandAlias(
     "testRunner/test",
     "testInterface/test",
     "tools/test",
-    "tools/mimaReportBinaryIssues"
+    "test-mima"
   ).mkString(";")
 )
 
@@ -130,6 +147,17 @@ addCommandAlias(
     "junitTestOutputsNative/test",
     "scalaPartestJunitTests/test"
   ).mkString(";")
+)
+
+addCommandAlias(
+  "test-mima", {
+    Seq("util", "nir", "tools") ++
+      Seq("testRunner", "testInterface", "testInterfaceSbtDefs") ++
+      Seq("junitRuntime") ++
+      Seq("nativelib", "clib", "posixlib", "windowslib") ++
+      Seq("auxlib", "javalib", "scalalib")
+  }.map(_ + "/mimaReportBinaryIssues")
+    .mkString(";")
 )
 
 addCommandAlias(
@@ -226,7 +254,7 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-) ++ nameSettings
+) ++ nameSettings ++ mimaSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
@@ -355,8 +383,7 @@ lazy val tools =
         }
       },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
-      Test / parallelExecution := false,
-      mimaSettings
+      Test / parallelExecution := false
     )
     .dependsOn(nir, util, testingCompilerInterface % Test)
 

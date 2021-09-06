@@ -9,7 +9,7 @@ package javalib.io
 import java.io._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import scala.scalanative.junit.utils.AssumesHelper._
 
 import org.junit._
 import org.junit.Assert._
@@ -301,7 +301,7 @@ trait DataInputStreamTest {
   }
 
   @Test def markReadLinePushBack(): Unit = {
-    assumeFalse("Not supported on JDK", executingInJVM)
+    assumeNotJVMCompliant()
 
     val stream = newStream(
       "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*

@@ -4,8 +4,10 @@ import java.io._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import scalanative.junit.utils.AssumesHelper._
 
 class FileDescriptorTest {
   val in = FileDescriptor.in
@@ -24,14 +26,17 @@ class FileDescriptorTest {
   }
 
   @Test def syncShouldThrowSyncFailedExceptionForStdin(): Unit = {
+    assumeNotJVMCompliant()
     assertThrows(classOf[SyncFailedException], in.sync())
   }
 
   @Test def syncShouldThrowSyncFailedExceptionForStdout(): Unit = {
+    assumeNotJVMCompliant()
     assertThrows(classOf[SyncFailedException], out.sync())
   }
 
   @Test def syncShouldThrowSyncFailedExceptionForStderr(): Unit = {
+    assumeNotJVMCompliant()
     assertThrows(classOf[SyncFailedException], err.sync())
   }
 
