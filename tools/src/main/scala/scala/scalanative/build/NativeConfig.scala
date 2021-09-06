@@ -37,6 +37,9 @@ sealed trait NativeConfig {
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
 
+  /** Shall linker NIR check treat warnings as errors? */
+  def checkFatalWarnings: Boolean
+
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
@@ -79,6 +82,9 @@ sealed trait NativeConfig {
   /** Create a new config with given check value. */
   def withCheck(value: Boolean): NativeConfig
 
+  /** Create a new config with given checkFatalWarnings value. */
+  def withCheckFatalWarnings(value: Boolean): NativeConfig
+
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
 
@@ -103,6 +109,7 @@ object NativeConfig {
       lto = LTO.default,
       mode = Mode.default,
       check = false,
+      checkFatalWarnings = false,
       dump = false,
       linkStubs = false,
       optimize = false,
@@ -120,6 +127,7 @@ object NativeConfig {
       lto: LTO,
       linkStubs: Boolean,
       check: Boolean,
+      checkFatalWarnings: Boolean,
       dump: Boolean,
       optimize: Boolean,
       linktimeProperties: Map[String, Any]
@@ -158,6 +166,9 @@ object NativeConfig {
 
     def withCheck(value: Boolean): NativeConfig =
       copy(check = value)
+
+    def withCheckFatalWarnings(value: Boolean): NativeConfig =
+      copy(checkFatalWarnings = value)
 
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
@@ -208,18 +219,19 @@ object NativeConfig {
         }
       }
       s"""NativeConfig(
-        | - clang:           $clang
-        | - clangPP:         $clangPP
-        | - linkingOptions:  $linkingOptions
-        | - compileOptions:  $compileOptions
-        | - targetTriple:    $targetTriple
-        | - GC:              $gc
-        | - mode:            $mode
-        | - LTO:             $lto
-        | - linkStubs:       $linkStubs
-        | - check:           $check
-        | - dump:            $dump
-        | - optimize         $optimize
+        | - clang:              $clang
+        | - clangPP:            $clangPP
+        | - linkingOptions:     $linkingOptions
+        | - compileOptions:     $compileOptions
+        | - targetTriple:       $targetTriple
+        | - GC:                 $gc
+        | - mode:               $mode
+        | - LTO:                $lto
+        | - linkStubs:          $linkStubs
+        | - check:              $check
+        | - checkFatalWarnings: $checkFatalWarnings
+        | - dump:               $dump
+        | - optimize            $optimize
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
     }

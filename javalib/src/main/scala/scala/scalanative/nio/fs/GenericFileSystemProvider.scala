@@ -4,6 +4,7 @@ import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
 import scala.scalanative.unsigned._
 import scala.scalanative.posix.unistd
 import scala.collection.immutable.{Map => SMap}
+import scala.scalanative.nio.fs.unix._
 
 import java.nio.channels.{
   AsynchronousFileChannel,
@@ -18,12 +19,15 @@ import java.util.concurrent.ExecutorService
 import java.util.{Map, Set}
 import scala.scalanative.libc.errno
 
-class UnixFileSystemProvider extends FileSystemProvider {
+abstract class GenericFileSystemProvider extends FileSystemProvider {
+  type AttributeViewClass = Class[_ <: FileAttributeView]
+  type GenericViewCtor = (Path, Array[LinkOption]) => FileAttributeView
+  type AttributeViewMapping = SMap[AttributeViewClass, GenericViewCtor]
 
-  private lazy val fs = new UnixFileSystem(this, "/", getUserDir())
+  protected def fs: FileSystem
+  protected def knownFileAttributeViews: AttributeViewMapping
 
-  override def getScheme(): String =
-    "file"
+  override def getScheme(): String = "file"
 
   override def newFileSystem(uri: URI, env: Map[String, _]): FileSystem =
     if (uri.getPath() != "/") {
@@ -88,7 +92,7 @@ class UnixFileSystemProvider extends FileSystemProvider {
     Files.delete(path)
 
   override def readSymbolicLink(link: Path): Path =
-    readSymbolicLink(link)
+    Files.readSymbolicLink(link)
 
   override def copy(
       source: Path,
@@ -154,30 +158,4 @@ class UnixFileSystemProvider extends FileSystemProvider {
   ): Unit =
     Files.setAttribute(path, attribute, value, options)
 
-  private def getUserDir(): String = {
-    val buff = stackalloc[CChar](4096.toUInt)
-    val res = unistd.getcwd(buff, 4095.toUInt)
-    if (res == null)
-      throw UnixException(
-        "Could not determine current working directory",
-        errno.errno
-      )
-    fromCString(res)
-  }
-
-  private val knownFileAttributeViews: SMap[
-    Class[_ <: FileAttributeView],
-    (Path, Array[LinkOption]) => FileAttributeView
-  ] =
-    SMap(
-      classOf[BasicFileAttributeView] -> ((p, l) =>
-        new PosixFileAttributeViewImpl(p, l)
-      ),
-      classOf[PosixFileAttributeView] -> ((p, l) =>
-        new PosixFileAttributeViewImpl(p, l)
-      ),
-      classOf[FileOwnerAttributeView] -> ((p, l) =>
-        new PosixFileAttributeViewImpl(p, l)
-      )
-    )
 }
