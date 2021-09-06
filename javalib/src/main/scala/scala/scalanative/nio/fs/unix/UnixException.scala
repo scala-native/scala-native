@@ -1,9 +1,9 @@
-package scala.scalanative.nio.fs
+package scala.scalanative.nio.fs.unix
 
 import java.io.IOException
 import java.nio.file.PosixException
 
-import scala.scalanative.unsafe.CInt
+import scala.scalanative.unsafe._
 
 object UnixException {
   def apply(file: String, errno: CInt): IOException =
