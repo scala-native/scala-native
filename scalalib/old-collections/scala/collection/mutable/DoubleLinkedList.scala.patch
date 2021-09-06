@@ -1,8 +1,6 @@
-@@ -2981,16 +2981,24 @@
- fo */%0A  
+@@ -2909,287 +2909,303 @@
+ List extends SeqFactory%5BDoubleLinkedList%5D %7B%0A  /** $genericCanBuildFromInfo */%0A  
 +@inline 
- implicit
-@@ -3116,16 +3116,24 @@
- %5BA%5D%5D%0A%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, DoubleLinkedList%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, DoubleLinkedList%5BA%5D%5D =%0A    new Builder%5BA, DoubleLi

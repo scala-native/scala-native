@@ -1,8 +1,6 @@
-@@ -631,16 +631,247 @@
- or%5D %7B%0A  
+@@ -559,226 +559,465 @@
+ ect to the Vector class%0A */%0Aobject Vector extends IndexedSeqFactory%5BVector%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- def newB
-@@ -928,16 +928,24 @@
- er%5BA%5D%0A  
+ def newBuilder%5BA%5D: Builder%5BA, Vector%5BA%5D%5D = new VectorBuilder%5BA%5D%0A  
 +@inline 
- implicit
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Vector%5BA%5D%5D =%0A    ReusableCBF

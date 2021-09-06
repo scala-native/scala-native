@@ -1,18 +1,12 @@
-@@ -1401,16 +1401,247 @@
- le%5D %7B%0A  
+@@ -1329,268 +1329,516 @@
+ terable collection%0A */%0Aobject Iterable extends TraversableFactory%5BIterable%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -1698,16 +1698,20 @@
- le%5BA%5D%5D =
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Iterable%5BA%5D%5D =
 +%0A   
-  Reusabl
-@@ -1752,18 +1752,27 @@
- rom%5BA%5D%5D%0A
+  ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A
 +%0A
    
 +@inline 
- def newB
-@@ -1807,16 +1807,20 @@
- le%5BA%5D%5D =
+ def newBuilder%5BA%5D: Builder%5BA, Iterable%5BA%5D%5D =
 +%0A   
-  new mut
+  new mutable.ListBuffer%0A%7D%0A

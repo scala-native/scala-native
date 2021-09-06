@@ -1,12 +1,8 @@
-@@ -3449,16 +3449,239 @@
- ySeq%5D %7B%0A
+@@ -3377,314 +3377,553 @@
+ %0A *  @define Coll %60ArraySeq%60%0A */%0Aobject ArraySeq extends SeqFactory%5BArraySeq%5D %7B%0A
 +  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $g
-@@ -3708,16 +3708,24 @@
- fo */%0A  
+   /** $genericCanBuildFromInfo */%0A  
 +@inline 
- implicit
-@@ -3834,16 +3834,24 @@
- m%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, ArraySeq%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, ArraySeq%5BA%5D%5D =%0A    new ArrayBuffer%5BA%5D mapResult %7B 

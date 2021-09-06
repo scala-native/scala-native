@@ -1,93 +1,87 @@
-@@ -3389,16 +3389,24 @@
- ransient
+@@ -3317,175 +3317,183 @@
+  def equals(that: Any): Boolean = this eq that.asInstanceOf%5BAnyRef%5D%0A  @transient
 + @inline
- %0A  overr
-@@ -3401,35 +3401,35 @@
- line%0A  override 
+ %0A  override 
 -val
 +def
-  hashCode = Syst
-@@ -4613,19 +4613,27 @@
- e%0A  %7D%0A  
+  hashCode = System.identityHashCode(this)%0A%7D%0A%0A/** %60ManifestFactory%60 defines facto
+@@ -4541,163 +4541,171 @@
+  =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Byte%0A  %7D%0A  
 -val
 +@inline def
-  Byte: A
-@@ -5286,19 +5286,27 @@
- t%0A  %7D%0A  
+  Byte: AnyValManifest%5BByte%5D = new ByteManifest%0A%0A  @SerialVersionUID(1L)%0A  privat
+@@ -5214,163 +5214,171 @@
+ =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Short%0A  %7D%0A  
 -val
 +@inline def
-  Short: 
-@@ -5953,19 +5953,27 @@
- r%0A  %7D%0A  
+  Short: AnyValManifest%5BShort%5D = new ShortManifest%0A%0A  @SerialVersionUID(1L)%0A  pri
+@@ -5881,163 +5881,171 @@
+  =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Char%0A  %7D%0A  
 -val
 +@inline def
-  Char: A
-@@ -6602,19 +6602,27 @@
- t%0A  %7D%0A  
+  Char: AnyValManifest%5BChar%5D = new CharManifest%0A%0A  @SerialVersionUID(1L)%0A  privat
+@@ -6530,163 +6530,171 @@
+ _ =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Int%0A  %7D%0A  
 -val
 +@inline def
-  Int: An
-@@ -7258,19 +7258,27 @@
- g%0A  %7D%0A  
+  Int: AnyValManifest%5BInt%5D = new IntManifest%0A%0A  @SerialVersionUID(1L)%0A  private c
+@@ -7186,163 +7186,171 @@
+  =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Long%0A  %7D%0A  
 -val
 +@inline def
-  Long: A
-@@ -7931,19 +7931,27 @@
- t%0A  %7D%0A  
+  Long: AnyValManifest%5BLong%5D = new LongManifest%0A%0A  @SerialVersionUID(1L)%0A  privat
+@@ -7859,163 +7859,171 @@
+ =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Float%0A  %7D%0A  
 -val
 +@inline def
-  Float: 
-@@ -8636,19 +8636,27 @@
- e%0A  %7D%0A  
+  Float: AnyValManifest%5BFloat%5D = new FloatManifest%0A%0A  @SerialVersionUID(1L)%0A  pri
+@@ -8564,163 +8564,171 @@
+ %3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Double%0A  %7D%0A  
 -val
 +@inline def
-  Double:
-@@ -9343,19 +9343,27 @@
- n%0A  %7D%0A  
+  Double: AnyValManifest%5BDouble%5D = new DoubleManifest%0A%0A  @SerialVersionUID(1L)%0A  
+@@ -9271,163 +9271,171 @@
+  None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Boolean%0A  %7D%0A  
 -val
 +@inline def
-  Boolean
-@@ -10217,19 +10217,27 @@
- t%0A  %7D%0A  
+  Boolean: AnyValManifest%5BBoolean%5D = new BooleanManifest%0A%0A  @SerialVersionUID(1L)
+@@ -10145,163 +10145,171 @@
+  =%3E None%0A      %7D%0A    %7D%0A    private def readResolve(): Any = Manifest.Unit%0A  %7D%0A  
 -val
 +@inline def
-  Unit: A
-@@ -10739,27 +10739,35 @@
- t.Any%0A  %7D%0A  
+  Unit: AnyValManifest%5BUnit%5D = new UnitManifest%0A%0A  private val ObjectTYPE = class
+@@ -10671,163 +10671,171 @@
+ oolean = (that eq this)%0A    private def readResolve(): Any = Manifest.Any%0A  %7D%0A  
 -val
 +@inline def
-  Any: Manife
-@@ -11138,19 +11138,27 @@
- t%0A  %7D%0A  
+  Any: Manifest%5Bscala.Any%5D = new AnyManifest%0A%0A  @SerialVersionUID(1L)%0A  private c
+@@ -11066,226 +11066,242 @@
+ is) %7C%7C (that eq Any)%0A    private def readResolve(): Any = Manifest.Object%0A  %7D%0A  
 -val
 +@inline def
-  Object:
-@@ -11209,19 +11209,27 @@
- fest%0A%0A  
+  Object: Manifest%5Bjava.lang.Object%5D = new ObjectManifest%0A%0A  
 -val
 +@inline def
-  AnyRef:
-@@ -11637,19 +11637,27 @@
- l%0A  %7D%0A  
+  AnyRef: Manifest%5Bscala.AnyRef%5D = Object.asInstanceOf%5BManifest%5Bscala.AnyRef%5D%5D%0A%0A 
+@@ -11565,163 +11565,171 @@
+ is) %7C%7C (that eq Any)%0A    private def readResolve(): Any = Manifest.AnyVal%0A  %7D%0A  
 -val
 +@inline def
-  AnyVal:
-@@ -12060,19 +12060,27 @@
- l%0A  %7D%0A  
+  AnyVal: Manifest%5Bscala.AnyVal%5D = new AnyValPhantomManifest%0A%0A  @SerialVersionUID
+@@ -11988,163 +11988,171 @@
+  && !(that %3C:%3C AnyVal)%0A    private def readResolve(): Any = Manifest.Null%0A  %7D%0A  
 -val
 +@inline def
-  Null: M
-@@ -12439,19 +12439,27 @@
- g%0A  %7D%0A  
+  Null: Manifest%5Bscala.Null%5D = new NullManifest%0A%0A  @SerialVersionUID(1L)%0A  privat
+@@ -12367,163 +12367,171 @@
+ an = (that ne null)%0A    private def readResolve(): Any = Manifest.Nothing%0A  %7D%0A  
 -val
 +@inline def
-  Nothing
-@@ -14320,16 +14320,24 @@
- ransient
+  Nothing: Manifest%5Bscala.Nothing%5D = new NothingManifest%0A%0A  @SerialVersionUID(1L)
+@@ -14248,177 +14248,185 @@
+ ef equals(that: Any): Boolean = this eq that.asInstanceOf%5BAnyRef%5D%0A    @transient
 + @inline
- %0A    ove
-@@ -14342,19 +14342,19 @@
- verride 
+ %0A    override 
 -val
 +def
-  hashCod
+  hashCode = System.identityHashCode(this)%0A  %7D%0A%0A  /** Manifest for the class type

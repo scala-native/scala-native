@@ -1,8 +1,6 @@
-@@ -1303,16 +1303,247 @@
- eq%5D %7B%0A  
+@@ -1231,266 +1231,505 @@
+ Coll %60mutable.LinearSeq%60%0A */%0Aobject LinearSeq extends SeqFactory%5BLinearSeq%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -1653,16 +1653,24 @@
- m%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, LinearSeq%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, LinearSeq%5BA%5D%5D = new MutableList%5BA%5D%0A%7D%0A

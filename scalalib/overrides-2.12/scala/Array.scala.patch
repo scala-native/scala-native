@@ -1,0 +1,233 @@
+@@ -285,357 +285,362 @@
+ %0A */%0A%0Apackage scala%0A%0Aimport scala.collection.generic._%0Aimport scala.collection.%7B
+-im
++ 
+ mutable, 
++im
+ mutable
++ 
+ %7D%0Aimport mutable.%7B
++ 
+ ArrayBuilder, ArraySeq
++ 
+ %7D%0Aimport scala.reflect.
+-%7B
+ ClassTag
+-, classTag%7D
+ %0Aimport scala.runtime.ScalaRunTime
+-%0Aimport scala.runtime.ScalaRunTime.%7Barray_apply, array_update%7D
++.%7B array_apply, array_update %7D%0Aimport scala.collection.mutable.WrappedArray
+ %0A%0A/** Contains a fallback builder for arrays when the element type%0A *  does not 
+@@ -1705,666 +1705,815 @@
+ Martin Odersky%0A *  @since  1.0%0A */%0Aobject Array extends FallbackArrayBuilding %7B%0A
+-%0A
+   
+-val
++@inline def
+  emptyBooleanArray = 
+-empt
++new Arra
+ y%5BBoolean%5D
+-%0A  val
++(0)%0A  @inline def
+  emptyByteArray    = 
+-empty%5BByte%5D%0A  val
++new Array%5BByte%5D(0)%0A  @inline def
+  emptyCharArray    = 
+-empty%5BChar%5D%0A  val
++new Array%5BChar%5D(0)%0A  @inline def
+  emptyDoubleArray  = 
+-empt
++new Arra
+ y%5BDouble%5D
+-%0A  val
++(0)%0A  @inline def
+  emptyFloatArray   = 
+-empty%5BFloat%5D%0A  val
++new Array%5BFloat%5D(0)%0A  @inline def
+  emptyIntArray     = 
+-empty%5BInt%5D%0A  val
++new Array%5BInt%5D(0)%0A  @inline def
+  emptyLongArray    = 
+-empty%5BLong%5D%0A  val
++new Array%5BLong%5D(0)%0A  @inline def
+  emptyShortArray   = 
+-empty%5BShort%5D%0A%0A 
++new Array%5BShort%5D(0)%0A%0A  @inline
+  private%5Bscala%5D //this is only private because of binary compatability%0A  
+-val
++def
+  emptyUnitArray    = 
+-empt
++new Arra
+ y%5Bscala.runtime.BoxedUnit%5D
++(0)
+ .asInstanceOf%5BArray%5BUnit%5D%5D%0A  
+-val
++@inline def
+  emptyObjectArray  = 
+-empt
++new Arra
+ y%5BObject%5D
++(0)
+ %0A%0A  implicit def canBuildFrom%5BT%5D(implicit tag: ClassTag%5BT%5D): CanBuildFrom%5BArray%5B
+@@ -3388,1780 +3388,1924 @@
+ val cbfBooleanArray = new CanBuildFrom%5BArray%5B_%5D, Boolean, Array%5BBoolean%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofBoolean()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofBoolean()%0A  %7D%0A%0A  private%5Bthis%5D val cbfByteArray    = new CanBuildFrom%5BArray%5B_%5D, Byte, Array%5BByte%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofByte()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofByte()%0A  %7D%0A%0A  private%5Bthis%5D val cbfCharArray    = new CanBuildFrom%5BArray%5B_%5D, Char, Array%5BChar%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofChar()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofChar()%0A  %7D%0A%0A  private%5Bthis%5D val cbfDoubleArray  = new CanBuildFrom%5BArray%5B_%5D, Double, Array%5BDouble%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofDouble()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofDouble()%0A  %7D%0A%0A  private%5Bthis%5D val cbfFloatArray   = new CanBuildFrom%5BArray%5B_%5D, Float, Array%5BFloat%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofFloat()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofFloat()%0A  %7D%0A%0A  private%5Bthis%5D val cbfIntArray     = new CanBuildFrom%5BArray%5B_%5D, Int, Array%5BInt%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofInt()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofInt()%0A  %7D%0A%0A  private%5Bthis%5D val cbfLongArray    = new CanBuildFrom%5BArray%5B_%5D, Long, Array%5BLong%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofLong()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofLong()%0A  %7D%0A%0A  private%5Bthis%5D val cbfShortArray   = new CanBuildFrom%5BArray%5B_%5D, Short, Array%5BShort%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofShort()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofShort()%0A  %7D%0A%0A  private%5Bthis%5D val cbfUnitArray    = new CanBuildFrom%5BArray%5B_%5D, Unit, Array%5BUnit%5D%5D %7B%0A    
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofUnit()%0A    
++@inline 
+ def apply() = new ArrayBuilder.ofUnit()%0A  %7D%0A%0A  private%5Bthis%5D val cbfObjectArray 
+@@ -5406,225 +5406,241 @@
+ om%5BArray%5B_%5D, T, Array%5BT%5D%5D =%0A    new CanBuildFrom%5BArray%5B_%5D, T, Array%5BT%5D%5D %7B%0A      
++@inline 
+ def apply(from: Array%5B_%5D) = new ArrayBuilder.ofRef%5BT%5D()(t)%0A      
++@inline 
+ def apply() = new ArrayBuilder.ofRef%5BT%5D()(t)%0A    %7D%0A%0A  /**%0A   * Returns a new %5B%5Bs
+@@ -7023,240 +7023,219 @@
+ rc, srcPos, dest, destPos, length)%0A  %7D%0A%0A  /** Returns an array of length 0 */%0A  
++@inline 
+ def empty%5BT: ClassTag%5D: Array%5BT%5D = 
+- %7B%0A    implicitly%5BClassTag%5BT%5D%5D.emptyArray%0A  %7D
++new Array%5BT%5D(0)%0A
+ %0A  /** Creates an array with given elements.%0A   *%0A   *  @param xs the elements t
+@@ -7420,758 +7420,1914 @@
+ l a = new Array(3); a(i) = ei; a %7D%0A  def apply%5BT: ClassTag%5D(xs: T*): Array%5BT%5D = 
+-%7B%0A    val 
++xs match %7B%0A    case xs: WrappedArray.ofBoo
+ le
++a
+ n =
+- xs
++%3E%0A      val from = xs.array%0A      val array = new Array%5BBoolean%5D(from
+ .length
+-%0A
++)%0A 
+     
+-xs match %7B%0A      case wa: mutable.WrappedArray%5B_%5D if wa.elemTag == classTag%5BT%5D =%3E%0A        // We get here in test/files/run/sd760a.scala, %60Array%5BT%5D(t)%60 for%0A        // a specialized type parameter %60T%60. While we still pay for two%0A        // copies of the array it is better than before when we also boxed%0A        // each element when populating the result.%0A        ScalaRunTime.array_clone(wa.
++ System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofByte =%3E%0A      val from = xs.array%0A      val array = new Array%5BByte%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofShort =%3E%0A      val from = xs.array%0A      val array = new Array%5BShort%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofChar =%3E%0A      val from = xs.array%0A      val array = new Array%5BChar%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofInt =%3E%0A      val from = xs.array%0A      val array = new Array%5BInt%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofLong =%3E%0A      val from = xs.array%0A      val array = new Array%5BLong%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofFloat =%3E%0A      val from = xs.array%0A      val array = new Array%5BFloat%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofDouble =%3E%0A      val from = xs.array%0A      val array = new Array%5BDouble%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      
+ array
+-)
+ .asInstanceOf%5BArray%5BT%5D%5D%0A
+-  
+     case 
+-_
++xs
+  =%3E%0A
+-  
+       val array = new Array%5BT%5D(
+-len
++xs.length
+ )%0A      
+- 
+- 
+ var i = 0%0A
+-  
+       for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A      
+-  
+ array%0A
+-    %7D%0A
+   %7D%0A%0A  /** Creates an array of %60Boolean%60 objects */%0A  // Subject to a compiler o
+@@ -9414,226 +9414,378 @@
+ Boolean%5D = %7B%0A    val array = new Array%5BBoolean%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofBoolean =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Byte%60 objects */%0A  // Subject to a com
+@@ -9867,226 +9867,375 @@
+ Array%5BByte%5D = %7B%0A    val array = new Array%5BByte%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofByte =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Short%60 objects */%0A  // Subject to a co
+@@ -10322,226 +10322,376 @@
+ ray%5BShort%5D = %7B%0A    val array = new Array%5BShort%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofShort =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Char%60 objects */%0A  // Subject to a com
+@@ -10773,226 +10773,375 @@
+ Array%5BChar%5D = %7B%0A    val array = new Array%5BChar%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofChar =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Int%60 objects */%0A  // Subject to a comp
+@@ -11218,226 +11218,374 @@
+ : Array%5BInt%5D = %7B%0A    val array = new Array%5BInt%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofInt =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Long%60 objects */%0A  // Subject to a com
+@@ -11667,226 +11667,375 @@
+ Array%5BLong%5D = %7B%0A    val array = new Array%5BLong%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofLong =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Float%60 objects */%0A  // Subject to a co
+@@ -12122,226 +12122,376 @@
+ ray%5BFloat%5D = %7B%0A    val array = new Array%5BFloat%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofFloat =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Double%60 objects */%0A  // Subject to a c
+@@ -12583,226 +12583,377 @@
+ y%5BDouble%5D = %7B%0A    val array = new Array%5BDouble%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofDouble =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates an array of %60Unit%60 objects */%0A  def apply(x: Unit, 
+@@ -12972,226 +12972,375 @@
+ Array%5BUnit%5D = %7B%0A    val array = new Array%5BUnit%5D(xs.length + 1)%0A    array(0) = x%0A
++    xs match %7B%0A      case xs: WrappedArray.ofUnit =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
+     var i = 1%0A
++    
+     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
++    %7D%0A
+     array%0A  %7D%0A%0A  /** Creates array with given dimensions */%0A  def ofDim%5BT: Class

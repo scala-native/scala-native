@@ -1,5 +1,5 @@
-@@ -5742,187 +5742,65 @@
- the 
+@@ -5666,339 +5666,217 @@
+ va.lang.Class.forName(name)%0A%0A  /** The default line separator.%0A   *%0A   * On the 
 -JVM, this is equivalent to calling the method:%0A   * %60System.getProperty(%22line.separator%22)%60%0A   * with a default value of %22%5Cn%22.%0A   */%0A  val EOL = scala.util.Properties.lineSeparator
 +Scala Native, this is always %22%5Cn%22.%0A   */%0A  val EOL = %22%5Cn%22
- %0A%0A  
+ %0A%0A  /** The current time in milliseconds. The time is counted since 1 January 19

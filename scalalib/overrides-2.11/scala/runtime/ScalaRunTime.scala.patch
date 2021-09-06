@@ -1,21 +1,15 @@
-@@ -3363,32 +3363,40 @@
- ay element */%0A  
+@@ -3299,2867 +3299,1051 @@
+ runtimeClass.asInstanceOf%5BjClass%5BT%5D%5D%0A%0A  /** Retrieve generic array element */%0A  
 +@inline 
- def array_apply(
-@@ -3434,638 +3434,146 @@
-     
+ def array_apply(xs: AnyRef, idx: Int): Any = %7B%0A    
 -xs match %7B%0A      case x: Array%5BAnyRef%5D  =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BInt%5D     =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BDouble%5D  =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BLong%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BFloat%5D   =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BChar%5D    =%3E x(idx).asInstanceOf%5BAny%5D
 +if (xs == null) %7B%0A      throw new NullPointerException
  %0A    
 -  case x: Array%5BByte%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BShort%5D   =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BBoolean%5D =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BUnit%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case null =%3E throw new NullPointerException
 +%7D else %7B%0A      xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.apply(idx)
- %0A   
-@@ -3616,24 +3616,32 @@
- lement */%0A  
+ %0A    %7D%0A  %7D%0A%0A  /** update generic array element */%0A  
 +@inline 
- def array_up
-@@ -3697,736 +3697,154 @@
-     
+ def array_update(xs: AnyRef, idx: Int, value: Any): Unit = %7B%0A    
 -xs match %7B%0A      case x: Array%5BAnyRef%5D  =%3E x(idx) = value.asInstanceOf%5BAnyRef%5D%0A      case x: Array%5BInt%5D     =%3E x(idx) = value.asInstanceOf%5BInt%5D%0A      case x: Array%5BDouble%5D  =%3E x(idx) = value.asInstanceOf%5BDouble%5D%0A      case x: Array%5BLong%5D    =%3E x(idx) = value.asInstanceOf%5BLong%5D%0A      case x: Array%5BFloat%5D   =%3E x(idx) = value.asInstanceOf%5BFloat%5D%0A      case x: Array%5BChar%5D    =%3E x(idx) = value.asInstanceOf%5BChar%5D
 +if (xs == null) %7B%0A      throw new NullPointerException
  %0A    
@@ -27,9 +21,7 @@
   value
 -.asInstanceOf%5BUnit%5D%0A      case null =%3E throw new NullPointerException
 +)
- %0A   
-@@ -3927,1105 +3927,347 @@
- t = 
+ %0A    %7D%0A  %7D%0A%0A  /** Get generic array length */%0A  def array_length(xs: AnyRef): Int = 
 -xs match %7B%0A    case x: Array%5BAnyRef%5D  =%3E x.length%0A    case x: Array%5BInt%5D     =%3E x.length%0A    case x: Array%5BDouble%5D  =%3E x.length%0A    case x: Array%5BLong%5D    =%3E x.length%0A    case x: Array%5BFloat%5D   =%3E x.length%0A    case x: Array%5BChar%5D    =%3E x.length
 +%7B%0A    if (xs == null) %7B%0A      throw new NullPointerException
  %0A    
@@ -44,4 +36,4 @@
  e.
 -cloneArray(x)%0A    case x: Array%5BShort%5D   =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BBoolean%5D =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BUnit%5D    =%3E x%0A    case null =%3E throw new NullPointerException
 +runtime.Array%5BAny%5D%5D.clone()%0A    %7D
- %0A  %7D
+ %0A  %7D%0A%0A  /** Convert an array to an object array.%0A   *  Needed to deal with varar

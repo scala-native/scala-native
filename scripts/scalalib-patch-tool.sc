@@ -2,8 +2,6 @@ import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
 import $ivy.`org.bitbucket.cowwoc:diff-match-patch:1.2`,
 org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
 
-import java.io.File
-
 val ignoredFiles = {
   val scala = os.rel / "scala"
 
@@ -31,13 +29,27 @@ def main(
     )
     overridesDir: Option[os.Path] = None
 ) = {
-  val Array(vMajor, vMinor, _) = scalaVersion.split('.')
+  val Array(vMajor, vMinor, vPatch) = scalaVersion.split('.')
 
   implicit val wd: os.Path = pwd
 
   val sourcesDir = pwd / 'scalalib / 'target / 'scalaSources / scalaVersion
-  val overridesDirPath =
-    overridesDir.getOrElse(pwd / 'scalalib / s"overrides-$vMajor.$vMinor")
+  val overridesDirPath = {
+    overridesDir
+      .orElse {
+        val overridesDir = s"overrides"
+        val scalaEpochDir = s"$overridesDir-$vMajor"
+        val binaryVersionDir = s"$scalaEpochDir.$vMinor"
+        val scalaVersionDir = s"$binaryVersionDir.$vPatch"
+
+        List(scalaVersionDir, binaryVersionDir, scalaEpochDir, overridesDir)
+          .map(pwd / 'scalalib / _)
+          .find(exists(_))
+      }
+      .getOrElse(
+        sys.error("Not found any existing default scalalib override dir")
+      )
+  }
 
   println(s"""
        |Attempting to $cmd with config:
@@ -62,10 +74,10 @@ def main(
         sourcePath = sourcesDir / relativePath if exists ! sourcePath
         patchPath = overridePath / up / s"${overridePath.last}.patch"
         _ = if (exists ! patchPath) rm ! patchPath
-
       } {
         val diff = new DiffMatchPatch()
-        val diffs = diff.diffMain(read(sourcePath), read(overridePath))
+        diff.patchMargin = 80
+        val diffs = diff.diffMain(read(sourcePath), read(overridePath), true)
         if (diffs.isEmpty) {
           System.err.println(
             s"File $relativePath has identical content as original source"

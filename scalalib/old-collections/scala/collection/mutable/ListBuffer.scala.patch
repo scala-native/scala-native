@@ -1,18 +1,12 @@
-@@ -14424,16 +14424,247 @@
- er%5D %7B%0A  
+@@ -14352,287 +14352,535 @@
+ efine coll list buffer%0A */%0Aobject ListBuffer extends SeqFactory%5BListBuffer%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -14723,16 +14723,20 @@
- er%5BA%5D%5D =
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, ListBuffer%5BA%5D%5D =
 +%0A   
-  Reusabl
-@@ -14777,18 +14777,27 @@
- rom%5BA%5D%5D%0A
+  ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A
 +%0A
    
 +@inline 
- def newB
-@@ -14834,16 +14834,20 @@
- er%5BA%5D%5D =
+ def newBuilder%5BA%5D: Builder%5BA, ListBuffer%5BA%5D%5D =
 +%0A   
-  new Gro
+  new GrowingBuilder(new ListBuffer%5BA%5D)%0A%7D%0A

@@ -1,24 +1,14 @@
-@@ -16858,16 +16858,239 @@
- List%5D %7B%0A
+@@ -16786,417 +16786,676 @@
+ ne coll list%0A *  @define Coll %60List%60%0A */%0Aobject List extends SeqFactory%5BList%5D %7B%0A
 +  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $g
-@@ -17117,16 +17117,24 @@
- fo */%0A  
+   /** $genericCanBuildFromInfo */%0A  
 +@inline 
- implicit
-@@ -17240,24 +17240,32 @@
- From%5BA%5D%5D%0A%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, List%5BA%5D%5D =%0A    ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
 +@inline 
- def newBuild
-@@ -17292,16 +17292,20 @@
- st%5BA%5D%5D =
+ def newBuilder%5BA%5D: Builder%5BA, List%5BA%5D%5D =
 +%0A   
-  new Lis
-@@ -17314,24 +17314,32 @@
- uffer%5BA%5D%0A%0A  
+  new ListBuffer%5BA%5D%0A%0A  
 +@inline 
- override def
-@@ -17362,24 +17362,32 @@
- A%5D = Nil%0A%0A  
+ override def empty%5BA%5D: List%5BA%5D = Nil%0A%0A  
 +@inline 
- override def
+ override def apply%5BA%5D(xs: A*): List%5BA%5D = xs.toList%0A%0A  private%5Bcollection%5D val pa

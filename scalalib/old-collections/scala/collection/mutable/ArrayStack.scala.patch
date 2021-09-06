@@ -1,13 +1,9 @@
-@@ -564,16 +564,247 @@
- ck%5D %7B%0A  
+@@ -492,346 +492,594 @@
+ fine Coll %60ArrayStack%60%0A */%0Aobject ArrayStack extends SeqFactory%5BArrayStack%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -911,24 +911,32 @@
- dFrom%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, ArrayStack%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newBuild
-@@ -988,17 +988,26 @@
- tack%5BA%5D%0A
+ def newBuilder%5BA%5D: Builder%5BA, ArrayStack%5BA%5D%5D = new ArrayStack%5BA%5D%0A
 - 
 +%0A  @inline
-  def emp
+  def empty: ArrayStack%5BNothing%5D = new ArrayStack()%0A  def apply%5BA: ClassTag%5D(elem

@@ -1,8 +1,6 @@
-@@ -1025,16 +1025,247 @@
- eq%5D %7B%0A  
+@@ -953,268 +953,507 @@
+ l %60mutable.IndexedSeq%60%0A */%0Aobject IndexedSeq extends SeqFactory%5BIndexedSeq%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -1376,16 +1376,24 @@
- m%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, IndexedSeq%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, IndexedSeq%5BA%5D%5D = new ArrayBuffer%5BA%5D%0A%7D%0A

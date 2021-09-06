@@ -1,5 +1,5 @@
-@@ -5975,63 +5975,64 @@
- or =
+@@ -5899,215 +5899,216 @@
+ e processors%5D%5D.%0A     */%0A    implicit lazy val global: ExecutionContextExecutor =
 - impl.ExecutionContextImpl.fromExecutor(null: Executor)
 +%0A      scala.scalanative.runtime.ExecutionContext.global
- %0A  %7D
+ %0A  %7D%0A%0A  /** Creates an %60ExecutionContext%60 from the given %60ExecutorService%60.%0A   *

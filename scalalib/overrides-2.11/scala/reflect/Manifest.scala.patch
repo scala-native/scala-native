@@ -1,143 +1,110 @@
-@@ -4194,44 +4194,959 @@
- %0A%0A  
+@@ -4118,196 +4118,1111 @@
+ t%5B_%5D%5D =%0A    List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)%0A%0A  
 -val Byte: AnyValManifest%5BByte%5D = new
 +@inline def Byte: AnyValManifest%5BByte%5D = ByteManifest%0A  @inline def Short: AnyValManifest%5BShort%5D = ShortManifest%0A  @inline def Char: AnyValManifest%5BChar%5D = CharManifest%0A  @inline def Int: AnyValManifest%5BInt%5D = IntManifest%0A  @inline def Long: AnyValManifest%5BLong%5D = LongManifest%0A  @inline def Float: AnyValManifest%5BFloat%5D = FloatManifest%0A  @inline def Double: AnyValManifest%5BDouble%5D = DoubleManifest%0A  @inline def Boolean: AnyValManifest%5BBoolean%5D = BooleanManifest%0A  @inline def Unit: AnyValManifest%5BUnit%5D = UnitManifest%0A  @inline def Any: Manifest%5Bscala.Any%5D = AnyManifest%0A  @inline def Object: Manifest%5Bjava.lang.Object%5D = ObjectManifest%0A  @inline def AnyRef: Manifest%5Bscala.AnyRef%5D = Object.asInstanceOf%5BManifest%5Bscala.AnyRef%5D%5D%0A  @inline def AnyVal: Manifest%5Bscala.AnyVal%5D = AnyValManifest%0A  @inline def Null: Manifest%5Bscala.Null%5D = NullManifest%0A  @inline def Nothing: Manifest%5Bscala.Nothing%5D = NothingManifest%0A%0A  private object ByteManifest extends
-  Any
-@@ -5550,46 +5550,44 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Byte%5D(%22Byte%22) %7B%0A    def runtimeClass = java.lang.Byte.TYPE
+@@ -5474,198 +5474,196 @@
+ ArrayBuilder.ofByte()%0A    private def readResolve(): Any = Manifest.Byte%0A  %7D%0A%0A  
 -val Short: AnyValManifest%5BShort%5D = new
 +private object ShortManifest extends
-  Any
-@@ -6002,44 +6002,43 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Short%5D(%22Short%22) %7B%0A    def runtimeClass = java.lang.Short.T
+@@ -5926,196 +5926,195 @@
+ rayBuilder.ofShort()%0A    private def readResolve(): Any = Manifest.Short%0A  %7D%0A%0A  
 -val Char: AnyValManifest%5BChar%5D = new
 +private object CharManifest extends
-  Any
-@@ -6447,42 +6447,42 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Char%5D(%22Char%22) %7B%0A    def runtimeClass = java.lang.Character
+@@ -6371,194 +6371,194 @@
+ ArrayBuilder.ofChar()%0A    private def readResolve(): Any = Manifest.Char%0A  %7D%0A%0A  
 -val Int: AnyValManifest%5BInt%5D = new
 +private object IntManifest extends
-  Any
-@@ -6879,44 +6879,43 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Int%5D(%22Int%22) %7B%0A    def runtimeClass = java.lang.Integer.TYP
+@@ -6803,196 +6803,195 @@
+ w ArrayBuilder.ofInt()%0A    private def readResolve(): Any = Manifest.Int%0A  %7D%0A%0A  
 -val Long: AnyValManifest%5BLong%5D = new
 +private object LongManifest extends
-  Any
-@@ -7319,46 +7319,44 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Long%5D(%22Long%22) %7B%0A    def runtimeClass = java.lang.Long.TYPE
+@@ -7243,198 +7243,196 @@
+ ArrayBuilder.ofLong()%0A    private def readResolve(): Any = Manifest.Long%0A  %7D%0A%0A  
 -val Float: AnyValManifest%5BFloat%5D = new
 +private object FloatManifest extends
-  Any
-@@ -7771,48 +7771,45 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Float%5D(%22Float%22) %7B%0A    def runtimeClass = java.lang.Float.T
+@@ -7695,200 +7695,197 @@
+ rayBuilder.ofFloat()%0A    private def readResolve(): Any = Manifest.Float%0A  %7D%0A%0A  
 -val Double: AnyValManifest%5BDouble%5D = new
 +private object DoubleManifest extends
-  Any
-@@ -8235,50 +8235,46 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Double%5D(%22Double%22) %7B%0A    def runtimeClass = java.lang.Doubl
+@@ -8159,202 +8159,198 @@
+ yBuilder.ofDouble()%0A    private def readResolve(): Any = Manifest.Double%0A  %7D%0A%0A  
 -val Boolean: AnyValManifest%5BBoolean%5D = new
 +private object BooleanManifest extends
-  Any
-@@ -8711,44 +8711,43 @@
- %0A%0A  
+  AnyValManifest%5Bscala.Boolean%5D(%22Boolean%22) %7B%0A    def runtimeClass = java.lang.Boo
+@@ -8635,196 +8635,195 @@
+ uilder.ofBoolean()%0A    private def readResolve(): Any = Manifest.Boolean%0A  %7D%0A%0A  
 -val Unit: AnyValManifest%5BUnit%5D = new
 +private object UnitManifest extends
-  Any
-@@ -9353,24 +9353,32 @@
- %0A  %7D%0A%0A  
+  AnyValManifest%5Bscala.Unit%5D(%22Unit%22) %7B%0A    def runtimeClass = java.lang.Void.TYPE
+@@ -9281,362 +9281,386 @@
+  super.arrayClass(tp)%0A    private def readResolve(): Any = Manifest.Unit%0A  %7D%0A%0A  
 +@inline 
- private 
- val Obje
-@@ -9369,19 +9369,19 @@
  private 
 -val
 +def
-  ObjectT
-@@ -9410,32 +9410,40 @@
- g.Object%5D%0A  
+  ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  
 +@inline 
- private 
- val NothingT
-@@ -9430,19 +9430,19 @@
  private 
 -val
 +def
-  Nothing
-@@ -9482,24 +9482,32 @@
- ing$%5D%0A  
+  NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  
 +@inline 
- private 
- val Null
-@@ -9498,19 +9498,19 @@
  private 
 -val
 +def
-  NullTYP
-@@ -9549,25 +9549,34 @@
- %0A%0A  
+  NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A  
 -val
 +private object
   Any
 -: 
  Manifest
- %5Bsca
-@@ -9575,25 +9575,16 @@
- fest
 -%5Bscala.Any%5D = new
 + extends
-  Pha
-@@ -9824,28 +9824,37 @@
- %0A%0A  
+  PhantomManifest%5Bscala.Any%5D(ObjectTYPE, %22Any%22) %7B%0A    override def newArray(len: 
+@@ -9748,204 +9748,197 @@
+ olean = (that eq this)%0A    private def readResolve(): Any = Manifest.Any%0A  %7D%0A%0A  
 -val
 +private object
   Object
 -: 
  Manifest
- %5Bjav
-@@ -9853,32 +9853,16 @@
- fest
 -%5Bjava.lang.Object%5D = new
 + extends
-  Pha
-@@ -10139,112 +10139,37 @@
- %0A%0A  
+  PhantomManifest%5Bjava.lang.Object%5D(ObjectTYPE, %22Object%22) %7B%0A    override def newA
+@@ -10063,284 +10063,197 @@
+ s) %7C%7C (that eq Any)%0A    private def readResolve(): Any = Manifest.Object%0A  %7D%0A%0A  
 -val AnyRef: Manifest%5Bscala.AnyRef%5D = Object.asInstanceOf%5BManifest%5Bscala.AnyRef%5D%5D%0A%0A  val
 +private object
   AnyVal
 -: 
  Manifest
- %5Bsca
-@@ -10168,28 +10168,16 @@
- fest
 -%5Bscala.AnyVal%5D = new
 + extends
-  Pha
-@@ -10446,26 +10446,35 @@
- %0A%0A  
+  PhantomManifest%5Bscala.AnyVal%5D(ObjectTYPE, %22AnyVal%22) %7B%0A    override def newArray
+@@ -10370,196 +10370,195 @@
+ s) %7C%7C (that eq Any)%0A    private def readResolve(): Any = Manifest.AnyVal%0A  %7D%0A%0A  
 -val
 +private object
   Null
 -: 
  Manifest
- %5Bsca
-@@ -10473,26 +10473,16 @@
- fest
 -%5Bscala.Null%5D = new
 + extends
-  Pha
-@@ -10773,19 +10773,30 @@
- %0A%0A  
+  PhantomManifest%5Bscala.Null%5D(NullTYPE, %22Null%22) %7B%0A    override def newArray(len: 
+@@ -10697,202 +10697,198 @@
+ && !(that %3C:%3C AnyVal)%0A    private def readResolve(): Any = Manifest.Null%0A  %7D%0A%0A  
 -val
 +private object
   Nothing
- : Ma
-@@ -10787,34 +10787,32 @@
- ject Nothing
 -: 
  Manifest
- %5Bscala.Nothi
-@@ -10803,29 +10803,16 @@
- fest
 -%5Bscala.Nothing%5D = new
 + extends
-  Pha
+  PhantomManifest%5Bscala.Nothing%5D(NothingTYPE, %22Nothing%22) %7B%0A    override def newAr

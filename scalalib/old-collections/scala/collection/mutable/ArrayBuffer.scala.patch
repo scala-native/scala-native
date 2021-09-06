@@ -1,12 +1,8 @@
-@@ -6338,16 +6338,239 @@
- ffer%5D %7B%0A
+@@ -6266,307 +6266,546 @@
+ ine Coll %60ArrayBuffer%60%0A */%0Aobject ArrayBuffer extends SeqFactory%5BArrayBuffer%5D %7B%0A
 +  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $g
-@@ -6597,16 +6597,24 @@
- fo */%0A  
+   /** $genericCanBuildFromInfo */%0A  
 +@inline 
- implicit
-@@ -6726,16 +6726,24 @@
- m%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, ArrayBuffer%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, ArrayBuffer%5BA%5D%5D = new ArrayBuffer%5BA%5D%0A%7D%0A%0A

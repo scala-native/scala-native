@@ -1,8 +1,6 @@
-@@ -5291,16 +5291,247 @@
- ue%5D %7B%0A  
+@@ -5260,276 +5260,515 @@
+ if (len == 0) last0 = first0%0A  %7D%0A%7D%0A%0A%0Aobject Queue extends SeqFactory%5BQueue%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -5638,16 +5638,24 @@
- %5BA%5D%5D%0A%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Queue%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, Queue%5BA%5D%5D = new MutableList%5BA%5D mapResult %7B _.toQue

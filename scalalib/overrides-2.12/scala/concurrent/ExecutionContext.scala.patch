@@ -1,19 +1,15 @@
-@@ -6144,38 +6144,34 @@
- r = 
+@@ -6068,215 +6068,209 @@
+ rn the global %60ExecutionContext%60%0A   */%0A  def global: ExecutionContextExecutor = 
 -Implicits.global.asInstanceOf%5B
 +scala.scalanative.runtime.
- Exec
-@@ -6182,25 +6182,23 @@
- nContext
+ ExecutionContext
 -Executor%5D
 +.global
- %0A%0A  obje
-@@ -6733,21 +6733,16 @@
- ntext = 
+ %0A%0A  object Implicits %7B%0A    /**%0A     * The implicit global %60ExecutionContext%60. Im
+@@ -6661,214 +6661,183 @@
+ vailable processors%5D%5D.%0A     */%0A    implicit lazy val global: ExecutionContext = 
 -impl.
- Executio
-@@ -6753,41 +6753,15 @@
- text
+ ExecutionContext
 -Impl.fromExecutor(null: Executor)
 +.global
- %0A  %7D
+ %0A  %7D%0A%0A  /** Creates an %60ExecutionContext%60 from the given %60ExecutorService%60.%0A   *

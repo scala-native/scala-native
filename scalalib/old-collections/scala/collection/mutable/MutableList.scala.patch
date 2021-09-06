@@ -1,12 +1,8 @@
-@@ -4616,16 +4616,247 @@
- st%5D %7B%0A  
+@@ -4544,275 +4544,518 @@
+ q%0A    bf.result()%0A  %7D%0A%7D%0A%0Aobject MutableList extends SeqFactory%5BMutableList%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -4969,24 +4969,32 @@
- From%5BA%5D%5D%0A%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, MutableList%5BA%5D%5D =%0A    ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
 +@inline 
- def newBuild
-@@ -5020,32 +5020,36 @@
- utableList%5BA%5D%5D =
+ def newBuilder%5BA%5D: Builder%5BA, MutableList%5BA%5D%5D =
 +%0A   
-  new MutableList
+  new MutableList%5BA%5D%0A%7D%0A

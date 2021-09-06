@@ -1,20 +1,16 @@
-@@ -41458,16 +41458,238 @@
- tream%5D %7B
+@@ -41386,160 +41386,382 @@
+ sion 1.1 08/08/03%0A * @since   2.8%0A */%0Aobject Stream extends SeqFactory%5BStream%5D %7B
 +%0A  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D
- %0A%0A  /** 
-@@ -42224,16 +42224,24 @@
- m%5BA%5D%0A%0A  
+ %0A%0A  /** The factory for streams.%0A   *  @note Methods such as map/flatMap will no
+@@ -42152,298 +42152,314 @@
+ t result.%0A   */%0A  class StreamCanBuildFrom%5BA%5D extends GenericCanBuildFrom%5BA%5D%0A%0A  
 +@inline 
- implicit
-@@ -42366,24 +42366,32 @@
- stream */%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Stream%5BA%5D%5D = new StreamCanBuildFrom%5BA%5D%0A%0A  /** Creates a new builder for a stream */%0A  
 +@inline 
- def newBuild
-@@ -43207,24 +43207,32 @@
- stream */%0A  
+ def newBuilder%5BA%5D: Builder%5BA, Stream%5BA%5D%5D = new StreamBuilder%5BA%5D%0A%0A  import scala.
+@@ -43139,251 +43139,267 @@
+  of empty stream%22)%0A    def tailDefined = false%0A  %7D%0A%0A  /** The empty stream */%0A  
 +@inline 
- override def
-@@ -43306,24 +43306,32 @@
- ements */%0A  
+ override def empty%5BA%5D: Stream%5BA%5D = Empty%0A%0A  /** A stream consisting of given elements */%0A  
 +@inline 
- override def
+ override def apply%5BA%5D(xs: A*): Stream%5BA%5D = xs.toStream%0A%0A  /** A wrapper class th

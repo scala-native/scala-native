@@ -1,20 +1,12 @@
-@@ -6594,16 +6594,239 @@
- ueue%5D %7B%0A
+@@ -6522,488 +6522,743 @@
+ %60%0A *  @define coll immutable queue%0A */%0Aobject Queue extends SeqFactory%5BQueue%5D %7B%0A
 +  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $g
-@@ -6853,16 +6853,24 @@
- fo */%0A  
+   /** $genericCanBuildFromInfo */%0A  
 +@inline 
- implicit
-@@ -6976,16 +6976,24 @@
- m%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Queue%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newB
-@@ -7091,16 +7091,24 @@
- ist))%0A  
+ def newBuilder%5BA%5D: Builder%5BA, Queue%5BA%5D%5D = new ListBuffer%5BA%5D mapResult (x =%3E new Queue%5BA%5D(Nil, x.toList))%0A  
 +@inline 
- override
-@@ -7169,16 +7169,24 @@
- e%5BA%5D%5D%0A  
+ override def empty%5BA%5D: Queue%5BA%5D = EmptyQueue.asInstanceOf%5BQueue%5BA%5D%5D%0A  
 +@inline 
- override
+ override def apply%5BA%5D(xs: A*): Queue%5BA%5D = new Queue%5BA%5D(Nil, xs.toList)%0A%0A  privat

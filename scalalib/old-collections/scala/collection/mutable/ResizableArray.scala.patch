@@ -1,8 +1,6 @@
-@@ -3717,16 +3717,247 @@
- ay%5D %7B%0A  
+@@ -3645,281 +3645,520 @@
+ ay, n, len)%0A  %7D%0A%7D%0A%0Aobject ResizableArray extends SeqFactory%5BResizableArray%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit
-@@ -4073,24 +4073,32 @@
- From%5BA%5D%5D%0A%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, ResizableArray%5BA%5D%5D =%0A    ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
 +@inline 
- def newBuild
+ def newBuilder%5BA%5D: Builder%5BA, ResizableArray%5BA%5D%5D = new ArrayBuffer%5BA%5D%0A%7D%0A

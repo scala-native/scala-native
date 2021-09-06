@@ -1,19 +1,13 @@
-@@ -1416,18 +1416,15 @@
- vate
+@@ -1340,310 +1340,296 @@
+ ith GenericTraversableTemplate%5BX, CC%5D%5D%0Aextends GenericCompanion%5BCC%5D %7B%0A%0A  private
 -%5Bthis%5D val
 + object
-  Reu
-@@ -1443,44 +1443,16 @@
- ance
+  ReusableCBFInstance
 -: GenericCanBuildFrom%5BNothing%5D = new
 + extends
-  Gen
-@@ -1483,16 +1483,24 @@
- %5D %7B%0A    
+  GenericCanBuildFrom%5BNothing%5D %7B%0A    
 +@inline 
- override
-@@ -1538,17 +1538,26 @@
- ng%5D%0A  %7D%0A
+ override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A
 - 
 +%0A  @inline
-  def Reu
+  def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A%0A  /** A ge

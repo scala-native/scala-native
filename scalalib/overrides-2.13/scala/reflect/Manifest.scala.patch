@@ -1,0 +1,745 @@
+@@ -242,211 +242,160 @@
+  information regarding copyright ownership.%0A */%0A%0Apackage scala%0Apackage reflect%0A%0A
+-import scala.annotation.%7BimplicitNotFound, nowarn%7D%0A
+ import scala.collection.mutable.%7BArrayBuilder, ArraySeq%7D%0A%0A/** A %60Manifest%5BT%5D%60 is
+@@ -1581,247 +1581,177 @@
+ etType%5BMap%5B_, _%5D%5D(%22values%22)  // Some(scala.collection.Iterable%3CB%3E)%0A *  %7D%7D%7D%0A */%0A@
+-nowarn(%22%22%22cat=deprecation&origin=scala%5C.reflect%5C.ClassManifest(DeprecatedApis.*)?%22%22%22)%0A@
++scala.annotation.
+ implicitNotFound(msg = %22No Manifest available for $%7BT%7D.%22)%0A// TODO undeprecated u
+@@ -2042,326 +2042,317 @@
+ ts: List%5BManifest%5B_%5D%5D = Nil%0A%0A  override def arrayManifest: Manifest%5BArray%5BT%5D%5D =%0A
+-    
++%09
+ Manifest.classType%5BArray%5BT%5D%5D(arrayClass%5BT%5D(runtimeClass), this)%0A%0A  override def canEqual(that: Any): Boolean = that match %7B%0A
+-    
++%09
+ case _: Manifest%5B_%5D   =%3E true%0A
+-    
++%09
+ case _                =%3E false%0A  %7D%0A  /** Note: testing for erasure here is impor
+@@ -2422,282 +2422,276 @@
+ ost comparisons.%0A   */%0A  override def equals(that: Any): Boolean = that match %7B%0A
+-    
++%09
+ case m: Manifest%5B_%5D =%3E (m canEqual this) && (this.runtimeClass == m.runtimeClass) && (this %3C:%3C m) && (m %3C:%3C this)%0A
+-    
++%09
+ case _              =%3E false%0A  %7D%0A  override def hashCode = this.runtimeClass.##%0A
+@@ -3325,1095 +3325,1212 @@
+ est%60%0A   * defined above.%0A   */%0A%0A  def valueManifests: List%5BAnyValManifest%5B_%5D%5D =%0A
+-    
++%09
+ ManifestFactory.valueManifests%0A%0A  
+-val
++@inline def
+  Byte: ManifestFactory.ByteManifest = ManifestFactory.Byte%0A  
+-val
++@inline def
+  Short: ManifestFactory.ShortManifest = ManifestFactory.Short%0A  
+-val
++@inline def
+  Char: ManifestFactory.CharManifest = ManifestFactory.Char%0A  
+-val
++@inline def
+  Int: ManifestFactory.IntManifest = ManifestFactory.Int%0A  
+-val
++@inline def
+  Long: ManifestFactory.LongManifest = ManifestFactory.Long%0A  
+-val
++@inline def
+  Float: ManifestFactory.FloatManifest = ManifestFactory.Float%0A  
+-val
++@inline def
+  Double: ManifestFactory.DoubleManifest = ManifestFactory.Double%0A  
+-val
++@inline def
+  Boolean: ManifestFactory.BooleanManifest = ManifestFactory.Boolean%0A  
+-val
++@inline def
+  Unit: ManifestFactory.UnitManifest = ManifestFactory.Unit%0A%0A  
+-val
++@inline def
+  Any: Manifest%5Bscala.Any%5D = ManifestFactory.Any%0A  
+-val
++@inline def
+  Object: Manifest%5Bjava.lang.Object%5D = ManifestFactory.Object%0A  
+-val
++@inline def
+  AnyRef: Manifest%5Bscala.AnyRef%5D = ManifestFactory.AnyRef%0A  
+-val
++@inline def
+  AnyVal: Manifest%5Bscala.AnyVal%5D = ManifestFactory.AnyVal%0A  
+-val
++@inline def
+  Null: Manifest%5Bscala.Null%5D = ManifestFactory.Null%0A  
+-val
++@inline def
+  Nothing: Manifest%5Bscala.Nothing%5D = ManifestFactory.Nothing%0A%0A  /** Manifest for 
+@@ -4553,766 +4553,753 @@
+ pe %60value.type%60. */%0A  def singleType%5BT %3C: AnyRef%5D(value: AnyRef): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.singleType%5BT%5D(value)%0A%0A  /** Manifest for the class type %60clazz%5Bargs%5D%60, where %60clazz%60 is%0A   
+- 
+ * a top-level or static class.%0A
+- 
+    * @note This no-prefix, no-arguments case is separate because we%0A
+- 
+    *       it's called from ScalaRunTime.boxArray itself. If we%0A   
+- 
+ *       pass varargs as arrays into this, we get an infinitely recursive call%0A   
+- 
+ *       to boxArray. (Besides, having a separate case is more efficient)%0A
+- 
+    */%0A  def classType%5BT%5D(clazz: Predef.Class%5B_%5D): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.classType%5BT%5D(clazz)%0A%0A  /** Manifest for the class type %60clazz%60, where %60clazz%60 is%0A   
+- 
+ * a top-level or static class and args are its type arguments. */%0A  def classTyp
+@@ -5309,771 +5309,758 @@
+ %5D(clazz: Predef.Class%5BT%5D, arg1: Manifest%5B_%5D, args: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.classType%5BT%5D(clazz, arg1, args: _*)%0A%0A  /** Manifest for the class type %60clazz%5Bargs%5D%60, where %60clazz%60 is%0A   
+- 
+ * a class with non-package prefix type %60prefix%60 and type arguments %60args%60.%0A
+- 
+    */%0A  def classType%5BT%5D(prefix: Manifest%5B_%5D, clazz: Predef.Class%5B_%5D, args: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.classType%5BT%5D(prefix, clazz, args: _*)%0A%0A  def arrayType%5BT%5D(arg: Manifest%5B_%5D): Manifest%5BArray%5BT%5D%5D =%0A
+-    
++%09
+ ManifestFactory.arrayType%5BT%5D(arg)%0A%0A  /** Manifest for the abstract type %60prefix # name%60. %60upperBound%60 is not%0A   
+- 
+ * strictly necessary as it could be obtained by reflection. It was%0A
+- 
+    * added so that erasure can be calculated without reflection. */%0A  def abstra
+@@ -6096,164 +6096,161 @@
+ , name: String, upperBound: Predef.Class%5B_%5D, args: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.abstractType%5BT%5D(prefix, name, upperBound, args: _*)%0A%0A  /** Manif
+@@ -6325,164 +6325,161 @@
+ ildcardType%5BT%5D(lowerBound: Manifest%5B_%5D, upperBound: Manifest%5B_%5D): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.wildcardType%5BT%5D(lowerBound, upperBound)%0A%0A  /** Manifest for the 
+@@ -6528,164 +6528,161 @@
+  parents_n%60. */%0A  def intersectionType%5BT%5D(parents: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ ManifestFactory.intersectionType%5BT%5D(parents: _*)%0A%0A%7D%0A%0A// TODO undeprecated until 
+@@ -6752,247 +6752,160 @@
+ ype tags and manually check the corresponding class or type instead%22, %222.10.0%22)%0A
+-@nowarn(%22%22%22cat=deprecation&origin=scala%5C.reflect%5C.ClassManifest(DeprecatedApis.*)?%22%22%22)%0A
+ @SerialVersionUID(1L)%0Aabstract class AnyValManifest%5BT %3C: AnyVal%5D(override val to
+@@ -6936,328 +6936,319 @@
+ Manifest%5BT%5D with Equals %7B%0A  override def %3C:%3C(that: ClassManifest%5B_%5D): Boolean =%0A
+-    
++%09
+ (that eq this) %7C%7C (that eq Manifest.Any) %7C%7C (that eq Manifest.AnyVal)%0A  override def canEqual(other: Any) = other match %7B%0A
+-    
++%09
+ case _: AnyValManifest%5B_%5D =%3E true%0A
+-    
++%09
+ case _                    =%3E false%0A  %7D%0A  override def equals(that: Any): Boolean
+@@ -7697,9026 +7697,8901 @@
+ s.%0A *  Why so complicated? Read up the comments for %60ClassManifestFactory%60.%0A */%0A
+-@nowarn(%22%22%22cat=deprecation&origin=scala%5C.reflect%5C.ClassManifest(DeprecatedApis.*)?%22%22%22)%0A
+ object ManifestFactory %7B%0A  def valueManifests: List%5BAnyValManifest%5B_%5D%5D =%0A
+-    
++%09
+ List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class ByteManifest extends AnyValManifest%5Bscala.Byte%5D(%22Byte%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Byte.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BByte%5D = new Array%5BByte%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BByte%5D = new ArraySeq.ofByte(new Array%5BByte%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BByte%5D = new ArrayBuilder.ofByte()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BByte%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Byte =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Byte%0A  %7D%0A  
+-val Byte: ByteManifest = new
++private object ByteManifest extends ByteManifest%0A  def Byte: ByteManifest =
+  ByteManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class ShortManifest extends AnyValManifest%5Bscala.Short%5D(%22Short%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Short.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BShort%5D = new Array%5BShort%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BShort%5D = new ArraySeq.ofShort(new Array%5BShort%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BShort%5D = new ArrayBuilder.ofShort()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BShort%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Short =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Short%0A  %7D%0A  
+-val Short: ShortManifest = new
++private object ShortManifest extends ShortManifest%0A  def Short: ShortManifest =
+  ShortManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class CharManifest extends AnyValManifest%5Bscala.Char%5D(%22Char%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Character.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BChar%5D = new Array%5BChar%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BChar%5D = new ArraySeq.ofChar(new Array%5BChar%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BChar%5D = new ArrayBuilder.ofChar()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BChar%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Char =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-   
++%09
+   
+- 
+ %7D%0A
+-    %7D%0A    
++%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Char%0A  %7D%0A  
+-val Char: CharManifest = new
++private object CharManifest extends CharManifest%0A  def Char: CharManifest =
+  CharManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class IntManifest extends AnyValManifest%5Bscala.Int%5D(%22Int%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Integer.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BInt%5D = new Array%5BInt%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BInt%5D = new ArraySeq.ofInt(new Array%5BInt%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BInt%5D = new ArrayBuilder.ofInt()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BInt%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Int =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Int%0A  %7D%0A  
+-val Int: IntManifest = new
++private object IntManifest extends IntManifest%0A  def Int: IntManifest =
+  IntManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class LongManifest extends AnyValManifest%5Bscala.Long%5D(%22Long%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Long.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BLong%5D = new Array%5BLong%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BLong%5D = new ArraySeq.ofLong(new Array%5BLong%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BLong%5D = new ArrayBuilder.ofLong()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BLong%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Long =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-   
++%09
+   
+- 
+ %7D%0A
+-    %7D%0A    
++%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Long%0A  %7D%0A  
+-val Long: LongManifest = new
++private object LongManifest extends LongManifest%0A  def Long: LongManifest =
+  LongManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class FloatManifest extends AnyValManifest%5Bscala.Float%5D(%22Float%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Float.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BFloat%5D = new Array%5BFloat%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BFloat%5D = new ArraySeq.ofFloat(new Array%5BFloat%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BFloat%5D = new ArrayBuilder.ofFloat()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BFloat%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Float =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Float%0A  %7D%0A  
+-val
++private object FloatManifest extends FloatManifest%0A  def
+  Float: FloatManifest =
+- new
+  FloatManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class DoubleManifest extends AnyValManifest%5Bscala.Double%5D(%22Double%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Double.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BDouble%5D = new Array%5BDouble%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BDouble%5D = new ArraySeq.ofDouble(new Array%5BDouble%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BDouble%5D = new ArrayBuilder.ofDouble()%0A%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BDouble%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Double =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Double%0A  %7D%0A  
+-val Double: DoubleManifest = new
++private object DoubleManifest extends DoubleManifest%0A  def Double: DoubleManifest =
+  DoubleManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class BooleanManifest extends AnyValManifest%5Bscala.Boolean%5D(%22Boolean%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Boolean.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BBoolean%5D = new Array%5BBoolean%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BBoolean%5D = new ArraySeq.ofBoolean(new Array%5BBoolean%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BBoolean%5D = new ArrayBuilder.ofBoolean()%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BBoolean%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Boolean =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Boolean%0A  %7D%0A  
+-val
++private object BooleanManifest extends BooleanManifest%0A  def
+  Boolean: BooleanManifest =
+- new
+  BooleanManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private%5Breflect%5D class UnitManifest extends AnyValManifest%5Bscala.Unit%5D(%22Unit%22) %7B%0A
+-    
++%09
+ def runtimeClass = java.lang.Void.TYPE%0A
+-    
++%09
+ @inline override def newArray(len: Int): Array%5BUnit%5D = new Array%5BUnit%5D(len)%0A
+-    
++%09
+ override def newWrappedArray(len: Int): ArraySeq%5BUnit%5D = new ArraySeq.ofUnit(new Array%5BUnit%5D(len))%0A
+-    
++%09
+ override def newArrayBuilder(): ArrayBuilder%5BUnit%5D = new ArrayBuilder.ofUnit()%0A
+-    
++%09
+ override protected def arrayClass%5BT%5D(tp: Class%5B_%5D): Class%5BArray%5BT%5D%5D =%0A
+-    
++%09
+   if (tp eq runtimeClass) classOf%5BArray%5Bscala.runtime.BoxedUnit%5D%5D.asInstanceOf%5BClass%5BArray%5BT%5D%5D%5D%0A
+-    
++%09
+   else super.arrayClass(tp)%0A
+-    
++%09
+ override def unapply(x: Any): Option%5BUnit%5D = %7B%0A
+-    
++%09
+   x match %7B%0A
+-        
++%09%09
+ case d: Unit =%3E Some(d)%0A
+-        
++%09%09
+ case _ =%3E None%0A
+-      %7D%0A    %7D%0A    
++%09  %7D%0A%09%7D%0A%09
+ private def readResolve(): Any = Manifest.Unit%0A  %7D%0A  
+-val Unit:
++private object
+  UnitManifest 
+-= new
++extends
+  UnitManifest%0A
+-%0A
+   
+-private%5Bthis%5D val ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  private%5Bthis%5D val NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  private%5Bthis%5D val NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A  @SerialVersionUID(1L)%0A  final
++def Unit: UnitManifest = UnitManifest%0A%0A 
+  private 
+-class
++object
+  AnyManifest extends PhantomManifest%5Bscala.Any%5D(
++classOf%5Bjava.lang.
+ Object
+-TYPE
++%5D
+ , %22Any%22) %7B%0A
+-    
++%09override def runtimeClass = classOf%5Bjava.lang.Object%5D%0A%09
+ override def newArray(len: Int) = new Array%5Bscala.Any%5D(len)%0A
+-    
++%09
+ override def %3C:%3C(that: ClassManifest%5B_%5D): Boolean = (that eq this)%0A
+-    
++%09
+ private def readResolve(): Any = Manifest.Any%0A  %7D%0A  
+-val
++def
+  Any: Manifest%5Bscala.Any%5D =
+- new
+  AnyManifest%0A%0A  
+-@SerialVersionUID(1L)%0A  final 
+ private 
+-class
++object
+  ObjectManifest extends PhantomManifest%5Bjava.lang.Object%5D(
++classOf%5Bjava.lang.
+ Object
+-TYPE
++%5D
+ , %22Object%22) %7B%0A
+-    
++%09override def runtimeClass = classOf%5Bjava.lang.Object%5D%0A%09
+ override def newArray(len: Int) = new Array%5Bjava.lang.Object%5D(len)%0A
+-    
++%09
+ override def %3C:%3C(that: ClassManifest%5B_%5D): Boolean = (that eq this) %7C%7C (that eq Any)%0A
+-    
++%09
+ private def readResolve(): Any = Manifest.Object%0A  %7D%0A  
+-val
++def
+  Object: Manifest%5Bjava.lang.Object%5D =
+- new
+  ObjectManifest%0A%0A  
+-val
++def
+  AnyRef: Manifest%5Bscala.AnyRef%5D = Object.asInstanceOf%5BManifest%5Bscala.AnyRef%5D%5D%0A%0A  
+-@SerialVersionUID(1L)%0A  final 
+ private 
+-class
++object
+  AnyVal
+-Phantom
+ Manifest extends PhantomManifest%5Bscala.AnyVal%5D(
++classOf%5Bjava.lang.
+ Object
+-TYPE
++%5D
+ , %22AnyVal%22) %7B%0A
+-    
++%09override def runtimeClass = classOf%5Bjava.lang.Object%5D%0A%09
+ override def newArray(len: Int) = new Array%5Bscala.AnyVal%5D(len)%0A
+-    
++%09
+ override def %3C:%3C(that: ClassManifest%5B_%5D): Boolean = (that eq this) %7C%7C (that eq Any)%0A
+-    
++%09
+ private def readResolve(): Any = Manifest.AnyVal%0A  %7D%0A  
+-val
++def
+  AnyVal: Manifest%5Bscala.AnyVal%5D =
+- new
+  AnyVal
+-Phantom
+ Manifest%0A%0A  
+-@SerialVersionUID(1L)%0A  final 
+ private 
+-class
++object
+  NullManifest extends PhantomManifest%5Bscala.Null%5D(
+-NullTYPE, %22Null%22) %7B%0A    
++classOf%5Bscala.runtime.Null$%5D, %22Null%22) %7B%0A%09override def runtimeClass = classOf%5Bscala.runtime.Null$%5D%0A%09
+ override def newArray(len: Int) = new Array%5Bscala.Null%5D(len)%0A
+-    
++%09
+ override def %3C:%3C(that: ClassManifest%5B_%5D): Boolean =%0A
+-    
++%09
+   (that ne null) && (that ne Nothing) && !(that %3C:%3C AnyVal)%0A
+-    
++%09
+ private def readResolve(): Any = Manifest.Null%0A  %7D%0A  
+-val
++def
+  Null: Manifest%5Bscala.Null%5D =
+- new
+  NullManifest%0A%0A  
+-@SerialVersionUID(1L)%0A  final 
+ private 
+-class
++object
+  NothingManifest extends PhantomManifest%5Bscala.Nothing%5D(
++classOf%5Bscala.runtime.
+ Nothing
+-TYPE
++$%5D
+ , %22Nothing%22) %7B%0A
+-    
++%09override def runtimeClass = classOf%5Bscala.runtime.Nothing$%5D%0A%09
+ override def newArray(len: Int) = new Array%5Bscala.Nothing%5D(len)%0A
+-    
++%09
+ override def %3C:%3C(that: ClassManifest%5B_%5D): Boolean = (that ne null)%0A
+-    
++%09
+ private def readResolve(): Any = Manifest.Nothing%0A  %7D%0A  
+-val
++def
+  Nothing: Manifest%5Bscala.Nothing%5D =
+- new
+  NothingManifest%0A%0A  @SerialVersionUID(1L)%0A  
+-final 
+ private class SingletonTypeManifest%5BT %3C: AnyRef%5D(value: AnyRef) extends Manifest%5BT%5D %7B%0A
+-    
++%09
+ lazy val runtimeClass = value.getClass%0A
+-    
++%09
+ override lazy val toString = value.toString + %22.type%22%0A  %7D%0A%0A  /** Manifest for th
+@@ -16612,772 +16612,759 @@
+ pe %60value.type%60. */%0A  def singleType%5BT %3C: AnyRef%5D(value: AnyRef): Manifest%5BT%5D =%0A
+-    
++%09
+ new SingletonTypeManifest%5BT%5D(value)%0A%0A  /** Manifest for the class type %60clazz%5Bargs%5D%60, where %60clazz%60 is%0A   
+- 
+ * a top-level or static class.%0A
+- 
+    * @note This no-prefix, no-arguments case is separate because we%0A
+- 
+    *       it's called from ScalaRunTime.boxArray itself. If we%0A   
+- 
+ *       pass varargs as arrays into this, we get an infinitely recursive call%0A   
+- 
+ *       to boxArray. (Besides, having a separate case is more efficient)%0A
+- 
+    */%0A  def classType%5BT%5D(clazz: Predef.Class%5B_%5D): Manifest%5BT%5D =%0A
+-    
++%09
+ new ClassTypeManifest%5BT%5D(None, clazz, Nil)%0A%0A  /** Manifest for the class type %60clazz%60, where %60clazz%60 is%0A   
+- 
+ * a top-level or static class and args are its type arguments. */%0A  def classTyp
+@@ -17374,639 +17374,631 @@
+ %5D(clazz: Predef.Class%5BT%5D, arg1: Manifest%5B_%5D, args: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ new ClassTypeManifest%5BT%5D(None, clazz, arg1 :: args.toList)%0A%0A  /** Manifest for the class type %60clazz%5Bargs%5D%60, where %60clazz%60 is%0A   
+- 
+ * a class with non-package prefix type %60prefix%60 and type arguments %60args%60.%0A
+- 
+    */%0A  def classType%5BT%5D(prefix: Manifest%5B_%5D, clazz: Predef.Class%5B_%5D, args: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ new ClassTypeManifest%5BT%5D(Some(prefix), clazz, args.toList)%0A%0A  @SerialVersionUID(1L)%0A  private abstract class PhantomManifest%5BT%5D(_runtimeClass: Predef.Class%5B_%5D,%0A
+                                             override val toString: String) exten
+@@ -17845,1067 +17845,972 @@
+ 1L)%0A  private abstract class PhantomManifest%5BT%5D(_runtimeClass: Predef.Class%5B_%5D,%0A
+-                                            
++%09
+ override val toString: String) extends ClassTypeManifest%5BT%5D(None, _runtimeClass, Nil) %7B%0A
+-    
++%09
+ override def equals(that: Any): Boolean = this eq that.asInstanceOf%5BAnyRef%5D%0A
+-    
++%09
+ @transient%0A
+-    
++%09
+ override val hashCode = System.identityHashCode(this)%0A  %7D%0A%0A  /** Manifest for the class type %60clazz%5Bargs%5D%60, where %60clazz%60 is%0A   
+- 
+ * a top-level or static class. */%0A  @SerialVersionUID(1L)%0A  private class ClassTypeManifest%5BT%5D(prefix: Option%5BManifest%5B_%5D%5D,%0A
+-                                     val 
++%09
+ runtimeClass
++1
+ : Predef.Class%5B_%5D,%0A
+-                                     
++%09
+ override val typeArguments: List%5BManifest%5B_%5D%5D) extends Manifest%5BT%5D %7B%0A
+-    
++%09def runtimeClass: Predef.Class%5B_%5D = runtimeClass1%0A%09
+ override def toString =%0A
+-   
++%09
+   
+- 
+ (if (prefix.isEmpty) %22%22 else prefix.get.toString+%22#%22) +%0A
+-      
++%09%09
+ (if (runtimeClass.isArray) %22Array%22 else runtimeClass.getName) +%0A
+-      
++%09%09
+ argString%0A
+- 
+   %7D%0A%0A  def arrayType%5BT%5D(arg: Manifest%5B_%5D): Manifest%5BArray%5BT%5D%5D =%0A
+-    
++%09
+ arg.asInstanceOf%5BManifest%5BT%5D%5D.arrayManifest%0A%0A  @SerialVersionUID(1L)%0A  private c
+@@ -18893,453 +18893,442 @@
+ Predef.Class%5B_%5D, args: scala.collection.Seq%5BManifest%5B_%5D%5D) extends Manifest%5BT%5D %7B%0A
+-    
++%09
+ def runtimeClass = upperBound%0A
+-    
++%09
+ override val typeArguments = args.toList%0A
+-    
++%09
+ override def toString = prefix.toString+%22#%22+name+argString%0A  %7D%0A%0A  /** Manifest for the abstract type %60prefix # name%60. %60upperBound%60 is not%0A   
+- 
+ * strictly necessary as it could be obtained by reflection. It was%0A
+- 
+    * added so that erasure can be calculated without reflection. */%0A  def abstra
+@@ -19364,164 +19364,161 @@
+ , name: String, upperBound: Predef.Class%5B_%5D, args: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ new AbstractTypeManifest%5BT%5D(prefix, name, upperBound, args)%0A%0A  @SerialVersionUID
+@@ -19558,547 +19558,522 @@
+ fest%5BT%5D(lowerBound: Manifest%5B_%5D, upperBound: Manifest%5B_%5D) extends Manifest%5BT%5D %7B%0A
+-    
++%09
+ def runtimeClass = upperBound.runtimeClass%0A
+-    
++%09
+ override def toString =%0A
+-    
++%09
+   %22_%22 +%0A
+-        
++%09%09
+ (if (lowerBound eq Nothing) %22%22 else %22 %3E: %22+lowerBound) +%0A
+-        
++%09%09
+ (if (upperBound eq Nothing) %22%22 else %22 %3C: %22+upperBound)%0A  %7D%0A%0A  /** Manifest for the unknown type %60_ %3E: L %3C: U%60 in an existential.%0A   
+- 
+ */%0A  def wildcardType%5BT%5D(lowerBound: Manifest%5B_%5D, upperBound: Manifest%5B_%5D): Manifest%5BT%5D =%0A
+-    
++%09
+ new WildcardManifest%5BT%5D(lowerBound, upperBound)%0A%0A  @SerialVersionUID(1L)%0A  priva
+@@ -20088,406 +20088,394 @@
+  IntersectionTypeManifest%5BT%5D(parents: Array%5BManifest%5B_%5D%5D) extends Manifest%5BT%5D %7B%0A
+-    
++%09
+ // We use an %60Array%60 instead of a %60Seq%60 for %60parents%60 to avoid cyclic dependencies during deserialization%0A
+-    
++%09
+ // which can cause serialization proxies to leak and cause a ClassCastException.%0A
+-    
++%09
+ def runtimeClass = parents(0).runtimeClass%0A
+-    
++%09
+ override def toString = parents.mkString(%22 with %22)%0A  %7D%0A%0A  /** Manifest for the i
+@@ -20523,135 +20523,132 @@
+  parents_n%60. */%0A  def intersectionType%5BT%5D(parents: Manifest%5B_%5D*): Manifest%5BT%5D =%0A
+-    
++%09
+ new IntersectionTypeManifest%5BT%5D(parents.toArray)%0A%7D%0A

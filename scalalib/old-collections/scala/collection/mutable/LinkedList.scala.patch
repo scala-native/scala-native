@@ -1,17 +1,11 @@
-@@ -4298,16 +4298,247 @@
- st%5D %7B%0A  
+@@ -4226,340 +4226,592 @@
+ are deprecated%22, %222.11.0%22)%0Aobject LinkedList extends SeqFactory%5BLinkedList%5D %7B%0A  
 +@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- override
-@@ -4567,16 +4567,20 @@
- ist%5BA%5D =
+ override def empty%5BA%5D: LinkedList%5BA%5D =
 +%0A   
-  new Lin
-@@ -4590,17 +4590,26 @@
- List%5BA%5D%0A
+  new LinkedList%5BA%5D%0A
 - 
 +%0A  @inline
-  implici
-@@ -4722,16 +4722,24 @@
- %5BA%5D%5D%0A%0A  
+  implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, LinkedList%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, LinkedList%5BA%5D%5D =%0A    (new MutableList) mapResult (

@@ -1,0 +1,5 @@
+@@ -4228,164 +4228,241 @@
+ original: Array%5BA%5D, newLength: Int): Array%5BA%5D = ((original: @unchecked) match %7B%0A
+-    
++//  We cannot distinguish Array%5BBoxedUnit%5D from Array%5BObject%5D in Scala Native%0A//%09
+ case x: Array%5BBoxedUnit%5D  =%3E newUnitArray(newLength).asInstanceOf%5BArray%5BA%5D%5D%0A    

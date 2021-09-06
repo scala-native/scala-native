@@ -1,20 +1,12 @@
-@@ -1507,24 +1507,32 @@
- zable %7B%0A    
+@@ -1439,346 +1439,592 @@
+ rayBuffer%5BA%5D) extends AbstractSeq%5BA%5D with IndexedSeq%5BA%5D with Serializable %7B%0A    
 +@inline 
- def length =
-@@ -1547,16 +1547,24 @@
- gth%0A    
+ def length = buf.length%0A    
 +@inline 
- def appl
-@@ -1598,16 +1598,24 @@
- )%0A  %7D%0A  
+ def apply(idx: Int) = buf.apply(idx)%0A  %7D%0A  
 +@inline 
- def newB
-@@ -1674,17 +1674,16 @@
- lder%5BA%5D%0A
+ def newBuilder%5BA%5D: Builder%5BA, IndexedSeq%5BA%5D%5D = Vector.newBuilder%5BA%5D%0A
 -%0A
-   implic
-@@ -1797,11 +1797,234 @@
- From%5BA%5D%5D
+   implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, IndexedSeq%5BA%5D%5D =%0A    ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D
 +%0A%0A  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D
  %0A%7D%0A

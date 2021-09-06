@@ -1,12 +1,8 @@
-@@ -523,16 +523,239 @@
- tack%5D %7B%0A
+@@ -451,311 +451,550 @@
+ %60%0A *  @define coll immutable stack%0A */%0Aobject Stack extends SeqFactory%5BStack%5D %7B%0A
 +  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $g
-@@ -782,16 +782,24 @@
- fo */%0A  
+   /** $genericCanBuildFromInfo */%0A  
 +@inline 
- implicit
-@@ -905,16 +905,24 @@
- m%5BA%5D%5D%0A  
+ implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Stack%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
 +@inline 
- def newB
+ def newBuilder%5BA%5D: Builder%5BA, Stack%5BA%5D%5D = new ArrayBuffer%5BA%5D mapResult (buf =%3E n
