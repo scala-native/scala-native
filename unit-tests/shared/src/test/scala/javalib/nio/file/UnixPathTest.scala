@@ -2,23 +2,24 @@ package javalib.nio.file
 
 import java.nio.file._
 
-import org.junit.{Test, Before}
+import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows
 
-class UnixPathTest {
-
-  @Before
-  def checkIsUnix() {
+object UnixPathTest {
+  @BeforeClass
+  def assumeIsUnix() {
     assumeFalse(
       "Not checking Unix paths on Windows",
       isWindows
     )
   }
+}
 
+class UnixPathTest {
   @Test def pathGetNameCount(): Unit = {
     assertTrue(Paths.get("/").getNameCount == 0)
     assertTrue(Paths.get("///").getNameCount == 0)

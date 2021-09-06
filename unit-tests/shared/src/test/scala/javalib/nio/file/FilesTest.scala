@@ -20,7 +20,7 @@ import org.scalanative.testsuite.utils.Platform.isWindows
 class FilesTest {
   import FilesTest._
 
-  def checkShouldTestSymlinks(): Unit = {
+  def assumeShouldTestSymlinks(): Unit = {
     assumeFalse(
       "Do not test symlinks on windows, admin privilege needed",
       isWindows
@@ -191,7 +191,7 @@ class FilesTest {
   }
 
   @Test def filesCopyDoesNotCopySymlinks(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
@@ -304,7 +304,7 @@ class FilesTest {
   }
 
   @Test def filesExistsHandlesSymlinks(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -541,7 +541,7 @@ class FilesTest {
   }
 
   @Test def filesIsRegularFileHandlesSymlinks(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
@@ -672,7 +672,7 @@ class FilesTest {
   }
 
   @Test def filesReadSymbolicLinkCanReadValidSymbolicLink(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -689,7 +689,7 @@ class FilesTest {
 
   @Test def filesReadSymbolicLinkCanReadBrokenSymbolicLink(): Unit = {
     // Does fail on Windows. Cannot open broken link
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -752,7 +752,7 @@ class FilesTest {
   }
 
   @Test def filesWalkFollowsSymlinks(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -792,7 +792,7 @@ class FilesTest {
   }
 
   @Test def filesWalkDetectsCycles(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -973,7 +973,7 @@ class FilesTest {
   // "NIO File Walker fails on broken links."
 
   @Test def filesWalkFileTreeRespectsFileVisitOptionFollowLinksNo(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectoryPath { dirPath =>
       val context = new FollowLinksTestsContext(dirPath)
@@ -995,7 +995,7 @@ class FilesTest {
   }
 
   @Test def filesWalkFileTreeRespectsFileVisitOptionFollowLinksYes(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectoryPath { dirPath =>
       val context = new FollowLinksTestsContext(dirPath)
@@ -1081,7 +1081,7 @@ class FilesTest {
   }
 
   @Test def filesFindRespectsFileVisitOptionFollowLinksValidSymlinks(): Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val soughtName = "quaesitum" // That which is sought.
@@ -1122,7 +1122,7 @@ class FilesTest {
   // Issue #1530
   @Test def filesFindRespectsFileVisitOptionFollowLinksBrokenSymlinks()
       : Unit = {
-    checkShouldTestSymlinks()
+    assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val soughtName = "quaesitum" // That which is sought.

@@ -650,11 +650,14 @@ object Files {
   def readAllLines(path: Path, cs: Charset): List[String] = {
     val list = new LinkedList[String]()
     val reader = newBufferedReader(path, cs)
-    val lines = reader.lines().iterator()
-    while (lines.hasNext()) {
-      list.add(lines.next())
+    try {
+      val lines = reader.lines().iterator()
+      while (lines.hasNext()) {
+        list.add(lines.next())
+      }
+    } finally {
+      reader.close()
     }
-    reader.close()
     list
   }
 

@@ -174,7 +174,6 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
       }
   }
 
-  @alwaysinline
   private lazy val pathAbs = path.toAbsolutePath().toString
 
   private def toFileTime(winFileTime: WinFileTime): FileTime = {

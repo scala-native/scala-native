@@ -100,7 +100,7 @@ class WindowsPath private[windows] (
       val thisLength = getNameCount()
 
       if (otherLength > thisLength) false
-      else if (isAbsolute() ^ other.isAbsolute()) false
+      else if (isAbsolute() != other.isAbsolute()) false
       else {
         (0 until otherLength).forall(i => getName(i) == other.getName(i))
       }

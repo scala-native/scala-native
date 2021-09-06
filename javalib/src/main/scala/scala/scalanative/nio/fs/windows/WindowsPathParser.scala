@@ -22,19 +22,20 @@ object WindowsPathParser {
   import WindowsPath.PathType._
 
   def apply(rawPath: String)(implicit fs: WindowsFileSystem): WindowsPath = {
+    @alwaysinline
     def charAtIdx(n: Int, pred: Char => Boolean): Boolean = {
       rawPath.size > n && pred(rawPath.charAt(n))
     }
 
     val (tpe, root) = if (charAtIdx(0, isSlash)) {
       if (charAtIdx(1, isSlash))
-        UNC -> getUNCRoot(rawPath)
-      else if (charAtIdx(1, isAnsiLetter) && charAtIdx(2, _ == ':'))
+        UNC -> Some(getUNCRoot(rawPath))
+      else if (charAtIdx(1, isASCIILetter) && charAtIdx(2, _ == ':'))
         // URI specific, absolute path starts with / followed by absolute path
         Absolute -> Some(rawPath.substring(1, 4))
       else
         DriveRelative -> None
-    } else if (charAtIdx(0, isAnsiLetter) && charAtIdx(1, _ == ':')) {
+    } else if (charAtIdx(0, isASCIILetter) && charAtIdx(1, _ == ':')) {
       if (charAtIdx(2, isSlash))
         Absolute -> Some(rawPath.substring(0, 3))
       else
@@ -50,21 +51,18 @@ object WindowsPathParser {
     new WindowsPath(tpe, root.map(fixSlashes), segments)
   }
 
-  private def fixSlashes(str: String): String = str.map {
-    case '/' => '\\'
-    case c   => c
-  }
+  private def fixSlashes(str: String): String = str.replace('/', '\\')
 
   private def isSlash(c: Char): Boolean = {
     c == '\\' || c == '/'
   }
 
-  private def isAnsiLetter(c: Char): Boolean = {
+  private def isASCIILetter(c: Char): Boolean = {
     (c >= 'a' && c <= 'z') ||
     (c >= 'A' && c <= 'Z')
   }
 
-  private def getUNCRoot(rawPath: String): Option[String] = {
+  private def getUNCRoot(rawPath: String): String = {
     val hostStartIdx = 2
     val hostEndIdx = rawPath.indexWhere(isSlash, hostStartIdx)
     if (hostEndIdx < 0) {
@@ -81,7 +79,7 @@ object WindowsPathParser {
     // We also accept `:` after drive letter
     val share = substringAndCheck(rawPath, shareStartIdx, shareEndIdx, ":")
 
-    Some(raw"""\\$host\$share\""")
+    raw"""\\$host\$share\"""
   }
 
   private def pathSegments(path: String): List[String] = {
@@ -122,8 +120,8 @@ object WindowsPathParser {
       to: Int,
       allowedChars: String = ""
   ): String = {
-    def isControlOrReservedChar(c: Char) = {
-      c <= '\u0020' || pathReservedChars.contains(c)
+    def isSpaceOrReservedChar(c: Char) = {
+      c.isSpaceChar || pathReservedChars.contains(c)
     }
     def checkValidSegment(
         segment: String,
@@ -132,7 +130,7 @@ object WindowsPathParser {
     ): Unit = {
 
       val invalidCharIdx = segment.indexWhere { c =>
-        isControlOrReservedChar(c) && !allowedChars.contains(c)
+        isSpaceOrReservedChar(c) && !allowedChars.contains(c)
       }
       if (invalidCharIdx >= 0) {
         throw new InvalidPathException(
