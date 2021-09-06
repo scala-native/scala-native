@@ -4,7 +4,6 @@ package channels
 import java.io.{InputStream, OutputStream, Reader, Writer}
 import java.nio.charset.{Charset, CharsetDecoder, CharsetEncoder}
 import java.util.Objects
-import scalanative.annotation.stub
 
 object Channels {
   def newInputStream(channel: ReadableByteChannel): InputStream = {
@@ -45,50 +44,25 @@ object Channels {
     }
   }
 
-  @stub
-  def newInputStream(ch: AsynchronousByteChannel): InputStream = ???
+  // def newInputStream(ch: AsynchronousByteChannel): InputStream
+  // def newOutputStream(ch: AsynchronousByteChannel): OutputStream
+  // def newChannel(in: InputStream): ReadableByteChannel
+  // def newChannel(out: OutputStream): WritableByteChannel
 
-  @stub
-  def newOutputStream(ch: AsynchronousByteChannel): OutputStream = ???
+  // def newReader(
+  //     ch: ReadableByteChannel,
+  //     dec: CharsetDecoder,
+  //     minBufferCap: Int
+  // ): Reader
+  // def newReader(ch: ReadableByteChannel, csName: String): Reader
+  // def newReader(ch: ReadableByteChannel, charset: Charset): Reader
 
-  @stub
-  def newChannel(in: InputStream): ReadableByteChannel = ???
-
-  @stub
-  def newChannel(out: OutputStream): WritableByteChannel = ???
-
-  @stub
-  def newReader(
-      ch: ReadableByteChannel,
-      dec: CharsetDecoder,
-      minBufferCap: Int
-  ): Reader = ???
-
-  def newReader(ch: ReadableByteChannel, csName: String): Reader = {
-    Objects.requireNonNull(csName, "csName")
-    newReader(ch, Charset.forName(csName).newDecoder(), -1)
-  }
-
-  def newReader(ch: ReadableByteChannel, charset: Charset): Reader = {
-    Objects.requireNonNull(charset, "charset")
-    newReader(ch, charset.newDecoder(), -1)
-  }
-
-  @stub
-  def newWriter(
-      ch: WritableByteChannel,
-      enc: CharsetEncoder,
-      minBufferCap: Int
-  ): Writer = ???
-
-  def newWriter(ch: WritableByteChannel, csName: String): Writer = {
-    Objects.requireNonNull(csName, "csName")
-    newWriter(ch, Charset.forName(csName).newEncoder(), -1)
-  }
-
-  def newWriter(ch: WritableByteChannel, charset: Charset): Writer = {
-    Objects.requireNonNull(charset, "charset")
-    newWriter(ch, charset.newEncoder(), -1)
-  }
+  // def newWriter(
+  //     ch: WritableByteChannel,
+  //     enc: CharsetEncoder,
+  //     minBufferCap: Int
+  // ): Writer
+  // def newWriter(ch: WritableByteChannel, csName: String): Writer
+  // def newWriter(ch: WritableByteChannel, charset: Charset): Writer
 
 }
