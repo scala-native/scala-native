@@ -32,3 +32,6 @@ bin/
 
 # vscode
 /.vscode/
+
+# vim
+*.swp

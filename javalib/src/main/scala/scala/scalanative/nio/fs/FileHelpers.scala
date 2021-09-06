@@ -1,18 +1,16 @@
 package scala.scalanative.nio.fs
 
+import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.libc._
 import scalanative.posix.dirent._
-import scalanative.posix.unistd
-import unistd.access
-import scalanative.unsafe._
-import stdlib._
-import stdio._
+import scalanative.posix.{errno => e, fcntl, unistd}, e._, unistd.access
+import scalanative.unsafe._, stdlib._, stdio._, string._
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
 import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets
-import scala.scalanative.windows.{ErrorCodes, WChar}
 import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
@@ -21,38 +19,73 @@ import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows._
 
 object FileHelpers {
+  sealed trait FileType
+  object FileType {
+    case object Normal extends FileType
+    case object Directory extends FileType
+    case object Link extends FileType
+
+    private[scalanative] def unixFileType(tpe: CInt) =
+      if (tpe == DT_LNK()) Link
+      else if (tpe == DT_DIR()) Directory
+      else Normal
+
+    private[scalanative] def windowsFileType(attributes: DWord) = {
+      def isSet(attr: DWord): Boolean = {
+        (attributes & attr) == attr
+      }
+
+      if (isSet(FILE_ATTRIBUTE_REPARSE_POINT)) Link
+      else if (isSet(FILE_ATTRIBUTE_DIRECTORY)) Directory
+      else Normal
+    }
+  }
+
   private[this] lazy val random = new scala.util.Random()
   final case class Dirent(name: String, tpe: CShort)
   def list[T: ClassTag](
       path: String,
-      f: (String, CShort) => T,
+      f: (String, FileType) => T,
       allowEmpty: Boolean = false
   ): Array[T] = Zone { implicit z =>
-    val dir = opendir(toCString(path))
+    lazy val buffer = UnrolledBuffer.empty[T]
 
-    if (dir == null) {
-      if (!allowEmpty) throw UnixException(path, errno.errno)
-      null
-    } else {
-      val buffer = UnrolledBuffer.empty[T]
-      Zone { implicit z =>
-        var elem = alloc[dirent]
-        var res = 0
-        while ({ res = readdir(dir, elem); res == 0 }) {
-          val name = fromCString(elem._2.at(0))
-
-          // java doesn't list '.' and '..', we filter them out.
-          if (name != "." && name != "..") {
-            buffer += f(name, elem._3)
-          }
-        }
-        closedir(dir)
-        if (res == -1)
-          buffer.toArray
-        else
-          throw UnixException(path, res)
+    def collectFile(name: String, fileType: FileType): Unit = {
+      // java doesn't list '.' and '..', we filter them out.
+      if (name != "." && name != "..") {
+        buffer += f(name, fileType)
       }
     }
+
+    def listUnix() = {
+      val dir = opendir(toCString(path))
+
+      if (dir == null) {
+        if (!allowEmpty) throw UnixException(path, errno.errno)
+        null
+      } else {
+        Zone { implicit z =>
+          var elem = alloc[dirent]
+          var res = 0
+          while ({ res = readdir(dir, elem); res == 0 }) {
+            val name = fromCString(elem._2.at(0))
+            val fileType = FileType.unixFileType(elem._3)
+            collectFile(name, fileType)
+          }
+          closedir(dir)
+          res match {
+            case e if e == EBADF || e == EFAULT || e == EIO =>
+              throw UnixException(path, res)
+            case _ => buffer.toArray
+          }
+        }
+      }
+    }
+
+    def listWindows() = ???
+
+    if (isWindows) listWindows()
+    else listUnix()
   }
 
   def createNewFile(path: String, throwOnError: Boolean = false): Boolean =

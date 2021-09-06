@@ -5,6 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
+import scalanative.nir.Attr.Link
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -93,7 +94,10 @@ private[scalanative] object LLVM {
       outpath: Path
   ): Path = {
     val links = {
-      val srclinks = linkerResult.links.map(_.name)
+      val srclinks = linkerResult.links.collect {
+        case Link("z") if config.targetsWindows => "zlib"
+        case Link(name)                         => name
+      }
       val gclinks = config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
@@ -113,10 +117,9 @@ private[scalanative] object LLVM {
     }
     val paths = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
-    val ltoName = lto(config).getOrElse("none")
 
     config.logger.time(
-      s"Linking native code (${config.gc.name} gc, $ltoName lto)"
+      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
       config.logger.running(compile)
       Process(compile, config.workdir.toFile) ! Logger.toProcessLogger(
@@ -126,17 +129,11 @@ private[scalanative] object LLVM {
     outpath
   }
 
-  private def lto(config: Config): Option[String] =
-    (config.mode, config.LTO) match {
-      case (Mode.Debug, _)             => None
-      case (_: Mode.Release, LTO.None) => None
-      case (_: Mode.Release, lto)      => Some(lto.name)
-    }
-
   private def flto(config: Config): Seq[String] =
-    lto(config).fold[Seq[String]] {
-      Seq()
-    } { name => Seq(s"-flto=$name") }
+    config.compilerConfig.lto match {
+      case LTO.None => Seq.empty
+      case lto      => Seq(s"-flto=${lto.name}")
+    }
 
   private def target(config: Config): Seq[String] =
     config.compilerConfig.targetTriple match {

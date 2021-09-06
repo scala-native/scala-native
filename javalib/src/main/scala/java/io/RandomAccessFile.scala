@@ -6,6 +6,7 @@ import scalanative.unsafe.{toCString, Zone}
 import scalanative.libc.stdio
 import scalanative.posix.{fcntl, unistd}
 import scalanative.posix.sys.stat
+import scalanative.meta.LinktimeInfo.isWindows
 
 class RandomAccessFile private (
     file: File,
@@ -30,7 +31,8 @@ class RandomAccessFile private (
 
   override def close(): Unit = {
     closed = true
-    unistd.close(fd.fd)
+    if (isWindows) ???
+    else unistd.close(fd.fd)
   }
 
   // final def getChannel(): FileChannel
@@ -38,8 +40,10 @@ class RandomAccessFile private (
   def getFD(): FileDescriptor =
     fd
 
-  def getFilePointer(): Long =
-    unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+  def getFilePointer(): Long = {
+    if (isWindows) ???
+    else unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
+  }
 
   def length(): Long =
     file.length()
@@ -133,15 +137,21 @@ class RandomAccessFile private (
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
+    if (isWindows) ???
+    else unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
 
   def setLength(newLength: Long): Unit =
     if (!mode.contains("w")) {
       throw new IOException("Invalid argument")
     } else {
       val currentPosition = getFilePointer()
-      if (unistd.ftruncate(fd.fd, newLength) != 0) {
-        throw new IOException()
+      val hasSucceded =
+        if (isWindows) ???
+        else {
+          unistd.ftruncate(fd.fd, newLength) == 0
+        }
+      if (!hasSucceded) {
+        throw new IOException("Failed to truncate file")
       }
       if (currentPosition > newLength) seek(newLength)
     }
@@ -233,24 +243,32 @@ class RandomAccessFile private (
 }
 
 private object RandomAccessFile {
-  private def fileDescriptor(file: File, _flags: String) =
-    Zone { implicit z =>
+  private def fileDescriptor(file: File, _flags: String) = {
+    if (_flags == "r" && !file.exists())
+      throw new FileNotFoundException(file.getName())
+
+    def invalidFlags() =
+      throw new IllegalArgumentException(
+        s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd""""
+      )
+
+    def unixFileDescriptor() = Zone { implicit z =>
       import fcntl._
       import stat._
-      if (_flags == "r" && !file.exists())
-        throw new FileNotFoundException(file.getName())
+
       val flags = _flags match {
         case "r"                  => O_RDONLY
         case "rw" | "rws" | "rwd" => O_RDWR | O_CREAT
-        case _ =>
-          throw new IllegalArgumentException(
-            s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd""""
-          )
+        case _                    => invalidFlags()
       }
       val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
       val fd = open(toCString(file.getPath()), flags, mode)
-      new FileDescriptor(fd)
+      new FileDescriptor(FileDescriptor.FileHandle(fd), readOnly = false)
     }
+
+    if (isWindows) ???
+    else unixFileDescriptor()
+  }
 
   private def flush(mode: String): Boolean =
     mode match {

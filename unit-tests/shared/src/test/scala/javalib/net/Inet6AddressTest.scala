@@ -113,4 +113,10 @@ class Inet6AddressTest {
     Inet6Address.getByAddress("123", addr2, -1)
   }
 
+  // Issue 2313
+  @Test def trailing0NotLost(): Unit = {
+    val addr = InetAddress.getByName("1c1e::")
+    assertTrue(addr.getHostAddress().endsWith("0"))
+  }
+
 }

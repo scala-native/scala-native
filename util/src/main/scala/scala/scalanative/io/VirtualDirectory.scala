@@ -178,7 +178,7 @@ object VirtualDirectory {
     }
   }
 
-  private final object EmptyDirectory extends VirtualDirectory {
+  private object EmptyDirectory extends VirtualDirectory {
 
     val uri: URI = URI.create("")
 

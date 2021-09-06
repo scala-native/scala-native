@@ -2,7 +2,7 @@ package scala.scalanative
 package interflow
 
 sealed abstract class Kind
-final object ClassKind extends Kind
-final object ArrayKind extends Kind
-final object BoxKind extends Kind
-final object StringKind extends Kind
+object ClassKind extends Kind
+object ArrayKind extends Kind
+object BoxKind extends Kind
+object StringKind extends Kind

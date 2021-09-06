@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.unsafe._
+import scalanative.meta.LinktimeInfo.isWindows
 
 import scalanative.libc.{errno => Cerrno}
 
@@ -11,7 +12,7 @@ import scalanative.posix.sys.stat
 
 class FcntlTest {
 
-  @Test def openPathnameFlagsExistingFile(): Unit = {
+  @Test def openPathnameFlagsExistingFile(): Unit = if (!isWindows) {
 
     Cerrno.errno = 0
     val fileName = c"/dev/null"
@@ -22,7 +23,7 @@ class FcntlTest {
     assertTrue(s"fd == -1 errno: ${Cerrno.errno}", fd != -1)
   }
 
-  @Test def openPathnameFlagsModeExistingFile(): Unit = {
+  @Test def openPathnameFlagsModeExistingFile(): Unit = if (!isWindows) {
 
     Cerrno.errno = 0
     val fileName = c"/dev/null"

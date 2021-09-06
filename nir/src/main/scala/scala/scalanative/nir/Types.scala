@@ -27,24 +27,24 @@ object Type {
 
   /** Primitive value types. */
   sealed abstract class PrimitiveKind(val width: Int) extends ValueKind
-  final case object Bool extends PrimitiveKind(1)
-  final case object Ptr extends PrimitiveKind(64)
+  case object Bool extends PrimitiveKind(1)
+  case object Ptr extends PrimitiveKind(64)
 
   sealed abstract class I(width: Int, val signed: Boolean)
       extends PrimitiveKind(width)
   object I {
     def unapply(i: I): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
-  final case object Char extends I(16, signed = false)
-  final case object Byte extends I(8, signed = true)
-  final case object Short extends I(16, signed = true)
-  final case object Int extends I(32, signed = true)
-  final case object Long extends I(64, signed = true)
+  case object Char extends I(16, signed = false)
+  case object Byte extends I(8, signed = true)
+  case object Short extends I(16, signed = true)
+  case object Int extends I(32, signed = true)
+  case object Long extends I(64, signed = true)
 
   sealed abstract class F(width: Int) extends PrimitiveKind(width)
   object F { def unapply(f: F): Some[Int] = Some(f.width) }
-  final case object Float extends F(32)
-  final case object Double extends F(64)
+  case object Float extends F(32)
+  case object Double extends F(64)
 
   /** Aggregate value types. */
   sealed abstract class AggregateKind extends ValueKind
@@ -72,8 +72,8 @@ object Type {
       case Type.Ref(_, _, n) => n
     }
   }
-  final case object Null extends RefKind
-  final case object Unit extends RefKind
+  case object Null extends RefKind
+  case object Unit extends RefKind
   final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
   final case class Ref(
       name: Global,
@@ -83,9 +83,9 @@ object Type {
 
   /** Second-class types. */
   sealed abstract class SpecialKind extends Type
-  final case object Vararg extends SpecialKind
-  final case object Nothing extends SpecialKind
-  final case object Virtual extends SpecialKind
+  case object Vararg extends SpecialKind
+  case object Nothing extends SpecialKind
+  case object Virtual extends SpecialKind
   final case class Var(ty: Type) extends SpecialKind
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 

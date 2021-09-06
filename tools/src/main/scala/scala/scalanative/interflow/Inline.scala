@@ -131,7 +131,7 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def inline(name: Global, args: Seq[Val])(implicit
+  def `inline`(name: Global, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result,
       origPos: Position
