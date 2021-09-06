@@ -1,13 +1,12 @@
 package java.nio.file
 package spi
 
-import java.util.{HashSet, LinkedList, List, Map, Set}
+import java.util.{LinkedList, List, Map, Set}
 import java.util.concurrent.ExecutorService
 
 import java.net.URI
 
-import java.io.{FileInputStream, InputStream, OutputStream}
-import java.nio.ByteBuffer
+import java.io.{InputStream, OutputStream}
 import java.nio.file.attribute.{
   BasicFileAttributes,
   FileAttribute,
@@ -15,12 +14,14 @@ import java.nio.file.attribute.{
 }
 import java.nio.channels.{
   AsynchronousFileChannel,
+  Channels,
   FileChannel,
   SeekableByteChannel
 }
 
 import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
 import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 abstract class FileSystemProvider protected () {
@@ -43,20 +44,7 @@ abstract class FileSystemProvider protected () {
       if (_options.isEmpty) Array[OpenOption](StandardOpenOption.READ)
       else _options
     val channel = Files.newByteChannel(path, options)
-    new InputStream {
-      private val buffer = ByteBuffer.allocate(1)
-      override def read(buf: Array[Byte], offset: Int, count: Int): Int = {
-        channel.read(ByteBuffer.wrap(buf, offset, count))
-      }
-      override def read(): Int = {
-        buffer.position(0)
-        val read = channel.read(buffer)
-        if (read <= 0) read
-        else buffer.get(0) & 0xff
-      }
-      override def close(): Unit =
-        channel.close()
-    }
+    Channels.newInputStream(channel)
   }
 
   def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
@@ -69,19 +57,7 @@ abstract class FileSystemProvider protected () {
         )
       else _options :+ StandardOpenOption.WRITE
     val channel = Files.newByteChannel(path, options)
-    new OutputStream {
-      private val buffer = ByteBuffer.allocate(1)
-      override def write(b: Int): Unit = {
-        buffer.position(0)
-        buffer.put(0, b.toByte)
-        channel.write(buffer)
-      }
-      override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-        channel.write(ByteBuffer.wrap(b, off, len))
-      }
-      override def close(): Unit =
-        channel.close()
-    }
+    Channels.newOutputStream(channel)
   }
 
   def newFileChannel(

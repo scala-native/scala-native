@@ -1590,6 +1590,20 @@ class FilesTest {
     }
   }
 
+  @Test def setPosition(): Unit = {
+    val offset = 42
+    val target = Files.createTempFile("", "")
+    val openAttrs = new java.util.HashSet[OpenOption]
+
+    val out = Files.newByteChannel(target, openAttrs)
+    assertNotNull(out)
+    try {
+      assertEquals(0, out.position())
+      out.position(offset)
+      assertEquals(offset, out.position())
+    } finally out.close()
+  }
+
   private class FollowLinksTestsContext(dirPath: Path) {
 
     final val fNames =
