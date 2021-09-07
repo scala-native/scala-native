@@ -1,0 +1,12 @@
+@@ -8980,214 +8980,209 @@
+  %5B%5BExecutionContext%5D%5D%0A   */%0A  final lazy val global: ExecutionContextExecutor = 
+-impl.ExecutionContextImpl.fromExecutor(null: Executor)
++scala.scalanative.runtime.ExecutionContext.global
+ %0A%0A  /**%0A   * WARNING: Only ever execute logic which will quickly return control 
+@@ -10564,727 +10564,184 @@
+ bal%5D%5D.%0A   */%0A  private%5Bscala%5D lazy val opportunistic: ExecutionContextExecutor =
+- new
+  ExecutionContext
+-Executor with BatchingExecutor %7B%0A    final override def submitForExecution(runnable: Runnable): Unit = global.execute(runnable)%0A%0A    final override def execute(runnable: Runnable): Unit =%0A      if ((!runnable.isInstanceOf%5Bimpl.Promise.Transformation%5B_,_%5D%5D %7C%7C runnable.asInstanceOf%5Bimpl.Promise.Transformation%5B_,_%5D%5D.benefitsFromBatching) && runnable.isInstanceOf%5BBatchable%5D)%0A        submitAsyncBatched(runnable)%0A      else%0A        submitForExecution(runnable)%0A%0A    override final def reportFailure(t: Throwable): Unit = global.reportFailure(t)%0A  %7D
++.global
+ %0A%0A  object Implicits %7B%0A    /**%0A     * An accessor that can be used to import the
