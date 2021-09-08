@@ -17,6 +17,7 @@
 #include <memory.h>
 #include <time.h>
 #include <inttypes.h>
+#include "WeakRefGreyList.h"
 
 void Heap_exitWithOutOfMemory() {
     fprintf(stderr, "Out of heap space\n");
@@ -185,6 +186,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     GreyList_Init(&heap->mark.empty);
     GreyList_Init(&heap->mark.full);
+    GreyList_Init(&heap->mark.foundWeakRefs);
 
     GreyList_PushAll(&heap->mark.empty, greyPacketsStart,
                      (GreyPacket *)greyPacketsStart, greyPacketCount);
@@ -232,6 +234,7 @@ void Heap_Collect(Heap *heap) {
     Phase_MarkDone(heap);
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
+    WeakRefGreyList_Visit(heap); // TODO concurrentify
     Phase_StartSweep(heap);
 }
 
