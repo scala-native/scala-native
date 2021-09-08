@@ -1,3 +1,4 @@
+import scala.util.control.NonFatal
 import scala.scalanative.build.Platform
 import java.io.File.pathSeparator
 import scala.collection.mutable
@@ -5,7 +6,6 @@ import scala.util.Try
 import build.ScalaVersions._
 import build.BinaryIncompatibilities
 import com.typesafe.tools.mima.core.ProblemFilter
-import org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
 
 // Convert "SomeName" to "some-name".
 def convertCamelKebab(name: String): String = {
@@ -707,34 +707,59 @@ lazy val scalalib =
 
           def tryApplyPatch(sourceName: String): Option[File] = {
             val scalaSourcePath = scalaSrcDir / sourceName
+            val scalaSourceCopyPath = scalaSrcDir / (sourceName + ".copy")
             val outputFile = crossTarget.value / "patched" / sourceName
             val outputDir = outputFile.getParentFile
             if (!outputDir.exists()) {
               IO.createDirectory(outputDir)
+
             }
 
-            val Array(patched: String, results: Array[Boolean]) = {
-              type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
-              val input = {
-                val raw = IO.read(sourcePath.toFile)
-                if (Platform.isWindows)
-                  raw.replace("\n", System.lineSeparator())
-                else raw
-              }
-              val diff = new DiffMatchPatch()
-              val patches = diff.patchFromText(input)
-              diff.patchApply(
-                patches.asInstanceOf[PatchList],
-                IO.read(scalaSourcePath)
+            def copySource(source: File, destination: File) = {
+              import java.nio.file.Files
+              import java.nio.file.StandardCopyOption._
+              Files.copy(
+                source.toPath(),
+                destination.toPath(),
+                COPY_ATTRIBUTES,
+                REPLACE_EXISTING
               )
             }
-            if (results.forall(_ == true)) {
-              IO.write(outputFile, patched)
-              Some(outputFile)
-            } else {
-              val path = sourcePath.toFile.relativeTo(srcDir.getParentFile).get
-              sLog.value.warn(s"Cannot apply patch for $path")
-              None
+
+            // There is not a single JVM library for diff that can apply
+            // patches in a fuzzy way (using context lines). We also
+            // canot use jgit to apply patches - it fails due to "invalid hunk headers".
+            // Becouse of that we use git app instead.
+            // We need to create copy of original file and restore it after creating
+            // patched file to allow for recompilation of sources (re-applying patches)
+            // git apply command needs to be used from within fetchedScalaSource directory.
+            try {
+              copySource(scalaSourcePath, scalaSourceCopyPath)
+              new java.lang.ProcessBuilder(
+                "git",
+                "apply",
+                "--ignore-space-change",
+                "--ignore-whitespace",
+                "--inaccurate-eof",
+                sourcePath.toAbsolutePath().toString()
+              ).directory(scalaSrcDir)
+                .inheritIO
+                .start()
+                .waitFor() match {
+                case 0 =>
+                  copySource(scalaSourcePath, outputFile)
+                  Some(outputFile)
+                case err =>
+                  val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
+                  sLog.value
+                    .warn(s"Cannot apply patch for $path")
+                  None
+              }
+            } finally {
+              if (scalaSourceCopyPath.exists()) {
+                copySource(scalaSourceCopyPath, scalaSourcePath)
+                scalaSourceCopyPath.delete()
+              }
             }
           }
 

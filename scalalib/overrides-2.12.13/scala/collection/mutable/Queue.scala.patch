@@ -1,0 +1,13 @@
+--- 2.12.13/scala/collection/mutable/Queue.scala
++++ overrides-2.12.13/scala/collection/mutable/Queue.scala
+@@ -195,1 +195,4 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+@@ -197,1 +200,3 @@
+-  def newBuilder[A]: Builder[A, Queue[A]] = new MutableList[A] mapResult { _.toQueue }
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++
++  @inline def newBuilder[A]: Builder[A, Queue[A]] = new MutableList[A] mapResult { _.toQueue }

@@ -1,5 +1,30 @@
-@@ -5666,339 +5666,217 @@
- va.lang.Class.forName(name)%0A%0A  /** The default line separator.%0A   *%0A   * On the 
--JVM, this is equivalent to calling the method:%0A   * %60System.getProperty(%22line.separator%22)%60%0A   * with a default value of %22%5Cn%22.%0A   */%0A  val EOL = scala.util.Properties.lineSeparator
-+Scala Native, this is always %22%5Cn%22.%0A   */%0A  val EOL = %22%5Cn%22
- %0A%0A  /** The current time in milliseconds. The time is counted since 1 January 19
+--- 2.11.12/scala/compat/Platform.scala
++++ overrides-2.11/scala/compat/Platform.scala
+@@ -107,3 +107,1 @@
+-   * On the JVM, this is equivalent to calling the method:
+-   * `System.getProperty("line.separator")`
+-   * with a default value of "\n".
++   * On the Scala Native, this is always "\n".
+@@ -111,1 +109,1 @@
+-  val EOL = scala.util.Properties.lineSeparator
++  val EOL = "\n"
+@@ -113,2 +111,1 @@
+-  /** The current time in milliseconds. The time is counted since 1 January 1970
+-    * UTC.
++  /** The current time in milliseconds. The time is counted since 1 January 1970    * UTC.
+@@ -118,2 +115,1 @@
+-    */
+-  @inline
++    */  @inline
+@@ -123,2 +119,1 @@
+-   *
+-   * This is a request that the underlying JVM runs the garbage collector.
++   *   * This is a request that the underlying JVM runs the garbage collector.
+@@ -128,2 +123,1 @@
+-  @inline
+-  def collectGarbage(): Unit = System.gc()
++  @inline  def collectGarbage(): Unit = System.gc()
+@@ -133,2 +127,1 @@
+-  def defaultCharsetName: String = java.nio.charset.Charset.defaultCharset.name
+-}
++  def defaultCharsetName: String = java.nio.charset.Charset.defaultCharset.name}

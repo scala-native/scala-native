@@ -1,5 +1,30 @@
-@@ -4228,164 +4228,241 @@
- original: Array%5BA%5D, newLength: Int): Array%5BA%5D = ((original: @unchecked) match %7B%0A
--    
-+//  We cannot distinguish Array%5BBoxedUnit%5D from Array%5BObject%5D in Scala Native%0A//%09
- case x: Array%5BBoxedUnit%5D  =%3E newUnitArray(newLength).asInstanceOf%5BArray%5BA%5D%5D%0A    
+--- 2.13.6/scala/Array.scala
++++ overrides-2.13/scala/Array.scala
+@@ -125,1 +125,2 @@
+-    case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
++//  We cannot distinguish Array[BoxedUnit] from Array[Object] in Scala Native
++//	case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
+@@ -127,2 +128,1 @@
+-    case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
+-    case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
++    case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)    case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
+@@ -132,2 +132,1 @@
+-    case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
+-    case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
++    case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)    case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
+@@ -137,2 +136,1 @@
+-  /** Copy one array to another, truncating or padding with default values (if
+-    * necessary) so the copy has the specified length. The new array can have
++  /** Copy one array to another, truncating or padding with default values (if    * necessary) so the copy has the specified length. The new array can have
+@@ -142,2 +140,1 @@
+-    *
+-    * Equivalent to Java's
++    *    * Equivalent to Java's
+@@ -147,2 +144,1 @@
+-    *
+-    * @see `java.util.Arrays#copyOf`
++    *    * @see `java.util.Arrays#copyOf`
+@@ -152,2 +148,1 @@
+-    if (runtimeClass == Void.TYPE) newUnitArray(newLength).asInstanceOf[Array[A]]
+-    else {
++    if (runtimeClass == Void.TYPE) newUnitArray(newLength).asInstanceOf[Array[A]]    else {

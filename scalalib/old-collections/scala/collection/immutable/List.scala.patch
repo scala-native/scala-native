@@ -1,14 +1,21 @@
-@@ -16786,417 +16786,676 @@
- ne coll list%0A *  @define Coll %60List%60%0A */%0Aobject List extends SeqFactory%5BList%5D %7B%0A
-+  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $genericCanBuildFromInfo */%0A  
-+@inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, List%5BA%5D%5D =%0A    ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, List%5BA%5D%5D =
-+%0A   
-  new ListBuffer%5BA%5D%0A%0A  
-+@inline 
- override def empty%5BA%5D: List%5BA%5D = Nil%0A%0A  
-+@inline 
- override def apply%5BA%5D(xs: A*): List%5BA%5D = xs.toList%0A%0A  private%5Bcollection%5D val pa
+--- 2.12.14/scala/collection/immutable/List.scala
++++ old-collections/scala/collection/immutable/List.scala
+@@ -497,0 +497,5 @@
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+@@ -498,1 +503,1 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
+@@ -501,1 +506,2 @@
+-  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
++  @inline def newBuilder[A]: Builder[A, List[A]] =
++    new ListBuffer[A]
+@@ -503,1 +509,1 @@
+-  override def empty[A]: List[A] = Nil
++  @inline override def empty[A]: List[A] = Nil
+@@ -505,1 +511,1 @@
+-  override def apply[A](xs: A*): List[A] = xs.toList
++  @inline override def apply[A](xs: A*): List[A] = xs.toList

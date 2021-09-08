@@ -1,39 +1,98 @@
-@@ -3299,2867 +3299,1051 @@
- runtimeClass.asInstanceOf%5BjClass%5BT%5D%5D%0A%0A  /** Retrieve generic array element */%0A  
-+@inline 
- def array_apply(xs: AnyRef, idx: Int): Any = %7B%0A    
--xs match %7B%0A      case x: Array%5BAnyRef%5D  =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BInt%5D     =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BDouble%5D  =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BLong%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BFloat%5D   =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BChar%5D    =%3E x(idx).asInstanceOf%5BAny%5D
-+if (xs == null) %7B%0A      throw new NullPointerException
- %0A    
--  case x: Array%5BByte%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BShort%5D   =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BBoolean%5D =%3E x(idx).asInstanceOf%5BAny%5D%0A      case x: Array%5BUnit%5D    =%3E x(idx).asInstanceOf%5BAny%5D%0A      case null =%3E throw new NullPointerException
-+%7D else %7B%0A      xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.apply(idx)
- %0A    %7D%0A  %7D%0A%0A  /** update generic array element */%0A  
-+@inline 
- def array_update(xs: AnyRef, idx: Int, value: Any): Unit = %7B%0A    
--xs match %7B%0A      case x: Array%5BAnyRef%5D  =%3E x(idx) = value.asInstanceOf%5BAnyRef%5D%0A      case x: Array%5BInt%5D     =%3E x(idx) = value.asInstanceOf%5BInt%5D%0A      case x: Array%5BDouble%5D  =%3E x(idx) = value.asInstanceOf%5BDouble%5D%0A      case x: Array%5BLong%5D    =%3E x(idx) = value.asInstanceOf%5BLong%5D%0A      case x: Array%5BFloat%5D   =%3E x(idx) = value.asInstanceOf%5BFloat%5D%0A      case x: Array%5BChar%5D    =%3E x(idx) = value.asInstanceOf%5BChar%5D
-+if (xs == null) %7B%0A      throw new NullPointerException
- %0A    
--  case x: Array%5BByte%5D    =%3E x(idx) = value.asInstanceOf%5BByte%5D%0A      case x: Array%5BShort%5D   =%3E x(idx) = value.asInstanceOf%5BShort%5D%0A      case x: Array%5BBoolean%5D =%3E x(idx) = value.asInstanceOf%5BBoolean%5D%0A      case x: Array%5BUnit%5D    =%3E x
-+%7D else %7B%0A      xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.update
- (idx
--) =
-+,
-  value
--.asInstanceOf%5BUnit%5D%0A      case null =%3E throw new NullPointerException
-+)
- %0A    %7D%0A  %7D%0A%0A  /** Get generic array length */%0A  def array_length(xs: AnyRef): Int = 
--xs match %7B%0A    case x: Array%5BAnyRef%5D  =%3E x.length%0A    case x: Array%5BInt%5D     =%3E x.length%0A    case x: Array%5BDouble%5D  =%3E x.length%0A    case x: Array%5BLong%5D    =%3E x.length%0A    case x: Array%5BFloat%5D   =%3E x.length%0A    case x: Array%5BChar%5D    =%3E x.length
-+%7B%0A    if (xs == null) %7B%0A      throw new NullPointerException
- %0A    
--case x: Array%5BByte%5D
-+%7D else %7B%0A 
-     
--=%3E x.length%0A    case x: Array%5BShort%5D   =%3E x.length%0A    case x: Array%5BBoolean%5D =%3E x.length%0A    case x: Array%5BUnit%5D    =%3E x.length%0A    case null =%3E throw new NullPointerException%0A  %7D%0A%0A  def array_clone(xs: AnyRef): AnyRef = xs match %7B%0A    case x: Array%5BAnyRef%5D  =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BInt%5D     =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BDouble%5D  =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BLong%5D    =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BFloat%5D   =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BChar%5D    =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BByte%5D    =%3E ArrayRun
-+ xs.asInstanceOf%5Bscala.scalanative.runtime.Array%5BAny%5D%5D.length%0A    %7D%0A  %7D%0A%0A  def array_clone(xs: AnyRef): AnyRef = %7B%0A    if (xs == null) %7B%0A      throw new NullPointerException%0A    %7D else %7B%0A      xs.asInstanceOf%5Bscala.scalana
- ti
--m
-+v
- e.
--cloneArray(x)%0A    case x: Array%5BShort%5D   =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BBoolean%5D =%3E ArrayRuntime.cloneArray(x)%0A    case x: Array%5BUnit%5D    =%3E x%0A    case null =%3E throw new NullPointerException
-+runtime.Array%5BAny%5D%5D.clone()%0A    %7D
- %0A  %7D%0A%0A  /** Convert an array to an object array.%0A   *  Needed to deal with varar
+--- 2.11.12/scala/runtime/ScalaRunTime.scala
++++ overrides-2.11/scala/runtime/ScalaRunTime.scala
+@@ -72,13 +72,5 @@
+-  def array_apply(xs: AnyRef, idx: Int): Any = {
+-    xs match {
+-      case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
+-      case x: Array[Int]     => x(idx).asInstanceOf[Any]
+-      case x: Array[Double]  => x(idx).asInstanceOf[Any]
+-      case x: Array[Long]    => x(idx).asInstanceOf[Any]
+-      case x: Array[Float]   => x(idx).asInstanceOf[Any]
+-      case x: Array[Char]    => x(idx).asInstanceOf[Any]
+-      case x: Array[Byte]    => x(idx).asInstanceOf[Any]
+-      case x: Array[Short]   => x(idx).asInstanceOf[Any]
+-      case x: Array[Boolean] => x(idx).asInstanceOf[Any]
+-      case x: Array[Unit]    => x(idx).asInstanceOf[Any]
+-      case null => throw new NullPointerException
++  @inline def array_apply(xs: AnyRef, idx: Int): Any = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].apply(idx)
+@@ -89,13 +81,5 @@
+-  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
+-    xs match {
+-      case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
+-      case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
+-      case x: Array[Double]  => x(idx) = value.asInstanceOf[Double]
+-      case x: Array[Long]    => x(idx) = value.asInstanceOf[Long]
+-      case x: Array[Float]   => x(idx) = value.asInstanceOf[Float]
+-      case x: Array[Char]    => x(idx) = value.asInstanceOf[Char]
+-      case x: Array[Byte]    => x(idx) = value.asInstanceOf[Byte]
+-      case x: Array[Short]   => x(idx) = value.asInstanceOf[Short]
+-      case x: Array[Boolean] => x(idx) = value.asInstanceOf[Boolean]
+-      case x: Array[Unit]    => x(idx) = value.asInstanceOf[Unit]
+-      case null => throw new NullPointerException
++  @inline def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].update(idx, value)
+@@ -106,12 +90,6 @@
+-  def array_length(xs: AnyRef): Int = xs match {
+-    case x: Array[AnyRef]  => x.length
+-    case x: Array[Int]     => x.length
+-    case x: Array[Double]  => x.length
+-    case x: Array[Long]    => x.length
+-    case x: Array[Float]   => x.length
+-    case x: Array[Char]    => x.length
+-    case x: Array[Byte]    => x.length
+-    case x: Array[Short]   => x.length
+-    case x: Array[Boolean] => x.length
+-    case x: Array[Unit]    => x.length
+-    case null => throw new NullPointerException
++  def array_length(xs: AnyRef): Int = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].length
++    }
+@@ -120,12 +98,6 @@
+-  def array_clone(xs: AnyRef): AnyRef = xs match {
+-    case x: Array[AnyRef]  => ArrayRuntime.cloneArray(x)
+-    case x: Array[Int]     => ArrayRuntime.cloneArray(x)
+-    case x: Array[Double]  => ArrayRuntime.cloneArray(x)
+-    case x: Array[Long]    => ArrayRuntime.cloneArray(x)
+-    case x: Array[Float]   => ArrayRuntime.cloneArray(x)
+-    case x: Array[Char]    => ArrayRuntime.cloneArray(x)
+-    case x: Array[Byte]    => ArrayRuntime.cloneArray(x)
+-    case x: Array[Short]   => ArrayRuntime.cloneArray(x)
+-    case x: Array[Boolean] => ArrayRuntime.cloneArray(x)
+-    case x: Array[Unit]    => x
+-    case null => throw new NullPointerException
++  def array_clone(xs: AnyRef): AnyRef = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].clone()
++    }
+@@ -133,1 +105,0 @@
+-
+@@ -137,2 +108,1 @@
+-   */
+-  def toObjectArray(src: AnyRef): Array[Object] = src match {
++   */  def toObjectArray(src: AnyRef): Array[Object] = src match {
+@@ -142,2 +112,1 @@
+-      val dest = new Array[Object](length)
+-      for (i <- 0 until length)
++      val dest = new Array[Object](length)      for (i <- 0 until length)
+@@ -147,1 +116,0 @@
+-
+@@ -151,2 +119,1 @@
+-    for (x <- xs) {
+-      arr(i) = x.asInstanceOf[AnyRef]
++    for (x <- xs) {      arr(i) = x.asInstanceOf[AnyRef]
+@@ -157,1 +124,0 @@
+-
+@@ -161,1 +127,0 @@
+-

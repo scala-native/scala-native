@@ -1,12 +1,15 @@
-@@ -571,160 +571,383 @@
- k%0A *  @define Coll %60mutable.Stack%60%0A */%0Aobject Stack extends SeqFactory%5BStack%5D %7B%0A
-+  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   class StackBuilder%5BA%5D extends Builder%5BA, Stack%5BA%5D%5D %7B%0A    val lbuff = new ListB
-@@ -1009,339 +1009,363 @@
-     def clear() = lbuff.clear()%0A    def result = new Stack(lbuff.result)%0A  %7D%0A%0A  
-+@inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Stack%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, Stack%5BA%5D%5D = new StackBuilder%5BA%5D%0A  
-+@inline 
- val empty: Stack%5BNothing%5D = new Stack(Nil)%0A%7D%0A%0A/** A stack implements a data stru
+--- 2.12.14/scala/collection/mutable/Stack.scala
++++ old-collections/scala/collection/mutable/Stack.scala
+@@ -29,0 +29,5 @@
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+@@ -36,3 +41,3 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
+-  val empty: Stack[Nothing] = new Stack(Nil)
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
++  @inline val empty: Stack[Nothing] = new Stack(Nil)

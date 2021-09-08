@@ -1,0 +1,61 @@
+--- 2.13.4/scala/concurrent/ExecutionContext.scala
++++ overrides-2.13.4/scala/concurrent/ExecutionContext.scala
+@@ -200,1 +200,1 @@
+-  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
++  final lazy val global: ExecutionContextExecutor = scala.scalanative.runtime.ExecutionContext.global
+@@ -202,2 +202,1 @@
+-  /**
+-   * WARNING: Only ever execute logic which will quickly return control to the caller.
++  /**   * WARNING: Only ever execute logic which will quickly return control to the caller.
+@@ -207,2 +206,1 @@
+-   * to the caller after *all* its `Runnable`s have been executed.
+-   * Nested invocations of `execute` will be trampolined to prevent uncontrolled stack space growth.
++   * to the caller after *all* its `Runnable`s have been executed.   * Nested invocations of `execute` will be trampolined to prevent uncontrolled stack space growth.
+@@ -212,2 +210,1 @@
+-   *
+-   * Do *not* call any blocking code in the `Runnable`s submitted to this `ExecutionContext`
++   *   * Do *not* call any blocking code in the `Runnable`s submitted to this `ExecutionContext`
+@@ -217,2 +214,1 @@
+-   * and severe performance problems.
+-   *
++   * and severe performance problems.   *
+@@ -222,2 +218,1 @@
+-    override final def submitForExecution(runnable: Runnable): Unit = runnable.run()
+-    override final def execute(runnable: Runnable): Unit = submitSyncBatched(runnable)
++    override final def submitForExecution(runnable: Runnable): Unit = runnable.run()    override final def execute(runnable: Runnable): Unit = submitSyncBatched(runnable)
+@@ -230,2 +225,1 @@
+-  private[scala] lazy val opportunistic: ExecutionContextExecutor = new ExecutionContextExecutor with BatchingExecutor {
+-    final override def submitForExecution(runnable: Runnable): Unit = global.execute(runnable)
++  private[scala] lazy val opportunistic: ExecutionContextExecutor = ExecutionContext.global
+@@ -233,9 +227,0 @@
+-    final override def execute(runnable: Runnable): Unit =
+-      if ((!runnable.isInstanceOf[impl.Promise.Transformation[_,_]] || runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
+-        submitAsyncBatched(runnable)
+-      else
+-        submitForExecution(runnable)
+-
+-    override final def reportFailure(t: Throwable): Unit = global.reportFailure(t)
+-  }
+-
+@@ -243,2 +228,1 @@
+-    /**
+-     * An accessor that can be used to import the global `ExecutionContext` into the implicit scope,
++    /**     * An accessor that can be used to import the global `ExecutionContext` into the implicit scope,
+@@ -249,1 +233,0 @@
+-
+@@ -253,2 +236,1 @@
+-   *  @param reporter  a function for error reporting
+-   *  @return          the `ExecutionContext` using the given `ExecutorService`
++   *  @param reporter  a function for error reporting   *  @return          the `ExecutionContext` using the given `ExecutorService`
+@@ -258,1 +240,0 @@
+-
+@@ -262,2 +243,1 @@
+-   *  can be used to create an `ExecutionContext` as follows:
+-   *
++   *  can be used to create an `ExecutionContext` as follows:   *
+@@ -267,2 +247,1 @@
+-   *  }}}
+-   *
++   *  }}}   *
+@@ -273,1 +252,0 @@
+-

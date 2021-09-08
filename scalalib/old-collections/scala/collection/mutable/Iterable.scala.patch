@@ -1,6 +1,14 @@
-@@ -1200,278 +1200,517 @@
- %60mutable.Iterable%60%0A */%0Aobject Iterable extends TraversableFactory%5BIterable%5D %7B%0A  
-+@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Iterable%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, Iterable%5BA%5D%5D = new ArrayBuffer%0A%7D%0A%0A/** Explicit ins
+--- 2.12.14/scala/collection/mutable/Iterable.scala
++++ old-collections/scala/collection/mutable/Iterable.scala
+@@ -41,3 +41,4 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
+-}
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+@@ -45,0 +46,3 @@
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
++}

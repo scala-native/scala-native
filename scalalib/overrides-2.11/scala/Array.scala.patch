@@ -1,114 +1,253 @@
-@@ -717,160 +717,205 @@
- reflect.ClassTag%0Aimport scala.runtime.ScalaRunTime.%7B array_apply, array_update %7D
-+%0Aimport scala.collection.mutable.WrappedArray
- %0A%0A/** Contains a fallback builder for arrays when the element type%0A *  does not 
-@@ -1983,529 +1983,601 @@
- tin Odersky%0A *  @version 1.0%0A */%0Aobject Array extends FallbackArrayBuilding %7B%0A  
--val
-+@inline def
-  emptyBooleanArray = new Array%5BBoolean%5D(0)%0A  
--val
-+@inline def
-  emptyByteArray    = new Array%5BByte%5D(0)%0A  
--val
-+@inline def
-  emptyCharArray    = new Array%5BChar%5D(0)%0A  
--val
-+@inline def
-  emptyDoubleArray  = new Array%5BDouble%5D(0)%0A  
--val
-+@inline def
-  emptyFloatArray   = new Array%5BFloat%5D(0)%0A  
--val
-+@inline def
-  emptyIntArray     = new Array%5BInt%5D(0)%0A  
--val
-+@inline def
-  emptyLongArray    = new Array%5BLong%5D(0)%0A  
--val
-+@inline def
-  emptyShortArray   = new Array%5BShort%5D(0)%0A  
--val
-+@inline def
-  emptyObjectArray  = new Array%5BObject%5D(0)%0A%0A  implicit def canBuildFrom%5BT%5D(implic
-@@ -4577,268 +4577,1904 @@
- l a = new Array(3); a(i) = ei; a %7D%0A  def apply%5BT: ClassTag%5D(xs: T*): Array%5BT%5D = 
--%7B%0A    val array = new Array%5BT%5D(xs.length)%0A
-+xs match %7B%0A    case xs: WrappedArray.ofBoolean =%3E%0A      val from = xs.array%0A      val array = new Array%5BBoolean%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofByte =%3E%0A      val from = xs.array%0A      val array = new Array%5BByte%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofShort =%3E%0A      val from = xs.array%0A      val array = new Array%5BShort%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofChar =%3E%0A      val from = xs.array%0A      val array = new Array%5BChar%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofInt =%3E%0A      val from = xs.array%0A      val array = new Array%5BInt%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofLong =%3E%0A      val from = xs.array%0A      val array = new Array%5BLong%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofFloat =%3E%0A      val from = xs.array%0A      val array = new Array%5BFloat%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs: WrappedArray.ofDouble =%3E%0A      val from = xs.array%0A      val array = new Array%5BDouble%5D(from.length)%0A      System.arraycopy(from, 0, array, 0, from.length)%0A      array.asInstanceOf%5BArray%5BT%5D%5D%0A    case xs =%3E%0A      val array = new Array%5BT%5D(xs.length)%0A  
-     var i = 0%0A
-+  
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+  
-     array%0A  %7D%0A%0A  /** Creates an array of %60Boolean%60 objects */%0A  // Subject to a 
-@@ -6571,226 +6571,378 @@
- Boolean%5D = %7B%0A    val array = new Array%5BBoolean%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofBoolean =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Byte%60 objects */%0A  // Subject to a com
-@@ -7024,226 +7024,375 @@
- Array%5BByte%5D = %7B%0A    val array = new Array%5BByte%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofByte =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Short%60 objects */%0A  // Subject to a co
-@@ -7479,226 +7479,376 @@
- ray%5BShort%5D = %7B%0A    val array = new Array%5BShort%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofShort =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Char%60 objects */%0A  // Subject to a com
-@@ -7930,226 +7930,375 @@
- Array%5BChar%5D = %7B%0A    val array = new Array%5BChar%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofChar =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Int%60 objects */%0A  // Subject to a comp
-@@ -8375,226 +8375,374 @@
- : Array%5BInt%5D = %7B%0A    val array = new Array%5BInt%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofInt =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Long%60 objects */%0A  // Subject to a com
-@@ -8824,226 +8824,375 @@
- Array%5BLong%5D = %7B%0A    val array = new Array%5BLong%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofLong =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Float%60 objects */%0A  // Subject to a co
-@@ -9279,226 +9279,376 @@
- ray%5BFloat%5D = %7B%0A    val array = new Array%5BFloat%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofFloat =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Double%60 objects */%0A  // Subject to a c
-@@ -9740,226 +9740,377 @@
- y%5BDouble%5D = %7B%0A    val array = new Array%5BDouble%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofDouble =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates an array of %60Unit%60 objects */%0A  def apply(x: Unit, 
-@@ -10129,226 +10129,375 @@
- Array%5BUnit%5D = %7B%0A    val array = new Array%5BUnit%5D(xs.length + 1)%0A    array(0) = x%0A
-+    xs match %7B%0A      case xs: WrappedArray.ofUnit =%3E%0A        System.arraycopy(xs.array, 0, array, 1, xs.array.length)%0A      case xs =%3E%0A    
-     var i = 1%0A
-+    
-     for (x %3C- xs.iterator) %7B array(i) = x; i += 1 %7D%0A
-+    %7D%0A
-     array%0A  %7D%0A%0A  /** Creates array with given dimensions */%0A  def ofDim%5BT: Class
+--- 2.11.12/scala/Array.scala
++++ overrides-2.11/scala/Array.scala
+@@ -17,0 +17,1 @@
++import scala.collection.mutable.WrappedArray
+@@ -18,2 +19,1 @@
+-/** Contains a fallback builder for arrays when the element type
+- *  does not have a class tag. In that case a generic array is built.
++/** Contains a fallback builder for arrays when the element type *  does not have a class tag. In that case a generic array is built.
+@@ -23,2 +23,1 @@
+-  /** A builder factory that generates a generic array.
+-   *  Called instead of `Array.newBuilder` if the element type of an array
++  /** A builder factory that generates a generic array.   *  Called instead of `Array.newBuilder` if the element type of an array
+@@ -28,2 +27,1 @@
+-   *  implicit search is always successful.
+-   */
++   *  implicit search is always successful.   */
+@@ -33,2 +31,1 @@
+-      def apply() = ArraySeq.newBuilder[T]
+-    }
++      def apply() = ArraySeq.newBuilder[T]    }
+@@ -38,2 +35,1 @@
+- *  For example:
+- *  {{{
++ *  For example: *  {{{
+@@ -43,2 +39,1 @@
+- *  }}}
+- *  where the array objects `a`, `b` and `c` have respectively the values
++ *  }}} *  where the array objects `a`, `b` and `c` have respectively the values
+@@ -51,9 +46,9 @@
+-  val emptyBooleanArray = new Array[Boolean](0)
+-  val emptyByteArray    = new Array[Byte](0)
+-  val emptyCharArray    = new Array[Char](0)
+-  val emptyDoubleArray  = new Array[Double](0)
+-  val emptyFloatArray   = new Array[Float](0)
+-  val emptyIntArray     = new Array[Int](0)
+-  val emptyLongArray    = new Array[Long](0)
+-  val emptyShortArray   = new Array[Short](0)
+-  val emptyObjectArray  = new Array[Object](0)
++  @inline def emptyBooleanArray = new Array[Boolean](0)
++  @inline def emptyByteArray    = new Array[Byte](0)
++  @inline def emptyCharArray    = new Array[Char](0)
++  @inline def emptyDoubleArray  = new Array[Double](0)
++  @inline def emptyFloatArray   = new Array[Float](0)
++  @inline def emptyIntArray     = new Array[Int](0)
++  @inline def emptyLongArray    = new Array[Long](0)
++  @inline def emptyShortArray   = new Array[Short](0)
++  @inline def emptyObjectArray  = new Array[Object](0)
+@@ -61,2 +56,1 @@
+-  implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =
+-    new CanBuildFrom[Array[_], T, Array[T]] {
++  implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =    new CanBuildFrom[Array[_], T, Array[T]] {
+@@ -66,1 +60,0 @@
+-
+@@ -71,1 +64,0 @@
+-
+@@ -75,2 +67,1 @@
+-                       destPos : Int,
+-                       length : Int) {
++                       destPos : Int,                       length : Int) {
+@@ -80,2 +71,1 @@
+-    while (i < srcUntil) {
+-      array_update(dest, j, array_apply(src, i))
++    while (i < srcUntil) {      array_update(dest, j, array_apply(src, i))
+@@ -86,1 +76,0 @@
+-
+@@ -90,2 +79,1 @@
+-   *  except that this also works for polymorphic and boxed arrays.
+-   *
++   *  except that this also works for polymorphic and boxed arrays.   *
+@@ -120,5 +108,46 @@
+-  def apply[T: ClassTag](xs: T*): Array[T] = {
+-    val array = new Array[T](xs.length)
+-    var i = 0
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
+-    array
++  def apply[T: ClassTag](xs: T*): Array[T] = xs match {
++    case xs: WrappedArray.ofBoolean =>
++      val from = xs.array
++      val array = new Array[Boolean](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofByte =>
++      val from = xs.array
++      val array = new Array[Byte](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofShort =>
++      val from = xs.array
++      val array = new Array[Short](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofChar =>
++      val from = xs.array
++      val array = new Array[Char](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofInt =>
++      val from = xs.array
++      val array = new Array[Int](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofLong =>
++      val from = xs.array
++      val array = new Array[Long](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofFloat =>
++      val from = xs.array
++      val array = new Array[Float](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs: WrappedArray.ofDouble =>
++      val from = xs.array
++      val array = new Array[Double](from.length)
++      System.arraycopy(from, 0, array, 0, from.length)
++      array.asInstanceOf[Array[T]]
++    case xs =>
++      val array = new Array[T](xs.length)
++      var i = 0
++      for (x <- xs.iterator) { array(i) = x; i += 1 }
++      array
+@@ -126,1 +155,0 @@
+-
+@@ -132,2 +160,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofBoolean =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -136,1 +169,0 @@
+-
+@@ -142,2 +174,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofByte =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -146,1 +183,0 @@
+-
+@@ -152,2 +188,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofShort =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -156,1 +197,0 @@
+-
+@@ -162,2 +202,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofChar =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -166,1 +211,0 @@
+-
+@@ -172,2 +216,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofInt =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -176,1 +225,0 @@
+-
+@@ -182,2 +230,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofLong =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -186,1 +239,0 @@
+-
+@@ -192,2 +244,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofFloat =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -196,1 +253,0 @@
+-
+@@ -202,2 +258,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofDouble =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -206,1 +267,0 @@
+-
+@@ -211,2 +271,7 @@
+-    var i = 1
+-    for (x <- xs.iterator) { array(i) = x; i += 1 }
++    xs match {
++      case xs: WrappedArray.ofUnit =>
++        System.arraycopy(xs.array, 0, array, 1, xs.array.length)
++      case xs =>
++        var i = 1
++        for (x <- xs.iterator) { array(i) = x; i += 1 }
++    }
+@@ -215,1 +280,0 @@
+-
+@@ -219,2 +283,1 @@
+-  /** Creates a 2-dimensional array */
+-  def ofDim[T: ClassTag](n1: Int, n2: Int): Array[Array[T]] = {
++  /** Creates a 2-dimensional array */  def ofDim[T: ClassTag](n1: Int, n2: Int): Array[Array[T]] = {
+@@ -224,2 +287,1 @@
+-    // tabulate(n1)(_ => ofDim[T](n2))
+-  }
++    // tabulate(n1)(_ => ofDim[T](n2))  }
+@@ -229,2 +291,1 @@
+-  /** Creates a 4-dimensional array */
+-  def ofDim[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
++  /** Creates a 4-dimensional array */  def ofDim[T: ClassTag](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
+@@ -235,1 +296,0 @@
+-
+@@ -239,2 +299,1 @@
+-   *  @return   the array created from concatenating `xss`
+-   */
++   *  @return   the array created from concatenating `xss`   */
+@@ -244,2 +303,1 @@
+-    for (xs <- xss) b ++= xs
+-    b.result()
++    for (xs <- xss) b ++= xs    b.result()

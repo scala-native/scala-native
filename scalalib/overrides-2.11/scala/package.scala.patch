@@ -1,0 +1,99 @@
+--- 2.11.12/scala/package.scala
++++ overrides-2.11/scala/package.scala
+@@ -33,1 +33,1 @@
+-  val AnyRef = new Specializable {
++  lazy val AnyRef = new Specializable {
+@@ -36,1 +36,0 @@
+-
+@@ -40,1 +39,1 @@
+-  val Traversable = scala.collection.Traversable
++  lazy val Traversable = scala.collection.Traversable
+@@ -43,1 +42,1 @@
+-  val Iterable = scala.collection.Iterable
++  lazy val Iterable = scala.collection.Iterable
+@@ -46,1 +45,1 @@
+-  val Seq = scala.collection.Seq
++  lazy val Seq = scala.collection.Seq
+@@ -49,1 +48,1 @@
+-  val IndexedSeq = scala.collection.IndexedSeq
++  lazy val IndexedSeq = scala.collection.IndexedSeq
+@@ -52,1 +51,1 @@
+-  val Iterator = scala.collection.Iterator
++  lazy val Iterator = scala.collection.Iterator
+@@ -57,1 +56,1 @@
+-  val List = scala.collection.immutable.List
++  lazy val List = scala.collection.immutable.List
+@@ -59,1 +58,1 @@
+-  val Nil = scala.collection.immutable.Nil
++  lazy val Nil = scala.collection.immutable.Nil
+@@ -62,1 +61,1 @@
+-  val :: = scala.collection.immutable.::
++  lazy val :: = scala.collection.immutable.::
+@@ -64,2 +63,2 @@
+-  val +: = scala.collection.+:
+-  val :+ = scala.collection.:+
++  lazy val +: = scala.collection.+:
++  lazy val :+ = scala.collection.:+
+@@ -68,2 +67,2 @@
+-  val Stream = scala.collection.immutable.Stream
+-  val #:: = scala.collection.immutable.Stream.#::
++  lazy val Stream = scala.collection.immutable.Stream
++  lazy val #:: = scala.collection.immutable.Stream.#::
+@@ -72,1 +71,1 @@
+-  val Vector = scala.collection.immutable.Vector
++  lazy val Vector = scala.collection.immutable.Vector
+@@ -75,1 +74,1 @@
+-  val StringBuilder = scala.collection.mutable.StringBuilder
++  lazy val StringBuilder = scala.collection.mutable.StringBuilder
+@@ -78,1 +77,1 @@
+-  val Range = scala.collection.immutable.Range
++  lazy val Range = scala.collection.immutable.Range
+@@ -83,1 +82,1 @@
+-  val BigDecimal = scala.math.BigDecimal
++  lazy val BigDecimal = scala.math.BigDecimal
+@@ -86,1 +85,1 @@
+-  val BigInt = scala.math.BigInt
++  lazy val BigInt = scala.math.BigInt
+@@ -89,1 +88,1 @@
+-  val Equiv = scala.math.Equiv
++  lazy val Equiv = scala.math.Equiv
+@@ -92,1 +91,1 @@
+-  val Fractional = scala.math.Fractional
++  lazy val Fractional = scala.math.Fractional
+@@ -95,1 +94,1 @@
+-  val Integral = scala.math.Integral
++  lazy val Integral = scala.math.Integral
+@@ -98,1 +97,1 @@
+-  val Numeric = scala.math.Numeric
++  lazy val Numeric = scala.math.Numeric
+@@ -101,1 +100,1 @@
+-  val Ordered = scala.math.Ordered
++  lazy val Ordered = scala.math.Ordered
+@@ -104,1 +103,1 @@
+-  val Ordering = scala.math.Ordering
++  lazy val Ordering = scala.math.Ordering
+@@ -106,2 +105,1 @@
+-  type PartialOrdering[T] = scala.math.PartialOrdering[T]
+-  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
++  type PartialOrdering[T] = scala.math.PartialOrdering[T]  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+@@ -110,1 +108,1 @@
+-  val Either = scala.util.Either
++  lazy val Either = scala.util.Either
+@@ -113,1 +111,1 @@
+-  val Left = scala.util.Left
++  lazy val Left = scala.util.Left
+@@ -116,1 +114,1 @@
+-  val Right = scala.util.Right
++  lazy val Right = scala.util.Right
+@@ -118,2 +116,1 @@
+-  // Annotations which we might move to annotation.*
+-/*
++  // Annotations which we might move to annotation.*/*
+@@ -123,2 +120,1 @@
+-  type inline = annotation.inline
+-  type native = annotation.native
++  type inline = annotation.inline  type native = annotation.native
+@@ -128,2 +124,1 @@
+-  type transient = annotation.transient
+-  type throws  = annotation.throws
++  type transient = annotation.transient  type throws  = annotation.throws

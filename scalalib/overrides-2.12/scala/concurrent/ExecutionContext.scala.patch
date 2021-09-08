@@ -1,15 +1,38 @@
-@@ -6068,215 +6068,209 @@
- rn the global %60ExecutionContext%60%0A   */%0A  def global: ExecutionContextExecutor = 
--Implicits.global.asInstanceOf%5B
-+scala.scalanative.runtime.
- ExecutionContext
--Executor%5D
-+.global
- %0A%0A  object Implicits %7B%0A    /**%0A     * The implicit global %60ExecutionContext%60. Im
-@@ -6661,214 +6661,183 @@
- vailable processors%5D%5D.%0A     */%0A    implicit lazy val global: ExecutionContext = 
--impl.
- ExecutionContext
--Impl.fromExecutor(null: Executor)
-+.global
- %0A  %7D%0A%0A  /** Creates an %60ExecutionContext%60 from the given %60ExecutorService%60.%0A   *
+--- scalaSources/2.12.14/scala/concurrent/ExecutionContext.scala
++++ overrides-2.12/scala/concurrent/ExecutionContext.scala
+@@ -137,31 +137,27 @@
+    * see [[scala.concurrent.BlockContext]].
+    *
+    * @return the global `ExecutionContext`
+    */
+-  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
++  def global: ExecutionContextExecutor = scala.scalanative.runtime.ExecutionContext.global
+ 
+-  object Implicits {
+-    /**
++  object Implicits {    /**
+      * The implicit global `ExecutionContext`. Import `global` when you want to provide the global
+      * `ExecutionContext` implicitly.
+      *
+      * The default `ExecutionContext` implementation is backed by a work-stealing thread pool. By default,
+      * the thread pool uses a target number of worker threads equal to the number of
+      * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
+      */
+-    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
++    implicit lazy val global: ExecutionContext = ExecutionContext.global
+   }
+-
+   /** Creates an `ExecutionContext` from the given `ExecutorService`.
+    *
+    *  @param e         the `ExecutorService` to use. If `null`, a new `ExecutorService` is created with [[scala.concurrent.ExecutionContext$.global default configuration]].
+-   *  @param reporter  a function for error reporting
+-   *  @return          the `ExecutionContext` using the given `ExecutorService`
++   *  @param reporter  a function for error reporting   *  @return          the `ExecutionContext` using the given `ExecutorService`
+    */
+   def fromExecutorService(e: ExecutorService, reporter: Throwable => Unit): ExecutionContextExecutorService =
+     impl.ExecutionContextImpl.fromExecutorService(e, reporter)
+-
+   /** Creates an `ExecutionContext` from the given `ExecutorService` with the [[scala.concurrent.ExecutionContext$.defaultReporter default reporter]].
+    *
+    *  If it is guaranteed that none of the executed tasks are blocking, a single-threaded `ExecutorService`
+    *  can be used to create an `ExecutionContext` as follows:

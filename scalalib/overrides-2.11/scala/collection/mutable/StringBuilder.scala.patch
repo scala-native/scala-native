@@ -1,4 +1,0 @@
-@@ -1532,160 +1532,205 @@
- tringBuilder%5D%0A         with Builder%5BChar, String%5D%0A         with Serializable %7B%0A%0A
-+  @inline override def isEmpty = length == 0%0A
-   override protected%5Bthis%5D def thisCollection: StringBuilder = this%0A  override p

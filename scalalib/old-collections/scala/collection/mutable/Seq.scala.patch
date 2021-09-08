@@ -1,12 +1,17 @@
-@@ -1013,312 +1013,560 @@
- uence%0A *  @define Coll %60mutable.Seq%60%0A */%0Aobject Seq extends SeqFactory%5BSeq%5D %7B%0A  
-+@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Seq%5BA%5D%5D =
-+%0A   
-  ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A
-+%0A
-   
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, Seq%5BA%5D%5D =
-+%0A   
-  new ArrayBuffer%0A%7D%0A%0A/** Explicit instantiation of the %60Seq%60 trait to reduce clas
+--- 2.12.14/scala/collection/mutable/Seq.scala
++++ old-collections/scala/collection/mutable/Seq.scala
+@@ -45,3 +45,4 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
+-}
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+@@ -49,0 +50,6 @@
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] =
++    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++
++  @inline def newBuilder[A]: Builder[A, Seq[A]] =
++    new ArrayBuffer
++}

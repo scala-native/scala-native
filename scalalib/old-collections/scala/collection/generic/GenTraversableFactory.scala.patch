@@ -1,13 +1,12 @@
-@@ -1340,310 +1340,296 @@
- ith GenericTraversableTemplate%5BX, CC%5D%5D%0Aextends GenericCompanion%5BCC%5D %7B%0A%0A  private
--%5Bthis%5D val
-+ object
-  ReusableCBFInstance
--: GenericCanBuildFrom%5BNothing%5D = new
-+ extends
-  GenericCanBuildFrom%5BNothing%5D %7B%0A    
-+@inline 
- override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A
-- 
-+%0A  @inline
-  def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A%0A  /** A ge
+--- 2.12.14/scala/collection/generic/GenTraversableFactory.scala
++++ old-collections/scala/collection/generic/GenTraversableFactory.scala
+@@ -44,2 +44,2 @@
+-  private[this] val ReusableCBFInstance: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
+-    override def apply() = newBuilder[Nothing]
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
+@@ -47,1 +47,0 @@
+-  def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
+@@ -49,0 +48,2 @@
++  @inline def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++

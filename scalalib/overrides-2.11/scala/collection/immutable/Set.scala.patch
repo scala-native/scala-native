@@ -1,7 +1,0 @@
-@@ -2054,273 +2054,451 @@
- *  @define coll immutable set%0A */%0Aobject Set extends ImmutableSetFactory%5BSet%5D %7B%0A
-+%0A  private%5Bthis%5D val ReusableCBF = setCanBuildFrom%5BAny%5D%0A%0A
-   /** $setCanBuildFromInfo */%0A  implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Set%5BA%5D%5D = 
--setCanBuildFrom%5BA%5D%0A
-+%0A    ReusableCBF.asInstanceOf%5BCanBuildFrom%5BColl, A, Set%5BA%5D%5D%5D%0A    %0A  @inline override def empty%5BA%5D: Set%5BA%5D = EmptySet.asInstanceOf%5BSet%5BA%5D%5D%0A  
- %0A  /** An optimized representation for immutable empty sets */%0A  private object 

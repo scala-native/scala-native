@@ -1,12 +1,17 @@
-@@ -6522,488 +6522,743 @@
- %60%0A *  @define coll immutable queue%0A */%0Aobject Queue extends SeqFactory%5BQueue%5D %7B%0A
-+  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $genericCanBuildFromInfo */%0A  
-+@inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Queue%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, Queue%5BA%5D%5D = new ListBuffer%5BA%5D mapResult (x =%3E new Queue%5BA%5D(Nil, x.toList))%0A  
-+@inline 
- override def empty%5BA%5D: Queue%5BA%5D = EmptyQueue.asInstanceOf%5BQueue%5BA%5D%5D%0A  
-+@inline 
- override def apply%5BA%5D(xs: A*): Queue%5BA%5D = new Queue%5BA%5D(Nil, xs.toList)%0A%0A  privat
+--- 2.12.14/scala/collection/immutable/Queue.scala
++++ old-collections/scala/collection/immutable/Queue.scala
+@@ -186,0 +186,5 @@
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+@@ -187,4 +192,4 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
+-  override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
+-  override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
++  @inline override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
++  @inline override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)

@@ -1,6 +1,12 @@
-@@ -1231,266 +1231,505 @@
- Coll %60mutable.LinearSeq%60%0A */%0Aobject LinearSeq extends SeqFactory%5BLinearSeq%5D %7B%0A  
-+@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, LinearSeq%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, LinearSeq%5BA%5D%5D = new MutableList%5BA%5D%0A%7D%0A
+--- 2.12.14/scala/collection/mutable/LinearSeq.scala
++++ old-collections/scala/collection/mutable/LinearSeq.scala
+@@ -42,2 +42,7 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, LinearSeq[A]] = new MutableList[A]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, LinearSeq[A]] = new MutableList[A]

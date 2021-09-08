@@ -1,11 +1,17 @@
-@@ -4226,340 +4226,592 @@
- are deprecated%22, %222.11.0%22)%0Aobject LinkedList extends SeqFactory%5BLinkedList%5D %7B%0A  
-+@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- override def empty%5BA%5D: LinkedList%5BA%5D =
-+%0A   
-  new LinkedList%5BA%5D%0A
-- 
-+%0A  @inline
-  implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, LinkedList%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, LinkedList%5BA%5D%5D =%0A    (new MutableList) mapResult (
+--- 2.12.14/scala/collection/mutable/LinkedList.scala
++++ old-collections/scala/collection/mutable/LinkedList.scala
+@@ -120,2 +120,4 @@
+-  override def empty[A]: LinkedList[A] = new LinkedList[A]
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+@@ -123,1 +125,6 @@
+-  def newBuilder[A]: Builder[A, LinkedList[A]] =
++  @inline override def empty[A]: LinkedList[A] =
++    new LinkedList[A]
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++
++  @inline def newBuilder[A]: Builder[A, LinkedList[A]] =

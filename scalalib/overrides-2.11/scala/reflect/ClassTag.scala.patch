@@ -1,76 +1,63 @@
-@@ -5932,1228 +5932,1188 @@
- rimitive types and constructor/extractor for ClassTags.%0A */%0Aobject ClassTag %7B%0A  
--private val ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  private val NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  private val NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A  val
-+@inline def
-  Byte    : ClassTag%5Bscala.Byte%5D       = Manifest.Byte%0A  
--val
-+@inline def
-  Short   : ClassTag%5Bscala.Short%5D      = Manifest.Short%0A  
--val
-+@inline def
-  Char    : ClassTag%5Bscala.Char%5D       = Manifest.Char%0A  
--val
-+@inline def
-  Int     : ClassTag%5Bscala.Int%5D        = Manifest.Int%0A  
--val
-+@inline def
-  Long    : ClassTag%5Bscala.Long%5D       = Manifest.Long%0A  
--val
-+@inline def
-  Float   : ClassTag%5Bscala.Float%5D      = Manifest.Float%0A  
--val
-+@inline def
-  Double  : ClassTag%5Bscala.Double%5D     = Manifest.Double%0A  
--val
-+@inline def
-  Boolean : ClassTag%5Bscala.Boolean%5D    = Manifest.Boolean%0A  
--val
-+@inline def
-  Unit    : ClassTag%5Bscala.Unit%5D       = Manifest.Unit%0A  
--val
-+@inline def
-  Any     : ClassTag%5Bscala.Any%5D        = Manifest.Any%0A  
--val
-+@inline def
-  Object  : ClassTag%5Bjava.lang.Object%5D = Manifest.Object%0A  
--val
-+@inline def
-  AnyVal  : ClassTag%5Bscala.AnyVal%5D     = Manifest.AnyVal%0A  
--val
-+@inline def
-  AnyRef  : ClassTag%5Bscala.AnyRef%5D     = Manifest.AnyRef%0A  
--val
-+@inline def
-  Nothing : ClassTag%5Bscala.Nothing%5D    = Manifest.Nothing%0A  
--val
-+@inline def
-  Null    : ClassTag%5Bscala.Null%5D       = Manifest.Null%0A%0A  
-+@inline 
- def apply%5BT%5D(runtimeClass1: jClass%5B_%5D): ClassTag%5BT%5D =%0A    runtimeClass1 match %7B%0A
-@@ -7768,491 +7768,650 @@
-  java.lang.Void.TYPE      =%3E ClassTag.Unit.asInstanceOf%5BClassTag%5BT%5D%5D%0A      case 
--ObjectTYPE  
-+_                        =%3E%0A        if (classOf%5Bjava.lang.Object%5D == runtimeClass1) %7B%0A
-          
--    =%3E
-  ClassTag.Object.asInstanceOf%5BClassTag%5BT%5D%5D%0A      
--case NothingTYPE  
-+  %7D else if (classOf%5Bscala.runtime.Nothing$%5D == runtimeClass1) %7B%0A
-          
--   =%3E
-  ClassTag.Nothing.asInstanceOf%5BClassTag%5BT%5D%5D%0A      
--case NullTYPE       
-+  %7D else if (classOf%5Bscala.runtime.Null$%5D == runtimeClass1) %7B%0A
-          
-- =%3E
-  ClassTag.Null.asInstanceOf%5BClassTag%5BT%5D%5D%0A      
--case _            
-+  %7D else %7B%0A
-          
--   =%3E
-  new ClassTag%5BT%5D%7B def runtimeClass = runtimeClass1 %7D%0A    
--%7D%0A%0A 
-+    %7D%0A    %7D%0A%0A  @inline
-  def unapply%5BT%5D(ctag: ClassTag%5BT%5D): Option%5BClass%5B_%5D%5D =
-+%0A   
-  Some(ctag.runtimeClass)%0A%7D%0A
+--- 2.11.12/scala/reflect/ClassTag.scala
++++ overrides-2.11/scala/reflect/ClassTag.scala
+@@ -118,3 +118,15 @@
+-  private val ObjectTYPE = classOf[java.lang.Object]
+-  private val NothingTYPE = classOf[scala.runtime.Nothing$]
+-  private val NullTYPE = classOf[scala.runtime.Null$]
++  @inline def Byte    : ClassTag[scala.Byte]       = Manifest.Byte
++  @inline def Short   : ClassTag[scala.Short]      = Manifest.Short
++  @inline def Char    : ClassTag[scala.Char]       = Manifest.Char
++  @inline def Int     : ClassTag[scala.Int]        = Manifest.Int
++  @inline def Long    : ClassTag[scala.Long]       = Manifest.Long
++  @inline def Float   : ClassTag[scala.Float]      = Manifest.Float
++  @inline def Double  : ClassTag[scala.Double]     = Manifest.Double
++  @inline def Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
++  @inline def Unit    : ClassTag[scala.Unit]       = Manifest.Unit
++  @inline def Any     : ClassTag[scala.Any]        = Manifest.Any
++  @inline def Object  : ClassTag[java.lang.Object] = Manifest.Object
++  @inline def AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
++  @inline def AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
++  @inline def Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
++  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
+@@ -122,17 +134,1 @@
+-  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
+-  val Short   : ClassTag[scala.Short]      = Manifest.Short
+-  val Char    : ClassTag[scala.Char]       = Manifest.Char
+-  val Int     : ClassTag[scala.Int]        = Manifest.Int
+-  val Long    : ClassTag[scala.Long]       = Manifest.Long
+-  val Float   : ClassTag[scala.Float]      = Manifest.Float
+-  val Double  : ClassTag[scala.Double]     = Manifest.Double
+-  val Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
+-  val Unit    : ClassTag[scala.Unit]       = Manifest.Unit
+-  val Any     : ClassTag[scala.Any]        = Manifest.Any
+-  val Object  : ClassTag[java.lang.Object] = Manifest.Object
+-  val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
+-  val AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
+-  val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
+-  val Null    : ClassTag[scala.Null]       = Manifest.Null
+-
+-  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
++  @inline def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
+@@ -140,2 +136,1 @@
+-      case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
+-      case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
++      case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]      case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
+@@ -149,4 +144,10 @@
+-      case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
+-      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
+-      case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
+-      case _                        => new ClassTag[T]{ def runtimeClass = runtimeClass1 }
++      case _                        =>
++        if (classOf[java.lang.Object] == runtimeClass1) {
++          ClassTag.Object.asInstanceOf[ClassTag[T]]
++        } else if (classOf[scala.runtime.Nothing$] == runtimeClass1) {
++          ClassTag.Nothing.asInstanceOf[ClassTag[T]]
++        } else if (classOf[scala.runtime.Null$] == runtimeClass1) {
++          ClassTag.Null.asInstanceOf[ClassTag[T]]
++        } else {
++          new ClassTag[T]{ def runtimeClass = runtimeClass1 }
++        }
+@@ -155,1 +156,2 @@
+-  def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
++  @inline def unapply[T](ctag: ClassTag[T]): Option[Class[_]] =
++    Some(ctag.runtimeClass)

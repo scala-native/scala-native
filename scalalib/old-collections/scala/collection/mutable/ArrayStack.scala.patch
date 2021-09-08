@@ -1,9 +1,15 @@
-@@ -492,346 +492,594 @@
- fine Coll %60ArrayStack%60%0A */%0Aobject ArrayStack extends SeqFactory%5BArrayStack%5D %7B%0A  
-+@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, ArrayStack%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, ArrayStack%5BA%5D%5D = new ArrayStack%5BA%5D%0A
-- 
-+%0A  @inline
-  def empty: ArrayStack%5BNothing%5D = new ArrayStack()%0A  def apply%5BA: ClassTag%5D(elem
+--- 2.12.14/scala/collection/mutable/ArrayStack.scala
++++ old-collections/scala/collection/mutable/ArrayStack.scala
+@@ -27,3 +27,9 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
+-  def empty: ArrayStack[Nothing] = new ArrayStack()
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
++
++  @inline def empty: ArrayStack[Nothing] = new ArrayStack()

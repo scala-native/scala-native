@@ -1,16 +1,12 @@
 import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
-import $ivy.`org.bitbucket.cowwoc:diff-match-patch:1.2`,
-org.bitbucket.cowwoc.diffmatchpatch.DiffMatchPatch
+import $ivy.`io.github.java-diff-utils:java-diff-utils:4.9`,
+com.github.difflib.{DiffUtils, UnifiedDiffUtils}
+import scala.util._
 
 val ignoredFiles = {
   val scala = os.rel / "scala"
 
-  Set[RelPath](
-    scala / "package.scala",
-    scala / "Enumeration.scala",
-    scala / "Predef.scala",
-    scala / "Symbol.scala"
-  )
+  Set[RelPath]()
 }
 
 @main(doc = """Helper tool created for working with scalalib overrides / patches.
@@ -75,17 +71,33 @@ def main(
         patchPath = overridePath / up / s"${overridePath.last}.patch"
         _ = if (exists ! patchPath) rm ! patchPath
       } {
-        val diff = new DiffMatchPatch()
-        diff.patchMargin = 80
-        val diffs = diff.diffMain(read(sourcePath), read(overridePath), true)
-        if (diffs.isEmpty) {
+        val originalLines = fileToLines(sourcePath)
+        val diff = DiffUtils.diff(
+          originalLines,
+          fileToLines(overridePath),
+          false
+        )
+        val unifiedDiff = UnifiedDiffUtils.generateUnifiedDiff(
+          // relativePath.toString,
+          (sourcePath relativeTo sourcesDir / up).toString(),
+          (overridePath relativeTo overridesDirPath / up).toString(),
+          originalLines,
+          diff,
+          0
+        )
+
+        if (unifiedDiff.isEmpty()) {
           System.err.println(
             s"File $relativePath has identical content as original source"
           )
         } else {
-          diff.diffCleanupSemantic(diffs)
-          val patch = diff.patchMake(diffs)
-          write.over(patchPath, diff.patchToText(patch))
+          write.over(
+            patchPath,
+            unifiedDiff
+              .stream()
+              .reduce(_ + System.lineSeparator() + _)
+              .orElse("") + System.lineSeparator()
+          )
           println(s"Created patch for $relativePath")
         }
       }
@@ -104,17 +116,31 @@ def main(
         _ = if (exists(overridePath)) rm ! overridePath
 
       } {
-        val Array(patched: String, results: Array[Boolean]) = {
-          type PatchList = java.util.LinkedList[DiffMatchPatch.Patch]
-          val diff = new DiffMatchPatch()
-          val patches = diff.patchFromText(read(patchPath))
-          diff.patchApply(patches.asInstanceOf[PatchList], read(sourcePath))
-        }
-        if (results.forall(_ == true)) {
+        // There is not JVM library for working with diffs which can apply
+        // fuzzy patches based on the context, we use build in git command instead.
+        val sourceCopyPath = sourcePath / up / (sourcePath.baseName + ".copy")
+        os.copy(
+          sourcePath,
+          sourceCopyPath,
+          replaceExisting = true,
+          copyAttributes = true
+        )
+        try {
+          %%(
+            "git",
+            "apply",
+            "--ignore-space-change",
+            "--inaccurate-eof",
+            patchPath
+          )(sourcesDir)
+          os.move(sourcePath, overridePath, replaceExisting = true)
+          os.move(sourceCopyPath, sourcePath)
           println(s"Recreated $overridePath")
-          write.over(overridePath, patched)
-        } else {
-          System.err.println(s"Cannot apply patch for $patchPath")
+        } catch {
+          case ex: Exception =>
+            System.err.println(
+              s"Cannot apply patch for $patchPath - ${ex.getMessage()}"
+            )
         }
       }
 
@@ -150,6 +176,12 @@ implicit object CommandReader
         case _               => Left("Expected one of create, prune, recreate")
       }
     )
+
+def fileToLines(path: os.Path) = {
+  val list = new java.util.LinkedList[String]()
+  read.lines(path).foreach(list.add(_))
+  list
+}
 
 def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
     wd: os.Path

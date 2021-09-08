@@ -1,6 +1,12 @@
-@@ -953,268 +953,507 @@
- l %60mutable.IndexedSeq%60%0A */%0Aobject IndexedSeq extends SeqFactory%5BIndexedSeq%5D %7B%0A  
-+@inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A  @inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, IndexedSeq%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, IndexedSeq%5BA%5D%5D = new ArrayBuffer%5BA%5D%0A%7D%0A
+--- 2.12.14/scala/collection/mutable/IndexedSeq.scala
++++ old-collections/scala/collection/mutable/IndexedSeq.scala
+@@ -38,2 +38,7 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]

@@ -1,12 +1,17 @@
-@@ -1439,346 +1439,592 @@
- rayBuffer%5BA%5D) extends AbstractSeq%5BA%5D with IndexedSeq%5BA%5D with Serializable %7B%0A    
-+@inline 
- def length = buf.length%0A    
-+@inline 
- def apply(idx: Int) = buf.apply(idx)%0A  %7D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, IndexedSeq%5BA%5D%5D = Vector.newBuilder%5BA%5D%0A
--%0A
-   implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, IndexedSeq%5BA%5D%5D =%0A    ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D
-+%0A%0A  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D
- %0A%7D%0A
+--- 2.12.14/scala/collection/immutable/IndexedSeq.scala
++++ old-collections/scala/collection/immutable/IndexedSeq.scala
+@@ -46,2 +46,2 @@
+-    def length = buf.length
+-    def apply(idx: Int) = buf.apply(idx)
++    @inline def length = buf.length
++    @inline def apply(idx: Int) = buf.apply(idx)
+@@ -49,2 +49,1 @@
+-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
+-
++  @inline def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
+@@ -53,0 +52,5 @@
++
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }

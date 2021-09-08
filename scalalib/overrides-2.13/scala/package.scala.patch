@@ -1,0 +1,108 @@
+--- 2.13.6/scala/package.scala
++++ overrides-2.13/scala/package.scala
+@@ -41,2 +41,2 @@
+-  val AnyRef = new Specializable {
+-    override def toString = "object AnyRef"
++  lazy val AnyRef = new Specializable {
++	override def toString = "object AnyRef"
+@@ -44,1 +44,0 @@
+-
+@@ -53,1 +52,1 @@
+-  val Traversable = scala.collection.Iterable
++  lazy val Traversable = scala.collection.Iterable
+@@ -56,1 +55,1 @@
+-  val Iterable = scala.collection.Iterable
++  lazy val Iterable = scala.collection.Iterable
+@@ -60,1 +59,1 @@
+-  val Seq = scala.collection.immutable.Seq
++  lazy val Seq = scala.collection.immutable.Seq
+@@ -64,1 +63,1 @@
+-  val IndexedSeq = scala.collection.immutable.IndexedSeq
++  lazy val IndexedSeq = scala.collection.immutable.IndexedSeq
+@@ -67,1 +66,1 @@
+-  val Iterator = scala.collection.Iterator
++  lazy val Iterator = scala.collection.Iterator
+@@ -69,2 +68,1 @@
+-  @deprecated("Use scala.collection.BufferedIterator instead of scala.BufferedIterator", "2.13.0")
+-  type BufferedIterator[+A] = scala.collection.BufferedIterator[A]
++  @deprecated("Use scala.collection.BufferedIterator instead of scala.BufferedIterator", "2.13.0")  type BufferedIterator[+A] = scala.collection.BufferedIterator[A]
+@@ -73,1 +71,1 @@
+-  val List = scala.collection.immutable.List
++  lazy val List = scala.collection.immutable.List
+@@ -75,1 +73,1 @@
+-  val Nil = scala.collection.immutable.Nil
++  lazy val Nil = scala.collection.immutable.Nil
+@@ -78,1 +76,1 @@
+-  val :: = scala.collection.immutable.::
++  lazy val :: = scala.collection.immutable.::
+@@ -80,2 +78,2 @@
+-  val +: = scala.collection.+:
+-  val :+ = scala.collection.:+
++  lazy val +: = scala.collection.+:
++  lazy val :+ = scala.collection.:+
+@@ -86,1 +84,1 @@
+-  val Stream = scala.collection.immutable.Stream
++  lazy val Stream = scala.collection.immutable.Stream
+@@ -89,1 +87,1 @@
+-  val LazyList = scala.collection.immutable.LazyList
++  lazy val LazyList = scala.collection.immutable.LazyList
+@@ -91,1 +89,1 @@
+-  //val #:: = scala.collection.immutable.LazyList.#::
++  //lazy val #:: = scala.collection.immutable.LazyList.#::
+@@ -93,5 +91,5 @@
+-    def unapply[A](s: LazyList[A]): Option[(A, LazyList[A])] =
+-      if (s.nonEmpty) Some((s.head, s.tail)) else None
+-    @deprecated("Prefer LazyList instead", since = "2.13.0")
+-    def unapply[A](s: Stream[A]): Option[(A, Stream[A])] =
+-      if (s.nonEmpty) Some((s.head, s.tail)) else None
++	def unapply[A](s: LazyList[A]): Option[(A, LazyList[A])] =
++	  if (s.nonEmpty) Some((s.head, s.tail)) else None
++	@deprecated("Prefer LazyList instead", since = "2.13.0")
++	def unapply[A](s: Stream[A]): Option[(A, Stream[A])] =
++	  if (s.nonEmpty) Some((s.head, s.tail)) else None
+@@ -101,1 +99,1 @@
+-  val Vector = scala.collection.immutable.Vector
++  lazy val Vector = scala.collection.immutable.Vector
+@@ -104,1 +102,1 @@
+-  val StringBuilder = scala.collection.mutable.StringBuilder
++  lazy val StringBuilder = scala.collection.mutable.StringBuilder
+@@ -107,1 +105,1 @@
+-  val Range = scala.collection.immutable.Range
++  lazy val Range = scala.collection.immutable.Range
+@@ -112,1 +110,1 @@
+-  val BigDecimal = scala.math.BigDecimal
++  lazy val BigDecimal = scala.math.BigDecimal
+@@ -115,1 +113,1 @@
+-  val BigInt = scala.math.BigInt
++  lazy val BigInt = scala.math.BigInt
+@@ -118,1 +116,1 @@
+-  val Equiv = scala.math.Equiv
++  lazy val Equiv = scala.math.Equiv
+@@ -121,1 +119,1 @@
+-  val Fractional = scala.math.Fractional
++  lazy val Fractional = scala.math.Fractional
+@@ -124,1 +122,1 @@
+-  val Integral = scala.math.Integral
++  lazy val Integral = scala.math.Integral
+@@ -127,1 +125,1 @@
+-  val Numeric = scala.math.Numeric
++  lazy val Numeric = scala.math.Numeric
+@@ -130,1 +128,1 @@
+-  val Ordered = scala.math.Ordered
++  lazy val Ordered = scala.math.Ordered
+@@ -133,1 +131,1 @@
+-  val Ordering = scala.math.Ordering
++  lazy val Ordering = scala.math.Ordering
+@@ -135,2 +133,1 @@
+-  type PartialOrdering[T] = scala.math.PartialOrdering[T]
+-  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
++  type PartialOrdering[T] = scala.math.PartialOrdering[T]  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+@@ -139,1 +136,1 @@
+-  val Either = scala.util.Either
++  lazy val Either = scala.util.Either
+@@ -142,1 +139,1 @@
+-  val Left = scala.util.Left
++  lazy val Left = scala.util.Left
+@@ -145,1 +142,1 @@
+-  val Right = scala.util.Right
++  lazy val Right = scala.util.Right

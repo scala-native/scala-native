@@ -1,0 +1,33 @@
+--- scalaSources/2.13.5/scala/Predef.scala
++++ overrides-2.13.5/scala/Predef.scala
+@@ -138,7 +138,6 @@
+ 
+   /** The `String` type in Scala has all the methods of the underlying
+-   *  `java.lang.String`, of which it is just an alias.
+-   *  (See the documentation corresponding to your Java version,
+-   *  for example [[https://docs.oracle.com/javase/8/docs/api/java/lang/String.html]].)
++   *  [[java.lang.String]], of which it is just an alias.
++   *
+    *  In addition, extension methods in [[scala.collection.StringOps]]
+    *  are added implicitly through the conversion [[augmentString]].
+@@ -161,7 +160,7 @@
+   type Set[A]     = immutable.Set[A]
+   /**  @group aliases */
+-  val Map         = immutable.Map
++  @inline def Map = immutable.Map
+   /**  @group aliases */
+-  val Set         = immutable.Set
++  @inline def Set = immutable.Set
+ 
+   /**
+@@ -189,8 +188,8 @@
+   // TODO undeprecated until Scala reflection becomes non-experimental
+   // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+-  val Manifest          = scala.reflect.Manifest
++  @inline def Manifest  = scala.reflect.Manifest
+   // TODO undeprecated until Scala reflection becomes non-experimental
+   // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
+-  val NoManifest        = scala.reflect.NoManifest
++  @inline def NoManifest = scala.reflect.NoManifest
+ 
+   // TODO undeprecated until Scala reflection becomes non-experimental

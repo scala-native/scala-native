@@ -1,0 +1,352 @@
+--- 2.11.12/scala/Predef.scala
++++ overrides-2.11/scala/Predef.scala
+@@ -19,0 +19,1 @@
++import scala.scalanative.annotation.alwaysinline
+@@ -20,2 +21,1 @@
+-/** The `Predef` object provides definitions that are accessible in all Scala
+- *  compilation units without explicit qualification.
++/** The `Predef` object provides definitions that are accessible in all Scala *  compilation units without explicit qualification.
+@@ -25,2 +25,1 @@
+- *  the immutable collection types [[scala.collection.immutable.Map]],
+- *  [[scala.collection.immutable.Set]], and the [[scala.collection.immutable.List]]
++ *  the immutable collection types [[scala.collection.immutable.Map]], *  [[scala.collection.immutable.Set]], and the [[scala.collection.immutable.List]]
+@@ -30,2 +29,1 @@
+- *  === Console I/O ===
+- *  Predef provides a number of simple functions for console I/O, such as
++ *  === Console I/O === *  Predef provides a number of simple functions for console I/O, such as
+@@ -35,2 +33,1 @@
+- *  === Assertions ===
+- *
++ *  === Assertions === *
+@@ -40,2 +37,1 @@
+- *  which raises `-Xelide-below` above `elidable.ASSERTION`, to the `scalac` command.
+- *
++ *  which raises `-Xelide-below` above `elidable.ASSERTION`, to the `scalac` command. *
+@@ -45,2 +41,1 @@
+- *  of pre- and post-conditions on functions, with the intention that these
+- *  specifications could be consumed by a static analysis tool. For instance,
++ *  of pre- and post-conditions on functions, with the intention that these *  specifications could be consumed by a static analysis tool. For instance,
+@@ -50,2 +45,1 @@
+- *    require(nats forall (_ >= 0), "List contains negative numbers")
+- *    nats.foldLeft(0)(_ + _)
++ *    require(nats forall (_ >= 0), "List contains negative numbers") *    nats.foldLeft(0)(_ + _)
+@@ -101,2 +95,2 @@
+-  val Map         = immutable.Map
+-  val Set         = immutable.Set
++  @inline def Map = immutable.Map
++  @inline def Set = immutable.Set
+@@ -104,2 +98,1 @@
+-  // Manifest types, companions, and incantations for summoning
+-  @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
++  // Manifest types, companions, and incantations for summoning  @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
+@@ -109,2 +102,1 @@
+-  // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
+-  type OptManifest[T]   = scala.reflect.OptManifest[T]
++  // @deprecated("This notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")  type OptManifest[T]   = scala.reflect.OptManifest[T]
+@@ -116,1 +108,1 @@
+-  val ClassManifest     = scala.reflect.ClassManifest
++  @inline def ClassManifest     = scala.reflect.ClassManifest
+@@ -119,1 +111,1 @@
+-  val Manifest          = scala.reflect.Manifest
++  @inline def Manifest          = scala.reflect.Manifest
+@@ -122,1 +114,1 @@
+-  val NoManifest        = scala.reflect.NoManifest
++  @inline def NoManifest        = scala.reflect.NoManifest
+@@ -126,1 +118,1 @@
+-  def manifest[T](implicit m: Manifest[T])           = m
++  @inline def manifest[T](implicit m: Manifest[T])           = m
+@@ -128,1 +120,1 @@
+-  def classManifest[T](implicit m: ClassManifest[T]) = m
++  @inline def classManifest[T](implicit m: ClassManifest[T]) = m
+@@ -131,1 +123,1 @@
+-  def optManifest[T](implicit m: OptManifest[T])     = m
++  @inline def optManifest[T](implicit m: OptManifest[T])     = m
+@@ -134,2 +126,2 @@
+-  def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
+-  @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
++  @inline def identity[A](x: A): A         = x    // @see `conforms` for the implicit version
++  @alwaysinline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+@@ -137,1 +129,0 @@
+-
+@@ -144,1 +135,1 @@
+-  def error(message: String): Nothing = sys.error(message)
++  @inline def error(message: String): Nothing = sys.error(message)
+@@ -146,2 +137,1 @@
+-  /** Tests an expression, throwing an `AssertionError` if false.
+-   *  Calls to this method will not be generated if `-Xelide-below`
++  /** Tests an expression, throwing an `AssertionError` if false.   *  Calls to this method will not be generated if `-Xelide-below`
+@@ -154,1 +144,1 @@
+-  def assert(assertion: Boolean) {
++  @inline def assert(assertion: Boolean) {
+@@ -156,2 +146,1 @@
+-      throw new java.lang.AssertionError("assertion failed")
+-  }
++      throw new java.lang.AssertionError("assertion failed")  }
+@@ -161,2 +150,1 @@
+-   *  is at least `ASSERTION`.
+-   *
++   *  is at least `ASSERTION`.   *
+@@ -166,2 +154,1 @@
+-   */
+-  @elidable(ASSERTION) @inline
++   */  @elidable(ASSERTION) @inline
+@@ -172,1 +159,0 @@
+-
+@@ -176,2 +162,1 @@
+-   *  assume contains an axiom for a static checker.  Calls to this method
+-   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
++   *  assume contains an axiom for a static checker.  Calls to this method   *  will not be generated if `-Xelide-below` is at least `ASSERTION`.
+@@ -183,1 +168,1 @@
+-  def assume(assumption: Boolean) {
++  @inline def assume(assumption: Boolean) {
+@@ -185,2 +170,1 @@
+-      throw new java.lang.AssertionError("assumption failed")
+-  }
++      throw new java.lang.AssertionError("assumption failed")  }
+@@ -190,2 +174,1 @@
+-   *  assert contains a predicate which needs to be proven, while
+-   *  assume contains an axiom for a static checker.  Calls to this method
++   *  assert contains a predicate which needs to be proven, while   *  assume contains an axiom for a static checker.  Calls to this method
+@@ -195,2 +178,1 @@
+-   *  @param assumption   the expression to test
+-   *  @param message      a String to include in the failure message
++   *  @param assumption   the expression to test   *  @param message      a String to include in the failure message
+@@ -200,2 +182,1 @@
+-    if (!assumption)
+-      throw new java.lang.AssertionError("assumption failed: "+ message)
++    if (!assumption)      throw new java.lang.AssertionError("assumption failed: "+ message)
+@@ -210,1 +191,1 @@
+-  def require(requirement: Boolean) {
++  @inline def require(requirement: Boolean) {
+@@ -212,2 +193,1 @@
+-      throw new IllegalArgumentException("requirement failed")
+-  }
++      throw new IllegalArgumentException("requirement failed")  }
+@@ -217,2 +197,1 @@
+-   *  for violating the condition.
+-   *
++   *  for violating the condition.   *
+@@ -222,2 +201,1 @@
+-  @inline final def require(requirement: Boolean, message: => Any) {
+-    if (!requirement)
++  @inline final def require(requirement: Boolean, message: => Any) {    if (!requirement)
+@@ -230,1 +208,1 @@
+-  def ??? : Nothing = throw new NotImplementedError
++  @inline def ??? : Nothing = throw new NotImplementedError
+@@ -233,1 +211,0 @@
+-
+@@ -237,2 +214,1 @@
+-  object Pair {
+-    def apply[A, B](x: A, y: B) = Tuple2(x, y)
++  object Pair {    def apply[A, B](x: A, y: B) = Tuple2(x, y)
+@@ -242,0 +218,1 @@
++  @deprecated("Use built-in tuple syntax or Tuple3 instead", "2.11.0")  type Triple[+A, +B, +C] = Tuple3[A, B, C]
+@@ -243,2 +220,0 @@
+-  type Triple[+A, +B, +C] = Tuple3[A, B, C]
+-  @deprecated("Use built-in tuple syntax or Tuple3 instead", "2.11.0")
+@@ -249,1 +224,0 @@
+-
+@@ -253,2 +227,1 @@
+-    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
+-    def →[B](y: B): Tuple2[A, B] = ->(y)
++    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)    def →[B](y: B): Tuple2[A, B] = ->(y)
+@@ -258,2 +231,1 @@
+-    def ensuring(cond: Boolean): A = { assert(cond); self }
+-    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); self }
++    def ensuring(cond: Boolean): A = { assert(cond); self }    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); self }
+@@ -263,1 +235,0 @@
+-
+@@ -303,1 +274,1 @@
+-  implicit val StringCanBuildFrom: CanBuildFrom[String, Char, String] = new CanBuildFrom[String, Char, String] {
++  private object StringCanBuildFromInstance extends CanBuildFrom[String, Char, String] {
+@@ -308,0 +279,2 @@
++  @inline implicit def StringCanBuildFrom: CanBuildFrom[String, Char, String] = StringCanBuildFromInstance
++
+@@ -310,1 +283,0 @@
+-
+@@ -313,4 +285,4 @@
+-  def print(x: Any) = Console.print(x)
+-  def println() = Console.println()
+-  def println(x: Any) = Console.println(x)
+-  def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
++  @inline def print(x: Any) = Console.print(x)
++  @inline def println() = Console.println()
++  @inline def println(x: Any) = Console.println(x)
++  @inline def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
+@@ -320,2 +292,2 @@
+-  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
+-  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
++  @inline implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
++  @inline implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
+@@ -323,1 +295,1 @@
+-  implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {
++  @inline implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs match {
+@@ -325,2 +297,1 @@
+-    case x: Array[Boolean] => booleanArrayOps(x)
+-    case x: Array[Byte]    => byteArrayOps(x)
++    case x: Array[Boolean] => booleanArrayOps(x)    case x: Array[Byte]    => byteArrayOps(x)
+@@ -330,2 +301,1 @@
+-    case x: Array[Int]     => intArrayOps(x)
+-    case x: Array[Long]    => longArrayOps(x)
++    case x: Array[Int]     => intArrayOps(x)    case x: Array[Long]    => longArrayOps(x)
+@@ -337,10 +307,10 @@
+-  implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
+-  implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps.ofByte(xs)
+-  implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps.ofChar(xs)
+-  implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps.ofDouble(xs)
+-  implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps.ofFloat(xs)
+-  implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps.ofInt(xs)
+-  implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps.ofLong(xs)
+-  implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps.ofRef[T](xs)
+-  implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps.ofShort(xs)
+-  implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps.ofUnit(xs)
++  @inline implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
++  @inline implicit def byteArrayOps(xs: Array[Byte]): ArrayOps[Byte]          = new ArrayOps.ofByte(xs)
++  @inline implicit def charArrayOps(xs: Array[Char]): ArrayOps[Char]          = new ArrayOps.ofChar(xs)
++  @inline implicit def doubleArrayOps(xs: Array[Double]): ArrayOps[Double]    = new ArrayOps.ofDouble(xs)
++  @inline implicit def floatArrayOps(xs: Array[Float]): ArrayOps[Float]       = new ArrayOps.ofFloat(xs)
++  @inline implicit def intArrayOps(xs: Array[Int]): ArrayOps[Int]             = new ArrayOps.ofInt(xs)
++  @inline implicit def longArrayOps(xs: Array[Long]): ArrayOps[Long]          = new ArrayOps.ofLong(xs)
++  @inline implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps.ofRef[T](xs)
++  @inline implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps.ofShort(xs)
++  @inline implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps.ofUnit(xs)
+@@ -350,8 +320,8 @@
+-  implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
+-  implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
+-  implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
+-  implicit def int2Integer(x: Int)          = java.lang.Integer.valueOf(x)
+-  implicit def long2Long(x: Long)           = java.lang.Long.valueOf(x)
+-  implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
+-  implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
+-  implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
++  @inline implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
++  @inline implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
++  @inline implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
++  @inline implicit def int2Integer(x: Int)          = java.lang.Integer.valueOf(x)
++  @inline implicit def long2Long(x: Long)           = java.lang.Long.valueOf(x)
++  @inline implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
++  @inline implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
++  @inline implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
+@@ -359,8 +329,8 @@
+-  implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
+-  implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
+-  implicit def Character2char(x: java.lang.Character): Char   = x.charValue
+-  implicit def Integer2int(x: java.lang.Integer): Int         = x.intValue
+-  implicit def Long2long(x: java.lang.Long): Long             = x.longValue
+-  implicit def Float2float(x: java.lang.Float): Float         = x.floatValue
+-  implicit def Double2double(x: java.lang.Double): Double     = x.doubleValue
+-  implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.booleanValue
++  @inline implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
++  @inline implicit def Short2short(x: java.lang.Short): Short         = x.shortValue
++  @inline implicit def Character2char(x: java.lang.Character): Char   = x.charValue
++  @inline implicit def Integer2int(x: java.lang.Integer): Int         = x.intValue
++  @inline implicit def Long2long(x: java.lang.Long): Long             = x.longValue
++  @inline implicit def Float2float(x: java.lang.Float): Float         = x.floatValue
++  @inline implicit def Double2double(x: java.lang.Double): Double     = x.doubleValue
++  @inline implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.booleanValue
+@@ -369,1 +339,0 @@
+-
+@@ -373,2 +342,1 @@
+-   * the generalized constraint `A <: B`.
+-   *
++   * the generalized constraint `A <: B`.   *
+@@ -378,2 +346,1 @@
+-   *
+-   * To constrain any abstract type T that's in scope in a method's
++   *   * To constrain any abstract type T that's in scope in a method's
+@@ -383,2 +350,1 @@
+-   * required lower bound.
+-   *
++   * required lower bound.   *
+@@ -389,1 +355,1 @@
+-  private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
++  private[this] lazy val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
+@@ -393,1 +359,1 @@
+-  implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
++  @inline implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
+@@ -395,2 +361,1 @@
+-  @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
+-  def conforms[A]: A <:< A = $conforms[A]
++  @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")  def conforms[A]: A <:< A = $conforms[A]
+@@ -404,1 +369,1 @@
+-  private[this] final val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
++  private[this] lazy val singleton_=:= = new =:=[Any,Any] { def apply(x: Any): Any = x }
+@@ -406,1 +371,1 @@
+-     implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
++     @inline implicit def tpEquals[A]: A =:= A = singleton_=:=.asInstanceOf[A =:= A]
+@@ -408,1 +373,0 @@
+-
+@@ -413,1 +377,0 @@
+-
+@@ -419,1 +382,1 @@
+-    implicit def dummyImplicit: DummyImplicit = new DummyImplicit
++    @inline implicit def dummyImplicit: DummyImplicit = new DummyImplicit
+@@ -422,1 +385,0 @@
+-
+@@ -426,2 +388,1 @@
+-  // Deprecated stubs for any who may have been calling these methods directly.
+-  @deprecated("Use `ArrowAssoc`", "2.11.0") def any2ArrowAssoc[A](x: A): ArrowAssoc[A]                                      = new ArrowAssoc(x)
++  // Deprecated stubs for any who may have been calling these methods directly.  @deprecated("Use `ArrowAssoc`", "2.11.0") def any2ArrowAssoc[A](x: A): ArrowAssoc[A]                                      = new ArrowAssoc(x)
+@@ -431,2 +392,1 @@
+-  @deprecated("Use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)
+-  @deprecated("Use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)
++  @deprecated("Use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)  @deprecated("Use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)
+@@ -436,2 +396,1 @@
+-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readBoolean()                      = StdIn.readBoolean()
+-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readByte()                         = StdIn.readByte()
++  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readBoolean()                      = StdIn.readBoolean()  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readByte()                         = StdIn.readByte()
+@@ -441,2 +400,1 @@
+-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLong()                         = StdIn.readLong()
+-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readFloat()                        = StdIn.readFloat()
++  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLong()                         = StdIn.readLong()  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readFloat()                        = StdIn.readFloat()
+@@ -446,2 +404,1 @@
+-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf2(format: String)             = StdIn.readf2(format)
+-  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf3(format: String)             = StdIn.readf3(format)
++  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf2(format: String)             = StdIn.readf2(format)  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf3(format: String)             = StdIn.readf3(format)
+@@ -451,2 +408,1 @@
+-*  are valid in all Scala compilation units without explicit qualification,
+-*  but that are partially overridden by higher-priority conversions in object
++*  are valid in all Scala compilation units without explicit qualification,*  but that are partially overridden by higher-priority conversions in object
+@@ -484,1 +440,1 @@
+-  implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
++  @inline implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
+@@ -487,1 +443,0 @@
+-
+@@ -491,1 +446,1 @@
+-  implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = {
++  @inline implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = {
+@@ -493,2 +448,1 @@
+-    else if (xs.length == 0) WrappedArray.empty[T]
+-    else new WrappedArray.ofRef[T](xs)
++    else if (xs.length == 0) WrappedArray.empty[T]    else new WrappedArray.ofRef[T](xs)
+@@ -497,9 +451,9 @@
+-  implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
+-  implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
+-  implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
+-  implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
+-  implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
+-  implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
+-  implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
+-  implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
+-  implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
++  @inline implicit def wrapIntArray(xs: Array[Int]): WrappedArray[Int] = if (xs ne null) new WrappedArray.ofInt(xs) else null
++  @inline implicit def wrapDoubleArray(xs: Array[Double]): WrappedArray[Double] = if (xs ne null) new WrappedArray.ofDouble(xs) else null
++  @inline implicit def wrapLongArray(xs: Array[Long]): WrappedArray[Long] = if (xs ne null) new WrappedArray.ofLong(xs) else null
++  @inline implicit def wrapFloatArray(xs: Array[Float]): WrappedArray[Float] = if (xs ne null) new WrappedArray.ofFloat(xs) else null
++  @inline implicit def wrapCharArray(xs: Array[Char]): WrappedArray[Char] = if (xs ne null) new WrappedArray.ofChar(xs) else null
++  @inline implicit def wrapByteArray(xs: Array[Byte]): WrappedArray[Byte] = if (xs ne null) new WrappedArray.ofByte(xs) else null
++  @inline implicit def wrapShortArray(xs: Array[Short]): WrappedArray[Short] = if (xs ne null) new WrappedArray.ofShort(xs) else null
++  @inline implicit def wrapBooleanArray(xs: Array[Boolean]): WrappedArray[Boolean] = if (xs ne null) new WrappedArray.ofBoolean(xs) else null
++  @inline implicit def wrapUnitArray(xs: Array[Unit]): WrappedArray[Unit] = if (xs ne null) new WrappedArray.ofUnit(xs) else null
+@@ -507,2 +461,2 @@
+-  implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
+-  implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
++  @inline implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
++  @inline implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
+@@ -510,1 +464,1 @@
+-  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
++  @inline implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
+@@ -512,2 +466,1 @@
+-      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
+-      def apply() = immutable.IndexedSeq.newBuilder[T]
++      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]      def apply() = immutable.IndexedSeq.newBuilder[T]

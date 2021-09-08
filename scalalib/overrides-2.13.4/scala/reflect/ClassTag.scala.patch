@@ -1,98 +1,76 @@
-@@ -2393,164 +2393,161 @@
-  with element type %60T%60 and length %60len%60 */%0A  def newArray(len: Int): Array%5BT%5D =%0A
--    
-+%09
- java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf%5BArray%5BT%5D%5D%0A%0A 
-@@ -3040,224 +3040,218 @@
-  we have an instance of %60ClassTag%5BT%5D%60.%0A   */%0A  def unapply(x: Any): Option%5BT%5D =%0A
--    
-+%09
- if (runtimeClass.isInstance(x)) Some(x.asInstanceOf%5BT%5D)%0A
--    
-+%09
- else None%0A%0A  // case class accessories%0A  override def canEqual(x: Any) = x.isIns
-@@ -3394,1517 +3394,1438 @@
- timeClass%0A  override def hashCode = runtimeClass.##%0A  override def toString = %7B%0A
--    
-+%09
- def prettyprint(clazz: jClass%5B_%5D): String =%0A
--    
-+%09
-   if (clazz.isArray) s%22Array%5B$%7Bprettyprint(clazz.getComponentType)%7D%5D%22 else%0A
--      
-+%09%09
- clazz.getName%0A
--    
-+%09
- prettyprint(runtimeClass)%0A  %7D%0A%7D%0A%0A/**%0A * Class tags corresponding to primitive types and constructor/extractor for ClassTags.%0A */%0Aobject ClassTag %7B%0A
--  private%5Bthis%5D val ObjectTYPE = classOf%5Bjava.lang.Object%5D%0A  private%5Bthis%5D val NothingTYPE = classOf%5Bscala.runtime.Nothing$%5D%0A  private%5Bthis%5D val NullTYPE = classOf%5Bscala.runtime.Null$%5D%0A%0A
-   import ManifestFactory._%0A%0A  
--val
-+@inline def
-  Byte    : ByteManifest               = Manifest.Byte%0A  
--val
-+@inline def
-  Short   : ShortManifest              = Manifest.Short%0A  
--val
-+@inline def
-  Char    : CharManifest               = Manifest.Char%0A  
--val
-+@inline def
-  Int     : IntManifest                = Manifest.Int%0A  
--val
-+@inline def
-  Long    : LongManifest               = Manifest.Long%0A  
--val
-+@inline def
-  Float   : FloatManifest              = Manifest.Float%0A  
--val
-+@inline def
-  Double  : DoubleManifest             = Manifest.Double%0A  
--val
-+@inline def
-  Boolean : BooleanManifest            = Manifest.Boolean%0A  
--val
-+@inline def
-  Unit    : UnitManifest               = Manifest.Unit%0A  
--val
-+@inline def
-  Any     : ClassTag%5Bscala.Any%5D        = Manifest.Any%0A  
--val
-+@inline def
-  Object  : ClassTag%5Bjava.lang.Object%5D = Manifest.Object%0A  
--val
-+@inline def
-  AnyVal  : ClassTag%5Bscala.AnyVal%5D     = Manifest.AnyVal%0A  
--val
-+@inline def
-  AnyRef  : ClassTag%5Bscala.AnyRef%5D     = Manifest.AnyRef%0A  
--val
-+@inline def
-  Nothing : ClassTag%5Bscala.Nothing%5D    = Manifest.Nothing%0A  
--val
-+@inline def
-  Null    : ClassTag%5Bscala.Null%5D       = Manifest.Null%0A%0A  @SerialVersionUID(1L)%0A 
-@@ -5038,164 +5038,161 @@
- Of%5BArray%5BT%5D%5D%0A    %7D%0A  %7D%0A%0A  def apply%5BT%5D(runtimeClass1: jClass%5B_%5D): ClassTag%5BT%5D =%0A
--    
-+%09
- runtimeClass1 match %7B%0A      case java.lang.Byte.TYPE      =%3E ClassTag.Byte.asIns
-@@ -5789,477 +5789,560 @@
-  java.lang.Void.TYPE      =%3E ClassTag.Unit.asInstanceOf%5BClassTag%5BT%5D%5D%0A      case 
--ObjectTYPE               =%3E
-+_ =%3E%0A        if (classOf%5Bjava.lang.Object%5D == runtimeClass1)%0A%09%09 
-  ClassTag.Object.asInstanceOf%5BClassTag%5BT%5D%5D%0A      
--case NothingTYPE     
-+  else if (classOf%5Bscala.runtime.Nothing$%5D == runtimeClass1)%0A
-          
--=%3E
-  ClassTag.Nothing.asInstanceOf%5BClassTag%5BT%5D%5D%0A      
--case NullTYPE        
-+  else if (classOf%5Bscala.runtime.Null$%5D == runtimeClass1)%0A
-          
--=%3E
-  ClassTag.Null.asInstanceOf%5BClassTag%5BT%5D%5D%0A      
--case _                        =%3E
-+  else
-  new GenericClassTag%5BT%5D(runtimeClass1)%0A    %7D%0A%0A  def unapply%5BT%5D(ctag: ClassTag%5BT%5D): Option%5BClass%5B_%5D%5D = Some(ctag.runtimeClass)%0A%7D
--%0A
+--- 2.13.4/scala/reflect/ClassTag.scala
++++ overrides-2.13.4/scala/reflect/ClassTag.scala
+@@ -76,2 +76,2 @@
+-    if (runtimeClass.isInstance(x)) Some(x.asInstanceOf[T])
+-    else None
++	if (runtimeClass.isInstance(x)) Some(x.asInstanceOf[T])
++	else None
+@@ -84,4 +84,4 @@
+-    def prettyprint(clazz: jClass[_]): String =
+-      if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else
+-      clazz.getName
+-    prettyprint(runtimeClass)
++	def prettyprint(clazz: jClass[_]): String =
++	  if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else
++		clazz.getName
++	prettyprint(runtimeClass)
+@@ -95,4 +95,0 @@
+-  private[this] val ObjectTYPE = classOf[java.lang.Object]
+-  private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
+-  private[this] val NullTYPE = classOf[scala.runtime.Null$]
+-
+@@ -101,15 +97,15 @@
+-  val Byte    : ByteManifest               = Manifest.Byte
+-  val Short   : ShortManifest              = Manifest.Short
+-  val Char    : CharManifest               = Manifest.Char
+-  val Int     : IntManifest                = Manifest.Int
+-  val Long    : LongManifest               = Manifest.Long
+-  val Float   : FloatManifest              = Manifest.Float
+-  val Double  : DoubleManifest             = Manifest.Double
+-  val Boolean : BooleanManifest            = Manifest.Boolean
+-  val Unit    : UnitManifest               = Manifest.Unit
+-  val Any     : ClassTag[scala.Any]        = Manifest.Any
+-  val Object  : ClassTag[java.lang.Object] = Manifest.Object
+-  val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
+-  val AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
+-  val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
+-  val Null    : ClassTag[scala.Null]       = Manifest.Null
++  @inline def Byte    : ByteManifest               = Manifest.Byte
++  @inline def Short   : ShortManifest              = Manifest.Short
++  @inline def Char    : CharManifest               = Manifest.Char
++  @inline def Int     : IntManifest                = Manifest.Int
++  @inline def Long    : LongManifest               = Manifest.Long
++  @inline def Float   : FloatManifest              = Manifest.Float
++  @inline def Double  : DoubleManifest             = Manifest.Double
++  @inline def Boolean : BooleanManifest            = Manifest.Boolean
++  @inline def Unit    : UnitManifest               = Manifest.Unit
++  @inline def Any     : ClassTag[scala.Any]        = Manifest.Any
++  @inline def Object  : ClassTag[java.lang.Object] = Manifest.Object
++  @inline def AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
++  @inline def AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
++  @inline def Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
++  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
+@@ -119,2 +115,1 @@
+-    override def newArray(len: Int): Array[T] = {
+-      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
++    override def newArray(len: Int): Array[T] = {      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
+@@ -125,1 +120,1 @@
+-    runtimeClass1 match {
++	runtimeClass1 match {
+@@ -129,2 +124,1 @@
+-      case java.lang.Integer.TYPE   => ClassTag.Int.asInstanceOf[ClassTag[T]]
+-      case java.lang.Long.TYPE      => ClassTag.Long.asInstanceOf[ClassTag[T]]
++      case java.lang.Integer.TYPE   => ClassTag.Int.asInstanceOf[ClassTag[T]]      case java.lang.Long.TYPE      => ClassTag.Long.asInstanceOf[ClassTag[T]]
+@@ -135,4 +129,8 @@
+-      case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
+-      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
+-      case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
+-      case _                        => new GenericClassTag[T](runtimeClass1)
++      case _ =>
++        if (classOf[java.lang.Object] == runtimeClass1)
++		  ClassTag.Object.asInstanceOf[ClassTag[T]]
++        else if (classOf[scala.runtime.Nothing$] == runtimeClass1)
++          ClassTag.Nothing.asInstanceOf[ClassTag[T]]
++        else if (classOf[scala.runtime.Null$] == runtimeClass1)
++          ClassTag.Null.asInstanceOf[ClassTag[T]]
++        else new GenericClassTag[T](runtimeClass1)

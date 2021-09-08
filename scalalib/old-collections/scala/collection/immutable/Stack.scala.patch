@@ -1,8 +1,13 @@
-@@ -451,311 +451,550 @@
- %60%0A *  @define coll immutable stack%0A */%0Aobject Stack extends SeqFactory%5BStack%5D %7B%0A
-+  @inline override def ReusableCBF: GenericCanBuildFrom%5BNothing%5D = ReusableCBFInstance%0A  private object ReusableCBFInstance extends GenericCanBuildFrom%5BNothing%5D %7B%0A    @inline override def apply() = newBuilder%5BNothing%5D%0A  %7D%0A%0A
-   /** $genericCanBuildFromInfo */%0A  
-+@inline 
- implicit def canBuildFrom%5BA%5D: CanBuildFrom%5BColl, A, Stack%5BA%5D%5D = ReusableCBF.asInstanceOf%5BGenericCanBuildFrom%5BA%5D%5D%0A  
-+@inline 
- def newBuilder%5BA%5D: Builder%5BA, Stack%5BA%5D%5D = new ArrayBuffer%5BA%5D mapResult (buf =%3E n
+--- 2.12.14/scala/collection/immutable/Stack.scala
++++ old-collections/scala/collection/immutable/Stack.scala
+@@ -25,0 +25,5 @@
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
+@@ -26,2 +31,2 @@
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
