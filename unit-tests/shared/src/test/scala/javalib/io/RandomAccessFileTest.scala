@@ -52,8 +52,8 @@ class RandomAccessFileTest {
     // assign to var for @After to close
     raf = new RandomAccessFile(file, "r")
     val fd = raf.getFD
-    assertTrue(fd.valid())
-    assertTrue(Try(fd.sync()).isSuccess)
+    assertTrue("Invalid FD", fd.valid())
+    assertTrue("Failed to sync", Try(fd.sync()).isSuccess)
   }
 
   @Test def canWriteAndReadBoolean(): Unit = {

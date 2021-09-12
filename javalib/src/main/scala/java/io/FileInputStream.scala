@@ -7,7 +7,7 @@ import scala.scalanative.libc.stdio._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.unistd.lseek
-import scala.scalanative.nio.fs.UnixException
+import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.{runtime, windows}

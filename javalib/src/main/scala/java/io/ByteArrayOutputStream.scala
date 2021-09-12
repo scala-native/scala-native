@@ -1,5 +1,7 @@
 package java.io
 
+import java.nio.charset.Charset
+
 class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
   protected var buf: Array[Byte] = new Array(initBufSize)
@@ -45,6 +47,9 @@ class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
   def toString(charsetName: String): String =
     new String(buf, 0, count, charsetName)
+
+  def toString(charset: Charset): String =
+    new String(buf, 0, count, charset)
 
   private def growBuf(minIncrement: Int): Unit = {
     val newSize = Math.max(count + minIncrement, buf.length * 2)
