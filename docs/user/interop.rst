@@ -452,7 +452,7 @@ Primitive operation between two integer values are supported only
 if they have the same signedness (they must both signed or both unsigned.)
 
 Conversions between signed and unsigned integers must be done explicitly
-using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``longValue.toULong``
+using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``longValue.toULong``, ``sizeValue.toUSize``
 and conversely ``unsignedByteValue.toByte``, ``unsignedShortValue.toShort``, ``unsignedIntValue.toInt``,
 ``unsignedLongValue.toLong``, ``unsignedSizeValue.toSize``.
 
