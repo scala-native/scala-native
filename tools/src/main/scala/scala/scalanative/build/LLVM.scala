@@ -13,9 +13,6 @@ private[scalanative] object LLVM {
   private val unwindSettings =
     Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
-  private val asanSettings =
-    Seq("-fsanitize=address", "-fno-omit-frame-pointer")
-
   /** Object file extension: ".o" */
   val oExt = ".o"
 
@@ -66,8 +63,7 @@ private[scalanative] object LLVM {
         val compilec =
           Seq(compiler) ++ flto(
             config
-          ) ++ flags ++ unwindSettings ++ (if (config.asan) asanSettings
-                                           else Seq.empty) ++ target(config) ++
+          ) ++ flags ++ unwindSettings ++ asan(config) ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
@@ -125,8 +121,7 @@ private[scalanative] object LLVM {
       flto(config) ++ platformFlags ++ Seq(
         "-o",
         outpath.abs
-      ) ++ unwindSettings ++ (if (config.asan) asanSettings
-                              else Seq.empty) ++ target(config)
+      ) ++ unwindSettings ++ asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
@@ -146,6 +141,12 @@ private[scalanative] object LLVM {
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
       case lto      => Seq(s"-flto=${lto.name}")
+    }
+
+  private def asan(config: Config): Seq[String] =
+    config.compilerConfig.asan match {
+      case true  => Seq("-fsanitize=address", "-fno-omit-frame-pointer")
+      case false => Seq.empty
     }
 
   private def target(config: Config): Seq[String] =

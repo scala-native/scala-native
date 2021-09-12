@@ -2,7 +2,6 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Paths}
-import scala.scalanative.nir.Val
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
@@ -78,23 +77,8 @@ sealed trait Config {
   /** Should address sanitizer be used? */
   def asan: Boolean = compilerConfig.asan
 
-  def is32BitPlatform: Boolean =
-    compilerConfig.targetTriple
-      .getOrElse(
-        Discover.targetTriple(clang)
-      )
-      .split('-')
-      .headOption
-      .getOrElse("") match {
-      case "x86_64" => false
-      case "i386"   => true
-      case "i686"   => true
-      case o =>
-        println(
-          s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit"
-        )
-        false
-    }
+  /** Are we targeting a 32-bit platform? */
+  def is32BitPlatform: Boolean = compilerConfig.is32BitPlatform
 
   private[scalanative] def targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
@@ -102,9 +86,6 @@ sealed trait Config {
       customTriple.contains("windows")
     }
   }
-
-  /** Map of properties resolved at linktime */
-  def linktimeProperties: Map[String, Any]
 }
 
 object Config {
@@ -148,29 +129,5 @@ object Config {
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
-
-    override def linktimeProperties: Map[String, Any] = {
-      val base = compilerConfig.linktimeProperties
-      val isWindows = compilerConfig.linktimeProperties
-        .get("scala.scalanative.meta.linktimeinfo.isWindows")
-        .getOrElse(targetsWindows)
-        .asInstanceOf[Boolean]
-      val is32BitPlatform = compilerConfig.linktimeProperties
-        .get("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
-        .getOrElse(this.is32BitPlatform)
-        .asInstanceOf[Boolean]
-      val asanEnabled = compilerConfig.linktimeProperties
-        .get("scala.scalanative.meta.linktimeinfo.asanEnabled")
-        .getOrElse(compilerConfig.asan)
-        .asInstanceOf[Boolean]
-      Map(
-        "scala.scalanative.meta.linktimeinfo.isWindows" -> isWindows,
-        "scala.scalanative.meta.linktimeinfo.is32BitPlatform" -> is32BitPlatform,
-        "scala.scalanative.meta.linktimeinfo.sizeOfPtr" -> Val.Size(
-          if (is32BitPlatform) 4 else 8
-        ),
-        "scala.scalanative.meta.linktimeinfo.asanEnabled" -> asanEnabled
-      ) ++ compilerConfig.linktimeProperties
-    }
   }
 }

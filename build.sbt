@@ -72,7 +72,7 @@ lazy val docsSettings: Seq[Setting[_]] = {
 }
 
 // The previous releases of Scala Native with which this version is binary compatible.
-val binCompatVersions = Set("0.4.0")
+val binCompatVersions = Set()
 lazy val neverPublishedProjects = Map(
   "2.11" -> Set(util, tools, nir, windowslib, testRunner),
   "2.12" -> Set(windowslib),

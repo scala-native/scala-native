@@ -53,6 +53,25 @@ sealed trait NativeConfig {
   /** Map of properties resolved at linktime */
   def linktimeProperties: Map[String, Any]
 
+  /** Are we targeting a 32-bit platform? */
+  def is32BitPlatform =
+    targetTriple
+      .getOrElse(
+        Discover.targetTriple(clang)
+      )
+      .split('-')
+      .headOption
+      .getOrElse("") match {
+      case "x86_64" => false
+      case "i386"   => true
+      case "i686"   => true
+      case o =>
+        println(
+          s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit"
+        )
+        false
+    }
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -121,7 +140,7 @@ object NativeConfig {
       asan = false,
       linkStubs = false,
       optimize = false,
-      linktimeProperties = Map.empty
+      customLinktimeProperties = Map.empty
     )
 
   private final case class Impl(
@@ -139,7 +158,7 @@ object NativeConfig {
       dump: Boolean,
       asan: Boolean,
       optimize: Boolean,
-      linktimeProperties: Map[String, Any]
+      customLinktimeProperties: Map[String, Any]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -188,6 +207,18 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
+    def linktimeProperties: Map[String, Any] = {
+      val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
+      val predefined = Map(
+        s"$linktimeInfo.isWindows" -> Platform.isWindows,
+        s"$linktimeInfo.is32BitPlatform" -> is32BitPlatform,
+        s"$linktimeInfo.sizeOfPtr" -> (if (is32BitPlatform) Val.Size(4)
+                                       else Val.Size(8)),
+        s"$linktimeInfo.asanEnabled" -> asan
+      )
+      predefined ++ customLinktimeProperties
+    }
+
     override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
       def isSupportedPropertyKind(value: Any) = {
         def hasSupportedType = value match {
@@ -212,7 +243,7 @@ object NativeConfig {
         )
       }
 
-      copy(linktimeProperties = v)
+      copy(customLinktimeProperties = v)
     }
 
     override def toString: String = {

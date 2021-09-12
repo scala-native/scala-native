@@ -45,7 +45,7 @@ trait LinktimeValueResolver { self: Reach =>
   private def lookupLinktimeProperty(
       propertyName: String
   )(implicit pos: Position): LinktimeValue = {
-    config.linktimeProperties
+    config.compilerConfig.linktimeProperties
       .get(propertyName)
       .map(ComparableVal.fromAny(_).asAny)
       .getOrElse {

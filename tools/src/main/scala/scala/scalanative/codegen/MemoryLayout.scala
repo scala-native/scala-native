@@ -17,7 +17,9 @@ final case class MemoryLayout(
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(offset / 8 - 1) // refMapStruct is int64_t*
+          Val.Long(
+            offset / MemoryLayout.BYTES_IN_LONG - 1
+          ) // refMapStruct is int64_t*
       }
 
     ptrOffsets :+ Val.Long(-1)
@@ -26,6 +28,7 @@ final case class MemoryLayout(
 
 object MemoryLayout {
   final val BITS_IN_BYTE = 8
+  final val BYTES_IN_LONG = 8
 
   final case class PositionedType(ty: Type, offset: Long)
 
