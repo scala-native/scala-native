@@ -53,12 +53,12 @@ sealed trait NativeConfig {
   /** Map of properties resolved at linktime */
   def linktimeProperties: Map[String, Any]
 
+  private lazy val detectedTriple = Discover.targetTriple(clang)
+
   /** Are we targeting a 32-bit platform? */
-  def is32BitPlatform =
+  def is32BitPlatform = {
     targetTriple
-      .getOrElse(
-        Discover.targetTriple(clang)
-      )
+      .getOrElse(detectedTriple)
       .split('-')
       .headOption
       .getOrElse("") match {
@@ -71,6 +71,7 @@ sealed trait NativeConfig {
         )
         false
     }
+  }
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig

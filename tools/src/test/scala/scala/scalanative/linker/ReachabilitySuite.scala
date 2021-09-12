@@ -77,7 +77,7 @@ trait ReachabilitySuite extends AnyFunSuite {
       .withWorkdir(outDir)
       .withClassPath(paths.toSeq)
       .withCompilerConfig {
-        _.withLinktimeProperties(linktimeInfoDefaults)
+        _.withTargetTriple("x86_64-unknown-unknown")
       }
   }
 }
