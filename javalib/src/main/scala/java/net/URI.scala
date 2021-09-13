@@ -72,6 +72,21 @@ final class URI private () extends Comparable[URI] with Serializable {
     Helper.parseURI(uri.toString, false)
   }
 
+  def isRelativePath(path: String): Boolean = {
+    def unixAbsolutePath = {
+      path.length() > 0 &&
+      path.charAt(0) == '/'
+    }
+    def windowsAbsolutePath = {
+      path.length() > 2 &&
+      path.charAt(0).isLetter &&
+      path.charAt(1) == ':' &&
+      path.charAt(2) == '\\'
+    }
+
+    path != null && !(unixAbsolutePath || windowsAbsolutePath)
+  }
+
   def this(
       scheme: String,
       userInfo: String,
@@ -91,9 +106,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       earlyStop = true
     }
     if (!earlyStop) {
-      if (scheme != null && path != null &&
-          path.length() > 0 &&
-          path.charAt(0) != '/') {
+      if (scheme != null && isRelativePath(path)) {
         throw new URISyntaxException(path, "Relative path")
       }
       val uri = new JStringBuilder()
@@ -121,7 +134,8 @@ final class URI private () extends Comparable[URI] with Serializable {
         uri.append(port)
       }
       if (path != null) {
-        uri.append(quoteComponent(path, "/@" + someLegal))
+        val withFixedSlashes = path.replace('\\', '/')
+        uri.append(quoteComponent(withFixedSlashes, "/@" + someLegal))
       }
       if (query != null) {
         uri.append('?')
@@ -146,9 +160,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       fragment: String
   ) = {
     this()
-    if (scheme != null && path != null &&
-        path.length() > 0 &&
-        path.charAt(0) != '/') {
+    if (scheme != null && isRelativePath(path)) {
       throw new URISyntaxException(path, "Relative path")
     }
     val uri = new JStringBuilder()
@@ -161,7 +173,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       uri.append(quoteComponent(authority, "@[]" + someLegal))
     }
     if (path != null) {
-      uri.append(quoteComponent(path, "/@" + someLegal))
+      val withFixedSlashes = path.replace('\\', '/')
+      uri.append(quoteComponent(withFixedSlashes, "/@" + someLegal))
     }
     if (query != null) {
       uri.append('?')
@@ -230,8 +243,22 @@ final class URI private () extends Comparable[URI] with Serializable {
         if (temp.startsWith("//")) {
           index = temp.indexOf('/', 2)
           if (index != -1) {
-            authority = temp.substring(2, index)
-            path = temp.substring(index)
+            // Todo temperol adjusment, should be replaced with proper rewrite in the future.
+            def gotWindowsVolume = {
+              index == 4 &&
+              temp.charAt(2).isLetter &&
+              temp.charAt(3) == ':'
+            }
+            def gotUncPath = {
+              temp.charAt(2) == '\\' && temp.charAt(3) == '\\'
+            }
+            if (gotWindowsVolume || gotUncPath) {
+              authority = ""
+              path = temp.substring(2)
+            } else {
+              authority = temp.substring(2, index)
+              path = temp.substring(index)
+            }
           } else {
             authority = temp.substring(2)
             if (authority.length() == 0 && query == null
