@@ -335,7 +335,12 @@ object Generate {
       val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
       val weakRefRegGlobal = Global.Top("java.lang.ref.WeakReferenceRegistry$")
 
-      val (classId, fieldOffset, registryOffset, registryFieldOffset) =
+      val (
+        weakRefId,
+        weakRefFieldOffset,
+        weakRefRegOffset,
+        weakRefRegFieldOffset
+      ) =
         if (linked.infos.contains(weakRefGlobal)) {
           // if WeakReferences are being compiled and therefore supported
           def gcModifiedFieldIndexes(clazz: Class): Seq[Int] =
@@ -348,7 +353,7 @@ object Generate {
           val weakRef = linked
             .infos(weakRefGlobal)
             .asInstanceOf[Class]
-          
+
           val weakRefFieldIndexes = gcModifiedFieldIndexes(weakRef)
           if (weakRefFieldIndexes.size != 1)
             throw new Exception(
@@ -358,7 +363,10 @@ object Generate {
           val weakRefRegistry = linked
             .infos(weakRefRegGlobal)
             .asInstanceOf[Class]
-          if (!weakRefRegistry.isModule) throw new Exception("WeakReferenceRegistry should be treated as a module by the compiler")
+          if (!weakRefRegistry.isModule)
+            throw new Exception(
+              "WeakReferenceRegistry should be treated as a module by the compiler"
+            )
 
           val weakRefRegIndex = meta.moduleArray.index(weakRefRegistry)
 
@@ -368,15 +376,20 @@ object Generate {
               "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReferenceRegistry"
             )
 
-          (meta.ids(weakRef), weakRefFieldIndexes.head, weakRefRegIndex, weakRefRegFieldIndexes.head)
+          (
+            meta.ids(weakRef),
+            weakRefFieldIndexes.head,
+            weakRefRegIndex,
+            weakRefRegFieldIndexes.head
+          )
         } else {
           // print to DEBUG
           (0, 0, 0, 0)
         }
-      addToBuf(weakRefIdName, classId)
-      addToBuf(weakRefFieldOffsetName, fieldOffset)
-      addToBuf(registryOffsetName, registryOffset)
-      addToBuf(registryFieldOffsetName, registryFieldOffset)
+      addToBuf(weakRefIdName, weakRefId)
+      addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)
+      addToBuf(registryOffsetName, weakRefRegOffset)
+      addToBuf(registryFieldOffsetName, weakRefRegFieldOffset)
     }
 
     def genArrayIds(): Unit = {

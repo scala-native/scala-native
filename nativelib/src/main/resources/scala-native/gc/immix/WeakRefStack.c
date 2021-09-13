@@ -11,7 +11,6 @@ int visited = 0;
 // Used to correctly set "NULL" values in place of cleaned objects
 // and to call other handler functions.
 
-
 void WeakRefStack_Init(size_t size) { Stack_Init(&weakRefStack, size); }
 
 void WeakRefStack_Push(Object *object) { Stack_Push(&weakRefStack, object); }
@@ -27,7 +26,7 @@ void WeakRefStack_Nullify(Heap *heap) {
         if (Heap_IsWordInHeap(heap, refObject)) {
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, refObject);
             if (!ObjectMeta_IsMarked(objectMeta)) {
-                // WeakReferences should have the referant 
+                // WeakReferences should have the referant
                 // field set to null if collected
                 object->fields[fieldOffset] = NULL;
                 visited++;

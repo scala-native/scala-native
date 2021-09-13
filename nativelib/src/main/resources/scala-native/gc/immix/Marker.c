@@ -74,7 +74,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
                 if (Object_IsReferantOfWeakReference(object, i))
                     continue;
-                
+
                 word_t *field = object->fields[ptr_map[i]];
                 if (Heap_IsWordInHeap(heap, field)) {
                     ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);

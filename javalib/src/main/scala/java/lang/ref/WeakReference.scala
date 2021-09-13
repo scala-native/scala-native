@@ -19,7 +19,7 @@ class WeakReference[T >: Null <: AnyRef](
 
   override def enqueue(): Boolean =
     enqueued match {
-      case true => false
+      case true                     => false
       case false if (queue == null) => false
       case _ =>
         queue.add(this)
@@ -30,7 +30,6 @@ class WeakReference[T >: Null <: AnyRef](
   override def isEnqueued(): Boolean = enqueued
 
   override def clear(): Unit = {
-    super.clear()
     _gc_modified_referent = null
     enqueue()
   }
