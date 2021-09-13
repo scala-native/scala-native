@@ -4,6 +4,7 @@ package codegen
 import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.linker.Class
+import scala.ref.WeakReferenceWithWrapper
 
 object Generate {
   import Impl._
@@ -323,25 +324,59 @@ object Generate {
     }
 
     def genWeakRefId(): Unit = {
-      val key = Global.Top(s"java.lang.ref.WeakReference")
-      val value =
-        if (linked.infos.contains(key)) {
-          val clazz =
-            linked
-              .infos(key)
-              .asInstanceOf[Class]
+      def addToBuf(name: Global, value: Int) =
+        buf +=
+          Defn.Var(
+            Attrs.None,
+            name,
+            Type.Int,
+            Val.Int(value)
+          )
+      val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
+      val weakRefRegGlobal = Global.Top("java.lang.ref.WeakReferenceRegistry$")
 
-          meta.ids(clazz)
+      val (classId, fieldOffset, registryOffset, registryFieldOffset) =
+        if (linked.infos.contains(weakRefGlobal)) {
+          // if WeakReferences are being compiled and therefore supported
+          def gcModifiedFieldIndexes(clazz: Class): Seq[Int] =
+            meta.layout(clazz).entries.zipWithIndex.collect {
+              case (field, index)
+                  if field.name.mangle.contains("_gc_modified_") =>
+                index
+            }
+
+          val weakRef = linked
+            .infos(weakRefGlobal)
+            .asInstanceOf[Class]
+          
+          val weakRefFieldIndexes = gcModifiedFieldIndexes(weakRef)
+          if (weakRefFieldIndexes.size != 1)
+            throw new Exception(
+              "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
+            )
+
+          val weakRefRegistry = linked
+            .infos(weakRefRegGlobal)
+            .asInstanceOf[Class]
+          if (!weakRefRegistry.isModule) throw new Exception("WeakReferenceRegistry should be treated as a module by the compiler")
+
+          val weakRefRegIndex = meta.moduleArray.index(weakRefRegistry)
+
+          val weakRefRegFieldIndexes = gcModifiedFieldIndexes(weakRefRegistry)
+          if (weakRefRegFieldIndexes.size != 1)
+            throw new Exception(
+              "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReferenceRegistry"
+            )
+
+          (meta.ids(weakRef), weakRefFieldIndexes.head, weakRefRegIndex, weakRefRegFieldIndexes.head)
         } else {
-          0
+          // print to DEBUG
+          (0, 0, 0, 0)
         }
-      buf +=
-        Defn.Var(
-          Attrs.None,
-          weakRefIdName,
-          Type.Int,
-          Val.Int(value)
-        )
+      addToBuf(weakRefIdName, classId)
+      addToBuf(weakRefFieldOffsetName, fieldOffset)
+      addToBuf(registryOffsetName, registryOffset)
+      addToBuf(registryFieldOffsetName, registryFieldOffset)
     }
 
     def genArrayIds(): Unit = {
@@ -433,6 +468,9 @@ object Generate {
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
     val weakRefIdName = extern("__weak_ref_id")
+    val weakRefFieldOffsetName = extern("__weak_ref_field_offset")
+    val registryOffsetName = extern("__weak_ref_registry_module_offset")
+    val registryFieldOffsetName = extern("__weak_ref_registry_field_offset")
     val arrayIdsMinName = extern("__array_ids_min")
     val arrayIdsMaxName = extern("__array_ids_max")
 

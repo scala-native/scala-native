@@ -4,7 +4,8 @@
 #include "Heap.h"
 
 void WeakRefStack_Init(size_t size);
-void WeakRefStack_Push(Object* object);
-void WeakRefStack_Visit(Heap* heap);
+void WeakRefStack_Push(Object *object);
+void WeakRefStack_Nullify(Heap *heap);
+void WeakRefStack_CallHandlers(Heap *heap);
 
 #endif // WEAK_REF_STACK_H

@@ -19,12 +19,12 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta));
 
-    if (object->rtti->rt.id == __weak_ref_id){
+    if (Object_IsWeakReference(object)) {
         assert(Object_Size(object) != 0);
         Object_Mark(heap, object, objectMeta);
-        // Added to weakreference stack for later visit
+        // Added to the WeakReference stack for later visit
         WeakRefStack_Push(object);
-        // Not added to dfs stack, as we don't
+        // Not added to the dfs stack, as we don't
         // want to mark the held object
     } else {
         assert(Object_Size(object) != 0);
@@ -71,7 +71,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
             int i = 0;
-            while (ptr_map[i] != LAST_FIELD_OFFSET) {
+            for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
+                if (Object_IsReferantOfWeakReference(object, i))
+                    continue;
+                
                 word_t *field = object->fields[ptr_map[i]];
                 if (Heap_IsWordInHeap(heap, field)) {
                     ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
@@ -80,7 +83,6 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                                           fieldMeta);
                     }
                 }
-                ++i;
             }
         }
     }
@@ -129,5 +131,5 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
 
     Marker_Mark(heap, stack);
 
-    WeakRefStack_Visit(heap);
+    WeakRefStack_Nullify(heap);
 }

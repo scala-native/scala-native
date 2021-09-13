@@ -6,7 +6,7 @@
 #include "Stats.h"
 
 void WeakRefGreyList_GiveWeakRefPacket(Heap *heap, Stats *stats,
-                                         GreyPacket *packet);
+                                       GreyPacket *packet);
 void WeakRefGreyList_Visit(Heap *heap);
 
 #endif // WEAK_REF_GREY_LIST

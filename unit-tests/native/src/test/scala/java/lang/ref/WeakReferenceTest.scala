@@ -11,7 +11,7 @@ class WeakReferenceTest {
 
   case class A(a: Int)
   var weakRef: WeakReference[A] = null
-   
+
   @noinline def alloc(): Unit = {
     var a = A(0)
     weakRef = new WeakReference(a)
@@ -23,11 +23,11 @@ class WeakReferenceTest {
     alloc()
 
     var i = 0
-    while (i<3) {
-      if(i == 0){
-          GC.collect()
+    while (i < 3) {
+      if (i == 0) {
+        GC.collect()
       }
-      
+
       // We do not want to put the reference on stack
       // during GC, so we hide it behind an if block
       if (i == 3) {
