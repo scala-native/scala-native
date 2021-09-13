@@ -234,8 +234,9 @@ void Heap_Collect(Heap *heap) {
     Phase_MarkDone(heap);
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
-    WeakRefGreyList_Visit(heap); // TODO concurrentify
+    WeakRefGreyList_Nullify(heap); // TODO concurrentify
     Phase_StartSweep(heap);
+    WeakRefGreyList_CallHandlers(heap);
 }
 
 bool Heap_shouldGrow(Heap *heap) {

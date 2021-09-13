@@ -182,10 +182,11 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
     int64_t *ptr_map = object->rtti->refMapStruct;
     
     for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
-        if (Object_IsReferantOfWeakReference(object, offsetIndex))
+        word_t current = ptr_map[i];
+        if (Object_IsReferantOfWeakReference(object, i))
             continue;
         
-        word_t *field = object->fields[*current];
+        word_t *field = object->fields[current];
         if (Heap_IsWordInHeap(heap, field)) {
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
             if (ObjectMeta_IsAllocated(fieldMeta)) {

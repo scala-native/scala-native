@@ -7,6 +7,7 @@
 
 void WeakRefGreyList_GiveWeakRefPacket(Heap *heap, Stats *stats,
                                        GreyPacket *packet);
-void WeakRefGreyList_Visit(Heap *heap);
+void WeakRefGreyList_Nullify(Heap *heap);
+void WeakRefGreyList_CallHandlers();
 
 #endif // WEAK_REF_GREY_LIST

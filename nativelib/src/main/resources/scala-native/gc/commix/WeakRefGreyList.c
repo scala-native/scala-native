@@ -1,6 +1,9 @@
 #include "WeakRefGreyList.h"
 #include "headers/ObjectHeader.h"
 
+extern word_t *__modules;
+int visited = 0;
+
 void WeakRefGreyList_GiveWeakRefPacket(Heap *heap, Stats *stats, // Rethink
                                        GreyPacket *packet) {
     assert(packet->type == grey_packet_refrange || packet->size > 0); // TODO
@@ -14,7 +17,8 @@ void WeakRefGreyList_GiveWeakRefPacket(Heap *heap, Stats *stats, // Rethink
     Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
 }
 
-void WeakRefGreyList_Visit(Heap *heap) {
+void WeakRefGreyList_Nullify(Heap *heap) {
+    visited = 0;
     GreyPacket *weakRefsPacket =
         GreyList_Pop(&heap->mark.foundWeakRefs, heap->greyPacketsStart);
     Bytemap *bytemap = heap->bytemap;
@@ -30,8 +34,9 @@ void WeakRefGreyList_Visit(Heap *heap) {
                 if (ObjectMeta_IsAllocated(objectMeta)) {
                     if (!ObjectMeta_IsMarked(objectMeta)) {
                         // WeakReferences should have the referant field set to
-                        // null on collect
+                        // null if collected
                         object->fields[objOffset] = NULL;
+                        visited++;
                     }
                 }
             }
@@ -40,5 +45,16 @@ void WeakRefGreyList_Visit(Heap *heap) {
                       weakRefsPacket);
         weakRefsPacket =
             GreyList_Pop(&heap->mark.foundWeakRefs, heap->greyPacketsStart);
+    }
+}
+void WeakRefGreyList_CallHandlers() {
+    if (visited > 0 && __weak_ref_registry_module_offset != 0 &&
+        __weak_ref_registry_field_offset != 0) {
+        word_t **modules = &__modules;
+        Object *registry = (Object *)modules[__weak_ref_registry_module_offset];
+        word_t *field = registry->fields[__weak_ref_registry_field_offset];
+        void (*fieldOffset)() = (void *)field;
+
+        fieldOffset();
     }
 }
