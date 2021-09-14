@@ -433,6 +433,15 @@ lazy val sbtScalaNative =
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
       scriptedDependencies := {
+        import java.nio.file.{Files, StandardCopyOption}
+        // Synchronize SocketHelpers used in java-net-socket test
+        // Each scripted test creates it's own environment in tmp directory
+        // which does not allow us to define external sources in script build
+        Files.copy(
+          ((javalib / Compile / scalaSource).value / "java/net/SocketHelpers.scala").toPath,
+          (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala").toPath,
+          StandardCopyOption.REPLACE_EXISTING
+        )
         scriptedDependencies
           .dependsOn(
             // Compiler plugins

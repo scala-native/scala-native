@@ -52,7 +52,9 @@ object BinaryIncompatibilities {
   final val PosixLib: Filters = Seq(
     exclude[IncompatibleResultTypeProblem](
       "scala.scalanative.posix.limits.PATH_MAX"
-    )
+    ),
+    // Moved to javalib, used internally and in scripted-tests
+    exclude[MissingClassProblem]("scala.scalanative.runtime.SocketHelpers*")
   )
   final val WindowsLib: Filters = Nil
 

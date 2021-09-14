@@ -1,5 +1,4 @@
-package scala.scalanative
-package runtime
+package java.net
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
@@ -13,10 +12,17 @@ import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.sys.time.timeval
 import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.windows.WinSocketApi._
+import scala.scalanative.windows.WinSocketApiOps
 
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
+  if (isWindows) {
+    // WinSockets needs to be initialized before usage
+    WinSocketApiOps.init()
+  }
+
   /*
    * The following should be long enough and constant exists on macOS.
    * https://www.gnu.org/software/libc/manual/html_node/Host-Identification.html
@@ -25,8 +31,11 @@ object SocketHelpers {
   val MAXHOSTNAMELEN = 256.toUInt
 
   private def setSocketNonBlocking(socket: CInt)(implicit z: Zone): CInt = {
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val mode = alloc[CInt]
+      !mode = 0
+      ioctlSocket(socket.toPtr[Byte], FIONBIO, mode)
+    } else {
       fcntl(socket, F_SETFL, O_NONBLOCK)
     }
   }
@@ -108,7 +117,7 @@ object SocketHelpers {
       } catch {
         case e: Throwable => e
       } finally {
-        if (isWindows) ???
+        if (isWindows) closeSocket(sock.toPtr[Byte])
         else close(sock)
         freeaddrinfo(ai)
       }

@@ -20,7 +20,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
       protocol = 0, // choosed by provider
       protocolInfo = null,
       group = 0.toUInt,
-      flags = 0.toUInt
+      flags = WSA_FLAG_OVERLAPPED
     )
     if (socket == InvalidSocket) {
       throw new IOException(s"Couldn't create a socket: ${WSAGetLastError()}")
@@ -109,10 +109,13 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
   ): Unit = {
     val mode = stackalloc[Int]
     if (blocking)
-      !mode = 1
-    else
       !mode = 0
-    ioctlSocket(fd.handle, FIONBIO, mode)
+    else
+      !mode = 1
+    if (ioctlSocket(fd.handle, FIONBIO, mode) != 0)
+      throw new SocketException(
+        s"Failed to set socket ${if (!blocking) "non-" else ""}blocking"
+      )
   }
 
 }
