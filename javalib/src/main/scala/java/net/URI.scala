@@ -91,7 +91,9 @@ final class URI private () extends Comparable[URI] with Serializable {
       earlyStop = true
     }
     if (!earlyStop) {
-      if (scheme != null && isRelativePath(path)) {
+      if (scheme != null && path != null &&
+          path.length() > 0 &&
+          path.charAt(0) != '/') {
         throw new URISyntaxException(path, "Relative path")
       }
       val uri = new JStringBuilder()
@@ -119,8 +121,7 @@ final class URI private () extends Comparable[URI] with Serializable {
         uri.append(port)
       }
       if (path != null) {
-        val withFixedSlashes = path.replace('\\', '/')
-        uri.append(quoteComponent(withFixedSlashes, "/@" + someLegal))
+        uri.append(quoteComponent(path, "/@" + someLegal))
       }
       if (query != null) {
         uri.append('?')
@@ -145,7 +146,9 @@ final class URI private () extends Comparable[URI] with Serializable {
       fragment: String
   ) = {
     this()
-    if (scheme != null && isRelativePath(path)) {
+    if (scheme != null && path != null &&
+        path.length() > 0 &&
+        path.charAt(0) != '/') {
       throw new URISyntaxException(path, "Relative path")
     }
     val uri = new JStringBuilder()
@@ -158,8 +161,7 @@ final class URI private () extends Comparable[URI] with Serializable {
       uri.append(quoteComponent(authority, "@[]" + someLegal))
     }
     if (path != null) {
-      val withFixedSlashes = path.replace('\\', '/')
-      uri.append(quoteComponent(withFixedSlashes, "/@" + someLegal))
+      uri.append(quoteComponent(path, "/@" + someLegal))
     }
     if (query != null) {
       uri.append('?')
@@ -170,21 +172,6 @@ final class URI private () extends Comparable[URI] with Serializable {
       uri.append(quoteComponent(fragment, allLegal))
     }
     Helper.parseURI(uri.toString, false)
-  }
-
-  private def isRelativePath(path: String): Boolean = {
-    def unixAbsolutePath = {
-      path.length() > 0 &&
-      path.charAt(0) == '/'
-    }
-    def windowsAbsolutePath = {
-      path.length() > 2 &&
-      path.charAt(0).isLetter &&
-      path.charAt(1) == ':' &&
-      path.charAt(2) == '\\'
-    }
-
-    path != null && !(unixAbsolutePath || windowsAbsolutePath)
   }
 
   private object Helper {
@@ -243,22 +230,8 @@ final class URI private () extends Comparable[URI] with Serializable {
         if (temp.startsWith("//")) {
           index = temp.indexOf('/', 2)
           if (index != -1) {
-            // Todo temperol adjusment, should be replaced with proper rewrite in the future.
-            def gotWindowsVolume = {
-              index == 4 &&
-              temp.charAt(2).isLetter &&
-              temp.charAt(3) == ':'
-            }
-            def gotUncPath = {
-              temp.charAt(2) == '\\' && temp.charAt(3) == '\\'
-            }
-            if (gotWindowsVolume || gotUncPath) {
-              authority = ""
-              path = temp.substring(2)
-            } else {
-              authority = temp.substring(2, index)
-              path = temp.substring(index)
-            }
+            authority = temp.substring(2, index)
+            path = temp.substring(index)
           } else {
             authority = temp.substring(2)
             if (authority.length() == 0 && query == null
