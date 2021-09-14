@@ -11,6 +11,10 @@ import scalanative.posix.unistd
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.windows._
+import scala.scalanative.windows.WinSocketApi._
+import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.windows.WinSocketApiOps
 
 import org.junit.Test
 import org.junit.Assert._
@@ -22,8 +26,15 @@ class UdpSocketTest {
   // For some unknown reason inlining content of this method leads to failures
   // on Unix, probably due to bug in linktime conditions.
   private def setSocketBlocking(socket: CInt): Unit = {
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val mode = stackalloc[CInt]
+      !mode = 1
+      assertNotEquals(
+        "iotctl setBLocking",
+        -1,
+        ioctlSocket(socket.toPtr[Byte], FIONBIO, mode)
+      )
+    } else {
       assertNotEquals(
         s"fcntl set blocking",
         -1,
@@ -33,8 +44,18 @@ class UdpSocketTest {
   }
 
   private def createAndCheckUdpSocket(): CInt = {
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val socket = WSASocketW(
+        addressFamily = AF_INET,
+        socketType = SOCK_DGRAM,
+        protocol = IPPROTO_UDP,
+        protocolInfo = null,
+        group = 0.toUInt,
+        flags = WSA_FLAG_OVERLAPPED
+      )
+      assertNotEquals("socket create", InvalidSocket, socket)
+      socket.toInt
+    } else {
       val sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
       assertNotEquals("socket create", -1, sock)
       sock
@@ -42,11 +63,14 @@ class UdpSocketTest {
   }
 
   private def closeSocket(socket: CInt): Unit = {
-    if (isWindows) ???
+    if (isWindows) WinSocketApi.closeSocket(socket.toPtr[Byte])
     else unistd.close(socket)
   }
 
   @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
+    if (isWindows) {
+      WinSocketApiOps.init()
+    }
     val localhost = c"127.0.0.1"
     val localhostInetAddr = inet_addr(localhost)
 
