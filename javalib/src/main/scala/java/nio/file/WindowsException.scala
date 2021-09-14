@@ -2,17 +2,18 @@ package java.nio.file
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scalanative.libc.{string, errno => stdErrno}
-import scalanative.posix.errno.ENOTDIR
+import scala.scalanative.posix.errno._
+import scala.scalanative.windows._
 import java.io.IOException
 import java.nio.charset.StandardCharsets
-import scala.scalanative.windows._
 import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.ErrorHandlingApiOps.errorMessage
 import scala.scalanative.windows.WinBaseApi._
+import java.nio.file._
+import scalanative.libc.{string, errno => stdErrno}
 
-private[java] trait WindowsException extends Exception
-private[java] object WindowsException {
+trait WindowsException extends Exception
+object WindowsException {
   def apply(msg: String): WindowsException = {
     WindowsException(msg, GetLastError())
   }
