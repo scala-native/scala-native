@@ -25,8 +25,8 @@ object zlib {
   type out_func =
     CFuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
   type gzFile = Ptr[Byte]
-  type z_streamp = Ptr[Byte with z_stream]
-  type gz_headerp = Ptr[Byte with gz_header]
+  type z_streamp = Ptr[z_stream[_, _]]
+  type gz_headerp = Ptr[gz_header[_, _]]
 
   @name("scalanative_z_no_flush")
   def Z_NO_FLUSH: CInt = extern
@@ -347,8 +347,6 @@ object zlib {
 object zlibExt {
   import zlib._
 
-  sealed trait z_stream
-
   object z_stream {
     // Depending on the OS zlib can use different types inside z_stream
     // We can distinguish to layouts using different size of integers:
@@ -357,32 +355,31 @@ object zlibExt {
     def size: CSize =
       if (isWindows) sizeof[z_stream_32]
       else sizeof[z_stream_64]
-
-    private[scalanative] type z_stream[UINT, ULONG] =
-      CStruct14[
-        Ptr[Bytef], // next_in
-        UINT, // avail_in
-        ULONG, // total_in,
-        Ptr[Bytef], // next_out
-        UINT, // avail_out
-        ULONG, // total_out
-        CString, // msg
-        voidpf, // (internal) state
-        alloc_func, // zalloc
-        free_func, // zfree
-        voidpf, // opaque
-        CInt, // data_type
-        ULONG, // adler
-        ULONG // future
-      ]
-
-    private[scalanative] type z_stream_32 =
-      z_stream[CUnsignedShort, CUnsignedInt]
-    private[scalanative] type z_stream_64 =
-      z_stream[CUnsignedInt, CUnsignedLong]
   }
 
-  sealed trait gz_header
+  private[scalanative] type z_stream[UINT, ULONG] =
+    CStruct14[
+      Ptr[Bytef], // next_in
+      UINT, // avail_in
+      ULONG, // total_in,
+      Ptr[Bytef], // next_out
+      UINT, // avail_out
+      ULONG, // total_out
+      CString, // msg
+      voidpf, // (internal) state
+      alloc_func, // zalloc
+      free_func, // zfree
+      voidpf, // opaque
+      CInt, // data_type
+      ULONG, // adler
+      ULONG // future
+    ]
+
+  private[scalanative] type z_stream_32 =
+    z_stream[CUnsignedShort, CUnsignedInt]
+  private[scalanative] type z_stream_64 =
+    z_stream[CUnsignedInt, CUnsignedLong]
+
   object gz_header {
     // Depending on the OS zlib can use different types inside gz_header
     // For details see comment in z_stream
@@ -390,28 +387,28 @@ object zlibExt {
     def size: CSize =
       if (isWindows) sizeof[gz_header_32]
       else sizeof[gz_header_64]
-
-    private[scalanative] type gz_header[uInt, uLong] =
-      CStruct13[
-        CInt, // text
-        uLong, // time
-        CInt, // xflags
-        CInt, // os
-        Ptr[Bytef], // extra
-        uInt, // extra_len
-        uInt, // extra_max
-        Ptr[Bytef], // name
-        uInt, // name_max
-        Ptr[Bytef], // comment
-        uInt, // comm_max
-        CInt, // gcrc
-        CInt
-      ] // done
-    private[scalanative] type gz_header_32 =
-      gz_header[CUnsignedShort, CUnsignedInt]
-    private[scalanative] type gz_header_64 =
-      gz_header[CUnsignedInt, CUnsignedLong]
   }
+
+  private[scalanative] type gz_header[UINT, ULONG] =
+    CStruct13[
+      CInt, // text
+      ULONG, // time
+      CInt, // xflags
+      CInt, // os
+      Ptr[Bytef], // extra
+      UINT, // extra_len
+      UINT, // extra_max
+      Ptr[Bytef], // name
+      UINT, // name_max
+      Ptr[Bytef], // comment
+      UINT, // comm_max
+      CInt, // gcrc
+      CInt // done
+    ]
+  private[scalanative] type gz_header_32 =
+    gz_header[CUnsignedShort, CUnsignedInt]
+  private[scalanative] type gz_header_64 =
+    gz_header[CUnsignedInt, CUnsignedLong]
 }
 
 object zlibOps {
