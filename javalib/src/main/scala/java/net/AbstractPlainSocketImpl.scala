@@ -217,21 +217,20 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     freeaddrinfo(!ret) // Must be after last use of ai_addr.
 
     if (connectRet < 0) {
-      def inProgress = {
-        if (isWindows) WSAGetLastError() match {
+      def inProgress = mapLastError(
+        onUnix = _ == EINPROGRESS,
+        onWindows = {
           case WSAEINPROGRESS | WSAEWOULDBLOCK => true
           case _                               => false
         }
-        else errno.errno == EINPROGRESS
-      }
+      )
       if (timeout > 0 && inProgress) {
         tryPollOnConnect(timeout)
       } else {
-        val errCode = if (isWindows) WSAGetLastError() else errno.errno
         throw new ConnectException(
           s"Could not connect to address: ${remoteAddress}"
             + s" on port: ${inetAddr.getPort}"
-            + s", errno: ${errCode}"
+            + s", errno: ${lastError()}"
         )
       }
     }
@@ -318,15 +317,10 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count.toUInt, 0)
         .toInt
 
-      def timeoutDetected = {
-        if (isWindows) {
-          val errCode = WSAGetLastError()
-          errCode == WSAEWOULDBLOCK || errCode == WSAETIMEDOUT
-        } else {
-          errno.errno == EAGAIN ||
-          errno.errno == EWOULDBLOCK
-        }
-      }
+      def timeoutDetected = mapLastError(
+        onUnix = { err => err == EAGAIN || err == EWOULDBLOCK },
+        onWindows = { err => err == WSAEWOULDBLOCK || err == WSAETIMEDOUT }
+      )
 
       bytesNum match {
         case _ if (bytesNum > 0) => bytesNum
@@ -337,8 +331,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           throw new SocketTimeoutException("Socket timeout while reading data")
 
         case _ =>
-          val errCode = if (isWindows) WSAGetLastError() else errno.errno
-          throw new SocketException(s"read failed, errno: ${errCode}")
+          throw new SocketException(s"read failed, errno: ${lastError()}")
       }
     }
   }
@@ -406,12 +399,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
 
     if (socket.getsockopt(fd.fd, level, optValue, opt, len) != 0) {
-      val errCode =
-        if (isWindows) WSAGetLastError()
-        else errno.errno
       throw new SocketException(
         "Exception while getting socket option with id: "
-          + optValue + ", errno: " + errCode
+          + optValue + ", errno: " + lastError()
       )
     }
 
@@ -501,14 +491,22 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
 
     if (socket.setsockopt(fd.fd, level, optValue, opt, len) != 0) {
-      val errCode =
-        if (isWindows) WSAGetLastError()
-        else errno.errno
       throw new SocketException(
         "Exception while setting socket option with id: "
-          + optID + ", errno: " + errCode
+          + optID + ", errno: " + lastError()
       )
     }
+  }
+
+  private def lastError(): CInt = mapLastError(identity, identity)
+  private def mapLastError[T](
+      onUnix: CInt => T,
+      onWindows: CInt => T
+  ): T = {
+    if (isWindows)
+      onWindows(WSAGetLastError())
+    else
+      onUnix(errno.errno)
   }
 }
 
