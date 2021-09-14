@@ -72,21 +72,6 @@ final class URI private () extends Comparable[URI] with Serializable {
     Helper.parseURI(uri.toString, false)
   }
 
-  def isRelativePath(path: String): Boolean = {
-    def unixAbsolutePath = {
-      path.length() > 0 &&
-      path.charAt(0) == '/'
-    }
-    def windowsAbsolutePath = {
-      path.length() > 2 &&
-      path.charAt(0).isLetter &&
-      path.charAt(1) == ':' &&
-      path.charAt(2) == '\\'
-    }
-
-    path != null && !(unixAbsolutePath || windowsAbsolutePath)
-  }
-
   def this(
       scheme: String,
       userInfo: String,
@@ -185,6 +170,21 @@ final class URI private () extends Comparable[URI] with Serializable {
       uri.append(quoteComponent(fragment, allLegal))
     }
     Helper.parseURI(uri.toString, false)
+  }
+
+  private def isRelativePath(path: String): Boolean = {
+    def unixAbsolutePath = {
+      path.length() > 0 &&
+      path.charAt(0) == '/'
+    }
+    def windowsAbsolutePath = {
+      path.length() > 2 &&
+      path.charAt(0).isLetter &&
+      path.charAt(1) == ':' &&
+      path.charAt(2) == '\\'
+    }
+
+    path != null && !(unixAbsolutePath || windowsAbsolutePath)
   }
 
   private object Helper {
