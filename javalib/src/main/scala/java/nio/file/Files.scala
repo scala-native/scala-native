@@ -6,17 +6,15 @@ import java.io.{
   BufferedWriter,
   File,
   FileOutputStream,
+  IOException,
   InputStream,
   InputStreamReader,
-  IOException,
   OutputStream,
   OutputStreamWriter
 }
-
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.channels.{FileChannel, SeekableByteChannel}
-
 import java.util.function.BiPredicate
 import java.util.{
   EnumSet,
@@ -29,18 +27,25 @@ import java.util.{
   Set
 }
 import java.util.stream.{Stream, WrappedScalaStream}
-
-import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
-import scalanative.posix.{dirent, fcntl, limits, unistd}, dirent._
+import scalanative.posix.{dirent, fcntl, limits, unistd}
+import dirent._
+import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
+import scalanative.nio.fs.unix.UnixException
 import scalanative.posix.sys.stat
-import scalanative.nio.fs.{FileHelpers, UnixException}
+import scalanative.windows._
+import scalanative.windows.WinBaseApi._
+import scalanative.windows.WinBaseApiExt._
+import scalanative.windows.FileApiExt._
+import scalanative.windows.ErrorHandlingApi._
+import scalanative.windows.winnt.AccessRights._
+import java.util.WindowsHelperMethods._
+import scalanative.nio.fs.FileHelpers
 import scalanative.compat.StreamsCompat._
-
+import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.immutable.{Map => SMap, Set => SSet}
-import StandardCopyOption._
 
 object Files {
 
@@ -81,15 +86,20 @@ object Files {
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
     val linkOpts = Array(LinkOption.NOFOLLOW_LINKS)
-    val attrs =
-      Files.readAttributes(source, classOf[PosixFileAttributes], linkOpts)
+    val attrsCls =
+      if (isWindows) classOf[DosFileAttributes]
+      else classOf[PosixFileAttributes]
+
+    val attrs = Files.readAttributes(source, attrsCls, linkOpts)
     if (attrs.isSymbolicLink())
       throw new IOException(
         s"Unsupported operation: copy symbolic link $source to $target"
       )
+
     val targetExists = exists(target, linkOpts)
     if (targetExists && !options.contains(REPLACE_EXISTING))
       throw new FileAlreadyExistsException(target.toString)
+
     if (isDirectory(source, Array.empty)) {
       createDirectory(target, Array.empty)
     } else {
@@ -97,16 +107,27 @@ object Files {
       try copy(in, target, options.filter(_ == REPLACE_EXISTING))
       finally in.close()
     }
-    if (options.contains(COPY_ATTRIBUTES)) {
-      val newAttrView =
-        getFileAttributeView(target, classOf[PosixFileAttributeView], linkOpts)
 
-      // Re-read attrs, copy() above may have changed lastModifiedTime.
-      val attrs =
-        Files.readAttributes(source, classOf[PosixFileAttributes], linkOpts)
-      newAttrView.setGroup(attrs.group())
-      newAttrView.setOwner(attrs.owner())
-      newAttrView.setPermissions(attrs.permissions())
+    if (options.contains(COPY_ATTRIBUTES)) {
+      val attrViewCls =
+        if (isWindows) classOf[DosFileAttributeView]
+        else classOf[PosixFileAttributeView]
+      val newAttrView = getFileAttributeView(target, attrViewCls, linkOpts)
+
+      (attrs, newAttrView) match {
+        case (
+              attrs: PosixFileAttributes,
+              newAttrView: PosixFileAttributeView
+            ) =>
+          newAttrView.setGroup(attrs.group())
+          newAttrView.setOwner(attrs.owner())
+          newAttrView.setPermissions(attrs.permissions())
+        case (attrs: DosFileAttributes, newAttrView: DosFileAttributeView) =>
+          newAttrView.setArchive(attrs.isArchive())
+          newAttrView.setHidden(attrs.isHidden())
+          newAttrView.setReadOnly(attrs.isReadOnly())
+          newAttrView.setSystem(attrs.isSystem())
+      }
       newAttrView.setTimes(
         attrs.lastModifiedTime(),
         attrs.lastAccessTime(),
@@ -166,7 +187,12 @@ object Files {
 
   def createLink(link: Path, existing: Path): Path = {
     def tryCreateHardLink() = Zone { implicit z =>
-      if (isWindows) ???
+      if (isWindows)
+        CreateHardLinkW(
+          toCWideStringUTF16LE(link.toString),
+          toCWideStringUTF16LE(existing.toString),
+          securityAttributes = null
+        )
       else
         unistd.link(
           toCString(existing.toString()),
@@ -189,8 +215,35 @@ object Files {
   ): Path = {
 
     def tryCreateLink() = Zone { implicit z =>
-      if (isWindows) ???
-      else {
+      if (isWindows) {
+        import WinBaseApiExt._
+        val targetFilename = toCWideStringUTF16LE(target.toString())
+        val linkFilename = toCWideStringUTF16LE(link.toString())
+        val flags =
+          if (target.toFile().isFile()) SYMBOLIC_LINK_FLAG_FILE
+          else SYMBOLIC_LINK_FLAG_DIRECTORY
+        val created =
+          CreateSymbolicLinkW(
+            symlinkFileName = linkFilename,
+            targetFileName = targetFilename,
+            flags = flags
+          )
+        val ERROR_PRIVILEGE_NOT_HELD = 1314.toUInt
+        // On Windows creating soft link is possible only with admin privileges
+        if (!created &&
+            GetLastError() == ERROR_PRIVILEGE_NOT_HELD) {
+          // If develop mode is enabled we can create unprivileged symlinks
+          CreateSymbolicLinkW(
+            symlinkFileName = linkFilename,
+            targetFileName = targetFilename,
+            flags = flags | SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+          ) || {
+            throw new SecurityException(
+              "Creating symbolic link requires admin privileges"
+            )
+          }
+        } else created
+      } else {
         val targetFilename = toCString(target.toString())
         val linkFilename = toCString(link.toString())
         unistd.symlink(targetFilename, linkFilename) == 0
@@ -278,12 +331,12 @@ object Files {
       delete(path); true
     } catch { case _: NoSuchFileException => false }
 
-  def exists(path: Path, options: Array[LinkOption]): Boolean =
-    if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-      path.toFile().exists() || isSymbolicLink(path)
-    } else {
-      path.toFile().exists()
-    }
+  def exists(path: Path, options: Array[LinkOption]): Boolean = {
+    def fileExists = path.toFile().exists()
+    def noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
+
+    fileExists || (noFollowLinks && isSymbolicLink(path))
+  }
 
   def find(
       start: Path,
@@ -367,8 +420,9 @@ object Files {
     path.toFile().canRead()
 
   def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
-    if (isWindows) ???
-    else
+    if (isWindows) {
+      getAttribute(path, "basic:isRegularFile", options).asInstanceOf[Boolean]
+    } else
       Zone { implicit z =>
         val buf = alloc[stat.stat]
         val err =
@@ -386,10 +440,16 @@ object Files {
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
   def isSymbolicLink(path: Path): Boolean = Zone { implicit z =>
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val filename = toCWideStringUTF16LE(path.toFile().getPath())
+      val attrs = FileApi.GetFileAttributesW(filename)
+      val exists = attrs != INVALID_FILE_ATTRIBUTES
+      def isReparsePoint = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0.toUInt
+      exists & isReparsePoint
+    } else {
+      val filename = toCString(path.toFile().getPath())
       val buf = alloc[stat.stat]
-      if (stat.lstat(toCString(path.toFile().getPath()), buf) == 0) {
+      if (stat.lstat(filename, buf) == 0) {
         stat.S_ISLNK(buf._13) == 1
       } else {
         false
@@ -436,8 +496,29 @@ object Files {
     Zone { implicit z =>
       val sourceAbs = source.toAbsolutePath().toString
       val targetAbs = target.toAbsolutePath().toString
-      if (isWindows) ???
-      else {
+      if (isWindows) {
+        val sourceCString = toCWideStringUTF16LE(sourceAbs)
+        val targetCString = toCWideStringUTF16LE(targetAbs)
+        // We cannot replace directory, it needs to be removed first
+        if (replaceExisting && target.toFile().isDirectory()) {
+          //todo delete children
+          Files.delete(target)
+        }
+        // stdio.rename on Windows does not replace existing file
+        val flags = {
+          val replace =
+            if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt
+          MOVEFILE_COPY_ALLOWED | //Allow coping betwen volumes
+            MOVEFILE_WRITE_THROUGH | //Block until actually moved
+            replace
+        }
+        if (!MoveFileExW(sourceCString, targetCString, flags)) {
+          GetLastError() match {
+            case ErrorCodes.ERROR_SUCCESS => ()
+            case _ => throw WindowsException.onPath(target.toString())
+          }
+        }
+      } else {
         val sourceCString = toCString(sourceAbs)
         val targetCString = toCString(targetAbs)
         if (stdio.rename(sourceCString, targetCString) != 0) {
@@ -525,8 +606,25 @@ object Files {
     val len = pathSize.toInt
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val bytesRead = stackalloc[DWord]
+
+      withFileOpen(
+        path.toString,
+        access = FILE_GENERIC_READ,
+        shareMode = FILE_SHARE_READ
+      ) { handle =>
+        if (!FileApi.ReadFile(
+              handle,
+              bytes.at(0),
+              pathSize.toUInt,
+              bytesRead,
+              null
+            )) {
+          throw WindowsException.onPath(path.toString())
+        }
+      }
+    } else {
       val pathCString = toCString(path.toString)
       val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
       try {
@@ -552,9 +650,13 @@ object Files {
   def readAllLines(path: Path, cs: Charset): List[String] = {
     val list = new LinkedList[String]()
     val reader = newBufferedReader(path, cs)
-    val lines = reader.lines().iterator()
-    while (lines.hasNext()) {
-      list.add(lines.next())
+    try {
+      val lines = reader.lines().iterator()
+      while (lines.hasNext()) {
+        list.add(lines.next())
+      }
+    } finally {
+      reader.close()
     }
     list
   }
@@ -603,19 +705,38 @@ object Files {
       throw new NotLinkException(link.toString)
     } else
       Zone { implicit z =>
-        val name =
-          if (isWindows) ???
-          else {
-            val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
-            if (unistd.readlink(
-                  toCString(link.toString),
-                  buf,
-                  limits.PATH_MAX - `1U`
-                ) == -1) {
-              throw UnixException(link.toString, errno.errno)
+        val name = if (isWindows) {
+          withFileOpen(
+            link.toString,
+            access = FILE_GENERIC_READ
+          ) { handle =>
+            val bufferSize = FileApiExt.MAX_PATH
+            val buffer = alloc[WChar](bufferSize)
+            val pathSize =
+              FileApi.GetFinalPathNameByHandleW(
+                handle,
+                buffer,
+                bufferSize,
+                FileApiExt.FILE_NAME_NORMALIZED
+              )
+            if (pathSize > bufferSize) {
+              throw WindowsException(
+                "Target path size of link was greater then max allowed size"
+              )
             }
-            fromCString(buf)
+            fromCWideString(buffer, StandardCharsets.UTF_16LE)
           }
+        } else {
+          val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+          if (unistd.readlink(
+                toCString(link.toString),
+                buf,
+                limits.PATH_MAX - `1U`
+              ) == -1) {
+            throw UnixException(link.toString, errno.errno)
+          }
+          fromCString(buf)
+        }
         Paths.get(name, Array.empty)
       }
 
@@ -865,10 +986,9 @@ object Files {
         setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
     }
 
-  private val attributesClassesToViews: SMap[
-    Class[_ <: BasicFileAttributes],
-    Class[_ <: BasicFileAttributeView]
-  ] =
+  private val attributesClassesToViews: SMap[Class[
+    _ <: BasicFileAttributes
+  ], Class[_ <: BasicFileAttributeView]] =
     SMap(
       classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
       classOf[DosFileAttributes] -> classOf[DosFileAttributeView],

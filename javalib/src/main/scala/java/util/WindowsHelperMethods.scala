@@ -14,7 +14,11 @@ import winnt.AccessToken._
 import scala.scalanative.windows.SecurityBaseApi._
 import java.nio.file.WindowsException
 
-private[java] object WindowsHelperMethods {
+/** Windows implementation specific helper methods, not available in public API
+ *  (javalib does not contain them in published jar) Not made `java` package
+ *  private only because of usage inside `scala.scalanative.nio.fs`
+ */
+object WindowsHelperMethods {
   def withUserToken[T](desiredAccess: DWord)(fn: Handle => T): T = {
     val tokenHandle = stackalloc[Handle]
     def getProcessToken =

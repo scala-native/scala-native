@@ -1,19 +1,9 @@
-package scala.scalanative.nio.fs
+package scala.scalanative.nio.fs.unix
 
 import java.io.File
 import java.net.URI
-import java.nio.file.{
-  FileSystem,
-  Files,
-  LinkOption,
-  NoSuchFileException,
-  Path,
-  WatchEvent,
-  WatchKey
-}
+import java.nio.file._
 import java.util.Iterator
-
-import scala.collection.mutable.UnrolledBuffer
 
 class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   import UnixPath._
