@@ -125,11 +125,6 @@ object WindowsProcess {
   private final val readEnd = 0
   private final val writeEnd = 1
 
-  private def zeroMemory[T: Tag](ptr: Ptr[T]) = {
-    import scalanative.libc.string.memset
-    memset(ptr.asInstanceOf[Ptr[Byte]], 0, sizeof[T])
-  }
-
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
     val (inRead, inWrite) =
       createPipeOrThrow(
@@ -168,16 +163,14 @@ object WindowsProcess {
         .map(e => s"${e.getKey()}=${e.getValue()}")
     }.asInstanceOf[Ptr[Byte]]
 
+    // stackalloc is documented as returning zeroed memory
+    val processInfo = stackalloc[ProcessInformation]
     val startupInfo = stackalloc[StartupInfoW]
-    zeroMemory(startupInfo)
     startupInfo.cb = sizeof[StartupInfoW].toUInt
     startupInfo.stdInput = inRead
     startupInfo.stdOutput = outWrite
     startupInfo.stdError = errWrite
     startupInfo.flags = STARTF_USESTDHANDLES
-
-    val processInfo = stackalloc[ProcessInformation]
-    zeroMemory(processInfo)
 
     val created = CreateProcessW(
       applicationName = null,

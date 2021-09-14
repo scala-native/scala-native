@@ -10,8 +10,8 @@ import sig._
 import err.errno
 import scala.scalanative.posix.{
   fcntl,
-  signal,
   pthread,
+  signal,
   sys,
   time,
   unistd,
