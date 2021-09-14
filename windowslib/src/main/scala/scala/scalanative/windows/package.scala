@@ -19,4 +19,11 @@ package object windows {
     Ptr[WChar] // In Windows wide string are always encoded using UTF-16LE
   type CTString =
     CWString // if UNICODE is defined equals to CWString, otherwise its CString
+
+  @extern
+  object Constants {
+    @name("scalanative_win32_infinite")
+    def Infinite: DWord = extern
+  }
+
 }
