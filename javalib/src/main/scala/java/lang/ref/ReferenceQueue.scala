@@ -9,7 +9,7 @@ class ReferenceQueue[T >: Null <: AnyRef] {
     underlying += reference
 
   def poll(): java.lang.ref.Reference[_] =
-    underlying.headOption.getOrElse(null)
+    underlying.dequeueFirst(ref => true).getOrElse(null)
 
   @stub
   def remove(): java.lang.ref.Reference[_] = ???
