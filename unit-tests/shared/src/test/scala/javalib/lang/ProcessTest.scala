@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 import org.scalanative.testsuite.utils.Platform._
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class ProcessTest {
   import javalib.lang.ProcessUtils._
@@ -38,11 +39,11 @@ class ProcessTest {
   }
 
   @Test def pathOverride(): Unit = {
+    assumeNotJVMCompliant()
     assumeFalse(
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
-    assumeFalse("Not JVM complient", executingInJVM)
 
     val pb = new ProcessBuilder("ls", resourceDir)
     pb.environment.put("PATH", resourceDir)
@@ -50,11 +51,11 @@ class ProcessTest {
   }
 
   @Test def pathPrefixOverride(): Unit = {
+    assumeNotJVMCompliant()
     assumeFalse(
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
-    assumeFalse("Not JVM complient", executingInJVM)
 
     val pb = new ProcessBuilder("ls", resourceDir)
     pb.environment.put("PATH", s"$resourceDir:${pb.environment.get("PATH")}")

@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 import org.scalanative.testsuite.utils.Platform._
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class RuntimeTest {
   import ProcessUtils._
@@ -26,11 +27,11 @@ class RuntimeTest {
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
   @Test def execEnvp(): Unit = {
+    assumeNotJVMCompliant()
     assumeFalse(
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
-    assumeFalse("Not complient with JVM", executingInJVM)
 
     val envp = Array(s"PATH=$resourceDir")
     val proc = Runtime.getRuntime.exec(Array("ls"), envp)
