@@ -23,7 +23,10 @@ class ExceptionTest {
     val expected = Seq(
       "javalib.lang.DummyNoStackTraceException",
       "\t<no stack trace available>"
-    ).mkString("\n")
-    assertTrue(trace.startsWith(expected))
+    ).mkString(System.lineSeparator()).trim()
+    assertTrue(
+      s"expected to start with '$expected', got `$trace`",
+      trace.startsWith(expected)
+    )
   }
 }

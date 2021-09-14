@@ -147,8 +147,8 @@ jobs:
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
           sandbox/run
-          "testsJVM/testOnly javalib.math.* javalib.security.* javalib.io.* javalib.nio.*"
-          "tests/testOnly javalib.math.* javalib.security.* javalib.io.* javalib.nio.*"
+          "testsJVM/testOnly javalib.math.* javalib.security.* javalib.io.* javalib.lang.* javalib.nio.*"
+          "tests/testOnly javalib.math.* javalib.security.* javalib.io.* javalib.lang.* javalib.nio.*"
           testsExt/test
           testsExtJVM/test
         shell: cmd
