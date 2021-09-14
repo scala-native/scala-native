@@ -53,10 +53,8 @@ object SocketHelpers {
       hints.ai_socktype = SOCK_STREAM
       hints.ai_next = null
 
-      getaddrinfo(cIP, toCString(port.toString), hints, ret) match {
-        case 0 => ()
-        case errCode =>
-          return false
+      if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
+        return false
       }
 
       val ai = !ret
@@ -80,23 +78,20 @@ object SocketHelpers {
         time.tv_sec = tv_sec
         time.tv_usec = tv_usec
 
-        connect(sock, ai.ai_addr, ai.ai_addrlen) match {
-          case 0 => ()
-          case error =>
-            return false
+        if (connect(sock, ai.ai_addr, ai.ai_addrlen) != 0) {
+          return false
         }
 
-        select(sock + 1, null, fdsetPtr, null, time) match {
-          case 1 =>
-            val so_error = stackalloc[CInt].asInstanceOf[Ptr[Byte]]
-            val len = stackalloc[socklen_t]
-            !len = sizeof[CInt].toUInt
-            getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
-            if (!(so_error.asInstanceOf[Ptr[CInt]]) != 0) {
-              return false
-            }
-          case error =>
+        if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
+          val so_error = stackalloc[CInt].asInstanceOf[Ptr[Byte]]
+          val len = stackalloc[socklen_t]
+          !len = sizeof[CInt].toUInt
+          getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
+          if (!(so_error.asInstanceOf[Ptr[CInt]]) != 0) {
             return false
+          }
+        } else {
+          return false
         }
 
         val sentBytes = send(sock, toCString("echo"), 4.toUInt, 0)
@@ -109,15 +104,15 @@ object SocketHelpers {
         // be considered as undefined for OS interoperability.
         time.tv_sec = tv_sec
         time.tv_usec = tv_usec
-        select(sock + 1, fdsetPtr, null, null, time) match {
-          case 1 =>
-            val buf = stackalloc[CChar](5.toUInt)
-            val recBytes = recv(sock, buf, 5.toUInt, 0)
-            if (recBytes < 4) {
-              return false
-            }
-          case error =>
+
+        if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
+          return false
+        } else {
+          val buf = stackalloc[CChar](5.toUInt)
+          val recBytes = recv(sock, buf, 5.toUInt, 0)
+          if (recBytes < 4) {
             return false
+          }
         }
       } catch {
         case e: Throwable => e
