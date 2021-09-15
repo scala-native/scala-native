@@ -4,12 +4,17 @@ import java.lang.ref._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
-import scala.scalanative.runtime.GC
-
+import scala.scalanative.runtime.{GC, GCInfo}
+import scala.scalanative.runtime.GCInfo._
 class WeakReferenceTest {
 
   case class A()
+
+  def gcAssumption(): Unit = {
+    assumeTrue("WeakReferences work only on Commix and Immix GC", GCInfo.getType() == Commix() || GCInfo.getType() == Immix())
+  }
 
   @noinline def alloc(referenceQueue: ReferenceQueue[A]): WeakReference[A] = {
     var a = A()
@@ -36,12 +41,14 @@ class WeakReferenceTest {
   }
 
   @Test def referencesNullAfterGC(): Unit = {
+    gcAssumption()
     val weakRef = alloc(null)
 
     forceGC { assertEquals(weakRef.get(), null) }
   }
 
   @Test def addsToReferenceQueueAfterGC(): Unit = {
+    gcAssumption()
     val refQueue = new ReferenceQueue[A]()
     val weakRef1 = alloc(refQueue)
     val weakRef2 = alloc(refQueue)

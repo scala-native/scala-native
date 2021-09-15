@@ -10,6 +10,7 @@
 #include "MemoryMap.h"
 #include "MemoryInfo.h"
 #include "Parsing.h"
+#include "GCInfo.h"
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
 #ifdef _WIN32
@@ -107,3 +108,5 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 void scalanative_collect() {}
+
+char *scalanative_get_type() { return GC_TYPE_NONE; }

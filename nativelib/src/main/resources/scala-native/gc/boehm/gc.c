@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "GCInfo.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
@@ -34,3 +35,5 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 void scalanative_collect() { GC_gcollect(); }
+
+char *scalanative_get_type() { return GC_TYPE_BOEHM; }
