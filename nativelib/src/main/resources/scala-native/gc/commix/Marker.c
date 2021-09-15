@@ -8,7 +8,7 @@
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
 #include "util/ThreadUtil.h"
-#include "WeakRefGreyList.h"
+#include "SyncGreyLists.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -36,6 +36,7 @@ extern word_t **__stack_bottom;
 // packet list. Similarly, when the "out" packet get full, marker gets another
 // empty packet and pushes the full one on the full packet list.
 // Marking is done when all the packets are empty and in the empty packet list.
+// TODO
 //
 // An object can have different number of outgoing pointers. Therefore, the
 // number of objects to check per packet varies and packets take different
@@ -58,35 +59,12 @@ extern word_t **__stack_bottom;
 // threads and not doing any work.
 
 static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyPacket *packet =
-        GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
-    if (packet != NULL) {
-        // Another thread setting size = 0 might not arrived, just write it now.
-        // Avoiding a memfence.
-        packet->size = 0;
-        packet->type = grey_packet_reflist;
-    }
-    assert(packet != NULL);
-    return packet;
+    return SyncGreyLists_takeEmptyPacket(heap, stats);
 }
 
 static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyPacket *packet = GreyList_Pop(&heap->mark.full, heap->greyPacketsStart);
-    if (packet != NULL) {
-        atomic_thread_fence(memory_order_release);
-    }
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, stats->mark_waiting_start_ns,
-                          end_ns);
-    if (packet == NULL) {
-        Stats_MarkerNoFullPacket(stats, start_ns, end_ns);
-    } else {
-        Stats_MarkerGotFullPacket(stats, end_ns);
-    }
+    GreyPacket *packet =
+        SyncGreyLists_takeNotEmptyPacket(heap, stats, &heap->mark.full);
     assert(packet == NULL || packet->type == grey_packet_refrange ||
            packet->size > 0);
     return packet;
@@ -94,25 +72,18 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
 
 static inline void Marker_giveEmptyPacket(Heap *heap, Stats *stats,
                                           GreyPacket *packet) {
-    assert(packet->size == 0);
-    // no memfence needed see Marker_takeEmptyPacket
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, packet);
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
+    SyncGreyLists_giveEmptyPacket(heap, stats, packet);
 }
 
 static inline void Marker_giveFullPacket(Heap *heap, Stats *stats,
                                          GreyPacket *packet) {
-    assert(packet->type == grey_packet_refrange || packet->size > 0);
-    // make all the contents visible to other threads
-    atomic_thread_fence(memory_order_acquire);
-    uint32_t greyListSize = GreyList_Size(&heap->mark.full);
-    assert(greyListSize <= heap->mark.total);
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
+    SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.full, packet);
+}
+
+static inline void Marker_giveWeakRefPacket(Heap *heap, Stats *stats,
+                                            GreyPacket *packet) {
+    SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.foundWeakRefs,
+                                     packet);
 }
 
 void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
@@ -127,7 +98,7 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
     if (Object_IsWeakReference(object)) {
         GreyPacket *out = *outWeakRefHolder;
         if (!GreyPacket_Push(out, object)) {
-            WeakRefGreyList_GiveWeakRefPacket(heap, stats, out);
+            Marker_giveWeakRefPacket(heap, stats, out);
             *outWeakRefHolder = out = Marker_takeEmptyPacket(heap, stats);
             GreyPacket_Push(out, object);
         }
@@ -342,7 +313,7 @@ void Marker_Mark(Heap *heap, Stats *stats) {
                 // next == NULL, exits
                 Marker_giveEmptyPacket(heap, stats, in);
                 Marker_giveEmptyPacket(heap, stats, out);
-                WeakRefGreyList_GiveWeakRefPacket(heap, stats, weakRefOut);
+                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
             }
         }
         in = next;
@@ -379,7 +350,7 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
                 // next == NULL, exits
                 Marker_giveEmptyPacket(heap, stats, in);
                 Marker_giveEmptyPacket(heap, stats, out);
-                WeakRefGreyList_GiveWeakRefPacket(heap, stats, weakRefOut);
+                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
             }
         }
         in = next;
@@ -441,7 +412,7 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
     Marker_markProgramStack(heap, stats, &out, &weakRefOut);
     Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_giveFullPacket(heap, stats, out);
-    WeakRefGreyList_GiveWeakRefPacket(heap, stats, weakRefOut);
+    Marker_giveWeakRefPacket(heap, stats, weakRefOut);
 }
 
 bool Marker_IsMarkDone(Heap *heap) {

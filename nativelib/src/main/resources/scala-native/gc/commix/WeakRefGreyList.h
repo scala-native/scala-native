@@ -5,9 +5,9 @@
 #include "datastructures/GreyPacket.h"
 #include "Stats.h"
 
-void WeakRefGreyList_GiveWeakRefPacket(Heap *heap, Stats *stats,
-                                       GreyPacket *packet);
-void WeakRefGreyList_Nullify(Heap *heap);
-void WeakRefGreyList_CallHandlers();
+void WeakRefGreyList_NullifyAndScale(Heap *heap, Stats *stats);
+void WeakRefGreyList_Nullify(Heap *heap, Stats *stats);
+void WeakRefGreyList_NullifyUntilDone(Heap *heap, Stats *stats);
+void WeakRefGreyList_CallHandlers(Heap *heap);
 
 #endif // WEAK_REF_GREY_LIST

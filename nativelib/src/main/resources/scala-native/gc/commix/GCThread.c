@@ -3,6 +3,7 @@
 #include "Sweeper.h"
 #include "Marker.h"
 #include "Phase.h"
+#include "WeakRefGreyList.h"
 #include <errno.h>
 #include <stdlib.h>
 
@@ -34,6 +35,24 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
     Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
     Stats_RecordEvent(stats, mark_waiting, stats->mark_waiting_start_ns,
                       stats->mark_waiting_end_ns);
+}
+
+static inline void GCThread_nullify(Heap *heap, Stats *stats) {
+    Stats_RecordTime(stats, start_ns);
+
+    WeakRefGreyList_Nullify(heap, stats);
+
+    Stats_RecordTime(stats, end_ns);
+    Stats_RecordEvent(stats, event_concurrent_nullify, start_ns, end_ns);
+}
+
+static inline void GCThread_nullifyMaster(Heap *heap, Stats *stats) {
+    Stats_RecordTime(stats, start_ns);
+
+    WeakRefGreyList_NullifyAndScale(heap, stats);
+
+    Stats_RecordTime(stats, end_ns);
+    Stats_RecordEvent(stats, event_concurrent_nullify, start_ns, end_ns);
 }
 
 static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
@@ -93,6 +112,9 @@ void *GCThread_loop(void *arg) {
         case gc_mark:
             GCThread_mark(heap, stats);
             break;
+        case gc_nullify:
+            GCThread_nullify(heap, stats);
+            break;
         case gc_sweep:
             GCThread_sweep(thread, heap, stats);
             Stats_WriteToFile(stats);
@@ -127,6 +149,9 @@ void *GCThread_loopMaster(void *arg) {
             break;
         case gc_mark:
             GCThread_markMaster(heap, stats);
+            break;
+        case gc_nullify:
+            GCThread_nullifyMaster(heap, stats);
             break;
         case gc_sweep:
             GCThread_sweepMaster(thread, heap, stats);

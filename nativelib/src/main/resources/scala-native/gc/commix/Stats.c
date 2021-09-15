@@ -12,8 +12,9 @@ extern long long scalanative_nano_time();
 
 #ifdef ENABLE_GC_STATS
 const char *const Stats_eventNames[] = {
-    "mark",       "sweep",       "concmark",       "concsweep",    "collection",
-    "mark_batch", "sweep_batch", "coalesce_batch", "mark_waiting", "sync"};
+    "mark",           "sweep",        "concmark",   "concnullify",
+    "concsweep",      "collection",   "mark_batch", "sweep_batch",
+    "coalesce_batch", "mark_waiting", "sync"};
 
 void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
     stats->outFile = fopen(statsFile, "w");
@@ -76,7 +77,7 @@ void Stats_MarkStarted(Stats *stats) {
         stats->mark_waiting_end_ns = 0;
     }
 }
-void Stats_MarkerGotFullPacket(Stats *stats, uint64_t end_ns) {
+void Stats_MarkerGotNotEmptyPacket(Stats *stats, uint64_t end_ns) {
     if (stats != NULL) {
         if (stats->mark_waiting_start_ns != 0) {
             Stats_RecordEventSync(stats, mark_waiting,
@@ -85,8 +86,8 @@ void Stats_MarkerGotFullPacket(Stats *stats, uint64_t end_ns) {
         }
     }
 }
-void Stats_MarkerNoFullPacket(Stats *stats, uint64_t start_ns,
-                              uint64_t end_ns) {
+void Stats_MarkerNoNotEmptyPacket(Stats *stats, uint64_t start_ns,
+                                  uint64_t end_ns) {
     if (stats != NULL) {
         if (stats->mark_waiting_start_ns == 0) {
             stats->mark_waiting_start_ns = start_ns;

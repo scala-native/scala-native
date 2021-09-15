@@ -384,7 +384,7 @@ object Generate {
           )
         } else {
           // print to DEBUG
-          (0, 0, 0, 0)
+          (-1, -1, -1, -1)
         }
       addToBuf(weakRefIdName, weakRefId)
       addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)

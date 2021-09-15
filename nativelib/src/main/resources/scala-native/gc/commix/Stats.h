@@ -22,19 +22,20 @@ typedef enum {
     // mark and sweep phases on mutator thread
     event_mark = 0x0,
     event_sweep = 0x1,
-    // mark and sweep phases on GCThreads
+    // mark, nullify and sweep phases on GCThreads
     event_concurrent_mark = 0x2,
-    event_concurrent_sweep = 0x3,
+    event_concurrent_nullify = 0x3,
+    event_concurrent_sweep = 0x4,
     // the whole collection from initialization until concurrent sweep stops
-    event_collection = 0x4,
+    event_collection = 0x5,
     // batches being processed
-    event_mark_batch = 0x5,
-    event_sweep_batch = 0x6,
-    event_coalesce_batch = 0x7,
+    event_mark_batch = 0x6,
+    event_sweep_batch = 0x7,
+    event_coalesce_batch = 0x8,
     // thread is waiting for full packets to be available during mark
-    mark_waiting = 0x8,
+    mark_waiting = 0x9,
     // any synchronization on common concurrent data structures
-    event_sync = 0x9
+    event_sync = 0xA
 } eventType;
 
 typedef struct {
@@ -111,16 +112,17 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
     } while (0)
 #define Stats_RecordEventSync(S, E, A, B) Stats_RecordEvent(S, E, A, B)
 void Stats_MarkStarted(Stats *stats);
-void Stats_MarkerGotFullPacket(Stats *stats, uint64_t end_ns);
-void Stats_MarkerNoFullPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns);
+void Stats_MarkerGotNotEmptyPacket(Stats *stats, uint64_t end_ns);
+void Stats_MarkerNoNotEmptyPacket(Stats *stats, uint64_t start_ns,
+                                  uint64_t end_ns);
 
 #else
 
 #define Stats_RecordTimeSync(S, T)
 #define Stats_RecordEventSync(S, E, A, B)
 static inline void Stats_MarkStarted(Stats *stats) {}
-#define Stats_MarkerGotFullPacket(S, B)
-#define Stats_MarkerNoFullPacket(S, A, B)
+#define Stats_MarkerGotNotEmptyPacket(S, B)
+#define Stats_MarkerNoNotEmptyPacket(S, A, B)
 
 #endif // ENABLE_GC_STATS_SYNC
 
