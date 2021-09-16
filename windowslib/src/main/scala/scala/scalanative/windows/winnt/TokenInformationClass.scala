@@ -151,9 +151,6 @@ object TokenInformationClass {
   @name("scalanative_win32_winnt_token_info_class_issandboxed")
   def TokenIsSandboxed: TokenInformationClass = extern
 
-  @name("scalanative_win32_winnt_token_info_class_originatingprocesstrustlevel")
-  def TokenOriginatingProcessTrustLevel: TokenInformationClass = extern
-
   @name("scalanative_win32_winnt_token_info_class_infoclass_max")
   def MaxTokenInfoClass: TokenInformationClass = extern
 
