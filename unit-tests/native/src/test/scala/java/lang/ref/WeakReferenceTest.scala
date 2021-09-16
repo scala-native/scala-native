@@ -13,10 +13,15 @@ class WeakReferenceTest {
   case class A()
 
   def gcAssumption(): Unit = {
-    assumeTrue("WeakReferences work only on Commix and Immix GC", GCInfo.getType() == Commix() || GCInfo.getType() == Immix())
+    assumeTrue(
+      "WeakReferences work only on Commix and Immix GC",
+      GCInfo.getType() == Commix() || GCInfo.getType() == Immix()
+    )
   }
 
-  @noinline def alloc(referenceQueue: ReferenceQueue[A]): WeakReference[A] = {
+  @noinline def allocWeakRef(
+      referenceQueue: ReferenceQueue[A]
+  ): WeakReference[A] = {
     var a = A()
     val weakRef = new WeakReference(a, referenceQueue)
     assertEquals("get() should return object reference", weakRef.get(), A())
@@ -24,46 +29,36 @@ class WeakReferenceTest {
     weakRef
   }
 
-  def forceGC(afterGC: => Unit): Unit = {
-    var i = 0
-    while (i <= 3) {
-      if (i == 0) {
-        GC.collect()
-      }
-
-      // We do not want to put the reference on stack
-      // during GC, so we hide it behind an if block
-      if (i == 3) {
-        afterGC
-      }
-      i += 1
-    }
+  @noinline def forceHiddenGC(): Unit = {
+    // We do not want to put the reference on stack
+    // during GC, so we hide GC behind a method call
+      C.collect()
   }
 
   @Test def referencesNullAfterGC(): Unit = {
     gcAssumption()
-    val weakRef = alloc(null)
+    val weakRef = allocWeakRef(null)
 
-    forceGC { assertEquals(weakRef.get(), null) }
+    forceHiddenGC()
+    assertEquals(weakRef.get(), null)
   }
 
   @Test def addsToReferenceQueueAfterGC(): Unit = {
     gcAssumption()
     val refQueue = new ReferenceQueue[A]()
-    val weakRef1 = alloc(refQueue)
-    val weakRef2 = alloc(refQueue)
+    val weakRef1 = allocWeakRef(refQueue)
+    val weakRef2 = allocWeakRef(refQueue)
     val weakRefList = List(weakRef1, weakRef2)
 
-    forceGC {
-      assertEquals(weakRef1.get(), null)
-      assertEquals(weakRef2.get(), null)
-      val a = refQueue.poll()
-      val b = refQueue.poll()
-      assertTrue(weakRefList.contains(a))
-      assertTrue(weakRefList.contains(b))
-      assertNotEquals(a, b)
-      assertEquals(refQueue.poll(), null)
-    }
+    forceHiddenGC()
+    assertEquals(weakRef1.get(), null)
+    assertEquals(weakRef2.get(), null)
+    val a = refQueue.poll()
+    val b = refQueue.poll()
+    assertTrue(weakRefList.contains(a))
+    assertTrue(weakRefList.contains(b))
+    assertNotEquals(a, b)
+    assertEquals(refQueue.poll(), null)
   }
 
   @Test def clear(): Unit = {
