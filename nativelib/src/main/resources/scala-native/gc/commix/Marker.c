@@ -35,8 +35,11 @@ extern word_t **__stack_bottom;
 // another from the full packet list and returns the empty one to the empty
 // packet list. Similarly, when the "out" packet get full, marker gets another
 // empty packet and pushes the full one on the full packet list.
-// Marking is done when all the packets are empty and in the empty packet list.
-// TODO
+// Marking is done when all the packets are empty in the empty packet list or
+// with only WeakRefereces in the WeakReference packet list. weakRefOut packets
+// are used to hold weakReferences found during the marking phase. This way, in
+// nullify phase it can be checked if their held objects were marked or not and
+// their fields can be set accordingly.
 //
 // An object can have different number of outgoing pointers. Therefore, the
 // number of objects to check per packet varies and packets take different
@@ -77,6 +80,7 @@ static inline void Marker_giveEmptyPacket(Heap *heap, Stats *stats,
 
 static inline void Marker_giveFullPacket(Heap *heap, Stats *stats,
                                          GreyPacket *packet) {
+    assert(packet->type == grey_packet_refrange || packet->size > 0);
     SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.full, packet);
 }
 
@@ -95,20 +99,20 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
 
+    GreyPacket *out;
     if (Object_IsWeakReference(object)) {
-        GreyPacket *out = *outWeakRefHolder;
+        out = *outWeakRefHolder;
         if (!GreyPacket_Push(out, object)) {
             Marker_giveWeakRefPacket(heap, stats, out);
             *outWeakRefHolder = out = Marker_takeEmptyPacket(heap, stats);
             GreyPacket_Push(out, object);
         }
-    } else {
-        GreyPacket *out = *outHolder;
-        if (!GreyPacket_Push(out, object)) {
-            Marker_giveFullPacket(heap, stats, out);
-            *outHolder = out = Marker_takeEmptyPacket(heap, stats);
-            GreyPacket_Push(out, object);
-        }
+    }
+    out = *outHolder;
+    if (!GreyPacket_Push(out, object)) {
+        Marker_giveFullPacket(heap, stats, out);
+        *outHolder = out = Marker_takeEmptyPacket(heap, stats);
+        GreyPacket_Push(out, object);
     }
 }
 

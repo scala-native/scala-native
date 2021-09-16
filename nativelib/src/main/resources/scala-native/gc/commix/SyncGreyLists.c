@@ -2,7 +2,6 @@
 
 void SyncGreyLists_giveNotEmptyPacket(Heap *heap, Stats *stats,
                                       GreyList *greyList, GreyPacket *packet) {
-    assert(packet->type == grey_packet_refrange || packet->size > 0);
     // make all the contents visible to other threads
     atomic_thread_fence(memory_order_acquire);
     uint32_t greyListSize = GreyList_Size(greyList);
@@ -48,8 +47,8 @@ GreyPacket *SyncGreyLists_takeEmptyPacket(Heap *heap, Stats *stats) {
     Stats_RecordTimeSync(stats, end_ns);
     Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
     if (packet != NULL) {
-        // Another thread setting size = 0 might not arrived, just write it now.
-        // Avoiding a memfence.
+        // Another thread setting size = 0 might not have arrived, just write it
+        // now. Avoiding a memfence.
         packet->size = 0;
         packet->type = grey_packet_reflist;
     }

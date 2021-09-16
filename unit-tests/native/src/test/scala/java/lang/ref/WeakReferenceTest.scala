@@ -6,8 +6,11 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.runtime.{GC, GCInfo}
+import scala.scalanative.runtime.GCInfo
 import scala.scalanative.runtime.GCInfo._
+
+// "AfterGC" tests are very sensitive to optimizations,
+// both by Scala Native and LLVM.
 class WeakReferenceTest {
 
   case class A()
@@ -29,20 +32,6 @@ class WeakReferenceTest {
     weakRef
   }
 
-  @noinline def forceHiddenGC(): Unit = {
-    // We do not want to put the reference on stack
-    // during GC, so we hide GC behind a method call
-      C.collect()
-  }
-
-  @Test def referencesNullAfterGC(): Unit = {
-    gcAssumption()
-    val weakRef = allocWeakRef(null)
-
-    forceHiddenGC()
-    assertEquals(weakRef.get(), null)
-  }
-
   @Test def addsToReferenceQueueAfterGC(): Unit = {
     gcAssumption()
     val refQueue = new ReferenceQueue[A]()
@@ -50,15 +39,32 @@ class WeakReferenceTest {
     val weakRef2 = allocWeakRef(refQueue)
     val weakRefList = List(weakRef1, weakRef2)
 
-    forceHiddenGC()
-    assertEquals(weakRef1.get(), null)
-    assertEquals(weakRef2.get(), null)
-    val a = refQueue.poll()
-    val b = refQueue.poll()
-    assertTrue(weakRefList.contains(a))
-    assertTrue(weakRefList.contains(b))
-    assertNotEquals(a, b)
-    assertEquals(refQueue.poll(), null)
+    // limit - arbitrary number that can be higher or lower,
+    // depending on how much garbage is necessary to perform GC
+    val limit = 1000000
+    for (i <- 0 to limit) {
+
+      // Allocation spamming. GC.collect() proved to be unreliable
+      // for commix (as in issue #2367), so we force garbage collection
+      // to happen organically.
+      val data = A()
+      if (data.toString() == "a") {
+        println(data)
+      }
+
+      // We do not want to put the reference on stack
+      // during GC, so we hide it behind an if block
+      if (i == limit) {
+        assertEquals(weakRef1.get(), null)
+        assertEquals(weakRef2.get(), null)
+        val a = refQueue.poll()
+        val b = refQueue.poll()
+        assertTrue(weakRefList.contains(a))
+        assertTrue(weakRefList.contains(b))
+        assertNotEquals(a, b)
+        assertEquals(refQueue.poll(), null)
+      }
+    }
   }
 
   @Test def clear(): Unit = {

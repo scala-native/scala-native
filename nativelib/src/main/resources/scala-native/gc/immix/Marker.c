@@ -20,17 +20,13 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     assert(ObjectMeta_IsAllocated(objectMeta));
 
     if (Object_IsWeakReference(object)) {
-        assert(Object_Size(object) != 0);
-        Object_Mark(heap, object, objectMeta);
-        // Added to the WeakReference stack for later visit
+        // Added to the WeakReference stack for additional later visit
         WeakRefStack_Push(object);
-        // Not added to the dfs stack, as we don't
-        // want to mark the held object
-    } else {
-        assert(Object_Size(object) != 0);
-        Object_Mark(heap, object, objectMeta);
-        Stack_Push(stack, object);
     }
+
+    assert(Object_Size(object) != 0);
+    Object_Mark(heap, object, objectMeta);
+    Stack_Push(stack, object);
 }
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
@@ -70,7 +66,6 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             // non-object arrays do not contain pointers
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
-            int i = 0;
             for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
                 if (Object_IsReferantOfWeakReference(object, i))
                     continue;

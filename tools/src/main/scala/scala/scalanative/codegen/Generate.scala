@@ -5,6 +5,7 @@ import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.linker.Class
 import scala.ref.WeakReferenceWithWrapper
+import scala.scalanative.build.Logger
 
 object Generate {
   import Impl._
@@ -36,7 +37,7 @@ object Generate {
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
-      genWeakRefId()
+      genWeakRefUtils()
       genArrayIds()
       genStackBottom()
 
@@ -323,7 +324,7 @@ object Generate {
       )
     }
 
-    def genWeakRefId(): Unit = {
+    def genWeakRefUtils(): Unit = {
       def addToBuf(name: Global, value: Int) =
         buf +=
           Defn.Var(
@@ -383,7 +384,6 @@ object Generate {
             weakRefRegFieldIndexes.head
           )
         } else {
-          // print to DEBUG
           (-1, -1, -1, -1)
         }
       addToBuf(weakRefIdName, weakRefId)

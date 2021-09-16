@@ -9,11 +9,11 @@ class WeakReference[T >: Null <: AnyRef](
     var _gc_modified_referent: T,
     queue: ReferenceQueue[_ >: T]
 ) extends Reference[T](null) {
-  private var enqueued = false
 
   def this(referent: T) = this(referent, null)
 
-  WeakReferenceRegistry.add(this)
+  private var enqueued = false
+  if (_gc_modified_referent != null) WeakReferenceRegistry.add(this)
 
   override def get(): T = _gc_modified_referent
 
