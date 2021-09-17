@@ -1,4 +1,5 @@
 import Files._
+import Utils._
 import java.nio.file.{Files => NioFiles}
 
 enablePlugins(ScalaNativePlugin)
@@ -18,64 +19,102 @@ lazy val setupTests = taskKey[Unit]("")
 setupTests := {
 
   IO.touch(readableFile)
-  readableFile.setReadable(true)
+  assert(readableFile.setReadable(true))
   assert(readableFile.exists())
   assert(readableFile.canRead())
 
   IO.touch(unreadableFile)
-  unreadableFile.setReadable(false)
+  // setReadable(false) not possible on Windows
+  assertOsSpecific(
+    unreadableFile.setReadable(false),
+    "unreadableFile.setReadable(false)"
+  )(onUnix = true, onWindows = false)
   assert(unreadableFile.exists())
-  assert(!unreadableFile.canRead())
+  assertOsSpecific(
+    unreadableFile.canRead(),
+    "!unreadableFile.canRead()"
+  )(onUnix = false, onWindows = true)
 
   IO.createDirectory(readableDirectory)
-  readableDirectory.setReadable(true)
+  assert(readableDirectory.setReadable(true))
   assert(readableDirectory.exists())
   assert(readableDirectory.canRead())
 
   IO.createDirectory(unreadableDirectory)
-  unreadableDirectory.setReadable(false)
   assert(unreadableDirectory.exists())
-  assert(!unreadableDirectory.canRead())
+  // setReadable(false) not possible on Windows
+  assertOsSpecific(
+    unreadableDirectory.setReadable(false),
+    "unreadableDirectory.setReadable(false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    unreadableDirectory.canRead(),
+    "!unreadableDirectory.canRead()"
+  )(onUnix = false, onWindows = true)
 
   IO.touch(executableFile)
-  executableFile.setExecutable(true)
+  assert(executableFile.setExecutable(true))
   assert(executableFile.exists())
   assert(executableFile.canExecute())
 
   IO.touch(unexecutableFile)
-  unexecutableFile.setExecutable(false)
   assert(unexecutableFile.exists())
-  assert(!unexecutableFile.canExecute())
-
+  // setExecutable(false) not possible on Windows
+  assertOsSpecific(
+    unexecutableFile.setExecutable(false),
+    "unexecutableFile.setExecutable(false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    unexecutableFile.canExecute(),
+    "!unexecutableFile.canExecute()"
+  )(onUnix = false, onWindows = true)
   IO.createDirectory(executableDirectory)
-  executableDirectory.setExecutable(true)
+  assert(executableDirectory.setExecutable(true))
   assert(executableDirectory.exists())
   assert(executableDirectory.canExecute())
 
   IO.createDirectory(unexecutableDirectory)
-  unexecutableDirectory.setExecutable(false)
   assert(unexecutableDirectory.exists())
-  assert(!unexecutableDirectory.canExecute())
+  // setExecutable(false) not possible on Windows
+  assertOsSpecific(
+    unexecutableDirectory.setExecutable(false),
+    "unexecutableDirectory.setExecutable(false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    unexecutableDirectory.canExecute(),
+    "!unexecutableDirectory.canExecute()"
+  )(onUnix = false, onWindows = true)
 
   IO.touch(writableFile)
-  writableFile.setWritable(true)
+  assert(writableFile.setWritable(true))
   assert(writableFile.exists())
   assert(writableFile.canWrite())
 
   IO.touch(unwritableFile)
-  unwritableFile.setWritable(false)
+  assert(unwritableFile.setWritable(false))
   assert(unwritableFile.exists())
   assert(!unwritableFile.canWrite())
 
   IO.createDirectory(writableDirectory)
-  writableDirectory.setWritable(true)
+  // setWritable directory not possible on Windows
+  assertOsSpecific(
+    writableDirectory.setWritable(true),
+    "writableDirectory.setWritable(true)"
+  )(onUnix = true, onWindows = false)
   assert(writableDirectory.exists())
   assert(writableDirectory.canWrite())
 
   IO.createDirectory(unwritableDirectory)
-  unwritableDirectory.setWritable(false)
   assert(unwritableDirectory.exists())
-  assert(!unwritableDirectory.canWrite())
+  // setWritable directory not possible on Windows
+  assertOsSpecific(
+    unwritableDirectory.setWritable(false),
+    "unwritableDirectory.setWritable(false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    unwritableDirectory.canWrite(),
+    "!unwritableDirectory.canWrite()"
+  )(onUnix = false, onWindows = true)
 
   assert(fileA.compareTo(fileB) < 0)
   assert(fileA.compareTo(fileA) == 0)
@@ -111,14 +150,21 @@ setupTests := {
 
   IO.touch(existingHiddenFile)
   IO.createDirectory(existingHiddenDirectory)
-  assert(currentDirectory.isHidden())
   assert(existingHiddenFile.exists())
-  assert(existingHiddenFile.isHidden())
   assert(existingHiddenDirectory.exists())
-  assert(existingHiddenDirectory.isHidden())
   assert(!nonexistentHiddenFile.exists())
-  assert(nonexistentHiddenFile.isHidden())
-
+  if (isWindows) {
+    Seq(currentDirectory, existingHiddenDirectory, existingHiddenFile)
+      .map(_.toPath)
+      .foreach(NioFiles.setAttribute(_, "dos:hidden", true.booleanValue()))
+  }
+  assert(currentDirectory.isHidden())
+  assert(existingHiddenFile.isHidden())
+  assert(existingHiddenDirectory.isHidden())
+  assertOsSpecific(
+    nonexistentHiddenFile.isHidden(),
+    "nonexistentHiddenFile.isHidden()"
+  )(onUnix = true, onWindows = false)
   IO.write(fileWith3Bytes, Array[Byte](1, 2, 3))
   assert(fileWith3Bytes.exists())
   assert(fileWith3Bytes.length() == 3L)
@@ -138,11 +184,19 @@ setupTests := {
   assert(!willBeRenamedTo.exists)
 
   IO.createDirectory(directoryLinkedTo)
-  NioFiles.createSymbolicLink(linkToDirectory.toPath, directoryLinkedTo.toPath)
   assert(directoryLinkedTo.exists)
-  assert(linkToDirectory.exists)
-  assert(linkToDirectory.getCanonicalPath == directoryLinkedTo.getCanonicalPath)
-  assert(linkToDirectory.getName != directoryLinkedTo.getName)
+  if (!isWindows) {
+    // Symbolic links on Windows are broken, needs admin priviliges
+    NioFiles.createSymbolicLink(
+      linkToDirectory.toPath,
+      directoryLinkedTo.toPath
+    )
+    assert(linkToDirectory.exists)
+    assert(
+      linkToDirectory.getCanonicalPath == directoryLinkedTo.getCanonicalPath
+    )
+    assert(linkToDirectory.getName != directoryLinkedTo.getName)
+  }
 
   assert(canon0F.getCanonicalPath == canon0N)
   assert(canon1F.getCanonicalPath == canon1N)
@@ -151,17 +205,22 @@ setupTests := {
   assert(canon4F.getCanonicalPath == canon4N)
   assert(canon5F.getCanonicalPath == canon5N)
 
-  if (java.io.File.separator == "/") {
-    assert(absoluteUnixStyle.isAbsolute)
-    assert(!absoluteWinStyle0.isAbsolute)
-    assert(!absoluteWinStyle1.isAbsolute)
-    assert(!absoluteWinStyle2.isAbsolute)
-  } else {
-    assert(!absoluteUnixStyle.isAbsolute)
-    assert(absoluteWinStyle0.isAbsolute)
-    assert(absoluteWinStyle1.isAbsolute)
-    assert(absoluteWinStyle2.isAbsolute)
-  }
+  assertOsSpecific(
+    absoluteUnixStyle.isAbsolute,
+    "absoluteUnixStyle.isAbsolute"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    absoluteWinStyle0.isAbsolute,
+    "!absoluteWinStyle0.isAbsolute"
+  )(onUnix = false, onWindows = true)
+  assertOsSpecific(
+    absoluteWinStyle1.isAbsolute,
+    "!absoluteWinStyle1.isAbsolute"
+  )(onUnix = false, onWindows = true)
+  assertOsSpecific(
+    absoluteWinStyle2.isAbsolute,
+    "!absoluteWinStyle2.isAbsolute"
+  )(onUnix = false, onWindows = true)
 
   assert(!relative0.isAbsolute)
   assert(!relative1.isAbsolute)
@@ -181,7 +240,7 @@ setupTests := {
 
   IO.touch(fileWithLastModifiedSet)
   assert(fileWithLastModifiedSet.exists())
-  fileWithLastModifiedSet.setLastModified(expectedLastModified)
+  assert(fileWithLastModifiedSet.setLastModified(expectedLastModified))
   assert(fileWithLastModifiedSet.lastModified == expectedLastModified)
   IO.touch(willBeSetLastModified)
   assert(willBeSetLastModified.exists)
@@ -195,44 +254,99 @@ setupTests := {
   IO.createDirectory(willBeSetReadOnlyDirectory)
   assert(willBeSetReadOnlyDirectory.exists)
   assert(willBeSetReadOnlyDirectory.setReadable(true, false))
-  assert(willBeSetReadOnlyDirectory.setWritable(true, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetReadOnlyDirectory.setWritable(true, false),
+    "willBeSetReadOnlyDirectory.setWritable(true, false)"
+  )(onUnix = true, onWindows = false)
   assert(willBeSetReadOnlyDirectory.setExecutable(true, false))
 
   IO.touch(willBeSetExecutableFile)
   assert(willBeSetExecutableFile.exists)
-  assert(willBeSetExecutableFile.setReadable(false, false))
   assert(willBeSetExecutableFile.setWritable(false, false))
-  assert(willBeSetExecutableFile.setExecutable(false, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetExecutableFile.setReadable(false, false),
+    "willBeSetExecutableFile.setReadable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetExecutableFile.setExecutable(false, false),
+    "willBeSetExecutableFile.setExecutable(false, false)"
+  )(onUnix = true, onWindows = false)
 
   IO.createDirectory(willBeSetExecutableDirectory)
   assert(willBeSetExecutableDirectory.exists)
-  assert(willBeSetExecutableDirectory.setReadable(false, false))
-  assert(willBeSetExecutableDirectory.setWritable(false, false))
-  assert(willBeSetExecutableDirectory.setExecutable(false, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetExecutableDirectory.setReadable(false, false),
+    "willBeSetExecutableDirectory.setReadable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetExecutableDirectory.setWritable(false, false),
+    "willBeSetExecutableDirectory.setWritable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetExecutableDirectory.setExecutable(false, false),
+    "willBeSetExecutableDirectory.setExecutable(false, false)"
+  )(onUnix = true, onWindows = false)
 
   IO.touch(willBeSetReadableFile)
   assert(willBeSetReadableFile.exists)
-  assert(willBeSetReadableFile.setReadable(false, false))
   assert(willBeSetReadableFile.setWritable(false, false))
-  assert(willBeSetReadableFile.setExecutable(false, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetReadableFile.setReadable(false, false),
+    "willBeSetReadableFile.setReadable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetReadableFile.setExecutable(false, false),
+    "willBeSetReadableFile.setExecutable(false, false)"
+  )(onUnix = true, onWindows = false)
 
   IO.createDirectory(willBeSetReadableDirectory)
   assert(willBeSetReadableDirectory.exists)
-  assert(willBeSetReadableDirectory.setReadable(false, false))
-  assert(willBeSetReadableDirectory.setWritable(false, false))
-  assert(willBeSetReadableDirectory.setExecutable(false, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetReadableDirectory.setReadable(false, false),
+    "willBeSetReadableDirectory.setReadable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetReadableDirectory.setWritable(false, false),
+    "willBeSetReadableDirectory.setWritable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetReadableDirectory.setExecutable(false, false),
+    "willBeSetReadableDirectory.setExecutable(false, false)"
+  )(onUnix = true, onWindows = false)
 
   IO.touch(willBeSetWritableFile)
   assert(willBeSetWritableFile.exists)
-  assert(willBeSetWritableFile.setReadable(false, false))
   assert(willBeSetWritableFile.setWritable(false, false))
-  assert(willBeSetWritableFile.setExecutable(false, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetWritableFile.setReadable(false, false),
+    "willBeSetWritableFile.setReadable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetWritableFile.setExecutable(false, false),
+    "willBeSetWritableFile.setExecutable(false, false)"
+  )(onUnix = true, onWindows = false)
 
   IO.createDirectory(willBeSetWritableDirectory)
   assert(willBeSetWritableDirectory.exists)
-  assert(willBeSetWritableDirectory.setReadable(false, false))
-  assert(willBeSetWritableDirectory.setWritable(false, false))
-  assert(willBeSetWritableDirectory.setExecutable(false, false))
+  // Not supported on Windows
+  assertOsSpecific(
+    willBeSetWritableDirectory.setReadable(false, false),
+    "willBeSetWritableDirectory.setReadable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetWritableDirectory.setWritable(false, false),
+    "willBeSetWritableDirectory.setWritable(false, false)"
+  )(onUnix = true, onWindows = false)
+  assertOsSpecific(
+    willBeSetWritableDirectory.setExecutable(false, false),
+    "willBeSetWritableDirectory.setExecutable(false, false)"
+  )(onUnix = true, onWindows = false)
 
   assert(!nonexistentFile.exists())
   assert(!nonexistentDirectory.exists())

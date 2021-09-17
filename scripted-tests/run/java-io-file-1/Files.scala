@@ -1,4 +1,5 @@
 import java.io.File
+import Utils._
 
 object Files {
 
@@ -55,18 +56,36 @@ object Files {
   val linkToDirectory = new File("linkToDirectory")
 
   // Those files are there to test the canonical name
-  val canon0F = new File("/.")
-  val canon0N = "/"
-  val canon1F = new File("/../")
-  val canon1N = "/"
-  val canon2F = new File("/foo/./bar")
-  val canon2N = "/foo/bar"
-  val canon3F = new File("/foo/../bar")
-  val canon3N = "/bar"
-  val canon4F = new File("/foo/../../bar")
-  val canon4N = "/../bar"
-  val canon5F = new File("/foo/../../../bar")
-  val canon5N = "/bar"
+  def osFilePathTuple(
+      unix: (String, String),
+      windows: (String, String)
+  ): (File, String) = {
+    val (path, expected) =
+      if (isWindows) windows
+      else unix
+    new File(path) -> expected
+  }
+
+  val (canon0F, canon0N) =
+    osFilePathTuple(unix = "/." -> "/", windows = "C:\\." -> "C:\\")
+  val (canon1F, canon1N) =
+    osFilePathTuple(unix = "/../" -> "/", windows = "C:\\.." -> "C:\\")
+  val (canon2F, canon2N) = osFilePathTuple(
+    unix = "/foo/./bar" -> "/foo/bar",
+    windows = "C:\\foo\\.\\bar" -> "C:\\foo\\bar"
+  )
+  val (canon3F, canon3N) = osFilePathTuple(
+    unix = "/foo/../bar" -> "/bar",
+    windows = "C:\\foo\\..\\bar" -> "C:\\bar"
+  )
+  val (canon4F, canon4N) = osFilePathTuple(
+    unix = "/foo/../../bar" -> "/../bar",
+    windows = "C:/foo/../../bar" -> "C:\\bar"
+  )
+  val (canon5F, canon5N) = osFilePathTuple(
+    unix = "/foo/../../../bar" -> "/bar",
+    windows = "C:/foo/../../../bar" -> "C:\\bar"
+  )
 
   // To test absolute names
   val absoluteUnixStyle = new File("/foo/bar")
@@ -77,16 +96,22 @@ object Files {
   val relative1 = new File("\\")
   val relative2 = new File("../")
 
-  val children0 = new File("/foo/bar")
-  val expectedParent0 = "/foo"
-  val children1 = new File("foo/bar")
-  val expectedParent1 = "foo"
-  val children2 = new File("/foobar")
-  val expectedParent2 = "/"
-  val children3 = new File("foobar")
-  val expectedParent3 = null
-  val children4 = new File("")
-  val expectedParent4 = null
+  val (children0, expectedParent0) =
+    osFilePathTuple(
+      unix = "/foo/bar" -> "/foo",
+      windows = "C:/foo/bar" -> "C:\\foo"
+    )
+  val (children1, expectedParent1) =
+    osFilePathTuple(
+      unix = "foo/bar" -> "foo",
+      windows = "C:/foo/bar" -> "C:\\foo"
+    )
+  val (children2, expectedParent2) =
+    osFilePathTuple(unix = "/foobar" -> "/", windows = "C:/foobar" -> "C:\\")
+  val (children3, expectedParent3) =
+    osFilePathTuple(unix = "foobar" -> null, windows = "C:/" -> null)
+  val (children4, expectedParent4) =
+    osFilePathTuple(unix = "" -> null, windows = "" -> null)
   val expectedParent5 = new File("foo")
   val children5 = new File(expectedParent5, "bar")
 
