@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class DeflaterOutputStreamTest {
 
@@ -43,6 +44,7 @@ class DeflaterOutputStreamTest {
   }
 
   @Test def deflaterOutputStreamCanBeFlushedWithSyncFlush(): Unit = {
+    assumeNotJVMCompliant()
     val bos = new ByteArrayOutputStream
     val out =
       new DeflaterOutputStream(bos, new Deflater, 16, /* syncFlush = */ true)

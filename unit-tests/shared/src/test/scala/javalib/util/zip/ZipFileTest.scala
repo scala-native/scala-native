@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 import ZipBytes._
 
@@ -56,6 +57,10 @@ class ZipFileTest {
 
     val enumeration = zip.entries()
     zip.close()
+    assumeNotJVMCompliant()
+    // Behaviour of hasMoreElements might differ across version.
+    // In Java 8 it would throw IllegalStateException,
+    // In Java 15 it would not throw any exception
     assertThrows(classOf[IllegalStateException], enumeration.hasMoreElements())
   }
 

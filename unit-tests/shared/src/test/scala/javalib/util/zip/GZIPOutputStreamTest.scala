@@ -43,7 +43,7 @@ class GZIPOutputStreamTest {
     assertTrue(outGZIP.getChecksum().getValue() == 3097700292L)
 
     assertThrows(
-      classOf[ArrayIndexOutOfBoundsException],
+      classOf[IndexOutOfBoundsException],
       outGZIP.write(byteArray, 0, 11)
     )
   }
