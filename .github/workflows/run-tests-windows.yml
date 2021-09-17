@@ -152,3 +152,53 @@ jobs:
           testsExt/test
           testsExtJVM/test
         shell: cmd
+
+  run-scripted-tests:
+    name: Run scripted tests
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        scala: [2.12.15]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure Pagefile
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 4GB
+          maximum-size: 16GB
+
+      #Prepare environment, clang needs to be installed
+      #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
+      #Cache commonly used files: Coursier, ivy cache
+      - name: Resolve env variables
+        id: resolve-env
+        run: |
+          echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
+          echo "::set-output name=LocalAppData::${env:LocalAppData}"
+          echo "::set-output name=UserProfile::${env:UserProfile}"
+
+      - name: Cache dependencies
+        id: cache-deps
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
+            ${{steps.resolve-env.outputs.LocalAppData}}\Coursier\Cache\v1\
+            ${{steps.resolve-env.outputs.UserProfile}}\.ivy2\cache
+          key: ${{ runner.os }}-${{ matrix.scala }}-deps
+
+      # Install LLVM in case if cache is missing
+      - name: Install LLVM
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: choco install llvm --version=11.0.0
+
+      - name: Add LLVM on Path
+        run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Assert clang installed and on path
+        run: clang --version
+
+      - name: Test scripted
+        run: sbt ++${{matrix.scala}};test-scripted
+        shell: cmd
