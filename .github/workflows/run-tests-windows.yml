@@ -137,7 +137,7 @@ jobs:
         run: clang --version
 
       - name: Install libs
-        run: vcpkg install zlib --triplet=x64-windows-static
+        run: vcpkg install bdwgc zlib --triplet=x64-windows-static
 
       - name: Test runtime
         run: >
