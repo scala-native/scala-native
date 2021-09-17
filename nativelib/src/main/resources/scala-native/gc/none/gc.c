@@ -1,7 +1,7 @@
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
 // These functions are not used directly, but are included in "Parsing.h".
-// The definition used to disable warnings needs to be placed before the first 
-// include of Windows.h, depending on the version of Windows runtime 
+// The definition used to disable warnings needs to be placed before the first
+// include of Windows.h, depending on the version of Windows runtime
 // it might happen while preprocessing some of stdlib headers.
 #define _CRT_SECURE_NO_WARNINGS
 
