@@ -92,12 +92,12 @@ class ZipEntry private (
   def isDirectory(): Boolean =
     name.charAt(name.length - 1) == '/'
 
-  def setComment(string: String): Unit =
-    if (string == null || string.length <= 0xffff) {
-      comment = string
-    } else {
-      throw new IllegalArgumentException()
-    }
+  def setComment(string: String): Unit = {
+    val lengthLimit = 0xffff
+    comment =
+      if (string == null || string.length() <= lengthLimit) string
+      else string.substring(0, lengthLimit)
+  }
 
   def setCompressedSize(value: Long): Unit =
     compressedSize = value
