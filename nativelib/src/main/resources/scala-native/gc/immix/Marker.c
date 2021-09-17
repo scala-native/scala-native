@@ -125,6 +125,4 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     Marker_markModules(heap, stack);
 
     Marker_Mark(heap, stack);
-
-    WeakRefStack_Nullify(heap);
 }

@@ -20,8 +20,8 @@ bool anyVisited = false;
 
 static inline GreyPacket *WeakRefGreyList_takeWeakRefPacket(Heap *heap,
                                                             Stats *stats) {
-    return SyncGreyLists_takeNotEmptyPacket(heap, stats,
-                                            &heap->mark.foundWeakRefs);
+    return SyncGreyLists_takeNotEmptyPacket(
+        heap, stats, &heap->mark.foundWeakRefs, nullify_waiting);
 }
 
 static void WeakRefGreyList_NullifyPacket(Heap *heap, Stats *stats,

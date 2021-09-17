@@ -6,7 +6,8 @@
 void SyncGreyLists_giveNotEmptyPacket(Heap *heap, Stats *stats,
                                       GreyList *greyList, GreyPacket *packet);
 GreyPacket *SyncGreyLists_takeNotEmptyPacket(Heap *heap, Stats *stats,
-                                             GreyList *greyList);
+                                             GreyList *greyList,
+                                             eventType waitingEventType);
 void SyncGreyLists_giveEmptyPacket(Heap *heap, Stats *stats,
                                    GreyPacket *packet);
 GreyPacket *SyncGreyLists_takeEmptyPacket(Heap *heap, Stats *stats);

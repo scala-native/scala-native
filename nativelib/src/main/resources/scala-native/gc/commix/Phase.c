@@ -99,13 +99,19 @@ void Phase_MarkDone(Heap *heap) {
 }
 
 void Phase_Nullify(Heap *heap, Stats *stats) {
-    Phase_Set(heap, gc_nullify);
-    // make sure all threads see the phase change
-    atomic_thread_fence(memory_order_release);
+    if (GreyList_Size(&heap->mark.foundWeakRefs) != 0) {
+        uint64_t nullifyStart = scalanative_nano_time();
+        Phase_Set(heap, gc_nullify);
+        // make sure all threads see the phase change
+        atomic_thread_fence(memory_order_release);
 
-    GCThread_WakeMaster(heap);
-    WeakRefGreyList_NullifyUntilDone(heap, stats);
-    Phase_Set(heap, gc_idle);
+        GCThread_WakeMaster(heap);
+        WeakRefGreyList_NullifyUntilDone(heap, stats);
+        Phase_Set(heap, gc_idle);
+
+        uint64_t nullifyEnd = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_nullify, nullifyStart, nullifyEnd);
+    }
 }
 
 void Phase_StartSweep(Heap *heap) {

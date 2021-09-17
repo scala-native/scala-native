@@ -13,19 +13,20 @@ void SyncGreyLists_giveNotEmptyPacket(Heap *heap, Stats *stats,
 }
 
 GreyPacket *SyncGreyLists_takeNotEmptyPacket(Heap *heap, Stats *stats,
-                                             GreyList *greyList) {
+                                             GreyList *greyList,
+                                             eventType waitingEventType) {
     Stats_RecordTimeSync(stats, start_ns);
     GreyPacket *packet = GreyList_Pop(greyList, heap->greyPacketsStart);
     if (packet != NULL) {
         atomic_thread_fence(memory_order_release);
     }
     Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, stats->mark_waiting_start_ns,
+    Stats_RecordEventSync(stats, event_sync, stats->packet_waiting_start_ns,
                           end_ns);
     if (packet == NULL) {
-        Stats_MarkerNoNotEmptyPacket(stats, start_ns, end_ns);
+        Stats_NoNotEmptyPacket(stats, start_ns, end_ns);
     } else {
-        Stats_MarkerGotNotEmptyPacket(stats, end_ns);
+        Stats_GotNotEmptyPacket(stats, end_ns, waitingEventType);
     }
     return packet;
 }

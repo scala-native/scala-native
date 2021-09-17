@@ -19,23 +19,25 @@
 #ifdef ENABLE_GC_STATS
 
 typedef enum {
-    // mark and sweep phases on mutator thread
+    // mark, nullify and sweep phases on mutator thread
     event_mark = 0x0,
-    event_sweep = 0x1,
+    event_nullify = 0x1,
+    event_sweep = 0x2,
     // mark, nullify and sweep phases on GCThreads
-    event_concurrent_mark = 0x2,
-    event_concurrent_nullify = 0x3,
-    event_concurrent_sweep = 0x4,
+    event_concurrent_mark = 0x3,
+    event_concurrent_nullify = 0x4,
+    event_concurrent_sweep = 0x5,
     // the whole collection from initialization until concurrent sweep stops
-    event_collection = 0x5,
+    event_collection = 0x6,
     // batches being processed
-    event_mark_batch = 0x6,
-    event_sweep_batch = 0x7,
-    event_coalesce_batch = 0x8,
-    // thread is waiting for full packets to be available during mark
-    mark_waiting = 0x9,
+    event_mark_batch = 0x7,
+    event_sweep_batch = 0x8,
+    event_coalesce_batch = 0x9,
+    // thread is waiting for full packets to be available during mark or nullify
+    mark_waiting = 0xA,
+    nullify_waiting = 0xB,
     // any synchronization on common concurrent data structures
-    event_sync = 0xA
+    event_sync = 0xC
 } eventType;
 
 typedef struct {
@@ -47,8 +49,8 @@ typedef struct {
     uint64_t time_ns[STATS_MEASUREMENTS];
 
     uint64_t collection_start_ns;
-    uint64_t mark_waiting_start_ns;
-    uint64_t mark_waiting_end_ns;
+    uint64_t packet_waiting_start_ns;
+    uint64_t packet_waiting_end_ns;
 } Stats;
 
 void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread);
@@ -64,6 +66,9 @@ void Stats_CollectionStarted(Stats *stats);
 
 #else
 typedef void *Stats;
+typedef void *eventType;
+#define mark_waiting 0
+#define nullify_waiting 0
 
 #define Stats_RecordEvent(S, E, A, B)
 // it is always NULL no need to read the expression
@@ -111,18 +116,17 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
         }                                                                      \
     } while (0)
 #define Stats_RecordEventSync(S, E, A, B) Stats_RecordEvent(S, E, A, B)
-void Stats_MarkStarted(Stats *stats);
-void Stats_MarkerGotNotEmptyPacket(Stats *stats, uint64_t end_ns);
-void Stats_MarkerNoNotEmptyPacket(Stats *stats, uint64_t start_ns,
-                                  uint64_t end_ns);
+void Stats_PhaseStarted(Stats *stats);
+void Stats_GotNotEmptyPacket(Stats *stats, uint64_t end_ns, eventType eType);
+void Stats_NoNotEmptyPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns);
 
 #else
 
 #define Stats_RecordTimeSync(S, T)
 #define Stats_RecordEventSync(S, E, A, B)
-static inline void Stats_MarkStarted(Stats *stats) {}
-#define Stats_MarkerGotNotEmptyPacket(S, B)
-#define Stats_MarkerNoNotEmptyPacket(S, A, B)
+static inline void Stats_PhaseStarted(Stats *stats) {}
+#define Stats_GotNotEmptyPacket(S, B, E)
+#define Stats_NoNotEmptyPacket(S, A, B)
 
 #endif // ENABLE_GC_STATS_SYNC
 

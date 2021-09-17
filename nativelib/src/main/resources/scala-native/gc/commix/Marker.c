@@ -66,8 +66,9 @@ static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
 }
 
 static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
-    GreyPacket *packet =
-        SyncGreyLists_takeNotEmptyPacket(heap, stats, &heap->mark.full);
+    GreyPacket *packet = SyncGreyLists_takeNotEmptyPacket(
+        heap, stats, &heap->mark.full, mark_waiting);
+
     assert(packet == NULL || packet->type == grey_packet_refrange ||
            packet->size > 0);
     return packet;
@@ -86,8 +87,12 @@ static inline void Marker_giveFullPacket(Heap *heap, Stats *stats,
 
 static inline void Marker_giveWeakRefPacket(Heap *heap, Stats *stats,
                                             GreyPacket *packet) {
-    SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.foundWeakRefs,
-                                     packet);
+    if (!GreyPacket_IsEmpty(packet)) {
+        SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.foundWeakRefs,
+                                         packet);
+    } else {
+        SyncGreyLists_giveEmptyPacket(heap, stats, packet);
+    }
 }
 
 void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
