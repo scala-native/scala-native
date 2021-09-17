@@ -250,7 +250,7 @@ class CComplexTest {
 
   def isAlmostEqual(act: Double, exp: Double): Boolean = {
     val diff = Math.abs(act - exp)
-    val epsilon = Math.max(Math.ulp(act), Math.ulp(exp))
+    val epsilon = 2 * Math.max(Math.ulp(act), Math.ulp(exp))
     if (debug) {
       println(
         s"diff: ${jl.Double.toHexString(diff)} eps: ${jl.Double.toHexString(epsilon)}"
