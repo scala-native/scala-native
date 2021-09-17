@@ -4,6 +4,8 @@ import java.util._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
+import org.scalanative.testsuite.utils.Platform.{isWindows, executingInScalaNative}
 
 class DateTest {
   // now : java.util.Date = Fri Mar 31 14:47:44 EDT 2017
@@ -53,6 +55,9 @@ class DateTest {
   }
 
   @Test def testToString(): Unit = {
+    // Due to problems with timezone abbreviation on Windows
+    assumeFalse("SN Windows implementation does not contain timezone", executingInScalaNative && isWindows)
+
     val result = new Date().toString // actual time this test is run.
     // regex should match, but not be: "Fri Mar 31 14:47:44 EDT 2020"
     // Two decade year range in regex is coarse sanity check.
