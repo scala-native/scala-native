@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(_WIN32) || defined(WIN32)
+// Boehm on Windows needs User32.lib linked
+#pragma comment(lib, "User32.lib")
+#endif
+
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
 
