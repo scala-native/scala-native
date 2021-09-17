@@ -87,7 +87,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-2019]
-        scala: [2.13.6, 2.12.14, 2.11.12]
+        scala: [2.13.6, 2.12.15, 2.11.12]
         gc: [none, immix, commix]
     steps:
       - uses: actions/checkout@v2
@@ -147,8 +147,8 @@ jobs:
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
           sandbox/run
-          "testsJVM/testOnly javalib.lang.* javalib.math.* javalib.security.* javalib.io.* javalib.nio.* javalib.net.*"
-          "tests/testOnly javalib.lang.* javalib.math.* javalib.security.* javalib.io.* javalib.nio.* javalib.net.*"
+          testsJVM/test
+          tests/testOnly
           testsExt/test
           testsExtJVM/test
         shell: cmd
