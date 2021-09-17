@@ -57,7 +57,9 @@ class RE2CompileTest {
           )
       } catch {
         case e: PatternSyntaxException =>
-          if (expectedError == null || !(e.getMessage == expectedError))
+          // Adapt error message on Windows to match Unix strings
+          val errorMsg = e.getMessage().replaceAll(System.lineSeparator(), "\n")
+          if (expectedError == null || errorMsg != expectedError)
             fail("compiling " + input + "; unexpected error: " + e.getMessage)
       }
     }
