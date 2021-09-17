@@ -31,10 +31,9 @@ class DeflaterOutputStream(
   def this(out: OutputStream) = this(out, false)
 
   protected def deflate(): Unit = {
-    var x = 0
     do {
-      x = `def`.deflate(buf)
-      out.write(buf, 0, x)
+      val len = `def`.deflate(buf)
+      out.write(buf, 0, len)
     } while (!`def`.needsInput())
   }
 
@@ -49,13 +48,12 @@ class DeflaterOutputStream(
   def finish(): Unit = {
     if (!done) {
       `def`.finish()
-      var x = 0
       while (!`def`.finished()) {
         if (`def`.needsInput()) {
           `def`.setInput(buf, 0, 0)
         }
-        x = `def`.deflate(buf)
-        out.write(buf, 0, x)
+        val len = `def`.deflate(buf)
+        out.write(buf, 0, len)
       }
       done = true
     }

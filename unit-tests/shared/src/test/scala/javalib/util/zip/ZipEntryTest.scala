@@ -9,7 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
-
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 import ZipBytes._
 
 class ZipEntryTest {
@@ -119,11 +119,12 @@ class ZipEntryTest {
     }
     zentry.setComment(s.toString)
 
+    // From Java API docs:
+    // ZIP entry comments have maximum length of 0xffff. If the length of the
+    // specified comment string is greater than 0xFFFF bytes after encoding,
+    // only the first 0xFFFF bytes are output to the ZIP file entry.
     s.append('a')
-    assertThrows(
-      classOf[IllegalArgumentException],
-      zentry.setComment(s.toString)
-    )
+    zentry.setComment(s.toString)
   }
 
   @Test def setCompressedSizeLong(): Unit = {
@@ -218,9 +219,20 @@ class ZipEntryTest {
 
     assertThrows(classOf[IllegalArgumentException], zentry.setSize(-25))
 
-    zentry.setSize(4294967295L)
+    if (!executingInJVM) {
+      // Cannot determinate wheter ZIP64 support is uspported on Windows
+      // From Java API: throws IllegalArgumentException if:
+      // * the specified size is less than 0
+      // * is greater than 0xFFFFFFFF when ZIP64 format is not supported
+      // * or is less than 0 when ZIP64 is supported
+      // ScalaNative supports ZIP64
+      zentry.setSize(4294967295L)
 
-    assertThrows(classOf[IllegalArgumentException], zentry.setSize(4294967296L))
+      assertThrows(
+        classOf[IllegalArgumentException],
+        zentry.setSize(4294967296L)
+      )
+    }
   }
 
   @Before

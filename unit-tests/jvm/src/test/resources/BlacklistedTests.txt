@@ -17,14 +17,7 @@ scala/javalib/util/FormatterTest.scala
 scala/javalib/util/IdentityHashMapTest.scala
 scala/javalib/util/Base64Test.scala
 
-scala/javalib/util/zip/InflaterInputStreamTest.scala
-scala/javalib/util/zip/DeflaterOutputStreamTest.scala
-scala/javalib/util/zip/GZIPInputStreamTest.scala
-scala/javalib/util/zip/GZIPOutputStreamTest.scala
-scala/javalib/util/zip/ZipInputStreamTest.scala
-scala/javalib/util/zip/InflaterTest.scala
-scala/javalib/util/zip/ZipEntryTest.scala
-
+scala/javalib/nio/file/FileSystemExceptionTest.scala
 scala/javalib/nio/file/FilesTest.scala
 scala/javalib/nio/file/DirectoryStreamTest.scala
 
@@ -42,4 +35,3 @@ scala/scala/bugcompat/LongFloatPrimitiveTest.scala
 # Tests that work on java 8, but fail on java 16
 scala/javalib/net/URLEncoderTest.scala
 scala/javalib/util/jar/JarFileTest.scala
-scala/javalib/util/zip/ZipFileTest.scala
