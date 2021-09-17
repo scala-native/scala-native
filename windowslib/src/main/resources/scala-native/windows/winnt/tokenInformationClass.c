@@ -132,9 +132,6 @@ int scalanative_win32_winnt_token_info_class_islessprivilegedappcontainer() {
 int scalanative_win32_winnt_token_info_class_issandboxed() {
     return TokenIsSandboxed;
 }
-int scalanative_win32_winnt_token_info_class_originatingprocesstrustlevel() {
-    return TokenOriginatingProcessTrustLevel;
-}
 int scalanative_win32_winnt_token_info_class_infoclass_max() {
     return MaxTokenInfoClass;
 }
