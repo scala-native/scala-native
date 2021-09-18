@@ -2,7 +2,7 @@
 import java.util.Locale
 
 object Platform {
-    val isWindows = System
+  val isWindows = System
     .getProperty("os.name", "unknown")
     .toLowerCase(Locale.ROOT)
     .startsWith("windows")
