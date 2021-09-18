@@ -416,7 +416,8 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
             "-Xmx1024M",
             "-XX:MaxMetaspaceSize=256M",
             "-Dplugin.version=" + version.value,
-            "-Dscala.version=" + (nativelib / scalaVersion).value
+            "-Dscala.version=" + (nativelib / scalaVersion).value,
+            "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
           ) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
       }
