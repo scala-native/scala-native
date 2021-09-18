@@ -11,6 +11,7 @@ import java.util.{Arrays, Collections}
 
 import scala.util.control.NonFatal
 import scala.util.control.Breaks._
+import scala.scalanative.runtime.Platform.isWindows
 
 import org.junit.Ignore
 import org.junit.Test
@@ -104,7 +105,10 @@ class ExecTest {
     var nfail = 0
     var ncase = 0
     var line: String = null
-    while ({ line = r.readLine(); line != null }) breakable {
+    while ({
+      line = withUnixCompat(r.readLine())
+      line != null
+    }) breakable {
       lineno += 1
       if (line.isEmpty)
         fail("%s:%d: unexpected blank line".format(file, lineno))
@@ -370,7 +374,10 @@ class ExecTest {
     var nerr = 0
     var line: String = null
     var lastRegexp = ""
-    while ({ line = r.readLine; line != null }) breakable {
+    while ({
+      line = withUnixCompat(r.readLine)
+      line != null
+    }) breakable {
       lineno += 1
       // if (line.isEmpty()) {
       //   fail(String.format("%s:%d: unexpected blank line", file, lineno));
@@ -671,4 +678,9 @@ class ExecTest {
     result
   }
 
+  private def withUnixCompat(str: String): String = {
+    if (str != null && isWindows) {
+      str.replaceAll("\r", "")
+    } else str
+  }
 }

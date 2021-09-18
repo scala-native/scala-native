@@ -1,12 +1,22 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.Test
+import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc.{stdio, stdlib, string}
+import scalanative.windows
+import scalanative.meta.LinktimeInfo.isWindows
+
+object CVarArgListTest {
+  @BeforeClass
+  def assumeIsImplemented(): Unit = {
+    assumeFalse("CVarArgList not implemented on Windows", isWindows)
+  }
+}
 
 class CVarArgListTest {
   def vatest(cstr: CString, varargs: Seq[CVarArg], output: String): Unit =

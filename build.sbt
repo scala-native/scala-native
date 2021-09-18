@@ -790,6 +790,11 @@ lazy val testsCommonSettings = Def.settings(
     "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
     "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
     "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
+  ),
+  // Some of the tests are designed with an assumptions about default encoding
+  // Make sure that tests run on JVM are using default defaults
+  Test / javaOptions ++= Seq(
+    "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
   )
 )
 
