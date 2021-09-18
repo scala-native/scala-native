@@ -3,7 +3,7 @@ object LinksTest {
   import Utils._
 
   def main(args: Array[String]): Unit = {
-    if (!isWindows) {
+    if (!Platform.isWindows) {
       // Not testing symbolic links on Windows, needs admin privileges
       assert(directoryLinkedTo.exists)
       assert(linkToDirectory.exists)
