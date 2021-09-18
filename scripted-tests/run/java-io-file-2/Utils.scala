@@ -3,7 +3,7 @@ import java.util.Locale
 object Utils {
   val isWindows = System
     .getProperty("os.name", "unknown")
-    .toLowerCase()
+    .toLowerCase(Locale.ROOT)
     .startsWith("windows")
 
   def assertOsSpecific(
