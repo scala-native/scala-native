@@ -61,7 +61,7 @@ object Files {
       windows: (String, String)
   ): (File, String) = {
     val (path, expected) =
-      if (isWindows) windows
+      if (Platform.isWindows) windows
       else unix
     new File(path) -> expected
   }
