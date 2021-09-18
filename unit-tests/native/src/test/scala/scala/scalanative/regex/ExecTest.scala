@@ -106,7 +106,7 @@ class ExecTest {
     var ncase = 0
     var line: String = null
     while ({
-      line = withUnixLineSeperators(r.readLine());
+      line = withUnixCompat(r.readLine())
       line != null
     }) breakable {
       lineno += 1
@@ -375,7 +375,7 @@ class ExecTest {
     var line: String = null
     var lastRegexp = ""
     while ({
-      line = withUnixLineSeperators(r.readLine);
+      line = withUnixCompat(r.readLine)
       line != null
     }) breakable {
       lineno += 1
@@ -678,9 +678,9 @@ class ExecTest {
     result
   }
 
-  def withUnixLineSeperators(str: String): String = {
+  private def withUnixCompat(str: String): String = {
     if (str != null && isWindows) {
-      str.replaceAll(System.lineSeparator(), "\n")
+      str.replaceAll("\r", "")
     } else str
   }
 }
