@@ -88,7 +88,7 @@ jobs:
       matrix:
         os: [windows-2019]
         scala: [2.13.6, 2.12.15, 2.11.12]
-        gc: [none, immix, commix]
+        gc: [none, boehm, immix, commix]
     steps:
       - uses: actions/checkout@v2
 
@@ -137,7 +137,7 @@ jobs:
         run: clang --version
 
       - name: Install libs
-        run: vcpkg install zlib --triplet=x64-windows-static
+        run: vcpkg install bdwgc zlib --triplet=x64-windows-static
 
       - name: Test runtime
         run: >
