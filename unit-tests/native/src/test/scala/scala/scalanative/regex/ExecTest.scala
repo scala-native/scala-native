@@ -105,12 +105,11 @@ class ExecTest {
     var nfail = 0
     var ncase = 0
     var line: String = null
-    while ({ line = r.readLine(); line != null }) breakable {
+    while ({
+      line = withUnixLineSeperators(r.readLine());
+      line != null
+    }) breakable {
       lineno += 1
-      // Compat for Windows
-      if (isWindows) {
-        line = line.replaceAll("\r", "")
-      }
       if (line.isEmpty)
         fail("%s:%d: unexpected blank line".format(file, lineno))
       val first = line.charAt(0)
@@ -375,12 +374,11 @@ class ExecTest {
     var nerr = 0
     var line: String = null
     var lastRegexp = ""
-    while ({ line = r.readLine; line != null }) breakable {
+    while ({
+      line = withUnixLineSeperators(r.readLine);
+      line != null
+    }) breakable {
       lineno += 1
-      // Compat for Windows
-      if (isWindows) {
-        line = line.replaceAll("\r", "")
-      }
       // if (line.isEmpty()) {
       //   fail(String.format("%s:%d: unexpected blank line", file, lineno));
       // }
@@ -680,4 +678,9 @@ class ExecTest {
     result
   }
 
+  def withUnixLineSeperators(str: String): String = {
+    if (str != null && isWindows) {
+      str.replaceAll(System.lineSeparator(), "\n")
+    } else str
+  }
 }
