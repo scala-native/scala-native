@@ -45,4 +45,29 @@ class FileTest {
     assertEquals(expectedPath, u2.getPath())
     assertEquals(s"file:$expectedPath", u2.toString)
   }
+
+  @Test def getCanonicalPathForRelativePath(): Unit = {
+    val cwd = {
+      val dir = System.getProperty("user.dir")
+      assertNotNull(dir)
+      dir.stripSuffix(java.io.File.separator)
+    }
+
+    def assertCanonicalPathEquals(expected: String, tested: String) =
+      assertEquals(
+        tested,
+        expected.replace(File.separator, "/"),
+        new File(tested)
+          .getCanonicalPath()
+          .replace(File.separator, "/")
+          .stripSuffix("/")
+      )
+
+    assertCanonicalPathEquals(cwd, ".")
+    assertCanonicalPathEquals(cwd, "")
+    assertCanonicalPathEquals(s"$cwd/foo/bar/baz", "./foo/bar/baz")
+    assertCanonicalPathEquals(s"$cwd/foo/bar/baz", "foo/bar/baz")
+    assertCanonicalPathEquals(s"$cwd/foo/baz", "./foo/bar/../baz")
+    assertCanonicalPathEquals(cwd, "foo/../baz/..")
+  }
 }
