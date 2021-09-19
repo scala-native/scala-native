@@ -60,8 +60,16 @@ class ThreadTest {
   @Test def sleepShouldSuspendForAtLeastSpecifiedMillis(): Unit = {
     val sleepForMillis = 10
     val start = System.currentTimeMillis()
-    Thread.sleep(sleepForMillis, 0)
+    Thread.sleep(sleepForMillis)
     val elapsedMillis = System.currentTimeMillis() - start
     assertTrue("Slept for less then expected", elapsedMillis >= sleepForMillis)
+  }
+
+  @Test def sleepShouldSuspendForAtLeastSpecifiedNanos(): Unit = {
+    val sleepForNanos = 500000 // 0.5ms
+    val start = System.nanoTime()
+    Thread.sleep(0, sleepForNanos)
+    val elapsedNanos = System.nanoTime() - start
+    assertTrue("Slept for less then expected", elapsedNanos >= sleepForNanos)
   }
 }
