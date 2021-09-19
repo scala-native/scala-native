@@ -172,6 +172,10 @@ object WinBaseApiExt {
   final val PROTECTED_SACL_SECURITY_INFORMATION = 0x40000000L.toUInt
   final val UNPROTECTED_DACL_SECURITY_INFORMATION = 0x20000000L.toUInt
   final val UNPROTECTED_SACL_SECURITY_INFORMATION = 0x10000000L.toUInt
+
+  final val PAGE_READONLY: DWord = 0x02.toUInt
+  final val PAGE_READWRITE: DWord = 0x04.toUInt
+  final val PAGE_WRITECOPY: DWord = 0x08.toUInt
 }
 
 object WinBaseApiOps {
@@ -186,9 +190,4 @@ object WinBaseApiOps {
     def securityDescriptor_=(v: Ptr[Byte]): Unit = ref._2 = v
     def inheritHandle_=(v: Boolean): Unit = ref._3 = v
   }
-
-  final val PAGE_READONLY: DWord = 0x02.toUInt
-  final val PAGE_READWRITE: DWord = 0x04.toUInt
-  final val PAGE_WRITECOPY: DWord = 0x08.toUInt
-
 }

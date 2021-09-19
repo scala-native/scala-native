@@ -11,7 +11,7 @@ import java.nio.file.{
 import java.nio.file.attribute.FileAttribute
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.nio.file.WindowsException
-import scala.scalanative.nio.fs.UnixException
+import scala.scalanative.nio.fs.unix.UnixException
 
 import java.io.FileDescriptor
 import java.io.File

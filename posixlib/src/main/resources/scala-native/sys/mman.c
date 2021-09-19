@@ -1,3 +1,6 @@
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
+
 #include <sys/mman.h>
 
 int scalanative_prot_exec() { return PROT_EXEC; }
@@ -12,3 +15,5 @@ int scalanative_map_fixed() { return MAP_FIXED; }
 int scalanative_ms_sync() { return MS_SYNC; }
 int scalanative_ms_async() { return MS_ASYNC; }
 int scalanative_ms_invalidate() { return MS_INVALIDATE; }
+
+#endif // Unix or Mac OS
