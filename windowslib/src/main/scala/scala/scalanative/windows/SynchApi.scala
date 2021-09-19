@@ -4,11 +4,12 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import HandleApi.Handle
 
-@extern()
+@extern
 object SynchApi {
   type CallbackContext = Ptr[Byte]
   type WaitOrTimerCallback = CFuncPtr2[CallbackContext, Boolean, Unit]
 
+  def Sleep(milliseconds: DWord): Unit = extern
   def WaitForSingleObject(
       ref: Handle,
       miliseconds: DWord

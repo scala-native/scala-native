@@ -56,4 +56,12 @@ class ThreadTest {
     assertFalse(t.isInterrupted())
     assertFalse(Thread.interrupted())
   }
+
+  @Test def sleepShouldSuspendForAtLeastSpecifiedMillis(): Unit = {
+    val sleepForMillis = 10
+    val start = System.currentTimeMillis()
+    Thread.sleep(sleepForMillis, 0)
+    val elapsedMillis = System.currentTimeMillis() - start
+    assertTrue("Slept for less then expected", elapsedMillis >= sleepForMillis)
+  }
 }
