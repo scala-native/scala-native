@@ -40,26 +40,18 @@ object CVarArgList {
   private[scalanative] def fromSeq(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
-    val builder = VarArgListBuilder()
-    varargs.foreach(builder.append)
-    builder.build()
+    if (isWindows)
+      toCVarArgList_X86_64_Windows(varargs)
+    else
+      toCVarArgList_X86_64_Unix(varargs)
   }
 
-  private object VarArgListBuilder {
-    def apply()(implicit z: Zone): VarArgListBuilder = {
-      if (isWindows) new VarArgsListBuilder_X86_64_Windows()
-      else new VarArgsListBuilder_X86_64_Unix()
-    }
-  }
+  @inline
+  private def isPassedAsDouble(vararg: CVarArg): Boolean =
+    vararg.tag == Tag.Float || vararg.tag == Tag.Double
 
-  private abstract class VarArgListBuilder()(implicit z: Zone) {
-    def append(varArg: CVarArg): Unit
-    def build(): CVarArgList
-
-    def isPassedAsDouble(vararg: CVarArg): Boolean =
-      vararg.tag == Tag.Float || vararg.tag == Tag.Double
-
-    def encode[T](value: T)(implicit tag: Tag[T]): Array[Long] = value match {
+  private def encode[T](value: T)(implicit tag: Tag[T]): Array[Long] =
+    value match {
       case value: Byte =>
         encode(value.toLong)
       case value: Short =>
@@ -82,16 +74,16 @@ object CVarArgList {
         tag.store(start, value)
         words
     }
-  }
 
-  private final class VarArgsListBuilder_X86_64_Unix()(implicit z: Zone)
-      extends VarArgListBuilder {
-    private var storage = new Array[Long](registerSaveWords)
-    private var wordsUsed = storage.size
-    private var gpRegistersUsed = 0
-    private var fpRegistersUsed = 0
+  private def toCVarArgList_X86_64_Unix(
+      varargs: Seq[CVarArg]
+  )(implicit z: Zone): CVarArgList = {
+    var storage = new Array[Long](registerSaveWords)
+    var wordsUsed = storage.size
+    var gpRegistersUsed = 0
+    var fpRegistersUsed = 0
 
-    private def appendWord(word: Long): Unit = {
+    def appendWord(word: Long): Unit = {
       if (wordsUsed == storage.size) {
         val newstorage = new Array[Long](storage.size * 2)
         System.arraycopy(storage, 0, newstorage, 0, storage.size)
@@ -101,7 +93,7 @@ object CVarArgList {
       wordsUsed += 1
     }
 
-    def append(vararg: CVarArg): Unit = {
+    varargs.foreach { vararg =>
       val encoded = encode(vararg.value)(vararg.tag)
       val isDouble = isPassedAsDouble(vararg)
 
@@ -121,35 +113,33 @@ object CVarArgList {
         encoded.foreach(appendWord)
       }
     }
+    val resultStorage =
+      z.alloc(sizeof[Long] * storage.size.toULong).asInstanceOf[Ptr[Long]]
+    val storageStart = storage.asInstanceOf[LongArray].at(0)
+    libc.memcpy(
+      toRawPtr(resultStorage),
+      toRawPtr(storageStart),
+      wordsUsed.toULong * sizeof[Long]
+    )
 
-    def build(): CVarArgList = {
-      val resultStorage =
-        z.alloc(sizeof[Long] * storage.size.toULong).asInstanceOf[Ptr[Long]]
-      val storageStart = storage.asInstanceOf[LongArray].at(0)
-      libc.memcpy(
-        toRawPtr(resultStorage),
-        toRawPtr(storageStart),
-        wordsUsed.toULong * sizeof[Long]
-      )
-
-      val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
-      resultHeader.gpOffset = 0.toUInt
-      resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
-      resultHeader.regSaveArea = resultStorage
-      resultHeader.overflowArgArea = resultStorage + registerSaveWords
-      new CVarArgList(toRawPtr(resultHeader))
-    }
+    val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
+    resultHeader.gpOffset = 0.toUInt
+    resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
+    resultHeader.regSaveArea = resultStorage
+    resultHeader.overflowArgArea = resultStorage + registerSaveWords
+    new CVarArgList(toRawPtr(resultHeader))
   }
 
-  private final class VarArgsListBuilder_X86_64_Windows()(implicit z: Zone)
-      extends VarArgListBuilder {
+  private def toCVarArgList_X86_64_Windows(
+      varargs: Seq[CVarArg]
+  )(implicit z: Zone) = {
     import scalanative.runtime.libc.realloc
     import scalanative.runtime.{fromRawPtr, toRawPtr}
-    private var storage: Ptr[Word] = _
-    private var count = 0
-    private var allocated = 0
+    var storage: Ptr[Word] = null
+    var count = 0
+    var allocated = 0
 
-    def append(vararg: CVarArg): Unit = {
+    varargs.foreach { vararg =>
       val encoded = encode(vararg.value)(vararg.tag)
       val requiredSize = count + encoded.size
       if (requiredSize > allocated) {
@@ -167,16 +157,14 @@ object CVarArgList {
       }
     }
 
-    def build(): CVarArgList = {
-      val resultStorage = alloc[Word](count)
-      libc.memcpy(
-        toRawPtr(resultStorage),
-        toRawPtr(storage),
-        count.toUInt * sizeof[Word]
-      )
-      libc.free(toRawPtr(storage))
-      new CVarArgList(toRawPtr(resultStorage))
-    }
+    val resultStorage = alloc[Word](count)
+    libc.memcpy(
+      toRawPtr(resultStorage),
+      toRawPtr(storage),
+      count.toUInt * sizeof[Word]
+    )
+    libc.free(toRawPtr(storage))
+    new CVarArgList(toRawPtr(resultStorage))
   }
 
 }
