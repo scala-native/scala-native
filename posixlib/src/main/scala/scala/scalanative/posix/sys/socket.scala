@@ -3,6 +3,8 @@ package posix
 package sys
 
 import scalanative.unsafe._
+import scalanative.unsigned._
+import scalanative.meta.LinktimeInfo.isWindows
 
 @extern
 object socket {
@@ -271,9 +273,16 @@ object socketOps {
   }
 
   implicit class lingerOps(val ptr: Ptr[linger]) extends AnyVal {
-    def l_onoff: CInt = ptr._1
-    def l_linger: CInt = ptr._2
-    def l_onoff_=(v: CInt): Unit = ptr._1 = v
-    def l_linger_=(v: CInt): Unit = ptr._2 = v
+    private type WindowsLinger = CStruct2[UShort, UShort]
+    private def asWinLinger = ptr.asInstanceOf[Ptr[WindowsLinger]]
+
+    def l_onoff: CInt = if (isWindows) asWinLinger._1.toInt else ptr._1
+    def l_linger: CInt = if (isWindows) asWinLinger._2.toInt else ptr._2
+    def l_onoff_=(v: CInt): Unit =
+      if (isWindows) asWinLinger._1 = v.toUShort
+      else ptr._1 = v
+    def l_linger_=(v: CInt): Unit =
+      if (isWindows) asWinLinger._2 = v.toUShort
+      else ptr._2 = v
   }
 }

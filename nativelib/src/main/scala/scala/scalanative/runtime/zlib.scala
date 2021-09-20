@@ -1,10 +1,13 @@
 package scala.scalanative.runtime
 
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 @link("z")
 @extern
 object zlib {
+  import zlibExt._
   type voidpf = Ptr[Byte]
   type voidp = Ptr[Byte]
   type voidpc = Ptr[Byte]
@@ -17,48 +20,13 @@ object zlib {
   type z_size_t = CUnsignedLong
   type z_off_t = CLong
 
-  type z_stream = CStruct14[
-    Ptr[Bytef], // next_in
-    uInt, // avail_in
-    uLong, // total_in,
-    Ptr[Bytef], // next_out
-    uInt, // avail_out
-    uLong, // total_out
-    CString, // msg
-    voidpf, // (internal) state
-    alloc_func, // zalloc
-    free_func, // zfree
-    voidpf, // opaque
-    CInt, // data_type
-    uLong, // adler
-    uLong // future
-  ]
-
-  type z_streamp = Ptr[z_stream]
-
-  type gz_header = CStruct13[
-    CInt, // text
-    uLong, // time
-    CInt, // xflags
-    CInt, // os
-    Ptr[Bytef], // extra
-    uInt, // extra_len
-    uInt, // extra_max
-    Ptr[Bytef], // name
-    uInt, // name_max
-    Ptr[Bytef], // comment
-    uInt, // comm_max
-    CInt, // gcrc
-    CInt // done
-  ]
-
-  type gz_headerp = Ptr[gz_header]
-
   type in_func =
     CFuncPtr2[Ptr[Byte], Ptr[Ptr[CUnsignedChar]], CUnsignedInt]
   type out_func =
     CFuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
   type gzFile = Ptr[Byte]
+  type z_streamp = Ptr[z_stream[_, _]]
+  type gz_headerp = Ptr[gz_header[_, _]]
 
   @name("scalanative_z_no_flush")
   def Z_NO_FLUSH: CInt = extern
@@ -374,4 +342,190 @@ object zlib {
 
   @name("scalanative_crc32_combine")
   def crc32_combine(crc1: uLong, crc2: uLong, len2: z_off_t): uLong = extern
+}
+
+object zlibExt {
+  import zlib._
+
+  object z_stream {
+    // Depending on the OS zlib can use different types inside z_stream
+    // We can distinguish to layouts using different size of integers:
+    // 64-bit: using uint32 and uint64, it can be found on Unix
+    // 32-bit  using uint15 and uint32, which is present on Windows
+    def size: CSize =
+      if (isWindows) sizeof[z_stream_32]
+      else sizeof[z_stream_64]
+  }
+
+  private[scalanative] type z_stream[UINT, ULONG] =
+    CStruct14[
+      Ptr[Bytef], // next_in
+      UINT, // avail_in
+      ULONG, // total_in,
+      Ptr[Bytef], // next_out
+      UINT, // avail_out
+      ULONG, // total_out
+      CString, // msg
+      voidpf, // (internal) state
+      alloc_func, // zalloc
+      free_func, // zfree
+      voidpf, // opaque
+      CInt, // data_type
+      ULONG, // adler
+      ULONG // future
+    ]
+
+  private[scalanative] type z_stream_32 =
+    z_stream[CUnsignedShort, CUnsignedInt]
+  private[scalanative] type z_stream_64 =
+    z_stream[CUnsignedInt, CUnsignedLong]
+
+  object gz_header {
+    // Depending on the OS zlib can use different types inside gz_header
+    // For details see comment in z_stream
+
+    def size: CSize =
+      if (isWindows) sizeof[gz_header_32]
+      else sizeof[gz_header_64]
+  }
+
+  private[scalanative] type gz_header[UINT, ULONG] =
+    CStruct13[
+      CInt, // text
+      ULONG, // time
+      CInt, // xflags
+      CInt, // os
+      Ptr[Bytef], // extra
+      UINT, // extra_len
+      UINT, // extra_max
+      Ptr[Bytef], // name
+      UINT, // name_max
+      Ptr[Bytef], // comment
+      UINT, // comm_max
+      CInt, // gcrc
+      CInt // done
+    ]
+  private[scalanative] type gz_header_32 =
+    gz_header[CUnsignedShort, CUnsignedInt]
+  private[scalanative] type gz_header_64 =
+    gz_header[CUnsignedInt, CUnsignedLong]
+}
+
+object zlibOps {
+  import zlib._
+  import zlibExt._
+  implicit class ZStreamOps(val ref: z_streamp) extends AnyVal {
+    import z_stream._
+    @alwaysinline private def asZStream32 = ref.asInstanceOf[Ptr[z_stream_32]]
+    @alwaysinline private def asZStream64 = ref.asInstanceOf[Ptr[z_stream_64]]
+
+    def nextIn: Ptr[Bytef] = asZStream32._1
+    def availableIn: uInt = if (isWindows) asZStream32._2 else asZStream64._2
+    def totalIn: uLong = if (isWindows) asZStream32._3 else asZStream64._3
+    def nextOut: Ptr[Bytef] =
+      if (isWindows) asZStream32._4 else asZStream64._4
+    def availableOut: uInt =
+      if (isWindows) asZStream32._5 else asZStream64._5
+    def totalOut: uLong = if (isWindows) asZStream32._6 else asZStream64._6
+    def msg: CString = if (isWindows) asZStream32._7 else asZStream64._7
+    def state: voidpf = if (isWindows) asZStream32._8 else asZStream64._8
+    def zalloc: alloc_func =
+      if (isWindows) asZStream32._9 else asZStream64._9
+    def zfree: free_func =
+      if (isWindows) asZStream32._10 else asZStream64._10
+    def opaque: voidpf = if (isWindows) asZStream32._11 else asZStream64._11
+    def data_type: CInt = if (isWindows) asZStream32._12 else asZStream64._12
+    def adler: uLong = if (isWindows) asZStream32._13 else asZStream64._13
+    def future: uLong = if (isWindows) asZStream32._14 else asZStream64._14
+
+    def nextIn_=(v: Ptr[Bytef]): Unit = asZStream32._1 = v
+    def availableIn_=(v: uInt): Unit =
+      if (isWindows) asZStream32._2 = v.toUShort else asZStream64._2 = v
+    def totalIn_=(v: uLong): Unit =
+      if (isWindows) asZStream32._3 = v.toUInt else asZStream64._3 = v
+    def nextOut_=(v: Ptr[Bytef]): Unit =
+      if (isWindows) asZStream32._4 = v else asZStream64._4 = v
+    def availableOut_=(v: uInt): Unit =
+      if (isWindows) asZStream32._5 = v.toUShort else asZStream64._5 = v
+    def totalOut_=(v: uLong): Unit =
+      if (isWindows) asZStream32._6 = v.toUInt else asZStream64._6 = v
+    def msg_=(v: CString): Unit =
+      if (isWindows) asZStream32._7 = v else asZStream64._7 = v
+    def state_=(v: voidpf): Unit =
+      if (isWindows) asZStream32._8 = v else asZStream64._8 = v
+    def zalloc_=(v: alloc_func): Unit =
+      if (isWindows) asZStream32._9 = v else asZStream64._9 = v
+    def zfree_=(v: free_func): Unit =
+      if (isWindows) asZStream32._10 = v else asZStream64._10 = v
+    def opaque_=(v: voidpf): Unit =
+      if (isWindows) asZStream32._11 = v else asZStream64._11 = v
+    def data_type_=(v: CInt): Unit =
+      if (isWindows) asZStream32._12 = v else asZStream64._12 = v
+    def adler_=(v: uLong): Unit =
+      if (isWindows) asZStream32._13 = v.toUInt else asZStream64._13 = v
+    def future_=(v: uLong): Unit =
+      if (isWindows) asZStream32._14 = v.toUInt else asZStream64._14 = v
+  }
+
+  implicit class GZHeaderOps(val ref: gz_headerp) extends AnyVal {
+    import gz_header._
+
+    @alwaysinline private def asZStream32 = ref.asInstanceOf[Ptr[gz_header_32]]
+    @alwaysinline private def asZStream64 = ref.asInstanceOf[Ptr[gz_header_64]]
+
+    def text: CInt = if (isWindows) asZStream32._1 else asZStream64._1
+    def time: uLong = if (isWindows) asZStream32._2 else asZStream64._2
+    def xflags: CInt = if (isWindows) asZStream32._3 else asZStream64._3
+    def os: CInt = if (isWindows) asZStream32._4 else asZStream64._4
+    def extra: Ptr[Bytef] = if (isWindows) asZStream32._5 else asZStream64._5
+    def extra_len: uInt = if (isWindows) asZStream32._6 else asZStream64._6
+    def extra_max: uInt = if (isWindows) asZStream32._7 else asZStream64._7
+    def name: Ptr[Bytef] = if (isWindows) asZStream32._8 else asZStream64._8
+    def name_max: uInt = if (isWindows) asZStream32._9 else asZStream64._9
+    def comment: Ptr[Bytef] =
+      if (isWindows) asZStream32._10 else asZStream64._10
+    def comm_max: uInt = if (isWindows) asZStream32._11 else asZStream64._11
+    def gcrc: CInt = if (isWindows) asZStream32._12 else asZStream64._12
+    def done: CInt = if (isWindows) asZStream32._13 else asZStream64._13
+
+    def text_=(v: CInt): Unit =
+      if (isWindows) asZStream32._1 = v
+      else asZStream64._1 = v
+    def time_=(v: uLong): Unit =
+      if (isWindows) asZStream32._2 = v.toUInt
+      else asZStream64._2 = v
+    def xflags_=(v: CInt): Unit =
+      if (isWindows) asZStream32._3 = v
+      else asZStream64._3 = v
+    def os_=(v: CInt): Unit =
+      if (isWindows) asZStream32._4 = v
+      else asZStream64._4 = v
+    def extra_=(v: Ptr[Bytef]): Unit =
+      if (isWindows) asZStream32._5 = v
+      else asZStream64._5 = v
+    def extra_len_=(v: uInt): Unit =
+      if (isWindows) asZStream32._6 = v.toUShort
+      else asZStream64._6 = v
+    def extra_max_=(v: uInt): Unit =
+      if (isWindows) asZStream32._7 = v.toUShort
+      else asZStream64._7 = v
+    def name_=(v: Ptr[Bytef]): Unit =
+      if (isWindows) asZStream32._8 = v
+      else asZStream64._8 = v
+    def name_max_=(v: uInt): Unit =
+      if (isWindows) asZStream32._9 = v.toUShort
+      else asZStream64._9 = v
+    def comment_=(v: Ptr[Bytef]): Unit =
+      if (isWindows) asZStream32._10 = v
+      else asZStream64._10 = v
+    def comm_max_=(v: uInt): Unit =
+      if (isWindows) asZStream32._11 = v.toUShort
+      else asZStream64._11 = v
+    def gcrc_=(v: CInt): Unit =
+      if (isWindows) asZStream32._12 = v
+      else asZStream64._12 = v
+    def done_=(v: CInt): Unit =
+      if (isWindows) asZStream32._13 = v
+      else asZStream64._13 = v
+  }
 }

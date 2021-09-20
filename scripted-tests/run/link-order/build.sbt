@@ -47,8 +47,18 @@ Compile / compile := {
     opath
   }
 
-  val archivePath = cwd / "liblink-order-test.a"
-  val archive = Seq("ar", "cr", abs(archivePath)) ++ opaths
+  val libName = {
+    import java.util.Locale
+    val isWindows = System
+      .getProperty("os.name", "unknown")
+      .toLowerCase(Locale.ROOT)
+      .startsWith("windows")
+
+    if (isWindows) "link-order-test.lib"
+    else "liblink-order-test.a"
+  }
+  val archivePath = cwd / libName
+  val archive = Seq("llvm-ar", "cr", abs(archivePath)) ++ opaths
   if (run(archive) != 0) {
     sys.error(s"Failed to create archive $archivePath")
   }

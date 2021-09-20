@@ -81,7 +81,7 @@ class GZIPInputStream(in: InputStream, size: Int)
     } else if (eos) {
       -1
     } else if (off > buffer.length || nbytes < 0 || off < 0 || buffer.length - off < nbytes) {
-      throw new ArrayIndexOutOfBoundsException()
+      throw new IndexOutOfBoundsException()
     } else {
       val bytesRead =
         try super.read(buffer, off, nbytes)

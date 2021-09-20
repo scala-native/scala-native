@@ -416,7 +416,8 @@ lazy val sbtPluginSettings: Seq[Setting[_]] =
             "-Xmx1024M",
             "-XX:MaxMetaspaceSize=256M",
             "-Dplugin.version=" + version.value,
-            "-Dscala.version=" + (nativelib / scalaVersion).value
+            "-Dscala.version=" + (nativelib / scalaVersion).value,
+            "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
           ) ++
           ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
       }
@@ -433,6 +434,15 @@ lazy val sbtScalaNative =
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
       // publish the other projects before running scripted tests.
       scriptedDependencies := {
+        import java.nio.file.{Files, StandardCopyOption}
+        // Synchronize SocketHelpers used in java-net-socket test
+        // Each scripted test creates it's own environment in tmp directory
+        // which does not allow us to define external sources in script build
+        Files.copy(
+          ((javalib / Compile / scalaSource).value / "java/net/SocketHelpers.scala").toPath,
+          (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala").toPath,
+          StandardCopyOption.REPLACE_EXISTING
+        )
         scriptedDependencies
           .dependsOn(
             // Compiler plugins
@@ -780,6 +790,11 @@ lazy val testsCommonSettings = Def.settings(
     "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
     "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
     "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
+  ),
+  // Some of the tests are designed with an assumptions about default encoding
+  // Make sure that tests run on JVM are using default defaults
+  Test / javaOptions ++= Seq(
+    "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
   )
 )
 

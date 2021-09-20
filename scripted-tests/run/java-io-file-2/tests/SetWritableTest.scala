@@ -1,33 +1,70 @@
 object SetWritableTest {
   import Files._
+  import Utils._
   def main(args: Array[String]): Unit = {
     assert(willBeSetWritableFile.exists())
-    assert(!willBeSetWritableFile.canExecute())
-    assert(!willBeSetWritableFile.canRead())
+    assertOsSpecific(
+      willBeSetWritableFile.canExecute(),
+      "!willBeSetWritableFile.canExecute()"
+    )(onUnix = false, onWindows = true)
+    assertOsSpecific(
+      willBeSetWritableFile.canRead(),
+      "!willBeSetWritableFile.canRead()"
+    )(onUnix = false, onWindows = true)
     assert(!willBeSetWritableFile.canWrite())
 
     assert(willBeSetWritableFile.setWritable(true))
-    assert(!willBeSetWritableFile.canExecute())
-    assert(!willBeSetWritableFile.canRead())
-    assert(willBeSetWritableFile.canWrite())
+    assertOsSpecific(
+      willBeSetWritableFile.canExecute(),
+      "!willBeSetWritableFile.canExecute()"
+    )(onUnix = false, onWindows = true)
+    assertOsSpecific(
+      willBeSetWritableFile.canRead(),
+      "!willBeSetWritableFile.canRead()"
+    )(onUnix = false, onWindows = true)
+    assertOsSpecific(
+      willBeSetWritableFile.canWrite(),
+      "willBeSetWritableFile.canWrite()"
+    )(onUnix = true, onWindows = false)
 
     assert(willBeSetWritableFile.setWritable(false))
-    assert(!willBeSetWritableFile.canExecute())
+    assertOsSpecific(
+      willBeSetWritableFile.canExecute(),
+      "!willBeSetWritableFile.canExecute()"
+    )(onUnix = false, onWindows = true)
     assert(!willBeSetWritableFile.canRead())
     assert(!willBeSetWritableFile.canWrite())
 
     assert(willBeSetWritableDirectory.exists())
-    assert(!willBeSetWritableDirectory.canExecute())
-    assert(!willBeSetWritableDirectory.canRead())
-    assert(!willBeSetWritableDirectory.canWrite())
+    assertOsSpecific(
+      willBeSetWritableDirectory.canExecute(),
+      "!willBeSetWritableDirectory.canExecute()"
+    )(onUnix = false, onWindows = true)
+    assertOsSpecific(
+      willBeSetWritableDirectory.canRead(),
+      "!willBeSetWritableDirectory.canRead()"
+    )(onUnix = false, onWindows = true)
+    assertOsSpecific(
+      willBeSetWritableDirectory.canWrite(),
+      "!willBeSetWritableDirectory.canWrite()"
+    )(onUnix = false, onWindows = true)
 
     assert(willBeSetWritableDirectory.setWritable(true))
-    assert(!willBeSetWritableDirectory.canExecute())
-    assert(!willBeSetWritableDirectory.canRead())
+    assertOsSpecific(
+      willBeSetWritableDirectory.canExecute(),
+      "!willBeSetWritableDirectory.canExecute()"
+    )(onUnix = false, onWindows = true)
+    assertOsSpecific(
+      willBeSetWritableDirectory.canRead(),
+      "!willBeSetWritableDirectory.canRead()"
+    )(onUnix = false, onWindows = true)
     assert(willBeSetWritableDirectory.canWrite())
 
     assert(willBeSetWritableDirectory.setWritable(false))
-    assert(!willBeSetWritableDirectory.canExecute())
+    assertOsSpecific(
+      willBeSetWritableDirectory.canExecute(),
+      "!willBeSetWritableDirectory.canExecute()"
+    )(onUnix = false, onWindows = true)
     assert(!willBeSetWritableDirectory.canRead())
     assert(!willBeSetWritableDirectory.canWrite())
 

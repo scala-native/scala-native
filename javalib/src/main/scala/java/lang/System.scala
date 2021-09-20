@@ -126,7 +126,7 @@ object System {
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
 
   def getenv(): Map[String, String] = envVars
-  def getenv(key: String): String = envVars.get(key)
+  def getenv(key: String): String = envVars.get(key.toUpperCase())
 
   def setIn(in: InputStream): Unit =
     this.in = in

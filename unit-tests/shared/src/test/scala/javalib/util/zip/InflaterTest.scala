@@ -348,7 +348,7 @@ class InflaterTest {
     inflater.end()
 
     assertThrows(
-      classOf[IllegalStateException],
+      classOf[NullPointerException],
       inflater.inflate(outPutInf, offSet, 1)
     )
   }
@@ -689,7 +689,7 @@ class InflaterTest {
     )
     infl1.end()
     assertThrows(
-      classOf[IllegalStateException],
+      classOf[NullPointerException],
       infl1.setDictionary(dictionary2.getBytes())
     )
   }
@@ -702,14 +702,14 @@ class InflaterTest {
     inflate.setInput(byteArray)
     inflate.end()
 
-    assertThrows(classOf[IllegalStateException], inflate.getAdler())
+    assertThrows(classOf[NullPointerException], inflate.getAdler())
 
     assertThrows(classOf[NullPointerException], inflate.getBytesRead())
 
     assertThrows(classOf[NullPointerException], inflate.getBytesWritten())
 
-    assertThrows(classOf[IllegalStateException], inflate.getTotalIn())
+    assertThrows(classOf[NullPointerException], inflate.getTotalIn())
 
-    assertThrows(classOf[IllegalStateException], inflate.getTotalOut())
+    assertThrows(classOf[NullPointerException], inflate.getTotalOut())
   }
 }
