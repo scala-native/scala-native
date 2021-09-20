@@ -92,7 +92,9 @@ sealed trait NativeConfig {
   def withOptimize(value: Boolean): NativeConfig
 
   /** Create a new config with given linktime properites */
-  def withLinktimeProperties(value: NativeConfig.LinktimeProperites): NativeConfig
+  def withLinktimeProperties(
+      value: NativeConfig.LinktimeProperites
+  ): NativeConfig
 }
 
 object NativeConfig {
@@ -231,7 +233,7 @@ object NativeConfig {
     def isNumberOrString(value: Any) = {
       def hasSupportedType = value match {
         case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
-             _: Float | _: Double | _: String =>
+            _: Float | _: Double | _: String =>
           true
         case _ => false
       }
