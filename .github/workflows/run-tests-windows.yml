@@ -72,11 +72,8 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\lib&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
-          sandbox/run
-          testsJVM/test
-          tests/test
-          testsExt/test
-          testsExtJVM/test
+          test-runtime
+          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
   run-scripted-tests:
