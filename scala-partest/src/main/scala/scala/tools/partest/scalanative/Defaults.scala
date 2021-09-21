@@ -9,7 +9,7 @@ object Defaults {
   // List of all libraries that need to be linked when precompiling libraries
   val links: Seq[Link] = {
     if (Platform.isWindows) Seq("zlib")
-    else Seq("z, pthread")
+    else Seq("z", "pthread")
   }.map(Link)
 
   def workdir(): Path = Files.createTempDirectory("partest-")
