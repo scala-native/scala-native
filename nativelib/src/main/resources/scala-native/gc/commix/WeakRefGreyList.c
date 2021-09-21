@@ -94,8 +94,8 @@ void WeakRefGreyList_CallHandlers() {
         word_t **modules = &__modules;
         Object *registry = (Object *)modules[__weak_ref_registry_module_offset];
         word_t *field = registry->fields[__weak_ref_registry_field_offset];
-        void (*fieldOffset)() = (void *)field;
+        void (*handlerFn)() = (void *)field;
 
-        fieldOffset();
+        handlerFn();
     }
 }

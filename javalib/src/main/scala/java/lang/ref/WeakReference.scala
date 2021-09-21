@@ -9,6 +9,15 @@ class WeakReference[T >: Null <: AnyRef](
     var _gc_modified_referent: T,
     queue: ReferenceQueue[_ >: T]
 ) extends Reference[T](null) {
+  // Since compiler generates _gc_modified_referent and referent 
+  // (of the Reference class) as two seperate fields and GC only 
+  // controls _gc_modified_ referent field, we pass null to the
+  // superclass to avoid adding additional control to the GC. 
+  // This should not be a problem as all Reference class methods were
+  // overriden.
+  // If we were to pass referent to Reference class without changes 
+  // to the GC, WeakReference class would hold a strong reference 
+  // therefore not fulfilling its purpose
 
   def this(referent: T) = this(referent, null)
 
@@ -18,14 +27,11 @@ class WeakReference[T >: Null <: AnyRef](
   override def get(): T = _gc_modified_referent
 
   override def enqueue(): Boolean =
-    enqueued match {
-      case true                     => false
-      case false if (queue == null) => false
-      case _ =>
-        queue.add(this)
-        enqueued = true
-        true
-    }
+    if(!enqueued && queue != null) {
+     queue.enqueue(this)
+     enqueued = true
+     true
+    } else false
 
   override def isEnqueued(): Boolean = enqueued
 

@@ -5,7 +5,7 @@
 
 void WeakRefStack_Init(size_t size);
 void WeakRefStack_Push(Object *object);
-void WeakRefStack_Nullify(Heap *heap);
+void WeakRefStack_Nullify();
 void WeakRefStack_CallHandlers();
 
 #endif // WEAK_REF_STACK_H

@@ -117,7 +117,7 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
     } while (0)
 #define Stats_RecordEventSync(S, E, A, B) Stats_RecordEvent(S, E, A, B)
 void Stats_PhaseStarted(Stats *stats);
-void Stats_GotNotEmptyPacket(Stats *stats, uint64_t end_ns, eventType eType);
+void Stats_GotNotEmptyPacket(Stats *stats, uint64_t end_ns, eventType event);
 void Stats_NoNotEmptyPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns);
 
 #else

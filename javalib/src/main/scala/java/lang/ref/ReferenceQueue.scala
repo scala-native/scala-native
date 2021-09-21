@@ -5,10 +5,10 @@ import scala.collection.mutable
 
 class ReferenceQueue[T >: Null <: AnyRef] {
   private val underlying = mutable.Queue[Reference[_]]()
-  private[java] def add(reference: Reference[_]): Unit =
+  private[ref] def enqueue(reference: Reference[_]): Unit =
     underlying += reference
 
-  def poll(): java.lang.ref.Reference[_] =
+  def poll(): java.lang.ref.Reference[_] = 
     underlying.dequeueFirst(ref => true).getOrElse(null)
 
   @stub

@@ -1,13 +1,12 @@
 package java.lang.ref
 
-import java.lang.ref._
-
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
 import scala.scalanative.runtime.GCInfo
 import scala.scalanative.runtime.GCInfo._
+import scala.scalanative.annotation.nooptimize
 
 // "AfterGC" tests are very sensitive to optimizations,
 // both by Scala Native and LLVM.
@@ -32,7 +31,7 @@ class WeakReferenceTest {
     weakRef
   }
 
-  @Test def addsToReferenceQueueAfterGC(): Unit = {
+  @nooptimize @Test def addsToReferenceQueueAfterGC(): Unit = {
     gcAssumption()
     val refQueue = new ReferenceQueue[A]()
     val weakRef1 = allocWeakRef(refQueue)
@@ -47,10 +46,7 @@ class WeakReferenceTest {
       // Allocation spamming. GC.collect() proved to be unreliable
       // for commix (as in issue #2367), so we force garbage collection
       // to happen organically.
-      val data = A()
-      if (data.toString() == "a") {
-        println(data)
-      }
+      A().toString()
 
       // We do not want to put the reference on stack
       // during GC, so we hide it behind an if block

@@ -24,14 +24,16 @@ private[java] object WeakReferenceRegistry {
     .toPtr(CFuncPtr0.fromScalaFunction(WeakReferenceRegistry.postGCControl))
     .toLong
 
+  // This method is designed for calls from C and therefore should not include
+  // non statically reachable fields or methods.
   private def postGCControl(): Unit =
-    WeakReferenceRegistry.weakRefList =
-      WeakReferenceRegistry.weakRefList.filter { weakRef =>
+    weakRefList =
+      weakRefList.filter { weakRef =>
         if (weakRef.get() == null) {
           weakRef.enqueue()
-          if (WeakReferenceRegistry.postGCHandlerMap.contains(weakRef)) {
-            WeakReferenceRegistry.postGCHandlerMap(weakRef)()
-            WeakReferenceRegistry.postGCHandlerMap.remove(weakRef)
+          if (postGCHandlerMap.contains(weakRef)) {
+            postGCHandlerMap(weakRef)()
+            postGCHandlerMap.remove(weakRef)
           }
           true
         } else {

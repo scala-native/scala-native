@@ -14,7 +14,8 @@ extern long long scalanative_nano_time();
 const char *const Stats_eventNames[] = {
     "mark",        "nullify",        "sweep",        "concmark",
     "concnullify", "concsweep",      "collection",   "mark_batch",
-    "sweep_batch", "coalesce_batch", "mark_waiting", "sync"};
+    "sweep_batch", "coalesce_batch", "mark_waiting", "nullify_waiting",
+    "sync"};
 
 void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
     stats->outFile = fopen(statsFile, "w");
@@ -77,7 +78,7 @@ void Stats_PhaseStarted(Stats *stats) {
         stats->packet_waiting_end_ns = 0;
     }
 }
-void Stats_GotNotEmptyPacket(Stats *stats, uint64_t end_ns, eventType eType) {
+void Stats_GotNotEmptyPacket(Stats *stats, uint64_t end_ns, eventType event) {
     if (stats != NULL) {
         if (stats->packet_waiting_start_ns != 0) {
             Stats_RecordEventSync(stats, event, stats->packet_waiting_start_ns,
