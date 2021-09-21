@@ -84,7 +84,7 @@ jobs:
         shell: cmd
       
       - name: Test runtime
-        if: matrix.gc != 'gc'
+        if: matrix.gc != 'none'
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
