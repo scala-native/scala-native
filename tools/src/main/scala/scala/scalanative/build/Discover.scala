@@ -109,42 +109,42 @@ object Discover {
     val empty = NativeConfig.empty
     val nconfig = fconfig
       .withCompilerConfig(c =>
-        if (c.clang.equals(empty.clang)) c.withClang(Discover.clang())
+        if (c.clang == empty.clang) c.withClang(Discover.clang())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.clangPP.equals(empty.clangPP)) c.withClangPP(Discover.clangpp())
+        if (c.clangPP == empty.clangPP) c.withClangPP(Discover.clangpp())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.compileOptions.equals(empty.compileOptions))
+        if (c.compileOptions == empty.compileOptions)
           c.withCompileOptions(Discover.compileOptions())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.linkingOptions.equals(empty.linkingOptions))
+        if (c.linkingOptions == empty.linkingOptions)
           c.withLinkingOptions(Discover.linkingOptions())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.lto.equals(empty.lto)) c.withLTO(Discover.LTO())
+        if (c.lto == empty.lto) c.withLTO(Discover.LTO())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.gc.equals(empty.gc)) c.withGC(Discover.GC())
+        if (c.gc == empty.gc) c.withGC(Discover.GC())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.mode.equals(empty.mode)) c.withMode(Discover.mode())
+        if (c.mode == empty.mode) c.withMode(Discover.mode())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.optimize.equals(empty.optimize))
+        if (c.optimize == empty.optimize)
           c.withOptimize(Discover.optimize())
         else c
       )
       .withCompilerConfig(c =>
-        if (c.linktimeProperties.equals(empty.linktimeProperties))
+        if (c.linktimeProperties == empty.linktimeProperties)
           c.withLinktimeProperties(Discover.linktimeProperties())
         else c
       )
