@@ -86,7 +86,7 @@ jobs:
           set SCALANATIVE_LTO=${{matrix.lto}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
-          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=${{matrix.lto == "full"}}
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=${{matrix.lto == 'full'}}
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
           tests/test
