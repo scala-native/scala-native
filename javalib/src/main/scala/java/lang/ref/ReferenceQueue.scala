@@ -4,16 +4,35 @@ import scalanative.annotation.stub
 import scala.collection.mutable
 
 class ReferenceQueue[T >: Null <: AnyRef] {
-  private val underlying = mutable.Queue[Reference[_]]()
-  private[ref] def enqueue(reference: Reference[_]): Unit =
-    underlying += reference
+  private val underlying = mutable.Queue[Reference[_ <: T]]()
+  private[ref] def enqueue(reference: Reference[_ <: T]): Unit =
+    synchronized {
+      underlying += reference
+      notify()
+    }
 
-  def poll(): java.lang.ref.Reference[_] =
-    underlying.dequeueFirst(ref => true).getOrElse(null)
+  def poll(): Reference[_ <: T] = {
+    synchronized[Reference[_ <: T]] {
+      underlying
+        .dequeueFirst(_ => true)
+        .map(_.dequeue())
+        .orNull
+    }
+  }
 
-  @stub
-  def remove(): java.lang.ref.Reference[_] = ???
+  def remove(): Reference[_ <: T] =
+    remove(0)
 
-  @stub
-  def remove(timeOut: Long): java.lang.ref.Reference[_] = ???
+  def remove(timeOut: Long): Reference[_ <: T] = {
+    if (timeOut < 0) throw new IllegalArgumentException();
+
+    synchronized[Reference[_ <: T]] {
+      if (timeOut == 0) {
+        while (underlying.isEmpty) wait()
+      } else {
+        if (underlying.isEmpty) wait(timeOut)
+      }
+      poll()
+    }
+  }
 }

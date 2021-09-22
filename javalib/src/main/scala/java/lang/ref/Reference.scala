@@ -5,4 +5,5 @@ abstract class Reference[T >: Null <: AnyRef](private[this] var referent: T) {
   def clear(): Unit = referent = null
   def isEnqueued(): Boolean = false
   def enqueue(): Boolean = false
+  private[ref] def dequeue(): Reference[T] = this
 }

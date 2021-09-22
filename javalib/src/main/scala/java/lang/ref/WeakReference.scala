@@ -40,4 +40,9 @@ class WeakReference[T >: Null <: AnyRef](
     enqueue()
   }
 
+  override private[ref] def dequeue(): Reference[T] = {
+    enqueued = false
+    this
+  }
+
 }
