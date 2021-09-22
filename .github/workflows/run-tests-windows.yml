@@ -82,8 +82,8 @@ jobs:
         run: >
           set SCALANATIVE_GC=immix&
           set SCALANATIVE_MODE=release-fast&
-          set SCALANATIVE_OPTIMIZE=${{matrix.optimize}}
-          set SCALANATIVE_LTO=${{matrix.lto}}
+          set SCALANATIVE_OPTIMIZE=${{matrix.optimize}}&
+          set SCALANATIVE_LTO=${{matrix.lto}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
