@@ -94,7 +94,7 @@ object Discover {
   }
 
   /** Use current config and discover any needed settings */
-  def complete(config: Config): Config = {
+  private[scalanative] def complete(config: Config): Config = {
     val fconfig = {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
       config.withClassPath(fclasspath)
