@@ -6,7 +6,7 @@ package java.lang.ref
 // _gc_unmarked_ works like this only in the context of
 // the WeakReference class.
 class WeakReference[T >: Null <: AnyRef](
-    var _gc_modified_referent: T,
+    private var _gc_modified_referent: T,
     queue: ReferenceQueue[_ >: T]
 ) extends Reference[T](null) {
   // Since compiler generates _gc_modified_referent and referent
