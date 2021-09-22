@@ -67,7 +67,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
             for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
-                if (Object_IsReferantOfWeakReference(object, i))
+                if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
                     continue;
 
                 word_t *field = object->fields[ptr_map[i]];

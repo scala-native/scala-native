@@ -163,7 +163,7 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
 
     for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
         word_t current = ptr_map[i];
-        if (Object_IsReferantOfWeakReference(object, i))
+        if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
             continue;
 
         word_t *field = object->fields[current];
