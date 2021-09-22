@@ -45,7 +45,7 @@ runs:
           ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
           ${{steps.resolve-env.outputs.LocalAppData}}\Coursier\Cache\v1\
           ${{steps.resolve-env.outputs.UserProfile}}\.ivy2\cache
-        key: ${{ runner.os }}-${{ inputs.scalaVersion }}-deps
+        key: ${{ runner.os }}-${{ inputs.scala-version }}-deps
 
     # Install LLVM in case if cache is missing
     - name: Install LLVM
