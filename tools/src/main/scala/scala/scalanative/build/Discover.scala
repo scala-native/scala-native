@@ -99,7 +99,7 @@ object Discover {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
       config.withClassPath(fclasspath)
     }
-    println(fconfig.compilerConfig)
+    //println(fconfig.compilerConfig)
     val empty = NativeConfig.empty
     val nconfig = fconfig
       .withCompilerConfig(c =>
@@ -109,7 +109,7 @@ object Discover {
         if (c.clangPP.equals(empty.clangPP)) c.withClangPP(Discover.clangpp())
         else c
       )
-    println(nconfig.compilerConfig)
+    //println(nconfig.compilerConfig)
     nconfig
   }
 
