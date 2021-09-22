@@ -92,7 +92,7 @@ object Build {
         libObjectPaths ++ llObjectPaths
       }
 
-      LLVM.link(config, linked, objectPaths, outpath)
+      LLVM.link(fconfig, linked, objectPaths, outpath)
     }
 
   def findAndCompileNativeSources(
