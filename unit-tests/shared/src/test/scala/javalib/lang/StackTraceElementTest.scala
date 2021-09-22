@@ -2,8 +2,22 @@ package javalib.lang
 
 import java.lang._
 
-import org.junit.Test
+import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
+import org.junit.Assume._
+
+object StackTraceElementTest {
+  @BeforeClass
+  def assumeSupportsStackTraces() {
+    // On Windows linking with LTO Full does not provide debug symbols, even
+    // if flag -g is used. Becouse of that limitation StackTraces do not work.
+    // If env variable exists and is set to true don't run tests in this file
+    assumeFalse(
+      "StackTrace tests not available in the current build",
+      sys.env.get("SCALANATIVE_CI_NO_DEBUG_SYMBOLS").exists(_.toBoolean)
+    )
+  }
+}
 
 class StackTraceDummy1 @noinline() {
   def dummy1: StackTraceElement =
