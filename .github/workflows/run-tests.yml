@@ -32,7 +32,7 @@ jobs:
           ammonite-version: 2.3.8
           scala-version: 2.13
         env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
 
       - name: Check partest disabled tests list
         run: |
@@ -59,7 +59,7 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [amd64]
+        arch: [ amd64 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -116,8 +116,8 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.13.6, 2.12.15, 2.11.12]
-        build-mode: [debug, release-fast]
-        gc: [boehm, immix, commix]
+        build-mode: [ debug , release-fast ]
+        gc: [ boehm, immix, commix ]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
@@ -172,15 +172,15 @@ jobs:
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
-  test-runtime-opt:
+  test-runtime-no-opt:
     name: Test runtime no-opt
     runs-on: ubuntu-18.04
     needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.6, 2.12.15, 2.11.12]
-        build-mode: [debug, release-fast]
+        scala: [ 2.13.6, 2.12.15, 2.11.12 ]
+        build-mode: [ debug, release-fast ]
         include:
           - scala: 2.12.13
             build-mode: release-fast
