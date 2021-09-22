@@ -7,6 +7,7 @@
 
 extern word_t *__modules;
 bool visited = false;
+void (*handlerFn)() = 0;
 
 // A collection of marked WeakReferences.
 // Used to correctly set "NULL" values in place of cleaned objects
@@ -35,14 +36,11 @@ void WeakRefStack_Nullify() {
     }
 }
 
+void WeakRefStack_SetHandler(void *handler) { handlerFn = handler; }
+
 void WeakRefStack_CallHandlers(Heap *heap) {
-    if (visited && __weak_ref_registry_module_offset != -1 &&
-        __weak_ref_registry_field_offset != -1) {
+    if (visited && handlerFn != 0) {
         visited = false;
-        word_t **modules = &__modules;
-        Object *registry = (Object *)modules[__weak_ref_registry_module_offset];
-        word_t *field = registry->fields[__weak_ref_registry_field_offset];
-        void (*handlerFn)() = (void *)field;
 
         handlerFn();
     }

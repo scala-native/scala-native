@@ -8,7 +8,7 @@ class ReferenceQueue[T >: Null <: AnyRef] {
   private[ref] def enqueue(reference: Reference[_]): Unit =
     underlying += reference
 
-  def poll(): java.lang.ref.Reference[_] = 
+  def poll(): java.lang.ref.Reference[_] =
     underlying.dequeueFirst(ref => true).getOrElse(null)
 
   @stub

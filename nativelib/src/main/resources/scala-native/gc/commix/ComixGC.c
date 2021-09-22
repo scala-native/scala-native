@@ -13,6 +13,7 @@
 #include "Constants.h"
 #include "Settings.h"
 #include "GCThread.h"
+#include "WeakRefGreyList.h"
 
 void scalanative_collect();
 
@@ -71,3 +72,7 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 INLINE void scalanative_collect() { Heap_Collect(&heap); }
+
+INLINE void scalanative_register_weak_reference_handler(void *handler) {
+    WeakRefGreyList_SetHandler(handler);
+}

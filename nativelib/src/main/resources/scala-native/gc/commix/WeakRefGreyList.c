@@ -17,6 +17,7 @@
 
 extern word_t *__modules;
 bool anyVisited = false;
+void (*handlerFn)() = 0;
 
 static inline GreyPacket *WeakRefGreyList_takeWeakRefPacket(Heap *heap,
                                                             Stats *stats) {
@@ -87,16 +88,11 @@ void WeakRefGreyList_NullifyUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
-void WeakRefGreyList_SetHandler(void *handler) {}
+void WeakRefGreyList_SetHandler(void *handler) { handlerFn = handler; }
 
 void WeakRefGreyList_CallHandlers() {
-    if (anyVisited && __weak_ref_registry_module_offset != -1 &&
-        __weak_ref_registry_field_offset != -1) {
+    if (anyVisited && handlerFn != 0) {
         anyVisited = false;
-        word_t **modules = &__modules;
-        Object *registry = (Object *)modules[__weak_ref_registry_module_offset];
-        word_t *field = registry->fields[__weak_ref_registry_field_offset];
-        void (*handlerFn)() = (void *)field;
 
         handlerFn();
     }

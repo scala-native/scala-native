@@ -53,3 +53,7 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 INLINE void scalanative_collect() { Heap_Collect(&heap, &stack); }
+
+INLINE void scalanative_register_weak_reference_handler(void *handler) {
+    WeakRefStack_SetHandler(handler);
+}

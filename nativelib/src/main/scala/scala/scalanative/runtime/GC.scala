@@ -33,4 +33,6 @@ object GC {
   def collect(): Unit = extern
   @name("scalanative_init")
   def init(): Unit = extern
+  @name("scalanative_register_weak_reference_handler")
+  def registerWeakReferenceHandler(handler: Ptr[Byte]): Unit = extern
 }

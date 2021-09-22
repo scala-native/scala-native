@@ -3,6 +3,7 @@ package java.lang.ref
 import scala.collection.{immutable, mutable}
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
+import scala.scalanative.runtime.GC
 
 /* Should always be treated as a module by the compiler.
  * _gc_modified_postGCControlField is explicitly acccessed
@@ -16,12 +17,11 @@ private[java] object WeakReferenceRegistry {
       : mutable.HashMap[WeakReference[_ >: Null <: AnyRef], Function0[Unit]] =
     new mutable.HashMap()
 
-  // _gc_modified_ is used in codegen to recognize a post gc handler
-  // function and register a pointer to it.
-  // This happens only in the context of WeakReferenceRegistry.
-  val _gc_modified_postGCControlField = CFuncPtr
-    .toPtr(CFuncPtr0.fromScalaFunction(WeakReferenceRegistry.postGCControl))
-    .toLong
+  if (isWeakReferenceSupported) {
+    GC.registerWeakReferenceHandler(
+      CFuncPtr.toPtr(CFuncPtr0.fromScalaFunction(postGCControl))
+    )
+  }
 
   // This method is designed for calls from C and therefore should not include
   // non statically reachable fields or methods.

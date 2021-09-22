@@ -334,13 +334,10 @@ object Generate {
             Val.Int(value)
           )
       val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
-      val weakRefRegGlobal = Global.Top("java.lang.ref.WeakReferenceRegistry$")
 
       val (
         weakRefId,
-        weakRefFieldOffset,
-        weakRefRegOffset,
-        weakRefRegFieldOffset
+        weakRefFieldOffset
       ) =
         if (linked.infos.contains(weakRefGlobal)) {
           // if WeakReferences are being compiled and therefore supported
@@ -361,35 +358,15 @@ object Generate {
               "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
             )
 
-          val weakRefRegistry = linked
-            .infos(weakRefRegGlobal)
-            .asInstanceOf[Class]
-          if (!weakRefRegistry.isModule)
-            throw new Exception(
-              "WeakReferenceRegistry should be treated as a module by the compiler"
-            )
-
-          val weakRefRegIndex = meta.moduleArray.index(weakRefRegistry)
-
-          val weakRefRegFieldIndexes = gcModifiedFieldIndexes(weakRefRegistry)
-          if (weakRefRegFieldIndexes.size != 1)
-            throw new Exception(
-              "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReferenceRegistry"
-            )
-
           (
             meta.ids(weakRef),
-            weakRefFieldIndexes.head,
-            weakRefRegIndex,
-            weakRefRegFieldIndexes.head
+            weakRefFieldIndexes.head
           )
         } else {
-          (-1, -1, -1, -1)
+          (-1, -1)
         }
       addToBuf(weakRefIdName, weakRefId)
       addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)
-      addToBuf(registryOffsetName, weakRefRegOffset)
-      addToBuf(registryFieldOffsetName, weakRefRegFieldOffset)
     }
 
     def genArrayIds(): Unit = {
