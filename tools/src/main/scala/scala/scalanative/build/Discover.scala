@@ -81,6 +81,38 @@ object Discover {
     libs
   }
 
+  /** Find default linktime resolve properties */
+  def linktimeProperties(): Map[String, Any] = {
+    val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
+    Map(
+      s"$linktimeInfo.isWindows" -> Platform.isWindows,
+      s"$linktimeInfo.isWeakReferenceSupported" -> {
+        val gcType = GC()
+        (gcType == build.GC.immix || gcType == build.GC.commix)
+      }
+    )
+  }
+
+  /** Use current config and discover any needed settings */
+  def complete(config: Config): Config = {
+    val fconfig = {
+      val fclasspath = NativeLib.filterClasspath(config.classPath)
+      config.withClassPath(fclasspath)
+    }
+    println(fconfig.compilerConfig)
+    val empty = NativeConfig.empty
+    val nconfig = fconfig
+      .withCompilerConfig(c =>
+        if (c.clang.equals(empty.clang)) c.withClang(Discover.clang()) else c
+      )
+      .withCompilerConfig(c =>
+        if (c.clangPP.equals(empty.clangPP)) c.withClangPP(Discover.clangpp())
+        else c
+      )
+    println(nconfig.compilerConfig)
+    nconfig
+  }
+
   /** Tests whether the clang compiler is greater or equal to the minumum
    *  version required.
    */

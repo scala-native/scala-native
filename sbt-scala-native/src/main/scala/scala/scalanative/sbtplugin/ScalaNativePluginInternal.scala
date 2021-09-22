@@ -42,6 +42,7 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+    // deprecated loose settings in NativeConfig since 0.4.0
     nativeClang := nativeConfig.value.clang.toFile,
     nativeClangPP := nativeConfig.value.clangPP.toFile,
     nativeCompileOptions := nativeConfig.value.compileOptions,
@@ -55,15 +56,15 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := build.NativeConfig.empty
-      .withClang(interceptBuildException(Discover.clang()))
-      .withClangPP(interceptBuildException(Discover.clangpp()))
-      .withCompileOptions(Discover.compileOptions())
-      .withLinkingOptions(Discover.linkingOptions())
-      .withLTO(Discover.LTO())
-      .withGC(Discover.GC())
-      .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
+    nativeConfig := {
+      build.NativeConfig.empty
+        .withCompileOptions(Discover.compileOptions())
+        .withLinkingOptions(Discover.linkingOptions())
+        .withLTO(Discover.LTO())
+        .withGC(Discover.GC())
+        .withMode(Discover.mode())
+        .withOptimize(Discover.optimize())
+    },
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -97,6 +98,8 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
+      // convert deprecated loose settings to NativeConfig
+      // change to empty when loose settings are removed
       nativeConfig.value
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)

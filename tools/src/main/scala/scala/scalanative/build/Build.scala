@@ -53,15 +53,23 @@ object Build {
    */
   def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
     config.logger.time("Total") {
-      val fclasspath = NativeLib.filterClasspath(config.classPath)
-      val fconfig = config.withClassPath(fclasspath)
 
-      // create optimized code and generate ll
-      val entries = ScalaNative.entries(fconfig)
-      val linked = ScalaNative.link(fconfig, entries)
-      ScalaNative.logLinked(fconfig, linked)
-      val optimized = ScalaNative.optimize(fconfig, linked)
-      val generated = ScalaNative.codegen(fconfig, optimized)
+      // do discovery
+      val fconfig = Discover.complete(config)
+
+      // find and link
+      val linked = {
+        val entries = ScalaNative.entries(fconfig)
+        val linked = ScalaNative.link(fconfig, entries)
+        ScalaNative.logLinked(fconfig, linked)
+        linked
+      }
+
+      // optimize and generate ll
+      val generated = {
+        val optimized = ScalaNative.optimize(fconfig, linked)
+        ScalaNative.codegen(fconfig, optimized)
+      }
 
       val objectPaths = config.logger.time("Compiling to native code") {
         // compile generated LLVM IR

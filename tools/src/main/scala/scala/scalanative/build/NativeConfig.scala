@@ -212,7 +212,7 @@ object NativeConfig {
         | - check:              $check
         | - checkFatalWarnings: $checkFatalWarnings
         | - dump:               $dump
-        | - optimize            $optimize
+        | - optimize:           $optimize
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
     }
