@@ -1,6 +1,7 @@
 enablePlugins(ScalaNativePlugin)
 
 import scala.sys.process._
+import scala.scalanative.build._
 
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
@@ -19,7 +20,7 @@ Compile / compile := {
   val cwd = target.value
   val compileOptions = nativeCompileOptions.value
   val cpaths = (baseDirectory.value.getAbsoluteFile * "*.c").get
-  val clangPath = nativeClang.value.toPath.toAbsolutePath.toString
+  val clangPath = Discover.clang().toString
 
   cwd.mkdirs()
 
