@@ -93,23 +93,62 @@ object Discover {
     )
   }
 
-  /** Use current config and discover any needed settings */
+  /** Run discovery on any items in the config that have default settings.
+   *
+   *  @param config
+   *    the config passed to the build
+   *  @return
+   *    the config with updated settings in compilerConfig found via discovery
+   */
   private[scalanative] def complete(config: Config): Config = {
     val fconfig = {
       val fclasspath = NativeLib.filterClasspath(config.classPath)
       config.withClassPath(fclasspath)
     }
-    //println(fconfig.compilerConfig)
+
     val empty = NativeConfig.empty
     val nconfig = fconfig
       .withCompilerConfig(c =>
-        if (c.clang.equals(empty.clang)) c.withClang(Discover.clang()) else c
+        if (c.clang.equals(empty.clang)) c.withClang(Discover.clang())
+        else c
       )
       .withCompilerConfig(c =>
         if (c.clangPP.equals(empty.clangPP)) c.withClangPP(Discover.clangpp())
         else c
       )
-    //println(nconfig.compilerConfig)
+      .withCompilerConfig(c =>
+        if (c.compileOptions.equals(empty.compileOptions))
+          c.withCompileOptions(Discover.compileOptions())
+        else c
+      )
+      .withCompilerConfig(c =>
+        if (c.linkingOptions.equals(empty.linkingOptions))
+          c.withLinkingOptions(Discover.linkingOptions())
+        else c
+      )
+      .withCompilerConfig(c =>
+        if (c.lto.equals(empty.lto)) c.withLTO(Discover.LTO())
+        else c
+      )
+      .withCompilerConfig(c =>
+        if (c.gc.equals(empty.gc)) c.withGC(Discover.GC())
+        else c
+      )
+      .withCompilerConfig(c =>
+        if (c.mode.equals(empty.mode)) c.withMode(Discover.mode())
+        else c
+      )
+      .withCompilerConfig(c =>
+        if (c.optimize.equals(empty.optimize))
+          c.withOptimize(Discover.optimize())
+        else c
+      )
+      .withCompilerConfig(c =>
+        if (c.linktimeProperties.equals(empty.linktimeProperties))
+          c.withLinktimeProperties(Discover.linktimeProperties())
+        else c
+      )
+
     nconfig
   }
 

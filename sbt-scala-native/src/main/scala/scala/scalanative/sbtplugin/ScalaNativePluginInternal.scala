@@ -58,12 +58,6 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
     nativeConfig := {
       build.NativeConfig.empty
-        .withCompileOptions(Discover.compileOptions())
-        .withLinkingOptions(Discover.linkingOptions())
-        .withLTO(Discover.LTO())
-        .withGC(Discover.GC())
-        .withMode(Discover.mode())
-        .withOptimize(Discover.optimize())
     },
     nativeWarnOldJVM := {
       val logger = streams.value.log
