@@ -21,7 +21,7 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
 
     if (Object_IsWeakReference(object)) {
         // Added to the WeakReference stack for additional later visit
-        WeakRefStack_Push(object);
+        Stack_Push(&weakRefStack, object);
     }
 
     assert(Object_Size(object) != 0);

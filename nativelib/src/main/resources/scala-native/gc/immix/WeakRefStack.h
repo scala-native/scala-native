@@ -3,8 +3,6 @@
 #include "Object.h"
 #include "Heap.h"
 
-void WeakRefStack_Init(size_t size);
-void WeakRefStack_Push(Object *object);
 void WeakRefStack_Nullify();
 void WeakRefStack_SetHandler(void *handler);
 void WeakRefStack_CallHandlers();

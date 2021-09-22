@@ -20,7 +20,7 @@ void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
     Stack_Init(&stack, INITIAL_STACK_SIZE);
-    WeakRefStack_Init(INITIAL_STACK_SIZE);
+    Stack_Init(&weakRefStack, INITIAL_STACK_SIZE);
     atexit(scalanative_afterexit);
 }
 

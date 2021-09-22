@@ -13,10 +13,6 @@ void (*handlerFn)() = 0;
 // Used to correctly set "NULL" values in place of cleaned objects
 // and to call other handler functions with WeakRefStack_CallHandlers.
 
-void WeakRefStack_Init(size_t size) { Stack_Init(&weakRefStack, size); }
-
-void WeakRefStack_Push(Object *object) { Stack_Push(&weakRefStack, object); }
-
 void WeakRefStack_Nullify() {
     visited = false;
     Bytemap *bytemap = heap.bytemap;
