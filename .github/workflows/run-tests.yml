@@ -18,9 +18,9 @@ jobs:
         scala: [2.13.6, 2.12.15, 2.11.12]
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/unix-setup-env.yml
+      - uses: ./.github/actions/unix-setup-env
         with:
-          scala-version: ${{matrix.scala}}      
+          scala-version: ${{matrix.scala}}
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
@@ -32,7 +32,7 @@ jobs:
           ammonite-version: 2.3.8
           scala-version: 2.13
         env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
 
       - name: Check partest disabled tests list
         run: |
@@ -59,7 +59,7 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [ amd64 ]
+        arch: [amd64]
 
     steps:
       - uses: actions/checkout@v2
@@ -116,8 +116,8 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.13.6, 2.12.15, 2.11.12]
-        build-mode: [ debug , release-fast ]
-        gc: [ boehm, immix, commix ]
+        build-mode: [debug, release-fast]
+        gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
@@ -157,9 +157,9 @@ jobs:
             gc: commix
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/unix-setup-env.yml
+      - uses: ./.github/actions/unix-setup-env
         with:
-          scala-version: ${{matrix.scala}}      
+          scala-version: ${{matrix.scala}}
 
       - name: Run tests
         env:
@@ -179,8 +179,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [ 2.13.6, 2.12.15, 2.11.12 ]
-        build-mode: [ debug, release-fast ]
+        scala: [2.13.6, 2.12.15, 2.11.12]
+        build-mode: [debug, release-fast]
         include:
           - scala: 2.12.13
             build-mode: release-fast
@@ -190,9 +190,9 @@ jobs:
             build-mode: release-fast
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/unix-setup-env.yml
+      - uses: ./.github/actions/unix-setup-env
         with:
-          scala-version: ${{matrix.scala}}      
+          scala-version: ${{matrix.scala}}
 
       - name: Run tests
         env:
@@ -204,13 +204,13 @@ jobs:
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
 
   test-runtime-lto:
-    name: Test runtime lto
+    name: Test runtime with lto
     runs-on: ubuntu-18.04
     needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
       matrix:
-        scala: [ 2.13.6, 2.12.15, 2.11.12 ]
+        scala: [2.13.6, 2.12.15, 2.11.12]
         lto: [thin]
         optimize: [true]
         include:
@@ -223,9 +223,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/unix-setup-env.yml
+      - uses: ./.github/actions/unix-setup-env
         with:
-          scala-version: ${{matrix.scala}}      
+          scala-version: ${{matrix.scala}}
 
       - name: Run tests
         env:
@@ -249,9 +249,9 @@ jobs:
         scala: [2.12.15]
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/unix-setup-env.yml
+      - uses: ./.github/actions/unix-setup-env
         with:
-          scala-version: ${{matrix.scala}}      
+          scala-version: ${{matrix.scala}}
 
       - name: Run tests
         env:

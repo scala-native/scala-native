@@ -1,16 +1,14 @@
-name: 'Unix tests env setup'
-description: 'Used to setup Unix tests environemt'
+name: "Unix tests env setup"
+description: "Used to setup Unix tests environemt"
 inputs:
-  scala-version: 
+  scala-version:
+    description: "Scala version used in the tests"
     required: true
-  cache-docker-image:
-    required: true
-    default: true
-outputs:
 runs:
   using: "composite"
   steps:
     - name: Calculate binary version
+      shell: bash
       run: |
         version=${{ inputs.scala-version }}
         echo "binary-version=${version%.*}" >> $GITHUB_ENV
@@ -26,7 +24,6 @@ runs:
 
     # Loads cached content of local docker registry containing built images.
     - name: Cache docker
-      if: inputs.cache-docker-image == true
       uses: actions/cache@v1
       with:
         path: /tmp/docker-registry

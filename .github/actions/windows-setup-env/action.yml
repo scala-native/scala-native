@@ -1,9 +1,13 @@
-name: 'Windows test env setup'
-description: 'Used to setup Windows tests environemt'
+name: "Windows test env setup"
+description: "Used to setup Windows tests environemt"
 inputs:
-  scala-version: 
+  scala-version:
+    description: "Scala version used in the tests"
     required: true
 outputs:
+  vcpkg-dir:
+    description: "Directory containing "
+    value: ${{steps.resolve-env.outputs.VcpkgLibs}}
 runs:
   using: "composite"
   steps:
@@ -26,6 +30,7 @@ runs:
     #Cache commonly used files: Coursier, ivy cache
     - name: Resolve env variables
       id: resolve-env
+      shell: pwsh
       run: |
         echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
         echo "::set-output name=LocalAppData::${env:LocalAppData}"
@@ -41,16 +46,20 @@ runs:
           ${{steps.resolve-env.outputs.LocalAppData}}\Coursier\Cache\v1\
           ${{steps.resolve-env.outputs.UserProfile}}\.ivy2\cache
         key: ${{ runner.os }}-${{ inputs.scalaVersion }}-deps
-        
+
     # Install LLVM in case if cache is missing
     - name: Install LLVM
-      if: steps.cache-deps.outputs.cache-hit != 'true'
+      shell: pwsh
       run: choco install llvm --version=11.0.0
 
     - name: Add LLVM on Path
+      shell: pwsh
       run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
     - name: Assert clang installed and on path
+      shell: pwsh
       run: clang --version
 
     - name: Install libs
+      shell: pwsh
       run: vcpkg install bdwgc zlib --triplet=x64-windows-static

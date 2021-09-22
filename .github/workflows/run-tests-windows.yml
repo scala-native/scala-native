@@ -17,15 +17,16 @@ jobs:
         gc: [none, boehm, immix, commix]
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/windows-setup-env.yml
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
         with:
           scala-version: ${{matrix.scala}}
 
       - name: Test runtime
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\lib&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
           sandbox/run
@@ -45,7 +46,7 @@ jobs:
         scala: [2.12.15]
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/windows-setup-env.yml
+      - uses: ./.github/actions/windows-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
@@ -53,13 +54,12 @@ jobs:
         run: sbt ++${{matrix.scala}};test-scripted
         shell: cmd
 
-  run-opt-tests:
-    name: Run additional test using non standard setup
-    runs-on: ${{matrix.os}}
+  test-runtime-lto:
+    name: Test runtime with LTO
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019]
         scala: [2.13.6, 2.12.15, 2.11.12]
         build-mode: [release-fast]
         lto: [thin]
@@ -71,10 +71,10 @@ jobs:
           - scala: 2.12.15
             lto: full
             optimize: false
-
     steps:
       - uses: actions/checkout@v2
-      - uses: .github/actions/windows-setup-env.yml
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
         with:
           scala-version: ${{matrix.scala}}
 
@@ -84,8 +84,8 @@ jobs:
           set SCALANATIVE_MODE=release-fast&
           set SCALANATIVE_OPTIMIZE=${{matrix.optimize}}
           set SCALANATIVE_LTO=${{matrix.lto}}
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\lib&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
           tests/test
