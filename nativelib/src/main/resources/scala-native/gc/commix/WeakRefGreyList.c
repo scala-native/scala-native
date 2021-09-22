@@ -87,6 +87,8 @@ void WeakRefGreyList_NullifyUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
+void WeakRefGreyList_SetHandler(void *handler) {}
+
 void WeakRefGreyList_CallHandlers() {
     if (anyVisited && __weak_ref_registry_module_offset != -1 &&
         __weak_ref_registry_field_offset != -1) {

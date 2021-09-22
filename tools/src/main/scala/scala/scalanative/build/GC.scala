@@ -28,15 +28,15 @@ sealed abstract class GC private (
 }
 object GC {
   private[scalanative] case object None
-      extends GC("none", Seq(), Seq("shared", "info"))
+      extends GC("none", Seq(), Seq("shared"))
   private[scalanative] case object Boehm
-      extends GC("boehm", Seq("gc"), Seq("info"))
+      extends GC("boehm", Seq("gc"), Seq())
   private[scalanative] case object Immix
-      extends GC("immix", Seq(), Seq("shared", "immix_commix", "info"))
+      extends GC("immix", Seq(), Seq("shared", "immix_commix"))
   private[scalanative] case object Commix
-      extends GC("commix", Seq(), Seq("shared", "immix_commix", "info"))
+      extends GC("commix", Seq(), Seq("shared", "immix_commix"))
   private[scalanative] case object Experimental
-      extends GC("experimental", Seq(), Seq("info"))
+      extends GC("experimental", Seq(), Seq())
 
   /** Non-freeing garbage collector. */
   def none: GC = None

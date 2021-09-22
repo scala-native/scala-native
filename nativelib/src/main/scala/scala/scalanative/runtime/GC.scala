@@ -33,6 +33,4 @@ object GC {
   def collect(): Unit = extern
   @name("scalanative_init")
   def init(): Unit = extern
-  @name("scalanative_get_type")
-  def getType(): CString = extern
 }

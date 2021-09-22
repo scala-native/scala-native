@@ -85,7 +85,9 @@ object Discover {
   def linktimeProperties(): Map[String, Any] = {
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     Map(
-      s"$linktimeInfo.isWindows" -> Platform.isWindows
+      s"$linktimeInfo.isWindows" -> Platform.isWindows,
+      s"$linktimeInfo.isWeakReferenceSupported" ->
+        (GC() == build.GC.immix || GC() == build.GC.commix)
     )
   }
 

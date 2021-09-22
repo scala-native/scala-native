@@ -7,7 +7,8 @@ package object linker {
   // Defaults values for linktime resolved properties
   val linktimeInfoDefaults: Map[String, Boolean] = {
     Map(
-      s"$linktimeInfoProperties.isWindows" -> false
+      s"$linktimeInfoProperties.isWindows" -> false,
+      s"$linktimeInfoProperties.isWeakReferenceSupported" -> false
     )
   }
 }

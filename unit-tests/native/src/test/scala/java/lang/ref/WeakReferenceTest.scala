@@ -4,8 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.runtime.GCInfo
-import scala.scalanative.runtime.GCInfo._
+import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.annotation.nooptimize
 
 // "AfterGC" tests are very sensitive to optimizations,
@@ -17,7 +16,7 @@ class WeakReferenceTest {
   def gcAssumption(): Unit = {
     assumeTrue(
       "WeakReferences work only on Commix and Immix GC",
-      GCInfo.getType() == Commix() || GCInfo.getType() == Immix()
+      isWeakReferenceSupported
     )
   }
 

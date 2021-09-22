@@ -13,7 +13,6 @@
 #include "Constants.h"
 #include "Settings.h"
 #include "GCThread.h"
-#include "GCInfo.h"
 
 void scalanative_collect();
 
@@ -72,5 +71,3 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 INLINE void scalanative_collect() { Heap_Collect(&heap); }
-
-INLINE char *scalanative_get_type() { return GC_TYPE_COMMIX; }

@@ -8,4 +8,9 @@ import scala.scalanative.unsafe._
 object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
   def isWindows: Boolean = resolved
+
+  @resolvedAtLinktime(
+    "scala.scalanative.meta.linktimeinfo.isWeakReferenceSupported"
+  )
+  def isWeakReferenceSupported: Boolean = resolved
 }
