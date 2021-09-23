@@ -225,7 +225,11 @@ object NativeConfig {
   def predefinedLinktimeProperties(config: NativeConfig): LinktimeProperites = {
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     Map(
-      s"$linktimeInfo.isWindows" -> Platform.isWindows
+      s"$linktimeInfo.isWindows" -> Platform.isWindows,
+      s"$linktimeInfo.isWeakReferenceSupported" -> {
+        config.gc == GC.Immix ||
+        config.gc == GC.Commix
+      }
     )
   }
 
