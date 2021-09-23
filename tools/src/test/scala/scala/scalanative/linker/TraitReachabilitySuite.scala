@@ -2,7 +2,7 @@ package scala.scalanative
 package linker
 
 import scala.scalanative.NativePlatform
-import scala.scalanative.nir.{Global, Sig, Type}
+import scala.scalanative.nir.{Global, Sig, Type, Rt}
 
 class TraitReachabilitySuite extends ReachabilitySuite {
   val Parent: Global = g("Parent")
@@ -30,7 +30,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val ObjectInit: Global = g("java.lang.Object", Sig.Ctor(Seq.empty))
   val Test: Global = g("Test$")
   val TestInit: Global = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain: Global = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val TestMain: Global =
+    g("Test$", Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
   val TestCallFoo: Global =
     g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
@@ -40,7 +41,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = ()
+        def main(args: Array[String]): Unit = ()
       }
     """
     val entry = TestMain
@@ -60,7 +61,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = new Child
+        def main(args: Array[String]): Unit = new Child
       }
     """
     val entry = TestMain
@@ -91,7 +92,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
@@ -128,7 +129,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           callFoo(new Child)
           callFoo(new GrandChild)
         }
@@ -165,7 +166,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
@@ -213,7 +214,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """

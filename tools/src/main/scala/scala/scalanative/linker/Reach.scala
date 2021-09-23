@@ -44,17 +44,22 @@ class Reach(
     // in reachUnavailable
     defns ++= done.valuesIterator.filter(_ != null)
 
-    val resultEntries = entries.head match {
-      case Global.Member(module, sig)
-          if module == Global.Top(config.mainClass) &&
-            sig == Rt.ScalaMainSig.mangled =>
-        //If main method is introduced via class inheritance we need resolve real entry
-        //Initial owner also needs to be passed or else it would be deleted in further steps
-        infos(module)
-          .asInstanceOf[Class]
-          .resolve(sig)
-          .toSeq ++ entries.tail :+ module
-      case _ => entries
+    val resultEntries = {
+      // If main method is introduced via class inheritance we need to resolve
+      // actual entry point. Initial owner also needs to be passed as entry,
+      // otherwise it would be marked as an unreachable
+      val mainObject = Global.Top(config.mainClass)
+      val mainMethodSig = Rt.ScalaMainSig
+      val mainMethod = Global.Member(mainObject, mainMethodSig)
+      val mainMethodIdx = entries.indexOf(mainMethod)
+      assert(mainMethodIdx >= 0, "Main method not defined in entries")
+
+      infos(mainObject)
+        .asInstanceOf[Class]
+        .resolve(mainMethodSig)
+        .foldLeft(entries) {
+          _.updated(mainMethodIdx, _) :+ mainObject
+        }
     }
 
     new Result(

@@ -1,7 +1,7 @@
 package scala.scalanative.linker
 
 import org.scalatest._
-import scalanative.nir.{Sig, Type, Global}
+import scalanative.nir.{Sig, Type, Global, Rt}
 
 class ClassReachabilitySuite extends ReachabilitySuite {
   val Parent = g("Parent")
@@ -10,7 +10,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   val ParentBar = g("Parent", Sig.Field("bar"))
   val ParentBarSet = g("Parent", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
   val ParentBarGet = g("Parent", Sig.Method("bar", Seq(Type.Int)))
-  val ParentMain = g("Parent", Sig.Method("main", Seq(Type.Unit)))
+  val ParentMain =
+    g("Parent", Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
   val Child = g("Child")
   val ChildInit = g("Child", Sig.Ctor(Seq.empty))
   val ChildFoo = g("Child", Sig.Method("foo", Seq(Type.Unit)))
@@ -18,7 +19,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   val ObjectInit = g("java.lang.Object", Sig.Ctor(Seq.empty))
   val Test = g("Test$")
   val TestInit = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val TestMain =
+    g("Test$", Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
   val TestCallFoo =
     g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
@@ -28,7 +30,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = ()
+        def main(args: Array[String]): Unit = ()
       }
     """
     val entry = TestMain
@@ -49,7 +51,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = new Parent
+        def main(args: Array[String]): Unit = new Parent
       }
     """
     val entry = TestMain
@@ -72,7 +74,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = new Parent
+        def main(args: Array[String]): Unit = new Parent
       }
     """
     val entry = TestMain
@@ -94,7 +96,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           new Parent
         }
       }
@@ -118,7 +120,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = new Child
+        def main(args: Array[String]): Unit = new Child
       }
     """
     val entry = TestMain
@@ -150,7 +152,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(null)
       }
     """
@@ -181,7 +183,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
@@ -216,7 +218,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Parent)
       }
     """
@@ -249,7 +251,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           callFoo(new Parent)
           callFoo(new Child)
         }
@@ -280,7 +282,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           val p = new Parent
           p.bar = 42
         }
@@ -308,7 +310,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           val p = new Parent
           p.bar
         }
@@ -330,10 +332,10 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   // Issue #805
-  testReachable("inherited methods are reachable") {
+  testReachable("inherited main methods are reachable") {
     val source = """
       abstract class Parent {
-        def main(): Unit = ()
+        def main(args: Array[String]): Unit = ()
       }
 
       object Test extends Parent

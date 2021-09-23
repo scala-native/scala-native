@@ -1,7 +1,7 @@
 package scala.scalanative.linker
 
 import org.scalatest._
-import scalanative.nir.{Sig, Type, Global}
+import scalanative.nir.{Sig, Type, Global, Rt}
 
 class ModuleReachabilitySuite extends ReachabilitySuite {
   val sources = Seq("""
@@ -12,7 +12,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
 
   val Test = g("Test$")
   val TestInit = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val TestMain =
+    g("Test$", Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
   val Module = g("Module$")
   val ModuleInit = g("Module$", Sig.Ctor(Seq.empty))
   val ModuleFoo = g("Module$", Sig.Method("foo", Seq(Type.Unit)))
@@ -31,7 +32,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       object Module
 
       object Test {
-        def main: Unit = ()
+        def main(args: Array[String]): Unit = ()
       }
     """
     val entry = TestMain
@@ -52,7 +53,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = Module
+        def main(args: Array[String]): Unit = Module
       }
     """
     val entry = TestMain
@@ -75,7 +76,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = Module
+        def main(args: Array[String]): Unit = Module
       }
     """
     val entry = TestMain
@@ -96,7 +97,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       object Module
 
       object Test {
-        def main: Unit = Module
+        def main(args: Array[String]): Unit = Module
       }
     """
     val entry = TestMain
@@ -121,7 +122,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = Module
+        def main(args: Array[String]): Unit = Module
       }
     """
     val entry = TestMain
@@ -148,7 +149,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = Module
+        def main(args: Array[String]): Unit = Module
       }
     """
     val entry = TestMain
@@ -172,7 +173,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = { Module.bar = 42 }
+        def main(args: Array[String]): Unit = { Module.bar = 42 }
       }
     """
     val entry = TestMain
@@ -197,7 +198,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = Module.bar
+        def main(args: Array[String]): Unit = Module.bar
       }
     """
     val entry = TestMain
@@ -222,7 +223,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = Module.foo
+        def main(args: Array[String]): Unit = Module.foo
       }
     """
     val entry = TestMain

@@ -17,29 +17,30 @@ class IdentifiersSuite extends ReachabilitySuite {
         |}
         |
         |object Main {
-        |     import `"Foo"Bar"`._
-        |     x
-        |     `x`
-        |     `"x"`
-        |     `"x"x"`
-        |     `$u0022x"`
-        |     `"x$u0022`
-        |     `"x$u0022x"`
-        |    
-        |     y()
-        |     `y`()
-        |     `"y"`()
-        |     `"y"y"`()
-        |     `$u0022y"`()
-        |     `"y$u0022`()
-        |     `"y$u0022y"`()
+        |  def main(args: Array[String]): Unit = ()
+        |  import `"Foo"Bar"`._
+        |  x
+        |  `x`
+        |  `"x"`
+        |  `"x"x"`
+        |  `$u0022x"`
+        |  `"x$u0022`
+        |  `"x$u0022x"`
+        |
+        |  y()
+        |  `y`()
+        |  `"y"`()
+        |  `"y"y"`()
+        |  `$u0022y"`()
+        |  `"y$u0022`()
+        |  `"y$u0022y"`()
         |}
         |""".stripMargin
 
     val FooBar = Global.Top("$u0022Foo$u0022Bar$u0022$")
     val Main = Global.Top("Main$")
 
-    val entry = Main
+    val entry = Main.member(Rt.ScalaMainSig)
     val privateFooBar = Sig.Scope.Private(FooBar)
 
     val reachable = Seq(
@@ -47,6 +48,7 @@ class IdentifiersSuite extends ReachabilitySuite {
       Rt.Object.name.member(Sig.Ctor(Seq.empty)),
       Main,
       Main.member(Sig.Ctor(Seq.empty)),
+      Main.member(Rt.ScalaMainSig),
       FooBar,
       FooBar.member(Sig.Ctor(Seq.empty)),
       // fields
