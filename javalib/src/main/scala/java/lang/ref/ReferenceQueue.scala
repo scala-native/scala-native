@@ -23,14 +23,14 @@ class ReferenceQueue[T >: Null <: AnyRef] {
   def remove(): Reference[_ <: T] =
     remove(0)
 
-  def remove(timeOut: Long): Reference[_ <: T] = {
-    if (timeOut < 0) throw new IllegalArgumentException()
+  def remove(timeout: Long): Reference[_ <: T] = {
+    if (timeout < 0) throw new IllegalArgumentException()
 
     synchronized[Reference[_ <: T]] {
-      if (timeOut == 0) {
+      if (timeout == 0) {
         while (underlying.isEmpty) wait()
       } else {
-        if (underlying.isEmpty) wait(timeOut)
+        if (underlying.isEmpty) wait(timeout)
       }
       poll()
     }
