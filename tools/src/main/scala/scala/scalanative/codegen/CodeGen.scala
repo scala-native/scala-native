@@ -19,9 +19,9 @@ object CodeGen {
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
     implicit val meta: Metadata = new Metadata(linked, proxies)
-    val main          = config.mainClass.map(Global.Top)
-    val generated     = Generate(main, defns ++ proxies)
-    val lowered       = lower(generated)
+    val main = config.mainClass.map(Global.Top)
+    val generated = Generate(main, defns ++ proxies)
+    val lowered = lower(generated)
     dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }

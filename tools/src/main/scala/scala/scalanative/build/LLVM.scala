@@ -55,25 +55,17 @@ private[scalanative] object LLVM {
           if (config.targetsWindows) Seq("-g")
           else Nil
         }
-        val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: config.compileOptions
+        val flags = Seq(opt(config), "-fvisibility=hidden") ++
+          stdflag ++ platformFlags ++
+          flto(config) ++ target(config) ++ buildCompileOpts(config)
         val compilec =
-          Seq(compiler) ++
-            buildCompileOpts(config) ++ flags ++ target(config) ++
-            Seq("-c", inpath, "-o", outpath)
+          Seq(compiler) ++ flags ++
+            Seq("-c", inpath, "-o", outpath) ++
+            config.compileOptions // Allow to override with user config
 
-        val cmd: Seq[String] = {
-          compiler ++
-            buildCompileOpts(config) ++
-            flto(config) ++
-            target(config) ++
-            Seq("-fvisibility=hidden") ++
-            input ++ output ++
-            config.compileOptions
-        }
-        config.logger.running(cmd)
-        val result = Process(cmd, config.workdir.toFile) !
-          Logger.toProcessLogger(config.logger)
+        config.logger.running(compilec)
+        val result = Process(compilec, config.workdir.toFile) ! Logger
+          .toProcessLogger(config.logger)
         if (result != 0) {
           sys.error(s"Failed to compile ${inpath}")
         }
@@ -101,56 +93,41 @@ private[scalanative] object LLVM {
       config: Config,
       linkerResult: linker.Result,
       objectsPaths: Seq[Path],
-           outpath: Path): Path = {
-    val inputs = objectsPaths.map(_.abs)
-    val output = Seq("-o", outpath.abs)
+      outpath: Path
+  ): Path = {
     val links = {
       val srclinks = linkerResult.links.collect {
         case Link("z") if config.targetsWindows => "zlib"
         case Link(name)                         => name
       }
-      val gclinks  = config.gc.links
+      val gclinks = config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
-      if (config.targetsWindows) Seq("Dbghelp")
-      else Seq("pthread", "dl")
+        if (config.targetsWindows) Seq("Dbghelp")
+        else Seq("pthread", "dl")
       platformsLinks ++ srclinks ++ gclinks
+    }.map("-l" + _)
+    val flags = {
+      val platformFlags =
+        if (config.targetsWindows) Seq("-g")
+        else Seq("-rdynamic")
+      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++
+        target(config) ++ buildLinkOpts(config)
     }
-    val linkopts = config.linkingOptions ++ links.map("-l" + _)
-
-    val linkCmd = config.compilerConfig.buildTarget match {
-        case BuildTarget.Application =>
-          val flags = {
-            val platformFlags =
-              if (config.targetsWindows) Seq("-g")
-              else Seq("-rdynamic")
-            flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
-          }
-          val paths = objectsPaths.map(_.abs)
-          config.clangPP.abs +:
-            flags ++
-            inputs ++
-            buildLinkOpts(config) ++
-            linkopts
-
-        case BuildTarget.SharedLibrary =>
-          config.clangPP.abs +:
-            "-shared" +:
-            target(config) ++
-        flto(config) ++
-        inputs ++ output ++
-        linkopts
-      }
+    val paths = objectsPaths.map(_.abs)
+    val linkCommand: Seq[String] = Seq(config.clangPP.abs) ++
+      flags ++ paths ++ links ++
+      config.linkingOptions // Allow to override with user config
 
     config.logger.time(
       s"Linking native code (${config.compilerConfig.buildTarget}, ${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
-      config.logger.running(linkCmd)
-      Process(linkCmd, config.workdir.toFile) !
-        Logger.toProcessLogger(config.logger
+      config.logger.running(linkCommand)
+      Process(linkCommand, config.workdir.toFile) ! Logger.toProcessLogger(
+        config.logger
       )
     }
     outpath
@@ -177,13 +154,13 @@ private[scalanative] object LLVM {
 
   private def buildCompileOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application    => Seq()
+      case BuildTarget.Application    => Nil
       case BuildTarget.LibraryDynamic => Seq("-fPIC")
     }
 
   private def buildLinkOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application    => Seq()
+      case BuildTarget.Application    => Nil
       case BuildTarget.LibraryDynamic => Seq("-shared")
     }
 }

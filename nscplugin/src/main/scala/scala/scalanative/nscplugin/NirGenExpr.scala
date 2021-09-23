@@ -2308,9 +2308,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         self: Val,
         argsp: Seq[Tree]
     )(implicit pos: nir.Position): Val = {
-      val owner      = sym.owner
-      val name       = genMethodName(sym)
-      val origSig    = genMethodSig(sym)
+      val owner = sym.owner
+      val name = genMethodName(sym)
+      val origSig = genMethodSig(sym)
       val isExternal = sym.isExternallyKnown
       val sig =
         if (isExternal) {
