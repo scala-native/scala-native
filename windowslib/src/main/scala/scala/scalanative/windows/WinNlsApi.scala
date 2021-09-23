@@ -7,6 +7,7 @@ import scala.scalanative.unsigned._
 @extern()
 object WinNlsApi {
   type LCType = Int
+  
   def GetLocaleInfoEx(
       localeName: CWString,
       lcType: LCType,
