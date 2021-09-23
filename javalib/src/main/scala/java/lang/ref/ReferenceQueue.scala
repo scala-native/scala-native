@@ -27,10 +27,16 @@ class ReferenceQueue[T >: Null <: AnyRef] {
     if (timeout < 0) throw new IllegalArgumentException()
 
     synchronized[Reference[_ <: T]] {
-      if (timeout == 0) {
-        while (underlying.isEmpty) wait()
-      } else {
-        if (underlying.isEmpty) wait(timeout)
+      def now() = System.currentTimeMillis()
+      val deadline = now() + timeout
+      def timeoutExceeded(current: Long): Boolean = {
+        if (timeout == 0) false
+        else current > deadline
+      }
+
+      while (underlying.isEmpty && !timeoutExceeded(now())) {
+        val timeoutMillis = (deadline - now()).min(0L)
+        wait(timeoutMillis)
       }
       poll()
     }
