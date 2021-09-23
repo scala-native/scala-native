@@ -4,25 +4,29 @@ import org.scalatest._
 import scalanative.nir.{Sig, Type, Global, Rt}
 
 class ClassReachabilitySuite extends ReachabilitySuite {
-  val Parent = g("Parent")
-  val ParentInit = g("Parent", Sig.Ctor(Seq.empty))
-  val ParentFoo = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
-  val ParentBar = g("Parent", Sig.Field("bar"))
-  val ParentBarSet = g("Parent", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
-  val ParentBarGet = g("Parent", Sig.Method("bar", Seq(Type.Int)))
-  val ParentMain =
-    g("Parent", Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
-  val Child = g("Child")
-  val ChildInit = g("Child", Sig.Ctor(Seq.empty))
-  val ChildFoo = g("Child", Sig.Method("foo", Seq(Type.Unit)))
-  val Object = g("java.lang.Object")
-  val ObjectInit = g("java.lang.Object", Sig.Ctor(Seq.empty))
-  val Test = g("Test$")
-  val TestInit = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain =
-    g("Test$", Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit)))
+  val TestClsName = "Test$"
+  val ChildClsName = "Child"
+  val ParentClsName = "Parent"
+  val ObjectClsName = "java.lang.Object"
+
+  val Parent = g(ParentClsName)
+  val ParentInit = g(ParentClsName, Sig.Ctor(Seq.empty))
+  val ParentFoo = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val ParentBar = g(ParentClsName, Sig.Field("bar"))
+  val ParentBarSet =
+    g(ParentClsName, Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
+  val ParentBarGet = g(ParentClsName, Sig.Method("bar", Seq(Type.Int)))
+  val ParentMain = g(ParentClsName, Rt.ScalaMainSig)
+  val Child = g(ChildClsName)
+  val ChildInit = g(ChildClsName, Sig.Ctor(Seq.empty))
+  val ChildFoo = g(ChildClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val Object = g(ObjectClsName)
+  val ObjectInit = g(ObjectClsName, Sig.Ctor(Seq.empty))
+  val Test = g(TestClsName)
+  val TestInit = g(TestClsName, Sig.Ctor(Seq.empty))
+  val TestMain = g(TestClsName, Rt.ScalaMainSig)
   val TestCallFoo =
-    g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+    g(TestClsName, Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
 
   testReachable("unused classes are discarded") {
     val source = """
