@@ -1163,7 +1163,7 @@ lazy val scalaPartestTests: Project = project
         (auxlib / Compile / packageBin).value,
         (scalalib / Compile / packageBin).value,
         (scalaPartestRuntime / Compile / packageBin).value
-      ).map(_.absolutePath).mkString(":")
+      ).map(_.absolutePath).mkString(pathSeparator)
 
       Tests.Argument(s"--nativeClasspath=$nativeCp")
     },

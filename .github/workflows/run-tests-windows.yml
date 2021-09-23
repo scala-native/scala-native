@@ -65,7 +65,10 @@ jobs:
       - name: Install libs
         run: vcpkg install bdwgc zlib --triplet=x64-windows-static
 
-      - name: Test runtime
+      # None GC takes too much memory on Windows to execute partest JUnit tests
+      # leading to spurious failures in the CI. Perform subset of tests instead
+      - name: Test runtime None GC
+        if: matrix.gc == 'none'
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
@@ -77,6 +80,19 @@ jobs:
           tests/test
           testsExt/test
           testsExtJVM/test
+          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
+      
+      - name: Test runtime
+        if: matrix.gc != 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\lib&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          test-runtime
+          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
   run-scripted-tests:
