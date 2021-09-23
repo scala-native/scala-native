@@ -142,7 +142,7 @@ object ScalaNativePluginInternal {
 
       logger.running(binary +: args)
 
-     val exitCode = {
+      val exitCode = {
         // It seems that previously used Scala Process has some bug leading
         // to possible ignoring of inherited IO and termination of wrapper
         // thread with an exception. We use java.lang ProcessBuilder instead
