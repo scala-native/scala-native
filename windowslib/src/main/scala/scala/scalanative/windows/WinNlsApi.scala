@@ -22,10 +22,10 @@ object WinNlsApi {
   @name("scalanative_win32_locale_name_user_default")
   def LOCALE_NAME_USER_DEFAULT: CWString = extern
 
-  @name("scalanative_win32_locale_siso3166langname")
+  @name("scalanative_win32_locale_siso639langname")
   def LOCALE_SISO639LANGNAME: LCType = extern
 
-  @name("scalanative_win32_locale_siso3166langname2")
+  @name("scalanative_win32_locale_siso639langname2")
   def LOCALE_SISO639LANGNAME2: LCType = extern
 
   @name("scalanative_win32_locale_siso3166ctryname")
