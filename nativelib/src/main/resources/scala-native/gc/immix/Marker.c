@@ -7,6 +7,7 @@
 #include "datastructures/Stack.h"
 #include "headers/ObjectHeader.h"
 #include "Block.h"
+#include "WeakRefStack.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -17,6 +18,11 @@ extern word_t **__stack_bottom;
 void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta));
+
+    if (Object_IsWeakReference(object)) {
+        // Added to the WeakReference stack for additional later visit
+        Stack_Push(&weakRefStack, object);
+    }
 
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
@@ -60,8 +66,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             // non-object arrays do not contain pointers
         } else {
             int64_t *ptr_map = object->rtti->refMapStruct;
-            int i = 0;
-            while (ptr_map[i] != LAST_FIELD_OFFSET) {
+            for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
+                if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
+                    continue;
+
                 word_t *field = object->fields[ptr_map[i]];
                 if (Heap_IsWordInHeap(heap, field)) {
                     ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
@@ -70,7 +78,6 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                                           fieldMeta);
                     }
                 }
-                ++i;
             }
         }
     }

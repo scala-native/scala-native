@@ -39,3 +39,5 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 void scalanative_collect() { GC_gcollect(); }
+
+void scalanative_register_weak_reference_handler(void *handler) {}

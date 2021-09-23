@@ -4,6 +4,8 @@ package codegen
 import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.linker.Class
+import scala.ref.WeakReferenceWithWrapper
+import scala.scalanative.build.Logger
 
 object Generate {
   import Impl._
@@ -35,6 +37,7 @@ object Generate {
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
+      genWeakRefUtils()
       genArrayIds()
       genStackBottom()
 
@@ -321,6 +324,51 @@ object Generate {
       )
     }
 
+    def genWeakRefUtils(): Unit = {
+      def addToBuf(name: Global, value: Int) =
+        buf +=
+          Defn.Var(
+            Attrs.None,
+            name,
+            Type.Int,
+            Val.Int(value)
+          )
+      val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
+
+      val (
+        weakRefId,
+        weakRefFieldOffset
+      ) =
+        if (linked.infos.contains(weakRefGlobal)) {
+          // if WeakReferences are being compiled and therefore supported
+          def gcModifiedFieldIndexes(clazz: Class): Seq[Int] =
+            meta.layout(clazz).entries.zipWithIndex.collect {
+              case (field, index)
+                  if field.name.mangle.contains("_gc_modified_") =>
+                index
+            }
+
+          val weakRef = linked
+            .infos(weakRefGlobal)
+            .asInstanceOf[Class]
+
+          val weakRefFieldIndexes = gcModifiedFieldIndexes(weakRef)
+          if (weakRefFieldIndexes.size != 1)
+            throw new Exception(
+              "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
+            )
+
+          (
+            meta.ids(weakRef),
+            weakRefFieldIndexes.head
+          )
+        } else {
+          (-1, -1)
+        }
+      addToBuf(weakRefIdName, weakRefId)
+      addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)
+    }
+
     def genArrayIds(): Unit = {
       val tpes = Seq(
         "Boolean",
@@ -409,6 +457,10 @@ object Generate {
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
+    val weakRefIdName = extern("__weak_ref_id")
+    val weakRefFieldOffsetName = extern("__weak_ref_field_offset")
+    val registryOffsetName = extern("__weak_ref_registry_module_offset")
+    val registryFieldOffsetName = extern("__weak_ref_registry_field_offset")
     val arrayIdsMinName = extern("__array_ids_min")
     val arrayIdsMaxName = extern("__array_ids_max")
 
