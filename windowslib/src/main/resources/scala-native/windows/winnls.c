@@ -5,26 +5,26 @@
 PCWSTR scalanative_win32_LocaleName_Invariant() {
     return LOCALE_NAME_INVARIANT;
 }
-PCWSTR scalanative_win32_LocaleName_SystemDefault() {
+PCWSTR scalanative_win32_locale_name_system_default() {
     return LOCALE_NAME_SYSTEM_DEFAULT;
 }
-PCWSTR scalanative_win32_LocaleName_UserDefault() {
+PCWSTR scalanative_win32_locale_name_user_default() {
     return LOCALE_NAME_USER_DEFAULT;
 }
 
-LCTYPE scalanative_win32_Locale_SISO_LangName() {
+LCTYPE scalanative_win32_locale_siso3166langname() {
     return LOCALE_SISO639LANGNAME;
 }
 
-LCTYPE scalanative_win32_Locale_SISO_LangName2() {
+LCTYPE scalanative_win32_locale_siso3166langname2() {
     return LOCALE_SISO639LANGNAME2;
 }
 
-LCTYPE scalanative_win32_Locale_SISO_CountryName() {
+LCTYPE scalanative_win32_locale_siso3166ctryname() {
     return LOCALE_SISO639LANGNAME;
 }
 
-LCTYPE scalanative_win32_Locale_SISO_CountryName2() {
+LCTYPE scalanative_win32_locale_siso3166ctryname2() {
     return LOCALE_SISO639LANGNAME2;
 }
 
