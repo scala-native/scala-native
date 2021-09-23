@@ -57,8 +57,9 @@ class Reach(
       case _ => entries
     }
 
-    new Result(infos,
-               resultEntries,
+    new Result(
+      infos,
+      resultEntries,
       unavailable.toSeq,
       from,
       links.toSeq,
@@ -115,10 +116,8 @@ class Reach(
         infos(owner)
           .asInstanceOf[ScopeInfo]
           .linearized
-          .collectFirst {
-            case info if info.responds.contains(sig) =>
-              info.responds(sig)
-          }
+          .find(_.responds.contains(sig))
+          .map(_.responds(sig))
           .flatMap(lookup)
       case _ => None
     }
@@ -352,7 +351,8 @@ class Reach(
         info.linearized.foreach {
           case traitInfo: Trait =>
             info.defaultResponds ++= traitInfo.responds
-          case _ => ()
+          case _ =>
+            ()
         }
       case _ =>
         ()

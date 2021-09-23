@@ -11,8 +11,8 @@ sealed abstract class Info {
 }
 
 sealed abstract class ScopeInfo extends Info {
-  val members  = mutable.UnrolledBuffer.empty[MemberInfo]
-  val calls    = mutable.Set.empty[Sig]
+  val members = mutable.UnrolledBuffer.empty[MemberInfo]
+  val calls = mutable.Set.empty[Sig]
   val responds = mutable.Map.empty[Sig, Global]
 
   def isClass: Boolean = this.isInstanceOf[Class]

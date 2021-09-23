@@ -3,7 +3,7 @@ package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
-import scala.scalanative.linker.{Class, ScopeInfo, Trait, Unavailable}
+import scala.scalanative.linker.{Class, ScopeInfo, Unavailable}
 import scala.ref.WeakReferenceWithWrapper
 import scala.scalanative.build.Logger
 
@@ -136,7 +136,7 @@ object Generate {
         Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
 
       val entryMainMethod = Val.Local(fresh(), Type.Ptr)
-      val stackBottom     = Val.Local(fresh(), Type.Ptr)
+      val stackBottom = Val.Local(fresh(), Type.Ptr)
 
       val argc = Val.Local(fresh(), Type.Int)
       val argv = Val.Local(fresh(), Type.Ptr)
@@ -190,11 +190,15 @@ object Generate {
               unwind
             ),
             Inst.Let(module.name, Op.Module(entry.top), unwind),
-          Inst.Let(entryMainMethod.name,
-                   Op.Method(module, Rt.ScalaMainSig),
-                   unwind),
-          Inst.Let(Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
-                   unwind),
+            Inst.Let(
+              entryMainMethod.name,
+              Op.Method(module, Rt.ScalaMainSig),
+              unwind
+            ),
+            Inst.Let(
+              Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
+              unwind
+            ),
             Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
             Inst.Ret(Val.Int(0)),
             Inst.Label(handler, Seq(exc)),
