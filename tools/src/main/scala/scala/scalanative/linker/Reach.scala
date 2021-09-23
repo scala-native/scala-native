@@ -49,14 +49,13 @@ class Reach(
       // actual entry point. Initial owner also needs to be passed as entry,
       // otherwise it would be marked as an unreachable
       val mainObject = Global.Top(config.mainClass)
-      val mainMethodSig = Rt.ScalaMainSig
-      val mainMethod = Global.Member(mainObject, mainMethodSig)
+      val mainMethod = Global.Member(mainObject, Rt.ScalaMainSig)
       val mainMethodIdx = entries.indexOf(mainMethod)
       assert(mainMethodIdx >= 0, "Main method not defined in entries")
 
       infos(mainObject)
         .asInstanceOf[Class]
-        .resolve(mainMethodSig)
+        .resolve(Rt.ScalaMainSig)
         .foldLeft(entries) {
           _.updated(mainMethodIdx, _) :+ mainObject
         }
