@@ -13,8 +13,6 @@
 extern int __object_array_id;
 extern int __weak_ref_id;
 extern int __weak_ref_field_offset;
-extern int __weak_ref_registry_module_offset;
-extern int __weak_ref_registry_field_offset;
 extern int __array_ids_min;
 extern int __array_ids_max;
 

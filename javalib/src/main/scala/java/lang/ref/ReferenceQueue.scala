@@ -24,7 +24,7 @@ class ReferenceQueue[T >: Null <: AnyRef] {
     remove(0)
 
   def remove(timeOut: Long): Reference[_ <: T] = {
-    if (timeOut < 0) throw new IllegalArgumentException();
+    if (timeOut < 0) throw new IllegalArgumentException()
 
     synchronized[Reference[_ <: T]] {
       if (timeOut == 0) {
