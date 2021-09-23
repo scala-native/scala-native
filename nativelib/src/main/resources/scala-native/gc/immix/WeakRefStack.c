@@ -7,7 +7,7 @@
 
 extern word_t *__modules;
 bool visited = false;
-void (*handlerFn)() = 0;
+void (*handlerFn)() = NULL;
 
 // A collection of marked WeakReferences.
 // Used to correctly set "NULL" values in place of cleaned objects
@@ -35,7 +35,7 @@ void WeakRefStack_Nullify() {
 void WeakRefStack_SetHandler(void *handler) { handlerFn = handler; }
 
 void WeakRefStack_CallHandlers(Heap *heap) {
-    if (visited && handlerFn != 0) {
+    if (visited && handlerFn != NULL) {
         visited = false;
 
         handlerFn();

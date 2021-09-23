@@ -17,7 +17,7 @@
 
 extern word_t *__modules;
 bool anyVisited = false;
-void (*handlerFn)() = 0;
+void (*handlerFn)() = NULL;
 
 static inline GreyPacket *WeakRefGreyList_takeWeakRefPacket(Heap *heap,
                                                             Stats *stats) {
@@ -91,7 +91,7 @@ void WeakRefGreyList_NullifyUntilDone(Heap *heap, Stats *stats) {
 void WeakRefGreyList_SetHandler(void *handler) { handlerFn = handler; }
 
 void WeakRefGreyList_CallHandlers() {
-    if (anyVisited && handlerFn != 0) {
+    if (anyVisited && handlerFn != NULL) {
         anyVisited = false;
 
         handlerFn();
