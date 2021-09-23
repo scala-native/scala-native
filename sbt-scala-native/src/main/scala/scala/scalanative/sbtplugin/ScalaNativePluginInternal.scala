@@ -141,9 +141,18 @@ object ScalaNativePluginInternal {
       val args = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args, None, env: _*)
-        .run(connectInput = false)
-        .exitValue
+
+     val exitCode = {
+        // It seams that scala.sys.process have some bug leading to possible 
+        // ignoring of inherited IO and termination of wrapper thread with 
+        // an exception. We use java.lang ProcessBuilder for a workaround 
+        //
+        val proc = new ProcessBuilder()
+          .command((Seq(binary) ++ args): _*)
+          .inheritIO()
+        env.foreach((proc.environment().put(_, _)).tupled)
+        proc.start().waitFor()
+      }
 
       val message =
         if (exitCode == 0) None
