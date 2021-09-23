@@ -130,9 +130,10 @@ object Generate {
 
     /* Generate set of instructions using common exception handling, generate method
      * would return 0 if would execute successfully exception and 1 in otherwise */
-    private def withExceptionHandler(body: (() => Next.Unwind) => Seq[Inst])(
-        implicit fresh: Fresh): Seq[Inst] = {
-      val exc     = Val.Local(fresh(), nir.Rt.Object)
+    private def withExceptionHandler(
+        body: (() => Next.Unwind) => Seq[Inst]
+    )(implicit fresh: Fresh): Seq[Inst] = {
+      val exc = Val.Local(fresh(), nir.Rt.Object)
       val handler = fresh()
 
       def unwind: Next.Unwind = {
@@ -143,21 +144,28 @@ object Generate {
       body(() => unwind) ++ Seq(
         Inst.Ret(Val.Int(0)),
         Inst.Label(handler, Seq(exc)),
-        Inst.Let(Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
-                 Next.None),
+        Inst.Let(
+          Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+          Next.None
+        ),
         Inst.Ret(Val.Int(1))
       )
     }
 
     /* Generate class initializers to handle class instantiated using reflection */
-    private def withClassInitializers(unwind: () => Next)(
-        body: Seq[Inst] => Seq[Inst])(implicit fresh: Fresh): Seq[Inst] = {
+    private def withClassInitializers(
+        unwind: () => Next
+    )(body: Seq[Inst] => Seq[Inst])(implicit fresh: Fresh): Seq[Inst] = {
       val classInitializers = defns.collect {
         case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
-          Inst.Let(Op.Call(Type.Function(Seq(), Type.Unit),
-                           Val.Global(name, Type.Ref(name)),
-                           Seq()),
-                   unwind())
+          Inst.Let(
+            Op.Call(
+              Type.Function(Seq(), Type.Unit),
+              Val.Global(name, Type.Ref(name)),
+              Seq()
+            ),
+            unwind()
+          )
       }
       body(classInitializers)
     }
@@ -172,27 +180,32 @@ object Generate {
         LibraryInitName,
         LibraryInitSig,
         withExceptionHandler { unwindFn =>
-          withClassInitializers(unwindFn) {
-            initializers =>
-              def unwind: Next = unwindFn()
+          withClassInitializers(unwindFn) { initializers =>
+            def unwind: Next = unwindFn()
 
-              val stackBottom = Val.Local(fresh(), Type.Ptr)
+            val stackBottom = Val.Local(fresh(), Type.Ptr)
 
+            Seq(
+              Inst.Label(fresh(), Seq()),
+              // init stack bottom needed by immix/commix
+              Inst.Let(
+                stackBottom.name,
+                Op.Stackalloc(Type.Ptr, Val.Long(0)),
+                unwind
+              ),
+              Inst.Let(
+                Op.Store(
+                  Type.Ptr,
+                  Val.Global(stackBottomName, Type.Ptr),
+                  stackBottom
+                ),
+                unwind
+              )
+            ) ++
+              initializers ++
               Seq(
-                Inst.Label(fresh(), Seq()),
-                // init stack bottom needed by immix/commix
-                Inst.Let(stackBottom.name,
-                         Op.Stackalloc(Type.Ptr, Val.Long(0)),
-                         unwind),
-                Inst.Let(Op.Store(Type.Ptr,
-                                  Val.Global(stackBottomName, Type.Ptr),
-                                  stackBottom),
-                         unwind)
-              ) ++
-                initializers ++
-                Seq(
-                  Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-                )
+                Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+              )
           }
         }
       )
@@ -208,9 +221,8 @@ object Generate {
         MainName,
         MainSig,
         withExceptionHandler { unwindFn =>
-          withClassInitializers(unwindFn) {
-            initializers =>
-              def unwind: Next = unwindFn()
+          withClassInitializers(unwindFn) { initializers =>
+            def unwind: Next = unwindFn()
 
               val entryMainTy =
                 Type.Function(Seq( ObjectArray), Type.Unit)
@@ -522,7 +534,7 @@ object Generate {
       Val.Global(RuntimeLoopName, Type.Ptr)
 
     val LibraryInitName = extern("ScalaNativeInit")
-    val LibraryInitSig  = Type.Function(Seq(), Type.Int)
+    val LibraryInitSig = Type.Function(Seq(), Type.Int)
 
     val MainName = extern("main")
     val MainSig = Type.Function(Seq(Type.Int, Type.Ptr), Type.Int)

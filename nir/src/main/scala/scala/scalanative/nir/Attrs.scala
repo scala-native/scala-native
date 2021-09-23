@@ -30,7 +30,7 @@ object Attr {
   case object Extern extends Attr
   final case class Link(name: String) extends Attr
   case object Abstract extends Attr
-  final case object Export            extends Attr
+  case object Export extends Attr
 }
 
 final case class Attrs(
@@ -38,7 +38,7 @@ final case class Attrs(
     specialize: Specialize = MaySpecialize,
     opt: Opt = UnOpt,
     isExtern: Boolean = false,
-                       isExported: Boolean = false,
+    isExported: Boolean = false,
     isDyn: Boolean = false,
     isStub: Boolean = false,
     isAbstract: Boolean = false,
@@ -88,13 +88,14 @@ object Attrs {
 
     new Attrs(
       inlineHint = inline,
-              specialize = specialize,
-              opt = opt,
-              isExtern = isExtern,
-              isExported = isExported,
-              isDyn = isDyn,
-              isStub = isStub,
-              isAbstract = isAbstract,
-      links = links.result())
+      specialize = specialize,
+      opt = opt,
+      isExtern = isExtern,
+      isExported = isExported,
+      isDyn = isDyn,
+      isStub = isStub,
+      isAbstract = isAbstract,
+      links = links.result()
+    )
   }
 }

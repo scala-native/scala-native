@@ -653,7 +653,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             if (attrs.isExported) {
               reporter.error(
                 sym.pos,
-                "Method cannot be both declared as extern and exported")
+                "Method cannot be both declared as extern and exported"
+              )
             } else {
               checkExplicitReturnTypeAnnotation(dd, "extern method")
               genExternMethod(attrs, name, sig, rhs)
@@ -677,13 +678,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               if (!owner.isScalaModule) {
                 reporter.error(
                   sym.pos,
-                  "Exported methods needs to be statically accessible")
+                  "Exported methods needs to be statically accessible"
+                )
               } else {
                 buf += Defn.Define(
                   attrs,
                   name,
                   genExternMethodSig(sym),
-                  genMethodBody(dd, rhs, isStatic, isExtern = true))
+                  genMethodBody(dd, rhs, isStatic, isExtern = true)
+                )
               }
             }
 

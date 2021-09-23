@@ -271,7 +271,7 @@ class Reach(
   def reachExported(name: Global): Unit = {
     reachGlobalNow(name)
     for {
-      cls          <- infos.get(name)
+      cls <- infos.get(name)
       (name, defn) <- loaded(cls.name) if defn.attrs.isExported
     } reachGlobal(name)
   }

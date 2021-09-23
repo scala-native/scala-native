@@ -8,12 +8,13 @@ scalaVersion := {
   if (scalaVersion == null)
     throw new RuntimeException(
       """|The system property 'scala.version' is not defined.
-         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
+         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+    )
   else scalaVersion
 }
 
 nativeConfig := {
-  val prev    = nativeConfig.value
+  val prev = nativeConfig.value
   val outPath = crossTarget.value / "libtest.so"
 
   prev
@@ -59,17 +60,21 @@ def discover(binaryName: String, envPath: String): Option[Path] = {
   path
 }
 
-def compileAndTest(clangPath: Path,
-                   libPath: File,
-                   sourcePath: File,
-                   outFile: File): Unit = {
+def compileAndTest(
+    clangPath: Path,
+    libPath: File,
+    sourcePath: File,
+    outFile: File
+): Unit = {
   val cmd: Seq[String] =
-    Seq(clangPath.toAbsolutePath.toString,
-        sourcePath.absolutePath,
-        "-o",
-        outFile.absolutePath,
-        s"-L${libPath.absolutePath}",
-        "-ltest")
+    Seq(
+      clangPath.toAbsolutePath.toString,
+      sourcePath.absolutePath,
+      "-o",
+      outFile.absolutePath,
+      s"-L${libPath.absolutePath}",
+      "-ltest"
+    )
 
   val ldPath = sys.env
     .get("LD_LIBRARY_PATH")

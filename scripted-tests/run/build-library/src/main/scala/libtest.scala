@@ -2,7 +2,7 @@ import scala.scalanative.runtime.{fromRawPtr, libc}
 import scala.scalanative.unsafe._
 
 object libtest {
-  val fourtyTwo        = 42.toShort
+  val fourtyTwo = 42.toShort
   var snRocks: CString = _
   snRocks = c"ScalaNativeRocks!"
 

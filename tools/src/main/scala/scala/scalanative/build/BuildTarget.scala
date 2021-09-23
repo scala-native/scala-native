@@ -3,7 +3,7 @@ package scala.scalanative.build
 sealed trait BuildTarget
 
 object BuildTarget {
-  private[scalanative] case object Application    extends BuildTarget
+  private[scalanative] case object Application extends BuildTarget
   private[scalanative] case object LibraryDynamic extends BuildTarget
 
   /** Link code as application */
