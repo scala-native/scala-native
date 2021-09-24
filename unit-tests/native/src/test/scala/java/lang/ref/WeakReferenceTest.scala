@@ -7,6 +7,8 @@ import org.junit.Assume._
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.annotation.nooptimize
 
+import scala.scalanative.runtime.GC
+
 // "AfterGC" tests are very sensitive to optimizations,
 // both by Scala Native and LLVM.
 class WeakReferenceTest {
@@ -37,29 +39,16 @@ class WeakReferenceTest {
     val weakRef2 = allocWeakRef(refQueue)
     val weakRefList = List(weakRef1, weakRef2)
 
-    // limit - arbitrary number that can be higher or lower,
-    // depending on how much garbage is necessary to perform GC
-    val limit = 1000000
-    for (i <- 0 to limit) {
+    GC.collect()
 
-      // Allocation spamming. GC.collect() proved to be unreliable
-      // for commix (as in issue #2367), so we force garbage collection
-      // to happen organically.
-      A().toString()
-
-      // We do not want to put the reference on stack
-      // during GC, so we hide it behind an if block
-      if (i == limit) {
-        assertEquals(weakRef1.get(), null)
-        assertEquals(weakRef2.get(), null)
-        val a = refQueue.poll()
-        val b = refQueue.poll()
-        assertTrue(weakRefList.contains(a))
-        assertTrue(weakRefList.contains(b))
-        assertNotEquals(a, b)
-        assertEquals(refQueue.poll(), null)
-      }
-    }
+    assertEquals(weakRef1.get(), null)
+    assertEquals(weakRef2.get(), null)
+    val a = refQueue.poll()
+    val b = refQueue.poll()
+    assertTrue(weakRefList.contains(a))
+    assertTrue(weakRefList.contains(b))
+    assertNotEquals(a, b)
+    assertEquals(refQueue.poll(), null)
   }
 
   @Test def clear(): Unit = {
