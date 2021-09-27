@@ -420,13 +420,19 @@ trait Combine { self: Interflow =>
 
       // Comparing non-nullable value with null will always
       // yield the same result.
-      case (Ieq, v @ Of(ty: Type.RefKind), Val.Null) if !ty.isNullable =>
+      // This is not true however for ptr boxes, since they
+      // underlying value might be null
+      case (Ieq, v @ Of(ty: Type.RefKind), Val.Null)
+          if !ty.isNullable && !Type.isPtrBox(ty) =>
         Val.False
-      case (Ieq, Val.Null, v @ Of(ty: Type.RefKind)) if !ty.isNullable =>
+      case (Ieq, Val.Null, v @ Of(ty: Type.RefKind))
+          if !ty.isNullable && !Type.isPtrBox(ty) =>
         Val.False
-      case (Ine, v @ Of(ty: Type.RefKind), Val.Null) if !ty.isNullable =>
+      case (Ine, v @ Of(ty: Type.RefKind), Val.Null)
+          if !ty.isNullable && !Type.isPtrBox(ty) =>
         Val.True
-      case (Ine, Val.Null, v @ Of(ty: Type.RefKind)) if !ty.isNullable =>
+      case (Ine, Val.Null, v @ Of(ty: Type.RefKind))
+          if !ty.isNullable && !Type.isPtrBox(ty) =>
         Val.True
 
       // Ptr boxes are null if underlying pointer is null.
