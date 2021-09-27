@@ -9,6 +9,7 @@ trait LinktimeValueResolver { self: Reach =>
 
   private lazy val linktimeProperties = {
     val conf = config.compilerConfig
+    val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.isWindows" -> Platform.isWindows,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
