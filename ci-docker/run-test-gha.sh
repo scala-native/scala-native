@@ -48,6 +48,7 @@ docker run --mount type=bind,source=$HOME/.cache/coursier,target=/home/scala-nat
            -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
            -e SCALANATIVE_GC="$SCALANATIVE_GC" \
            -e SCALANATIVE_OPTIMIZE="$SCALANATIVE_OPTIMIZE" \
+           -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \
            -e TEST_COMMAND="$TEST_COMMAND" \
            -e SCALA_VERSION="$SCALA_VERSION" \
            -i "${FULL_IMAGE_NAME}"
