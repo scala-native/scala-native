@@ -235,14 +235,12 @@ object NativeConfig {
 
   def checkLinktimeProperties(properties: LinktimeProperites): Unit = {
     def isNumberOrString(value: Any) = {
-      def hasSupportedType = value match {
+      value match {
         case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
             _: Float | _: Double | _: String =>
           true
         case _ => false
       }
-
-      value != null && hasSupportedType
     }
 
     val invalid = properties.collect {
