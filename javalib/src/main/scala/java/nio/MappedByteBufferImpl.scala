@@ -81,7 +81,7 @@ private[nio] object MappedByteBufferImpl {
   ): MappedByteBufferImpl = {
 
     val prevPosition = channel.position()
-    
+
     def throwException(): Unit =
       throw new IOException("Could not map file to memory")
 
@@ -91,9 +91,9 @@ private[nio] object MappedByteBufferImpl {
       val minSize = position + size
       if (minSize > prevSize) {
         channel.truncate(minSize)
-        if(isWindows){
+        if (isWindows) {
           channel.position(prevSize)
-          for(i <- prevSize until minSize)
+          for (i <- prevSize until minSize)
             channel.write(ByteBuffer.wrap(Array[Byte](0.toByte)))
           channel.position(prevPosition)
         }

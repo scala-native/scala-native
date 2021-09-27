@@ -16,8 +16,13 @@ abstract class MappedByteBuffer private[nio] (
       mode == FileChannel.MapMode.READ_ONLY
     ) {
 
-  def this(mode: FileChannel.MapMode, _capacity: Int, _array: Array[Byte], _arrayOffset: Int) = 
-      this(mode, _capacity, ScalaArray(_array), _arrayOffset)
+  def this(
+      mode: FileChannel.MapMode,
+      _capacity: Int,
+      _array: Array[Byte],
+      _arrayOffset: Int
+  ) =
+    this(mode, _capacity, ScalaArray(_array), _arrayOffset)
 
   def force(): MappedByteBuffer
 

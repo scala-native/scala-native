@@ -244,7 +244,7 @@ private[java] final class FileChannelImpl(
   }
 
   override def size(): Long = {
-    if(isWindows){
+    if (isWindows) {
       val size = stackalloc[windows.LargeInteger]
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
@@ -280,7 +280,7 @@ private[java] final class FileChannelImpl(
   }
 
   override def truncate(size: Long): FileChannel =
-    if(!openForWriting) {
+    if (!openForWriting) {
       throw new IOException("Invalid argument")
     } else {
       ensureOpen()

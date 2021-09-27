@@ -1,6 +1,4 @@
 package java.io
-
-import java.nio.file.WindowsException
 import scala.scalanative.annotation.stub
 import scala.scalanative.libc._
 import scala.scalanative.libc.stdio._
