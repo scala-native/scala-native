@@ -6,7 +6,7 @@ inputs:
     required: true
 outputs:
   vcpkg-dir:
-    description: "Directory containing "
+    description: "Directory containing installed libraries"
     value: ${{steps.resolve-env.outputs.VcpkgLibs}}
 runs:
   using: "composite"
