@@ -46,8 +46,8 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
-  /** Map of properties resolved at linktime */
-  def linktimeProperties: Map[String, Any]
+  /** Map of user defined properties resolved at linktime */
+  def linktimeProperties: NativeConfig.LinktimeProperites
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
@@ -116,7 +116,7 @@ object NativeConfig {
       dump = false,
       linkStubs = false,
       optimize = false,
-      customLinktimeProperties = Map.empty
+      linktimeProperties = Map.empty
     )
 
   private final case class Impl(
@@ -133,7 +133,7 @@ object NativeConfig {
       checkFatalWarnings: Boolean,
       dump: Boolean,
       optimize: Boolean,
-      customLinktimeProperties: LinktimeProperites
+      linktimeProperties: LinktimeProperites
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -179,13 +179,9 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    def linktimeProperties: Map[String, Any] = {
-      predefinedLinktimeProperties(this) ++ customLinktimeProperties
-    }
-
-    override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
+    def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {
       checkLinktimeProperties(v)
-      copy(customLinktimeProperties = v)
+      copy(linktimeProperties = v)
     }
 
     override def toString: String = {
@@ -220,17 +216,6 @@ object NativeConfig {
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
     }
-  }
-
-  def predefinedLinktimeProperties(config: NativeConfig): LinktimeProperites = {
-    val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
-    Map(
-      s"$linktimeInfo.isWindows" -> Platform.isWindows,
-      s"$linktimeInfo.isWeakReferenceSupported" -> {
-        config.gc == GC.Immix ||
-        config.gc == GC.Commix
-      }
-    )
   }
 
   def checkLinktimeProperties(properties: LinktimeProperites): Unit = {

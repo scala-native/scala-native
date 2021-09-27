@@ -2,9 +2,23 @@ package scala.scalanative.linker
 
 import scala.collection.mutable
 import scala.scalanative.nir._
+import scala.scalanative.build._
 
 trait LinktimeValueResolver { self: Reach =>
   import LinktimeValueResolver._
+
+  private lazy val linktimeProperties = {
+    val conf = config.compilerConfig
+    val predefined: NativeConfig.LinktimeProperites = Map(
+      s"$linktimeInfo.isWindows" -> Platform.isWindows,
+      s"$linktimeInfo.isWeakReferenceSupported" -> {
+        conf.gc == GC.Immix ||
+        conf.gc == GC.Commix
+      }
+    )
+    NativeConfig.checkLinktimeProperties(predefined)
+    predefined ++ conf.linktimeProperties
+  }
 
   private val resolvedValues = mutable.Map.empty[String, LinktimeValue]
   // For compat with 2.13 where mapValues is deprecated
@@ -45,7 +59,7 @@ trait LinktimeValueResolver { self: Reach =>
   private def lookupLinktimeProperty(
       propertyName: String
   )(implicit pos: Position): LinktimeValue = {
-    config.compilerConfig.linktimeProperties
+    linktimeProperties
       .get(propertyName)
       .map(ComparableVal.fromAny(_).asAny)
       .getOrElse {
