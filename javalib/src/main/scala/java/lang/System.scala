@@ -176,7 +176,7 @@ object System {
   }
   private def getUserLanguage(): Option[String] = {
     if (isWindows) {
-      getUserLocaleInfo(LOCALE_SISO639LANGNAME2, 9.toUInt)
+      getUserLocaleInfo(LOCALE_SISO639LANGNAME2, bufSize = 9.toUInt)
     } else {
       Option(getenv("LANG")).map(_.takeWhile(_ != '_'))
     }
@@ -184,7 +184,7 @@ object System {
 
   private def getUserCountry(): Option[String] = {
     if (isWindows) {
-      getUserLocaleInfo(LOCALE_SISO3166CTRYNAME2, 9.toUInt)
+      getUserLocaleInfo(LOCALE_SISO3166CTRYNAME2, bufSize = 9.toUInt)
     } else {
       Option(getenv("LANG")).map(
         _.dropWhile(_ != '_')
