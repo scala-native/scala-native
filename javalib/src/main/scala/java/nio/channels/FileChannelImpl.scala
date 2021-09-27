@@ -38,6 +38,7 @@ import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.ErrorCodes
+import scala.scalanative.windows._
 
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
@@ -116,12 +117,30 @@ private[java] final class FileChannelImpl(
   }
 
   override def position(offset: Long): FileChannel = {
-    unistd.lseek(fd.fd, offset, stdio.SEEK_SET)
+    if (isWindows)
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        offset,
+        null,
+        FILE_BEGIN
+      )
+    else unistd.lseek(fd.fd, offset, stdio.SEEK_SET)
     this
   }
 
   override def position(): Long =
-    unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+    if (isWindows) {
+      val filePointer = stackalloc[LargeInteger]
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        0,
+        filePointer,
+        FILE_CURRENT
+      )
+      !filePointer
+    } else {
+      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+    }
 
   override def read(
       buffers: Array[ByteBuffer],
@@ -225,9 +244,15 @@ private[java] final class FileChannelImpl(
   }
 
   override def size(): Long = {
-    val size = unistd.lseek(fd.fd, 0L, stdio.SEEK_END);
-    unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
-    size
+    if(isWindows){
+      val size = stackalloc[windows.LargeInteger]
+      if (GetFileSizeEx(fd.handle, size)) (!size).toLong
+      else 0L
+    } else {
+      val size = unistd.lseek(fd.fd, 0L, stdio.SEEK_END);
+      unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
+      size
+    }
   }
 
   override def transferFrom(
@@ -254,15 +279,31 @@ private[java] final class FileChannelImpl(
     nb
   }
 
-  override def truncate(size: Long): FileChannel = {
-    ensureOpen()
-    val currentPosition = position()
-    if (unistd.ftruncate(fd.fd, size) != 0) {
-      throw new IOException()
+  override def truncate(size: Long): FileChannel =
+    if(!openForWriting) {
+      throw new IOException("Invalid argument")
+    } else {
+      ensureOpen()
+      val currentPosition = position()
+      val hasSucceded =
+        if (isWindows) {
+          FileApi.SetFilePointerEx(
+            fd.handle,
+            size,
+            null,
+            FILE_BEGIN
+          ) &&
+          FileApi.SetEndOfFile(fd.handle)
+        } else {
+          unistd.ftruncate(fd.fd, size) == 0
+        }
+      if (!hasSucceded) {
+        throw new IOException("Failed to truncate file")
+      }
+      if (currentPosition > size) position(size)
+      else position(currentPosition)
+      this
     }
-    if (currentPosition > size) position(size)
-    this
-  }
 
   override def write(
       buffers: Array[ByteBuffer],

@@ -50,20 +50,8 @@ class RandomAccessFile private (
   def getFD(): FileDescriptor =
     fd
 
-  def getFilePointer(): Long = {
-    if (isWindows) {
-      val filePointer = stackalloc[LargeInteger]
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        0,
-        filePointer,
-        FILE_CURRENT
-      )
-      !filePointer
-    } else {
-      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
-    }
-  }
+  def getFilePointer(): Long =
+    channel.position()
 
   def length(): Long =
     file.length()
@@ -157,37 +145,10 @@ class RandomAccessFile private (
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    if (isWindows)
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        pos,
-        null,
-        FILE_BEGIN
-      )
-    else unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
+    channel.position(pos)
 
   def setLength(newLength: Long): Unit =
-    if (!mode.contains("w")) {
-      throw new IOException("Invalid argument")
-    } else {
-      val currentPosition = getFilePointer()
-      val hasSucceded =
-        if (isWindows) {
-          FileApi.SetFilePointerEx(
-            fd.handle,
-            newLength,
-            null,
-            FILE_BEGIN
-          ) &&
-          FileApi.SetEndOfFile(fd.handle)
-        } else {
-          unistd.ftruncate(fd.fd, newLength) == 0
-        }
-      if (!hasSucceded) {
-        throw new IOException("Failed to truncate file")
-      }
-      if (currentPosition > newLength) seek(newLength)
-    }
+    channel.truncate(newLength)
 
   override def skipBytes(n: Int): Int =
     if (n <= 0) 0
