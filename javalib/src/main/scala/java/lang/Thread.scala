@@ -2,7 +2,7 @@ package java.lang
 
 import scalanative.annotation.stub
 import scalanative.meta.LinktimeInfo.isWindows
-import impl._
+import java.lang.impl._
 
 class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
