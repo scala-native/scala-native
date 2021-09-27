@@ -11,6 +11,7 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 import java.io.{FileInputStream, FileOutputStream}
+import java.io.RandomAccessFile
 
 class FileChannelTest {
   @Test def fileChannelCanReadBufferFromFile(): Unit = {
@@ -165,6 +166,24 @@ class FileChannelTest {
     }
   }
 
+  @Test def canMoveFilePointer(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+      val channel = new RandomAccessFile(f.toFile(),"rw").getChannel()
+      assertEquals(channel.position(), 0)
+      channel.position(3)
+      assertEquals(channel.position(), 3)
+      channel.write(ByteBuffer.wrap("a".getBytes()))
+
+      channel.close()
+
+      val newLines = Files.readAllLines(f)
+      assertTrue(newLines.size() == 1)
+      assertTrue(newLines.get(0) == "helao")
+    }
+  }
+
   @Test def getChannelFromFileInputStreamCoherency(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -203,6 +222,7 @@ class FileChannelTest {
         channel.write(ByteBuffer.wrap(Array[Byte](bytes(i))))
         i += 1
       }
+      channel.close()
       val readb = Files.readAllBytes(f)
       println(new String(readb))
       assertTrue(bytes sameElements readb)

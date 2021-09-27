@@ -66,8 +66,9 @@ class MappedByteBufferTest {
       writeBytes(mapped, count)
       mapped.force()
 
-      assertEquals("File size after mapping", file.length(), count)
+      assertEquals("File length after mapping", file.length(), count)
 
+      ch.position(0)
       for (i <- 0 until count) {
         val expected = ('A'.toByte + i / 10).toByte
         assertEquals(f"Byte #${i}", file.read(), expected)
@@ -84,10 +85,11 @@ class MappedByteBufferTest {
       writeBytes(mapped, count)
       mapped.force()
 
-      assertEquals(file.length(), 100)
+      assertEquals("FIle length after mapping", file.length(), 100)
 
+      file.seek(0)
       for (i <- 0 until count) {
-        assertEquals(file.read(), 0)
+        assertEquals(s"Byte ${i}", file.read(), 0)
       }
     }
   }
