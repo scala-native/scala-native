@@ -14,9 +14,11 @@ object Platform {
   @name("scalanative_platform_is_windows")
   def isWindows(): Boolean = extern
 
+  @deprecated("Use windows.WinNlsApi to retrieve locale info instead", "0.4.1")
   @name("scalanative_windows_get_user_lang")
   def windowsGetUserLang(): CString = extern
 
+  @deprecated("Use windows.WinNlsApi to retrieve locale info instead", "0.4.1")
   @name("scalanative_windows_get_user_country")
   def windowsGetUserCountry(): CString = extern
 
