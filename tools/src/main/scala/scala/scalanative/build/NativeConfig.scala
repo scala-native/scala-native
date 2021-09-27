@@ -249,11 +249,11 @@ object NativeConfig {
       case (key, value) if !isNumberOrString(value) => key
     }
     if (invalid.nonEmpty) {
-      System.err.println(
-        s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}"
-      )
       throw new BuildException(
-        "Link-time properties needs to be non-null primitives or non-empty string"
+        s"""Link-time properties needs to be non-null primitives or non-empty string
+           |Invalid link-time properties:
+           |${invalid.mkString(" - ", "\n", "")}
+        """.stripMargin
       )
     }
   }
