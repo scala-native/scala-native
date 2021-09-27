@@ -9,7 +9,7 @@ import scalanative.build.LLVM.oExt
 import scalanative.linker.Result
 
 /** Includes the GC code and filters unused code. */
-private[build] class GcBuildPlugin extends BuildPlugin {
+private[build] class GcFilterPlugin extends FilterPlugin {
   override def filterNativelib(
       config: Config,
       linkerResult: Result,

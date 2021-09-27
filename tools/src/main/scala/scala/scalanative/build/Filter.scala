@@ -17,7 +17,7 @@ private[scalanative] object Filter {
   private[build] val nativeProjectProps = s"${nativeCodeDir}.properties"
 
   /** Build plugin factory key */
-  private[build] val buildPluginKey = "buildplugin"
+  private[build] val filterPluginKey = "filterplugin"
 
   /** Filter the `nativelib` source files with special logic to select GC and
    *  optional components.
@@ -52,8 +52,8 @@ private[scalanative] object Filter {
           case t: Throwable =>
             sys.error(s"Unable to read properties: ${file}")
         }
-      val pluginName = props.getProperty(buildPluginKey)
-      val plugin = BuildPluginFactory.create(pluginName)
+      val pluginName = props.getProperty(filterPluginKey)
+      val plugin = FilterPluginFactory.create(pluginName)
       plugin.filterNativelib(config, linkerResult, nativeCodePath, allPaths)
     }
   }

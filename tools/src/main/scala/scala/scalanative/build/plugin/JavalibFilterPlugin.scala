@@ -9,7 +9,7 @@ import scalanative.build.LLVM.oExt
 import scalanative.linker.Result
 
 /** If used, includes the C code used for `java.util.zip` */
-private[build] class JavalibBuildPlugin extends BuildPlugin {
+private[build] class JavalibFilterPlugin extends FilterPlugin {
   override def filterNativelib(
       config: Config,
       linkerResult: Result,

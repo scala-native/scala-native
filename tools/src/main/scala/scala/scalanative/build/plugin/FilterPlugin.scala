@@ -5,7 +5,7 @@ import java.nio.file.Path
 
 import scalanative.linker
 
-trait BuildPlugin {
+trait FilterPlugin {
   def filterNativelib(
       config: Config,
       linkerResult: linker.Result,
