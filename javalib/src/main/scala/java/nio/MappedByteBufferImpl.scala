@@ -28,38 +28,52 @@ import scala.scalanative.annotation.alwaysinline
 import java.lang.ref.{WeakReference, WeakReferenceRegistry}
 
 import scala.scalanative.windows.ErrorHandlingApi._
+import java.lang.ref.ReferenceQueue
+
+// Finalization object used to unmap file after GC.
+class MappedByteBufferFinalizer(
+    weakRef: WeakReference[_ >: Null <: AnyRef],
+    ptr: Ptr[Byte],
+    size: Int,
+    windowsMappingHandler: Option[Handle]
+) {
+
+  WeakReferenceRegistry.addHandler(weakRef, apply)
+
+  def apply(): Unit = {
+    if (isWindows) {
+      UnmapViewOfFile(ptr)
+      CloseHandle(windowsMappingHandler.get)
+    } else {
+      munmap(ptr, size.toUInt)
+    }
+  }
+}
 
 class MappedByteBufferImpl private (
     mode: MapMode,
-    size: Int,
     array: GenArray[Byte],
     ptr: Ptr[Byte],
     windowsMappingHandler: Option[Handle]
-) extends MappedByteBuffer(mode, size, array, 0) {
+) extends MappedByteBuffer(mode, array.length, array, 0) {
 
-  // Finalization. Unmapping is done on garbage collection,
-  // like on JVM.
-  // private val selfWeakReference = new WeakReference(this)
-  // WeakReferenceRegistry.addHandler(selfWeakReference, ()=>println("WOOO") )
-
-  def unmap(ptr: Ptr[Byte], windowsMappingHandler: Option[Handle])(): Unit = {
-    if (isWindows) {
-      if (!UnmapViewOfFile(ptr)) throw new IOException
-      if (!CloseHandle(windowsMappingHandler.get)) throw new IOException
-    } else {
-      if (munmap(ptr, size.toUInt) == -1)
-        throw new IOException
-    }
-  }
+  // Finalization. Unmapping is done on garbage collection, like on JVM.
+  private val selfWeakReference = new WeakReference(this)
+  new MappedByteBufferFinalizer(
+    selfWeakReference,
+    ptr,
+    array.length,
+    windowsMappingHandler
+  )
 
   override def force(): MappedByteBuffer = {
     if (mode eq MapMode.READ_WRITE) {
       if (isWindows) {
         if (!FlushViewOfFile(ptr, 0.toUInt))
-          throw new IOException
+          throw new IOException("Could not flush view of file")
       } else {
-        if (msync(ptr, size.toUInt, MS_SYNC) == -1)
-          throw new IOException
+        if (msync(ptr, array.length.toUInt, MS_SYNC) == -1)
+          throw new IOException("Could not sync with file")
       }
     }
     this
@@ -151,7 +165,6 @@ private[nio] object MappedByteBufferImpl {
 
     new MappedByteBufferImpl(
       mode,
-      size,
       PtrArray(ptr, size),
       ptr,
       windowsMappingHandler
