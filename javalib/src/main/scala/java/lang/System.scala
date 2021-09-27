@@ -174,7 +174,7 @@ object System {
       case _ => Some(fromCWideString(buf, StandardCharsets.UTF_16))
     }
   }
-  
+
   private def getUserLanguage(): Option[String] = {
     if (isWindows) {
       getUserLocaleInfo(LOCALE_SISO639LANGNAME2, bufSize = 9.toUInt)
