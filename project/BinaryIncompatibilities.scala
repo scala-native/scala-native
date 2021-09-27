@@ -46,7 +46,9 @@ object BinaryIncompatibilities {
     // package-private
     exclude[MissingClassProblem]("scala.scalanative.runtime.*Shutdown*"),
     exclude[Problem]("scala.scalanative.runtime.ClassInstancesRegistry*"),
-    exclude[Problem]("scala.scalanative.runtime.package*TypeOps*")
+    exclude[Problem]("scala.scalanative.runtime.package*TypeOps*"),
+    exclude[MissingClassProblem]("scala.scalanative.runtime.zlib"),
+    exclude[MissingClassProblem]("scala.scalanative.runtime.zlib$")
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq(
