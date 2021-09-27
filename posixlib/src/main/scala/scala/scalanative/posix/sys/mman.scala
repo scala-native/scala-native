@@ -3,7 +3,6 @@ package posix
 package sys
 
 import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
 import scala.scalanative.unsafe.extern
 import scala.scalanative.posix.sys.types._
 

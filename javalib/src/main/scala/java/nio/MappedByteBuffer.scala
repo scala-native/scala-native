@@ -1,6 +1,6 @@
 package java.nio
 
-import java.nio.channels.{FileChannel, NonWritableChannelException}
+import java.nio.channels.FileChannel
 
 abstract class MappedByteBuffer private[nio] (
     mode: FileChannel.MapMode,

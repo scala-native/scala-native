@@ -1,22 +1,13 @@
 package java.nio.channels
 
-import java.nio.file.{
-  FileAlreadyExistsException,
-  Files,
-  NoSuchFileException,
-  OpenOption,
-  Path,
-  StandardOpenOption
-}
-import java.nio.file.attribute.FileAttribute
+import java.nio.file.Files
+
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.nio.file.WindowsException
 import scala.scalanative.nio.fs.unix.UnixException
 
 import java.io.FileDescriptor
 import java.io.File
-
-import java.util.Set
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import java.io.IOException
@@ -35,8 +26,6 @@ import scala.scalanative.libc.errno
 import scala.scalanative.windows.ErrorHandlingApi
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.HandleApiExt._
-import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.ErrorCodes
 import scala.scalanative.windows._
 

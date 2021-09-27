@@ -5,16 +5,9 @@ import java.nio.file.{OpenOption, Path}
 import java.nio.file.attribute.FileAttribute
 import spi.AbstractInterruptibleChannel
 
-import java.io.FileDescriptor
-
 import java.util.{HashSet, Set}
 import java.io.RandomAccessFile
 
-import scala.scalanative.windows.ErrorHandlingApi._
-import scala.scalanative.windows.FileApi._
-import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.HandleApiExt._
-import scala.scalanative.windows.winnt.AccessRights._
 import java.nio.file._
 
 abstract class FileChannel protected ()

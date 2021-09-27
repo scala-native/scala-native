@@ -1,24 +1,16 @@
 package java.nio
 
 import scala.scalanative.posix.sys.mman._
-import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.runtime.ByteArray
-import scala.scalanative.runtime.IntArray
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
 import scala.scalanative.windows.WinBaseApiExt._
 import scala.scalanative.windows.MemoryApi._
 import scala.scalanative.windows.HandleApi._
-import scala.scalanative.windows.FileApi
-import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows._
-
-import scala.scalanative.libc.errno._
-import scala.scalanative.libc.stdlib._
 
 import java.io.IOException
 import java.io.FileDescriptor
@@ -26,9 +18,6 @@ import java.nio.channels.FileChannel.MapMode
 import java.nio.channels.FileChannel
 import scala.scalanative.annotation.alwaysinline
 import java.lang.ref.{WeakReference, WeakReferenceRegistry}
-
-import scala.scalanative.windows.ErrorHandlingApi._
-import java.lang.ref.ReferenceQueue
 
 // Finalization object used to unmap file after GC.
 class MappedByteBufferFinalizer(
@@ -96,7 +85,7 @@ private[nio] object MappedByteBufferImpl {
 
     val prevPosition = channel.position()
 
-    def throwException(): Unit =
+    @alwaysinline def throwException(): Unit =
       throw new IOException("Could not map file to memory")
 
     // JVM resizes file to accomodate mapping

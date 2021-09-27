@@ -1,12 +1,8 @@
 package java.io
-import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.libc._
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.unistd
-import scala.scalanative.runtime
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._

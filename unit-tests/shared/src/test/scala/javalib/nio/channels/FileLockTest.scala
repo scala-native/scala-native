@@ -2,8 +2,8 @@ package javalib.nio.channels
 
 // Ported from Apache Harmony
 
-import java.io.{File, FileOutputStream, IOException, RandomAccessFile}
-import java.nio.channels.{ClosedChannelException, FileChannel, FileLock}
+import java.io.{File, RandomAccessFile}
+import java.nio.channels.{FileChannel, FileLock}
 
 import org.junit.{Test, Before, After}
 import org.junit.Assert._
