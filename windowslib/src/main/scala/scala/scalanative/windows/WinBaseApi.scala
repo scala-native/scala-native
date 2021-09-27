@@ -124,7 +124,16 @@ object WinBaseApi {
       flProtect: DWord,
       dwMaximumSizeHigh: DWord,
       dwMaximumSizeLow: DWord,
-      lpName: Ptr[Byte]
+      lpName: CString
+  ): Handle = extern
+
+  def CreateFileMappingW(
+      hFile: Handle,
+      lpFileMappingAttributes: SecurityAttributes,
+      flProtect: DWord,
+      dwMaximumSizeHigh: DWord,
+      dwMaximumSizeLow: DWord,
+      lpName: CWString
   ): Handle = extern
 
   @name("scalanative_lang_user_default")
@@ -173,9 +182,9 @@ object WinBaseApiExt {
   final val UNPROTECTED_DACL_SECURITY_INFORMATION = 0x20000000L.toUInt
   final val UNPROTECTED_SACL_SECURITY_INFORMATION = 0x10000000L.toUInt
 
-  final val PAGE_READONLY: DWord = 0x02.toUInt
-  final val PAGE_READWRITE: DWord = 0x04.toUInt
-  final val PAGE_WRITECOPY: DWord = 0x08.toUInt
+  final val PAGE_READONLY = 0x02.toUInt
+  final val PAGE_READWRITE = 0x04.toUInt
+  final val PAGE_WRITECOPY = 0x08.toUInt
 }
 
 object WinBaseApiOps {

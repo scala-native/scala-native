@@ -1,7 +1,7 @@
 package java.nio
 
 import scala.scalanative.posix.sys.mman._
-import scala.scalanative.posix.unistd.ftruncate
+import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -13,6 +13,8 @@ import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
 import scala.scalanative.windows.WinBaseApiExt._
 import scala.scalanative.windows.MemoryApi._
 import scala.scalanative.windows.HandleApi._
+import scala.scalanative.windows.FileApi
+import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows._
 
 import scala.scalanative.libc.errno._
@@ -22,11 +24,11 @@ import java.io.IOException
 import java.io.FileDescriptor
 import java.nio.channels.FileChannel.MapMode
 import java.nio.channels.FileChannel
+import scala.scalanative.annotation.alwaysinline
+import java.lang.ref.{WeakReference, WeakReferenceRegistry}
 
-// Unmap is not actually found in Java API. Unmapping should be done on
-// garbage collection, however, Scala Native does not provide that
-// functionality. Users have to rely on automatic unmapping at the end
-// of a process. Essentially, a memory leak on lost reference.
+import scala.scalanative.windows.ErrorHandlingApi._
+
 class MappedByteBufferImpl private (
     mode: MapMode,
     size: Int,
@@ -35,8 +37,12 @@ class MappedByteBufferImpl private (
     windowsMappingHandler: Option[Handle]
 ) extends MappedByteBuffer(mode, size, array, 0) {
 
-  // Not found in java API
-  override def unmap(): Unit = {
+  // Finalization. Unmapping is done on garbage collection,
+  // like on JVM.
+  // private val selfWeakReference = new WeakReference(this)
+  // WeakReferenceRegistry.addHandler(selfWeakReference, ()=>println("WOOO") )
+
+  def unmap(ptr: Ptr[Byte], windowsMappingHandler: Option[Handle])(): Unit = {
     if (isWindows) {
       if (!UnmapViewOfFile(ptr)) throw new IOException
       if (!CloseHandle(windowsMappingHandler.get)) throw new IOException
@@ -49,7 +55,7 @@ class MappedByteBufferImpl private (
   override def force(): MappedByteBuffer = {
     if (mode eq MapMode.READ_WRITE) {
       if (isWindows) {
-        if (!FlushViewOfFile(ptr, size.toUInt))
+        if (!FlushViewOfFile(ptr, 0.toUInt))
           throw new IOException
       } else {
         if (msync(ptr, size.toUInt, MS_SYNC) == -1)
@@ -74,23 +80,30 @@ private[nio] object MappedByteBufferImpl {
       channel: FileChannel
   ): MappedByteBufferImpl = {
 
+    val prevPosition = channel.position()
+    
+    def throwException(): Unit =
+      throw new IOException("Could not map file to memory")
+
     // JVM resizes file to accomodate mapping
     if (mode ne MapMode.READ_ONLY) {
-      if (position + size > channel.size())
-        if (isWindows) {
-          // _chsize( _fileno(f), size);
-          ???
-        } else {
-          if (ftruncate(fd.fd, position + size) == -1)
-            throw new IOException
+      val prevSize = channel.size()
+      val minSize = position + size
+      if (minSize > prevSize) {
+        channel.truncate(minSize)
+        if(isWindows){
+          channel.position(prevSize)
+          for(i <- prevSize until minSize)
+            channel.write(ByteBuffer.wrap(Array[Byte](0.toByte)))
+          channel.position(prevPosition)
         }
+      }
     }
 
     val (ptr: Ptr[Byte], windowsMappingHandler: Option[Handle]) =
       if (isWindows) {
         val (flProtect: DWord, dwDesiredAccess: DWord) =
-          if (mode eq MapMode.PRIVATE)
-            (PAGE_WRITECOPY, FILE_MAP_WRITE | FILE_MAP_COPY)
+          if (mode eq MapMode.PRIVATE) (PAGE_WRITECOPY, FILE_MAP_COPY)
           else if (mode eq MapMode.READ_ONLY) (PAGE_READONLY, FILE_MAP_READ)
           else if (mode eq MapMode.READ_WRITE) (PAGE_READWRITE, FILE_MAP_WRITE)
 
@@ -103,9 +116,9 @@ private[nio] object MappedByteBufferImpl {
             0.toUInt,
             null
           )
-        if (mappingHandle == null) throw new IOException
+        if (mappingHandle == null) throwException()
 
-        val dwFileOffsetHigh = (position >> 32).toInt.toUInt
+        val dwFileOffsetHigh = (position >>> 32).toInt.toUInt
         val dwFileOffsetLow = position.toInt.toUInt
 
         val ptr = MapViewOfFile(
@@ -115,7 +128,8 @@ private[nio] object MappedByteBufferImpl {
           dwFileOffsetLow,
           size.toUInt
         )
-        if (ptr.toInt == -1) throw new IOException
+
+        if (ptr == null) throwException()
         (ptr, Some(mappingHandle))
       } else {
         val (prot: Int, isPrivate: Int) =
@@ -131,7 +145,7 @@ private[nio] object MappedByteBufferImpl {
           fd.fd,
           position
         )
-        if (ptr.toInt == -1) throw new IOException
+        if (ptr.toInt == -1) throwException()
         (ptr, None)
       }
 

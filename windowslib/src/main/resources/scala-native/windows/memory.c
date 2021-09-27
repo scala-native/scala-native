@@ -1,6 +1,7 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#import <windows.h>
+#include <windows.h>
+#include <Winbase.h>
 
 DWORD scalanative_file_map_all_access() { return FILE_MAP_ALL_ACCESS; }
 DWORD scalanative_file_map_read() { return FILE_MAP_READ; }
@@ -12,4 +13,4 @@ DWORD scalanative_file_map_targets_invalid() {
     return FILE_MAP_TARGETS_INVALID;
 }
 
-#endif // defined(Win32)
+#endif // defined(_WIN32)

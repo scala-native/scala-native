@@ -12,7 +12,7 @@ object MemoryApi {
       dwDesiredAccess: DWord,
       dwFileOffsetHigh: DWord,
       dwFileOffsetLow: DWord,
-      dwNumberOfBytesToMap: DWord
+      dwNumberOfBytesToMap: CSize
   ): Ptr[Byte] = extern
 
   def UnmapViewOfFile(lpBaseAddress: Ptr[Byte]): Boolean = extern
