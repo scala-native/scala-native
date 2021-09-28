@@ -201,6 +201,15 @@ object FileApi {
       nNumberOfBytesToLockHigh: DWord
   ): Boolean = extern
 
+  def LockFileEx(
+      hfile: Handle,
+      dwFlags: DWord,
+      dwReserved: DWord,
+      nNumberOfBytesToLockLow: DWord,
+      nNumberOfBytesToLockHigh: DWord,
+      lpOverlapped: Ptr[_OVERLAPPED]
+  ): Boolean = extern
+
   def UnlockFile(
       hfile: Handle,
       dwFileOffsetLow: DWord,
@@ -279,6 +288,10 @@ object FileApiExt {
   final val VOLUME_NAME_GUID = 0x01.toUInt
   final val VOLUME_NAME_NT = 0x02.toUInt
   final val VOLUME_NAME_NONE = 0x04.toUInt
+
+  // File lock flags
+  final val LOCKFILE_EXCLUSIVE_LOCK = 0x00000002.toUInt
+  final val LOCKFILE_FAIL_IMMEDIATELY = 0x00000001.toUInt
 }
 
 object FileApiOps {

@@ -4,11 +4,14 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.language.implicitConversions
 import scala.scalanative.windows.util.Conversion
+import HandleApi._
 
 object MinWinBaseApi {
   type FileTime = ULargeInteger
   type FileTimeStruct = CStruct2[DWord, DWord]
   type SystemTime = CStruct8[Word, Word, Word, Word, Word, Word, Word, Word]
+  type DUMMYSTRUCTNAME = CStruct2[DWord, DWord]
+  type _OVERLAPPED = CStruct4[ULong, ULong, DUMMYSTRUCTNAME, Handle]
 }
 
 object MinWinBaseApiOps {
@@ -76,5 +79,26 @@ object MinWinBaseApiOps {
     def minute_=(v: Word): Unit = ref._6
     def second_=(v: Word): Unit = ref._7
     def milliseconds_=(v: Word): Unit = ref._8
+  }
+
+  implicit class OverlappedOps(val ref: Ptr[_OVERLAPPED]) extends AnyVal {
+    def Internal: ULong = ref._1
+    def InternalHigh: ULong = ref._2
+    def DUMMYSTRUCTNAME: DUMMYSTRUCTNAME = ref._3
+    def hEvent: Handle = ref._4
+
+    def Internal_=(v: ULong): Unit = ref._1 = v
+    def InternalHigh_=(v: ULong): Unit = ref._2 = v
+    def DUMMYSTRUCTNAME_=(v: DUMMYSTRUCTNAME): Unit = ref._3 = v
+    def hEvent_=(v: Handle): Unit = ref._4 = v
+  }
+
+  implicit class DUMMYSTRUCTNAMEOps(val ref: Ptr[DUMMYSTRUCTNAME])
+      extends AnyVal {
+    def Offset: DWord = ref._1
+    def OffsetHigh: DWord = ref._2
+
+    def Offset_=(v: DWord) = ref._1 = v
+    def OffsetHigh_=(v: DWord) = ref._2 = v
   }
 }

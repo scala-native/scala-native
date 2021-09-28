@@ -27,6 +27,8 @@ import scala.scalanative.windows.ErrorHandlingApi
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.ErrorCodes
+import scala.scalanative.windows.MinWinBaseApi._
+import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows._
 
 private[java] final class FileChannelImpl(
@@ -42,21 +44,17 @@ private[java] final class FileChannelImpl(
       position: Long,
       size: Long,
       shared: Boolean
-  ): FileLock = {
-    val lock =
-      if (!isWindows) lockUnix(position, size, shared, F_SETLK)
-      else lockWindows(position, size)
+  ): FileLock =
+    if (isWindows) {
+      val flag = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
+      lockWindows(position, size, flag)
+    } else lockUnix(position, size, shared, F_SETLK)
 
-    lock
-  }
-
-  override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
-    val lock =
-      if (!isWindows) lockUnix(position, size, shared, F_SETLKW)
-      else lockWindows(position, size)
-
-    lock
-  }
+  override def lock(position: Long, size: Long, shared: Boolean): FileLock =
+    if (isWindows) {
+      val flag: DWord = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
+      lockWindows(position, size, LOCKFILE_FAIL_IMMEDIATELY | flag)
+    } else lockUnix(position, size, shared, F_SETLKW)
 
   @inline private def lockUnix(
       position: Long,
@@ -71,20 +69,34 @@ private[java] final class FileChannelImpl(
     fl.l_type = F_WRLCK
     fl.l_whence = stdio.SEEK_SET
     if (fcntl(fd.fd, command, fl) == -1) {
-      throw new IOException()
+      throw new IOException("Could not lock file")
     }
     new FileLockImpl(this, position, size, shared, fd)
   }
 
-  @inline private def lockWindows(position: Long, size: Long): FileLock = {
-    if (!LockFile(
+  @inline private def lockWindows(
+      position: Long,
+      size: Long,
+      flags: DWord
+  ): FileLock = {
+
+    val dummy = stackalloc[DUMMYSTRUCTNAME]
+    dummy.Offset = position.toInt.toUInt
+    dummy.OffsetHigh = (position >> 32).toInt.toUInt
+    val overlapped = stackalloc[_OVERLAPPED]
+    overlapped.Internal = 0.toULong
+    overlapped.InternalHigh = 0.toULong
+    overlapped.DUMMYSTRUCTNAME = !dummy
+    overlapped.hEvent = fd.handle
+
+    if (!LockFileEx(
           fd.handle,
-          position.toInt.toUInt,
-          (position >> 32).toInt.toUInt,
+          flags,
+          0.toUInt,
           size.toInt.toUInt,
-          (size >> 32).toInt.toUInt
-        ))
-      throw new IOException()
+          (size >> 32).toInt.toUInt,
+          overlapped
+        )) throw new IOException("Could not lock file")
     new FileLockImpl(this, position, size, true, fd)
   }
 
