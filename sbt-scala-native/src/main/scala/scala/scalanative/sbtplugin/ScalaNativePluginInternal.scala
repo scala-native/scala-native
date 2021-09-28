@@ -16,6 +16,7 @@ import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
 import scala.scalanative.build.Platform
+import java.nio.file.Files
 
 object ScalaNativePluginInternal {
 
@@ -109,28 +110,75 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
+      val classpath = fullClasspath.value.map(_.data.toPath)
       val outpath = (nativeLink / artifactPath).value
-      val config = {
-        val mainClass = selectMainClass.value.getOrElse {
-          throw new MessageOnlyException("No main class detected.")
+
+      def makeBuild(): HashFileInfo = {
+        val config = {
+          val mainClass = selectMainClass.value.getOrElse {
+            throw new MessageOnlyException("No main class detected.")
+          }
+
+          val maincls = mainClass + "$"
+          val cwd = nativeWorkdir.value.toPath
+
+          val logger = streams.value.log.toLogger
+          build.Config.empty
+            .withLogger(logger)
+            .withMainClass(maincls)
+            .withClassPath(classpath)
+            .withWorkdir(cwd)
+            .withCompilerConfig(nativeConfig.value)
         }
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val maincls = mainClass + "$"
-        val cwd = nativeWorkdir.value.toPath
 
-        val logger = streams.value.log.toLogger
-        build.Config.empty
-          .withLogger(logger)
-          .withMainClass(maincls)
-          .withClassPath(classpath)
-          .withWorkdir(cwd)
-          .withCompilerConfig(nativeConfig.value)
+        interceptBuildException {
+          Build.build(config, outpath.toPath)(sharedScope)
+        }
+
+        FileInfo.hash(outpath)
       }
 
-      interceptBuildException {
-        Build.build(config, outpath.toPath)(sharedScope)
+      def buildIfChanged(): Unit = {
+        import sbt.util.CacheImplicits._
+        import collection.JavaConverters._
+
+        val cacheFactory = streams.value.cacheStoreFactory / "fileInfo"
+        val classpathTracker =
+          Tracked.inputChanged[Seq[HashFileInfo], HashFileInfo](
+            cacheFactory.make("inputFileInfo")
+          ) {
+            case (changed: Boolean, filesInfo: Seq[HashFileInfo]) =>
+              val outputTracker =
+                Tracked
+                  .lastOutput[Seq[HashFileInfo], HashFileInfo](
+                    cacheFactory.make("outputFileInfo")
+                  ) {
+                    case (_, None) => makeBuild()
+                    case (_, Some(outHashInfo)) =>
+                      if (changed || outHashInfo != FileInfo.hash(outpath))
+                        makeBuild()
+                      else outHashInfo
+                  }
+              outputTracker(filesInfo)
+          }
+
+        val classpathFilesInfo = classpath
+          .flatMap { classpath =>
+            if (Files.exists(classpath))
+              Files
+                .walk(classpath)
+                .iterator()
+                .asScala
+                .filter(path => Files.exists(path) && !Files.isDirectory(path))
+                .toList
+            else Nil
+          }
+          .map(path => FileInfo.hash(path.toFile()))
+
+        classpathTracker(classpathFilesInfo)
       }
 
+      buildIfChanged()
       outpath
     },
     run := {
