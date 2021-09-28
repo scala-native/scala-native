@@ -50,6 +50,10 @@ RUN useradd -ms /bin/bash scala-native
 
 USER scala-native
 
+# Install Rust for integration tests
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH=/home/scala-native/.cargo/bin:${PATH}
+
 WORKDIR /home/scala-native/scala-native
 
 CMD sbt "++ $SCALA_VERSION -v" -no-colors -J-Xmx5G "set scriptedBufferLog in sbtScalaNative := false" "$TEST_COMMAND"
