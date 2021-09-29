@@ -62,8 +62,7 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withOptimize(Discover.optimize())
-      .withLinktimeProperties(Discover.linktimeProperties()),
+      .withOptimize(Discover.optimize()),
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -141,9 +140,17 @@ object ScalaNativePluginInternal {
       val args = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args, None, env: _*)
-        .run(connectInput = false)
-        .exitValue
+
+      val exitCode = {
+        // It seems that previously used Scala Process has some bug leading
+        // to possible ignoring of inherited IO and termination of wrapper
+        // thread with an exception. We use java.lang ProcessBuilder instead
+        val proc = new ProcessBuilder()
+          .command((Seq(binary) ++ args): _*)
+          .inheritIO()
+        env.foreach((proc.environment().put(_, _)).tupled)
+        proc.start().waitFor()
+      }
 
       val message =
         if (exitCode == 0) None

@@ -4,6 +4,7 @@ package unsafe
 import scala.language.implicitConversions
 import scalanative.unsigned._
 import scalanative.runtime.{intrinsic, RawPtr, toRawPtr, libc, LongArray}
+import scalanative.meta.LinktimeInfo._
 
 /** Type of a C-style vararg list (va_list in C). */
 final class CVarArgList private[scalanative] (
@@ -39,15 +40,18 @@ object CVarArgList {
   private[scalanative] def fromSeq(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
-    var storage = new Array[Long](registerSaveWords)
-    var wordsUsed = storage.size
-    var gpRegistersUsed = 0
-    var fpRegistersUsed = 0
+    if (isWindows)
+      toCVarArgList_X86_64_Windows(varargs)
+    else
+      toCVarArgList_X86_64_Unix(varargs)
+  }
 
-    def isPassedAsDouble(vararg: CVarArg): Boolean =
-      vararg.tag == Tag.Float || vararg.tag == Tag.Double
+  @inline
+  private def isPassedAsDouble(vararg: CVarArg): Boolean =
+    vararg.tag == Tag.Float || vararg.tag == Tag.Double
 
-    def encode[T](value: T)(implicit tag: Tag[T]): Array[Long] = value match {
+  private def encode[T](value: T)(implicit tag: Tag[T]): Array[Long] =
+    value match {
       case value: Byte =>
         encode(value.toLong)
       case value: Short =>
@@ -71,7 +75,15 @@ object CVarArgList {
         words
     }
 
-    def append(word: Long): Unit = {
+  private def toCVarArgList_X86_64_Unix(
+      varargs: Seq[CVarArg]
+  )(implicit z: Zone): CVarArgList = {
+    var storage = new Array[Long](registerSaveWords)
+    var wordsUsed = storage.size
+    var gpRegistersUsed = 0
+    var fpRegistersUsed = 0
+
+    def appendWord(word: Long): Unit = {
       if (wordsUsed == storage.size) {
         val newstorage = new Array[Long](storage.size * 2)
         System.arraycopy(storage, 0, newstorage, 0, storage.size)
@@ -86,7 +98,8 @@ object CVarArgList {
       val isDouble = isPassedAsDouble(vararg)
 
       if (isDouble && fpRegistersUsed < countFPRegisters) {
-        var startIndex = countGPRegisters + (fpRegistersUsed * fpRegisterWords)
+        var startIndex =
+          countGPRegisters + (fpRegistersUsed * fpRegisterWords)
         encoded.foreach { w =>
           storage(startIndex) = w
           startIndex += 1
@@ -97,10 +110,9 @@ object CVarArgList {
         storage(startIndex) = encoded(0)
         gpRegistersUsed += 1
       } else {
-        encoded.foreach(append)
+        encoded.foreach(appendWord)
       }
     }
-
     val resultStorage =
       z.alloc(sizeof[Long] * storage.size.toULong).asInstanceOf[Ptr[Long]]
     val storageStart = storage.asInstanceOf[LongArray].at(0)
@@ -115,7 +127,44 @@ object CVarArgList {
     resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
     resultHeader.regSaveArea = resultStorage
     resultHeader.overflowArgArea = resultStorage + registerSaveWords
-
     new CVarArgList(toRawPtr(resultHeader))
   }
+
+  private def toCVarArgList_X86_64_Windows(
+      varargs: Seq[CVarArg]
+  )(implicit z: Zone) = {
+    import scalanative.runtime.libc.realloc
+    import scalanative.runtime.{fromRawPtr, toRawPtr}
+    var storage: Ptr[Word] = null
+    var count = 0
+    var allocated = 0
+
+    varargs.foreach { vararg =>
+      val encoded = encode(vararg.value)(vararg.tag)
+      val requiredSize = count + encoded.size
+      if (requiredSize > allocated) {
+        allocated = requiredSize.max(allocated * 2)
+        storage = fromRawPtr(
+          realloc(
+            toRawPtr(storage),
+            allocated.toUInt * sizeof[Word]
+          )
+        )
+      }
+      encoded.foreach { word =>
+        !(storage + count) = word
+        count += 1
+      }
+    }
+
+    val resultStorage = toRawPtr(z.alloc(count.toUInt * sizeof[Word]))
+    libc.memcpy(
+      resultStorage,
+      toRawPtr(storage),
+      count.toUInt * sizeof[Word]
+    )
+    libc.free(toRawPtr(storage))
+    new CVarArgList(resultStorage)
+  }
+
 }

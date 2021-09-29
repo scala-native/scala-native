@@ -111,8 +111,17 @@ private[scalanative] object LLVM {
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags = {
       val platformFlags =
-        if (config.targetsWindows) Seq("-g")
-        else Seq("-rdynamic")
+        if (config.targetsWindows) {
+          // https://github.com/scala-native/scala-native/issues/2372
+          // When using LTO make sure to use lld linker instead of default one
+          // LLD might find some duplicated symbols defined in both C and C++,
+          // runtime libraries (libUCRT, libCPMT), we ignore this warnings.
+          val ltoSupport = config.compilerConfig.lto match {
+            case LTO.None => Nil
+            case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
+          }
+          Seq("-g") ++ ltoSupport
+        } else Seq("-rdynamic")
       flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
