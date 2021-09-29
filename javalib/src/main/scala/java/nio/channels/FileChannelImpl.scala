@@ -38,23 +38,31 @@ private[java] final class FileChannelImpl(
     openForReading: Boolean,
     openForWriting: Boolean
 ) extends FileChannel {
+  override def force(metadata: Boolean): Unit =
+    fd.sync()
 
-  override def force(metadata: Boolean): Unit = ()
+  @inline private def assertIfCanLock(): Unit = {
+    if (!isOpen()) throw new ClosedChannelException()
+    if (!openForWriting) throw new NonWritableChannelException()
+  }
   override def tryLock(
       position: Long,
       size: Long,
       shared: Boolean
-  ): FileLock =
+  ): FileLock = {
+    assertIfCanLock()
     if (isWindows) {
       val flag = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
       lockWindows(position, size, flag)
     } else lockUnix(position, size, shared, F_SETLK)
-
-  override def lock(position: Long, size: Long, shared: Boolean): FileLock =
+  }
+  override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
+    assertIfCanLock()
     if (isWindows) {
       val flag: DWord = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
       lockWindows(position, size, LOCKFILE_FAIL_IMMEDIATELY | flag)
     } else lockUnix(position, size, shared, F_SETLKW)
+  }
 
   @inline private def lockUnix(
       position: Long,
@@ -101,8 +109,10 @@ private[java] final class FileChannelImpl(
   }
 
   override protected def implCloseChannel(): Unit = {
-    fd.close()
-    if (deleteFileOnClose && !file.isEmpty) Files.delete(file.get.toPath())
+    if (!isOpen()) {
+      fd.close()
+      if (deleteFileOnClose && !file.isEmpty) Files.delete(file.get.toPath())
+    }
   }
 
   override def map(

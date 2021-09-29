@@ -27,7 +27,6 @@ class RandomAccessFile private (
     )
   def this(name: String, mode: String) = this(new File(name), mode)
 
-  private var closed: Boolean = false
   private lazy val in = new DataInputStream(new FileInputStream(fd))
   private lazy val out = new DataOutputStream(new FileOutputStream(fd))
   private lazy val channel =
@@ -39,12 +38,11 @@ class RandomAccessFile private (
       openForWriting = mode.contains('w')
     )
 
-  override def close(): Unit = {
-    closed = true
+  override def close(): Unit =
     channel.close()
-  }
 
-  final def getChannel(): FileChannel = channel
+  final def getChannel(): FileChannel =
+    channel
 
   def getFD(): FileDescriptor =
     fd
@@ -56,15 +54,15 @@ class RandomAccessFile private (
     file.length()
 
   def read(): Int =
-    if (closed) throw new IOException("Stream Closed")
+    if (!channel.isOpen()) throw new IOException("Stream Closed")
     else in.read()
 
   def read(b: Array[Byte]): Int =
-    if (closed) throw new IOException("Stream Closed")
+    if (!channel.isOpen()) throw new IOException("Stream Closed")
     else in.read(b)
 
   def read(b: Array[Byte], off: Int, len: Int): Int =
-    if (closed) throw new IOException("Stream Closed")
+    if (!channel.isOpen()) throw new IOException("Stream Closed")
     else in.read(b, off, len)
 
   override final def readBoolean(): Boolean =

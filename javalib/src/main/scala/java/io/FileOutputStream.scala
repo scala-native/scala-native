@@ -27,7 +27,8 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File])
       openForWriting = true
     )
 
-  override def close(): Unit = channel.close()
+  override def close(): Unit =
+    channel.close()
 
   override protected def finalize(): Unit = close()
 
