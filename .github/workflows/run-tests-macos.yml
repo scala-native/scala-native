@@ -1,0 +1,82 @@
+name: Run tests
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  run-tests:
+    name: Run tests
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-10.15]
+        scala: [2.13.6, 2.12.15, 2.11.12]
+        gc: [none, boehm, immix, commix]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/macos-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test runtime
+        run: >
+          export SCALANATIVE_GC=${{matrix.gc}} &&
+          sbt ++${{matrix.scala}}
+          test-runtime
+          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+
+  run-scripted-tests:
+    name: Run scripted tests
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-10.15]
+        scala: [2.12.15]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test scripted
+        run: sbt ++${{matrix.scala}};test-scripted
+        shell: cmd
+
+  test-runtime-lto:
+    name: Test runtime with LTO
+    runs-on: macos-10.15
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.13.6, 2.12.15, 2.11.12]
+        build-mode: [release-fast]
+        lto: [thin]
+        optimize: [true]
+        include:
+          - scala: 2.13.6
+            lto: full
+            optimize: true
+          - scala: 2.12.15
+            lto: full
+            optimize: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/macos-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test runtime
+        run: >
+          export SCALANATIVE_MODE=release-fast &&
+          export SCALANATIVE_OPTIMIZE=${{matrix.optimize}} &&
+          export SCALANATIVE_LTO=${{matrix.lto}} &&
+          sbt ++${{matrix.scala}}
+          tests/test
+          testsExt/test
+        shell: cmd
