@@ -65,7 +65,7 @@ private[scalanative] object LLVM {
         val result = Process(compilec, config.workdir.toFile) ! Logger
           .toProcessLogger(config.logger)
         if (result != 0) {
-          sys.error(s"Failed to compile ${inpath}")
+          throw new BuildException(s"Failed to compile ${inpath}")
         }
       }
       objPath
