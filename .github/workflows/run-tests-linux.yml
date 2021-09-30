@@ -18,7 +18,7 @@ jobs:
         scala: [2.13.6, 2.12.15, 2.11.12]
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/unix-setup-env
+      - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
@@ -157,7 +157,7 @@ jobs:
             gc: commix
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/unix-setup-env
+      - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
@@ -190,7 +190,7 @@ jobs:
             build-mode: release-fast
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/unix-setup-env
+      - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
@@ -223,7 +223,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/unix-setup-env
+      - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
@@ -249,7 +249,7 @@ jobs:
         scala: [2.12.15]
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/unix-setup-env
+      - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
