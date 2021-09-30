@@ -113,7 +113,7 @@ object ScalaNativePluginInternal {
       val classpath = fullClasspath.value.map(_.data.toPath)
       val outpath = (nativeLink / artifactPath).value
 
-      def makeBuild(): HashFileInfo = {
+      def build(): Unit = {
         val config = {
           val mainClass = selectMainClass.value.getOrElse {
             throw new MessageOnlyException("No main class detected.")
@@ -123,7 +123,7 @@ object ScalaNativePluginInternal {
           val cwd = nativeWorkdir.value.toPath
 
           val logger = streams.value.log.toLogger
-          build.Config.empty
+          scala.scalanative.build.Config.empty
             .withLogger(logger)
             .withMainClass(maincls)
             .withClassPath(classpath)
@@ -134,8 +134,6 @@ object ScalaNativePluginInternal {
         interceptBuildException {
           Build.build(config, outpath.toPath)(sharedScope)
         }
-
-        FileInfo.hash(outpath)
       }
 
       def buildIfChanged(): Unit = {
@@ -152,12 +150,12 @@ object ScalaNativePluginInternal {
                 Tracked
                   .lastOutput[Seq[HashFileInfo], HashFileInfo](
                     cacheFactory.make("outputFileInfo")
-                  ) {
-                    case (_, None) => makeBuild()
-                    case (_, Some(outHashInfo)) =>
-                      if (changed || outHashInfo != FileInfo.hash(outpath))
-                        makeBuild()
-                      else outHashInfo
+                  ) { (_, prev) =>
+                    val outputHashInfo = FileInfo.hash(outpath)
+                    if (changed || !prev.contains(outputHashInfo)) {
+                      build()
+                      FileInfo.hash(outpath)
+                    } else outputHashInfo
                   }
               outputTracker(filesInfo)
           }
