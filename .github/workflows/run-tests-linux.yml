@@ -1,4 +1,4 @@
-name: Run tests
+name: Run tests Linux
 on:
   pull_request:
   push:
@@ -204,7 +204,7 @@ jobs:
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
 
   test-runtime-lto:
-    name: Test runtime with lto
+    name: Test runtime LTO
     runs-on: ubuntu-18.04
     needs: [tests-tools, build-image]
     strategy:

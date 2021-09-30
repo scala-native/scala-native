@@ -1,4 +1,4 @@
-name: Run tests
+name: Run tests MacOs 
 on:
   pull_request:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   run-tests:
-    name: Run tests
+    name: Test runtime
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -30,7 +30,7 @@ jobs:
           "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   run-scripted-tests:
-    name: Run scripted tests
+    name: Scripted tests
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -45,10 +45,9 @@ jobs:
 
       - name: Test scripted
         run: sbt ++${{matrix.scala}};test-scripted
-        shell: cmd
 
   test-runtime-lto:
-    name: Test runtime with LTO
+    name: Runtime LTO
     runs-on: macos-10.15
     strategy:
       fail-fast: false
@@ -79,4 +78,3 @@ jobs:
           sbt ++${{matrix.scala}}
           tests/test
           testsExt/test
-        shell: cmd
