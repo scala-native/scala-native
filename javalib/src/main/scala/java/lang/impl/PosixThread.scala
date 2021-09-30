@@ -5,7 +5,6 @@ import scala.scalanative.posix.errno.EINTR
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps._
 import scala.scalanative.unsafe._
-import scala.scalanative.posix.unistd
 import scala.scalanative.libc.errno
 
 private[lang] object PosixThread {
@@ -13,7 +12,7 @@ private[lang] object PosixThread {
     @tailrec
     def doSleep(requestedTime: Ptr[timespec]): Unit = {
       val remaining = stackalloc[timespec]
-      unistd.nanosleep(requestedTime, remaining) match {
+      nanosleep(requestedTime, remaining) match {
         case _ if Thread.interrupted() =>
           throw new InterruptedException("Sleep was interrupted")
 
