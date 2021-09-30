@@ -17,12 +17,19 @@ trait ReachabilitySuite extends AnyFunSuite {
   def g(top: String, sig: Sig): Global =
     Global.Member(Global.Top(top), sig)
 
+  private val MainMethodDependencies = Set(
+    Global.Top("java.lang.String"),
+    Global.Top("java.lang.CharSequence"),
+    Global.Top("java.lang.Comparable"),
+    Global.Top("java.io.Serializable")
+  )
+
   def testReachable(label: String)(f: => (String, Global, Seq[Global])) =
     test(label) {
       val (source, entry, expected) = f
-      link(Seq(entry), Seq(source)) { res =>
+      link(Seq(entry), Seq(source), entry.top.id) { res =>
         val left = res.defns.map(_.name).toSet
-        val right = expected.toSet
+        val right = expected.toSet ++ MainMethodDependencies
         assert(res.unavailable.isEmpty, "unavailable")
         assert((left -- right).isEmpty, "underapproximation")
         assert((right -- left).isEmpty, "overapproximation")
@@ -44,7 +51,11 @@ trait ReachabilitySuite extends AnyFunSuite {
    *  @return
    *    The result of applying `fn` to the resulting definitions.
    */
-  def link[T](entries: Seq[Global], sources: Seq[String])(
+  def link[T](
+      entries: Seq[Global],
+      sources: Seq[String],
+      mainClass: String
+  )(
       f: linker.Result => T
   ): T =
     Scope { implicit in =>
@@ -55,7 +66,7 @@ trait ReachabilitySuite extends AnyFunSuite {
       }.toMap
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files = compiler.compile(sourcesDir)
-      val config = makeConfig(outDir)
+      val config = makeConfig(outDir, mainClass)
       val result = ScalaNative.link(config, entries)
 
       f(result)
@@ -71,10 +82,14 @@ trait ReachabilitySuite extends AnyFunSuite {
     parts :+ outDir
   }
 
-  private def makeConfig(outDir: Path)(implicit in: Scope): build.Config = {
+  private def makeConfig(outDir: Path, mainClass: String)(implicit
+      in: Scope
+  ): build.Config = {
     val paths = makeClasspath(outDir)
-    build.Config.empty
+    val default = build.Config.empty
+    default
       .withWorkdir(outDir)
       .withClassPath(paths.toSeq)
+      .withMainClass(mainClass)
   }
 }

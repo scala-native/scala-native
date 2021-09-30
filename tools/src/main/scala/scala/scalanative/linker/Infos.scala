@@ -13,6 +13,7 @@ sealed abstract class Info {
 sealed abstract class ScopeInfo extends Info {
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
   val calls = mutable.Set.empty[Sig]
+  val responds = mutable.Map.empty[Sig, Global]
 
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Trait]
@@ -67,7 +68,6 @@ final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
 ) extends ScopeInfo {
   val implementors = mutable.SortedSet.empty[Class]
   val subtraits = mutable.Set.empty[Trait]
-  val responds = mutable.Map.empty[Sig, Global]
 
   def targets(sig: Sig): mutable.Set[Global] = {
     val out = mutable.Set.empty[Global]
@@ -104,7 +104,6 @@ final class Class(
     extends ScopeInfo {
   val implementors = mutable.SortedSet[Class](this)
   val subclasses = mutable.Set.empty[Class]
-  val responds = mutable.Map.empty[Sig, Global]
   val defaultResponds = mutable.Map.empty[Sig, Global]
   var allocated = false
 
