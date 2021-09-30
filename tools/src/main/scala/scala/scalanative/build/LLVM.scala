@@ -62,8 +62,8 @@ private[scalanative] object LLVM {
             Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) ! Logger
-          .toProcessLogger(config.logger)
+        val result = Process(compilec, config.workdir.toFile) !
+          Logger.toProcessLogger(config.logger)
         if (result != 0) {
           throw new BuildException(s"Failed to compile ${inpath}")
         }
@@ -131,8 +131,8 @@ private[scalanative] object LLVM {
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
       config.logger.running(compile)
-      val result = Process(compile, config.workdir.toFile) ! Logger
-        .toProcessLogger(config.logger)
+      val result = Process(compile, config.workdir.toFile) !
+        Logger.toProcessLogger(config.logger)
       if (result != 0) {
         throw new BuildException(s"Failed to link ${outpath}")
       }
