@@ -58,7 +58,10 @@ Compile / compile := {
     else "liblink-order-test.a"
   }
   val archivePath = cwd / libName
-  val archive = Seq("llvm-ar", "cr", abs(archivePath)) ++ opaths
+  // Windows does not have ar binary, but llvm toolchain provides llvm-ar
+  // On MacOS llvm-ar might not be defined in path by default
+  val archiveBin = if (isWindows) "llvm-ar" else "ar"
+  val archive = Seq(archiveBin, "cr", abs(archivePath)) ++ opaths
   if (run(archive) != 0) {
     sys.error(s"Failed to create archive $archivePath")
   }
