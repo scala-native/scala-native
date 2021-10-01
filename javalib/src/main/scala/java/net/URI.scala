@@ -940,8 +940,8 @@ final class URI private () extends Comparable[URI] with Serializable {
     val include: Array[Boolean] = Array.ofDim[Boolean](size)
     // break the path into segments and store in the list
     var current: Int = 0
-    var index2: Int = path.indexOf('/', index + 1)
     index = if (pathlen > 0 && path.charAt(0) == '/') 1 else 0
+    var index2: Int = path.indexOf('/', index + 1)
     while (index2 != -1) {
       seglist({ current += 1; current - 1 }) = path.substring(index, index2)
       index = index2 + 1
