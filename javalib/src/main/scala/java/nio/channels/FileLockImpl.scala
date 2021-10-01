@@ -10,7 +10,14 @@ import java.io.FileDescriptor
 import scala.scalanative.windows.FileApi
 import scala.scalanative.unsigned._
 
-// Works only between system processes. No thread support
+// Works only between system processes. No thread support.
+// Although in JVM locks are held on behalf the entire Java
+// Virtual Machine, and are not suitable for controlling access
+// to a file between different threads of the same JVM (which is
+// effectively what is being done here, with a process instead of
+// JVM), it should be still checked if multiple filelocks from
+// different threads (of the same JVM/process) overlap, according
+// to the java docs.
 private[java] final class FileLockImpl(
     channel: FileChannel,
     position: Long,

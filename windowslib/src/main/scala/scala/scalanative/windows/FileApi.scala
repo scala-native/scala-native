@@ -207,7 +207,7 @@ object FileApi {
       dwReserved: DWord,
       nNumberOfBytesToLockLow: DWord,
       nNumberOfBytesToLockHigh: DWord,
-      lpOverlapped: Ptr[_OVERLAPPED]
+      lpOverlapped: Ptr[OVERLAPPED]
   ): Boolean = extern
 
   def UnlockFile(

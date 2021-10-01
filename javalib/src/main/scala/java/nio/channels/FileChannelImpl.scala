@@ -45,6 +45,7 @@ private[java] final class FileChannelImpl(
     if (!isOpen()) throw new ClosedChannelException()
     if (!openForWriting) throw new NonWritableChannelException()
   }
+
   override def tryLock(
       position: Long,
       size: Long,
@@ -56,6 +57,7 @@ private[java] final class FileChannelImpl(
       lockWindows(position, size, flag)
     } else lockUnix(position, size, shared, F_SETLK)
   }
+
   override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
     assertIfCanLock()
     if (isWindows) {
@@ -91,7 +93,7 @@ private[java] final class FileChannelImpl(
     val dummy = stackalloc[DUMMYSTRUCTNAME]
     dummy.Offset = position.toInt.toUInt
     dummy.OffsetHigh = (position >> 32).toInt.toUInt
-    val overlapped = stackalloc[_OVERLAPPED]
+    val overlapped = stackalloc[OVERLAPPED]
     overlapped.Internal = 0.toULong
     overlapped.InternalHigh = 0.toULong
     overlapped.DUMMYSTRUCTNAME = !dummy
@@ -111,7 +113,7 @@ private[java] final class FileChannelImpl(
   override protected def implCloseChannel(): Unit = {
     if (!isOpen()) {
       fd.close()
-      if (deleteFileOnClose && !file.isEmpty) Files.delete(file.get.toPath())
+      if (deleteFileOnClose && file.isDefined) Files.delete(file.get.toPath())
     }
   }
 
@@ -324,7 +326,6 @@ private[java] final class FileChannelImpl(
     ensureOpen()
     var i = 0
     while (i < length) {
-      val buffer = buffers(offset + i).array()
       write(buffers(offset + i))
       i += 1
     }

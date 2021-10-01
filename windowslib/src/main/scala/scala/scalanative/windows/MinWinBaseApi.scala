@@ -11,7 +11,7 @@ object MinWinBaseApi {
   type FileTimeStruct = CStruct2[DWord, DWord]
   type SystemTime = CStruct8[Word, Word, Word, Word, Word, Word, Word, Word]
   type DUMMYSTRUCTNAME = CStruct2[DWord, DWord]
-  type _OVERLAPPED = CStruct4[ULong, ULong, DUMMYSTRUCTNAME, Handle]
+  type OVERLAPPED = CStruct4[ULong, ULong, DUMMYSTRUCTNAME, Handle]
 }
 
 object MinWinBaseApiOps {
@@ -81,7 +81,7 @@ object MinWinBaseApiOps {
     def milliseconds_=(v: Word): Unit = ref._8
   }
 
-  implicit class OverlappedOps(val ref: Ptr[_OVERLAPPED]) extends AnyVal {
+  implicit class OverlappedOps(val ref: Ptr[OVERLAPPED]) extends AnyVal {
     def Internal: ULong = ref._1
     def InternalHigh: ULong = ref._2
     def DUMMYSTRUCTNAME: DUMMYSTRUCTNAME = ref._3

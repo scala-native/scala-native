@@ -104,10 +104,11 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
 
     val len = remaining()
     val bytesPerElem = newHeapBufferView.bytesPerElem
+    val array = _byteArray.toArray()
     System.arraycopy(
-      _byteArray.toArray(),
+      array,
       _byteArrayOffset + bytesPerElem * position(),
-      _byteArray.toArray(),
+      array,
       _byteArrayOffset,
       bytesPerElem * len
     )

@@ -59,7 +59,11 @@ struct scalanative_flock {
     short l_type;   /* lock type: read/write, etc. */
     short l_whence; /* type of l_start */
 };
-
+/* POSIX does not define the order of fields in flock, and there can be an
+ * unidentified amount of additional ones. Because of this, we have to access
+ * them by name and not by position, which is impossible for now in the c
+ * interop of Scala Native. This is a way around that.
+ */
 int scalanative_fcntl(int fd, int cmd, struct scalanative_flock *flock_struct) {
     struct flock flock_buf;
     flock_buf.l_start = flock_struct->l_start;

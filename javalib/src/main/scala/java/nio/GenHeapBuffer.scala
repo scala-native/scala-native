@@ -99,11 +99,12 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
     ensureNotReadOnly()
 
     val len = remaining()
+    val array = _array.toArray()
     System
       .arraycopy(
-        _array.toArray(),
+        array,
         _arrayOffset + position(),
-        _array.toArray(),
+        array,
         _arrayOffset,
         len
       )
