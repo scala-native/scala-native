@@ -52,4 +52,4 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Test scripted
-        run: sbt ++${{matrix.scala}};test-scripted
+        run: sbt "++${{matrix.scala}};test-scripted"
