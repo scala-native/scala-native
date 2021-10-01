@@ -1,4 +1,4 @@
-name: Run tests MacOs 
+name: Run tests MacOs
 on:
   pull_request:
   push:
@@ -8,11 +8,10 @@ on:
 jobs:
   run-tests:
     name: Test runtime
-    runs-on: ${{matrix.os}}
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-10.15]
         scala: [2.13.6, 2.12.15, 2.11.12]
         gc: [immix]
         include:
@@ -39,11 +38,10 @@ jobs:
 
   run-scripted-tests:
     name: Scripted tests
-    runs-on: ${{matrix.os}}
+    runs-on: macos-10.15
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-10.15]
         scala: [2.12.15]
     steps:
       - uses: actions/checkout@v2
