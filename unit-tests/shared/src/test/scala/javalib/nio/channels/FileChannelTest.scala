@@ -171,9 +171,9 @@ class FileChannelTest {
       val f = dir.resolve("f")
       Files.write(f, "hello".getBytes("UTF-8"))
       val channel = new RandomAccessFile(f.toFile(), "rw").getChannel()
-      assertEquals(channel.position(), 0)
+      assertEquals(0, channel.position())
       channel.position(3)
-      assertEquals(channel.position(), 3)
+      assertEquals(3, channel.position())
       channel.write(ByteBuffer.wrap("a".getBytes()))
 
       channel.close()
@@ -199,7 +199,7 @@ class FileChannelTest {
 
       var i = 2
       while (i < bytes.length) {
-        assertEquals(f"Byte#$i", read345.get(i - 2), bytes(i))
+        assertEquals(f"Byte#$i", bytes(i), read345.get(i - 2))
         i += 1
       }
     }
