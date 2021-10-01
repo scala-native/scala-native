@@ -15,22 +15,22 @@ object WinNlsApi {
       bufferSize: UInt
   ): Int = extern
 
-  @name("scalanative_win32_locale_name_invariant")
+  @name("scalanative_locale_name_invariant")
   def LOCALE_NAME_INVARIANT: CWString = extern
-  @name("scalanative_win32_locale_name_system_default")
+  @name("scalanative_locale_name_system_default")
   def LOCALE_NAME_SYSTEM_DEFAULT: CWString = extern
-  @name("scalanative_win32_locale_name_user_default")
+  @name("scalanative_locale_name_user_default")
   def LOCALE_NAME_USER_DEFAULT: CWString = extern
 
-  @name("scalanative_win32_locale_siso639langname")
+  @name("scalanative_locale_siso639langname")
   def LOCALE_SISO639LANGNAME: LCType = extern
 
-  @name("scalanative_win32_locale_siso639langname2")
+  @name("scalanative_locale_siso639langname2")
   def LOCALE_SISO639LANGNAME2: LCType = extern
 
-  @name("scalanative_win32_locale_siso3166ctryname")
+  @name("scalanative_locale_siso3166ctryname")
   def LOCALE_SISO3166CTRYNAME: LCType = extern
 
-  @name("scalanative_win32_locale_siso3166ctryname2")
+  @name("scalanative_locale_siso3166ctryname2")
   def LOCALE_SISO3166CTRYNAME2: LCType = extern
 }

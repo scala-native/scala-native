@@ -2,17 +2,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-DWORD scalanative_win32_security_impersonation_anonymous() {
-    return SecurityAnonymous;
-}
-DWORD scalanative_win32_security_impersonation_identification() {
-    return SecurityIdentification;
-}
-DWORD scalanative_win32_security_impersonation_impersonation() {
-    return SecurityImpersonation;
-}
-DWORD scalanative_win32_security_impersonation_delegation() {
-    return SecurityDelegation;
-}
+DWORD scalanative_securityanonymous() { return SecurityAnonymous; }
+DWORD scalanative_securityidentification() { return SecurityIdentification; }
+DWORD scalanative_securityimpersonation() { return SecurityImpersonation; }
+DWORD scalanative_securitydelegation() { return SecurityDelegation; }
 
 #endif // defined(_WIN32)

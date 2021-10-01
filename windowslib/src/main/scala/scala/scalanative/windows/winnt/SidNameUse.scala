@@ -3,36 +3,36 @@ package scala.scalanative.windows.winnt
 import scalanative.unsafe._
 @extern
 object SidNameUse {
-  @name("scalanative_win32_winnt_sid_name_use_sidtypeuser")
+  @name("scalanative_sidtypeuser")
   def SidTypeUser: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypegroup")
+  @name("scalanative_sidtypegroup")
   def SidTypeGroup: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypedomain")
+  @name("scalanative_sidtypedomain")
   def SidTypeDomain: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypealias")
+  @name("scalanative_sidtypealias")
   def SidTypeAlias: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypewellknowngroup")
+  @name("scalanative_sidtypewellknowngroup")
   def SidTypeWellKnownGroup: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypedeletedaccount")
+  @name("scalanative_sidtypedeletedaccount")
   def SidTypeDeletedAccount: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypeinvalid")
+  @name("scalanative_sidtypeinvalid")
   def SidTypeInvalid: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypeunknown")
+  @name("scalanative_sidtypeunknown")
   def SidTypeUnknown: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypecomputer")
+  @name("scalanative_sidtypecomputer")
   def SidTypeComputer: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypelabel")
+  @name("scalanative_sidtypelabel")
   def SidTypeLabel: SidNameUse = extern
 
-  @name("scalanative_win32_winnt_sid_name_use_sidtypelogonsession")
+  @name("scalanative_sidtypelogonsession")
   def SidTypeLogonSession: SidNameUse = extern
 }
