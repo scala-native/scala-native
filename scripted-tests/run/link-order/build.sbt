@@ -1,6 +1,7 @@
 enablePlugins(ScalaNativePlugin)
 
 import scala.sys.process._
+import scala.scalanative.build.Platform.isWindows
 
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
@@ -47,16 +48,10 @@ Compile / compile := {
     opath
   }
 
-  val libName = {
-    import java.util.Locale
-    val isWindows = System
-      .getProperty("os.name", "unknown")
-      .toLowerCase(Locale.ROOT)
-      .startsWith("windows")
-
+  val libName =
     if (isWindows) "link-order-test.lib"
     else "liblink-order-test.a"
-  }
+
   val archivePath = cwd / libName
   // Windows does not have ar binary, but llvm toolchain provides llvm-ar
   // On MacOS llvm-ar might not be defined in path by default
