@@ -19,9 +19,11 @@
 package scala.scalanative
 package regex
 
+import java.util.ArrayDeque
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
+import java.util.Queue
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -53,7 +55,9 @@ class RE2 private {
 
   // Cache of machines for running regexp.
   // Accesses must be serialized using |this| monitor.
-  private val machine = new ArrayList[Machine]()
+  // @GuardedBy("this")
+
+  private val machine: Queue[Machine] = new ArrayDeque[Machine]()
 
   // This is visible for testing.
   def this(expr: String) = {
@@ -98,12 +102,20 @@ class RE2 private {
 
   // get() returns a machine to use for matching |this|.  It uses |this|'s
   // machine cache if possible, to avoid unnecessary allocation.
-  def get(): Machine = synchronized {
-    val n = machine.size()
-    if (n > 0) {
-      return machine.remove(n - 1)
+
+  def get(): Machine = {
+    /// Scala Native: Having a return statement in the middle of the code is an
+    /// eyesore that comes directly from the re2j base code.
+    /// Its saving grace is that it _vastly_ simplifies the mutual
+    /// exclusion logic.
+
+    synchronized {
+      if (!machine.isEmpty()) {
+        return machine.remove()
+      }
     }
-    return new Machine(this)
+
+    new Machine(this)
   }
 
   // Clears the memory associated with this machine.
