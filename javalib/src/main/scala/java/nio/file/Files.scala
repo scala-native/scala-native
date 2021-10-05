@@ -10,7 +10,8 @@ import java.io.{
   InputStream,
   InputStreamReader,
   OutputStream,
-  OutputStreamWriter
+  OutputStreamWriter,
+  UncheckedIOException
 }
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
@@ -46,6 +47,7 @@ import scalanative.nio.fs.FileHelpers
 import scalanative.compat.StreamsCompat._
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.immutable.{Map => SMap, Set => SSet}
+import java.io.FileNotFoundException
 
 object Files {
 
@@ -71,6 +73,9 @@ object Files {
           replaceExisting) {
         if (!targetFile.delete()) throw new IOException()
         new FileOutputStream(targetFile, append = false)
+      } else if (targetFile
+            .isDirectory() && !targetFile.list().isEmpty && replaceExisting) {
+        throw new DirectoryNotEmptyException(targetFile.getAbsolutePath())
       } else {
         throw new FileAlreadyExistsException(targetFile.getAbsolutePath())
       }
@@ -344,8 +349,16 @@ object Files {
       matcher: BiPredicate[Path, BasicFileAttributes],
       options: Array[FileVisitOption]
   ): Stream[Path] = {
+    val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
     val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
-      val linkOpts = linkOptsFromFileVisitOpts(options)
+      val brokenSymLink =
+        if (isSymbolicLink(p)) {
+          val target = readSymbolicLink(p)
+          val targetExists = exists(target, nofollow)
+          !targetExists
+        } else false
+      val linkOpts =
+        if (!brokenSymLink) linkOptsFromFileVisitOpts(options) else nofollow
       val attributes =
         getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
           .readAttributes()
@@ -496,14 +509,15 @@ object Files {
     Zone { implicit z =>
       val sourceAbs = source.toAbsolutePath().toString
       val targetAbs = target.toAbsolutePath().toString
+      // We cannot replace directory, it needs to be removed first
+      if (replaceExisting && target.toFile().isDirectory()) {
+        //todo delete children
+        Files.delete(target)
+      }
       if (isWindows) {
         val sourceCString = toCWideStringUTF16LE(sourceAbs)
         val targetCString = toCWideStringUTF16LE(targetAbs)
-        // We cannot replace directory, it needs to be removed first
-        if (replaceExisting && target.toFile().isDirectory()) {
-          //todo delete children
-          Files.delete(target)
-        }
+
         // stdio.rename on Windows does not replace existing file
         val flags = {
           val replace =
@@ -819,8 +833,13 @@ object Files {
               val newVisited = visited + path
               val target = readSymbolicLink(path)
               if (newVisited.contains(target))
-                throw new FileSystemLoopException(path.toString)
-              else walk(path, maxDepth, currentDepth + 1, options, newVisited)
+                throw new UncheckedIOException(
+                  new FileSystemLoopException(path.toString)
+                )
+              else if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
+                start.resolve(name) #:: SStream.empty
+              else
+                walk(path, maxDepth, currentDepth + 1, options, newVisited)
 
             case (name, FileHelpers.FileType.Directory)
                 if currentDepth < maxDepth =>
@@ -875,6 +894,7 @@ object Files {
       maxDepth: Int,
       visitor: FileVisitor[_ >: Path]
   ): Path = {
+    val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
     val optsArray = options.toArray(new Array[FileVisitOption](options.size()))
     val stream = walk(start, maxDepth, 0, optsArray, SSet.empty)
     val dirsToSkip = scala.collection.mutable.Set.empty[Path]
@@ -885,7 +905,17 @@ object Files {
       if (dirsToSkip.contains(parent)) ()
       else {
         try {
-          val linkOpts = linkOptsFromFileVisitOpts(optsArray)
+          val brokenSymLink =
+            if (isSymbolicLink(p)) {
+              val target = readSymbolicLink(p)
+              val targetExists = exists(target, nofollow)
+              !targetExists
+            } else false
+
+          val linkOpts =
+            if (!brokenSymLink) linkOptsFromFileVisitOpts(optsArray)
+            else nofollow
+
           val attributes =
             getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
               .readAttributes()
@@ -904,6 +934,8 @@ object Files {
                   openDirs.pop(); FileVisitResult.SKIP_SUBTREE
                 case other => other
               }
+            } else if (attributes.isSymbolicLink()) {
+              visitor.visitFile(p, attributes)
             } else {
               FileVisitResult.CONTINUE
             }
