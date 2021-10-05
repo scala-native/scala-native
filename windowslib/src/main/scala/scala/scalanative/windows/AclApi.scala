@@ -60,32 +60,32 @@ object AclApi {
   ): DWord = extern
 
   // SecurityObjectType enum
-  @name("scalanative_win32_se_object_type_unknown_object_type")
+  @name("scalanative_se_unknown_object_type")
   def SE_UNKNOWN_OBJECT_TYPE: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_file_object")
+  @name("scalanative_se_file_object")
   def SE_FILE_OBJECT: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_service")
+  @name("scalanative_se_service")
   def SE_SERVICE: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_printer")
+  @name("scalanative_se_printer")
   def SE_PRINTER: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_registry_key")
+  @name("scalanative_se_registry_key")
   def SE_REGISTRY_KEY: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_lmshare")
+  @name("scalanative_se_lmshare")
   def SE_LMSHARE: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_kernel_object")
+  @name("scalanative_se_kernel_object")
   def SE_KERNEL_OBJECT: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_window_object")
+  @name("scalanative_se_window_object")
   def SE_WINDOW_OBJECT: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_ds_object")
+  @name("scalanative_se_ds_object")
   def SE_DS_OBJECT: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_ds_object_all")
+  @name("scalanative_se_ds_object_all")
   def SE_DS_OBJECT_ALL: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_provider_defined_object")
+  @name("scalanative_se_provider_defined_object")
   def SE_PROVIDER_DEFINED_OBJECT: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_wmiguid_object")
+  @name("scalanative_se_wmiguid_object")
   def SE_WMIGUID_OBJECT: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_registry_wow64_32key")
+  @name("scalanative_se_registry_wow64_32key")
   def SE_REGISTRY_WOW64_32KEY: SecurityObjectType = extern
-  @name("scalanative_win32_se_object_type_registry_wow64_64key")
+  @name("scalanative_se_registry_wow64_64key")
   def SE_REGISTRY_WOW64_64KEY: SecurityObjectType = extern
 }
