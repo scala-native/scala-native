@@ -115,7 +115,7 @@ object NativeConfig {
       checkFatalWarnings = false,
       dump = false,
       linkStubs = false,
-      optimize = false,
+      optimize = true,
       linktimeProperties = Map.empty
     )
 
@@ -212,7 +212,7 @@ object NativeConfig {
         | - check:              $check
         | - checkFatalWarnings: $checkFatalWarnings
         | - dump:               $dump
-        | - optimize            $optimize
+        | - optimize:           $optimize
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
     }
