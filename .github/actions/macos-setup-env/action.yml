@@ -1,0 +1,23 @@
+name: "MacOs tests env setup"
+description: "Used to setup MacOS tests environemt"
+inputs:
+  scala-version:
+    description: "Scala version used in the tests"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Calculate binary version
+      shell: bash
+      run: |
+        version=${{ inputs.scala-version }}
+        echo "binary-version=${version%.*}" >> $GITHUB_ENV
+
+    # Loads cache with dependencies created in test-tools job
+    - name: Cache dependencies
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/coursier
+          ~/.sbt/boot
+        key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
