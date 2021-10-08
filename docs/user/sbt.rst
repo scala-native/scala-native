@@ -215,6 +215,29 @@ Use the following approach in `sbt` to set the target triple:
 
     nativeConfig ~= { _.withTargetTriple("x86_64-apple-macosx10.14.0") }
 
+you may create a few dedicated projects with different target triples. If you
+have multiple project definitions for different macOS architectures, eg:
+
+.. code-block:: scala
+
+    lazy val sandbox64 = project.in(file("sandbox"))
+        .settings(nativeConfig ~= { _.withTargetTriple("arm64-apple-darwin20.6.0") })
+
+    lazy val sandboxM1 = project.in(file("sandbox"))
+        .settings(nativeConfig ~= { _.withTargetTriple("x86_64-apple-darwin20.6.0") })
+
+These project definitions allow to produce different binaries - one dedicated
+for the `x86_64` platform and another one for `arm64`. You may easily combine
+them to one so called fat binary or universal binary via lipo:
+
+.. code-block:: sh
+
+     lipo -create sandbox64/target/scala-2.12/sandbox64-out sandboxM1/target/scala-2.12/sandboxM1-out -output sandbox-out
+
+which produces `sandbox-out` that can be used at any platform.
+
+You may use `FatELF https://icculus.org/fatelf/` to build fat binaries for Linux.
+
 Publishing
 ----------
 
