@@ -15,10 +15,13 @@ import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 import scala.scalanative.windows.WinSocketApiOps
+import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import scala.scalanative.libc.errno
+import scala.scalanative.libc.string.strerror
 
 class UdpSocketTest {
   // All tests in this class assume that an IPv4 network is up & running.
@@ -137,14 +140,23 @@ class UdpSocketTest {
         // failure. Since this is send/recv pair is explicitly loopback,
         // that is highly unlikely.
         //
-        // If this race condition becomes bothersome, a Thead.sleep() can
-        // be inserted here.
-
         /// Two tests using one inbound packet, save test duplication.
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
         val inData = alloc[Byte](maxInData)
+
+        // Try to prevent spourious race conditions
+        Thread.sleep(100)
+
+        def checkRecvfromResult(v: CSSize, label: String): Unit = {
+          if (v.toInt < 0) {
+            val reason =
+              if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
+              else fromCString(strerror(errno.errno))
+            fail(s"$label failed - $reason")
+          }
+        }
 
         // Test not fetching remote address. Exercise last two arguments.
         val nBytesPeekedAt =
@@ -156,6 +168,7 @@ class UdpSocketTest {
             null.asInstanceOf[Ptr[sockaddr]],
             null.asInstanceOf[Ptr[socklen_t]]
           )
+        checkRecvfromResult(nBytesPeekedAt, "recvfrom_1")
 
         // Friendlier code here and after the next recvfrom() would loop
         // on partial reads rather than fail.
@@ -170,6 +183,7 @@ class UdpSocketTest {
         val nBytesRecvd =
           recvfrom(inSocket, inData, maxInData.toUInt, 0, srcAddr, srcAddrLen)
 
+        checkRecvfromResult(nBytesRecvd, "recvfrom_2")
         assertEquals("recvfrom_2 length", nBytesSent, nBytesRecvd)
 
         // Packet came from where we expected, and not Mars.
