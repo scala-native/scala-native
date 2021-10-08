@@ -73,8 +73,9 @@ object Files {
           replaceExisting) {
         if (!targetFile.delete()) throw new IOException()
         new FileOutputStream(targetFile, append = false)
-      } else if (targetFile
-            .isDirectory() && !targetFile.list().isEmpty && replaceExisting) {
+      } else if (targetFile.isDirectory() &&
+          !targetFile.list().isEmpty &&
+          replaceExisting) {
         throw new DirectoryNotEmptyException(targetFile.getAbsolutePath())
       } else {
         throw new FileAlreadyExistsException(targetFile.getAbsolutePath())

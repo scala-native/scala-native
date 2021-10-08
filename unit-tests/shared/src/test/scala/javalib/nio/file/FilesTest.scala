@@ -17,6 +17,7 @@ import scala.util.{Try, Failure}
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.CollectionConverters._
+import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import org.scalanative.testsuite.utils.Platform.{isWindows, executingInJVM}
 
 class FilesTest {
@@ -27,10 +28,6 @@ class FilesTest {
       "Do not test symlinks on windows, admin privilege needed",
       isWindows
     )
-  }
-
-  def assumeNotJDK(): Unit = {
-    assumeFalse("Not compliant with the JDK", executingInJVM)
   }
 
   @Test def filesCopyCanCopyToNonExistingFile(): Unit = {
@@ -61,7 +58,7 @@ class FilesTest {
   }
 
   @Test def filesCopyThrowsIfTargetExistsAndIsEmptyDir(): Unit = {
-    assumeNotJDK()
+    assumeNotJVMCompliant()
 
     val targetFile = File.createTempFile("test", ".tmp")
     val target = targetFile.toPath()
@@ -105,7 +102,7 @@ class FilesTest {
   }
 
   @Test def filesCopyThrowsIfTheTargetExistsAndIsNonEmptyDir(): Unit = {
-    assumeNotJDK()
+    assumeNotJVMCompliant()
 
     val targetFile = File.createTempFile("test", ".tmp")
     val target = targetFile.toPath()
@@ -213,7 +210,8 @@ class FilesTest {
   }
 
   @Test def filesCopyShouldCopyAttributes(): Unit = {
-    assumeNotJDK()
+    // Incompatible resolution
+    assumeNotJVMCompliant()
 
     withTemporaryDirectory { dirFile =>
       val foo = dirFile.toPath.resolve("foo")
@@ -942,8 +940,7 @@ class FilesTest {
   }
 
   @Test def filesWalkFileTreeCanSkipSiblings(): Unit = {
-    // Incompatible resolution
-    assumeNotJDK()
+    assumeNotJVMCompliant()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
