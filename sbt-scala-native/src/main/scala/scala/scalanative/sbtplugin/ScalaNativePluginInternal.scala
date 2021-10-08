@@ -144,7 +144,7 @@ object ScalaNativePluginInternal {
         val cacheFactory = streams.value.cacheStoreFactory / "fileInfo"
         val classpathTracker =
           Tracked.inputChanged[
-            (Seq[HashFileInfo], scala.scalanative.build.Config),
+            (Seq[HashFileInfo], build.Config),
             HashFileInfo
           ](
             cacheFactory.make("inputFileInfo")
