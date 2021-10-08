@@ -137,14 +137,14 @@ class UdpSocketTest {
         // failure. Since this is send/recv pair is explicitly loopback,
         // that is highly unlikely.
         //
-        // If this race condition becomes bothersome, a Thead.sleep() can
-        // be inserted here.
-
         /// Two tests using one inbound packet, save test duplication.
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
         val inData = alloc[Byte](maxInData)
+
+        // Try to prevent spourious race conditions
+        Thread.sleep(100)
 
         // Test not fetching remote address. Exercise last two arguments.
         val nBytesPeekedAt =
