@@ -37,19 +37,7 @@ object BinaryIncompatibilities {
 
   final val NativeLib = Seq(
     // Internal usage
-    exclude[DirectMissingMethodProblem](
-      "scala.scalanative.regex.RE2.namedCaps"
-    ),
-    exclude[DirectMissingMethodProblem](
-      "scala.scalanative.regex.RE2.namedCaps_="
-    ),
-    exclude[DirectMissingMethodProblem](
-      "scala.scalanative.regex.RE2.findNamedCapturingGroups"
-    ),
-    exclude[DirectMissingMethodProblem]("scala.scalanative.regex.RE2.this"),
-    exclude[DirectMissingMethodProblem](
-      "scala.scalanative.regex.Regexp.namedCaps"
-    ),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.regex.*"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.rawty"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.this"),
     // moved to auxlib

@@ -35,14 +35,14 @@ object Simplify {
           val sub = re.subs(i)
           val nsub = simplify(sub)
 
-          if (nre.eq(re) && nsub != sub) { // object equality (.eq()) required
+          if (nre.eq(re) && nsub != sub) { // reference equality (eq) required
             // Start a copy.
             nre = new Regexp(re) // shallow copy
             nre.runes = null
             nre.subs = Parser.subarray(re.subs, 0, re.subs.length) // clone
           }
 
-          if (!nre.eq(re)) { // object inequality (! .eq()) required.
+          if (nre.ne(re)) { // reference inequality (ne) required.
             nre.subs(i) = nsub
           }
           i += 1
