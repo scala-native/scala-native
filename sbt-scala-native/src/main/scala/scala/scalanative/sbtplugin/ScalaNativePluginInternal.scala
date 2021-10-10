@@ -113,24 +113,24 @@ object ScalaNativePluginInternal {
       val classpath = fullClasspath.value.map(_.data.toPath)
       val outpath = (nativeLink / artifactPath).value
 
-      def build(): Unit = {
-        val config = {
-          val mainClass = selectMainClass.value.getOrElse {
-            throw new MessageOnlyException("No main class detected.")
-          }
-
-          val maincls = mainClass + "$"
-          val cwd = nativeWorkdir.value.toPath
-
-          val logger = streams.value.log.toLogger
-          scala.scalanative.build.Config.empty
-            .withLogger(logger)
-            .withMainClass(maincls)
-            .withClassPath(classpath)
-            .withWorkdir(cwd)
-            .withCompilerConfig(nativeConfig.value)
+      val config = {
+        val mainClass = selectMainClass.value.getOrElse {
+          throw new MessageOnlyException("No main class detected.")
         }
 
+        val maincls = mainClass + "$"
+        val cwd = nativeWorkdir.value.toPath
+
+        val logger = streams.value.log.toLogger
+        build.Config.empty
+          .withLogger(logger)
+          .withMainClass(maincls)
+          .withClassPath(classpath)
+          .withWorkdir(cwd)
+          .withCompilerConfig(nativeConfig.value)
+      }
+
+      def buildNew(): Unit = {
         interceptBuildException {
           Build.build(config, outpath.toPath)(sharedScope)
         }
@@ -138,14 +138,21 @@ object ScalaNativePluginInternal {
 
       def buildIfChanged(): Unit = {
         import sbt.util.CacheImplicits._
+        import NativeLinkCacheImplicits._
         import collection.JavaConverters._
 
         val cacheFactory = streams.value.cacheStoreFactory / "fileInfo"
         val classpathTracker =
-          Tracked.inputChanged[Seq[HashFileInfo], HashFileInfo](
+          Tracked.inputChanged[
+            (Seq[HashFileInfo], build.Config),
+            HashFileInfo
+          ](
             cacheFactory.make("inputFileInfo")
           ) {
-            case (changed: Boolean, filesInfo: Seq[HashFileInfo]) =>
+            case (
+                  changed: Boolean,
+                  (filesInfo: Seq[HashFileInfo], config: build.Config)
+                ) =>
               val outputTracker =
                 Tracked
                   .lastOutput[Seq[HashFileInfo], HashFileInfo](
@@ -153,7 +160,7 @@ object ScalaNativePluginInternal {
                   ) { (_, prev) =>
                     val outputHashInfo = FileInfo.hash(outpath)
                     if (changed || !prev.contains(outputHashInfo)) {
-                      build()
+                      buildNew()
                       FileInfo.hash(outpath)
                     } else outputHashInfo
                   }
@@ -173,7 +180,7 @@ object ScalaNativePluginInternal {
           }
           .map(path => FileInfo.hash(path.toFile()))
 
-        classpathTracker(classpathFilesInfo)
+        classpathTracker(classpathFilesInfo, config)
       }
 
       buildIfChanged()
