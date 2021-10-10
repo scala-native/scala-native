@@ -44,7 +44,7 @@ object WinSocketApi {
   @name("closesocket")
   def closeSocket(socket: Socket): CInt = extern
 
-  @name("scalanative_winsocket_fionbio")
+  @name("scalanative_winsock_fionbio")
   final def FIONBIO: CInt = extern
 
   @name("scalanative_winsock_wsadata_size")

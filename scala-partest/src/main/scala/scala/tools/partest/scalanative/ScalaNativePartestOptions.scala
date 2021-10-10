@@ -2,6 +2,7 @@
 
 package scala.tools.partest.scalanative
 import java.nio.file.{Path, Paths}
+import java.io.File.pathSeparator
 import scalanative.build
 
 case class ScalaNativePartestOptions private (
@@ -21,8 +22,8 @@ case class ScalaNativePartestOptions private (
     s"-Dscalanative.partest.mode=${buildMode.name}",
     s"-Dscalanative.partest.gc=${gc.name}",
     s"-Dscalanative.partest.lto=${lto.name}",
-    s"-Dscalanative.partest.nativeCp=${nativeClasspath.mkString(":")}",
-    s"-Dscalanative.build.paths.libobj=${precompiledLibrariesPaths.mkString(":")}"
+    s"-Dscalanative.partest.nativeCp=${nativeClasspath.mkString(pathSeparator)}",
+    s"-Dscalanative.build.paths.libobj=${precompiledLibrariesPaths.mkString(pathSeparator)}"
   )
 
   def show: String =

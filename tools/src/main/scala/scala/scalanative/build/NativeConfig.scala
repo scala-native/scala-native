@@ -50,8 +50,8 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
-  /** Map of properties resolved at linktime */
-  def linktimeProperties: Map[String, Any]
+  /** Map of user defined properties resolved at linktime */
+  def linktimeProperties: NativeConfig.LinktimeProperites
 
   private lazy val detectedTriple = Discover.targetTriple(clang)
 
@@ -119,10 +119,13 @@ sealed trait NativeConfig {
   def withOptimize(value: Boolean): NativeConfig
 
   /** Create a new config with given linktime properites */
-  def withLinktimeProperties(value: Map[String, Any]): NativeConfig
+  def withLinktimeProperties(
+      value: NativeConfig.LinktimeProperites
+  ): NativeConfig
 }
 
 object NativeConfig {
+  type LinktimeProperites = Map[String, Any]
 
   /** Default empty config object where all of the fields are left blank. */
   def empty: NativeConfig =
@@ -220,30 +223,8 @@ object NativeConfig {
       predefined ++ customLinktimeProperties
     }
 
-    override def withLinktimeProperties(v: Map[String, Any]): NativeConfig = {
-      def isSupportedPropertyKind(value: Any) = {
-        def hasSupportedType = value match {
-          case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
-              _: Val.Size | _: Float | _: Double | _: String =>
-            true
-          case _ => false
-        }
-
-        value != null && hasSupportedType
-      }
-
-      val invalid = v.collect {
-        case (key, value) if !isSupportedPropertyKind(value) => key
-      }
-      if (invalid.nonEmpty) {
-        System.err.println(
-          s"Invalid link-time properties: \n ${invalid.mkString(" - ", "\n", "")}"
-        )
-        throw new BuildException(
-          "Link-time properties needs to be non-null primitives or non-empty string"
-        )
-      }
-
+    def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {
+      checkLinktimeProperties(v)
       copy(customLinktimeProperties = v)
     }
 
@@ -279,6 +260,29 @@ object NativeConfig {
         | - optimize            $optimize
         | - linktimeProperties: $listLinktimeProperties
         |)""".stripMargin
+    }
+  }
+
+  def checkLinktimeProperties(properties: LinktimeProperites): Unit = {
+    def isNumberOrString(value: Any) = {
+      value match {
+        case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
+            _: Float | _: Double | _: String | _: Val =>
+          true
+        case _ => false
+      }
+    }
+
+    val invalid = properties.collect {
+      case (key, value) if !isNumberOrString(value) => key
+    }
+    if (invalid.nonEmpty) {
+      throw new BuildException(
+        s"""Link-time properties needs to be non-null primitives or non-empty string
+           |Invalid link-time properties:
+           |${invalid.mkString(" - ", "\n", "")}
+        """.stripMargin
+      )
     }
   }
 

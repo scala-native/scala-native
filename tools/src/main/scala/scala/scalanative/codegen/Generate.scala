@@ -3,7 +3,9 @@ package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
-import scala.scalanative.linker.Class
+import scala.scalanative.linker.{Class, ScopeInfo, Unavailable}
+import scala.ref.WeakReferenceWithWrapper
+import scala.scalanative.build.Logger
 
 object Generate {
   import Impl._
@@ -35,6 +37,7 @@ object Generate {
       genModuleArray()
       genModuleArraySize()
       genObjectArrayId()
+      genWeakRefUtils()
       genArrayIds()
       genStackBottom()
 
@@ -126,16 +129,13 @@ object Generate {
     }
 
     def genMain(): Unit = {
+      validateMainEntry()
+
       implicit val fresh = Fresh()
       val entryMainTy =
         Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
-      val entryMainName =
-        Global.Member(
-          entry,
-          Sig.Method("main", Seq(Type.Array(Rt.String), Type.Unit))
-        )
-      val entryMain = Val.Global(entryMainName, Type.Ptr)
 
+      val entryMainMethod = Val.Local(fresh(), Type.Ptr)
       val stackBottom = Val.Local(fresh(), Type.Ptr)
 
       val argc = Val.Local(fresh(), Type.Int)
@@ -190,7 +190,15 @@ object Generate {
               unwind
             ),
             Inst.Let(module.name, Op.Module(entry.top), unwind),
-            Inst.Let(Op.Call(entryMainTy, entryMain, Seq(module, arr)), unwind),
+            Inst.Let(
+              entryMainMethod.name,
+              Op.Method(module, Rt.ScalaMainSig),
+              unwind
+            ),
+            Inst.Let(
+              Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
+              unwind
+            ),
             Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
             Inst.Ret(Val.Int(0)),
             Inst.Label(handler, Seq(exc)),
@@ -321,6 +329,51 @@ object Generate {
       )
     }
 
+    def genWeakRefUtils(): Unit = {
+      def addToBuf(name: Global, value: Int) =
+        buf +=
+          Defn.Var(
+            Attrs.None,
+            name,
+            Type.Int,
+            Val.Int(value)
+          )
+      val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
+
+      val (
+        weakRefId,
+        weakRefFieldOffset
+      ) =
+        if (linked.infos.contains(weakRefGlobal)) {
+          // if WeakReferences are being compiled and therefore supported
+          def gcModifiedFieldIndexes(clazz: Class): Seq[Int] =
+            meta.layout(clazz).entries.zipWithIndex.collect {
+              case (field, index)
+                  if field.name.mangle.contains("_gc_modified_") =>
+                index
+            }
+
+          val weakRef = linked
+            .infos(weakRefGlobal)
+            .asInstanceOf[Class]
+
+          val weakRefFieldIndexes = gcModifiedFieldIndexes(weakRef)
+          if (weakRefFieldIndexes.size != 1)
+            throw new Exception(
+              "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
+            )
+
+          (
+            meta.ids(weakRef),
+            weakRefFieldIndexes.head
+          )
+        } else {
+          (-1, -1)
+        }
+      addToBuf(weakRefIdName, weakRefId)
+      addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)
+    }
+
     def genArrayIds(): Unit = {
       val tpes = Seq(
         "Boolean",
@@ -354,6 +407,22 @@ object Generate {
       buf += meta.dispatchTable.dispatchDefn
       buf += meta.hasTraitTables.classHasTraitDefn
       buf += meta.hasTraitTables.traitHasTraitDefn
+    }
+
+    private def validateMainEntry(): Unit = {
+      def fail(reason: String): Nothing =
+        util.unsupported(s"Entry ${entry.id} $reason")
+
+      val info = linked.infos.getOrElse(entry, fail("not linked"))
+      info match {
+        case cls: Class if cls.isModule =>
+          cls.resolve(Rt.ScalaMainSig).getOrElse {
+            fail(s"does not contain ${Rt.ScalaMainSig}")
+          }
+        case _: ScopeInfo   => fail("was not a module")
+        case _: Unavailable => fail("unavailable")
+        case _              => util.unreachable
+      }
     }
   }
 
@@ -409,6 +478,10 @@ object Generate {
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
+    val weakRefIdName = extern("__weak_ref_id")
+    val weakRefFieldOffsetName = extern("__weak_ref_field_offset")
+    val registryOffsetName = extern("__weak_ref_registry_module_offset")
+    val registryFieldOffsetName = extern("__weak_ref_registry_field_offset")
     val arrayIdsMinName = extern("__array_ids_min")
     val arrayIdsMaxName = extern("__array_ids_max")
 

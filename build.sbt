@@ -170,17 +170,6 @@ addCommandAlias(
 lazy val publishSnapshot =
   taskKey[Unit]("Publish snapshot to sonatype on every commit to master.")
 
-// to publish plugin (we only need to do this once, it's already done!)
-// follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html
-// then add a new package
-// name: sbt-scala-native, license: BSD-like, version control: git@github.com:scala-native/scala-native.git
-// to be available without a resolver
-// follow: https://www.scala-sbt.org/1.x/docs/Bintray-For-Plugins.html#Linking+your+package+to+the+sbt+organization
-lazy val bintrayPublishSettings: Seq[Setting[_]] = Seq(
-  bintrayRepository := "sbt-plugins",
-  bintrayOrganization := Some("scala-native")
-) ++ publishSettings
-
 lazy val mavenPublishSettings: Seq[Setting[_]] = Seq(
   publishMavenStyle := true,
   pomIncludeRepository := { x => false },
@@ -407,7 +396,7 @@ lazy val nscplugin =
 
 lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
-    bintrayPublishSettings ++
+    mavenPublishSettings ++
     Seq(
       sbtVersion := sbt10Version,
       scriptedLaunchOpts := {
@@ -1163,7 +1152,7 @@ lazy val scalaPartestTests: Project = project
         (auxlib / Compile / packageBin).value,
         (scalalib / Compile / packageBin).value,
         (scalaPartestRuntime / Compile / packageBin).value
-      ).map(_.absolutePath).mkString(":")
+      ).map(_.absolutePath).mkString(pathSeparator)
 
       Tests.Argument(s"--nativeClasspath=$nativeCp")
     },

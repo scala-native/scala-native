@@ -62,20 +62,20 @@ object SecurityBaseApi {
   ): Unit = extern
 
   // SecurityImpersonationLevel enum
-  @name("scalanative_win32_security_impersonation_anonymous")
+  @name("scalanative_securityanonymous")
   def SecurityAnonymous: SecurityImpersonationLevel = extern
 
-  @name("scalanative_win32_security_impersonation_identification")
+  @name("scalanative_securityidentification")
   def SecurityIdentification: SecurityImpersonationLevel = extern
 
-  @name("scalanative_win32_security_impersonation_impersonation")
+  @name("scalanative_securityimpersonation")
   def SecurityImpersonation: SecurityImpersonationLevel = extern
 
-  @name("scalanative_win32_security_impersonation_delegation")
+  @name("scalanative_securitydelegation")
   def SecurityDelegation: SecurityImpersonationLevel = extern
 
   // utils
-  @name("scalanative_win32_winnt_empty_priviliges_size")
+  @name("scalanative_winnt_empty_priviliges_size")
   def emptyPriviligesSize: CSize = extern
 
 }

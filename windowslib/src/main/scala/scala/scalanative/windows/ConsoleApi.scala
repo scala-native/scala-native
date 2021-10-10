@@ -8,13 +8,13 @@ object ConsoleApi {
   def GetStdHandle(handleNum: DWord): Handle = extern
   def SetStdHandle(stdHandle: DWord, handle: Handle): Boolean = extern
 
-  @name("scalanative_win32_console_std_in_handle")
+  @name("scalanative_std_input_handle")
   final def STD_INPUT_HANDLE: DWord = extern
 
-  @name("scalanative_win32_console_std_out_handle")
+  @name("scalanative_std_output_handle")
   final def STD_OUTPUT_HANDLE: DWord = extern
 
-  @name("scalanative_win32_console_std_err_handle")
+  @name("scalanative_std_error_handle")
   final def STD_ERROR_HANDLE: DWord = extern
 }
 

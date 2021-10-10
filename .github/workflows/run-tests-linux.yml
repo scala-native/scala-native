@@ -1,4 +1,4 @@
-name: Run tests
+name: Run tests Linux
 on:
   pull_request:
   push:
@@ -18,24 +18,9 @@ jobs:
         scala: [2.13.6, 2.12.15, 2.11.12]
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: ./.github/actions/linux-setup-env
         with:
-          java-version: 1.8
-      - name: Calculate binary version
-        run: |
-          version=${{matrix.scala}}
-          echo "binary-version=${version%.*}" >> $GITHUB_ENV
-
-      # Build cache for library dependencies and SBT. Its crucial for performance to always load this cache
-      # We're loading it here, when build, to always have ready cache in the big matrix of runtime tests.
-      # Cache is generated based on Scala binary version on contents of build
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cache/coursier
-            ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          scala-version: ${{matrix.scala}}
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
@@ -194,19 +179,13 @@ jobs:
             docker_arch: library
     steps:
       - uses: actions/checkout@v2
-      - name: Calculate binary version
-        run: |
-          version=${{ matrix.scala }}
-          echo "binary-version=${version%.*}" >> $GITHUB_ENV
-
-      # Loads cache with dependencies created in test-tools job
-      - name: Cache dependencies
-        uses: actions/cache@v2
+      - uses: ./.github/actions/linux-setup-env
         with:
           path: |
             ~/.cache/coursier
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          scala-version: ${{matrix.scala}}
 
       # Loads cached content of local docker registry containing built images.
       - name: Cache docker
@@ -252,19 +231,13 @@ jobs:
             docker_arch: library
     steps:
       - uses: actions/checkout@v2
-      - name: Calculate binary version
-        run: |
-          version=${{ matrix.scala }}
-          echo "binary-version=${version%.*}" >> $GITHUB_ENV
-
-      # Loads cache with dependencies created in test-tools job
-      - name: Cache dependencies
-        uses: actions/cache@v2
+      - uses: ./.github/actions/linux-setup-env
         with:
           path: |
             ~/.cache/coursier
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          scala-version: ${{matrix.scala}}
 
       # Loads cached content of local docker registry containing built images.
       - name: Cache docker
@@ -282,6 +255,40 @@ jobs:
           TEST_COMMAND: test-runtime
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
 
+  test-runtime-lto:
+    name: Test runtime LTO
+    runs-on: ubuntu-18.04
+    needs: [tests-tools, build-image]
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.13.6, 2.12.15, 2.11.12]
+        lto: [thin]
+        optimize: [true]
+        include:
+          - scala: 2.13.6
+            lto: full
+            optimize: true
+          - scala: 2.12.15
+            lto: full
+            optimize: false
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Run tests
+        env:
+          SCALANATIVE_MODE: release-fast
+          SCALANATIVE_GC: immix
+          SCALANATIVE_OPTIMIZE: ${{matrix.optimize}}
+          SCALANATIVE_LTO: ${{matrix.lto}}
+          SCALA_VERSION: ${{ matrix.scala}}
+          TEST_COMMAND: test-runtime
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+
   # This job is basically copy-paste of test-runtime.
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
@@ -296,19 +303,13 @@ jobs:
         docker_arch: [ library ]
     steps:
       - uses: actions/checkout@v2
-      - name: Calculate binary version
-        run: |
-          version=${{ matrix.scala }}
-          echo "binary-version=${version%.*}" >> $GITHUB_ENV
-
-      # Loads cache with dependencies created in test-tools job
-      - name: Cache dependencies
-        uses: actions/cache@v2
+      - uses: ./.github/actions/linux-setup-env
         with:
           path: |
             ~/.cache/coursier
             ~/.sbt/boot
           key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+          scala-version: ${{matrix.scala}}
 
       # Loads cached content of local docker registry containing built images.
       - name: Cache docker

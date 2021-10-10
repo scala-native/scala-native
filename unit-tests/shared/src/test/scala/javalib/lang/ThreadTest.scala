@@ -13,10 +13,8 @@ import java.lang._
 import org.junit.Test
 import org.junit.Assert._
 
-import org.scalanative.testsuite.utils.Platform.{
-  executingInJVM,
-  executingInScalaNative
-}
+import org.scalanative.testsuite.utils.Platform._
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class ThreadTest {
 
@@ -55,5 +53,28 @@ class ThreadTest {
     assertTrue(Thread.interrupted())
     assertFalse(t.isInterrupted())
     assertFalse(Thread.interrupted())
+  }
+
+  @Test def sleepShouldSuspendForAtLeastSpecifiedMillis(): Unit = {
+    val sleepForMillis = 10
+    val start = System.currentTimeMillis()
+    Thread.sleep(sleepForMillis)
+    val elapsedMillis = System.currentTimeMillis() - start
+    assertTrue("Slept for less then expected", elapsedMillis >= sleepForMillis)
+  }
+
+  @Test def sleepShouldSuspendForAtLeastSpecifiedNanos(): Unit = {
+    if (isWindows) {
+      // Behaviour for Thread.sleep(0, nanos) is not well documented on the JVM
+      // when executing on Windows. Local tests have proven that sleep might
+      // take undefined amount of time, in multiple cases less then expected.
+      // In SN for Windows we assume minimal granuality of sleep to be 1ms
+      assumeNotJVMCompliant()
+    }
+    val sleepForNanos = 500000 // 0.5ms
+    val start = System.nanoTime()
+    Thread.sleep(0, sleepForNanos)
+    val elapsedNanos = System.nanoTime() - start
+    assertTrue("Slept for less then expected", elapsedNanos >= sleepForNanos)
   }
 }

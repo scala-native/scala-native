@@ -838,12 +838,9 @@ object File {
 
         // found an absolute path. continue from there.
         case link if link(0) == separatorChar =>
-          if (Platform.isWindows() &&
-              strncmp(link, c"\\\\?\\", 4.toUInt) == 0 &&
-              strlen(link) <= 7.toUInt) {
-            // It's root directory
+          if (Platform.isWindows() && strncmp(link, c"\\\\?\\", 4.toUInt) == 0)
             path
-          } else
+          else
             resolveLink(link, resolveAbsolute, restart = resolveAbsolute)
 
         // found a relative path. append to the current path, and continue.

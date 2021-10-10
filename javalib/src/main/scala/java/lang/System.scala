@@ -15,6 +15,7 @@ import scala.scalanative.windows.UserEnvApi._
 import scala.scalanative.windows.WinBaseApi._
 import scala.scalanative.windows.ProcessEnvApi._
 import scala.scalanative.windows.winnt.AccessToken
+import scala.scalanative.windows.WinNlsApi._
 
 final class System private ()
 
@@ -52,8 +53,10 @@ object System {
       "Java Platform API Specification"
     )
     sysProps.setProperty("line.separator", lineSeparator())
-    getCurrentDirectory().map(sysProps.setProperty("user.dir", _))
-    getUserHomeDirectory().map(sysProps.setProperty("user.home", _))
+    getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
+    getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
+    getUserCountry().foreach(sysProps.setProperty("user.country", _))
+    getUserLanguage().foreach(sysProps.setProperty("user.language", _))
 
     if (isWindows) {
       sysProps.setProperty("file.separator", "\\")
@@ -65,27 +68,10 @@ object System {
           fromCString(buffer)
         }
       )
-
-      val userLang = fromCString(Platform.windowsGetUserLang())
-      val userCountry = fromCString(Platform.windowsGetUserCountry())
-      sysProps.setProperty("user.language", userLang)
-      sysProps.setProperty("user.country", userCountry)
-
     } else {
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
       sysProps.setProperty("java.io.tmpdir", "/tmp")
-      val userLocale = getenv("LANG")
-      if (userLocale != null) {
-        val userLang = userLocale.takeWhile(_ != '_')
-        // this mess will be updated when Regexes get implemented
-        val userCountry = userLocale
-          .dropWhile(_ != '_')
-          .takeWhile(c => (c != '.') && (c != '@'))
-          .drop(1)
-        sysProps.setProperty("user.language", userLang)
-        sysProps.setProperty("user.country", userCountry)
-      }
     }
 
     sysProps
@@ -170,6 +156,42 @@ object System {
       if (res == 0 && buf.pw_dir != null)
         Some(fromCString(buf.pw_dir))
       else None
+    }
+  }
+
+  private def getUserLocaleInfo(
+      infoCode: LCType,
+      bufSize: UInt
+  ): Option[String] = {
+    val buf = stackalloc[CChar16](bufSize)
+    GetLocaleInfoEx(
+      LOCALE_NAME_USER_DEFAULT,
+      infoCode,
+      buf,
+      bufSize
+    ) match {
+      case 0 => None
+      case _ => Some(fromCWideString(buf, StandardCharsets.UTF_16))
+    }
+  }
+
+  private def getUserLanguage(): Option[String] = {
+    if (isWindows) {
+      getUserLocaleInfo(LOCALE_SISO639LANGNAME2, bufSize = 9.toUInt)
+    } else {
+      Option(getenv("LANG")).map(_.takeWhile(_ != '_'))
+    }
+  }
+
+  private def getUserCountry(): Option[String] = {
+    if (isWindows) {
+      getUserLocaleInfo(LOCALE_SISO3166CTRYNAME2, bufSize = 9.toUInt)
+    } else {
+      Option(getenv("LANG")).map(
+        _.dropWhile(_ != '_')
+          .takeWhile(c => (c != '.') && (c != '@'))
+          .drop(1)
+      )
     }
   }
 

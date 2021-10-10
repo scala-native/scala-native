@@ -14,6 +14,8 @@ import java.util.List
 
 import java.util.regex.PatternSyntaxException
 
+import scala.annotation.switch
+
 import Regexp.{Op => ROP}
 
 // A parser of regular expression patterns.
@@ -1116,6 +1118,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
       if (c == 'P') {
         sign = -1
       }
+      if (!t.more()) {
+        val pos = t.pos()
+        t.rewindTo(startPos);
+        throw new PatternSyntaxException(
+          ERR_UNKNOWN_CHARACTER_PROPERTY_NAME,
+          t.rest(),
+          pos
+        )
+      }
       c = t.pop()
       var name: String = ""
       if (c != '{') {
@@ -1126,11 +1137,12 @@ class Parser(wholeRegexp: String, _flags: Int) {
         val rest = t.rest()
         val end = rest.indexOf('}')
         if (end < 0) {
+          val pos = t.pos()
           t.rewindTo(startPos)
           throw new PatternSyntaxException(
-            ERR_INVALID_CHAR_RANGE,
+            ERR_UNKNOWN_CHARACTER_PROPERTY_NAME,
             t.str,
-            t.pos() - 1
+            pos
           )
         }
         name = rest.substring(0, end) // e.g. "Han"
@@ -1325,7 +1337,7 @@ object Parser {
     "Unknown inline modifier"
 
   private final val ERR_INVALID_REPEAT_OP =
-    "invalid nested repetition operator"
+    "Invalid nested repetition operator"
 
   private final val ERR_INVALID_REPEAT_SIZE =
     "Dangling meta character '*'"
@@ -1341,6 +1353,9 @@ object Parser {
 
   private final val ERR_UNMATCHED_CLOSING_PAREN =
     "Unmatched closing ')'"
+
+  private final val ERR_UNKNOWN_CHARACTER_PROPERTY_NAME =
+    "Unknown character property name"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {
@@ -1596,25 +1611,31 @@ object Parser {
   // does re match r?
   private def matchRune(re: Regexp, r: Int): Boolean = {
 
-    var matched = false
+    val matched = (re.op: @switch) match {
 
-    (re.op: @scala.annotation.switch) match {
-      case ROP.LITERAL => re.runes.length == 1 && re.runes(0) == r
+      case ROP.LITERAL => (re.runes.length == 1) && (re.runes(0) == r)
 
       case ROP.CHAR_CLASS =>
+        val len = re.runes.length
+        assert((len % 2) == 0, s"matchRune: runs.length ${len} must be even")
+
+        var found = false
         var i = 0
-        while (i < re.runes.length) {
-          if (re.runes(i) <= r && r <= re.runes(i + 1)) {
-            matched = true
+
+        while ((i < len) && (!found)) {
+          if ((re.runes(i) <= r) && (r <= re.runes(i + 1))) {
+            found = true
           }
           i += 2
         }
 
-      case ROP.ANY_CHAR_NOT_NL => r != '\n'
+        found
 
-      case ROP.ANY_CHAR => matched = true
+      case ROP.ANY_CHAR_NOT_NL => (r != '\n')
 
-      case _ =>
+      case ROP.ANY_CHAR => true
+
+      case _ => false
     }
 
     matched

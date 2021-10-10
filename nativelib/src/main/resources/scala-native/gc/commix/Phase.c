@@ -8,6 +8,8 @@
 #include "util/ThreadUtil.h"
 #include <errno.h>
 #include <stdlib.h>
+#include "WeakRefGreyList.h"
+#include "Stats.h"
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -94,6 +96,22 @@ void Phase_StartMark(Heap *heap) {
 void Phase_MarkDone(Heap *heap) {
     Phase_Set(heap, gc_idle);
     heap->mark.currentEnd_ns = scalanative_nano_time();
+}
+
+void Phase_Nullify(Heap *heap, Stats *stats) {
+    if (GreyList_Size(&heap->mark.foundWeakRefs) != 0) {
+        uint64_t nullifyStart = scalanative_nano_time();
+        Phase_Set(heap, gc_nullify);
+        // make sure all threads see the phase change
+        atomic_thread_fence(memory_order_release);
+
+        GCThread_WakeMaster(heap);
+        WeakRefGreyList_NullifyUntilDone(heap, stats);
+        Phase_Set(heap, gc_idle);
+
+        uint64_t nullifyEnd = scalanative_nano_time();
+        Stats_RecordEvent(stats, event_nullify, nullifyStart, nullifyEnd);
+    }
 }
 
 void Phase_StartSweep(Heap *heap) {

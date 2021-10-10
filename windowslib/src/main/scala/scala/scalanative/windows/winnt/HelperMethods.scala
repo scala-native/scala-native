@@ -8,6 +8,6 @@ import scala.scalanative.windows.SecurityBaseApi._
 @link("Advapi32")
 @extern
 object HelperMethods {
-  @name("scalanative_win32_winnt_setupUsersGroupSid")
+  @name("scalanative_winnt_setupUsersGroupSid")
   def setupUserGroupSid(ref: Ptr[SIDPtr]): Boolean = extern
 }

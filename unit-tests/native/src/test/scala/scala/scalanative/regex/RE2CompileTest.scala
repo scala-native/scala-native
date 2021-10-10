@@ -42,9 +42,11 @@ class RE2CompileTest {
 //          "Illegal/unsupported character class near index 3\n[a-z\n   ^"),
     Array("[z-a]", "Illegal character range near index 3\n[z-a]\n   ^"),
     Array("abc\\", "Trailing Backslash near index 4\nabc\\\n    ^"),
-    Array("a**", "invalid nested repetition operator near index 0\n**\n^"),
-    Array("a*+", "invalid nested repetition operator near index 0\n*+\n^"),
-    Array("\\x", "Illegal/unsupported escape sequence near index 1\n\\x\n ^")
+    Array("a**", "Invalid nested repetition operator near index 0\n**\n^"),
+    Array("a*+", "Invalid nested repetition operator near index 0\n*+\n^"),
+    Array("\\x", "Illegal/unsupported escape sequence near index 1\n\\x\n ^"),
+    Array("\\p", "Unknown character property name near index 2\n\\p\n  ^"),
+    Array("\\p{", "Unknown character property name near index 3\n\\p{\n   ^")
   )
 
   @Test def compile(): Unit = {

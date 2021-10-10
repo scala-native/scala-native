@@ -22,7 +22,7 @@ package object windows {
 
   @extern
   object Constants {
-    @name("scalanative_win32_infinite")
+    @name("scalanative_infinite")
     def Infinite: DWord = extern
   }
 

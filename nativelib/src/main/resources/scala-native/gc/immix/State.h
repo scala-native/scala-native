@@ -5,6 +5,7 @@
 
 extern Heap heap;
 extern Stack stack;
+extern Stack weakRefStack;
 extern Allocator allocator;
 extern LargeAllocator largeAllocator;
 extern BlockAllocator blockAllocator;

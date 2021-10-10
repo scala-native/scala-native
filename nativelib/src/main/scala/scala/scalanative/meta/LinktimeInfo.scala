@@ -18,4 +18,9 @@ object LinktimeInfo {
 
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.asanEnabled")
   def asanEnabled: Boolean = resolved
+
+  @resolvedAtLinktime(
+    "scala.scalanative.meta.linktimeinfo.isWeakReferenceSupported"
+  )
+  def isWeakReferenceSupported: Boolean = resolved
 }

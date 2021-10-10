@@ -1,0 +1,53 @@
+name: Run tests MacOs
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  run-tests:
+    name: Test runtime
+    runs-on: macos-10.15
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.13.6, 2.12.15, 2.11.12]
+        gc: [immix]
+        include:
+          - scala: 2.13.6
+            gc: commix
+          - scala: 2.12.15
+            gc: boehm
+          - scala: 2.11.12
+            gc: none
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/macos-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test runtime
+        run: >
+          export SCALANATIVE_GC=${{matrix.gc}} &&
+          sbt ++${{matrix.scala}}
+          test-runtime
+          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+
+  run-scripted-tests:
+    name: Scripted tests
+    runs-on: macos-10.15
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.12.15]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test scripted
+        run: sbt "++${{matrix.scala}};test-scripted"

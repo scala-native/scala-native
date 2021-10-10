@@ -118,7 +118,7 @@ object WinBaseApi {
 
   def UnregisterWait(handle: Handle): Boolean = extern
 
-  @name("scalanative_win32_default_language")
+  @name("scalanative_lang_user_default")
   final def DefaultLanguageId: DWord = extern
 }
 

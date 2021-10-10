@@ -13,6 +13,8 @@
 #include "Constants.h"
 #include "Settings.h"
 #include "GCThread.h"
+#include "WeakRefGreyList.h"
+#include "Sweeper.h"
 
 void scalanative_collect();
 
@@ -70,4 +72,14 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
     return scalanative_alloc(info, size);
 }
 
-INLINE void scalanative_collect() { Heap_Collect(&heap); }
+INLINE void scalanative_collect() {
+    // Wait until sweeping will end, otherwise we risk segmentation
+    // fault or failing an assertion.
+    while (!Sweeper_IsSweepDone(&heap))
+        thread_yield();
+    Heap_Collect(&heap);
+}
+
+INLINE void scalanative_register_weak_reference_handler(void *handler) {
+    WeakRefGreyList_SetHandler(handler);
+}
