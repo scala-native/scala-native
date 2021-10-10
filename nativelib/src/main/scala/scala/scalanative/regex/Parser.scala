@@ -10,7 +10,9 @@ package regex
 
 import java.util.ArrayList
 import java.util.Arrays
+import java.util.HashMap
 import java.util.List
+import java.util.Map
 
 import java.util.regex.PatternSyntaxException
 
@@ -32,6 +34,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private val stack = new Stack()
   private var free: Regexp = _
   private var numCap = 0 // number of capturing groups seen
+
+  private val namedGroups = new HashMap[String, Int]()
 
   // Allocate a Regexp, from the free list if possible.
   private def newRegexp(op: ROP): Regexp = {
@@ -868,6 +872,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
           t.pos()
         )
       }
+      stack.get(0).namedGroups = namedGroups
       stack.get(0)
     }
   }
@@ -879,27 +884,65 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private def parsePerlFlags(t: StringIterator): Unit = {
     val startPos = t.pos()
 
+    /// SN Porting Note:
+    ///     This code has been edited to support both the (?P<name>expr)
+    ///     idiom in the re2j description below and the (?<name>expr)
+    ///     idiom it describes as Perl but which is used by Java.
+    ///
+    // Check for named captures, first introduced in Python's regexp library.
+    // As usual, there are three slightly different syntaxes:
+    //
+    //   (?P<name>expr)   the original, introduced by Python
+    //   (?<name>expr)    the .NET alteration, adopted by Perl 5.10
+    //   (?'name'expr)    another .NET alteration, adopted by Perl 5.10
+    //
+    // Perl 5.10 gave in and implemented the Python version too,
+    // but they claim that the last two are the preferred forms.
+    // PCRE and languages based on it (specifically, PHP and Ruby)
+    // support all three as well.  EcmaScript 4 uses only the Python form.
+    //
+    // In both the open source world (via Code Search) and the
+    // Google source tree, (?P<expr>name) is the dominant form,
+    // so that's the one we implement.  One is enough.
+
     val s = t.rest()
-    if (s.startsWith("(?<")) {
+
+    val (isNamedCapture, namedCaptureStart, namedCaptureSkip) =
+      if (s.startsWith("(?<")) { // Java style is most likely
+        (true, 3, 4)
+      } else if (s.startsWith("(?P<")) { // Perl/Python style
+        (true, 4, 5)
+      } else {
+        (false, -1, 1)
+      }
+
+    if (isNamedCapture) {
       // Pull out name.
       val end = s.indexOf('>')
       if (end < 0) {
         throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s, 0)
       }
-      val name = s.substring(3, end) // "name"
+      val name = s.substring(namedCaptureStart, end) // "name"
       t.skipString(name)
-      t.skip(4) // "(?<>"
+      t.skip(namedCaptureSkip) // "(?<>" or "(?P<>"
       if (!isValidCaptureName(name)) {
         throw new PatternSyntaxException(
           ERR_INVALID_NAMED_CAPTURE,
-          s.substring(0, end),
-          0
-        ) // "(?P<name>"
+          s,
+          end
+        ) // "(?<name>" or "(?P<name>"
       }
       // Like ordinary capture, but named.
       val re = op(ROP.LEFT_PAREN)
       numCap += 1
       re.cap = numCap
+      if (namedGroups.put(name, numCap) != 0) {
+        throw new PatternSyntaxException(
+          ERR_DUPLICATE_NAMED_CAPTURE + s" <${name}> " + "is already defined",
+          s,
+          end
+        )
+      }
       re.name = name
     } else {
 
@@ -1331,7 +1374,7 @@ object Parser {
     "Illegal/unsupported escape sequence"
 
   private final val ERR_INVALID_NAMED_CAPTURE =
-    "Bad named capture group"
+    "capturing group name does not start with a Latin letter"
 
   private final val ERR_INVALID_PERL_OP =
     "Unknown inline modifier"
@@ -1356,6 +1399,9 @@ object Parser {
 
   private final val ERR_UNKNOWN_CHARACTER_PROPERTY_NAME =
     "Unknown character property name"
+
+  private final val ERR_DUPLICATE_NAMED_CAPTURE =
+    "Named capturing group"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {
