@@ -474,9 +474,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
       lensub = lenout
       s = 0
 
-      // Round 2: Factor out common complex prefixes,
-      // just the first piece of each concatenation,
-      // whatever it is.	This is good enough a lot of the time.
+      // Round 2: Factor out common simple prefixes,
+      // just the first piece of each concatenation.
+      // This will be good enough a lot of the time.
+      //
+      // Complex subexpressions (e.g. involving quantifiers)
+      // are not safe to factor because that collapses their
+      // distinct paths through the automaton, which affects
+      // correctness in some cases.
       start = 0
       lenout = 0
       var first: Regexp = null
@@ -492,7 +497,21 @@ class Parser(wholeRegexp: String, _flags: Int) {
         var continue = false
         if (i < lensub) {
           ifirst = leadingRegexp(array(s + i))
-          if (first != null && first.equals(ifirst)) {
+          // first must be a character class OR a fixed repeat of a
+          // character class.
+
+          /// SN: This hairy next block is adapted for SN directly from
+          /// Go code, dated 2016-01-07. It is not in re2j V1.3, dated
+          /// 2019-07-23:
+          ///     https://github.com/golang/go/commit/
+          ///     5ccaf0255b75063a9c685009e77cee24e26a509e
+          /// Ugly as sin! but it fixes the test cases in its PR (and now in
+          /// sn.regex ParserTest.scala).
+
+          if (first != null && first.equals(ifirst) &&
+              (isCharClass(first) ||
+                (first.op == ROP.REPEAT &&
+                  first.min == first.max && isCharClass(first.subs(0))))) {
             continue = true
           }
         }
@@ -807,9 +826,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
                   if (i >= 0) {
                     lit = lit.substring(0, i)
                   }
+
+                  // Ported directly to Scala Native from Go Repository
+                  // commit 0680e9c0c16a7d900e3564e1836b8cb93d962a2b
+                  // to fix Go issue #11187.
+                  lit.foreach(ch => literal(ch))
+
                   t.skipString(lit)
                   t.skipString("\\E")
-                  push(literalRegexp(lit, flags))
                   breakBigswitch = true
                 case 'z' =>
                   op(ROP.END_TEXT)
