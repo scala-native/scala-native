@@ -148,6 +148,12 @@ private[scalanative] object ScalaNative {
           }
           warn("")
           warn(s"${errors.size} errors found")
+
+          if (config.compilerConfig.checkFatalWarnings) {
+            throw new BuildException(
+              "Fatal warning(s) found; see the error output for details."
+            )
+          }
         }
       }
     }
