@@ -100,8 +100,9 @@ abstract class Buffer private[nio] (val _capacity: Int) {
    * We only declare the methods we need somewhere.
    */
 
-  private[nio] def _array: GenArray[ElementType]
+  private[nio] def _array: Array[ElementType]
   private[nio] def _arrayOffset: Int
+  private[nio] def _mappedData: MappedByteBufferData
 
   /** Loads an element at the given absolute, unchecked index. */
   private[nio] def load(index: Int): ElementType
@@ -112,7 +113,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   /** Loads a range of elements with absolute, unchecked indices. */
   private[nio] def load(
       startIndex: Int,
-      dst: GenArray[ElementType],
+      dst: Array[ElementType],
       offset: Int,
       length: Int
   ): Unit
@@ -120,7 +121,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   /** Stores a range of elements with absolute, unchecked indices. */
   private[nio] def store(
       startIndex: Int,
-      src: GenArray[ElementType],
+      src: Array[ElementType],
       offset: Int,
       length: Int
   ): Unit
@@ -128,7 +129,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   /* Only for HeapByteBufferViews -- but that's the only place we can put it.
    * For all other types, it will be dce'ed.
    */
-  private[nio] def _byteArray: GenArray[Byte] =
+  private[nio] def _byteArray: Array[Byte] =
     throw new UnsupportedOperationException
   private[nio] def _byteArrayOffset: Int =
     throw new UnsupportedOperationException
@@ -143,11 +144,19 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   }
 
   @inline private[nio] def validateArrayIndexRange(
-      array: GenArray[_],
+      array: Array[_],
       offset: Int,
       length: Int
   ): Unit = {
     if (offset < 0 || length < 0 || offset > array.length - length)
+      throw new IndexOutOfBoundsException
+  }
+  @inline private[nio] def validatePtrIndexRange(
+      ptr: PtrByteArray,
+      offset: Int,
+      length: Int
+  ): Unit = {
+    if (offset < 0 || length < 0 || offset > ptr.length - length)
       throw new IndexOutOfBoundsException
   }
 

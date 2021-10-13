@@ -12,7 +12,7 @@ object ByteBuffer {
 
   def wrap(array: Array[Byte], offset: Int, length: Int): ByteBuffer =
     HeapByteBuffer.wrap(
-      ScalaArray(array),
+      array,
       0,
       array.length,
       offset,
@@ -26,7 +26,8 @@ object ByteBuffer {
 
 abstract class ByteBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: GenArray[Byte],
+    private[nio] val _array: Array[Byte],
+    private[nio] val _mappedData: MappedByteBufferData,
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[ByteBuffer] {
@@ -34,7 +35,7 @@ abstract class ByteBuffer private[nio] (
   private[nio] type ElementType = Byte
   private[nio] type BufferType = ByteBuffer
 
-  def this(_capacity: Int) = this(_capacity, null, -1)
+  def this(_capacity: Int) = this(_capacity, null, null, -1)
 
   private[nio] var _isBigEndian: Boolean = true
 
@@ -54,7 +55,7 @@ abstract class ByteBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
+    GenBuffer(this).generic_get(dst, offset, length)
 
   def get(dst: Array[Byte]): ByteBuffer =
     get(dst, 0, dst.length)
@@ -65,7 +66,7 @@ abstract class ByteBuffer private[nio] (
 
   @noinline
   def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
+    GenBuffer(this).generic_put(src, offset, length)
 
   final def put(src: Array[Byte]): ByteBuffer =
     put(src, 0, src.length)
@@ -198,7 +199,7 @@ abstract class ByteBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: GenArray[Byte],
+      dst: Array[Byte],
       offset: Int,
       length: Int
   ): Unit =
@@ -207,7 +208,7 @@ abstract class ByteBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: GenArray[Byte],
+      src: Array[Byte],
       offset: Int,
       length: Int
   ): Unit =

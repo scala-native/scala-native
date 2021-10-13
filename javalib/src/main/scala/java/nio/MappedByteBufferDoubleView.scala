@@ -1,9 +1,9 @@
 package java.nio
 
 // Ported from Scala.js
-private[nio] final class HeapByteBufferDoubleView private (
+private[nio] final class MappedByteBufferDoubleView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
+    override private[nio] val _mappedData: MappedByteBufferData,
     override private[nio] val _byteArrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
@@ -14,8 +14,8 @@ private[nio] final class HeapByteBufferDoubleView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newHeapDoubleBufferView =
-    HeapByteBufferDoubleView.NewHeapByteBufferDoubleView
+  private[this] implicit def newMappedDoubleBufferView =
+    MappedByteBufferDoubleView.NewMappedByteBufferDoubleView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -23,15 +23,15 @@ private[nio] final class HeapByteBufferDoubleView private (
 
   @noinline
   def slice(): DoubleBuffer =
-    GenHeapBufferView(this).generic_slice()
+    GenMappedBufferView(this).generic_slice()
 
   @noinline
   def duplicate(): DoubleBuffer =
-    GenHeapBufferView(this).generic_duplicate()
+    GenMappedBufferView(this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): DoubleBuffer =
-    GenHeapBufferView(this).generic_asReadOnlyBuffer()
+    GenMappedBufferView(this).generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Double =
@@ -59,40 +59,40 @@ private[nio] final class HeapByteBufferDoubleView private (
 
   @noinline
   def compact(): DoubleBuffer =
-    GenHeapBufferView(this).generic_compact()
+    GenMappedBufferView(this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView(this).generic_order()
+    GenMappedBufferView(this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Double =
-    GenHeapBufferView(this).byteArrayBits.loadDouble(index)
+    GenMappedBufferView(this).byteArrayBits.loadDouble(index)
 
   @inline
   private[nio] def store(index: Int, elem: Double): Unit =
-    GenHeapBufferView(this).byteArrayBits.storeDouble(index, elem)
+    GenMappedBufferView(this).byteArrayBits.storeDouble(index, elem)
 }
 
-private[nio] object HeapByteBufferDoubleView {
-  private[nio] implicit object NewHeapByteBufferDoubleView
-      extends GenHeapBufferView.NewHeapBufferView[DoubleBuffer] {
+private[nio] object MappedByteBufferDoubleView {
+  private[nio] implicit object NewMappedByteBufferDoubleView
+      extends GenMappedBufferView.NewMappedBufferView[DoubleBuffer] {
     def bytesPerElem: Int = 8
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        mappedData: MappedByteBufferData,
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): DoubleBuffer = {
-      new HeapByteBufferDoubleView(
+      new MappedByteBufferDoubleView(
         capacity,
-        byteArray,
+        mappedData,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -103,8 +103,8 @@ private[nio] object HeapByteBufferDoubleView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(
-      byteBuffer: HeapByteBuffer
+  private[nio] def fromMappedByteBuffer(
+      byteBuffer: MappedByteBuffer
   ): DoubleBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+    GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }

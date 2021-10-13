@@ -21,7 +21,8 @@ object CharBuffer {
 
 abstract class CharBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: GenArray[Char],
+    private[nio] val _array: Array[Char],
+    private[nio] val _mappedData: MappedByteBufferData,
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[CharBuffer]
@@ -32,7 +33,7 @@ abstract class CharBuffer private[nio] (
   private[nio] type ElementType = Char
   private[nio] type BufferType = CharBuffer
 
-  def this(_capacity: Int) = this(_capacity, null, -1)
+  def this(_capacity: Int) = this(_capacity, null, null, -1)
 
   def read(target: CharBuffer): Int = {
     // Attention: this method must not change this buffer's position
@@ -66,7 +67,7 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
+    GenBuffer(this).generic_get(dst, offset, length)
 
   def get(dst: Array[Char]): CharBuffer =
     get(dst, 0, dst.length)
@@ -77,7 +78,7 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
+    GenBuffer(this).generic_put(src, offset, length)
 
   final def put(src: Array[Char]): CharBuffer =
     put(src, 0, src.length)
@@ -152,7 +153,7 @@ abstract class CharBuffer private[nio] (
   override def toString(): String = {
     if (_array != null) {
       // even if read-only
-      new String(_array.toArray(), position() + _arrayOffset, remaining())
+      new String(_array, position() + _arrayOffset, remaining())
     } else {
       val chars = new Array[Char](remaining())
       val savedPos = position()
@@ -188,7 +189,7 @@ abstract class CharBuffer private[nio] (
   @inline
   private[nio] def load(
       startIndex: Int,
-      dst: GenArray[Char],
+      dst: Array[Char],
       offset: Int,
       length: Int
   ): Unit =
@@ -197,7 +198,7 @@ abstract class CharBuffer private[nio] (
   @inline
   private[nio] def store(
       startIndex: Int,
-      src: GenArray[Char],
+      src: Array[Char],
       offset: Int,
       length: Int
   ): Unit =

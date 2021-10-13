@@ -1,20 +1,16 @@
 package java.nio
 
 import java.nio.channels.FileChannel
+import scala.scalanative.windows.HandleApi._
 
 abstract class MappedByteBuffer private[nio] (
-    mode: FileChannel.MapMode,
     _capacity: Int,
-    _array: GenArray[Byte],
-    _arrayOffset: Int
-) extends HeapByteBuffer(
-      _capacity,
-      _array,
-      _arrayOffset,
-      _arrayOffset,
-      _capacity,
-      mode == FileChannel.MapMode.READ_ONLY
-    ) {
+    private[nio] override val _mappedData: MappedByteBufferData,
+    _arrayOffset: Int,
+    initialPosition: Int,
+    initialLimit: Int,
+    isReadOnly: Boolean
+) extends ByteBuffer(_capacity, null, _mappedData, _arrayOffset) {
 
   def force(): MappedByteBuffer
 

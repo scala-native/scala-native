@@ -9,7 +9,7 @@ private[nio] object GenHeapBuffer {
   trait NewHeapBuffer[BufferType <: Buffer, ElementType] {
     def apply(
         capacity: Int,
-        array: GenArray[ElementType],
+        array: Array[ElementType],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -19,7 +19,7 @@ private[nio] object GenHeapBuffer {
 
   @inline
   def generic_wrap[BufferType <: Buffer, ElementType](
-      array: GenArray[ElementType],
+      array: Array[ElementType],
       arrayOffset: Int,
       capacity: Int,
       initialPosition: Int,
@@ -99,12 +99,11 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
     ensureNotReadOnly()
 
     val len = remaining()
-    val array = _array.toArray()
     System
       .arraycopy(
-        array,
+        _array,
         _arrayOffset + position(),
-        array,
+        _array,
         _arrayOffset,
         len
       )
@@ -125,14 +124,14 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
   @inline
   def generic_load(
       startIndex: Int,
-      dst: GenArray[ElementType],
+      dst: Array[ElementType],
       offset: Int,
       length: Int
   ): Unit =
     System.arraycopy(
-      _array.toArray(),
+      _array,
       _arrayOffset + startIndex,
-      dst.toArray(),
+      dst,
       offset,
       length
     )
@@ -140,14 +139,14 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
   @inline
   def generic_store(
       startIndex: Int,
-      src: GenArray[ElementType],
+      src: Array[ElementType],
       offset: Int,
       length: Int
   ): Unit =
     System.arraycopy(
-      src.toArray(),
+      src,
       offset,
-      _array.toArray(),
+      _array,
       _arrayOffset + startIndex,
       length
     )

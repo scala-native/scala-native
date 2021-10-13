@@ -1,9 +1,9 @@
 package java.nio
 
 // Ported from Scala.js
-private[nio] final class HeapByteBufferShortView private (
+private[nio] final class MappedByteBufferShortView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
+    override private[nio] val _mappedData: MappedByteBufferData,
     override private[nio] val _byteArrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
@@ -14,8 +14,8 @@ private[nio] final class HeapByteBufferShortView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newHeapShortBufferView =
-    HeapByteBufferShortView.NewHeapByteBufferShortView
+  private[this] implicit def newMappedShortBufferView =
+    MappedByteBufferShortView.NewMappedByteBufferShortView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -23,15 +23,15 @@ private[nio] final class HeapByteBufferShortView private (
 
   @noinline
   def slice(): ShortBuffer =
-    GenHeapBufferView(this).generic_slice()
+    GenMappedBufferView(this).generic_slice()
 
   @noinline
   def duplicate(): ShortBuffer =
-    GenHeapBufferView(this).generic_duplicate()
+    GenMappedBufferView(this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): ShortBuffer =
-    GenHeapBufferView(this).generic_asReadOnlyBuffer()
+    GenMappedBufferView(this).generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Short =
@@ -59,40 +59,40 @@ private[nio] final class HeapByteBufferShortView private (
 
   @noinline
   def compact(): ShortBuffer =
-    GenHeapBufferView(this).generic_compact()
+    GenMappedBufferView(this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView(this).generic_order()
+    GenMappedBufferView(this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Short =
-    GenHeapBufferView(this).byteArrayBits.loadShort(index)
+    GenMappedBufferView(this).byteArrayBits.loadShort(index)
 
   @inline
   private[nio] def store(index: Int, elem: Short): Unit =
-    GenHeapBufferView(this).byteArrayBits.storeShort(index, elem)
+    GenMappedBufferView(this).byteArrayBits.storeShort(index, elem)
 }
 
-private[nio] object HeapByteBufferShortView {
-  private[nio] implicit object NewHeapByteBufferShortView
-      extends GenHeapBufferView.NewHeapBufferView[ShortBuffer] {
+private[nio] object MappedByteBufferShortView {
+  private[nio] implicit object NewMappedByteBufferShortView
+      extends GenMappedBufferView.NewMappedBufferView[ShortBuffer] {
     def bytesPerElem: Int = 2
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        mappedData: MappedByteBufferData,
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): ShortBuffer = {
-      new HeapByteBufferShortView(
+      new MappedByteBufferShortView(
         capacity,
-        byteArray,
+        mappedData,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -103,6 +103,8 @@ private[nio] object HeapByteBufferShortView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): ShortBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromMappedByteBuffer(
+      byteBuffer: MappedByteBuffer
+  ): ShortBuffer =
+    GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }

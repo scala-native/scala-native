@@ -3,12 +3,12 @@ package java.nio
 // Ported from Scala.js
 private[nio] final class HeapIntBuffer private (
     _capacity: Int,
-    _array0: GenArray[Int],
+    _array0: Array[Int],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends IntBuffer(_capacity, _array0, _arrayOffset0) {
+) extends IntBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -49,11 +49,11 @@ private[nio] final class HeapIntBuffer private (
 
   @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
-    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
+    GenBuffer(this).generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Int], offset: Int, length: Int): IntBuffer =
-    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
+    GenBuffer(this).generic_put(src, offset, length)
 
   @noinline
   def compact(): IntBuffer =
@@ -74,7 +74,7 @@ private[nio] final class HeapIntBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: GenArray[Int],
+      dst: Array[Int],
       offset: Int,
       length: Int
   ): Unit =
@@ -83,7 +83,7 @@ private[nio] final class HeapIntBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: GenArray[Int],
+      src: Array[Int],
       offset: Int,
       length: Int
   ): Unit =
@@ -95,7 +95,7 @@ private[nio] object HeapIntBuffer {
       extends GenHeapBuffer.NewHeapBuffer[IntBuffer, Int] {
     def apply(
         capacity: Int,
-        array: GenArray[Int],
+        array: Array[Int],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -122,7 +122,7 @@ private[nio] object HeapIntBuffer {
       isReadOnly: Boolean
   ): IntBuffer = {
     GenHeapBuffer.generic_wrap(
-      ScalaArray(array),
+      array,
       arrayOffset,
       capacity,
       initialPosition,

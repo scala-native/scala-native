@@ -1,15 +1,17 @@
 package java.nio
 
+import scala.scalanative.runtime.ByteArray
+
 // Ported from Scala.js
 
 private[nio] class HeapByteBuffer(
     _capacity: Int,
-    _array0: GenArray[Byte],
+    _array0: Array[Byte],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ByteBuffer(_capacity, _array0, _arrayOffset0) {
+) extends ByteBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -51,11 +53,11 @@ private[nio] class HeapByteBuffer(
 
   @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
+    GenBuffer(this).generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
+    GenBuffer(this).generic_put(src, offset, length)
 
   @noinline
   def compact(): ByteBuffer =
@@ -64,7 +66,11 @@ private[nio] class HeapByteBuffer(
   // Here begins the stuff specific to ByteArrays
 
   @inline private def arrayBits: ByteArrayBits =
-    ByteArrayBits(_array.toPtr(), _arrayOffset, isBigEndian)
+    ByteArrayBits(
+      _array.asInstanceOf[ByteArray].at(0),
+      _arrayOffset,
+      isBigEndian
+    )
 
   @noinline def getChar(): Char =
     arrayBits.loadChar(getPosAndAdvanceRead(2))
@@ -175,7 +181,7 @@ private[nio] class HeapByteBuffer(
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: GenArray[Byte],
+      dst: Array[Byte],
       offset: Int,
       length: Int
   ): Unit =
@@ -184,7 +190,7 @@ private[nio] class HeapByteBuffer(
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: GenArray[Byte],
+      src: Array[Byte],
       offset: Int,
       length: Int
   ): Unit =
@@ -196,7 +202,7 @@ private[nio] object HeapByteBuffer {
       extends GenHeapBuffer.NewHeapBuffer[ByteBuffer, Byte] {
     def apply(
         capacity: Int,
-        array: GenArray[Byte],
+        array: Array[Byte],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -215,7 +221,7 @@ private[nio] object HeapByteBuffer {
 
   @noinline
   private[nio] def wrap(
-      array: GenArray[Byte],
+      array: Array[Byte],
       arrayOffset: Int,
       capacity: Int,
       initialPosition: Int,

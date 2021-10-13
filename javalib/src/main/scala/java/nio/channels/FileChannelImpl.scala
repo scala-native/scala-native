@@ -2,7 +2,7 @@ package java.nio.channels
 
 import java.nio.file.Files
 
-import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
+import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferMapper}
 import java.nio.file.WindowsException
 import scala.scalanative.nio.fs.unix.UnixException
 
@@ -126,7 +126,7 @@ private[java] final class FileChannelImpl(
       throw new NonReadableChannelException
     if ((mode eq FileChannel.MapMode.READ_WRITE) && (!openForReading || !openForWriting))
       throw new NonWritableChannelException
-    MappedByteBufferImpl.map(mode, position, size.toInt, fd, this)
+    MappedByteBufferMapper.map(mode, position, size.toInt, fd, this)
   }
 
   override def position(offset: Long): FileChannel = {

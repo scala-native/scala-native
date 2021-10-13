@@ -3,12 +3,12 @@ package java.nio
 // Ported from Scala.js
 private[nio] final class HeapDoubleBuffer private (
     _capacity: Int,
-    _array0: GenArray[Double],
+    _array0: Array[Double],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends DoubleBuffer(_capacity, _array0, _arrayOffset0) {
+) extends DoubleBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -50,11 +50,11 @@ private[nio] final class HeapDoubleBuffer private (
 
   @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
-    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
+    GenBuffer(this).generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Double], offset: Int, length: Int): DoubleBuffer =
-    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
+    GenBuffer(this).generic_put(src, offset, length)
 
   @noinline
   def compact(): DoubleBuffer =
@@ -75,7 +75,7 @@ private[nio] final class HeapDoubleBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: GenArray[Double],
+      dst: Array[Double],
       offset: Int,
       length: Int
   ): Unit =
@@ -84,7 +84,7 @@ private[nio] final class HeapDoubleBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: GenArray[Double],
+      src: Array[Double],
       offset: Int,
       length: Int
   ): Unit =
@@ -96,7 +96,7 @@ private[nio] object HeapDoubleBuffer {
       extends GenHeapBuffer.NewHeapBuffer[DoubleBuffer, Double] {
     def apply(
         capacity: Int,
-        array: GenArray[Double],
+        array: Array[Double],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -123,7 +123,7 @@ private[nio] object HeapDoubleBuffer {
       isReadOnly: Boolean
   ): DoubleBuffer = {
     GenHeapBuffer.generic_wrap(
-      ScalaArray(array),
+      array,
       arrayOffset,
       capacity,
       initialPosition,

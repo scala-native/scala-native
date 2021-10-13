@@ -3,12 +3,12 @@ package java.nio
 // Ported from Scala.js
 private[nio] final class HeapFloatBuffer private (
     _capacity: Int,
-    _array0: GenArray[Float],
+    _array0: Array[Float],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends FloatBuffer(_capacity, _array0, _arrayOffset0) {
+) extends FloatBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -50,11 +50,11 @@ private[nio] final class HeapFloatBuffer private (
 
   @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
-    GenBuffer(this).generic_get(ScalaArray(dst), offset, length)
+    GenBuffer(this).generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Float], offset: Int, length: Int): FloatBuffer =
-    GenBuffer(this).generic_put(ScalaArray(src), offset, length)
+    GenBuffer(this).generic_put(src, offset, length)
 
   @noinline
   def compact(): FloatBuffer =
@@ -75,7 +75,7 @@ private[nio] final class HeapFloatBuffer private (
   @inline
   override private[nio] def load(
       startIndex: Int,
-      dst: GenArray[Float],
+      dst: Array[Float],
       offset: Int,
       length: Int
   ): Unit =
@@ -84,7 +84,7 @@ private[nio] final class HeapFloatBuffer private (
   @inline
   override private[nio] def store(
       startIndex: Int,
-      src: GenArray[Float],
+      src: Array[Float],
       offset: Int,
       length: Int
   ): Unit =
@@ -96,7 +96,7 @@ private[nio] object HeapFloatBuffer {
       extends GenHeapBuffer.NewHeapBuffer[FloatBuffer, Float] {
     def apply(
         capacity: Int,
-        array: GenArray[Float],
+        array: Array[Float],
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
@@ -123,7 +123,7 @@ private[nio] object HeapFloatBuffer {
       isReadOnly: Boolean
   ): FloatBuffer = {
     GenHeapBuffer.generic_wrap(
-      ScalaArray(array),
+      array,
       arrayOffset,
       capacity,
       initialPosition,
