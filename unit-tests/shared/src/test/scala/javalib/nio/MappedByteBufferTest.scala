@@ -94,6 +94,64 @@ class MappedByteBufferTest {
     }
   }
 
+  @Test def mappedBufferViews(): Unit = {
+    withTemporaryFile("rw") { file: RandomAccessFile =>
+      val count = 100
+      val mapped = file.getChannel.map(MapMode.READ_WRITE, 0, count)
+
+      val charBuffer = mapped.asCharBuffer()
+      charBuffer.append("abcd")
+      for (i <- 0 until 4)
+        assertEquals(s"char $i", 'a' + i, mapped.getChar())
+      mapped.rewind()
+
+      val doubleBuffer = mapped.asDoubleBuffer()
+      for (i <- 0 until 4)
+        doubleBuffer.put(i.asInstanceOf[Double] / 10)
+      for (i <- 0 until 4)
+        assertEquals(
+          s"double $i",
+          i.asInstanceOf[Double] / 10,
+          mapped.getDouble(),
+          0.01
+        )
+      mapped.rewind()
+
+      val floatBuffer = mapped.asFloatBuffer()
+      for (i <- 0 until 4)
+        floatBuffer.put(i.asInstanceOf[Float] / 10)
+      for (i <- 0 until 4)
+        assertEquals(
+          s"float $i",
+          i.asInstanceOf[Float] / 10,
+          mapped.getFloat(),
+          0.01
+        )
+      mapped.rewind()
+
+      val intBuffer = mapped.asIntBuffer()
+      println(intBuffer)
+      for (i <- 0 until 4)
+        intBuffer.put(i)
+      for (i <- 0 until 4)
+        assertEquals(s"int $i", i, mapped.getInt())
+      mapped.rewind()
+
+      val longBuffer = mapped.asLongBuffer()
+      for (i <- 0 until 4)
+        longBuffer.put(i)
+      for (i <- 0 until 4)
+        assertEquals(s"long $i", i, mapped.getLong())
+      mapped.rewind()
+
+      val shortBuffer = mapped.asShortBuffer()
+      for (i <- 0 until 4)
+        shortBuffer.put(i.asInstanceOf[Short])
+      for (i <- 0 until 4)
+        assertEquals(s"short $i", i.asInstanceOf[Short], mapped.getShort())
+    }
+  }
+
   // Apache Harmony tests
   var tmpFile: File = null
   var emptyFile: File = null
