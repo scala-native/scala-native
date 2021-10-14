@@ -102,7 +102,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
   }
 
   // Optional operation according to javadoc, does not make sense
-  // in the context of MemoryMappedBuffers. COmpacting a MemoryMappedBuffer
+  // in the context of MemoryMappedBuffers. Compacting a MemoryMappedBuffer
   // would change the mapped file's internal structure.
   @inline
   def generic_compact(): BufferType =
@@ -120,7 +120,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
       newMappedBufferView: NewThisMappedBufferView
   ): ByteArrayBits = {
     ByteArrayBits(
-      _mappedData.array.ptr,
+      _mappedData.ptr,
       _byteArrayOffset,
       isBigEndian,
       newMappedBufferView.bytesPerElem

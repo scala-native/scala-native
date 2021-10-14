@@ -92,11 +92,11 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
 
   @inline
   def generic_load(index: Int): Byte =
-    _mappedData.array(_arrayOffset + index)
+    _mappedData(_arrayOffset + index)
 
   @inline
   def generic_store(index: Int, elem: Byte): Unit =
-    _mappedData.array(_arrayOffset + index) = elem
+    _mappedData(_arrayOffset + index) = elem
 
   @inline
   def generic_load(
@@ -107,7 +107,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
   ): Unit = {
     if (length < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
-    } else if (startIndex < 0 || startIndex + length > _mappedData.maxSize) {
+    } else if (startIndex < 0 || startIndex + length > _mappedData.length) {
       throw new ArrayIndexOutOfBoundsException(startIndex)
     } else if (offset < 0 || offset + length > dst.length) {
       throw new ArrayIndexOutOfBoundsException(offset)
@@ -115,7 +115,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       ()
     } else {
       val dstPtr = dst.asInstanceOf[ByteArray].at(0) + offset
-      val srcPtr = _mappedData.array.ptr + startIndex
+      val srcPtr = _mappedData.ptr + startIndex
       string.memcpy(dstPtr, srcPtr, length.toUInt)
     }
   }
@@ -129,7 +129,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
   ): Unit = {
     if (length < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
-    } else if (startIndex < 0 || startIndex + length > _mappedData.maxSize) {
+    } else if (startIndex < 0 || startIndex + length > _mappedData.length) {
       throw new ArrayIndexOutOfBoundsException(startIndex)
     } else if (offset < 0 || offset + length > src.length) {
       throw new ArrayIndexOutOfBoundsException(offset)
@@ -137,7 +137,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       ()
     } else {
       val srcPtr = src.asInstanceOf[ByteArray].at(0) + offset
-      val dstPtr = _mappedData.array.ptr + startIndex
+      val dstPtr = _mappedData.ptr + startIndex
       string.memcpy(dstPtr, srcPtr, length.toUInt)
     }
   }

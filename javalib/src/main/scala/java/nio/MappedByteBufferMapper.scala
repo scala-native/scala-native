@@ -45,8 +45,8 @@ private class MappedByteBufferFinalizer(
 // on runtime.
 private[nio] class MappedByteBufferData(
     private[nio] val mode: MapMode,
-    private[nio] val array: PtrByteArray,
-    private[nio] val maxSize: Int,
+    private[nio] val ptr: Ptr[Byte],
+    private[nio] val length: Int,
     private[nio] val windowsMappingHandle: Option[Handle]
 ) {
 
@@ -54,22 +54,28 @@ private[nio] class MappedByteBufferData(
   private val selfWeakReference = new WeakReference(this)
   new MappedByteBufferFinalizer(
     selfWeakReference,
-    array.ptr,
-    array.length,
+    ptr,
+    length,
     windowsMappingHandle
   )
 
   def force(): Unit = {
     if (mode eq MapMode.READ_WRITE) {
       if (isWindows) {
-        if (!FlushViewOfFile(array.ptr, 0.toUInt))
+        if (!FlushViewOfFile(ptr, 0.toUInt))
           throw new IOException("Could not flush view of file")
       } else {
-        if (msync(array.ptr, array.length.toUInt, MS_SYNC) == -1)
+        if (msync(ptr, length.toUInt, MS_SYNC) == -1)
           throw new IOException("Could not sync with file")
       }
     }
   }
+
+  @inline def update(index: Int, value: Byte): Unit =
+    ptr(index) = value
+
+  @inline def apply(index: Int): Byte =
+    ptr(index)
 }
 
 private[nio] object MappedByteBufferMapper {
@@ -111,12 +117,7 @@ private[nio] object MappedByteBufferMapper {
     )
     if (ptr == null) failMapping()
 
-    new MappedByteBufferData(
-      mode,
-      PtrByteArray(ptr, size),
-      size,
-      Some(mappingHandle)
-    )
+    new MappedByteBufferData(mode, ptr, size, Some(mappingHandle))
   }
 
   def mapUnix(
@@ -140,12 +141,7 @@ private[nio] object MappedByteBufferMapper {
     )
     if (ptr.toInt == -1) failMapping()
 
-    new MappedByteBufferData(
-      mode,
-      PtrByteArray(ptr, size),
-      size,
-      None
-    )
+    new MappedByteBufferData(mode, ptr, size, None)
   }
 
   def map(
@@ -177,7 +173,7 @@ private[nio] object MappedByteBufferMapper {
       else mapUnix(position, size, fd, mode)
 
     new MappedByteBufferImpl(
-      mappedData.maxSize,
+      mappedData.length,
       mappedData,
       0,
       0,

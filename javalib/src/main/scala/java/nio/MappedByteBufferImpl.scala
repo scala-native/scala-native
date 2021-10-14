@@ -80,7 +80,7 @@ private[nio] class MappedByteBufferImpl(
   // Here begins the stuff specific to ByteArrays
 
   @inline private def arrayBits: ByteArrayBits =
-    ByteArrayBits(_mappedData.array.ptr, _arrayOffset, isBigEndian)
+    ByteArrayBits(_mappedData.ptr, _arrayOffset, isBigEndian)
 
   @noinline def getChar(): Char =
     arrayBits.loadChar(getPosAndAdvanceRead(2))
