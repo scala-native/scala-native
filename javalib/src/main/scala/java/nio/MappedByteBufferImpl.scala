@@ -1,8 +1,27 @@
 package java.nio
 
+import scala.scalanative.meta.LinktimeInfo.isWindows
+
+import scala.scalanative.annotation.alwaysinline
+
+import scala.scalanative.posix.sys.mman._
+
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
+import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
+import scala.scalanative.windows.WinBaseApiExt._
+import scala.scalanative.windows.MemoryApi._
+import scala.scalanative.windows.HandleApi._
+import scala.scalanative.windows._
+
+import java.io.IOException
+import java.io.FileDescriptor
+
+import java.nio.channels.FileChannel.MapMode
 import java.nio.channels.FileChannel
 
-private[nio] class MappedByteBufferImpl(
+private class MappedByteBufferImpl(
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
     override private[nio] val _byteArrayOffset: Int,
@@ -226,5 +245,107 @@ private[nio] object MappedByteBufferImpl {
         initialLimit,
         readOnly
       )
+  }
+
+  @alwaysinline private def failMapping(): Unit =
+    throw new IOException("Could not map file to memory")
+
+  private def mapWindows(
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      mode: MapMode
+  ): MappedByteBufferData = {
+    val (flProtect: DWord, dwDesiredAccess: DWord) =
+      if (mode eq MapMode.PRIVATE) (PAGE_WRITECOPY, FILE_MAP_COPY)
+      else if (mode eq MapMode.READ_ONLY) (PAGE_READONLY, FILE_MAP_READ)
+      else if (mode eq MapMode.READ_WRITE) (PAGE_READWRITE, FILE_MAP_WRITE)
+
+    val mappingHandle =
+      CreateFileMappingA(
+        fd.handle,
+        null,
+        flProtect,
+        0.toUInt,
+        0.toUInt,
+        null
+      )
+    if (mappingHandle == null) failMapping()
+
+    val dwFileOffsetHigh = (position >>> 32).toUInt
+    val dwFileOffsetLow = position.toUInt
+
+    val ptr = MapViewOfFile(
+      mappingHandle,
+      dwDesiredAccess,
+      dwFileOffsetHigh,
+      dwFileOffsetLow,
+      size.toUInt
+    )
+    if (ptr == null) failMapping()
+
+    new MappedByteBufferData(mode, ptr, size, Some(mappingHandle))
+  }
+
+  private def mapUnix(
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      mode: MapMode
+  ): MappedByteBufferData = {
+    val (prot: Int, isPrivate: Int) =
+      if (mode eq MapMode.PRIVATE) (PROT_WRITE, MAP_PRIVATE)
+      else if (mode eq MapMode.READ_ONLY) (PROT_READ, MAP_SHARED)
+      else if (mode eq MapMode.READ_WRITE) (PROT_WRITE, MAP_SHARED)
+
+    val ptr = mmap(
+      null,
+      size.toUInt,
+      prot,
+      isPrivate,
+      fd.fd,
+      position
+    )
+    if (ptr.toInt == -1) failMapping()
+
+    new MappedByteBufferData(mode, ptr, size, None)
+  }
+
+  def apply(
+      mode: MapMode,
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      channel: FileChannel
+  ): MappedByteBufferImpl = {
+
+    // JVM resizes file to accomodate mapping
+    if (mode ne MapMode.READ_ONLY) {
+      val prevSize = channel.size()
+      val minSize = position + size
+      if (minSize > prevSize) {
+        val prevPosition = channel.position()
+        channel.truncate(minSize)
+        if (isWindows) {
+          channel.position(prevSize)
+          for (i <- prevSize until minSize)
+            channel.write(ByteBuffer.wrap(Array[Byte](0.toByte)))
+          channel.position(prevPosition)
+        }
+      }
+    }
+
+    val mappedData =
+      if (isWindows) mapWindows(position, size, fd, mode)
+      else mapUnix(position, size, fd, mode)
+
+    new MappedByteBufferImpl(
+      mappedData.length,
+      mappedData,
+      0,
+      0,
+      size,
+      mode == FileChannel.MapMode.READ_ONLY
+    )
   }
 }
