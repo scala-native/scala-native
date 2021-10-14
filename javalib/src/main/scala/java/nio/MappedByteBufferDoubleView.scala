@@ -1,6 +1,7 @@
 package java.nio
 
-// Ported from Scala.js
+// Based on the code ported from Scala.js,
+// see HeapByteBufferDoubleView.scala
 private[nio] final class MappedByteBufferDoubleView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,

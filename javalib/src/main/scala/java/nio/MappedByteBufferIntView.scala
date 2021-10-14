@@ -1,6 +1,7 @@
 package java.nio
 
-// Ported from Scala.js
+// Based on the code ported from Scala.js,
+// see HeapByteBufferIntView.scala
 private[nio] final class MappedByteBufferIntView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
@@ -17,7 +18,7 @@ private[nio] final class MappedByteBufferIntView private (
   private[this] implicit def newMappedIntBufferView =
     MappedByteBufferIntView.NewMappedByteBufferIntView
 
-  val isReadOnly: Boolean = _readOnly
+  def isReadOnly(): Boolean = _readOnly
 
   def isDirect(): Boolean = true
 

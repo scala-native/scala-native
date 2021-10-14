@@ -7,8 +7,8 @@ import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.string
 
-// Ported from Scala.js
-
+// Based on the code ported from Scala.js,
+// see GenHeapBuffer.scala
 private[nio] object GenMappedBuffer {
   def apply[B <: Buffer](self: B): GenMappedBuffer[B] =
     new GenMappedBuffer(self)
@@ -82,7 +82,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
   }
 
   // Optional operation according to javadoc, does not make sense
-  // in the context of MemoryMappedBuffers. COmpacting a MemoryMappedBuffer
+  // in the context of MemoryMappedBuffers. Compacting a MemoryMappedBuffer
   // would change the mapped file's internal structure.
   @inline
   def generic_compact(): BufferType =

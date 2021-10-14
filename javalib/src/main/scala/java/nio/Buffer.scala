@@ -102,7 +102,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   private[nio] def _array: Array[ElementType]
   private[nio] def _arrayOffset: Int
-  private[nio] def _mappedData: MappedByteBufferData
+  private[nio] def _mappedData: MappedByteBufferData // Added to ScalaNative
 
   /** Loads an element at the given absolute, unchecked index. */
   private[nio] def load(index: Int): ElementType
@@ -149,14 +149,6 @@ abstract class Buffer private[nio] (val _capacity: Int) {
       length: Int
   ): Unit = {
     if (offset < 0 || length < 0 || offset > array.length - length)
-      throw new IndexOutOfBoundsException
-  }
-  @inline private[nio] def validatePtrIndexRange(
-      ptr: PtrByteArray,
-      offset: Int,
-      length: Int
-  ): Unit = {
-    if (offset < 0 || length < 0 || offset > ptr.length - length)
       throw new IndexOutOfBoundsException
   }
 

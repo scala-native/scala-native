@@ -1,5 +1,7 @@
 package java.nio
 
+// Based on the code ported from Scala.js,
+// see HeapByteBufferCharView.scala
 private[nio] final class MappedByteBufferCharView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,

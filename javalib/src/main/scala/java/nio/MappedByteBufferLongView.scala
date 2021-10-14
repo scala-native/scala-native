@@ -1,6 +1,7 @@
 package java.nio
 
-// Ported from Scala.js
+// Based on the code ported from Scala.js,
+// see HeapByteBufferLongView.scala
 private[nio] final class MappedByteBufferLongView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,

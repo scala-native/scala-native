@@ -130,7 +130,6 @@ class MappedByteBufferTest {
       mapped.rewind()
 
       val intBuffer = mapped.asIntBuffer()
-      println(intBuffer)
       for (i <- 0 until 4)
         intBuffer.put(i)
       for (i <- 0 until 4)

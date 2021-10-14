@@ -100,13 +100,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
 
     val len = remaining()
     System
-      .arraycopy(
-        _array,
-        _arrayOffset + position(),
-        _array,
-        _arrayOffset,
-        len
-      )
+      .arraycopy(_array, _arrayOffset + position(), _array, _arrayOffset, len)
     _mark = -1
     limit(capacity())
     position(len)
@@ -128,13 +122,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       offset: Int,
       length: Int
   ): Unit =
-    System.arraycopy(
-      _array,
-      _arrayOffset + startIndex,
-      dst,
-      offset,
-      length
-    )
+    System.arraycopy(_array, _arrayOffset + startIndex, dst, offset, length)
 
   @inline
   def generic_store(
@@ -143,11 +131,5 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       offset: Int,
       length: Int
   ): Unit =
-    System.arraycopy(
-      src,
-      offset,
-      _array,
-      _arrayOffset + startIndex,
-      length
-    )
+    System.arraycopy(src, offset, _array, _arrayOffset + startIndex, length)
 }
