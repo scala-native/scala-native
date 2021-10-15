@@ -8,7 +8,7 @@ private[nio] final class HeapLongBuffer private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends LongBuffer(_capacity, _array0, _arrayOffset0) {
+) extends LongBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)

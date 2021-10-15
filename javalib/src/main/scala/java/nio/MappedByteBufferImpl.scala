@@ -1,39 +1,72 @@
 package java.nio
 
-import scala.scalanative.runtime.ByteArray
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
-// Ported from Scala.js
+import scala.scalanative.annotation.alwaysinline
 
-private[nio] class HeapByteBuffer(
+import scala.scalanative.posix.sys.mman._
+
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
+import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
+import scala.scalanative.windows.WinBaseApiExt._
+import scala.scalanative.windows.MemoryApi._
+import scala.scalanative.windows.HandleApi._
+import scala.scalanative.windows._
+
+import java.io.IOException
+import java.io.FileDescriptor
+
+import java.nio.channels.FileChannel.MapMode
+import java.nio.channels.FileChannel
+
+private class MappedByteBufferImpl(
     _capacity: Int,
-    _array0: Array[Byte],
-    _arrayOffset0: Int,
+    override private[nio] val _mappedData: MappedByteBufferData,
+    override private[nio] val _byteArrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ByteBuffer(_capacity, _array0, null, _arrayOffset0) {
+) extends MappedByteBuffer(
+      _capacity,
+      _mappedData,
+      _byteArrayOffset,
+      _initialPosition,
+      _initialLimit,
+      _readOnly
+    ) {
 
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newHeapByteBuffer =
-    HeapByteBuffer.NewHeapByteBuffer
+  private[this] implicit def newMappedByteBuffer =
+    MappedByteBufferImpl.NewMappedByteBuffer
 
-  def isReadOnly(): Boolean = _readOnly
+  override def force() = {
+    _mappedData.force()
+    this
+  }
+
+  override def isLoaded(): Boolean = true
+
+  override def load(): MappedByteBuffer = this
+
+  override def isReadOnly(): Boolean = _readOnly
 
   def isDirect(): Boolean = true
 
   @noinline
   def slice(): ByteBuffer =
-    GenHeapBuffer(this).generic_slice()
+    GenMappedBuffer(this).generic_slice()
 
   @noinline
   def duplicate(): ByteBuffer =
-    GenHeapBuffer(this).generic_duplicate()
+    GenMappedBuffer(this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): ByteBuffer =
-    GenHeapBuffer(this).generic_asReadOnlyBuffer()
+    GenMappedBuffer(this).generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Byte =
@@ -61,16 +94,12 @@ private[nio] class HeapByteBuffer(
 
   @noinline
   def compact(): ByteBuffer =
-    GenHeapBuffer(this).generic_compact()
+    GenMappedBuffer(this).generic_compact()
 
   // Here begins the stuff specific to ByteArrays
 
   @inline private def arrayBits: ByteArrayBits =
-    ByteArrayBits(
-      _array.asInstanceOf[ByteArray].at(0),
-      _arrayOffset,
-      isBigEndian
-    )
+    ByteArrayBits(_mappedData.ptr, _arrayOffset, isBigEndian)
 
   @noinline def getChar(): Char =
     arrayBits.loadChar(getPosAndAdvanceRead(2))
@@ -86,7 +115,7 @@ private[nio] class HeapByteBuffer(
   }
 
   def asCharBuffer(): CharBuffer =
-    HeapByteBufferCharView.fromHeapByteBuffer(this)
+    MappedByteBufferCharView.fromMappedByteBuffer(this)
 
   @noinline def getShort(): Short =
     arrayBits.loadShort(getPosAndAdvanceRead(2))
@@ -102,7 +131,7 @@ private[nio] class HeapByteBuffer(
   }
 
   def asShortBuffer(): ShortBuffer =
-    HeapByteBufferShortView.fromHeapByteBuffer(this)
+    MappedByteBufferShortView.fromMappedByteBuffer(this)
 
   @noinline def getInt(): Int =
     arrayBits.loadInt(getPosAndAdvanceRead(4))
@@ -118,7 +147,7 @@ private[nio] class HeapByteBuffer(
   }
 
   def asIntBuffer(): IntBuffer =
-    HeapByteBufferIntView.fromHeapByteBuffer(this)
+    MappedByteBufferIntView.fromMappedByteBuffer(this)
 
   @noinline def getLong(): Long =
     arrayBits.loadLong(getPosAndAdvanceRead(8))
@@ -134,7 +163,7 @@ private[nio] class HeapByteBuffer(
   }
 
   def asLongBuffer(): LongBuffer =
-    HeapByteBufferLongView.fromHeapByteBuffer(this)
+    MappedByteBufferLongView.fromMappedByteBuffer(this)
 
   @noinline def getFloat(): Float =
     arrayBits.loadFloat(getPosAndAdvanceRead(4))
@@ -150,7 +179,7 @@ private[nio] class HeapByteBuffer(
   }
 
   def asFloatBuffer(): FloatBuffer =
-    HeapByteBufferFloatView.fromHeapByteBuffer(this)
+    MappedByteBufferFloatView.fromMappedByteBuffer(this)
 
   @noinline def getDouble(): Double =
     arrayBits.loadDouble(getPosAndAdvanceRead(8))
@@ -166,17 +195,17 @@ private[nio] class HeapByteBuffer(
   }
 
   def asDoubleBuffer(): DoubleBuffer =
-    HeapByteBufferDoubleView.fromHeapByteBuffer(this)
+    MappedByteBufferDoubleView.fromMappedByteBuffer(this)
 
   // Internal API
 
   @inline
   private[nio] def load(index: Int): Byte =
-    GenHeapBuffer(this).generic_load(index)
+    GenMappedBuffer(this).generic_load(index)
 
   @inline
   private[nio] def store(index: Int, elem: Byte): Unit =
-    GenHeapBuffer(this).generic_store(index, elem)
+    GenMappedBuffer(this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -185,7 +214,7 @@ private[nio] class HeapByteBuffer(
       offset: Int,
       length: Int
   ): Unit =
-    GenHeapBuffer(this).generic_load(startIndex, dst, offset, length)
+    GenMappedBuffer(this).generic_load(startIndex, dst, offset, length)
 
   @inline
   override private[nio] def store(
@@ -194,47 +223,129 @@ private[nio] class HeapByteBuffer(
       offset: Int,
       length: Int
   ): Unit =
-    GenHeapBuffer(this).generic_store(startIndex, src, offset, length)
+    GenMappedBuffer(this).generic_store(startIndex, src, offset, length)
 }
 
-private[nio] object HeapByteBuffer {
-  private[nio] implicit object NewHeapByteBuffer
-      extends GenHeapBuffer.NewHeapBuffer[ByteBuffer, Byte] {
+private[nio] object MappedByteBufferImpl {
+  private[nio] implicit object NewMappedByteBuffer
+      extends GenMappedBuffer.NewMappedBuffer[ByteBuffer, Byte] {
     def apply(
         capacity: Int,
-        array: Array[Byte],
+        mappedData: MappedByteBufferData,
         arrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean
-    ): ByteBuffer = {
-      new HeapByteBuffer(
+    ): ByteBuffer =
+      new MappedByteBufferImpl(
         capacity,
-        array,
+        mappedData,
         arrayOffset,
         initialPosition,
         initialLimit,
         readOnly
       )
-    }
   }
 
-  @noinline
-  private[nio] def wrap(
-      array: Array[Byte],
-      arrayOffset: Int,
-      capacity: Int,
-      initialPosition: Int,
-      initialLength: Int,
-      isReadOnly: Boolean
-  ): ByteBuffer = {
-    GenHeapBuffer.generic_wrap(
-      array,
-      arrayOffset,
-      capacity,
-      initialPosition,
-      initialLength,
-      isReadOnly
+  @alwaysinline private def failMapping(): Unit =
+    throw new IOException("Could not map file to memory")
+
+  private def mapWindows(
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      mode: MapMode
+  ): MappedByteBufferData = {
+    val (flProtect: DWord, dwDesiredAccess: DWord) =
+      if (mode eq MapMode.PRIVATE) (PAGE_WRITECOPY, FILE_MAP_COPY)
+      else if (mode eq MapMode.READ_ONLY) (PAGE_READONLY, FILE_MAP_READ)
+      else if (mode eq MapMode.READ_WRITE) (PAGE_READWRITE, FILE_MAP_WRITE)
+
+    val mappingHandle =
+      CreateFileMappingA(
+        fd.handle,
+        null,
+        flProtect,
+        0.toUInt,
+        0.toUInt,
+        null
+      )
+    if (mappingHandle == null) failMapping()
+
+    val dwFileOffsetHigh = (position >>> 32).toUInt
+    val dwFileOffsetLow = position.toUInt
+
+    val ptr = MapViewOfFile(
+      mappingHandle,
+      dwDesiredAccess,
+      dwFileOffsetHigh,
+      dwFileOffsetLow,
+      size.toUInt
+    )
+    if (ptr == null) failMapping()
+
+    new MappedByteBufferData(mode, ptr, size, Some(mappingHandle))
+  }
+
+  private def mapUnix(
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      mode: MapMode
+  ): MappedByteBufferData = {
+    val (prot: Int, isPrivate: Int) =
+      if (mode eq MapMode.PRIVATE) (PROT_WRITE, MAP_PRIVATE)
+      else if (mode eq MapMode.READ_ONLY) (PROT_READ, MAP_SHARED)
+      else if (mode eq MapMode.READ_WRITE) (PROT_WRITE, MAP_SHARED)
+
+    val ptr = mmap(
+      null,
+      size.toUInt,
+      prot,
+      isPrivate,
+      fd.fd,
+      position
+    )
+    if (ptr.toInt == -1) failMapping()
+
+    new MappedByteBufferData(mode, ptr, size, None)
+  }
+
+  def apply(
+      mode: MapMode,
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      channel: FileChannel
+  ): MappedByteBufferImpl = {
+
+    // JVM resizes file to accomodate mapping
+    if (mode ne MapMode.READ_ONLY) {
+      val prevSize = channel.size()
+      val minSize = position + size
+      if (minSize > prevSize) {
+        val prevPosition = channel.position()
+        channel.truncate(minSize)
+        if (isWindows) {
+          channel.position(prevSize)
+          for (i <- prevSize until minSize)
+            channel.write(ByteBuffer.wrap(Array[Byte](0.toByte)))
+          channel.position(prevPosition)
+        }
+      }
+    }
+
+    val mappedData =
+      if (isWindows) mapWindows(position, size, fd, mode)
+      else mapUnix(position, size, fd, mode)
+
+    new MappedByteBufferImpl(
+      mappedData.length,
+      mappedData,
+      0,
+      0,
+      size,
+      mode == FileChannel.MapMode.READ_ONLY
     )
   }
 }

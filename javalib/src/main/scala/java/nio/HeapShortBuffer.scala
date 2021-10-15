@@ -8,7 +8,7 @@ private[nio] final class HeapShortBuffer private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ShortBuffer(_capacity, _array0, _arrayOffset0) {
+) extends ShortBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)

@@ -1,37 +1,120 @@
 package java.nio.channels
 
-import java.nio.file.{
-  FileAlreadyExistsException,
-  Files,
-  NoSuchFileException,
-  OpenOption,
-  Path,
-  StandardOpenOption
-}
-import java.nio.file.attribute.FileAttribute
-import java.nio.{ByteBuffer, MappedByteBuffer}
+import java.nio.file.Files
 
-import java.io.RandomAccessFile
+import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
+import java.nio.file.WindowsException
+import scala.scalanative.nio.fs.unix.UnixException
 
-import java.util.Set
+import java.io.FileDescriptor
+import java.io.File
 
-final class FileChannelImpl(
-    path: Path,
-    options: Set[_ <: OpenOption],
-    attrs: Array[FileAttribute[_]]
+import scala.scalanative.meta.LinktimeInfo.isWindows
+import java.io.IOException
+
+import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.fcntlOps._
+import scala.scalanative.libc.stdio
+import scala.scalanative.unsafe._
+
+import scala.scalanative.posix.unistd
+import scala.scalanative.unsigned._
+import scala.scalanative.{runtime, windows}
+import scalanative.libc.stdio
+import scala.scalanative.libc.errno
+
+import scala.scalanative.windows.ErrorHandlingApi
+import scala.scalanative.windows.FileApi._
+import scala.scalanative.windows.FileApiExt._
+import scala.scalanative.windows.ErrorCodes
+import scala.scalanative.windows.MinWinBaseApi._
+import scala.scalanative.windows.MinWinBaseApiOps._
+import scala.scalanative.windows._
+
+private[java] final class FileChannelImpl(
+    fd: FileDescriptor,
+    file: Option[File],
+    deleteFileOnClose: Boolean,
+    openForReading: Boolean,
+    openForWriting: Boolean
 ) extends FileChannel {
+  override def force(metadata: Boolean): Unit =
+    fd.sync()
 
-  private val deleteOnClose =
-    options.contains(StandardOpenOption.DELETE_ON_CLOSE)
-  private val raf = FileChannelImpl.getRAF(path, options, attrs)
+  @inline private def assertIfCanLock(): Unit = {
+    if (!isOpen()) throw new ClosedChannelException()
+    if (!openForWriting) throw new NonWritableChannelException()
+  }
 
-  // override def force(metadata: Boolean): Unit
-  // override def tryLock(position: Long, size: Long, shared: Boolean): FileLock
-  // override def lock(position: Long, size: Long, shared: Boolean): FileLock
+  override def tryLock(
+      position: Long,
+      size: Long,
+      shared: Boolean
+  ): FileLock = {
+    assertIfCanLock()
+    if (isWindows) {
+      val flag = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
+      lockWindows(position, size, flag)
+    } else lockUnix(position, size, shared, F_SETLK)
+  }
+
+  override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
+    assertIfCanLock()
+    if (isWindows) {
+      val flag: DWord = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
+      lockWindows(position, size, LOCKFILE_FAIL_IMMEDIATELY | flag)
+    } else lockUnix(position, size, shared, F_SETLKW)
+  }
+
+  @inline private def lockUnix(
+      position: Long,
+      size: Long,
+      shared: Boolean,
+      command: CInt
+  ): FileLock = {
+    val fl = stackalloc[flock]
+    fl.l_start = position
+    fl.l_len = size
+    fl.l_pid = 0
+    fl.l_type = F_WRLCK
+    fl.l_whence = stdio.SEEK_SET
+    if (fcntl(fd.fd, command, fl) == -1) {
+      throw new IOException("Could not lock file")
+    }
+    new FileLockImpl(this, position, size, shared, fd)
+  }
+
+  @inline private def lockWindows(
+      position: Long,
+      size: Long,
+      flags: DWord
+  ): FileLock = {
+
+    val dummy = stackalloc[DUMMYSTRUCTNAME]
+    dummy.Offset = position.toInt.toUInt
+    dummy.OffsetHigh = (position >> 32).toInt.toUInt
+    val overlapped = stackalloc[OVERLAPPED]
+    overlapped.Internal = 0.toULong
+    overlapped.InternalHigh = 0.toULong
+    overlapped.DUMMYSTRUCTNAME = !dummy
+    overlapped.hEvent = fd.handle
+
+    if (!LockFileEx(
+          fd.handle,
+          flags,
+          0.toUInt,
+          size.toInt.toUInt,
+          (size >> 32).toInt.toUInt,
+          overlapped
+        )) throw new IOException("Could not lock file")
+    new FileLockImpl(this, position, size, true, fd)
+  }
 
   override protected def implCloseChannel(): Unit = {
-    raf.close()
-    if (deleteOnClose) Files.delete(path)
+    if (!isOpen()) {
+      fd.close()
+      if (deleteFileOnClose && file.isDefined) Files.delete(file.get.toPath())
+    }
   }
 
   override def map(
@@ -39,22 +122,38 @@ final class FileChannelImpl(
       position: Long,
       size: Long
   ): MappedByteBuffer = {
-    var total = 0
-    var copied = 0
-    val buffer =
-      new MappedByteBuffer(mode, size.toInt, new Array(size.toInt), 0) {}
-    while (copied < size && { copied = read(buffer); copied > 0 }) {
-      total += copied
-    }
-    buffer
+    if ((mode eq FileChannel.MapMode.READ_ONLY) && !openForReading)
+      throw new NonReadableChannelException
+    if ((mode eq FileChannel.MapMode.READ_WRITE) && (!openForReading || !openForWriting))
+      throw new NonWritableChannelException
+    MappedByteBufferImpl(mode, position, size.toInt, fd, this)
   }
 
   override def position(offset: Long): FileChannel = {
-    raf.seek(offset)
+    if (isWindows)
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        offset,
+        null,
+        FILE_BEGIN
+      )
+    else unistd.lseek(fd.fd, offset, stdio.SEEK_SET)
     this
   }
 
-  override def position(): Long = raf.getFilePointer()
+  override def position(): Long =
+    if (isWindows) {
+      val filePointer = stackalloc[LargeInteger]
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        0,
+        filePointer,
+        FILE_CURRENT
+      )
+      !filePointer
+    } else {
+      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+    }
 
   override def read(
       buffers: Array[ByteBuffer],
@@ -70,7 +169,7 @@ final class FileChannelImpl(
       val startPos = buffers(i).position()
       val len = buffers(i).limit() - startPos
       val dst = new Array[Byte](len)
-      val nb = raf.read(dst)
+      val nb = read(dst, 0, dst.length)
 
       if (nb > 0) {
         buffers(i).put(dst)
@@ -88,8 +187,9 @@ final class FileChannelImpl(
     ensureOpen()
     position(pos)
     val bufPosition: Int = buffer.position()
-    raf.read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
-      case bytesRead if bytesRead < 0 => bytesRead
+    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
+      case bytesRead if bytesRead < 0 =>
+        bytesRead
       case bytesRead =>
         buffer.position(bufPosition + bytesRead)
         bytesRead
@@ -100,7 +200,73 @@ final class FileChannelImpl(
     read(buffer, position())
   }
 
-  override def size(): Long = raf.length()
+  private[java] def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
+    if (buffer == null) {
+      throw new NullPointerException
+    }
+    if (offset < 0 || count < 0 || count > buffer.length - offset) {
+      throw new IndexOutOfBoundsException
+    }
+    if (count == 0) {
+      return 0
+    }
+
+    // we use the runtime knowledge of the array layout to avoid
+    // intermediate buffer, and write straight into the array memory
+    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    if (isWindows) {
+      def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
+
+      def tryRead(count: Int)(fallback: => Int) = {
+        val readBytes = stackalloc[windows.DWord]
+        if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
+          (!readBytes).toInt match {
+            case 0     => -1 // EOF
+            case bytes => bytes
+          }
+        } else fallback
+      }
+
+      tryRead(count)(fallback = {
+        ErrorHandlingApi.GetLastError() match {
+          case ErrorCodes.ERROR_BROKEN_PIPE =>
+            // Pipe was closed, but it still can contain some unread data
+            available() match {
+              case 0     => -1 //EOF
+              case count => tryRead(count)(fallback = fail())
+            }
+
+          case _ =>
+            fail()
+        }
+      })
+
+    } else {
+      val readCount = unistd.read(fd.fd, buf, count.toUInt)
+      if (readCount == 0) {
+        // end of file
+        -1
+      } else if (readCount < 0) {
+        // negative value (typically -1) indicates that read failed
+        throw UnixException(file.fold("")(_.toString), errno.errno)
+      } else {
+        // successfully read readCount bytes
+        readCount
+      }
+    }
+  }
+
+  override def size(): Long = {
+    if (isWindows) {
+      val size = stackalloc[windows.LargeInteger]
+      if (GetFileSizeEx(fd.handle, size)) (!size).toLong
+      else 0L
+    } else {
+      val size = unistd.lseek(fd.fd, 0L, stdio.SEEK_END);
+      unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
+      size
+    }
+  }
 
   override def transferFrom(
       src: ReadableByteChannel,
@@ -121,16 +287,36 @@ final class FileChannelImpl(
     ensureOpen()
     position(pos)
     val buf = new Array[Byte](count.toInt)
-    val nb = raf.read(buf)
+    val nb = read(buf, 0, buf.length)
     target.write(ByteBuffer.wrap(buf, 0, nb))
     nb
   }
 
-  override def truncate(size: Long): FileChannel = {
-    ensureOpen()
-    raf.setLength(size)
-    this
-  }
+  override def truncate(size: Long): FileChannel =
+    if (!openForWriting) {
+      throw new IOException("Invalid argument")
+    } else {
+      ensureOpen()
+      val currentPosition = position()
+      val hasSucceded =
+        if (isWindows) {
+          FileApi.SetFilePointerEx(
+            fd.handle,
+            size,
+            null,
+            FILE_BEGIN
+          ) &&
+          FileApi.SetEndOfFile(fd.handle)
+        } else {
+          unistd.ftruncate(fd.fd, size) == 0
+        }
+      if (!hasSucceded) {
+        throw new IOException("Failed to truncate file")
+      }
+      if (currentPosition > size) position(size)
+      else position(currentPosition)
+      this
+    }
 
   override def write(
       buffers: Array[ByteBuffer],
@@ -140,7 +326,7 @@ final class FileChannelImpl(
     ensureOpen()
     var i = 0
     while (i < length) {
-      raf.write(buffers(offset + i).get())
+      write(buffers(offset + i))
       i += 1
     }
     i
@@ -152,7 +338,7 @@ final class FileChannelImpl(
     val srcPos: Int = buffer.position()
     val srcLim: Int = buffer.limit()
     val lim = math.abs(srcLim - srcPos)
-    raf.write(buffer.array(), 0, lim)
+    write(buffer.array(), 0, lim)
     buffer.position(srcPos + lim)
     lim
   }
@@ -162,61 +348,71 @@ final class FileChannelImpl(
 
   private def ensureOpen(): Unit =
     if (!isOpen()) throw new ClosedChannelException()
-}
 
-private object FileChannelImpl {
-  def getRAF(
-      path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]
-  ): RandomAccessFile = {
-    import StandardOpenOption._
-
-    if (options.contains(APPEND) && options.contains(TRUNCATE_EXISTING)) {
-      throw new IllegalArgumentException(
-        "APPEND + TRUNCATE_EXISTING not allowed"
-      )
+  private[java] def write(
+      buffer: Array[Byte],
+      offset: Int,
+      count: Int
+  ): Unit = {
+    if (buffer == null) {
+      throw new NullPointerException
+    }
+    if (offset < 0 || count < 0 || count > buffer.length - offset) {
+      throw new IndexOutOfBoundsException
+    }
+    if (count == 0) {
+      return
     }
 
-    if (options.contains(APPEND) && options.contains(READ)) {
-      throw new IllegalArgumentException("APPEND + READ not allowed")
-    }
-
-    val writing = options.contains(WRITE) || options.contains(APPEND)
-
-    val mode = new StringBuilder("r")
-    if (writing) mode.append("w")
-
-    if (!Files.exists(path, Array.empty)) {
-      if (!options.contains(CREATE) && !options.contains(CREATE_NEW)) {
-        throw new NoSuchFileException(path.toString)
-      } else if (writing) {
-        Files.createFile(path, attrs)
+    // we use the runtime knowledge of the array layout to avoid
+    // intermediate buffer, and read straight from the array memory
+    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    if (isWindows) {
+      val hasSucceded =
+        WriteFile(fd.handle, buf, count.toUInt, null, null)
+      if (!hasSucceded) {
+        throw WindowsException.onPath(
+          file.fold("<file descriptor>")(_.toString)
+        )
       }
-    } else if (options.contains(CREATE_NEW)) {
-      throw new FileAlreadyExistsException(path.toString)
+    } else {
+      val writeCount = unistd.write(fd.fd, buf, count.toUInt)
+
+      if (writeCount < 0) {
+        // negative value (typically -1) indicates that write failed
+        throw UnixException(file.fold("")(_.toString), errno.errno)
+      }
     }
+  }
 
-    if (writing && options.contains(DSYNC) && !options
-          .contains(SYNC)) {
-      mode.append("d")
+  def available(): Int = {
+    if (isWindows) {
+      val currentPosition, lastPosition = stackalloc[windows.LargeInteger]
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = currentPosition,
+        moveMethod = FILE_CURRENT
+      )
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = lastPosition,
+        moveMethod = FILE_END
+      )
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = !currentPosition,
+        newFilePointer = null,
+        moveMethod = FILE_BEGIN
+      )
+
+      (!lastPosition - !currentPosition).toInt
+    } else {
+      val currentPosition = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
+      val lastPosition = unistd.lseek(fd.fd, 0, stdio.SEEK_END)
+      unistd.lseek(fd.fd, currentPosition, stdio.SEEK_SET)
+      (lastPosition - currentPosition).toInt
     }
-
-    if (writing && options.contains(SYNC)) {
-      mode.append("s")
-    }
-
-    val raf = new RandomAccessFile(path.toFile(), mode.toString)
-
-    if (writing && options.contains(TRUNCATE_EXISTING)) {
-      raf.setLength(0L)
-    }
-
-    if (writing && options.contains(APPEND)) {
-      raf.seek(raf.length())
-    }
-
-    raf
-
   }
 }

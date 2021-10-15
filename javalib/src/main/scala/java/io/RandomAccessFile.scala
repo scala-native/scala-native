@@ -1,14 +1,14 @@
 package java.io
 
 import java.{lang => jl}
-import scalanative.unsafe.{Zone, stackalloc, toCString, toCWideStringUTF16LE}
-import scalanative.libc.stdio
-import scalanative.posix.{fcntl, unistd}
+import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
+import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows
 import windows._
 import windows.FileApiExt._
+import java.nio.channels.{FileChannelImpl, FileChannel}
 
 class RandomAccessFile private (
     file: File,
@@ -27,48 +27,42 @@ class RandomAccessFile private (
     )
   def this(name: String, mode: String) = this(new File(name), mode)
 
-  private var closed: Boolean = false
   private lazy val in = new DataInputStream(new FileInputStream(fd))
   private lazy val out = new DataOutputStream(new FileOutputStream(fd))
+  private lazy val channel =
+    new FileChannelImpl(
+      fd,
+      Some(file),
+      deleteFileOnClose = false,
+      openForReading = true,
+      openForWriting = mode.contains('w')
+    )
 
-  override def close(): Unit = {
-    closed = true
-    if (isWindows) HandleApi.CloseHandle(fd.handle)
-    else unistd.close(fd.fd)
-  }
-  // final def getChannel(): FileChannel
+  override def close(): Unit =
+    channel.close()
+
+  final def getChannel(): FileChannel =
+    channel
 
   def getFD(): FileDescriptor =
     fd
 
-  def getFilePointer(): Long = {
-    if (isWindows) {
-      val filePointer = stackalloc[LargeInteger]
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        0,
-        filePointer,
-        FILE_CURRENT
-      )
-      !filePointer
-    } else {
-      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
-    }
-  }
+  def getFilePointer(): Long =
+    channel.position()
 
   def length(): Long =
     file.length()
 
   def read(): Int =
-    if (closed) throw new IOException("Stream Closed")
+    if (!channel.isOpen()) throw new IOException("Stream Closed")
     else in.read()
 
   def read(b: Array[Byte]): Int =
-    if (closed) throw new IOException("Stream Closed")
+    if (!channel.isOpen()) throw new IOException("Stream Closed")
     else in.read(b)
 
   def read(b: Array[Byte], off: Int, len: Int): Int =
-    if (closed) throw new IOException("Stream Closed")
+    if (!channel.isOpen()) throw new IOException("Stream Closed")
     else in.read(b, off, len)
 
   override final def readBoolean(): Boolean =
@@ -148,37 +142,10 @@ class RandomAccessFile private (
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    if (isWindows)
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        pos,
-        null,
-        FILE_BEGIN
-      )
-    else unistd.lseek(fd.fd, pos, stdio.SEEK_SET)
+    channel.position(pos)
 
   def setLength(newLength: Long): Unit =
-    if (!mode.contains("w")) {
-      throw new IOException("Invalid argument")
-    } else {
-      val currentPosition = getFilePointer()
-      val hasSucceded =
-        if (isWindows) {
-          FileApi.SetFilePointerEx(
-            fd.handle,
-            newLength,
-            null,
-            FILE_BEGIN
-          ) &&
-          FileApi.SetEndOfFile(fd.handle)
-        } else {
-          unistd.ftruncate(fd.fd, newLength) == 0
-        }
-      if (!hasSucceded) {
-        throw new IOException("Failed to truncate file")
-      }
-      if (currentPosition > newLength) seek(newLength)
-    }
+    channel.truncate(newLength)
 
   override def skipBytes(n: Int): Int =
     if (n <= 0) 0

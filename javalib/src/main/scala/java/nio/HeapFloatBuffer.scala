@@ -8,7 +8,7 @@ private[nio] final class HeapFloatBuffer private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends FloatBuffer(_capacity, _array0, _arrayOffset0) {
+) extends FloatBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)

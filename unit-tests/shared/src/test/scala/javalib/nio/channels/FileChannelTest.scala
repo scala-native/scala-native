@@ -10,6 +10,8 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import java.io.{FileInputStream, FileOutputStream}
+import java.io.RandomAccessFile
 
 class FileChannelTest {
   @Test def fileChannelCanReadBufferFromFile(): Unit = {
@@ -161,6 +163,68 @@ class FileChannelTest {
       val newLines = Files.readAllLines(f)
       assertTrue(newLines.size() == 1)
       assertTrue(newLines.get(0) == "hello, world")
+    }
+  }
+
+  @Test def canMoveFilePointer(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+      val channel = new RandomAccessFile(f.toFile(), "rw").getChannel()
+      assertEquals(0, channel.position())
+      channel.position(3)
+      assertEquals(3, channel.position())
+      channel.write(ByteBuffer.wrap("a".getBytes()))
+
+      channel.close()
+
+      val newLines = Files.readAllLines(f)
+      assertTrue(newLines.size() == 1)
+      assertTrue(newLines.get(0) == "helao")
+    }
+  }
+
+  @Test def getChannelFromFileInputStreamCoherency(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+      Files.write(f, bytes)
+      val in = new FileInputStream(f.toString())
+      val channel = in.getChannel()
+      val read345 = ByteBuffer.allocate(3)
+
+      in.read()
+      in.read()
+      channel.read(read345)
+
+      var i = 2
+      while (i < bytes.length) {
+        assertEquals(f"Byte#$i", bytes(i), read345.get(i - 2))
+        i += 1
+      }
+    }
+  }
+
+  @Test def getChannelFromFileOutputStreamCoherency(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val out = new FileOutputStream(f.toString())
+      val channel = out.getChannel()
+
+      val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+
+      var i = 0
+      while (i < 3) {
+        out.write(bytes(i))
+        i += 1
+      }
+      while (i < bytes.length) {
+        channel.write(ByteBuffer.wrap(Array[Byte](bytes(i))))
+        i += 1
+      }
+      channel.close()
+      val readb = Files.readAllBytes(f)
+      assertTrue(bytes sameElements readb)
     }
   }
 
