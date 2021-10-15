@@ -11,14 +11,7 @@ object ByteBuffer {
   def allocateDirect(capacity: Int): ByteBuffer = allocate(capacity)
 
   def wrap(array: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    HeapByteBuffer.wrap(
-      array,
-      0,
-      array.length,
-      offset,
-      length,
-      false
-    )
+    HeapByteBuffer.wrap(array, 0, array.length, offset, length, false)
 
   def wrap(array: Array[Byte]): ByteBuffer =
     wrap(array, 0, array.length)
