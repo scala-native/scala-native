@@ -224,7 +224,6 @@ class FileChannelTest {
       }
       channel.close()
       val readb = Files.readAllBytes(f)
-      println(new String(readb))
       assertTrue(bytes sameElements readb)
     }
   }
