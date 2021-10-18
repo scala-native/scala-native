@@ -102,7 +102,7 @@ inThisBuild(
     organization := "org.scala-native", // Maven <groupId>
     version := nativeVersion, // Maven <version>
     scalaVersion := scala212,
-    crossScalaVersions := libCrossScalaVersions,
+    crossScalaVersions := libCrossScala2Versions,
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding",
