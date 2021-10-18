@@ -23,7 +23,7 @@ bin/
 .cache*
 
 # metals
-/.bloop/
+**/.bloop/
 /.metals/
 /project/**/metals.sbt
 
