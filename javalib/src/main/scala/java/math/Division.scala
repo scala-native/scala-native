@@ -1028,7 +1028,7 @@ private[math] object Division {
    *  operation.
    *
    *  @param bi
-   *    @param n
+   *  @param n
    *  @return
    */
   private def howManyIterations(bi: BigInteger, n: Int): Int = {

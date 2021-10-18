@@ -56,7 +56,7 @@ private[math] object Elementary {
    *  @see
    *    BigInteger#add(BigInteger) .
    *  @param op1
-   *    @param op2
+   *  @param op2
    *  @return
    *    the sum.
    */
@@ -317,7 +317,7 @@ private[math] object Elementary {
    *  @see
    *    BigInteger#subtract(BigInteger) .
    *  @param op1
-   *    @param op2
+   *  @param op2
    *  @return
    */
   def subtract(op1: BigInteger, op2: BigInteger): BigInteger = {
