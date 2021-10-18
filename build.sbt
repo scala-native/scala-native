@@ -20,15 +20,6 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
 )
 
-lazy val crossCompatSettings: Seq[Setting[_]] = Seq(
-  scalacOptions ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, _)) => Seq("-target:jvm-1.8")
-      case _            => Nil
-    }
-  }
-)
-
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
   Compile / doc / sources := Nil
 )
@@ -118,7 +109,8 @@ inThisBuild(
       "utf8",
       "-feature",
       "-unchecked",
-      "-Xfatal-warnings"
+      "-Xfatal-warnings",
+      "-target:jvm-1.8"
     )
   )
 )
@@ -251,7 +243,7 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-) ++ nameSettings ++ mimaSettings ++ crossCompatSettings
+) ++ nameSettings ++ mimaSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
@@ -266,6 +258,25 @@ lazy val toolSettings: Seq[Setting[_]] =
   Def.settings(
     javacOptions ++= Seq("-encoding", "utf8")
   )
+
+lazy val scala3CompatSettings: Seq[Setting[_]] = Def.settings(
+  scalacOptions := {
+    val prev = scalacOptions.value
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) =>
+        prev.map {
+          case "-target:jvm-1.8" => "-Xtarget:8"
+          case v                 => v
+        }
+      case _ => prev
+    }
+  }
+)
+
+lazy val scala3ProjectSettings: Seq[Setting[_]] = Def.settings(
+  scalaVersion := scala3,
+  crossScalaVersions := libCrossScala3Versions
+) ++ scala3CompatSettings
 
 lazy val buildInfoJVMSettings: Seq[Setting[_]] =
   Def.settings(
@@ -336,8 +347,8 @@ lazy val tools =
     .settings(buildInfoSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %% "scalacheck" % "1.15.4" % "test",
-        "org.scalatest" %% "scalatest" % "3.2.9" % "test"
+        "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+        "org.scalatest" %% "scalatest" % "3.1.1" % "test"
       ),
       Test / fork := true,
       Test / javaOptions ++= {
@@ -391,8 +402,10 @@ lazy val nscplugin =
   project
     .in(file("nscplugin"))
     .settings(mavenPublishSettings)
+    .settings(scala3CompatSettings)
     .settings(
       crossVersion := CrossVersion.full,
+      crossScalaVersions := libCrossScalaVersions,
       Compile / unmanagedSourceDirectories ++= Seq(
         (nir / Compile / scalaSource).value,
         (util / Compile / scalaSource).value
@@ -764,15 +777,13 @@ lazy val scalalib3 = project
   .in(file("scalalib3"))
   .enablePlugins(MyScalaNativePlugin)
   .settings(scalalibSettings("scala3-library_3", libCrossScala3Versions))
+  .settings(scala3ProjectSettings)
   .settings(mavenPublishSettings)
   .settings(disabledDocsSettings)
   .settings(
-    scalaVersion := scala3,
     scalacOptions ++= Seq(
       "-language:implicitConversions"
-    )
-  )
-  .settings(
+    ),
     libraryDependencies +=
       "org.scala-native" %%% "scalalib" % version.value cross (CrossVersion.for3Use2_13)
   )
@@ -834,7 +845,7 @@ def sharedTestSource(withBlacklist: Boolean) = Def.settings(
 
 lazy val testsCommonSettings = Def.settings(
   scalacOptions -= "-deprecation",
-  scalacOptions += "-deprecation:false",
+  scalacOptions ++= Seq("-deprecation:false"),
   Test / testOptions ++= Seq(
     Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
   ),
@@ -943,11 +954,8 @@ lazy val sandbox3 =
   project
     .in(file("sandbox") / ".scala3")
     .enablePlugins(MyScalaNativePlugin)
+    .settings(scala3ProjectSettings)
     .settings(sandboxSettings)
-    .settings(
-      scalaVersion := scala3,
-      scalacOptions -= "-Xfatal-warnings"
-    )
     .dependsOn(nscplugin % "plugin", scalalib3)
 
 lazy val testingCompilerInterface =
