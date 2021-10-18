@@ -14,7 +14,6 @@ object GenNIR extends PluginPhase {
     Set(transform.MoveStatics.name, backend.jvm.GenBCode.name)
 
   override def run(using Context): Unit = {
-    println(s"Producing NIR for `${ctx.compilationUnit.source.file}`")
     NirCodeGen().run()
   }
 }
