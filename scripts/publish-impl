@@ -24,6 +24,13 @@ for v in 2.11.12 2.12.15 2.13.6; do
     junitRuntime/$publish
 done
 
+for v in 3.1.0; do 
+  sbt -Dsbt.supershell=false \
+  ++$v \
+  nscplugin/$publish \
+  scalalib3/$publish 
+done
+
 sbt -Dsbt.supershell=false \
   util/$publish \
   nir/$publish \
