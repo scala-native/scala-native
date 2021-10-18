@@ -20,6 +20,15 @@ lazy val nameSettings: Seq[Setting[_]] = Seq(
   name := projectName(thisProject.value) // Maven <name>
 )
 
+lazy val crossCompatSettings: Seq[Setting[_]] = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) => Seq("-target:jvm-1.8")
+      case _            => Nil
+    }
+  }
+)
+
 lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
   Compile / doc / sources := Nil
 )
@@ -108,7 +117,6 @@ inThisBuild(
       "-encoding",
       "utf8",
       "-feature",
-      "-target:jvm-1.8",
       "-unchecked",
       "-Xfatal-warnings"
     )
@@ -243,7 +251,7 @@ lazy val publishSettings: Seq[Setting[_]] = Seq(
       <url>https://github.com/scala-native/scala-native/issues</url>
     </issueManagement>
   )
-) ++ nameSettings ++ mimaSettings
+) ++ nameSettings ++ mimaSettings ++ crossCompatSettings
 
 lazy val noPublishSettings: Seq[Setting[_]] = Seq(
   publishArtifact := false,
@@ -328,8 +336,8 @@ lazy val tools =
     .settings(buildInfoSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
-        "org.scalatest" %% "scalatest" % "3.1.1" % "test"
+        "org.scalacheck" %% "scalacheck" % "1.15.4" % "test",
+        "org.scalatest" %% "scalatest" % "3.2.9" % "test"
       ),
       Test / fork := true,
       Test / javaOptions ++= {
@@ -346,20 +354,23 @@ lazy val tools =
             allCoreLibsCp.map(_.getAbsolutePath).mkString(pathSeparator)
         )
       },
-      scalacOptions ++= {
+      scalacOptions := {
+        val prev = scalacOptions.value
         CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 11 | 12)) => Nil
-          case _                  =>
+          case Some((2, 11 | 12)) => prev
+          case Some((2, 13))      =>
             // 2.13 and 2.11 tools are only used in partest.
             // It looks like it's impossible to provide alternative sources - it fails to compile plugin sources,
             // before attaching them to other build projects. We disable unsolvable fatal-warnings with filters below
-            Seq(
+            prev ++ Seq(
               // In 2.13 lineStream_! was replaced with lazyList_!.
               "-Wconf:cat=deprecation&msg=lineStream_!:s",
               // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
               // Should not be replaced with HashMap due to performance reasons.
               "-Wconf:cat=deprecation&msg=OpenHashMap:s"
             )
+          case _ =>
+            prev.diff(Seq("-Xfatal-warnings"))
         }
       },
       libraryDependencies ++= {
@@ -367,7 +378,7 @@ lazy val tools =
           case Some((2, 11 | 12)) => Nil
           case _ =>
             List(
-              "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.0"
+              "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.3"
             )
         }
       },
@@ -386,13 +397,29 @@ lazy val nscplugin =
         (nir / Compile / scalaSource).value,
         (util / Compile / scalaSource).value
       ),
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value
-      ),
-      exportJars := true
+      libraryDependencies ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, _)) =>
+            Seq(
+              "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+              "org.scala-lang" % "scala-reflect" % scalaVersion.value
+            )
+          case Some((3, _)) =>
+            Seq(
+              "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided"
+            )
+          case _ =>
+            throw new Exception(s"Unknown Scala version ${scalaVersion.value}")
+        }
+      },
+      exportJars := true,
+      scalacOptions ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, _)) => Seq("-Xno-patmat-analysis")
+          case _            => Nil
+        }
+      }
     )
-    .settings(scalacOptions += "-Xno-patmat-analysis")
 
 lazy val sbtPluginSettings: Seq[Setting[_]] =
   toolSettings ++
@@ -544,34 +571,14 @@ lazy val auxlib =
     )
     .dependsOn(nscplugin % "plugin", nativelib)
 
-lazy val scalalib =
-  project
-    .in(file("scalalib"))
-    .enablePlugins(MyScalaNativePlugin)
-    .settings(
-      scalacOptions -= "-deprecation",
-      scalacOptions += "-deprecation:false",
-      // The option below is needed since Scala 2.12.12.
-      scalacOptions += "-language:postfixOps",
-      // The option below is needed since Scala 2.13.0.
-      scalacOptions += "-language:implicitConversions",
-      scalacOptions += "-language:higherKinds",
-      /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
-      scalacOptions --= {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 12))
-              if scalaVersion.value
-                .stripPrefix("2.12.")
-                .takeWhile(_.isDigit)
-                .toInt >= 13 =>
-            Seq("-Xfatal-warnings")
-          case _ => Nil
-        }
-      }
-    )
-    .settings(mavenPublishSettings)
-    .settings(disabledDocsSettings)
-    .settings(
+def scalalibSettings(
+    libraryName: String,
+    scalalibCrossVersions: Seq[String]
+): Seq[Setting[_]] =
+  mavenPublishSettings ++
+    disabledDocsSettings ++
+    Def.settings(
+      crossScalaVersions := scalalibCrossVersions,
       // Code to fetch scala sources adapted, with gratitude, from
       // Scala.js Build.scala at the suggestion of @sjrd.
       // https://github.com/scala-js/scala-js/blob/\
@@ -581,8 +588,20 @@ lazy val scalalib =
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies +=
-        "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
+
+      // `update/skip` was used instead of `update` task due to its
+      // depenendenies triggering update execution and leading to failure
+      // when wrong Scala version is used
+      update / skip := {
+        val version = scalaVersion.value
+        if (!scalalibCrossVersions.contains(version)) {
+          throw new Exception(
+            s"Cannot use ${name.value} project with uncompattible Scala version ${version}"
+          )
+        }
+        (update / skip).value
+      },
+      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
       fetchScalaSource / artifactPath :=
         target.value / "scalaSources" / scalaVersion.value,
       // Scala.js original comment modified to clarify issue is Scala.js.
@@ -594,33 +613,37 @@ lazy val scalalib =
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        if (scalaVersion.value == scala.util.Properties.versionNumberString)
-          updateClassifiers
-        else
-          update
+        val version = scalaVersion.value
+        val usedScalaVersion = scala.util.Properties.versionNumberString
+        if (version == usedScalaVersion) updateClassifiers
+        else update
       }.value,
       fetchScalaSource := {
+        val version = scalaVersion.value
+        if (!scalalibCrossVersions.contains(version)) {
+          throw new Exception(
+            s"Cannot compile ${name.value} project with uncompattible Scala version ${version}"
+          )
+        }
+        val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
-        val ver = scalaVersion.value
-        val trgDir = (fetchScalaSource / artifactPath).value
-
         val report = (fetchScalaSource / update).value
         val scalaLibSourcesJar = report
           .select(
             configuration = configurationFilter("compile"),
-            module = moduleFilter(name = "scala-library"),
+            module = moduleFilter(name = libraryName),
             artifact = artifactFilter(classifier = "sources")
           )
           .headOption
           .getOrElse {
             throw new Exception(
-              s"Could not fetch scala-library sources for version $ver"
+              s"Could not fetch $libraryName sources for version $version"
             )
           }
 
         FileFunction.cached(
-          cacheDir / s"fetchScalaSource-$ver",
+          cacheDir / s"fetchScalaSource-$version",
           FilesInfo.lastModified,
           FilesInfo.exists
         ) { dependencies =>
@@ -631,7 +654,6 @@ lazy val scalalib =
           IO.createDirectory(trgDir)
           IO.unzip(scalaLibSourcesJar, trgDir)
         }(Set(scalaLibSourcesJar))
-
         trgDir
       },
       Compile / unmanagedSourceDirectories := {
@@ -698,19 +720,63 @@ lazy val scalalib =
 
         sources.result()
       },
-      // Don't include classfiles for scalalib in the packaged jar.
+      // Don't include classfiles/tasty for scalalib in the packaged jar.
       Compile / packageBin / mappings := {
         val previous = (Compile / packageBin / mappings).value
+        val ignoredExtensions = Set(".class", ".tasty")
         previous.filter {
-          case (file, path) =>
-            !path.endsWith(".class")
+          case (file, path) => !ignoredExtensions.exists(path.endsWith)
         }
       },
       // Sources in scalalib are only internal overrides, we don't include them in the resulting sources jar
       Compile / packageSrc / mappings := Seq.empty,
       exportJars := true
     )
+
+lazy val scalalib =
+  project
+    .in(file("scalalib"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(scalalibSettings("scala-library", libCrossScala2Versions))
+    .settings(
+      scalacOptions += "-deprecation:false",
+      // The option below is needed since Scala 2.12.12.
+      scalacOptions += "-language:postfixOps",
+      // The option below is needed since Scala 2.13.0.
+      scalacOptions += "-language:implicitConversions",
+      scalacOptions += "-language:higherKinds",
+      /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
+      scalacOptions --= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, 12))
+              if scalaVersion.value
+                .stripPrefix("2.12.")
+                .takeWhile(_.isDigit)
+                .toInt >= 13 =>
+            Seq("-Xfatal-warnings")
+          case _ => Nil
+        }
+      }
+    )
     .dependsOn(nscplugin % "plugin", auxlib, nativelib, javalib)
+
+lazy val scalalib3 = project
+  .in(file("scalalib3"))
+  .enablePlugins(MyScalaNativePlugin)
+  .settings(scalalibSettings("scala3-library_3", libCrossScala3Versions))
+  .settings(mavenPublishSettings)
+  .settings(disabledDocsSettings)
+  .settings(
+    scalaVersion := scala3,
+    scalacOptions ++= Seq(
+      "-language:implicitConversions"
+    )
+  )
+  .settings(
+    libraryDependencies +=
+      "org.scala-native" %%% "scalalib" % version.value cross (CrossVersion.for3Use2_13)
+  )
+  .dependsOn(nscplugin % "plugin")
 
 // Shortcut for further Native projects to depend on all core libraries
 lazy val allCoreLibs: Project =
@@ -862,13 +928,27 @@ lazy val testsExtJVM = project
   )
   .dependsOn(junitAsyncJVM % "test")
 
+lazy val sandboxSettings = Def.settings(
+  sourceDirectory := baseDirectory.value.getParentFile / "src"
+) ++ noPublishSettings
+
 lazy val sandbox =
   project
-    .in(file("sandbox"))
+    .in(file("sandbox") / ".scala2")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(scalacOptions -= "-Xfatal-warnings")
-    .settings(noPublishSettings)
-    .dependsOn(nscplugin % "plugin", allCoreLibs, testInterface % Test)
+    .settings(sandboxSettings)
+    .dependsOn(nscplugin % "plugin", scalalib, testInterface % Test)
+
+lazy val sandbox3 =
+  project
+    .in(file("sandbox") / ".scala3")
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(sandboxSettings)
+    .settings(
+      scalaVersion := scala3,
+      scalacOptions -= "-Xfatal-warnings"
+    )
+    .dependsOn(nscplugin % "plugin", scalalib3)
 
 lazy val testingCompilerInterface =
   project
@@ -885,10 +965,19 @@ lazy val testingCompiler =
     .in(file("testing-compiler"))
     .settings(noPublishSettings)
     .settings(
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-        "org.scala-lang" % "scala-reflect" % scalaVersion.value
-      ),
+      libraryDependencies ++= {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          case Some((2, _)) =>
+            Seq(
+              "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+              "org.scala-lang" % "scala-reflect" % scalaVersion.value
+            )
+          case _ =>
+            Seq(
+              "org.scala-lang" %% "scala3-compiler" % scalaVersion.value
+            )
+        }
+      },
       Compile / unmanagedSourceDirectories ++= {
         val oldCompat: File = baseDirectory.value / "src/main/compat-old"
         val newCompat: File = baseDirectory.value / "src/main/compat-new"
