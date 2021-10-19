@@ -686,6 +686,8 @@ lazy val scalalib =
 
         val s = streams.value
         val fileTree = fileTreeView.value
+        def listFilesInOrder(patterns: Glob*) =
+          patterns.flatMap(fileTree.list(_))
 
         for {
           srcDir <- sourceDirectories
@@ -693,7 +695,7 @@ lazy val scalalib =
           scalaGlob = srcDir.toGlob / ** / "*.scala"
           patchGlob = srcDir.toGlob / ** / "*.scala.patch"
 
-          (sourcePath, _) <- fileTree.list(scalaGlob) ++ fileTree.list(patchGlob)
+          (sourcePath, _) <- listFilesInOrder(scalaGlob, patchGlob)
           path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
           def addSource(path: String)(optSource: => Option[File]): Unit = {
