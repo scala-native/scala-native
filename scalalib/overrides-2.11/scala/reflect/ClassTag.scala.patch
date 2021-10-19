@@ -1,6 +1,9 @@
 --- 2.11.12/scala/reflect/ClassTag.scala
 +++ overrides-2.11/scala/reflect/ClassTag.scala
-@@ -118,3 +118,15 @@
+@@ -115,27 +115,23 @@
+  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+  */
+ object ClassTag {
 -  private val ObjectTYPE = classOf[java.lang.Object]
 -  private val NothingTYPE = classOf[scala.runtime.Nothing$]
 -  private val NullTYPE = classOf[scala.runtime.Null$]
@@ -19,7 +22,7 @@
 +  @inline def AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
 +  @inline def Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
 +  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
-@@ -122,17 +134,1 @@
+ 
 -  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
 -  val Short   : ClassTag[scala.Short]      = Manifest.Short
 -  val Char    : ClassTag[scala.Char]       = Manifest.Char
@@ -38,11 +41,13 @@
 -
 -  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
 +  @inline def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
-@@ -140,2 +136,1 @@
--      case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
--      case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
-+      case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]      case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
-@@ -149,4 +144,10 @@
+     runtimeClass1 match {
+       case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
+       case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
+@@ -146,11 +142,17 @@
+       case java.lang.Double.TYPE    => ClassTag.Double.asInstanceOf[ClassTag[T]]
+       case java.lang.Boolean.TYPE   => ClassTag.Boolean.asInstanceOf[ClassTag[T]]
+       case java.lang.Void.TYPE      => ClassTag.Unit.asInstanceOf[ClassTag[T]]
 -      case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
 -      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
 -      case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
@@ -57,7 +62,8 @@
 +        } else {
 +          new ClassTag[T]{ def runtimeClass = runtimeClass1 }
 +        }
-@@ -155,1 +156,2 @@
+     }
+ 
 -  def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
-+  @inline def unapply[T](ctag: ClassTag[T]): Option[Class[_]] =
-+    Some(ctag.runtimeClass)
++  @inline def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
+ }

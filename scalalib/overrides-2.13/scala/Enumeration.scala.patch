@@ -1,42 +1,33 @@
 --- 2.13.6/scala/Enumeration.scala
 +++ overrides-2.13/scala/Enumeration.scala
-@@ -95,1 +95,1 @@
+@@ -92,13 +92,12 @@
+ 
+   /* Note that `readResolve` cannot be private, since otherwise
+      the JVM does not invoke it when deserializing subclasses. */
 -  protected def readResolve(): AnyRef = thisenum.getClass.getField(MODULE_INSTANCE_NAME).get(null)
 +  protected def readResolve(): AnyRef = ???
-@@ -99,3 +99,2 @@
+ 
+   /** The name of this enumeration.
+    */
 -  override def toString: String =
 -    ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split
 -       Regex.quote(NAME_JOIN_STRING)).last
 +  override def toString =
 +    (getClass.getName.stripSuffix("$").split('.')).last.split('$').last
-@@ -103,2 +102,1 @@
--  /** The mapping from the integer used to identify values to the actual
--    * values. */
-+  /** The mapping from the integer used to identify values to the actual    * values. */
-@@ -108,2 +106,1 @@
--  @transient private var vset: ValueSet = null
--  @transient @volatile private var vsetDefined = false
-+  @transient private var vset: ValueSet = null  @transient @volatile private var vsetDefined = false
-@@ -114,1 +111,0 @@
--
-@@ -118,2 +114,1 @@
--    if (!vsetDefined) {
--      vset = (ValueSet.newBuilder ++= vmap.values).result()
-+    if (!vsetDefined) {      vset = (ValueSet.newBuilder ++= vmap.values).result()
-@@ -124,1 +119,0 @@
--
-@@ -128,2 +122,1 @@
--  /** The string to use to name the next created value. */
--  protected var nextName: Iterator[String] = _
-+  /** The string to use to name the next created value. */  protected var nextName: Iterator[String] = _
-@@ -158,2 +151,4 @@
+ 
+   /** The mapping from the integer used to identify values to the actual
+     * values. */
+@@ -155,9 +154,24 @@
+    * @throws   NoSuchElementException if no `Value` with a matching
+    *           name is in this `Enumeration`
+    */
 -  final def withName(s: String): Value = values.byName.getOrElse(s,
 -    throw new NoSuchElementException(s"No value found for '$s'"))
 +  final def withName(s: String): Value = {
 +    val (unnamed, named) = values partition {
 +      _.toString().startsWith("<Unknown name for enum field ")
 +    }
-@@ -161,0 +156,13 @@
+ 
 +    named.find(_.toString == s) match {
 +      case Some(v) => v
 +      // If we have unnamed values, we issue a detailed error message
@@ -50,23 +41,13 @@
 +    }
 +  }
 +
-@@ -163,1 +171,0 @@
--
-@@ -167,2 +174,1 @@
--   *  @param i An integer that identifies this value at run-time. It must be
--   *           unique amongst all values of the enumeration.
-+   *  @param i An integer that identifies this value at run-time. It must be   *           unique amongst all values of the enumeration.
-@@ -172,1 +178,0 @@
--
-@@ -176,2 +181,1 @@
--   *  @return  Fresh value called `name`.
--   */
-+   *  @return  Fresh value called `name`.   */
-@@ -181,2 +185,1 @@
--   *  and identified by the integer `i`.
--   *
-+   *  and identified by the integer `i`.   *
-@@ -190,32 +193,0 @@
+   /** Creates a fresh value, part of this enumeration. */
+   protected final def Value: Value = Value(nextId)
+ 
+@@ -187,38 +201,6 @@
+    */
+   protected final def Value(i: Int, name: String): Value = new Val(i, name)
+ 
 -  private def populateNameMap(): Unit = {
 -    @tailrec def getFields(clazz: Class[_], acc: Array[JField]): Array[JField] = {
 -      if (clazz == null)
@@ -99,49 +80,17 @@
 -   */
 -  private def nameOf(i: Int): String = synchronized { nmap.getOrElse(i, { populateNameMap() ; nmap(i) }) }
 -
-@@ -223,2 +194,1 @@
--  @SerialVersionUID(7091335633555234129L)
--  abstract class Value extends Ordered[Value] with Serializable {
-+  @SerialVersionUID(7091335633555234129L)  abstract class Value extends Ordered[Value] with Serializable {
-@@ -229,1 +199,0 @@
--
-@@ -233,2 +202,1 @@
--      else 1
--    override def equals(other: Any): Boolean = other match {
-+      else 1    override def equals(other: Any): Boolean = other match {
-@@ -239,1 +207,0 @@
--
-@@ -243,1 +210,0 @@
--
-@@ -247,2 +213,1 @@
--   */
--  @SerialVersionUID(0 - 3501153230598116017L)
-+   */  @SerialVersionUID(0 - 3501153230598116017L)
-@@ -260,2 +225,2 @@
--    def id: Int = i
--    override def toString(): String =
-+    def id = i
-+    override def toString() =
-@@ -263,2 +228,2 @@
+   /** The type of the enumerated values. */
+   @SerialVersionUID(7091335633555234129L)
+   abstract class Value extends Ordered[Value] with Serializable {
+@@ -260,8 +242,8 @@
+     def id: Int = i
+     override def toString(): String =
+       if (name != null) name
 -      else try thisenum.nameOf(i)
 -      catch { case _: NoSuchElementException => "<Invalid enum: no field for #" + i + ">" }
-+      // Scala.js specific
++      // Scala Native specific
 +      else s"<Unknown name for enum field #$i of class ${getClass}>"
-@@ -266,2 +231,1 @@
--    protected def readResolve(): AnyRef = {
--      val enumeration = thisenum.readResolve().asInstanceOf[Enumeration]
-+    protected def readResolve(): AnyRef = {      val enumeration = thisenum.readResolve().asInstanceOf[Enumeration]
-@@ -272,1 +236,0 @@
--
-@@ -277,1 +240,0 @@
--
-@@ -281,2 +243,1 @@
--   *  @param nnIds The set of ids of values (adjusted so that the lowest value does
--   *    not fall below zero), organized as a `BitSet`.
-+   *  @param nnIds The set of ids of values (adjusted so that the lowest value does   *    not fall below zero), organized as a `BitSet`.
-@@ -286,2 +247,1 @@
--  class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
--    extends immutable.AbstractSet[Value]
-+  class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)    extends immutable.AbstractSet[Value]
-@@ -292,1 +252,0 @@
--
+ 
+     protected def readResolve(): AnyRef = {
+       val enumeration = thisenum.readResolve().asInstanceOf[Enumeration]

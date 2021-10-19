@@ -1,17 +1,21 @@
---- 2.12.14/scala/collection/mutable/LinkedList.scala
+--- 2.12.15/scala/collection/mutable/LinkedList.scala
 +++ old-collections/scala/collection/mutable/LinkedList.scala
-@@ -120,2 +120,4 @@
+@@ -116,10 +116,15 @@
+  *  @define coll linked list
+  */
+ @deprecated("low-level linked lists are deprecated", "2.11.0")
+ object LinkedList extends SeqFactory[LinkedList] {
 -  override def empty[A]: LinkedList[A] = new LinkedList[A]
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-@@ -123,1 +125,6 @@
+ 
 -  def newBuilder[A]: Builder[A, LinkedList[A]] =
-+  @inline override def empty[A]: LinkedList[A] =
-+    new LinkedList[A]
-+
++  @inline override def empty[A]: LinkedList[A] = new LinkedList[A]
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 +
 +  @inline def newBuilder[A]: Builder[A, LinkedList[A]] =
+     (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)
+ }

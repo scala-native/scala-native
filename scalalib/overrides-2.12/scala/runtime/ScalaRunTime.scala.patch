@@ -1,8 +1,6 @@
---- scalaSources/2.12.14/scala/runtime/ScalaRunTime.scala
+--- 2.12.15/scala/runtime/ScalaRunTime.scala
 +++ overrides-2.12/scala/runtime/ScalaRunTime.scala
-@@ -52,76 +52,49 @@
-   def anyValClass[T <: AnyVal : ClassTag](value: T): jClass[T] =
-     classTag[T].runtimeClass.asInstanceOf[jClass[T]]
+@@ -54,60 +54,36 @@
  
    /** Retrieve generic array element */
 -  def array_apply(xs: AnyRef, idx: Int): Any = {
@@ -84,20 +82,4 @@
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].clone()
 +    }
    }
--
-   /** Convert an array to an object array.
-    *  Needed to deal with vararg arguments of primitive types that are passed
-    *  to a generic Java vararg parameter T ...
--   */
--  def toObjectArray(src: AnyRef): Array[Object] = {
-+   */  def toObjectArray(src: AnyRef): Array[Object] = {
-     def copy[@specialized T <: AnyVal](src: Array[T]): Array[Object] = {
-       val length = src.length
-       if (length == 0) Array.emptyObjectArray
--      else {
--        val dest = new Array[Object](length)
-+      else {        val dest = new Array[Object](length)
-         var i = 0
-         while (i < length) {
-           dest(i) = src(i).asInstanceOf[AnyRef]
-           i += 1
+ 

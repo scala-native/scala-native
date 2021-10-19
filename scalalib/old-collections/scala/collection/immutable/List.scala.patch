@@ -1,21 +1,28 @@
---- 2.12.14/scala/collection/immutable/List.scala
+--- 2.12.15/scala/collection/immutable/List.scala
 +++ old-collections/scala/collection/immutable/List.scala
-@@ -497,0 +497,5 @@
+@@ -493,17 +493,21 @@
+  *  @define coll list
+  *  @define Coll `List`
+  */
+ object List extends SeqFactory[List] {
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-+
-@@ -498,1 +503,1 @@
+   /** $genericCanBuildFromInfo */
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
-@@ -501,1 +506,2 @@
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ 
 -  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
-+  @inline def newBuilder[A]: Builder[A, List[A]] =
-+    new ListBuffer[A]
-@@ -503,1 +509,1 @@
++  @inline def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
+ 
 -  override def empty[A]: List[A] = Nil
 +  @inline override def empty[A]: List[A] = Nil
-@@ -505,1 +511,1 @@
+ 
 -  override def apply[A](xs: A*): List[A] = xs.toList
 +  @inline override def apply[A](xs: A*): List[A] = xs.toList
+ 
+   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
+ 
+   @SerialVersionUID(1L)

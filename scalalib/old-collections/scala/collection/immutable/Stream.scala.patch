@@ -1,15 +1,48 @@
---- 2.12.14/scala/collection/immutable/Stream.scala
+--- 2.12.15/scala/collection/immutable/Stream.scala
 +++ old-collections/scala/collection/immutable/Stream.scala
-@@ -1079,0 +1079,4 @@
-+  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
+@@ -1076,8 +1076,9 @@
+  * @since   2.8
+  */
+ object Stream extends SeqFactory[Stream] {
+ 
++
+   /** The factory for streams.
+    *  @note Methods such as map/flatMap will not invoke the `Builder` factory,
+    *        but will return a new stream directly, to preserve laziness.
+    *        The new stream is then cast to the factory's result type.
+@@ -1086,14 +1087,17 @@
+    *        If that assumption is broken, cast errors might result.
+    */
+   class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A]
+ 
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-@@ -1090,3 +1092,1 @@
--  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
--    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Stream[A]]]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
+     ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Stream[A]]]
 -  private[this] val ReusableCBF = new StreamCanBuildFrom[Any]
-+  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
-@@ -1095,1 +1095,1 @@
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
+ 
+   /** Creates a new builder for a stream */
 -  def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
 +  @inline def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
+ 
+   /** A builder for streams
+    *  @note This builder is lazy only in the sense that it does not go downs the spine
+    *        of traversables that are added as a whole. If more laziness can be achieved,
+@@ -1110,12 +1114,12 @@
+     def tailDefined = false
+   }
+ 
+   /** The empty stream */
+-  override def empty[A]: Stream[A] = Empty
++  @inline override def empty[A]: Stream[A] = Empty
+ 
+   /** A stream consisting of given elements */
+-  override def apply[A](xs: A*): Stream[A] = xs.toStream
++  @inline override def apply[A](xs: A*): Stream[A] = xs.toStream
+ 
+   /** A wrapper class that adds `#::` for cons and `#:::` for concat as operations
+    *  to streams.
+    */

@@ -1,15 +1,28 @@
---- 2.12.14/scala/collection/mutable/Stack.scala
+--- 2.12.15/scala/collection/mutable/Stack.scala
 +++ old-collections/scala/collection/mutable/Stack.scala
-@@ -29,0 +29,5 @@
+@@ -25,18 +25,22 @@
+  *  @define coll mutable stack
+  *  @define Coll `mutable.Stack`
+  */
+ object Stack extends SeqFactory[Stack] {
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-+
-@@ -36,3 +41,3 @@
+   class StackBuilder[A] extends Builder[A, Stack[A]] {
+     val lbuff = new ListBuffer[A]
+     def +=(elem: A) = { lbuff += elem; this }
+     def clear() = lbuff.clear()
+     def result = new Stack(lbuff.result)
+   }
+ 
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 -  def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
 -  val empty: Stack[Nothing] = new Stack(Nil)
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 +  @inline def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
 +  @inline val empty: Stack[Nothing] = new Stack(Nil)
+ }
+ 
+ /** A stack implements a data structure which allows to store and retrieve
+  *  objects in a last-in-first-out (LIFO) fashion.

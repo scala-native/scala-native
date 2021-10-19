@@ -1,13 +1,18 @@
---- 2.12.14/scala/collection/mutable/ResizableArray.scala
+--- 2.12.15/scala/collection/mutable/ResizableArray.scala
 +++ old-collections/scala/collection/mutable/ResizableArray.scala
-@@ -128,1 +128,6 @@
+@@ -124,9 +124,13 @@
+   }
+ }
+ 
+ object ResizableArray extends SeqFactory[ResizableArray] {
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ResizableArray[A]] =
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-+
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ResizableArray[A]] =
-@@ -131,1 +136,1 @@
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ 
 -  def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
 +  @inline def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
+ }

@@ -1,17 +1,22 @@
---- 2.12.14/scala/collection/immutable/IndexedSeq.scala
+--- 2.12.15/scala/collection/immutable/IndexedSeq.scala
 +++ old-collections/scala/collection/immutable/IndexedSeq.scala
-@@ -46,2 +46,2 @@
+@@ -42,12 +42,16 @@
+  *  @define Coll `IndexedSeq`
+  */
+ object IndexedSeq extends IndexedSeqFactory[IndexedSeq] {
+   class Impl[A](buf: ArrayBuffer[A]) extends AbstractSeq[A] with IndexedSeq[A] with Serializable {
 -    def length = buf.length
 -    def apply(idx: Int) = buf.apply(idx)
 +    @inline def length = buf.length
 +    @inline def apply(idx: Int) = buf.apply(idx)
-@@ -49,2 +49,1 @@
+   }
 -  def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
--
-+  @inline def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
-@@ -53,0 +52,5 @@
-+
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
++  @inline def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
+ 
+   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ }

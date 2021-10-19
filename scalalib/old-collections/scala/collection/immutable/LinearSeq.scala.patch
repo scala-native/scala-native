@@ -1,6 +1,10 @@
---- 2.12.14/scala/collection/immutable/LinearSeq.scala
+--- 2.12.15/scala/collection/immutable/LinearSeq.scala
 +++ old-collections/scala/collection/immutable/LinearSeq.scala
-@@ -38,2 +38,10 @@
+@@ -34,7 +34,13 @@
+  *  @define coll immutable linear sequence
+  *  @define Coll `immutable.LinearSeq`
+  */
+ object LinearSeq extends SeqFactory[LinearSeq] {
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 -  def newBuilder[A]: Builder[A, LinearSeq[A]] = new mutable.ListBuffer
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
@@ -10,6 +14,5 @@
 +
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] =
 +    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-+
-+  @inline def newBuilder[A]: Builder[A, LinearSeq[A]] =
-+    new mutable.ListBuffer
++  @inline def newBuilder[A]: Builder[A, LinearSeq[A]] = new mutable.ListBuffer
+ }

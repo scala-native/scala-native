@@ -1,55 +1,24 @@
 --- 2.13.6/scala/reflect/ClassTag.scala
 +++ overrides-2.13/scala/reflect/ClassTag.scala
-@@ -17,1 +17,0 @@
--import java.lang.ref.{WeakReference => jWeakReference}
-@@ -20,1 +19,0 @@
--
-@@ -24,2 +22,1 @@
-- * field. This is particularly useful for instantiating `Array`s whose element types are unknown
-- * at compile time.
-+ * field. This is particularly useful for instantiating `Array`s whose element types are unknown * at compile time.
-@@ -29,2 +26,1 @@
-- * information. That is, `ClassTag`s are constructed from knowing only the top-level class of a
-- * type, without necessarily knowing all of its argument types. This runtime information is enough
-+ * information. That is, `ClassTag`s are constructed from knowing only the top-level class of a * type, without necessarily knowing all of its argument types. This runtime information is enough
-@@ -34,2 +30,1 @@
-- * {{{
-- *   scala> def mkArray[T : ClassTag](elems: T*) = Array[T](elems: _*)
-+ * {{{ *   scala> def mkArray[T : ClassTag](elems: T*) = Array[T](elems: _*)
-@@ -39,2 +34,1 @@
-- *   res0: Array[Int] = Array(42, 13)
-- *
-+ *   res0: Array[Int] = Array(42, 13) *
-@@ -44,2 +38,1 @@
-- *
-- * See [[scala.reflect.api.TypeTags]] for more examples, or the
-+ * * See [[scala.reflect.api.TypeTags]] for more examples, or the
-@@ -77,2 +70,2 @@
--    if (runtimeClass.isInstance(x)) Some(x.asInstanceOf[T])
--    else None
-+	if (runtimeClass.isInstance(x)) Some(x.asInstanceOf[T])
-+	else None
-@@ -80,2 +73,1 @@
--  // case class accessories
--  override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
-+  // case class accessories  override def canEqual(x: Any) = x.isInstanceOf[ClassTag[_]]
-@@ -85,4 +77,4 @@
--    def prettyprint(clazz: jClass[_]): String =
--      if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else
--      clazz.getName
--    prettyprint(runtimeClass)
-+	def prettyprint(clazz: jClass[_]): String =
-+	  if (clazz.isArray) s"Array[${prettyprint(clazz.getComponentType)}]" else
-+		clazz.getName
-+	prettyprint(runtimeClass)
-@@ -91,1 +83,0 @@
--
-@@ -96,4 +87,0 @@
+@@ -63,7 +63,7 @@
+ 
+   /** Produces a new array with element type `T` and length `len` */
+   def newArray(len: Int): Array[T] =
+-    java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
++	java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
+ 
+   /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
+    *
+@@ -93,56 +93,24 @@
+  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
+  */
+ object ClassTag {
 -  private[this] val ObjectTYPE = classOf[java.lang.Object]
 -  private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
 -  private[this] val NullTYPE = classOf[scala.runtime.Null$]
 -
-@@ -102,15 +89,15 @@
+   import ManifestFactory._
+ 
 -  val Byte    : ByteManifest               = Manifest.Byte
 -  val Short   : ShortManifest              = Manifest.Short
 -  val Char    : CharManifest               = Manifest.Char
@@ -80,7 +49,7 @@
 +  @inline def AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
 +  @inline def Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
 +  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
-@@ -118,28 +105,0 @@
+ 
 -  private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
 -  private[this] object cache extends ClassValue[jWeakReference[ClassTag[_]]] {
 -    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
@@ -109,11 +78,13 @@
 -      }
 -  }
 -
-@@ -147,2 +106,1 @@
--  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {
--    override def newArray(len: Int): Array[T] = {
-+  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {    override def newArray(len: Int): Array[T] = {
-@@ -153,11 +111,19 @@
+   @SerialVersionUID(1L)
+   private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {
+     override def newArray(len: Int): Array[T] = {
+@@ -150,19 +118,26 @@
+     }
+   }
+ 
 -  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = {
 -    if (cacheDisabled) {
 -      cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
@@ -144,9 +115,8 @@
 +        else if (classOf[scala.runtime.Null$] == runtimeClass1)
 +          ClassTag.Null.asInstanceOf[ClassTag[T]]
 +        else new GenericClassTag[T](runtimeClass1)
-@@ -165,1 +131,0 @@
+     }
 -  }
-@@ -167,2 +132,1 @@
--  def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
--}
-+  def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)}
+ 
+   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
+ }

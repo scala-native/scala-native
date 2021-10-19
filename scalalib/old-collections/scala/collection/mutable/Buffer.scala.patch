@@ -1,14 +1,19 @@
---- 2.12.14/scala/collection/mutable/Buffer.scala
+--- 2.12.15/scala/collection/mutable/Buffer.scala
 +++ old-collections/scala/collection/mutable/Buffer.scala
-@@ -45,3 +45,4 @@
+@@ -41,10 +41,14 @@
+  *  @define coll buffer
+  *  @define Coll `Buffer`
+  */
+ object Buffer extends SeqFactory[Buffer] {
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Buffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 -  def newBuilder[A]: Builder[A, Buffer[A]] = new ArrayBuffer
--}
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-@@ -49,0 +50,3 @@
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Buffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 +  @inline def newBuilder[A]: Builder[A, Buffer[A]] = new ArrayBuffer
-+}
+ }
+ 
+ /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
+ abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]

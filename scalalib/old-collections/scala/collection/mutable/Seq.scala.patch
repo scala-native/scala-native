@@ -1,17 +1,19 @@
---- 2.12.14/scala/collection/mutable/Seq.scala
+--- 2.12.15/scala/collection/mutable/Seq.scala
 +++ old-collections/scala/collection/mutable/Seq.scala
-@@ -45,3 +45,4 @@
+@@ -41,10 +41,14 @@
+  *  @define coll mutable sequence
+  *  @define Coll `mutable.Seq`
+  */
+ object Seq extends SeqFactory[Seq] {
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 -  def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
--}
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
 +  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
 +    @inline override def apply() = newBuilder[Nothing]
 +  }
-@@ -49,0 +50,6 @@
-+  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] =
-+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-+
-+  @inline def newBuilder[A]: Builder[A, Seq[A]] =
-+    new ArrayBuffer
-+}
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
+ }
+ 
+ /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
+ abstract class AbstractSeq[A] extends scala.collection.AbstractSeq[A] with Seq[A]

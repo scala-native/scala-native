@@ -1,6 +1,10 @@
---- 2.12.14/scala/collection/immutable/Traversable.scala
+--- 2.12.15/scala/collection/immutable/Traversable.scala
 +++ old-collections/scala/collection/immutable/Traversable.scala
-@@ -50,2 +50,7 @@
+@@ -46,7 +46,12 @@
+  *  @define coll immutable traversable collection
+  *  @define Coll `immutable.Traversable`
+  */
+ object Traversable extends TraversableFactory[Traversable] {
 -  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 -  def newBuilder[A]: Builder[A, Traversable[A]] = new mutable.ListBuffer
 +  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
@@ -10,3 +14,4 @@
 +
 +  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 +  @inline def newBuilder[A]: Builder[A, Traversable[A]] = new mutable.ListBuffer
+ }

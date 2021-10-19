@@ -1,6 +1,9 @@
 --- 2.12.13/scala/runtime/ScalaRunTime.scala
 +++ overrides-2.12.13/scala/runtime/ScalaRunTime.scala
-@@ -56,13 +56,5 @@
+@@ -53,66 +53,38 @@
+     classTag[T].runtimeClass.asInstanceOf[jClass[T]]
+ 
+   /** Retrieve generic array element */
 -  def array_apply(xs: AnyRef, idx: Int): Any = {
 -    xs match {
 -      case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
@@ -19,7 +22,10 @@
 +      throw new NullPointerException
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].apply(idx)
-@@ -73,13 +65,5 @@
+     }
+   }
+ 
+   /** update generic array element */
 -  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
 -    xs match {
 -      case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
@@ -38,7 +44,10 @@
 +      throw new NullPointerException
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].update(idx, value)
-@@ -90,12 +74,6 @@
+     }
+   }
+ 
+   /** Get generic array length */
 -  def array_length(xs: AnyRef): Int = xs match {
 -    case x: Array[AnyRef]  => x.length
 -    case x: Array[Int]     => x.length
@@ -57,7 +66,8 @@
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].length
 +    }
-@@ -104,12 +82,6 @@
+   }
+ 
 -  def array_clone(xs: AnyRef): AnyRef = xs match {
 -    case x: Array[AnyRef]  => x.clone()
 -    case x: Array[Int]     => x.clone()
@@ -76,45 +86,6 @@
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].clone()
 +    }
-@@ -117,1 +89,0 @@
--
-@@ -121,2 +92,1 @@
--   */
--  def toObjectArray(src: AnyRef): Array[Object] = {
-+   */  def toObjectArray(src: AnyRef): Array[Object] = {
-@@ -126,2 +96,1 @@
--      else {
--        val dest = new Array[Object](length)
-+      else {        val dest = new Array[Object](length)
-@@ -131,2 +100,1 @@
--          i += 1
--        }
-+          i += 1        }
-@@ -136,2 +104,1 @@
--    src match {
--      case x: Array[AnyRef]  => x
-+    src match {      case x: Array[AnyRef]  => x
-@@ -146,1 +113,0 @@
--      case x: Array[Unit]    => copy(x)
-@@ -148,2 +114,1 @@
--    }
--  }
-+    }  }
-@@ -153,2 +118,1 @@
--    else {
--      val arr = new Array[AnyRef](xs.length)
-+    else {      val arr = new Array[AnyRef](xs.length)
-@@ -158,2 +122,1 @@
--        arr(i) = it.next().asInstanceOf[AnyRef]
--        i += 1
-+        arr(i) = it.next().asInstanceOf[AnyRef]        i += 1
-@@ -164,1 +127,0 @@
--
-@@ -168,1 +130,0 @@
--
-@@ -173,1 +134,0 @@
--
-@@ -177,2 +137,1 @@
--      private var c: Int = 0
--      private val cmax = x.productArity
-+      private var c: Int = 0      private val cmax = x.productArity
+   }
+ 
+   /** Convert an array to an object array.

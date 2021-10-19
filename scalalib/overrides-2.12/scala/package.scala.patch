@@ -1,16 +1,13 @@
---- scalaSources/2.12.14/scala/package.scala
+--- 2.12.15/scala/package.scala
 +++ overrides-2.12/scala/package.scala
-@@ -32,105 +32,100 @@
-   type AbstractMethodError             = java.lang.AbstractMethodError
-   type InterruptedException            = java.lang.InterruptedException
+@@ -34,5 +34,5 @@
  
    // A dummy used by the specialization annotation.
 -  val AnyRef = new Specializable {
 +  lazy val AnyRef = new Specializable {
      override def toString = "object AnyRef"
    }
--
-   type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
+@@ -41,69 +41,69 @@
  
    type Traversable[+A] = scala.collection.Traversable[A]
 -  val Traversable = scala.collection.Traversable
@@ -102,9 +99,8 @@
 -  val Ordering = scala.math.Ordering
 +  lazy val Ordering = scala.math.Ordering
  
--  type PartialOrdering[T] = scala.math.PartialOrdering[T]
--  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
-+  type PartialOrdering[T] = scala.math.PartialOrdering[T]  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+   type PartialOrdering[T] = scala.math.PartialOrdering[T]
+@@ -111,11 +111,11 @@
  
    type Either[+A, +B] = scala.util.Either[A, B]
 -  val Either = scala.util.Either
@@ -118,22 +114,4 @@
 -  val Right = scala.util.Right
 +  lazy val Right = scala.util.Right
  
--  // Annotations which we might move to annotation.*
--/*
-+  // Annotations which we might move to annotation.*/*
-   type SerialVersionUID = annotation.SerialVersionUID
-   type deprecated = annotation.deprecated
-   type deprecatedName = annotation.deprecatedName
--  type inline = annotation.inline
--  type native = annotation.native
-+  type inline = annotation.inline  type native = annotation.native
-   type noinline = annotation.noinline
-   type remote = annotation.remote
-   type specialized = annotation.specialized
--  type transient = annotation.transient
--  type throws  = annotation.throws
-+  type transient = annotation.transient  type throws  = annotation.throws
-   type unchecked = annotation.unchecked.unchecked
-   type volatile = annotation.volatile
-   */
- }
+   // Annotations which we might move to annotation.*

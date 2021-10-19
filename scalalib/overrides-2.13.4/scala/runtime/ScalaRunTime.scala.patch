@@ -1,6 +1,9 @@
 --- 2.13.4/scala/runtime/ScalaRunTime.scala
 +++ overrides-2.13.4/scala/runtime/ScalaRunTime.scala
-@@ -56,13 +56,5 @@
+@@ -53,55 +53,38 @@
+     classTag[T].runtimeClass.asInstanceOf[jClass[T]]
+ 
+   /** Retrieve generic array element */
 -  def array_apply(xs: AnyRef, idx: Int): Any = {
 -    (xs: @unchecked) match {
 -      case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
@@ -19,7 +22,10 @@
 +      throw new NullPointerException
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].apply(idx)
-@@ -73,13 +65,5 @@
+     }
+   }
+ 
+   /** update generic array element */
 -  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
 -    (xs: @unchecked) match {
 -      case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
@@ -38,9 +44,19 @@
 +      throw new NullPointerException
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].update(idx, value)
-@@ -90,15 +74,6 @@
+     }
+   }
+ 
+   /** Get generic array length */
 -  @inline def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
--
++  def array_length(xs: AnyRef): Int = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].length
++    }
++  }
+ 
 -  // TODO: bytecode Object.clone() will in fact work here and avoids
 -  // the type switch. See Array_clone comment in BCodeBodyBuilder.
 -  def array_clone(xs: AnyRef): AnyRef = (xs: @unchecked) match {
@@ -54,57 +70,12 @@
 -    case x: Array[Short]   => x.clone()
 -    case x: Array[Boolean] => x.clone()
 -    case null => throw new NullPointerException
-+  def array_length(xs: AnyRef): Int = {
-+    if (xs == null) {
-+      throw new NullPointerException
-+    } else {
-+      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].length
-+    }
-@@ -107,0 +82,7 @@
 +  def array_clone(xs: AnyRef): AnyRef = {
 +    if (xs == null) {
 +      throw new NullPointerException
 +    } else {
 +      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].clone()
 +    }
-+  }
-@@ -110,2 +92,1 @@
--   */
--  def toObjectArray(src: AnyRef): Array[Object] = {
-+   */  def toObjectArray(src: AnyRef): Array[Object] = {
-@@ -115,2 +96,1 @@
--      else {
--        val dest = new Array[Object](length)
-+      else {        val dest = new Array[Object](length)
-@@ -120,2 +100,1 @@
--          i += 1
--        }
-+          i += 1        }
-@@ -125,2 +104,1 @@
--    (src: @unchecked) match {
--      case x: Array[AnyRef]  => x
-+    (src: @unchecked) match {      case x: Array[AnyRef]  => x
-@@ -135,1 +113,0 @@
--      case x: Array[Unit]    => copy(x)
-@@ -137,2 +114,1 @@
--    }
--  }
-+    }  }
-@@ -142,2 +118,1 @@
--    else {
--      val arr = new Array[AnyRef](xs.length)
-+    else {      val arr = new Array[AnyRef](xs.length)
-@@ -147,2 +122,1 @@
--        arr(i) = it.next().asInstanceOf[AnyRef]
--        i += 1
-+        arr(i) = it.next().asInstanceOf[AnyRef]        i += 1
-@@ -153,1 +127,0 @@
--
-@@ -157,1 +130,0 @@
--
-@@ -162,1 +134,0 @@
--
-@@ -166,2 +137,1 @@
--      private[this] var c: Int = 0
--      private[this] val cmax = x.productArity
-+      private[this] var c: Int = 0      private[this] val cmax = x.productArity
+   }
+ 
+   /** Convert an array to an object array.
