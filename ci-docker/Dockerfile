@@ -30,7 +30,7 @@ ENV SBT_INSTALL_FILE sbt-$SBT_LAUNCHER_VERSION.deb
 ENV SBT_INSTALL_URL \
         https://repo.scala-sbt.org/scalasbt/debian/$SBT_INSTALL_FILE
 
-RUN apt-get install -y curl patch
+RUN apt-get install -y curl
 
 # Install sbt
 RUN \

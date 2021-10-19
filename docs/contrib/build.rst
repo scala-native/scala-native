@@ -261,7 +261,5 @@ It is also possible to define explicitly overrides directory to use by passing i
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.
 
-
-
 .. [1] http://www.scala-native.org/en/latest/user/setup.html
 .. [2] http://www.scala-native.org/en/latest/user/sbt.html

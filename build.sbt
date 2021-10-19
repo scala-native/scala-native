@@ -1,5 +1,3 @@
-import scala.util.control.NonFatal
-import scala.scalanative.build.Platform
 import java.io.File.pathSeparator
 import scala.collection.mutable
 import scala.util.Try
@@ -664,8 +662,7 @@ lazy val scalalib =
           case _                  => baseDirectory.value / "new-collections"
         }
         // most specific shadow less specific and special dirs
-        (dirs.toSeq :+ collectionsDir)
-          .filter(_.exists)
+        (dirs.toSeq :+ collectionsDir).filter(_.exists)
       },
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
