@@ -99,7 +99,7 @@
  
    // tupling ------------------------------------------------------------
  
-@@ -300,7 +301,7 @@
+@@ -300,27 +301,29 @@
      override def toString                               = __arrayOfChars mkString ""
    }
  
@@ -108,7 +108,11 @@
      def apply(from: String) = apply()
      def apply()             = mutable.StringBuilder.newBuilder
    }
-@@ -310,17 +311,17 @@
+ 
++  @inline implicit def StringCanBuildFrom: CanBuildFrom[String, Char, String] = StringCanBuildFromInstance
++
+   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
+   @inline implicit def unaugmentString(x: StringOps): String = x.repr
  
    // printing -----------------------------------------------------------
  
@@ -133,7 +137,7 @@
      case x: Array[AnyRef]  => refArrayOps[AnyRef](x)
      case x: Array[Boolean] => booleanArrayOps(x)
      case x: Array[Byte]    => byteArrayOps(x)
-@@ -334,36 +335,36 @@
+@@ -334,36 +337,36 @@
      case null              => null
    }).asInstanceOf[ArrayOps[T]]
  
@@ -196,7 +200,7 @@
  
    // Type Constraints --------------------------------------------------------------
  
-@@ -386,11 +387,11 @@
+@@ -386,11 +389,11 @@
     */
    @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
    sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
@@ -210,7 +214,7 @@
  
    @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
    def conforms[A]: A <:< A = $conforms[A]
-@@ -401,9 +402,9 @@
+@@ -401,9 +404,9 @@
     */
    @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
    sealed abstract class =:=[From, To] extends (From => To) with Serializable
@@ -222,7 +226,7 @@
    }
  
    /** A type for which there is always an implicit value.
-@@ -416,7 +417,7 @@
+@@ -416,7 +419,7 @@
      /** An implicit value yielding a `DummyImplicit`.
       *   @see [[scala.Array$]], method `fallbackCanBuildFrom`
       */
@@ -231,7 +235,7 @@
    }
  }
  
-@@ -481,33 +482,33 @@
+@@ -481,33 +484,33 @@
    @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
    @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
  
