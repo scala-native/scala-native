@@ -685,6 +685,7 @@ lazy val scalalib =
         val paths = mutable.Set.empty[String]
 
         val s = streams.value
+        val fileTree = fileTreeView.value
 
         for {
           srcDir <- sourceDirectories
@@ -692,7 +693,7 @@ lazy val scalalib =
           scalaGlob = srcDir.toGlob / ** / "*.scala"
           patchGlob = srcDir.toGlob / ** / "*.scala.patch"
 
-          (sourcePath, _) <- fileTreeView.value.list(Seq(scalaGlob, patchGlob))
+          (sourcePath, _) <- fileTree.list(scalaGlob) ++ fileTree.list(patchGlob)
           path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
           def addSource(path: String)(optSource: => Option[File]): Unit = {
@@ -738,9 +739,8 @@ lazy val scalalib =
               new java.lang.ProcessBuilder(
                 "git",
                 "apply",
-                "--ignore-space-change",
-                "--ignore-whitespace",
-                "--inaccurate-eof",
+                "--whitespace=fix",
+                "--recount",
                 sourcePath.toAbsolutePath().toString()
               ).directory(scalaSrcDir)
                 .inheritIO

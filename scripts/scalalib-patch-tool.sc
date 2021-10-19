@@ -77,13 +77,13 @@ def main(
           fileToLines(overridePath),
           false
         )
+        val contextLines = 3
         val unifiedDiff = UnifiedDiffUtils.generateUnifiedDiff(
-          // relativePath.toString,
           (sourcePath relativeTo sourcesDir / up).toString(),
           (overridePath relativeTo overridesDirPath / up).toString(),
           originalLines,
           diff,
-          0
+          contextLines
         )
 
         if (unifiedDiff.isEmpty()) {
@@ -116,8 +116,8 @@ def main(
         _ = if (exists(overridePath)) rm ! overridePath
 
       } {
-        // There is not JVM library for working with diffs which can apply
-        // fuzzy patches based on the context, we use build in git command instead.
+        // There is no JVM library working with diffs which can apply fuzzy
+        // patches based on the context, we use build in git command instead.
         val sourceCopyPath = sourcePath / up / (sourcePath.baseName + ".copy")
         os.copy(
           sourcePath,
@@ -129,8 +129,8 @@ def main(
           %%(
             "git",
             "apply",
-            "--ignore-space-change",
-            "--inaccurate-eof",
+            "--whitespace=fix",
+            "--recount",
             patchPath
           )(sourcesDir)
           os.move(sourcePath, overridePath, replaceExisting = true)

@@ -1,15 +1,15 @@
 import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
 import $file.`scalalib-patch-tool`
 
+val crossScala211 = List("2.11.12")
+val crossScala212 = List("2.12.13", "2.12.14", "2.12.15")
+val crossScala213 = List("2.13.4", "2.13.5", "2.13.6")
+
+val commands = List("recreate", "create", "prune")
+
 for {
-  version <- List(
-    "2.13.6",
-    "2.13.4",
-    "2.12.14",
-    "2.12.13",
-    "2.11.12"
-  )
-  cmd <- List("recreate", "create", "prune")
+  version <- crossScala211 ++ crossScala212 ++ crossScala213
+  cmd <- commands
   _ = println(s"$cmd $version")
   res = %%("amm", "scripts/scalalib-patch-tool.sc", cmd, version)(pwd)
 } {
@@ -17,10 +17,8 @@ for {
 }
 
 for {
-  version <- List(
-    "2.12.14"
-  )
-  cmd <- List("recreate", "create", "prune")
+  version <- List(crossScala212.last)
+  cmd <- commands
   _ = println(s"$cmd $version")
   res = %%(
     "amm",
