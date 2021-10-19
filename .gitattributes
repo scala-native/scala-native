@@ -1,0 +1,3 @@
+# Assume default UNIX end line character.
+# It's needed to correctly apply patches in scalalib
+/scalalib/* text eol=lf
