@@ -1,12 +1,15 @@
 --- 2.12.15/scala/Array.scala
 +++ overrides-2.12/scala/Array.scala
-@@ -19,4 +19,5 @@
+@@ -18,6 +18,7 @@
+ import scala.reflect.{ClassTag, classTag}
  import scala.runtime.ScalaRunTime
  import scala.runtime.ScalaRunTime.{array_apply, array_update}
 +import mutable.WrappedArray
  
  /** Contains a fallback builder for arrays when the element type
-@@ -54,16 +55,16 @@
+  *  does not have a class tag. In that case a generic array is built.
+@@ -53,18 +54,18 @@
+  */
  object Array extends FallbackArrayBuilding {
  
 -  val emptyBooleanArray = empty[Boolean]
@@ -34,7 +37,9 @@
 +  @inline def emptyObjectArray  = new Array[Object](0)
  
    implicit def canBuildFrom[T](implicit tag: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] = {
-@@ -90,46 +91,46 @@
+     val cls = tag.runtimeClass
+@@ -89,55 +90,55 @@
+   private[this] val ObjectClass = classOf[Object]
  
    private[this] val cbfBooleanArray = new CanBuildFrom[Array[_], Boolean, Array[Boolean]] {
 -    def apply(from: Array[_]) = new ArrayBuilder.ofBoolean()
@@ -99,7 +104,7 @@
 +    @inline def apply() = new ArrayBuilder.ofUnit()
    }
  
-@@ -137,6 +138,6 @@
+   private[this] val cbfObjectArray  = refCBF[Object]
    private[this] def refCBF[T <: AnyRef](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =
      new CanBuildFrom[Array[_], T, Array[T]] {
 -      def apply(from: Array[_]) = new ArrayBuilder.ofRef[T]()(t)
@@ -108,7 +113,9 @@
 +      @inline def apply() = new ArrayBuilder.ofRef[T]()(t)
      }
  
-@@ -185,6 +186,6 @@
+   /**
+@@ -184,8 +185,8 @@
+   }
  
    /** Returns an array of length 0 */
 -  def empty[T: ClassTag]: Array[T] =  {
@@ -117,7 +124,9 @@
 +    new Array[T](0)
    }
    /** Creates an array with given elements.
-@@ -195,19 +196,50 @@
+    *
+@@ -194,21 +195,52 @@
+    */
    // Subject to a compiler optimization in Cleanup.
    // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
 -  def apply[T: ClassTag](xs: T*): Array[T] = {
@@ -183,7 +192,9 @@
 +      array
    }
  
-@@ -217,6 +249,11 @@
+   /** Creates an array of `Boolean` objects */
+@@ -216,8 +248,13 @@
+   def apply(x: Boolean, xs: Boolean*): Array[Boolean] = {
      val array = new Array[Boolean](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -197,7 +208,9 @@
 +    }
      array
    }
-@@ -227,6 +264,11 @@
+ 
+@@ -226,8 +263,13 @@
+   def apply(x: Byte, xs: Byte*): Array[Byte] = {
      val array = new Array[Byte](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -211,7 +224,9 @@
 +    }
      array
    }
-@@ -237,6 +279,11 @@
+ 
+@@ -236,8 +278,13 @@
+   def apply(x: Short, xs: Short*): Array[Short] = {
      val array = new Array[Short](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -225,7 +240,9 @@
 +    }
      array
    }
-@@ -247,6 +294,11 @@
+ 
+@@ -246,8 +293,13 @@
+   def apply(x: Char, xs: Char*): Array[Char] = {
      val array = new Array[Char](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -239,7 +256,9 @@
 +    }
      array
    }
-@@ -257,6 +309,11 @@
+ 
+@@ -256,8 +308,13 @@
+   def apply(x: Int, xs: Int*): Array[Int] = {
      val array = new Array[Int](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -253,7 +272,9 @@
 +    }
      array
    }
-@@ -267,6 +324,11 @@
+ 
+@@ -266,8 +323,13 @@
+   def apply(x: Long, xs: Long*): Array[Long] = {
      val array = new Array[Long](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -267,7 +288,9 @@
 +    }
      array
    }
-@@ -277,6 +339,11 @@
+ 
+@@ -276,8 +338,13 @@
+   def apply(x: Float, xs: Float*): Array[Float] = {
      val array = new Array[Float](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -281,7 +304,9 @@
 +    }
      array
    }
-@@ -287,6 +354,11 @@
+ 
+@@ -286,8 +353,13 @@
+   def apply(x: Double, xs: Double*): Array[Double] = {
      val array = new Array[Double](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -295,7 +320,9 @@
 +    }
      array
    }
-@@ -296,6 +368,11 @@
+ 
+@@ -295,8 +367,13 @@
+   def apply(x: Unit, xs: Unit*): Array[Unit] = {
      val array = new Array[Unit](xs.length + 1)
      array(0) = x
 -    var i = 1
@@ -309,3 +336,4 @@
 +    }
      array
    }
+ 

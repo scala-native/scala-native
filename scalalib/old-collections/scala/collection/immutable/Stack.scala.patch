@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/immutable/Stack.scala
 +++ old-collections/scala/collection/immutable/Stack.scala
-@@ -21,11 +21,15 @@
-  *  @define Coll `immutable.Stack`
+@@ -22,9 +22,13 @@
   *  @define coll immutable stack
   */
  object Stack extends SeqFactory[Stack] {
@@ -17,4 +16,3 @@
  }
  
  /** This class implements immutable stacks using a list-based data
-  *  structure.

@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/Iterable.scala
 +++ old-collections/scala/collection/mutable/Iterable.scala
-@@ -37,10 +37,14 @@
-  *  @define coll mutable iterable collection
+@@ -38,8 +38,12 @@
   *  @define Coll `mutable.Iterable`
   */
  object Iterable extends TraversableFactory[Iterable] {
@@ -16,4 +15,3 @@
  }
  
  /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
- abstract class AbstractIterable[A] extends scala.collection.AbstractIterable[A] with Iterable[A]

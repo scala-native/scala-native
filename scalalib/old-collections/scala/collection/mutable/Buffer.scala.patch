@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/Buffer.scala
 +++ old-collections/scala/collection/mutable/Buffer.scala
-@@ -41,10 +41,14 @@
-  *  @define coll buffer
+@@ -42,8 +42,12 @@
   *  @define Coll `Buffer`
   */
  object Buffer extends SeqFactory[Buffer] {
@@ -16,4 +15,3 @@
  }
  
  /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
- abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]

@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/ResizableArray.scala
 +++ old-collections/scala/collection/mutable/ResizableArray.scala
-@@ -124,9 +124,13 @@
-   }
+@@ -125,8 +125,12 @@
  }
  
  object ResizableArray extends SeqFactory[ResizableArray] {

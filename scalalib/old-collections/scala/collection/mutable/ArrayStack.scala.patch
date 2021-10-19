@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/ArrayStack.scala
 +++ old-collections/scala/collection/mutable/ArrayStack.scala
-@@ -23,11 +23,15 @@
-  *  @define coll array stack
+@@ -24,9 +24,13 @@
   *  @define Coll `ArrayStack`
   */
  object ArrayStack extends SeqFactory[ArrayStack] {
@@ -18,4 +17,3 @@
    def apply[A: ClassTag](elems: A*): ArrayStack[A] = {
      val els: Array[AnyRef] = elems.reverseMap(_.asInstanceOf[AnyRef])(breakOut)
      if (els.length == 0) new ArrayStack()
-     else new ArrayStack[A](els, els.length)

@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/LinkedList.scala
 +++ old-collections/scala/collection/mutable/LinkedList.scala
-@@ -116,10 +116,15 @@
-  *  @define coll linked list
+@@ -117,9 +117,14 @@
   */
  @deprecated("low-level linked lists are deprecated", "2.11.0")
  object LinkedList extends SeqFactory[LinkedList] {

@@ -1,6 +1,7 @@
 --- 2.12.15/scala/runtime/ScalaRunTime.scala
 +++ overrides-2.12/scala/runtime/ScalaRunTime.scala
-@@ -54,60 +54,36 @@
+@@ -53,62 +53,38 @@
+     classTag[T].runtimeClass.asInstanceOf[jClass[T]]
  
    /** Retrieve generic array element */
 -  def array_apply(xs: AnyRef, idx: Int): Any = {
@@ -83,3 +84,4 @@
 +    }
    }
  
+   /** Convert an array to an object array.

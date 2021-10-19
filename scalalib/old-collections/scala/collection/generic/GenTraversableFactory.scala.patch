@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/generic/GenTraversableFactory.scala
 +++ old-collections/scala/collection/generic/GenTraversableFactory.scala
-@@ -40,13 +40,14 @@
-  */
+@@ -41,11 +41,12 @@
  abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
  extends GenericCompanion[CC] {
  
@@ -17,4 +16,3 @@
    /** A generic implementation of the `CanBuildFrom` trait, which forwards
     *  all calls to `apply(from)` to the `genericBuilder` method of
     *  $coll `from`, and which forwards all calls of `apply()` to the
-    *  `newBuilder` method of this factory.

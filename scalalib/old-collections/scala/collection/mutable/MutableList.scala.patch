@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/MutableList.scala
 +++ old-collections/scala/collection/mutable/MutableList.scala
-@@ -167,9 +167,13 @@
-   }
+@@ -168,8 +168,12 @@
  }
  
  object MutableList extends SeqFactory[MutableList] {

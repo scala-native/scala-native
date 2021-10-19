@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/IndexedSeq.scala
 +++ old-collections/scala/collection/mutable/IndexedSeq.scala
-@@ -34,7 +34,11 @@
-  *  @define coll mutable indexed sequence
+@@ -35,6 +35,10 @@
   *  @define Coll `mutable.IndexedSeq`
   */
  object IndexedSeq extends SeqFactory[IndexedSeq] {

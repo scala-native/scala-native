@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/LinearSeq.scala
 +++ old-collections/scala/collection/mutable/LinearSeq.scala
-@@ -38,7 +38,11 @@
-  *  @define coll mutable linear sequence
+@@ -39,6 +39,10 @@
   *  @define Coll `mutable.LinearSeq`
   */
  object LinearSeq extends SeqFactory[LinearSeq] {

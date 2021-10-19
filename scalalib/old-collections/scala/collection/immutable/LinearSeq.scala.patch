@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/immutable/LinearSeq.scala
 +++ old-collections/scala/collection/immutable/LinearSeq.scala
-@@ -34,7 +34,13 @@
-  *  @define coll immutable linear sequence
+@@ -35,6 +35,12 @@
   *  @define Coll `immutable.LinearSeq`
   */
  object LinearSeq extends SeqFactory[LinearSeq] {

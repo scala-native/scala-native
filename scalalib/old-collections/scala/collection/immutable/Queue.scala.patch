@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/immutable/Queue.scala
 +++ old-collections/scala/collection/immutable/Queue.scala
-@@ -182,12 +182,16 @@
-  *  @define Coll `immutable.Queue`
+@@ -183,11 +183,15 @@
   *  @define coll immutable queue
   */
  object Queue extends SeqFactory[Queue] {

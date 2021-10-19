@@ -1,13 +1,15 @@
 --- 2.12.15/scala/package.scala
 +++ overrides-2.12/scala/package.scala
-@@ -34,5 +34,5 @@
+@@ -33,90 +33,90 @@
+   type InterruptedException            = java.lang.InterruptedException
  
    // A dummy used by the specialization annotation.
 -  val AnyRef = new Specializable {
 +  lazy val AnyRef = new Specializable {
      override def toString = "object AnyRef"
    }
-@@ -41,69 +41,69 @@
+ 
+   type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
  
    type Traversable[+A] = scala.collection.Traversable[A]
 -  val Traversable = scala.collection.Traversable
@@ -100,7 +102,7 @@
 +  lazy val Ordering = scala.math.Ordering
  
    type PartialOrdering[T] = scala.math.PartialOrdering[T]
-@@ -111,11 +111,11 @@
+   type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
  
    type Either[+A, +B] = scala.util.Either[A, B]
 -  val Either = scala.util.Either
@@ -115,3 +117,4 @@
 +  lazy val Right = scala.util.Right
  
    // Annotations which we might move to annotation.*
+ /*

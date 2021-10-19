@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/immutable/List.scala
 +++ old-collections/scala/collection/immutable/List.scala
-@@ -493,17 +493,21 @@
-  *  @define coll list
+@@ -494,15 +494,19 @@
   *  @define Coll `List`
   */
  object List extends SeqFactory[List] {
@@ -25,4 +24,3 @@
  
    private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
  
-   @SerialVersionUID(1L)

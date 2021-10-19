@@ -1,6 +1,7 @@
 --- 2.12.15/scala/Predef.scala
 +++ overrides-2.12/scala/Predef.scala
-@@ -152,7 +152,7 @@
+@@ -151,9 +151,9 @@
+   /**  @group aliases */
    type Set[A]     = immutable.Set[A]
    /**  @group aliases */
 -  val Map         = immutable.Map
@@ -10,7 +11,9 @@
 +  @inline def Set         = immutable.Set
  
    // Manifest types, companions, and incantations for summoning
-@@ -168,11 +168,11 @@
+   @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")
+@@ -167,13 +167,13 @@
+   // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
    type Manifest[T]      = scala.reflect.Manifest[T]
    @deprecated("use `scala.reflect.ClassTag` instead", "2.10.0")
 -  val ClassManifest     = scala.reflect.ClassManifest
@@ -25,3 +28,4 @@
 +  @inline def NoManifest        = scala.reflect.NoManifest
  
    // TODO undeprecated until Scala reflection becomes non-experimental
+   // @deprecated("use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")

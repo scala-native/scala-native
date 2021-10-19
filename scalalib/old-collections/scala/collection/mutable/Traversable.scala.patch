@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/Traversable.scala
 +++ old-collections/scala/collection/mutable/Traversable.scala
-@@ -34,9 +34,14 @@
-  *  @define coll mutable traversable collection
+@@ -35,8 +35,13 @@
   *  @define Coll `mutable.Traversable`
   */
  object Traversable extends TraversableFactory[Traversable] {

@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/immutable/Seq.scala
 +++ old-collections/scala/collection/immutable/Seq.scala
-@@ -42,8 +42,12 @@
-  *  @define Coll `immutable.Seq`
+@@ -43,7 +43,11 @@
   *  @define coll immutable sequence
   */
  object Seq extends SeqFactory[Seq] {

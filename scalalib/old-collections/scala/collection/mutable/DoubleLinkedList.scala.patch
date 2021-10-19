@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/DoubleLinkedList.scala
 +++ old-collections/scala/collection/mutable/DoubleLinkedList.scala
-@@ -81,11 +81,11 @@
-  */
+@@ -82,9 +82,9 @@
  @deprecated("low-level linked lists are deprecated", "2.11.0")
  object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
    /** $genericCanBuildFromInfo */
@@ -13,4 +12,3 @@
      new Builder[A, DoubleLinkedList[A]] {
        def emptyList() = new DoubleLinkedList[A]()
        var current = emptyList()
- 

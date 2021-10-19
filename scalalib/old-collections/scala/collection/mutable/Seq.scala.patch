@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/Seq.scala
 +++ old-collections/scala/collection/mutable/Seq.scala
-@@ -41,10 +41,14 @@
-  *  @define coll mutable sequence
+@@ -42,8 +42,12 @@
   *  @define Coll `mutable.Seq`
   */
  object Seq extends SeqFactory[Seq] {
@@ -16,4 +15,3 @@
  }
  
  /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
- abstract class AbstractSeq[A] extends scala.collection.AbstractSeq[A] with Seq[A]

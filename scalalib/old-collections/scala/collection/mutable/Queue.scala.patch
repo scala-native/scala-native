@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/mutable/Queue.scala
 +++ old-collections/scala/collection/mutable/Queue.scala
-@@ -192,8 +192,13 @@
- }
+@@ -193,7 +193,12 @@
  
  
  object Queue extends SeqFactory[Queue] {

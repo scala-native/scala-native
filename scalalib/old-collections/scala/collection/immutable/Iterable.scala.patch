@@ -1,7 +1,6 @@
 --- 2.12.15/scala/collection/immutable/Iterable.scala
 +++ old-collections/scala/collection/immutable/Iterable.scala
-@@ -41,7 +41,13 @@
-  *  @define Coll `immutable.Iterable`
+@@ -42,6 +42,12 @@
   *  @define coll immutable iterable collection
   */
  object Iterable extends TraversableFactory[Iterable] {
