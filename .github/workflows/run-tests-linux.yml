@@ -265,9 +265,6 @@ jobs:
   test-scala3:
     name: Test experimental Scala3 runtime
     runs-on: ubuntu-18.04
-    # Scala3 is treated as experimental, ignore if job fails
-    continue-on-error: true
-    needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
       matrix:
@@ -281,10 +278,4 @@ jobs:
       - name: Publish dependencies
         run: bash scripts/publish-local
       - name: Run tests
-        env:
-          SCALANATIVE_MODE: release-fast
-          SCALANATIVE_GC: immix
-          SCALANATIVE_OPTIMIZE: true
-          SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: sandbox3/run
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+        run: sbt "++${matrix.scala};sandbox3/run"
