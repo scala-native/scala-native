@@ -265,6 +265,8 @@ jobs:
   test-scala3:
     name: Test experimental Scala3 runtime
     runs-on: ubuntu-18.04
+    # Scala3 is treated as experimental, ignore if job fails
+    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -274,8 +276,17 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-      # Make sure that scalalib (for Scala 2) is published
+      # Make sure that scalalib (for Scala 2) and it's dependendicies are published
       - name: Publish dependencies
-        run: bash scripts/publish-local
+        run: >
+          sbt ++2.13.6
+          nativelib/publishLocal
+          clib/publishLocal
+          posixlib/publishLocal
+          windowslib/publishLocal
+          auxlib/publishLocal
+          javalib/publishLocal
+          scalalib/publishLocal
+
       - name: Run tests
-        run: sbt "++${matrix.scala};sandbox3/run"
+        run: sbt "++${{matrix.scala}};sandbox3/run"
