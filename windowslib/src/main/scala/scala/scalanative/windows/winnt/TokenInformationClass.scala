@@ -145,12 +145,6 @@ object TokenInformationClass {
   @name("scalanative_tokenchildprocessflags")
   def TokenChildProcessFlags: TokenInformationClass = extern
 
-  @name("scalanative_tokenislessprivilegedappcontainer")
-  def TokenIsLessPrivilegedAppContainer: TokenInformationClass = extern
-
-  @name("scalanative_tokenissandboxed")
-  def TokenIsSandboxed: TokenInformationClass = extern
-
   @name("scalanative_maxtokeninfoclass")
   def MaxTokenInfoClass: TokenInformationClass = extern
 
