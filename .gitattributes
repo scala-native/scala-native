@@ -1,5 +1,0 @@
-# Ensure that UNIX end line encoding is used in this repo, it is crucial due to
-# the problems with appling patches in scalalib on Windows
-* text=auto
-*.scala eol=lf
-*.scala.patch eol=lf
