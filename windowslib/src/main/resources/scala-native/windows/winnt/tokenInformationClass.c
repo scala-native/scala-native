@@ -59,12 +59,12 @@ int scalanative_tokenisrestricted() { return TokenIsRestricted; }
 int scalanative_tokenprocesstrustlevel() { return TokenProcessTrustLevel; }
 int scalanative_tokenprivatenamespace() { return TokenPrivateNameSpace; }
 
-// The following enums exist only since specified SDK versions
-// Since they're enums and not constants with cannot use prepropocessr 
-// definitions to guard if they're defined. Instead we check if used
+// The following enums exist only since some SDK version
+// Since they're enums and not constants we cannot use prepropocessor
+// definitions to check if they're defined. Instead we check if used
 // SDK is the same or later then the one defined in sdkddkver.h
-// Never versions of Windows SDK might contain additional enums, but it is 
-// not well documented when given enum value was added.
+// Later versions of Windows SDK might contain additional enums, but it is
+// not well documented when given enum value was added or removed.
 
 #ifdef NTDDI_WIN10_RS1 // since 10.0.14393
 int scalanative_tokensingletonattributes() { return TokenSingletonAttributes; }
