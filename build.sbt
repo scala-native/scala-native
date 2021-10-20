@@ -686,23 +686,34 @@ lazy val scalalib =
         def listFilesInOrder(patterns: Glob*) =
           patterns.flatMap(fileTree.list(_))
 
+        var failedToApplyPatches = false
         for {
           srcDir <- sourceDirectories
           normSrcDir = normPath(srcDir)
           scalaGlob = srcDir.toGlob / ** / "*.scala"
           patchGlob = srcDir.toGlob / ** / "*.scala.patch"
-
           (sourcePath, _) <- listFilesInOrder(scalaGlob, patchGlob)
           path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
           def addSource(path: String)(optSource: => Option[File]): Unit = {
-            if (!paths.contains(path)) {
+            if (paths.contains(path)) s.log.debug(s"not including $path")
+            else {
               optSource.foreach { source =>
                 paths += path
                 sources += source
               }
-            } else
-              s.log.debug(s"not including $path")
+            }
+          }
+
+          def copy(source: File, destination: File) = {
+            import java.nio.file.Files
+            import java.nio.file.StandardCopyOption._
+            Files.copy(
+              source.toPath(),
+              destination.toPath(),
+              COPY_ATTRIBUTES,
+              REPLACE_EXISTING
+            )
           }
 
           def tryApplyPatch(sourceName: String): Option[File] = {
@@ -712,51 +723,40 @@ lazy val scalalib =
             val outputDir = outputFile.getParentFile
             if (!outputDir.exists()) {
               IO.createDirectory(outputDir)
-
             }
-
-            def copySource(source: File, destination: File) = {
-              import java.nio.file.Files
-              import java.nio.file.StandardCopyOption._
-              Files.copy(
-                source.toPath(),
-                destination.toPath(),
-                COPY_ATTRIBUTES,
-                REPLACE_EXISTING
-              )
-            }
-
             // There is not a single JVM library for diff that can apply
             // patches in a fuzzy way (using context lines). We also
             // canot use jgit to apply patches - it fails due to "invalid hunk headers".
-            // Becouse of that we use git app instead.
+            // Becouse of that we use git apply instead.
             // We need to create copy of original file and restore it after creating
             // patched file to allow for recompilation of sources (re-applying patches)
             // git apply command needs to be used from within fetchedScalaSource directory.
             try {
-              copySource(scalaSourcePath, scalaSourceCopyPath)
-              new java.lang.ProcessBuilder(
-                "git",
-                "apply",
-                "--whitespace=fix",
-                "--recount",
-                sourcePath.toAbsolutePath().toString()
-              ).directory(scalaSrcDir)
-                .inheritIO
-                .start()
-                .waitFor() match {
-                case 0 =>
-                  copySource(scalaSourcePath, outputFile)
-                  Some(outputFile)
-                case err =>
-                  val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
-                  sLog.value
-                    .warn(s"Cannot apply patch for $path")
-                  None
-              }
+              import scala.sys.process._
+              copy(scalaSourcePath, scalaSourceCopyPath)
+              Process(
+                command = Seq(
+                  "git",
+                  "apply",
+                  "--whitespace=fix",
+                  "--recount",
+                  sourcePath.toAbsolutePath().toString()
+                ),
+                cwd = scalaSrcDir
+              ) !! s.log
+
+              copy(scalaSourcePath, outputFile)
+              Some(outputFile)
+            } catch {
+              case _: Exception =>
+                // Postpone failing to check which other patches do not apply
+                failedToApplyPatches = true
+                val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
+                s.log.error(s"Cannot apply patch for $path")
+                None
             } finally {
               if (scalaSourceCopyPath.exists()) {
-                copySource(scalaSourceCopyPath, scalaSourcePath)
+                copy(scalaSourceCopyPath, scalaSourcePath)
                 scalaSourceCopyPath.delete()
               }
             }
@@ -765,21 +765,23 @@ lazy val scalalib =
           val useless =
             path.contains("/scala/collection/parallel/") ||
               path.contains("/scala/util/parsing/")
-
           if (!useless) {
-            if (patchGlob.matches(sourcePath)) {
+            if (!patchGlob.matches(sourcePath))
+              addSource(path)(Some(sourcePath.toFile))
+            else {
               val sourceName = path.stripSuffix(".patch")
-              addSource(sourceName) {
+              addSource(sourceName)(
                 tryApplyPatch(sourceName)
-              }
-            } else {
-              addSource(path) {
-                Some(sourcePath.toFile)
-              }
+              )
             }
           }
         }
 
+        if (failedToApplyPatches) {
+          throw new Exception(
+            "Failed to apply some of scalalib patches, check logs for more information"
+          )
+        }
         sources.result()
       },
       // Don't include classfiles for scalalib in the packaged jar.
