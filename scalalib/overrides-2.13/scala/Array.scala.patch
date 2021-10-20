@@ -1,0 +1,47 @@
+--- 2.13.6/scala/Array.scala
++++ overrides-2.13/scala/Array.scala
+@@ -122,7 +122,8 @@
+     * @see `java.util.Arrays#copyOf`
+     */
+   def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
+-    case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
++//  We cannot distinguish Array[BoxedUnit] from Array[Object] in Scala Native
++//	case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
+     case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+     case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
+     case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
+@@ -183,16 +184,7 @@
+   // Subject to a compiler optimization in Cleanup.
+   // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
+   def apply[T: ClassTag](xs: T*): Array[T] = {
+-    val len = xs.length
+-    xs match {
+-      case wa: immutable.ArraySeq[_] if wa.unsafeArray.getClass.getComponentType == classTag[T].runtimeClass =>
+-        // We get here in test/files/run/sd760a.scala, `Array[T](t)` for
+-        // a specialized type parameter `T`. While we still pay for two
+-        // copies of the array it is better than before when we also boxed
+-        // each element when populating the result.
+-        ScalaRunTime.array_clone(wa.unsafeArray).asInstanceOf[Array[T]]
+-      case _ =>
+-        val array = new Array[T](len)
++    val array = new Array[T](xs.length)
+         val iterator = xs.iterator
+         var i = 0
+         while (iterator.hasNext) {
+@@ -200,7 +192,6 @@
+         }
+         array
+     }
+-  }
+ 
+   /** Creates an array of `Boolean` objects */
+   // Subject to a compiler optimization in Cleanup, see above.
+@@ -577,7 +568,7 @@
+   def unapplySeq[T](x: Array[T]): UnapplySeqWrapper[T] = new UnapplySeqWrapper(x)
+ 
+   final class UnapplySeqWrapper[T](private val a: Array[T]) extends AnyVal {
+-    def isEmpty: false = false
++    def isEmpty: Boolean = false
+     def get: UnapplySeqWrapper[T] = this
+     def lengthCompare(len: Int): Int = a.lengthCompare(len)
+     def apply(i: Int): T = a(i)

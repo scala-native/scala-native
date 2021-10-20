@@ -1,0 +1,19 @@
+--- 2.12.15/scala/collection/mutable/ArrayStack.scala
++++ old-collections/scala/collection/mutable/ArrayStack.scala
+@@ -24,9 +24,13 @@
+  *  @define Coll `ArrayStack`
+  */
+ object ArrayStack extends SeqFactory[ArrayStack] {
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
+-  def empty: ArrayStack[Nothing] = new ArrayStack()
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
++  @inline def empty: ArrayStack[Nothing] = new ArrayStack()
+   def apply[A: ClassTag](elems: A*): ArrayStack[A] = {
+     val els: Array[AnyRef] = elems.reverseMap(_.asInstanceOf[AnyRef])(breakOut)
+     if (els.length == 0) new ArrayStack()

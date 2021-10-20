@@ -38,7 +38,7 @@ RUN \
   dpkg -i $SBT_INSTALL_FILE && \
   rm $SBT_INSTALL_FILE
 
-RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev
+RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev git
 
 ENV LC_ALL "C.UTF-8"
 

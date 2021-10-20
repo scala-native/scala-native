@@ -1,0 +1,16 @@
+--- 2.12.15/scala/collection/mutable/ListBuffer.scala
++++ old-collections/scala/collection/mutable/ListBuffer.scala
+@@ -478,6 +478,11 @@
+  *  @define coll list buffer
+  */
+ object ListBuffer extends SeqFactory[ListBuffer] {
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListBuffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowingBuilder(new ListBuffer[A])
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListBuffer[A]] =
++    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowingBuilder(new ListBuffer[A])
+ }

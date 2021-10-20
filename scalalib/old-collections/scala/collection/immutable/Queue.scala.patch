@@ -1,0 +1,22 @@
+--- 2.12.15/scala/collection/immutable/Queue.scala
++++ old-collections/scala/collection/immutable/Queue.scala
+@@ -183,11 +183,15 @@
+  *  @define coll immutable queue
+  */
+ object Queue extends SeqFactory[Queue] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
+-  override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
+-  override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
++  @inline override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
++  @inline override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
+ 
+   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
+ }

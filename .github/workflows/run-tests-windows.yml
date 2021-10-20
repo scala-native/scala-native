@@ -16,6 +16,9 @@ jobs:
         scala: [2.13.6, 2.12.15, 2.11.12]
         gc: [none, boehm, immix, commix]
     steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v2
       - uses: ./.github/actions/windows-setup-env
         id: setup
@@ -61,6 +64,9 @@ jobs:
         os: [windows-2019]
         scala: [2.12.15]
     steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v2
       - uses: ./.github/actions/windows-setup-env
         with:
@@ -88,6 +94,9 @@ jobs:
             lto: full
             optimize: false
     steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v2
       - uses: ./.github/actions/windows-setup-env
         id: setup

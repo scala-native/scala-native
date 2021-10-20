@@ -1,0 +1,18 @@
+--- 2.12.15/scala/collection/immutable/Vector.scala
++++ old-collections/scala/collection/immutable/Vector.scala
+@@ -22,8 +22,13 @@
+ /** Companion object to the Vector class
+  */
+ object Vector extends IndexedSeqFactory[Vector] {
+-  def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++
++  @inline def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
+     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
+   override def empty[A]: Vector[A] = NIL
