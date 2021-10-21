@@ -174,7 +174,7 @@ final class Matcher private (private var _pattern: Pattern) {
    *
    *  @param group
    *    the group name
-   *  @throws IllegalStateException
+   *  @throws java.lang.IllegalStateException
    *    if no group with that name exists
    */
   def start(_group: String): Int = {
@@ -187,7 +187,7 @@ final class Matcher private (private var _pattern: Pattern) {
    *
    *  @param group
    *    the group name
-   *  @throws IllegalStateException
+   *  @throws java.lang.IllegalStateException
    *    if no group with that name exists
    */
   def end(_group: String): Int = {
@@ -200,7 +200,7 @@ final class Matcher private (private var _pattern: Pattern) {
    *
    *  @param group
    *    the group name
-   *  @throws IllegalStateException
+   *  @throws java.lang.IllegalStateException
    *    if no group with that name exists
    */
   def group(_group: String): String = {
