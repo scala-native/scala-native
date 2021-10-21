@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <WinNT.h>
+#include <sdkddkver.h>
 
 int scalanative_tokenuser() { return TokenUser; }
 int scalanative_tokengroups() { return TokenGroups; }
@@ -57,13 +58,23 @@ int scalanative_tokensecurityattributes() { return TokenSecurityAttributes; }
 int scalanative_tokenisrestricted() { return TokenIsRestricted; }
 int scalanative_tokenprocesstrustlevel() { return TokenProcessTrustLevel; }
 int scalanative_tokenprivatenamespace() { return TokenPrivateNameSpace; }
+
+// The following enums exist only since some SDK version
+// Since they're enums and not constants we cannot use prepropocessor
+// definitions to check if they're defined. Instead we check if used
+// SDK is the same or later then the one defined in sdkddkver.h
+// Later versions of Windows SDK might contain additional enums, but it is
+// not well documented when given enum value was added or removed.
+
+#ifdef NTDDI_WIN10_RS1 // since 10.0.14393
 int scalanative_tokensingletonattributes() { return TokenSingletonAttributes; }
+#endif
+
+#ifdef NTDDI_WIN10_RS3 // since 10.0.16299
 int scalanative_tokenbnoisolation() { return TokenBnoIsolation; }
 int scalanative_tokenchildprocessflags() { return TokenChildProcessFlags; }
-int scalanative_tokenislessprivilegedappcontainer() {
-    return TokenIsLessPrivilegedAppContainer;
-}
-int scalanative_tokenissandboxed() { return TokenIsSandboxed; }
+#endif
+
 int scalanative_maxtokeninfoclass() { return MaxTokenInfoClass; }
 
 #endif // defined(_WIN32)
