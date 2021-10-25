@@ -56,7 +56,13 @@ object Discover {
         getenv("SCALANATIVE_INCLUDE_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
           .getOrElse(
-            filterExisting(Seq("/usr/local/include", "/opt/local/include", "/opt/homebrew/include"))
+            filterExisting(
+              Seq(
+                "/usr/local/include",
+                "/opt/local/include",
+                "/opt/homebrew/include"
+              )
+            )
           )
 
       (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
@@ -74,7 +80,11 @@ object Discover {
       val libDirs =
         getenv("SCALANATIVE_LIB_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(filterExisting(Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")))
+          .getOrElse(
+            filterExisting(
+              Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")
+            )
+          )
 
       (libDirs ++ llvmLibDir).map(s => s"-L$s")
     }
