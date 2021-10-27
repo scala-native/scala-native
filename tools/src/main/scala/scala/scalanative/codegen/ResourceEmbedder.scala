@@ -19,10 +19,10 @@ object ResourceEmbedder {
 
   final case class ClasspathFile(file: Path, classpath: Path)
 
-  def apply(config: Config): Array[Defn.Var] = {
+  def apply(config: Config): Seq[Defn.Var] = {
     val classpath = config.classPath
 
-    def getAllClassPathFiles(classpath: Seq[Path]): Array[ClasspathFile] = {
+    def getAllClassPathFiles(classpath: Seq[Path]): Seq[ClasspathFile] = {
       var paths: ArrayBuffer[ClasspathFile] = ArrayBuffer.empty
 
       var root: Path = null
@@ -58,7 +58,7 @@ object ResourceEmbedder {
         Files.walkFileTree(path, visitor);
       }
 
-      paths.toArray
+      paths.toSeq
     }
 
     val pathValues = new ArrayBuffer[Val.ArrayValue]()
@@ -66,7 +66,12 @@ object ResourceEmbedder {
 
     implicit val position: Position = Position.NoPosition
 
-    val embeddedFiles = getAllClassPathFiles(classpath)
+    val embeddedFiles = 
+      if(config.compilerConfig.embedResources) {
+        getAllClassPathFiles(classpath)
+      } else {
+        Seq()
+      }
 
     embeddedFiles.foreach {
       case ClasspathFile(path, root) =>
@@ -111,7 +116,7 @@ object ResourceEmbedder {
     }
 
     val generated =
-      Array(
+      Seq(
         generateExtern2DArray(
           "__resources_all_path",
           pathValues.toArray.map(Val.Const(_))
