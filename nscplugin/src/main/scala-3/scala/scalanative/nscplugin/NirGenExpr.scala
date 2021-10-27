@@ -185,6 +185,7 @@ trait NirGenExpr(using Context) {
     def genClosure(tree: Closure): Val = {
       given nir.Position = tree.span
       val Closure(env, fun, functionalInterface) = tree
+      val treeTpe = tree.tpe.typeSymbol
       val funSym = fun.symbol
       val funInterfaceSym = functionalInterface.tpe.typeSymbol
       val isFunction =
@@ -212,16 +213,20 @@ trait NirGenExpr(using Context) {
       val (captureTypes, captureNames) = captureTypesAndNames.unzip
 
       def genAnonymousClass: nir.Defn = {
-        val traitName = genName(
-          if (functionalInterface.isEmpty) tree.tpe.typeSymbol
-          else functionalInterface.symbol
-        )
+        val traits =
+          if (functionalInterface.isEmpty) genName(treeTpe) :: Nil
+          else {
+            funInterfaceSym.info.parents.collect {
+              case tpe if tpe.typeSymbol.isTraitOrInterface =>
+                genName(tpe.typeSymbol)
+            }
+          }
 
         nir.Defn.Class(
           attrs = Attrs.None,
           name = anonClassName,
           parent = Some(nir.Rt.Object.name),
-          traits = Seq(traitName)
+          traits = traits
         )
       }
 
@@ -266,14 +271,19 @@ trait NirGenExpr(using Context) {
       }
 
       def resolveAnonClassMethods: List[Symbol] = {
-        val denots =
-          if (isFunction)
-            tree.tpe.typeSymbol.info.allMembers
-              .filter(_.name == nme.apply)
-          else
-            functionalInterface.symbol.info.possibleSamMethods
-        denots
+        // In same cases (eg. `JProcedureN`) we need to generate
+        // both `apply` method and SAM methods
+        // Make sure to also collect parent methods with overriden argument types
+        val applyMethods =
+          (treeTpe.info :: treeTpe.info.parents)
+            .flatMap(_.member(nme.apply).alternatives)
+        val samMethods =
+          if (isFunction) Nil
+          else funInterfaceSym.info.possibleSamMethods
+
+        (applyMethods ++ samMethods)
           .map(_.symbol)
+          .distinct
           .toList
       }
 
@@ -1809,10 +1819,12 @@ trait NirGenExpr(using Context) {
     )(using
         buf: ExprBuffer,
         pos: nir.Position
-    ) = {
+    ): Val = {
       tpeEnteringPosterasure match {
         case tpe if tpe.isPrimitiveValueType =>
-          buf.unbox(genType(tpe), value, Next.None)
+          val targetTpe = genType(tpeEnteringPosterasure)
+          if (targetTpe == value.ty) value
+          else buf.unbox(genBoxType(tpe), value, Next.None)
 
         case ErasedValueType(valueClass, _) =>
           val boxedClass = valueClass.typeSymbol.asClass
