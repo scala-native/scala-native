@@ -42,8 +42,6 @@ trait NirGenExpr(using Context) {
         case ValTree(value) => value
         case ContTree(f)    => f()
         case tree: Apply    => genApply(tree)
-        // case tree: ApplyDynamic => genApplyDynamic(tree)
-        // case tree: ArrayValue =>   genArrayValue(tree)
         case tree: Assign         => genAssign(tree)
         case tree: Block          => genBlock(tree)
         case tree: Closure        => genClosure(tree)
