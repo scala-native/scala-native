@@ -10,6 +10,7 @@ import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import scala.scalanative.compat.CompatParColls.Converters._
+import scala.scalanative.embedder.ResourceEmbedder
 
 object CodeGen {
 
@@ -21,7 +22,8 @@ object CodeGen {
     implicit val meta: Metadata = new Metadata(linked, proxies)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
-    val lowered = lower(generated)
+    val embedded = ResourceEmbedder(config)
+    val lowered = lower(generated ++ embedded)
     dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }

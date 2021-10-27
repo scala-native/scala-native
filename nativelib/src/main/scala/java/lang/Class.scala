@@ -6,6 +6,11 @@ import scala.language.implicitConversions
 import scalanative.annotation._
 import scalanative.unsafe._
 import scalanative.runtime.{Array => _, _}
+import java.io.InputStream
+import java.lang.resource.EncodedResourceInputStream
+import java.lang.resource.EmbeddedResourceHelper
+import java.util.Base64
+import java.nio.file.Paths
 
 // These two methods are generated at link-time by the toolchain
 // using current closed-world knowledge of classes and traits in
@@ -144,8 +149,27 @@ final class _Class[A] {
   ): java.lang.reflect.Method = ???
   @stub
   def getMethods(): Array[Method] = ???
-  @stub
-  def getResourceAsStream(name: java.lang.String): java.io.InputStream = ???
+
+  def getResourceAsStream(name: java.lang.String): java.io.InputStream = {
+    val absoluteName =
+      if (name(0) == '/') {
+        name.substring(1)
+      } else {
+        Option(Paths.get(this.name.replaceAll("\\.", "/")).getParent()) match {
+          case Some(path) => s"${path.toString()}/$name"
+          case None       => name
+        }
+      }
+
+    val path = Paths.get(absoluteName).normalize().toString()
+
+    EmbeddedResourceHelper.resourceFileIdMap.get(path) match {
+      case Some(fileIndex) =>
+        Base64.getDecoder().wrap(new EncodedResourceInputStream(fileIndex))
+      case None =>
+        null
+    }
+  }
 }
 
 object _Class {
