@@ -215,7 +215,7 @@ trait NirGenDefn(using Context) {
     val paramSyms = genParamSyms(dd, isStatic)
     val params = paramSyms.map {
       case None =>
-        val ty = genType(curClassSym.get.typeRef)
+        val ty = genType(curClassSym.get)
         Val.Local(fresh(), ty)
       case Some(sym) =>
         val tpe = sym.info.resultType

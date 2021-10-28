@@ -97,12 +97,10 @@ trait NirGenExpr(using Context) {
             genApplyUnbox(app.tpe, args.head)
           else
             val isStatic = sym.owner.isStaticOwner
-            val receiverp = {
-              fun match {
-                case t: Ident => desugarIdent(t)
-                case t        => t
-              }
-            }.asInstanceOf[Select].qualifier
+            val Select(receiverp, _) = fun match {
+              case t: Ident => desugarIdent(t)
+              case t        => t
+            }
             genApplyMethod(sym, statically = isStatic, receiverp, args)
       }
     }
@@ -121,7 +119,7 @@ trait NirGenExpr(using Context) {
             ???
             // genStoreExtern(externTy, sel.symbol, rhs)
           } else {
-            val ty = genType(sel.symbol.typeRef)
+            val ty = genType(sel.tpe)
             buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
@@ -675,11 +673,11 @@ trait NirGenExpr(using Context) {
         val qual = genExpr(qualp)
         buf.extract(qual, Seq(index), unwind)
       } else {
-        val ty = genType(tree.symbol.typeRef)
+        val ty = genType(tree.tpe)
         val qual = genExpr(qualp)
         val name = genFieldName(tree.symbol)
         if (sym.owner.isExternModule) {
-          val externTy = genExternType(tree.symbol.typeRef)
+          val externTy = genExternType(tree.tpe)
           ??? //genLoadExtern(ty, externTy, tree.symbol)
         } else {
           buf.fieldload(ty, qual, name, unwind)
@@ -1505,7 +1503,7 @@ trait NirGenExpr(using Context) {
     )(implicit pos: nir.Position): Val = {
       if (sym == defn.BoxedUnit_UNIT) Val.Unit
       else {
-        val ty = genType(sym.typeRef)
+        val ty = genType(sym.info.resultType)
         val module = genModule(sym.owner)
         genApplyMethod(sym, statically = true, module, Seq())
       }
