@@ -70,9 +70,9 @@ class NirCodeGen()(using ctx: Context)
     collectTypeDefs(cunit.tpdTree)
       .foreach(genClass)
 
-    def genClasses() = generatedDefns.toSeq
-      .groupBy(_.name.top)
-      .map(getFileFor(cunit, _) -> _)
+    generatedDefns.toSeq
+      .groupBy(defn => getFileFor(cunit, defn.name.top))
+      .foreach(genIRFile(_, _))
 
     for {
       (path, defns) <- genClasses()
@@ -133,7 +133,6 @@ class NirCodeGen()(using ctx: Context)
 
     def resolveExit(sym: Symbol): nir.Local = exits(sym)
     def resolveExit(label: Labeled): nir.Local = exits(label.bind.symbol)
-
   }
 
   class MethodEnv(val fresh: nir.Fresh) {

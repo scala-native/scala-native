@@ -23,6 +23,7 @@ import dotty.tools.dotc.report
 import dotty.tools.dotc.transform
 import transform.SymUtils._
 import transform.{ValueClasses, Erasure}
+import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 
 import scala.collection.mutable
 import scala.scalanative.nir
@@ -41,10 +42,10 @@ trait NirGenExpr(using Context) {
     buf =>
     def genExpr(tree: Tree): Val = {
       tree match {
-        case EmptyTree      => Val.Unit
-        case ValTree(value) => value
-        case ContTree(f)    => f()
-        case tree: Apply    => genApply(tree)
+        case EmptyTree            => Val.Unit
+        case ValTree(value)       => value
+        case ContTree(f)          => f()
+        case tree: Apply          => genApply(tree)
         case tree: Assign         => genAssign(tree)
         case tree: Block          => genBlock(tree)
         case tree: Closure        => genClosure(tree)
@@ -665,7 +666,7 @@ trait NirGenExpr(using Context) {
       val owner = sym.owner
 
       if (sym.is(Module)) genModule(sym)
-      else if (sym.isStatic) genStaticMember(sym)
+      else if (sym.isStaticMember) genStaticMember(sym)
       else if (sym.is(Method))
         genApplyMethod(sym, statically = false, qualp, Seq())
       else if (owner.isStruct) {
@@ -1503,13 +1504,12 @@ trait NirGenExpr(using Context) {
     )(using nir.Position): Val = {
       def ty = genType(sym.info.resultType)
       def module = genModule(sym.owner)
-      
+
       if (sym == defn.BoxedUnit_UNIT) Val.Unit
       else if (sym.isStaticModuleField)
-        val name = genFieldName(sym) 
+        val name = genFieldName(sym)
         buf.fieldload(ty, module, name, unwind)
-      else 
-        genApplyMethod(sym, statically = true, module, Seq())
+      else genApplyMethod(sym, statically = true, module, Seq())
     }
 
     private def genSynchronized(receiverp: Tree, bodyp: Tree)(using

@@ -95,10 +95,10 @@ trait NirGenDefn(using Context) {
       if sym.isField && !sym.is(Module)
     do
       addDefn {
+        given nir.Position = sym.span
         val ty = genType(sym.info.resultType)
         val name = genFieldName(sym)
-        val pos: nir.Position = sym.span
-        Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
+        Defn.Var(attrs, name, ty, Val.Zero(ty))
       }
     end for
 

@@ -330,7 +330,7 @@ final class NirDefinitions()(using ctx: Context) {
 
   // Scala Native reflect
   @tu lazy val ReflectModuleVal = requiredModuleRef("scala.scalanative.reflect.Reflect")
-  @tu lazy val ReflectModule = ReflectModuleVal.symbol.asClass
+  @tu lazy val ReflectModule = ReflectModuleVal.symbol.moduleClass.asClass
   @tu lazy val Reflect_registerLoadableModuleClassR =
     ReflectModule.requiredMethodRef("registerLoadableModuleClass")
   @tu lazy val Reflect_registerInstantiatableClassR =

@@ -18,10 +18,9 @@ trait NirGenName(using Context) {
     else if (sym.is(Method)) genMethodName(sym)
     else genFieldName(sym)
 
-  def genTypeName(sym0: Symbol): nir.Global.Top = {
-    val sym =
-      if (sym0.isAllOf(ModuleClass | JavaDefined)) sym0.linkedClass
-      else sym0
+  def genTypeName(
+      sym: Symbol
+  ): nir.Global.Top = {
     if (sym == defn.ObjectClass) nir.Rt.Object.name.asInstanceOf[nir.Global.Top]
     else {
       val id = {
