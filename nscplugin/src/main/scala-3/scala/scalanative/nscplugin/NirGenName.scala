@@ -6,7 +6,7 @@ import core.Contexts._
 import core.Symbols._
 import core.Flags._
 import core.StdNames._
-
+import dotty.tools.dotc.transform.SymUtils._
 import scalanative.util.unreachable
 import scalanative.nir
 

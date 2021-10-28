@@ -9,14 +9,15 @@ import core.Symbols._
 import core.Constants._
 import core.StdNames._
 import core.Flags._
+import dotty.tools.dotc.transform.SymUtils._
 
 import scala.collection.mutable
 import scala.scalanative.nir
 import nir._
+import scala.scalanative.util.ScopedVar
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
 import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
-import scala.scalanative.util.ScopedVar
 
 trait NirGenDefn(using Context) {
   self: NirCodeGen =>

@@ -32,9 +32,6 @@ trait NirGenType(using Context) {
     def isScalaModule: Boolean =
       sym.is(ModuleClass, butNot = Lifted)
 
-    def isField: Boolean =
-      sym.isTerm && !sym.is(Method) && !isScalaModule
-
     def isExternModule: Boolean =
       isScalaModule && sym.hasAnnotation(defnNir.ExternClass)
 

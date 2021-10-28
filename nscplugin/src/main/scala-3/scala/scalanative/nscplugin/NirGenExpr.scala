@@ -11,6 +11,7 @@ import dotty.tools.dotc.core
 import core.Contexts._
 import core.Symbols._
 import core.Names._
+import core.Types._
 import core.Constants._
 import core.StdNames._
 import core.Flags._
@@ -19,7 +20,9 @@ import core.TypeErasure.ErasedValueType
 import core._
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
-import dotty.tools.dotc.transform._
+import dotty.tools.dotc.transform
+import transform.SymUtils._
+import transform.{ValueClasses, Erasure}
 
 import scala.collection.mutable
 import scala.scalanative.nir
