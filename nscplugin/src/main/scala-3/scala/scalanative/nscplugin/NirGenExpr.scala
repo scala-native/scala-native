@@ -1500,13 +1500,16 @@ trait NirGenExpr(using Context) {
 
     private def genStaticMember(
         sym: Symbol
-    )(implicit pos: nir.Position): Val = {
+    )(using nir.Position): Val = {
+      def ty = genType(sym.info.resultType)
+      def module = genModule(sym.owner)
+      
       if (sym == defn.BoxedUnit_UNIT) Val.Unit
-      else {
-        val ty = genType(sym.info.resultType)
-        val module = genModule(sym.owner)
+      else if (sym.isStaticModuleField)
+        val name = genFieldName(sym) 
+        buf.fieldload(ty, module, name, unwind)
+      else 
         genApplyMethod(sym, statically = true, module, Seq())
-      }
     }
 
     private def genSynchronized(receiverp: Tree, bodyp: Tree)(using
