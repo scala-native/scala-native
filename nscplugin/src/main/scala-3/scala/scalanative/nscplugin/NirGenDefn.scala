@@ -90,13 +90,13 @@ trait NirGenDefn(using Context) {
     val attrs = nir.Attrs(isExtern = isExternModule)
 
     for
-      field <- sym.info.decls.toList
-      if field.isField
+      sym <- sym.info.decls.toList
+      if sym.isField && !sym.is(Module)
     do
       addDefn {
-        val ty = genType(field)
-        val name = genFieldName(field)
-        val pos: nir.Position = field.span
+        val ty = genType(sym.info.resultType)
+        val name = genFieldName(sym)
+        val pos: nir.Position = sym.span
         Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
       }
     end for
