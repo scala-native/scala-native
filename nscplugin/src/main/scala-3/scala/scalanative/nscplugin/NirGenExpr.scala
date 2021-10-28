@@ -429,10 +429,14 @@ trait NirGenExpr(using Context) {
 
     def genJavaSeqLiteral(tree: JavaSeqLiteral): Val = {
       given nir.Position = tree.span
+      val JavaArrayType(elemTpe) = tree.tpe
+      val arrayLength = Val.Int(tree.elems.length)
+      val nirElemTpe = genType(elemTpe)
 
-      val genElems = tree.elems.map(genExpr)
-      val arrayTypeRef = genRefType(tree.tpe)
-      Val.ArrayValue(arrayTypeRef, genElems)
+      val alloc = buf.genApplyNewArray(elemTpe, Seq(ValTree(arrayLength)))
+      for (elem, idx) <- tree.elems.zipWithIndex do
+        buf.arraystore(nirElemTpe, alloc, Val.Int(idx), genExpr(elem), unwind)
+      alloc
     }
 
     def genLabelDef(label: Labeled): Val = {
