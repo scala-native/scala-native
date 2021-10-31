@@ -18,9 +18,7 @@ trait NirGenName(using Context) {
     else if (sym.is(Method)) genMethodName(sym)
     else genFieldName(sym)
 
-  def genTypeName(
-      sym: Symbol
-  ): nir.Global.Top = {
+  def genTypeName(sym: Symbol): nir.Global.Top = {
     if (sym == defn.ObjectClass) nir.Rt.Object.name.asInstanceOf[nir.Global.Top]
     else {
       val id = {
@@ -35,10 +33,7 @@ trait NirGenName(using Context) {
     val owner = genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val scope = {
-      /* TODO: Restore me - Variables are internally private, but with public setter/getter.
-       * Removing this check would cause problems with reachability
-       */
-      if (sym.isPrivate) nir.Sig.Scope.Private(owner)
+      if (sym.isPrivate || !sym.is(Mutable)) nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
     }
 

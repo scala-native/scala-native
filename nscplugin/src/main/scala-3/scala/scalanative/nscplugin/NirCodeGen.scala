@@ -73,10 +73,6 @@ class NirCodeGen()(using ctx: Context)
     generatedDefns.toSeq
       .groupBy(defn => getFileFor(cunit, defn.name.top))
       .foreach(genIRFile(_, _))
-
-    for {
-      (path, defns) <- genClasses()
-    } genIRFile(path, defns)
   }
 
   private def genIRFile(

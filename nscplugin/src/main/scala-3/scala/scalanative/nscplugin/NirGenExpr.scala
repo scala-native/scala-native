@@ -353,12 +353,12 @@ trait NirGenExpr(using Context) {
         resolveAnonClassMethods
           .map(genAnonClassMethod)
 
-      {
+      generatedDefns ++= {
         genAnonymousClass ::
           genAnonymousClassCtor ::
           genCaptureFields :::
           genAnonymousClassMethods
-      }.foreach(addDefn)
+      }
 
       def allocateClosure() = {
         val alloc = buf.classalloc(anonClassName, unwind)
