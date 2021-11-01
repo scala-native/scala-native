@@ -62,8 +62,10 @@ trait MapTest {
       largeMap.put(i.toString(), i)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
-    for (i <- (1000 - expectedSize) until 1000)
-      assertEquals(i, largeMap.get(i.toString()))
+    if (!factory.isIdentityBased) {
+      for (i <- (1000 - expectedSize) until 1000)
+        assertEquals(i, largeMap.get(i.toString()))
+    }
     assertNull(largeMap.get("1000"))
 
     assertEquals(null, largeMap.get("THREE"))
@@ -103,8 +105,10 @@ trait MapTest {
       largeMap.put(i, i * 2)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
-    for (i <- (1000 - expectedSize) until 1000)
-      assertEquals(i * 2, largeMap.get(i))
+    if (!factory.isIdentityBased) {
+      for (i <- (1000 - expectedSize) until 1000)
+        assertEquals(i * 2, largeMap.get(i))
+    }
     assertNull(largeMap.get(1000))
 
     assertEquals(null, largeMap.get(-42))
