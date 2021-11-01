@@ -29,6 +29,12 @@ trait MapTest {
       executingInJVM && factory.isIdentityBased
     )
 
+  private def assumeNotIdentityHashMapOnJVMAndNative(): Unit =
+    assumeFalse(
+      "JVM and Native vs JS cache differences",
+      (executingInJVM || executingInScalaNative) && factory.isIdentityBased
+    )
+
   @Test def testSizeGetPutWithStrings(): Unit = {
     assumeNotIdentityHashMapOnJVM()
 
@@ -55,19 +61,16 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithStringsLargeMap(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
+    assumeNotIdentityHashMapOnJVMAndNative()
 
     val largeMap = factory.empty[String, Int]
     for (i <- 0 until 1000)
       largeMap.put(i.toString(), i)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
-    if (!factory.isIdentityBased) {
-      for (i <- (1000 - expectedSize) until 1000)
-        assertEquals(i, largeMap.get(i.toString()))
-    }
+    for (i <- (1000 - expectedSize) until 1000)
+      assertEquals(i, largeMap.get(i.toString()))
     assertNull(largeMap.get("1000"))
-
     assertEquals(null, largeMap.get("THREE"))
     assertEquals(null, largeMap.get(42))
     assertEquals(null, largeMap.get(testObj(42)))
@@ -98,17 +101,15 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithIntsLargeMap(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
+    assumeNotIdentityHashMapOnJVMAndNative()
 
     val largeMap = factory.empty[Int, Int]
     for (i <- 0 until 1000)
       largeMap.put(i, i * 2)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
-    if (!factory.isIdentityBased) {
-      for (i <- (1000 - expectedSize) until 1000)
-        assertEquals(i * 2, largeMap.get(i))
-    }
+    for (i <- (1000 - expectedSize) until 1000)
+      assertEquals(i * 2, largeMap.get(i))
     assertNull(largeMap.get(1000))
 
     assertEquals(null, largeMap.get(-42))
