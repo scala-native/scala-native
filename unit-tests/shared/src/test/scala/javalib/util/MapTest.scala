@@ -24,7 +24,10 @@ trait MapTest {
   def testObj(i: Int): TestObj = TestObj(i)
 
   private def assumeNotIdentityHashMapOnJVM(): Unit =
-    assumeFalse("JVM vs JS cache differences", executingInJVM && factory.isIdentityBased)
+    assumeFalse(
+      "JVM vs JS cache differences",
+      executingInJVM && factory.isIdentityBased
+    )
 
   @Test def testSizeGetPutWithStrings(): Unit = {
     assumeNotIdentityHashMapOnJVM()
@@ -478,17 +481,21 @@ trait MapTest {
 
     assertTrue(values.contains(testObj(33)))
 
-    val coll1 = TrivialImmutableCollection(testObj(11), testObj(22),
-        testObj(33))
+    val coll1 =
+      TrivialImmutableCollection(testObj(11), testObj(22), testObj(33))
     assertTrue(values.containsAll(coll1))
 
-    val coll2 = TrivialImmutableCollection(testObj(11), testObj(22),
-        testObj(33), testObj(44))
+    val coll2 = TrivialImmutableCollection(
+      testObj(11),
+      testObj(22),
+      testObj(33),
+      testObj(44)
+    )
     assertFalse(values.containsAll(coll2))
 
     if (factory.allowsNullValuesQueries) {
-      val coll3 = TrivialImmutableCollection(testObj(11), testObj(22),
-          testObj(33), null)
+      val coll3 =
+        TrivialImmutableCollection(testObj(11), testObj(22), testObj(33), null)
       assertFalse(values.containsAll(coll3))
     }
   }
@@ -807,8 +814,9 @@ trait MapTest {
     assertTrue(mp.containsKey(testObj(2)))
     assertTrue(mp.containsKey(testObj(3)))
 
-    keySet.removeAll(TrivialImmutableCollection(testObj(1), testObj(2),
-        testObj(5)))
+    keySet.removeAll(
+      TrivialImmutableCollection(testObj(1), testObj(2), testObj(5))
+    )
 
     assertFalse(mp.containsKey(testObj(1)))
     assertFalse(mp.containsKey(testObj(2)))
@@ -822,8 +830,9 @@ trait MapTest {
     assertTrue(mp.containsKey(testObj(2)))
     assertTrue(mp.containsKey(testObj(3)))
 
-    keySet.retainAll(TrivialImmutableCollection(testObj(1), testObj(2),
-        testObj(5)))
+    keySet.retainAll(
+      TrivialImmutableCollection(testObj(1), testObj(2), testObj(5))
+    )
 
     assertTrue(mp.containsKey(testObj(1)))
     assertTrue(mp.containsKey(testObj(2)))
@@ -888,20 +897,33 @@ trait MapTest {
 
     assertTrue(entrySet.contains(SIE("THREE", "three")))
 
-    val coll1 = TrivialImmutableCollection(SIE("ONE", "one"),
-        SIE("TWO", "two"), SIE("THREE", "three"))
+    val coll1 = TrivialImmutableCollection(
+      SIE("ONE", "one"),
+      SIE("TWO", "two"),
+      SIE("THREE", "three")
+    )
     assertTrue(entrySet.containsAll(coll1))
 
-    val coll2 = TrivialImmutableCollection(SIE("ONE", "one"),
-        SIE("TWO", "two"), SIE("THREE", "three"), SIE("FOUR", "four"))
+    val coll2 = TrivialImmutableCollection(
+      SIE("ONE", "one"),
+      SIE("TWO", "two"),
+      SIE("THREE", "three"),
+      SIE("FOUR", "four")
+    )
     assertFalse(entrySet.containsAll(coll2))
 
-    val coll3 = TrivialImmutableCollection(SIE("ONE", "one"),
-        SIE("TWO", "four"), SIE("THREE", "three"))
+    val coll3 = TrivialImmutableCollection(
+      SIE("ONE", "one"),
+      SIE("TWO", "four"),
+      SIE("THREE", "three")
+    )
     assertFalse(entrySet.containsAll(coll3))
 
-    val coll4 = TrivialImmutableCollection(SIE("ONE", "one"),
-        SIE("four", "two"), SIE("THREE", "three"))
+    val coll4 = TrivialImmutableCollection(
+      SIE("ONE", "one"),
+      SIE("four", "two"),
+      SIE("THREE", "three")
+    )
     assertFalse(entrySet.containsAll(coll4))
   }
 
@@ -934,21 +956,33 @@ trait MapTest {
 
     assertTrue(entrySet.contains(SIE(testObj(3), testObj(33))))
 
-    val coll1 = TrivialImmutableCollection(SIE(testObj(1), testObj(11)),
-        SIE(testObj(2), testObj(22)), SIE(testObj(3), testObj(33)))
+    val coll1 = TrivialImmutableCollection(
+      SIE(testObj(1), testObj(11)),
+      SIE(testObj(2), testObj(22)),
+      SIE(testObj(3), testObj(33))
+    )
     assertTrue(entrySet.containsAll(coll1))
 
-    val coll2 = TrivialImmutableCollection(SIE(testObj(1), testObj(11)),
-        SIE(testObj(2), testObj(22)), SIE(testObj(3), testObj(33)),
-        SIE(testObj(4), testObj(44)))
+    val coll2 = TrivialImmutableCollection(
+      SIE(testObj(1), testObj(11)),
+      SIE(testObj(2), testObj(22)),
+      SIE(testObj(3), testObj(33)),
+      SIE(testObj(4), testObj(44))
+    )
     assertFalse(entrySet.containsAll(coll2))
 
-    val coll3 = TrivialImmutableCollection(SIE(testObj(1), testObj(11)),
-        SIE(testObj(2), testObj(44)), SIE(testObj(3), testObj(33)))
+    val coll3 = TrivialImmutableCollection(
+      SIE(testObj(1), testObj(11)),
+      SIE(testObj(2), testObj(44)),
+      SIE(testObj(3), testObj(33))
+    )
     assertFalse(entrySet.containsAll(coll3))
 
-    val coll4 = TrivialImmutableCollection(SIE(testObj(1), testObj(11)),
-        SIE(testObj(4), testObj(22)), SIE(testObj(3), testObj(33)))
+    val coll4 = TrivialImmutableCollection(
+      SIE(testObj(1), testObj(11)),
+      SIE(testObj(4), testObj(22)),
+      SIE(testObj(3), testObj(33))
+    )
     assertFalse(entrySet.containsAll(coll4))
   }
 
@@ -992,8 +1026,15 @@ trait MapTest {
     assertTrue(mp.containsKey("TWO"))
     assertTrue(mp.containsKey("THREE"))
 
-    entrySet.removeAll(TrivialImmutableCollection(SIE("ONE", "one"),
-        SIE("TWO", "two"), SIE("THREE", "four"), "THREE", 42))
+    entrySet.removeAll(
+      TrivialImmutableCollection(
+        SIE("ONE", "one"),
+        SIE("TWO", "two"),
+        SIE("THREE", "four"),
+        "THREE",
+        42
+      )
+    )
 
     assertFalse(mp.containsKey("ONE"))
     assertFalse(mp.containsKey("TWO"))
@@ -1007,8 +1048,15 @@ trait MapTest {
     assertTrue(mp.containsKey("TWO"))
     assertTrue(mp.containsKey("THREE"))
 
-    entrySet.retainAll(TrivialImmutableCollection(SIE("ONE", "one"),
-        SIE("TWO", "two"), SIE("THREE", "four"), "THREE", 42))
+    entrySet.retainAll(
+      TrivialImmutableCollection(
+        SIE("ONE", "one"),
+        SIE("TWO", "two"),
+        SIE("THREE", "four"),
+        "THREE",
+        42
+      )
+    )
 
     assertTrue(mp.containsKey("ONE"))
     assertTrue(mp.containsKey("TWO"))
@@ -1055,9 +1103,15 @@ trait MapTest {
     assertTrue(mp.containsKey(testObj(2)))
     assertTrue(mp.containsKey(testObj(3)))
 
-    entrySet.removeAll(TrivialImmutableCollection(SIE(testObj(1), testObj(11)),
-        SIE(testObj(2), testObj(22)), SIE(testObj(3), testObj(44)),
-        testObj(3), 42))
+    entrySet.removeAll(
+      TrivialImmutableCollection(
+        SIE(testObj(1), testObj(11)),
+        SIE(testObj(2), testObj(22)),
+        SIE(testObj(3), testObj(44)),
+        testObj(3),
+        42
+      )
+    )
 
     assertFalse(mp.containsKey(testObj(1)))
     assertFalse(mp.containsKey(testObj(2)))
@@ -1071,9 +1125,15 @@ trait MapTest {
     assertTrue(mp.containsKey(testObj(2)))
     assertTrue(mp.containsKey(testObj(3)))
 
-    entrySet.retainAll(TrivialImmutableCollection(SIE(testObj(1), testObj(11)),
-        SIE(testObj(2), testObj(22)), SIE(testObj(3), testObj(44)),
-        testObj(3), 42))
+    entrySet.retainAll(
+      TrivialImmutableCollection(
+        SIE(testObj(1), testObj(11)),
+        SIE(testObj(2), testObj(22)),
+        SIE(testObj(3), testObj(44)),
+        testObj(3),
+        42
+      )
+    )
 
     assertTrue(mp.containsKey(testObj(1)))
     assertTrue(mp.containsKey(testObj(2)))
@@ -1115,7 +1175,11 @@ trait MapTest {
   }
 
   @Test def testGetOrDefault(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     assertEquals("one", mp.getOrDefault("ONE", "def"))
     assertEquals("def", mp.getOrDefault("FOUR", "def"))
@@ -1128,7 +1192,11 @@ trait MapTest {
   }
 
   @Test def testForEach(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     val b = List.newBuilder[(String, String)]
     mp.forEach(new BiConsumer[String, String] {
@@ -1146,7 +1214,11 @@ trait MapTest {
   }
 
   @Test def testReplaceAll(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     mp.replaceAll(new BiFunction[String, String, String] {
       def apply(key: String, value: String): String =
@@ -1172,9 +1244,12 @@ trait MapTest {
       assertNull(mp.get("ONE"))
       assertEquals("it was null", mp.get("nullable"))
     } else {
-      assertThrows(classOf[NullPointerException], mp.replaceAll(new BiFunction[String, String, String] {
-        def apply(key: String, value: String): String = null
-      }))
+      assertThrows(
+        classOf[NullPointerException],
+        mp.replaceAll(new BiFunction[String, String, String] {
+          def apply(key: String, value: String): String = null
+        })
+      )
     }
   }
 
@@ -1195,7 +1270,10 @@ trait MapTest {
       assertEquals("non null", mp.get("nullable"))
     } else {
       assertThrows(classOf[NullPointerException], mp.putIfAbsent("abc", null))
-      assertThrows(classOf[NullPointerException], mp.putIfAbsent("new key", null))
+      assertThrows(
+        classOf[NullPointerException],
+        mp.putIfAbsent("new key", null)
+      )
     }
 
     if (!factory.allowsNullKeys) {
@@ -1204,7 +1282,11 @@ trait MapTest {
   }
 
   @Test def testConditionalRemove(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     assertFalse(mp.remove("non existing", "value"))
     assertFalse(mp.containsKey("non existing"))
@@ -1240,7 +1322,11 @@ trait MapTest {
   }
 
   @Test def testUnconditionalRemove(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     assertEquals(null, mp.remove("non existing"))
     assertFalse(mp.containsKey("non existing"))
@@ -1259,7 +1345,11 @@ trait MapTest {
   }
 
   @Test def testConditionalReplace(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     assertTrue(mp.replace("ONE", "one", "four"))
     assertEquals("four", mp.get("ONE"))
@@ -1281,8 +1371,14 @@ trait MapTest {
       assertTrue(mp.containsKey("nullable"))
       assertNull(mp.get("nullable"))
     } else {
-      assertThrows(classOf[NullPointerException], mp.replace("ONE", null, "one"))
-      assertThrows(classOf[NullPointerException], mp.replace("ONE", "four", null))
+      assertThrows(
+        classOf[NullPointerException],
+        mp.replace("ONE", null, "one")
+      )
+      assertThrows(
+        classOf[NullPointerException],
+        mp.replace("ONE", "four", null)
+      )
     }
 
     if (factory.allowsNullKeys) {
@@ -1293,12 +1389,19 @@ trait MapTest {
       assertTrue(mp.replace(null, "null value", "new value"))
       assertEquals("new value", mp.get(null))
     } else {
-      assertThrows(classOf[NullPointerException], mp.replace(null, "one", "two"))
+      assertThrows(
+        classOf[NullPointerException],
+        mp.replace(null, "one", "two")
+      )
     }
   }
 
   @Test def testUnconditionalReplace(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     assertEquals("one", mp.replace("ONE", "four"))
     assertEquals("four", mp.get("ONE"))
@@ -1332,11 +1435,17 @@ trait MapTest {
   }
 
   @Test def testComputeIfAbsent(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     val notCalled = new Function[String, String] {
       def apply(key: String): String =
-        throw new AssertionError(s"function should not have been called for $key")
+        throw new AssertionError(
+          s"function should not have been called for $key"
+        )
     }
 
     val lengthAsString = new Function[String, String] {
@@ -1362,11 +1471,17 @@ trait MapTest {
   }
 
   @Test def testComputeIfPresent(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     val notCalled = new BiFunction[String, String, String] {
       def apply(key: String, value: String): String =
-        throw new AssertionError(s"function should not have been called for $key")
+        throw new AssertionError(
+          s"function should not have been called for $key"
+        )
     }
 
     val remappingFun = new BiFunction[String, String, String] {
@@ -1395,7 +1510,11 @@ trait MapTest {
   }
 
   @Test def testCompute(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     val remappingFun = new BiFunction[String, String, String] {
       def apply(key: String, value: String): String = s"$key - $value"
@@ -1429,15 +1548,22 @@ trait MapTest {
   }
 
   @Test def testMerge(): Unit = {
-    val mp = factory.fromKeyValuePairs("ONE" -> "one", "TWO" -> "two", "THREE" -> "three")
+    val mp = factory.fromKeyValuePairs(
+      "ONE" -> "one",
+      "TWO" -> "two",
+      "THREE" -> "three"
+    )
 
     val notCalled = new BiFunction[String, String, String] {
       def apply(prevValue: String, newValue: String): String =
-        throw new AssertionError(s"function should not have been called for $prevValue")
+        throw new AssertionError(
+          s"function should not have been called for $prevValue"
+        )
     }
 
     val remappingFun = new BiFunction[String, String, String] {
-      def apply(prevValue: String, newValue: String): String = s"$prevValue - $newValue"
+      def apply(prevValue: String, newValue: String): String =
+        s"$prevValue - $newValue"
     }
 
     val returnsNull = new BiFunction[String, String, String] {
@@ -1450,8 +1576,14 @@ trait MapTest {
     assertEquals("def", mp.merge("SEVEN", "def", notCalled))
     assertEquals("def", mp.get("SEVEN"))
 
-    assertThrows(classOf[NullPointerException], mp.merge("non existing", null, notCalled))
-    assertThrows(classOf[NullPointerException], mp.merge("ONE", null, notCalled))
+    assertThrows(
+      classOf[NullPointerException],
+      mp.merge("non existing", null, notCalled)
+    )
+    assertThrows(
+      classOf[NullPointerException],
+      mp.merge("ONE", null, notCalled)
+    )
 
     assertNull(mp.merge("ONE", "def", returnsNull))
     assertFalse(mp.containsKey("ONE"))
@@ -1467,8 +1599,14 @@ trait MapTest {
     val set = factory.empty[String, String].keySet()
 
     assertThrows(classOf[UnsupportedOperationException], set.add("ONE"))
-    assertThrows(classOf[UnsupportedOperationException], set.addAll(ju.Arrays.asList("ONE")))
-    assertThrows(classOf[UnsupportedOperationException], set.addAll(ju.Arrays.asList(null)))
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      set.addAll(ju.Arrays.asList("ONE"))
+    )
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      set.addAll(ju.Arrays.asList(null))
+    )
     assertThrows(classOf[UnsupportedOperationException], set.add(null))
   }
 }
@@ -1482,7 +1620,9 @@ trait MapFactory {
 
   def empty[K: ClassTag, V: ClassTag]: ju.Map[K, V]
 
-  def fromKeyValuePairs[K: ClassTag, V: ClassTag](pairs: (K, V)*): ju.Map[K, V] = {
+  def fromKeyValuePairs[K: ClassTag, V: ClassTag](
+      pairs: (K, V)*
+  ): ju.Map[K, V] = {
     val result = empty[K, V]
     for ((key, value) <- pairs)
       result.put(key, value)
