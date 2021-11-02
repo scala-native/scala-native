@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.6, 2.12.15, 2.11.12]
+        scala: [2.13.7, 2.12.15, 2.11.12]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -115,13 +115,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.6, 2.12.15, 2.11.12]
+        scala: [2.13.7, 2.12.15, 2.11.12]
         build-mode: [ debug , release-fast ]
         gc: [ boehm, immix, commix ]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
-          - scala: 2.13.6
+          - scala: 2.13.7
             build-mode: debug
             gc: immix
           - scala: 2.12.15
@@ -155,6 +155,12 @@ jobs:
           - scala: 2.13.5
             build-mode: release-fast
             gc: commix
+          - scala: 2.13.6
+            build-mode: debug
+            gc: commix
+          - scala: 2.13.6
+            build-mode: release-fast
+            gc: immix
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -179,7 +185,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [ 2.13.6, 2.12.15, 2.11.12 ]
+        scala: [ 2.13.7, 2.12.15, 2.11.12 ]
         build-mode: [ debug, release-fast ]
         include:
           - scala: 2.12.13
@@ -187,6 +193,8 @@ jobs:
           - scala: 2.13.4
             build-mode: release-fast
           - scala: 2.13.5
+            build-mode: release-fast
+          - scala: 2.13.6
             build-mode: release-fast
     steps:
       - uses: actions/checkout@v2
@@ -210,11 +218,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.6, 2.12.15, 2.11.12]
+        scala: [2.13.7, 2.12.15, 2.11.12]
         lto: [thin]
         optimize: [true]
         include:
-          - scala: 2.13.6
+          - scala: 2.13.7
             lto: full
             optimize: true
           - scala: 2.12.15
