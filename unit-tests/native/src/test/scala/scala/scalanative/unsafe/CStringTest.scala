@@ -7,7 +7,7 @@ import org.junit.Assert._
 import java.nio.charset.Charset
 import scalanative.libc.string._
 import scalanative.unsigned._
-// Scala 2.13.7 needs explicit import for implciit conversions
+// Scala 2.13.7 needs explicit import for implicit conversions
 import scalanative.unsafe.Ptr.ptrToCArray
 
 class CStringTest {
