@@ -72,8 +72,8 @@ lazy val docsSettings: Seq[Setting[_]] = {
 }
 
 // The previous releases of Scala Native with which this version is binary compatible.
-val binCompatVersions = Set("0.4.0")
-lazy val neverPublishedProjects = Map(
+val binCompatVersions = Set("0.4.0", "0.4.1")
+lazy val neverPublishedProjects040 = Map(
   "2.11" -> Set(util, tools, nir, windowslib, testRunner),
   "2.12" -> Set(windowslib),
   "2.13" -> Set(util, tools, nir, windowslib, testRunner)
@@ -83,11 +83,15 @@ lazy val mimaSettings = Seq(
   mimaFailOnNoPrevious := false,
   mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
   mimaPreviousArtifacts ++= {
-    val wasPreviouslyPublished = neverPublishedProjects
-      .get(scalaBinaryVersion.value)
-      .exists(!_.contains(thisProject.value.id))
+    def wasPreviouslyPublished(version: String) = version match {
+      case "0.4.0" =>
+        neverPublishedProjects040
+          .get(scalaBinaryVersion.value)
+          .exists(!_.contains(thisProject.value.id))
+      case _ => true
+    }
     binCompatVersions
-      .filter(_ => wasPreviouslyPublished)
+      .filter(wasPreviouslyPublished)
       .map { version =>
         ModuleID(organization.value, moduleName.value, version)
           .cross(crossVersion.value)
