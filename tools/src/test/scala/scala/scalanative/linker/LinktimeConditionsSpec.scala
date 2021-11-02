@@ -398,8 +398,11 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     }
   }
 
-  private def shouldContainAll[T](expected: Iterable[T], given: Iterable[T]) = {
-    val left = given.toSet
+  private def shouldContainAll[T](
+      expected: Iterable[T],
+      actual: Iterable[T]
+  ) = {
+    val left = actual.toSet
     val right = expected.toSet
     assert((left -- right).isEmpty, "underapproximation")
     assert((right -- left).isEmpty, "overapproximation")

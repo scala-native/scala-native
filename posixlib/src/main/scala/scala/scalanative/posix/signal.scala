@@ -405,7 +405,7 @@ object signalOps {
     def si_status_=(value: CInt): Unit = p._7 = value
     def si_band: CLong = p._8
     def si_band_=(value: CLong): Unit = p._8 = value
-    def si_value: sigval = p._9
+    def si_value: sigval = !(p._9)
     def si_value_=(value: sigval): Unit =
       !p._9.asInstanceOf[Ptr[CArray[Byte, Nat._8]]] = value
   }

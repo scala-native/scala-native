@@ -221,7 +221,7 @@ object WindowsProcess {
     securityAttributes.inheritHandle = true
     securityAttributes.securityDescriptor = null
 
-    val pipe: PipeHandles = stackalloc[PipeHandles]
+    val pipe: PipeHandles = !stackalloc[PipeHandles]
     val pipeEnds @ (pipeRead, pipeWrite) = (pipe.at(readEnd), pipe.at(writeEnd))
     val pipeCreated =
       CreatePipe(pipeRead, pipeWrite, null, 0.toUInt)

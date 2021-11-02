@@ -1,4 +1,4 @@
---- 2.13.7/scala/reflect/ClassTag.scala
+--- 2.13.6/scala/reflect/ClassTag.scala
 +++ overrides-2.13/scala/reflect/ClassTag.scala
 @@ -93,56 +93,24 @@
   * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
@@ -42,7 +42,7 @@
 +  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
  
 -  private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
--  private[this] object cache extends ClassValueCompat[jWeakReference[ClassTag[_]]] {
+-  private[this] object cache extends ClassValue[jWeakReference[ClassTag[_]]] {
 -    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
 -      new jWeakReference(computeTag(runtimeClass))
 -

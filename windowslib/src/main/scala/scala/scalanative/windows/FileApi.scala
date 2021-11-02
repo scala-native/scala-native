@@ -334,22 +334,22 @@ object FileApiOps {
 
   implicit final class Win32FileDataAOps(ref: Ptr[Win32FindDataA])
       extends Win32FileDataOps[CChar](ref) {
-    override def fileName_=(v: CString): Unit = strcpy(ref.at9.at(0), v)
+    override def fileName_=(v: CString): Unit = strcpy(ref._9.at(0), v)
     override def alternateFileName_=(v: CString): Unit =
-      strcpy(ref.at10.at(0), v)
+      strcpy(ref._10.at(0), v)
   }
 
   implicit final class Win32FileDataWOps(ref: Ptr[Win32FindDataW])
       extends Win32FileDataOps[CChar16](ref) {
     override def fileName_=(v: CWString): Unit =
       wcscpy(
-        ref.at9.at(0).asInstanceOf[CWideString],
+        ref._10.at(0).asInstanceOf[CWideString],
         v.asInstanceOf[CWideString]
       )
 
     override def alternateFileName_=(v: CWString): Unit =
       wcscpy(
-        ref.at10.at(0).asInstanceOf[CWideString],
+        ref._10.at(0).asInstanceOf[CWideString],
         v.asInstanceOf[CWideString]
       )
   }
