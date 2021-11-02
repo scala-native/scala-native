@@ -78,17 +78,24 @@ lazy val neverPublishedProjects040 = Map(
   "2.12" -> Set(windowslib),
   "2.13" -> Set(util, tools, nir, windowslib, testRunner)
 ).mapValues(_.map(_.id))
+lazy val neverPublishedProjects041 = neverPublishedProjects040
+  .mapValues(_.diff(Set(windowslib.id)))
 
 lazy val mimaSettings = Seq(
   mimaFailOnNoPrevious := false,
   mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
   mimaPreviousArtifacts ++= {
+    def wasPublishedInRelease(
+        notPublishedProjectsInRelease: Map[String, Set[String]]
+    ): Boolean = {
+      notPublishedProjectsInRelease
+        .get(scalaBinaryVersion.value)
+        .exists(!_.contains(thisProject.value.id))
+    }
     def wasPreviouslyPublished(version: String) = version match {
-      case "0.4.0" =>
-        neverPublishedProjects040
-          .get(scalaBinaryVersion.value)
-          .exists(!_.contains(thisProject.value.id))
-      case _ => true
+      case "0.4.0" => wasPublishedInRelease(neverPublishedProjects040)
+      case "0.4.1" => wasPublishedInRelease(neverPublishedProjects041)
+      case _       => false
     }
     binCompatVersions
       .filter(wasPreviouslyPublished)
