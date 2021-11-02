@@ -882,11 +882,7 @@ lazy val tests =
     .settings(noPublishSettings)
     .settings(
       nativeConfig ~= {
-        _.withLinkStubs(true) // default false
-          .withOptimize(true)
-          .withLTO(LTO.default)
-          .withMode(Mode.default)
-          .withGC(GC.default)
+        _.withLinkStubs(true)
       },
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
