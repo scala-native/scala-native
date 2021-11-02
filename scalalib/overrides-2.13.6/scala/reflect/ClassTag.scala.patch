@@ -1,14 +1,5 @@
 --- 2.13.6/scala/reflect/ClassTag.scala
 +++ overrides-2.13/scala/reflect/ClassTag.scala
-@@ -63,7 +63,7 @@
- 
-   /** Produces a new array with element type `T` and length `len` */
-   def newArray(len: Int): Array[T] =
--    java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
-+	java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
- 
-   /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
-    *
 @@ -93,56 +93,24 @@
   * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
   */
