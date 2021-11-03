@@ -258,6 +258,25 @@ if it's not the present script will try to use directory with corresponding Scal
 or it would try to use Scala epoch version or `overrides` directory. If none of these directories exists it will fail. 
 It is also possible to define explicitly overrides directory to use by passing it as the third argument to the script.
 
+
+Locally publish docs
+---------------------------------------
+Follow the steps after cloning the `scalanative <https://github.com/scala-native/scala-native>`_ repo and changing to `scala-native` directory.
+
+1. First time building the docs. This command will setup & build the docs.
+
+.. code-block:: text
+
+    $ bash scripts/makedocs setup
+
+2. If setup is already done. This command will only build the docs assuming setup is already done.
+
+.. code-block:: text
+
+    $ bash scripts/makedocs 
+
+3. Navigate to ``docs/_build/html`` directory and open ``index.html`` file in your browser.
+
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.
 
