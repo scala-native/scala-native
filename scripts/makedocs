@@ -21,7 +21,6 @@ function usage {
   echo "  Usage:"
   echo "    1. bash makedocs setup # if setup is not done."
   echo "    2. bash makedocs       # if setup is done and building docs is needed"
-
 }
 
 case $@ in
