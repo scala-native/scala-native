@@ -17,7 +17,7 @@ template.  In an empty working directory, execute::
 
   In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
 
-  In wsl2 environment, creating new project wsl2 file path work. e.g /home/<USER>/sn-projects.
+  In the WSL2 environment, it is recommended to create projects in the user files path, e.g /home/<USER>/sn-projects.
 This will:
 
 * start sbt.
