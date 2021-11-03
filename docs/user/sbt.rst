@@ -15,7 +15,7 @@ template.  In an empty working directory, execute::
 
 .. note:: New project should not be created in `mounted` directories, like external storage devices.
 
-  Incase of WSL2(Windows Subsystem Linux), windows file system like `C` or `D` drive are percieved as `mounted`. So creating new projects in these location will not work.
+  In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
 
   In wsl2 environment, creating new project wsl2 file path work. e.g /home/<USER>/sn-projects.
 This will:
