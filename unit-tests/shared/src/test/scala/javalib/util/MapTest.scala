@@ -7,7 +7,6 @@ import java.util.function.{BiConsumer, BiFunction, Function}
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.Assume._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
@@ -23,21 +22,51 @@ trait MapTest {
 
   def testObj(i: Int): TestObj = TestObj(i)
 
-  private def assumeNotIdentityHashMapOnJVM(): Unit =
-    assumeFalse(
-      "JVM vs JS cache differences",
-      executingInJVM && factory.isIdentityBased
-    )
+  // Scala Native specific
+  // Some of Scala.js tests on IdentityHashMap are not compliant with the JVM.
+  // Scala Native optimizer is more aggressive then Scala.js which allows us
+  // to match exact behaviour of execution on the JVM. However, if the optimizer
+  // is disabled, behaviour of Scala Native will match Scala.js.
+  // It is not possible to match non-optimized code to match Scala.js behaviour,
+  // and it is not desireable to change optimizer to match behaviour of the JVM
+  // as we shouldn't rely on identity of the boxed value.
+  private def assertEqualOneOfIfIdentityBased[T](
+      expected: T,
+      actual: T,
+      orValue: T
+  ): Unit = {
+    if (factory.isIdentityBased) {
+      assertTrue(
+        s"expected $orValue or $expected, but got $actual",
+        actual == orValue || expected == actual
+      )
+    } else assertEquals(expected, actual)
+  }
 
-  private def assumeNotIdentityHashMapOnJVMAndNative(): Unit =
-    assumeFalse(
-      "JVM and Native vs JS cache differences",
-      (executingInJVM || executingInScalaNative) && factory.isIdentityBased
-    )
+  private def assertEqualOrOneOfIfIdentityBased(
+      expected: Double,
+      actual: Double,
+      orValue: Double
+  ): Unit = {
+    if (factory.isIdentityBased) {
+      assertTrue(
+        s"expected $orValue or $expected, but got $actual",
+        actual == orValue || expected == actual
+      )
+    } else assertEquals(expected, actual, 0.0)
+  }
+
+  private def assertEqualsOrNullIfIdentityBased[T](expected: T, actual: T) =
+    assertEqualOneOfIfIdentityBased(expected, actual, null)
+  private def assertEqualsOrZeroIfIdentityBased(expected: Int, actual: Int) =
+    assertEqualOrOneOfIfIdentityBased(expected, actual, 0)
+  private def assertEqualsOrZeroIfIdentityBased(
+      expected: Double,
+      actual: Double
+  ) =
+    assertEqualOrOneOfIfIdentityBased(expected, actual, 0.0)
 
   @Test def testSizeGetPutWithStrings(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val mp = factory.empty[String, String]
 
     assertEquals(0, mp.size())
@@ -61,15 +90,13 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithStringsLargeMap(): Unit = {
-    assumeNotIdentityHashMapOnJVMAndNative()
-
     val largeMap = factory.empty[String, Int]
     for (i <- 0 until 1000)
       largeMap.put(i.toString(), i)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
     for (i <- (1000 - expectedSize) until 1000)
-      assertEquals(i, largeMap.get(i.toString()))
+      assertEqualsOrZeroIfIdentityBased(i, largeMap.get(i.toString()))
     assertNull(largeMap.get("1000"))
     assertEquals(null, largeMap.get("THREE"))
     assertEquals(null, largeMap.get(42))
@@ -79,8 +106,6 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithInts(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val mp = factory.empty[Int, Int]
 
     mp.put(100, 12345)
@@ -88,7 +113,7 @@ trait MapTest {
     assertEquals(12345, mp.get(100))
     mp.put(150, 54321)
     assertEquals(2, mp.size())
-    assertEquals(54321, mp.get(150))
+    assertEqualsOrZeroIfIdentityBased(54321, mp.get(150))
     mp.put(100, 3)
     assertEquals(2, mp.size())
     assertEquals(3, mp.get(100))
@@ -101,15 +126,13 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithIntsLargeMap(): Unit = {
-    assumeNotIdentityHashMapOnJVMAndNative()
-
     val largeMap = factory.empty[Int, Int]
     for (i <- 0 until 1000)
       largeMap.put(i, i * 2)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
     for (i <- (1000 - expectedSize) until 1000)
-      assertEquals(i * 2, largeMap.get(i))
+      assertEqualsOrZeroIfIdentityBased(i * 2, largeMap.get(i))
     assertNull(largeMap.get(1000))
 
     assertEquals(null, largeMap.get(-42))
@@ -157,29 +180,27 @@ trait MapTest {
   }
 
   @Test def testSizeGetPutWithDoublesCornerCasesOfEquals(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val mp = factory.empty[Double, Double]
 
     mp.put(1.2345, 11111.0)
     assertEquals(1, mp.size())
     val one = mp.get(1.2345)
-    assertEquals(11111.0, one, 0.0)
+    assertEqualsOrZeroIfIdentityBased(11111.0, one)
 
     mp.put(Double.NaN, 22222.0)
     assertEquals(2, mp.size())
     val two = mp.get(Double.NaN)
-    assertEquals(22222.0, two, 0.0)
+    assertEqualsOrZeroIfIdentityBased(22222.0, two)
 
     mp.put(+0.0, 33333.0)
     assertEquals(3, mp.size())
     val three = mp.get(+0.0)
-    assertEquals(33333.0, three, 0.0)
+    assertEqualsOrZeroIfIdentityBased(33333.0, three)
 
     mp.put(-0.0, 44444.0)
     assertEquals(4, mp.size())
     val four = mp.get(-0.0)
-    assertEquals(44444.0, four, 0.0)
+    assertEqualsOrZeroIfIdentityBased(44444.0, four)
   }
 
   @Test def testRemoveWithStrings(): Unit = {
@@ -203,15 +224,13 @@ trait MapTest {
   }
 
   @Test def testRemoveWithInts(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val mp = factory.empty[Int, String]
 
     mp.put(543, "one")
     for (i <- 0 until 30)
       mp.put(i, s"value $i")
     assertEquals(31, mp.size())
-    assertEquals("one", mp.remove(543))
+    assertEqualsOrNullIfIdentityBased("one", mp.remove(543))
     assertNull(mp.get(543))
     assertNull(mp.remove(543))
 
@@ -241,31 +260,30 @@ trait MapTest {
   }
 
   @Test def testRemoveWithDoublesCornerCasesOfEquals(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val mp = factory.empty[Double, String]
+    val identityBased = factory.isIdentityBased
 
     mp.put(1.2345, "11111.0")
     mp.put(Double.NaN, "22222.0")
     mp.put(+0.0, "33333.0")
     mp.put(-0.0, "44444.0")
 
-    assertEquals("11111.0", mp.get(1.2345))
-    assertEquals("22222.0", mp.get(Double.NaN))
-    assertEquals("33333.0", mp.get(+0.0))
-    assertEquals("44444.0", mp.get(-0.0))
+    assertEqualsOrNullIfIdentityBased("11111.0", mp.get(1.2345))
+    assertEqualsOrNullIfIdentityBased("22222.0", mp.get(Double.NaN))
+    assertEqualsOrNullIfIdentityBased("33333.0", mp.get(+0.0))
+    assertEqualsOrNullIfIdentityBased("44444.0", mp.get(-0.0))
 
-    assertEquals("44444.0", mp.remove(-0.0))
+    assertEqualsOrNullIfIdentityBased("44444.0", mp.remove(-0.0))
     assertNull(mp.get(-0.0))
 
     mp.put(-0.0, "55555.0")
 
-    assertEquals("33333.0", mp.remove(+0.0))
+    assertEqualsOrNullIfIdentityBased("33333.0", mp.remove(+0.0))
     assertNull(mp.get(+0.0))
 
     mp.put(+0.0, "66666.0")
 
-    assertEquals("22222.0", mp.remove(Double.NaN))
+    assertEqualsOrNullIfIdentityBased("22222.0", mp.remove(Double.NaN))
     assertNull(mp.get(Double.NaN))
 
     mp.put(Double.NaN, "77777.0")
@@ -506,25 +524,30 @@ trait MapTest {
   }
 
   @Test def testValuesIsViewForQueriesWithDoublesCornerCaseOfEquals(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val nummp = factory.empty[Double, Double]
     val numValues = nummp.values()
 
+    // Behaviour of the Scala Native is diffrent from the Scala.js
+    // For more info check comment at the begging of the file
+    def assertContainsButNotWhenIdentityBased(key: Double): Unit = {
+      if (factory.isIdentityBased) assertFalse(numValues.contains(key))
+      else assertTrue(numValues.contains(key))
+    }
+
     nummp.put(1, +0.0)
-    assertTrue(numValues.contains(+0.0))
+    assertContainsButNotWhenIdentityBased(+0.0)
     assertFalse(numValues.contains(-0.0))
     assertFalse(numValues.contains(Double.NaN))
 
     nummp.put(2, -0.0)
-    assertTrue(numValues.contains(+0.0))
-    assertTrue(numValues.contains(-0.0))
+    assertContainsButNotWhenIdentityBased(+0.0)
+    assertContainsButNotWhenIdentityBased(-0.0)
     assertFalse(numValues.contains(Double.NaN))
 
     nummp.put(3, Double.NaN)
-    assertTrue(numValues.contains(+0.0))
-    assertTrue(numValues.contains(-0.0))
-    assertTrue(numValues.contains(Double.NaN))
+    assertContainsButNotWhenIdentityBased(+0.0)
+    assertContainsButNotWhenIdentityBased(-0.0)
+    assertContainsButNotWhenIdentityBased(Double.NaN)
   }
 
   @Test def testValuesIsViewForRemoveWithStrings(): Unit = {
@@ -703,25 +726,31 @@ trait MapTest {
   }
 
   @Test def testKeySetIsViewForQueriesWithDoublesCornerCaseOfEquals(): Unit = {
-    assumeNotIdentityHashMapOnJVM()
-
     val nummp = factory.empty[Double, Double]
     val numkeySet = nummp.keySet()
 
+    // Behaviour of the Scala Native is diffrent from the Scala.js
+    // For more info check comment at the begging of the file
+    def assertContainsButNotWhenIdentityBased(key: Double): Unit = {
+      if (factory.isIdentityBased) assertFalse(numkeySet.contains(key))
+      else assertTrue(numkeySet.contains(key))
+    }
+
     nummp.put(+0.0, 1)
-    assertTrue(numkeySet.contains(+0.0))
+    assertContainsButNotWhenIdentityBased(0.0)
+    assertContainsButNotWhenIdentityBased(+0.0)
     assertFalse(numkeySet.contains(-0.0))
     assertFalse(numkeySet.contains(Double.NaN))
 
     nummp.put(-0.0, 2)
-    assertTrue(numkeySet.contains(+0.0))
-    assertTrue(numkeySet.contains(-0.0))
+    assertContainsButNotWhenIdentityBased(+0.0)
+    assertContainsButNotWhenIdentityBased(-0.0)
     assertFalse(numkeySet.contains(Double.NaN))
 
     nummp.put(Double.NaN, 3)
-    assertTrue(numkeySet.contains(+0.0))
-    assertTrue(numkeySet.contains(-0.0))
-    assertTrue(numkeySet.contains(Double.NaN))
+    assertContainsButNotWhenIdentityBased(+0.0)
+    assertContainsButNotWhenIdentityBased(-0.0)
+    assertContainsButNotWhenIdentityBased(Double.NaN)
   }
 
   @Test def testKeySetIsViewForRemoveWithStrings(): Unit = {
