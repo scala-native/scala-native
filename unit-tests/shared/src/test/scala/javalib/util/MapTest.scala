@@ -22,14 +22,20 @@ trait MapTest {
 
   def testObj(i: Int): TestObj = TestObj(i)
 
-  // Scala Native specific
-  // Some of Scala.js tests on IdentityHashMap are not compliant with the JVM.
-  // Scala Native optimizer is more aggressive then Scala.js which allows us
-  // to match exact behaviour of execution on the JVM. However, if the optimizer
-  // is disabled, behaviour of Scala Native will match Scala.js.
-  // It is not possible to match non-optimized code to match Scala.js behaviour,
-  // and it is not desireable to change optimizer to match behaviour of the JVM
-  // as we shouldn't rely on identity of the boxed value.
+  /* Scala Native specific
+   *
+   * Some of Scala.js tests on IdentityHashMap are not compliant with the JVM.
+   * The Scala Native optimizer is more aggressive than Scala.js which allows
+   * us to match the exact behaviour of execution on the JVM. However, if the
+   * optimizer is disabled, behaviour of Scala Native will match Scala.js.
+   *
+   * It is not possible to match non-optimized code to match Scala.js
+   * behaviour, and it is not desirable to change the optimizer to match
+   * behaviour of the JVM so we shouldn't rely on identity of the boxed value.
+   */
+
+  // helper methods *not* used in tests
+
   private def assertEqualOneOfIfIdentityBased[T](
       expected: T,
       actual: T,
@@ -56,15 +62,21 @@ trait MapTest {
     } else assertEquals(expected, actual, 0.0)
   }
 
+  // helper methods used in tests
+
   private def assertEqualsOrNullIfIdentityBased[T](expected: T, actual: T) =
     assertEqualOneOfIfIdentityBased(expected, actual, null)
+
   private def assertEqualsOrZeroIfIdentityBased(expected: Int, actual: Int) =
     assertEqualOrOneOfIfIdentityBased(expected, actual, 0)
+
   private def assertEqualsOrZeroIfIdentityBased(
       expected: Double,
       actual: Double
   ) =
     assertEqualOrOneOfIfIdentityBased(expected, actual, 0.0)
+
+  // tests
 
   @Test def testSizeGetPutWithStrings(): Unit = {
     val mp = factory.empty[String, String]
@@ -261,7 +273,6 @@ trait MapTest {
 
   @Test def testRemoveWithDoublesCornerCasesOfEquals(): Unit = {
     val mp = factory.empty[Double, String]
-    val identityBased = factory.isIdentityBased
 
     mp.put(1.2345, "11111.0")
     mp.put(Double.NaN, "22222.0")
@@ -527,11 +538,12 @@ trait MapTest {
     val nummp = factory.empty[Double, Double]
     val numValues = nummp.values()
 
-    // Behaviour of the Scala Native is diffrent from the Scala.js
-    // For more info check comment at the begging of the file
-    def assertContainsButNotWhenIdentityBased(key: Double): Unit = {
-      if (factory.isIdentityBased) assertFalse(numValues.contains(key))
-      else assertTrue(numValues.contains(key))
+    // Identity based map values will not be found unless
+    // they have the same identity - same object
+
+    def assertContainsButNotWhenIdentityBased(value: Double): Unit = {
+      if (factory.isIdentityBased) assertFalse(numValues.contains(value))
+      else assertTrue(numValues.contains(value))
     }
 
     nummp.put(1, +0.0)
