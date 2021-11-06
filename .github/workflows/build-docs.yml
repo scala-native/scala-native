@@ -1,0 +1,16 @@
+name: Build docs
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+jobs:
+  build-docs:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ammaraskar/sphinx-action@master
+        with:
+          pre-build-command: "pip install Sphinx==4.2.0 recommonmark==0.7.1"
+          docs-folder: "docs/"
+
