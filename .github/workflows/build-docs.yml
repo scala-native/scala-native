@@ -13,4 +13,3 @@ jobs:
         with:
           pre-build-command: "pip install Sphinx==4.2.0 recommonmark==0.7.1"
           docs-folder: "docs/"
-
