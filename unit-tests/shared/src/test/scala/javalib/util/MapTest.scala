@@ -1661,13 +1661,19 @@ trait MapTest {
     mp.put("ONE", "one")
     assertEquals("{ONE=one}", mp.toString())
     mp.put("TWO", "two")
-    assertEquals("{ONE=one, TWO=two}", mp.toString())
+    // handle ordering issues
+    val o1 = "{ONE=one, TWO=two}"
+    val o2 = "{TWO=two, ONE=one}"
+    val res = mp.toString()
+    if (o1 == res) assertEquals(o1, res)
+    else assertEquals(o2, res)
   }
 
   @Test def testIntMapEntryToString(): Unit = {
     val mp = factory.empty[Int, Int]
     mp.put(1, 10)
     assertEquals("1=10", mp.entrySet.iterator().next().toString())
+    mp.clear()
     mp.put(2, 20)
     assertEquals("2=20", mp.entrySet.iterator().next().toString())
   }
