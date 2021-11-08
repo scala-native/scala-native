@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: ammaraskar/sphinx-action@master
+      - uses: ammaraskar/sphinx-action@0.4
         with:
           pre-build-command: "pip install Sphinx==4.2.0 recommonmark==0.7.1"
           docs-folder: "docs/"
