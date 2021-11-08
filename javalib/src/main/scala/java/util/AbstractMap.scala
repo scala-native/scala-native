@@ -2,6 +2,8 @@
 
 package java.util
 
+import java.{lang => jl}
+
 import scala.annotation.tailrec
 
 import ScalaOps._
@@ -44,7 +46,10 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      "" + getKey() + "=" + getValue()
+      new jl.StringBuilder(getKey().toString)
+        .append("=")
+        .append(getValue().toString)
+        .toString
   }
 
   class SimpleImmutableEntry[K, V](key: K, value: V)
@@ -68,7 +73,10 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      "" + getKey() + "=" + getValue()
+      new jl.StringBuilder(getKey().toString)
+        .append("=")
+        .append(getValue().toString)
+        .toString
   }
 }
 
@@ -176,7 +184,9 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     entrySet().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
 
   override def toString(): String = {
-    var result = "{"
+    // Scala.js Strings are treated as primitive types
+    // so we use jl.StringBuilder for Scala Native
+    val sb = new jl.StringBuilder("{")
     var first = true
     val iter = entrySet().iterator()
     while (iter.hasNext()) {
@@ -184,9 +194,11 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
       if (first)
         first = false
       else
-        result += ", "
-      result = result + entry.getKey() + "=" + entry.getValue()
+        sb.append(", ")
+      sb.append(entry.getKey().toString)
+        .append("=")
+        .append(entry.getValue().toString)
     }
-    result + "}"
+    sb.append("}").toString
   }
 }

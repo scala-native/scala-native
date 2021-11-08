@@ -1655,6 +1655,22 @@ trait MapTest {
     )
     assertThrows(classOf[UnsupportedOperationException], set.add(null))
   }
+
+  @Test def testStringMapToString(): Unit = {
+    val mp = factory.empty[String, String]
+    mp.put("ONE", "one")
+    assertEquals("{ONE=one}", mp.toString())
+    mp.put("TWO", "two")
+    assertEquals("{ONE=one, TWO=two}", mp.toString())
+  }
+
+  @Test def testIntMapEntryToString(): Unit = {
+    val mp = factory.empty[Int, Int]
+    mp.put(1, 10)
+    assertEquals("1=10", mp.entrySet.iterator().next().toString())
+    mp.put(2, 20)
+    assertEquals("2=20", mp.entrySet.iterator().next().toString())
+  }
 }
 
 object MapTest {
