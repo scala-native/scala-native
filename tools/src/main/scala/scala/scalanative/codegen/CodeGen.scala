@@ -15,7 +15,9 @@ import scala.scalanative.embedder.ResourceEmbedder
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
+  def apply(config: build.Config, linked: linker.Result)(implicit
+      scope: Scope
+  ): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 

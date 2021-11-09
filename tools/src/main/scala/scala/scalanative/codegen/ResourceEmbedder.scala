@@ -14,73 +14,70 @@ import scala.scalanative.nir._
 import java.util.Base64
 import java.nio.ByteBuffer
 import scala.scalanative.build.Config
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.util.Scope
+import java.nio.file.Paths
+import scala.collection.mutable
 
 object ResourceEmbedder {
 
-  final case class ClasspathFile(file: Path, classpath: Path)
+  final case class ClasspathFile(
+      accessPath: Path,
+      pathName: String,
+      classpathDirectory: VirtualDirectory
+  )
 
-  def apply(config: Config): Seq[Defn.Var] = {
+  def apply(config: Config)(implicit scope: Scope): Seq[Defn.Var] = {
     val classpath = config.classPath
-
-    def getAllClassPathFiles(classpath: Seq[Path]): Seq[ClasspathFile] = {
-      var paths: ArrayBuffer[ClasspathFile] = ArrayBuffer.empty
-
-      var root: Path = null
-      val visitor = new SimpleFileVisitor[Path] {
-
-        override def visitFile(
-            path: Path,
-            attr: BasicFileAttributes
-        ): FileVisitResult = {
-          if (attr.isRegularFile() && notSourceFile(path)) {
-            paths += ClasspathFile(path, root)
-          }
-          CONTINUE
-        }
-
-        override def postVisitDirectory(
-            dir: Path,
-            exc: IOException
-        ): FileVisitResult =
-          CONTINUE
-
-        override def visitFileFailed(
-            file: Path,
-            exc: IOException
-        ): FileVisitResult = {
-          throw exc
-          TERMINATE
-        }
-      }
-
-      classpath.map { path =>
-        root = path
-        Files.walkFileTree(path, visitor);
-      }
-
-      paths.toSeq
-    }
 
     val pathValues = new ArrayBuffer[Val.ArrayValue]()
     val contentValues = new ArrayBuffer[Val.ArrayValue]()
 
     implicit val position: Position = Position.NoPosition
 
-    val embeddedFiles = 
-      if(config.compilerConfig.embedResources) {
-        getAllClassPathFiles(classpath)
+    val foundFiles =
+      if (config.compilerConfig.embedResources) {
+        classpath.flatMap { classpath =>
+          val virtualDir = VirtualDirectory.real(classpath)
+          val root = virtualDir.uri.getPath()
+
+          virtualDir.files
+            .flatMap { relativePath =>
+              val (path, pathName) =
+                if (root != null) { // local file
+                  val name = s"${root}${relativePath}"
+                  (Paths.get(name), s"/${relativePath.toString()}")
+                } else { // other file (f.e in jar)
+                  (relativePath, relativePath.toString)
+                }
+
+              if(notSourceFile(path) && Files.isRegularFile(path)) {
+                Some(ClasspathFile(path, pathName, virtualDir))
+              } else None
+            }
+        }
       } else {
         Seq()
       }
 
-    embeddedFiles.foreach {
-      case ClasspathFile(path, root) =>
-        val relativePath: String = root.relativize(path).toString
+    val alreadyVisited = mutable.HashSet[String]()
+
+    val embeddedFiles = foundFiles.filter { classpathFile =>
+      if (!alreadyVisited.contains(classpathFile.pathName)) {
+        alreadyVisited.add(classpathFile.pathName)
+        true
+      } else false
+    }
+
+    foundFiles.foreach {
+      case ClasspathFile(accessPath, pathName, virtDir) =>
+        val fileBuffer = virtDir.read(accessPath)
         val encodedContent = Base64.getEncoder
-          .encode(Files.readAllBytes(path))
+          .encode(fileBuffer.array())
           .map(a => Val.Int(a.asInstanceOf[Int]))
+
         val encodedPath = Base64.getEncoder
-          .encode(relativePath.getBytes())
+          .encode(pathName.toString.getBytes())
           .map(a => Val.Int(a.asInstanceOf[Int]))
 
         contentValues += Val.ArrayValue(Type.Int, encodedContent.toSeq)
@@ -148,7 +145,7 @@ object ResourceEmbedder {
       )
 
     embeddedFiles.foreach { classpathFile =>
-      config.logger.info("Embedded resource: " + classpathFile.file)
+      config.logger.info("Embedded resource: " + classpathFile.pathName)
     }
 
     generated
@@ -158,9 +155,11 @@ object ResourceEmbedder {
     Global.Member(Global.Top("__"), Sig.Extern(id))
 
   private val sourceExtensions =
-    Set(".class", ".c", ".cpp", ".h", ".nir", ".jar")
+    Seq(".class", ".c", ".cpp", ".h", ".nir", ".jar", ".scala", ".java", ".hpp")
 
-  private def notSourceFile(path: Path): Boolean =
-    sourceExtensions.filter(path.getFileName.toString.endsWith(_)).isEmpty
+  private def notSourceFile(path: Path): Boolean = {
+    if (path.getFileName == null) false
+    else sourceExtensions.filter(path.getFileName.toString.endsWith(_)).isEmpty
+  }
 
 }

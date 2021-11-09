@@ -153,10 +153,10 @@ final class _Class[A] {
   def getResourceAsStream(name: java.lang.String): java.io.InputStream = {
     val absoluteName =
       if (name(0) == '/') {
-        name.substring(1)
+        name
       } else {
         Option(Paths.get(this.name.replaceAll("\\.", "/")).getParent()) match {
-          case Some(path) => s"${path.toString()}/$name"
+          case Some(path) => s"/${path.toString()}/$name"
           case None       => name
         }
       }
