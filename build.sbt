@@ -3,6 +3,7 @@ import scala.collection.mutable
 import scala.util.Try
 import build.ScalaVersions._
 import build.BinaryIncompatibilities
+import scala.scalanative.build._
 import com.typesafe.tools.mima.core.ProblemFilter
 
 // Convert "SomeName" to "some-name".
@@ -891,7 +892,9 @@ lazy val tests =
     .settings(buildInfoSettings)
     .settings(noPublishSettings)
     .settings(
-      nativeLinkStubs := true,
+      nativeConfig ~= {
+        _.withLinkStubs(true)
+      },
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
       Test / unmanagedSourceDirectories ++= {

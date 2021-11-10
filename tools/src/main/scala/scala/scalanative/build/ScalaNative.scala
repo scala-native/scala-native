@@ -82,7 +82,9 @@ private[scalanative] object ScalaNative {
             linker.Link(config, linked.entries, optimized)
           }
         } else {
-          linked
+          config.logger.time("Optimizing (skipped)") {
+            linked
+          }
         }
       }
     }

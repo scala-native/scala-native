@@ -1,29 +1,26 @@
+// Ported from Scala.js commit: a6c1451 dated: 2021-10-16
+
 package java.util
 
+import java.{lang => jl}
+
 import scala.annotation.tailrec
-import java.util.ScalaOps._
+
+import ScalaOps._
 
 object AbstractMap {
 
   private def entryEquals[K, V](entry: Map.Entry[K, V], other: Any): Boolean = {
     other match {
       case other: Map.Entry[_, _] =>
-        entry.getKey() === other.getKey() &&
-          entry.getValue() === other.getValue()
+        Objects.equals(entry.getKey(), other.getKey()) &&
+          Objects.equals(entry.getValue(), other.getValue())
       case _ => false
     }
   }
 
-  private def entryHashCode[K, V](entry: Map.Entry[K, V]): Int = {
-    val keyHash =
-      if (entry.getKey() == null) 0
-      else entry.getKey().hashCode
-    val valueHash =
-      if (entry.getValue() == null) 0
-      else entry.getValue().hashCode
-
-    keyHash ^ valueHash
-  }
+  private def entryHashCode[K, V](entry: Map.Entry[K, V]): Int =
+    Objects.hashCode(entry.getKey()) ^ Objects.hashCode(entry.getValue())
 
   class SimpleEntry[K, V](private var key: K, private var value: V)
       extends Map.Entry[K, V]
@@ -49,7 +46,10 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      "" + getKey() + "=" + getValue()
+      new jl.StringBuilder(getKey().toString)
+        .append("=")
+        .append(getValue().toString)
+        .toString
   }
 
   class SimpleImmutableEntry[K, V](key: K, value: V)
@@ -73,7 +73,10 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      "" + getKey() + "=" + getValue()
+      new jl.StringBuilder(getKey().toString)
+        .append("=")
+        .append(getValue().toString)
+        .toString
   }
 }
 
@@ -85,30 +88,30 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   def isEmpty(): Boolean = size() == 0
 
   def containsValue(value: Any): Boolean =
-    entrySet().iterator().scalaOps.exists(value === _.getValue())
+    entrySet().scalaOps.exists(entry => Objects.equals(value, entry.getValue()))
 
   def containsKey(key: Any): Boolean =
-    entrySet().iterator().scalaOps.exists(entry => entry === key)
+    entrySet().scalaOps.exists(entry => Objects.equals(key, entry.getKey()))
 
   def get(key: Any): V = {
-    entrySet()
-      .iterator()
-      .scalaOps
-      .find(_.getKey() === key)
+    entrySet().scalaOps
+      .find(entry => Objects.equals(key, entry.getKey()))
       .fold[V] {
         null.asInstanceOf[V]
-      } { entry => entry.getValue() }
+      } { entry =>
+        entry.getValue()
+      }
   }
 
   def put(key: K, value: V): V =
     throw new UnsupportedOperationException()
 
-  override def remove(key: Any): V = {
+  def remove(key: Any): V = {
     @tailrec
     def findAndRemove(iter: Iterator[Map.Entry[K, V]]): V = {
       if (iter.hasNext()) {
         val item = iter.next()
-        if (key === item.getKey()) {
+        if (Objects.equals(key, item.getKey())) {
           iter.remove()
           item.getValue()
         } else
@@ -120,10 +123,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   }
 
   def putAll(m: Map[_ <: K, _ <: V]): Unit =
-    m.entrySet()
-      .iterator()
-      .scalaOps
-      .foreach(e => put(e.getKey(), e.getValue()))
+    m.entrySet().scalaOps.foreach(e => put(e.getKey(), e.getValue()))
 
   def clear(): Unit =
     entrySet().clear()
@@ -171,10 +171,10 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     else {
       o match {
         case m: Map[_, _] =>
-          (self.size() == m.size() &&
+          self.size() == m.size() &&
             entrySet().scalaOps.forall(item =>
-              m.get(item.getKey()) === item.getValue()
-            ))
+              Objects.equals(m.get(item.getKey()), item.getValue())
+            )
         case _ => false
       }
     }
@@ -184,11 +184,21 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     entrySet().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
 
   override def toString(): String = {
-    entrySet()
-      .iterator()
-      .scalaOps
-      .map(e => s"${e.getKey()}=${e.getValue()}")
-      .scalaOps
-      .mkString("{", ", ", "}")
+    // Scala.js Strings are treated as primitive types
+    // so we use jl.StringBuilder for Scala Native
+    val sb = new jl.StringBuilder("{")
+    var first = true
+    val iter = entrySet().iterator()
+    while (iter.hasNext()) {
+      val entry = iter.next()
+      if (first)
+        first = false
+      else
+        sb.append(", ")
+      sb.append(entry.getKey().toString)
+        .append("=")
+        .append(entry.getValue().toString)
+    }
+    sb.append("}").toString
   }
 }
