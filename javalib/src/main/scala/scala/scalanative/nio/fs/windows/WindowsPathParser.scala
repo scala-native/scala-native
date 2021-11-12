@@ -121,7 +121,8 @@ object WindowsPathParser {
       allowedChars: String = ""
   ): String = {
     def isControlOrReservedChar(c: Char) = {
-      c < '\u0020' || pathReservedChars.contains(c)
+      // '\u0001F' - last control character (no. 31)
+      c <= '\u001F' || pathReservedChars.contains(c)
     }
     def checkValidSegment(
         segment: String,
