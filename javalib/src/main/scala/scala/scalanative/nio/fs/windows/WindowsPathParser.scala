@@ -120,8 +120,8 @@ object WindowsPathParser {
       to: Int,
       allowedChars: String = ""
   ): String = {
-    def isSpaceOrReservedChar(c: Char) = {
-      c.isSpaceChar || pathReservedChars.contains(c)
+    def isControlOrReservedChar(c: Char) = {
+      c < '\u0020' || pathReservedChars.contains(c)
     }
     def checkValidSegment(
         segment: String,
@@ -130,7 +130,7 @@ object WindowsPathParser {
     ): Unit = {
 
       val invalidCharIdx = segment.indexWhere { c =>
-        isSpaceOrReservedChar(c) && !allowedChars.contains(c)
+        isControlOrReservedChar(c) && !allowedChars.contains(c)
       }
       if (invalidCharIdx >= 0) {
         throw new InvalidPathException(
