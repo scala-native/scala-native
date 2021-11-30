@@ -6,6 +6,12 @@ class IOException(s: String, e: Throwable) extends Exception(s, e) {
   def this() = this(null, null)
 }
 
+class UncheckedIOException(message: String, cause: IOException)
+    extends RuntimeException(message, cause) {
+  def this(cause: IOException) = this(null, cause)
+  override def getCause(): IOException = cause
+}
+
 class FileNotFoundException(s: String) extends IOException(s) {
   def this() = this(null)
 }

@@ -1,6 +1,6 @@
-/** Ported from Scala.js and Harmony
- */
-package javalib.util
+// Ported from Scala.js
+
+package org.scalanative.testsuite.javalib.util
 
 import java.util._
 
@@ -13,7 +13,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.Utils._
+import Utils._
 
 import org.scalanative.testsuite.utils.Platform._
 

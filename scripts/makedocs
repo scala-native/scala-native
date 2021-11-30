@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+cd docs
+function create_venv {
+  virtualenv .venv
+}
+
+function activate_venv {
+  source .venv/bin/activate
+}
+
+function install_req {
+  pip install Sphinx==4.2.0
+  pip install recommonmark==0.7.1
+}
+
+function generate_docs {
+  make html
+}
+
+function usage {
+  echo "  Usage:"
+  echo "    1. bash makedocs setup # if setup is not done."
+  echo "    2. bash makedocs       # if setup is done and building docs is needed"
+}
+
+case $@ in
+  "")       activate_venv; generate_docs; exit 0 ;;
+  setup)    create_venv; activate_venv; install_req; generate_docs; exit 0 ;;
+  *)        echo "Unknown parameters $@"; usage; exit 1 ;;
+esac

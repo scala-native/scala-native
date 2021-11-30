@@ -7,6 +7,8 @@ import org.junit.Assert._
 
 import scalanative.libc._
 import scalanative.unsigned._
+// Scala 2.13.7 needs explicit import for implicit conversions
+import scalanative.unsafe.Ptr.ptrToCArray
 
 class PtrOpsTest {
 

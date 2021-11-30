@@ -1,0 +1,26 @@
+--- 2.12.15/scala/collection/mutable/Stack.scala
++++ old-collections/scala/collection/mutable/Stack.scala
+@@ -26,6 +26,10 @@
+  *  @define Coll `mutable.Stack`
+  */
+ object Stack extends SeqFactory[Stack] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+   class StackBuilder[A] extends Builder[A, Stack[A]] {
+     val lbuff = new ListBuffer[A]
+     def +=(elem: A) = { lbuff += elem; this }
+@@ -33,9 +37,9 @@
+     def result = new Stack(lbuff.result)
+   }
+ 
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
+-  val empty: Stack[Nothing] = new Stack(Nil)
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
++  @inline val empty: Stack[Nothing] = new Stack(Nil)
+ }
+ 
+ /** A stack implements a data structure which allows to store and retrieve

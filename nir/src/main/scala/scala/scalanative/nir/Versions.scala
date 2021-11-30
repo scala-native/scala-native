@@ -25,7 +25,7 @@ object Versions {
   final val revision: Int = 8 // a.k.a. MINOR version
 
   /* Current public release version of Scala Native. */
-  final val current: String = "0.4.1-SNAPSHOT"
+  final val current: String = "0.4.2-SNAPSHOT"
   final val currentBinaryVersion: String = binaryVersion(current)
 
   private object FullVersion {

@@ -9,7 +9,7 @@ private[nio] final class HeapByteBufferDoubleView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends DoubleBuffer(_capacity, null, -1) {
+) extends DoubleBuffer(_capacity, null, null, -1) {
 
   position(_initialPosition)
   limit(_initialLimit)

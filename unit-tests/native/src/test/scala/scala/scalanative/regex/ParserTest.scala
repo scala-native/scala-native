@@ -234,6 +234,7 @@ class ParserTest {
     // Test Perl quoted literals
     Array("\\Q+|*?{[\\E", "str{+|*?{[}"),
     Array("\\Q+\\E+", "plus{lit{+}}"),
+    Array("\\Qab\\E+", "cat{lit{a}plus{lit{b}}}"),
     Array("\\Q\\\\E", "lit{\\}"),
     Array("\\Q\\\\\\E", "str{\\\\}"),
     // Test Perl \A and \z
@@ -246,7 +247,8 @@ class ParserTest {
     Array("(?-m)\\A", "bot{}"),
     Array("(?-m)\\z", "eot{\\z}"),
     // Test named captures
-    Array("(?<name>a)", "cap{name:lit{a}}"),
+    Array("(?P<name>a)", "cap{name:lit{a}}"), // Perl style
+    Array("(?<name>a)", "cap{name:lit{a}}"), // Java style
     // Case-folded literals
     Array("[Aa]", "litfold{A}"),
     Array("[\\x{100}\\x{101}]", "litfold{Ā}"),
@@ -259,7 +261,10 @@ class ParserTest {
       "abc|abd|aef|bcx|bcy",
       "alt{cat{lit{a}alt{cat{lit{b}cc{0x63-0x64}}str{ef}}}cat{str{bc}cc{0x78-0x79}}}"
     ),
-//    Array("ax+y|ax+z|ay+w", "cat{lit{a}alt{cat{plus{lit{x}}cc{0x79-0x7a}}cat{plus{lit{y}}lit{w}}}}"), // TODO: fails because of equals  if (first != null && first.equals(ifirst)) {
+    Array(
+      "ax+y|ax+z|ay+w",
+      "cat{lit{a}alt{cat{plus{lit{x}}lit{y}}cat{plus{lit{x}}lit{z}}cat{plus{lit{y}}lit{w}}}}"
+    ),
     // Bug fixes.
     Array("(?:.)", "dot{}"),
     Array("(?:x|(?:xa))", "cat{lit{x}alt{emp{}lit{a}}}"),
@@ -282,11 +287,16 @@ class ParserTest {
       "alt{cat{lit{a}alt{cat{lit{b}cc{0x63-0x64}}str{ef}}}" + "cat{str{bc}cc{0x78-0x79}}}"
     ),
     Array("abc|x|abd", "alt{str{abc}lit{x}str{abd}}"),
-    Array("(?i)abc|ABD", "cat{strfold{AB}cc{0x43-0x44 0x63-0x64}}")
-//    Array("[ab]c|[ab]d", "cat{cc{0x61-0x62}cc{0x63-0x64}}")
-//    Array("(?:xx|yy)c|(?:xx|yy)d", "cat{alt{str{xx}str{yy}}cc{0x63-0x64}}"),
-//    Array("x{2}|x{2}[0-9]", "cat{rep{2,2 lit{x}}alt{emp{}cc{0x30-0x39}}}"),
-//    Array("x{2}y|x{2}[0-9]y", "cat{rep{2,2 lit{x}}alt{lit{y}cat{cc{0x30-0x39}lit{y}}}}")
+    Array("(?i)abc|ABD", "cat{strfold{AB}cc{0x43-0x44 0x63-0x64}}"),
+    Array("[ab]c|[ab]d", "cat{cc{0x61-0x62}cc{0x63-0x64}}"),
+    Array(".c|.d", "cat{dot{}cc{0x63-0x64}}"),
+    Array("x{2}|x{2}[0-9]", "cat{rep{2,2 lit{x}}alt{emp{}cc{0x30-0x39}}}"),
+// Still failing 2019-09-02: "scala.MatchError: 2"
+//    Array("x{2}y|x{2}[0-9]y", "cat{rep{2,2 lit{x}}alt{lit{y}cat{cc{0x30-0x39}lit{y}}}}"),
+    Array(
+      "a.*?c|a.*?b",
+      "cat{lit{a}alt{cat{nstar{dot{}}lit{c}}cat{nstar{dot{}}lit{b}}}}"
+    )
   )
 
   // TODO(adonovan): add some tests for:
@@ -523,7 +533,10 @@ class ParserTest {
     "[a-Z]",
     "(?i)[a-Z]",
     "a{100000}",
-    "a{100000,}"
+    "a{100000,}",
+    // Group names may not be repeated
+    "(?P<foo>bar)(?P<foo>baz)",
+    "(?<foo>bar)(?<foo>baz)"
   )
 
   private val ONLY_PERL = Array(

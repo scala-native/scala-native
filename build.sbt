@@ -3,6 +3,7 @@ import scala.collection.mutable
 import scala.util.Try
 import build.ScalaVersions._
 import build.BinaryIncompatibilities
+import scala.scalanative.build._
 import com.typesafe.tools.mima.core.ProblemFilter
 
 // Convert "SomeName" to "some-name".
@@ -73,21 +74,32 @@ lazy val docsSettings: Seq[Setting[_]] = {
 
 // The previous releases of Scala Native with which this version is binary compatible.
 val binCompatVersions = Set()
-lazy val neverPublishedProjects = Map(
+lazy val neverPublishedProjects040 = Map(
   "2.11" -> Set(util, tools, nir, windowslib, testRunner),
   "2.12" -> Set(windowslib),
   "2.13" -> Set(util, tools, nir, windowslib, testRunner)
 ).mapValues(_.map(_.id))
+lazy val neverPublishedProjects041 = neverPublishedProjects040
+  .mapValues(_.diff(Set(windowslib.id)))
 
 lazy val mimaSettings = Seq(
   mimaFailOnNoPrevious := false,
   mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(name.value),
   mimaPreviousArtifacts ++= {
-    val wasPreviouslyPublished = neverPublishedProjects
-      .get(scalaBinaryVersion.value)
-      .exists(!_.contains(thisProject.value.id))
+    def wasPublishedInRelease(
+        notPublishedProjectsInRelease: Map[String, Set[String]]
+    ): Boolean = {
+      notPublishedProjectsInRelease
+        .get(scalaBinaryVersion.value)
+        .exists(!_.contains(thisProject.value.id))
+    }
+    def wasPreviouslyPublished(version: String) = version match {
+      case "0.4.0" => wasPublishedInRelease(neverPublishedProjects040)
+      case "0.4.1" => wasPublishedInRelease(neverPublishedProjects041)
+      case _       => false
+    }
     binCompatVersions
-      .filter(_ => wasPreviouslyPublished)
+      .filter(wasPreviouslyPublished)
       .map { version =>
         ModuleID(organization.value, moduleName.value, version)
           .cross(crossVersion.value)
@@ -656,8 +668,13 @@ lazy val scalalib =
         }
         def dirStr(v: String) =
           if (v.isEmpty) "overrides" else s"overrides-$v"
-        val dirs = verList.map(base / dirStr(_)).filter(_.exists)
-        dirs.toSeq // most specific shadow less specific
+        val dirs = verList.map(base / dirStr(_))
+        val collectionsDir = CrossVersion.partialVersion(ver) match {
+          case Some((2, 11 | 12)) => baseDirectory.value / "old-collections"
+          case _                  => baseDirectory.value / "new-collections"
+        }
+        // most specific shadow less specific and special dirs
+        (dirs.toSeq :+ collectionsDir).filter(_.exists)
       },
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
@@ -677,25 +694,106 @@ lazy val scalalib =
         val paths = mutable.Set.empty[String]
 
         val s = streams.value
+        val fileTree = fileTreeView.value
+        def listFilesInOrder(patterns: Glob*) =
+          patterns.flatMap(fileTree.list(_))
 
+        var failedToApplyPatches = false
         for {
           srcDir <- sourceDirectories
           normSrcDir = normPath(srcDir)
-          src <- (srcDir ** "*.scala").get
+          scalaGlob = srcDir.toGlob / ** / "*.scala"
+          patchGlob = srcDir.toGlob / ** / "*.scala.patch"
+          (sourcePath, _) <- listFilesInOrder(scalaGlob, patchGlob)
+          path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
-          val normSrc = normPath(src)
-          val path = normSrc.substring(normSrcDir.length)
+          def addSource(path: String)(optSource: => Option[File]): Unit = {
+            if (paths.contains(path)) s.log.debug(s"not including $path")
+            else {
+              optSource.foreach { source =>
+                paths += path
+                sources += source
+              }
+            }
+          }
+
+          def copy(source: File, destination: File) = {
+            import java.nio.file.Files
+            import java.nio.file.StandardCopyOption._
+            Files.copy(
+              source.toPath(),
+              destination.toPath(),
+              COPY_ATTRIBUTES,
+              REPLACE_EXISTING
+            )
+          }
+
+          def tryApplyPatch(sourceName: String): Option[File] = {
+            val scalaSourcePath = scalaSrcDir / sourceName
+            val scalaSourceCopyPath = scalaSrcDir / (sourceName + ".copy")
+            val outputFile = crossTarget.value / "patched" / sourceName
+            val outputDir = outputFile.getParentFile
+            if (!outputDir.exists()) {
+              IO.createDirectory(outputDir)
+            }
+            // There is not a single JVM library for diff that can apply
+            // patches in a fuzzy way (using context lines). We also
+            // canot use jgit to apply patches - it fails due to "invalid hunk headers".
+            // Becouse of that we use git apply instead.
+            // We need to create copy of original file and restore it after creating
+            // patched file to allow for recompilation of sources (re-applying patches)
+            // git apply command needs to be used from within fetchedScalaSource directory.
+            try {
+              import scala.sys.process._
+              copy(scalaSourcePath, scalaSourceCopyPath)
+              Process(
+                command = Seq(
+                  "git",
+                  "apply",
+                  "--whitespace=fix",
+                  "--recount",
+                  sourcePath.toAbsolutePath().toString()
+                ),
+                cwd = scalaSrcDir
+              ) !! s.log
+
+              copy(scalaSourcePath, outputFile)
+              Some(outputFile)
+            } catch {
+              case _: Exception =>
+                // Postpone failing to check which other patches do not apply
+                failedToApplyPatches = true
+                val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
+                s.log.error(s"Cannot apply patch for $path")
+                None
+            } finally {
+              if (scalaSourceCopyPath.exists()) {
+                copy(scalaSourceCopyPath, scalaSourcePath)
+                scalaSourceCopyPath.delete()
+              }
+            }
+          }
+
           val useless =
             path.contains("/scala/collection/parallel/") ||
               path.contains("/scala/util/parsing/")
           if (!useless) {
-            if (paths.add(path))
-              sources += src
-            else
-              s.log.debug(s"not including $src")
+            if (!patchGlob.matches(sourcePath))
+              addSource(path)(Some(sourcePath.toFile))
+            else {
+              val sourceName = path.stripSuffix(".patch")
+              addSource(sourceName)(
+                tryApplyPatch(sourceName)
+              )
+            }
           }
         }
 
+        if (failedToApplyPatches) {
+          throw new Exception(
+            "Failed to apply some of scalalib patches, check logs for more information"
+          )
+        }
         sources.result()
       },
       // Don't include classfiles for scalalib in the packaged jar.
@@ -794,7 +892,9 @@ lazy val tests =
     .settings(buildInfoSettings)
     .settings(noPublishSettings)
     .settings(
-      nativeLinkStubs := true,
+      nativeConfig ~= {
+        _.withLinkStubs(true)
+      },
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
       Test / unmanagedSourceDirectories ++= {

@@ -13,6 +13,11 @@ template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
+.. note:: New project should not be created in `mounted` directories, like external storage devices.
+
+  In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
+
+  In the WSL2 environment, it is recommended to create projects in the user files path, e.g /home/<USER>/sn-projects.
 This will:
 
 * start sbt.

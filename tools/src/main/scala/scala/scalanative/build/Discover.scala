@@ -55,12 +55,18 @@ object Discover {
       val llvmIncludeDir =
         Try(Process("llvm-config --includedir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
-
+      // dirs: standard, macports, brew M1 arm
       val includeDirs =
         getenv("SCALANATIVE_INCLUDE_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
           .getOrElse(
-            filterExisting(Seq("/usr/local/include", "/opt/local/include"))
+            filterExisting(
+              Seq(
+                "/usr/local/include",
+                "/opt/local/include",
+                "/opt/homebrew/include"
+              )
+            )
           )
 
       (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
@@ -78,7 +84,11 @@ object Discover {
       val libDirs =
         getenv("SCALANATIVE_LIB_DIRS")
           .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(filterExisting(Seq("/usr/local/lib", "/opt/local/lib")))
+          .getOrElse(
+            filterExisting(
+              Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")
+            )
+          )
 
       (libDirs ++ llvmLibDir).map(s => s"-L$s")
     }

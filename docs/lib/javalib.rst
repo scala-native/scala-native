@@ -588,7 +588,16 @@ Some notes on the implementation:
      are not supported. Often another pattern ``\p{isAlpha}`` may be used
      instead, ``\p{isAlpha}`` in this case.
 
-3. The following Matcher methods have a minimal implementation:
+3. The reference Java 8 regex package does not support certain commonly used
+   Perl expressions supported by this implementation of RE2. For example,
+   for named capture groups Java uses the expression "(?<foo>)" while
+   Perl uses the expression "(?P<foo>)".
+
+   Scala Native java.util.regex methods accept both forms. This extension
+   is intended to useful but is not strictly Java 8 compliant. Not all RE2
+   Perl expressions may be exposed in this way.
+
+4. The following Matcher methods have a minimal implementation:
 
    * Matcher.hasAnchoringBounds() - always return true.
    * Matcher.hasTransparentBounds() - always throws
@@ -603,7 +612,7 @@ Some notes on the implementation:
    * Matcher.useTransparentBounds(boolean) - always throws
      UnsupportedOperationException because RE2 does not support lookaheads.
 
-4. Scala Native 0.3.8 required POSIX patterns to have the form
+5. Scala Native 0.3.8 required POSIX patterns to have the form
    ``[[:alpha:]]``.
    Now the Java standard form ``\p{Alpha}`` is accepted and the former variant
    pattern is not. This improves compatibility with Java but,

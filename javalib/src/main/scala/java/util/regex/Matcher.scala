@@ -23,17 +23,6 @@ final class Matcher private[regex] (
 
   private var anchoringBoundsInUse = true
 
-  private def groupIndex(name: String): Int = {
-
-    val pos = _pattern.compiled.re2.findNamedCapturingGroups(name)
-
-    if (pos == -1) {
-      throw new IllegalArgumentException(s"No group with name <$name>")
-    }
-
-    pos
-  }
-
   private def noLookAhead(methodName: String): Nothing =
     throw new UnsupportedOperationException(
       s"$methodName is not supported due to unsupported lookaheads."
@@ -52,7 +41,7 @@ final class Matcher private[regex] (
 
   def end(group: Int): Int = underlying.end(group)
 
-  def end(name: String): Int = end(groupIndex(name))
+  def end(name: String): Int = underlying.end(name)
 
   def find(): Boolean = underlying.find()
 
@@ -116,7 +105,7 @@ final class Matcher private[regex] (
 
   def start(group: Int): Int = underlying.start(group)
 
-  def start(name: String): Int = start(groupIndex(name))
+  def start(name: String): Int = underlying.start(name)
 
   def toMatchResult(): MatchResult = this.clone.asInstanceOf[MatchResult]
 

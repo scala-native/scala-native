@@ -37,6 +37,7 @@ object BinaryIncompatibilities {
 
   final val NativeLib = Seq(
     // Internal usage
+    exclude[DirectMissingMethodProblem]("scala.scalanative.regex.*"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.rawty"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.this"),
     // moved to auxlib

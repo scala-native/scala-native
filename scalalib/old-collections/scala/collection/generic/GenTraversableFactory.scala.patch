@@ -1,0 +1,18 @@
+--- 2.12.15/scala/collection/generic/GenTraversableFactory.scala
++++ old-collections/scala/collection/generic/GenTraversableFactory.scala
+@@ -41,11 +41,12 @@
+ abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
+ extends GenericCompanion[CC] {
+ 
+-  private[this] val ReusableCBFInstance: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
+-    override def apply() = newBuilder[Nothing]
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
+   }
+-  def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
+ 
++  @inline def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++
+   /** A generic implementation of the `CanBuildFrom` trait, which forwards
+    *  all calls to `apply(from)` to the `genericBuilder` method of
+    *  $coll `from`, and which forwards all calls of `apply()` to the

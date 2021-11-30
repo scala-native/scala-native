@@ -611,7 +611,7 @@ object Collections {
     added
   }
 
-  def newSetFromMap[E](map: Map[E, java.lang.Boolean]): Set[E] = {
+  def newSetFromMap[E](map: Map[E, jl.Boolean]): Set[E] = {
     if (!map.isEmpty())
       throw new IllegalArgumentException
 
@@ -619,11 +619,11 @@ object Collections {
       override protected val inner: Set[E] = map.keySet()
 
       override def add(e: E): Boolean =
-        map.put(e, true) == null
+        map.put(e, jl.Boolean.TRUE) == null
 
       override def addAll(c: Collection[_ <: E]): Boolean =
         c.scalaOps.foldLeft(false)((prev, elem) =>
-          map.put(elem, true) == null || prev
+          map.put(elem, jl.Boolean.TRUE) == null || prev
         )
     }
   }

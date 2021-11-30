@@ -1,15 +1,17 @@
 package java.nio
 
+import scala.scalanative.runtime.ByteArray
+
 // Ported from Scala.js
 
-private[nio] final class HeapByteBuffer private (
+private[nio] class HeapByteBuffer(
     _capacity: Int,
     _array0: Array[Byte],
     _arrayOffset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ByteBuffer(_capacity, _array0, _arrayOffset0) {
+) extends ByteBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -64,7 +66,11 @@ private[nio] final class HeapByteBuffer private (
   // Here begins the stuff specific to ByteArrays
 
   @inline private def arrayBits: ByteArrayBits =
-    ByteArrayBits(_array, _arrayOffset, isBigEndian)
+    ByteArrayBits(
+      _array.asInstanceOf[ByteArray].at(0),
+      _arrayOffset,
+      isBigEndian
+    )
 
   @noinline def getChar(): Char =
     arrayBits.loadChar(getPosAndAdvanceRead(2))

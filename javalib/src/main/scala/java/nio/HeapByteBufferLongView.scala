@@ -9,7 +9,7 @@ private[nio] final class HeapByteBufferLongView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends LongBuffer(_capacity, null, -1) {
+) extends LongBuffer(_capacity, null, null, -1) {
 
   position(_initialPosition)
   limit(_initialLimit)

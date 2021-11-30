@@ -9,7 +9,7 @@ private[nio] final class HeapCharBuffer private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends CharBuffer(_capacity, _array0, _arrayOffset0) {
+) extends CharBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)

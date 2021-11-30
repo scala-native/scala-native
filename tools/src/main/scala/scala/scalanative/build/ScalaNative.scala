@@ -85,7 +85,9 @@ private[scalanative] object ScalaNative {
             linker.Link(config, linked.entries, optimized)
           }
         } else {
-          linked
+          config.logger.time("Optimizing (skipped)") {
+            linked
+          }
         }
       }
     }
@@ -154,6 +156,12 @@ private[scalanative] object ScalaNative {
           }
           warn("")
           warn(s"${errors.size} errors found")
+
+          if (config.compilerConfig.checkFatalWarnings) {
+            throw new BuildException(
+              "Fatal warning(s) found; see the error output for details."
+            )
+          }
         }
       }
     }

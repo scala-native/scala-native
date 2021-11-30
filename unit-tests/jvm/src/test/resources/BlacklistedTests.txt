@@ -14,11 +14,9 @@ scala/javalib/net/ServerSocketTest.scala
 
 scala/javalib/util/DefaultFormatterTest.scala
 scala/javalib/util/FormatterTest.scala
-scala/javalib/util/IdentityHashMapTest.scala
 scala/javalib/util/Base64Test.scala
 
 scala/javalib/nio/file/FileSystemExceptionTest.scala
-scala/javalib/nio/file/FilesTest.scala
 scala/javalib/nio/file/DirectoryStreamTest.scala
 
 scala/scala/ObjectCloneTest.scala

@@ -1,4 +1,4 @@
-// Ported from Scala.js  commit f7be410 dated: 2020-10-07
+// Ported from Scala.js commit f7be410 dated: 2020-10-07
 
 package java.util
 

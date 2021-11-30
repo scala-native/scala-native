@@ -8,7 +8,7 @@ private[nio] final class HeapIntBuffer private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends IntBuffer(_capacity, _array0, _arrayOffset0) {
+) extends IntBuffer(_capacity, _array0, null, _arrayOffset0) {
 
   position(_initialPosition)
   limit(_initialLimit)

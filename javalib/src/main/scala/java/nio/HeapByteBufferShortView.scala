@@ -9,7 +9,7 @@ private[nio] final class HeapByteBufferShortView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends ShortBuffer(_capacity, null, -1) {
+) extends ShortBuffer(_capacity, null, null, -1) {
 
   position(_initialPosition)
   limit(_initialLimit)
