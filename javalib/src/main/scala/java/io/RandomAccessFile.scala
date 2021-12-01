@@ -2,7 +2,6 @@ package java.io
 
 import java.{lang => jl}
 import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
-import scalanative.libc.stdio
 import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
 import scalanative.meta.LinktimeInfo.isWindows
