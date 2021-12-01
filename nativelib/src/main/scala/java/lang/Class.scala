@@ -131,7 +131,7 @@ final class _Class[A] {
   @stub
   def getClassLoader(): java.lang.ClassLoader = ???
   @stub
-  def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
+  def getConstructor(args: Array[_Class[_]]): java.lang.reflect.Constructor[_] =
     ???
   @stub
   def getConstructors(): Array[Object] = ???

@@ -47,7 +47,9 @@ object BinaryIncompatibilities {
     // package-private
     exclude[MissingClassProblem]("scala.scalanative.runtime.*Shutdown*"),
     exclude[Problem]("scala.scalanative.runtime.ClassInstancesRegistry*"),
-    exclude[Problem]("scala.scalanative.runtime.package*TypeOps*")
+    exclude[Problem]("scala.scalanative.runtime.package*TypeOps*"),
+    // Stub with incorrect signature
+    exclude[Problem]("java.lang._Class.getConstructor")
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq(
