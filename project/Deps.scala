@@ -51,9 +51,8 @@ object Deps {
   }
 
   def compilerPluginDependencies(scalaVersion: String): Seq[ModuleID] =
-        List(
-          ScalaCompiler(scalaVersion),
-          ScalaReflect(scalaVersion)
-        )
-    }
+    List(
+      ScalaCompiler(scalaVersion),
+      ScalaReflect(scalaVersion)
+    )
 }

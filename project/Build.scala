@@ -374,7 +374,9 @@ object Build {
     MultiScalaProject("testingCompiler", file("testing-compiler"))
       .settings(
         noPublishSettings,
-        libraryDependencies ++= scalaCompilerDependency(scalaVersion.value),
+        libraryDependencies ++= Deps.compilerPluginDependencies(
+          scalaVersion.value
+        ),
         Compile / unmanagedSourceDirectories ++= {
           val base = baseDirectory.value.getParentFile()
           val oldCompat: File = base / "src/main/compat-old"
