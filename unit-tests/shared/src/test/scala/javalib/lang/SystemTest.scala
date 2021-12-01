@@ -66,10 +66,11 @@ class SystemTest {
       if (executingInJVM) Paths.get(base, "unit-tests", "jvm").toString()
       else base
     }
-    assertEquals(
-      expected,
-      System.getProperty("user.dir").toLowerCase()
-    )
+
+    val userDir = System.getProperty("user.dir").toLowerCase()
+    // JVM project can end with Scala binary version suffix directory
+    if (executingInJVM) assertTrue(userDir.startsWith(expected))
+    else assertEquals(expected, userDir)
   }
 
 }
