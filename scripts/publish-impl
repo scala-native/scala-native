@@ -1,52 +1,32 @@
 #!/bin/bash
 # publishSigned or publishLocal
 publish=$1
+projectVersions=(2_11 2_12 2_13 3)
 
 set -ex
-
 sbt clean
 
-# Latests Scala versions used to publish libraries
-scala211=2.11.12
-scala212=2.12.15
-scala213=2.13.7
-
-# Scala versions (without latest) for cross publishing Scala compiler plugin
-crossScala211=()
-crossScala212=(2.12.13 2.12.14)
-crossScala213=(2.13.4 2.13.5 2.13.6)
-crossScalaVersions=("${crossScala211[@]}" "${crossScala212[@]}" "${crossScala213[@]}")
-
 # use the latest versions
-for v in ${scala211} ${scala212} ${scala213}; do
+for v in ${projectVersions[@]}; do
   sbt -Dsbt.supershell=false \
-    ++$v \
-    nscplugin/$publish `# Compiler plugins` \
-    junitPlugin/$publish \
-    nativelib/$publish `# Native libraries` \
-    clib/$publish \
-    posixlib/$publish \
-    windowslib/$publish \
-    javalib/$publish \
-    auxlib/$publish \
-    scalalib/$publish \
-    testInterfaceSbtDefs/$publish `# Testing` \
-    testInterface/$publish \
-    testRunner/$publish \
-    junitRuntime/$publish \
-    util/$publish `# Tools` \
-    nir/$publish \
-    tools/$publish 
-done
-
-# Publish Scala compiler plugin for non-latest versions
-for v in ${crossScalaVersions[@]}; do
-  sbt -Dsbt.supershell=false \
-    ++$v \
-    nscplugin/$publish
+    +nscplugin$v/$publish `# Compiler plugins` \
+    +junitPlugin$v/$publish \
+    nativelib$v/$publish `# Native libraries` \
+    clib$v/$publish \
+    posixlib$v/$publish \
+    windowslib$v/$publish \
+    javalib$v/$publish \
+    auxlib$v/$publish \
+    scalalib$v/$publish \
+    testInterfaceSbtDefs$v/$publish `# Testing` \
+    testInterface$v/$publish \
+    testRunner$v/$publish \
+    junitRuntime$v/$publish \
+    util$v/$publish `# Tools` \
+    nir$v/$publish \
+    tools$v/$publish 
 done
 
 # Publish sbt plugin
 sbt -Dsbt.supershell=false \
-  ++${scala212} \
   sbtScalaNative/$publish
