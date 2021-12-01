@@ -838,18 +838,12 @@ class Reach(
   }
 
   protected def addMissing(global: Global, pos: Position): Unit = {
-    if (config.linkStubs) {
-      config.logger.warn(s"Found usage of undefined symbol not marked as stub: ${global.mangle}")
-    } else {
-      val prev = missing.getOrElse(global, Set.empty)
-
-      val position = NonReachablePosition(
-        path = Paths.get(pos.source),
-        line = pos.line + 1
-      )
-      missing(global) = prev + position
-      reachUnavailable(global)
-    }
+    val prev = missing.getOrElse(global, Set.empty)
+    val position = NonReachablePosition(
+      path = Paths.get(pos.source),
+      line = pos.line + 1
+    )
+    missing(global) = prev + position
   }
 
   private def reportMissing(): Unit = {
