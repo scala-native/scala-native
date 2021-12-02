@@ -197,24 +197,11 @@ object System {
 
   private lazy val envVars: Map[String, String] = {
     def getEnvsUnix() = {
-      // workaround since `while(ptr(0) != null)` causes segfault
-      def isDefined(ptr: Ptr[CString]): Boolean = {
-        val s: CString = ptr(0)
-        s != null
-      }
-
-      // Count to preallocate the map
-      var size = 0
-      var sizePtr = unistd.environ
-      while (isDefined(sizePtr)) {
-        size += 1
-        sizePtr += 1
-      }
-
-      val map = new HashMap[String, String](10)
-      var ptr: Ptr[CString] = unistd.environ
-      while (isDefined(ptr)) {
-        val variable = fromCString(ptr(0))
+      val map = new HashMap[String, String]()
+      val ptr: Ptr[CString] = unistd.environ
+      var i = 0
+      while (ptr(i) != null) {
+        val variable = fromCString(ptr(i))
         val name = variable.takeWhile(_ != '=')
         val value =
           if (name.length < variable.length)
@@ -222,7 +209,7 @@ object System {
           else
             ""
         map.put(name, value)
-        ptr = ptr + 1
+        i += 1
       }
       map
     }
