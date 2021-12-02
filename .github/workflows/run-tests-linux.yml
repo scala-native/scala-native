@@ -21,6 +21,8 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          host_arch: amd64
+          docker_arch: library
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
@@ -191,18 +193,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
         with:
-          path: |
-            ~/.cache/coursier
-            ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
           scala-version: ${{matrix.scala}}
-
-      # Loads cached content of local docker registry containing built images.
-      - name: Cache docker
-        uses: actions/cache@v1
-        with:
-          path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
+          host_arch: ${{matrix.host_arch}}
+          docker_arch: ${{matrix.docker_arch}}
 
       - name: Run tests
         env:
@@ -247,18 +240,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
         with:
-          path: |
-            ~/.cache/coursier
-            ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
           scala-version: ${{matrix.scala}}
-
-      # Loads cached content of local docker registry containing built images.
-      - name: Cache docker
-        uses: actions/cache@v1
-        with:
-          path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
+          host_arch: ${{matrix.host_arch}}
+          docker_arch: ${{matrix.docker_arch}}
 
       - name: Run tests
         env:
@@ -292,6 +276,8 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          host_arch: amd64
+          docker_arch: library
 
       - name: Run tests
         env:
@@ -319,18 +305,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
         with:
-          path: |
-            ~/.cache/coursier
-            ~/.sbt/boot
-          key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
           scala-version: ${{matrix.scala}}
-
-      # Loads cached content of local docker registry containing built images.
-      - name: Cache docker
-        uses: actions/cache@v1
-        with:
-          path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
+          host_arch: ${{matrix.host_arch}}
+          docker_arch: ${{matrix.docker_arch}}
 
       - name: Run tests
         env:

@@ -4,6 +4,12 @@ inputs:
   scala-version:
     description: "Scala version used in the tests"
     required: true
+  host_arch:
+    description: "Architecture of the host machine"
+    required: true
+  docker_arch:
+    description: "Architecture of the Docker container"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -27,4 +33,4 @@ runs:
       uses: actions/cache@v1
       with:
         path: /tmp/docker-registry
-        key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
+        key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ inputs.host_arch }}-${{ inputs.docker_arch }}
