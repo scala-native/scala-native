@@ -39,7 +39,6 @@ object Defaults {
           .withDump(false)
           .withOptimize(Discover.optimize())
           .withMode(Discover.mode())
-          .withASAN(Discover.asan())
           .withGC(Discover.GC())
           .withLTO(Discover.LTO())
           .withLinkingOptions(Discover.linkingOptions())

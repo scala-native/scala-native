@@ -22,7 +22,7 @@ object CodeGen {
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
     implicit val meta: Metadata =
-      new Metadata(linked, proxies, config.is32BitPlatform)
+      new Metadata(linked, proxies, config.compilerConfig.is32BitPlatform)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
     val lowered = lower(generated)

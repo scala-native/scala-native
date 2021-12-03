@@ -74,12 +74,6 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
 
-  /** Should address sanitizer be used? */
-  def asan: Boolean = compilerConfig.asan
-
-  /** Are we targeting a 32-bit platform? */
-  def is32BitPlatform: Boolean = compilerConfig.is32BitPlatform
-
   private[scalanative] def targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||

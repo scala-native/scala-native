@@ -149,7 +149,8 @@ object Interflow {
       config: build.Config,
       linked: linker.Result
   ): Seq[Defn] = {
-    val interflow = new Interflow(config.mode, config.is32BitPlatform)(linked)
+    val interflow =
+      new Interflow(config.mode, config.compilerConfig.is32BitPlatform)(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

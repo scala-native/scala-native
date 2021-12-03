@@ -63,7 +63,6 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withASAN(Discover.asan())
       .withOptimize(Discover.optimize()),
     nativeWarnOldJVM := {
       val logger = streams.value.log

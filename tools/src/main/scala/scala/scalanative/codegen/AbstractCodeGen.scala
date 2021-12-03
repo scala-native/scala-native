@@ -19,7 +19,7 @@ private[codegen] abstract class AbstractCodeGen(
   val os: OsCompat
 
   private val targetTriple: Option[String] = config.compilerConfig.targetTriple
-  private val is32BitPlatform: Boolean = config.is32BitPlatform
+  private val is32BitPlatform: Boolean = config.compilerConfig.is32BitPlatform
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _

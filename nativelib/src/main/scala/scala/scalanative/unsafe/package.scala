@@ -390,7 +390,7 @@ package object unsafe {
       val runtime = q"_root_.scala.scalanative.runtime"
 
       q"""{
-        val $size    = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
+        val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag)
         val $rawptr = $runtime.Intrinsics.stackalloc($size)
         $runtime.libc.memset($rawptr, 0, $size)
         $runtime.fromRawPtr[$T]($rawptr)
