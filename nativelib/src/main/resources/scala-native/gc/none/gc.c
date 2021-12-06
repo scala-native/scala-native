@@ -20,6 +20,12 @@
 #define DEFAULT_CHUNK_SIZE "4G"
 #endif
 
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define GC_ASAN
+#endif
+#endif
+
 void *current = 0;
 void *end = 0;
 
@@ -68,22 +74,24 @@ void Prealloc_Or_Default() {
 }
 
 void scalanative_init() {
-#ifdef _WIN32
+#ifndef GC_ASAN
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     if (current == NULL) {
         exitWithOutOfMemory();
     }
     end = current + CHUNK;
+#ifdef _WIN32
     if (!memoryCommit(current, CHUNK)) {
         exitWithOutOfMemory();
     };
 #endif // _WIN32
+#endif // GC_ASAN
 }
 
 void *scalanative_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
-#ifdef _WIN32
+#ifndef GC_ASAN
     if (current + size < end) {
         void **alloc = current;
         *alloc = info;
