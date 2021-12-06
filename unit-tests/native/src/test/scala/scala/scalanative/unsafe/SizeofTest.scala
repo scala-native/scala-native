@@ -65,37 +65,45 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
+    val expectedSize = if (!is32BitPlatform) {
+      24
+    } else {
+      16
+    }
+
     assertTrue(
-      sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == (if (!is32BitPlatform) {
-                                                         24
-                                                       } else {
-                                                         16
-                                                       }).toUSize
+      sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == expectedSize.toUSize
     )
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
+    val expectedSize = if (!is32BitPlatform) {
+      32
+    } else {
+      24
+    }
+
     assertTrue(
-      sizeof[CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]] == (if (!is32BitPlatform) {
-                                                                   32
-                                                                 } else {
-                                                                   24
-                                                                 }).toUSize
+      sizeof[
+        CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]
+      ] == expectedSize.toUSize
     )
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntCStruct4ByteIntShortByte()
       : Unit = {
+    val expectedSize = if (!is32BitPlatform) {
+      40
+    } else {
+      32
+    }
+
     assertTrue(
       sizeof[CStruct3[
         Byte,
         Long,
         CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]
-      ]] == (if (!is32BitPlatform) {
-               40
-             } else {
-               32
-             }).toUSize
+      ]] == expectedSize.toUSize
     )
   }
 
