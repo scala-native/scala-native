@@ -40,6 +40,7 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.regex.*"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.rawty"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.this"),
+    exclude[MissingClassProblem]("scala.scalanative.unsafe.Zone$ZoneImpl*"),
     // moved to auxlib
     exclude[MissingClassProblem]("scala.runtime.BoxesRunTime*"),
     // moved to javalib
