@@ -143,8 +143,8 @@ object NativeConfig {
       dump = false,
       asan = false,
       linkStubs = false,
-      optimize = false,
-      customLinktimeProperties = Map.empty
+      optimize = true,
+      linktimeProperties = Map.empty
     )
 
   private final case class Impl(
@@ -162,7 +162,7 @@ object NativeConfig {
       dump: Boolean,
       asan: Boolean,
       optimize: Boolean,
-      customLinktimeProperties: Map[String, Any]
+      linktimeProperties: Map[String, Any]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -211,21 +211,9 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    def linktimeProperties: Map[String, Any] = {
-      val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
-      val predefined = Map(
-        s"$linktimeInfo.isWindows" -> Platform.isWindows,
-        s"$linktimeInfo.is32BitPlatform" -> is32BitPlatform,
-        s"$linktimeInfo.sizeOfPtr" -> (if (is32BitPlatform) Val.Size(4)
-                                       else Val.Size(8)),
-        s"$linktimeInfo.asanEnabled" -> asan
-      )
-      predefined ++ customLinktimeProperties
-    }
-
     def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {
       checkLinktimeProperties(v)
-      copy(customLinktimeProperties = v)
+      copy(linktimeProperties = v)
     }
 
     override def toString: String = {

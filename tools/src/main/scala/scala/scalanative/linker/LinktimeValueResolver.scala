@@ -15,7 +15,11 @@ trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix
-      }
+      },
+      s"$linktimeInfo.is32BitPlatform" -> conf.is32BitPlatform,
+      s"$linktimeInfo.sizeOfPtr" -> (if (conf.is32BitPlatform) Val.Size(4)
+                                     else Val.Size(8)),
+      s"$linktimeInfo.asanEnabled" -> conf.asan
     )
     NativeConfig.checkLinktimeProperties(predefined)
     predefined ++ conf.linktimeProperties
