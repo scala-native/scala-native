@@ -11,6 +11,8 @@ import scalanative.libc.{stdio, stdlib, string}
 import scalanative.windows
 import scalanative.meta.LinktimeInfo.isWindows
 
+import scala.scalanative.junit.utils.AssumesHelper._
+
 class CVarArgListTest {
   def vatest(cstr: CString, varargs: Seq[CVarArg], output: String): Unit =
     Zone { implicit z =>
@@ -216,11 +218,11 @@ class CVarArgListTest {
   @Test def longValueMinus1(): Unit =
     vatest(c"%d", Seq(-1L), "-1")
   @Test def longValueMin(): Unit = {
-    assumeTrue(!is32BitPlatform)
+    assumeNot32Bit()
     vatest(c"%lld", Seq(java.lang.Long.MIN_VALUE), "-9223372036854775808")
   }
   @Test def longValueMax(): Unit = {
-    assumeTrue(!is32BitPlatform)
+    assumeNot32Bit()
     vatest(c"%lld", Seq(java.lang.Long.MAX_VALUE), "9223372036854775807")
   }
   @Test def longArgs1(): Unit =
@@ -476,11 +478,11 @@ class CVarArgListTest {
     )
 
   @Test def ulongValueMin(): Unit = {
-    assumeTrue(!is32BitPlatform)
+    assumeNot32Bit()
     vatest(c"%llu", Seq(ULong.MinValue), "0")
   }
   @Test def ulongValueMax(): Unit = {
-    assumeTrue(!is32BitPlatform)
+    assumeNot32Bit()
     vatest(c"%llu", Seq(ULong.MaxValue), "18446744073709551615")
   }
   @Test def ulongArgs1(): Unit =

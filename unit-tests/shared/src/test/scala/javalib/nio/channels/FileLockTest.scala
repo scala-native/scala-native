@@ -9,8 +9,8 @@ import org.junit.{Test, Before, After}
 import org.junit.Assert._
 import org.junit.Assume._
 
-import org.scalanative.testsuite.utils.Platform.is32BitPlatform
 import scalanative.junit.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class FileLockTest {
 
@@ -102,7 +102,7 @@ class FileLockTest {
   @Test def testIsValid(): Unit = {
     // locks are not supported because it is unclear how to lock Long.MaxValue
     // on a 32-bit platform (where size is an int)
-    assumeTrue(!is32BitPlatform)
+    assumeNot32Bit()
     val fileLock = readWriteChannel.lock()
     assertTrue(fileLock.isValid())
     fileLock.release()
