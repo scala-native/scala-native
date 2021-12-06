@@ -31,7 +31,6 @@ import scalanative.runtime.Intrinsics._
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, sizeOfPtr}
 
 % sizePtr = 'sizeOfPtr'
-% sizeHeader = 'if (is32BitPlatform) castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8) else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)'
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -185,8 +184,8 @@ final class ${T}Array private () extends Array[${T}] {
       val rawptr = castObjectToRawPtr(this)
       elemRawPtr(
         rawptr,
-        if (is32BitPlatform) castIntToRawSize(castRawSizeToInt(${sizeHeader}) + ${sizeT} * i)
-        else castLongToRawSize(castRawSizeToLong(${sizeHeader}) + ${sizeT}.toLong * i.toLong)
+        if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * i)
+        else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * i.toLong)
       )
     }
 
@@ -197,8 +196,8 @@ final class ${T}Array private () extends Array[${T}] {
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
     val arrsize = new USize(
-      if (is32BitPlatform) castIntToRawSize(castRawSizeToInt(${sizeHeader}) + ${sizeT} * length)
-      else castLongToRawSize(castRawSizeToLong(${sizeHeader}) + ${sizeT}.toLong * length.toLong)
+      if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
+      else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
     )
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
@@ -216,8 +215,8 @@ object ${T}Array {
 
     val arrcls  = classOf[${T}Array]
     val arrsize = new USize(
-      if (is32BitPlatform) castIntToRawSize(castRawSizeToInt(${sizeHeader}) + ${sizeT} * length)
-      else castLongToRawSize(castRawSizeToLong(${sizeHeader}) + ${sizeT}.toLong * length.toLong)
+      if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
+      else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
     )
     val arr     = ${alloc}(arrcls, arrsize)
     storeInt(elemRawPtr(arr, ${sizePtr}), length)

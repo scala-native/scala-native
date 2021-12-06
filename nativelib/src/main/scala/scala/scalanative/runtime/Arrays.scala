@@ -175,20 +175,10 @@ final class BooleanArray private () extends Array[Boolean] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 1 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 1.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * i.toLong
           )
       )
     }
@@ -202,20 +192,10 @@ final class BooleanArray private () extends Array[Boolean] {
     val arrcls = classOf[BooleanArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -235,20 +215,10 @@ object BooleanArray {
     val arrcls = classOf[BooleanArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -290,20 +260,10 @@ final class CharArray private () extends Array[Char] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 2 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 2.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * i.toLong
           )
       )
     }
@@ -316,20 +276,10 @@ final class CharArray private () extends Array[Char] {
     val arrcls = classOf[CharArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -349,20 +299,10 @@ object CharArray {
     val arrcls = classOf[CharArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -404,20 +344,10 @@ final class ByteArray private () extends Array[Byte] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 1 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 1.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * i.toLong
           )
       )
     }
@@ -430,20 +360,10 @@ final class ByteArray private () extends Array[Byte] {
     val arrcls = classOf[ByteArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -463,20 +383,10 @@ object ByteArray {
     val arrcls = classOf[ByteArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 1.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -518,20 +428,10 @@ final class ShortArray private () extends Array[Short] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 2 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 2.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * i.toLong
           )
       )
     }
@@ -544,20 +444,10 @@ final class ShortArray private () extends Array[Short] {
     val arrcls = classOf[ShortArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -577,20 +467,10 @@ object ShortArray {
     val arrcls = classOf[ShortArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 2.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -632,20 +512,10 @@ final class IntArray private () extends Array[Int] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 4 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 4.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * i.toLong
           )
       )
     }
@@ -658,20 +528,10 @@ final class IntArray private () extends Array[Int] {
     val arrcls = classOf[IntArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -691,20 +551,10 @@ object IntArray {
     val arrcls = classOf[IntArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -746,20 +596,10 @@ final class LongArray private () extends Array[Long] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 8 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 8.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * i.toLong
           )
       )
     }
@@ -772,20 +612,10 @@ final class LongArray private () extends Array[Long] {
     val arrcls = classOf[LongArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -805,20 +635,10 @@ object LongArray {
     val arrcls = classOf[LongArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -860,20 +680,10 @@ final class FloatArray private () extends Array[Float] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 4 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 4.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * i.toLong
           )
       )
     }
@@ -886,20 +696,10 @@ final class FloatArray private () extends Array[Float] {
     val arrcls = classOf[FloatArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -919,20 +719,10 @@ object FloatArray {
     val arrcls = classOf[FloatArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 4.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -974,20 +764,10 @@ final class DoubleArray private () extends Array[Double] {
       elemRawPtr(
         rawptr,
         if (is32BitPlatform)
-          castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 8 * i
-          )
+          castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * i)
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + 8.toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * i.toLong
           )
       )
     }
@@ -1000,20 +780,10 @@ final class DoubleArray private () extends Array[Double] {
     val arrcls = classOf[DoubleArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -1033,20 +803,10 @@ object DoubleArray {
     val arrcls = classOf[DoubleArray]
     val arrsize = new USize(
       if (is32BitPlatform)
-        castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8 * length
-        )
+        castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * length)
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + 8.toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * length.toLong
         )
     )
     val arr = GC.alloc_atomic(arrcls, arrsize)
@@ -1089,19 +849,13 @@ final class ObjectArray private () extends Array[Object] {
         rawptr,
         if (is32BitPlatform)
           castIntToRawSize(
-            castRawSizeToInt(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + castRawSizeToInt(sizeOfPtr) * i
+            (castRawSizeToInt(sizeOfPtr) + 8) + castRawSizeToInt(sizeOfPtr) * i
           )
         else
           castLongToRawSize(
-            castRawSizeToLong(
-              if (is32BitPlatform)
-                castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-              else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-            ) + castRawSizeToInt(sizeOfPtr).toLong * i.toLong
+            (castRawSizeToLong(sizeOfPtr) + 8L) + castRawSizeToInt(
+              sizeOfPtr
+            ).toLong * i.toLong
           )
       )
     }
@@ -1115,19 +869,15 @@ final class ObjectArray private () extends Array[Object] {
     val arrsize = new USize(
       if (is32BitPlatform)
         castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + castRawSizeToInt(sizeOfPtr) * length
+          (castRawSizeToInt(sizeOfPtr) + 8) + castRawSizeToInt(
+            sizeOfPtr
+          ) * length
         )
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + castRawSizeToInt(sizeOfPtr).toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + castRawSizeToInt(
+            sizeOfPtr
+          ).toLong * length.toLong
         )
     )
     val arr = GC.alloc(arrcls, arrsize)
@@ -1148,19 +898,15 @@ object ObjectArray {
     val arrsize = new USize(
       if (is32BitPlatform)
         castIntToRawSize(
-          castRawSizeToInt(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + castRawSizeToInt(sizeOfPtr) * length
+          (castRawSizeToInt(sizeOfPtr) + 8) + castRawSizeToInt(
+            sizeOfPtr
+          ) * length
         )
       else
         castLongToRawSize(
-          castRawSizeToLong(
-            if (is32BitPlatform)
-              castIntToRawSize(castRawSizeToInt(sizeOfPtr) + 8)
-            else castLongToRawSize(castRawSizeToLong(sizeOfPtr) + 8L)
-          ) + castRawSizeToInt(sizeOfPtr).toLong * length.toLong
+          (castRawSizeToLong(sizeOfPtr) + 8L) + castRawSizeToInt(
+            sizeOfPtr
+          ).toLong * length.toLong
         )
     )
     val arr = GC.alloc(arrcls, arrsize)
