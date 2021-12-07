@@ -105,51 +105,19 @@ object Settings {
   // MiMa
   lazy val mimaSettings = {
     // The previous releases of Scala Native with which this version is binary compatible.
-    val binCompatVersions = Set("0.4.0", "0.4.1")
+    val binCompatVersions = Set()
 
     Def.settings(
       mimaFailOnNoPrevious := false,
       mimaBinaryIssueFilters ++=
         BinaryIncompatibilities.moduleFilters(name.value),
-      mimaPreviousArtifacts ++= Def.settingDyn {
-        Def.setting {
-          import Build._
-          lazy val notPublished_040 = Map(
-            "2.11" -> Seq(util, tools, nir, windowslib, testRunner),
-            "2.12" -> Seq(windowslib),
-            "2.13" -> Seq(util, tools, nir, windowslib, testRunner)
-          ).map {
-            case (version, projects) =>
-              (version, projects.map(_.forBinaryVersion(version)))
+      mimaPreviousArtifacts ++= {
+        binCompatVersions
+          .map { version =>
+            ModuleID(organization.value, moduleName.value, version)
+              .cross(crossVersion.value)
           }
-          lazy val notPublished_041 = notPublished_040
-            .map {
-              case (version, projects) =>
-                version -> projects.diff(
-                  Seq(windowslib).map(_.forBinaryVersion(version))
-                )
-            }
-
-          def wasNotPublished(version: String) = {
-            def wasNotPublishedIn(m: Map[String, Seq[Project]]) = {
-              m.get(scalaBinaryVersion.value)
-                .forall(_.exists(_.id == thisProject.value.id))
-            }
-
-            version match {
-              case "0.4.0" => wasNotPublishedIn(notPublished_040)
-              case "0.4.1" => wasNotPublishedIn(notPublished_041)
-            }
-          }
-
-          binCompatVersions
-            .filterNot(wasNotPublished)
-            .map { version =>
-              ModuleID(organization.value, moduleName.value, version)
-                .cross(crossVersion.value)
-            }
-        }
-      }.value
+      }
     )
   }
 
