@@ -8,9 +8,15 @@ import scala.scalanative.unsafe._
 object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
   def isWindows: Boolean = resolved
+  
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isMac")
+  def isMac: Boolean = resolved
 
   @resolvedAtLinktime(
     "scala.scalanative.meta.linktimeinfo.isWeakReferenceSupported"
   )
   def isWeakReferenceSupported: Boolean = resolved
+  
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isArm64")
+  def isArm64: Boolean = resolved
 }
