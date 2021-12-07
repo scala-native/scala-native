@@ -10,7 +10,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class ThrowablesTest {
 
@@ -24,7 +24,7 @@ class ThrowablesTest {
       throwable: Throwable,
       expectedCause: Throwable
   ): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val resultCause = throwable.getCause
 
     val causeMessage = getThrowableMessage(throwable)
@@ -41,7 +41,7 @@ class ThrowablesTest {
       throwable: Throwable,
       expectedMessage: String
   ): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val resultMessage = throwable.getMessage
 
     assertTrue(
@@ -51,7 +51,7 @@ class ThrowablesTest {
   }
 
   private def checkStackTraceString(trace: String): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val startText = "java.lang.Throwable"
     assertTrue(
       s"Expected trace to start with '${startText}' and it did not.",
@@ -66,7 +66,7 @@ class ThrowablesTest {
   }
 
   private def checkStackTrace(throwable: Throwable): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
 
@@ -76,7 +76,7 @@ class ThrowablesTest {
   }
 
   private def checkSuppressed(throwable: Throwable, expectedLength: Int) {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val getSuppressedLength = throwable.getSuppressed.length
     assertTrue(
       s"getSuppressed.length: ${getSuppressedLength} != " +
@@ -267,7 +267,7 @@ class ThrowablesTest {
   }
 
   @Test def printStackTracePrintStream(): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val throwable = new Throwable("Dev-Em")
     val baos = new java.io.ByteArrayOutputStream
     val ps = new java.io.PrintStream(baos)
@@ -351,7 +351,7 @@ class ThrowablesTest {
   }
 
   @Test def setStackTraceStackTraceWriteToReturnedStack(): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val throwable = new Throwable()
     val trace1 = throwable.getStackTrace()
 

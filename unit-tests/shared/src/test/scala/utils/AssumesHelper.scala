@@ -13,4 +13,11 @@ object AssumesHelper {
       Platform.is32BitPlatform
     )
   }
+
+  def assumeNotASAN(): Unit = if (!Platform.executingInJVM) {
+    Assume.assumeFalse(
+      "Not compliant with Address Sanitizer",
+      Platform.asanEnabled
+    )
+  }
 }

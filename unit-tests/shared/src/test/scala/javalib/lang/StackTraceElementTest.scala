@@ -6,7 +6,7 @@ import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
 
-import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.junit.utils.AssumesHelper._
 
 object StackTraceElementTest {
   @BeforeClass
@@ -20,7 +20,7 @@ object StackTraceElementTest {
     )
 
     // libunwind does not work with AddressSanitizer
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
   }
 }
 

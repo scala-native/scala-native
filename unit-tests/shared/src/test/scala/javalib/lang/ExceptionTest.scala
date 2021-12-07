@@ -4,13 +4,13 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class DummyNoStackTraceException extends scala.util.control.NoStackTrace
 
 class ExceptionTest {
   @Test def printStackTrace(): Unit = {
-    assumeFalse(Platform.asanEnabled)
+    assumeNotASAN()
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
     (new Exception).printStackTrace(pw)
