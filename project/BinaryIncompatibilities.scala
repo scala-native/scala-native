@@ -6,7 +6,7 @@ import com.typesafe.tools.mima.core.ProblemFilters._
 object BinaryIncompatibilities {
   type Filters = Seq[ProblemFilter]
   final val Util: Filters = Nil
-  final val Nir: Filters = Nil 
+  final val Nir: Filters = Nil
   final val NscPlugin = Nil
   final val JUnitPlugin: Filters = Nil
 
