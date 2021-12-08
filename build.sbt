@@ -25,6 +25,23 @@ lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
   Compile / doc / sources := Nil
 )
 
+val javaVersion = settingKey[Int](
+  "The major Java SDK version that should be assumed for compatibility. " +
+    "Defaults to what sbt is running with."
+)
+
+// JDK version we are running with
+javaVersion in Global := {
+  val fullVersion = System.getProperty("java.version")
+  val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
+  sLog.value.info(s"Detected JDK version $v")
+  if (v < 8)
+    throw new MessageOnlyException(
+      "This build requires JDK 8 or later. Aborting."
+    )
+  v
+}
+
 lazy val docsSettings: Seq[Setting[_]] = {
   val javaDocBaseURL: String = "https://docs.oracle.com/javase/8/docs/api/"
   // partially ported from Scala.js
@@ -880,6 +897,20 @@ lazy val tests =
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, n)) if n >= 12 =>
             Seq((Test / sourceDirectory).value / "scala-2.12+")
+          case _ => Nil
+        }
+      },
+      // temp hack
+      Test / unmanagedSourceDirectories ++= {
+        // unit-tests/native/src/test
+        val testDir = (Test / sourceDirectory).value
+        val rootTestDir =
+          testDir.getParentFile.getParentFile.getParentFile
+
+        val javaV = javaVersion.value
+        javaV match {
+          case v if (v >= 11) =>
+            Seq(rootTestDir / "require-jdk11" / "src" / "test")
           case _ => Nil
         }
       }
