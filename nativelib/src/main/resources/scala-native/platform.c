@@ -58,16 +58,7 @@ int scalanative_little_endian() {
 void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
 #ifdef _WIN32
     add_prop("os.name", "Windows (Unknown version)");
-    wchar_t wcharPath[MAX_PATH];
-    size_t size = sizeof(wchar_t) * wcslen(wcharPath);
-    char path[MAX_PATH];
-    if (GetTempPathW(MAX_PATH, wcharPath) &&
-        wcstombs_s(&size, path, MAX_PATH, wcharPath, MAX_PATH - 1) == 0 &&
-        size > 0) {
-        add_prop("java.io.tmpdir", (const char *)path);
-    }
-#else
-#ifdef __APPLE__
+#elif defined(__APPLE__)
     add_prop("os.name", "Mac OS X");
 #else
     struct utsname name;
