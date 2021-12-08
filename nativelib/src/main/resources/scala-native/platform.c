@@ -5,6 +5,7 @@
 #include <sys/utsname.h>
 #endif
 #include <stdlib.h>
+#include <string.h>
 
 int scalanative_platform_is_linux() {
 #ifdef __linux__
@@ -75,8 +76,37 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
         add_prop("os.version", name.release);
     }
 #endif
-    add_prop("java.io.tmpdir", "/tmp");
+
+    char *arch = "unknown";
+#ifdef _WIN32
+#if defined(_M_AMD64)
+    arch = "amd64";
+#elif defined(_X86_)
+    arch = "x86";
+#elif defined(_M_ARM64)
+    arch = "aarch64";
+#endif // Windows
+
+#else // on Unix
+    struct utsname buffer;
+    if (uname(&buffer) >= 0) {
+        arch = buffer.machine;
+// JVM compliance logic
+// On Linux we replace x86 with i386
+#ifdef __linux__
+        if (strcmp("x86", arch) == 0) {
+            arch = "i386";
+        }
 #endif
+// On all platforms except MacOSX replace x86_64 with amd64
+#ifndef __APPLE__
+        if (strcmp("x86_64", arch) == 0) {
+            arch = "amd64";
+        }
+#endif
+    }
+#endif
+    add_prop("os.arch", arch);
 }
 
 size_t scalanative_wide_char_size() { return sizeof(wchar_t); }
