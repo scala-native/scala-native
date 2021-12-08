@@ -881,6 +881,25 @@ lazy val testsCommonSettings = Def.settings(
   )
 )
 
+lazy val javaVersionBasedTestSources = Def.settings(
+  Test / unmanagedSourceDirectories ++= {
+    // unit-tests/native/src/test
+    val testDir = (Test / baseDirectory).value
+    sLog.value.info(s"testDir: $testDir")
+    val sharedTestDir =
+      testDir.getParentFile / "shared/src/test"
+    sLog.value.info(s"sharedTestDir: $sharedTestDir")
+    val javaV = javaVersion.value
+    val res = javaV match {
+      case v if (v >= 11) =>
+        Seq(sharedTestDir / "require-jdk11")
+      case _ => Nil
+    }
+    sLog.value.info(s"Res: $res")
+    res
+  }
+)
+
 lazy val tests =
   project
     .in(file("unit-tests/native"))
@@ -893,24 +912,11 @@ lazy val tests =
       },
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
+      javaVersionBasedTestSources,
       Test / unmanagedSourceDirectories ++= {
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, n)) if n >= 12 =>
             Seq((Test / sourceDirectory).value / "scala-2.12+")
-          case _ => Nil
-        }
-      },
-      // temp hack
-      Test / unmanagedSourceDirectories ++= {
-        // unit-tests/native/src/test
-        val testDir = (Test / sourceDirectory).value
-        val rootTestDir =
-          testDir.getParentFile.getParentFile.getParentFile
-
-        val javaV = javaVersion.value
-        javaV match {
-          case v if (v >= 11) =>
-            Seq(rootTestDir / "require-jdk11" / "src" / "test")
           case _ => Nil
         }
       }
@@ -934,6 +940,7 @@ lazy val testsJVM =
       Test / parallelExecution := false,
       testsCommonSettings,
       sharedTestSource(withBlacklist = true),
+      javaVersionBasedTestSources,
       libraryDependencies ++= jUnitJVMDependencies
     )
     .dependsOn(junitAsyncJVM % "test")
