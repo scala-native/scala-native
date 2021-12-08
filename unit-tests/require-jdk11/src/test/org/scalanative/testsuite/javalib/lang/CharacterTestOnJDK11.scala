@@ -20,10 +20,19 @@ class CharacterTestOnJDK11 {
     assertEquals("\uD808\uDF45", Character.toString(0x12345))
     assertEquals("\uDBFF\uDFFF", Character.toString(0x10ffff))
 
-    assertThrows(classOf[IllegalArgumentException], Character.toString(0x110000))
-    assertThrows(classOf[IllegalArgumentException], Character.toString(0x234567))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Character.toString(0x110000)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Character.toString(0x234567)
+    )
     assertThrows(classOf[IllegalArgumentException], Character.toString(-1))
-    assertThrows(classOf[IllegalArgumentException], Character.toString(Int.MinValue))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Character.toString(Int.MinValue)
+    )
   }
 
 }
