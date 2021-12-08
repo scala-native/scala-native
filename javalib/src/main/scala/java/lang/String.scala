@@ -16,7 +16,7 @@ final class _String()
     extends Serializable
     with Comparable[_String]
     with CharSequence {
-  protected[_String] var value: Array[Char] = new Array[Char](0)
+  protected[_String] var value: Array[Char] = _
   protected[_String] var offset: Int = 0
   protected[_String] var count: Int = 0
   protected[_String] var cachedHashCode: Int = _
