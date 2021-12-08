@@ -31,7 +31,7 @@ val javaVersion = settingKey[Int](
 )
 
 // JDK version we are running with
-javaVersion in Global := {
+Global / javaVersion := {
   val fullVersion = System.getProperty("java.version")
   val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
   sLog.value.info(s"Detected JDK version $v")
