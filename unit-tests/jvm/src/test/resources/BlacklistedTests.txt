@@ -2,34 +2,34 @@
 # In most cases, both javalib implementation 
 # and tests need to be changed
 
-scala/javalib/lang/CharacterTest.scala
-scala/javalib/lang/IntegerTest.scala
-scala/javalib/lang/ShortTest.scala
-scala/javalib/lang/LongTest.scala
-scala/javalib/lang/StringTest.scala
-scala/javalib/lang/ThrowablesTest.scala
-scala/javalib/lang/ExceptionTest.scala
+javalib/lang/CharacterTest.scala
+javalib/lang/IntegerTest.scala
+javalib/lang/ShortTest.scala
+javalib/lang/LongTest.scala
+javalib/lang/StringTest.scala
+javalib/lang/ThrowablesTest.scala
+javalib/lang/ExceptionTest.scala
 
-scala/javalib/net/ServerSocketTest.scala
+javalib/net/ServerSocketTest.scala
 
-scala/javalib/util/DefaultFormatterTest.scala
-scala/javalib/util/FormatterTest.scala
-scala/javalib/util/Base64Test.scala
+javalib/util/DefaultFormatterTest.scala
+javalib/util/FormatterTest.scala
+javalib/util/Base64Test.scala
 
-scala/javalib/nio/file/FileSystemExceptionTest.scala
-scala/javalib/nio/file/DirectoryStreamTest.scala
+javalib/nio/file/FileSystemExceptionTest.scala
+javalib/nio/file/DirectoryStreamTest.scala
 
-scala/scala/ObjectCloneTest.scala
-scala/scala/ReflectiveProxyTest.scala
-scala/scala/ExecutionContextTest.scala
-scala/scala/AsInstanceOfTest.scala
+scala/ObjectCloneTest.scala
+scala/ReflectiveProxyTest.scala
+scala/ExecutionContextTest.scala
+scala/AsInstanceOfTest.scala
 
 # Tests that fail for scala 2.11 on JVM
-scala/scala/PrimitiveTest.scala
+scala/PrimitiveTest.scala
 
 # Tests that fail for scala 2.13 on JVM
-scala/scala/bugcompat/LongFloatPrimitiveTest.scala
+scala/bugcompat/LongFloatPrimitiveTest.scala
 
 # Tests that work on java 8, but fail on java 16
-scala/javalib/net/URLEncoderTest.scala
-scala/javalib/util/jar/JarFileTest.scala
+javalib/net/URLEncoderTest.scala
+javalib/util/jar/JarFileTest.scala

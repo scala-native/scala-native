@@ -848,8 +848,9 @@ def sharedTestSource(withBlacklist: Boolean) = Def.settings(
         )
       else Set.empty
 
+    // start from scala to avoid jdk specific tests
     val sharedSources = allScalaFromDir(
-      baseDirectory.value.getParentFile / "shared/src/test"
+      baseDirectory.value.getParentFile / "shared/src/test/scala"
     )
 
     checkBlacklistCoherency(blacklist, sharedSources)
@@ -883,20 +884,12 @@ lazy val testsCommonSettings = Def.settings(
 
 lazy val javaVersionBasedTestSources = Def.settings(
   Test / unmanagedSourceDirectories ++= {
-    // unit-tests/native/src/test
     val testDir = (Test / baseDirectory).value
-    sLog.value.info(s"testDir: $testDir")
-    val sharedTestDir =
-      testDir.getParentFile / "shared/src/test"
-    sLog.value.info(s"sharedTestDir: $sharedTestDir")
-    val javaV = javaVersion.value
-    val res = javaV match {
-      case v if (v >= 11) =>
-        Seq(sharedTestDir / "require-jdk11")
-      case _ => Nil
+    val sharedTestDir = testDir.getParentFile / "shared/src/test"
+    // Java 8 is reference so start at 9
+    (9 to javaVersion.value).map { v =>
+      sharedTestDir / s"require-jdk$v"
     }
-    sLog.value.info(s"Res: $res")
-    res
   }
 )
 
