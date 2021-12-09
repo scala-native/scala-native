@@ -99,10 +99,6 @@ package object unsafe {
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
 
-  // Scala 3 does not allow to use extern method and extern annotation class
-  // defined in separate files in the same package
-  type extern = scala.scalanative.annotation.extern
-
   /** Heap allocate and zero-initialize a value using current implicit
    *  allocator.
    */
@@ -173,6 +169,11 @@ package object unsafe {
   )
   def stackalloc[T](n: CSSize)(implicit tag: Tag[T]): Ptr[T] =
     macro MacroImpl.stackallocN[T]
+
+  /** An annotation that is used to mark objects that contain externally-defined
+   *  members
+   */
+  final class extern extends scala.annotation.StaticAnnotation
 
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = intrinsic
