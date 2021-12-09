@@ -3,7 +3,15 @@ package unsafe
 
 import scala.language.implicitConversions
 import scalanative.unsigned._
-import scalanative.runtime.{intrinsic, RawPtr, toRawPtr, libc, LongArray}
+import scalanative.runtime.{
+  intrinsic,
+  RawPtr,
+  toRawPtr,
+  libc,
+  LongArray,
+  PlatformExt,
+  Platform
+}
 import scalanative.meta.LinktimeInfo._
 
 /** Type of a C-style vararg list (va_list in C). */
@@ -40,15 +48,10 @@ object CVarArgList {
   private[scalanative] def fromSeq(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
-    if (!isArm64) {
-      if (isWindows)
-        toCVarArgList_X86_64_Windows(varargs)
-      else
-        toCVarArgList_X86_64_Unix(varargs)
-    } else {
-      if (isMac) toCVarArgList_Arm64_MacOS(varargs)
-      else toCVarArgList_X86_64_Unix(varargs)
-    }
+    if (isWindows)
+      toCVarArgList_X86_64_Windows(varargs)
+    else
+      toCVarArgList_Unix(varargs)
   }
 
   @inline
@@ -80,7 +83,7 @@ object CVarArgList {
         words
     }
 
-  private def toCVarArgList_Arm64_MacOS(
+  private def toCVarArgList_Unix(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
     var storage = new Array[Long](registerSaveWords)
@@ -126,65 +129,16 @@ object CVarArgList {
       toRawPtr(storageStart),
       wordsUsed.toULong * sizeof[Long]
     )
-
-    // On MacOS Arm64 the variadic arguments list is stored in memory
-    // without a header structure (such as one used on x86)
-    new CVarArgList(toRawPtr(storageStart))
-  }
-
-  private def toCVarArgList_X86_64_Unix(
-      varargs: Seq[CVarArg]
-  )(implicit z: Zone): CVarArgList = {
-    var storage = new Array[Long](registerSaveWords)
-    var wordsUsed = storage.size
-    var gpRegistersUsed = 0
-    var fpRegistersUsed = 0
-
-    def appendWord(word: Long): Unit = {
-      if (wordsUsed == storage.size) {
-        val newstorage = new Array[Long](storage.size * 2)
-        System.arraycopy(storage, 0, newstorage, 0, storage.size)
-        storage = newstorage
-      }
-      storage(wordsUsed) = word
-      wordsUsed += 1
+    if (PlatformExt.isArm64 && Platform.isMac)
+      new CVarArgList(toRawPtr(resultStorage))
+    else {
+      val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
+      resultHeader.gpOffset = 0.toUInt
+      resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
+      resultHeader.regSaveArea = resultStorage
+      resultHeader.overflowArgArea = resultStorage + registerSaveWords
+      new CVarArgList(toRawPtr(resultHeader))
     }
-
-    varargs.foreach { vararg =>
-      val encoded = encode(vararg.value)(vararg.tag)
-      val isDouble = isPassedAsDouble(vararg)
-
-      if (isDouble && fpRegistersUsed < countFPRegisters) {
-        var startIndex =
-          countGPRegisters + (fpRegistersUsed * fpRegisterWords)
-        encoded.foreach { w =>
-          storage(startIndex) = w
-          startIndex += 1
-        }
-        fpRegistersUsed += 1
-      } else if (encoded.size == 1 && !isDouble && gpRegistersUsed < countGPRegisters) {
-        val startIndex = gpRegistersUsed
-        storage(startIndex) = encoded(0)
-        gpRegistersUsed += 1
-      } else {
-        encoded.foreach(appendWord)
-      }
-    }
-    val resultStorage =
-      z.alloc(sizeof[Long] * storage.size.toULong).asInstanceOf[Ptr[Long]]
-    val storageStart = storage.asInstanceOf[LongArray].at(0)
-    libc.memcpy(
-      toRawPtr(resultStorage),
-      toRawPtr(storageStart),
-      wordsUsed.toULong * sizeof[Long]
-    )
-
-    val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
-    resultHeader.gpOffset = 0.toUInt
-    resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
-    resultHeader.regSaveArea = resultStorage
-    resultHeader.overflowArgArea = resultStorage + registerSaveWords
-    new CVarArgList(toRawPtr(resultHeader))
   }
 
   private def toCVarArgList_X86_64_Windows(
