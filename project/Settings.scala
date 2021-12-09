@@ -12,12 +12,31 @@ import ScriptedPlugin.autoImport._
 import scala.collection.mutable
 
 object Settings {
-  val fetchScalaSource = taskKey[File](
+  lazy val fetchScalaSource = taskKey[File](
     "Fetches the scala source for the current scala version"
   )
 
   lazy val shouldPartest = settingKey[Boolean](
     "Whether we should partest the current scala version (or skip if we can't)"
+  )
+
+  lazy val javaVersion = settingKey[Int](
+    "The major Java SDK version that should be assumed for compatibility. " +
+      "Defaults to what sbt is running with."
+  )
+
+  // JDK version we are running with
+  lazy val thisBuildSettings = Def.settings(
+    Global / javaVersion := {
+      val fullVersion = System.getProperty("java.version")
+      val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
+      sLog.value.info(s"Detected JDK version $v")
+      if (v < 8)
+        throw new MessageOnlyException(
+          "This build requires JDK 8 or later. Aborting."
+        )
+      v
+    }
   )
 
 // Generate project name from project id.
@@ -259,9 +278,9 @@ object Settings {
       .toSet
 
   // Get all scala sources from a directory
-  def allScalaFromDir(dir: File, baseDir: File): Seq[(String, java.io.File)] =
+  def allScalaFromDir(dir: File): Seq[(String, java.io.File)] =
     (dir ** "*.scala").get.flatMap { file =>
-      file.relativeTo(baseDir) match {
+      file.relativeTo(dir) match {
         case Some(rel) => List((rel.toString.replace('\\', '/'), file))
         case None      => Nil
       }
@@ -283,32 +302,35 @@ object Settings {
 
   def sharedTestSource(withBlacklist: Boolean) = Def.settings(
     Test / unmanagedSources ++= {
-      def scalaVersionDirectory(path: String): String = path.takeWhile(_ != '/')
-      val testsDir =
-        baseDirectory.value.getParentFile.getParentFile / "shared/src/test"
-      val scalaVersionTestDirectories =
-        scalaVersionDirectories(testsDir, "scala", scalaVersion.value)
-      val scalaVersionDirNames =
-        scalaVersionTestDirectories
-          .flatMap(_.relativeTo(testsDir))
-          .map(f => scalaVersionDirectory(f.toString()))
-          .toSet
-      val sharedSources = scalaVersionTestDirectories
-        .flatMap(allScalaFromDir(_, testsDir))
-
-      // Read blacklist from file, filter out not related Scala version dirs
-      val blacklist: Set[String] = {
+      val blacklist: Set[String] =
         if (withBlacklist)
           blacklistedFromFile(
             (Test / resourceDirectory).value / "BlacklistedTests.txt"
           )
-        else Set.empty[String]
-      }.filter(p => scalaVersionDirNames.contains(scalaVersionDirectory(p)))
+        else Set.empty
+
+      // start from scala to avoid jdk specific tests
+      // baseDirectory = project/{native,jvm}/.{binVersion}
+      val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
+      val sharedSources = allScalaFromDir(
+        testsRootDir / "shared/src/test/scala"
+      )
 
       checkBlacklistCoherency(blacklist, sharedSources)
 
       sharedSources.collect {
         case (path, file) if !blacklist.contains(path) => file
+      }
+    }
+  )
+
+  lazy val javaVersionBasedTestSources = Def.settings(
+    Test / unmanagedSourceDirectories ++= {
+      val testDir = (Test / baseDirectory).value
+      val sharedTestDir = testDir.getParentFile / "shared/src/test"
+      // Java 8 is reference so start at 9
+      (9 to (Global / javaVersion).value).map { v =>
+        sharedTestDir / s"require-jdk$v"
       }
     }
   )

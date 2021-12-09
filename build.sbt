@@ -37,3 +37,5 @@ lazy val scalaPartestJunitTests   = Build.scalaPartestJunitTests
 lazy val scalaPartestRuntime      = Build.scalaPartestRuntime
 
 commands ++= build.Commands.values
+
+inThisBuild(build.Settings.thisBuildSettings)

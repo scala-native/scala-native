@@ -285,6 +285,7 @@ object Build {
       noPublishSettings,
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
+      javaVersionBasedTestSources,
       nativeConfig ~= {
         _.withLinkStubs(true)
       },
@@ -315,6 +316,7 @@ object Build {
         noPublishSettings,
         testsCommonSettings,
         sharedTestSource(withBlacklist = true),
+        javaVersionBasedTestSources,
         Test / fork := true,
         Test / parallelExecution := false,
         libraryDependencies ++= Deps.JUnitJvm
@@ -689,8 +691,7 @@ object Build {
 
             val jUnitTestsPath =
               (scalaPartest / fetchScalaSource).value / "test" / "junit"
-            val scalaScalaJUnitSources =
-              allScalaFromDir(jUnitTestsPath, jUnitTestsPath)
+            val scalaScalaJUnitSources = allScalaFromDir(jUnitTestsPath)
             checkBlacklistCoherency(blacklist, scalaScalaJUnitSources)
             scalaScalaJUnitSources.collect {
               case (rel, file) if !blacklist.contains(rel) => file
