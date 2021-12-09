@@ -1,7 +1,7 @@
 #!/bin/bash
 # publishSigned or publishLocal
 publish=$1
-projectVersions=(2_11 2_12 2_13)
+projectVersions=(2_11 2_12 2_13 3)
 
 set -ex
 sbt clean
