@@ -106,8 +106,18 @@ package object unsafe {
   /** Heap allocate and zero-initialize a value using current implicit
    *  allocator.
    */
+  @deprecated(
+    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime erros, use alloc[T]() instead",
+    since = "0.5.0"
+  )
   def alloc[T](implicit tag: Tag[T], z: Zone): Ptr[T] =
     macro MacroImpl.alloc1[T]
+
+  /** Heap allocate and zero-initialize a value using current implicit
+   *  allocator.
+   */
+  def alloc[T]()(implicit tag: Tag[T], z: Zone): Ptr[T] =
+    macro MacroImpl.allocSingle[T]
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
@@ -130,8 +140,19 @@ package object unsafe {
    *
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
+  @deprecated(
+    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime erros, use alloc[T]() instead",
+    since = "0.5.0"
+  )
   def stackalloc[T](implicit tag: Tag[T]): Ptr[T] =
     macro MacroImpl.stackalloc1[T]
+
+  /** Stack allocate a value of given type.
+   *
+   *  Note: unlike alloc, the memory is not zero-initialized.
+   */
+  def stackalloc[T]()(implicit tag: Tag[T]): Ptr[T] =
+    macro MacroImpl.stackallocSingle[T]
 
   /** Stack allocate n values of given type.
    *
@@ -350,6 +371,10 @@ package object unsafe {
       }"""
     }
 
+    def allocSingle[T: c.WeakTypeTag](
+        c: Context
+    )()(tag: c.Tree, z: c.Tree): c.Tree = alloc1(c)(tag, z)
+
     def allocN[T: c.WeakTypeTag](
         c: Context
     )(n: c.Tree)(tag: c.Tree, z: c.Tree): c.Tree = {
@@ -370,6 +395,9 @@ package object unsafe {
         $ptr.asInstanceOf[Ptr[$T]]
       }"""
     }
+
+    def stackallocSingle[T: c.WeakTypeTag](c: Context)()(tag: c.Tree): c.Tree =
+      stackalloc1(c)(tag)
 
     def stackalloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree): c.Tree = {
       import c.universe._
