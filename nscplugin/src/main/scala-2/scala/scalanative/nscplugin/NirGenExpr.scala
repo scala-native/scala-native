@@ -1151,6 +1151,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Val.Unit
       } else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE) {
         genUnsignedOp(app, code)
+      } else if (code == CLASS_FIELD_RAWPTR) {
+        genClassFieldRawPtr(app)
       } else {
         abort(
           "Unknown primitive operation: " + sym.fullName + "(" +
@@ -1981,6 +1983,42 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
           buf.bin(bin, ty, left, right, unwind)
       }
+    }
+
+    def genClassFieldRawPtr(app: Apply)(implicit pos: nir.Position): Val = {
+      val Apply(_, List(target, fieldName: Literal)) = app
+      val fieldNameId = fieldName.value.stringValue
+      val classInfo = target.tpe.finalResultType
+      val classInfoSym = classInfo.typeSymbol.asClass
+      def matchesName(f: Symbol) = {
+        f.nameString == TermName(fieldNameId).toString()
+      }
+
+      val candidates =
+        (classInfo.decls ++ classInfoSym.parentSymbols.flatMap(_.info.decls))
+          .filter(f => f.isField && matchesName(f))
+
+      candidates.find(!_.isVariable).foreach { f =>
+        reporter.error(
+          app.pos,
+          s"Resolving pointer of immutable field ${fieldNameId} in ${f.owner} is not allowed"
+        )
+      }
+
+      candidates
+        .collectFirst {
+          case f if matchesName(f) && f.isVariable =>
+            // Don't allow to get pointer to immutable field, as it might allow for mutation
+            buf.field(genExpr(target), genFieldName(f), unwind)
+        }
+        .getOrElse {
+          reporter.error(
+            app.pos,
+            s"${classInfoSym} does not contain field ${fieldNameId}"
+          )
+          Val.Int(-1)
+        }
+
     }
 
     def genSynchronized(receiverp: Tree, bodyp: Tree)(implicit

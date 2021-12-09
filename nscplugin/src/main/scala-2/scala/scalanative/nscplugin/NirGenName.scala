@@ -84,8 +84,8 @@ trait NirGenName[G <: Global with Singleton] {
       genMethodName(StringConcatMethod)
     } else if (sym.owner.isExternModule) {
       if (sym.isSetter) {
-        val id0 = sym.name.dropSetter.decoded.toString
-        owner.member(nir.Sig.Extern(id0))
+        val id = nativeIdOf(sym.getter)
+        owner.member(nir.Sig.Extern(id))
       } else {
         owner.member(nir.Sig.Extern(id))
       }
@@ -104,12 +104,15 @@ trait NirGenName[G <: Global with Singleton] {
 
   private def nativeIdOf(sym: Symbol): String = {
     sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {
-      val id: String = if (sym.isField) {
-        val id0 = sym.name.decoded.toString
-        if (id0.charAt(id0.length() - 1) != ' ') id0
-        else id0.substring(0, id0.length() - 1) // strip trailing ' '
+      val name = sym.javaSimpleName.toString()
+      val id: String = if (sym.owner.isExternModule) {
+        // Don't use encoded names for externs
+        // LLVM intrinisc methods are using dots
+        sym.decodedName.trim()
+      } else if (sym.isField) {
+        // Scala 2 fields can contain ' ' suffix
+        name.trim()
       } else if (sym.isMethod) {
-        val name = sym.name.decoded
         val isScalaHashOrEquals = name.startsWith("__scala_")
         if (sym.owner == NObjectClass || isScalaHashOrEquals) {
           name.substring(2) // strip the __
