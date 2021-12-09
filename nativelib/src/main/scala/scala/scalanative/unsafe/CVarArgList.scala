@@ -129,8 +129,8 @@ object CVarArgList {
       toRawPtr(storageStart),
       wordsUsed.toULong * sizeof[Long]
     )
-    if (PlatformExt.isArm64 && Platform.isMac)
-      new CVarArgList(toRawPtr(resultStorage))
+    if (PlatformExt.isArm64 && Platform.isMac())
+      new CVarArgList(toRawPtr(storageStart))
     else {
       val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = 0.toUInt

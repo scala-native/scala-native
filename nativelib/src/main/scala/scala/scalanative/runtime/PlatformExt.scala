@@ -1,10 +1,8 @@
 package scala.scalanative.runtime
 
-import java.util.Locale
-
 object PlatformExt {
   private lazy val osArch =
-    System.getProperty("os.arch").toLowerCase(Locale.ROOT)
+    System.getProperty("os.arch").toLowerCase()
   
   lazy val isArm64 = osArch == "aarch64"
 }
