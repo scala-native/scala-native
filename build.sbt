@@ -25,6 +25,23 @@ lazy val disabledDocsSettings: Seq[Setting[_]] = Def.settings(
   Compile / doc / sources := Nil
 )
 
+val javaVersion = settingKey[Int](
+  "The major Java SDK version that should be assumed for compatibility. " +
+    "Defaults to what sbt is running with."
+)
+
+// JDK version we are running with
+Global / javaVersion := {
+  val fullVersion = System.getProperty("java.version")
+  val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
+  sLog.value.info(s"Detected JDK version $v")
+  if (v < 8)
+    throw new MessageOnlyException(
+      "This build requires JDK 8 or later. Aborting."
+    )
+  v
+}
+
 lazy val docsSettings: Seq[Setting[_]] = {
   val javaDocBaseURL: String = "https://docs.oracle.com/javase/8/docs/api/"
   // partially ported from Scala.js
@@ -831,8 +848,9 @@ def sharedTestSource(withBlacklist: Boolean) = Def.settings(
         )
       else Set.empty
 
+    // start from scala to avoid jdk specific tests
     val sharedSources = allScalaFromDir(
-      baseDirectory.value.getParentFile / "shared/src/test"
+      baseDirectory.value.getParentFile / "shared/src/test/scala"
     )
 
     checkBlacklistCoherency(blacklist, sharedSources)
@@ -864,6 +882,17 @@ lazy val testsCommonSettings = Def.settings(
   )
 )
 
+lazy val javaVersionBasedTestSources = Def.settings(
+  Test / unmanagedSourceDirectories ++= {
+    val testDir = (Test / baseDirectory).value
+    val sharedTestDir = testDir.getParentFile / "shared/src/test"
+    // Java 8 is reference so start at 9
+    (9 to javaVersion.value).map { v =>
+      sharedTestDir / s"require-jdk$v"
+    }
+  }
+)
+
 lazy val tests =
   project
     .in(file("unit-tests/native"))
@@ -876,6 +905,7 @@ lazy val tests =
       },
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
+      javaVersionBasedTestSources,
       Test / unmanagedSourceDirectories ++= {
         CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, n)) if n >= 12 =>
@@ -903,6 +933,7 @@ lazy val testsJVM =
       Test / parallelExecution := false,
       testsCommonSettings,
       sharedTestSource(withBlacklist = true),
+      javaVersionBasedTestSources,
       libraryDependencies ++= jUnitJVMDependencies
     )
     .dependsOn(junitAsyncJVM % "test")
