@@ -99,6 +99,10 @@ package object unsafe {
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
 
+  // Scala 3 does not allow to use extern method and extern annotation class
+  // defined in separate files in the same package
+  type extern = scala.scalanative.annotation.extern
+
   /** Heap allocate and zero-initialize a value using current implicit
    *  allocator.
    */

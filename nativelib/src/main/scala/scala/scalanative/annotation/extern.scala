@@ -1,5 +1,4 @@
-package scala.scalanative
-package unsafe
+package scala.scalanative.annotation
 
 /** An annotation that is used to mark objects that contain externally-defined
  *  members.
