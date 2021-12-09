@@ -252,32 +252,51 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .settings(mavenPublishSettings, disabledDocsSettings)
       .withNativeCompilerPlugin
-      .settings(
-        commonScalalibSettings,
-        scalacOptions ++= Seq(
-          "-deprecation:false",
-          "-language:postfixOps",
-          "-language:implicitConversions",
-          "-language:existentials",
-          "-language:higherKinds"
-        ),
-        /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
-        scalacOptions --= {
-          scalaVersionsDependendent(scalaVersion.value)(
-            List.empty[String]
-          ) {
-            case (2, 12)
-                if scalaVersion.value
-                  .stripPrefix("2.12.")
-                  .takeWhile(_.isDigit)
-                  .toInt >= 13 =>
-              List("-Xfatal-warnings")
-          }
-        }
-      )
+      .mapBinaryVersions {
+        case "2.11" | "2.12" | "2.13" =>
+          _.settings(
+            commonScalalibSettings("scala-library"),
+            scalacOptions ++= Seq(
+              "-deprecation:false",
+              "-language:postfixOps",
+              "-language:implicitConversions",
+              "-language:existentials",
+              "-language:higherKinds"
+            ),
+            /* Used to disable fatal warnings due to problems with compilation of `@nowarn` annotation */
+            scalacOptions --= {
+              scalaVersionsDependendent(scalaVersion.value)(
+                List.empty[String]
+              ) {
+                case (2, 12)
+                    if scalaVersion.value
+                      .stripPrefix("2.12.")
+                      .takeWhile(_.isDigit)
+                      .toInt >= 13 =>
+                  List("-Xfatal-warnings")
+              }
+            }
+          )
+        case "3" =>
+          _.settings(
+            name := "scala3lib",
+            commonScalalibSettings("scala3-library_3"),
+            scalacOptions ++= Seq(
+              "-language:implicitConversions"
+            ),
+            libraryDependencies += ("org.scala-native" %%% "scalalib" % nativeVersion)
+              .excludeAll(ExclusionRule("org.scala-native"))
+              .cross(CrossVersion.for3Use2_13),
+            update := {
+              update.dependsOn {
+                Def.taskDyn(scalalib.v2_13 / Compile / publishLocal)
+              }.value
+            }
+          )
+      }
       .dependsOn(auxlib, javalib)
 
-// Tests ------------------------------------------------
+  // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
     .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
     .settings(
