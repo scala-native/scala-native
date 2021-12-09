@@ -18,4 +18,39 @@ abstract class MappedByteBuffer private[nio] (
 
   def load(): MappedByteBuffer
 
+  @inline override def position(newPosition: Int): MappedByteBuffer = {
+    super.position(newPosition)
+    this
+  }
+
+  @inline override def limit(newLimit: Int): MappedByteBuffer = {
+    super.limit(newLimit)
+    this
+  }
+
+  @inline override def mark(): MappedByteBuffer = {
+    super.mark()
+    this
+  }
+
+  @inline override def reset(): MappedByteBuffer = {
+    super.reset()
+    this
+  }
+
+  @inline override def clear(): MappedByteBuffer = {
+    super.clear()
+    this
+  }
+
+  @inline override def flip(): MappedByteBuffer = {
+    super.flip()
+    this
+  }
+
+  @inline override def rewind(): MappedByteBuffer = {
+    super.rewind()
+    this
+  }
+
 }
