@@ -403,7 +403,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         ) {
           case INVALID_HANDLE_VALUE => 0L
           case handle =>
-            val lastModified = stackalloc[WinFileTime]
+            val lastModified = stackalloc[WinFileTime]()
             GetFileTime(
               handle,
               creationTime = null,
@@ -459,7 +459,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           ) {
             case INVALID_HANDLE_VALUE => false
             case handle =>
-              val lastModified = stackalloc[WinFileTime]
+              val lastModified = stackalloc[WinFileTime]()
               !lastModified =
                 MinWinBaseApiOps.FileTimeOps.fromUnixEpochMillis(time)
               SetFileTime(
@@ -628,7 +628,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       access: windows.DWord
   )(implicit zone: Zone): Boolean = {
     // based on this article https://blog.aaronballman.com/2011/08/how-to-check-access-rights/
-    val accessStatus = stackalloc[Boolean]
+    val accessStatus = stackalloc[Boolean]()
 
     def withFileSecurityDescriptor(
         fn: Ptr[SecurityDescriptor] => Unit
@@ -665,7 +665,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     else {
       withFileSecurityDescriptor { securityDescriptor =>
         withImpersonatedToken { impersonatedToken =>
-          val genericMapping = stackalloc[GenericMapping]
+          val genericMapping = stackalloc[GenericMapping]()
           genericMapping.genericRead = FILE_GENERIC_READ
           genericMapping.genericWrite = FILE_GENERIC_WRITE
           genericMapping.genericExecute = FILE_GENERIC_EXECUTE

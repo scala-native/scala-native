@@ -20,7 +20,7 @@ import java.nio.file.WindowsException
  */
 object WindowsHelperMethods {
   def withUserToken[T](desiredAccess: DWord)(fn: Handle => T): T = {
-    val tokenHandle = stackalloc[Handle]
+    val tokenHandle = stackalloc[Handle]()
     def getProcessToken =
       OpenProcessToken(GetCurrentProcess(), desiredAccess, tokenHandle)
     def getThreadToken =
@@ -45,7 +45,7 @@ object WindowsHelperMethods {
     withUserToken(
       TOKEN_IMPERSONATE | TOKEN_READ | TOKEN_DUPLICATE
     ) { tokenHandle =>
-      val impersonatedToken = stackalloc[Handle]
+      val impersonatedToken = stackalloc[Handle]()
       if (!DuplicateToken(
             tokenHandle,
             SecurityImpersonation,

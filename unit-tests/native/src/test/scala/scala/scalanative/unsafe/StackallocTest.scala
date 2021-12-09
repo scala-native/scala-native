@@ -8,7 +8,7 @@ import scalanative.unsigned._
 class StackallocTest {
 
   @Test def stackallocInt(): Unit = {
-    val ptr = stackalloc[Int]
+    val ptr = stackalloc[Int]()
 
     !ptr = 42
 

@@ -622,7 +622,7 @@ object Files {
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
     if (isWindows) {
-      val bytesRead = stackalloc[DWord]
+      val bytesRead = stackalloc[DWord]()
 
       withFileOpen(
         path.toString,

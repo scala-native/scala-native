@@ -107,7 +107,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
       fd: FileDescriptor,
       blocking: Boolean
   ): Unit = {
-    val mode = stackalloc[Int]
+    val mode = stackalloc[Int]()
     if (blocking)
       !mode = 0
     else

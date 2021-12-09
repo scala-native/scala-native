@@ -74,8 +74,8 @@ private[lang] class UnixProcess private (
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
     checkResult() match {
       case -1 =>
-        val ts = stackalloc[timespec]
-        val tv = stackalloc[timeval]
+        val ts = stackalloc[timespec]()
+        val tv = stackalloc[timeval]()
         throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
         val nsec = unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2)
         val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
@@ -124,7 +124,7 @@ private[lang] class UnixProcess private (
     }
   }
   private[this] def waitFor(ts: Ptr[timespec]): Int = {
-    val res = stackalloc[CInt]
+    val res = stackalloc[CInt]()
     !res = -1
     val result = UnixProcess.waitForPid(pid, ts, res)
     setExitValue(!res)

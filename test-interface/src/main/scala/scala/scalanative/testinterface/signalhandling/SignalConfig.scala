@@ -26,7 +26,7 @@ private[testinterface] object SignalConfig {
 
     def printError(str: CString): Unit =
       if (isWindows) {
-        val written = stackalloc[DWord]
+        val written = stackalloc[DWord]()
         FileApi.WriteFile(
           ConsoleApiExt.stdErr,
           str,
@@ -77,7 +77,7 @@ private[testinterface] object SignalConfig {
 
     while (unwind.step(cursor) > 0) {
       val offset = stackalloc[scala.Byte](8.toUInt)
-      val pc = stackalloc[CUnsignedLongLong]
+      val pc = stackalloc[CUnsignedLongLong]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
       if (pc == 0)
         return

@@ -90,7 +90,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   }
 
   override def bind(addr: InetAddress, port: Int): Unit = {
-    val hints = stackalloc[addrinfo]
+    val hints = stackalloc[addrinfo]()
     val ret = stackalloc[Ptr[addrinfo]]
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST
@@ -186,7 +186,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     throwIfClosed("connect") // Do not send negative fd.fd to poll()
 
     val inetAddr = address.asInstanceOf[InetSocketAddress]
-    val hints = stackalloc[addrinfo]
+    val hints = stackalloc[addrinfo]()
     val ret = stackalloc[Ptr[addrinfo]]
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
@@ -340,7 +340,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (shutInput) {
       0
     } else {
-      val bytesAvailable = stackalloc[CInt]
+      val bytesAvailable = stackalloc[CInt]()
       ioctl(fd.fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
       !bytesAvailable match {
         case -1 =>
@@ -453,7 +453,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     val opt = optID match {
       case SocketOptions.TCP_NODELAY | SocketOptions.SO_KEEPALIVE |
           SocketOptions.SO_REUSEADDR | SocketOptions.SO_OOBINLINE =>
-        val ptr = stackalloc[CInt]
+        val ptr = stackalloc[CInt]()
         !ptr = if (value.asInstanceOf[Boolean]) 1 else 0
         ptr.asInstanceOf[Ptr[Byte]]
       case SocketOptions.SO_LINGER =>
@@ -473,11 +473,11 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         this.timeout = mseconds
 
         if (isWindows) {
-          val ptr = stackalloc[DWord]
+          val ptr = stackalloc[DWord]()
           !ptr = mseconds.toUInt
           ptr.asInstanceOf[Ptr[Byte]]
         } else {
-          val ptr = stackalloc[timeval]
+          val ptr = stackalloc[timeval]()
 
           ptr.tv_sec = mseconds / 1000
           ptr.tv_usec = (mseconds % 1000) * 1000
@@ -485,7 +485,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           ptr.asInstanceOf[Ptr[Byte]]
         }
       case _ =>
-        val ptr = stackalloc[CInt]
+        val ptr = stackalloc[CInt]()
         !ptr = value.asInstanceOf[Int]
         ptr.asInstanceOf[Ptr[Byte]]
     }

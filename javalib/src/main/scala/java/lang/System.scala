@@ -142,7 +142,7 @@ object System {
   private def getUserHomeDirectory(): Option[String] = {
     if (isWindows) {
       WindowsHelperMethods.withUserToken(AccessToken.TOKEN_QUERY) { token =>
-        val bufSize = stackalloc[UInt]
+        val bufSize = stackalloc[UInt]()
         !bufSize = 256.toUInt
         val buf = stackalloc[CChar16](!bufSize)
         if (GetUserProfileDirectoryW(token, buf, bufSize))

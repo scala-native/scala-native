@@ -39,7 +39,7 @@ class TimeTest {
     if (isWindows) false
     else {
       Zone { implicit z =>
-        val time_ptr = stackalloc[time_t]
+        val time_ptr = stackalloc[time_t]()
         !time_ptr = now_time_t
         val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
 
@@ -77,7 +77,7 @@ class TimeTest {
         "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
         Platform.isFreeBSD
       )
-      val time_ptr = stackalloc[time_t]
+      val time_ptr = stackalloc[time_t]()
       !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime(time_ptr)
       val cstr: CString = asctime(time)
@@ -97,7 +97,7 @@ class TimeTest {
           "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
           Platform.isFreeBSD
         )
-        val time_ptr = stackalloc[time_t]
+        val time_ptr = stackalloc[time_t]()
         !time_ptr = epoch + timezone
         val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
         val cstr: CString = asctime_r(time, alloc[Byte](26))

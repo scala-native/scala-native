@@ -35,7 +35,7 @@ object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
 
   private def lookupByName(name: String): Try[WindowsUserPrincipal] = Zone {
     implicit z =>
-      val cbSid, domainSize = stackalloc[DWord]
+      val cbSid, domainSize = stackalloc[DWord]()
       !cbSid = 0.toUInt
       !domainSize = 0.toUInt
 

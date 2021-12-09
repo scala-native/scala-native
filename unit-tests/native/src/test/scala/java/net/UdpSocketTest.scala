@@ -30,7 +30,7 @@ class UdpSocketTest {
   // on Unix, probably due to bug in linktime conditions.
   private def setSocketBlocking(socket: CInt): Unit = {
     if (isWindows) {
-      val mode = stackalloc[CInt]
+      val mode = stackalloc[CInt]()
       !mode = 1
       assertNotEquals(
         "iotctl setBLocking",

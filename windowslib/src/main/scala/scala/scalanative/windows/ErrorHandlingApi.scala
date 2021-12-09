@@ -14,7 +14,7 @@ object ErrorHandlingApiOps {
     import WinBaseApi._
     import WinBaseApiExt._
 
-    val msgBuffer = stackalloc[CWString]
+    val msgBuffer = stackalloc[CWString]()
     FormatMessageW(
       flags = FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |

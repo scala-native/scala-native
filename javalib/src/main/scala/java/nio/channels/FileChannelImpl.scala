@@ -72,7 +72,7 @@ private[java] final class FileChannelImpl(
       shared: Boolean,
       command: CInt
   ): FileLock = {
-    val fl = stackalloc[flock]
+    val fl = stackalloc[flock]()
     fl.l_start = position
     fl.l_len = size
     fl.l_pid = 0
@@ -90,10 +90,10 @@ private[java] final class FileChannelImpl(
       flags: DWord
   ): FileLock = {
 
-    val dummy = stackalloc[DUMMYSTRUCTNAME]
+    val dummy = stackalloc[DUMMYSTRUCTNAME]()
     dummy.Offset = position.toInt.toUInt
     dummy.OffsetHigh = (position >> 32).toInt.toUInt
-    val overlapped = stackalloc[OVERLAPPED]
+    val overlapped = stackalloc[OVERLAPPED]()
     overlapped.Internal = 0.toULong
     overlapped.InternalHigh = 0.toULong
     overlapped.DUMMYSTRUCTNAME = !dummy
@@ -143,7 +143,7 @@ private[java] final class FileChannelImpl(
 
   override def position(): Long =
     if (isWindows) {
-      val filePointer = stackalloc[LargeInteger]
+      val filePointer = stackalloc[LargeInteger]()
       FileApi.SetFilePointerEx(
         fd.handle,
         0,

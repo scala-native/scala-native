@@ -11,7 +11,7 @@ private[lang] object PosixThread {
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
     @tailrec
     def doSleep(requestedTime: Ptr[timespec]): Unit = {
-      val remaining = stackalloc[timespec]
+      val remaining = stackalloc[timespec]()
       nanosleep(requestedTime, remaining) match {
         case _ if Thread.interrupted() =>
           throw new InterruptedException("Sleep was interrupted")
@@ -23,7 +23,7 @@ private[lang] object PosixThread {
       }
     }
 
-    val requestedTime = stackalloc[timespec]
+    val requestedTime = stackalloc[timespec]()
     requestedTime.tv_sec = millis / 1000
     requestedTime.tv_nsec = (millis % 1000) * 1e6.toInt + nanos
     doSleep(requestedTime)
