@@ -203,7 +203,7 @@ object FileHelpers {
 
   lazy val tempDir: String = {
     if (isWindows) {
-      val buffer = stackalloc[WChar](MAX_PATH)
+      val buffer: Ptr[WChar] = stackalloc[WChar](MAX_PATH)
       GetTempPathW(MAX_PATH, buffer)
       fromCWideString(buffer, StandardCharsets.UTF_16LE)
     } else {

@@ -289,7 +289,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
    */
   private def simplifyExistingPath(path: String)(implicit z: Zone): String = {
     if (isWindows) {
-      val resolvedName = alloc[WChar](FileApiExt.MAX_PATH)
+      val resolvedName: Ptr[WChar] = alloc[WChar](FileApiExt.MAX_PATH)
       GetFullPathNameW(
         toCWideStringUTF16LE(properPath),
         FileApiExt.MAX_PATH,
@@ -298,7 +298,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       )
       fromCWideString(resolvedName, StandardCharsets.UTF_16LE)
     } else {
-      val resolvedName = alloc[Byte](limits.PATH_MAX)
+      val resolvedName: Ptr[Byte] = alloc[Byte](limits.PATH_MAX)
       if (realpath(toCString(path), resolvedName) == null) {
         throw new IOException(
           s"realpath can't resolve: ${fromCString(resolvedName)}"
@@ -677,7 +677,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           val privilegeSetLength = stackalloc[windows.DWord]
           !privilegeSetLength = emptyPriviligesSize.toUInt
 
-          val privilegeSet = stackalloc[Byte](!privilegeSetLength)
+          val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
           memset(privilegeSet, 0, !privilegeSetLength)
 
           val grantedAcccess = stackalloc[windows.DWord]
@@ -854,7 +854,7 @@ object File {
 
           // previous path up to last /, plus result of resolving the link.
           val newPathLength = last + linkLength + `1UL`
-          val newPath = alloc[Byte](newPathLength)
+          val newPath: Ptr[Byte] = alloc[Byte](newPathLength)
           strncpy(newPath, path, last)
           strncat(newPath, link, linkLength)
 

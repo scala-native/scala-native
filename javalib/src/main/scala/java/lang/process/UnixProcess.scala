@@ -149,8 +149,8 @@ object UnixProcess {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    val infds = stackalloc[CInt](2.toUInt)
-    val outfds = stackalloc[CInt](2.toUInt)
+    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
     val errfds =
       if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
 
@@ -242,7 +242,7 @@ object UnixProcess {
   @inline private def nullTerminate(
       seq: collection.Seq[String]
   )(implicit z: Zone) = {
-    val res = alloc[CString]((seq.size + 1).toUInt)
+    val res: Ptr[CString] = alloc[CString]((seq.size + 1).toUInt)
     seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
     res
   }

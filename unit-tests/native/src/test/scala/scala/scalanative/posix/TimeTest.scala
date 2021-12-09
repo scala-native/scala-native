@@ -169,7 +169,7 @@ class TimeTest {
 
         // grossly over-provision rather than chase fencepost bugs.
         val bufSize = 70.toULong
-        val buf = alloc[Byte](bufSize)
+        val buf: Ptr[Byte] = alloc[Byte](bufSize)
 
         val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
@@ -300,7 +300,7 @@ class TimeTest {
         )
 
         val tmBufSize = 56.toULong
-        val tmBuf = alloc[Byte](tmBufSize)
+        val tmBuf: Ptr[Byte] = alloc[Byte](tmBufSize)
 
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 

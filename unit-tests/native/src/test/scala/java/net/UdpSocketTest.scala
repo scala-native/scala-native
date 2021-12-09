@@ -144,7 +144,7 @@ class UdpSocketTest {
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData = alloc[Byte](maxInData)
+        val inData: Ptr[Byte] = alloc[Byte](maxInData)
 
         // Try to prevent spourious race conditions
         Thread.sleep(100)

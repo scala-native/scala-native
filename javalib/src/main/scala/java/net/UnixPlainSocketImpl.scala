@@ -21,7 +21,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
 
   protected def tryPollOnConnect(timeout: Int): Unit = {
     val nAlloc = 1.toUInt
-    val pollFd = stackalloc[struct_pollfd](nAlloc)
+    val pollFd: Ptr[struct_pollfd] = stackalloc[struct_pollfd](nAlloc)
 
     pollFd.fd = fd.fd
     pollFd.revents = 0
@@ -56,7 +56,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
 
   protected def tryPollOnAccept(): Unit = {
     val nAlloc = 1.toUInt
-    val pollFd = stackalloc[struct_pollfd](nAlloc)
+    val pollFd: Ptr[struct_pollfd] = stackalloc[struct_pollfd](nAlloc)
 
     pollFd.fd = fd.fd
     pollFd.revents = 0

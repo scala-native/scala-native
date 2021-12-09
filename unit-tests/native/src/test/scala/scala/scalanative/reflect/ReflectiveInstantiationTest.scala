@@ -226,7 +226,7 @@ class ReflectiveInstantiationTest {
     // test with array of bytes
     Zone { implicit z =>
       val size = 64
-      val buffer = alloc[Byte](size.toUInt)
+      val buffer: Ptr[Byte] = alloc[Byte](size.toUInt)
 
       def fn(idx: Int) = size - idx
 

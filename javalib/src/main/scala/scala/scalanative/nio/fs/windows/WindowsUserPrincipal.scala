@@ -40,8 +40,8 @@ object WindowsUserPrincipal {
         val nameSize, domainSize = stackalloc[DWord]()
         !nameSize = 255.toUInt
         !domainSize = 255.toUInt
-        val nameRef = stackalloc[WChar](!nameSize)
-        val domainRef = stackalloc[WChar](!domainSize)
+        val nameRef: Ptr[WChar] = stackalloc[WChar](!nameSize)
+        val domainRef: Ptr[WChar] = stackalloc[WChar](!domainSize)
         val useRef = stackalloc[SidNameUse]()
         if (!LookupAccountSidW(
               systemName = null,

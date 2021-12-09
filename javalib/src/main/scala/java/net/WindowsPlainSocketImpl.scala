@@ -33,7 +33,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
 
   protected def tryPollOnConnect(timeout: Int): Unit = {
     val nAlloc = 1.toUInt
-    val pollFd = stackalloc[WSAPollFd](nAlloc)
+    val pollFd: Ptr[WSAPollFd] = stackalloc[WSAPollFd](nAlloc)
 
     pollFd.socket = fd.handle
     pollFd.revents = 0.toShort
@@ -68,7 +68,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
 
   protected def tryPollOnAccept(): Unit = {
     val nAlloc = 1.toUInt
-    val pollFd = stackalloc[WSAPollFd](nAlloc)
+    val pollFd: Ptr[WSAPollFd] = stackalloc[WSAPollFd](nAlloc)
 
     pollFd.socket = fd.handle
     pollFd.revents = 0.toShort

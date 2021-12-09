@@ -133,7 +133,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       tryPollOnAccept()
     }
 
-    val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
+    val storage: Ptr[Byte] = stackalloc[Byte](sizeof[in.sockaddr_in6])
     val len = stackalloc[socket.socklen_t]
     !len = sizeof[in.sockaddr_in6].toUInt
 
@@ -144,7 +144,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
+    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
 
     if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]

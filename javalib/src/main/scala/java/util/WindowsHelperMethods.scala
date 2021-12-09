@@ -84,7 +84,7 @@ object WindowsHelperMethods {
       }
     }
 
-    val data = alloc[Byte](!dataSize)
+    val data: Ptr[Byte] = alloc[Byte](!dataSize)
     if (!GetTokenInformation(
           token,
           informationClass,

@@ -128,7 +128,7 @@ object System {
   private def getCurrentDirectory(): Option[String] = {
     val bufSize = 1024.toUInt
     if (isWindows) {
-      val buf = stackalloc[CChar16](bufSize)
+      val buf: Ptr[CChar16] = stackalloc[CChar16](bufSize)
       if (GetCurrentDirectoryW(bufSize, buf) != 0.toUInt)
         Some(fromCWideString(buf, StandardCharsets.UTF_16LE))
       else None
@@ -144,7 +144,7 @@ object System {
       WindowsHelperMethods.withUserToken(AccessToken.TOKEN_QUERY) { token =>
         val bufSize = stackalloc[UInt]()
         !bufSize = 256.toUInt
-        val buf = stackalloc[CChar16](!bufSize)
+        val buf: Ptr[CChar16] = stackalloc[CChar16](!bufSize)
         if (GetUserProfileDirectoryW(token, buf, bufSize))
           Some(fromCWideString(buf, StandardCharsets.UTF_16LE))
         else None
@@ -163,7 +163,7 @@ object System {
       infoCode: LCType,
       bufSize: UInt
   ): Option[String] = {
-    val buf = stackalloc[CChar16](bufSize)
+    val buf: Ptr[CChar16] = stackalloc[CChar16](bufSize)
     GetLocaleInfoEx(
       LOCALE_NAME_USER_DEFAULT,
       infoCode,
