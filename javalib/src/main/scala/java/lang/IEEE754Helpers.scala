@@ -51,7 +51,7 @@ private[java] object IEEE754Helpers {
 
       val cStr = bytesToCString(bytes, bytesLen)
 
-      val end = stackalloc[CString] // Address one past last parsed cStr byte.
+      val end = stackalloc[CString]() // Address one past last parsed cStr byte.
 
       errno.errno = 0
       var res = f(cStr, end)

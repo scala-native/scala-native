@@ -22,8 +22,9 @@ trait NirDefinitions {
 
     lazy val NameClass = getRequiredClass("scala.scalanative.unsafe.name")
     lazy val LinkClass = getRequiredClass("scala.scalanative.unsafe.link")
-    lazy val ExternClass = getRequiredClass("scala.scalanative.unsafe.extern")
-    lazy val PinClass = getRequiredClass("scala.scalanative.unsafe.pin")
+    lazy val ExternClass = getRequiredClass(
+      "scala.scalanative.unsafe.package$extern"
+    )
     lazy val StubClass = getRequiredClass("scala.scalanative.annotation.stub")
 
     lazy val AlwaysInlineClass = getRequiredClass(

@@ -30,8 +30,8 @@ object ExternTest {
   def runTest(): Unit = {
     import scalanative.libc.string
     val bufsize = 10.toUInt
-    val buf1 = stackalloc[Byte](bufsize)
-    val buf2 = stackalloc[Byte](bufsize)
+    val buf1: Ptr[Byte] = stackalloc[Byte](bufsize)
+    val buf2: Ptr[Byte] = stackalloc[Byte](bufsize)
     Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
     assertTrue(string.strcmp(buf1, c"hello") == 0)
     Ext2.p(buf2, bufsize, c"%d", 1)
@@ -53,7 +53,7 @@ class ExternTest {
     val args = Seq("skipped", "skipped", "skipped", "-b", "-f", "farg")
 
     Zone { implicit z =>
-      val argv = stackalloc[CString](args.length.toUInt)
+      val argv: Ptr[CString] = stackalloc[CString](args.length.toUInt)
 
       for ((arg, i) <- args.zipWithIndex) {
         argv(i) = toCString(arg)

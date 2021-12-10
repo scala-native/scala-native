@@ -14,7 +14,7 @@ import scalanative.meta.LinktimeInfo.isWindows
 class CVarArgListTest {
   def vatest(cstr: CString, varargs: Seq[CVarArg], output: String): Unit =
     Zone { implicit z =>
-      val buff = alloc[CChar](1024)
+      val buff: Ptr[CChar] = alloc[CChar](1024)
       stdio.vsprintf(buff, cstr, toCVarArgList(varargs))
       val got = fromCString(buff)
       assertTrue(s"$got != $output", got == output)

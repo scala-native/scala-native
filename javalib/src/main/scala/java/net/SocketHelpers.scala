@@ -43,7 +43,7 @@ object SocketHelpers {
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
     Zone { implicit z =>
       val cIP = toCString(ip)
-      val hints = stackalloc[addrinfo]
+      val hints = stackalloc[addrinfo]()
       val ret = stackalloc[Ptr[addrinfo]]
 
       hints.ai_family = AF_UNSPEC
@@ -67,14 +67,14 @@ object SocketHelpers {
         }
         setSocketNonBlocking(sock)
         // stackalloc is documented as returning zeroed memory
-        val fdsetPtr = stackalloc[fd_set] //  No need to FD_ZERO
+        val fdsetPtr = stackalloc[fd_set]() //  No need to FD_ZERO
         FD_SET(sock, fdsetPtr)
 
         // calculate once and use a second time below.
         val tv_sec = timeout / 1000
         val tv_usec = (timeout % 1000) * 1000
 
-        val time = stackalloc[timeval]
+        val time = stackalloc[timeval]()
         time.tv_sec = tv_sec
         time.tv_usec = tv_usec
 
@@ -84,7 +84,7 @@ object SocketHelpers {
 
         if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
           val so_error = stackalloc[CInt].asInstanceOf[Ptr[Byte]]
-          val len = stackalloc[socklen_t]
+          val len = stackalloc[socklen_t]()
           !len = sizeof[CInt].toUInt
           getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
           if (!(so_error.asInstanceOf[Ptr[CInt]]) != 0) {
@@ -108,7 +108,7 @@ object SocketHelpers {
         if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
         } else {
-          val buf = stackalloc[CChar](5.toUInt)
+          val buf: Ptr[CChar] = stackalloc[CChar](5.toUInt)
           val recBytes = recv(sock, buf, 5.toUInt, 0)
           if (recBytes < 4) {
             return false
@@ -126,10 +126,10 @@ object SocketHelpers {
 
   def hostToIp(host: String): Option[String] =
     Zone { implicit z =>
-      val hints = stackalloc[addrinfo]
+      val hints = stackalloc[addrinfo]()
       val ret = stackalloc[Ptr[addrinfo]]
 
-      val ipstr = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
+      val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = 0
       hints.ai_next = null
@@ -160,7 +160,7 @@ object SocketHelpers {
 
   def hostToIpArray(host: String): scala.Array[String] =
     Zone { implicit z =>
-      val hints = stackalloc[addrinfo]
+      val hints = stackalloc[addrinfo]()
       val ret = stackalloc[Ptr[addrinfo]]
 
       hints.ai_family = AF_UNSPEC
@@ -175,7 +175,7 @@ object SocketHelpers {
 
       var ai = !ret
       while (ai != null) {
-        val ipstr = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
+        val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
         val addr =
           if (ai.ai_family == AF_INET) {
             ai.ai_addr
@@ -230,8 +230,8 @@ object SocketHelpers {
       // does not allow/specify Exceptions, so better error reporting
       // of C function failures here and in tailorSockaddr() is not feasible.
 
-      val host = stackalloc[CChar](MAXHOSTNAMELEN)
-      val addr = stackalloc[sockaddr]
+      val host: Ptr[CChar] = stackalloc[CChar](MAXHOSTNAMELEN)
+      val addr = stackalloc[sockaddr]()
 
       if (!tailorSockaddr(ip, isV6, addr)) {
         None

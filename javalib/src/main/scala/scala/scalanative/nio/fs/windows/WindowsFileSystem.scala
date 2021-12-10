@@ -38,7 +38,7 @@ class WindowsFileSystem(override val provider: WindowsFileSystemProvider)
   override def getRootDirectories(): Iterable[Path] = {
     val list = new LinkedList[Path]()
     val bufferSize = GetLogicalDriveStringsW(0.toUInt, null)
-    val buffer = stackalloc[CChar16](bufferSize)
+    val buffer: Ptr[CChar16] = stackalloc[CChar16](bufferSize)
 
     @tailrec
     def readStringsBlock(ptr: Ptr[CChar16]): Unit = {

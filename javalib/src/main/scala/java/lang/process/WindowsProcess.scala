@@ -102,7 +102,7 @@ private[lang] class WindowsProcess private (
   private[lang] def checkResult(): CInt = {
     cachedExitValue
       .getOrElse {
-        val exitCode: Ptr[DWord] = stackalloc[DWord]
+        val exitCode: Ptr[DWord] = stackalloc[DWord]()
         if (!GetExitCodeProcess(handle, exitCode)) -1
         else {
           (!exitCode) match {
@@ -164,8 +164,8 @@ object WindowsProcess {
     }.asInstanceOf[Ptr[Byte]]
 
     // stackalloc is documented as returning zeroed memory
-    val processInfo = stackalloc[ProcessInformation]
-    val startupInfo = stackalloc[StartupInfoW]
+    val processInfo = stackalloc[ProcessInformation]()
+    val startupInfo = stackalloc[StartupInfoW]()
     startupInfo.cb = sizeof[StartupInfoW].toUInt
     startupInfo.stdInput = inRead
     startupInfo.stdOutput = outWrite
@@ -216,12 +216,12 @@ object WindowsProcess {
       msg: => String
   )(implicit z: Zone): (Handle, Handle) = {
 
-    val securityAttributes = stackalloc[SecurityAttributes]
+    val securityAttributes = stackalloc[SecurityAttributes]()
     securityAttributes.length = sizeof[SecurityAttributes].toUInt
     securityAttributes.inheritHandle = true
     securityAttributes.securityDescriptor = null
 
-    val pipe: PipeHandles = !stackalloc[PipeHandles]
+    val pipe: PipeHandles = !stackalloc[PipeHandles]()
     val pipeEnds @ (pipeRead, pipeWrite) = (pipe.at(readEnd), pipe.at(writeEnd))
     val pipeCreated =
       CreatePipe(pipeRead, pipeWrite, null, 0.toUInt)

@@ -92,7 +92,7 @@ object FileHelpers {
       if (searchPath.length.toUInt > FileApiExt.MAX_PATH)
         throw new IOException("File name to long")
 
-      val fileData = stackalloc[Win32FindDataW]
+      val fileData = stackalloc[Win32FindDataW]()
       val searchHandle =
         FindFirstFileW(toCWideStringUTF16LE(searchPath), fileData)
       if (searchHandle == INVALID_HANDLE_VALUE) {
@@ -203,7 +203,7 @@ object FileHelpers {
 
   lazy val tempDir: String = {
     if (isWindows) {
-      val buffer = stackalloc[WChar](MAX_PATH)
+      val buffer: Ptr[WChar] = stackalloc[WChar](MAX_PATH)
       GetTempPathW(MAX_PATH, buffer)
       fromCWideString(buffer, StandardCharsets.UTF_16LE)
     } else {

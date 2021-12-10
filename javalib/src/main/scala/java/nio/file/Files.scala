@@ -622,7 +622,7 @@ object Files {
     val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
     if (isWindows) {
-      val bytesRead = stackalloc[DWord]
+      val bytesRead = stackalloc[DWord]()
 
       withFileOpen(
         path.toString,
@@ -726,7 +726,7 @@ object Files {
             access = FILE_GENERIC_READ
           ) { handle =>
             val bufferSize = FileApiExt.MAX_PATH
-            val buffer = alloc[WChar](bufferSize)
+            val buffer: Ptr[WChar] = alloc[WChar](bufferSize)
             val pathSize =
               FileApi.GetFinalPathNameByHandleW(
                 handle,
