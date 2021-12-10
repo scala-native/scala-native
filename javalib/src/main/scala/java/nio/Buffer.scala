@@ -91,6 +91,10 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   def isDirect(): Boolean
 
+  def slice(): Buffer
+
+  def duplicate(): Buffer
+
   override def toString(): String =
     s"${getClass.getName}[pos=${position()} lim=${limit()} cap=${capacity()}]"
 

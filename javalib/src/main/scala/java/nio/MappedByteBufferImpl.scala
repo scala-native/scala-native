@@ -43,7 +43,7 @@ private class MappedByteBufferImpl(
   private[this] implicit def newMappedByteBuffer =
     MappedByteBufferImpl.NewMappedByteBuffer
 
-  override def force() = {
+  override def force(): MappedByteBuffer = {
     _mappedData.force()
     this
   }
