@@ -649,6 +649,7 @@ object Settings {
     Test / scalacOptions += "-deprecation:false"
   )
 
+// Partests
   def shouldPartestSetting: Seq[Def.Setting[_]] = {
     Def.settings(
       shouldPartest := {

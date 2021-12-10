@@ -64,7 +64,6 @@ object NirPrimitives {
 
   final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
-  final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
 }
 
 abstract class NirPrimitives {
@@ -173,6 +172,5 @@ abstract class NirPrimitives {
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
     CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
     CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
-    addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
   }
 }
