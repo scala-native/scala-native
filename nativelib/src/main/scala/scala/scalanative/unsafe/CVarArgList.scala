@@ -129,6 +129,7 @@ object CVarArgList {
       toRawPtr(storageStart),
       wordsUsed.toULong * sizeof[Long]
     )
+
     if (PlatformExt.isArm64 && Platform.isMac())
       new CVarArgList(toRawPtr(storageStart))
     else {
