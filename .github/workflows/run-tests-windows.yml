@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - master
+concurrency: 
+  group: windows-${{ github.head_ref }}
+  cancel-in-progress: true
+
 
 jobs:
   run-tests:
@@ -35,14 +39,14 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
-          sandbox/run
-          testsJVM/test
-          tests/test
-          testsExt/test
-          testsExtJVM/test
-          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sandbox${{env.project-version}}/run
+          testsJVM${{env.project-version}}/test
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
+          testsExtJVM${{env.project-version}}/test
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
-      
+
       - name: Test runtime
         if: matrix.gc != 'none'
         run: >
@@ -51,8 +55,8 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
-          test-runtime
-          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          "test-runtime ${{matrix.scala}}"
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
   run-scripted-tests:
@@ -73,7 +77,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Test scripted
-        run: sbt ++${{matrix.scala}};test-scripted
+        run: sbt "++${{matrix.scala}}" "test-scripted ${{matrix.scala}}"
         shell: cmd
 
   test-runtime-lto:
@@ -114,6 +118,6 @@ jobs:
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=${{matrix.lto == 'full'}}&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
-          tests/test
-          testsExt/test
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
         shell: cmd

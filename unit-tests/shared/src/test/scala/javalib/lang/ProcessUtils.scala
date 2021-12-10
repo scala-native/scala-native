@@ -17,7 +17,7 @@ object ProcessUtils {
   val resourceDir = Paths
     .get(
       System.getProperty("user.dir"),
-      if (executingInJVM) ".." else "unit-tests",
+      if (executingInJVM) "../.." else "unit-tests",
       "shared",
       "src",
       "test",
