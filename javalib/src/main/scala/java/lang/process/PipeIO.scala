@@ -119,7 +119,7 @@ private[lang] object PipeIO {
       (_, fd) => new BufferedOutputStream(new FileOutputStream(fd))
     )
 
-  private final object NullInput extends Stream {
+  private object NullInput extends Stream {
     @stub
     override def process: GenericProcess = ???
     override def available(): Int = 0
@@ -127,7 +127,7 @@ private[lang] object PipeIO {
     override def read(): Int = 0
     override def read(buf: Array[scala.Byte], offset: Int, len: Int) = -1
   }
-  private final object NullOutput extends OutputStream {
+  private object NullOutput extends OutputStream {
     override def close(): Unit = {}
     override def write(b: Int): Unit = {}
   }
