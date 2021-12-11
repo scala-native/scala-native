@@ -770,14 +770,15 @@ final class _String()
       loop(i + 1)
     }
     val preprocessed = replaceCharsAtIndex { i =>
+      def ifMoreAboveOrNull(v: String) = if (moreAbove(i)) v else null
       (this.charAt(i): @switch) match {
-        case '\u0049' if moreAbove(i) => "\u0069\u0307"
-        case '\u004A' if moreAbove(i) => "\u006A\u0307"
-        case '\u012E' if moreAbove(i) => "\u012F\u0307"
-        case '\u00CC'                 => "\u0069\u0307\u0300"
-        case '\u00CD'                 => "\u0069\u0307\u0301"
-        case '\u0128'                 => "\u0069\u0307\u0303"
-        case _                        => null
+        case '\u0049' => ifMoreAboveOrNull("\u0069\u0307")
+        case '\u004A' => ifMoreAboveOrNull("\u006A\u0307")
+        case '\u012E' => ifMoreAboveOrNull("\u012F\u0307")
+        case '\u00CC' => "\u0069\u0307\u0300"
+        case '\u00CD' => "\u0069\u0307\u0301"
+        case '\u0128' => "\u0069\u0307\u0303"
+        case _        => null
       }
     }
 
@@ -833,10 +834,10 @@ final class _String()
 
     val preprocessed = replaceCharsAtIndex { i =>
       (this.charAt(i): @switch) match {
-        case '\u0130'                  => "\u0069"
-        case '\u0307' if afterI(i)     => ""
-        case '\u0049' if !beforeDot(i) => "\u0131"
-        case _                         => null
+        case '\u0130' => "\u0069"
+        case '\u0307' => if (afterI(i)) "" else null
+        case '\u0049' => if (!beforeDot(i)) "\u0131" else null
+        case _        => null
       }
     }
 
