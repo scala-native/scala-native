@@ -1,3 +1,5 @@
+// Enums are not source-compatbile, make sure to sync this file Scala 3 implementation
+
 package java.lang.annotation
 
 final class RetentionPolicy private (name: String, ordinal: Int)
