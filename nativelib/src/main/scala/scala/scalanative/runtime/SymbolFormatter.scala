@@ -39,7 +39,7 @@ object SymbolFormatter {
     def readGlobal(): Boolean = read() match {
       case 'M' =>
         readIdent()
-        if (strlen(ident) == 0) {
+        if (strlen(ident) == 0.toUInt) {
           false
         } else {
           strcpy(classNameOut, ident)
@@ -55,7 +55,7 @@ object SymbolFormatter {
         true
       case 'D' | 'P' | 'C' | 'G' =>
         readIdent()
-        if (strlen(ident) == 0) {
+        if (strlen(ident) == 0.toUInt) {
           false
         } else {
           strcpy(methodNameOut, ident)

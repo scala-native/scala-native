@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
-concurrency: 
+concurrency:
   group: linux-${{ github.head_ref }}
   cancel-in-progress: true
-  
+
 jobs:
   # Compile all sources for given Scala version
   # Cache external dependencies
@@ -272,3 +272,28 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: "test-scripted ${{matrix.scala}}"
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+
+  experimental-scala3:
+    name: Scala3 experimental tests
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.1.0]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+        # Ensure that our codebase is source compatible with Scala 3
+        # Skip transitive dependencies in the build
+      - name: Compile sources with Scala 3
+        run: >
+          sbt "++ ${{ matrix.scala }} -v" 
+          "-no-colors" 
+          "-J-Xmx3G" 
+          tools3/compile
+          posixlib3/compile
+          windowslib3/compile
+          auxlib3/compile

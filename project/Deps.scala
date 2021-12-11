@@ -7,9 +7,15 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
 object Deps {
 // scalafmt: { align.preset = more, maxColumn = 120 }
-  def ScalaLibrary(version: String)  = "org.scala-lang" % "scala-library"  % version
-  def ScalaCompiler(version: String) = "org.scala-lang" % "scala-compiler" % version
-  def ScalaReflect(version: String)  = "org.scala-lang" % "scala-reflect"  % version
+  def ScalaLibrary(version: String) = scalaVersionsDependendent(version) {
+    case (2, _) => Seq("org.scala-lang" % "scala-library" % version)
+    case (3, _) => Seq("org.scala-lang" % "scala3-library" % version)
+  }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
+  def ScalaCompiler(version: String) = scalaVersionsDependendent(version) {
+    case (2, _) => Seq("org.scala-lang" % "scala-compiler" % version)
+    case (3, _) => Seq("org.scala-lang" %% "scala3-compiler" % version)
+  }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
+  def ScalaReflect(version: String) = "org.scala-lang" % "scala-reflect" % version
 
   def ScalaCheck(scalaVersion: String) = scalaVersionsDependendent(scalaVersion) {
     case (2, 11) => "org.scalacheck" %% "scalacheck" % "1.15.2" :: Nil // Last released version
@@ -51,8 +57,13 @@ object Deps {
   }
 
   def compilerPluginDependencies(scalaVersion: String): Seq[ModuleID] =
-    List(
-      ScalaCompiler(scalaVersion),
-      ScalaReflect(scalaVersion)
-    )
+    scalaVersionsDependendent(scalaVersion) {
+      case (2, _) =>
+        List(
+          ScalaCompiler(scalaVersion),
+          ScalaReflect(scalaVersion)
+        )
+      case (3, _) =>
+        ScalaCompiler(scalaVersion) :: Nil
+    }
 }

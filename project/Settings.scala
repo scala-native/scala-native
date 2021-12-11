@@ -401,7 +401,7 @@ object Settings {
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value
-      val ignoredExtensions = Set(".class")
+      val ignoredExtensions = Set(".class", ".tasty")
       previous.filter {
         case (_, path) => !ignoredExtensions.exists(path.endsWith(_))
       }
@@ -434,7 +434,7 @@ object Settings {
     dirs.toSeq // most specific shadow less specific
   }
 
-  val commonScalalibSettings =
+  def commonScalalibSettings(libraryName: String): Seq[Setting[_]] =
     Def.settings(
       mavenPublishSettings,
       disabledDocsSettings,
@@ -447,7 +447,7 @@ object Settings {
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value classifier "sources",
+      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
       fetchScalaSource / artifactPath :=
         baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
       // Scala.js original comment modified to clarify issue is Scala.js.
@@ -473,13 +473,13 @@ object Settings {
         val scalaLibSourcesJar = report
           .select(
             configuration = configurationFilter("compile"),
-            module = moduleFilter(name = "scala-library"),
+            module = moduleFilter(name = libraryName),
             artifact = artifactFilter(classifier = "sources")
           )
           .headOption
           .getOrElse {
             throw new Exception(
-              s"Could not fetch sources for version $version"
+              s"Could not fetch $libraryName sources for version $version"
             )
           }
 
@@ -622,10 +622,10 @@ object Settings {
         }
         sources.result()
       },
-      // Don't include classfiles for scalalib in the packaged jar.
+      // Don't include classfiles/tasty for scalalib in the packaged jar.
       Compile / packageBin / mappings := {
         val previous = (Compile / packageBin / mappings).value
-        val ignoredExtensions = Set(".class")
+        val ignoredExtensions = Set(".class", ".tasty")
         previous.filter {
           case (file, path) => !ignoredExtensions.exists(path.endsWith)
         }
@@ -649,6 +649,7 @@ object Settings {
     Test / scalacOptions += "-deprecation:false"
   )
 
+// Partests
   def shouldPartestSetting: Seq[Def.Setting[_]] = {
     Def.settings(
       shouldPartest := {
@@ -657,6 +658,17 @@ object Settings {
       }.exists()
     )
   }
+
+// Compat
+  lazy val scala3CompatSettings = Def.settings(
+    scalacOptions := {
+      val prev = scalacOptions.value
+      prev.map {
+        case "-target:jvm-1.8" => "-Xtarget:8"
+        case v                 => v
+      }
+    }
+  )
 
   def scalaVersionsDependendent[T](scalaVersion: String)(default: T)(
       matching: PartialFunction[(Long, Long), T]

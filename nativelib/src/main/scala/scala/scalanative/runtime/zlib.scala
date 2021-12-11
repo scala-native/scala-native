@@ -25,8 +25,8 @@ object zlib {
   type out_func =
     CFuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
   type gzFile = Ptr[Byte]
-  type z_streamp = Ptr[z_stream[_, _]]
-  type gz_headerp = Ptr[gz_header[_, _]]
+  type z_streamp = Ptr[z_stream[AnyVal, AnyVal]]
+  type gz_headerp = Ptr[gz_header[AnyVal, AnyVal]]
 
   @name("scalanative_z_no_flush")
   def Z_NO_FLUSH: CInt = extern

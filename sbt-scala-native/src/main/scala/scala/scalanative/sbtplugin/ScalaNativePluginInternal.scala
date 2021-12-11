@@ -31,9 +31,14 @@ object ScalaNativePluginInternal {
       "org.scala-native" %%% "nativelib" % nativeVersion,
       "org.scala-native" %%% "javalib" % nativeVersion,
       "org.scala-native" %%% "auxlib" % nativeVersion,
-      "org.scala-native" %%% "scalalib" % nativeVersion,
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
+    libraryDependencies += CrossVersion
+      .partialVersion(scalaVersion.value)
+      .fold(throw new RuntimeException("Unsupported Scala Version")) {
+        case (2, _) => "org.scala-native" %%% "scalalib" % nativeVersion
+        case (3, _) => "org.scala-native" %%% "scala3lib" % nativeVersion
+      },
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full
     )

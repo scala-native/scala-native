@@ -20,8 +20,9 @@ final case class MultiScalaProject private (
   lazy val v2_11: Project = project("2.11")
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
+  lazy val v3: Project = project("3").settings(Settings.scala3CompatSettings)
 
-  override def componentProjects: Seq[Project] = Seq(v2_11, v2_12, v2_13)
+  override def componentProjects: Seq[Project] = Seq(v2_11, v2_12, v2_13, v3)
 
   def mapBinaryVersions(
       mapping: String => Project => Project
@@ -117,7 +118,8 @@ object MultiScalaProject {
   private final val versions = Map[String, Seq[String]](
     "2.11" -> ScalaVersions.crossScala211,
     "2.12" -> ScalaVersions.crossScala212,
-    "2.13" -> ScalaVersions.crossScala213
+    "2.13" -> ScalaVersions.crossScala213,
+    "3" -> ScalaVersions.crossScala3
   )
 
   private def projectID(id: String, major: String) =
