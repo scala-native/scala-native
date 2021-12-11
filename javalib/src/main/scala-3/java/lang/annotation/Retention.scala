@@ -1,3 +1,3 @@
 package java.lang.annotation
 
-trait Retention
+trait _Retention
