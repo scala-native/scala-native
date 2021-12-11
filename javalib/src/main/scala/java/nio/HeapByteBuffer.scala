@@ -12,7 +12,7 @@ private[nio] class HeapByteBuffer(
     _initialLimit: Int,
     _readOnly: Boolean
 ) extends ByteBuffer(_capacity, _array0, null, _arrayOffset0) {
-  
+
   position(_initialPosition)
   limit(_initialLimit)
 

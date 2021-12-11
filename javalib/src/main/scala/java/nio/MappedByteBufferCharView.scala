@@ -14,7 +14,7 @@ private[nio] final class MappedByteBufferCharView private (
 
   position(_initialPosition)
   limit(_initialLimit)
-  
+
   private def genBuffer = GenBuffer[CharBuffer](this)
   private def genHeapBufferView = GenMappedBufferView[CharBuffer](this)
   private implicit def newMappedCharBufferView

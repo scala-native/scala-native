@@ -27,7 +27,7 @@ abstract class ByteBuffer private[nio] (
 
   private[nio] type ElementType = Byte
   private[nio] type BufferType = ByteBuffer
-      
+
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null, null, -1)

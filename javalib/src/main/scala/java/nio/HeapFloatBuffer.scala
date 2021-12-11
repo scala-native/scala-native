@@ -13,7 +13,6 @@ private[nio] final class HeapFloatBuffer private (
   position(_initialPosition)
   limit(_initialLimit)
 
-
   private def genBuffer = GenBuffer[FloatBuffer](this)
   private def genHeapBuffer = GenHeapBuffer[FloatBuffer](this)
   private[this] implicit def newHeapFloatBuffer

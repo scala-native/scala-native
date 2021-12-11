@@ -13,7 +13,7 @@ private[nio] final class HeapByteBufferDoubleView private (
 
   position(_initialPosition)
   limit(_initialLimit)
-  
+
   private def genBuffer = GenBuffer[DoubleBuffer](this)
   private def genHeapBufferView = GenHeapBufferView[DoubleBuffer](this)
   private implicit def newHeapBufferView
