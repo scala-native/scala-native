@@ -9,11 +9,13 @@ private[nio] final class HeapShortBuffer private (
     _initialLimit: Int,
     _readOnly: Boolean
 ) extends ShortBuffer(_capacity, _array0, null, _arrayOffset0) {
-
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newHeapShortBuffer =
+  private def genBuffer = GenBuffer[ShortBuffer](this)
+  private def genHeapBuffer = GenHeapBuffer[ShortBuffer](this)
+  private implicit def newHeapByteBuffer
+      : GenHeapBuffer.NewHeapBuffer[ShortBuffer, Short] =
     HeapShortBuffer.NewHeapShortBuffer
 
   def isReadOnly(): Boolean = _readOnly
@@ -22,43 +24,43 @@ private[nio] final class HeapShortBuffer private (
 
   @noinline
   def slice(): ShortBuffer =
-    GenHeapBuffer(this).generic_slice()
+    genHeapBuffer.generic_slice()
 
   @noinline
   def duplicate(): ShortBuffer =
-    GenHeapBuffer(this).generic_duplicate()
+    genHeapBuffer.generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): ShortBuffer =
-    GenHeapBuffer(this).generic_asReadOnlyBuffer()
+    genHeapBuffer.generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Short =
-    GenBuffer(this).generic_get()
+    genBuffer.generic_get()
 
   @noinline
   def put(s: Short): ShortBuffer =
-    GenBuffer(this).generic_put(s)
+    genBuffer.generic_put(s)
 
   @noinline
   def get(index: Int): Short =
-    GenBuffer(this).generic_get(index)
+    genBuffer.generic_get(index)
 
   @noinline
   def put(index: Int, s: Short): ShortBuffer =
-    GenBuffer(this).generic_put(index, s)
+    genBuffer.generic_put(index, s)
 
   @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   @noinline
   def compact(): ShortBuffer =
-    GenHeapBuffer(this).generic_compact()
+    genHeapBuffer.generic_compact()
 
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
@@ -66,11 +68,11 @@ private[nio] final class HeapShortBuffer private (
 
   @inline
   private[nio] def load(index: Int): Short =
-    GenHeapBuffer(this).generic_load(index)
+    genHeapBuffer.generic_load(index)
 
   @inline
   private[nio] def store(index: Int, elem: Short): Unit =
-    GenHeapBuffer(this).generic_store(index, elem)
+    genHeapBuffer.generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -79,7 +81,7 @@ private[nio] final class HeapShortBuffer private (
       offset: Int,
       length: Int
   ): Unit =
-    GenHeapBuffer(this).generic_load(startIndex, dst, offset, length)
+    genHeapBuffer.generic_load(startIndex, dst, offset, length)
 
   @inline
   override private[nio] def store(
@@ -88,7 +90,7 @@ private[nio] final class HeapShortBuffer private (
       offset: Int,
       length: Int
   ): Unit =
-    GenHeapBuffer(this).generic_store(startIndex, src, offset, length)
+    genHeapBuffer.generic_store(startIndex, src, offset, length)
 }
 
 private[nio] object HeapShortBuffer {
