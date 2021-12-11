@@ -1,7 +1,7 @@
 package java.nio.channels
 
 abstract class FileLock private (
-    channel: Channel,
+    _channel: Channel,
     final val position: Long,
     final val size: Long,
     shared: Boolean
@@ -24,13 +24,13 @@ abstract class FileLock private (
   require(position >= 0 && size >= 0, "position and size must be non negative")
 
   final def channel(): FileChannel =
-    channel match {
+    _channel match {
       case fc: FileChannel => fc
       case _               => null
     }
 
   def acquiredBy(): Channel =
-    channel
+    _channel
 
   final def isShared(): Boolean =
     shared
@@ -46,6 +46,6 @@ abstract class FileLock private (
     release()
 
   override final def toString(): String =
-    s"FileLock($channel, $position, $size, $shared), isValid = ${isValid()}"
+    s"FileLock(${_channel}, $position, $size, $shared), isValid = ${isValid()}"
 
 }

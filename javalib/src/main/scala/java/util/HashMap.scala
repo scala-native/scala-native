@@ -93,7 +93,12 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
         val iter = m.nodeIterator()
         while (iter.hasNext()) {
           val next = iter.next()
-          put0(next.key, next.value, next.hash, ifAbsent = false)
+          put0(
+            next.key.asInstanceOf[K],
+            next.value.asInstanceOf[V],
+            next.hash,
+            ifAbsent = false
+          )
         }
       case _ =>
         super.putAll(m)
