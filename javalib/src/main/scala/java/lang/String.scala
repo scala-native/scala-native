@@ -11,6 +11,7 @@ import java.nio._
 import java.nio.charset._
 import java.util.Objects
 import scala.annotation.{switch, tailrec}
+import _String.{string2_string, _string2string}
 
 final class _String()
     extends Serializable
@@ -1329,8 +1330,8 @@ object _String {
     new Formatter(loc).format(fmt, args).toString()
 
   import scala.language.implicitConversions
-  @inline private implicit def _string2string(s: _String): String =
+  @inline private[lang] implicit def _string2string(s: _String): String =
     s.asInstanceOf[String]
-  @inline private implicit def string2_string(s: String): _String =
+  @inline private[lang] implicit def string2_string(s: String): _String =
     s.asInstanceOf[_String]
 }

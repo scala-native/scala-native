@@ -178,7 +178,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         if (ownerOnly) {
           withUserToken(TOKEN_QUERY) { userToken =>
             withTokenInformation(userToken, TokenInformationClass.TokenUser) {
-              data: Ptr[SidAndAttributes] =>
+              (data: Ptr[SidAndAttributes]) =>
                 ea.trustee.trusteeType = TrusteeType.TRUSTEE_IS_USER
                 ea.trustee.sid = data.sid
             }
@@ -717,14 +717,14 @@ object File {
     Zone { implicit z =>
       if (isWindows) {
         val buffSize = GetCurrentDirectoryW(0.toUInt, null)
-        val buff = alloc[windows.WChar](buffSize + 1.toUInt)
-        if (GetCurrentDirectoryW(buffSize, buff) == 0) {
+        val buff: Ptr[windows.WChar] = alloc[windows.WChar](buffSize + 1.toUInt)
+        if (GetCurrentDirectoryW(buffSize, buff) == 0.toUInt) {
           throw WindowsException("error in trying to get user directory")
         }
         fromCWideString(buff, StandardCharsets.UTF_16LE)
       } else {
         val buff: CString = alloc[CChar](4096.toUInt)
-        if (getcwd(buff, 4095.toUInt) == 0) {
+        if (getcwd(buff, 4095.toUInt) == 0.toUInt) {
           val errMsg = fromCString(string.strerror(errno.errno))
           throw new IOException(
             s"error in trying to get user directory - $errMsg"
@@ -924,7 +924,7 @@ object File {
           flags = finalPathFlags
         )
 
-        if (fileHandle == HandleApiExt.INVALID_HANDLE_VALUE || pathLength == 0)
+        if (fileHandle == HandleApiExt.INVALID_HANDLE_VALUE || pathLength == 0.toUInt)
           null
         else buffer
       }
