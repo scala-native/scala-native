@@ -10,11 +10,11 @@ import scala.scalanative.runtime.GC
  * by the internals of the immix and commix GC.
  */
 private[java] object WeakReferenceRegistry {
-  private var weakRefList: immutable.List[WeakReference[_ >: Null <: AnyRef]] =
+  private var weakRefList: immutable.List[WeakReference[_]] =
     immutable.List()
 
   private val postGCHandlerMap
-      : mutable.HashMap[WeakReference[_ >: Null <: AnyRef], Function0[Unit]] =
+      : mutable.HashMap[WeakReference[_], Function0[Unit]] =
     new mutable.HashMap()
 
   if (isWeakReferenceSupported) {
@@ -39,13 +39,13 @@ private[java] object WeakReferenceRegistry {
       }
     }
 
-  private[ref] def add(weakRef: WeakReference[_ >: Null <: AnyRef]): Unit =
+  private[ref] def add(weakRef: WeakReference[_]): Unit =
     if (isWeakReferenceSupported) weakRefList = weakRefList ++ List(weakRef)
 
   // Scala Native javalib exclusive functionality.
   // Can be used to emulate finalize for javalib classes where necessary.
   private[java] def addHandler(
-      weakRef: WeakReference[_ >: Null <: AnyRef],
+      weakRef: WeakReference[_],
       handler: Function0[Unit]
   ): Unit =
     if (isWeakReferenceSupported) postGCHandlerMap += (weakRef -> handler)

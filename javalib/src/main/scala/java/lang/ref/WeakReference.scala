@@ -5,10 +5,10 @@ package java.lang.ref
 // to register which fields shall not be marked by GC.
 // _gc_unmarked_ works like this only in the context of
 // the WeakReference class.
-class WeakReference[T >: Null <: AnyRef](
+class WeakReference[T](
     private var _gc_modified_referent: T,
-    queue: ReferenceQueue[_ >: T]
-) extends Reference[T](null) {
+    queue: ReferenceQueue[T]
+) extends Reference[T](null.asInstanceOf[T]) {
   // Since compiler generates _gc_modified_referent and referent
   // (of the Reference class) as two seperate fields and GC only
   // controls _gc_modified_ referent field, we pass null to the
@@ -36,7 +36,7 @@ class WeakReference[T >: Null <: AnyRef](
   override def isEnqueued(): Boolean = enqueued
 
   override def clear(): Unit = {
-    _gc_modified_referent = null
+    _gc_modified_referent = null.asInstanceOf[T]
     enqueue()
   }
 
