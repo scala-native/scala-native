@@ -15,18 +15,20 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     else {
       var i = 0
       var count = 1
-      do {
+      while ({
         count += 1
         i = path.indexOf('/', i + 1)
-      } while (i != -1)
+        i != -1
+      }) ()
       val result = new Array[Int](count)
       i = if (path.charAt(0) == '/') 0 else -1
       var j = 0
-      do {
+      while ({
         result(j) = i
         i = path.indexOf('/', i + 1)
         j += 1
-      } while (i != -1)
+        i != -1
+      }) ()
       result(count - 1) = path.length
       result
     }

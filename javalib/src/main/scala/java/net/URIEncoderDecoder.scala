@@ -16,7 +16,7 @@ object URIEncoderDecoder {
       val ch: Char = s.charAt(i)
       if (ch == '%') {
         continue = true
-        do {
+        while ({
           if (i + 2 >= s.length) {
             throw new URISyntaxException(s, "Incomplete % sequence", i)
           }
@@ -30,7 +30,8 @@ object URIEncoderDecoder {
             )
           }
           i += 3
-        } while (i < s.length && s.charAt(i) == '%')
+          i < s.length && s.charAt(i) == '%'
+        }) ()
       } else if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
             (ch >= '0' && ch <= '9') || legal.indexOf(ch) > -1 ||
             (ch > 127 && !java.lang.Character.isSpaceChar(ch) &&
@@ -101,7 +102,7 @@ object URIEncoderDecoder {
       val c: Char = s.charAt(i)
       if (c == '%') {
         out.reset()
-        do {
+        while ({
           if (i + 2 >= s.length) {
             throw new IllegalArgumentException("Incomplete % sequence at: " + i)
           }
@@ -114,7 +115,8 @@ object URIEncoderDecoder {
           }
           out.write(((d1 << 4) + d2).toByte)
           i += 3
-        } while (i < s.length && s.charAt(i) == '%')
+          i < s.length && s.charAt(i) == '%'
+        }) ()
         result.append(out.toString(encoding))
       }
       result.append(c)

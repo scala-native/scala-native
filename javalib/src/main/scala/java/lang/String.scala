@@ -589,11 +589,12 @@ final class _String()
       val buffer = new Array[Char](count)
       System.arraycopy(value, offset, buffer, 0, count)
 
-      do {
+      while ({
         buffer(index) = newChar
         index += 1
         index = indexOf(oldChar, index)
-      } while (index != -1)
+        index != -1
+      }) ()
 
       new _String(0, count, buffer)
     }
@@ -630,12 +631,13 @@ final class _String()
       val buffer = new java.lang.StringBuilder(count + rs.length)
       val tl = target.length()
       var tail = 0
-      do {
+      while ({
         buffer.append(value, offset + tail, index - tail)
         buffer.append(rs)
         tail = index + tl
         index = indexOf(ts, tail)
-      } while (index != -1)
+        index != -1
+      }) ()
       buffer.append(value, offset + tail, count - tail)
 
       buffer.toString
@@ -1187,9 +1189,10 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       if (separatorCount == count) {
         return Array.empty[String]
       }
-      do {
+      while ({
         begin -= 1
-      } while (charAt(begin - 1) == ch)
+        charAt(begin - 1) == ch
+      }) ()
       separatorCount -= count - begin
       begin
     } else {

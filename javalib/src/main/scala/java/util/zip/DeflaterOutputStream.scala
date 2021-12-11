@@ -31,10 +31,11 @@ class DeflaterOutputStream(
   def this(out: OutputStream) = this(out, false)
 
   protected def deflate(): Unit = {
-    do {
+    while ({
       val len = `def`.deflate(buf)
       out.write(buf, 0, len)
-    } while (!`def`.needsInput())
+      !`def`.needsInput()
+    }) ()
   }
 
   override def close(): Unit = {

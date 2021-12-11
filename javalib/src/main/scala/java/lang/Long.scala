@@ -382,11 +382,12 @@ object Long {
       else 64 - numberOfLeadingZeros(l)
     val buffer = new Array[Char](count)
     var k = l
-    do {
+    while ({
       count -= 1
       buffer(count) = ((k & 1) + '0').toChar
       k >>= 1
-    } while (count > 0)
+      count > 0
+    }) ()
 
     new String(buffer)
   }
@@ -397,7 +398,7 @@ object Long {
       else ((64 - numberOfLeadingZeros(l)) + 3) / 4
     val buffer = new Array[Char](count)
     var k = l
-    do {
+    while ({
       var t = (k & 15).toInt
       if (t > 9) {
         t = t - 10 + 'a'
@@ -407,7 +408,8 @@ object Long {
       count -= 1
       buffer(count) = t.toChar
       k >>= 4
-    } while (count > 0)
+      count > 0
+    }) ()
 
     new String(buffer)
   }
@@ -418,11 +420,12 @@ object Long {
       else ((64 - numberOfLeadingZeros(l)) + 2) / 3
     val buffer = new Array[Char](count)
     var k = l
-    do {
+    while ({
       count -= 1
       buffer(count) = ((k & 7) + '0').toChar
       k >>>= 3
-    } while (count > 0)
+      count > 0
+    }) ()
 
     new String(buffer)
   }
@@ -453,7 +456,7 @@ object Long {
       }
 
       val buffer = new Array[Char](count)
-      do {
+      while ({
         var ch = 0 - (j % radix)
         if (ch > 9) {
           ch = ch - 10 + 'a'
@@ -463,7 +466,8 @@ object Long {
         count -= 1
         buffer(count) = ch.toChar
         j = j / radix
-      } while (j != 0)
+        j != 0
+      }) ()
 
       if (negative) {
         buffer(0) = '-'
@@ -579,13 +583,14 @@ object Long {
 
       // populate string with characters
       val buffer = new Array[Char](count)
-      do {
+      while ({
         val digit = remainderUnsigned(j, radix)
         val ch = Character.forDigit(digit.toInt, radix)
         count -= 1
         buffer(count) = ch
         j = divideUnsigned(j, radix)
-      } while (j != 0)
+        j != 0
+      }) ()
 
       new String(buffer)
     }
