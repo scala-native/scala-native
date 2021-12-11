@@ -106,7 +106,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     new UnixPath(fs, (beginIndex until endIndex).map(getName).mkString("/"))
 
   override def startsWith(other: Path): Boolean =
-    if (fs.provider == other.getFileSystem().provider()) {
+    if (fs.provider() == other.getFileSystem().provider()) {
       val otherLength = other.getNameCount()
       val thisLength = getNameCount()
 
@@ -123,7 +123,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     startsWith(new UnixPath(fs, other))
 
   override def endsWith(other: Path): Boolean =
-    if (fs.provider == other.getFileSystem().provider()) {
+    if (fs.provider() == other.getFileSystem().provider()) {
       val otherLength = other.getNameCount()
       val thisLength = getNameCount()
       if (otherLength > thisLength) false
@@ -210,7 +210,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     }
 
   override def compareTo(other: Path): Int =
-    if (fs.provider == other.getFileSystem().provider()) {
+    if (fs.provider() == other.getFileSystem().provider()) {
       this.toString().compareTo(other.toString)
     } else {
       throw new ClassCastException()

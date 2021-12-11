@@ -1,12 +1,12 @@
 package java.util.concurrent.atomic
 
-class AtomicLongArray(length: Int) extends Serializable {
+class AtomicLongArray(_length: Int) extends Serializable {
   def this(array: Array[Long]) = {
     this(array.size)
-    System.arraycopy(array, 0, inner, 0, length)
+    System.arraycopy(array, 0, inner, 0, _length)
   }
 
-  private val inner: Array[Long] = new Array[Long](length)
+  private val inner: Array[Long] = new Array[Long](_length)
 
   final def length(): Int =
     inner.length
