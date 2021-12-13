@@ -301,4 +301,7 @@ jobs:
           javalib3/compile
           scalalib3/compile
           testRunner3/test
-          testingCompiler3/Test/compile
+          junitRuntime3/compile
+          testInterfaceSbtDefs3/compile
+          testInterface3/compile
+          testingCompiler3/compile
