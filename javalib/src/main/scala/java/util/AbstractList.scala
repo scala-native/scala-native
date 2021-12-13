@@ -223,7 +223,7 @@ private abstract class AbstractListView[E](
 private class BackedUpListIterator[E](
     innerIterator: ListIterator[E],
     fromIndex: Int,
-    override protected var end: Int
+    protected var end: Int
 ) extends ListIterator[E]
     with SizeChangeEvent {
 

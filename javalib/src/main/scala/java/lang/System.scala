@@ -63,7 +63,7 @@ object System {
       sysProps.setProperty("path.separator", ";")
       sysProps.setProperty(
         "java.io.tmpdir", {
-          val buffer = stackalloc[scala.Byte](MAX_PATH)
+          val buffer: Ptr[scala.Byte] = stackalloc[scala.Byte](MAX_PATH)
           GetTempPathA(MAX_PATH, buffer)
           fromCString(buffer)
         }
@@ -133,7 +133,7 @@ object System {
         Some(fromCWideString(buf, StandardCharsets.UTF_16LE))
       else None
     } else {
-      val buf = stackalloc[scala.Byte](bufSize)
+      val buf: Ptr[scala.Byte] = stackalloc[scala.Byte](bufSize)
       val cwd = unistd.getcwd(buf, bufSize)
       Option(cwd).map(fromCString(_))
     }

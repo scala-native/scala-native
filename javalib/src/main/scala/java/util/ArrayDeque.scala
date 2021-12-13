@@ -226,7 +226,7 @@ class ArrayDeque[E] private (private val inner: ArrayList[E])
     inner.toArray()
   }
 
-  override def toArray[T](a: Array[T]): Array[T] = {
+  override def toArray[T <: AnyRef](a: Array[T]): Array[T] = {
     inner.toArray(a)
   }
 }

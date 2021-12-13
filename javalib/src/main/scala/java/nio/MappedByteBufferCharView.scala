@@ -15,7 +15,10 @@ private[nio] final class MappedByteBufferCharView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newMappedCharBufferView =
+  private def genBuffer = GenBuffer[CharBuffer](this)
+  private def genHeapBufferView = GenMappedBufferView[CharBuffer](this)
+  private implicit def newMappedCharBufferView
+      : GenMappedBufferView.NewMappedBufferView[CharBuffer] =
     MappedByteBufferCharView.NewMappedByteBufferCharView
 
   def isReadOnly(): Boolean = _readOnly
@@ -24,15 +27,15 @@ private[nio] final class MappedByteBufferCharView private (
 
   @noinline
   def slice(): CharBuffer =
-    GenMappedBufferView(this).generic_slice()
+    genHeapBufferView.generic_slice()
 
   @noinline
   def duplicate(): CharBuffer =
-    GenMappedBufferView(this).generic_duplicate()
+    genHeapBufferView.generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): CharBuffer =
-    GenMappedBufferView(this).generic_asReadOnlyBuffer()
+    genHeapBufferView.generic_asReadOnlyBuffer()
 
   def subSequence(start: Int, end: Int): CharBuffer = {
     if (start < 0 || end < start || end > remaining())
@@ -50,45 +53,45 @@ private[nio] final class MappedByteBufferCharView private (
 
   @noinline
   def get(): Char =
-    GenBuffer(this).generic_get()
+    genBuffer.generic_get()
 
   @noinline
   def put(c: Char): CharBuffer =
-    GenBuffer(this).generic_put(c)
+    genBuffer.generic_put(c)
 
   @noinline
   def get(index: Int): Char =
-    GenBuffer(this).generic_get(index)
+    genBuffer.generic_get(index)
 
   @noinline
   def put(index: Int, c: Char): CharBuffer =
-    GenBuffer(this).generic_put(index, c)
+    genBuffer.generic_put(index, c)
 
   @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   @noinline
   def compact(): CharBuffer =
-    GenMappedBufferView(this).generic_compact()
+    genHeapBufferView.generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenMappedBufferView(this).generic_order()
+    genHeapBufferView.generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Char =
-    GenMappedBufferView(this).byteArrayBits.loadChar(index)
+    genHeapBufferView.byteArrayBits.loadChar(index)
 
   @inline
   private[nio] def store(index: Int, elem: Char): Unit =
-    GenMappedBufferView(this).byteArrayBits.storeChar(index, elem)
+    genHeapBufferView.byteArrayBits.storeChar(index, elem)
 }
 
 private[nio] object MappedByteBufferCharView {

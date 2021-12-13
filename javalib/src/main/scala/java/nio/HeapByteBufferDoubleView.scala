@@ -14,7 +14,10 @@ private[nio] final class HeapByteBufferDoubleView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newHeapDoubleBufferView =
+  private def genBuffer = GenBuffer[DoubleBuffer](this)
+  private def genHeapBufferView = GenHeapBufferView[DoubleBuffer](this)
+  private implicit def newHeapBufferView
+      : GenHeapBufferView.NewHeapBufferView[DoubleBuffer] =
     HeapByteBufferDoubleView.NewHeapByteBufferDoubleView
 
   def isReadOnly(): Boolean = _readOnly
@@ -23,57 +26,57 @@ private[nio] final class HeapByteBufferDoubleView private (
 
   @noinline
   def slice(): DoubleBuffer =
-    GenHeapBufferView(this).generic_slice()
+    genHeapBufferView.generic_slice()
 
   @noinline
   def duplicate(): DoubleBuffer =
-    GenHeapBufferView(this).generic_duplicate()
+    genHeapBufferView.generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): DoubleBuffer =
-    GenHeapBufferView(this).generic_asReadOnlyBuffer()
+    genHeapBufferView.generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Double =
-    GenBuffer(this).generic_get()
+    genBuffer.generic_get()
 
   @noinline
   def put(c: Double): DoubleBuffer =
-    GenBuffer(this).generic_put(c)
+    genBuffer.generic_put(c)
 
   @noinline
   def get(index: Int): Double =
-    GenBuffer(this).generic_get(index)
+    genBuffer.generic_get(index)
 
   @noinline
   def put(index: Int, c: Double): DoubleBuffer =
-    GenBuffer(this).generic_put(index, c)
+    genBuffer.generic_put(index, c)
 
   @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Double], offset: Int, length: Int): DoubleBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   @noinline
   def compact(): DoubleBuffer =
-    GenHeapBufferView(this).generic_compact()
+    genHeapBufferView.generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView(this).generic_order()
+    genHeapBufferView.generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Double =
-    GenHeapBufferView(this).byteArrayBits.loadDouble(index)
+    genHeapBufferView.byteArrayBits.loadDouble(index)
 
   @inline
   private[nio] def store(index: Int, elem: Double): Unit =
-    GenHeapBufferView(this).byteArrayBits.storeDouble(index, elem)
+    genHeapBufferView.byteArrayBits.storeDouble(index, elem)
 }
 
 private[nio] object HeapByteBufferDoubleView {

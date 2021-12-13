@@ -154,7 +154,7 @@ class RandomAccessFile private (
       val fileLength = length()
       val toSkip =
         if (currentPosition + n > fileLength) fileLength - currentPosition
-        else n
+        else n.toLong
       seek(toSkip)
       toSkip.toInt
     }

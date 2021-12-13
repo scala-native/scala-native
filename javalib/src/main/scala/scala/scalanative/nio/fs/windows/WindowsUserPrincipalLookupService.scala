@@ -17,8 +17,6 @@ object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
     lookupByName(name) match {
       case Success(user: WindowsUserPrincipal.User) => user
       case other =>
-        println(name)
-        println(other)
         throw new UserPrincipalNotFoundException(name)
     }
   }

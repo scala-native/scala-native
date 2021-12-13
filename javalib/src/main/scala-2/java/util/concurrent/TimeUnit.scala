@@ -1,3 +1,5 @@
+// Enums are not source-compatible, make sure to sync this file with Scala 3 implementation
+
 package java.util.concurrent
 
 // Ported from Scala.js

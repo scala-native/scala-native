@@ -1,3 +1,6 @@
+// Classes in this file need special handling in Scala 3, we need to make sure
+// that they would not be compiled with Scala 3 compiler
+
 package java.lang
 
 abstract class Enum[E <: Enum[E]] protected (_name: String, _ordinal: Int)

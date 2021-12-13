@@ -1,3 +1,5 @@
+// Enums are not source-compatible, make sure to sync this file with Scala 3 implementation
+
 package java.nio.file.attribute
 
 class PosixFilePermission private (name: String, ordinal: Int)
@@ -13,7 +15,7 @@ object PosixFilePermission {
   final val OTHERS_WRITE = new PosixFilePermission("OTHERS_WRITE", 7)
   final val OTHERS_EXECUTE = new PosixFilePermission("OTHERS_EXECUTE", 8)
 
-  def values(): Array[PosixFilePermission] = _values.clone()
+  def values: Array[PosixFilePermission] = _values.clone()
 
   private[this] val _values = Array(
     OWNER_READ,

@@ -16,9 +16,10 @@ object PosixFilePermissions {
       val set = new HashSet[PosixFilePermission]()
       var i = 0
       while (i < 3) {
-        if (isR(perms, i)) set.add(PosixFilePermission.values()(3 * i))
-        if (isW(perms, i)) set.add(PosixFilePermission.values()(3 * i + 1))
-        if (isX(perms, i)) set.add(PosixFilePermission.values()(3 * i + 2))
+        val permissions = PosixFilePermission.values
+        if (isR(perms, i)) set.add(permissions(3 * i))
+        if (isW(perms, i)) set.add(permissions(3 * i + 1))
+        if (isX(perms, i)) set.add(permissions(3 * i + 2))
         i += 1
       }
       set

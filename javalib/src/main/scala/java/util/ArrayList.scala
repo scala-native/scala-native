@@ -85,7 +85,7 @@ class ArrayList[E] private (
   override def toArray(): Array[AnyRef] =
     inner.slice(0, _size).map(_.asInstanceOf[AnyRef])
 
-  override def toArray[T](a: Array[T]): Array[T] =
+  override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
     if (a == null)
       throw new NullPointerException
     else if (a.length < size())

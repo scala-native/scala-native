@@ -1,5 +1,11 @@
-package java.util
+// Due to location constraints of Enums in Scala 3 we cannot place their
+// implementation in provider trait implemented for both version.
+// Also companion object needs to be defined in the same file as class
+// The only remaining solution to provide Scala version dependent implementation
+// is by providing common implementation used by actual Formatter class defining
+// correct enums for each Scala version.
 
+package java.util
 // Ported from Scala.js, commit: 0383e9f, dated: 2021-03-07
 
 import java.io._
@@ -13,13 +19,14 @@ import java.nio.CharBuffer
 import java.nio.charset.Charset
 import scala.annotation.{switch, tailrec}
 
-final class Formatter private (
+private[util] abstract class FormatterImpl protected (
     private var dest: Appendable,
     formatterLocaleInfo: Formatter.LocaleInfo
 ) extends Closeable
     with Flushable {
+  self: Formatter =>
+  import FormatterImpl._
 
-  import Formatter._
   import Flags._
 
   if (dest == null) {
@@ -28,78 +35,6 @@ final class Formatter private (
 
   private[this] var closed: Boolean = false
   private[this] var lastIOException: IOException = null
-
-  def this() =
-    this(new JStringBuilder(), Formatter.RootLocaleInfo)
-  def this(a: Appendable) =
-    this(a, Formatter.RootLocaleInfo)
-  def this(l: Locale) =
-    this(new JStringBuilder(), new Formatter.LocaleLocaleInfo(l))
-
-  def this(a: Appendable, l: Locale) =
-    this(a, new Formatter.LocaleLocaleInfo(l))
-
-  private def this(
-      os: OutputStream,
-      csn: String,
-      localeInfo: Formatter.LocaleInfo
-  ) =
-    this(
-      new BufferedWriter(new OutputStreamWriter(os, csn)),
-      localeInfo
-    )
-  def this(os: OutputStream, csn: String, l: Locale) =
-    this(os, csn, new Formatter.LocaleLocaleInfo(l))
-  def this(os: OutputStream, csn: String) =
-    this(os, csn, Formatter.RootLocaleInfo)
-  def this(os: OutputStream) =
-    this(os, Charset.defaultCharset().name(), Formatter.RootLocaleInfo)
-
-  private def this(file: File, csn: String, l: Formatter.LocaleInfo) =
-    this(
-      {
-        var fout: FileOutputStream = null
-        try {
-          fout = new FileOutputStream(file)
-          val writer = new OutputStreamWriter(fout, csn)
-          new BufferedWriter(writer)
-        } catch {
-          case e @ (_: RuntimeException | _: UnsupportedEncodingException) =>
-            if (fout != null) {
-              try { fout.close() }
-              catch {
-                case _: IOException => () // silently
-              }
-            }
-            throw e
-        }
-      },
-      l
-    )
-
-  def this(file: File, csn: String, l: Locale) =
-    this(file, csn, new Formatter.LocaleLocaleInfo(l))
-  def this(file: File, csn: String) =
-    this(file, csn, Formatter.RootLocaleInfo)
-
-  def this(file: File) =
-    this(new FileOutputStream(file))
-  def this(ps: PrintStream) =
-    this(
-      {
-        if (null == ps)
-          throw new NullPointerException()
-        ps
-      },
-      Formatter.RootLocaleInfo
-    )
-
-  def this(fileName: String, csn: String, l: Locale) =
-    this(new File(fileName), csn, l)
-  def this(fileName: String, csn: String) =
-    this(new File(fileName), csn)
-  def this(fileName: String) =
-    this(new File(fileName))
 
   @inline
   private def trapIOExceptions(body: => Unit): Unit = {
@@ -142,13 +77,13 @@ final class Formatter private (
   }
 
   def format(format: String, args: Array[AnyRef]): Formatter =
-    this.format(formatterLocaleInfo, format, args)
+    this.asInstanceOf[FormatterImpl].format(formatterLocaleInfo, format, args)
 
   def format(l: Locale, format: String, args: Array[AnyRef]): Formatter =
     this.format(new LocaleLocaleInfo(l), format, args)
 
-  private def format(
-      localeInfo: LocaleInfo,
+  private[util] def format(
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       format: String,
       args: Array[AnyRef]
   ): Formatter = {
@@ -294,7 +229,14 @@ final class Formatter private (
             "null"
           )
         } else {
-          formatArg(localeInfo, arg, conversionLower, flags, width, precision)
+          formatArg(
+            localeInfo,
+            arg,
+            conversionLower,
+            flags,
+            width,
+            precision
+          )
         }
       }
     }
@@ -305,7 +247,7 @@ final class Formatter private (
   }
 
   private def formatArg(
-      localeInfo: LocaleInfo,
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       arg: Any,
       conversionLower: Char,
       flags: Flags,
@@ -819,7 +761,7 @@ final class Formatter private (
   }
 
   private def formatNonNumericString(
-      localeInfo: LocaleInfo,
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       flags: Flags,
       width: Int,
       precision: Int,
@@ -854,7 +796,7 @@ final class Formatter private (
   }
 
   private def formatNumericString(
-      localeInfo: LocaleInfo,
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       flags: Flags,
       width: Int,
       str: String,
@@ -917,7 +859,7 @@ final class Formatter private (
    *  with another meaning (such as '.') at this point.
    */
   private def insertGroupingCommas(
-      localeInfo: LocaleInfo,
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       s: String
   ): String = {
     val groupingSize = localeInfo.groupingSize
@@ -949,7 +891,7 @@ final class Formatter private (
     else str
 
   private def applyUpperCase(
-      localeInfo: LocaleInfo,
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       flags: Flags,
       str: String
   ): String =
@@ -975,7 +917,7 @@ final class Formatter private (
 
   /** This method ignores `flags.upperCase`. */
   private def padAndSendToDest(
-      localeInfo: LocaleInfo,
+      localeInfo: FormatterCompanionImpl#LocaleInfo,
       flags: Flags,
       width: Int,
       prefix: String,
@@ -1083,8 +1025,7 @@ final class Formatter private (
 
 }
 
-object Formatter {
-
+object FormatterImpl extends FormatterCompanionImpl {
   private def appendZeros(builder: JStringBuilder, count: Int): builder.type = {
     val twentyZeros = "00000000000000000000"
     if (count <= 20) {
@@ -1104,27 +1045,6 @@ object Formatter {
   private def assert(condition: Boolean, msg: => String): Unit = {
     if (!condition)
       throw new AssertionError(msg)
-  }
-
-  final class BigDecimalLayoutForm private (name: String, ordinal: Int)
-      extends Enum[BigDecimalLayoutForm](name, ordinal)
-
-  object BigDecimalLayoutForm {
-
-    final val SCIENTIFIC = new BigDecimalLayoutForm("SCIENTIFIC", 0)
-    final val DECIMAL_FLOAT = new BigDecimalLayoutForm("DECIMAL_FLOAT", 1)
-
-    def valueOf(name: String): BigDecimalLayoutForm =
-      _values.find(_.name() == name).getOrElse {
-        throw new IllegalArgumentException(
-          "No enum constant java.util.Formatter.BigDecimalLayoutForm." + name
-        )
-      }
-
-    private val _values: Array[BigDecimalLayoutForm] =
-      Array(SCIENTIFIC, DECIMAL_FLOAT)
-
-    def values(): Array[BigDecimalLayoutForm] = _values.clone()
   }
 
   /* This class is never used in a place where it would box, so it will
@@ -1156,7 +1076,7 @@ object Formatter {
    * methods. Therefore, it will completely disappear at link-time. Make sure
    * to keep it that way. In particular, do not add non-inlineable methods.
    */
-  private object Flags {
+  private[util] object Flags {
     final val LeftAlign = 0x001
     final val AltFormat = 0x002
     final val PositivePlus = 0x004
@@ -1417,94 +1337,6 @@ object Formatter {
       new Decimal(negative, "0", 0)
   }
 
-  /* A proxy for a `java.util.Locale` or for the root locale that provides
-   * the info required by `Formatter`.
-   *
-   * The purpose of this abstraction is to allow `java.util.Formatter` to link
-   * when `java.util.Locale` and `java.text.*` are not on the classpath, as
-   * long as only methods that do not take an explicit `Locale` are used.
-   *
-   * While the `LocaleLocaleInfo` subclass actually delegates to a `Locale`
-   * (and hence cannot link without `Locale`), the object `RootLocaleInfo`
-   * hard-codes the required information about the Root locale.
-   *
-   * We use object-oriented method calls so that the reachability analysis
-   * never reaches the `Locale`-dependent code if `LocaleLocaleInfo` is never
-   * instantiated, which is the case as long the methods and constructors
-   * taking an explicit `Locale` are not called.
-   *
-   * When `LocaleLocaleInfo` can be dead-code-eliminated, the optimizer can
-   * even inline and constant-fold all the methods of `RootLocaleInfo`,
-   * resulting in top efficiency.
-   */
-  private sealed abstract class LocaleInfo {
-    def locale: Locale
-
-    def groupingSize: Int
-
-    def localizeNumber(str: String): String
-
-    def toUpperCase(str: String): String
-
-    def zeroDigit: Char
-
-    def zeroDigitString: String = zeroDigit.toString
-  }
-
-  private object RootLocaleInfo extends LocaleInfo {
-    def locale: Locale = Locale.ROOT
-
-    def groupingSize: Int = 3
-
-    def zeroDigit: Char = '0'
-
-    def localizeNumber(str: String): String = str
-
-    def toUpperCase(str: String): String = str.toUpperCase()
-  }
-
-  private final class LocaleLocaleInfo(val locale: Locale) extends LocaleInfo {
-
-    import java.text._
-
-    private def actualLocale: Locale =
-      if (locale == null) Locale.ROOT
-      else locale
-
-    private lazy val decimalFormatSymbols: DecimalFormatSymbols =
-      DecimalFormatSymbols.getInstance(actualLocale)
-
-    lazy val groupingSize: Int = getGroupingSize
-
-    private def getGroupingSize =
-      NumberFormat.getNumberInstance(actualLocale) match {
-        case decimalFormat: DecimalFormat => decimalFormat.getGroupingSize()
-        case _                            => 3
-      }
-
-    def zeroDigit: Char = decimalFormatSymbols.getZeroDigit()
-
-    def localizeNumber(str: String): String = {
-      val formatSymbols = decimalFormatSymbols
-      val digitOffset = formatSymbols.getZeroDigit() - '0'
-      var result = ""
-      val len = str.length()
-      var i = 0
-      while (i != len) {
-        result += (str.charAt(i) match {
-          case c if isAsciiDigit(c) => (c + digitOffset).toChar
-          case '.'                  => formatSymbols.getDecimalSeparator()
-          case ','                  => formatSymbols.getGroupingSeparator()
-          case c                    => c
-        })
-        i += 1
-      }
-      result
-    }
-
-    def toUpperCase(str: String): String = str.toUpperCase(actualLocale)
-  }
-
   /* ParserStateMachine ported from Apache Harmony,
    * Used instead of regexp due to performance issues
    */
@@ -1741,5 +1573,101 @@ object Formatter {
   }
 
   @inline
-  private def isAsciiDigit(c: Char) = c >= '0' && c <= '9'
+  private[util] def isAsciiDigit(c: Char) = c >= '0' && c <= '9'
+}
+
+abstract class FormatterCompanionImpl {
+  import FormatterImpl._
+
+  /* A proxy for a `java.util.Locale` or for the root locale that provides
+   * the info required by `Formatter`.
+   *
+   * The purpose of this abstraction is to allow `java.util.Formatter` to link
+   * when `java.util.Locale` and `java.text.*` are not on the classpath, as
+   * long as only methods that do not take an explicit `Locale` are used.
+   *
+   * While the `LocaleLocaleInfo` subclass actually delegates to a `Locale`
+   * (and hence cannot link without `Locale`), the object `RootLocaleInfo`
+   * hard-codes the required information about the Root locale.
+   *
+   * We use object-oriented method calls so that the reachability analysis
+   * never reaches the `Locale`-dependent code if `LocaleLocaleInfo` is never
+   * instantiated, which is the case as long the methods and constructors
+   * taking an explicit `Locale` are not called.
+   *
+   * When `LocaleLocaleInfo` can be dead-code-eliminated, the optimizer can
+   * even inline and constant-fold all the methods of `RootLocaleInfo`,
+   * resulting in top efficiency.
+   */
+  private[util] sealed abstract class LocaleInfo {
+    def locale: Locale
+
+    def groupingSize: Int
+
+    def localizeNumber(str: String): String
+
+    def toUpperCase(str: String): String
+
+    def zeroDigit: Char
+
+    def zeroDigitString: String = zeroDigit.toString
+  }
+
+  private[util] object RootLocaleInfo extends LocaleInfo {
+    def locale: Locale = Locale.ROOT
+
+    def groupingSize: Int = 3
+
+    def zeroDigit: Char = '0'
+
+    def localizeNumber(str: String): String = str
+
+    def toUpperCase(str: String): String = str.toUpperCase()
+  }
+
+  private[util] final class LocaleLocaleInfo(val locale: Locale)
+      extends LocaleInfo {
+
+    import java.text._
+
+    private def actualLocale: Locale =
+      if (locale == null) Locale.ROOT
+      else locale
+
+    private lazy val decimalFormatSymbols: DecimalFormatSymbols =
+      DecimalFormatSymbols.getInstance(actualLocale)
+
+    lazy val groupingSize: Int = getGroupingSize
+
+    private def getGroupingSize =
+      NumberFormat.getNumberInstance(actualLocale) match {
+        case decimalFormat: DecimalFormat => decimalFormat.getGroupingSize()
+        case _                            => 3
+      }
+
+    def zeroDigit: Char = decimalFormatSymbols.getZeroDigit()
+
+    def localizeNumber(str: String): String = {
+      val formatSymbols = decimalFormatSymbols
+      val digitOffset = formatSymbols.getZeroDigit() - '0'
+      val result = new JStringBuilder()
+      val len = str.length()
+      var i = 0
+      while (i != len) {
+        result.append {
+          (str.charAt(i) match {
+            case c if isAsciiDigit(c) => (c + digitOffset).toChar
+            case '.'                  => formatSymbols.getDecimalSeparator()
+            case ','                  => formatSymbols.getGroupingSeparator()
+            case c                    => c
+          })
+        }
+        i += 1
+      }
+      result.toString()
+    }
+
+    def toUpperCase(str: String): String = str.toUpperCase(actualLocale)
+  }
+
 }

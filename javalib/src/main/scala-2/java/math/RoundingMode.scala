@@ -1,3 +1,5 @@
+// Enums are not source-compatible, make sure to sync this file with Scala 3 implementation
+
 /*
  * Ported by Alistair Johnson from
  * https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/java/math/RoundingMode.java

@@ -1,3 +1,5 @@
+// Enums are not source-compatible, make sure to sync this file with Scala 3 implementation
+
 package java.nio.file
 
 class StandardOpenOption private (name: String, ordinal: Int)

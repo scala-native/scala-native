@@ -1,3 +1,5 @@
+// Enums are not source-compatible, make sure to sync this file with Scala 3 implementation
+
 package java.nio.file
 
 final class FileVisitResult private (name: String, ordinal: Int)

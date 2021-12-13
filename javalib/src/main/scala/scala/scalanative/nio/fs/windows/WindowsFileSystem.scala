@@ -21,9 +21,10 @@ import scalanative.annotation.stub
 import scalanative.windows.FileApi._
 import scala.annotation.tailrec
 
-class WindowsFileSystem(override val provider: WindowsFileSystemProvider)
+class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)
     extends FileSystem {
 
+  override def provider(): WindowsFileSystemProvider = fsProvider
   override def close(): Unit = throw new UnsupportedOperationException()
 
   @stub
