@@ -297,3 +297,5 @@ jobs:
           posixlib3/compile
           windowslib3/compile
           auxlib3/compile
+          javalib3/compile
+          scalalib3/compile
