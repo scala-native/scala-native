@@ -18,7 +18,7 @@ import ProcessBuilder.Redirect
 
 private[lang] class ProcessBuilderImpl(private var _command: List[String]) {
   self: java.lang.ProcessBuilder =>
-    
+
   def command(): List[String] = _command
 
   def command(command: Array[String]): ProcessBuilder =

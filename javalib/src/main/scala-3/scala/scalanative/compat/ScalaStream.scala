@@ -1,5 +1,5 @@
 // This file defines common wrapper for Scala streams
-// to allow for cross-compilation between Scala 2.12- and Scala 2.13+ 
+// to allow for cross-compilation between Scala 2.12- and Scala 2.13+
 // due to changes to collections API used in the javalib.
 package scala.scalanative.compat
 
