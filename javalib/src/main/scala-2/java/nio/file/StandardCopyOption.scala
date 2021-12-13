@@ -1,4 +1,4 @@
-// Enums are not source-compatible, make sure to sync this file's Scala 3 implementation
+// Enums are not source-compatible, make sure to sync this file with Scala 3 implementation
 
 package java.nio.file
 

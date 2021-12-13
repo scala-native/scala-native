@@ -1,3 +1,5 @@
+// Enums are not source-compatible, make sure to sync this file with Scala 2 implementation
+
 package java.util.concurrent
 
 import java.sql.Time

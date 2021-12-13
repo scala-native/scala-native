@@ -1,3 +1,9 @@
+// Make sure to sync this file with its Scala 2 counterpart.
+// Duo to problems with source-comaptibility of enums between Scala 2 and 3
+// main logic of Formatter was factored out to a shared `FormatterImpl` trait.
+// `Formatter` class should define only members that cannot be defined
+// in `FormatterImpl` like constructors and enums
+
 package java.util
 // Ported from Scala.js, commit: 0383e9f, dated: 2021-03-07
 

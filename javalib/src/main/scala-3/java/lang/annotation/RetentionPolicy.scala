@@ -1,4 +1,4 @@
-// Enums are not source-compatbile, make sure to sync this file Scala 2 implementation
+// Enums are not source-compatbile, make sure to sync this file with Scala 2 implementation
 
 package java.lang.annotation
 
