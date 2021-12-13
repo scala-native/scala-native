@@ -14,7 +14,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   val ParentFoo = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
   val ParentBar = g(ParentClsName, Sig.Field("bar"))
   val ParentBarSet =
-    g(ParentClsName, Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
+    g(ParentClsName, Sig.Method("bar_$eq", Seq(Type.Int, Type.Unit)))
   val ParentBarGet = g(ParentClsName, Sig.Method("bar", Seq(Type.Int)))
   val ParentMain = g(ParentClsName, Rt.ScalaMainSig)
   val Child = g(ChildClsName)

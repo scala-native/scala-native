@@ -23,7 +23,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   val ModuleFoo = g(ModuleClsName, Sig.Method("foo", Seq(Type.Unit)))
   val ModuleBar = g(ModuleClsName, Sig.Field("bar"))
   val ModuleBarSet =
-    g(ModuleClsName, Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
+    g(ModuleClsName, Sig.Method("bar_$eq", Seq(Type.Int, Type.Unit)))
   val ModuleBarGet = g(ModuleClsName, Sig.Method("bar", Seq(Type.Int)))
   val Parent = g(ParentClsName)
   val ParentInit = g(ParentClsName, Sig.Ctor(Seq.empty))
