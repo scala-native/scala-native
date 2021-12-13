@@ -703,6 +703,9 @@ class Reach(
       reachVal(v1)
       reachGlobal(n)
       reachVal(v2)
+    case Op.Field(obj, name) =>
+      reachVal(obj)
+      reachGlobal(name)
     case Op.Method(obj, sig) =>
       reachVal(obj)
       reachMethodTargets(obj.ty, sig)

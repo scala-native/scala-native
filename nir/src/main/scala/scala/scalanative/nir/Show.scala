@@ -276,6 +276,11 @@ object Show {
         global_(name)
         str(", ")
         val_(value)
+      case Op.Field(value, name) =>
+        str("field ")
+        val_(value)
+        str(", ")
+        global_(name)
       case Op.Method(value, sig) =>
         str("method ")
         val_(value)

@@ -24,6 +24,7 @@ sealed abstract class Op {
     case Op.Classalloc(n)       => Type.Ref(n, exact = true, nullable = false)
     case Op.Fieldload(ty, _, _) => ty
     case Op.Fieldstore(ty, _, _, _) => Type.Unit
+    case Op.Field(_, _)             => Type.Ptr
     case Op.Method(_, _)            => Type.Ptr
     case Op.Dynmethod(_, _)         => Type.Ptr
     case Op.Module(n) => Type.Ref(n, exact = true, nullable = false)
@@ -84,8 +85,8 @@ sealed abstract class Op {
     // Division and modulo are non-pure but idempotent.
     case op: Op.Bin =>
       true
-    case _: Op.Method | _: Op.Dynmethod | _: Op.Module | _: Op.Box |
-        _: Op.Unbox | _: Op.Arraylength =>
+    case _: Op.Field | _: Op.Method | _: Op.Dynmethod | _: Op.Module |
+        _: Op.Box | _: Op.Unbox | _: Op.Arraylength =>
       true
     case _ =>
       false
@@ -129,6 +130,7 @@ object Op {
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op
+  final case class Field(obj: Val, name: Global) extends Op
   final case class Method(obj: Val, sig: Sig) extends Op
   final case class Dynmethod(obj: Val, sig: Sig) extends Op
   final case class Module(name: Global) extends Op

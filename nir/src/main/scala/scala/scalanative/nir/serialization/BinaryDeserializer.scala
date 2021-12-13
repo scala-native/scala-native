@@ -231,6 +231,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.FieldloadOp  => Op.Fieldload(getType(), getVal(), getGlobal())
     case T.FieldstoreOp =>
       Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
+    case T.FieldOp      => Op.Field(getVal(), getGlobal())
     case T.MethodOp     => Op.Method(getVal(), getSig())
     case T.DynmethodOp  => Op.Dynmethod(getVal(), getSig())
     case T.ModuleOp     => Op.Module(getGlobal())
