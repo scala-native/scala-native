@@ -1,4 +1,4 @@
-// Any changes to this files needs to be synced with it's Scala2 counter part.
+// Any changes to this file need to be synced with it's Scala2 counterpart.
 // Due to enum restrictions it is impossible to create common implementation
 // for both Scala versions
 
