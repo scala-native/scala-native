@@ -7,7 +7,7 @@ import org.scalacheck.Prop.forAll
 
 object PerfectHashMapTest extends Properties("PerfectHashMap") {
 
-  property("correctness") = forAll { map: Map[Int, Int] =>
+  property("correctness") = forAll { (map: Map[Int, Int]) =>
     val perfectHashMap = PerfectHashMap(DynmethodPerfectHashMap.hash, map)
 
     map.forall { case (k, v) => perfectHashMap.perfectLookup(k) == v }
