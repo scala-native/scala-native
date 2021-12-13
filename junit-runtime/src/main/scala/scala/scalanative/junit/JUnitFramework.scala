@@ -7,7 +7,7 @@ import sbt.testing._
 
 final class JUnitFramework extends Framework {
 
-  val name: String = "Scala Native JUnit test framework"
+  override def name(): String = "Scala Native JUnit test framework"
 
   private object JUnitFingerprint extends AnnotatedFingerprint {
     override def annotationName(): String = "org.junit.Test"
