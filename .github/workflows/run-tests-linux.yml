@@ -294,8 +294,11 @@ jobs:
           "-no-colors" 
           "-J-Xmx3G" 
           tools3/compile
+          tools3/Test/compile
           posixlib3/compile
           windowslib3/compile
           auxlib3/compile
           javalib3/compile
           scalalib3/compile
+          testRunner3/test
+          testingCompiler3/Test/compile
