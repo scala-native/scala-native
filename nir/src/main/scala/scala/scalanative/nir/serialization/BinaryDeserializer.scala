@@ -26,6 +26,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     (prelude, pairs, files)
   }
 
+  private val usesEncodedMemberNames = prelude.revision >= 9
+
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
     header.foreach {
@@ -190,8 +192,16 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       Global.Member(Global.Top(getUTF8String()), getSig())
   }
 
-  private def getSig(): Sig =
-    new Sig(getUTF8String())
+  private def getSig(): Sig = {
+    val sig = new Sig(getUTF8String())
+    if (usesEncodedMemberNames) sig
+    else
+      sig.unmangled match {
+        case s: Sig.Field  => s.copy(id = NameTransformer.encode(s.id))
+        case s: Sig.Method => s.copy(id = NameTransformer.encode(s.id))
+        case sig           => sig
+      }
+  }
 
   private def getLocal(): Local =
     Local(getLong)
@@ -362,4 +372,73 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
     readPosition()
   }
+
+  // Copy pasted from Scala 3.1.0 compiler
+  // Used to encode names from NIR versions <= 5.8 produced with decoded names
+  private object NameTransformer {
+
+    private val nops = 128
+
+    private val op2code = new Array[String](nops)
+    private def enterOp(op: Char, code: String) = {
+      op2code(op.toInt) = code
+    }
+
+    /* Note: decoding assumes opcodes are only ever lowercase. */
+    enterOp('~', "$tilde")
+    enterOp('=', "$eq")
+    enterOp('<', "$less")
+    enterOp('>', "$greater")
+    enterOp('!', "$bang")
+    enterOp('#', "$hash")
+    enterOp('%', "$percent")
+    enterOp('^', "$up")
+    enterOp('&', "$amp")
+    enterOp('|', "$bar")
+    enterOp('*', "$times")
+    enterOp('/', "$div")
+    enterOp('+', "$plus")
+    enterOp('-', "$minus")
+    enterOp(':', "$colon")
+    enterOp('\\', "$bslash")
+    enterOp('?', "$qmark")
+    enterOp('@', "$at")
+
+    /** Replace operator symbols by corresponding expansion strings, and replace
+     *  characters that are not valid Java identifiers by "$u" followed by the
+     *  character's unicode expansion. Note that no attempt is made to escape
+     *  the use of '$' in `name`: blindly escaping them might make it impossible
+     *  to call some platform APIs. This unfortunately means that
+     *  `decode(encode(name))` might not be equal to `name`, this is considered
+     *  acceptable since '$' is a reserved character in the Scala spec as well
+     *  as the Java spec.
+     */
+    def encode(name: String): String = {
+      var buf: StringBuilder = null
+      val len = name.length
+      var i = 0
+      while (i < len) {
+        val c = name(i)
+        if (c < nops && (op2code(c.toInt) ne null)) {
+          if (buf eq null) {
+            buf = new StringBuilder()
+            buf.append(name.slice(0, i))
+          }
+          buf.append(op2code(c.toInt))
+          /* Handle glyphs that are not valid Java/JVM identifiers */
+        } else if (!Character.isJavaIdentifierPart(c)) {
+          if (buf eq null) {
+            buf = new StringBuilder()
+            buf.append(name.slice(0, i))
+          }
+          buf.append("$u%04X".format(c.toInt))
+        } else if (buf ne null) {
+          buf.append(c)
+        }
+        i += 1
+      }
+      if (buf eq null) name else buf.toString
+    }
+  }
+
 }
