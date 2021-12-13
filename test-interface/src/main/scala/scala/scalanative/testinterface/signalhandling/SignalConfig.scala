@@ -70,17 +70,16 @@ private[testinterface] object SignalConfig {
     strcat(stackTraceHeader, c" caught\n")
     printError(stackTraceHeader)
 
-    val cursor = stackalloc[scala.Byte](2048.toUInt)
-    val context = stackalloc[scala.Byte](2048.toUInt)
+    val cursor: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
+    val context: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
     unwind.get_context(context)
     unwind.init_local(cursor, context)
 
     while (unwind.step(cursor) > 0) {
-      val offset = stackalloc[scala.Byte](8.toUInt)
+      val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
       val pc = stackalloc[CUnsignedLongLong]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
-      if (pc == 0)
-        return
+      if (!pc == 0.toUInt) return
       val symMax = 1024
       val sym: Ptr[CChar] = stackalloc[CChar](symMax.toUInt)
       if (unwind.get_proc_name(

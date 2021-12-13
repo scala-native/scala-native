@@ -24,7 +24,7 @@ class RunMuxRPCTest {
   }
 
   @Test
-  def muxedCall: AsyncResult = await {
+  def muxedCall: Unit = await {
     val called = Array.fill(10)(false)
 
     for (i <- called.indices)
@@ -58,7 +58,7 @@ class RunMuxRPCTest {
   }
 
   @Test
-  def badRunId: AsyncResult = await {
+  def badRunId: Unit = await {
     x.attach(eps.call, 0)(_ => ())
 
     y.call(eps.call, 1)(())
