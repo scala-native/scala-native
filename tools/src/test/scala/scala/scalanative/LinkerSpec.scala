@@ -37,7 +37,32 @@ abstract class LinkerSpec extends AnyFlatSpec {
       val entries = ScalaNative.entries(config)
       val result = ScalaNative.link(config, entries)
 
-      fn(config, result)
+      val filteredResult = {
+        import scalanative.nir.Global._
+        import scalanative.nir.Sig
+        
+        // Until proper support for Scala 3 LazyVals is established 
+        val ignoredNames = List(
+          Top("sun.misc.Unsafe"),
+          Member(
+            Top("java.lang.Class"),
+            new Sig("D17getDeclaredFieldsLAL23java.lang.reflect.Field_EO")
+          )
+        )
+        new linker.Result(
+          infos = result.infos,
+          entries = result.entries,
+          unavailable = result.unavailable.diff(ignoredNames),
+          referencedFrom = result.referencedFrom,
+          links = result.links,
+          defns = result.defns,
+          dynsigs = result.dynsigs,
+          dynimpls = result.dynimpls,
+          resolvedVals = result.resolvedVals
+        )
+      }
+
+      fn(config, filteredResult)
     }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
