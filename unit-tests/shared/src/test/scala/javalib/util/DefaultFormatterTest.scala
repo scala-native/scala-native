@@ -709,7 +709,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForGeneralConversionType_bB(): Unit = {
-    val triple: Array[Array[Any]] = Array[Array[Any]](
+    val triple = Array[Array[Object]](
       Array(Boolean.box(false), "%3.2b", " fa"),
       Array(Boolean.box(false), "%-4.6b", "false"),
       Array(Boolean.box(false), "%.2b", "fa"),
@@ -746,7 +746,7 @@ class DefaultFormatterTest {
       Array(null.asInstanceOf[Object], "%3.2b", " fa"),
       Array(null.asInstanceOf[Object], "%-4.6b", "false"),
       Array(null.asInstanceOf[Object], "%.2b", "fa")
-    ).asInstanceOf[Array[Array[Any]]]
+    )
 
     val input = 0
     val pattern = 1
@@ -809,7 +809,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForGeneralConversionType_sS(): Unit = {
-    val triple: Array[Array[Any]] = Array[Array[Any]](
+    val triple = Array[Array[Object]](
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
       Array(Boolean.box(false), "%.5s", "false"),
@@ -858,7 +858,7 @@ class DefaultFormatterTest {
       Array(null.asInstanceOf[Object], "%2.3s", "nul"),
       Array(null.asInstanceOf[Object], "%-6.4s", "null  "),
       Array(null.asInstanceOf[Object], "%.5s", "null")
-    ).asInstanceOf[Array[Array[Any]]]
+    )
 
     val input = 0
     val pattern = 1
@@ -2312,7 +2312,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_f(): Unit = {
-    val tripleF: Array[Array[Any]] = Array(
+    val tripleF = Array(
       Array(0f, "%f", "0.000000"),
       Array(0f, "%#.3f", "0.000"),
       Array(0f, "%,5f", "0.000000"),
@@ -2503,7 +2503,7 @@ class DefaultFormatterTest {
 
   @Test def formatForDoubleMinValueConversionType_aA(): Unit = {
 
-    val tripleA: Array[Array[Any]] = Array(
+    val tripleA = Array(
       Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
     ).asInstanceOf[Array[Array[Any]]]
