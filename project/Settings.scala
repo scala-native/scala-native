@@ -312,9 +312,13 @@ object Settings {
       // start from scala to avoid jdk specific tests
       // baseDirectory = project/{native,jvm}/.{binVersion}
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
-      val sharedSources = allScalaFromDir(
-        testsRootDir / "shared/src/test/scala"
-      )
+      val sharedSources =
+        scalaVersionDirectories(
+          testsRootDir / "shared/src/test",
+          "scala",
+          scalaVersion.value
+        ).map{d => println(d); d}
+          .flatMap(allScalaFromDir(_))
 
       checkBlacklistCoherency(blacklist, sharedSources)
 
