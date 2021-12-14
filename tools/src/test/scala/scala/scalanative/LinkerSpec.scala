@@ -40,8 +40,8 @@ abstract class LinkerSpec extends AnyFlatSpec {
       val filteredResult = {
         import scalanative.nir.Global._
         import scalanative.nir.Sig
-        
-        // Until proper support for Scala 3 LazyVals is established 
+
+        // Until proper support for Scala 3 LazyVals is established
         val ignoredNames = List(
           Top("sun.misc.Unsafe"),
           Member(
