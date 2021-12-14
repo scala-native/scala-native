@@ -92,7 +92,7 @@ class ProcessTest {
       }
       assertProcessExitOrTimeout(proc)
       assertEquals("", readInputStream(proc.getErrorStream()))
-      val out = Source.fromFile(file.toString).getLines.mkString
+      val out = Source.fromFile(file.toString).getLines().mkString
 
       assertEquals("hello", out)
     } finally {

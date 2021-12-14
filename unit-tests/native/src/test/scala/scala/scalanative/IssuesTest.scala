@@ -218,8 +218,8 @@ class IssuesTest {
     bytes(0) = 'b'.toByte
     bytes(1) = 'a'.toByte
     val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
-    assertFalse(p == 'b'.toByte)
-    assertFalse((p + 1) == 'a'.toByte)
+    assertEquals('b'.toByte, !p)
+    assertEquals('a'.toByte, !(p + 1))
   }
 
   @Test def test_Issue349(): Unit = {
@@ -331,7 +331,7 @@ class IssuesTest {
 
     val x5: AnyRef = new { override def toString = "custom" }
     val x6: String = null
-    assertTrue(x5 + x6 == "customnull")
+    assertTrue(x5.toString + x6 == "customnull")
 
     val x7: String = null
     val x8: AnyRef = new { override def toString = "custom" }
@@ -343,11 +343,11 @@ class IssuesTest {
 
     val x11: AnyRef = null
     val x12: String = null
-    assertTrue(x11 + x12 == "nullnull")
+    assertTrue(x11.toString + x12 == "nullnull")
 
     val x13: String = null
     val x14: AnyRef = null
-    assertTrue(x13 + x14 == "nullnull")
+    assertTrue(x13 + x14.toString == "nullnull")
   }
 
   @Test def test_Issue809(): Unit = {

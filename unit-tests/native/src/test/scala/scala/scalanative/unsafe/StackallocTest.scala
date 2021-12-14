@@ -12,7 +12,8 @@ class StackallocTest {
 
     !ptr = 42
 
-    assertFalse(ptr == 42)
+    assertTrue(!ptr == 42)
+    assertFalse(ptr.toInt == 42)
   }
 
   @Test def stackallocInt4(): Unit = {

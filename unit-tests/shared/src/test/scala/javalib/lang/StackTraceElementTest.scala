@@ -8,7 +8,7 @@ import org.junit.Assume._
 
 object StackTraceElementTest {
   @BeforeClass
-  def assumeSupportsStackTraces() {
+  def assumeSupportsStackTraces() = {
     // On Windows linking with LTO Full does not provide debug symbols, even
     // if flag -g is used. Becouse of that limitation StackTraces do not work.
     // If env variable exists and is set to true don't run tests in this file

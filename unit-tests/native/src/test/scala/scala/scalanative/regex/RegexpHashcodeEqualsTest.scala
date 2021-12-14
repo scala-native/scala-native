@@ -6,7 +6,7 @@ import org.junit.Assert._
 
 object RegexHashcodeEqualsSuite {
 
-  @Test def equalsHashcode {
+  @Test def equalsHashcode: Unit = {
 
     case class TestPoint(
         first: String,
