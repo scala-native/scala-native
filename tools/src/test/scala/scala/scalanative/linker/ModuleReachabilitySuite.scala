@@ -81,7 +81,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain
@@ -102,7 +104,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       object Module
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain
@@ -127,7 +131,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain
@@ -154,7 +160,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain

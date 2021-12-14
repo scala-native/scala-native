@@ -19,8 +19,9 @@ class StubSpec extends LinkerSpec {
                            |}""".stripMargin
   val stubModuleSource = """@scalanative.annotation.stub object StubModule
                            |object Main {
-                           |  def main(args: Array[String]): Unit =
-                           |    StubModule
+                           |  def main(args: Array[String]): Unit = {
+                           |    val x = StubModule
+                           |  }
                            |}""".stripMargin
 
   "Stub methods" should "be ignored by the linker when `linkStubs = false`" in {
