@@ -1,0 +1,41 @@
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
+package scala.runtime.function
+
+import scala.runtime.BoxedUnit
+import scala.scalanative.annotation.JavaDefaultMethod
+
+trait JProcedure0 extends scala.Function0[Object]
+    with java.io.Serializable {
+  def applyVoid(): Unit
+
+  @JavaDefaultMethod
+  def apply(): Object = {
+    applyVoid()
+    return BoxedUnit.UNIT
+  }
+}
+
+% for N in range(1, 23):
+%   Tps      = ["T" + str(i) for i in range(1, N + 1)]
+%   TpsDecl  = ", ".join(Tps)
+%   args     = ", ".join("t{}: {}".format(i + 1, T) for (i, T) in enumerate(Tps))
+%   argNames = ", ".join("t{}".format(i) for i in range(1, N + 1))
+trait JProcedure${N}[${TpsDecl}]
+    extends scala.Function${N}[${TpsDecl}, Object]
+    with java.io.Serializable {
+  def applyVoid(${args}): Unit
+
+  @JavaDefaultMethod
+  def apply(${args}): Object = {
+    applyVoid(${argNames})
+    return BoxedUnit.UNIT
+  }
+}
+% end
