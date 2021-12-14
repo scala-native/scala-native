@@ -63,7 +63,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
 		|""".stripMargin
     )
 
-    val tops = Seq("xyz.B$", "xyz.A", "foo.B$").map(Global.Top)
+    val tops = Seq("xyz.B$", "xyz.A", "foo.B$").map(Global.Top(_))
 
     link("Main$", sources) {
       case (_, result) =>

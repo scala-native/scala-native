@@ -24,14 +24,14 @@ class RPCCoreTest {
   }
 
   @Test
-  def simpleEndpoint: AsyncResult = await {
+  def simpleEndpoint: Unit = await {
     var called = false
     x.attach(eps.simple)((_: Unit) => called = true)
     y.call(eps.simple)(()).map(_ => assertTrue(called))
   }
 
   @Test
-  def multiplePendingCalls: AsyncResult = await {
+  def multiplePendingCalls: Unit = await {
     val p = Promise[Int]()
 
     x.attachAsync(eps.number)(_ => p.future)
@@ -79,7 +79,7 @@ class RPCCoreTest {
   }
 
   @Test
-  def msgRPCOrdering: AsyncResult = await {
+  def msgRPCOrdering: Unit = await {
     val msgsX = new AtomicInteger(0)
     val msgsY = new AtomicInteger(0)
 
@@ -120,7 +120,7 @@ class RPCCoreTest {
   }
 
   @Test
-  def remoteException: AsyncResult = await {
+  def remoteException: Unit = await {
     val msg0 = "My message for the outer exception"
     val msg1 = "My message for the inner exception"
     x.attach(eps.simple)((_: Unit) =>
@@ -139,7 +139,7 @@ class RPCCoreTest {
   }
 
   @Test
-  def closeChannel: AsyncResult = await {
+  def closeChannel: Unit = await {
     // Attach something that never completes.
     x.attachAsync(eps.number)((_: Unit) => Promise[Int]().future)
     val future = y.call(eps.number)(())

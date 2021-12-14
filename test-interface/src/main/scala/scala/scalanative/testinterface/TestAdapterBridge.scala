@@ -17,7 +17,7 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
     rpcClient.attach(createWorker)(createRunnerFun(isController = false))
   }
 
-  private def detectFrameworksFun = { names: List[List[String]] =>
+  private def detectFrameworksFun = { (names: List[List[String]]) =>
     FrameworkLoader.detectFrameworkNames(names).map { maybeName =>
       maybeName.map { name =>
         val framework = FrameworkLoader.loadFramework(name)
@@ -30,7 +30,7 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
     }
   }
 
-  private def createRunnerFun(isController: Boolean) = { args: RunnerArgs =>
+  private def createRunnerFun(isController: Boolean) = { (args: RunnerArgs) =>
     val framework = FrameworkLoader.loadFramework(args.frameworkImpl)
     val loader = new ScalaNativeClassLoader()
 
@@ -75,13 +75,13 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
       mux.detach(NativeEndpoints.msgWorker, runID)
   }
 
-  private def tasksFun(runner: Runner) = { taskDefs: List[TaskDef] =>
+  private def tasksFun(runner: Runner) = { (taskDefs: List[TaskDef]) =>
     val tasks = runner.tasks(taskDefs.toArray)
     tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList
   }
 
   private def executeFun(runID: RunMux.RunID, runner: Runner) = {
-    req: ExecuteRequest =>
+    (req: ExecuteRequest) =>
       val task = TaskInfoBuilder.attachTask(req.taskInfo, runner)
       val eventHandler = new RemoteEventHandler(runID)
 
@@ -97,13 +97,13 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
       runID: RunMux.RunID,
       runner: Runner,
       isController: Boolean
-  ) = { _: Unit =>
+  ) = { (_: Unit) =>
     try runner.done()
     finally detachRunnerCommands(runID, isController)
   }
 
   private def msgMasterFun(runID: RunMux.RunID, runner: Runner) = {
-    msg: FrameworkMessage =>
+    (msg: FrameworkMessage) =>
       for (reply <- runner.receiveMessage(msg.msg)) {
         val fm = new FrameworkMessage(msg.workerId, reply)
         mux.send(JVMEndpoints.msgController, runID)(fm)
@@ -117,8 +117,10 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
   private class RemoteLogger(
       runID: RunMux.RunID,
       index: Int,
-      val ansiCodesSupported: Boolean
+      _ansiCodesSupported: Boolean
   ) extends Logger {
+    def ansiCodesSupported(): Boolean = _ansiCodesSupported
+
     private def l[T](x: T) = new LogElement(index, x)
 
     def error(msg: String): Unit = mux.send(logError, runID)(l(msg))
