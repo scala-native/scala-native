@@ -395,7 +395,7 @@ trait NirGenExpr(using Context) {
           else curMethodEnv.resolve(sym)
         case desuaged: Select =>
           genSelect(desuaged)
-        case tree => fail(s"Unsupported desugared ident tree: $tree")
+        case tree => throw FatalError(s"Unsupported desugared ident tree: $tree")
       }
 
     def genIf(tree: If): Val = {

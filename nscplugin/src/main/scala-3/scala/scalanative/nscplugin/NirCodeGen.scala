@@ -107,19 +107,6 @@ class NirCodeGen()(using ctx: Context)
     dir.fileNamed(filename + ".nir")
   }
 
-  def fail(msg: => String): Nothing = {
-    throw FatalError(
-      s"""
-      Fatal failure: ${msg}
-      currClassSym: ${curClassSym.get}
-      currMethodSym: ${curMethodSym}
-      curExprBuffer: 
-      - ${curExprBuffer.get.toSeq.mkString("\n-\t")}
-      """
-    )
-
-  }
-
   class MethodLabelsEnv(val fresh: nir.Fresh) {
     private val entries, exits = mutable.Map.empty[Symbol, Local]
 
