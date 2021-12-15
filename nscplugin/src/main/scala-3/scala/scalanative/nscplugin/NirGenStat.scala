@@ -133,101 +133,13 @@ trait NirGenStat(using Context) {
 
   private def genMethods(td: TypeDef): Unit = {
     val tpl = td.rhs.asInstanceOf[Template]
-    val generatedMethods = (tpl.constr :: tpl.body).flatMap {
-      case EmptyTree  => None
-      case _: ValDef  => None // handled in genClassFields
-      case _: TypeDef => None
-      case dd: DefDef =>
-        genMethod(dd)
-        Some(dd)
+    (tpl.constr :: tpl.body).foreach {
+      case EmptyTree  => ()
+      case _: ValDef  => () // handled in genClassFields
+      case _: TypeDef => ()
+      case dd: DefDef => genMethod(dd)
       case tree =>
         throw new FatalError("Illegal tree in body of genMethods():" + tree)
-    }
-
-    // Generate forwarders for static methods inside companion module
-    val currentClass = curClassSym.get
-    val staticMethods = generatedMethods.filter(d =>
-      d.symbol.is(JavaStatic) && d.name == nme.main
-    )
-    if (!currentClass.is(Module) && staticMethods.nonEmpty) {
-      scoped(
-        curUnwindHandler := None
-      ) {
-        genStaticMethodForwarders(td, staticMethods)
-      }
-    }
-  }
-
-  private def genStaticMethodForwarders(
-      td: TypeDef,
-      methods: Seq[DefDef]
-  ): Unit = {
-    val currentClass = td.symbol.asClass
-    val companionModule = currentClass.denot.companionModule
-    val Global.Top(clsName) = genTypeName(currentClass)
-    val moduleName = Global.Top(clsName + nme.MODULE_SUFFIX)
-    val moduleType = Type.Ref(moduleName)
-    // Create companion module stub if it's not defined
-    if (!companionModule.exists) {
-      given nir.Position = td.span
-      generatedDefns += Defn.Module(
-        attrs = Attrs.None,
-        name = moduleName,
-        parent = Some(Rt.Object.name),
-        traits = Nil
-      )
-      generatedDefns += Defn.Define(
-        attrs = Attrs(inlineHint = Attr.AlwaysInline),
-        name = moduleName.member(Sig.Ctor(Nil)),
-        ty = Type.Function(Seq(moduleType), Type.Unit),
-        insts = {
-          given fresh: Fresh = Fresh()
-          given buf: ExprBuffer = ExprBuffer()
-
-          val self = Val.Local(fresh(), moduleType)
-          buf.label(fresh(), Seq(self))
-          buf.ret(Val.Unit)
-
-          buf.toSeq
-        }
-      )
-    }
-
-    methods.foreach { tree =>
-      given nir.Position = tree.span
-      val sym = tree.symbol
-
-      val methodName @ Global.Member(_, methodSig) = genMethodName(sym)
-      val methodType @ Type.Function(_ +: paramTypes, retType) =
-        genMethodSig(sym)
-
-      val selfType = Type.Ref(moduleName)
-      val forwarderName = moduleName.member(methodSig)
-      val forwarderParamTypes = selfType +: paramTypes
-      val forwarderSig = Type.Function(forwarderParamTypes, retType)
-
-      generatedDefns += Defn.Define(
-        attrs = Attrs(inlineHint = nir.Attr.InlineHint),
-        name = forwarderName,
-        ty = forwarderSig,
-        insts = {
-          given fresh: Fresh = Fresh()
-          given buf: ExprBuffer = ExprBuffer()
-
-          val entryParams @ (self +: params) =
-            forwarderParamTypes.map(Val.Local(fresh(), _))
-          buf.label(fresh(), entryParams)
-          val result = buf.call(
-            methodType,
-            Val.Global(methodName, Type.Ptr),
-            Val.Null +: params,
-            Next.None
-          )
-          buf.ret(result)
-
-          buf.toSeq
-        }
-      )
     }
   }
 
