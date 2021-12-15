@@ -1036,7 +1036,7 @@ trait NirGenExpr(using Context) {
       else if (funSym == defn.Object_synchronized)
         assert(argsp.size == 1, "synchronized with wrong number of args")
         genSynchronized(ValTree(boxed), argsp.head)
-      else unsupported("Unkown case forgenApplyTypeApply: " + funSym)
+      else unsupported("Unkown case for genApplyTypeApply: " + funSym)
     }
 
     private def genApplyNew(app: Apply): Val = {
