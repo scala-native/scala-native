@@ -7,7 +7,7 @@ import core._
 import Contexts._
 
 object GenNIR extends PluginPhase {
-  val phaseName = "genNIR"
+  val phaseName = "scalanative-genNIR"
 
   override val runsAfter = Set(transform.MoveStatics.name)
   override val runsBefore = Set(backend.jvm.GenBCode.name)
