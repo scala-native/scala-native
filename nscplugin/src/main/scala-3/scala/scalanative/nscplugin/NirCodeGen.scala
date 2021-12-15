@@ -186,7 +186,3 @@ class NirCodeGen()(using ctx: Context)
   }
 
 end NirCodeGen
-
-// object NirCodeGen:
-
-// end NirCodeGen
