@@ -1998,7 +1998,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         (classInfo.decls ++ classInfoSym.parentSymbols.flatMap(_.info.decls))
           .filter(f => f.isField && matchesName(f))
 
-      candidates.find(!_.isVariable).foreach { f =>
+      candidates.find(!_.isVar).foreach { f =>
         reporter.error(
           app.pos,
           s"Resolving pointer of immutable field ${fieldNameId} in ${f.owner} is not allowed"
