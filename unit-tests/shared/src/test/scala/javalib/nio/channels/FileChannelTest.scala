@@ -228,7 +228,7 @@ class FileChannelTest {
     }
   }
 
-  def withTemporaryDirectory(fn: Path => Unit) {
+  def withTemporaryDirectory(fn: Path => Unit): Unit = {
     val file = File.createTempFile("test", ".tmp")
     assertTrue(file.delete())
     assertTrue(file.mkdir())

@@ -300,8 +300,16 @@ jobs:
           auxlib3/compile
           javalib3/compile
           scalalib3/compile
-          testRunner3/test
           junitRuntime3/compile
           testInterfaceSbtDefs3/compile
           testInterface3/compile
           testingCompiler3/compile
+
+      - name: Run Scala 3 tsts
+        run: >
+          sbt "++ ${{ matrix.scala }} -v" 
+          "-no-colors" 
+          "-J-Xmx3G"
+          testRunner3/test
+          testsJVM3/test
+          testsExtJVM3/test

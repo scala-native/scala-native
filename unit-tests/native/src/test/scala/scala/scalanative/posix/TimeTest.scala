@@ -78,7 +78,7 @@ class TimeTest {
         Platform.isFreeBSD
       )
       val time_ptr = stackalloc[time_t]()
-      !time_ptr = epoch + timezone
+      !time_ptr = epoch + timezone()
       val time: Ptr[tm] = localtime(time_ptr)
       val cstr: CString = asctime(time)
       val str: String = fromCString(cstr)
@@ -98,7 +98,7 @@ class TimeTest {
           Platform.isFreeBSD
         )
         val time_ptr = stackalloc[time_t]()
-        !time_ptr = epoch + timezone
+        !time_ptr = epoch + timezone()
         val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
         val cstr: CString = asctime_r(time, alloc[Byte](26))
         val str: String = fromCString(cstr)
@@ -153,7 +153,7 @@ class TimeTest {
       // Scala Native tm, so the linux 56 byte form is necessary here.
       val tmBufCount = 7.toULong
 
-      val tmBuf = alloc[Ptr[Byte]](tmBufCount)
+      val tmBuf: Ptr[Ptr[Byte]] = alloc[Ptr[Byte]](tmBufCount)
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 

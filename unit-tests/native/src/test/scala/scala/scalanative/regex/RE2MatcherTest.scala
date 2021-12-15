@@ -212,7 +212,7 @@ class RE2MatcherTest {
   @Test def startEndBeforeFind(): Unit = {
     try {
       val m = Pattern.compile("a").matcher("abaca")
-      m.start
+      m.start()
       fail()
     } catch {
       case ise: IllegalStateException =>
@@ -225,15 +225,15 @@ class RE2MatcherTest {
    */
   @Test def matchesUpdatesMatchInformation(): Unit = {
     val m = Pattern.compile("a+").matcher("aaa")
-    if (m.matches) assertTrue("aaa" == m.group(0))
+    if (m.matches()) assertTrue("aaa" == m.group(0))
   }
 
   /** Test for b/6891133. Test matches in case of alternation.
    */
   @Test def alternationMatches(): Unit = {
     val s = "123:foo"
-    assertTrue(Pattern.compile("(?:\\w+|\\d+:foo)").matcher(s).matches)
-    assertTrue(Pattern.compile("(?:\\d+:foo|\\w+)").matcher(s).matches)
+    assertTrue(Pattern.compile("(?:\\w+|\\d+:foo)").matcher(s).matches())
+    assertTrue(Pattern.compile("(?:\\d+:foo|\\w+)").matcher(s).matches())
   }
 
   private def helperTestMatchEndUTF16(
@@ -258,7 +258,7 @@ class RE2MatcherTest {
     val pat = new Pattern(pattern, 0, re)
     val m = pat.matcher(string)
     var found = 0
-    while (m.find) found += 1
+    while (m.find()) found += 1
     assertTrue(
       "Matches Expected " + num + " but found " + found + ", for input " + string,
       num == found
@@ -288,7 +288,7 @@ class RE2MatcherTest {
     val p = Pattern.compile("cat")
     val m = p.matcher("one cat two cats in the yard")
     val sb = new StringBuffer
-    while (m.find) m.appendReplacement(sb, "dog")
+    while (m.find()) m.appendReplacement(sb, "dog")
     m.appendTail(sb)
     m.appendTail(sb)
     assertTrue("one dog two dogs in the yards in the yard" == sb.toString)
@@ -298,7 +298,7 @@ class RE2MatcherTest {
     val p = Pattern.compile("cat")
     val m = p.matcher("one cat two cats in the yard")
     val sb = new StringBuffer()
-    while (m.find) m.appendReplacement(sb, "dog")
+    while (m.find()) m.appendReplacement(sb, "dog")
     m.appendTail(sb)
     m.appendTail(sb)
     assertTrue("one dog two dogs in the yards in the yard" == sb.toString)
@@ -307,7 +307,7 @@ class RE2MatcherTest {
   @Test def resetOnFindIntStringBuffer(): Unit = {
     var buffer = new StringBuffer
     val matcher = Pattern.compile("a").matcher("zza")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     buffer = new StringBuffer
     matcher.appendReplacement(buffer, "foo")
     assertTrue("1st time", "zzfoo" == buffer.toString)
@@ -320,7 +320,7 @@ class RE2MatcherTest {
   @Test def resetOnFindIntStringBuilder(): Unit = {
     var buffer = new StringBuffer
     val matcher = Pattern.compile("a").matcher("zza")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     buffer = new StringBuffer
     matcher.appendReplacement(buffer, "foo")
     assertTrue("1st time", "zzfoo" == buffer.toString)
@@ -333,26 +333,26 @@ class RE2MatcherTest {
   @Test def emptyReplacementGroupsStringBuffer(): Unit = {
     var buffer = new StringBuffer
     var matcher = Pattern.compile("(a)(b$)?(b)?").matcher("abc")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1-$2-$3")
     assertTrue("a--b" == buffer.toString)
     matcher.appendTail(buffer)
     assertTrue("a--bc" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(a)(b$)?(b)?").matcher("ab")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1-$2-$3")
     matcher.appendTail(buffer)
     assertTrue("a-b-" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(^b)?(b)?c").matcher("abc")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1-$2")
     matcher.appendTail(buffer)
     assertTrue("a-b" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("^(.)[^-]+(-.)?(.*)").matcher("Name")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1$2")
     matcher.appendTail(buffer)
     assertTrue("N" == buffer.toString)
@@ -361,26 +361,26 @@ class RE2MatcherTest {
   @Test def emptyReplacementGroupsStringBuilder(): Unit = {
     var buffer = new StringBuffer
     var matcher = Pattern.compile("(a)(b$)?(b)?").matcher("abc")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1-$2-$3")
     assertTrue("a--b" == buffer.toString)
     matcher.appendTail(buffer)
     assertTrue("a--bc" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(a)(b$)?(b)?").matcher("ab")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1-$2-$3")
     matcher.appendTail(buffer)
     assertTrue("a-b-" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("(^b)?(b)?c").matcher("abc")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1-$2")
     matcher.appendTail(buffer)
     assertTrue("a-b" == buffer.toString)
     buffer = new StringBuffer
     matcher = Pattern.compile("^(.)[^-]+(-.)?(.*)").matcher("Name")
-    assertTrue(matcher.find)
+    assertTrue(matcher.find())
     matcher.appendReplacement(buffer, "$1$2")
     matcher.appendTail(buffer)
     assertTrue("N" == buffer.toString)
@@ -390,20 +390,20 @@ class RE2MatcherTest {
   @Test def documentedExample(): Unit = {
     val p = Pattern.compile("b(an)*(.)")
     val m = p.matcher("by, band, banana")
-    assertTrue(m.lookingAt)
-    m.reset
-    assertTrue(m.find)
+    assertTrue(m.lookingAt())
+    m.reset()
+    assertTrue(m.find())
     assertTrue("by" == m.group(0))
     assertTrue(null == m.group(1))
     assertTrue("y" == m.group(2))
-    assertTrue(m.find)
+    assertTrue(m.find())
     assertTrue("band" == m.group(0))
     assertTrue("an" == m.group(1))
     assertTrue("d" == m.group(2))
-    assertTrue(m.find)
+    assertTrue(m.find())
     assertTrue("banana" == m.group(0))
     assertTrue("an" == m.group(1))
     assertTrue("a" == m.group(2))
-    assertFalse(m.find)
+    assertFalse(m.find())
   }
 }

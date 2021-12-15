@@ -35,14 +35,14 @@ class MatcherTest {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
     import m._
 
-    assertTrue(groupCount == 2)
+    assertTrue(groupCount() == 2)
 
-    assertThrowsAnd(classOf[IllegalStateException], group)(
+    assertThrowsAnd(classOf[IllegalStateException], group())(
       _.getMessage == "No match found"
     )
 
     assertTrue(find())
-    assertTrue(group == "a12z")
+    assertTrue(group() == "a12z")
     assertTrue(group(0) == "a12z")
     assertTrue(group(1) == "1")
     assertTrue(group(2) == "2")
@@ -51,7 +51,7 @@ class MatcherTest {
     )
 
     assertTrue(find())
-    assertTrue(group == "a34z")
+    assertTrue(group() == "a34z")
     assertTrue(group(0) == "a34z")
     assertTrue(group(1) == "3")
     assertTrue(group(2) == "4")
@@ -63,18 +63,18 @@ class MatcherTest {
     val m = matcher("a(\\d)(\\d)z", "012345_a12z_012345")
     import m._
 
-    assertThrowsAnd(classOf[IllegalStateException], start)(
+    assertThrowsAnd(classOf[IllegalStateException], start())(
       _.getMessage == "No match found"
     )
 
-    assertThrowsAnd(classOf[IllegalStateException], end)(
+    assertThrowsAnd(classOf[IllegalStateException], end())(
       _.getMessage == "No match found"
     )
 
     assertTrue(find())
 
-    assertTrue(start == 7)
-    assertTrue(end == 11)
+    assertTrue(start() == 7)
+    assertTrue(end() == 11)
 
     assertTrue(start(0) == 7)
     assertTrue(end(0) == 11)
@@ -100,12 +100,12 @@ class MatcherTest {
     import m._
 
     assertTrue(find())
-    assertTrue(start == 1)
-    assertTrue(end == 5)
+    assertTrue(start() == 1)
+    assertTrue(end() == 5)
 
     assertTrue(find())
-    assertTrue(start == 6)
-    assertTrue(end == 10)
+    assertTrue(start() == 6)
+    assertTrue(end() == 10)
 
     assertFalse(find())
   }
@@ -117,7 +117,7 @@ class MatcherTest {
     import m._
 
     while (find()) {
-      appendReplacement(buf, "{" + group + "}")
+      appendReplacement(buf, "{" + group() + "}")
     }
     appendTail(buf)
     assertTrue(buf.toString == "_{a12z}_{a34z}_")
@@ -139,18 +139,18 @@ class MatcherTest {
     import m._
 
     assertTrue(find())
-    assertTrue(start == 1)
-    assertTrue(end == 5)
+    assertTrue(start() == 1)
+    assertTrue(end() == 5)
 
     reset()
 
     assertTrue(find())
-    assertTrue(start == 1)
-    assertTrue(end == 5)
+    assertTrue(start() == 1)
+    assertTrue(end() == 5)
 
     assertTrue(find())
-    assertTrue(start == 6)
-    assertTrue(end == 10)
+    assertTrue(start() == 6)
+    assertTrue(end() == 10)
 
     assertFalse(find())
   }
@@ -198,7 +198,7 @@ class MatcherTest {
     b.toString()
   }
 
-  @Test def namedGroupsPerl() {
+  @Test def namedGroupsPerl(): Unit = {
 
     val p = Pattern.compile(
       "(?P<baz>f(?P<foo>b*a(?P<another>r+)){0,10})" +
@@ -248,7 +248,7 @@ class MatcherTest {
     )
   }
 
-  @Test def namedGroupsJava() {
+  @Test def namedGroupsJava(): Unit = {
 
     val p = Pattern.compile(
       "(?<baz>f(?<foo>b*a(?<another>r+)){0,10})" +

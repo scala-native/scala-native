@@ -88,8 +88,8 @@ class RE2PatternTest {
       `match`: String,
       nonMatch: String
   ): Unit = {
-    assertTrue(Pattern.compile(regexp, flag).matcher(`match`).find)
-    assertFalse(Pattern.compile(regexp, flag).matcher(nonMatch).find)
+    assertTrue(Pattern.compile(regexp, flag).matcher(`match`).find())
+    assertFalse(Pattern.compile(regexp, flag).matcher(nonMatch).find())
   }
 
   @Test def find(): Unit = {

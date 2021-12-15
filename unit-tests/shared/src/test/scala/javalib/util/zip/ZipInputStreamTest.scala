@@ -136,7 +136,7 @@ class ZipInputStreamTest {
   }
 
   @Before
-  def setUp() {
+  def setUp(): Unit = {
     zis = new ZipInputStream(new ByteArrayInputStream(zipFile))
     val bos = new ByteArrayOutputStream()
     val zos = new ZipOutputStream(bos)

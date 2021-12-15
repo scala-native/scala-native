@@ -20,9 +20,11 @@ javalib/nio/file/FileSystemExceptionTest.scala
 javalib/nio/file/DirectoryStreamTest.scala
 
 scala/ObjectCloneTest.scala
-scala/ReflectiveProxyTest.scala
 scala/ExecutionContextTest.scala
 scala/AsInstanceOfTest.scala
+
+# Scala 2 specific
+scala/ReflectiveProxyTest.scala
 
 # Tests that fail for scala 2.11 on JVM
 scala/PrimitiveTest.scala

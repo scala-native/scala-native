@@ -57,7 +57,7 @@ class IterableDefaultTest extends IterableTest {
           val l: Iterator[E] = elems.toIterator
           new ju.Iterator[E] {
             override def hasNext(): Boolean = l.hasNext
-            override def next(): E = l.next
+            override def next(): E = l.next()
           }
         }
       }

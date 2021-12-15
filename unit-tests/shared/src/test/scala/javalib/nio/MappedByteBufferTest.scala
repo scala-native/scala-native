@@ -26,7 +26,7 @@ class MappedByteBufferTest {
   }
 
   @Test def readWriteOnReadOnlyFileThrowsException(): Unit = {
-    withTemporaryFile("r") { file: RandomAccessFile =>
+    withTemporaryFile("r") { (file: RandomAccessFile) =>
       assertThrows(
         classOf[NonWritableChannelException],
         file.getChannel.map(MapMode.READ_WRITE, 0, 100)
@@ -36,7 +36,7 @@ class MappedByteBufferTest {
   }
 
   @Test def readOnlyMappedBuffer(): Unit = {
-    withTemporaryFile("rw") { file: RandomAccessFile =>
+    withTemporaryFile("rw") { (file: RandomAccessFile) =>
       val count = 100
       for (i <- 0 until count) {
         val byte = ('A'.toByte + i / 10).toByte
@@ -58,7 +58,7 @@ class MappedByteBufferTest {
   }
 
   @Test def readWriteMappedBuffer(): Unit = {
-    withTemporaryFile("rw") { file: RandomAccessFile =>
+    withTemporaryFile("rw") { (file: RandomAccessFile) =>
       val count = 100
       val ch = file.getChannel()
       val mapped = ch.map(MapMode.READ_WRITE, 0, count)
@@ -78,7 +78,7 @@ class MappedByteBufferTest {
   }
 
   @Test def privateMappedBuffer(): Unit = {
-    withTemporaryFile("rw") { file: RandomAccessFile =>
+    withTemporaryFile("rw") { (file: RandomAccessFile) =>
       val count = 100
       val mapped = file.getChannel.map(MapMode.PRIVATE, 0, count)
 
@@ -95,7 +95,7 @@ class MappedByteBufferTest {
   }
 
   @Test def mappedBufferViews(): Unit = {
-    withTemporaryFile("rw") { file: RandomAccessFile =>
+    withTemporaryFile("rw") { (file: RandomAccessFile) =>
       val count = 100
       val mapped = file.getChannel.map(MapMode.READ_WRITE, 0, count)
 

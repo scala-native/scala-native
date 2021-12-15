@@ -8,7 +8,7 @@ import scalanative.junit.utils.AssertThrows.assertThrows
 import scalanative.unsigned._
 
 class ZoneTest {
-  private def assertAccessible(bptr: Ptr[_], n: Int) {
+  private def assertAccessible(bptr: Ptr[_], n: Int): Unit = {
     val ptr = bptr.asInstanceOf[Ptr[Int]]
     var i = 0
     while (i < n) {

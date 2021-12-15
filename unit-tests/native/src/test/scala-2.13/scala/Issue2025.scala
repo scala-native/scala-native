@@ -26,11 +26,11 @@ class Issue2025 {
 
     def unit1(): Unit = {}
     def unit2(): Unit = {}
-    assertEquals("Units are equal", unit1, unit2)
+    assertEquals("Units are equal", unit1(), unit2())
     // unitArray is actually an instance of Immutable[BoxedUnit], the check to which is actually checked slice
     // implementation of ofRef
-    val unitArray: ArraySeq[Unit] = Array(unit1, unit2, unit1, unit2)
-    check(unitArray, Array(unit1, unit1), Array(unit1, unit1))
+    val unitArray: ArraySeq[Unit] = Array(unit1(), unit2(), unit1(), unit2())
+    check(unitArray, Array(unit1(), unit1()), Array(unit1(), unit1()))
 
   }
 
@@ -38,7 +38,7 @@ class Issue2025 {
       array: ArraySeq[T],
       expectedSliceResult1: ArraySeq[T],
       expectedSliceResult2: ArraySeq[T]
-  ) {
+  ): Unit = {
     assertEquals(array, array.slice(-1, 4))
     assertEquals(array, array.slice(0, 5))
     assertEquals(array, array.slice(-1, 5))
