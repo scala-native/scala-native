@@ -366,6 +366,10 @@ object Settings {
       sharedScalaSources.collect {
         case (path, file) if !blacklist.contains(path) => file
       }
+    },
+    Test / unmanagedResourceDirectories += {
+      val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
+      testsRootDir / "shared/src/test/resources"
     }
   )
 
