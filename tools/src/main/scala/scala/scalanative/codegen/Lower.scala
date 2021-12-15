@@ -336,6 +336,8 @@ object Lower {
 
     def genOp(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit = {
       op match {
+        case op: Op.Field =>
+          genFieldOp(buf, n, op)
         case op: Op.Fieldload =>
           genFieldloadOp(buf, n, op)
         case op: Op.Fieldstore =>
