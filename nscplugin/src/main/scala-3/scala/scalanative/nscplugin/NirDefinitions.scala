@@ -205,6 +205,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_castIntToRawPtrR = IntrinsicsModule.requiredMethodRef("castIntToRawPtr")
   @tu lazy val Intrinsics_castLongToRawPtrR = IntrinsicsModule.requiredMethodRef("castLongToRawPtr")
   @tu lazy val Intrinsics_stackallocR = IntrinsicsModule.requiredMethodRef("stackalloc")
+  @tu lazy val Intrinsics_classFieldRawPtrR = IntrinsicsModule.requiredMethodRef("classFieldRawPtr")
 
   def Intrinsics_divUInt(using Context) = Intrinsics_divUIntR.symbol
   def Intrinsics_divULong(using Context) = Intrinsics_divULongR.symbol
@@ -251,6 +252,7 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_castIntToRawPtr(using Context) = Intrinsics_castIntToRawPtrR.symbol
   def Intrinsics_castLongToRawPtr(using Context) = Intrinsics_castLongToRawPtrR.symbol
   def Intrinsics_stackalloc(using Context) = Intrinsics_stackallocR.symbol
+  def Intrinsics_classFieldRawPtr(using Context) = Intrinsics_classFieldRawPtrR.symbol
 
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
