@@ -1,0 +1,15 @@
+# -- compiles but does not have embedded resources
+> projectA/compile
+> projectA/nativeLink
+# includes simple tests
+> projectA/run
+
+# -- does not link because of conflicting files
+> projectB/compile
+->project/nativeLink 
+
+# -- links and runs tests without conflicts
+> projectC/compile
+> projectC/nativeLink
+# includes simple tests
+> projectC/run
