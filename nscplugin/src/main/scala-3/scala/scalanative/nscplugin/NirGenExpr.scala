@@ -989,6 +989,7 @@ trait NirGenExpr(using Context) {
       else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
       else if (code == STACKALLOC) genStackalloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
+      else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else {
         report.error(
           s"Unknown primitive operation: ${sym.fullName}(${fun.symbol.showName})",
@@ -2058,6 +2059,47 @@ trait NirGenExpr(using Context) {
           report.error("Failed to interpret CQuote", app.sourcePos)
           Val.Null
       }
+    }
+
+    def genClassFieldRawPtr(app: Apply): Val = {
+      given nir.Position = app.span
+      val Apply(_, List(target, fieldName: Literal)) = app
+      val fieldNameId = fieldName.const.stringValue
+      val classInfo = target.tpe.finalResultType
+      val classInfoSym = classInfo.typeSymbol.asClass
+      def matchesName(f: SingleDenotation) =
+        f.name.mangled == termName(fieldNameId).mangled
+      def isImmutableField(f: SymDenotation) = {
+        // If `val` was defined in trait it would be internally mutable, but with stable accessors
+        !f.is(Mutable) || classInfoSym.parentSyms.exists(s =>
+          s.asClass.info.decls.exists { f =>
+            matchesName(f) && f.asSymDenotation
+              .isAllOf(Method | Accessor, butNot = Mutable)
+          }
+        )
+      }
+
+      val allFields =
+        classInfoSym.info.fields ++ classInfoSym.info.parents.flatMap(_.fields)
+      allFields
+        .collectFirst {
+          case f if matchesName(f) =>
+            // Don't allow to get pointer to immutable field, as it might allow for mutation
+            if (isImmutableField(f.asSymDenotation)) {
+              val owner = f.asSymDenotation.owner
+              report.error(
+                s"Resolving pointer of immutable field ${fieldNameId} in ${owner.show} is not allowed"
+              )
+            }
+            buf.field(genExpr(target), genFieldName(f.symbol), unwind)
+        }
+        .getOrElse {
+          report.error(
+            s"${classInfoSym.show} does not contain field ${fieldNameId}",
+            app.sourcePos
+          )
+          Val.Int(-1)
+        }
     }
 
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol)(using

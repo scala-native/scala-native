@@ -77,7 +77,9 @@ object NirPrimitives {
   final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
 
-  final val LastNirPrimitiveCode = CFUNCPTR_APPLY
+  final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
+
+  final val LastNirPrimitiveCode = CLASS_FIELD_RAWPTR
 
   def isNirPrimitive(code: Int): Boolean =
     code >= FirstNirPrimitiveCode && code <= LastNirPrimitiveCode
@@ -178,6 +180,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     defnNir.CFuncPtr_fromScalaFunction.foreach(
       addPrimitive(_, CFUNCPTR_FROM_FUNCTION)
     )
+    addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
     primitives
   }
 }

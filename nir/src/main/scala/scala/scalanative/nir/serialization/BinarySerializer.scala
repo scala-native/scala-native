@@ -385,6 +385,11 @@ final class BinarySerializer {
       putGlobal(name)
       putVal(value)
 
+    case Op.Field(v, name) =>
+      putInt(T.FieldOp)
+      putVal(v)
+      putGlobal(name)
+
     case Op.Method(v, sig) =>
       putInt(T.MethodOp)
       putVal(v)

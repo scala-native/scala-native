@@ -223,6 +223,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethod =
       getMember(IntrinsicsModule, TermName("stackalloc"))
+    lazy val ClassFieldRawPtrMethod =
+      getMember(IntrinsicsModule, TermName("classFieldRawPtr"))
 
     lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
       getMember(_, TermName("apply"))
