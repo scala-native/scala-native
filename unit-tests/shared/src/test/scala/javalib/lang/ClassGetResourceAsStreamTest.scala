@@ -16,11 +16,13 @@ class ClassGetResourceAsStreamTest {
   val basicFileRelative = "../../../embedded-resources-tests/basic-file.txt"
 
   @Test def doesNotLoseUtf8Data(): Unit = {
-    val inputStream = getClass().getResourceAsStream("/embedded-resources-tests/no_extension_utf8")
+    val inputStream = getClass().getResourceAsStream(
+      "/embedded-resources-tests/no_extension_utf8"
+    )
     val text = new BufferedReader(
       new InputStreamReader(inputStream, StandardCharsets.UTF_8)
     ).readLine()
-    
+
     assertEquals(text, "śćŹŻźó")
   }
 
@@ -31,26 +33,41 @@ class ClassGetResourceAsStreamTest {
     val expected = "second line"
     val expectedCharArray = expected.toCharArray()
     for (i <- 0 until expected.size) {
-      assertEquals(s"Byte #$i in \"$expected\"", expectedCharArray(i), inputStream.read())
+      assertEquals(
+        s"Byte #$i in \'$expected\'",
+        expectedCharArray(i),
+        inputStream.read()
+      )
     }
 
     val expectedSecond = "line"
     val expectedSecondCharArray = expectedSecond.toCharArray
     inputStream.skip(7)
     for (i <- 0 until expectedSecond.size) {
-      assertEquals(s"Byte #${i} in \"$expectedSecond\"", expectedSecondCharArray(i), inputStream.read())
+      assertEquals(
+        s"Byte #${i} in \'$expectedSecond\'",
+        expectedSecondCharArray(i),
+        inputStream.read()
+      )
     }
 
     val inputStream2 = getClass().getResourceAsStream(basicFileAbsolute)
     val skipped = inputStream2.skip(100)
 
     assertEquals("Skipped when skipping more than allowed", 33, skipped)
-    assertEquals("Read value after skipping to the end", -1, inputStream2.read())
+    assertEquals(
+      "Read value after skipping to the end",
+      -1,
+      inputStream2.read()
+    )
   }
 
   @Test def resourceInputStreamMark(): Unit = {
     val inputStream = getClass().getResourceAsStream(basicFileAbsolute)
-    assumeTrue("Mark supported on resource InputStream", inputStream.markSupported())
+    assumeTrue(
+      "Mark supported on resource InputStream",
+      inputStream.markSupported()
+    )
 
     val readBeforeMark = 5
     val readAfterMark = 6
@@ -61,21 +78,29 @@ class ClassGetResourceAsStreamTest {
     inputStream.mark(readLimit)
     for (i <- 0 to readAfterMark) inputStream.read()
     inputStream.reset()
-    assertEquals("available after reset() after mark()", expectedAvailable, inputStream.available())
+    assertEquals(
+      "available after reset() after mark()",
+      expectedAvailable,
+      inputStream.available()
+    )
   }
 
   private def resourceInputStreamReadByte(path: String): Unit = {
     val embeddedInputStream = getClass().getResourceAsStream(basicFileAbsolute)
-    val fileInputStream = 
-      if(Platform.executingInJVM) // In JVM, cwd changes to unit-tests/jvm/[scala-version]
-        new FileInputStream("../../shared/src/test/resources/embedded-resources-tests/basic-file.txt")
-      else 
-        new FileInputStream("unit-tests/shared/src/test/resources/embedded-resources-tests/basic-file.txt")
+    val fileInputStream =
+      if (Platform.executingInJVM) // In JVM, cwd changes to unit-tests/jvm/[scala-version]
+        new FileInputStream(
+          "../../shared/src/test/resources/embedded-resources-tests/basic-file.txt"
+        )
+      else
+        new FileInputStream(
+          "unit-tests/shared/src/test/resources/embedded-resources-tests/basic-file.txt"
+        )
 
     var idx = 0
     var i = 0
     var j = 0
-    while(i != -1) {
+    while (i != -1) {
       i = fileInputStream.read()
       j = embeddedInputStream.read()
       assertEquals(s"Byte $idx", i, j)

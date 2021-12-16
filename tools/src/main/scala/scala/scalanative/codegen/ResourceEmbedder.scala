@@ -51,7 +51,7 @@ object ResourceEmbedder {
                   (relativePath, relativePath.toString)
                 }
 
-              if(notSourceFile(path) && Files.isRegularFile(path)) {
+              if (notSourceFile(path) && Files.isRegularFile(path)) {
                 Some(ClasspathFile(path, pathName, virtualDir))
               } else None
             }
@@ -84,7 +84,7 @@ object ResourceEmbedder {
         pathValues += Val.ArrayValue(Type.Int, encodedPath.toSeq)
     }
 
-    def generateExtern2DArray(name: String, content: Array[Val.Const]) = {
+    def generateExtern2DArray(name: String, content: IndexedSeq[Val.Const]) = {
       Defn.Var(
         Attrs.None,
         extern(name),
@@ -98,7 +98,7 @@ object ResourceEmbedder {
       )
     }
 
-    def generateExternLongArray(name: String, content: Array[Val.Long]) = {
+    def generateExternLongArray(name: String, content: IndexedSeq[Val.Long]) = {
       Defn.Var(
         Attrs.None,
         extern(name),
@@ -116,21 +116,21 @@ object ResourceEmbedder {
       Seq(
         generateExtern2DArray(
           "__resources_all_path",
-          pathValues.toArray.map(Val.Const(_))
+          pathValues.toIndexedSeq.map(Val.Const(_))
         ),
         generateExtern2DArray(
           "__resources_all_content",
-          contentValues.toArray.map(Val.Const(_))
+          contentValues.toIndexedSeq.map(Val.Const(_))
         ),
         generateExternLongArray(
           "__resources_all_path_lengths",
-          pathValues.toArray.map(path =>
+          pathValues.toIndexedSeq.map(path =>
             Val.Long(path.values.length.asInstanceOf[Long])
           )
         ),
         generateExternLongArray(
           "__resources_all_content_lengths",
-          contentValues.toArray.map(content =>
+          contentValues.toIndexedSeq.map(content =>
             Val.Long(content.values.length.asInstanceOf[Long])
           )
         ),

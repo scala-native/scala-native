@@ -307,7 +307,7 @@ object Build {
       javaVersionBasedTestSources,
       nativeConfig ~= {
         _.withLinkStubs(true)
-         .withEmbedResources(true)
+          .withEmbedResources(true)
       },
       Test / unmanagedSourceDirectories ++= {
         val base = (Test / sourceDirectory).value

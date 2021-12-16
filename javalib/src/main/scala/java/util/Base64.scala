@@ -262,8 +262,8 @@ object Base64 {
       @tailrec
       def recSkip(n: Long, acc: Long): Long = {
         val a = read()
-        if (n > 1 && a != -1) recSkip(n-1, acc+1)
-        else if(a != -1) 1 + acc
+        if (n > 1 && a != -1) recSkip(n - 1, acc + 1)
+        else if (a != -1) 1 + acc
         else acc
       }
       recSkip(n, 0)

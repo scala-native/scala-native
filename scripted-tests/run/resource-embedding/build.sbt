@@ -26,7 +26,8 @@ lazy val projectB = (project in file("B"))
       _.withEmbedResources(true)
     },
     scalaVersion := commonScalaVersion
-  ).dependsOn(projectA)
+  )
+  .dependsOn(projectA)
 
 // Embedded without duplicates from A
 lazy val projectC = (project in file("C"))
@@ -36,4 +37,5 @@ lazy val projectC = (project in file("C"))
       _.withEmbedResources(true)
     },
     scalaVersion := commonScalaVersion
-  ).dependsOn(projectA)
+  )
+  .dependsOn(projectA)
