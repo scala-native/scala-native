@@ -197,6 +197,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           ParentClassInit,
           ParentClassFoo
         )
+      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+        Seq(Parent, ParentFoo)
       } else {
         Seq(
           Parent,
@@ -244,6 +246,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           ParentClass,
           ParentClassInit
         )
+      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+        Seq(Parent)
       } else {
         Seq(
           Parent,

@@ -109,7 +109,11 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
             |}""".stripMargin
       )() { (_, _) => () }
     }
-    caught.getMessage shouldEqual "Link-time resolved property must have scala.scalanative.unsafe.resolved as body"
+    assert(
+      caught.getMessage.matches(
+        "Link-time resolved property must have scala.scalanative.*resolved as body"
+      )
+    )
   }
 
   it should "not allow to define property with null rhs" in {
@@ -131,7 +135,11 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
             |}""".stripMargin
       )() { (_, _) => () }
     }
-    caught.getMessage shouldEqual "Link-time resolved property must have scala.scalanative.unsafe.resolved as body"
+    assert(
+      caught.getMessage.matches(
+        "Link-time resolved property must have scala.scalanative.*resolved as body"
+      )
+    )
   }
 
   it should "not allow to define property resolved from property with null name" in {
@@ -374,6 +382,15 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   }
 
   it should "allow to inline linktime property" in {
+    val isScala3 = util
+      .Try(java.lang.Class.forName("scala.runtime.LazyVals"))
+      .map(_ => true)
+      .getOrElse(false)
+    assume(
+      !isScala3,
+      "Would fail due to problems with lazy vals in the optimizer"
+    )
+
     optimizeWithProps(
       "props.scala" ->
         """package scala.scalanative

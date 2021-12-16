@@ -293,6 +293,7 @@ jobs:
           sbt "++ ${{ matrix.scala }} -v" 
           "-no-colors" 
           "-J-Xmx3G" 
+          nscplugin3/compile
           tools3/compile
           tools3/Test/compile
           posixlib3/compile
@@ -307,9 +308,10 @@ jobs:
 
       - name: Run Scala 3 tsts
         run: >
-          sbt "++ ${{ matrix.scala }} -v" 
-          "-no-colors" 
+          sbt "++ ${{ matrix.scala }} -v"
+          "-no-colors"
           "-J-Xmx3G"
+          tools3/test
           testRunner3/test
           testsJVM3/test
           testsExtJVM3/test
