@@ -13,7 +13,7 @@ import core.StdNames._
 import scala.annotation.{threadUnsafe => tu}
 
 // This phase is responsible for rewriting calls to scala.runtime.LazyVals with
-// its scala native specific counter-part. This is needed, becouse LazyVals are
+// its scala native specific counter-part. This is needed, because LazyVals are
 // using JVM unsafe API and static class constructors which are not supported
 // in Scala Native.
 object AdaptLazyVals extends PluginPhase {
@@ -55,8 +55,8 @@ object AdaptLazyVals extends PluginPhase {
     ctx
   }
 
-  // Replace all usages of all unsuportted LazyVals methods with their
-  // Scala Native specific implementation (taking Ptr intead of object + offset)
+  // Replace all usages of all unsupported LazyVals methods with their
+  // Scala Native specific implementation (taking Ptr instead of object + offset)
   override def transformApply(tree: Apply)(using Context): Tree = {
     // Create call to SN intrinsic methods returning pointer to bitmap field
     def classFieldPtr(target: Tree, fieldRef: Tree): Tree = {
