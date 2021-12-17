@@ -30,6 +30,9 @@ import dotty.tools.dotc.sbt
  *  Unfortunately we cannot use sjs implementation directly, because
  *  JsDefinitions assumes usage of JsPlatform which is absent in SN compiler
  *  plugin.
+ *
+ *  Additionally this port differs from Scala.js implementation by supporting
+ *  test suite wide ignore (ported from Scala 2 Native compiler plugin)
  */
 object ScalaNativeJUnitBootstrappers extends PluginPhase {
   def phaseName: String = "scalanative-junitBootstrappers"

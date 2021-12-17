@@ -22,7 +22,7 @@ object JUnitDefinitions {
 /** Definitions required by JUnit plugin
  *
  *  Scala.js port based on dotty.tools.backend.sjs.JSDefinitions#junit from
- *  Scala release 3.1.0 Contains the same definitions as original class which
+ *  Scala release 3.1.0. It contains the same definitions as original class which
  *  cannot be used directly in Scala Native plugin
  */
 final class JUnitDefinitions()(using ctx: Context) {
