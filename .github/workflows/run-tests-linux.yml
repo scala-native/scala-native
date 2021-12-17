@@ -311,8 +311,5 @@ jobs:
           sbt "++ ${{ matrix.scala }} -v"
           "-no-colors"
           "-J-Xmx3G"
-          tools3/test
-          testRunner3/test
-          testsJVM3/test
-          testsExtJVM3/test
-          sandbox3/run
+          test-tools 3
+          test-runtime 3
