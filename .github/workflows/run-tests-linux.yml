@@ -315,3 +315,4 @@ jobs:
           testRunner3/test
           testsJVM3/test
           testsExtJVM3/test
+          sandbox3/run

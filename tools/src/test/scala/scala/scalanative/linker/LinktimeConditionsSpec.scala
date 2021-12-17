@@ -382,15 +382,6 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   }
 
   it should "allow to inline linktime property" in {
-    val isScala3 = util
-      .Try(java.lang.Class.forName("scala.runtime.LazyVals"))
-      .map(_ => true)
-      .getOrElse(false)
-    assume(
-      !isScala3,
-      "Would fail due to problems with lazy vals in the optimizer"
-    )
-
     optimizeWithProps(
       "props.scala" ->
         """package scala.scalanative
