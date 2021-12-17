@@ -286,26 +286,6 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
 
-        # Ensure that our codebase is source compatible with Scala 3
-        # Skip transitive dependencies in the build
-      - name: Compile sources with Scala 3
-        run: >
-          sbt "++ ${{ matrix.scala }} -v" 
-          "-no-colors" 
-          "-J-Xmx3G" 
-          nscplugin3/compile
-          tools3/compile
-          tools3/Test/compile
-          posixlib3/compile
-          windowslib3/compile
-          auxlib3/compile
-          javalib3/compile
-          scalalib3/compile
-          junitRuntime3/compile
-          testInterfaceSbtDefs3/compile
-          testInterface3/compile
-          testingCompiler3/compile
-
       - name: Run Scala 3 tsts
         run: >
           sbt "++ ${{ matrix.scala }} -v"
