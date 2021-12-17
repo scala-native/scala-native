@@ -286,10 +286,10 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
 
-      - name: Run Scala 3 tsts
+      - name: Run Scala 3 tests
         run: >
           sbt "++ ${{ matrix.scala }} -v"
           "-no-colors"
           "-J-Xmx3G"
-          test-tools 3
-          test-runtime 3
+          "test-tools 3"
+          "test-runtime 3"
