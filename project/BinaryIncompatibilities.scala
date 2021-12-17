@@ -24,7 +24,7 @@ object BinaryIncompatibilities {
   final val PosixLib: Filters = Nil
   final val WindowsLib: Filters = Nil
 
-  final val AuxLib, JavaLib, ScalaLib: Filters = Nil
+  final val AuxLib, JavaLib, ScalaLib, Scala3Lib: Filters = Nil
   final val TestRunner: Filters = Nil
   final val TestInterface: Filters = Nil
   final val TestInterfaceSbtDefs: Filters = Nil
@@ -41,6 +41,7 @@ object BinaryIncompatibilities {
     "auxlib" -> AuxLib,
     "javalib" -> JavaLib,
     "scalalib" -> ScalaLib,
+    "scala3lib" -> Scala3Lib,
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,
