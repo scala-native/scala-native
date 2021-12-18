@@ -242,6 +242,12 @@ trait Eval { self: Interflow =>
                 )
             )
         }
+
+      case Op.Field(rawObj, name) =>
+        val obj = eval(rawObj)
+        visitRoot(name)
+        delay(Op.Field(materialize(obj), name))
+
       case Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
         val objty = {

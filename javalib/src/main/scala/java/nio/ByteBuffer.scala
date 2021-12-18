@@ -28,6 +28,8 @@ abstract class ByteBuffer private[nio] (
   private[nio] type ElementType = Byte
   private[nio] type BufferType = ByteBuffer
 
+  private def genBuffer = GenBuffer[ByteBuffer](this)
+
   def this(_capacity: Int) = this(_capacity, null, null, -1)
 
   private[nio] var _isBigEndian: Boolean = true
@@ -48,30 +50,30 @@ abstract class ByteBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   def get(dst: Array[Byte]): ByteBuffer =
     get(dst, 0, dst.length)
 
   @noinline
   def put(src: ByteBuffer): ByteBuffer =
-    GenBuffer(this).generic_put(src)
+    genBuffer.generic_put(src)
 
   @noinline
   def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Byte]): ByteBuffer =
     put(src, 0, src.length)
 
   @inline final def hasArray(): Boolean =
-    GenBuffer(this).generic_hasArray()
+    genBuffer.generic_hasArray()
 
   @inline final def array(): Array[Byte] =
-    GenBuffer(this).generic_array()
+    genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    GenBuffer(this).generic_arrayOffset()
+    genBuffer.generic_arrayOffset()
 
   @inline override def position(newPosition: Int): ByteBuffer = {
     super.position(newPosition)
@@ -116,7 +118,7 @@ abstract class ByteBuffer private[nio] (
 
   @noinline
   override def hashCode(): Int =
-    GenBuffer(this).generic_hashCode(ByteBuffer.HashSeed)
+    genBuffer.generic_hashCode(ByteBuffer.HashSeed)
 
   override def equals(that: Any): Boolean = that match {
     case that: ByteBuffer => compareTo(that) == 0
@@ -125,7 +127,7 @@ abstract class ByteBuffer private[nio] (
 
   @noinline
   def compareTo(that: ByteBuffer): Int =
-    GenBuffer(this).generic_compareTo(that)(_.compareTo(_))
+    genBuffer.generic_compareTo(that)(_.compareTo(_))
 
   final def order(): ByteOrder =
     if (_isBigEndian) ByteOrder.BIG_ENDIAN
@@ -196,7 +198,7 @@ abstract class ByteBuffer private[nio] (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_load(startIndex, dst, offset, length)
+    genBuffer.generic_load(startIndex, dst, offset, length)
 
   @inline
   private[nio] def store(
@@ -205,5 +207,5 @@ abstract class ByteBuffer private[nio] (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_store(startIndex, src, offset, length)
+    genBuffer.generic_store(startIndex, src, offset, length)
 }

@@ -92,7 +92,7 @@ class ProcessTest {
       }
       assertProcessExitOrTimeout(proc)
       assertEquals("", readInputStream(proc.getErrorStream()))
-      val out = Source.fromFile(file.toString).getLines.mkString
+      val out = Source.fromFile(file.toString).getLines().mkString
 
       assertEquals("hello", out)
     } finally {
@@ -140,7 +140,7 @@ class ProcessTest {
 
     assertTrue(
       "process should have exited but timed out",
-      proc.waitFor(2, TimeUnit.SECONDS)
+      proc.waitFor(4, TimeUnit.SECONDS)
     )
     assertEquals(0, proc.exitValue)
   }

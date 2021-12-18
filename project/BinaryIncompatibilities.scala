@@ -6,19 +6,8 @@ import com.typesafe.tools.mima.core.ProblemFilters._
 object BinaryIncompatibilities {
   type Filters = Seq[ProblemFilter]
   final val Util: Filters = Nil
-  final val Nir: Filters = Seq(
-    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*")
-  )
-
-  final val NscPlugin = Seq(
-    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*"),
-    exclude[IncompatibleMethTypeProblem](
-      "scala.scalanative.nscplugin.NirCompat*"
-    ),
-    exclude[ReversedMissingMethodProblem](
-      "scala.scalanative.nscplugin.NirGenStat.LinktimeProperty"
-    )
-  )
+  final val Nir: Filters = Nil
+  final val NscPlugin = Nil
   final val JUnitPlugin: Filters = Nil
 
   final val Tools: Filters = Seq(
@@ -27,46 +16,19 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.interflow.*"),
     exclude[Problem]("scala.scalanative.linker.*"),
     exclude[Problem]("scala.scalanative.build.NativeLib.*"),
-    exclude[Problem]("scala.scalanative.build.LLVM.*"),
-    exclude[Problem]("scala.scalanative.build.NativeConfig*Impl*"),
-    exclude[Problem]("scala.scalanative.build.GC.this"),
-    exclude[ReversedMissingMethodProblem](
-      "scala.scalanative.build.NativeConfig*"
-    )
+    exclude[Problem]("scala.scalanative.build.LLVM.*")
   )
 
-  final val NativeLib = Seq(
-    // Internal usage
-    exclude[DirectMissingMethodProblem]("scala.scalanative.regex.*"),
-    exclude[DirectMissingMethodProblem]("java.lang._Class.rawty"),
-    exclude[DirectMissingMethodProblem]("java.lang._Class.this"),
-    // moved to auxlib
-    exclude[MissingClassProblem]("scala.runtime.BoxesRunTime*"),
-    // moved to javalib
-    exclude[MissingClassProblem]("scala.scalanative.runtime.DeleteOnExit*"),
-    // package-private
-    exclude[MissingClassProblem]("scala.scalanative.runtime.*Shutdown*"),
-    exclude[Problem]("scala.scalanative.runtime.ClassInstancesRegistry*"),
-    exclude[Problem]("scala.scalanative.runtime.package*TypeOps*")
-  )
+  final val NativeLib = Nil
   final val CLib: Filters = Nil
-  final val PosixLib: Filters = Seq(
-    exclude[IncompatibleResultTypeProblem](
-      "scala.scalanative.posix.limits.PATH_MAX"
-    ),
-    // Moved to javalib, used internally and in scripted-tests
-    exclude[MissingClassProblem]("scala.scalanative.runtime.SocketHelpers*")
-  )
+  final val PosixLib: Filters = Nil
   final val WindowsLib: Filters = Nil
 
-  final val AuxLib, JavaLib, ScalaLib: Filters = Nil
+  final val AuxLib, JavaLib, ScalaLib, Scala3Lib: Filters = Nil
   final val TestRunner: Filters = Nil
   final val TestInterface: Filters = Nil
   final val TestInterfaceSbtDefs: Filters = Nil
-  final val JUnitRuntime: Filters = Seq(
-    // Internal method, package-private
-    exclude[IncompatibleMethTypeProblem]("scala.scalanative.junit.Reporter.*")
-  )
+  final val JUnitRuntime: Filters = Nil
 
   val moduleFilters = Map(
     "util" -> Util,
@@ -79,6 +41,7 @@ object BinaryIncompatibilities {
     "auxlib" -> AuxLib,
     "javalib" -> JavaLib,
     "scalalib" -> ScalaLib,
+    "scala3lib" -> Scala3Lib,
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,

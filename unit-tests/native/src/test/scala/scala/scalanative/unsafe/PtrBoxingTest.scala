@@ -191,9 +191,9 @@ class PtrBoxingTest {
 
   @Test def loadAndStoreCFuncPtr(): Unit = {
     Zone { implicit z =>
-      val x: Ptr[Functions] = stackalloc[Functions]
-      x._1 = CFuncPtr0.fromScalaFunction(getInt)
-      x._2 = CFuncPtr1.fromScalaFunction(stringLength)
+      val x: Ptr[Functions] = stackalloc[Functions]()
+      x._1 = CFuncPtr0.fromScalaFunction(getInt _)
+      x._2 = CFuncPtr1.fromScalaFunction(stringLength _)
 
       val loadedGetInt: GetInt = x._1
       val loadedStringLength: StringLength = x._2

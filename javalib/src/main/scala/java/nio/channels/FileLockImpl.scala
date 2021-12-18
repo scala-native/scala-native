@@ -42,7 +42,7 @@ private[java] final class FileLockImpl(
           ))
         throw new IOException()
     } else {
-      val fl = stackalloc[flock]
+      val fl = stackalloc[flock]()
       fl.l_start = position.toSize
       fl.l_len = size.toSize
       fl.l_pid = 0

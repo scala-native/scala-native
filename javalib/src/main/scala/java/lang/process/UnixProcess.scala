@@ -74,8 +74,8 @@ private[lang] class UnixProcess private (
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
     checkResult() match {
       case -1 =>
-        val ts = stackalloc[timespec]
-        val tv = stackalloc[timeval]
+        val ts = stackalloc[timespec]()
+        val tv = stackalloc[timeval]()
         throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
         val nsec =
           unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
@@ -87,9 +87,15 @@ private[lang] class UnixProcess private (
       case _ => true
     }
 
-  @inline private def waitImpl(f: () => Int) = {
+  @inline private def waitImpl(f: () => Int): Int = {
     var res = 1
-    do res = f() while (if (res == 0) _exitValue == -1 else res != ETIMEDOUT)
+    while ({
+      res = f()
+      res match {
+        case 0   => _exitValue == -1
+        case res => res != ETIMEDOUT
+      }
+    }) ()
     res
   }
 
@@ -126,7 +132,7 @@ private[lang] class UnixProcess private (
     }
   }
   private[this] def waitFor(ts: Ptr[timespec]): Int = {
-    val res = stackalloc[CInt]
+    val res = stackalloc[CInt]()
     !res = -1
     val result = UnixProcess.waitForPid(pid, ts, res)
     setExitValue(!res)
@@ -151,8 +157,8 @@ object UnixProcess {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    val infds = stackalloc[CInt](2.toUInt)
-    val outfds = stackalloc[CInt](2.toUInt)
+    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
     val errfds =
       if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
 
@@ -244,7 +250,7 @@ object UnixProcess {
   @inline private def nullTerminate(
       seq: collection.Seq[String]
   )(implicit z: Zone) = {
-    val res = alloc[CString]((seq.size + 1).toUInt)
+    val res: Ptr[CString] = alloc[CString]((seq.size + 1).toUInt)
     seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
     res
   }

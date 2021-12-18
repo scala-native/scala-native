@@ -180,6 +180,7 @@ object Tags {
   final val ArrayloadOp = 1 + ArrayallocOp
   final val ArraystoreOp = 1 + ArrayloadOp
   final val ArraylengthOp = 1 + ArraystoreOp
+  final val FieldOp = 1 + ArraylengthOp
 
   // Types
 

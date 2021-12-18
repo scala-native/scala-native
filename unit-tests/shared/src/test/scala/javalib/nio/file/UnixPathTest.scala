@@ -11,7 +11,7 @@ import org.scalanative.testsuite.utils.Platform.isWindows
 
 object UnixPathTest {
   @BeforeClass
-  def assumeIsUnix() {
+  def assumeIsUnix(): Unit = {
     assumeFalse(
       "Not checking Unix paths on Windows",
       isWindows

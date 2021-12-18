@@ -12,7 +12,7 @@ class CharClassTest {
   private def s(str: String): Array[Int] = stringToRunes(str)
 
   private def assertClass(cc: CharClass, expected: Array[Int]): Unit = {
-    val actual = cc.toArray
+    val actual = cc.toArray()
     if (!(actual.sameElements(expected)))
       throw new AssertionError(
         "Incorrect CharClass value:\n" + "Expected: " + expected
@@ -21,39 +21,39 @@ class CharClassTest {
   }
 
   @Test def cleanClass(): Unit = {
-    assertClass(cc(Array.emptyIntArray).cleanClass, Array.emptyIntArray)
-    assertClass(cc(Array(10, 20, 10, 20, 10, 20)).cleanClass, Array(10, 20))
-    assertClass(cc(Array(10, 20)).cleanClass, Array(10, 20))
-    assertClass(cc(Array(10, 20, 20, 30)).cleanClass, Array(10, 30))
-    assertClass(cc(Array(10, 20, 30, 40, 20, 30)).cleanClass, Array(10, 40))
-    assertClass(cc(Array(0, 50, 20, 30)).cleanClass, Array(0, 50))
+    assertClass(cc(Array.emptyIntArray).cleanClass(), Array.emptyIntArray)
+    assertClass(cc(Array(10, 20, 10, 20, 10, 20)).cleanClass(), Array(10, 20))
+    assertClass(cc(Array(10, 20)).cleanClass(), Array(10, 20))
+    assertClass(cc(Array(10, 20, 20, 30)).cleanClass(), Array(10, 30))
+    assertClass(cc(Array(10, 20, 30, 40, 20, 30)).cleanClass(), Array(10, 40))
+    assertClass(cc(Array(0, 50, 20, 30)).cleanClass(), Array(0, 50))
     assertClass(
-      cc(Array(10, 11, 13, 14, 16, 17, 19, 20, 22, 23)).cleanClass,
+      cc(Array(10, 11, 13, 14, 16, 17, 19, 20, 22, 23)).cleanClass(),
       Array(10, 11, 13, 14, 16, 17, 19, 20, 22, 23)
     )
     assertClass(
-      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17)).cleanClass,
+      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17)).cleanClass(),
       Array(10, 11, 13, 14, 16, 17, 19, 20, 22, 23)
     )
     assertClass(
-      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17)).cleanClass,
+      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17)).cleanClass(),
       Array(10, 11, 13, 14, 16, 17, 19, 20, 22, 23)
     )
     assertClass(
-      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17, 5, 25)).cleanClass,
+      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17, 5, 25)).cleanClass(),
       Array(5, 25)
     )
     assertClass(
-      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17, 12, 21)).cleanClass,
+      cc(Array(13, 14, 10, 11, 22, 23, 19, 20, 16, 17, 12, 21)).cleanClass(),
       Array(10, 23)
     )
     assertClass(
-      cc(Array(0, Unicode.MAX_RUNE)).cleanClass,
+      cc(Array(0, Unicode.MAX_RUNE)).cleanClass(),
       Array(0, Unicode.MAX_RUNE)
     )
-    assertClass(cc(Array(0, 50)).cleanClass, Array(0, 50))
+    assertClass(cc(Array(0, 50)).cleanClass(), Array(0, 50))
     assertClass(
-      cc(Array(50, Unicode.MAX_RUNE)).cleanClass,
+      cc(Array(50, Unicode.MAX_RUNE)).cleanClass(),
       Array(50, Unicode.MAX_RUNE)
     )
   }
@@ -169,15 +169,15 @@ class CharClassTest {
 
   @Test def negateClass(): Unit = {
     assertClass(
-      cc(Array.emptyIntArray).negateClass,
+      cc(Array.emptyIntArray).negateClass(),
       Array('\u0000', Unicode.MAX_RUNE)
     )
     assertClass(
-      cc(Array('A', 'Z')).negateClass,
+      cc(Array('A', 'Z')).negateClass(),
       Array('\u0000', '@', '[', Unicode.MAX_RUNE)
     )
     assertClass(
-      cc(Array('A', 'Z', 'a', 'z')).negateClass,
+      cc(Array('A', 'Z', 'a', 'z')).negateClass(),
       Array('\u0000', '@', '[', '`', '{', Unicode.MAX_RUNE)
     )
   }

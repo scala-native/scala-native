@@ -849,7 +849,7 @@ class FilesTest {
       Files.walkFileTree(dir, visitor)
       val expected = Map(dir -> 2, d0 -> 2, f2 -> 1, f0 -> 1, f1 -> 1)
       val result = scala.collection.mutable.Map.empty[Path, Int]
-      while (!visitor.isEmpty) {
+      while (!visitor.isEmpty()) {
         val f = visitor.dequeue()
         val count = result.getOrElse(f, 0)
         result(f) = count + 1
@@ -895,7 +895,7 @@ class FilesTest {
         else expected += p
       }
       val found = scala.collection.mutable.Set.empty[Path]
-      while (!terminatingVisitor.isEmpty) {
+      while (!terminatingVisitor.isEmpty()) {
         found += terminatingVisitor.dequeue()
       }
       assertEquals("a5", expected, found)
@@ -930,7 +930,7 @@ class FilesTest {
       Files.walkFileTree(dir, visitor)
       val expected = Map(dir -> 2, f0 -> 1, f1 -> 1)
       val result = scala.collection.mutable.Map.empty[Path, Int]
-      while (!visitor.isEmpty) {
+      while (!visitor.isEmpty()) {
         val f = visitor.dequeue()
         val count = result.getOrElse(f, 0)
         result(f) = count + 1
@@ -971,7 +971,7 @@ class FilesTest {
       }
       Files.walkFileTree(dir, visitor)
       Files.walkFileTree(dir, skippingVisitor)
-      while (!visitor.isEmpty) {
+      while (!visitor.isEmpty()) {
         val p = visitor.dequeue()
         if (p == f0) skip = true
         if (skip && p.getParent == f0.getParent()) ()
@@ -979,7 +979,7 @@ class FilesTest {
       }
 
       val result = scala.collection.mutable.Set.empty[Path]
-      while (!skippingVisitor.isEmpty) {
+      while (!skippingVisitor.isEmpty()) {
         result += skippingVisitor.dequeue()
       }
       assertEquals("a5", expected, result)
@@ -1376,7 +1376,7 @@ class FilesTest {
     }
   }
 
-  def moveDirectoryTest(delete: Boolean, options: CopyOption*) {
+  def moveDirectoryTest(delete: Boolean, options: CopyOption*): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val f0 = dir.resolve("f0")
@@ -1700,7 +1700,7 @@ class FilesTest {
     v.dequeue() // skip temp directory pre-visit.
 
     // -1 to skip temp directory post-visit
-    val nStrings = v.length - 1
+    val nStrings = v.length() - 1
     val strings = new Array[String](nStrings)
 
     for (i <- 0 until nStrings) {
@@ -1719,11 +1719,11 @@ object FilesTest {
     file
   }
 
-  def withTemporaryDirectory(fn: File => Unit) {
+  def withTemporaryDirectory(fn: File => Unit): Unit = {
     fn(makeTemporaryDir())
   }
 
-  def withTemporaryDirectoryPath(fn: Path => Unit) {
+  def withTemporaryDirectoryPath(fn: Path => Unit): Unit = {
     fn(makeTemporaryDir().toPath)
   }
 }
@@ -1733,7 +1733,7 @@ class Iterable[T](elems: Array[T]) extends java.lang.Iterable[T] {
     private var i = 0
     override def hasNext(): Boolean = i < elems.length
     override def next(): T =
-      if (hasNext) {
+      if (hasNext()) {
         val elem = elems(i)
         i += 1
         elem

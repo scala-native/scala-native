@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
+import scala.reflect.NameTransformer
 
 final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
@@ -25,6 +26,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     val pairs = getSeq((getGlobal(), getInt()))
     (prelude, pairs, files)
   }
+
+  private val usesEncodedMemberNames = prelude.revision >= 9
 
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
@@ -192,8 +195,16 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       Global.Member(Global.Top(getUTF8String()), getSig())
   }
 
-  private def getSig(): Sig =
-    new Sig(getUTF8String())
+  private def getSig(): Sig = {
+    val sig = new Sig(getUTF8String())
+    if (usesEncodedMemberNames) sig
+    else
+      sig.unmangled match {
+        case s: Sig.Field  => s.copy(id = NameTransformer.encode(s.id))
+        case s: Sig.Method => s.copy(id = NameTransformer.encode(s.id))
+        case sig           => sig
+      }
+  }
 
   private def getLocal(): Local =
     Local(getLong)
@@ -222,6 +233,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.FieldloadOp  => Op.Fieldload(getType(), getVal(), getGlobal())
     case T.FieldstoreOp =>
       Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
+    case T.FieldOp      => Op.Field(getVal(), getGlobal())
     case T.MethodOp     => Op.Method(getVal(), getSig())
     case T.DynmethodOp  => Op.Dynmethod(getVal(), getSig())
     case T.ModuleOp     => Op.Module(getGlobal())
@@ -366,4 +378,5 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
     readPosition()
   }
+
 }

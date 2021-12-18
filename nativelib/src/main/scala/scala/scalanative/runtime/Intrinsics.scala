@@ -163,4 +163,8 @@ object Intrinsics {
 
   /** Intrinsified cast that reinterprets long as a raw size. */
   def castLongToRawSize(long: Long): RawSize = intrinsic
+
+  /** Intrinsified resolving of class field as a raw pointer */
+  def classFieldRawPtr[T <: AnyRef](obj: T, fieldName: String): RawPtr =
+    intrinsic
 }

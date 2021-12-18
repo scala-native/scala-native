@@ -14,8 +14,8 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte]
   ): StackTraceElement = {
     val nameMax = 1024
-    val name = stackalloc[CChar](nameMax.toUSize)
-    val offset = stackalloc[scala.Byte](8.toUSize)
+    val name: Ptr[CChar] = stackalloc[CChar](nameMax.toUSize)
+    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUSize)
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
@@ -41,9 +41,9 @@ private[lang] object StackTrace {
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
     if (!LinktimeInfo.asanEnabled) {
       Zone { implicit z =>
-        val cursor = alloc[scala.Byte](2048.toUSize)
-        val context = alloc[scala.Byte](2048.toUSize)
-        val offset = alloc[scala.Byte](8.toUSize)
+        val cursor: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
+        val context: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
+        val offset: Ptr[scala.Byte] = alloc[scala.Byte](8.toUSize)
         val ip = alloc[CUnsignedLong]
 
         unwind.get_context(context)
@@ -475,10 +475,6 @@ class NoSuchFieldException(s: String) extends ReflectiveOperationException(s) {
 }
 
 class NoSuchMethodException(s: String) extends ReflectiveOperationException(s) {
-  def this() = this(null)
-}
-
-class NullPointerException(s: String) extends RuntimeException(s) {
   def this() = this(null)
 }
 

@@ -25,6 +25,6 @@ class SystemWithPosixTest {
     // Truncate down to keep math simple & reduce number of bits in play.
     val ctmSeconds = ctmMillis / 1000
 
-    assertEquals(cSeconds.toLong, ctmSeconds, tolerance)
+    assertEquals(cSeconds.toFloat, ctmSeconds.toFloat, tolerance.toFloat)
   }
 }

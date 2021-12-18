@@ -20,10 +20,10 @@ private[net] class SocketInputStream(socket: AbstractPlainSocketImpl)
 
   override def read(buffer: Array[Byte]) = read(buffer, 0, buffer.length)
 
-  override def read(buffer: Array[Byte], offset: Int, count: Int) = {
+  override def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (buffer == null) throw new NullPointerException("Buffer is null")
 
-    if (count == 0) 0
+    if (count == 0) return 0
 
     if (offset < 0 || offset >= buffer.length)
       throw new ArrayIndexOutOfBoundsException(

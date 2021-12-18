@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+concurrency:
+  group: linux-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   # Compile all sources for given Scala version
@@ -25,7 +28,7 @@ jobs:
           docker_arch: library
 
       - name: Test tools
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" test-tools
+        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-tools ${{ matrix.scala }}"
 
         # Make sure that Scala partest blacklisted tests contain only valid test names
       - name: Setup Ammonite
@@ -34,13 +37,13 @@ jobs:
           ammonite-version: 2.3.8
           scala-version: 2.13
         env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
 
       - name: Check partest disabled tests list
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
-          "scalaPartest/fetchScalaSource"
+          "scalaPartest${{env.project-version}}/fetchScalaSource"
           amm scripts/partest-check-files.sc ${{ matrix.scala }}
 
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
@@ -50,7 +53,7 @@ jobs:
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
           "-J-Xmx3G" \
-          "scalaPartestTests/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   # Build testing image that would be used to build and run against different platforms
   # Currently only Linux x64 is tested
@@ -118,8 +121,8 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.13.7, 2.12.15, 2.11.12]
-        build-mode: [ debug , release-fast ]
-        gc: [ boehm, immix, commix ]
+        build-mode: [debug, release-fast]
+        gc: [boehm, immix, commix]
         host_arch: [ amd64 ]
         docker_arch: [ library, i386 ]
         # Create holes in grid to lower number of tests.
@@ -203,7 +206,7 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_OPTIMIZE: true
           SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: test-runtime
+          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
 
   # This job is basically copy-paste of test-runtime.
@@ -215,8 +218,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [ 2.13.7, 2.12.15, 2.11.12 ]
-        build-mode: [ debug, release-fast ]
+        scala: [2.13.7, 2.12.15, 2.11.12]
+        build-mode: [debug, release-fast]
         host_arch: [ amd64 ]
         docker_arch: [ library ]
         include:
@@ -250,7 +253,7 @@ jobs:
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: false
           SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: test-runtime
+          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
 
   test-runtime-lto:
@@ -286,7 +289,7 @@ jobs:
           SCALANATIVE_OPTIMIZE: ${{matrix.optimize}}
           SCALANATIVE_LTO: ${{matrix.lto}}
           SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: test-runtime
+          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
 
   # This job is basically copy-paste of test-runtime.
@@ -315,5 +318,26 @@ jobs:
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
           SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: test-scripted
+          TEST_COMMAND: "test-scripted ${{matrix.scala}}"
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
+
+  experimental-scala3:
+    name: Scala3 experimental tests
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.1.0]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Run Scala 3 tests
+        run: >
+          sbt "++ ${{ matrix.scala }} -v"
+          "-no-colors"
+          "-J-Xmx3G"
+          "test-tools 3"
+          "test-runtime 3"

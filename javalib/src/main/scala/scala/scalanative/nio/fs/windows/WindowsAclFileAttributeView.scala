@@ -27,7 +27,7 @@ class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
   def getOwner(): UserPrincipal =
     Zone { implicit z =>
       val filename = toCWideStringUTF16LE(path.toString)
-      val ownerSid = stackalloc[SIDPtr]
+      val ownerSid = stackalloc[SIDPtr]()
 
       if (AclApi.GetNamedSecurityInfoW(
             filename,
@@ -55,7 +55,7 @@ class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
           "Unsupported user principal type " + owner.getClass.getName
         )
     }
-    val newOwnerSid = stackalloc[SIDPtr]
+    val newOwnerSid = stackalloc[SIDPtr]()
 
     if (!SddlApi.ConvertStringSidToSidW(sidCString, newOwnerSid)) {
       throw WindowsException("Cannot convert user principal to sid")

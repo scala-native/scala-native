@@ -334,7 +334,7 @@ object signalOps {
       p._5 = value
   }
 
-  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
+  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]()
 
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
     def sival_int: Ptr[CInt] = p.asInstanceOf[Ptr[CInt]]
@@ -410,5 +410,5 @@ object signalOps {
       !p._9.asInstanceOf[Ptr[CArray[Byte, Nat._8]]] = value
   }
 
-  def struct_siginfo_t()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
+  def struct_siginfo_t()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]()
 }

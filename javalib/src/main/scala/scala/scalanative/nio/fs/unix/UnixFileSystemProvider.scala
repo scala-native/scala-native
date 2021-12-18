@@ -1,6 +1,6 @@
 package scala.scalanative.nio.fs.unix
 
-import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
+import scala.scalanative.unsafe.{CChar, Ptr, fromCString, stackalloc}
 import scala.scalanative.unsigned._
 import scala.scalanative.posix.unistd
 import scala.scalanative.libc.errno
@@ -24,7 +24,7 @@ class UnixFileSystemProvider extends GenericFileSystemProvider {
   }
 
   private def getUserDir(): String = {
-    val buff = stackalloc[CChar](4096.toUInt)
+    val buff: Ptr[CChar] = stackalloc[CChar](4096.toUInt)
     val res = unistd.getcwd(buff, 4095.toUInt)
     if (res == null)
       throw UnixException(

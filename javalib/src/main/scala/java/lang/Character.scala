@@ -825,6 +825,18 @@ object Character {
   @inline def toString(c: scala.Char): String =
     String.valueOf(c)
 
+  @inline def toString(codePoint: Int): String = {
+    if (isBmpCodePoint(codePoint)) {
+      Character.toString(codePoint.toChar)
+    } else if (isValidCodePoint(codePoint)) {
+      val dst = new Array[Char](2)
+      toSurrogate(codePoint, dst, 0)
+      dst.mkString
+    } else {
+      throw new IllegalArgumentException()
+    }
+  }
+
   @inline def compare(x: scala.Char, y: scala.Char): Int =
     x - y
 

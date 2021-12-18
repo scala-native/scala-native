@@ -94,11 +94,12 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
      * ones.
      * Rejection sampling throws away about 20% of the pairs.
      */
-    do {
+    while ({
       x = nextDouble() * 2 - 1
       y = nextDouble() * 2 - 1
       rds = x * x + y * y
-    } while (rds == 0 || rds > 1)
+      rds == 0 || rds > 1
+    }) ()
 
     val c = Math.sqrt(-2 * Math.log(rds) / rds)
 

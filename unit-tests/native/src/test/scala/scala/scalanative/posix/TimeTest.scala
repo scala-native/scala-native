@@ -39,7 +39,7 @@ class TimeTest {
     if (isWindows) false
     else {
       Zone { implicit z =>
-        val time_ptr = stackalloc[time_t]
+        val time_ptr = stackalloc[time_t]()
         !time_ptr = now_time_t
         val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
 
@@ -77,8 +77,8 @@ class TimeTest {
         "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
         Platform.isFreeBSD
       )
-      val time_ptr = stackalloc[time_t]
-      !time_ptr = epoch + timezone
+      val time_ptr = stackalloc[time_t]()
+      !time_ptr = epoch + timezone()
       val time: Ptr[tm] = localtime(time_ptr)
       val cstr: CString = asctime(time)
       val str: String = fromCString(cstr)
@@ -97,8 +97,8 @@ class TimeTest {
           "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
           Platform.isFreeBSD
         )
-        val time_ptr = stackalloc[time_t]
-        !time_ptr = epoch + timezone
+        val time_ptr = stackalloc[time_t]()
+        !time_ptr = epoch + timezone()
         val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
         val cstr: CString = asctime_r(time, alloc[Byte](26.toUSize))
         val str: String = fromCString(cstr)
@@ -153,7 +153,7 @@ class TimeTest {
       // Scala Native tm, so the linux 56 byte form is necessary here.
       val tmBufCount = 7.toUSize
 
-      val tmBuf = alloc[scala.Long](tmBufCount).asInstanceOf[Ptr[Ptr[Byte]]]
+      val tmBuf: Ptr[Ptr[Byte]] = alloc[scala.Long](tmBufCount).asInstanceOf[Ptr[Ptr[Byte]]]
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
@@ -169,7 +169,7 @@ class TimeTest {
 
         // grossly over-provision rather than chase fencepost bugs.
         val bufSize = 70.toUSize
-        val buf = alloc[Byte](bufSize)
+        val buf: Ptr[Byte] = alloc[Byte](bufSize)
 
         val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
 
@@ -302,7 +302,7 @@ class TimeTest {
         )
 
         val tmBufSize = 56.toUSize
-        val tmBuf = alloc[Byte](tmBufSize)
+        val tmBuf: Ptr[Byte] = alloc[Byte](tmBufSize)
 
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 

@@ -17,8 +17,6 @@ object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
     lookupByName(name) match {
       case Success(user: WindowsUserPrincipal.User) => user
       case other =>
-        println(name)
-        println(other)
         throw new UserPrincipalNotFoundException(name)
     }
   }
@@ -35,7 +33,7 @@ object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
 
   private def lookupByName(name: String): Try[WindowsUserPrincipal] = Zone {
     implicit z =>
-      val cbSid, domainSize = stackalloc[DWord]
+      val cbSid, domainSize = stackalloc[DWord]()
       !cbSid = 0.toUInt
       !domainSize = 0.toUInt
 
@@ -56,7 +54,8 @@ object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
         )
       } else {
         val sidRef: SIDPtr = alloc[Byte](!cbSid)
-        val domainName = alloc[CChar16](!domainSize).asInstanceOf[CWString]
+        val domainName: CWString =
+          alloc[CChar16](!domainSize).asInstanceOf[CWString]
 
         if (!LookupAccountNameW(
               systemName = null,

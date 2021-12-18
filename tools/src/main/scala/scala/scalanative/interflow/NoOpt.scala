@@ -82,6 +82,9 @@ trait NoOpt { self: Interflow =>
       noOptVal(v1)
       noOptGlobal(n)
       noOptVal(v2)
+    case Op.Field(obj, n) =>
+      noOptVal(obj)
+      noOptGlobal(n)
     case Op.Method(obj, sig) =>
       noOptVal(obj)
       obj.ty match {

@@ -497,7 +497,7 @@ class ParserTest {
       cc.appendRange(i, i)
       cc.appendRange(i + 'a' - 'A', i + 'a' - 'A')
     }
-    assertTrue("AZaz" == runesToString(cc.toArray))
+    assertTrue("AZaz" == runesToString(cc.toArray()))
   }
 
   // Converts an array of Unicode runes to a Java UTF-16 string.

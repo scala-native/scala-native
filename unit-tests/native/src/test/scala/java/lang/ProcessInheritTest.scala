@@ -49,7 +49,7 @@ class ProcessInheritTest {
       import FileApiExt._
       import winnt.AccessRights._
       val f = Files.createTempFile("tmp", "out")
-      val readEnd, writeEnd, stdOutDup = stackalloc[Handle]
+      val readEnd, writeEnd, stdOutDup = stackalloc[Handle]()
 
       assertEquals(
         "createPipe",

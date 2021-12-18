@@ -11,7 +11,7 @@ import sbt.testing._
 final class JUnitFramework extends Framework {
   private val f = new scala.scalanative.junit.JUnitFramework
 
-  val name: String = f.name
+  override def name(): String = f.name()
 
   def fingerprints(): Array[Fingerprint] = f.fingerprints()
 

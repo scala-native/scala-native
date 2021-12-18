@@ -40,10 +40,13 @@ private class MappedByteBufferImpl(
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newMappedByteBuffer =
+  private def genBuffer = GenBuffer[ByteBuffer](this)
+  private def genMappedBuffer = GenMappedBuffer[ByteBuffer](this)
+  private[this] implicit def newMappedByteBuffer
+      : GenMappedBuffer.NewMappedBuffer[ByteBuffer, Byte] =
     MappedByteBufferImpl.NewMappedByteBuffer
 
-  override def force() = {
+  override def force(): MappedByteBuffer = {
     _mappedData.force()
     this
   }
@@ -58,43 +61,43 @@ private class MappedByteBufferImpl(
 
   @noinline
   def slice(): ByteBuffer =
-    GenMappedBuffer(this).generic_slice()
+    genMappedBuffer.generic_slice()
 
   @noinline
   def duplicate(): ByteBuffer =
-    GenMappedBuffer(this).generic_duplicate()
+    genMappedBuffer.generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): ByteBuffer =
-    GenMappedBuffer(this).generic_asReadOnlyBuffer()
+    genMappedBuffer.generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Byte =
-    GenBuffer(this).generic_get()
+    genBuffer.generic_get()
 
   @noinline
   def put(b: Byte): ByteBuffer =
-    GenBuffer(this).generic_put(b)
+    genBuffer.generic_put(b)
 
   @noinline
   def get(index: Int): Byte =
-    GenBuffer(this).generic_get(index)
+    genBuffer.generic_get(index)
 
   @noinline
   def put(index: Int, b: Byte): ByteBuffer =
-    GenBuffer(this).generic_put(index, b)
+    genBuffer.generic_put(index, b)
 
   @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   @noinline
   def compact(): ByteBuffer =
-    GenMappedBuffer(this).generic_compact()
+    genMappedBuffer.generic_compact()
 
   // Here begins the stuff specific to ByteArrays
 
@@ -201,11 +204,11 @@ private class MappedByteBufferImpl(
 
   @inline
   private[nio] def load(index: Int): Byte =
-    GenMappedBuffer(this).generic_load(index)
+    genMappedBuffer.generic_load(index)
 
   @inline
   private[nio] def store(index: Int, elem: Byte): Unit =
-    GenMappedBuffer(this).generic_store(index, elem)
+    genMappedBuffer.generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -214,7 +217,7 @@ private class MappedByteBufferImpl(
       offset: Int,
       length: Int
   ): Unit =
-    GenMappedBuffer(this).generic_load(startIndex, dst, offset, length)
+    genMappedBuffer.generic_load(startIndex, dst, offset, length)
 
   @inline
   override private[nio] def store(
@@ -223,7 +226,7 @@ private class MappedByteBufferImpl(
       offset: Int,
       length: Int
   ): Unit =
-    GenMappedBuffer(this).generic_store(startIndex, src, offset, length)
+    genMappedBuffer.generic_store(startIndex, src, offset, length)
 }
 
 private[nio] object MappedByteBufferImpl {
@@ -256,10 +259,12 @@ private[nio] object MappedByteBufferImpl {
       fd: FileDescriptor,
       mode: MapMode
   ): MappedByteBufferData = {
-    val (flProtect: DWord, dwDesiredAccess: DWord) =
-      if (mode eq MapMode.PRIVATE) (PAGE_WRITECOPY, FILE_MAP_COPY)
-      else if (mode eq MapMode.READ_ONLY) (PAGE_READONLY, FILE_MAP_READ)
-      else if (mode eq MapMode.READ_WRITE) (PAGE_READWRITE, FILE_MAP_WRITE)
+    val (flProtect: DWord, dwDesiredAccess: DWord) = mode match {
+      case MapMode.PRIVATE    => (PAGE_WRITECOPY, FILE_MAP_COPY)
+      case MapMode.READ_ONLY  => (PAGE_READONLY, FILE_MAP_READ)
+      case MapMode.READ_WRITE => (PAGE_READWRITE, FILE_MAP_WRITE)
+      case _ => throw new IllegalStateException("Unknown MapMode")
+    }
 
     val mappingHandle =
       CreateFileMappingA(
@@ -293,11 +298,12 @@ private[nio] object MappedByteBufferImpl {
       fd: FileDescriptor,
       mode: MapMode
   ): MappedByteBufferData = {
-    val (prot: Int, isPrivate: Int) =
-      if (mode eq MapMode.PRIVATE) (PROT_WRITE, MAP_PRIVATE)
-      else if (mode eq MapMode.READ_ONLY) (PROT_READ, MAP_SHARED)
-      else if (mode eq MapMode.READ_WRITE) (PROT_WRITE, MAP_SHARED)
-
+    val (prot: Int, isPrivate: Int) = mode match {
+      case MapMode.PRIVATE    => (PROT_WRITE, MAP_PRIVATE)
+      case MapMode.READ_ONLY  => (PROT_READ, MAP_SHARED)
+      case MapMode.READ_WRITE => (PROT_WRITE, MAP_SHARED)
+      case _ => throw new IllegalStateException("Unknown MapMode")
+    }
     val ptr = mmap(
       null,
       size.toUInt,

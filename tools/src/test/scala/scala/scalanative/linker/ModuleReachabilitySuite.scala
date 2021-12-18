@@ -23,7 +23,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   val ModuleFoo = g(ModuleClsName, Sig.Method("foo", Seq(Type.Unit)))
   val ModuleBar = g(ModuleClsName, Sig.Field("bar"))
   val ModuleBarSet =
-    g(ModuleClsName, Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
+    g(ModuleClsName, Sig.Method("bar_$eq", Seq(Type.Int, Type.Unit)))
   val ModuleBarGet = g(ModuleClsName, Sig.Method("bar", Seq(Type.Int)))
   val Parent = g(ParentClsName)
   val ParentInit = g(ParentClsName, Sig.Ctor(Seq.empty))
@@ -81,7 +81,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain
@@ -102,7 +104,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       object Module
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain
@@ -127,7 +131,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain
@@ -154,7 +160,9 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main(args: Array[String]): Unit = Module
+        def main(args: Array[String]): Unit = {
+          val x = Module
+        }
       }
     """
     val entry = TestMain

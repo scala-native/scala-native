@@ -36,6 +36,11 @@ runs:
         echo "::set-output name=LocalAppData::${env:LocalAppData}"
         echo "::set-output name=UserProfile::${env:UserProfile}"
         echo "::set-output name=VcpkgLibs::${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static"
+        if ("${{inputs.scala-version}}".StartsWith("2.")) {
+          echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
+        } else {
+          echo "project-version=3" >> $env:GITHUB_ENV
+        }
 
     - name: Cache dependencies
       id: cache-deps

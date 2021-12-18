@@ -9,17 +9,17 @@ import scala.util.{Failure, Success, Try}
 import org.junit.TestCouldNotBeSkippedException
 
 private[junit] final class JUnitTask(
-    val taskDef: TaskDef,
+    _taskDef: TaskDef,
     runSettings: RunSettings
 ) extends Task {
-
+  def taskDef(): TaskDef = _taskDef
   def tags(): Array[String] = Array.empty
 
   override def execute(
       eventHandler: EventHandler,
       loggers: Array[Logger]
   ): Array[Task] = {
-    val reporter = new Reporter(eventHandler, loggers, runSettings, taskDef)
+    val reporter = new Reporter(eventHandler, loggers, runSettings, taskDef())
 
     loadBootstrapper(reporter).foreach { bootstrapper =>
       executeTests(bootstrapper, reporter)
@@ -141,7 +141,7 @@ private[junit] final class JUnitTask(
 
   private def loadBootstrapper(reporter: Reporter): Option[Bootstrapper] = {
     val bootstrapperName =
-      taskDef.fullyQualifiedName() + "$scalanative$junit$bootstrapper$"
+      taskDef().fullyQualifiedName() + "$scalanative$junit$bootstrapper$"
 
     try {
       val b = Reflect

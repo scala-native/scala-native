@@ -21,9 +21,10 @@ import scalanative.annotation.stub
 import scalanative.windows.FileApi._
 import scala.annotation.tailrec
 
-class WindowsFileSystem(override val provider: WindowsFileSystemProvider)
+class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)
     extends FileSystem {
 
+  override def provider(): WindowsFileSystemProvider = fsProvider
   override def close(): Unit = throw new UnsupportedOperationException()
 
   @stub
@@ -38,7 +39,7 @@ class WindowsFileSystem(override val provider: WindowsFileSystemProvider)
   override def getRootDirectories(): Iterable[Path] = {
     val list = new LinkedList[Path]()
     val bufferSize = GetLogicalDriveStringsW(0.toUInt, null)
-    val buffer = stackalloc[CChar16](bufferSize)
+    val buffer: Ptr[CChar16] = stackalloc[CChar16](bufferSize)
 
     @tailrec
     def readStringsBlock(ptr: Ptr[CChar16]): Unit = {

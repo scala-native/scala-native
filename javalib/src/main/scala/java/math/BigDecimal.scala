@@ -1024,7 +1024,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
             if (compRemDiv0 == 0) {
               val bi = qr.rem.multiply(powerOf10(exp2))
               val rem = bi.divide(divisor.getUnscaledValue())
-              Math.abs(rem.signum())
+              Math.abs(rem.signum()).toLong
             } else {
               compRemDiv0
             }

@@ -218,8 +218,8 @@ class IssuesTest {
     bytes(0) = 'b'.toByte
     bytes(1) = 'a'.toByte
     val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
-    assertFalse(p == 'b'.toByte)
-    assertFalse((p + 1) == 'a'.toByte)
+    assertEquals('b'.toByte, !p)
+    assertEquals('a'.toByte, !(p + 1))
   }
 
   @Test def test_Issue349(): Unit = {
@@ -318,36 +318,6 @@ class IssuesTest {
     assertTrue(ab.getKey() == "a")
     assertTrue(ab.getValue() == "b")
     assertFalse(iter.hasNext())
-  }
-
-  @Test def test_Issue803(): Unit = {
-    val x1: String = null
-    var x2: String = "right"
-    assertTrue(x1 + x2 == "nullright")
-
-    val x3: String = "left"
-    val x4: String = null
-    assertTrue(x3 + x4 == "leftnull")
-
-    val x5: AnyRef = new { override def toString = "custom" }
-    val x6: String = null
-    assertTrue(x5 + x6 == "customnull")
-
-    val x7: String = null
-    val x8: AnyRef = new { override def toString = "custom" }
-    assertTrue(x7 + x8 == "nullcustom")
-
-    val x9: String = null
-    val x10: String = null
-    assertTrue(x9 + x10 == "nullnull")
-
-    val x11: AnyRef = null
-    val x12: String = null
-    assertTrue(x11 + x12 == "nullnull")
-
-    val x13: String = null
-    val x14: AnyRef = null
-    assertTrue(x13 + x14 == "nullnull")
   }
 
   @Test def test_Issue809(): Unit = {

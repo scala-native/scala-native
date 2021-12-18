@@ -3,7 +3,15 @@ package unsafe
 
 import scala.language.implicitConversions
 import scalanative.unsigned._
-import scalanative.runtime.{intrinsic, RawPtr, toRawPtr, libc, LongArray}
+import scalanative.runtime.{
+  intrinsic,
+  RawPtr,
+  toRawPtr,
+  libc,
+  LongArray,
+  PlatformExt,
+  Platform
+}
 import scalanative.meta.LinktimeInfo._
 
 /** Type of a C-style vararg list (va_list in C). */
@@ -40,15 +48,9 @@ object CVarArgList {
   private[scalanative] def fromSeq(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
-    if (isWindows) {
-      toCVarArgList_X86_64_Windows(varargs)
-    } else {
-      if (!is32BitPlatform) {
-        toCVarArgList_X86_64_Unix(varargs)
-      } else {
-        toCVarArgList_X86_Unix(varargs)
-      }
-    }
+    if (isWindows) toCVarArgList_X86_64_Windows(varargs)
+    else if(is32BitPlatform) toCVarArgList_X86_Unix(varargs)
+    else toCVarArgList_Unix(varargs)
   }
 
   @inline
@@ -80,7 +82,7 @@ object CVarArgList {
         words
     }
 
-  private def toCVarArgList_X86_64_Unix(
+  private def toCVarArgList_Unix(
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
     var storage = new Array[Long](registerSaveWords)
@@ -127,12 +129,16 @@ object CVarArgList {
       wordsUsed.toUSize * sizeof[Long]
     )
 
-    val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
-    resultHeader.gpOffset = 0.toUInt
+    if (PlatformExt.isArm64 && Platform.isMac())
+      new CVarArgList(toRawPtr(storageStart))
+    else {
+      val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
+      resultHeader.gpOffset = 0.toUInt
     resultHeader.fpOffset = (countGPRegisters.toUSize * sizeof[Long]).toUInt
-    resultHeader.regSaveArea = resultStorage
-    resultHeader.overflowArgArea = resultStorage + registerSaveWords
-    new CVarArgList(toRawPtr(resultHeader))
+      resultHeader.regSaveArea = resultStorage
+      resultHeader.overflowArgArea = resultStorage + registerSaveWords
+      new CVarArgList(toRawPtr(resultHeader))
+    }
   }
 
   private def toCVarArgList_X86_Unix(

@@ -30,7 +30,7 @@ class UdpSocketTest {
   // on Unix, probably due to bug in linktime conditions.
   private def setSocketBlocking(socket: CInt): Unit = {
     if (isWindows) {
-      val mode = stackalloc[CInt]
+      val mode = stackalloc[CInt]()
       !mode = 1
       assertNotEquals(
         "iotctl setBLocking",
@@ -144,7 +144,7 @@ class UdpSocketTest {
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData = alloc[Byte](maxInData.toUSize)
+        val inData: Ptr[Byte] = alloc[Byte](maxInData.toUSize)
 
         // Try to prevent spourious race conditions
         Thread.sleep(100)

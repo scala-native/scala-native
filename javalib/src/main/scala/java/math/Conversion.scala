@@ -177,20 +177,22 @@ private[math] object Conversion {
         val highDigit = digits(0)
         if (highDigit < 0) {
           var v: Long = highDigit & 0xffffffffL
-          do {
+          while ({
             val prev = v
             v /= 10
             currentChar -= 1
             result = (prev - v * 10).toString + result
-          } while (v != 0)
+            v != 0
+          }) ()
         } else {
           var v: Int = highDigit
-          do {
+          while ({
             val prev = v
             v /= 10
             currentChar -= 1
             result = (prev - v * 10).toString + result
-          } while (v != 0)
+            v != 0
+          }) ()
         }
       } else {
         val temp = new Array[Int](numberLength)
@@ -281,12 +283,13 @@ private[math] object Conversion {
       var currentChar = resLengthInChars
 
       var v: Long = if (negNumber) -value else value
-      do {
+      while ({
         val prev = v
         v /= 10
         currentChar -= 1
         result = (prev - v * 10).toString + result
-      } while (v != 0)
+        v != 0
+      }) ()
 
       val exponent: Long = resLengthInChars - currentChar - scale.toLong - 1
 

@@ -11,7 +11,7 @@ class TagTest {
   @Test def tagSize(): Unit = {
     assertTrue(tagof[Ptr[_]].size == sizeof[Size])
     assertTrue(tagof[Object].size == sizeof[Size])
-    assertTrue(tagof[Array[_]].size == sizeof[Size])
+    assertTrue(tagof[Array[Any]].size == sizeof[Size])
     assertTrue(tagof[Unit].size == sizeof[Size])
     assertTrue(tagof[Boolean].size == 1.toULong)
     assertTrue(tagof[Char].size == 2.toULong)

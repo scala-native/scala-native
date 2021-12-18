@@ -15,7 +15,11 @@ private[nio] final class MappedByteBufferShortView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newMappedShortBufferView =
+  private def genBuffer = GenBuffer[ShortBuffer](this)
+  protected def genMappedBufferView =
+    GenMappedBufferView[ShortBuffer](this)
+  private[this] implicit def newMappedShortBufferView
+      : GenMappedBufferView.NewMappedBufferView[ShortBuffer] =
     MappedByteBufferShortView.NewMappedByteBufferShortView
 
   def isReadOnly(): Boolean = _readOnly
@@ -24,57 +28,57 @@ private[nio] final class MappedByteBufferShortView private (
 
   @noinline
   def slice(): ShortBuffer =
-    GenMappedBufferView(this).generic_slice()
+    genMappedBufferView.generic_slice()
 
   @noinline
   def duplicate(): ShortBuffer =
-    GenMappedBufferView(this).generic_duplicate()
+    genMappedBufferView.generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): ShortBuffer =
-    GenMappedBufferView(this).generic_asReadOnlyBuffer()
+    genMappedBufferView.generic_asReadOnlyBuffer()
 
   @noinline
   def get(): Short =
-    GenBuffer(this).generic_get()
+    genBuffer.generic_get()
 
   @noinline
   def put(c: Short): ShortBuffer =
-    GenBuffer(this).generic_put(c)
+    genBuffer.generic_put(c)
 
   @noinline
   def get(index: Int): Short =
-    GenBuffer(this).generic_get(index)
+    genBuffer.generic_get(index)
 
   @noinline
   def put(index: Int, c: Short): ShortBuffer =
-    GenBuffer(this).generic_put(index, c)
+    genBuffer.generic_put(index, c)
 
   @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   @noinline
   override def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   @noinline
   def compact(): ShortBuffer =
-    GenMappedBufferView(this).generic_compact()
+    genMappedBufferView.generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenMappedBufferView(this).generic_order()
+    genMappedBufferView.generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Short =
-    GenMappedBufferView(this).byteArrayBits.loadShort(index)
+    genMappedBufferView.byteArrayBits.loadShort(index)
 
   @inline
   private[nio] def store(index: Int, elem: Short): Unit =
-    GenMappedBufferView(this).byteArrayBits.storeShort(index, elem)
+    genMappedBufferView.byteArrayBits.storeShort(index, elem)
 }
 
 private[nio] object MappedByteBufferShortView {

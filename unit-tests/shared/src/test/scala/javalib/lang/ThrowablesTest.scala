@@ -75,7 +75,10 @@ class ThrowablesTest {
     checkStackTraceString(sw.toString)
   }
 
-  private def checkSuppressed(throwable: Throwable, expectedLength: Int) {
+  private def checkSuppressed(
+      throwable: Throwable,
+      expectedLength: Int
+  ): Unit = {
     assumeNotASAN()
     val getSuppressedLength = throwable.getSuppressed.length
     assertTrue(

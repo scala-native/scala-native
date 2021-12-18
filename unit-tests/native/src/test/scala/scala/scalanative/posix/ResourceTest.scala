@@ -111,7 +111,7 @@ class ResourceTest {
 
       for (c <- cases) {
         errno.errno = 0
-        val rlimPtr = alloc[rlimit] // start each pass with all bytes 0.
+        val rlimPtr = alloc[rlimit]() // start each pass with all bytes 0.
 
         val result = getrlimit(c.value, rlimPtr)
 

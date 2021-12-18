@@ -8,15 +8,16 @@ import scalanative.unsigned._
 class StackallocTest {
 
   @Test def stackallocInt(): Unit = {
-    val ptr = stackalloc[Int]
+    val ptr = stackalloc[Int]()
 
     !ptr = 42
 
-    assertFalse(ptr == 42)
+    assertTrue(!ptr == 42)
+    assertFalse(ptr.toInt == 42)
   }
 
   @Test def stackallocInt4(): Unit = {
-    val ptr = stackalloc[Int](4.toUInt)
+    val ptr: Ptr[Int] = stackalloc[Int](4.toUInt)
 
     ptr(0) = 1
     ptr(1) = 2

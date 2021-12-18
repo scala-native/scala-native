@@ -103,7 +103,7 @@ class DeflaterOutputStreamTest {
     val defl = new Deflater()
     val dos = new MyDeflaterOutputStream(fos, defl)
 
-    assertTrue(dos.getBuf.length == 512)
+    assertTrue(dos.getBuf().length == 512)
     dos.write(byteArray)
     dos.close()
     f1.delete()
@@ -129,7 +129,7 @@ class DeflaterOutputStreamTest {
     )
 
     val dos = new MyDeflaterOutputStream(fos, defl, buf)
-    assertTrue(dos.getBuf.length == 5)
+    assertTrue(dos.getBuf().length == 5)
     dos.write(byteArray)
     dos.close()
     f1.delete()
