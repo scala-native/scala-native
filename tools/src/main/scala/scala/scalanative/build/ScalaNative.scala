@@ -71,10 +71,7 @@ private[scalanative] object ScalaNative {
   }
 
   /** Optimizer high-level NIR under closed-world assumption. */
-  def optimize(
-      config: Config,
-      linked: linker.Result
-  ): linker.Result =
+  def optimize(config: Config, linked: linker.Result): linker.Result =
     dump(config, "optimized") {
       check(config) {
         if (config.compilerConfig.optimize) {
@@ -93,10 +90,7 @@ private[scalanative] object ScalaNative {
     }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(
-      config: Config,
-      linked: linker.Result
-  ): Seq[Path] = {
+  def codegen(config: Config, linked: linker.Result): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
       // currently, always clean ll files
       IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)

@@ -61,9 +61,8 @@ private[scalanative] object LLVM {
         val flags = opt(config) +: "-fvisibility=hidden" +:
           stdflag ++: platformFlags ++: config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(
-            config
-          ) ++ flags ++ unwindSettings ++ asan(config) ++ target(config) ++
+          Seq(compiler) ++ flto(config) ++ flags ++
+            unwindSettings ++ asan(config) ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
@@ -127,10 +126,9 @@ private[scalanative] object LLVM {
           }
           Seq("-g") ++ ltoSupport
         } else Seq("-rdynamic", "--rtlib=compiler-rt")
-      flto(config) ++ platformFlags ++ Seq(
-        "-o",
-        outpath.abs
-      ) ++ unwindSettings ++ asan(config) ++ target(config)
+      flto(config) ++ platformFlags ++
+        Seq("-o", outpath.abs) ++
+        unwindSettings ++ asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)

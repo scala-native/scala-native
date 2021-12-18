@@ -763,17 +763,10 @@ trait Eval { self: Interflow =>
           case o                     => bailOut
         }
 
-        if (fromSize == toSize) {
-          eval(Conv.Bitcast, ty, value)
-        } else if (fromSize > toSize) {
-          eval(Conv.Trunc, ty, value)
-        } else {
-          if (conv == Conv.ZSizeCast) {
-            eval(Conv.Zext, ty, value)
-          } else {
-            eval(Conv.Sext, ty, value)
-          }
-        }
+        if (fromSize == toSize) eval(Conv.Bitcast, ty, value)
+        else if (fromSize > toSize) eval(Conv.Trunc, ty, value)
+        else if (conv == Conv.ZSizeCast) eval(Conv.Zext, ty, value)
+        else eval(Conv.Sext, ty, value)
 
       case Conv.Trunc =>
         (value, ty) match {

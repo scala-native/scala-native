@@ -17,9 +17,8 @@ final case class MemoryLayout(
       tys.collect {
         // offset in words without rtti
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(
-            offset / MemoryLayout.BYTES_IN_LONG - 1
-          ) // refMapStruct is int64_t*
+          // refMapStruct is int64_t*
+          Val.Long(offset / MemoryLayout.BYTES_IN_LONG - 1)
       }
 
     ptrOffsets :+ Val.Long(-1)
@@ -80,8 +79,10 @@ object MemoryLayout {
       offset += sizeOf(ty, is32BitPlatform)
     }
 
-    val alignment =
-      if (tys.isEmpty) 1 else tys.map(alignmentOf(_, is32BitPlatform)).max
+    val alignment = {
+      if (tys.isEmpty) 1
+      else tys.map(alignmentOf(_, is32BitPlatform)).max
+    }
 
     MemoryLayout(align(offset, alignment), pos.toSeq, is32BitPlatform)
   }

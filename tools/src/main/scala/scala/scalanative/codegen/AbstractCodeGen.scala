@@ -366,11 +366,8 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Bool                                             => str("i1")
       case i: Type.FixedSizeI => str("i"); str(i.width)
       case Type.Size =>
-        if (is32BitPlatform) {
-          str("i32")
-        } else {
-          str("i64")
-        }
+        if (is32BitPlatform) str("i32")
+        else str("i64")
       case Type.Float  => str("float")
       case Type.Double => str("double")
       case Type.ArrayValue(ty, n) =>
@@ -428,17 +425,10 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.Null     => str("null")
       case Val.Zero(ty) => str("zeroinitializer")
       case Val.Byte(v)  => str(v)
-      case Val.Size(v) => {
-        if (is32BitPlatform) {
-          if (v.toInt != v) {
-            unsupported("Emitting size values that exceed the platform bounds")
-          } else {
-            str(v.toInt)
-          }
-        } else {
-          str(v)
-        }
-      }
+      case Val.Size(v) =>
+        if (!is32BitPlatform) str(v)
+        else if (v.toInt == v) str(v.toInt)
+        else unsupported("Emitting size values that exceed the platform bounds")
       case Val.Char(v)   => str(v.toInt)
       case Val.Short(v)  => str(v)
       case Val.Int(v)    => str(v)
@@ -688,11 +678,8 @@ private[codegen] abstract class AbstractCodeGen(
             }
             str(", !")
             str(deref)
-            if (is32BitPlatform) {
-              str(" !{i32 ")
-            } else {
-              str(" !{i64 ")
-            }
+            if (is32BitPlatform) str(" !{i32 ")
+            else str(" !{i64 ")
             str(size)
             str("}")
           case _ =>
@@ -990,13 +977,11 @@ private[codegen] abstract class AbstractCodeGen(
         case o                     => unsupported(o)
       }
 
-      val castOp = if (fromSize == toSize) {
-        "bitcast"
-      } else if (fromSize > toSize) {
-        "trunc"
-      } else {
-        if (conv == Conv.ZSizeCast) "zext" else "sext"
-      }
+      val castOp =
+        if (fromSize == toSize) "bitcast"
+        else if (fromSize > toSize) "trunc"
+        else if (conv == Conv.ZSizeCast) "zext"
+        else "sext"
 
       sb.str(castOp)
 

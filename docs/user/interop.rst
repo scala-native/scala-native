@@ -252,7 +252,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
       import scala.scalanative.unsafe._
 
       Zone { implicit z =>
-        val buffer = alloc[Byte](n.toUSize)
+        val buffer = alloc[Byte](n)
       }
 
    ``alloc`` requests memory sufficient to contain `n` values of a given type.
@@ -278,7 +278,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    .. code-block:: scala
 
-       val buffer = unsafe.stackalloc[Byte](256.toUSize)
+       val buffer = unsafe.stackalloc[Byte](256)
 
    This code will allocate 256 bytes that are going to be available until
    the enclosing method returns. Number of elements to be allocated is optional

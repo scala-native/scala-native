@@ -162,7 +162,7 @@ object NativeConfig {
       dump: Boolean,
       asan: Boolean,
       optimize: Boolean,
-      linktimeProperties: Map[String, Any]
+      linktimeProperties: LinktimeProperites
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =

@@ -44,7 +44,7 @@ private[lang] object StackTrace {
         val cursor: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
         val context: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
         val offset: Ptr[scala.Byte] = alloc[scala.Byte](8.toUSize)
-        val ip = alloc[CUnsignedLong]
+        val ip = alloc[CUnsignedLong]()
 
         unwind.get_context(context)
         unwind.init_local(cursor, context)

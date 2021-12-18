@@ -49,7 +49,7 @@ object CVarArgList {
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
     if (isWindows) toCVarArgList_X86_64_Windows(varargs)
-    else if(is32BitPlatform) toCVarArgList_X86_Unix(varargs)
+    else if (is32BitPlatform) toCVarArgList_X86_Unix(varargs)
     else toCVarArgList_Unix(varargs)
   }
 
@@ -134,7 +134,7 @@ object CVarArgList {
     else {
       val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = 0.toUInt
-    resultHeader.fpOffset = (countGPRegisters.toUSize * sizeof[Long]).toUInt
+      resultHeader.fpOffset = (countGPRegisters.toUSize * sizeof[Long]).toUInt
       resultHeader.regSaveArea = resultStorage
       resultHeader.overflowArgArea = resultStorage + registerSaveWords
       new CVarArgList(toRawPtr(resultHeader))

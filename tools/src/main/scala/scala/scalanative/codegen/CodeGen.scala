@@ -14,10 +14,7 @@ import scala.scalanative.compat.CompatParColls.Converters._
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(
-      config: build.Config,
-      linked: linker.Result
-  ): Seq[Path] = {
+  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
@@ -84,11 +81,7 @@ object CodeGen {
     import scala.scalanative.codegen.AbstractCodeGen
     import scala.scalanative.codegen.compat.os._
 
-    def apply(
-        config: Config,
-        env: Map[Global, Defn],
-        defns: Seq[Defn]
-    )(implicit
+    def apply(config: Config, env: Map[Global, Defn], defns: Seq[Defn])(implicit
         meta: Metadata
     ): AbstractCodeGen = {
       new AbstractCodeGen(config, env, defns) {

@@ -15,16 +15,16 @@ private[scalanative] trait UnsafePackageCompat {
     since = "0.5.0"
   )
   inline def alloc[T](using tag: Tag[T], zone: Zone): Ptr[T] = {
-    alloc[T](1.toULong)
+    alloc[T](1.toUSize)
   }
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
   inline def alloc[T](
-      inline n: CSize = 1.toULong
+      inline n: CSize = 1.toUSize
   )(using tag: Tag[T], zone: Zone): Ptr[T] = {
-    val size = sizeof[T] * n.toULong
+    val size = sizeof[T] * n.toUSize
     val ptr = zone.alloc(size)
     val rawPtr = toRawPtr(ptr)
     libc.memset(rawPtr, 0, size)
@@ -47,13 +47,13 @@ private[scalanative] trait UnsafePackageCompat {
     since = "0.5.0"
   )
   inline def stackalloc[T](implicit tag: Tag[T]): Ptr[T] =
-    stackalloc[T](1.toULong)
+    stackalloc[T](1.toUSize)
 
   /** Stack allocate n values of given type */
   inline def stackalloc[T](
-      inline n: CSize = 1.toULong
+      inline n: CSize = 1.toUSize
   )(using Tag[T]): Ptr[T] = {
-    val size = sizeof[T] * n.toULong
+    val size = sizeof[T] * n.toUSize
     val rawPtr = Intrinsics.stackalloc(size)
     libc.memset(rawPtr, 0, size)
     fromRawPtr[T](rawPtr)
@@ -70,5 +70,5 @@ private[scalanative] trait UnsafePackageCompat {
     since = "0.4.0"
   )
   inline def stackalloc[T](inline n: CSSize)(using Tag[T]): Ptr[T] =
-    stackalloc[T](n.toULong)
+    stackalloc[T](n.toUSize)
 }
