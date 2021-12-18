@@ -31,6 +31,18 @@ trait NirGenName(using Context) {
     }
   }
 
+  def genModuleName(sym: Symbol): nir.Global.Top = {
+    if (sym.is(Module)) genTypeName(sym)
+    else {
+      val module = sym.moduleClass
+      if (module.exists) genTypeName(module)
+      else {
+        val nir.Global.Top(className) = genTypeName(sym)
+        nir.Global.Top(className + "$")
+      }
+    }
+  }
+
   def genFieldName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id = nativeIdOf(sym)

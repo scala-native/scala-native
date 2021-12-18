@@ -35,6 +35,9 @@ trait NirGenType(using Context) {
     def isStaticModule: Boolean =
       sym.is(Module) && sym.isStatic
 
+    def isStaticMethod: Boolean =
+      sym.isAllOf(Method | JavaStatic)
+
     def isExtern: Boolean = sym.owner.isExternModule
 
     def isExternModule: Boolean =
