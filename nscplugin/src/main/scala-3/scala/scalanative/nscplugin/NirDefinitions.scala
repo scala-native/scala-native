@@ -53,10 +53,16 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val UShortType = requiredClassRef("scala.scalanative.unsigned.UShort")
   @tu lazy val UIntType = requiredClassRef("scala.scalanative.unsigned.UInt")
   @tu lazy val ULongType = requiredClassRef("scala.scalanative.unsigned.ULong")
+  @tu lazy val SizeType = requiredClassRef("scala.scalanative.unsafe.Size")
+  @tu lazy val USizeType = requiredClassRef("scala.scalanative.unsigned.USize")
+  @tu lazy val RawSizeType = requiredClassRef("scala.scalanative.runtime.RawSize")
   def UByteClass(using Context) = UByteClassVal.symbol.asClass
   def UShortClass(using Context) = UShortType.symbol.asClass
   def UIntClass(using Context) = UIntType.symbol.asClass
   def ULongClass(using Context) = ULongType.symbol.asClass
+  def SizeClass(using Context) = SizeType.symbol.asClass
+  def USizeClass(using Context) = USizeType.symbol.asClass
+  def RawSizeClass(using Context) = RawSizeType.symbol.asClass
 
   // Pointers
   @tu lazy val PtrType = requiredClassRef("scala.scalanative.unsafe.Ptr")
@@ -122,6 +128,8 @@ final class NirDefinitions()(using ctx: Context) {
     (2 to 9).map(n => TagModule.requiredMethodRef(s"materializeNatDigit${n}Tag"))
   @tu lazy val UnsafeTag_materializeCStructTagsR =
     (0 to 22).map(n => TagModule.requiredMethodRef(s"materializeCStruct${n}Tag"))
+  @tu lazy val UnsafeTag_materializeSizeTagR = TagModule.requiredMethodRef("materializeSizeTag")
+  @tu lazy val UnsafeTag_materializeUSizeTagR = TagModule.requiredMethodRef("materializeUSizeTag")
   def UnsafeTag_materializeUnitTag(using Context) = UnsafeTag_materializeUnitTagR.symbol
   def UnsafeTag_materializeBooleanTag(using Context) = UnsafeTag_materializeBooleanTagR.symbol
   def UnsafeTag_materializeCharTag(using Context) = UnsafeTag_materializeCharTagR.symbol
@@ -141,6 +149,8 @@ final class NirDefinitions()(using ctx: Context) {
   def UnsafeTag_materializeNatBaseTags(using Context) = UnsafeTag_materializeNatBaseTagsR.map(_.symbol)
   def UnsafeTag_materializeNatDigitTags(using Context) = UnsafeTag_materializeNatDigitTagsR.map(_.symbol)
   def UnsafeTag_materializeCStructTags(using Context) = UnsafeTag_materializeCStructTagsR.map(_.symbol)
+  def UnsafeTag_materializeSizeTag(using Context) = UnsafeTag_materializeSizeTagR.symbol
+  def UnsafeTag_materializeUSizeTag(using Context) = UnsafeTag_materializeUSizeTagR.symbol
 
   // Native runtime package
   @tu lazy val RuntimePackageVal = requiredModuleRef("scala.scalanative.runtime.package")
@@ -182,6 +192,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_loadFloatR = IntrinsicsModule.requiredMethodRef("loadFloat")
   @tu lazy val Intrinsics_loadDoubleR = IntrinsicsModule.requiredMethodRef("loadDouble")
   @tu lazy val Intrinsics_loadRawPtrR = IntrinsicsModule.requiredMethodRef("loadRawPtr")
+  @tu lazy val Intrinsics_loadRawSizeR = IntrinsicsModule.requiredMethodRef("loadRawSize")
   @tu lazy val Intrinsics_loadObjectR = IntrinsicsModule.requiredMethodRef("loadObject")
   @tu lazy val Intrinsics_storeBoolR = IntrinsicsModule.requiredMethodRef("storeBoolean")
   @tu lazy val Intrinsics_storeCharR = IntrinsicsModule.requiredMethodRef("storeChar")
@@ -192,6 +203,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_storeFloatR = IntrinsicsModule.requiredMethodRef("storeFloat")
   @tu lazy val Intrinsics_storeDoubleR = IntrinsicsModule.requiredMethodRef("storeDouble")
   @tu lazy val Intrinsics_storeRawPtrR = IntrinsicsModule.requiredMethodRef("storeRawPtr")
+  @tu lazy val Intrinsics_storeRawSizeR = IntrinsicsModule.requiredMethodRef("storeRawSize")
   @tu lazy val Intrinsics_storeObjectR = IntrinsicsModule.requiredMethodRef("storeObject")
   @tu lazy val Intrinsics_elemRawPtrR = IntrinsicsModule.requiredMethodRef("elemRawPtr")
   @tu lazy val Intrinsics_castRawPtrToObjectR = IntrinsicsModule.requiredMethodRef("castRawPtrToObject")
@@ -204,6 +216,12 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_castRawPtrToLongR = IntrinsicsModule.requiredMethodRef("castRawPtrToLong")
   @tu lazy val Intrinsics_castIntToRawPtrR = IntrinsicsModule.requiredMethodRef("castIntToRawPtr")
   @tu lazy val Intrinsics_castLongToRawPtrR = IntrinsicsModule.requiredMethodRef("castLongToRawPtr")
+  @tu lazy val Intrinsics_castRawSizeToIntR = IntrinsicsModule.requiredMethodRef("castRawSizeToInt")
+  @tu lazy val Intrinsics_castRawSizeToLongR = IntrinsicsModule.requiredMethodRef("castRawSizeToLong")
+  @tu lazy val Intrinsics_castRawSizeToLongUnsignedR = IntrinsicsModule.requiredMethodRef("castRawSizeToLongUnsigned")
+  @tu lazy val Intrinsics_castIntToRawSizeR = IntrinsicsModule.requiredMethodRef("castIntToRawSize")
+  @tu lazy val Intrinsics_castIntToRawSizeUnsignedR = IntrinsicsModule.requiredMethodRef("castIntToRawSizeUnsigned")
+  @tu lazy val Intrinsics_castLongToRawSizeR = IntrinsicsModule.requiredMethodRef("castLongToRawSize")
   @tu lazy val Intrinsics_stackallocR = IntrinsicsModule.requiredMethodRef("stackalloc")
   @tu lazy val Intrinsics_classFieldRawPtrR = IntrinsicsModule.requiredMethodRef("classFieldRawPtr")
 
@@ -229,6 +247,7 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_loadFloat(using Context) = Intrinsics_loadFloatR.symbol
   def Intrinsics_loadDouble(using Context) = Intrinsics_loadDoubleR.symbol
   def Intrinsics_loadRawPtr(using Context) = Intrinsics_loadRawPtrR.symbol
+  def Intrinsics_loadRawSize(using Context) = Intrinsics_loadRawSizeR.symbol
   def Intrinsics_loadObject(using Context) = Intrinsics_loadObjectR.symbol
   def Intrinsics_storeBool(using Context) = Intrinsics_storeBoolR.symbol
   def Intrinsics_storeChar(using Context) = Intrinsics_storeCharR.symbol
@@ -239,6 +258,7 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_storeFloat(using Context) = Intrinsics_storeFloatR.symbol
   def Intrinsics_storeDouble(using Context) = Intrinsics_storeDoubleR.symbol
   def Intrinsics_storeRawPtr(using Context) = Intrinsics_storeRawPtrR.symbol
+  def Intrinsics_storeRawSize(using Context) = Intrinsics_storeRawSizeR.symbol
   def Intrinsics_storeObject(using Context) = Intrinsics_storeObjectR.symbol
   def Intrinsics_elemRawPtr(using Context) = Intrinsics_elemRawPtrR.symbol
   def Intrinsics_castRawPtrToObject(using Context) = Intrinsics_castRawPtrToObjectR.symbol
@@ -251,6 +271,12 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_castRawPtrToLong(using Context) = Intrinsics_castRawPtrToLongR.symbol
   def Intrinsics_castIntToRawPtr(using Context) = Intrinsics_castIntToRawPtrR.symbol
   def Intrinsics_castLongToRawPtr(using Context) = Intrinsics_castLongToRawPtrR.symbol
+  def Intrinsics_castRawSizeToInt(using Context) = Intrinsics_castRawSizeToIntR.symbol
+  def Intrinsics_castRawSizeToLong(using Context) = Intrinsics_castRawSizeToLongR.symbol
+  def Intrinsics_castRawSizeToLongUnsigned(using Context) = Intrinsics_castRawSizeToLongUnsignedR.symbol
+  def Intrinsics_castIntToRawSize(using Context) = Intrinsics_castIntToRawSizeR.symbol
+  def Intrinsics_castIntToRawSizeUnsigned(using Context) = Intrinsics_castIntToRawSizeUnsignedR.symbol
+  def Intrinsics_castLongToRawSize(using Context) = Intrinsics_castLongToRawSizeR.symbol
   def Intrinsics_stackalloc(using Context) = Intrinsics_stackallocR.symbol
   def Intrinsics_classFieldRawPtr(using Context) = Intrinsics_classFieldRawPtrR.symbol
 
@@ -299,13 +325,15 @@ final class NirDefinitions()(using ctx: Context) {
     UByteClass -> RuntimeBoxesModule.requiredMethod("boxToUByte"),
     UShortClass -> RuntimeBoxesModule.requiredMethod("boxToUShort"),
     UIntClass -> RuntimeBoxesModule.requiredMethod("boxToUInt"),
-    ULongClass -> RuntimeBoxesModule.requiredMethod("boxToULong")
+    ULongClass -> RuntimeBoxesModule.requiredMethod("boxToULong"),
+    USizeClass -> RuntimeBoxesModule.requiredMethod("boxToUSize")
   )
   @tu lazy val UnboxUnsignedMethod = Map[Symbol, Symbol](
     UByteClass -> RuntimeBoxesModule.requiredMethod("unboxToUByte"),
     UShortClass -> RuntimeBoxesModule.requiredMethod("unboxToUShort"),
     UIntClass -> RuntimeBoxesModule.requiredMethod("unboxToUInt"),
-    ULongClass -> RuntimeBoxesModule.requiredMethod("unboxToULong")
+    ULongClass -> RuntimeBoxesModule.requiredMethod("unboxToULong"),
+    USizeClass -> RuntimeBoxesModule.requiredMethod("unboxToUSize")
   )
 
   // Scala boxes

@@ -153,8 +153,12 @@ class TimeTest {
       // Scala Native tm, so the linux 56 byte form is necessary here.
       val tmBufCount = 7.toUSize
 
-      val tmBuf: Ptr[Ptr[Byte]] =
-        alloc[scala.Long](tmBufCount).asInstanceOf[Ptr[Ptr[Byte]]]
+      val tmBuf: Ptr[Ptr[Byte]] = {
+        // Use explicit result type to workaround Scala 3 issue, otherwise
+        // it would alloc 1 long and would load it at tmBufCount offset
+        val buf: Ptr[scala.Long] = alloc[scala.Long](tmBufCount)
+        buf.asInstanceOf[Ptr[Ptr[Byte]]]
+      }
 
       val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 

@@ -40,7 +40,7 @@ object Type {
   object FixedSizeI {
     def unapply(i: FixedSizeI): Some[(Int, Boolean)] = Some((i.width, i.signed))
   }
-  final case object Size extends I {
+  case object Size extends I {
     val signed = true;
   }
   case object Char extends FixedSizeI(16, signed = false)

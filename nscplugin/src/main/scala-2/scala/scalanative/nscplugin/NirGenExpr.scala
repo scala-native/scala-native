@@ -1765,17 +1765,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val ptr = genExpr(ptrp)
 
       val ty = code match {
-        case LOAD_BOOL    => nir.Type.Bool
-        case LOAD_SIZE    => nir.Type.Size
-        case LOAD_CHAR    => nir.Type.Char
-        case LOAD_BYTE    => nir.Type.Byte
-        case LOAD_SHORT   => nir.Type.Short
-        case LOAD_INT     => nir.Type.Int
-        case LOAD_LONG    => nir.Type.Long
-        case LOAD_FLOAT   => nir.Type.Float
-        case LOAD_DOUBLE  => nir.Type.Double
-        case LOAD_RAW_PTR => nir.Type.Ptr
-        case LOAD_OBJECT  => Rt.Object
+        case LOAD_BOOL     => nir.Type.Bool
+        case LOAD_RAW_SIZE => nir.Type.Size
+        case LOAD_CHAR     => nir.Type.Char
+        case LOAD_BYTE     => nir.Type.Byte
+        case LOAD_SHORT    => nir.Type.Short
+        case LOAD_INT      => nir.Type.Int
+        case LOAD_LONG     => nir.Type.Long
+        case LOAD_FLOAT    => nir.Type.Float
+        case LOAD_DOUBLE   => nir.Type.Double
+        case LOAD_RAW_PTR  => nir.Type.Ptr
+        case LOAD_OBJECT   => Rt.Object
       }
 
       buf.load(ty, ptr, unwind)(app.pos)
@@ -1788,17 +1788,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val value = genExpr(valuep)
 
       val ty = code match {
-        case STORE_BOOL    => nir.Type.Bool
-        case STORE_SIZE    => nir.Type.Size
-        case STORE_CHAR    => nir.Type.Char
-        case STORE_BYTE    => nir.Type.Byte
-        case STORE_SHORT   => nir.Type.Short
-        case STORE_INT     => nir.Type.Int
-        case STORE_LONG    => nir.Type.Long
-        case STORE_FLOAT   => nir.Type.Float
-        case STORE_DOUBLE  => nir.Type.Double
-        case STORE_RAW_PTR => nir.Type.Ptr
-        case STORE_OBJECT  => Rt.Object
+        case STORE_BOOL     => nir.Type.Bool
+        case STORE_RAW_SIZE => nir.Type.Size
+        case STORE_CHAR     => nir.Type.Char
+        case STORE_BYTE     => nir.Type.Byte
+        case STORE_SHORT    => nir.Type.Short
+        case STORE_INT      => nir.Type.Int
+        case STORE_LONG     => nir.Type.Long
+        case STORE_FLOAT    => nir.Type.Float
+        case STORE_DOUBLE   => nir.Type.Double
+        case STORE_RAW_PTR  => nir.Type.Ptr
+        case STORE_OBJECT   => Rt.Object
       }
 
       buf.store(ty, ptr, value, unwind)(app.pos)

@@ -174,7 +174,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("ulongToDouble"))
     lazy val LoadBoolMethod =
       getMember(IntrinsicsModule, TermName("loadBoolean"))
-    lazy val LoadSizeMethod = getMember(IntrinsicsModule, TermName("loadSize"))
+    lazy val LoadRawSizeMethod =
+      getMember(IntrinsicsModule, TermName("loadRawSize"))
     lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))
     lazy val LoadByteMethod = getMember(IntrinsicsModule, TermName("loadByte"))
     lazy val LoadShortMethod =
@@ -193,8 +194,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("storeBoolean"))
     lazy val StoreCharMethod =
       getMember(IntrinsicsModule, TermName("storeChar"))
-    lazy val StoreSizeMethod =
-      getMember(IntrinsicsModule, TermName("storeSize"))
+    lazy val StoreRawSizeMethod =
+      getMember(IntrinsicsModule, TermName("storeRawSize"))
     lazy val StoreByteMethod =
       getMember(IntrinsicsModule, TermName("storeByte"))
     lazy val StoreShortMethod =

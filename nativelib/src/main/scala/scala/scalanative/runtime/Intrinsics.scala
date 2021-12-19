@@ -51,8 +51,6 @@ object Intrinsics {
   /** Intrinsified raw memory load of boolean. */
   def loadBoolean(rawptr: RawPtr): Boolean = intrinsic
 
-  def loadSize(rawptr: RawPtr): RawSize = intrinsic
-
   /** Intrinsified raw memory load of char. */
   def loadChar(rawptr: RawPtr): Char = intrinsic
 
@@ -77,13 +75,16 @@ object Intrinsics {
   /** Intrinsified raw memory load of rawptr. */
   def loadRawPtr(rawptr: RawPtr): RawPtr = intrinsic
 
+  /** Intrinsified raw memory load of RawSize. */
+  def loadRawSize(rawptr: RawPtr): RawSize = intrinsic
+
   /** Intrinsified raw memory load of object. */
   def loadObject(rawptr: RawPtr): Object = intrinsic
 
   /** Intrinsified raw memory store of boolean. */
   def storeBoolean(rawptr: RawPtr, value: Boolean): Unit = intrinsic
 
-  def storeSize(rawptr: RawPtr, value: RawSize): Unit = intrinsic
+  def storeRawSize(rawptr: RawPtr, value: RawSize): Unit = intrinsic
 
   /** Intrinsified raw memory store of char. */
   def storeChar(rawptr: RawPtr, value: Char): Unit = intrinsic

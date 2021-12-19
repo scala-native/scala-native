@@ -54,7 +54,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
     else (~toLong).toSize
 
   /** Returns the negated version of this value. */
-  @inline def unary_- : Size = 0 - this
+  @inline def unary_- : Size = 0.toSize - this
 
   /**
    * Returns this value bit-shifted left by the specified number of bits,

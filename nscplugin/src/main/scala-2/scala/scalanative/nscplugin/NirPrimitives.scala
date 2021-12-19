@@ -28,8 +28,7 @@ object NirPrimitives {
   final val ULONG_TO_DOUBLE = 1 + UINT_TO_DOUBLE
 
   final val LOAD_BOOL = 1 + ULONG_TO_DOUBLE
-  final val LOAD_SIZE = 1 + LOAD_BOOL
-  final val LOAD_CHAR = 1 + LOAD_SIZE
+  final val LOAD_CHAR = 1 + LOAD_BOOL
   final val LOAD_BYTE = 1 + LOAD_CHAR
   final val LOAD_SHORT = 1 + LOAD_BYTE
   final val LOAD_INT = 1 + LOAD_SHORT
@@ -37,11 +36,11 @@ object NirPrimitives {
   final val LOAD_FLOAT = 1 + LOAD_LONG
   final val LOAD_DOUBLE = 1 + LOAD_FLOAT
   final val LOAD_RAW_PTR = 1 + LOAD_DOUBLE
-  final val LOAD_OBJECT = 1 + LOAD_RAW_PTR
+  final val LOAD_RAW_SIZE = 1 + LOAD_RAW_PTR
+  final val LOAD_OBJECT = 1 + LOAD_RAW_SIZE
 
   final val STORE_BOOL = 1 + LOAD_OBJECT
-  final val STORE_SIZE = 1 + STORE_BOOL
-  final val STORE_CHAR = 1 + STORE_SIZE
+  final val STORE_CHAR = 1 + STORE_BOOL
   final val STORE_BYTE = 1 + STORE_CHAR
   final val STORE_SHORT = 1 + STORE_BYTE
   final val STORE_INT = 1 + STORE_SHORT
@@ -49,7 +48,8 @@ object NirPrimitives {
   final val STORE_FLOAT = 1 + STORE_LONG
   final val STORE_DOUBLE = 1 + STORE_FLOAT
   final val STORE_RAW_PTR = 1 + STORE_DOUBLE
-  final val STORE_OBJECT = 1 + STORE_RAW_PTR
+  final val STORE_RAW_SIZE = 1 + STORE_RAW_PTR
+  final val STORE_OBJECT = 1 + STORE_RAW_SIZE
 
   final val ELEM_RAW_PTR = 1 + STORE_OBJECT
 
@@ -153,7 +153,6 @@ abstract class NirPrimitives {
     }
 
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
-    addPrimitive(LoadSizeMethod, LOAD_SIZE)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)
     addPrimitive(LoadShortMethod, LOAD_SHORT)
@@ -162,10 +161,10 @@ abstract class NirPrimitives {
     addPrimitive(LoadFloatMethod, LOAD_FLOAT)
     addPrimitive(LoadDoubleMethod, LOAD_DOUBLE)
     addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
+    addPrimitive(LoadRawSizeMethod, LOAD_RAW_SIZE)
     addPrimitive(LoadObjectMethod, LOAD_OBJECT)
 
     addPrimitive(StoreBoolMethod, STORE_BOOL)
-    addPrimitive(StoreSizeMethod, STORE_SIZE)
     addPrimitive(StoreCharMethod, STORE_CHAR)
     addPrimitive(StoreByteMethod, STORE_BYTE)
     addPrimitive(StoreShortMethod, STORE_SHORT)
@@ -174,6 +173,7 @@ abstract class NirPrimitives {
     addPrimitive(StoreFloatMethod, STORE_FLOAT)
     addPrimitive(StoreDoubleMethod, STORE_DOUBLE)
     addPrimitive(StoreRawPtrMethod, STORE_RAW_PTR)
+    addPrimitive(StoreRawSizeMethod, STORE_RAW_SIZE)
     addPrimitive(StoreObjectMethod, STORE_OBJECT)
 
     addPrimitive(ElemRawPtrMethod, ELEM_RAW_PTR)

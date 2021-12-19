@@ -44,30 +44,30 @@ object Tag {
       storeRawPtr(toRawPtr(ptr), toRawPtr(value))
   }
 
-  final case object Size extends Tag[unsafe.Size] {
+  case object Size extends Tag[unsafe.Size] {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Size]): unsafe.Size =
-      new Size(loadSize(toRawPtr(ptr)))
+      new Size(loadRawSize(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsafe.Size],
         value: unsafe.Size
     ): Unit =
-      storeSize(toRawPtr(ptr), value.rawSize)
+      storeRawSize(toRawPtr(ptr), value.rawSize)
   }
 
-  final case object USize extends Tag[unsigned.USize] {
+  case object USize extends Tag[unsigned.USize] {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(
         ptr: unsafe.Ptr[unsigned.USize]
     ): unsigned.USize =
-      new USize(loadSize(toRawPtr(ptr)))
+      new USize(loadRawSize(toRawPtr(ptr)))
     @alwaysinline override def store(
         ptr: unsafe.Ptr[unsigned.USize],
         value: unsigned.USize
     ): Unit =
-      storeSize(toRawPtr(ptr), value.rawSize)
+      storeRawSize(toRawPtr(ptr), value.rawSize)
   }
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T]) extends Tag[T] {

@@ -24,7 +24,7 @@ private[scalanative] trait UnsafePackageCompat {
   inline def alloc[T](
       inline n: CSize = 1.toUSize
   )(using tag: Tag[T], zone: Zone): Ptr[T] = {
-    val size = sizeof[T] * n.toUSize
+    val size = sizeof[T] * n
     val ptr = zone.alloc(size)
     val rawPtr = toRawPtr(ptr)
     libc.memset(rawPtr, 0, size)
@@ -53,7 +53,7 @@ private[scalanative] trait UnsafePackageCompat {
   inline def stackalloc[T](
       inline n: CSize = 1.toUSize
   )(using Tag[T]): Ptr[T] = {
-    val size = sizeof[T] * n.toUSize
+    val size = sizeof[T] * n
     val rawPtr = Intrinsics.stackalloc(size)
     libc.memset(rawPtr, 0, size)
     fromRawPtr[T](rawPtr)
