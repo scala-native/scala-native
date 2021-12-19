@@ -1766,7 +1766,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val ty = code match {
         case LOAD_BOOL     => nir.Type.Bool
-        case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_CHAR     => nir.Type.Char
         case LOAD_BYTE     => nir.Type.Byte
         case LOAD_SHORT    => nir.Type.Short
@@ -1775,6 +1774,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case LOAD_FLOAT    => nir.Type.Float
         case LOAD_DOUBLE   => nir.Type.Double
         case LOAD_RAW_PTR  => nir.Type.Ptr
+        case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => Rt.Object
       }
 
@@ -1789,7 +1789,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val ty = code match {
         case STORE_BOOL     => nir.Type.Bool
-        case STORE_RAW_SIZE => nir.Type.Size
         case STORE_CHAR     => nir.Type.Char
         case STORE_BYTE     => nir.Type.Byte
         case STORE_SHORT    => nir.Type.Short
@@ -1798,6 +1797,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case STORE_FLOAT    => nir.Type.Float
         case STORE_DOUBLE   => nir.Type.Double
         case STORE_RAW_PTR  => nir.Type.Ptr
+        case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => Rt.Object
       }
 

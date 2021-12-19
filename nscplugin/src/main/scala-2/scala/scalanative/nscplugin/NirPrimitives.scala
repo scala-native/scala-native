@@ -63,17 +63,16 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR = 1 + CAST_INT_TO_RAWPTR
-
-  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
-  final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
-  final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
-
-  final val CAST_RAWSIZE_TO_INT = 1 + CFUNCPTR_APPLY
+  final val CAST_RAWSIZE_TO_INT = 1 + CAST_LONG_TO_RAWPTR
   final val CAST_RAWSIZE_TO_LONG = 1 + CAST_RAWSIZE_TO_INT
   final val CAST_RAWSIZE_TO_LONG_UNSIGNED = 1 + CAST_RAWSIZE_TO_LONG
   final val CAST_INT_TO_RAWSIZE = 1 + CAST_RAWSIZE_TO_LONG_UNSIGNED
   final val CAST_INT_TO_RAWSIZE_UNSIGNED = 1 + CAST_INT_TO_RAWSIZE
   final val CAST_LONG_TO_RAWSIZE = 1 + CAST_INT_TO_RAWSIZE_UNSIGNED
+
+  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
+  final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
+  final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
 }
 
 abstract class NirPrimitives {
@@ -188,15 +187,15 @@ abstract class NirPrimitives {
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
-    CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
-    CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
-    addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
-
     addPrimitive(CastRawSizeToInt, CAST_RAWSIZE_TO_INT)
     addPrimitive(CastRawSizeToLong, CAST_RAWSIZE_TO_LONG)
     addPrimitive(CastRawSizeToLongUnsigned, CAST_RAWSIZE_TO_LONG_UNSIGNED)
     addPrimitive(CastIntToRawSize, CAST_INT_TO_RAWSIZE)
     addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
     addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWSIZE)
+
+    CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
+    CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
+    addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
   }
 }
