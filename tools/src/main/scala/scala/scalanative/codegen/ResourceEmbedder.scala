@@ -80,34 +80,50 @@ object ResourceEmbedder {
           .encode(pathName.toString.getBytes())
           .map(a => Val.Int(a.asInstanceOf[Int]))
 
-        contentValues += Val.ArrayValue(Type.Int, encodedContent.toSeq)
-        pathValues += Val.ArrayValue(Type.Int, encodedPath.toSeq)
+        config.logger.info(
+          "Encoded: " + Base64.getEncoder
+            .encode(pathName.toString.getBytes())
+        )
+
+        contentValues += Val.ArrayValue(Type.Int, encodedContent.toIndexedSeq)
+        pathValues += Val.ArrayValue(Type.Int, encodedPath.toIndexedSeq)
+
+        config.logger.info(
+          "Length: " + Val
+            .ArrayValue(Type.Int, encodedPath.toIndexedSeq)
+            .values
+            .length
+            .asInstanceOf[Long]
+        )
     }
 
-    def generateExtern2DArray(name: String, content: IndexedSeq[Val.Const]) = {
+    def generateArrayVar(name: String, arrayValue: Val.ArrayValue) = {
       Defn.Var(
         Attrs.None,
         extern(name),
         Type.Ptr,
         Val.Const(
-          Val.ArrayValue(
-            Type.Ptr,
-            content
-          )
+          arrayValue
         )
       )
     }
 
-    def generateExternLongArray(name: String, content: IndexedSeq[Val.Long]) = {
-      Defn.Var(
-        Attrs.None,
-        extern(name),
-        Type.Ptr,
-        Val.Const(
-          Val.ArrayValue(
-            Type.Long,
-            content
-          )
+    def generateExtern2DArray(name: String, content: IndexedSeq[Val.Const]) = {
+      generateArrayVar(
+        name,
+        Val.ArrayValue(
+          Type.Ptr,
+          content
+        )
+      )
+    }
+
+    def generateExternLongArray(name: String, content: IndexedSeq[Val.Int]) = {
+      generateArrayVar(
+        name,
+        Val.ArrayValue(
+          Type.Int,
+          content
         )
       )
     }
@@ -124,23 +140,19 @@ object ResourceEmbedder {
         ),
         generateExternLongArray(
           "__resources_all_path_lengths",
-          pathValues.toIndexedSeq.map(path =>
-            Val.Long(path.values.length.asInstanceOf[Long])
-          )
+          pathValues.toIndexedSeq.map(path => Val.Int(path.values.length))
         ),
         generateExternLongArray(
           "__resources_all_content_lengths",
           contentValues.toIndexedSeq.map(content =>
-            Val.Long(content.values.length.asInstanceOf[Long])
+            Val.Int(content.values.length)
           )
         ),
         Defn.Var(
           Attrs.None,
           extern("__resources_size"),
           Type.Ptr,
-          Val.Long(
-            contentValues.length.asInstanceOf[Long]
-          )
+          Val.Int(contentValues.length)
         )
       )
 
@@ -155,7 +167,18 @@ object ResourceEmbedder {
     Global.Member(Global.Top("__"), Sig.Extern(id))
 
   private val sourceExtensions =
-    Seq(".class", ".c", ".cpp", ".h", ".nir", ".jar", ".scala", ".java", ".hpp")
+    Seq(
+      ".class",
+      ".c",
+      ".cpp",
+      ".h",
+      ".nir",
+      ".jar",
+      ".scala",
+      ".java",
+      ".hpp",
+      ".S"
+    )
 
   private def notSourceFile(path: Path): Boolean = {
     if (path.getFileName == null) false

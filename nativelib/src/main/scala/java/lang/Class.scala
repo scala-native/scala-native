@@ -156,8 +156,8 @@ final class _Class[A] {
         name
       } else {
         Option(Paths.get(this.name.replaceAll("\\.", "/")).getParent()) match {
-          case Some(path) => s"/${path.toString()}/$name"
-          case None       => name
+          case Some(parentPath) => s"/${parentPath.toString()}/$name"
+          case None             => s"/$name"
         }
       }
 

@@ -17,5 +17,5 @@ private[lang] object EmbeddedResourceReader {
   def getPathLength(embeddedResourceId: CInt): CInt = extern
 
   @name("scalanative_resource_get_content_length")
-  def getContentLength(embeddedResourceId: CInt): CLong = extern
+  def getContentLength(embeddedResourceId: CInt): CInt = extern
 }

@@ -14,10 +14,9 @@ private[lang] object EmbeddedResourceHelper {
 
     for (id <- 0 until filePathAmount) {
       val pathSize = EmbeddedResourceReader.getPathLength(id)
-      val path = Array.ofDim[Byte](pathSize)
-      for (pos <- 0 until pathSize) {
-        path(pos) =
-          EmbeddedResourceReader.getPathByte(id, pos).asInstanceOf[Byte]
+      val path = Array.ofDim[Byte](pathSize.toInt) // TODO toint
+      for (pos <- 0 until pathSize.toInt) {
+        path(pos) = EmbeddedResourceReader.getPathByte(id, pos)
       }
       res(id) = Base64.getDecoder().decode(new String(path))
     }
@@ -25,6 +24,6 @@ private[lang] object EmbeddedResourceHelper {
     res.map(new String(_))
   }
 
-  def getContentByte(resourceId: Int, pos: Long): Byte =
-    EmbeddedResourceReader.getContentByte(resourceId, pos.toInt)
+  def getContentByte(resourceId: Int, pos: Int): Byte =
+    EmbeddedResourceReader.getContentByte(resourceId, pos)
 }

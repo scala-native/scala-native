@@ -7,13 +7,13 @@ private[lang] class EncodedResourceInputStream(resourceId: Int)
     extends InputStream {
 
   // Position in Base64 encoded bytes
-  var position: Long = 0
+  var position: Int = 0
   var leftSeq = Seq[Byte]()
   val size = EmbeddedResourceReader.getContentLength(resourceId).toLong
 
-  var markPosition: Long = 0
+  var markPosition: Int = 0
   var markSeq = Seq[Byte]()
-  var markReadLimit: Long = 0
+  var markReadLimit: Int = 0
 
   override def close(): Unit = ()
 
