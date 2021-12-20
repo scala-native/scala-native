@@ -117,12 +117,17 @@ class Reach(
     }
     def fallback = global match {
       case Global.Member(owner, sig) =>
-        infos(owner)
-          .asInstanceOf[ScopeInfo]
-          .linearized
-          .find(_.responds.contains(sig))
-          .map(_.responds(sig))
-          .flatMap(lookup)
+        infos
+          .get(owner)
+          .collect {
+            case scope: ScopeInfo =>
+              scope.linearized
+                .find(_.responds.contains(sig))
+                .map(_.responds(sig))
+                .flatMap(lookup)
+          }
+          .flatten
+
       case _ => None
     }
 
@@ -130,6 +135,15 @@ class Reach(
       .get(owner)
       .flatMap(_.get(global))
       .orElse(fallback)
+      .orElse {
+        val resolvedPosition = for {
+          invokedFrom <- from.get(global)
+          callerInfo <- infos.get(invokedFrom)
+        } yield callerInfo.position
+        val pos = resolvedPosition.getOrElse(nir.Position.NoPosition)
+        addMissing(global, pos)
+        None
+      }
   }
 
   def process(): Unit =
@@ -151,14 +165,15 @@ class Reach(
        */
       delayedMethods.foreach {
         case DelayedMethod(top, sig, position) =>
-          scopeInfo(top).foreach { info =>
+          def addMissing() = this.addMissing(top.member(sig), position)
+          scopeInfo(top).fold(addMissing()) { info =>
             val wasAllocated = info match {
               case value: Trait => value.implementors.exists(_.allocated)
               case clazz: Class => clazz.allocated
             }
             val targets = info.targets(sig)
             if (targets.isEmpty && wasAllocated) {
-              addMissing(top.member(sig), position)
+              addMissing()
             } else {
               todo ++= targets
             }
@@ -261,8 +276,7 @@ class Reach(
     } else {
       val lines = (s"cyclic reference to ${name.show}:" +:
         stack.map(el => s"* ${el.show}"))
-      val msg = lines.mkString("\n")
-      throw new Exception(msg)
+      fail(lines.mkString("\n"))
     }
 
   def newInfo(info: Info): Unit = {
@@ -330,7 +344,10 @@ class Reach(
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
-              info.responds(sig) = lookup(info, sig).get
+              info.responds(sig) = lookup(info, sig)
+                .getOrElse(
+                  fail(s"Required method ${sig} not found in ${info.name}")
+                )
             }
             sig match {
               case Rt.JavaEqualsSig =>
@@ -446,9 +463,9 @@ class Reach(
   }
 
   def classInfoOrObject(name: Global): Class =
-    classInfo(name).getOrElse {
-      classInfo(Rt.Object.name).get
-    }
+    classInfo(name)
+      .orElse(classInfo(Rt.Object.name))
+      .getOrElse(fail(s"Class info not available for $name"))
 
   def traitInfo(name: Global): Option[Trait] = {
     reachGlobalNow(name)
@@ -811,6 +828,9 @@ class Reach(
       }
     }
 
+    def lookupRequired(sig: Sig) = lookupSig(cls, sig)
+      .getOrElse(fail(s"Not found required definition ${cls.name} ${sig}"))
+
     sig match {
       // We short-circuit scala_== and scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
@@ -818,8 +838,8 @@ class Reach(
       // as implementation of scala_== on java.lang.Object assumes it's only
       // called on classes which don't overrider java_==.
       case Rt.ScalaEqualsSig =>
-        val scalaImpl = lookupSig(cls, Rt.ScalaEqualsSig).get
-        val javaImpl = lookupSig(cls, Rt.JavaEqualsSig).get
+        val scalaImpl = lookupRequired(Rt.ScalaEqualsSig)
+        val javaImpl = lookupRequired(Rt.JavaEqualsSig)
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -827,8 +847,8 @@ class Reach(
           Some(scalaImpl)
         }
       case Rt.ScalaHashCodeSig =>
-        val scalaImpl = lookupSig(cls, Rt.ScalaHashCodeSig).get
-        val javaImpl = lookupSig(cls, Rt.JavaHashCodeSig).get
+        val scalaImpl = lookupRequired(Rt.ScalaHashCodeSig)
+        val javaImpl = lookupRequired(Rt.JavaHashCodeSig)
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -841,19 +861,23 @@ class Reach(
   }
 
   protected def addMissing(global: Global, pos: Position): Unit = {
-    val prev = missing.getOrElse(global, Set.empty)
-    val position = NonReachablePosition(
-      path = Paths.get(pos.source),
-      line = pos.line + 1
-    )
-    missing(global) = prev + position
+    val prev = missing.getOrElseUpdate(global, Set.empty)
+    if (pos != nir.Position.NoPosition) {
+      val position = NonReachablePosition(
+        path = Paths.get(pos.source),
+        line = pos.line + 1
+      )
+      missing(global) = prev + position
+    }
   }
 
   private def reportMissing(): Unit = {
     if (missing.nonEmpty) {
+      unavailable
+        .foreach(missing.getOrElseUpdate(_, Set.empty))
       val log = config.logger
       log.error(s"Found ${missing.size} missing definitions while linking")
-      missing.foreach {
+      missing.toSeq.sortBy(_._1).foreach {
         case (global, positions) =>
           log.error(s"Not found $global")
           positions.toList
@@ -862,10 +886,12 @@ class Reach(
               log.error(s"\tat ${pos.path.toString}:${pos.line}")
             }
       }
-      throw new LinkingException(
-        "Undefined definitions found in reachability phase"
-      )
+      fail("Undefined definitions found in reachability phase")
     }
+  }
+
+  private def fail(msg: => String): Nothing = {
+    throw new LinkingException(msg)
   }
 }
 
