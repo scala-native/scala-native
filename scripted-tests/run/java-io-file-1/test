@@ -1,6 +1,6 @@
-# Make `Files.scala` and `Utils.scala` usable in build.sbt
-$ copy-file Files.scala project/Files.scala
-$ copy-file Utils.scala project/Utils.scala
+# Make `Files.scala` and `Utils.scala` usable in tests
+$ copy-file project/Files.scala Files.scala 
+$ copy-file project/Utils.scala Utils.scala 
 > setupTests
 
 $ copy-file tests/CanExecuteTest.scala Main.scala
