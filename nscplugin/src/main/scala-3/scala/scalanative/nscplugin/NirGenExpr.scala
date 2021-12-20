@@ -119,6 +119,14 @@ trait NirGenExpr(using Context) {
       val Assign(lhsp, rhsp) = tree
       given nir.Position = tree.span
 
+      val sym = lhsp.symbol
+      if (sym.is(JavaStaticTerm) && sym.source != ctx.compilationUnit.source) {
+        report.error(
+          s"Assignment to static member ${sym.fullName} is not supported",
+          tree.sourcePos
+        )
+      }
+
       desugarTree(lhsp) match {
         case sel @ Select(qualp, _) =>
           val qual = genExpr(qualp)
@@ -334,7 +342,7 @@ trait NirGenExpr(using Context) {
               buf.genApplyMethod(
                 funSym,
                 statically = false,
-                thisVal,
+                ValTree(thisVal),
                 argVals.map(ValTree(_))
               )
             }
@@ -1108,6 +1116,7 @@ trait NirGenExpr(using Context) {
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
+      else if (sym.isStaticMethod) genApplyStaticMethod(sym, argsp)
       else
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -1119,6 +1128,7 @@ trait NirGenExpr(using Context) {
         self: Val,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
+      assert(!sym.isStaticMethod, sym)
       val owner = sym.owner.asClass
       val name = genMethodName(sym)
       val curThis = curMethodThis.get
@@ -1146,7 +1156,7 @@ trait NirGenExpr(using Context) {
         else self
 
       val isStaticCall = statically ||
-        sym.is(JavaStatic) ||
+        sym.isStaticMethod ||
         owner.isStruct || owner.isExternModule
       val method =
         if (isStaticCall) Val.Global(name, nir.Type.Ptr)
@@ -1165,6 +1175,28 @@ trait NirGenExpr(using Context) {
         val Type.Function(_, retty) = origSig
         fromExtern(retty, res)
       }
+    }
+
+    // Generate call to static method using static method forwarder defined in companion object
+    private def genApplyStaticMethod(
+        sym: Symbol,
+        argsp: Seq[Tree]
+    )(using nir.Position): Val = {
+      val owner = sym.owner.asClass
+      val module = genModuleName(owner)
+
+      val name = {
+        val nir.Global.Member(_, sig) = genMethodName(sym)
+        module.member(sig)
+      }
+      val method = Val.Global(name, nir.Type.Ptr)
+
+      val Type.Function(_ +: argTypes, retty) = genMethodSig(sym)
+      val sig = Type.Function(Type.Ref(module) +: argTypes, retty)
+      val args = genMethodArgs(sym, argsp)
+      val self = buf.module(module, unwind)
+      val values = self +: args
+      buf.call(sig, method, values, unwind)
     }
 
     private def genApplyExternAccessor(sym: Symbol, argsp: Seq[Tree])(using

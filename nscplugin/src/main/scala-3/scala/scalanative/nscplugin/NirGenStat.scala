@@ -141,6 +141,74 @@ trait NirGenStat(using Context) {
       case tree =>
         throw new FatalError("Illegal tree in body of genMethods():" + tree)
     }
+
+    scoped(
+      curUnwindHandler := None
+    ) {
+      genStaticMethodForwarders(td)
+    }
+  }
+
+  // In Scala Native we don't have a limited access for static members.
+  // Make sure that we can always call static methods, by generating a forwarder
+  // inside a companion module. It is need to handle methods created by compiler
+  // with JavaStatic flag, eg main method using @main annotation
+  private def genStaticMethodForwarders(td: TypeDef): Unit = {
+    val sym = td.symbol.asClass
+    val moduleName = genModuleName(sym)
+    val staticMethods =
+      sym.info.allMembers
+        .map(_.symbol)
+        .filter(_.isStaticMethod)
+
+    if (!sym.isStaticModule && staticMethods.nonEmpty) {
+      val module = sym.companionModule
+      if (!module.exists) {
+        given nir.Position = td.span
+        generatedDefns += Defn.Module(
+          attrs = Attrs.None,
+          name = moduleName,
+          parent = Some(Rt.Object.name),
+          traits = Nil
+        )
+      }
+
+      staticMethods.foreach { sym =>
+        given nir.Position = sym.span
+
+        val methodName @ Global.Member(_, methodSig) = genMethodName(sym)
+        val methodType @ Type.Function(origOwner +: paramTypes, retType) =
+          genMethodSig(sym)
+
+        val selfType = Type.Ref(moduleName)
+        val forwarderName = moduleName.member(methodSig)
+        val forwarderParamTypes = selfType +: paramTypes
+        val forwarderSig = Type.Function(forwarderParamTypes, retType)
+
+        generatedDefns += Defn.Define(
+          attrs = Attrs(inlineHint = nir.Attr.InlineHint),
+          name = forwarderName,
+          ty = forwarderSig,
+          insts = {
+            given fresh: Fresh = Fresh()
+            given buf: ExprBuffer = ExprBuffer()
+
+            val entryParams @ (self +: params) =
+              forwarderParamTypes.map(Val.Local(fresh(), _))
+            buf.label(fresh(), entryParams)
+            val result = buf.call(
+              methodType,
+              Val.Global(methodName, Type.Ptr),
+              Val.Null +: params,
+              Next.None
+            )
+            buf.ret(result)
+
+            buf.toSeq
+          }
+        )
+      }
+    }
   }
 
   private def genMethod(dd: DefDef): Unit = {
@@ -166,12 +234,11 @@ trait NirGenStat(using Context) {
       dd.rhs match {
         case EmptyTree =>
           generatedDefns += Defn.Declare(attrs, name, sig)
-        case _ if dd.name == nme.CONSTRUCTOR && sym.isExtern =>
+        case _ if sym.isClassConstructor && sym.isExtern =>
           validateExternCtor(dd.rhs)
           ()
 
-        case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
-          ()
+        case _ if sym.isClassConstructor && owner.isStruct => ()
 
         case rhs if sym.isExtern =>
           checkExplicitReturnTypeAnnotation(dd, "extern method")
