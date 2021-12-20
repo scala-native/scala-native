@@ -619,4 +619,39 @@ Some notes on the implementation:
    regrettably, may require code changes when upgrading from Scala Native
    0.3.8.
 
+Embedding Resources
+-------------------
+
+In Scala Native, resources are implemented via embedding a resource in a resulting
+binary file. Only getClass().getResourceAsInputStream() is implemented.
+For that to work, you have to specify an additional NativeConfig option:
+
+```scala
+nativeConfig ~= {
+  _withEmbedResources(true)
+}
+```
+
+This will include the resource files found on the classpath in the resulting
+binary file. Please note that files with following extensions cannot be embedded
+and used as a resource:
+
+```
+".class", ".c", ".cpp", ".h", ".nir", ".jar", ".scala", ".java", ".hpp", ".S"
+```
+
+This is to avoid unnecesarily embedding source files. If necessary, please
+consider using a different file extension for embeddal.
+
+Reasoning for the lack of getResource() and getResources():
+
+In Scala Native, the outputted file that can be run is a binary, unlike JVM's
+classfiles and jars. For that reason, were getResources() URI methods implemented,
+a new URI format using a seperate FileSystem would have to be added (f.e. instead
+of obtaining jar:file:path.ext you would obtain embedded:path.ext). As this still
+would provide a meaningful differentiation between JVM's javalib API, and Scala
+Native's reimplementation, this remains not implemented for now. The added
+getClass().getResourceAsInputStream() however is able to be consistent between
+the platforms.
+
 Continue to :ref:`libc`.
