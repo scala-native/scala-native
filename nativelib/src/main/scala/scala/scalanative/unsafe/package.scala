@@ -15,6 +15,14 @@ import scala.scalanative.meta.LinktimeInfo
 package object unsafe extends unsafe.UnsafePackageCompat {
   val is32BitPlatform = LinktimeInfo.is32BitPlatform
 
+  /** Int on 32-bit architectures and Long on 64-bit ones. */
+  @deprecated("Word type is deprecated, use Size instead", since = "0.5.0")
+  type Word = Size
+
+  /** UInt on 32-bit architectures and ULong on 64-bit ones. */
+  @deprecated("UWord type is deprecated, use USize instead", since = "0.5.0")
+  type UWord = USize
+
   /** The C 'char' type. */
   type CChar = Byte
 
