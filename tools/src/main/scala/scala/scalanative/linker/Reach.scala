@@ -849,12 +849,14 @@ class Reach(
   }
 
   protected def addMissing(global: Global, pos: Position): Unit = {
-    val prev = missing.getOrElse(global, Set.empty)
-    val position = NonReachablePosition(
-      path = Paths.get(pos.source),
-      line = pos.line + 1
-    )
-    missing(global) = prev + position
+    val prev = missing.getOrElseUpdate(global, Set.empty)
+    if (pos != nir.Position.NoPosition) {
+      val position = NonReachablePosition(
+        path = Paths.get(pos.source),
+        line = pos.line + 1
+      )
+      missing(global) = prev + position
+    }
   }
 
   private def reportMissing(): Unit = {
