@@ -117,14 +117,17 @@ class Reach(
     }
     def fallback = global match {
       case Global.Member(owner, sig) =>
-        infos(owner) match {
-          case scope: ScopeInfo =>
-            scope.linearized
-              .find(_.responds.contains(sig))
-              .map(_.responds(sig))
-              .flatMap(lookup)
-          case _ => None
-        }
+        infos
+          .get(owner)
+          .collect {
+            case scope: ScopeInfo =>
+              scope.linearized
+                .find(_.responds.contains(sig))
+                .map(_.responds(sig))
+                .flatMap(lookup)
+          }
+          .flatten
+
       case _ => None
     }
 
@@ -132,6 +135,15 @@ class Reach(
       .get(owner)
       .flatMap(_.get(global))
       .orElse(fallback)
+      .orElse {
+        val resolvedPosition = for {
+          invokedFrom <- from.get(global)
+          callerInfo <- infos.get(invokedFrom)
+        } yield callerInfo.position
+        val pos = resolvedPosition.getOrElse(nir.Position.NoPosition)
+        addMissing(global, pos)
+        None
+      }
   }
 
   def process(): Unit =
@@ -153,14 +165,15 @@ class Reach(
        */
       delayedMethods.foreach {
         case DelayedMethod(top, sig, position) =>
-          scopeInfo(top).foreach { info =>
+          def addMissing() = this.addMissing(top.member(sig), position)
+          scopeInfo(top).fold(addMissing()) { info =>
             val wasAllocated = info match {
               case value: Trait => value.implementors.exists(_.allocated)
               case clazz: Class => clazz.allocated
             }
             val targets = info.targets(sig)
             if (targets.isEmpty && wasAllocated) {
-              addMissing(top.member(sig), position)
+              addMissing()
             } else {
               todo ++= targets
             }
@@ -263,8 +276,7 @@ class Reach(
     } else {
       val lines = (s"cyclic reference to ${name.show}:" +:
         stack.map(el => s"* ${el.show}"))
-      val msg = lines.mkString("\n")
-      throw new Exception(msg)
+      fail(lines.mkString("\n"))
     }
 
   def newInfo(info: Info): Unit = {
@@ -861,9 +873,11 @@ class Reach(
 
   private def reportMissing(): Unit = {
     if (missing.nonEmpty) {
+      unavailable
+        .foreach(missing.getOrElseUpdate(_, Set.empty))
       val log = config.logger
       log.error(s"Found ${missing.size} missing definitions while linking")
-      missing.foreach {
+      missing.toSeq.sortBy(_._1).foreach {
         case (global, positions) =>
           log.error(s"Not found $global")
           positions.toList
