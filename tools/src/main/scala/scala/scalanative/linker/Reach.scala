@@ -117,12 +117,14 @@ class Reach(
     }
     def fallback = global match {
       case Global.Member(owner, sig) =>
-        infos(owner)
-          .asInstanceOf[ScopeInfo]
-          .linearized
-          .find(_.responds.contains(sig))
-          .map(_.responds(sig))
-          .flatMap(lookup)
+        infos(owner) match {
+          case scope: ScopeInfo =>
+            scope.linearized
+              .find(_.responds.contains(sig))
+              .map(_.responds(sig))
+              .flatMap(lookup)
+          case _ => None
+        }
       case _ => None
     }
 
@@ -330,7 +332,10 @@ class Reach(
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
-              info.responds(sig) = lookup(info, sig).get
+              info.responds(sig) = lookup(info, sig)
+                .getOrElse(
+                  fail(s"Required method ${sig} not found in ${info.name}")
+                )
             }
             sig match {
               case Rt.JavaEqualsSig =>
@@ -446,9 +451,9 @@ class Reach(
   }
 
   def classInfoOrObject(name: Global): Class =
-    classInfo(name).getOrElse {
-      classInfo(Rt.Object.name).get
-    }
+    classInfo(name)
+      .orElse(classInfo(Rt.Object.name))
+      .getOrElse(fail(s"Class info not available for $name"))
 
   def traitInfo(name: Global): Option[Trait] = {
     reachGlobalNow(name)
@@ -811,6 +816,9 @@ class Reach(
       }
     }
 
+    def lookupRequired(sig: Sig) = lookupSig(cls, sig)
+      .getOrElse(fail(s"Not found required definition ${cls.name} ${sig}"))
+
     sig match {
       // We short-circuit scala_== and scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
@@ -818,8 +826,8 @@ class Reach(
       // as implementation of scala_== on java.lang.Object assumes it's only
       // called on classes which don't overrider java_==.
       case Rt.ScalaEqualsSig =>
-        val scalaImpl = lookupSig(cls, Rt.ScalaEqualsSig).get
-        val javaImpl = lookupSig(cls, Rt.JavaEqualsSig).get
+        val scalaImpl = lookupRequired(Rt.ScalaEqualsSig)
+        val javaImpl = lookupRequired(Rt.JavaEqualsSig)
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -827,8 +835,8 @@ class Reach(
           Some(scalaImpl)
         }
       case Rt.ScalaHashCodeSig =>
-        val scalaImpl = lookupSig(cls, Rt.ScalaHashCodeSig).get
-        val javaImpl = lookupSig(cls, Rt.JavaHashCodeSig).get
+        val scalaImpl = lookupRequired(Rt.ScalaHashCodeSig)
+        val javaImpl = lookupRequired(Rt.JavaHashCodeSig)
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -862,10 +870,12 @@ class Reach(
               log.error(s"\tat ${pos.path.toString}:${pos.line}")
             }
       }
-      throw new LinkingException(
-        "Undefined definitions found in reachability phase"
-      )
+      fail("Undefined definitions found in reachability phase")
     }
+  }
+
+  private def fail(msg: => String): Nothing = {
+    throw new LinkingException(msg)
   }
 }
 
