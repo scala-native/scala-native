@@ -88,7 +88,7 @@ class ClassGetResourceAsStreamTest {
   private def resourceInputStreamReadByte(path: String): Unit = {
     val embeddedInputStream = getClass().getResourceAsStream(basicFileAbsolute)
     val fileInputStream =
-      if (Platform.executingInJVM) // In JVM, cwd changes to unit-tests/jvm/[scala-version]
+      if (Platform.executingInJVM) // In JVM, cwd is set to unit-tests/jvm/[scala-version]
         new FileInputStream(
           "../../shared/src/test/resources/embedded-resources-tests/basic-file.txt"
         )

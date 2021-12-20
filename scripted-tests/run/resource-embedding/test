@@ -6,7 +6,8 @@
 
 # -- does not link because of conflicting files
 > projectB/compile
-->project/nativeLink 
+> projectB/nativeLink
+> projectB/run
 
 # -- links and runs tests without conflicts
 > projectC/compile

@@ -13,7 +13,7 @@ lazy val projectA = (project in file("A"))
   .enablePlugins(ScalaNativePlugin)
   .settings(
     nativeConfig ~= {
-      _.withEmbedResources(true)
+      _.withEmbedResources(false)
     },
     scalaVersion := commonScalaVersion
   )

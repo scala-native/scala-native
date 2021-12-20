@@ -8,7 +8,7 @@ object Main {
     )
 
     assert(
-      getClass().getResourceAsStream("/a-res") != null,
+      getClass().getResourceAsStream("a-res") != null,
       "a-res should be embedded"
     )
     assert(
@@ -16,7 +16,7 @@ object Main {
       "b-res should not be embedded"
     )
     assert(
-      getClass().getResourceAsStream("/c-res") != null,
+      getClass().getResourceAsStream("c-res") != null,
       "c-res should be embedded"
     )
   }
