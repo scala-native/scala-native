@@ -51,8 +51,8 @@ sealed trait NativeConfig {
 
   /** Shall the resource files be embedded in the resulting binary file? Allows
    *  the use of getClass().getResourceAsStream() on the included files. Will
-   *  not embed .c, .h, .class or .scala files. Does not work with native jar
-   *  packages.
+   *  not embed files with certain extensions, including ".c", ".h", ".scala"
+   *  and ".class".
    */
   def embedResources: Boolean
 
