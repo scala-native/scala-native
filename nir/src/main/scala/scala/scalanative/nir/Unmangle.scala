@@ -21,7 +21,9 @@ object Unmangle {
 
     def readSigScope(): Sig.Scope = read() match {
       case 'O' => Sig.Scope.Public
+      case 'o' => Sig.Scope.PublicStatic
       case 'P' => Sig.Scope.Private(readGlobal())
+      case 'p' => Sig.Scope.PrivateStatic(readGlobal())
     }
 
     def readUnmangledSig(): Sig.Unmangled = read() match {

@@ -3,6 +3,10 @@ package nir
 
 import scala.annotation.tailrec
 import scala.language.implicitConversions
+import scala.scalanative.nir.Sig.Scope.Public
+import scala.scalanative.nir.Sig.Scope.Private
+import scala.scalanative.nir.Sig.Scope.PublicStatic
+import scala.scalanative.nir.Sig.Scope.PrivateStatic
 
 final class Sig(val mangle: String) {
   final def toProxy: Sig =
@@ -25,7 +29,14 @@ final class Sig(val mangle: String) {
     mangle.##
   final override def toString: String =
     mangle
-  final def unmangled: Sig.Unmangled = Unmangle.unmangleSig(mangle)
+  final def unmangled: Sig.Unmangled = try {
+    Unmangle.unmangleSig(mangle)
+  } catch {
+    case ex: scala.MatchError =>
+      throw new Exception(
+        s"Failed to unmangle signature `${mangle}`, unknown tag found ${ex.getMessage()}"
+      )
+  }
 
   final def isField: Boolean = mangle(0) == 'F'
   final def isCtor: Boolean = mangle(0) == 'R'
@@ -39,18 +50,23 @@ final class Sig(val mangle: String) {
 
   final def isVirtual = !(isCtor || isClinit || isImplCtor || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
+  final def isStatic: Boolean = unmangled.sigScope.isStatic
   final lazy val privateIn: Option[Global.Top] = {
-    unmangled.sigScope match {
-      case Sig.Scope.Private(in: Global.Top) => Some(in)
-      case _                                 => None
-    }
+    unmangled.sigScope.privateIn.map(_.top)
   }
 }
 object Sig {
-  sealed trait Scope
+  sealed abstract class Scope(
+      val isStatic: Boolean,
+      val privateIn: Option[Global]
+  ) {
+    def isPublic: Boolean = privateIn.isEmpty
+  }
   object Scope {
-    case object Public extends Scope
-    case class Private(in: Global) extends Scope
+    case object Public extends Scope(false, None)
+    case object PublicStatic extends Scope(true, None)
+    final case class Private(in: Global) extends Scope(false, Some(in))
+    final case class PrivateStatic(in: Global) extends Scope(true, Some(in))
   }
 
   sealed abstract class Unmangled {
