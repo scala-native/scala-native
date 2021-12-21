@@ -161,7 +161,8 @@ final class _Class[A] {
         }
       }
 
-    val path = Paths.get(absoluteName).normalize().toString()
+    val path =
+      Paths.get(absoluteName).normalize().toString().replaceAll("\\\\", "/")
 
     EmbeddedResourceHelper.resourceFileIdMap.get(path) match {
       case Some(fileIndex) =>
