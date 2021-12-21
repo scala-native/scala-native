@@ -11,6 +11,7 @@ import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import scalanative.util.unreachable
 import scalanative.nir
 import scala.language.implicitConversions
+import scala.scalanative.nir.Global
 
 trait NirGenName(using Context) {
   self: NirCodeGen =>
@@ -21,10 +22,14 @@ trait NirGenName(using Context) {
     else genFieldName(sym)
 
   def genTypeName(sym: Symbol): nir.Global.Top = {
-    if (sym == defn.ObjectClass) nir.Rt.Object.name.top
+    val sym1 =
+      if (sym.isAllOf(ModuleClass | JavaDefined)) sym.linkedClass
+      else sym
+
+    if (sym1 == defn.ObjectClass) nir.Rt.Object.name.top
     else {
       val id = {
-        val fullName = sym.javaClassName
+        val fullName = sym1.javaClassName
         NirGenName.MappedNames.getOrElse(fullName, fullName)
       }
       nir.Global.Top(id)
@@ -64,9 +69,11 @@ trait NirGenName(using Context) {
   def genMethodName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id = nativeIdOf(sym)
-    val tpe = sym.info.resultType.widen
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.Private(owner)
+      if (sym.isPrivate)
+        if (sym.isStaticMethod) nir.Sig.Scope.PrivateStatic(owner)
+        else nir.Sig.Scope.Private(owner)
+      else if (sym.isStaticMethod) nir.Sig.Scope.PublicStatic
       else nir.Sig.Scope.Public
 
     val paramTypes = sym.info.paramInfoss.flatten
@@ -85,6 +92,25 @@ trait NirGenName(using Context) {
     else
       val retType = genType(fromType(sym.info.resultType))
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
+  }
+
+  def genStaticMemberName(sym: Symbol): Global = {
+    require(sym.is(JavaStatic),
+        "genStaticMemberName called with non-static symbol: " + sym + " " + sym.flagsString)
+    val owner = genTypeName(sym.owner)
+    val id = nativeIdOf(sym)
+    val scope =
+      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      else nir.Sig.Scope.PublicStatic
+
+    val paramTypes = sym.info.paramInfoss.flatten
+      .map(fromType)
+      .map(genType)
+    val retType = genType(fromType(sym.info.resultType))
+
+    val name = sym.name
+    val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
+    owner.member(sig)
   }
 
   private def nativeIdOf(sym: Symbol): String = {

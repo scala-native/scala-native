@@ -20,7 +20,7 @@ object AdaptLazyVals extends PluginPhase {
   val phaseName = "scalanative-adaptLazyVals"
 
   override val runsAfter = Set(LazyVals.name, MoveStatics.name)
-  override val runsBefore = Set(GenNIR.phaseName)
+  override val runsBefore = Set(GenNIR.name)
 
   def defn(using Context) = LazyValsDefns.get
   def defnNir(using Context) = NirDefinitions.defnNir

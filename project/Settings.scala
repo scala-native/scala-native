@@ -405,6 +405,9 @@ object Settings {
       val separator = sys.props("path.separator")
       "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
     },
+    Compile / scalacOptions ++= scalaNativeCompilerOptions(
+      "GenStaticForwardersForNonTopLevelObjects"
+    ),
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value
@@ -676,6 +679,10 @@ object Settings {
       }
     }
   )
+
+  def scalaNativeCompilerOptions(options: String*): Seq[String] = {
+    options.map(opt => s"-P:NirPlugin:$opt")
+  }
 
   def scalaVersionsDependendent[T](scalaVersion: String)(default: T)(
       matching: PartialFunction[(Long, Long), T]
