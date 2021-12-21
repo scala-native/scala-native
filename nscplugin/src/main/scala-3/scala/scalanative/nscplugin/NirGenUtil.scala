@@ -7,7 +7,8 @@ import core.Symbols._
 import core.Contexts._
 import core.Types._
 import scalanative.util.unsupported
-
+import scalanative.util.ScopedVar.scoped
+import scalanative.nir.Fresh
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   private lazy val materializeClassTagTypes: Map[Symbol, Symbol] = Map(
@@ -130,4 +131,13 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     unwrapClassTagOption(tree).getOrElse {
       unsupported(s"can't recover runtime class tag from $tree")
     }
+
+  protected def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
+    scoped(
+      curFresh := Fresh()
+    ) {
+      val buffer = new ExprBuffer(using curFresh)
+      f(using buffer)
+    }
+  }
 }
