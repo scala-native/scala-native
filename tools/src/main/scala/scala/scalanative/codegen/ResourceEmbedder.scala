@@ -18,6 +18,7 @@ import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.util.Scope
 import java.nio.file.Paths
 import scala.collection.mutable
+import scala.annotation.tailrec
 
 object ResourceEmbedder {
 
@@ -29,9 +30,6 @@ object ResourceEmbedder {
 
   def apply(config: Config)(implicit scope: Scope): Seq[Defn.Var] = {
     val classpath = config.classPath
-
-    val pathValues = new ArrayBuffer[Val.ArrayValue]()
-    val contentValues = new ArrayBuffer[Val.ArrayValue]()
 
     implicit val position: Position = Position.NoPosition
 
@@ -60,41 +58,45 @@ object ResourceEmbedder {
         Seq()
       }
 
-    val alreadyVisited = mutable.HashSet[String]()
-
-    val embeddedFiles = foundFiles.filter { classpathFile =>
-      if (!alreadyVisited.contains(classpathFile.pathName)) {
-        alreadyVisited.add(classpathFile.pathName)
-        true
-      } else false
+    @tailrec
+    def filterEqualPathNames(
+        path: List[ClasspathFile],
+        visitedPathNames: Set[String],
+        filteredFiles: List[ClasspathFile]
+    ): List[ClasspathFile] = {
+      path match {
+        case (file @ ClasspathFile(_, pathName, _)) :: tail =>
+          if (visitedPathNames.contains(pathName)) {
+            filterEqualPathNames(tail, visitedPathNames, filteredFiles)
+          } else {
+            filterEqualPathNames(
+              tail,
+              visitedPathNames + pathName,
+              filteredFiles.::(file)
+            )
+          }
+        case Nil =>
+          filteredFiles
+      }
     }
 
-    foundFiles.foreach {
+    val embeddedFiles = filterEqualPathNames(foundFiles.toList, Set.empty, Nil)
+
+    val pathValues = embeddedFiles.map {
+      case ClasspathFile(accessPath, pathName, virtDir) =>
+        val encodedPath = Base64.getEncoder
+          .encode(pathName.toString.getBytes())
+          .map(a => Val.Int(a))
+        Val.ArrayValue(Type.Int, encodedPath.toIndexedSeq)
+    }
+
+    val contentValues = embeddedFiles.map {
       case ClasspathFile(accessPath, pathName, virtDir) =>
         val fileBuffer = virtDir.read(accessPath)
         val encodedContent = Base64.getEncoder
           .encode(fileBuffer.array())
-          .map(a => Val.Int(a.asInstanceOf[Int]))
-
-        val encodedPath = Base64.getEncoder
-          .encode(pathName.toString.getBytes())
-          .map(a => Val.Int(a.asInstanceOf[Int]))
-
-        config.logger.info(
-          "Encoded: " + Base64.getEncoder
-            .encode(pathName.toString.getBytes())
-        )
-
-        contentValues += Val.ArrayValue(Type.Int, encodedContent.toIndexedSeq)
-        pathValues += Val.ArrayValue(Type.Int, encodedPath.toIndexedSeq)
-
-        config.logger.info(
-          "Length: " + Val
-            .ArrayValue(Type.Int, encodedPath.toIndexedSeq)
-            .values
-            .length
-            .asInstanceOf[Long]
-        )
+          .map(a => Val.Int(a))
+        Val.ArrayValue(Type.Int, encodedContent.toIndexedSeq)
     }
 
     def generateArrayVar(name: String, arrayValue: Val.ArrayValue) = {
@@ -150,7 +152,7 @@ object ResourceEmbedder {
         ),
         Defn.Var(
           Attrs.None,
-          extern("__resources_size"),
+          extern("__resources_amount"),
           Type.Ptr,
           Val.Int(contentValues.length)
         )
@@ -169,13 +171,13 @@ object ResourceEmbedder {
   private val sourceExtensions =
     Seq(
       ".class",
-      ".c",
-      ".cpp",
-      ".h",
       ".nir",
       ".jar",
       ".scala",
       ".java",
+      ".c",
+      ".h",
+      ".cpp",
       ".hpp",
       ".S"
     )

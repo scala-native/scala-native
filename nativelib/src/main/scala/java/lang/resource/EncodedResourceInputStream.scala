@@ -9,7 +9,7 @@ private[lang] class EncodedResourceInputStream(resourceId: Int)
   // Position in Base64 encoded bytes
   var position: Int = 0
   var leftSeq = Seq[Byte]()
-  val size = EmbeddedResourceReader.getContentLength(resourceId).toLong
+  val size = EmbeddedResourceReader.getContentLength(resourceId)
 
   var markPosition: Int = 0
   var markSeq = Seq[Byte]()

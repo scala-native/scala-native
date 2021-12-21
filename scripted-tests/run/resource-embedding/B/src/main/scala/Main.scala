@@ -1,15 +1,15 @@
 object Main {
   def main(args: Array[String]): Unit = {
     val repeatedFile = getClass().getResourceAsStream("repeated.txt")
-    assert(repeatedFile != null, "repeated.txt is not embedded")
+    assert(repeatedFile != null, "repeated.txt should be embedded")
     assert(
       repeatedFile.read().toChar == 'B',
-      "correct repeated.txt was embedded"
+      "correct repeated.txt should be embedded"
     )
 
     assert(
-      getClass().getResourceAsStream("a-res") == null,
-      "a-res should not be embedded"
+      getClass().getResourceAsStream("a-res") != null,
+      "a-res should be embedded"
     )
     assert(
       getClass().getResourceAsStream("b-res") != null,

@@ -7,6 +7,7 @@
 # -- does not link because of conflicting files
 > projectB/compile
 > projectB/nativeLink
+# includes simple tests
 > projectB/run
 
 # -- links and runs tests without conflicts
