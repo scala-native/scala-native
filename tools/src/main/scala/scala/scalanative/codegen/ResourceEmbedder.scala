@@ -49,9 +49,18 @@ object ResourceEmbedder {
                   (relativePath, relativePath.toString)
                 }
 
-              if (notSourceFile(path) && Files.isRegularFile(path)) {
-                Some(ClasspathFile(path, pathName, virtualDir))
-              } else None
+              if (isSourceFile(path)) {
+                config.logger.debug(
+                  s"Did not embed: $pathName. Source file extension detected."
+                )
+                None
+              } else {
+                if (Files.isRegularFile(path)) {
+                  Some(ClasspathFile(path, pathName, virtualDir))
+                } else {
+                  None
+                }
+              }
             }
         }
       } else {
@@ -182,9 +191,9 @@ object ResourceEmbedder {
       ".S"
     )
 
-  private def notSourceFile(path: Path): Boolean = {
+  private def isSourceFile(path: Path): Boolean = {
     if (path.getFileName == null) false
-    else sourceExtensions.filter(path.getFileName.toString.endsWith(_)).isEmpty
+    else !sourceExtensions.filter(path.getFileName.toString.endsWith(_)).isEmpty
   }
 
 }
