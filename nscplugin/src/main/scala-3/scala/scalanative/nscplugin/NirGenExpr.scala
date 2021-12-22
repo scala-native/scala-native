@@ -1183,7 +1183,7 @@ trait NirGenExpr(using Context) {
       val method = Val.Global(name, nir.Type.Ptr)
 
       val Type.Function(_ +: argTypes, retty) = genMethodSig(sym)
-      val sig = Type.Function(Type.Ref(name.owner) +: argTypes, retty)
+      val sig = Type.Function(Type.Ref(name.top) +: argTypes, retty)
       val args = genMethodArgs(sym, argsp)
       val values = Val.Null +: args
       buf.call(sig, method, values, unwind)
