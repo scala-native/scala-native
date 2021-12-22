@@ -423,17 +423,23 @@ final class Check(implicit linked: linker.Result) {
     obj.ty match {
       case ScopeRef(scope) =>
         scope.implementors.foreach { cls =>
-          cls.fields.collectFirst {
-            case fld: Field if fld.name == name =>
-              in("field declared type") {
-                expect(ty, fld.ty)
-              }
-              value.foreach { v =>
-                in("stored value") {
-                  expect(fld.ty, v)
+          cls.fields
+            .collectFirst {
+              case fld: Field if fld.name == name =>
+                in("field declared type") {
+                  expect(ty, fld.ty)
                 }
-              }
-          }
+                value.foreach { v =>
+                  in("stored value") {
+                    expect(fld.ty, v)
+                  }
+                }
+            }
+            .getOrElse(
+              error(
+                s"class ${scope.name.show} does not define field ${name.show}"
+              )
+            )
         }
       case ty =>
         error(s"can't access fields of a non-class type ${ty.show}")
