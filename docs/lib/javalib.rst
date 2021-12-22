@@ -623,7 +623,7 @@ Embedding Resources
 -------------------
 
 In Scala Native, resources are implemented via embedding a resource in a resulting
-binary file. Only getClass().getResourceAsInputStream() is implemented.
+binary file. Only `getClass().getResourceAsInputStream()` is implemented.
 For that to work, you have to specify an additional NativeConfig option:
 
 ```scala
@@ -637,7 +637,7 @@ binary file. Please note that files with following extensions cannot be embedded
 and used as a resource:
 
 ```
-".class", ".c", ".cpp", ".h", ".nir", ".jar", ".scala", ".java", ".hpp", ".S"
+".class", ".nir", ".scala", ".java", ".jar", ".c", ".h", ".cpp", ".hpp", ".S"
 ```
 
 This is to avoid unnecesarily embedding source files. If necessary, please
@@ -649,7 +649,7 @@ In Scala Native, the outputted file that can be run is a binary, unlike JVM's
 classfiles and jars. For that reason, were getResources() URI methods implemented,
 a new URI format using a seperate FileSystem would have to be added (f.e. instead
 of obtaining jar:file:path.ext you would obtain embedded:path.ext). As this still
-would provide a meaningful differentiation between JVM's javalib API, and Scala
+would provide a meaningful inconsistency between JVM's javalib API and Scala
 Native's reimplementation, this remains not implemented for now. The added
 getClass().getResourceAsInputStream() however is able to be consistent between
 the platforms.

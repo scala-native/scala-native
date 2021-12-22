@@ -259,14 +259,9 @@ object Base64 {
     private var shift = DecodeState18
 
     override def skip(n: Long): Long = {
-      @tailrec
-      def recSkip(n: Long, acc: Long): Long = {
-        val a = read()
-        if (n > 1 && a != -1) recSkip(n - 1, acc + 1)
-        else if (a != -1) 1 + acc
-        else acc
-      }
-      recSkip(n, 0)
+      var skipped = 0
+      while (skipped < n && read() != -1) skipped += 1
+      skipped
     }
 
     override def read(): Int =
