@@ -957,7 +957,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       existingMembers: Seq[Defn],
       sym: Symbol
   ): Seq[Defn.Define] = {
-    /* Phase travel is necessary for non-top-level classes, because flatten
+    /*  Phase travel is necessary for non-top-level classes, because flatten
      *  breaks their companionModule. This is tracked upstream at
      *  https://github.com/scala/scala-dev/issues/403
      */
@@ -1036,7 +1036,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val pos: nir.Position = sym.pos
 
       val methodName = genMethodName(sym)
-      val forwarderName = genStaticMemberName(sym)
+      val forwarderName = genStaticMemberName(sym, Some(moduleClass))
       val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
       val forwarderParamTypes = Type.Ref(forwarderName.top) +: paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
@@ -1056,21 +1056,26 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         attrs = Attrs(inlineHint = nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,
-        insts = curStatBuffer.withFreshExprBuffer { implicit buf: ExprBuffer =>
-          val fresh = curFresh.get
-          scoped(
-            curUnwindHandler := None,
-            curMethodThis := None
-          ) {
-            val entryParams @ (_ +: params) = forwarderParamTypes
-              .map(Val.Local(fresh(), _))
-            buf.label(fresh(), entryParams)
-            val res =
-              buf.genApplyModuleMethod(sym.owner, sym, params.map(ValTree(_)))
-            buf.ret(res)
+        insts = curStatBuffer
+          .withFreshExprBuffer { buf =>
+            val fresh = curFresh.get
+            scoped(
+              curUnwindHandler := None,
+              curMethodThis := None
+            ) {
+              val entryParams @ (_ +: params) = forwarderParamTypes
+                .map(Val.Local(fresh(), _))
+              buf.label(fresh(), entryParams)
+              val res =
+                buf.genApplyModuleMethod(
+                  moduleClass,
+                  sym,
+                  params.map(ValTree(_))
+                )
+              buf.ret(res)
+            }
+            buf.toSeq
           }
-          buf.toSeq
-        }
       )
     }
 

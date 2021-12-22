@@ -55,7 +55,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
       super.run()
     }
 
-    override def apply(cunit: CompilationUnit): Unit = {
+    override def apply(cunit: CompilationUnit): Unit = try {
       val classDefs = mutable.UnrolledBuffer.empty[ClassDef]
 
       def collectClassDefs(tree: Tree): Unit = tree match {
@@ -88,7 +88,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      val regularDefns = if (generatedStaticForwarderClasses.isEmpty) {
+      val allRegularDefns = if (generatedStaticForwarderClasses.isEmpty) {
         /* Fast path, applicable under -Xno-forwarders, as well as when all
          * the `object`s of a compilation unit have a companion class.
          */
@@ -111,39 +111,39 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
          * conflicting top-level classes. However, it uses `toLowerCase()`
          * without argument, which is not deterministic.
          */
-        def caseInsensitiveNameOf(name: nir.Global.Top): String =
-          name.mangle.toLowerCase(java.util.Locale.ENGLISH)
+
+        def caseInsensitiveNameOf(classDef: nir.Defn.Class): String =
+          classDef.name.mangle.toLowerCase(java.util.Locale.ENGLISH)
 
         val generatedCaseInsensitiveNames =
-          regularDefns
-            .toSet[nir.Defn]
-            .map(_.name.top)
-            .map(caseInsensitiveNameOf(_))
-        val staticForwarderDefns = generatedStaticForwarderClasses.toList
-          .withFilter {
-            case (site, StaticForwarderClass(classDef, _)) =>
-              val name = caseInsensitiveNameOf(classDef.name.top)
-              !generatedCaseInsensitiveNames.contains(name) || {
-                global.runReporting.warning(
-                  site.pos,
-                  s"Not generating the static forwarders of ${classDef.name.show} " +
-                    "because its name differs only in case from the name of another class or " +
-                    "trait in this compilation unit.",
-                  Reporting.WarningCategory.Other,
-                  site
-                )
-                false
-              }
-          }
-          .flatMap {
-            case (_, StaticForwarderClass(defn, forwarders)) =>
-              defn +: forwarders
-          }
+          regularDefns.collect {
+            case cls: nir.Defn.Class => caseInsensitiveNameOf(cls)
+          }.toSet
+
+        val staticForwarderDefns: List[nir.Defn] =
+          generatedStaticForwarderClasses
+            .collect {
+              case (site, StaticForwarderClass(classDef, forwarders)) =>
+                val name = caseInsensitiveNameOf(classDef)
+                if (!generatedCaseInsensitiveNames.contains(name)) {
+                  classDef +: forwarders
+                } else {
+                  global.reporter.warning(
+                    site.pos,
+                    s"Not generating the static forwarders of ${classDef.name.show} " +
+                      "because its name differs only in case from the name of another class or " +
+                      "trait in this compilation unit."
+                  )
+                  Nil
+                }
+            }
+            .flatten
+            .toList
 
         regularDefns ::: staticForwarderDefns
       }
 
-      val regularFiles = regularDefns.toSeq
+      val regularFiles = allRegularDefns.toSeq
         .groupBy(_.name.top)
         .map {
           case (ownerName, defns) =>
@@ -163,6 +163,8 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
         .of(allFiles.toSeq: _*)
         .parallel()
         .forEach(generateIRFile)
+    } finally {
+      generatedStaticForwarderClasses.clear()
     }
   }
 

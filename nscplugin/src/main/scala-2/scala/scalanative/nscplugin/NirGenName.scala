@@ -40,15 +40,30 @@ trait NirGenName[G <: Global with Singleton] {
         genTypeName(sym.moduleClass)
       case _ =>
         val needsModuleClassSuffix =
-          sym.isModuleClass && !isImplClass(sym)
+          sym.isModuleClass && !sym.isJavaDefined && !isImplClass(sym)
         val idWithSuffix = if (needsModuleClassSuffix) id + "$" else id
         nir.Global.Top(idWithSuffix)
     }
     name
   }
 
+  def genModuleName(sym: Symbol): nir.Global.Top = {
+    if (sym.isModule) genTypeName(sym)
+    else {
+      val module = sym.moduleClass
+      if (module.exists) genTypeName(module)
+      else {
+        val name @ nir.Global.Top(className) = genTypeName(sym)
+        if (className.endsWith("$")) name
+        else nir.Global.Top(className + "$")
+      }
+    }
+  }
+
   def genFieldName(sym: Symbol): nir.Global = {
-    val owner = genTypeName(sym.owner)
+    val owner =
+      if (sym.isStaticMember) genModuleName(sym.owner)
+      else genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
@@ -98,8 +113,11 @@ trait NirGenName[G <: Global with Singleton] {
     }
   }
 
-  def genStaticMemberName(sym: Symbol): nir.Global = {
-    val typeName = genTypeName(sym.owner)
+  def genStaticMemberName(
+      sym: Symbol,
+      explicitOwner: Option[Symbol]
+  ): nir.Global = {
+    val typeName = genTypeName(explicitOwner.getOrElse(sym.owner))
     val owner = nir.Global.Top(typeName.id.stripSuffix("$"))
     val id = nativeIdOf(sym)
     val scope =
