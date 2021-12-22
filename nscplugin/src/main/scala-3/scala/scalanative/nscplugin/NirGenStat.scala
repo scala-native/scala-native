@@ -535,9 +535,8 @@ trait NirGenStat(using Context) {
 
     def isExcluded(m: Symbol): Boolean = {
       def hasAccessBoundary = m.accessBoundary(defn.RootClass) ne defn.RootClass
-      m.isExtern ||
-      m.is(Deferred) || m.isConstructor ||
-      hasAccessBoundary ||
+      m.isExtern || m.isConstructor ||
+      m.is(Deferred) || hasAccessBoundary ||
       (m.owner eq defn.ObjectClass)
     }
 
