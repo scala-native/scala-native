@@ -409,7 +409,7 @@ object Settings {
       scalaBinaryVersion.value match {
         case "3" =>
           scalaNativeCompilerOptions(
-            "GenStaticForwardersForNonTopLevelObjects"
+            "genStaticForwardersForNonTopLevelObjects"
           )
         case _ => Nil
       }
@@ -687,7 +687,7 @@ object Settings {
   )
 
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
-    options.map(opt => s"-P:NirPlugin:$opt")
+    options.map(opt => s"-P:scalanative:$opt")
   }
 
   def scalaVersionsDependendent[T](scalaVersion: String)(default: T)(
