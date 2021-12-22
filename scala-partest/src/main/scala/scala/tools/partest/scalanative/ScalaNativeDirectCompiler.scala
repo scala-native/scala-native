@@ -1,6 +1,6 @@
 package scala.tools.partest.scalanative
 
-import scala.scalanative.nscplugin.NirPlugin
+import scala.scalanative.nscplugin.ScalaNativePlugin
 import scala.tools.nsc.Settings
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.reporters.Reporter
@@ -14,7 +14,7 @@ trait ScalaNativeDirectCompiler extends DirectCompiler {
     new PartestGlobal(settings, reporter) {
       override protected def loadRoughPluginsList(): List[Plugin] = {
         super.loadRoughPluginsList() :+
-          Plugin.instantiate(classOf[NirPlugin], this)
+          Plugin.instantiate(classOf[ScalaNativePlugin], this)
       }
     }
   }
