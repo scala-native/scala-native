@@ -37,16 +37,14 @@ object ResourceEmbedder {
       if (config.compilerConfig.embedResources) {
         classpath.flatMap { classpath =>
           val virtualDir = VirtualDirectory.real(classpath)
-          val root = virtualDir.uri.getPath()
 
           virtualDir.files
-            .flatMap { relativePath =>
-              val (path, pathName) =
-                if (root != null) { // local file
-                  val name = s"${root}${relativePath}"
-                  (Paths.get(name), s"/${relativePath.toString()}")
+            .flatMap { path =>
+              val pathName =
+                if (!path.toString().startsWith("/")) { // local file
+                  "/" + path.toString()
                 } else { // other file (f.e in jar)
-                  (relativePath, relativePath.toString)
+                  path.toString()
                 }
 
               if (isSourceFile(path)) {
@@ -54,12 +52,10 @@ object ResourceEmbedder {
                   s"Did not embed: $pathName. Source file extension detected."
                 )
                 None
+              } else if (Files.isDirectory(path)) {
+                None
               } else {
-                if (Files.isRegularFile(path)) {
-                  Some(ClasspathFile(path, pathName, virtualDir))
-                } else {
-                  None
-                }
+                Some(ClasspathFile(path, pathName, virtualDir))
               }
             }
         }

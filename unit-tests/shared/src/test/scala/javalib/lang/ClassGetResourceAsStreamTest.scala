@@ -40,9 +40,9 @@ class ClassGetResourceAsStreamTest {
       )
     }
 
+    inputStream.skip(7)
     val expectedSecond = "line"
     val expectedSecondCharArray = expectedSecond.toCharArray
-    inputStream.skip(7)
     for (i <- 0 until expectedSecond.size) {
       assertEquals(
         s"Byte #${i} in \'$expectedSecond\'",
@@ -53,8 +53,12 @@ class ClassGetResourceAsStreamTest {
 
     val inputStream2 = getClass().getResourceAsStream(basicFileAbsolute)
     val skipped = inputStream2.skip(100)
-
-    assertEquals("Skipped when skipping more than allowed", 33, skipped)
+    val expectedSkipped = 33
+    assertEquals(
+      "Skipped when skipping more than allowed",
+      expectedSkipped,
+      skipped
+    )
     assertEquals(
       "Read value after skipping to the end",
       -1,
@@ -71,7 +75,7 @@ class ClassGetResourceAsStreamTest {
 
     val readBeforeMark = 5
     val readAfterMark = 6
-    val readLimit = 10 // todo consider testing read limit
+    val readLimit = 10
     for (i <- 0 to readBeforeMark) inputStream.read()
     val expectedAvailable = inputStream.available()
 

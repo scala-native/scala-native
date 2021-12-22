@@ -164,7 +164,11 @@ final class _Class[A] {
     val path =
       Paths.get(absoluteName).normalize().toString().replaceAll("\\\\", "/")
 
-    EmbeddedResourceHelper.resourceFileIdMap.get(path) match {
+    val absolutePath =
+      if (!path.isEmpty() && path(0) != '/') "/" + path
+      else path
+
+    EmbeddedResourceHelper.resourceFileIdMap.get(absolutePath) match {
       case Some(fileIndex) =>
         Base64.getDecoder().wrap(new EncodedResourceInputStream(fileIndex))
       case None =>
