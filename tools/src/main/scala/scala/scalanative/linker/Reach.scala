@@ -32,16 +32,7 @@ class Reach(
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   entries.foreach(reachEntry)
-
-  // Internal hack used inside linker tests, for more information
-  // check out comment in scala.scalanative.linker.ReachabilitySuite
-  val reachStaticConstructors = sys.props
-    .get("scala.scalanative.linker.reachStaticConstructors")
-    .flatMap(v => scala.util.Try(v.toBoolean).toOption)
-    .forall(_ == true)
-  if (reachStaticConstructors) {
-    loader.classesWithEntryPoints.foreach(reachClinit)
-  }
+  loader.classesWithEntryPoints.foreach(reachClinit)
 
   def result(): Result = {
     reportMissing()
