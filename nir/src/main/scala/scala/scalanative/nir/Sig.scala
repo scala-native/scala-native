@@ -3,10 +3,6 @@ package nir
 
 import scala.annotation.tailrec
 import scala.language.implicitConversions
-import scala.scalanative.nir.Sig.Scope.Public
-import scala.scalanative.nir.Sig.Scope.Private
-import scala.scalanative.nir.Sig.Scope.PublicStatic
-import scala.scalanative.nir.Sig.Scope.PrivateStatic
 
 final class Sig(val mangle: String) {
   final def toProxy: Sig =
@@ -29,14 +25,7 @@ final class Sig(val mangle: String) {
     mangle.##
   final override def toString: String =
     mangle
-  final def unmangled: Sig.Unmangled = try {
-    Unmangle.unmangleSig(mangle)
-  } catch {
-    case ex: scala.MatchError =>
-      throw new Exception(
-        s"Failed to unmangle signature `${mangle}`, unknown tag found ${ex.getMessage()}"
-      )
-  }
+  final def unmangled: Sig.Unmangled = Unmangle.unmangleSig(mangle)
 
   final def isField: Boolean = mangle(0) == 'F'
   final def isCtor: Boolean = mangle(0) == 'R'
