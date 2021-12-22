@@ -389,6 +389,4 @@ trait GenReflectiveInstantisation(using Context) {
     ctorsInfo
   }
 
-
-
 }

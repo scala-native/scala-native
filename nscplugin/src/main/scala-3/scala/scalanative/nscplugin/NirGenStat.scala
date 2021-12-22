@@ -547,7 +547,7 @@ trait NirGenStat(using Context) {
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym)
-      
+
       val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
       val forwarderParamTypes = Type.Ref(forwarderName.top) +: paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
