@@ -55,6 +55,29 @@ object AdaptLazyVals extends PluginPhase {
     ctx
   }
 
+  override def transformDefDef(dd: DefDef)(using Context): Tree = {
+    val hasLazyFields = dd.symbol.owner.denot.info.fields
+      .exists(f => isLazyFieldOffset(f.name))
+
+    // Remove LazyVals Offset fields assignments from static constructors,
+    // as they're leading to reachability problems
+    // Drop static constructor if empty after filtering
+    if (hasLazyFields && dd.symbol.isStaticConstructor) {
+      val DefDef(_, _, _, b @ Block(stats, expr)) = dd
+      val newBlock = cpy.Block(b.asInstanceOf[Tree])(
+        stats = b.stats
+          .filter {
+            case Assign(lhs, rhs) => !isLazyFieldOffset(lhs.symbol.name)
+            case _                => true
+          }
+          .asInstanceOf[List[Tree]],
+        expr = expr.asInstanceOf[Tree]
+      )
+      if (newBlock.stats.isEmpty) EmptyTree
+      else cpy.DefDef(dd)(dd.name, dd.paramss, dd.tpt, newBlock)
+    } else dd
+  }
+
   // Replace all usages of all unsupported LazyVals methods with their
   // Scala Native specific implementation (taking Ptr instead of object + offset)
   override def transformApply(tree: Apply)(using Context): Tree = {
