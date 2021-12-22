@@ -25,10 +25,10 @@ class StaticForwardersSuite extends LinkerSpec {
           Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.PublicStatic)
         ),
         Package.member(
-          Sig.Method("myMainFunction", Nil, Sig.Scope.PublicStatic)
+          Sig.Method("myMainFunction", Seq(Type.Unit), Sig.Scope.PublicStatic)
         ),
         PackageModule.member(Sig.Ctor(Nil)),
-        PackageModule.member(Sig.Method("myMainFunction", Nil))
+        PackageModule.member(Sig.Method("myMainFunction", Seq(Type.Unit)))
       )
       val names = defns.map(_.name)
       assert(expected.diff(names).isEmpty)
