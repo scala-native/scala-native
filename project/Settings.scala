@@ -405,9 +405,15 @@ object Settings {
       val separator = sys.props("path.separator")
       "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
     },
-    Compile / scalacOptions ++= scalaNativeCompilerOptions(
-      "GenStaticForwardersForNonTopLevelObjects"
-    ),
+    Compile / scalacOptions ++= {
+      scalaBinaryVersion.value match {
+        case "3" =>
+          scalaNativeCompilerOptions(
+            "GenStaticForwardersForNonTopLevelObjects"
+          )
+        case _ => Nil
+      }
+    },
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value
