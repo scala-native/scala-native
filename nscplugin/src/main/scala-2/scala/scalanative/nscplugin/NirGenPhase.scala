@@ -82,18 +82,74 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
         classDefs.foreach(cd => statBuffer.genClass(cd))
       }
 
-      val files = statBuffer.toSeq.groupBy(defn => defn.name.top).map {
-        case (ownerName, defns) =>
-          (genPathFor(cunit, ownerName), defns)
-      }
-
       val reflectiveInstFiles = reflectiveInstantiationInfo.map {
         reflectiveInstBuf =>
           val path = genPathFor(cunit, reflectiveInstBuf.name.id)
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      val allFiles = files ++ reflectiveInstFiles
+      val regularDefns = if (generatedStaticForwarderClasses.isEmpty) {
+        /* Fast path, applicable under -Xno-forwarders, as well as when all
+         * the `object`s of a compilation unit have a companion class.
+         */
+        statBuffer.toSeq
+      } else {
+        val regularDefns = statBuffer.toSeq.toList
+
+        /* #4148 Add generated static forwarder classes, except those that
+         * would collide with regular classes on case insensitive file
+         * systems.
+         */
+
+        /* I could not find any reference anywhere about what locale is used
+         * by case insensitive file systems to compare case-insensitively.
+         * In doubt, force the English locale, which is probably going to do
+         * the right thing in virtually all cases (especially if users stick
+         * to ASCII class names), and it has the merit of being deterministic,
+         * as opposed to using the OS' default locale.
+         * The JVM backend performs a similar test to emit a warning for
+         * conflicting top-level classes. However, it uses `toLowerCase()`
+         * without argument, which is not deterministic.
+         */
+        def caseInsensitiveNameOf(name: nir.Global.Top): String =
+          name.mangle.toLowerCase(java.util.Locale.ENGLISH)
+
+        val generatedCaseInsensitiveNames =
+          regularDefns
+            .toSet[nir.Defn]
+            .map(_.name.top)
+            .map(caseInsensitiveNameOf(_))
+        val staticForwarderDefns = generatedStaticForwarderClasses.toList
+          .withFilter {
+            case (site, StaticForwarderClass(classDef, _)) =>
+              val name = caseInsensitiveNameOf(classDef.name.top)
+              !generatedCaseInsensitiveNames.contains(name) || {
+                global.runReporting.warning(
+                  site.pos,
+                  s"Not generating the static forwarders of ${classDef.name.show} " +
+                    "because its name differs only in case from the name of another class or " +
+                    "trait in this compilation unit.",
+                  Reporting.WarningCategory.Other,
+                  site
+                )
+                false
+              }
+          }
+          .flatMap {
+            case (_, StaticForwarderClass(defn, forwarders)) =>
+              defn +: forwarders
+          }
+
+        regularDefns ::: staticForwarderDefns
+      }
+
+      val regularFiles = regularDefns.toSeq
+        .groupBy(_.name.top)
+        .map {
+          case (ownerName, defns) =>
+            (genPathFor(cunit, ownerName), defns)
+        }
+      val allFiles = regularFiles ++ reflectiveInstFiles
 
       val generateIRFile: JConsumer[(JPath, Seq[Defn])] =
         new JConsumer[(JPath, Seq[Defn])] {

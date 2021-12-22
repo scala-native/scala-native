@@ -72,7 +72,11 @@ trait NirGenName[G <: Global with Singleton] {
     val id = nativeIdOf(sym)
     val tpe = sym.tpe.widen
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.Private(owner)
+      if (sym.isStaticMember) {
+        if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+        else nir.Sig.Scope.PublicStatic
+      } else if (sym.isPrivate)
+        nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
 
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
@@ -92,6 +96,23 @@ trait NirGenName[G <: Global with Singleton] {
       val retType = genType(tpe.resultType)
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
     }
+  }
+
+  def genStaticMemberName(sym: Symbol): nir.Global = {
+    val typeName = genTypeName(sym.owner)
+    val owner = nir.Global.Top(typeName.id.stripSuffix("$"))
+    val id = nativeIdOf(sym)
+    val scope =
+      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      else nir.Sig.Scope.PublicStatic
+
+    val tpe = sym.tpe.widen
+    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
+    val retType = genType(fromType(sym.info.resultType))
+
+    val name = sym.name
+    val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
+    owner.member(sig)
   }
 
   def genFuncPtrExternForwarderName(ownerSym: Symbol): nir.Global = {
