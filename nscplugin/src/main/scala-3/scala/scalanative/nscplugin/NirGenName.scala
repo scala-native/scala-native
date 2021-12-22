@@ -49,7 +49,9 @@ trait NirGenName(using Context) {
   }
 
   def genFieldName(sym: Symbol): nir.Global = {
-    val owner = genTypeName(sym.owner)
+    val owner =
+      if (sym.isScalaStatic) genModuleName(sym.owner)
+      else genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
@@ -95,9 +97,8 @@ trait NirGenName(using Context) {
   }
 
   def genStaticMemberName(sym: Symbol): Global = {
-    require(sym.is(JavaStatic),
-        "genStaticMemberName called with non-static symbol: " + sym + " " + sym.flagsString)
-    val owner = genTypeName(sym.owner)
+    val typeName = genTypeName(sym.owner)
+    val owner = Global.Top(typeName.id.stripSuffix("$"))
     val id = nativeIdOf(sym)
     val scope =
       if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
