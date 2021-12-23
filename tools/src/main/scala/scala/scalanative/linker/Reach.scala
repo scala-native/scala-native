@@ -580,7 +580,10 @@ class Reach(
             n,
             Op.Call(
               ty: Type.Function,
-              Val.Global(methodName @ Global.Member(Global.Top(owner), sig), _),
+              Val.Global(
+                methodName @ Global.Member(Global.Top(methodOwner), sig),
+                _
+              ),
               args
             ),
             unwind
@@ -589,10 +592,10 @@ class Reach(
             methodName,
             ignoreIfUnavailable = true
           ).isEmpty =>
-        def findRewriteCandidate(
-            owner: Global.Top,
-            isModule: Boolean
-        ): Option[List[Inst]] = {
+        def findRewriteCandidate(inModule: Boolean): Option[List[Inst]] = {
+          val owner =
+            if (inModule) Global.Top(methodOwner + "$")
+            else Global.Top(methodOwner)
           val newMethod = {
             val Sig.Method(id, tps, scope) = sig.unmangled
             val newScope = scope match {
@@ -609,7 +612,7 @@ class Reach(
               implicit val pos: nir.Position = defn.pos
               val moduleV = Val.Local(fresh(), Type.Ref(owner))
               val newArgs = args.toList match {
-                case Val.Null :: args if isModule => moduleV :: args
+                case Val.Null :: args if inModule => moduleV :: args
                 case _                            => args
               }
               val newType = {
@@ -623,7 +626,7 @@ class Reach(
 
               val callOp =
                 Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind)
-              if (isModule) {
+              if (inModule) {
                 List(
                   Inst.Let(moduleV.name, Op.Module(owner), Next.None),
                   callOp
@@ -632,14 +635,14 @@ class Reach(
             }
         }
 
-        findRewriteCandidate(Global.Top(owner + "$"), isModule = true)
+        findRewriteCandidate(inModule = true)
           //  special case for lifted methods
-          .orElse(findRewriteCandidate(Global.Top(owner), isModule = false))
+          .orElse(findRewriteCandidate(inModule = false))
           .getOrElse {
             throw new LinkingException(
-              s"Found a call to not defined static method ${methodName.show} that could not be rewritten." +
-                "Static methods are generated since Scala Native 0.4.3" +
-                "Report this issue to Scala Native repository"
+              s"Found a call to not defined static method ${methodName} that could not be rewritten. " +
+                "Static methods are generated since Scala Native 0.4.3, " +
+                "report this bug in the Scala Native issues."
             )
           }
 
