@@ -654,8 +654,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           } else {
             val ty = genType(sym.tpe)
             val qual = genExpr(qualp)
-            // if (sym.isStaticMember) buf.genModule(sym.owner)
-            // else genExpr(qualp)
             buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
