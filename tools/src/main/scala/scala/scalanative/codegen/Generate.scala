@@ -415,11 +415,10 @@ object Generate {
 
       val info = linked.infos.getOrElse(entry, fail("not linked"))
       info match {
-        case cls: Class if cls.isModule =>
+        case cls: Class =>
           cls.resolve(Rt.ScalaMainSig).getOrElse {
             fail(s"does not contain ${Rt.ScalaMainSig}")
           }
-        case _: ScopeInfo   => fail("was not a module")
         case _: Unavailable => fail("unavailable")
         case _              => util.unreachable
       }
