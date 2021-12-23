@@ -122,23 +122,59 @@ object Settings {
   )
 
   // MiMa
-  lazy val mimaSettings = {
-    // The previous releases of Scala Native with which this version is binary compatible.
-    val binCompatVersions = Set()
+  lazy val mimaSettings = Seq(
+    mimaFailOnNoPrevious := false,
+    mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(
+      name.value
+    ),
+    mimaPreviousArtifacts ++= {
+      // The previous releases of Scala Native with which this version is binary compatible.
+      val binCompatVersions = Set("0.4.0", "0.4.1")
+      lazy val neverPublishedProjects040 = Map(
+        "2.11" -> Set(
+          "util",
+          "tools",
+          "nir",
+          "windowslib",
+          "testRunner",
+          "scala3lib"
+        ),
+        "2.12" -> Set("windowslib", "scala3lib"),
+        "2.13" -> Set(
+          "util",
+          "tools",
+          "nir",
+          "windowslib",
+          "testRunner",
+          "scala3lib"
+        )
+      )
+      lazy val neverPublishedProjects041 = neverPublishedProjects040
+        .mapValues(_.diff(Set("windowslib")))
+      lazy val neverPublishedProjects042 = neverPublishedProjects041
+        .mapValues(_ => Set("scala3lib"))
 
-    Def.settings(
-      mimaFailOnNoPrevious := false,
-      mimaBinaryIssueFilters ++=
-        BinaryIncompatibilities.moduleFilters(name.value),
-      mimaPreviousArtifacts ++= {
-        binCompatVersions
-          .map { version =>
-            ModuleID(organization.value, moduleName.value, version)
-              .cross(crossVersion.value)
-          }
+      def wasPublishedInRelease(
+          notPublishedProjectsInRelease: Map[String, Set[String]]
+      ): Boolean = {
+        notPublishedProjectsInRelease
+          .get(scalaBinaryVersion.value)
+          .exists(!_.contains(thisProject.value.id))
       }
-    )
-  }
+      def wasPreviouslyPublished(version: String) = version match {
+        case "0.4.0" => wasPublishedInRelease(neverPublishedProjects040)
+        case "0.4.1" => wasPublishedInRelease(neverPublishedProjects041)
+        case "0.4.2" => wasPublishedInRelease(neverPublishedProjects042)
+        case _       => false
+      }
+      binCompatVersions
+        .filter(wasPreviouslyPublished)
+        .map { version =>
+          ModuleID(organization.value, moduleName.value, version)
+            .cross(crossVersion.value)
+        }
+    }
+  )
 
   // Publishing
   lazy val publishSettings: Seq[Setting[_]] = Seq(
