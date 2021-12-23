@@ -89,6 +89,7 @@ trait NirGenName(using Context) {
         owner.member(nir.Sig.Extern(id))
       else owner.member(nir.Sig.Extern(id))
     else if (sym.isClassConstructor) owner.member(nir.Sig.Ctor(paramTypes))
+    else if (sym.isStaticConstructor) owner.member(nir.Sig.Clinit())
     else if (sym.name == nme.TRAIT_CONSTRUCTOR)
       owner.member(nir.Sig.Method(id, Seq(nir.Type.Unit), scope))
     else
