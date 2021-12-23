@@ -12,7 +12,7 @@ private[scalanative] trait UnsafePackageCompat {
    */
   @deprecated(
     "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime erros, use alloc[T]() instead",
-    since = "0.5.0"
+    since = "0.4.3"
   )
   inline def alloc[T](using tag: Tag[T], zone: Zone): Ptr[T] = {
     alloc[T](1.toULong)
@@ -44,7 +44,7 @@ private[scalanative] trait UnsafePackageCompat {
 
   @deprecated(
     "In Scala 3 stackalloc[T](n) can be confused with stackalloc[T].apply(n) leading to runtime erros, use stackalloc[T]() instead",
-    since = "0.5.0"
+    since = "0.4.3"
   )
   inline def stackalloc[T](implicit tag: Tag[T]): Ptr[T] =
     stackalloc[T](1.toULong)
