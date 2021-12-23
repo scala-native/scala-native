@@ -41,7 +41,7 @@ class TimeTest {
       Zone { implicit z =>
         val time_ptr = stackalloc[time_t]()
         !time_ptr = now_time_t
-        val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
+        val localtime: Ptr[tm] = localtime_r(time_ptr, alloc[tm]())
 
         localtime.tm_isdst == 0
       }
@@ -50,7 +50,7 @@ class TimeTest {
   @Test def asctimeWithGivenKnownStateShouldMatchItsRepresentation(): Unit =
     if (!isWindows) {
       Zone { implicit z =>
-        val anno_zero_ptr = alloc[tm]
+        val anno_zero_ptr = alloc[tm]()
         anno_zero_ptr.tm_mday = 1
         anno_zero_ptr.tm_wday = 1
         val cstr: CString = asctime(anno_zero_ptr)
@@ -62,7 +62,7 @@ class TimeTest {
   @Test def asctime_rWithGivenKnownStateShouldMatchItsRepresentation(): Unit =
     if (!isWindows) {
       Zone { implicit z =>
-        val anno_zero_ptr = alloc[tm]
+        val anno_zero_ptr = alloc[tm]()
         anno_zero_ptr.tm_mday = 1
         anno_zero_ptr.tm_wday = 1
         val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
@@ -99,7 +99,7 @@ class TimeTest {
         )
         val time_ptr = stackalloc[time_t]()
         !time_ptr = epoch + timezone()
-        val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm])
+        val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm]())
         val cstr: CString = asctime_r(time, alloc[Byte](26))
         val str: String = fromCString(cstr)
 
@@ -146,7 +146,7 @@ class TimeTest {
         36.toULong
       )
 
-      val ttPtr = alloc[time_t]
+      val ttPtr = alloc[time_t]()
       !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
 
       // This code is testing for reading past the end of a "short"
@@ -197,7 +197,7 @@ class TimeTest {
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = if (!isWindows) {
     Zone { implicit z =>
       val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
-      val timePtr = alloc[tm]
+      val timePtr = alloc[tm]()
 
       timePtr.tm_mday = 1
 
@@ -211,7 +211,7 @@ class TimeTest {
 
   @Test def strftimeForMondayJanOne1990ZeroTime(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val timePtr = alloc[tm]
+      val timePtr = alloc[tm]()
       val datePtr: Ptr[CChar] = alloc[CChar](70)
 
       timePtr.tm_mday = 1
@@ -226,7 +226,7 @@ class TimeTest {
 
   @Test def strptimeDetectsGrosslyInvalidFormat(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
 
       // As described in the Scala Native time.c implementation,
       // the format string is passed, unchecked, to the underlying
@@ -246,7 +246,7 @@ class TimeTest {
 
   @Test def strptimeDetectsInvalidString(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
 
       // 32 in string is invalid
       val result =
@@ -258,7 +258,7 @@ class TimeTest {
 
   @Test def strptimeDetectsStringShorterThanFormat(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
 
       val result =
         strptime(c"December 32, 2016 23:59", c"%B %d, %Y %T", tmPtr)
@@ -386,7 +386,7 @@ class TimeTest {
 
   @Test def strptimeFor31December2016Time235960(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
 
       // A leap second was added at this time
       val result =
@@ -436,7 +436,7 @@ class TimeTest {
 
   @Test def strptimeExtraTextAfterDateStringIsOK(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
 
       val result =
         strptime(c"December 31, 2016 23:59:60 UTC", c"%B %d, %Y %T ", tmPtr)

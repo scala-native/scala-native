@@ -64,7 +64,7 @@ class UnixFileSystem(
     closed == false
 
   override def isReadOnly(): Boolean = Zone { implicit z =>
-    val stat = alloc[statvfs.statvfs]
+    val stat = alloc[statvfs.statvfs]()
     val err = statvfs.statvfs(toCString(root), stat)
     if (err != 0) {
       throw new IOException()
