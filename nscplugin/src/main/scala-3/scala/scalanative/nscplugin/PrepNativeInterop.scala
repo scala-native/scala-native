@@ -16,10 +16,13 @@ import core.Constants.Constant
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
  *      from ScalaJS and Scala 2 Native compiler plugin)
  */
-object PrepNativeInterop extends PluginPhase {
+object PrepNativeInterop {
+  val name = "scalanative-prepareInterop"
+}
+class PrepNativeInterop() extends PluginPhase {
   override val runsAfter = Set(transform.PostTyper.name)
   override val runsBefore = Set(transform.Pickler.name)
-  val phaseName = "scalanative-prepareInterop"
+  val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
   def defn(using Context): Definitions = ctx.definitions

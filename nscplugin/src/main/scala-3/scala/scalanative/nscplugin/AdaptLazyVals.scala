@@ -16,8 +16,11 @@ import scala.annotation.{threadUnsafe => tu}
 // its scala native specific counter-part. This is needed, because LazyVals are
 // using JVM unsafe API and static class constructors which are not supported
 // in Scala Native.
-object AdaptLazyVals extends PluginPhase {
-  val phaseName = "scalanative-adaptLazyVals"
+object AdaptLazyVals {
+  val name = "scalanative-adaptLazyVals"
+}
+class AdaptLazyVals() extends PluginPhase {
+  val phaseName = AdaptLazyVals.name
 
   override val runsAfter = Set(LazyVals.name, MoveStatics.name)
   override val runsBefore = Set(GenNIR.name)
