@@ -81,7 +81,7 @@ private object MacroImpl {
   def alloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree, z: c.Tree): c.Tree = {
     c.warning(
       c.enclosingPosition,
-      s"Empty param method `alloc[T]` is deprecated, " +
+      s"Scala Native method `alloc[T]` is deprecated, " +
         "in Scala 3 `alloc[T](n)` can be interpretted as " +
         "`alloc[T].apply(n)` leading to runtime erros, " +
         "use `alloc[T]()` instead "
@@ -139,7 +139,7 @@ private object MacroImpl {
   def stackalloc1[T: c.WeakTypeTag](c: Context)(tag: c.Tree): c.Tree = {
     c.warning(
       c.enclosingPosition,
-      s"Empty param method `stackalloc[T]` is deprecated, " +
+      s"Scala Native method `stackalloc[T]` is deprecated, " +
         "in Scala 3 `stackalloc[T](n)` can be interpretted as " +
         "`stackalloc[T].apply(n)` leading to runtime erros, " +
         "use `stackalloc[T]()` instead "
@@ -147,7 +147,9 @@ private object MacroImpl {
     stackalloc1Impl(c)(tag)
   }
 
-  private def stackalloc1Impl[T: c.WeakTypeTag](c: Context)(tag: c.Tree): c.Tree = {
+  private def stackalloc1Impl[T: c.WeakTypeTag](
+      c: Context
+  )(tag: c.Tree): c.Tree = {
 
     import c.universe._
 
