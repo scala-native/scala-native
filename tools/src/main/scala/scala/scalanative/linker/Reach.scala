@@ -111,13 +111,21 @@ class Reach(
     }
   }
 
-  def lookup(global: Global): Option[Defn] = {
+  def lookup(global: Global): Option[Defn] =
+    lookup(global, ignoreIfUnavailable = false)
+
+  private def lookup(
+      global: Global,
+      ignoreIfUnavailable: Boolean
+  ): Option[Defn] = {
     val owner = global.top
     if (!loaded.contains(owner) && !unavailable.contains(owner)) {
       loader
         .load(owner)
         .fold[Unit] {
-          unavailable += owner
+          if (!ignoreIfUnavailable) {
+            unavailable += owner
+          }
         } { defns =>
           val scope = mutable.Map.empty[Global, Defn]
           defns.foreach { defn => scope(defn.name) = defn }
@@ -145,12 +153,14 @@ class Reach(
       .flatMap(_.get(global))
       .orElse(fallback)
       .orElse {
-        val resolvedPosition = for {
-          invokedFrom <- from.get(global)
-          callerInfo <- infos.get(invokedFrom)
-        } yield callerInfo.position
-        val pos = resolvedPosition.getOrElse(nir.Position.NoPosition)
-        addMissing(global, pos)
+        if (!ignoreIfUnavailable) {
+          val resolvedPosition = for {
+            invokedFrom <- from.get(global)
+            callerInfo <- infos.get(invokedFrom)
+          } yield callerInfo.position
+          val pos = resolvedPosition.getOrElse(nir.Position.NoPosition)
+          addMissing(global, pos)
+        }
         None
       }
   }
@@ -203,11 +213,14 @@ class Reach(
       if (defn.attrs.isStub && !config.linkStubs) {
         reachUnavailable(name)
       } else {
-        val maybeResolvedDefn = defn match {
-          case defn: Defn.Define => resolveLinktimeDefine(defn)
-          case _                 => defn
+        val maybeFixedDefn = defn match {
+          case defn: Defn.Define =>
+            (resolveLinktimeDefine _)
+              .andThen(mitigateStaticCalls _)
+              .apply(defn)
+          case _ => defn
         }
-        reachDefn(maybeResolvedDefn)
+        reachDefn(maybeFixedDefn)
       }
     }
     stack = stack.tail
@@ -555,6 +568,85 @@ class Reach(
     )
     reachAttrs(attrs)
     reachType(ty)
+  }
+
+  // Mitigate static calls to methods compiled with Scala Native older then 0.4.3
+  // If given static method in not rechable replace it with call to method with the same
+  // name in the companion module
+  private def mitigateStaticCalls(defn: Defn.Define): Defn.Define = {
+    lazy val fresh = Fresh(defn.insts)
+    val newInsts = defn.insts.flatMap {
+      case inst @ Inst.Let(
+            n,
+            Op.Call(
+              ty: Type.Function,
+              Val.Global(methodName @ Global.Member(Global.Top(owner), sig), _),
+              args
+            ),
+            unwind
+          )
+          if sig.isStatic && lookup(
+            methodName,
+            ignoreIfUnavailable = true
+          ).isEmpty =>
+        def findRewriteCandidate(
+            owner: Global.Top,
+            isModule: Boolean
+        ): Option[List[Inst]] = {
+          val newMethod = {
+            val Sig.Method(id, tps, scope) = sig.unmangled
+            val newScope = scope match {
+              case Sig.Scope.PublicStatic      => Sig.Scope.Public
+              case Sig.Scope.PrivateStatic(in) => Sig.Scope.Private(in)
+              case scope                       => scope
+            }
+            val newSig = Sig.Method(id, tps, newScope)
+            Val.Global(owner.member(newSig), Type.Ptr)
+          }
+          // Make sure that candidate exists
+          lookup(newMethod.name, ignoreIfUnavailable = true)
+            .map { _ =>
+              implicit val pos: nir.Position = defn.pos
+              val moduleV = Val.Local(fresh(), Type.Ref(owner))
+              val newArgs = args.toList match {
+                case Val.Null :: args if isModule => moduleV :: args
+                case _                            => args
+              }
+              val newType = {
+                val newArgsTpe = ty.args.toList match {
+                  case Type.Ref(methodName.owner, _, _) :: argsTpe =>
+                    Type.Ref(owner) :: argsTpe
+                  case argsTpe => argsTpe
+                }
+                Type.Function(newArgsTpe, ty.ret)
+              }
+
+              val callOp =
+                Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind)
+              if (isModule) {
+                List(
+                  Inst.Let(moduleV.name, Op.Module(owner), Next.None),
+                  callOp
+                )
+              } else List(callOp)
+            }
+        }
+
+        findRewriteCandidate(Global.Top(owner + "$"), isModule = true)
+          //  special case for lifted methods
+          .orElse(findRewriteCandidate(Global.Top(owner), isModule = false))
+          .getOrElse {
+            throw new LinkingException(
+              s"Found a call to not defined static method ${methodName.show} that could not be rewritten." +
+                "Static methods are generated since Scala Native 0.4.3" +
+                "Report this issue to Scala Native repository"
+            )
+          }
+
+      case inst =>
+        inst :: Nil
+    }
+    defn.copy(insts = newInsts)(defn.pos)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
