@@ -25,7 +25,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   import tpd._
   import nir._
 
-  protected val defnNir = NirDefinitions.defnNir
+  protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
   protected val positionsConversions = new NirPositions()
 
