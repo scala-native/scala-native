@@ -129,25 +129,12 @@ object Settings {
     ),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
-      val binCompatVersions = Set("0.4.0", "0.4.1")
+      val binCompatVersions = Set("0.4.0", "0.4.1", "0.4.2")
+      val toolsProjects = Set("util", "tools", "nir", "test-runner")
       lazy val neverPublishedProjects040 = Map(
-        "2.11" -> Set(
-          "util",
-          "tools",
-          "nir",
-          "windowslib",
-          "testRunner",
-          "scala3lib"
-        ),
+        "2.11" -> (toolsProjects ++ Set("windowslib", "scala3lib")),
         "2.12" -> Set("windowslib", "scala3lib"),
-        "2.13" -> Set(
-          "util",
-          "tools",
-          "nir",
-          "windowslib",
-          "testRunner",
-          "scala3lib"
-        )
+        "2.13" -> (toolsProjects ++ Set("windowslib", "scala3lib"))
       )
       lazy val neverPublishedProjects041 = neverPublishedProjects040
         .mapValues(_.diff(Set("windowslib")))
@@ -159,7 +146,7 @@ object Settings {
       ): Boolean = {
         notPublishedProjectsInRelease
           .get(scalaBinaryVersion.value)
-          .exists(!_.contains(thisProject.value.id))
+          .exists(!_.contains((thisProject / name).value))
       }
       def wasPreviouslyPublished(version: String) = version match {
         case "0.4.0" => wasPublishedInRelease(neverPublishedProjects040)
