@@ -8,4 +8,4 @@ object Macros:
   }
   private def testCode(s: Expr[String])(using Quotes): Expr[Seq[Int]] =
     import quotes.reflect.*
-    Expr(List(1,2,3))
+    Expr(List(1, 2, 3))

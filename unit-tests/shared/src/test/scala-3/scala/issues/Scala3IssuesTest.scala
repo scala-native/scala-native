@@ -3,7 +3,7 @@ package scala.issues
 import org.junit.Test
 import org.junit.Assert._
 
-class Scala3Issues:
+class Scala3IssuesTest:
 
   // Test itslf does not have a large value, it does however assert that
   // usage of macros in the code, does not break compiler plugin

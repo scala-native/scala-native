@@ -19,6 +19,7 @@ import scala.annotation.{threadUnsafe => tu}
 object AdaptLazyVals {
   val name = "scalanative-adaptLazyVals"
 }
+
 class AdaptLazyVals extends PluginPhase {
   val phaseName = AdaptLazyVals.name
 

@@ -19,6 +19,7 @@ import core.Constants.Constant
 object PrepNativeInterop {
   val name = "scalanative-prepareInterop"
 }
+
 class PrepNativeInterop extends PluginPhase {
   override val runsAfter = Set(transform.PostTyper.name)
   override val runsBefore = Set(transform.Pickler.name)
