@@ -17,7 +17,7 @@ import core.Contexts._
  */
 
 class ScalaNativeJUnitPlugin extends StandardPlugin {
-  val name: String = "Scala Native JUnit plugin"
+  val name: String = "scalanative-junit"
   val description: String = "Makes JUnit test classes invokable in Scala Native"
 
   def init(options: List[String]): List[PluginPhase] =

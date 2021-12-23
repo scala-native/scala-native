@@ -2,7 +2,7 @@ package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.plugins._
 
-class NirPlugin extends StandardPlugin:
+class ScalaNativePlugin extends StandardPlugin:
   val name: String = "scalanative"
   val description: String = "Scala Native compiler plugin"
 

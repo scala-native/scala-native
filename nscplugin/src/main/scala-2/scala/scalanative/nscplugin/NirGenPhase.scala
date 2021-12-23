@@ -25,7 +25,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   import definitions._
   import nirAddons._
 
-  val phaseName = "nir"
+  val phaseName = "scalanative-genNIR"
 
   protected val curClassSym = new util.ScopedVar[Symbol]
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]

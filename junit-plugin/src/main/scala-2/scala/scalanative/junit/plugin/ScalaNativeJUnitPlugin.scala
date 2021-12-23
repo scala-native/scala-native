@@ -20,14 +20,13 @@ import scala.tools.nsc.plugins.{
  */
 class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
-  val name: String = "Scala Native JUnit plugin"
+  val name: String = "scalanative-junit"
+  val description: String = "Makes JUnit test classes invokable in Scala Native"
 
   val components: List[NscPluginComponent] = global match {
     case _: doc.ScaladocGlobal => Nil
     case _                     => List(ScalaNativeJUnitPluginComponent)
   }
-
-  val description: String = "Makes JUnit test classes invokable in Scala Native"
 
   object ScalaNativeJUnitPluginComponent
       extends plugins.PluginComponent
@@ -38,9 +37,9 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
     import definitions._
     import rootMirror.getRequiredClass
 
-    val phaseName: String = "junit-inject"
+    val phaseName: String = "scalanative-junitBootstrappers"
     val runsAfter: List[String] = List("mixin")
-    override val runsBefore: List[String] = List("nir")
+    override val runsBefore: List[String] = List("scalanative-genNIR")
 
     protected def newTransformer(unit: CompilationUnit): Transformer =
       new ScalaNativeJUnitPluginTransformer
