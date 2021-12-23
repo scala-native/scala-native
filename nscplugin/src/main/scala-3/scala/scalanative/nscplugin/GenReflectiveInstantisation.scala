@@ -389,13 +389,4 @@ trait GenReflectiveInstantisation(using Context) {
     ctorsInfo
   }
 
-  private def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
-    scoped(
-      curFresh := Fresh()
-    ) {
-      val buffer = new ExprBuffer(using curFresh)
-      f(using buffer)
-    }
-  }
-
 }

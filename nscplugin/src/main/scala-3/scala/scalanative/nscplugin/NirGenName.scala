@@ -11,6 +11,7 @@ import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import scalanative.util.unreachable
 import scalanative.nir
 import scala.language.implicitConversions
+import scala.scalanative.nir.Global
 
 trait NirGenName(using Context) {
   self: NirCodeGen =>
@@ -21,10 +22,14 @@ trait NirGenName(using Context) {
     else genFieldName(sym)
 
   def genTypeName(sym: Symbol): nir.Global.Top = {
-    if (sym == defn.ObjectClass) nir.Rt.Object.name.top
+    val sym1 =
+      if (sym.isAllOf(ModuleClass | JavaDefined)) sym.linkedClass
+      else sym
+
+    if (sym1 == defn.ObjectClass) nir.Rt.Object.name.top
     else {
       val id = {
-        val fullName = sym.javaClassName
+        val fullName = sym1.javaClassName
         NirGenName.MappedNames.getOrElse(fullName, fullName)
       }
       nir.Global.Top(id)
@@ -44,7 +49,9 @@ trait NirGenName(using Context) {
   }
 
   def genFieldName(sym: Symbol): nir.Global = {
-    val owner = genTypeName(sym.owner)
+    val owner =
+      if (sym.isScalaStatic) genModuleName(sym.owner)
+      else genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
@@ -64,9 +71,11 @@ trait NirGenName(using Context) {
   def genMethodName(sym: Symbol): nir.Global = {
     val owner = genTypeName(sym.owner)
     val id = nativeIdOf(sym)
-    val tpe = sym.info.resultType.widen
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.Private(owner)
+      if (sym.isPrivate)
+        if (sym.isStaticMethod) nir.Sig.Scope.PrivateStatic(owner)
+        else nir.Sig.Scope.Private(owner)
+      else if (sym.isStaticMethod) nir.Sig.Scope.PublicStatic
       else nir.Sig.Scope.Public
 
     val paramTypes = sym.info.paramInfoss.flatten
@@ -79,12 +88,31 @@ trait NirGenName(using Context) {
         val id = nativeIdOf(sym.getter)
         owner.member(nir.Sig.Extern(id))
       else owner.member(nir.Sig.Extern(id))
-    else if (sym.name == nme.CONSTRUCTOR) owner.member(nir.Sig.Ctor(paramTypes))
+    else if (sym.isClassConstructor) owner.member(nir.Sig.Ctor(paramTypes))
+    else if (sym.isStaticConstructor) owner.member(nir.Sig.Clinit())
     else if (sym.name == nme.TRAIT_CONSTRUCTOR)
       owner.member(nir.Sig.Method(id, Seq(nir.Type.Unit), scope))
     else
       val retType = genType(fromType(sym.info.resultType))
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
+  }
+
+  def genStaticMemberName(sym: Symbol): Global = {
+    val typeName = genTypeName(sym.owner)
+    val owner = Global.Top(typeName.id.stripSuffix("$"))
+    val id = nativeIdOf(sym)
+    val scope =
+      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      else nir.Sig.Scope.PublicStatic
+
+    val paramTypes = sym.info.paramInfoss.flatten
+      .map(fromType)
+      .map(genType)
+    val retType = genType(fromType(sym.info.resultType))
+
+    val name = sym.name
+    val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
+    owner.member(sig)
   }
 
   private def nativeIdOf(sym: Symbol): String = {

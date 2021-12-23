@@ -119,23 +119,18 @@ trait NirGenExpr(using Context) {
       val Assign(lhsp, rhsp) = tree
       given nir.Position = tree.span
 
-      val sym = lhsp.symbol
-      if (sym.is(JavaStaticTerm) && sym.source != ctx.compilationUnit.source) {
-        report.error(
-          s"Assignment to static member ${sym.fullName} is not supported",
-          tree.sourcePos
-        )
-      }
-
       desugarTree(lhsp) match {
         case sel @ Select(qualp, _) =>
-          val qual = genExpr(qualp)
           val rhs = genExpr(rhsp)
-          val name = genFieldName(sel.symbol)
-          if (sel.symbol.owner.isExternModule) {
+          val sym = sel.symbol
+          val name = genFieldName(sym)
+          if (sym.owner.isExternModule) {
             val externTy = genExternType(sel.tpe)
-            genStoreExtern(externTy, sel.symbol, rhs)
+            genStoreExtern(externTy, sym, rhs)
           } else {
+            val qual =
+              if (sym.isStaticMember) genModule(qualp.symbol)
+              else genExpr(qualp)
             val ty = genType(sel.tpe)
             buf.fieldstore(ty, qual, name, rhs, unwind)
           }
@@ -646,7 +641,7 @@ trait NirGenExpr(using Context) {
 
     def genModule(sym: Symbol)(using nir.Position): Val = {
       val moduleSym = if (sym.isTerm) sym.moduleClass else sym
-      buf.module(genTypeName(moduleSym), unwind)
+      buf.module(genModuleName(moduleSym), unwind)
     }
 
     def genReturn(tree: Return): Val = {
@@ -693,7 +688,9 @@ trait NirGenExpr(using Context) {
         buf.extract(qual, Seq(index), unwind)
       } else {
         val ty = genType(tree.tpe)
-        val qual = genExpr(qualp)
+        val qual =
+          if (sym.isStaticMember) genModule(owner)
+          else genExpr(qualp)
         val name = genFieldName(tree.symbol)
         if (sym.isExtern) {
           val externTy = genExternType(tree.tpe)
@@ -1182,20 +1179,13 @@ trait NirGenExpr(using Context) {
         sym: Symbol,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
-      val owner = sym.owner.asClass
-      val module = genModuleName(owner)
-
-      val name = {
-        val nir.Global.Member(_, sig) = genMethodName(sym)
-        module.member(sig)
-      }
+      val name = genStaticMemberName(sym)
       val method = Val.Global(name, nir.Type.Ptr)
 
       val Type.Function(_ +: argTypes, retty) = genMethodSig(sym)
-      val sig = Type.Function(Type.Ref(module) +: argTypes, retty)
+      val sig = Type.Function(Type.Ref(name.top) +: argTypes, retty)
       val args = genMethodArgs(sym, argsp)
-      val self = buf.module(module, unwind)
-      val values = self +: args
+      val values = Val.Null +: args
       buf.call(sig, method, values, unwind)
     }
 
@@ -1576,11 +1566,15 @@ trait NirGenExpr(using Context) {
     private def genStaticMember(
         sym: Symbol
     )(using nir.Position): Val = {
-      def ty = genType(sym.info.resultType)
-      def module = genModule(sym.owner)
+      /* Actually, there is no static member in Scala Native. If we come here, that
+       * is because we found the symbol in a Java-emitted .class in the
+       * classpath. But the corresponding implementation in Scala Native will
+       * actually be a val in the companion module.
+       */
 
       if (sym == defn.BoxedUnit_UNIT) Val.Unit
-      else genApplyMethod(sym, statically = true, module, Seq())
+      else if (sym == defn.BoxedUnit_TYPE) Val.Unit
+      else genApplyStaticMethod(sym, Seq())
     }
 
     private def genSynchronized(receiverp: Tree, bodyp: Tree)(using

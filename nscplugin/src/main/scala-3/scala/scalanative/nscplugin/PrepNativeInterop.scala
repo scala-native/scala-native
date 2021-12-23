@@ -38,19 +38,8 @@ object PrepNativeInterop extends PluginPhase {
         val nrhs = scalaEnumValName(sym.owner.asClass, sym, optIntParam)
         cpy.ValDef(vd)(tpt = transformAllDeep(tpt), nrhs)
 
-      case _ =>
-        // Scala Native expectes static methods to be defined in companion object
-        // Remove scala.static annotations that would move them to linked class
-        vd.symbol.removeAnnotation(defn.ScalaStaticAnnot)
-        vd
+      case _ => vd
     }
-  }
-
-  override def transformDefDef(dd: DefDef)(using Context): Tree = {
-    // Scala Native expectes static fields to be defined in companion object
-    // Remove scala.static annotations that would move them to linked class
-    dd.symbol.removeAnnotation(defn.ScalaStaticAnnot)
-    dd
   }
 
   private object EnumerationsContext {

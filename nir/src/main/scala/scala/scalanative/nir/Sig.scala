@@ -39,18 +39,23 @@ final class Sig(val mangle: String) {
 
   final def isVirtual = !(isCtor || isClinit || isImplCtor || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
+  final def isStatic: Boolean = unmangled.sigScope.isStatic
   final lazy val privateIn: Option[Global.Top] = {
-    unmangled.sigScope match {
-      case Sig.Scope.Private(in: Global.Top) => Some(in)
-      case _                                 => None
-    }
+    unmangled.sigScope.privateIn.map(_.top)
   }
 }
 object Sig {
-  sealed trait Scope
+  sealed abstract class Scope(
+      val isStatic: Boolean,
+      val privateIn: Option[Global]
+  ) {
+    def isPublic: Boolean = privateIn.isEmpty
+  }
   object Scope {
-    case object Public extends Scope
-    case class Private(in: Global) extends Scope
+    case object Public extends Scope(false, None)
+    case object PublicStatic extends Scope(true, None)
+    final case class Private(in: Global) extends Scope(false, Some(in))
+    final case class PrivateStatic(in: Global) extends Scope(true, Some(in))
   }
 
   sealed abstract class Unmangled {
