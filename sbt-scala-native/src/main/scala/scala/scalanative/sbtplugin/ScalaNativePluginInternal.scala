@@ -123,13 +123,12 @@ object ScalaNativePluginInternal {
           throw new MessageOnlyException("No main class detected.")
         }
 
-        val maincls = mainClass + "$"
         val cwd = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
         build.Config.empty
           .withLogger(logger)
-          .withMainClass(maincls)
+          .withMainClass(mainClass)
           .withClassPath(classpath)
           .withWorkdir(cwd)
           .withCompilerConfig(nativeConfig.value)
