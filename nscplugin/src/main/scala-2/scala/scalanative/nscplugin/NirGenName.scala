@@ -87,7 +87,7 @@ trait NirGenName[G <: Global with Singleton] {
     val id = nativeIdOf(sym)
     val tpe = sym.tpe.widen
     val scope =
-      if (sym.isStaticMember) {
+      if (sym.isStaticMember && !isImplClass(sym.owner)) {
         if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
         else nir.Sig.Scope.PublicStatic
       } else if (sym.isPrivate)
@@ -117,6 +117,7 @@ trait NirGenName[G <: Global with Singleton] {
       sym: Symbol,
       explicitOwner: Option[Symbol]
   ): nir.Global = {
+    require(!isImplClass(sym.owner), sym.owner)
     val typeName = genTypeName(explicitOwner.getOrElse(sym.owner))
     val owner = nir.Global.Top(typeName.id.stripSuffix("$"))
     val id = nativeIdOf(sym)

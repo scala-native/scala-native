@@ -633,8 +633,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     ): Val = {
       if (sym == BoxedUnit_UNIT) {
         Val.Unit
-      } else {
+      } else if (!isImplClass(sym.owner)) {
         genApplyStaticMethod(sym, receiver, Seq())
+      } else {
+        val module = genModule(sym.owner)
+        genApplyMethod(sym, statically = true, module, Seq())
       }
     }
 
@@ -2276,10 +2279,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     )(implicit pos: nir.Position): Val = {
       if (sym.owner.isExternModule && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
-      } else if (sym.isStaticMember) {
-        genApplyStaticMethod(sym, selfp, argsp)
       } else if (isImplClass(sym.owner)) {
         genApplyMethod(sym, statically = true, Val.Null, argsp)
+      } else if (sym.isStaticMember) {
+        genApplyStaticMethod(sym, selfp, argsp)
       } else {
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -2291,6 +2294,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         receiver: Tree,
         argsp: Seq[Tree]
     )(implicit pos: nir.Position): Val = {
+      require(!isImplClass(sym.owner), sym.owner)
       val name = genStaticMemberName(
         sym,
         Option(receiver.symbol).filter(_.exists)
