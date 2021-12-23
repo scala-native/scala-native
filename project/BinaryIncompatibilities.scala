@@ -7,7 +7,9 @@ object BinaryIncompatibilities {
   type Filters = Seq[ProblemFilter]
   final val Util: Filters = Nil
   final val Nir: Filters = Seq(
-    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*")
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*"),
+    //sealed trait replaced with sealed abstract class, used internally
+    exclude[Problem]("scala.scalanative.nir.Sig$Scope*")
   )
 
   final val NscPlugin = Seq(
@@ -41,6 +43,9 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("java.lang._Class.rawty"),
     exclude[DirectMissingMethodProblem]("java.lang._Class.this"),
     exclude[MissingClassProblem]("scala.scalanative.unsafe.Zone$ZoneImpl*"),
+    exclude[MissingClassProblem]("scala.scalanative.unsafe.package$MacroImpl$"),
+    // Moved to unsafe package, source compatible change
+    exclude[MissingClassProblem]("scala.scalanative.unsafe.extern"),
     // moved to auxlib
     exclude[MissingClassProblem]("scala.runtime.BoxesRunTime*"),
     // moved to javalib
