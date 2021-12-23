@@ -1094,7 +1094,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         if (forwarders.nonEmpty) {
           val classDefn = Defn.Class(
             attrs = Attrs.None,
-            name = Global.Top(genName(sym).top.id.stripSuffix("$")),
+            name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
             parent = Some(Rt.Object.name),
             traits = Nil
           )(td.pos)

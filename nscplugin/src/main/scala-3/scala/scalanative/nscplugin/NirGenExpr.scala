@@ -203,7 +203,7 @@ trait NirGenExpr(using Context) {
         !funInterfaceSym.exists || defn.isFunctionClass(funInterfaceSym)
 
       val anonClassName = {
-        val Global.Top(className) = genName(curClassSym)
+        val Global.Top(className) = genTypeName(curClassSym)
         val suffix = "$$Lambda$" + curClassFresh.get.apply().id
         nir.Global.Top(className + suffix)
       }
@@ -225,12 +225,12 @@ trait NirGenExpr(using Context) {
 
       def genAnonymousClass: nir.Defn = {
         val traits =
-          if (functionalInterface.isEmpty) genName(treeTpe) :: Nil
+          if (functionalInterface.isEmpty) genTypeName(treeTpe) :: Nil
           else {
             val parents = funInterfaceSym.info.parents
             genTypeName(funInterfaceSym) +: parents.collect {
               case tpe if tpe.typeSymbol.isTraitOrInterface =>
-                genName(tpe.typeSymbol)
+                genTypeName(tpe.typeSymbol)
             }
           }
 
@@ -679,7 +679,7 @@ trait NirGenExpr(using Context) {
       val owner = sym.owner
 
       if (sym.is(Module)) genModule(sym)
-      else if (sym.is(JavaStatic)) genStaticMember(sym)
+      else if (sym.is(JavaStatic)) genStaticMember(sym, qualp)
       else if (sym.is(Method))
         genApplyMethod(sym, statically = false, qualp, Seq())
       else if (owner.isStruct) {
@@ -1113,7 +1113,7 @@ trait NirGenExpr(using Context) {
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
-      else if (sym.isStaticMethod) genApplyStaticMethod(sym, argsp)
+      else if (sym.isStaticMethod) genApplyStaticMethod(sym, selfp, argsp)
       else
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -1174,12 +1174,12 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    // Generate call to static method using static method forwarder defined in companion object
     private def genApplyStaticMethod(
         sym: Symbol,
+        receiver: Tree,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
-      val name = genStaticMemberName(sym)
+      val name = genStaticMemberName(sym, Option(receiver.symbol).filter(_.exists))
       val method = Val.Global(name, nir.Type.Ptr)
 
       val Type.Function(_ +: argTypes, retty) = genMethodSig(sym)
@@ -1564,7 +1564,8 @@ trait NirGenExpr(using Context) {
     }
 
     private def genStaticMember(
-        sym: Symbol
+        sym: Symbol,
+        receiver: Tree
     )(using nir.Position): Val = {
       /* Actually, there is no static member in Scala Native. If we come here, that
        * is because we found the symbol in a Java-emitted .class in the
@@ -1574,7 +1575,7 @@ trait NirGenExpr(using Context) {
 
       if (sym == defn.BoxedUnit_UNIT) Val.Unit
       else if (sym == defn.BoxedUnit_TYPE) Val.Unit
-      else genApplyStaticMethod(sym, Seq())
+      else genApplyStaticMethod(sym, receiver, Seq())
     }
 
     private def genSynchronized(receiverp: Tree, bodyp: Tree)(using
@@ -1771,7 +1772,7 @@ trait NirGenExpr(using Context) {
           val ctorName = genMethodName(boxedClass.primaryConstructor)
           val ctorSig = genMethodSig(boxedClass.primaryConstructor)
 
-          val alloc = buf.classalloc(genName(boxedClass), unwind)
+          val alloc = buf.classalloc(genTypeName(boxedClass), unwind)
           val ctor = buf.method(
             alloc,
             ctorName.asInstanceOf[nir.Global.Member].sig,
