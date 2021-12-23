@@ -21,5 +21,5 @@ class ScalaNativeJUnitPlugin extends StandardPlugin {
   val description: String = "Makes JUnit test classes invokable in Scala Native"
 
   def init(options: List[String]): List[PluginPhase] =
-    ScalaNativeJUnitBootstrappers :: Nil
+    ScalaNativeJUnitBootstrappers() :: Nil
 }

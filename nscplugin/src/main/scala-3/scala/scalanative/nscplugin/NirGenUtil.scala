@@ -141,3 +141,18 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     }
   }
 }
+
+object NirGenUtil {
+  class ContextCached[T](init: Context ?=> T) {
+    private var lastContext: Context = _
+    private var cached: T = _
+
+    def get(using Context): T = {
+      if (lastContext != ctx) {
+        cached = init
+        lastContext = ctx
+      }
+      cached
+    }
+  }
+}

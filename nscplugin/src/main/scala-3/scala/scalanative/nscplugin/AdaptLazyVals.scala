@@ -16,14 +16,18 @@ import scala.annotation.{threadUnsafe => tu}
 // its scala native specific counter-part. This is needed, because LazyVals are
 // using JVM unsafe API and static class constructors which are not supported
 // in Scala Native.
-object AdaptLazyVals extends PluginPhase {
-  val phaseName = "scalanative-adaptLazyVals"
+object AdaptLazyVals {
+  val name = "scalanative-adaptLazyVals"
+}
+
+class AdaptLazyVals extends PluginPhase {
+  val phaseName = AdaptLazyVals.name
 
   override val runsAfter = Set(LazyVals.name, MoveStatics.name)
   override val runsBefore = Set(GenNIR.name)
 
   def defn(using Context) = LazyValsDefns.get
-  def defnNir(using Context) = NirDefinitions.defnNir
+  def defnNir(using Context) = NirDefinitions.get
 
   private def isLazyFieldOffset(name: Name) =
     name.startsWith(nme.LAZY_FIELD_OFFSET.toString)
@@ -122,16 +126,8 @@ object AdaptLazyVals extends PluginPhase {
   }
 
   object LazyValsDefns {
-    var lastCtx: Option[Context] = None
-    var lastDefns: LazyValsDefns = _
-
-    def get(using Context): LazyValsDefns = {
-      if (!lastCtx.contains(ctx)) {
-        lastDefns = LazyValsDefns()
-        lastCtx = Some(ctx)
-      }
-      lastDefns
-    }
+    private val cached = NirGenUtil.ContextCached(LazyValsDefns())
+    def get(using Context): LazyValsDefns = cached.get
   }
   class LazyValsDefns(using Context) {
     @tu lazy val NativeLazyValsModule = requiredModule(

@@ -34,7 +34,7 @@ import dotty.tools.dotc.sbt
  *  Additionally this port differs from Scala.js implementation by supporting
  *  test suite wide ignore (ported from Scala 2 Native compiler plugin)
  */
-object ScalaNativeJUnitBootstrappers extends PluginPhase {
+class ScalaNativeJUnitBootstrappers extends PluginPhase {
   def phaseName: String = "scalanative-junitBootstrappers"
   override val runsAfter = Set(transform.Mixin.name)
   override val runsBefore = Set("scalanative-genNIR")
