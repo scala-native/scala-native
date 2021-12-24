@@ -40,15 +40,30 @@ trait NirGenName[G <: Global with Singleton] {
         genTypeName(sym.moduleClass)
       case _ =>
         val needsModuleClassSuffix =
-          sym.isModuleClass && !isImplClass(sym)
+          sym.isModuleClass && !sym.isJavaDefined && !isImplClass(sym)
         val idWithSuffix = if (needsModuleClassSuffix) id + "$" else id
         nir.Global.Top(idWithSuffix)
     }
     name
   }
 
+  def genModuleName(sym: Symbol): nir.Global.Top = {
+    if (sym.isModule) genTypeName(sym)
+    else {
+      val module = sym.moduleClass
+      if (module.exists) genTypeName(module)
+      else {
+        val name @ nir.Global.Top(className) = genTypeName(sym)
+        if (className.endsWith("$")) name
+        else nir.Global.Top(className + "$")
+      }
+    }
+  }
+
   def genFieldName(sym: Symbol): nir.Global = {
-    val owner = genTypeName(sym.owner)
+    val owner =
+      if (sym.isStaticMember) genModuleName(sym.owner)
+      else genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
@@ -72,7 +87,11 @@ trait NirGenName[G <: Global with Singleton] {
     val id = nativeIdOf(sym)
     val tpe = sym.tpe.widen
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.Private(owner)
+      if (sym.isStaticMember && !isImplClass(sym.owner)) {
+        if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+        else nir.Sig.Scope.PublicStatic
+      } else if (sym.isPrivate)
+        nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
 
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
@@ -92,6 +111,27 @@ trait NirGenName[G <: Global with Singleton] {
       val retType = genType(tpe.resultType)
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
     }
+  }
+
+  def genStaticMemberName(
+      sym: Symbol,
+      explicitOwner: Option[Symbol]
+  ): nir.Global = {
+    require(!isImplClass(sym.owner), sym.owner)
+    val typeName = genTypeName(explicitOwner.getOrElse(sym.owner))
+    val owner = nir.Global.Top(typeName.id.stripSuffix("$"))
+    val id = nativeIdOf(sym)
+    val scope =
+      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      else nir.Sig.Scope.PublicStatic
+
+    val tpe = sym.tpe.widen
+    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
+    val retType = genType(fromType(sym.info.resultType))
+
+    val name = sym.name
+    val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
+    owner.member(sig)
   }
 
   def genFuncPtrExternForwarderName(ownerSym: Symbol): nir.Global = {

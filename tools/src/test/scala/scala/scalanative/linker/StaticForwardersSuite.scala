@@ -10,31 +10,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import java.nio.file.{Files, Path, Paths}
 
 class StaticForwardersSuite extends LinkerSpec {
-  "Static forwarder methods" should "be generated for @main annotated method" in {
-    val MainClass = Global.Top("myMainFunction")
-    val Package = Global.Top("Main$package")
-    val PackageModule = Global.Top("Main$package$")
-
-    compileAndLoad(
-      "Main.scala" -> "@main def myMainFunction(): Unit = ()"
-    ) { defns =>
-      val expected = Seq(
-        MainClass,
-        MainClass.member(Sig.Ctor(Nil)),
-        MainClass.member(
-          Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.PublicStatic)
-        ),
-        Package.member(
-          Sig.Method("myMainFunction", Seq(Type.Unit), Sig.Scope.PublicStatic)
-        ),
-        PackageModule.member(Sig.Ctor(Nil)),
-        PackageModule.member(Sig.Method("myMainFunction", Seq(Type.Unit)))
-      )
-      val names = defns.map(_.name)
-      assert(expected.diff(names).isEmpty)
-    }
-  }
-  it should "generate static members for methods defined in companion object" in {
+  import StaticForwardersSuite._
+  "Static forwarder methods" should "generate static forwarders for methods defined in companion object" in {
     compileAndLoad(
       "Test.scala" ->
         """ 
@@ -73,7 +50,6 @@ class StaticForwardersSuite extends LinkerSpec {
         Module.member(Sig.Method("bar", Seq(Rt.String))),
         Module.member(Sig.Method("fooBar", Seq(Rt.String)))
       )
-
       assert(expected.diff(defns.map(_.name)).isEmpty)
     }
   }
@@ -101,7 +77,9 @@ class StaticForwardersSuite extends LinkerSpec {
       assert(expected.diff(defns.map(_.name)).isEmpty)
     }
   }
+}
 
+object StaticForwardersSuite {
   def compileAndLoad(
       sources: (String, String)*
   )(fn: Seq[Defn] => Unit): Unit = {
