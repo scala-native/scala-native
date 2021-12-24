@@ -230,6 +230,9 @@ jobs:
         optimize: [true]
         include:
           # LTO full fails with 3.1 in the CI - we were not able to reproduce it locally
+          - scala: 3.1.0
+            lto: full
+            optimize: true
           - scala: 2.13.8
             lto: full
             optimize: true
