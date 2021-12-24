@@ -79,7 +79,7 @@ class PtrOpsTest {
 
     def test(fn: CFuncPtr2[CString, StructA, StructA]): Unit = Zone {
       implicit z =>
-        val str = alloc[StructA]
+        val str = alloc[StructA]()
         val charset = java.nio.charset.StandardCharsets.UTF_8
 
         str._1 = 1
@@ -107,7 +107,7 @@ class PtrOpsTest {
   @Test def castedCFuncPtrHandlesArrays(): Unit = {
     def test(fn: CFuncPtr3[CInt, CUnsignedLongLong, LLArr, LLArr]) = Zone {
       implicit z =>
-        val arr = alloc[LLArr]
+        val arr = alloc[LLArr]()
 
         val value = ULong.MaxValue
         val idx = 5

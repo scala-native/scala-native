@@ -172,7 +172,7 @@ class PtrBoxingTest {
     type Cons = CStruct2[Int, Ptr[Byte]]
 
     def cons(value: Int, next: Ptr[Cons])(implicit z: Zone): Ptr[Cons] = {
-      val v = alloc[Cons]
+      val v = alloc[Cons]()
       v._1 = value
       v._2 = next.asInstanceOf[Ptr[Byte]]
       v

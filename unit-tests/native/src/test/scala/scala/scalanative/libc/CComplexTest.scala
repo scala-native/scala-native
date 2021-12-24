@@ -60,10 +60,10 @@ class CComplexTest {
 
   def tf(implicit z: Zone) = res(real.toFloat, imag.toFloat)
 
-  def buff(implicit z: Zone) = alloc[CFloatComplex]
+  def buff(implicit z: Zone) = alloc[CFloatComplex]()
 
   def res(real: Float, imag: Float)(implicit z: Zone) =
-    alloc[CFloatComplex].init(real.toFloat, imag.toFloat)
+    alloc[CFloatComplex]().init(real.toFloat, imag.toFloat)
 
   @Test def testCacosf(): Unit = {
     Zone { implicit z =>
@@ -267,10 +267,10 @@ class CComplexTest {
 
   def td(implicit z: Zone) = res(real, imag)
 
-  def buf(implicit z: Zone) = alloc[CDoubleComplex]
+  def buf(implicit z: Zone) = alloc[CDoubleComplex]()
 
   def res(real: Double, imag: Double)(implicit z: Zone) =
-    alloc[CDoubleComplex].init(real, imag)
+    alloc[CDoubleComplex]().init(real, imag)
 
   @Test def testCacos(): Unit = {
     Zone { implicit z =>

@@ -107,7 +107,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
   def readAttributes(): DosFileAttributes = attributes
 
   private lazy val attributes: DosFileAttributes = Zone { implicit z: Zone =>
-    val fileInfo = alloc[ByHandleFileInformation]
+    val fileInfo = alloc[ByHandleFileInformation]()
 
     withFileOpen(
       pathAbs,

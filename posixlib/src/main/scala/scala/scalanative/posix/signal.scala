@@ -344,7 +344,7 @@ object signalOps {
       !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
   }
 
-  def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]
+  def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]()
 
   implicit class sigaction_ops(val p: Ptr[sigaction]) extends AnyVal {
     def sa_handler: CFuncPtr1[CInt, Unit] = p._1
@@ -360,7 +360,7 @@ object signalOps {
       p._4 = value
   }
 
-  def struct_sigaction()(implicit z: Zone): Ptr[sigaction] = alloc[sigaction]
+  def struct_sigaction()(implicit z: Zone): Ptr[sigaction] = alloc[sigaction]()
 
   // mcontext_t - platform specific
 
@@ -375,7 +375,8 @@ object signalOps {
     def uc_mcontext_=(value: mcontext_t): Unit = !p._4
   }
 
-  def struct_ucontext_t()(implicit z: Zone): Ptr[ucontext_t] = alloc[ucontext_t]
+  def struct_ucontext_t()(implicit z: Zone): Ptr[ucontext_t] =
+    alloc[ucontext_t]()
 
   implicit class stack_t_ops(val p: Ptr[stack_t]) extends AnyVal {
     def ss_sp: Ptr[Byte] = p._1
@@ -386,7 +387,7 @@ object signalOps {
     def ss_flags_=(value: CInt): Unit = p._3 = value
   }
 
-  def struct_stack_t()(implicit z: Zone): Ptr[stack_t] = alloc[stack_t]
+  def struct_stack_t()(implicit z: Zone): Ptr[stack_t] = alloc[stack_t]()
 
   implicit class siginfo_t_ops(val p: Ptr[siginfo_t]) extends AnyVal {
     def si_signo: CInt = p._1
