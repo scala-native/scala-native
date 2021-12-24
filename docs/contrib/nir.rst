@@ -418,7 +418,7 @@ stackalloc
 ``````````
 .. code-block:: text
 
-    stackalloc[$type]
+    stackalloc[$type]()
 
 Stack allocate a slot of memory big enough to store given type.
 Corresponds to LLVM's

@@ -333,7 +333,7 @@ pointers and do not have a corresponding first-class values backing them.
 
   .. code-block:: scala
 
-      val ptr = unsafe.stackalloc[unsafe.CStruct2[Int, Int]]
+      val ptr = unsafe.stackalloc[unsafe.CStruct2[Int, Int]]()
       ptr._1 = 10
       ptr._2 = 20
       println(s"first ${ptr._1}, second ${ptr._2}")
@@ -365,7 +365,7 @@ pointers and do not have a corresponding first-class values backing them.
 
   Once you have a natural for the length, it can be used as an array length::
 
-      val arrptr = unsafe.stackalloc[CArray[Byte, _1024]]
+      val arrptr = unsafe.stackalloc[CArray[Byte, _1024]]()
 
   You can find an address of n-th array element via ``arrptr.at(n)``.
 

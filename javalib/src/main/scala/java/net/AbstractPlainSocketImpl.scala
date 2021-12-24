@@ -57,9 +57,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   }
 
   private def fetchLocalPort(family: Int): Option[Int] = {
-    val len = stackalloc[socket.socklen_t]
+    val len = stackalloc[socket.socklen_t]()
     val portOpt = if (family == socket.AF_INET) {
-      val sin = stackalloc[in.sockaddr_in]
+      val sin = stackalloc[in.sockaddr_in]()
       !len = sizeof[in.sockaddr_in].toUInt
 
       if (socket.getsockname(
@@ -72,7 +72,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         Some(sin.sin_port)
       }
     } else {
-      val sin = stackalloc[in.sockaddr_in6]
+      val sin = stackalloc[in.sockaddr_in6]()
       !len = sizeof[in.sockaddr_in6].toUInt
 
       if (socket.getsockname(
@@ -91,7 +91,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def bind(addr: InetAddress, port: Int): Unit = {
     val hints = stackalloc[addrinfo]()
-    val ret = stackalloc[Ptr[addrinfo]]
+    val ret = stackalloc[Ptr[addrinfo]]()
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST
     hints.ai_socktype = socket.SOCK_STREAM
@@ -134,7 +134,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
 
     val storage: Ptr[Byte] = stackalloc[Byte](sizeof[in.sockaddr_in6])
-    val len = stackalloc[socket.socklen_t]
+    val len = stackalloc[socket.socklen_t]()
     !len = sizeof[in.sockaddr_in6].toUInt
 
     val newFd =
@@ -187,7 +187,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
     val inetAddr = address.asInstanceOf[InetSocketAddress]
     val hints = stackalloc[addrinfo]()
-    val ret = stackalloc[Ptr[addrinfo]]
+    val ret = stackalloc[Ptr[addrinfo]]()
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
@@ -386,12 +386,12 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     val optValue = nativeValueFromOption(optID)
 
     val opt = if (optID == SocketOptions.SO_LINGER) {
-      stackalloc[socket.linger].asInstanceOf[Ptr[Byte]]
+      stackalloc[socket.linger]().asInstanceOf[Ptr[Byte]]
     } else {
-      stackalloc[CInt].asInstanceOf[Ptr[Byte]]
+      stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
     }
 
-    val len = stackalloc[socket.socklen_t]
+    val len = stackalloc[socket.socklen_t]()
     !len = if (optID == SocketOptions.SO_LINGER) {
       sizeof[socket.linger].toUInt
     } else {
@@ -457,7 +457,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         !ptr = if (value.asInstanceOf[Boolean]) 1 else 0
         ptr.asInstanceOf[Ptr[Byte]]
       case SocketOptions.SO_LINGER =>
-        val ptr = stackalloc[socket.linger]
+        val ptr = stackalloc[socket.linger]()
         val linger = value.asInstanceOf[Int]
         if (linger == -1) {
           ptr.l_onoff = 0

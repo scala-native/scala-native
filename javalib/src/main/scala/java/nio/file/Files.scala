@@ -438,7 +438,7 @@ object Files {
       getAttribute(path, "basic:isRegularFile", options).asInstanceOf[Boolean]
     } else
       Zone { implicit z =>
-        val buf = alloc[stat.stat]
+        val buf = alloc[stat.stat]()
         val err =
           if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
             stat.lstat(toCString(path.toFile().getPath()), buf)
@@ -462,7 +462,7 @@ object Files {
       exists & isReparsePoint
     } else {
       val filename = toCString(path.toFile().getPath())
-      val buf = alloc[stat.stat]
+      val buf = alloc[stat.stat]()
       if (stat.lstat(filename, buf) == 0) {
         stat.S_ISLNK(buf._13) == 1
       } else {
