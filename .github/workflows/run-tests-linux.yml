@@ -293,4 +293,4 @@ jobs:
           "-J-Xmx3G"
           "test-tools 3"
           "test-runtime 3"
-          "test-scripted 3"
+          "test-scripted ${{matrix.scala}}"
