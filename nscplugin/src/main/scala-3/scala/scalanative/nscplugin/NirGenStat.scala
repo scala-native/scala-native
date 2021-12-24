@@ -49,7 +49,7 @@ trait NirGenStat(using Context) {
     implicit val pos: nir.Position = td.span
     val sym = td.symbol.asClass
     val attrs = genClassAttrs(td)
-    val name = genName(sym)
+    val name = genTypeName(sym)
 
     def parent = genClassParent(sym)
     def traits = sym.info.parents
@@ -121,7 +121,7 @@ trait NirGenStat(using Context) {
         // enum values, which are backed by static fields.
         generatedDefns += Defn.Define(
           attrs = Attrs(inlineHint = nir.Attr.InlineHint),
-          name = genStaticMemberName(f),
+          name = genStaticMemberName(f, Some(classSym)),
           ty = Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
             val fresh = curFresh.get
@@ -546,8 +546,7 @@ trait NirGenStat(using Context) {
       given nir.Position = sym.span
 
       val methodName = genMethodName(sym)
-      val forwarderName = genStaticMemberName(sym)
-
+      val forwarderName = genStaticMemberName(sym, Some(moduleClass))
       val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
       val forwarderParamTypes = Type.Ref(forwarderName.top) +: paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
@@ -578,7 +577,7 @@ trait NirGenStat(using Context) {
               .map(Val.Local(fresh(), _))
             buf.label(fresh(), entryParams)
             val res =
-              buf.genApplyModuleMethod(sym.owner, sym, params.map(ValTree(_)))
+              buf.genApplyModuleMethod(moduleClass, sym, params.map(ValTree(_)))
             buf.ret(res)
           }
           buf.toSeq
@@ -600,7 +599,7 @@ trait NirGenStat(using Context) {
           given pos: nir.Position = td.span
           val classDefn = Defn.Class(
             attrs = Attrs.None,
-            name = Global.Top(genName(sym).top.id.stripSuffix("$")),
+            name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
             parent = Some(Rt.Object.name),
             traits = Nil
           )

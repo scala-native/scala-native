@@ -134,13 +134,12 @@ object Generate {
       implicit val fresh = Fresh()
       val entryMainTy =
         Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
+      val entryMainMethod =
+        Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
 
-      val entryMainMethod = Val.Local(fresh(), Type.Ptr)
       val stackBottom = Val.Local(fresh(), Type.Ptr)
-
       val argc = Val.Local(fresh(), Type.Int)
       val argv = Val.Local(fresh(), Type.Ptr)
-      val module = Val.Local(fresh(), Type.Ref(entry.top))
       val rt = Val.Local(fresh(), Runtime)
       val arr = Val.Local(fresh(), ObjectArray)
       val exc = Val.Local(fresh(), nir.Rt.Object)
@@ -189,17 +188,11 @@ object Generate {
               Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
               unwind
             ),
-            Inst.Let(module.name, Op.Module(entry.top), unwind),
             Inst.Let(
-              entryMainMethod.name,
-              Op.Method(module, Rt.ScalaMainSig),
+              Op.Call(entryMainTy, entryMainMethod, Seq(Val.Null, arr)),
               unwind
             ),
-            Inst.Let(
-              Op.Call(entryMainTy, entryMainMethod, Seq(module, arr)),
-              unwind
-            ),
-            Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(module)), unwind),
+            Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
             Inst.Ret(Val.Int(0)),
             Inst.Label(handler, Seq(exc)),
             Inst.Let(
@@ -415,11 +408,10 @@ object Generate {
 
       val info = linked.infos.getOrElse(entry, fail("not linked"))
       info match {
-        case cls: Class if cls.isModule =>
+        case cls: Class =>
           cls.resolve(Rt.ScalaMainSig).getOrElse {
             fail(s"does not contain ${Rt.ScalaMainSig}")
           }
-        case _: ScopeInfo   => fail("was not a module")
         case _: Unavailable => fail("unavailable")
         case _              => util.unreachable
       }

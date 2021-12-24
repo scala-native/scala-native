@@ -9,9 +9,9 @@ import core.StdNames._
 import dotty.tools.dotc.transform.SymUtils._
 import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import scalanative.util.unreachable
-import scalanative.nir
+import scala.scalanative.nir
+import scala.scalanative.nir._
 import scala.language.implicitConversions
-import scala.scalanative.nir.Global
 
 trait NirGenName(using Context) {
   self: NirCodeGen =>
@@ -97,9 +97,17 @@ trait NirGenName(using Context) {
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
   }
 
-  def genStaticMemberName(sym: Symbol): Global = {
-    val typeName = genTypeName(sym.owner)
-    val owner = Global.Top(typeName.id.stripSuffix("$"))
+  def genStaticMemberName(
+      sym: Symbol,
+      explicitOwner: Option[Symbol]
+  ): Global = {
+    val owner = {
+      val ownerSymbol =
+        explicitOwner
+          .filter(s => s.exists && !s.is(JavaDefined))
+          .getOrElse(sym.owner)
+      Global.Top(genTypeName(ownerSymbol).id.stripSuffix("$"))
+    }
     val id = nativeIdOf(sym)
     val scope =
       if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)

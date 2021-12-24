@@ -17,9 +17,7 @@ class StaticForwardersSuiteScala3 extends LinkerSpec {
       val expected = Seq(
         MainClass,
         MainClass.member(Sig.Ctor(Nil)),
-        MainClass.member(
-          Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.PublicStatic)
-        ),
+        MainClass.member(Rt.ScalaMainSig),
         Package.member(
           Sig.Method("myMainFunction", Seq(Type.Unit), Sig.Scope.PublicStatic)
         ),
