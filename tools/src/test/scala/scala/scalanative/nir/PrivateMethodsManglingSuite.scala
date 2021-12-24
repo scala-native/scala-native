@@ -65,7 +65,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
 
     val tops = Seq("xyz.B$", "xyz.A", "foo.B$").map(Global.Top(_))
 
-    link("Main$", sources) {
+    link("Main", sources) {
       case (_, result) =>
         val testedDefns = result.defns
           .collect {

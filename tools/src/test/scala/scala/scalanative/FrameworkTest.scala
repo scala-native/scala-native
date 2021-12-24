@@ -9,7 +9,7 @@ class FrameworkTest extends codegen.CodeGenSpec with Matchers {
 
   "The test framework" should "return the definitions for a single class" in {
     link(
-      "A$",
+      "A",
       """object A {
            |  def main(args: Array[String]): Unit =
            |    println("Hello, world!")
@@ -29,7 +29,7 @@ class FrameworkTest extends codegen.CodeGenSpec with Matchers {
                      |}""".stripMargin
     )
 
-    link("B$", sources) {
+    link("B", sources) {
       case (_, res) =>
         val defNames = res.defns map (_.name)
         defNames should contain(Global.Top("A"))

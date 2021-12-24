@@ -3,10 +3,12 @@ package scala.scalanative.linker
 import org.scalatest.matchers.should.Matchers
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
-import scala.scalanative.nir.{Global, Sig, Type, Val}
+import scala.scalanative.nir.{Global, Sig, Type, Val, Rt}
+
 
 class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
-  val entry = "Main$"
+  val entry = "Main"
+  val module = "Main$"
   private val props =
     s"""package scala.scalanative
        |import scala.scalanative.unsafe.{resolvedAtLinktime, resolved}
@@ -421,19 +423,14 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   )(fn: (Method, Result) => T): T = {
     link(entry, sources) { (_, result) =>
       implicit val linkerResult: Result = result
-      val mainSig =
-        Sig.Method(
-          "main",
-          Seq(Type.Array(scalanative.nir.Rt.String), Type.Unit)
-        )
-      val MethodRef(_, mainMethod) = Global.Member(Global.Top(entry), mainSig)
+      val MethodRef(_, mainMethod) = Global.Top(entry).member(Rt.ScalaMainSig)
       fn(mainMethod, result)
     }
   }
 
   private def pathForNumber(n: Int) = {
     Global.Member(
-      owner = Global.Top(entry),
+      owner = Global.Top(module),
       sig = Sig.Method(s"path$n", Seq(Type.Unit))
     )
   }

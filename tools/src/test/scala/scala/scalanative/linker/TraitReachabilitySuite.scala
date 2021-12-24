@@ -23,6 +23,14 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       ParentClassClsName,
       Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit))
     )
+  val ParentClassMain = g(
+    ParentClassClsName,
+    Sig.Method(
+      "main",
+      Type.Ref(Parent) +: Rt.ScalaMainSig.types,
+      Sig.Scope.Public
+    )
+  )
   val ParentClassFoo: Global =
     g(ParentClassClsName, Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
   // val ParentClassMain = g(ParentClassClsName, Sig.Method("main", Type.))
@@ -268,7 +276,9 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           Seq(
             Parent,
             ParentClass,
-            ParentClassInit
+            ParentClassInit,
+            ParentClassMain,
+            TestModuleMain
           )
         } else if (NativePlatform.erasesEmptyTraitConstructor) {
           Seq(ParentMain, TestModuleMain)

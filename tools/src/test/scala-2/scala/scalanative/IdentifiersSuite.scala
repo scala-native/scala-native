@@ -38,7 +38,8 @@ class IdentifiersSuite extends ReachabilitySuite {
         |""".stripMargin
 
     val FooBar = Global.Top("$u0022Foo$u0022Bar$u0022$")
-    val Main = Global.Top("Main$")
+    val Main = Global.Top("Main")
+    val MainModule = Global.Top("Main$")
 
     val entry = Main.member(Rt.ScalaMainSig)
     val privateFooBar = Sig.Scope.Private(FooBar)
@@ -47,8 +48,12 @@ class IdentifiersSuite extends ReachabilitySuite {
       Rt.Object.name,
       Rt.Object.name.member(Sig.Ctor(Seq.empty)),
       Main,
-      Main.member(Sig.Ctor(Seq.empty)),
       Main.member(Rt.ScalaMainSig),
+      MainModule,
+      MainModule.member(Sig.Ctor(Seq.empty)),
+      MainModule.member(
+        Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+      ),
       FooBar,
       FooBar.member(Sig.Ctor(Seq.empty)),
       // fields
