@@ -53,26 +53,9 @@ class Reach(
     // in reachUnavailable
     defns ++= done.valuesIterator.filter(_ != null)
 
-    val resultEntries = {
-      // If main method is introduced via class inheritance we need to resolve
-      // actual entry point. Initial owner also needs to be passed as entry,
-      // otherwise it would be marked as an unreachable
-      val mainObject = Global.Top(config.mainClass)
-      val mainMethod = Global.Member(mainObject, Rt.ScalaMainSig)
-      val mainMethodIdx = entries.indexOf(mainMethod)
-      assert(mainMethodIdx >= 0, "Main method not defined in entries")
-
-      infos(mainObject)
-        .asInstanceOf[Class]
-        .resolve(Rt.ScalaMainSig)
-        .foldLeft(entries) {
-          _.updated(mainMethodIdx, _) :+ mainObject
-        }
-    }
-
     new Result(
       infos,
-      resultEntries,
+      entries,
       unavailable.toSeq,
       from,
       links.toSeq,
