@@ -42,7 +42,9 @@ class StaticForwardersSuite extends LinkerSpec {
         Module.member(Sig.Ctor(Nil)),
         Module.member(Sig.Method("bar", Seq(Rt.String))),
         Module.member(Sig.Method("fooBar", Seq(Rt.String))),
-        Module.member(Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public))
+        Module.member(
+          Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+        )
       )
       assert(expected.diff(defns.map(_.name)).isEmpty)
     }

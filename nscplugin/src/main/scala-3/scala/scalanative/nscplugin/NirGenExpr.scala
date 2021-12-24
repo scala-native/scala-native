@@ -1179,7 +1179,8 @@ trait NirGenExpr(using Context) {
         receiver: Tree,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
-      val name = genStaticMemberName(sym, Option(receiver.symbol).filter(_.exists))
+      val name =
+        genStaticMemberName(sym, Option(receiver.symbol).filter(_.exists))
       val method = Val.Global(name, nir.Type.Ptr)
 
       val Type.Function(_ +: argTypes, retty) = genMethodSig(sym)

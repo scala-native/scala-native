@@ -45,7 +45,9 @@ class IdentifiersSuite extends ReachabilitySuite {
       Main.member(Rt.ScalaMainSig),
       MainModule,
       MainModule.member(Sig.Ctor(Seq.empty)),
-      MainModule.member(Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)),
+      MainModule.member(
+        Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+      ),
       FooBar,
       FooBar.member(Sig.Ctor(Seq.empty)),
       // fields

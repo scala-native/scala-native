@@ -5,7 +5,6 @@ import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
 import scala.scalanative.nir.{Global, Sig, Type, Val, Rt}
 
-
 class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   val entry = "Main"
   val module = "Main$"

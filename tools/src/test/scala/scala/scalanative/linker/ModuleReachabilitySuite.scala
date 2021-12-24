@@ -18,12 +18,11 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   val ScalaMainNonStaticSig =
     Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
 
-
   val Test = g(TestClsName)
   val TestModule = g(TestModuleName)
   val TestInit = g(TestModuleName, Sig.Ctor(Seq.empty))
   val TestMain = g(TestClsName, Rt.ScalaMainSig)
-  val TestModuleMain = g(TestModuleName,ScalaMainNonStaticSig)
+  val TestModuleMain = g(TestModuleName, ScalaMainNonStaticSig)
   val Module = g(ModuleClsName)
   val ModuleInit = g(ModuleClsName, Sig.Ctor(Seq.empty))
   val ModuleFoo = g(ModuleClsName, Sig.Method("foo", Seq(Type.Unit)))
