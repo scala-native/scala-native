@@ -21,7 +21,7 @@ class Scala3IssuesTest:
           given Tag[MyEnum] = Tag.materializeIntTag
       import types.MyEnum
 
-      asserEquals(Tag.materializeIntTag, summon[Tag[MyEnum]])
+      assertEquals(Tag.materializeIntTag, summon[Tag[MyEnum]])
       // Check if compiles
       CFuncPtr1.fromScalaFunction[MyEnum, MyEnum] { a =>
         a
