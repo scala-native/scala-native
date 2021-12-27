@@ -2,6 +2,7 @@ package scala.issues
 
 import org.junit.Test
 import org.junit.Assert._
+import scala.scalanative.unsafe._
 
 class Scala3IssuesTest:
 
@@ -10,4 +11,20 @@ class Scala3IssuesTest:
   @Test def canUseMacros(): Unit = {
     val result = Macros.test("foo")
     assertEquals(List(1, 2, 3), result)
+  }
+
+  @Test def issue2485(): Unit = {
+    object testing:
+      object types:
+        opaque type MyEnum = Int
+        object MyEnum:
+          given Tag[MyEnum] = Tag.materializeIntTag
+      import types.MyEnum
+
+      asserEquals(Tag.materializeIntTag, summon[Tag[MyEnum]])
+      // Check if compiles
+      CFuncPtr1.fromScalaFunction[MyEnum, MyEnum] { a =>
+        a
+      }
+    end testing
   }
