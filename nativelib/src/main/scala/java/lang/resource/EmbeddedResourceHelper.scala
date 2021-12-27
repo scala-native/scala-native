@@ -12,13 +12,17 @@ private[lang] object EmbeddedResourceHelper {
     val filePathAmount = EmbeddedResourceReader.getEmbeddedSize()
     val res = Array.ofDim[Array[Byte]](filePathAmount)
 
-    for (id <- 0 until filePathAmount) {
+    var id = 0
+    while (id < filePathAmount) {
       val pathSize = EmbeddedResourceReader.getPathLength(id)
       val path = Array.ofDim[Byte](pathSize)
-      for (pos <- 0 until pathSize) {
+      var pos = 0
+      while (pos < pathSize) {
         path(pos) = EmbeddedResourceReader.getPathByte(id, pos)
+        pos += 1
       }
       res(id) = Base64.getDecoder().decode(new String(path))
+      id += 1
     }
 
     res.map(new String(_))
