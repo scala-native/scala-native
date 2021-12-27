@@ -2,7 +2,6 @@ package scala.issues
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.unsafe._
 
 class Scala3IssuesTest:
 
