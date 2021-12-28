@@ -115,10 +115,15 @@ trait NirGenName[G <: Global with Singleton] {
 
   def genStaticMemberName(
       sym: Symbol,
-      explicitOwner: Option[Symbol]
+      explicitOwner: Symbol
   ): nir.Global = {
+    // Use explicit owner in case if forwarder target was defined in the trait/interface
+    // or was abstract. In Scala 2 `sym.owner` would always point to original owner.
+    // To resolve correct owner use optional explicit owner containing symbol of implementing class
     require(!isImplClass(sym.owner), sym.owner)
-    val typeName = genTypeName(explicitOwner.getOrElse(sym.owner))
+    val typeName = genTypeName(
+      Option(explicitOwner).filter(_.exists).getOrElse(sym.owner)
+    )
     val owner = nir.Global.Top(typeName.id.stripSuffix("$"))
     val id = nativeIdOf(sym)
     val scope =

@@ -208,8 +208,10 @@ trait NirGenExpr(using Context) {
         nir.Global.Top(className + suffix)
       }
 
-      val isStaticCall = funSym.is(JavaStatic)
-      val allCaptureValues = qualifierOf(fun) :: env
+      val isStaticCall = funSym.isStaticInIR
+      val allCaptureValues =
+        if (isStaticCall) env
+        else qualifierOf(fun) :: env
       val captureSyms = allCaptureValues.map(_.symbol)
       val captureTypesAndNames = {
         for
@@ -329,18 +331,23 @@ trait NirGenExpr(using Context) {
               for (sym, (tpe, name)) <- captureSyms.zip(captureTypesAndNames)
               yield buf.fieldload(tpe, self, name, unwind)
 
-            val allVals = (captureVals ++ paramVals).toList
-            val thisVal :: argVals = allVals
-            val res = scoped(
-              curMethodThis := Some(thisVal)
-            ) {
-              buf.genApplyMethod(
-                funSym,
-                statically = false,
-                ValTree(thisVal),
-                argVals.map(ValTree(_))
-              )
+            val allVals = (captureVals ++ paramVals).toList.map(ValTree(_))
+            val res = if (isStaticCall) {
+              scoped(curMethodThis := None) {
+                buf.genApplyStaticMethod(funSym, allVals)
+              }
+            } else {
+              val thisVal :: argVals = allVals
+              scoped(curMethodThis := Some(thisVal.value)) {
+                buf.genApplyMethod(
+                  funSym,
+                  statically = false,
+                  thisVal,
+                  argVals
+                )
+              }
             }
+
             val retValue =
               if (retType == res.ty) res
               else
@@ -641,7 +648,9 @@ trait NirGenExpr(using Context) {
 
     def genModule(sym: Symbol)(using nir.Position): Val = {
       val moduleSym = if (sym.isTerm) sym.moduleClass else sym
-      buf.module(genModuleName(moduleSym), unwind)
+      val name = genModuleName(moduleSym)
+      assert(name.id.endsWith("$"), moduleSym)
+      buf.module(name, unwind)
     }
 
     def genReturn(tree: Return): Val = {
@@ -679,7 +688,7 @@ trait NirGenExpr(using Context) {
       val owner = sym.owner
 
       if (sym.is(Module)) genModule(sym)
-      else if (sym.is(JavaStatic)) genStaticMember(sym, qualp)
+      else if (sym.isStaticInIR && !sym.isExtern) genStaticMember(sym)
       else if (sym.is(Method))
         genApplyMethod(sym, statically = false, qualp, Seq())
       else if (owner.isStruct) {
@@ -1113,7 +1122,8 @@ trait NirGenExpr(using Context) {
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
-      else if (sym.isStaticMethod) genApplyStaticMethod(sym, selfp, argsp)
+      else if (sym.isStaticInIR && !sym.isExtern)
+        genApplyStaticMethod(sym, argsp)
       else
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -1153,7 +1163,6 @@ trait NirGenExpr(using Context) {
         else self
 
       val isStaticCall = statically ||
-        sym.isStaticMethod ||
         owner.isStruct || owner.isExternModule
       val method =
         if (isStaticCall) Val.Global(name, nir.Type.Ptr)
@@ -1176,18 +1185,22 @@ trait NirGenExpr(using Context) {
 
     private def genApplyStaticMethod(
         sym: Symbol,
-        receiver: Tree,
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
-      val name =
-        genStaticMemberName(sym, Option(receiver.symbol).filter(_.exists))
-      val method = Val.Global(name, nir.Type.Ptr)
+      require(!sym.isExtern, sym)
 
-      val Type.Function(_ +: argTypes, retty) = genMethodSig(sym)
-      val sig = Type.Function(Type.Ref(name.top) +: argTypes, retty)
+      val owner = {
+        val typeName = genTypeName(sym.owner)
+        val ownerIsScalaModule = sym.is(Module, butNot = JavaDefined)
+        def hasNoForwarders = sym.isOneOf(ExcludedForwarder, butNot = Enum)
+        if (ownerIsScalaModule && hasNoForwarders) typeName
+        else Global.Top(typeName.id.stripSuffix("$"))
+      }
+      val sig = genMethodSig(sym)
       val args = genMethodArgs(sym, argsp)
-      val values = Val.Null +: args
-      buf.call(sig, method, values, unwind)
+      val methodName = genStaticMemberName(sym)
+      val method = Val.Global(methodName, nir.Type.Ptr)
+      buf.call(sig, method, args, unwind)
     }
 
     private def genApplyExternAccessor(sym: Symbol, argsp: Seq[Tree])(using
@@ -1564,10 +1577,7 @@ trait NirGenExpr(using Context) {
       )(using leftp.span: nir.Position)
     }
 
-    private def genStaticMember(
-        sym: Symbol,
-        receiver: Tree
-    )(using nir.Position): Val = {
+    private def genStaticMember(sym: Symbol)(using nir.Position): Val = {
       /* Actually, there is no static member in Scala Native. If we come here, that
        * is because we found the symbol in a Java-emitted .class in the
        * classpath. But the corresponding implementation in Scala Native will
@@ -1576,7 +1586,7 @@ trait NirGenExpr(using Context) {
 
       if (sym == defn.BoxedUnit_UNIT) Val.Unit
       else if (sym == defn.BoxedUnit_TYPE) Val.Unit
-      else genApplyStaticMethod(sym, receiver, Seq())
+      else genApplyStaticMethod(sym, Seq())
     }
 
     private def genSynchronized(receiverp: Tree, bodyp: Tree)(using
@@ -2315,17 +2325,18 @@ trait NirGenExpr(using Context) {
         val params = paramtys.map(ty => Val.Local(fresh(), ty))
         buf.label(fresh(), params)
 
-        val origTypes = if (isAdapted) origtys else origtys.tail
+        val origTypes = if (funSym.isStaticInIR) origtys else origtys.tail
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val owner =
           if (funSym.is(JavaStatic)) Val.Null
           else buf.genModule(funSym.owner)
-        val res = buf.genApplyMethod(
-          funSym,
-          statically = true,
-          ValTree(owner),
-          boxedParams.map(ValTree(_))
-        )
+        val selfp = ValTree(owner)
+        val argsp = boxedParams.map(ValTree(_))
+        val res =
+          if (funSym.isStaticInIR)
+            buf.genApplyStaticMethod(funSym, argsp)
+          else
+            buf.genApplyMethod(funSym, statically = true, selfp, argsp)
 
         val unboxedRes = buf.toExtern(retty, res)
         buf.ret(unboxedRes)

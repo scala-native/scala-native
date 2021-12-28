@@ -107,21 +107,21 @@ trait NirGenStat(using Context) {
     do
       given nir.Position = f.span
 
-      val isJavaStatic = f.is(JavaStatic)
-      val mutable = isJavaStatic || f.is(Mutable)
+      val isStatic = f.is(JavaStatic) || f.isScalaStatic
+      val mutable = isStatic || f.is(Mutable)
       val isExternModule = classSym.isExternModule
       val attrs = nir.Attrs(isExtern = isExternModule)
       val ty = genType(f.info.resultType)
       val fieldName @ Global.Member(owner, sig) = genFieldName(f)
       generatedDefns += Defn.Var(attrs, fieldName, ty, Val.Zero(ty))
 
-      if (isJavaStatic) {
+      if (isStatic) {
         // Here we are generating a public static getter for the static field,
         // this is its API for other units. This is necessary for singleton
         // enum values, which are backed by static fields.
         generatedDefns += Defn.Define(
           attrs = Attrs(inlineHint = nir.Attr.InlineHint),
-          name = genStaticMemberName(f, Some(classSym)),
+          name = genStaticMemberName(f),
           ty = Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
             val fresh = curFresh.get
@@ -170,7 +170,6 @@ trait NirGenStat(using Context) {
       val attrs = genMethodAttrs(sym)
       val name = genMethodName(sym)
       val sig = genMethodSig(sym)
-      val isStatic = sym.isExtern
 
       dd.rhs match {
         case EmptyTree => Some(Defn.Declare(attrs, name, sig))
@@ -196,7 +195,7 @@ trait NirGenStat(using Context) {
               attrs,
               name,
               sig,
-              genMethodBody(dd, rhs, isStatic, isExtern = false)
+              genMethodBody(dd, rhs)
             )
             Some(defn)
           }
@@ -236,13 +235,14 @@ trait NirGenStat(using Context) {
   protected val curExprBuffer = ScopedVar[ExprBuffer]()
   private def genMethodBody(
       dd: DefDef,
-      bodyp: Tree,
-      isStatic: Boolean,
-      isExtern: Boolean
+      bodyp: Tree
   ): Seq[nir.Inst] = {
     given nir.Position = bodyp.span
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
+    val isExtern = dd.symbol.owner.isExternModule
+    val isStatic = dd.symbol.isStaticInIR
+    val isSynchronized = dd.symbol.is(Synchronized)
 
     val sym = curMethodSym.get
     val argParamSyms = for {
@@ -251,9 +251,7 @@ trait NirGenStat(using Context) {
     } yield param.symbol
     val argParams = argParamSyms.map { sym =>
       val tpe = sym.info.resultType
-      val ty =
-        if (isExtern) genExternType(tpe)
-        else genType(tpe)
+      val ty = genType(tpe)
       val param = Val.Local(fresh(), ty)
       curMethodEnv.enter(sym, param)
       param
@@ -265,19 +263,8 @@ trait NirGenStat(using Context) {
       .find(_.name == nme.OUTER)
     val params = thisParam.toList ::: argParams
 
-    val isSynchronized = dd.symbol.is(Synchronized)
-
     def genEntry(): Unit = {
       buf.label(fresh(), params)
-      if (isExtern) {
-        argParamSyms.zip(argParams).foreach {
-          case (sym, param) =>
-            val tpe = sym.info.resultType
-            val ty = genType(tpe)
-            val value = buf.fromExtern(ty, param)
-            curMethodEnv.enter(sym, value)
-        }
-      }
     }
 
     def genVars(): Unit = {
@@ -546,9 +533,9 @@ trait NirGenStat(using Context) {
       given nir.Position = sym.span
 
       val methodName = genMethodName(sym)
-      val forwarderName = genStaticMemberName(sym, Some(moduleClass))
+      val forwarderName = genStaticMemberName(sym)
       val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
-      val forwarderParamTypes = Type.Ref(forwarderName.top) +: paramTypes
+      val forwarderParamTypes = paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
 
       if (existingStaticMethodNames.contains(forwarderName)) {
@@ -573,11 +560,10 @@ trait NirGenStat(using Context) {
             curMethodThis := None,
             curMethodOuterSym := None
           ) {
-            val entryParams @ (_ +: params) = forwarderParamTypes
-              .map(Val.Local(fresh(), _))
+            val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
+            val args = entryParams.map(ValTree(_))
             buf.label(fresh(), entryParams)
-            val res =
-              buf.genApplyModuleMethod(moduleClass, sym, params.map(ValTree(_)))
+            val res = buf.genApplyModuleMethod(moduleClass, sym, args)
             buf.ret(res)
           }
           buf.toSeq

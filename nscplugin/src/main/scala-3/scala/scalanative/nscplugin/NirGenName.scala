@@ -37,15 +37,9 @@ trait NirGenName(using Context) {
   }
 
   def genModuleName(sym: Symbol): nir.Global.Top = {
-    if (sym.is(Module)) genTypeName(sym)
-    else {
-      val module = sym.moduleClass
-      if (module.exists) genTypeName(module)
-      else {
-        val nir.Global.Top(className) = genTypeName(sym)
-        nir.Global.Top(className + "$")
-      }
-    }
+    val typeName = genTypeName(sym)
+    if (typeName.id.endsWith("$")) typeName
+    else Global.Top(typeName.id + "$")
   }
 
   def genFieldName(sym: Symbol): nir.Global = {
@@ -97,20 +91,24 @@ trait NirGenName(using Context) {
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
   }
 
-  def genStaticMemberName(
-      sym: Symbol,
-      explicitOwner: Option[Symbol]
-  ): Global = {
+  def genStaticMemberName(sym: Symbol): Global = {
     val owner = {
-      val ownerSymbol =
-        explicitOwner
-          .filter(s => s.exists && !s.is(JavaDefined))
-          .getOrElse(sym.owner)
-      Global.Top(genTypeName(ownerSymbol).id.stripSuffix("$"))
+      // Methods defined as static inside module cannot have static forwarders
+      // Make sure to use refer to their original owner
+      val typeName = genTypeName(sym.owner)
+      val ownerIsScalaModule = sym.owner.is(Module, butNot = JavaDefined)
+      def haveNoForwarders = sym.isOneOf(ExcludedForwarder, butNot = Enum)
+      if (ownerIsScalaModule && haveNoForwarders) typeName
+      else Global.Top(typeName.id.stripSuffix("$"))
     }
+    val sig = genStaticMemberSig(sym)
+    owner.member(sig)
+  }
+
+  def genStaticMemberSig(sym: Symbol): nir.Sig = {
     val id = nativeIdOf(sym)
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(genTypeName(sym.owner))
       else nir.Sig.Scope.PublicStatic
 
     val paramTypes = sym.info.paramInfoss.flatten
@@ -120,7 +118,7 @@ trait NirGenName(using Context) {
 
     val name = sym.name
     val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
-    owner.member(sig)
+    sig
   }
 
   private def nativeIdOf(sym: Symbol): String = {

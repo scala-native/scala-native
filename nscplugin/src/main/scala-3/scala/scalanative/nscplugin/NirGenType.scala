@@ -40,6 +40,9 @@ trait NirGenType(using Context) {
         sym.is(JavaStatic) || sym.isScalaStatic
       }
 
+    def isStaticInIR: Boolean =
+      sym.is(JavaStatic) || sym.isScalaStatic || sym.isExtern
+
     def isExtern: Boolean = sym.owner.isExternModule
 
     def isExternModule: Boolean =
@@ -225,9 +228,9 @@ trait NirGenType(using Context) {
 
     val owner = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
-    val selfty =
-      if (isExtern || owner.isExternModule) None
-      else Some(genType(owner))
+    val selfty = Option.unless(isExtern || sym.isStaticInIR) {
+      genType(owner)
+    }
     val resultType = sym.info.resultType
     val retty =
       if (sym.isConstructor) nir.Type.Unit
