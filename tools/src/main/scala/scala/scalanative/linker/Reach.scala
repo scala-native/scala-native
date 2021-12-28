@@ -593,28 +593,20 @@ class Reach(
           lookup(newMethod.name, ignoreIfUnavailable = true)
             .map { _ =>
               implicit val pos: nir.Position = defn.pos
-              val moduleV = Val.Local(fresh(), Type.Ref(owner))
-              val newArgs = args.toList match {
-                case Val.Null :: args if inModule => moduleV :: args
-                case _                            => args
-              }
               val newType = {
-                val newArgsTpe = ty.args.toList match {
-                  case Type.Ref(methodName.owner, _, _) :: argsTpe =>
-                    Type.Ref(owner) :: argsTpe
-                  case argsTpe => argsTpe
-                }
+                val newArgsTpe = Type.Ref(owner) +: ty.args
                 Type.Function(newArgsTpe, ty.ret)
               }
 
-              val callOp =
-                Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind)
               if (inModule) {
-                List(
-                  Inst.Let(moduleV.name, Op.Module(owner), Next.None),
-                  callOp
-                )
-              } else List(callOp)
+                val moduleV = Val.Local(fresh(), Type.Ref(owner))
+                val newArgs = moduleV +: args
+                Inst.Let(moduleV.name, Op.Module(owner), Next.None) ::
+                  Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind) ::
+                  Nil
+              } else {
+                Inst.Let(n, Op.Call(newType, newMethod, args), unwind) :: Nil
+              }
             }
         }
 
