@@ -241,7 +241,7 @@ trait NirGenStat(using Context) {
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
     val isExtern = dd.symbol.owner.isExternModule
-    val isStatic = dd.symbol.isStaticInIR
+    val isStatic = dd.symbol.isStaticInNIR
     val isSynchronized = dd.symbol.is(Synchronized)
 
     val sym = curMethodSym.get

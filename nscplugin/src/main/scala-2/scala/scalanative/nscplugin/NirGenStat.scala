@@ -802,7 +802,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isStatic = dd.symbol.isStaticInIR || isImplClass(dd.symbol.owner)
+      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner)
       val isExtern = dd.symbol.owner.isExternModule
 
       implicit val pos: nir.Position = bodyp.pos

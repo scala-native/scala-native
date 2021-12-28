@@ -2386,7 +2386,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           buf.method(self, sig, unwind)
         }
       val values =
-        if (sym.isStaticInIR) args
+        if (sym.isStaticInNIR) args
         else self +: args
 
       val res = buf.call(sig, method, values, unwind)

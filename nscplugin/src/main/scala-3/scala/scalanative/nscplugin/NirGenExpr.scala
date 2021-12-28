@@ -208,7 +208,7 @@ trait NirGenExpr(using Context) {
         nir.Global.Top(className + suffix)
       }
 
-      val isStaticCall = funSym.isStaticInIR
+      val isStaticCall = funSym.isStaticInNIR
       val allCaptureValues =
         if (isStaticCall) env
         else qualifierOf(fun) :: env
@@ -649,7 +649,6 @@ trait NirGenExpr(using Context) {
     def genModule(sym: Symbol)(using nir.Position): Val = {
       val moduleSym = if (sym.isTerm) sym.moduleClass else sym
       val name = genModuleName(moduleSym)
-      assert(name.id.endsWith("$"), moduleSym)
       buf.module(name, unwind)
     }
 
@@ -688,7 +687,7 @@ trait NirGenExpr(using Context) {
       val owner = sym.owner
 
       if (sym.is(Module)) genModule(sym)
-      else if (sym.isStaticInIR && !sym.isExtern) genStaticMember(sym)
+      else if (sym.isStaticInNIR && !sym.isExtern) genStaticMember(sym)
       else if (sym.is(Method))
         genApplyMethod(sym, statically = false, qualp, Seq())
       else if (owner.isStruct) {
@@ -1122,7 +1121,7 @@ trait NirGenExpr(using Context) {
         argsp: Seq[Tree]
     )(using nir.Position): Val = {
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
-      else if (sym.isStaticInIR && !sym.isExtern)
+      else if (sym.isStaticInNIR && !sym.isExtern)
         genApplyStaticMethod(sym, argsp)
       else
         val self = genExpr(selfp)
@@ -2325,7 +2324,7 @@ trait NirGenExpr(using Context) {
         val params = paramtys.map(ty => Val.Local(fresh(), ty))
         buf.label(fresh(), params)
 
-        val origTypes = if (funSym.isStaticInIR) origtys else origtys.tail
+        val origTypes = if (funSym.isStaticInNIR) origtys else origtys.tail
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val owner =
           if (funSym.is(JavaStatic)) Val.Null
@@ -2333,7 +2332,7 @@ trait NirGenExpr(using Context) {
         val selfp = ValTree(owner)
         val argsp = boxedParams.map(ValTree(_))
         val res =
-          if (funSym.isStaticInIR)
+          if (funSym.isStaticInNIR)
             buf.genApplyStaticMethod(funSym, argsp)
           else
             buf.genApplyMethod(funSym, statically = true, selfp, argsp)

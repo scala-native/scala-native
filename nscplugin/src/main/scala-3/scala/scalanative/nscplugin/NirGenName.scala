@@ -101,11 +101,6 @@ trait NirGenName(using Context) {
       if (ownerIsScalaModule && haveNoForwarders) typeName
       else Global.Top(typeName.id.stripSuffix("$"))
     }
-    val sig = genStaticMemberSig(sym)
-    owner.member(sig)
-  }
-
-  def genStaticMemberSig(sym: Symbol): nir.Sig = {
     val id = nativeIdOf(sym)
     val scope =
       if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(genTypeName(sym.owner))
@@ -116,9 +111,8 @@ trait NirGenName(using Context) {
       .map(genType)
     val retType = genType(fromType(sym.info.resultType))
 
-    val name = sym.name
     val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
-    sig
+    owner.member(sig)
   }
 
   private def nativeIdOf(sym: Symbol): String = {

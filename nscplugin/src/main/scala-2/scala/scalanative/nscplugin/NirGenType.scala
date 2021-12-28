@@ -19,7 +19,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     def isScalaModule: Boolean =
       sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
-    def isStaticInIR: Boolean =
+    def isStaticInNIR: Boolean =
       sym.owner.isExternModule || sym.isStaticMember || isImplClass(sym.owner)
 
     def isExternModule: Boolean =
@@ -170,7 +170,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     val owner = sym.owner
     val paramtys = genMethodSigParamsImpl(sym, isExtern)
     val selfty =
-      if (isExtern || sym.isStaticInIR) None
+      if (isExtern || sym.isStaticInNIR) None
       else Some(genType(owner.tpe))
     val retty =
       if (sym.isClassConstructor) nir.Type.Unit
