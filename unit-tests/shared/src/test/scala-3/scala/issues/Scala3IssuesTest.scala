@@ -44,4 +44,32 @@ class Scala3IssuesTest:
     assertEquals("nullnull", x13 + x14)
   }
 
+  @Test def issue2484(): Unit = {
+    import scala.issues.issue2484.*
+    assertEquals(
+      5,
+      CallByNeed.instance.map(CallByNeed(2))(_ + 3).value
+    )
+  }
 end Scala3IssuesTest
+
+private object issue2484 {
+  final class CallByNeed[A] private (private[this] var eval: () => A) {
+    lazy val value: A = {
+      val value0 = eval()
+      eval = null
+      value0
+    }
+  }
+
+  object CallByNeed {
+    def apply[A](a: => A): CallByNeed[A] = new CallByNeed[A](() => a)
+    implicit val instance: Functor[CallByNeed] = new Functor[CallByNeed] {
+      def map[A, B](fa: CallByNeed[A])(f: A => B) = CallByNeed(f(fa.value))
+    }
+  }
+
+  trait Functor[F[_]] {
+    def map[A, B](fa: F[A])(f: A => B): F[B]
+  }
+}
