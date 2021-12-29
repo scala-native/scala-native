@@ -103,7 +103,7 @@ trait NirGenExpr(using Context) {
           ) = args
           if (dimensions.size == 1)
             val length = genExpr(dimensions.head)
-            buf.arrayalloc(genType(componentType), length, unwind)
+            buf.arrayalloc(genType(componentType.typeValue), length, unwind)
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
