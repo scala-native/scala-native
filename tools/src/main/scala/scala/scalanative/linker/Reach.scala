@@ -617,7 +617,8 @@ class Reach(
             throw new LinkingException(
               s"Found a call to not defined static method ${methodName} that could not be rewritten. " +
                 "Static methods are generated since Scala Native 0.4.3, " +
-                "report this bug in the Scala Native issues."
+                "report this bug in the Scala Native issues. " +
+                s"Call defined at ${inst.pos.source}:${inst.pos.line}:${inst.pos.column}"
             )
           }
 
