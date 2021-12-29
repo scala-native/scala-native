@@ -121,7 +121,7 @@ trait NirGenStat(using Context) {
         // enum values, which are backed by static fields.
         generatedDefns += Defn.Define(
           attrs = Attrs(inlineHint = nir.Attr.InlineHint),
-          name = genStaticMemberName(f),
+          name = genStaticMemberName(f, classSym),
           ty = Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
             val fresh = curFresh.get
@@ -533,7 +533,7 @@ trait NirGenStat(using Context) {
       given nir.Position = sym.span
 
       val methodName = genMethodName(sym)
-      val forwarderName = genStaticMemberName(sym)
+      val forwarderName = genStaticMemberName(sym, moduleClass)
       val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
       val forwarderParamTypes = paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)

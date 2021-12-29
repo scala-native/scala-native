@@ -118,11 +118,17 @@ trait NirGenName[G <: Global with Singleton] {
       explicitOwner: Symbol
   ): nir.Global = {
     // Use explicit owner in case if forwarder target was defined in the trait/interface
-    // or was abstract. In Scala 2 `sym.owner` would always point to original owner.
-    // To resolve correct owner use optional explicit owner containing symbol of implementing class
+    // or was abstract. `sym.owner` would always point to original owner, even if it also defined
+    // in the super class. This is important, becouse (on the JVM) static methods are resolved at
+    // compile time and do never use dynamic method dispatch, however it is possible to shadow
+    // static method in the parent class by defining static method with the same name in the child.
     require(!isImplClass(sym.owner), sym.owner)
     val typeName = genTypeName(
-      Option(explicitOwner).filter(_.exists).getOrElse(sym.owner)
+      Option(explicitOwner)
+        .fold[Symbol](NoSymbol) {
+          _.filter(_.isSubClass(sym.owner))
+        }
+        .orElse(sym.owner)
     )
     val owner = nir.Global.Top(typeName.id.stripSuffix("$"))
     val id = nativeIdOf(sym)
