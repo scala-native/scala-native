@@ -334,7 +334,11 @@ trait NirGenExpr(using Context) {
             val allVals = (captureVals ++ paramVals).toList.map(ValTree(_))
             val res = if (isStaticCall) {
               scoped(curMethodThis := None) {
-                buf.genApplyStaticMethod(funSym, qualifierOf(fun).symbol, allVals)
+                buf.genApplyStaticMethod(
+                  funSym,
+                  qualifierOf(fun).symbol,
+                  allVals
+                )
               }
             } else {
               val thisVal :: argVals = allVals
