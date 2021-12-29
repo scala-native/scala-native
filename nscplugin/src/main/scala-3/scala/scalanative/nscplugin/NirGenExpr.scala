@@ -102,7 +102,8 @@ trait NirGenExpr(using Context) {
             SeqLiteral(dimensions, _)
           ) = args
           if (dimensions.size == 1)
-            genApplyNewArray(componentType.typeValue, dimensions)
+            val length = genExpr(dimensions.head)
+            buf.arrayalloc(genType(componentType), length, unwind)
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
@@ -443,15 +444,22 @@ trait NirGenExpr(using Context) {
     }
 
     def genJavaSeqLiteral(tree: JavaSeqLiteral): Val = {
-      given nir.Position = tree.span
       val JavaArrayType(elemTpe) = tree.tpe
       val arrayLength = Val.Int(tree.elems.length)
-      val nirElemTpe = genType(elemTpe)
 
-      val alloc = buf.genApplyNewArray(elemTpe, Seq(ValTree(arrayLength)))
-      for (elem, idx) <- tree.elems.zipWithIndex do
-        buf.arraystore(nirElemTpe, alloc, Val.Int(idx), genExpr(elem), unwind)
-      alloc
+      val elems = tree.elems
+      val elemty = genType(elemTpe)
+      val values = genSimpleArgs(elems)
+      given nir.Position = tree.span
+
+      if (values.forall(_.isCanonical) && values.exists(v => !v.isZero))
+        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
+      else
+        val alloc = buf.arrayalloc(elemty, Val.Int(values.length), unwind)
+        for (v, i) <- values.zipWithIndex if !v.isZero do
+          given nir.Position = elems(i).span
+          buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
+        alloc
     }
 
     def genLabelDef(label: Labeled): Val = {
@@ -1077,14 +1085,6 @@ trait NirGenExpr(using Context) {
         given nir.Position = argp.span
       do res = buf.insert(res, arg, Seq(idx), unwind)
       res
-    }
-
-    private def genApplyNewArray(targ: SimpleType, argsp: Seq[Tree])(using
-        nir.Position
-    ): Val = {
-      val Seq(lengthp) = argsp
-      val length = genExpr(lengthp)
-      buf.arrayalloc(genType(targ), length, unwind)
     }
 
     private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
