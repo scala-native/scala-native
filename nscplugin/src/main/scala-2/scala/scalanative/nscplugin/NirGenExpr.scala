@@ -2294,19 +2294,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         receiver: Tree,
         argsp: Seq[Tree]
     )(implicit pos: nir.Position): Val = {
-      require(!isImplClass(sym.owner), sym.owner)
-      val name = genStaticMemberName(
-        sym,
-        Option(receiver.symbol).filter(_.exists)
-      )
+      require(!isImplClass(sym.owner) && !sym.owner.isExternModule, sym.owner)
+      val name = genStaticMemberName(sym, receiver.symbol)
       val method = Val.Global(name, nir.Type.Ptr)
 
       val sig = genMethodSig(sym)
       val args = genMethodArgs(sym, argsp)
-      val values =
-        if (isImplClass(sym.owner)) args
-        else Val.Null +: args
-      buf.call(sig, method, values, unwind)
+      buf.call(sig, method, args, unwind)
     }
 
     def genApplyExternAccessor(sym: Symbol, argsp: Seq[Tree])(implicit
@@ -2392,10 +2386,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           buf.method(self, sig, unwind)
         }
       val values =
-        if (owner.isExternModule || isImplClass(owner))
-          args
-        else
-          self +: args
+        if (sym.isStaticInNIR) args
+        else self +: args
 
       val res = buf.call(sig, method, values, unwind)
 

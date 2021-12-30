@@ -23,7 +23,8 @@ trait NirGenName(using Context) {
 
   def genTypeName(sym: Symbol): nir.Global.Top = {
     val sym1 =
-      if (sym.isAllOf(ModuleClass | JavaDefined)) sym.linkedClass
+      if (sym.isAllOf(ModuleClass | JavaDefined) && sym.linkedClass.exists)
+        sym.linkedClass
       else sym
 
     if (sym1 == defn.ObjectClass) nir.Rt.Object.name.top
@@ -37,15 +38,9 @@ trait NirGenName(using Context) {
   }
 
   def genModuleName(sym: Symbol): nir.Global.Top = {
-    if (sym.is(Module)) genTypeName(sym)
-    else {
-      val module = sym.moduleClass
-      if (module.exists) genTypeName(module)
-      else {
-        val nir.Global.Top(className) = genTypeName(sym)
-        nir.Global.Top(className + "$")
-      }
-    }
+    val typeName = genTypeName(sym)
+    if (typeName.id.endsWith("$")) typeName
+    else Global.Top(typeName.id + "$")
   }
 
   def genFieldName(sym: Symbol): nir.Global = {
@@ -97,16 +92,24 @@ trait NirGenName(using Context) {
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
   }
 
-  def genStaticMemberName(
-      sym: Symbol,
-      explicitOwner: Option[Symbol]
-  ): Global = {
+  def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): Global = {
     val owner = {
-      val ownerSymbol =
+      // Use explicit owner in case if forwarder target was defined in the trait/interface
+      // or was abstract. `sym.owner` would always point to original owner, even if it also defined
+      // in the super class. This is important, becouse (on the JVM) static methods are resolved at
+      // compile time and do never use dynamic method dispatch, however it is possible to shadow
+      // static method in the parent class by defining static method with the same name in the child.
+      // Methods defined as static inside module cannot have static forwarders
+      // Make sure to use refer to their original owner
+      val ownerSym =
         explicitOwner
-          .filter(s => s.exists && !s.is(JavaDefined))
-          .getOrElse(sym.owner)
-      Global.Top(genTypeName(ownerSymbol).id.stripSuffix("$"))
+          .filter(_.isSubClass(sym.owner))
+          .orElse(sym.owner)
+      val typeName = genTypeName(ownerSym)
+      val ownerIsScalaModule = ownerSym.is(Module, butNot = JavaDefined)
+      def haveNoForwarders = sym.isOneOf(ExcludedForwarder, butNot = Enum)
+      if (ownerIsScalaModule && haveNoForwarders) typeName
+      else Global.Top(typeName.id.stripSuffix("$"))
     }
     val id = nativeIdOf(sym)
     val scope =
@@ -118,7 +121,6 @@ trait NirGenName(using Context) {
       .map(genType)
     val retType = genType(fromType(sym.info.resultType))
 
-    val name = sym.name
     val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
     owner.member(sig)
   }

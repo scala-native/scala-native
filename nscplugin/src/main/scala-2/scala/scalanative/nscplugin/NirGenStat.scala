@@ -619,7 +619,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val attrs = genMethodAttrs(sym)
         val name = genMethodName(sym)
         val sig = genMethodSig(sym)
-        val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
           case EmptyTree
@@ -666,7 +665,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             scoped(
               curMethodSig := sig
             ) {
-              val body = genMethodBody(dd, rhs, isStatic, isExtern = false)
+              val body = genMethodBody(dd, rhs)
               Some(Defn.Define(attrs, name, sig, body))
             }
         }
@@ -798,12 +797,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodBody(
         dd: DefDef,
-        bodyp: Tree,
-        isStatic: Boolean,
-        isExtern: Boolean
+        bodyp: Tree
     ): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
+      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
+      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner)
+      val isExtern = dd.symbol.owner.isExternModule
 
       implicit val pos: nir.Position = bodyp.pos
 
@@ -813,27 +813,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val ty = genType(curClassSym.tpe)
           Val.Local(fresh(), ty)
         case Some(sym) =>
-          val ty = if (isExtern) genExternType(sym.tpe) else genType(sym.tpe)
+          val ty = genType(sym.tpe)
           val param = Val.Local(fresh(), ty)
           curMethodEnv.enter(sym, param)
           param
       }
 
-      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-
       def genEntry(): Unit = {
         buf.label(fresh(), params)
-
-        if (isExtern) {
-          paramSyms.zip(params).foreach {
-            case (Some(sym), param) if isExtern =>
-              val ty = genType(sym.tpe)
-              val value = buf.fromExtern(ty, param)
-              curMethodEnv.enter(sym, value)
-            case _ =>
-              ()
-          }
-        }
       }
 
       def genVars(): Unit = {
@@ -1036,9 +1023,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val pos: nir.Position = sym.pos
 
       val methodName = genMethodName(sym)
-      val forwarderName = genStaticMemberName(sym, Some(moduleClass))
+      val forwarderName = genStaticMemberName(sym, moduleClass)
       val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
-      val forwarderParamTypes = Type.Ref(forwarderName.top) +: paramTypes
+      val forwarderParamTypes = paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
 
       if (existingStaticMethodNames.contains(forwarderName)) {
@@ -1063,14 +1050,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               curUnwindHandler := None,
               curMethodThis := None
             ) {
-              val entryParams @ (_ +: params) = forwarderParamTypes
-                .map(Val.Local(fresh(), _))
+              val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
               buf.label(fresh(), entryParams)
               val res =
                 buf.genApplyModuleMethod(
                   moduleClass,
                   sym,
-                  params.map(ValTree(_))
+                  entryParams.map(ValTree(_))
                 )
               buf.ret(res)
             }

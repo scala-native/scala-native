@@ -132,10 +132,8 @@ object Generate {
       validateMainEntry()
 
       implicit val fresh = Fresh()
-      val entryMainTy =
-        Type.Function(Seq(Type.Ref(entry.top), ObjectArray), Type.Unit)
-      val entryMainMethod =
-        Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
+      val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
+      val entryMainMethod = Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
 
       val stackBottom = Val.Local(fresh(), Type.Ptr)
       val argc = Val.Local(fresh(), Type.Int)
@@ -189,7 +187,7 @@ object Generate {
               unwind
             ),
             Inst.Let(
-              Op.Call(entryMainTy, entryMainMethod, Seq(Val.Null, arr)),
+              Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
               unwind
             ),
             Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
