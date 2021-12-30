@@ -25,19 +25,18 @@ private[java] object WeakReferenceRegistry {
 
   // This method is designed for calls from C and therefore should not include
   // non statically reachable fields or methods.
-  private def postGCControl(): Unit =
+  private def postGCControl(): Unit = {
     weakRefList = weakRefList.filter { weakRef =>
-      if (weakRef.get() == null) {
+      val wasCollected = weakRef.get() == null
+      if (wasCollected) {
         weakRef.enqueue()
-        if (postGCHandlerMap.contains(weakRef)) {
-          postGCHandlerMap(weakRef)()
-          postGCHandlerMap.remove(weakRef)
-        }
-        true
-      } else {
-        false
+        postGCHandlerMap
+          .remove(weakRef)
+          .foreach(_())
       }
+      !wasCollected
     }
+  }
 
   private[ref] def add(weakRef: WeakReference[_]): Unit =
     if (isWeakReferenceSupported) weakRefList = weakRefList ++ List(weakRef)
