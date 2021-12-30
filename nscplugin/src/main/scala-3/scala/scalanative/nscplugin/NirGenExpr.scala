@@ -1005,7 +1005,8 @@ trait NirGenExpr(using Context) {
     }
 
     private def genApplyTypeApply(app: Apply): Val = {
-      val Apply(TypeApply(fun @ Select(receiverp, _), targs), argsp) = app
+      val Apply(TypeApply(fun, targs), argsp) = app
+      val Select(receiverp, _) = desugarTree(fun)
       given nir.Position = fun.span
 
       val funSym = fun.symbol
@@ -1635,9 +1636,9 @@ trait NirGenExpr(using Context) {
     private def genCoercion(value: Val, fromty: nir.Type, toty: nir.Type)(using
         nir.Position
     ): Val = {
-      if (fromty == toty) {
-        value
-      } else {
+      if (fromty == toty) value
+      else if (fromty == nir.Type.Nothing || toty == nir.Type.Nothing) value
+      else {
         val conv = (fromty, toty) match {
           case (nir.Type.Ptr, _: nir.Type.RefKind) => Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) => Conv.Bitcast
