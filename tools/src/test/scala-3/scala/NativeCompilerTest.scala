@@ -15,7 +15,8 @@ class NativeCompilerTest extends AnyFlatSpec:
     }
   }
 
-  "The Scala Native compiler plugin" should "compile t8612" in nativeCompilation("""
+  "The Scala Native compiler plugin" should "compile t8612" in nativeCompilation(
+    """
     |object Foo1:
     |  def assert1(x: Boolean) = if !x then ???
     |  inline def assert2(x: Boolean) = if !x then ???
@@ -33,7 +34,8 @@ class NativeCompilerTest extends AnyFlatSpec:
     |  assert1(???)
     |  assert2(???)
     |  assert3(???)
-    |""".stripMargin)
+    |""".stripMargin
+  )
 
   it should "compile i505" in nativeCompilation("""
   |object Test {
