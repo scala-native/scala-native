@@ -18,7 +18,7 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [arm64v8, mips64]
+        arch: [arm64v8]
 
     steps:
       - uses: actions/checkout@v2
@@ -73,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [arm64v8, mips64]
+        arch: [arm64v8]
         scala: [3.1.0, 2.13.7]
         build-mode: [release-fast]
         lto: [thin]
