@@ -122,12 +122,20 @@ trait NirGenExpr(using Context) {
 
       desugarTree(lhsp) match {
         case sel @ Select(qualp, _) =>
-          val rhs = genExpr(rhsp)
+          def rhs = genExpr(rhsp)
           val sym = sel.symbol
           val name = genFieldName(sym)
-          if (sym.owner.isExternModule) {
-            val externTy = genExternType(sel.tpe)
-            genStoreExtern(externTy, sym, rhs)
+          if (sym.isExtern) {
+            // Ignore intrinsic call to extern in class constructor
+            // It would always present and would lead to undefined behaviour otherwise
+            val shouldIgnoreAssign =
+              curMethodSym.get.isClassConstructor &&
+                rhsp.symbol == defnNir.UnsafePackage_extern
+            if (shouldIgnoreAssign) Val.Unit
+            else {
+              val externTy = genExternType(sel.tpe)
+              genStoreExtern(externTy, sym, rhs)
+            }
           } else {
             val qual =
               if (sym.isStaticMember) genModule(qualp.symbol)
@@ -929,6 +937,8 @@ trait NirGenExpr(using Context) {
       given nir.Position = vd.span
       val rhs = genExpr(vd.rhs)
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
+      if (vd.symbol.isExtern)
+        checkExplicitReturnTypeAnnotation(vd, "extern field")
       if (isMutable)
         val slot = curMethodEnv.resolve(vd.symbol)
         buf.varstore(slot, rhs, unwind)
@@ -1148,7 +1158,7 @@ trait NirGenExpr(using Context) {
 
       val origSig = genMethodSig(sym)
       val sig =
-        if (owner.isExternModule) genExternMethodSig(sym)
+        if (sym.isExtern) genExternMethodSig(sym)
         else origSig
       val args = genMethodArgs(sym, argsp)
 
@@ -1167,22 +1177,20 @@ trait NirGenExpr(using Context) {
           genApplyMethod(outerAccessor, false, curThis.get, Nil)
         else self
 
-      val isStaticCall = statically ||
-        owner.isStruct || owner.isExternModule
+      val isStaticCall = statically || owner.isStruct || sym.isExtern
       val method =
         if (isStaticCall) Val.Global(name, nir.Type.Ptr)
         else
           val Global.Member(_, sig) = name
           buf.method(selfVal, sig, unwind)
       val values =
-        if (owner.isExternModule) args
+        if (sym.isExtern) args
         else selfVal +: args
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!owner.isExternModule) {
-        res
-      } else {
+      if (!sym.isExtern) res
+      else {
         val Type.Function(_, retty) = origSig
         fromExtern(retty, res)
       }

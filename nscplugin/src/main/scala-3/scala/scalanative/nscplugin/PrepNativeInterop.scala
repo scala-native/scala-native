@@ -4,6 +4,7 @@ import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
 import dotc._
 import dotc.ast.tpd._
+import dotc.transform.SymUtils.setter
 import core.Contexts._
 import core.Definitions
 import core.Names._
@@ -11,6 +12,7 @@ import core.Symbols._
 import core.Types._
 import core.StdNames._
 import core.Constants.Constant
+import NirGenUtil.ContextCached
 
 /** This phase does:
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
@@ -27,11 +29,24 @@ class PrepNativeInterop extends PluginPhase {
   override def description: String = "prepare ASTs for Native interop"
 
   def defn(using Context): Definitions = ctx.definitions
+  def defnNir(using Context): NirDefinitions = NirDefinitions.get
+
+  private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
+    dd.rhs.symbol == defnNir.UnsafePackage_extern &&
+    dd.symbol.isWrappedToplevelDef
+  }
+
+  override def transformDefDef(dd: DefDef)(using Context): Tree = {
+    // Set `@extern` annotation for top-level extern functions
+    if (isTopLevelExtern(dd) && !dd.symbol.hasAnnotation(defnNir.ExternClass)) {
+      dd.symbol.addAnnotation(defnNir.ExternClass)
+    }
+    dd
+  }
 
   override def transformValDef(vd: ValDef)(using Context): Tree = {
-    val enumsCtx = EnumerationsContext.cached
+    val enumsCtx = EnumerationsContext.get
     import enumsCtx._
-
     val sym = vd.symbol
     vd match {
       case ValDef(_, tpt, ScalaEnumValue.NoName(optIntParam)) =>
@@ -42,21 +57,21 @@ class PrepNativeInterop extends PluginPhase {
         val nrhs = scalaEnumValName(sym.owner.asClass, sym, optIntParam)
         cpy.ValDef(vd)(tpt = transformAllDeep(tpt), nrhs)
 
-      case _ => vd
+      case _ =>
+        // Set `@extern` annotation for top-level extern variables
+        if (isTopLevelExtern(vd) &&
+            !sym.hasAnnotation(defnNir.ExternClass)) {
+          sym.addAnnotation(defnNir.ExternClass)
+          sym.setter.addAnnotation(defnNir.ExternClass)
+        }
+
+        vd
     }
   }
 
   private object EnumerationsContext {
-    private var lastDotcCtx: Option[Context] = None
-    private var lastValue: EnumerationsContext = _
-    def cached(using ctx: Context): EnumerationsContext = {
-      if (lastDotcCtx.contains(ctx)) lastValue
-      else {
-        lastDotcCtx = Some(ctx)
-        lastValue = EnumerationsContext()
-        lastValue
-      }
-    }
+    private val cached = ContextCached(EnumerationsContext())
+    def get(using Context): EnumerationsContext = cached.get
   }
   private class EnumerationsContext(using Context) {
     abstract class ScalaEnumFctExtractors(
