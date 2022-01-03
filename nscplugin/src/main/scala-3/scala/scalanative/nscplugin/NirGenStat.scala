@@ -108,9 +108,9 @@ trait NirGenStat(using Context) {
       given nir.Position = f.span
 
       val isStatic = f.is(JavaStatic) || f.isScalaStatic
+      val isExtern = f.isExtern
       val mutable = isStatic || f.is(Mutable)
-      val isExternModule = classSym.isExternModule
-      val attrs = nir.Attrs(isExtern = isExternModule)
+      val attrs = nir.Attrs(isExtern = f.isExtern)
       val ty = genType(f.info.resultType)
       val fieldName @ Global.Member(owner, sig) = genFieldName(f)
       generatedDefns += Defn.Var(attrs, fieldName, ty, Val.Zero(ty))
@@ -222,7 +222,7 @@ trait NirGenStat(using Context) {
       }
 
     val isStub = sym.hasAnnotation(defnNir.StubClass)
-    val isExtern = sym.owner.hasAnnotation(defnNir.ExternClass)
+    val isExtern = sym.hasAnnotation(defnNir.ExternClass)
 
     Attrs
       .fromSeq(inlineAttrs ++ optAttrs)
@@ -240,7 +240,7 @@ trait NirGenStat(using Context) {
     given nir.Position = bodyp.span
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
-    val isExtern = dd.symbol.owner.isExternModule
+    val isExtern = dd.symbol.isExtern
     val isStatic = dd.symbol.isStaticInNIR
     val isSynchronized = dd.symbol.is(Synchronized)
 
@@ -327,14 +327,14 @@ trait NirGenStat(using Context) {
     genMethods(td)
   }
 
-  private def checkExplicitReturnTypeAnnotation(
-      externMethodDd: DefDef,
+  protected def checkExplicitReturnTypeAnnotation(
+      externDef: ValOrDefDef,
       methodKind: String
   ): Unit = {
-    if (externMethodDd.tpt.symbol == defn.NothingClass)
+    if (externDef.tpt.symbol == defn.NothingClass)
       report.error(
-        s"$methodKind ${externMethodDd.name} needs result type",
-        externMethodDd.sourcePos
+        s"$methodKind ${externDef.name} needs result type",
+        externDef.sourcePos
       )
   }
 
