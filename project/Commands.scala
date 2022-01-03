@@ -24,10 +24,10 @@ object Commands {
           .map(id => s"$id/run")
 
       val tests = List(
-        Build.tests,
         testsJVM,
-        testsExt,
+        Build.tests,
         testsExtJVM,
+        testsExt,
         junitTestOutputsJVM,
         junitTestOutputsNative,
         scalaPartestJunitTests
