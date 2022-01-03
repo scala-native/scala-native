@@ -45,6 +45,7 @@ class WeakReferenceTest {
           if (retries > 0) {
             // Give GC something to collect
             System.err.println(s"$clue - not yet collected $ref ($retries)")
+            Thread.sleep(200)
             GC.collect()
             assertEventuallyIsCollected(clue, ref, retries - 1)
           } else {
@@ -62,8 +63,8 @@ class WeakReferenceTest {
     val weakRefList = List(weakRef1, weakRef2)
 
     GC.collect()
-    assertEventuallyIsCollected("weakRef1", weakRef1, retries = 3)
-    assertEventuallyIsCollected("weakRef2", weakRef2, retries = 3)
+    assertEventuallyIsCollected("weakRef1", weakRef1, retries = 5)
+    assertEventuallyIsCollected("weakRef2", weakRef2, retries = 5)
 
     assertEquals("weakRef1", null, weakRef1.get())
     assertEquals("weakRef2", null, weakRef2.get())
