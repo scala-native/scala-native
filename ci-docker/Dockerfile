@@ -1,7 +1,7 @@
 ARG TARGET_DOCKER_PLATFORM
 
 FROM ubuntu:18.04
-RUN apt-get update && apt-get install -y qemu-user-static
+RUN apt-get update && apt-get install -y qemu-user-static apt-utils
 
 FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
 ARG HOST_ARCHITECTURE
