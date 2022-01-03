@@ -29,6 +29,7 @@ if ! docker pull $FULL_IMAGE_NAME;then
   if [[ "$IMAGE_NAME" =~ $imageNamePattern ]];then
     arch=${BASH_REMATCH[1]}
 
+    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     docker build \
     -t ${FULL_IMAGE_NAME} \
     --build-arg TARGET_DOCKER_PLATFORM=${arch} \
