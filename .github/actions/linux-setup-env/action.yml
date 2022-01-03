@@ -29,9 +29,3 @@ runs:
           ~/.sbt/boot
         key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
-    # Loads cached content of local docker registry containing built images.
-    - name: Cache docker
-      uses: actions/cache@v1
-      with:
-        path: /tmp/docker-registry
-        key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}

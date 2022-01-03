@@ -31,8 +31,8 @@ if ! docker pull $FULL_IMAGE_NAME;then
 
     docker build \
     -t ${FULL_IMAGE_NAME} \
-    --build-arg TARGET_DOCKER_PLATFORM=library \
-    --build-arg HOST_ARCHITECTURE=${arch}  \
+    --build-arg TARGET_DOCKER_PLATFORM=${arch} \
+    --build-arg HOST_ARCHITECTURE=amd64  \
     --cpuset-cpus=0 \
     ci-docker
   else
