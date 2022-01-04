@@ -43,7 +43,7 @@ if ! docker pull $FULL_IMAGE_NAME;then
 fi
 
 docker run -i "${FULL_IMAGE_NAME}" java -version
-docker run --mount type=bind,source=$HOME/.cache/coursier,target=/home/scala-native/.cache/coursier \
+docker run --mount type=bind,source=$HOME/.cache,target=/home/scala-native/.cache \
            --mount type=bind,source=$HOME/.sbt,target=/home/scala-native/.sbt \
            --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
            -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
