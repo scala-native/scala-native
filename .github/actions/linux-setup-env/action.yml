@@ -26,6 +26,7 @@ runs:
       with:
         path: |
           ~/.cache/coursier
+          ~/.cache/sbt
           ~/.sbt/boot
         key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
 
