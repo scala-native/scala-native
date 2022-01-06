@@ -16,7 +16,7 @@ import scala.annotation.{threadUnsafe => tu}
 // its scala native specific counter-part. This is needed, because LazyVals are
 // using JVM unsafe API and static class constructors which are not supported
 // in Scala Native.
-// In theory it could be defined as seperate compilation phase (it was in the past), but
+// In theory it could be defined as separate compilation phase (it was in the past), but
 // it would lead to the problems when using macros - rewritten lazy fields method would
 // be inlined and evaluated at compile time, however modified AST contains Scala Native
 // specific calls to Intrinsic methods. This would lead to throwing exception while compiling.
