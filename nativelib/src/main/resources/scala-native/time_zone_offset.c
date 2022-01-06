@@ -1,11 +1,11 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
-    #include <wchar.h>
+#include <windows.h>
+#include <wchar.h>
 #else
-    // #define _GNU_SOURCE /* for tm_gmtoff and tm_zone */
-    #include <stdio.h>
-    #include <time.h>
+// #define _GNU_SOURCE /* for tm_gmtoff and tm_zone */
+#include <stdio.h>
+#include <time.h>
 #endif
 
 long long scalanative_time_zone_offset() {
