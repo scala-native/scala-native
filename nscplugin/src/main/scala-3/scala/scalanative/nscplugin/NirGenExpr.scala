@@ -49,7 +49,7 @@ trait NirGenExpr(using Context) {
         case ValTree(value) => value
         case ContTree(f)    => f()
         case tree: Apply =>
-          val updatedTree = LazyValsAdapter.transformApply(tree)
+          val updatedTree = lazyValsAdapter.transformApply(tree)
           genApply(updatedTree)
         case tree: Assign         => genAssign(tree)
         case tree: Block          => genBlock(tree)
