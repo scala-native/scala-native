@@ -89,14 +89,12 @@ class NativeCompilerTest extends AnyFlatSpec:
         |end Macros
         |
         |class ReflectionUtils[Q <: Quotes](val q: Q) {
-        |  given q.type = q
+        |  given q.type = q // Internally defined as lazy val, leading to problems
         |  import q.reflect._
         |
         |  case class Mirror(arg: String)
         |  object Mirror{
-        |    def apply(): Mirror = 
-        |      println("Mirror.apply")
-        |      Mirror("foo")
+        |    def apply(): Mirror = Mirror("foo")
         |  }
         |}""".stripMargin
     )
