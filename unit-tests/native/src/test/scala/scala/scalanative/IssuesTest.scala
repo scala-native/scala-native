@@ -437,7 +437,8 @@ class IssuesTest {
     val singletonMap = Collections.singletonMap(value, value)
     val singletonSet = Collections.singleton(value)
     val singletonList = Collections.singletonList(value)
-    val unmodifiableMap = Collections.unmodifiableMap[String, String](singletonMap)
+    val unmodifiableMap =
+      Collections.unmodifiableMap[String, String](singletonMap)
     val unmodifiableSet = Collections.unmodifiableSet(singletonSet)
     val unmodifiableList = Collections.unmodifiableList(singletonList)
     val unmodifiableCollection =
