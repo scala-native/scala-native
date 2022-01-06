@@ -45,10 +45,12 @@ trait NirGenExpr(using Context) {
     buf =>
     def genExpr(tree: Tree): Val = {
       tree match {
-        case EmptyTree            => Val.Unit
-        case ValTree(value)       => value
-        case ContTree(f)          => f()
-        case tree: Apply          => genApply(tree)
+        case EmptyTree      => Val.Unit
+        case ValTree(value) => value
+        case ContTree(f)    => f()
+        case tree: Apply =>
+          val updatedTree = LazyValsAdapter.transformApply(tree)
+          genApply(updatedTree)
         case tree: Assign         => genAssign(tree)
         case tree: Block          => genBlock(tree)
         case tree: Closure        => genClosure(tree)
