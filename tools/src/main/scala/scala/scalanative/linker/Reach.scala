@@ -614,12 +614,14 @@ class Reach(
           //  special case for lifted methods
           .orElse(findRewriteCandidate(inModule = false))
           .getOrElse {
-            throw new LinkingException(
-              s"Found a call to not defined static method ${methodName} that could not be rewritten. " +
+            config.logger.warn(
+              s"Found a call to not defined static method ${methodName}. " +
                 "Static methods are generated since Scala Native 0.4.3, " +
                 "report this bug in the Scala Native issues. " +
-                s"Call defined at ${inst.pos.source}:${inst.pos.line}:${inst.pos.column}"
+                s"Call defined at ${inst.pos.show}"
             )
+            addMissing(methodName, inst.pos)
+            inst :: Nil
           }
 
       case inst =>
