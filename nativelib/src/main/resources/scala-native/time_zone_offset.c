@@ -1,38 +1,35 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+    #include <windows.h>
+    #include <wchar.h>
 #else
-#include <stdio.h>
-#include <sys/time.h>
+    // #define _GNU_SOURCE /* for tm_gmtoff and tm_zone */
+    #include <stdio.h>
+    #include <time.h>
 #endif
 
 long long scalanative_time_zone_offset() {
-    long long current_time_millis;
+    long long time_zone_offset_secs;
 
 #if defined(_WIN32)
-    // January 1, 1970 (start of Unix epoch) in "ticks"
-    long long UNIX_TIME_START = 0x019DB1DED53E8000;
-    long long TICKS_PER_MILLIS = 10000; // a tick is 100ns
+    TIME_ZONE_INFORMATION tzi = {0};
+   
+    int r = GetTimeZoneInformation(&tzi);
 
-    FILETIME filetime;
-    GetSystemTimeAsFileTime(&filetime); // returns ticks in UTC
-
-    // Copy the low and high parts of FILETIME into a LARGE_INTEGER
-    // This is so we can access the full 64-bits as an Int64 without causing
-    // an alignment fault
-    LARGE_INTEGER li;
-    li.LowPart = filetime.dwLowDateTime;
-    li.HighPart = filetime.dwHighDateTime;
-
-    current_time_millis = (li.QuadPart - UNIX_TIME_START) / TICKS_PER_MILLIS;
+    if (r == TIME_ZONE_ID_INVALID) {
+        // If failed return 0 - default for UTC
+        time_zone_offset_secs = 0L;
+    } else {
+        // Bias is in minutes
+        time_zone_offset_secs = tzi.Bias * 60;
+    }
 #else
-#define MILLIS_PER_SEC 1000LL
-#define MICROS_PER_MILLI 1000LL
+    time_t t = time(NULL);
+    struct tm lt = {0};
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    current_time_millis =
-        tv.tv_sec * MILLIS_PER_SEC + tv.tv_usec / MICROS_PER_MILLI;
+    localtime_r(&t, &lt);
+
+    time_zone_offset_secs = lt.tm_gmtoff;
 #endif
-    return current_time_millis;
+    return time_zone_offset_secs;
 }
