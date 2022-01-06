@@ -8,8 +8,10 @@ final case class Position(
     /** Zero-based column number. */
     column: Int
 ) {
+
   /** One-based line number */
   def sourceLine: Int = line + 1
+
   /** One-based column number */
   def sourceColumn: Int = column + 1
   def show: String = s"$source:$sourceLine:$sourceColumn"

@@ -23,7 +23,7 @@ class NirPositions()(using Context) {
     def nirSource = conversionCache.toNIRSource(source)
     if (span.exists && source.exists)
       val point = span.point
-      val line = source.offsetToLine(point) 
+      val line = source.offsetToLine(point)
       val column = source.column(point)
       nir.Position(nirSource, line, column)
     else if (source.exists) nir.Position(nirSource, 0, 0)
