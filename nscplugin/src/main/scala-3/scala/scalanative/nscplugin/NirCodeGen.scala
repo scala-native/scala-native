@@ -33,7 +33,6 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]
 
   protected val curMethodSym = new util.ScopedVar[Symbol]
-  protected val curMethodOuterSym = new util.ScopedVar[Option[Symbol]]
   protected val curMethodSig = new util.ScopedVar[nir.Type]
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]

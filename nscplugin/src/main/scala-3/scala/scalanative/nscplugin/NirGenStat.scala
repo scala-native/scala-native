@@ -297,7 +297,6 @@ trait NirGenStat(using Context) {
       else
         scoped(
           curMethodThis := thisParam,
-          curMethodOuterSym := outerParam,
           curMethodIsExtern := isExtern
         ) {
           buf.genReturn(withOptSynchronized(_.genExpr(bodyp)) match {
@@ -557,8 +556,7 @@ trait NirGenStat(using Context) {
           val fresh = curFresh.get
           scoped(
             curUnwindHandler := None,
-            curMethodThis := None,
-            curMethodOuterSym := None
+            curMethodThis := None
           ) {
             val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
             val args = entryParams.map(ValTree(_))

@@ -416,6 +416,59 @@ class IssuesTest {
     assertNotNull(res)
   }
 
+  @Test def test_Issue2504(): Unit = {
+    // In issue 2504 accessing iterator of immutable Java collection, would lead to
+    // infinite loop and segmentation fault.
+    import java.util.Collections
+    import java.util.Map.Entry
+    Seq(
+      Collections.EMPTY_MAP.entrySet().iterator(),
+      Collections.EMPTY_MAP.keySet().iterator(),
+      Collections.EMPTY_MAP.values().iterator(),
+      Collections.EMPTY_SET.iterator(),
+      Collections.EMPTY_LIST.iterator()
+    ).zipWithIndex.foreach {
+      case (iterator, idx) =>
+        assertNotNull(idx.toString, iterator)
+        assertFalse(idx.toString(), iterator.hasNext())
+    }
+
+    val value = "foo"
+    val singletonMap = Collections.singletonMap(value, value)
+    val singletonSet = Collections.singleton(value)
+    val singletonList = Collections.singletonList(value)
+    val unmodifiableMap =
+      Collections.unmodifiableMap[String, String](singletonMap)
+    val unmodifiableSet = Collections.unmodifiableSet(singletonSet)
+    val unmodifiableList = Collections.unmodifiableList(singletonList)
+    val unmodifiableCollection =
+      Collections.unmodifiableCollection(singletonList)
+
+    Seq(
+      singletonMap.entrySet().iterator(),
+      singletonMap.keySet().iterator(),
+      singletonMap.values().iterator(),
+      singletonSet.iterator(),
+      singletonList.iterator(),
+      unmodifiableMap.entrySet().iterator(),
+      unmodifiableMap.keySet().iterator(),
+      unmodifiableMap.values().iterator(),
+      unmodifiableSet.iterator(),
+      unmodifiableList.iterator(),
+      unmodifiableCollection.iterator()
+    ).zipWithIndex.foreach {
+      case (iterator, idx) =>
+        assertNotNull(idx.toString, iterator)
+        assertTrue(idx.toString(), iterator.hasNext())
+        iterator.next() match {
+          case entry: Entry[String, String] @unchecked =>
+            assertEquals(s"$idx key", value, entry.getKey())
+            assertEquals(s"$idx value", value, entry.getValue())
+          case v => assertEquals(idx.toString(), value, v)
+        }
+    }
+  }
+
 }
 
 package issue1090 {

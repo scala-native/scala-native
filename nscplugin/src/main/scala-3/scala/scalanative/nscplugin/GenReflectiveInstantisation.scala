@@ -57,8 +57,7 @@ trait GenReflectiveInstantisation(using Context) {
         curClassSym := sym,
         curFresh := Fresh(),
         curUnwindHandler := None,
-        curMethodThis := None,
-        curMethodOuterSym := None
+        curMethodThis := None
       ) {
         registerReflectiveInstantiation(td)
       }
