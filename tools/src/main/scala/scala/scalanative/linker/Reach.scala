@@ -945,7 +945,7 @@ class Reach(
     if (pos != nir.Position.NoPosition) {
       val position = NonReachablePosition(
         path = Paths.get(pos.source),
-        line = pos.line + 1
+        line = pos.sourceLine
       )
       missing(global) = prev + position
     }
