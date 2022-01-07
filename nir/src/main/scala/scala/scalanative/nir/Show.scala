@@ -161,6 +161,13 @@ object Show {
         next_(thenp)
         str(" else ")
         next_(elsep)
+      case Inst.LinktimeIf(cond, thenp, elsep) =>
+        str("linktime if ")
+        linktimeCondition(cond)
+        str(" then ")
+        next_(thenp)
+        str(" else ")
+        next_(elsep)
       case Inst.Switch(scrut, default, cases) =>
         str("switch ")
         val_(scrut)
@@ -185,7 +192,6 @@ object Show {
           str(" ")
           next_(unwind)
         }
-      case _ => util.unsupported(s"Show does not support ${inst}")
     }
 
     def op_(op: Op): Unit = op match {
@@ -631,6 +637,23 @@ object Show {
     def local_(local: Local): Unit = {
       str("%")
       str(local.id)
+    }
+
+    def linktimeCondition(cond: LinktimeCondition): Unit = {
+      import LinktimeCondition._
+      cond match {
+        case SimpleCondition(propertyName, comparison, value) =>
+          str(propertyName + " ")
+          comp_(comparison)
+          str(" ")
+          val_(value)
+        case ComplexCondition(op, left, right) =>
+          linktimeCondition(left)
+          str(" ")
+          bin_(op)
+          str(" ")
+          linktimeCondition(right)
+      }
     }
 
     private def escapeNewLine(s: String): String =
