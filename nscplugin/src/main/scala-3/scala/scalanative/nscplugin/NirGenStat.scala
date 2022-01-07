@@ -46,6 +46,7 @@ trait NirGenStat(using Context) {
   }
 
   private def genNormalClass(td: TypeDef): Unit = {
+    lazyValsAdapter.prepareForTypeDef(td)
     implicit val pos: nir.Position = td.span
     val sym = td.symbol.asClass
     val attrs = genClassAttrs(td)
@@ -142,7 +143,11 @@ trait NirGenStat(using Context) {
       case EmptyTree  => Nil
       case _: ValDef  => Nil // handled in genClassFields
       case _: TypeDef => Nil
-      case dd: DefDef => genMethod(dd)
+      case dd: DefDef =>
+        lazyValsAdapter.transformDefDef(dd) match {
+          case dd: DefDef => genMethod(dd)
+          case _          => Nil // erased
+        }
       case tree =>
         throw new FatalError("Illegal tree in body of genMethods():" + tree)
     }

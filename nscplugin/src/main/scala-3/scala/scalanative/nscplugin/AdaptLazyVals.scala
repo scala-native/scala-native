@@ -12,22 +12,16 @@ import core.Symbols._
 import core.StdNames._
 import scala.annotation.{threadUnsafe => tu}
 
-// This phase is responsible for rewriting calls to scala.runtime.LazyVals with
+// This helper class is responsible for rewriting calls to scala.runtime.LazyVals with
 // its scala native specific counter-part. This is needed, because LazyVals are
 // using JVM unsafe API and static class constructors which are not supported
 // in Scala Native.
-object AdaptLazyVals {
-  val name = "scalanative-adaptLazyVals"
-}
-
-class AdaptLazyVals extends PluginPhase {
-  val phaseName = AdaptLazyVals.name
-
-  override val runsAfter = Set(LazyVals.name, MoveStatics.name)
-  override val runsBefore = Set(GenNIR.name)
-
+// In theory it could be defined as separate compilation phase (it was in the past), but
+// it would lead to the problems when using macros - rewritten lazy fields method would
+// be inlined and evaluated at compile time, however modified AST contains Scala Native
+// specific calls to Intrinsic methods. This would lead to throwing exception while compiling.
+class AdaptLazyVals(defnNir: NirDefinitions) {
   def defn(using Context) = LazyValsDefns.get
-  def defnNir(using Context) = NirDefinitions.get
 
   private def isLazyFieldOffset(name: Name) =
     name.startsWith(nme.LAZY_FIELD_OFFSET.toString)
@@ -36,13 +30,12 @@ class AdaptLazyVals extends PluginPhase {
   // with the name of referenced bitmap fields within given TypeDef
   private val bitmapFieldNames = collection.mutable.Map.empty[Symbol, Literal]
 
-  override def prepareForUnit(tree: Tree)(using Context): Context = {
+  def clean(): Unit = {
     bitmapFieldNames.clear()
-    super.prepareForUnit(tree)
   }
 
   // Collect informations about offset fields
-  override def prepareForTypeDef(td: TypeDef)(using Context): Context = {
+  def prepareForTypeDef(td: TypeDef)(using Context): Unit = {
     val sym = td.symbol
     val hasLazyFields = sym.denot.info.fields
       .exists(f => isLazyFieldOffset(f.name))
@@ -55,11 +48,9 @@ class AdaptLazyVals extends PluginPhase {
           vd.symbol -> fieldname
       }.toMap
     }
-
-    ctx
   }
 
-  override def transformDefDef(dd: DefDef)(using Context): Tree = {
+  def transformDefDef(dd: DefDef)(using Context): DefDef | Thicket = {
     val hasLazyFields = dd.symbol.owner.denot.info.fields
       .exists(f => isLazyFieldOffset(f.name))
 
@@ -84,7 +75,7 @@ class AdaptLazyVals extends PluginPhase {
 
   // Replace all usages of all unsupported LazyVals methods with their
   // Scala Native specific implementation (taking Ptr instead of object + offset)
-  override def transformApply(tree: Apply)(using Context): Tree = {
+  def transformApply(tree: Apply)(using Context): Apply = {
     // Create call to SN intrinsic methods returning pointer to bitmap field
     def classFieldPtr(target: Tree, fieldRef: Tree): Tree = {
       val fieldName = bitmapFieldNames(fieldRef.symbol)

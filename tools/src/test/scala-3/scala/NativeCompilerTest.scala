@@ -4,6 +4,9 @@ import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.scalanative.api._
+import scala.scalanative.util.Scope
+import scala.scalanative.io.VirtualDirectory
+import java.nio.file.Files
 
 class NativeCompilerTest extends AnyFlatSpec:
 
@@ -12,6 +15,21 @@ class NativeCompilerTest extends AnyFlatSpec:
     catch {
       case ex: CompilationFailedException =>
         fail(s"Failed to compile source: ${ex.getMessage}", ex)
+    }
+  }
+
+  def compileAll(sources: (String, String)*): Unit = {
+    Scope { implicit in =>
+      val outDir = Files.createTempDirectory("native-test-out")
+      val compiler = scalanative.NIRCompiler.getCompiler(outDir)
+      val sourcesDir = scalanative.NIRCompiler.writeSources(sources.toMap)
+      val dir = VirtualDirectory.real(outDir)
+
+      try scalanative.NIRCompiler(_.compile(sourcesDir))
+      catch {
+        case ex: CompilationFailedException =>
+          fail(s"Failed to compile source: ${ex.getMessage}", ex)
+      }
     }
   }
 
@@ -54,3 +72,30 @@ class NativeCompilerTest extends AnyFlatSpec:
   |  }
   |}
   """.stripMargin)
+
+  // Reproducer for https://github.com/typelevel/shapeless-3/pull/61#discussion_r779376350
+  it should "allow to compile inlined macros with lazy vals" in {
+    compileAll(
+      "Test.scala" -> "@main def run(): Unit = Macros.foo()",
+      "Macros.scala" -> """
+        |import scala.quoted.*
+        |object Macros:
+        |  def foo_impl()(using q: Quotes): Expr[Unit] = '{
+        |     ${val x = ReflectionUtils(quotes).Mirror(); '{()} }
+        |     println()
+        |   }
+        |
+        |  inline def foo(): Unit = ${foo_impl()}
+        |end Macros
+        |
+        |class ReflectionUtils[Q <: Quotes](val q: Q) {
+        |  given q.type = q // Internally defined as lazy val, leading to problems
+        |  import q.reflect._
+        |
+        |  case class Mirror(arg: String)
+        |  object Mirror{
+        |    def apply(): Mirror = Mirror("foo")
+        |  }
+        |}""".stripMargin
+    )
+  }
