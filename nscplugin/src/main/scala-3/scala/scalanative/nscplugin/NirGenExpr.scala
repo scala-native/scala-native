@@ -2246,6 +2246,13 @@ trait NirGenExpr(using Context) {
           )
           fnRef
 
+        case ref: RefTree =>
+          report.error(
+            s"Function passed to ${app.symbol.show} needs to be inlined",
+            tree.sourcePos
+          )
+          Val.Null
+
         case _ =>
           report.error(
             "Failed to resolve function ref for extern forwarder",
