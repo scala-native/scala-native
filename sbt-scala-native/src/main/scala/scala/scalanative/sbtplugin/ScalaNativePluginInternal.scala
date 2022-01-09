@@ -145,8 +145,14 @@ object ScalaNativePluginInternal {
         import NativeLinkCacheImplicits._
         import collection.JavaConverters._
 
+        // Products of compilation for Scala 2 are always defined in `target/scala-<scalaBinaryVersion` directory,
+        // but in case of Scala 3 there is always a dedicated directory for each (minor) Scala version.
+        // This allows us to cache binaries for each Scala version instead of each binary Scala version.
+        val scalaVersionDir =
+          if (scalaVersion.value.startsWith("2.")) scalaBinaryVersion.value
+          else scalaVersion.value
         val cacheFactory =
-          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaBinaryVersion.value}"
+          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaVersionDir}"
         val classpathTracker =
           Tracked.inputChanged[
             (Seq[HashFileInfo], build.Config),
