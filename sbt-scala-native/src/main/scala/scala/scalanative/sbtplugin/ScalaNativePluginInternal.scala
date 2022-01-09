@@ -145,7 +145,8 @@ object ScalaNativePluginInternal {
         import NativeLinkCacheImplicits._
         import collection.JavaConverters._
 
-        val cacheFactory = streams.value.cacheStoreFactory / "fileInfo"
+        val cacheFactory =
+          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaBinaryVersion.value}"
         val classpathTracker =
           Tracked.inputChanged[
             (Seq[HashFileInfo], build.Config),
