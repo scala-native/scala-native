@@ -142,6 +142,8 @@ object UnixProcess {
   @link("pthread")
   @extern
   private[this] object ProcessMonitor {
+    @name("scalanative_process_monitor_notify")
+    def notifyMonitor(): Unit = extern
     @name("scalanative_process_monitor_check_result")
     def checkResult(pid: Int): CInt = extern
     @name("scalanative_process_monitor_init")
@@ -198,6 +200,7 @@ object UnixProcess {
          * to run on the child before execve inside of a method.
          */
         def invokeChildProcess(): Process = {
+          ProcessMonitor.notifyMonitor()
           if (dir != null) unistd.chdir(toCString(dir.toString))
           setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
           setupChildFDS(
