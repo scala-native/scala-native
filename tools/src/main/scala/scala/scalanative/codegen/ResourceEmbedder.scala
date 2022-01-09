@@ -47,9 +47,14 @@ object ResourceEmbedder {
                   path.toString()
                 }
 
-              if (isSourceFile(path)) {
+              if (isInIgnoredDirectory(path)) {
                 config.logger.debug(
                   s"Did not embed: $pathName. Source file extension detected."
+                )
+                None
+              } else if (isSourceFile(path)) {
+                config.logger.debug(
+                  s"Did not embed: $pathName. File in the ignored scala-native folder."
                 )
                 None
               } else if (Files.isDirectory(path)) {
@@ -179,17 +184,16 @@ object ResourceEmbedder {
       ".nir",
       ".jar",
       ".scala",
-      ".java",
-      ".c",
-      ".h",
-      ".cpp",
-      ".hpp",
-      ".S"
+      ".java"
     )
 
   private def isSourceFile(path: Path): Boolean = {
     if (path.getFileName == null) false
     else !sourceExtensions.filter(path.getFileName.toString.endsWith(_)).isEmpty
+  }
+
+  private def isInIgnoredDirectory(path: Path): Boolean = {
+    path.startsWith("/scala-native/")
   }
 
 }

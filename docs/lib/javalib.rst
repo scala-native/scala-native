@@ -637,11 +637,13 @@ binary file. Please note that files with following extensions cannot be embedded
 and used as a resource:
 
 ```
-".class", ".nir", ".scala", ".java", ".jar", ".c", ".h", ".cpp", ".hpp", ".S"
+".class", ".nir", ".scala", ".java", ".jar",
 ```
 
 This is to avoid unnecesarily embedding source files. If necessary, please
-consider using a different file extension for embeddal.
+consider using a different file extension for embeddal. Files found in the
+resources/scala-native directory will not be embedded as well. It is recommended
+to add the ".c" nad ".h" files there.
 
 Reasoning for the lack of getResource() and getResources():
 
