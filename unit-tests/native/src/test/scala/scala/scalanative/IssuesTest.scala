@@ -467,6 +467,7 @@ class IssuesTest {
           case v => assertEquals(idx.toString(), value, v)
         }
     }
+  }
 
   @Test def test_Issue2519(): Unit = {
     import scala.scalanative.reflect.Reflect
