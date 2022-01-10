@@ -95,7 +95,7 @@ object ScalaNativePluginInternal {
       crossTarget.value / s"${moduleName.value}${nameSuffix}-out${ext}"
     },
     nativeWorkdir := {
-      val workdir = crossTarget.value / "native"
+      val workdir = crossTarget.value / s"native${nameSuffix}"
       if (!workdir.exists) {
         IO.createDirectory(workdir)
       }
