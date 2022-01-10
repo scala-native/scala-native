@@ -19,13 +19,11 @@ class URLDecoderTest {
   @Test
   def decodeTest(): Unit = {
     def test(encoded: String, expected: String, enc: String = utf8): Unit = {
-      if (enc == "utf-16") {
-        println(s">$expected<")
-        val decoded = URLDecoder.decode(encoded, enc)
-        println(expected.toList.map(_.toByte))
-        println(decoded.toList.map(_.toByte))
-      }
-      assertEquals(expected, URLDecoder.decode(encoded, enc))
+      assertEquals(
+        ("test", enc, encoded).toString,
+        expected,
+        URLDecoder.decode(encoded, enc)
+      )
     }
 
     def illegalArgumentOrReplacement(
@@ -45,7 +43,7 @@ class URLDecoderTest {
         }
       }
 
-      assertTrue(thrown)
+      assertTrue(("illegal argument", enc, encoded).toString, thrown)
     }
 
     def unsupportedEncoding(encoded: String, enc: String = utf8): Unit = {
