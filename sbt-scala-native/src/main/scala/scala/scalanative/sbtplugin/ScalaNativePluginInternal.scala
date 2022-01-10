@@ -92,10 +92,10 @@ object ScalaNativePluginInternal {
   def scalaNativeConfigSettings(nameSuffix: String): Seq[Setting[_]] = Seq(
     nativeLink / artifactPath := {
       val ext = if (Platform.isWindows) ".exe" else ""
-      crossTarget.value / s"${moduleName.value}${nameSuffix}-out${ext}"
+      crossTarget.value / s"${moduleName.value}$nameSuffix-out$ext"
     },
     nativeWorkdir := {
-      val workdir = crossTarget.value / s"native${nameSuffix}"
+      val workdir = crossTarget.value / s"native$nameSuffix"
       if (!workdir.exists) {
         IO.createDirectory(workdir)
       }
