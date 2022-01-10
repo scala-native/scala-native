@@ -28,7 +28,7 @@ object ResourceEmbedder {
       classpathDirectory: VirtualDirectory
   )
 
-  def apply(config: Config)(implicit scope: Scope): Seq[Defn.Var] = {
+  def apply(config: Config): Seq[Defn.Var] = Scope { implicit scope =>
     val classpath = config.classPath
 
     implicit val position: Position = Position.NoPosition
