@@ -89,10 +89,10 @@ object ScalaNativePluginInternal {
     }
   )
 
-  lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
+  def scalaNativeConfigSettings(nameSuffix: String): Seq[Setting[_]] = Seq(
     nativeLink / artifactPath := {
       val ext = if (Platform.isWindows) ".exe" else ""
-      crossTarget.value / (moduleName.value + "-out" + ext)
+      crossTarget.value / s"${moduleName.value}${nameSuffix}-out${ext}"
     },
     nativeWorkdir := {
       val workdir = crossTarget.value / "native"
@@ -218,10 +218,10 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings
+    scalaNativeConfigSettings(nameSuffix = "")
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings ++
+    scalaNativeConfigSettings(nameSuffix = "-test") ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {
