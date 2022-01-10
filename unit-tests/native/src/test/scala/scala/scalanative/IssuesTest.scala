@@ -499,6 +499,23 @@ class IssuesTest {
     )
   }
 
+  @Test def test_Issue2520(): Unit = {
+    import issue2520._
+    import issue2520.Kleisli.KleisliOpt
+    implicit def instance: Strong[Function1] = new Strong[Function1] {
+      override def first[A, B, C](f: A => B): Function1[(A, C), (B, C)] = {
+        case (a1, a2) => (f(a1), a2)
+      }
+    }
+
+    assertNotNull {
+      val res =
+        implicitly[Strong[KleisliOpt]].law.test[Int, Int, Int, Int](x => x)
+      println(res)
+      res
+    }
+  }
+
 }
 
 package issue1090 {
@@ -559,4 +576,33 @@ package issue2519 {
   class C extends B
   object D extends A
   object E extends B
+}
+
+package issue2520 {
+  case class Kleisli[F[_], A, B](run: A => F[B])
+
+  object Kleisli {
+    type KleisliOpt[A, B] = Kleisli[Option, A, B]
+
+    implicit def instance: Strong[KleisliOpt] = new Strong[KleisliOpt] {
+      override def first[A, B, C](
+          f: KleisliOpt[A, B]
+      ): KleisliOpt[(A, C), (B, C)] =
+        Kleisli[Option, (A, C), (B, C)] {
+          case (a1, a2) => f.run(a1).map(_ -> a2)
+        }
+    }
+  }
+
+  trait Strong[F[_, _]] {
+    def first[A, B, C](fa: F[A, B]): F[(A, C), (B, C)]
+
+    trait Law {
+      def test[A, B, C, D](f: C => D)(implicit PF: Strong[Function1]) = {
+        val x: ((C, B)) => (D, B) = PF.first[C, D, B](f)
+      }
+    }
+
+    def law: Law = new Law {}
+  }
 }

@@ -17,8 +17,9 @@ abstract class CharsetEncoder protected (
       cs: Charset,
       _averageBytesPerChar: Float,
       _maxBytesPerChar: Float
-  ) =
-    this(cs, _averageBytesPerChar, _averageBytesPerChar, Array('?'.toByte))
+  ) = {
+    this(cs, _averageBytesPerChar, _maxBytesPerChar, Array('?'.toByte))
+  }
 
   // Config
 
