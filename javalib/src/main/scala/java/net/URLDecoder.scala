@@ -67,7 +67,7 @@ object URLDecoder {
             buffer.put(((c1 << 4) + c2).toByte)
             // Peak next char to check if it's also an escape.
             // If so drop next char to allign with state before loop
-            inEscape = in.hasRemaining() && in.get(in.position()) == '%'
+            inEscape = in.remaining() > 2 && in.get(in.position()) == '%'
             if (inEscape) in.get()
           }
 
