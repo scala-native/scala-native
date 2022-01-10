@@ -467,6 +467,35 @@ class IssuesTest {
           case v => assertEquals(idx.toString(), value, v)
         }
     }
+
+  @Test def test_Issue2519(): Unit = {
+    import scala.scalanative.reflect.Reflect
+
+    def isInstantiatableClass(fqcn: String) =
+      Reflect.lookupInstantiatableClass(fqcn).isDefined
+    def isLoadableModule(fqcn: String) =
+      Reflect.lookupLoadableModuleClass(fqcn).isDefined
+
+    assertTrue(
+      "A should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.A")
+    )
+    assertFalse(
+      "B should be not instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.B")
+    )
+    assertTrue(
+      "C should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.C")
+    )
+    assertTrue(
+      "D should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.D$")
+    )
+    assertTrue(
+      "E should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.E$")
+    )
   }
 
 }
@@ -518,4 +547,15 @@ package issue1909 {
 package issue1950 {
   final class ValueClass(val value: Float) extends AnyVal
   final case class ValueClass2(string: String) extends AnyVal
+}
+
+package issue2519 {
+  import scala.scalanative.reflect.Reflect
+
+  @scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
+  class A
+  abstract class B extends A
+  class C extends B
+  object D extends A
+  object E extends B
 }
