@@ -14,13 +14,6 @@
 #include <semaphore.h>
 #endif
 
-#define RETURN_ON_ERROR(f)                                                     \
-    do {                                                                       \
-        int res = f;                                                           \
-        if (res != 0)                                                          \
-            return res;                                                        \
-    } while (0)
-
 struct Monitor {
   public:
     pthread_cond_t *cond;
