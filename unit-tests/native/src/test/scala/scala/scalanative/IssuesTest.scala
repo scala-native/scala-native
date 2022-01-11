@@ -469,6 +469,36 @@ class IssuesTest {
     }
   }
 
+  @Test def test_Issue2519(): Unit = {
+    import scala.scalanative.reflect.Reflect
+
+    def isInstantiatableClass(fqcn: String) =
+      Reflect.lookupInstantiatableClass(fqcn).isDefined
+    def isLoadableModule(fqcn: String) =
+      Reflect.lookupLoadableModuleClass(fqcn).isDefined
+
+    assertTrue(
+      "A should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.A")
+    )
+    assertFalse(
+      "B should be not instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.B")
+    )
+    assertTrue(
+      "C should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.C")
+    )
+    assertTrue(
+      "D should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.D$")
+    )
+    assertTrue(
+      "E should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.E$")
+    )
+  }
+
   @Test def test_Issue2520(): Unit = {
     import issue2520._
     import issue2520.Kleisli.KleisliOpt
@@ -537,6 +567,17 @@ package issue1950 {
   final case class ValueClass2(string: String) extends AnyVal
 }
 
+package issue2519 {
+  import scala.scalanative.reflect.Reflect
+
+  @scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
+  class A
+  abstract class B extends A
+  class C extends B
+  object D extends A
+  object E extends B
+}
+
 package issue2520 {
   case class Kleisli[F[_], A, B](run: A => F[B])
 
@@ -564,5 +605,4 @@ package issue2520 {
 
     def law: Law = new Law {}
   }
-
 }

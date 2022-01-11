@@ -47,7 +47,7 @@ trait GenReflectiveInstantisation(using Context) {
   def genReflectiveInstantiation(td: TypeDef): Unit = {
     val sym = td.symbol.asClass
     val enableReflectiveInstantiation =
-      (sym :: sym.info.parents.map(_.typeSymbol))
+      sym.baseClasses
         .exists(
           _.hasAnnotation(defnNir.EnableReflectiveInstantiationAnnotationClass)
         )
