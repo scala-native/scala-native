@@ -12,6 +12,7 @@
 #include <dispatch/dispatch.h>
 #else
 #include <semaphore.h>
+#include <errno.h>
 #endif
 
 struct Monitor {
