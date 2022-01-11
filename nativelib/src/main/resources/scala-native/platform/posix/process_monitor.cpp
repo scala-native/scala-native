@@ -29,9 +29,13 @@ struct Monitor {
 };
 
 static pthread_mutex_t shared_mutex;
-static sem_t active_procs;
 static std::unordered_map<int, std::shared_ptr<Monitor>> waiting_procs;
 static std::unordered_map<int, int> finished_procs;
+#ifdef __APPLE__
+static dispatch_semaphore_t active_procs;
+#else
+static sem_t active_procs;
+#endif
 
 static void *wait_loop(void *arg) {
     while (1) {
