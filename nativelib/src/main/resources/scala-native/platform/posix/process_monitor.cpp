@@ -7,7 +7,12 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <unordered_map>
+#ifdef __APPLE__
+// Semaphores on OSX are deprectated
+#include <dispatch/dispatch.h>
+#else
 #include <semaphore.h>
+#endif
 
 #define RETURN_ON_ERROR(f)                                                     \
     do {                                                                       \
@@ -37,9 +42,18 @@ static std::unordered_map<int, int> finished_procs;
 
 static void *wait_loop(void *arg) {
     while (1) {
-        int status;
 
-        sem_wait(&active_procs);
+// Wait until there is at least 1 active process
+#ifdef __APPLE__
+        dispatch_semaphore_wait(active_procs, DISPATCH_TIME_FOREVER);
+#else
+        int wait_result;
+        do {
+            wait_result = sem_wait(&active_procs);
+        } while (wait_result == -1 && errno == EINTR);
+#endif
+
+        int status;
         const int pid = waitpid(-1, &status, 0);
         if (pid != -1) {
             pthread_mutex_lock(&shared_mutex);
@@ -73,7 +87,14 @@ static int check_result(const int pid, pthread_mutex_t *lock) {
 }
 
 extern "C" {
-void scalanative_process_monitor_notify() { sem_post(&active_procs); }
+/* Notify process monitor about spawning new process */
+void scalanative_process_monitor_notify() {
+#ifdef __APPLE__
+    dispatch_semaphore_signal(active_procs);
+#else
+    sem_post(&active_procs);
+#endif
+}
 
 int scalanative_process_monitor_check_result(const int pid) {
     pthread_mutex_lock(&shared_mutex);
@@ -108,7 +129,11 @@ int scalanative_process_monitor_wait_for_pid(const int pid, timespec *ts,
 void scalanative_process_monitor_init() {
     pthread_t thread;
     pthread_mutex_init(&shared_mutex, NULL);
+#ifdef __APPLE__
+    active_procs = dispatch_semaphore_create(0);
+#else
     sem_init(&active_procs, 1, 0);
+#endif
     pthread_create(&thread, NULL, wait_loop, NULL);
     pthread_detach(thread);
 }
