@@ -3,7 +3,7 @@ package build
 object ScalaVersions {
   val crossScala211 = Seq("2.11.12")
   val crossScala212 = Seq("2.12.13", "2.12.14", "2.12.15")
-  val crossScala213 = Seq("2.13.4", "2.13.5", "2.13.6", "2.13.7")
+  val crossScala213 = Seq("2.13.4", "2.13.5", "2.13.6", "2.13.7", "2.13.8")
   val crossScala3 = Seq("3.1.0")
 
   val scala211: String = crossScala211.last

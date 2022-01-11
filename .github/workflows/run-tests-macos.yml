@@ -16,10 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [2.13.8, 2.12.15, 2.11.12]
         gc: [immix]
         include:
-          - scala: 2.13.7
+          - scala: 2.13.8
             gc: commix
           - scala: 2.12.15
             gc: boehm
