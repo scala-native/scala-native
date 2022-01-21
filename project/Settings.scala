@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 
 import scala.collection.mutable
+import scala.scalanative.build.Platform
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -109,17 +110,29 @@ object Settings {
           }
         }
 
-        optRTJar.fold[Map[File, URL]] {
-          Map.empty
-        } { rtJar =>
-          assert(rtJar.exists, s"$rtJar does not exist")
-          Map(rtJar -> url(javaDocBaseURL))
+        val extraMappings = optRTJar.foldLeft(
+          Map(
+            /* Add a second Java Scaladoc mapping for cases where Scala actually
+             * understands the jrt:/ filesystem of Java 9.
+             */
+            file("/modules/java.base") -> url(javaDocBaseURL)
+          )
+        ) {
+          case (mappings, rtJar) =>
+            assert(rtJar.exists, s"$rtJar does not exist")
+            Map(rtJar -> url(javaDocBaseURL))
         }
-      },
-      /* Add a second Java Scaladoc mapping for cases where Scala actually
-       * understands the jrt:/ filesystem of Java 9.
-       */
-      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL)
+
+        // Due to the bug in Scala 3 scaladoc Windows paths are leading to
+        // runtime exceptions in regex pattern matching. By default, we publish
+        // Scala using Unix machine, so this change should not cause any kind
+        // of regression. It is only used to mitigate errors in the CI
+        if (scalaVersion.value.startsWith("3.") &&
+            Platform.isWindows &&
+            sys.env.contains("CI") // always present in the GitHub Actions
+        ) Map.empty
+        else extraMappings
+      }
     )
   }
 
