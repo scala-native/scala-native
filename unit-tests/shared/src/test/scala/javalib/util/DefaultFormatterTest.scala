@@ -196,11 +196,12 @@ class DefaultFormatterTest {
         classOf[UnsupportedEncodingException],
         new Formatter(notExist, "ISO 1111-1")
       )
-    } finally if (notExist.exists()) {
-      // Fail on RI on Windows, because output stream is created and
-      // not closed when exception thrown
-      assertTrue(notExist.delete())
-    }
+    } finally
+      if (notExist.exists()) {
+        // Fail on RI on Windows, because output stream is created and
+        // not closed when exception thrown
+        assertTrue(notExist.delete())
+      }
   }
 
   @Test def constructorPrintStream(): Unit = {

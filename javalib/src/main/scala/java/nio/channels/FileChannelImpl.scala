@@ -232,7 +232,7 @@ private[java] final class FileChannelImpl(
           case ErrorCodes.ERROR_BROKEN_PIPE =>
             // Pipe was closed, but it still can contain some unread data
             available() match {
-              case 0     => -1 //EOF
+              case 0     => -1 // EOF
               case count => tryRead(count)(fallback = fail())
             }
 

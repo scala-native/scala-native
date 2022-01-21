@@ -127,7 +127,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include(
       // In Scala 3 trait would be inlined into class
       "Resolving pointer of immutable field myField in "
-    ) //trait Foo is not allowed")
+    ) // trait Foo is not allowed")
   }
 
   it should "report error for intrinsic resolving of immutable field introduced by inheritence" in {

@@ -187,7 +187,7 @@ class BigDecimalConstructorsTest {
   }
 
   @Test def testConstrDoubleDenormalized(): Unit = {
-    //INF
+    // INF
     val a: Double = 2.274341322658976e-304
     val aNumber = new BigDecimal(a)
     val expected = new BigDecimal("2.274341322658976E-304")

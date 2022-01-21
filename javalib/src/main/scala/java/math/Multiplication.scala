@@ -359,7 +359,7 @@ private[math] object Multiplication {
       // "LARGE POWERS"
       BigFivePows(1).pow(exp.toInt).shiftLeft(exp.toInt)
     } else {
-      //"HUGE POWERS"
+      // "HUGE POWERS"
       val powerOfFive = BigFivePows(1).pow(Integer.MAX_VALUE)
       var res: BigInteger = powerOfFive
       var longExp = exp - Int.MaxValue

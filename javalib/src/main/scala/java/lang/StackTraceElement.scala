@@ -37,9 +37,9 @@ final class StackTraceElement(
     that match {
       case that: StackTraceElement =>
         getClassName == that.getClassName &&
-          getMethodName == that.getMethodName &&
-          getFileName == that.getFileName &&
-          getLineNumber == that.getLineNumber
+        getMethodName == that.getMethodName &&
+        getFileName == that.getFileName &&
+        getLineNumber == that.getLineNumber
       case _ =>
         false
     }

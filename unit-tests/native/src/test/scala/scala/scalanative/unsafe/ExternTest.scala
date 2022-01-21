@@ -43,7 +43,7 @@ class ExternTest {
 
   @Test def externVariableReadAndAssign(): Unit = {
     assumeFalse("No getOpt in Windows", isWindows)
-    if (isWindows) ??? //unsupported extern methods
+    if (isWindows) ??? // unsupported extern methods
     else externVariableReadAndAssignUnix()
   }
 
@@ -79,8 +79,8 @@ class ExternTest {
 
   val cb: CFuncPtr0[CInt] = () => 42
   @Test def allowsToUseGenericFunctionAsArgument(): Unit = {
-    val res0 = testlib.exec0(cb) //expected CFuncPtr0[Int]
-    val res1 = testlib.exec(cb) //expected CFuncPtr
+    val res0 = testlib.exec0(cb) // expected CFuncPtr0[Int]
+    val res1 = testlib.exec(cb) // expected CFuncPtr
     assertTrue(res0 == 42)
     assertTrue(res1 == 42)
   }

@@ -40,9 +40,9 @@ final class Locale(
     that match {
       case that: Locale =>
         getLanguage() == that.getLanguage() &&
-          getCountry() == that.getCountry() &&
-          getVariant() == that.getVariant() &&
-          extensions == that.extensions
+        getCountry() == that.getCountry() &&
+        getVariant() == that.getVariant() &&
+        extensions == that.extensions
       case _ =>
         false
     }

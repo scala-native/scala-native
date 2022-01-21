@@ -32,7 +32,7 @@ final class Timestamp private (
         true
       case that: Timestamp =>
         timestamp.equals(that.getTimestamp) &&
-          signerCertPath.equals(that.getSignerCertPath)
+        signerCertPath.equals(that.getSignerCertPath)
       case _ =>
         false
     }

@@ -512,7 +512,7 @@ object Files {
       val targetAbs = target.toAbsolutePath().toString
       // We cannot replace directory, it needs to be removed first
       if (replaceExisting && target.toFile().isDirectory()) {
-        //todo delete children
+        // todo delete children
         Files.delete(target)
       }
       if (isWindows) {
@@ -523,8 +523,8 @@ object Files {
         val flags = {
           val replace =
             if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt
-          MOVEFILE_COPY_ALLOWED | //Allow coping betwen volumes
-            MOVEFILE_WRITE_THROUGH | //Block until actually moved
+          MOVEFILE_COPY_ALLOWED | // Allow coping betwen volumes
+            MOVEFILE_WRITE_THROUGH | // Block until actually moved
             replace
         }
         if (!MoveFileExW(sourceCString, targetCString, flags)) {

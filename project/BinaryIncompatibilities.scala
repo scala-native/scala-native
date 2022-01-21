@@ -8,7 +8,7 @@ object BinaryIncompatibilities {
   final val Util: Filters = Nil
   final val Nir: Filters = Seq(
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*"),
-    //sealed trait replaced with sealed abstract class, used internally
+    // sealed trait replaced with sealed abstract class, used internally
     exclude[Problem]("scala.scalanative.nir.Sig$Scope*")
   )
 

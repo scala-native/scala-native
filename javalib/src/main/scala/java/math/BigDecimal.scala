@@ -861,8 +861,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
           (q, l)
       }
 
-      //q simplifies all "5" factors of q1, dividing by 5^l
-      //l number of factors "5" in divisorUnscaled
+      // q simplifies all "5" factors of q1, dividing by 5^l
+      // l number of factors "5" in divisorUnscaled
       val (q, l) = loop(1, q1.shiftRight(k), 0)
 
       // If  abs(q) != 1  then the quotient is periodic
@@ -1265,7 +1265,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   def scaleByPowerOfTen(n: Int): BigDecimal = {
     val newScale = _scale - n.toLong
     if (_bitLength < 64) {
-      //Taking care when a 0 is to be scaled
+      // Taking care when a 0 is to be scaled
       if (_smallValue == 0) zeroScaledBy(newScale)
       else valueOf(_smallValue, safeLongToInt(newScale))
     } else {
@@ -1350,8 +1350,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   override def equals(x: Any): Boolean = x match {
     case that: BigDecimal =>
       that._scale == this._scale &&
-        (if (_bitLength < 64) that._smallValue == this._smallValue
-         else this._intVal == that._intVal)
+      (if (_bitLength < 64) that._smallValue == this._smallValue
+       else this._intVal == that._intVal)
     case _ => false
   }
 

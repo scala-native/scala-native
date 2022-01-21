@@ -735,7 +735,7 @@ object HashMap {
     override def equals(that: Any): Boolean = that match {
       case that: Map.Entry[_, _] =>
         Objects.equals(getKey(), that.getKey()) &&
-          Objects.equals(getValue(), that.getValue())
+        Objects.equals(getValue(), that.getValue())
       case _ =>
         false
     }

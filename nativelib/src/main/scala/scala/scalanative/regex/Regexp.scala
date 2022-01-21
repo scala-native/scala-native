@@ -296,18 +296,18 @@ class Regexp {
 
           case Op.STAR | Op.PLUS | Op.QUEST =>
             ((x.flags & RE2.NON_GREEDY) == (y.flags & RE2.NON_GREEDY)) &&
-              (x.subs(0).equals(y.subs(0)))
+            (x.subs(0).equals(y.subs(0)))
 
           case Op.REPEAT =>
             ((x.flags & RE2.NON_GREEDY) == (y.flags & RE2.NON_GREEDY)) &&
-              (x.min == y.min) &&
-              (x.max == y.max) &&
-              (x.subs(0).equals(y.subs(0)))
+            (x.min == y.min) &&
+            (x.max == y.max) &&
+            (x.subs(0).equals(y.subs(0)))
 
           case Op.CAPTURE =>
             (x.cap == y.cap) &&
-              (if (x.name == null) y.name == null else x.name == y.name) &&
-              (x.subs(0) == y.subs(0))
+            (if (x.name == null) y.name == null else x.name == y.name) &&
+            (x.subs(0) == y.subs(0))
 
           case _ =>
             true // Handle ANY_CHAR, ANY_CHAR_NOT_NL, END_LINE, & others

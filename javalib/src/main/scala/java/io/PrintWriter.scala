@@ -133,7 +133,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
     format(fmt, args)
 
   // Not implemented:
-  //def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
+  // def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
 
   def format(fmt: String, args: Array[Object]): PrintWriter = {
     new Formatter(this).format(fmt, args)
@@ -143,7 +143,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   }
 
   // Not implemented:
-  //def format(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
+  // def format(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
 
   override def append(csq: CharSequence): PrintWriter = {
     super.append(csq)

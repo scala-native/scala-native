@@ -145,7 +145,7 @@ object UUID {
   }
 
   // Not implemented (requires messing with MD5 or SHA-1):
-  //def nameUUIDFromBytes(name: Array[Byte]): UUID = ???
+  // def nameUUIDFromBytes(name: Array[Byte]): UUID = ???
 
   def fromString(name: String): UUID = {
     import Integer.parseInt

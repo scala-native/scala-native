@@ -137,7 +137,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
       def fileKey(): Object = dosFileKey
       def size(): Long = fileSize.toLong
 
-      //to replace with checking reparse tag
+      // to replace with checking reparse tag
       def isSymbolicLink(): Boolean = hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT)
       def isDirectory(): Boolean = hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
       def isOther(): Boolean =
