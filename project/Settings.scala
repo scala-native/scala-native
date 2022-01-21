@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 
 import scala.collection.mutable
+import scala.scalanative.build.Platform
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -77,10 +78,16 @@ object Settings {
         scalaVersion.value
       )(Seq.empty[String]) {
         case (2, 11) => Seq("-Xfatal-warnings")
-        case (3, _)  =>
-          // Remove all plugins as they lead to exceptions
-          (Compile / doc / scalacOptions).value
-            .filter(_.contains("-Xplugin"))
+        case (3, 0 | 1) =>
+          val prev = (Compile / doc / scalacOptions).value
+          val version = scalaVersion.value
+          // Remove all plugins as they lead to throwing exceptions by the compiler
+          // Bug was fixes in 3.1.1
+          if (version.startsWith("3.1.") &&
+              version.stripPrefix("3.1.").takeWhile(_.isDigit).toInt < 1)
+            prev.filter(_.contains("-Xplugin"))
+          else Seq.empty
+        case (3, _) => Seq.empty
       },
       // Add Java Scaladoc mapping
       apiMappings ++= {
@@ -113,7 +120,15 @@ object Settings {
       /* Add a second Java Scaladoc mapping for cases where Scala actually
        * understands the jrt:/ filesystem of Java 9.
        */
-      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL)
+      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL),
+      Compile / doc / sources := {
+        val prev = (Compile / doc / sources).value
+        if (Platform.isWindows &&
+            sys.env.contains("CI") && // Always present in GitHub Actions
+            scalaVersion.value.startsWith("3.") // Bug in Scala 3 scaladoc
+        ) Nil
+        else prev
+      }
     )
   }
 
