@@ -33,4 +33,12 @@ class BigDecimalTest {
 
     assertFalse(jbd1 == jbd2)
   }
+
+  // issue #2553
+  @Test def bigDecimalSupportsDivideOperation(): Unit = {
+    val rangeBD = BigDecimal.valueOf(1000000000)
+    val valueBD = BigDecimal.valueOf(500000000)
+    val fraction: BigDecimal = valueBD.divide(rangeBD, 9, RoundingMode.FLOOR)
+    assertEquals(0.5, fraction.floatValue(), 0.000001)
+  }
 }
