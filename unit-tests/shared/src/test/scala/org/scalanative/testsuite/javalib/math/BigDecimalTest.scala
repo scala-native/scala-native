@@ -7,7 +7,7 @@ import java.math.BigDecimal
 import org.junit.Test
 import org.junit.Assert._
 
-class BigDecimalTest  {
+class BigDecimalTest {
 
   // java.lang.Math.BigDecimal Int/Long Constructors
 
@@ -115,7 +115,7 @@ class BigDecimalTest  {
   }
 
   @Test def ctorDouble9999Point9999: Unit = {
-    val d:Double = 9999.9999
+    val d: Double = 9999.9999
     val bd = new BigDecimal(d)
     assertEquals(d, bd.doubleValue(), 0.0)
   }

@@ -38,7 +38,8 @@ class BigIntegerSubtractTest {
     val bBytes = Array[Byte](1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7)
     val aSign = 1
     val bSign = 1
-    val rBytes = Array[Byte](-2, -3, -4, -4, 5, 14, 23, 39, 48, 57, 66, 5, 14, 23)
+    val rBytes =
+      Array[Byte](-2, -3, -4, -4, 5, 14, 23, 39, 48, 57, 66, 5, 14, 23)
     val aNumber = new BigInteger(aSign, aBytes)
     val bNumber = new BigInteger(bSign, bBytes)
     val result = aNumber.subtract(bNumber)
@@ -89,7 +90,8 @@ class BigIntegerSubtractTest {
     val bBytes = Array[Byte](10, 20, 30, 40, 50, 60, 70, 10, 20, 30)
     val aSign = -1
     val bSign = 1
-    val rBytes = Array[Byte](-2, -3, -4, -5, -16, -27, -38, -42, -53, -64, -75, -16, -27, -37)
+    val rBytes = Array[Byte](-2, -3, -4, -5, -16, -27, -38, -42, -53, -64, -75,
+      -16, -27, -37)
     val aNumber = new BigInteger(aSign, aBytes)
     val bNumber = new BigInteger(bSign, bBytes)
     val result = aNumber.subtract(bNumber)
@@ -106,7 +108,8 @@ class BigIntegerSubtractTest {
     val bBytes = Array[Byte](10, 20, 30, 40, 50, 60, 70, 10, 20, 30)
     val aSign = -1
     val bSign = 1
-    val rBytes = Array[Byte](-2, -3, -4, -5, -16, -27, -38, -42, -53, -64, -75, -16, -27, -37)
+    val rBytes = Array[Byte](-2, -3, -4, -5, -16, -27, -38, -42, -53, -64, -75,
+      -16, -27, -37)
     val aNumber = new BigInteger(aSign, aBytes)
     val bNumber = new BigInteger(bSign, bBytes)
     val result = aNumber.subtract(bNumber)
@@ -123,7 +126,8 @@ class BigIntegerSubtractTest {
     val bBytes = Array[Byte](10, 20, 30, 40, 50, 60, 70, 10, 20, 30)
     val aSign = -1
     val bSign = -1
-    val rBytes = Array[Byte](-2, -3, -4, -4, 5, 14, 23, 39, 48, 57, 66, 5, 14, 23)
+    val rBytes =
+      Array[Byte](-2, -3, -4, -4, 5, 14, 23, 39, 48, 57, 66, 5, 14, 23)
     val aNumber = new BigInteger(aSign, aBytes)
     val bNumber = new BigInteger(bSign, bBytes)
     val result = aNumber.subtract(bNumber)
@@ -140,7 +144,8 @@ class BigIntegerSubtractTest {
     val bBytes = Array[Byte](1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7)
     val aSign = -1
     val bSign = -1
-    val rBytes = Array[Byte](1, 2, 3, 3, -6, -15, -24, -40, -49, -58, -67, -6, -15, -23)
+    val rBytes =
+      Array[Byte](1, 2, 3, 3, -6, -15, -24, -40, -49, -58, -67, -6, -15, -23)
     val aNumber = new BigInteger(aSign, aBytes)
     val bNumber = new BigInteger(bSign, bBytes)
     val result = aNumber.subtract(bNumber)
@@ -295,7 +300,8 @@ class BigIntegerSubtractTest {
 
   @Test def testCase25(): Unit = {
     val aBytes = Array[Byte](-1, -1, -1, -1, -1, -1, -1, -1)
-    val bBytes = Array[Byte](-128, -128, -128, -128, -128, -128, -128, -128, -128)
+    val bBytes =
+      Array[Byte](-128, -128, -128, -128, -128, -128, -128, -128, -128)
     val aSign = 1
     val bSign = 1
     val rBytes = Array[Byte](-128, 127, 127, 127, 127, 127, 127, 127, 127)
@@ -417,7 +423,8 @@ class BigIntegerSubtractTest {
     val bBytes = Array[Byte](10, 20, 30, 40, 50, 60, 70, 10, 20, 30)
     val aSign = 1
     val bSign = 1
-    val rBytes = Array[Byte](1, 2, 3, 3, -6, -15, -24, -40, -49, -58, -67, -6, -15, -23)
+    val rBytes =
+      Array[Byte](1, 2, 3, 3, -6, -15, -24, -40, -49, -58, -67, -6, -15, -23)
     val aNumber = new BigInteger(aSign, aBytes)
     val bNumber = new BigInteger(bSign, bBytes)
     val result = aNumber.subtract(bNumber)

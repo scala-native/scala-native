@@ -44,18 +44,30 @@ class MathContextTest {
     assertTrue(mc8.getPrecision == 23)
     assertTrue(mc8.getRoundingMode == RoundingMode.UP)
 
-    assertThrows(classOf[IllegalArgumentException],
-        new MathContext("prcision=27 roundingMode=CEILING"))
-    assertThrows(classOf[IllegalArgumentException],
-        new MathContext("precision=26 roundingMoe=CEILING"))
-    assertThrows(classOf[IllegalArgumentException],
-        new MathContext("precision=25 roundingMode=CEILINGFAN"))
-    assertThrows(classOf[IllegalArgumentException],
-        new MathContext("precision=24 roundingMode=HALF"))
-    assertThrows(classOf[IllegalArgumentException],
-        new MathContext("precision=23 roundingMode=UPSIDEDOWN"))
-    assertThrows(classOf[IllegalArgumentException],
-        new MathContext("precision=22roundingMode=UP"))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new MathContext("prcision=27 roundingMode=CEILING")
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new MathContext("precision=26 roundingMoe=CEILING")
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new MathContext("precision=25 roundingMode=CEILINGFAN")
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new MathContext("precision=24 roundingMode=HALF")
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new MathContext("precision=23 roundingMode=UPSIDEDOWN")
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new MathContext("precision=22roundingMode=UP")
+    )
     assertThrows(classOf[IllegalArgumentException], new MathContext(""))
     assertThrows(classOf[NullPointerException], new MathContext(null))
   }
