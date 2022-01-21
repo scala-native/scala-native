@@ -10,7 +10,6 @@ import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 
 import scala.collection.mutable
-import scala.scalanative.build.Platform
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -108,14 +107,6 @@ object Settings {
             val scalaExtDirs = Option(System.getProperty("scala.ext.dirs"))
             scalaExtDirs.map(extDirs => file(extDirs) / "rt.jar")
           }
-        }.filterNot { _ =>
-          // Bug in the Scaladoc leads to failures in the CI when trying
-          // to publish docs. Bug is present only on Windows and Scala 3.x.x
-          // Standard release process is being done on Linux machines, so
-          // this workaround should not lead to any kind of regression.
-          scalaVersion.value.startsWith("3.") &&
-          Platform.isWindows &&
-          sys.env.contains("CI") // always set in Github Actions
         }
 
         optRTJar.fold[Map[File, URL]] {
