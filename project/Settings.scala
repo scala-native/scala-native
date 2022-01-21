@@ -77,10 +77,16 @@ object Settings {
         scalaVersion.value
       )(Seq.empty[String]) {
         case (2, 11) => Seq("-Xfatal-warnings")
-        case (3, _)  =>
-          // Remove all plugins as they lead to exceptions
-          (Compile / doc / scalacOptions).value
-            .filter(_.contains("-Xplugin"))
+        case (3, 0 | 1) =>
+          val prev = (Compile / doc / scalacOptions).value
+          val version = scalaVersion.value
+          // Remove all plugins as they lead to throwing exceptions by the compiler
+          // Bug was fixes in 3.1.1
+          if (version.startsWith("3.1.") &&
+              version.stripPrefix("3.1.").takeWhile(_.isDigit).toInt < 1)
+            prev.filter(_.contains("-Xplugin"))
+          else Seq.empty
+        case (3, _) => Seq.empty
       },
       // Add Java Scaladoc mapping
       apiMappings ++= {
