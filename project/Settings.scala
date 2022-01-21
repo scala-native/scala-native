@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 
 import scala.collection.mutable
+import scala.scalanative.build.Platform
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -119,7 +120,15 @@ object Settings {
       /* Add a second Java Scaladoc mapping for cases where Scala actually
        * understands the jrt:/ filesystem of Java 9.
        */
-      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL)
+      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL),
+      Compile / doc / sources := {
+        val prev = (Compile / doc / sources).value
+        if (Platform.isWindows &&
+            sys.env.contains("CI") && // Always present in GitHub Actions
+            scalaVersion.value.startsWith("3.") // Bug in Scala 3 scaladoc
+        ) Nil
+        else prev
+      }
     )
   }
 
