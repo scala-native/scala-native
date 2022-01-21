@@ -39,6 +39,6 @@ class BigDecimalTest {
     val rangeBD = BigDecimal.valueOf(1000000000)
     val valueBD = BigDecimal.valueOf(500000000)
     val fraction: BigDecimal = valueBD.divide(rangeBD, 9, RoundingMode.FLOOR)
-    assertEquals(fraction, BigDecimal.valueOf(0.500000000))
+    assertEquals(0.5, fraction.floatValue(), 0.000001)
   }
 }
