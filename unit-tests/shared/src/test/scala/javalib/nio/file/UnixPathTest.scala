@@ -209,11 +209,27 @@ class UnixPathTest {
         .toString == "../baz"
     )
     assertTrue(Paths.get("").relativize(Paths.get("foo")).toString == "foo")
+
+    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+      assertTrue(
+        Paths
+          .get("foo/../bar")
+          .relativize(Paths.get("bar"))
+          .toString == "../../../bar"
+      )
+    } else {
+      assertTrue(
+        Paths
+          .get("foo/../bar")
+          .relativize(Paths.get("bar"))
+          .toString == ""
+      )
+    }
     assertTrue(
       Paths
-        .get("foo/../bar")
-        .relativize(Paths.get("bar"))
-        .toString == "../../../bar"
+        .get("bar")
+        .relativize(Paths.get("bar/../foo"))
+        .toString == "../foo"
     )
 
     assertThrows(
@@ -238,11 +254,26 @@ class UnixPathTest {
         .toString == "../baz"
     )
     assertTrue(Paths.get("/").relativize(Paths.get("/foo")).toString == "foo")
+    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+      assertTrue(
+        Paths
+          .get("/foo/../bar")
+          .relativize(Paths.get("/bar"))
+          .toString == "../../../bar"
+      )
+    } else {
+      assertTrue(
+        Paths
+          .get("/foo/../bar")
+          .relativize(Paths.get("/bar"))
+          .toString == ""
+      )
+    }
     assertTrue(
       Paths
-        .get("/foo/../bar")
-        .relativize(Paths.get("/bar"))
-        .toString == "../../../bar"
+        .get("/bar")
+        .relativize(Paths.get("/bar/../foo"))
+        .toString == "../foo"
     )
   }
 
