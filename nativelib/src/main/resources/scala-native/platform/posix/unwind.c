@@ -2,7 +2,7 @@
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include "../unwind.h"
-#include "libunwind/include-libunwind/libunwind.h"
+#include "libunwind/libunwind.h"
 
 int scalanative_unwind_get_context(void *context) {
     return unw_getcontext((unw_context_t *)context);
