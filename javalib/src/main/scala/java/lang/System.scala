@@ -150,7 +150,7 @@ object System {
         else None
       }
     } else {
-      val buf = stackalloc[pwd.passwd]
+      val buf = stackalloc[pwd.passwd]()
       val uid = unistd.getuid()
       val res = pwd.getpwuid(uid, buf)
       if (res == 0 && buf.pw_dir != null)

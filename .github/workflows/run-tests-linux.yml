@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -40,6 +40,8 @@ jobs:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
 
       - name: Check partest disabled tests list
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3.') }}
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
@@ -49,6 +51,8 @@ jobs:
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.
       - name: Run subset of partest tests
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3.') }}
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
@@ -120,7 +124,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         build-mode: [debug, release-fast]
         gc: [boehm, immix, commix]
         host_arch: [ amd64 ]
@@ -128,7 +132,7 @@ jobs:
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
-          - scala: 2.13.7
+          - scala: 2.13.8
             build-mode: debug
             gc: immix
           - scala: 2.12.15
@@ -218,7 +222,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         build-mode: [debug, release-fast]
         host_arch: [ amd64 ]
         docker_arch: [ library ]
@@ -263,11 +267,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         lto: [thin]
         optimize: [true]
         include:
-          - scala: 2.13.7
+          # LTO full fails with 3.1 in the CI - we were not able to reproduce it locally
+          - scala: 2.13.8
             lto: full
             optimize: true
           - scala: 2.12.15
@@ -301,7 +306,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.15]
+        scala: [2.12.15, 3.1.1]
         host_arch: [ amd64 ]
         docker_arch: [ library ]
     steps:
@@ -320,24 +325,3 @@ jobs:
           SCALA_VERSION: ${{ matrix.scala}}
           TEST_COMMAND: "test-scripted ${{matrix.scala}}"
         run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
-
-  experimental-scala3:
-    name: Scala3 experimental tests
-    runs-on: ubuntu-18.04
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3.1.0]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-
-      - name: Run Scala 3 tests
-        run: >
-          sbt "++ ${{ matrix.scala }} -v"
-          "-no-colors"
-          "-J-Xmx3G"
-          "test-tools 3"
-          "test-runtime 3"

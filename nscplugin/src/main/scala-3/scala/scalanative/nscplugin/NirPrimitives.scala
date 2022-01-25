@@ -129,7 +129,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
   }
 
   private def initNirPrimitives(using Context): ReadOnlyMap[Symbol, Int] = {
-    val defnNir = NirDefinitions.defnNir
+    val defnNir = NirDefinitions.get
     val primitives = MutableSymbolMap[Int]()
 
     def addPrimitive(s: Symbol, code: Int) = {

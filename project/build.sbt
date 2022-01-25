@@ -12,7 +12,7 @@ Compile / unmanagedSourceDirectories ++= {
 }
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.1")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.10.0.202012080955-r"

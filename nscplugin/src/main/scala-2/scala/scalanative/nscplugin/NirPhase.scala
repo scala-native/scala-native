@@ -11,5 +11,6 @@ abstract class NirPhase[G <: Global with Singleton](val global: G)
   val nirAddons: NirGlobalAddons {
     val global: NirPhase.this.global.type
   }
+  val scalaNativeOpts: ScalaNativeOptions
 
 }

@@ -147,9 +147,9 @@ class File(_path: String) extends Serializable with Comparable[File] {
   ): Boolean =
     Zone { implicit z =>
       val filename = toCWideStringUTF16LE(properPath)
-      val securityDescriptorPtr = alloc[Ptr[SecurityDescriptor]]
-      val previousDacl, newDacl = alloc[ACLPtr]
-      val usersGroupSid = alloc[SIDPtr]
+      val securityDescriptorPtr = alloc[Ptr[SecurityDescriptor]]()
+      val previousDacl, newDacl = alloc[ACLPtr]()
+      val usersGroupSid = alloc[SIDPtr]()
 
       val accessMode: AccessMode =
         if (grant) AccessMode.GRANT_ACCESS
@@ -169,7 +169,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
       def setupNewAclEntry() = {
         import accctrl.ops._
-        val ea = alloc[ExplicitAccessW]
+        val ea = alloc[ExplicitAccessW]()
         ea.accessPermisions = accessRights
         ea.accessMode = accessMode
         ea.inheritence = NO_PROPAGATE_INHERIT_ACE
@@ -413,7 +413,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
             MinWinBaseApiOps.FileTimeOps.toUnixEpochMillis(!lastModified)
         }
       } else {
-        val buf = alloc[stat.stat]
+        val buf = alloc[stat.stat]()
         if (stat.stat(toCString(path), buf) == 0) {
           buf._8 * 1000L
         } else {
@@ -423,7 +423,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   private def accessMode()(implicit z: Zone): stat.mode_t = {
-    val buf = alloc[stat.stat]
+    val buf = alloc[stat.stat]()
     if (stat.stat(toCString(path), buf) == 0) {
       buf._13
     } else {
@@ -470,9 +470,9 @@ class File(_path: String) extends Serializable with Comparable[File] {
               )
           }
         } else {
-          val statbuf = alloc[stat.stat]
+          val statbuf = alloc[stat.stat]()
           if (stat.stat(toCString(path), statbuf) == 0) {
-            val timebuf = alloc[utime.utimbuf]
+            val timebuf = alloc[utime.utimbuf]()
             timebuf._1 = statbuf._8
             timebuf._2 = time.toSize / 1000
             utime.utime(toCString(path), timebuf) == 0
@@ -516,12 +516,12 @@ class File(_path: String) extends Serializable with Comparable[File] {
       ) {
         case INVALID_HANDLE_VALUE => 0L
         case handle =>
-          val size = stackalloc[windows.LargeInteger]
+          val size = stackalloc[windows.LargeInteger]()
           if (GetFileSizeEx(handle, size)) (!size).toLong
           else 0L
       }
     } else {
-      val buf = alloc[stat.stat]
+      val buf = alloc[stat.stat]()
       if (stat.stat(toCString(path), buf) == 0) {
         buf._6.toLong
       } else {
@@ -633,7 +633,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     def withFileSecurityDescriptor(
         fn: Ptr[SecurityDescriptor] => Unit
     ): Unit = {
-      val securityDescriptorPtr = stackalloc[Ptr[SecurityDescriptor]]
+      val securityDescriptorPtr = stackalloc[Ptr[SecurityDescriptor]]()
       val filename = toCWideStringUTF16LE(properPath)
       val securityInfo =
         OWNER_SECURITY_INFORMATION |
@@ -671,16 +671,16 @@ class File(_path: String) extends Serializable with Comparable[File] {
           genericMapping.genericExecute = FILE_GENERIC_EXECUTE
           genericMapping.genericAll = FILE_GENERIC_ALL
 
-          val accessMask = stackalloc[windows.DWord]
+          val accessMask = stackalloc[windows.DWord]()
           !accessMask = access
 
-          val privilegeSetLength = stackalloc[windows.DWord]
+          val privilegeSetLength = stackalloc[windows.DWord]()
           !privilegeSetLength = emptyPriviligesSize.toUInt
 
           val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
           memset(privilegeSet, 0, !privilegeSetLength)
 
-          val grantedAcccess = stackalloc[windows.DWord]
+          val grantedAcccess = stackalloc[windows.DWord]()
           !grantedAcccess = 0.toUInt
 
           MapGenericMask(accessMask, genericMapping)

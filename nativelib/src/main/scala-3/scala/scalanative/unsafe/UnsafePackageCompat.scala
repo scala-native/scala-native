@@ -7,17 +7,6 @@ private[scalanative] trait UnsafePackageCompat {
   private[scalanative] given reflect.ClassTag[Array[?]] =
     reflect.classTag[Array[AnyRef]].asInstanceOf[reflect.ClassTag[Array[?]]]
 
-  /** Heap allocate and zero-initialize a value using current implicit
-   *  allocator.
-   */
-  @deprecated(
-    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime erros, use alloc[T]() instead",
-    since = "0.5.0"
-  )
-  inline def alloc[T](using tag: Tag[T], zone: Zone): Ptr[T] = {
-    alloc[T](1.toUSize)
-  }
-
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
@@ -41,13 +30,6 @@ private[scalanative] trait UnsafePackageCompat {
   )
   inline def alloc[T](inline n: CSSize)(using Tag[T], Zone): Ptr[T] =
     alloc[T](n.toUInt)
-
-  @deprecated(
-    "In Scala 3 stackalloc[T](n) can be confused with stackalloc[T].apply(n) leading to runtime erros, use stackalloc[T]() instead",
-    since = "0.5.0"
-  )
-  inline def stackalloc[T](implicit tag: Tag[T]): Ptr[T] =
-    stackalloc[T](1.toUSize)
 
   /** Stack allocate n values of given type */
   inline def stackalloc[T](

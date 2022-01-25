@@ -1,6 +1,6 @@
 package scala.scalanative
 package nir
-import scala.scalanative.nir.Sig.Scope.{Private, Public}
+import scala.scalanative.nir.Sig.Scope._
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 
 object Mangle {
@@ -45,9 +45,13 @@ object Mangle {
     def mangleSig(sig: Sig): Unit =
       str(sig.mangle)
 
-    def mangleSigScope(scope: Sig.Scope): Unit = scope match {
-      case Public      => str("O")
-      case Private(in) => str("P"); mangleGlobal(in)
+    def mangleSigScope(scope: Sig.Scope): Unit = {
+      scope match {
+        case Public            => str("O")
+        case PublicStatic      => str("o")
+        case Private(in)       => str("P"); mangleGlobal(in)
+        case PrivateStatic(in) => str("p"); mangleGlobal(in)
+      }
     }
 
     def mangleUnmangledSig(sig: Sig.Unmangled): Unit = sig match {

@@ -24,10 +24,10 @@ object Commands {
           .map(id => s"$id/run")
 
       val tests = List(
-        Build.tests,
         testsJVM,
-        testsExt,
+        Build.tests,
         testsExtJVM,
+        testsExt,
         junitTestOutputsJVM,
         junitTestOutputsNative,
         scalaPartestJunitTests
@@ -78,7 +78,6 @@ object Commands {
         .getOrElse(
           "Used command needs explicit Scala binary version as an argument"
         )
-      val binaryVersion = CrossVersion.binaryScalaVersion(version)
       val setScriptedLaunchOpts =
         s"""set sbtScalaNative/scriptedLaunchOpts := {
             |  (sbtScalaNative/scriptedLaunchOpts).value

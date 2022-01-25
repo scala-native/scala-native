@@ -2,9 +2,18 @@ package scala.scalanative
 package nir
 
 object Unmangle {
-  def unmangleGlobal(s: String): Global = (new Impl(s)).readGlobal()
-  def unmangleType(s: String): Type = (new Impl(s)).readType()
-  def unmangleSig(s: String): Sig.Unmangled = (new Impl(s)).readUnmangledSig()
+  def unmangleGlobal(s: String): Global = unmangle(s)(_.readGlobal())
+  def unmangleType(s: String): Type = unmangle(s)(_.readType())
+  def unmangleSig(s: String): Sig.Unmangled = unmangle(s)(_.readUnmangledSig())
+
+  private def unmangle[T](s: String)(fn: Impl => T) =
+    try fn(new Impl(s))
+    catch {
+      case ex: scala.MatchError =>
+        throw new Exception(
+          s"Failed to unmangle signature `${s}`, unknown symbol found ${ex.getMessage()}"
+        )
+    }
 
   private class Impl(s: String) {
     val chars = s.toArray
@@ -21,7 +30,9 @@ object Unmangle {
 
     def readSigScope(): Sig.Scope = read() match {
       case 'O' => Sig.Scope.Public
+      case 'o' => Sig.Scope.PublicStatic
       case 'P' => Sig.Scope.Private(readGlobal())
+      case 'p' => Sig.Scope.PrivateStatic(readGlobal())
     }
 
     def readUnmangledSig(): Sig.Unmangled = read() match {

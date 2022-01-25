@@ -19,7 +19,8 @@ object Rt {
   val JavaHashCodeSig = Sig.Method("hashCode", Seq(Int)).mangled
   val ScalaEqualsSig = Sig.Method("scala_$eq$eq", Seq(Object, Bool)).mangled
   val ScalaHashCodeSig = Sig.Method("scala_$hash$hash", Seq(Int)).mangled
-  val ScalaMainSig = Sig.Method("main", Seq(Array(Rt.String), Unit))
+  val ScalaMainSig =
+    Sig.Method("main", Seq(Array(Rt.String), Unit), Sig.Scope.PublicStatic)
   val IsArraySig = Sig.Method("isArray", Seq(Bool)).mangled
   val IsAssignableFromSig =
     Sig.Method("isAssignableFrom", Seq(Class, Bool)).mangled

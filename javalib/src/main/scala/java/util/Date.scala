@@ -60,10 +60,10 @@ object Date {
 
   private def secondsToString(seconds: Long, default: => String): String =
     Zone { implicit z =>
-      val ttPtr = alloc[time_t]
+      val ttPtr = alloc[time_t]()
       !ttPtr = seconds.toSize
 
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
       def getLocalTime() =
         if (isWindows) winTime.localtime_s(tmPtr, ttPtr) != 0
         else localtime_r(ttPtr, tmPtr) == null

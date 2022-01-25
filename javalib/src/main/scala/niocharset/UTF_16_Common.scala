@@ -93,7 +93,7 @@ private[niocharset] abstract class UTF_16_Common protected (
 
                 if (!Character.isLowSurrogate(c2)) {
                   in.position(in.position() - 4)
-                  CoderResult.malformedForLength(2)
+                  CoderResult.malformedForLength(4)
                 } else {
                   if (out.remaining() < 2) {
                     in.position(in.position() - 4)
@@ -118,7 +118,7 @@ private[niocharset] abstract class UTF_16_Common protected (
       extends CharsetEncoder(
         UTF_16_Common.this,
         2.0f,
-        2.0f,
+        if (endianness == AutoEndian) 4.0f else 2.0f,
         // Character 0xfffd
         if (endianness == LittleEndian) Array(-3, -1) else Array(-1, -3)
       ) {

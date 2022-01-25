@@ -416,6 +416,106 @@ class IssuesTest {
     assertNotNull(res)
   }
 
+  @Test def test_Issue2504(): Unit = {
+    // In issue 2504 accessing iterator of immutable Java collection, would lead to
+    // infinite loop and segmentation fault.
+    import java.util.Collections
+    import java.util.Map.Entry
+    Seq(
+      Collections.EMPTY_MAP.entrySet().iterator(),
+      Collections.EMPTY_MAP.keySet().iterator(),
+      Collections.EMPTY_MAP.values().iterator(),
+      Collections.EMPTY_SET.iterator(),
+      Collections.EMPTY_LIST.iterator()
+    ).zipWithIndex.foreach {
+      case (iterator, idx) =>
+        assertNotNull(idx.toString, iterator)
+        assertFalse(idx.toString(), iterator.hasNext())
+    }
+
+    val value = "foo"
+    val singletonMap = Collections.singletonMap(value, value)
+    val singletonSet = Collections.singleton(value)
+    val singletonList = Collections.singletonList(value)
+    val unmodifiableMap =
+      Collections.unmodifiableMap[String, String](singletonMap)
+    val unmodifiableSet = Collections.unmodifiableSet(singletonSet)
+    val unmodifiableList = Collections.unmodifiableList(singletonList)
+    val unmodifiableCollection =
+      Collections.unmodifiableCollection(singletonList)
+
+    Seq(
+      singletonMap.entrySet().iterator(),
+      singletonMap.keySet().iterator(),
+      singletonMap.values().iterator(),
+      singletonSet.iterator(),
+      singletonList.iterator(),
+      unmodifiableMap.entrySet().iterator(),
+      unmodifiableMap.keySet().iterator(),
+      unmodifiableMap.values().iterator(),
+      unmodifiableSet.iterator(),
+      unmodifiableList.iterator(),
+      unmodifiableCollection.iterator()
+    ).zipWithIndex.foreach {
+      case (iterator, idx) =>
+        assertNotNull(idx.toString, iterator)
+        assertTrue(idx.toString(), iterator.hasNext())
+        iterator.next() match {
+          case entry: Entry[String, String] @unchecked =>
+            assertEquals(s"$idx key", value, entry.getKey())
+            assertEquals(s"$idx value", value, entry.getValue())
+          case v => assertEquals(idx.toString(), value, v)
+        }
+    }
+  }
+
+  @Test def test_Issue2519(): Unit = {
+    import scala.scalanative.reflect.Reflect
+
+    def isInstantiatableClass(fqcn: String) =
+      Reflect.lookupInstantiatableClass(fqcn).isDefined
+    def isLoadableModule(fqcn: String) =
+      Reflect.lookupLoadableModuleClass(fqcn).isDefined
+
+    assertTrue(
+      "A should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.A")
+    )
+    assertFalse(
+      "B should be not instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.B")
+    )
+    assertTrue(
+      "C should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.C")
+    )
+    assertTrue(
+      "D should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.D$")
+    )
+    assertTrue(
+      "E should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.E$")
+    )
+  }
+
+  @Test def test_Issue2520(): Unit = {
+    import issue2520._
+    import issue2520.Kleisli.KleisliOpt
+    implicit def instance: Strong[Function1] = new Strong[Function1] {
+      override def first[A, B, C](f: A => B): Function1[(A, C), (B, C)] = {
+        case (a1, a2) => (f(a1), a2)
+      }
+    }
+
+    assertNotNull {
+      val res =
+        implicitly[Strong[KleisliOpt]].law.test[Int, Int, Int, Int](x => x)
+      println(res)
+      res
+    }
+  }
+
 }
 
 package issue1090 {
@@ -465,4 +565,44 @@ package issue1909 {
 package issue1950 {
   final class ValueClass(val value: Float) extends AnyVal
   final case class ValueClass2(string: String) extends AnyVal
+}
+
+package issue2519 {
+  import scala.scalanative.reflect.Reflect
+
+  @scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
+  class A
+  abstract class B extends A
+  class C extends B
+  object D extends A
+  object E extends B
+}
+
+package issue2520 {
+  case class Kleisli[F[_], A, B](run: A => F[B])
+
+  object Kleisli {
+    type KleisliOpt[A, B] = Kleisli[Option, A, B]
+
+    implicit def instance: Strong[KleisliOpt] = new Strong[KleisliOpt] {
+      override def first[A, B, C](
+          f: KleisliOpt[A, B]
+      ): KleisliOpt[(A, C), (B, C)] =
+        Kleisli[Option, (A, C), (B, C)] {
+          case (a1, a2) => f.run(a1).map(_ -> a2)
+        }
+    }
+  }
+
+  trait Strong[F[_, _]] {
+    def first[A, B, C](fa: F[A, B]): F[(A, C), (B, C)]
+
+    trait Law {
+      def test[A, B, C, D](f: C => D)(implicit PF: Strong[Function1]) = {
+        val x: ((C, B)) => (D, B) = PF.first[C, D, B](f)
+      }
+    }
+
+    def law: Law = new Law {}
+  }
 }

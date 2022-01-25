@@ -22,10 +22,9 @@ class NirPositions()(using Context) {
   ): nir.Position = {
     def nirSource = conversionCache.toNIRSource(source)
     if (span.exists && source.exists)
-      // dotty positions are 1-based but NIR positions are 0-based
       val point = span.point
-      val line = source.offsetToLine(point) - 1
-      val column = source.column(point) - 1
+      val line = source.offsetToLine(point)
+      val column = source.column(point)
       nir.Position(nirSource, line, column)
     else if (source.exists) nir.Position(nirSource, 0, 0)
     else nir.Position.NoPosition

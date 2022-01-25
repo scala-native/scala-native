@@ -42,6 +42,7 @@ class WindowsPath private[windows] (
         }
       case (PathType.Absolute, Some(root))          => root
       case (PathType.DirectoryRelative, Some(root)) => root + "\\"
+      case (PathType.DriveRelative, _)              => "\\"
       case _                                        => ""
     }
     drivePrefix + segments.mkString(seperator)

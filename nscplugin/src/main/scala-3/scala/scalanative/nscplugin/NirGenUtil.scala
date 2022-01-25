@@ -6,8 +6,11 @@ import dotty.tools.dotc.core
 import core.Symbols._
 import core.Contexts._
 import core.Types._
+import core.Flags._
 import scalanative.util.unsupported
-
+import scalanative.util.ScopedVar.scoped
+import scalanative.nir.Fresh
+import dotty.tools.dotc.core.Phases
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   private lazy val materializeClassTagTypes: Map[Symbol, Symbol] = Map(
@@ -93,43 +96,79 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
           if (methods.contains(s)) Some(classes(methods.indexOf(s)))
           else None
 
-        materializePrimitiveTypeMethodTypes.get(s) match {
-          case Some(primitive) => just(primitive)
-          case None =>
-            if s == defnNir.UnsafeTag_materializeClassTag then
-              just(unwrapClassTag(args.head))
-            else if s == defnNir.UnsafeTag_materializeCArrayTag then
-              wrap(defnNir.CArrayClass)
-            else {
-              def asCStruct = optIndexOf(
-                defnNir.UnsafeTag_materializeCStructTags,
-                defnNir.CStructClasses
-              ).flatMap(wrap)
+        def resolveMaterializedTree = {
+          if s == defnNir.UnsafeTag_materializeClassTag then
+            just(unwrapClassTag(args.head))
+          else if s == defnNir.UnsafeTag_materializeCArrayTag then
+            wrap(defnNir.CArrayClass)
+          else {
+            def asCStruct = optIndexOf(
+              defnNir.UnsafeTag_materializeCStructTags,
+              defnNir.CStructClasses
+            ).flatMap(wrap)
 
-              def asNatBase = optIndexOf(
-                defnNir.UnsafeTag_materializeNatBaseTags,
-                defnNir.NatBaseClasses
-              ).flatMap(just)
+            def asNatBase = optIndexOf(
+              defnNir.UnsafeTag_materializeNatBaseTags,
+              defnNir.NatBaseClasses
+            ).flatMap(just)
 
-              def asNatDigit = optIndexOf(
-                defnNir.UnsafeTag_materializeNatDigitTags,
-                defnNir.NatDigitClasses
-              ).flatMap(wrap)
+            def asNatDigit = optIndexOf(
+              defnNir.UnsafeTag_materializeNatDigitTags,
+              defnNir.NatDigitClasses
+            ).flatMap(wrap)
 
-              asCStruct.orElse(asNatBase).orElse(asNatDigit)
-            }
+            asCStruct.orElse(asNatBase).orElse(asNatDigit)
+          }
         }
+
+        def resolveGiven = Option.when(s.is(Given)) {
+          atPhase(Phases.postTyperPhase) {
+            val givenTpe = s.denot.info.argInfos.head
+            fromType(givenTpe)
+          }
+        }
+
+        materializePrimitiveTypeMethodTypes
+          .get(s)
+          .flatMap(just(_))
+          .orElse(resolveMaterializedTree)
+          .orElse(resolveGiven)
+
       case _ => None
     }
   }
 
   protected def unwrapTag(tree: Tree): SimpleType =
     unwrapTagOption(tree).getOrElse {
-      unsupported(s"can't recover runtime tag from $tree")
+      unsupported(s"can't recover compile-time tag from $tree")
     }
 
   protected def unwrapClassTag(tree: Tree): Symbol =
     unwrapClassTagOption(tree).getOrElse {
-      unsupported(s"can't recover runtime class tag from $tree")
+      unsupported(s"can't recover compile-time tag from $tree")
     }
+
+  protected def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
+    scoped(
+      curFresh := Fresh()
+    ) {
+      val buffer = new ExprBuffer(using curFresh)
+      f(using buffer)
+    }
+  }
+}
+
+object NirGenUtil {
+  class ContextCached[T](init: Context ?=> T) {
+    private var lastContext: Context = _
+    private var cached: T = _
+
+    def get(using Context): T = {
+      if (lastContext != ctx) {
+        cached = init
+        lastContext = ctx
+      }
+      cached
+    }
+  }
 }

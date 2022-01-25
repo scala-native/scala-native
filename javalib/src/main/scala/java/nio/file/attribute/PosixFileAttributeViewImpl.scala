@@ -28,7 +28,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
   ): Unit = Zone { implicit z =>
     val sb = getStat()
 
-    val buf = alloc[utime.utimbuf]
+    val buf = alloc[utime.utimbuf]()
     buf._1 =
       if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS).toSize
       else sb._7
@@ -190,7 +190,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     }
 
   private def getStat()(implicit z: Zone): Ptr[stat.stat] = {
-    val buf = alloc[stat.stat]
+    val buf = alloc[stat.stat]()
     val err =
       if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
         stat.lstat(toCString(path.toString), buf)

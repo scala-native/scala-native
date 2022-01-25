@@ -423,7 +423,7 @@ final class Check(implicit linked: linker.Result) {
     obj.ty match {
       case ScopeRef(scope) =>
         scope.implementors.foreach { cls =>
-          cls.fields.collectFirst {
+          val field = cls.fields.collectFirst {
             case fld: Field if fld.name == name =>
               in("field declared type") {
                 expect(ty, fld.ty)
@@ -433,6 +433,11 @@ final class Check(implicit linked: linker.Result) {
                   expect(fld.ty, v)
                 }
               }
+          }
+          if (field.isEmpty) {
+            error(
+              s"class ${scope.name.show} does not define field ${name.show}"
+            )
           }
         }
       case ty =>

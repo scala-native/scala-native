@@ -5,7 +5,7 @@ import nir.{Sig, Type, Global}
 
 class StubSpec extends LinkerSpec {
 
-  val entry = "Main$"
+  val entry = "Main"
   val stubMethodSource = """object Main {
                            |  def main(args: Array[String]): Unit =
                            |    stubMethod

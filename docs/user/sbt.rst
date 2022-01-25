@@ -18,6 +18,7 @@ template.  In an empty working directory, execute::
   In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
 
   In the WSL2 environment, it is recommended to create projects in the user files path, e.g /home/<USER>/sn-projects.
+
 This will:
 
 * start sbt.
@@ -79,16 +80,19 @@ Scala versions
 
 Scala Native supports following Scala versions for corresponding releases:
 
-========================== ================================
+========================== ===============================================
 Scala Native Version       Scala Versions
-========================== ================================
+========================== ===============================================
 0.1.x                      2.11.8
 0.2.x                      2.11.8, 2.11.11
 0.3.0-0.3.3                2.11.8, 2.11.11
 0.3.4+, 0.4.0-M1, 0.4.0-M2 2.11.8, 2.11.11, 2.11.12
 0.4.0                      2.11.12, 2.12.13, 2.13.4
 0.4.1                      2.11.12, 2.12.13, 2.13.4, 2.13.5
-========================== ================================
+0.4.2                      2.11.12, 2.12.{13..15}, 2.13.{4..8}
+0.4.3-RC1, 0.4.3-RC2       2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.0
+0.4.3                      2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.{0..1}
+========================== ===============================================
 
 Sbt settings and tasks
 ----------------------

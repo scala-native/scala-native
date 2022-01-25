@@ -12,18 +12,16 @@ import core.Symbols._
 import core.StdNames._
 import scala.annotation.{threadUnsafe => tu}
 
-// This phase is responsible for rewriting calls to scala.runtime.LazyVals with
+// This helper class is responsible for rewriting calls to scala.runtime.LazyVals with
 // its scala native specific counter-part. This is needed, because LazyVals are
 // using JVM unsafe API and static class constructors which are not supported
 // in Scala Native.
-object AdaptLazyVals extends PluginPhase {
-  val phaseName = "scalanative-adaptLazyVals"
-
-  override val runsAfter = Set(LazyVals.name, MoveStatics.name)
-  override val runsBefore = Set(GenNIR.phaseName)
-
+// In theory it could be defined as separate compilation phase (it was in the past), but
+// it would lead to the problems when using macros - rewritten lazy fields method would
+// be inlined and evaluated at compile time, however modified AST contains Scala Native
+// specific calls to Intrinsic methods. This would lead to throwing exception while compiling.
+class AdaptLazyVals(defnNir: NirDefinitions) {
   def defn(using Context) = LazyValsDefns.get
-  def defnNir(using Context) = NirDefinitions.defnNir
 
   private def isLazyFieldOffset(name: Name) =
     name.startsWith(nme.LAZY_FIELD_OFFSET.toString)
@@ -32,13 +30,12 @@ object AdaptLazyVals extends PluginPhase {
   // with the name of referenced bitmap fields within given TypeDef
   private val bitmapFieldNames = collection.mutable.Map.empty[Symbol, Literal]
 
-  override def prepareForUnit(tree: Tree)(using Context): Context = {
+  def clean(): Unit = {
     bitmapFieldNames.clear()
-    super.prepareForUnit(tree)
   }
 
   // Collect informations about offset fields
-  override def prepareForTypeDef(td: TypeDef)(using Context): Context = {
+  def prepareForTypeDef(td: TypeDef)(using Context): Unit = {
     val sym = td.symbol
     val hasLazyFields = sym.denot.info.fields
       .exists(f => isLazyFieldOffset(f.name))
@@ -51,13 +48,34 @@ object AdaptLazyVals extends PluginPhase {
           vd.symbol -> fieldname
       }.toMap
     }
+  }
 
-    ctx
+  def transformDefDef(dd: DefDef)(using Context): DefDef | Thicket = {
+    val hasLazyFields = dd.symbol.owner.denot.info.fields
+      .exists(f => isLazyFieldOffset(f.name))
+
+    // Remove LazyVals Offset fields assignments from static constructors,
+    // as they're leading to reachability problems
+    // Drop static constructor if empty after filtering
+    if (hasLazyFields && dd.symbol.isStaticConstructor) {
+      val DefDef(_, _, _, b @ Block(stats, expr)) = dd
+      val newBlock = cpy.Block(b.asInstanceOf[Tree])(
+        stats = b.stats
+          .filter {
+            case Assign(lhs, rhs) => !isLazyFieldOffset(lhs.symbol.name)
+            case _                => true
+          }
+          .asInstanceOf[List[Tree]],
+        expr = expr.asInstanceOf[Tree]
+      )
+      if (newBlock.stats.isEmpty) EmptyTree
+      else cpy.DefDef(dd)(dd.name, dd.paramss, dd.tpt, newBlock)
+    } else dd
   }
 
   // Replace all usages of all unsupported LazyVals methods with their
   // Scala Native specific implementation (taking Ptr instead of object + offset)
-  override def transformApply(tree: Apply)(using Context): Tree = {
+  def transformApply(tree: Apply)(using Context): Apply = {
     // Create call to SN intrinsic methods returning pointer to bitmap field
     def classFieldPtr(target: Tree, fieldRef: Tree): Tree = {
       val fieldName = bitmapFieldNames(fieldRef.symbol)
@@ -99,16 +117,8 @@ object AdaptLazyVals extends PluginPhase {
   }
 
   object LazyValsDefns {
-    var lastCtx: Option[Context] = None
-    var lastDefns: LazyValsDefns = _
-
-    def get(using Context): LazyValsDefns = {
-      if (!lastCtx.contains(ctx)) {
-        lastDefns = LazyValsDefns()
-        lastCtx = Some(ctx)
-      }
-      lastDefns
-    }
+    private val cached = NirGenUtil.ContextCached(LazyValsDefns())
+    def get(using Context): LazyValsDefns = cached.get
   }
   class LazyValsDefns(using Context) {
     @tu lazy val NativeLazyValsModule = requiredModule(

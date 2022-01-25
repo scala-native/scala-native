@@ -16,10 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         gc: [immix]
         include:
-          - scala: 2.13.7
+          - scala: 2.13.8
             gc: commix
           - scala: 2.12.15
             gc: boehm
@@ -40,6 +40,8 @@ jobs:
           "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3.') }}
         run: >
           sbt ++${{matrix.scala}}
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
@@ -50,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.15]
+        scala: [2.12.15, 3.1.1]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/macos-setup-env
