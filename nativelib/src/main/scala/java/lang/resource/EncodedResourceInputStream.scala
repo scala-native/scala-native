@@ -2,6 +2,7 @@ package java.lang.resource
 
 import java.io.InputStream
 import java.util.Base64
+import scala.scalanative.runtime._
 
 private[lang] class EncodedResourceInputStream(resourceId: Int)
     extends InputStream {
@@ -21,7 +22,7 @@ private[lang] class EncodedResourceInputStream(resourceId: Int)
     if (position == size) {
       -1
     } else {
-      val res = EmbeddedResourceHelper.getContentByte(resourceId, position)
+      val res = EmbeddedResourceHelper.getContentPtr(resourceId)(position)
       position += 1
       res
     }

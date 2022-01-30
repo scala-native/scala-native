@@ -7,7 +7,6 @@ import scala.annotation.tailrec
 import java.io._
 import java.nio.charset.StandardCharsets
 import java.nio.ByteBuffer
-import scala.annotation.tailrec
 
 object Base64 {
 
@@ -259,9 +258,12 @@ object Base64 {
     private var shift = DecodeState18
 
     override def skip(n: Long): Long = {
-      var skipped = 0
-      while (skipped < n && read() != -1) skipped += 1
-      skipped
+      if (n <= 0) 0
+      else {
+        var skipped = 0
+        while (skipped < n && read() != -1) skipped += 1
+        skipped
+      }
     }
 
     override def read(): Int =

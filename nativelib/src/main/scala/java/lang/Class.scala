@@ -150,29 +150,34 @@ final class _Class[A] {
   @stub
   def getMethods(): Array[Method] = ???
 
-  def getResourceAsStream(name: java.lang.String): java.io.InputStream = {
-    val absoluteName =
-      if (name(0) == '/') {
-        name
-      } else {
-        Option(Paths.get(this.name.replaceAll("\\.", "/")).getParent()) match {
-          case Some(parentPath) => s"/${parentPath.toString()}/$name"
-          case None             => s"/$name"
+  def getResourceAsStream(
+      resourceName: java.lang.String
+  ): java.io.InputStream = {
+    if (resourceName.isEmpty()) null
+    else {
+      val absoluteName =
+        if (resourceName(0) == '/') {
+          resourceName
+        } else {
+          Paths.get(this.name.replace(".", "/")).getParent() match {
+            case null       => s"/$resourceName"
+            case parentPath => s"/${parentPath.toString()}/$resourceName"
+          }
         }
-      }
 
-    val path =
-      Paths.get(absoluteName).normalize().toString().replaceAll("\\\\", "/")
+      val path =
+        Paths.get(absoluteName).normalize().toString().replace("\\", "/")
 
-    val absolutePath =
-      if (!path.isEmpty() && path(0) != '/') "/" + path
-      else path
+      val absolutePath =
+        if (!path.isEmpty() && path(0) != '/') "/" + path
+        else path
 
-    EmbeddedResourceHelper.resourceFileIdMap.get(absolutePath) match {
-      case Some(fileIndex) =>
-        Base64.getDecoder().wrap(new EncodedResourceInputStream(fileIndex))
-      case None =>
-        null
+      EmbeddedResourceHelper.resourceFileIdMap
+        .get(absolutePath)
+        .map { fileIndex =>
+          Base64.getDecoder().wrap(new EncodedResourceInputStream(fileIndex))
+        }
+        .orNull
     }
   }
 }

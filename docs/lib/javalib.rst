@@ -628,7 +628,7 @@ For that to work, you have to specify an additional NativeConfig option:
 
 ```scala
 nativeConfig ~= {
-  _withEmbedResources(true)
+  _.withEmbedResources(true)
 }
 ```
 
@@ -641,16 +641,16 @@ and used as a resource:
 ```
 
 This is to avoid unnecesarily embedding source files. If necessary, please
-consider using a different file extension for embeddal. Files found in the
+consider using a different file extension for embedding. Files found in the
 resources/scala-native directory will not be embedded as well. It is recommended
 to add the ".c" nad ".h" files there.
 
 Reasoning for the lack of getResource() and getResources():
 
 In Scala Native, the outputted file that can be run is a binary, unlike JVM's
-classfiles and jars. For that reason, were getResources() URI methods implemented,
-a new URI format using a seperate FileSystem would have to be added (f.e. instead
-of obtaining jar:file:path.ext you would obtain embedded:path.ext). As this still
+classfiles and jars. For that reason, if getResources() URI methods would be implemented,
+a new URI format using a seperate FileSystem would have to be added (e.g. instead
+of obtaining `jar:file:path.ext` you would obtain `embedded:path.ext`). As this still
 would provide a meaningful inconsistency between JVM's javalib API and Scala
 Native's reimplementation, this remains not implemented for now. The added
 getClass().getResourceAsInputStream() however is able to be consistent between

@@ -1,14 +1,15 @@
 package java.lang.resource
 
 import scala.scalanative.unsafe._
+import scala.scalanative.runtime.RawPtr
 
 @extern
 private[lang] object EmbeddedResourceReader {
-  @name("scalanative_resource_get_content_byte")
-  def getContentByte(embeddedResourceId: CInt, byteIndex: CInt): Byte = extern
+  @name("scalanative_resource_get_content_ptr")
+  def getContentPtr(embeddedResourceId: CInt): Ptr[Byte] = extern
 
-  @name("scalanative_resource_get_path_byte")
-  def getPathByte(embeddedResourceId: CInt, byteIndex: CInt): Byte = extern
+  @name("scalanative_resource_get_path_ptr")
+  def getPathPtr(embeddedResourceId: CInt): RawPtr = extern
 
   @name("scalanative_resource_get_embedded_size")
   def getEmbeddedSize(): CInt = extern
