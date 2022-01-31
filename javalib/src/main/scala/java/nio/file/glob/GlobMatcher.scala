@@ -3,11 +3,18 @@ package java.nio.file.glob
 import java.nio.file.{PathMatcher, Path}
 import scala.util.matching.Regex
 import scala.annotation.tailrec
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 class GlobMatcher(pattern: GlobPattern) extends PathMatcher {
 
-  def matches(path: java.nio.file.Path): Boolean = {
-    val input = path.toString() // TODO change dividers (?)
+  def matches(path: Path): Boolean = {
+    val input =
+      if(isWindows){
+        path.toString.replace("\\", "/")
+      } else {
+        path.toString()
+      }
+
     val glob = pattern.globSpecification
 
     // Finds states reachable after using one inputChar
@@ -41,20 +48,18 @@ class GlobMatcher(pattern: GlobPattern) extends PathMatcher {
         Nil
       }
 
-    // @tailrec
     def isEndReachable(node: GlobNode): Boolean =
       if (!node.isFinal) {
         node.globSpec match {
-          case NonCrossingName => node.next.exists(isEndReachable(_))
-          case CrossingName    => node.next.exists(isEndReachable(_))
-          case Groups(_)       => node.next.exists(isEndReachable(_))
-          case _               => false
+          case NonCrossingName | CrossingName | Groups(_) => 
+            node.next.exists(isEndReachable(_))
+          case _ => false
         }
       } else true
 
     // Matches against one string
     @tailrec
-    def matchesInternal(inputIdx: Int, states: List[GlobNode]): Boolean = { /// return if not found
+    def matchesInternal(inputIdx: Int, states: List[GlobNode]): Boolean = { // return if not found
       val inputChar = input.charAt(inputIdx)
       val newStates = states.flatMap { node =>
         val nextList = node.next.flatMap { nextNode =>
@@ -69,6 +74,5 @@ class GlobMatcher(pattern: GlobPattern) extends PathMatcher {
     }
 
     matchesInternal(0, List(glob))
-
   }
 }

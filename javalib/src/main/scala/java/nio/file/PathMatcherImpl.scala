@@ -21,11 +21,12 @@ object PathMatcherImpl {
 
 private class RegexPathMatcher(pattern: Pattern) extends PathMatcher {
   override def matches(p: Path): Boolean =
-    pattern.matcher(p.toString).matches()
+    pattern.matcher(p.toString).matches() // does it work on windows ???
 }
 
 private class GlobPathMatcher(pattern: String) extends PathMatcher {
   val globPattern = GlobPattern.compile(pattern)
   override def matches(p: Path): Boolean =
     globPattern.matcher().matches(p)
+
 }

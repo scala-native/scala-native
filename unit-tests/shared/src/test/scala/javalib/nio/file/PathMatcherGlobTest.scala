@@ -8,34 +8,47 @@ import org.junit.Assert._
 import java.util.regex.PatternSyntaxException
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.isWindows
 
 class PathMatcherGlobTest {
 
-  @inline def pass(glob: String, path: String) = {
-    // println(glob + " " + path)
-    val pattern = s"glob:$glob"
-    val matched = Paths.get(path)
-    val matcher = FileSystems.getDefault().getPathMatcher(pattern)
-    assertTrue(
-      s"glob: $glob, path: $path should be matched", 
-      matcher.matches(matched)
-    )
+  @inline def pass(glob: String, path: String, onWindows: Boolean = true) = {
+    if (isWindows && !onWindows) {
+      // incompatible on windows
+      println("Skipping pass($glob, $path) on Windows")
+    } else {
+      val pattern = s"glob:$glob"
+      val matched = Paths.get(path)
+      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
+      assertTrue(
+        s"glob: $glob, path: $path should be matched",
+        matcher.matches(matched)
+      )
+    }
   }
 
-  @inline def fail(glob: String, path: String) = {
-    // println(glob + " " + path)
-    val pattern    = s"glob:$glob"
-    val matched    = Paths.get(path)
-    val matcher = FileSystems.getDefault().getPathMatcher(pattern)
-    assertFalse(
-      s"glob: $glob, path: $path should not be matched",
-      matcher.matches(matched)
-    )
+  @inline def fail(glob: String, path: String, onWindows: Boolean = true) = {
+    if (isWindows && !onWindows) {
+      // incompatible on windows
+      println("Skipping pass($glob, $path) on Windows")
+    } else {
+      val pattern = s"glob:$glob"
+      val matched = Paths.get(path)
+      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
+      assertFalse(
+        s"glob: $glob, path: $path should not be matched",
+        matcher.matches(matched)
+      )
+    }
   }
 
   @inline def throws[T <: Throwable](glob: String, message: String) = {
     val pattern = s"glob:$glob"
-    assertThrows(message, classOf[PatternSyntaxException], FileSystems.getDefault().getPathMatcher(pattern))
+    assertThrows(
+      message,
+      classOf[PatternSyntaxException],
+      FileSystems.getDefault().getPathMatcher(pattern)
+    )
   }
 
   @Test def correctMatcherOfClass(): Unit = {
@@ -45,7 +58,7 @@ class PathMatcherGlobTest {
     fail("ab[c-d].ext", "abb.ext")
     pass("ab[c-e].ext", "abe.ext")
     fail("ab[c-e].ext", "abf.ext")
-    
+
     pass("[a-c].ext", "b.ext")
     fail("[a-c].ext", ".ext")
 
@@ -68,13 +81,13 @@ class PathMatcherGlobTest {
     pass("a[-a]b", "a-b")
     pass("a[a-]b", "a-b")
 
-    pass("a[\\]b", "a\\b")
-    fail("a[\\]b", "ab")
+    pass("a[\\]b", "a\\b", onWindows = false)
+    fail("a[\\]b", "ab", onWindows = false)
 
-    pass("a[?]b", "a?b")
+    pass("a[?]b", "a?b", onWindows = false)
     fail("a[?]b", "ab")
 
-    pass("a[*]b", "a*b")
+    pass("a[*]b", "a*b", onWindows = false)
     fail("a[*]b", "ab")
   }
 
@@ -90,11 +103,11 @@ class PathMatcherGlobTest {
     fail("{ba,na}na", "na")
     fail("{ba,na}na", "ba")
 
-    // infix, differing length 
+    // infix, differing length
     pass("b{ana,n}a", "banaa")
     pass("b{ana,n}a", "bna")
     fail("b{ana,n}a", "banana")
-    
+
     // infix, with empty
     pass("ba{na,}na", "bana")
     pass("ba{na,}na", "banana")
@@ -108,7 +121,7 @@ class PathMatcherGlobTest {
     fail("b{an,ana,nana}", "ba")
     fail("b{an,ana,nana}", "nan")
   }
- // TODO what if space
+  // TODO what if space
   @Test def incorrectPattern(): Unit = {
 
     throws("{ba,{na{na}},{na}}", "nested groups")
@@ -118,7 +131,7 @@ class PathMatcherGlobTest {
     throws("a[b", "class does not end")
 
     throws("a[!b", "exclusion class does not end")
-    
+
     throws("a{b,c", "group does not end")
   }
 
@@ -180,9 +193,7 @@ class PathMatcherGlobTest {
     pass("**/*/*{.zip,.gz}", "dir/dir2/file.gz")
     fail("**/*/*{.zip,.gz}", "dir2/file.gz")
     fail("**/*/*{.zip,.gz}", "dir/dir2/file.ext")
-
   }
-
 
   // TODO test windows things
 
