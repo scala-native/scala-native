@@ -485,8 +485,8 @@ class BigInteger extends Number with Comparable[BigInteger] {
   override def equals(x: Any): Boolean = x match {
     case that: BigInteger =>
       this.sign == that.sign &&
-      this.numberLength == that.numberLength &&
-      this.equalsArrays(that.digits)
+        this.numberLength == that.numberLength &&
+        this.equalsArrays(that.digits)
     case _ => false
   }
 

@@ -14,7 +14,7 @@ object AbstractMap {
     other match {
       case other: Map.Entry[_, _] =>
         Objects.equals(entry.getKey(), other.getKey()) &&
-        Objects.equals(entry.getValue(), other.getValue())
+          Objects.equals(entry.getValue(), other.getValue())
       case _ => false
     }
   }
@@ -172,9 +172,9 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
       o match {
         case m: Map[_, _] =>
           self.size() == m.size() &&
-          entrySet().scalaOps.forall(item =>
-            Objects.equals(m.get(item.getKey()), item.getValue())
-          )
+            entrySet().scalaOps.forall(item =>
+              Objects.equals(m.get(item.getKey()), item.getValue())
+            )
         case _ => false
       }
     }

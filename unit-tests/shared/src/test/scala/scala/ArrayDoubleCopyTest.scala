@@ -24,9 +24,9 @@ class ArrayDoubleCopyTest {
     init(arr, 100.0)
     assertTrue(
       arr(0) == 100.0 && arr(1) == 101.0 && arr(2) == 102.0 &&
-        arr(3) == 103.0 && arr(4) == 104.0 && arr(5) == 105.0 &&
-        arr(6) == 106.0 && arr(7) == 107.0 && arr(8) == 108.0 &&
-        arr(9) == 109.0
+      arr(3) == 103.0 && arr(4) == 104.0 && arr(5) == 105.0 &&
+      arr(6) == 106.0 && arr(7) == 107.0 && arr(8) == 108.0 &&
+      arr(9) == 109.0
     )
   }
 
@@ -35,9 +35,9 @@ class ArrayDoubleCopyTest {
     java.lang.System.arraycopy(arr, 0, arr2, 1, 10)
     assertTrue(
       arr2(0) == 0.0 && arr2(1) == 100.0 && arr2(2) == 101.0 &&
-        arr2(3) == 102.0 && arr2(4) == 103.0 && arr2(5) == 104.0 &&
-        arr2(6) == 105.0 && arr2(7) == 106.0 && arr2(8) == 107.0 &&
-        arr2(9) == 108.0 && arr2(10) == 109.0 && arr2(11) == 0.0
+      arr2(3) == 102.0 && arr2(4) == 103.0 && arr2(5) == 104.0 &&
+      arr2(6) == 105.0 && arr2(7) == 106.0 && arr2(8) == 107.0 &&
+      arr2(9) == 108.0 && arr2(10) == 109.0 && arr2(11) == 0.0
     )
   }
 
@@ -46,9 +46,9 @@ class ArrayDoubleCopyTest {
     java.lang.System.arraycopy(arrEmpty, 0, arr2, 5, 0)
     assertTrue(
       arr2(0) == 0.0 && arr2(1) == 1.0 && arr2(2) == 2.0 &&
-        arr2(3) == 3.0 && arr2(4) == 4.0 && arr2(5) == 5.0 &&
-        arr2(6) == 6.0 && arr2(7) == 7.0 && arr2(8) == 8.0 &&
-        arr2(9) == 9.0 && arr2(10) == 10.0 && arr2(11) == 11.0
+      arr2(3) == 3.0 && arr2(4) == 4.0 && arr2(5) == 5.0 &&
+      arr2(6) == 6.0 && arr2(7) == 7.0 && arr2(8) == 8.0 &&
+      arr2(9) == 9.0 && arr2(10) == 10.0 && arr2(11) == 11.0
     )
   }
 
@@ -57,8 +57,8 @@ class ArrayDoubleCopyTest {
     java.lang.System.arraycopy(arr, 0, arr, 5, 5)
     assertTrue(
       arr(0) == 0.0 && arr(1) == 1.0 && arr(2) == 2.0 && arr(3) == 3.0 &&
-        arr(4) == 4.0 && arr(5) == 0.0 && arr(6) == 1.0 && arr(7) == 2.0 &&
-        arr(8) == 3.0 && arr(9) == 4.0
+      arr(4) == 4.0 && arr(5) == 0.0 && arr(6) == 1.0 && arr(7) == 2.0 &&
+      arr(8) == 3.0 && arr(9) == 4.0
     )
   }
 
@@ -67,8 +67,8 @@ class ArrayDoubleCopyTest {
     java.lang.System.arraycopy(arr, 6, arr, 4, 2)
     assertTrue(
       arr(0) == 0.0 && arr(1) == 1.0 && arr(2) == 2.0 && arr(3) == 3.0 &&
-        arr(4) == 6.0 && arr(5) == 7.0 && arr(6) == 6.0 && arr(7) == 7.0 &&
-        arr(8) == 8.0 && arr(9) == 9.0
+      arr(4) == 6.0 && arr(5) == 7.0 && arr(6) == 6.0 && arr(7) == 7.0 &&
+      arr(8) == 8.0 && arr(9) == 9.0
     )
   }
 
@@ -77,8 +77,8 @@ class ArrayDoubleCopyTest {
     java.lang.System.arraycopy(arr, 0, arr, 2, 6)
     assertTrue(
       arr(0) == 0.0 && arr(1) == 1.0 && arr(2) == 0.0 && arr(3) == 1.0 &&
-        arr(4) == 2.0 && arr(5) == 3.0 && arr(6) == 4.0 && arr(7) == 5.0 &&
-        arr(8) == 8.0 && arr(9) == 9.0
+      arr(4) == 2.0 && arr(5) == 3.0 && arr(6) == 4.0 && arr(7) == 5.0 &&
+      arr(8) == 8.0 && arr(9) == 9.0
     )
   }
 
@@ -87,8 +87,8 @@ class ArrayDoubleCopyTest {
     java.lang.System.arraycopy(arr, 2, arr, 0, 6)
     assertTrue(
       arr(0) == 2.0 && arr(1) == 3.0 && arr(2) == 4.0 && arr(3) == 5.0 &&
-        arr(4) == 6.0 && arr(5) == 7.0 && arr(6) == 6.0 && arr(7) == 7.0 &&
-        arr(8) == 8.0 && arr(9) == 9.0
+      arr(4) == 6.0 && arr(5) == 7.0 && arr(6) == 6.0 && arr(7) == 7.0 &&
+      arr(8) == 8.0 && arr(9) == 9.0
     )
   }
 

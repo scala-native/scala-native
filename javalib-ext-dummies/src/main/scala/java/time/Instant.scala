@@ -17,7 +17,7 @@ final class Instant(private val epochSecond: Long, private val nano: Int)
   override def equals(that: Any): Boolean = that match {
     case that: Instant =>
       this.epochSecond == that.epochSecond &&
-      this.nano == that.nano
+        this.nano == that.nano
     case _ =>
       false
   }

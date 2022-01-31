@@ -293,8 +293,8 @@ private[math] object Primality {
         while ({
           x = new BigInteger(bitLength, rnd)
           (x.compareTo(n) >= BigInteger.EQUALS ||
-          x.sign == 0 ||
-          x.isOne())
+            x.sign == 0 ||
+            x.isOne())
         }) ()
       }
 

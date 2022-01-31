@@ -1350,8 +1350,8 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   override def equals(x: Any): Boolean = x match {
     case that: BigDecimal =>
       that._scale == this._scale &&
-      (if (_bitLength < 64) that._smallValue == this._smallValue
-       else this._intVal == that._intVal)
+        (if (_bitLength < 64) that._smallValue == this._smallValue
+         else this._intVal == that._intVal)
     case _ => false
   }
 

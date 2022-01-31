@@ -693,8 +693,8 @@ object Character {
   def isAlphabetic(codePoint: Int): scala.Boolean = {
     val tpe = getType(codePoint)
     tpe == UPPERCASE_LETTER || tpe == LOWERCASE_LETTER ||
-    tpe == TITLECASE_LETTER || tpe == MODIFIER_LETTER ||
-    tpe == OTHER_LETTER || tpe == LETTER_NUMBER
+      tpe == TITLECASE_LETTER || tpe == MODIFIER_LETTER ||
+      tpe == OTHER_LETTER || tpe == LETTER_NUMBER
   }
 
   def isIdeographic(c: Int): scala.Boolean = {

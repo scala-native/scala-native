@@ -23,9 +23,9 @@ class ArrayIntCopyTest {
     init(arr, 100)
     assertTrue(
       arr(0) == 100 && arr(1) == 101 && arr(2) == 102 &&
-        arr(3) == 103 && arr(4) == 104 && arr(5) == 105 &&
-        arr(6) == 106 && arr(7) == 107 && arr(8) == 108 &&
-        arr(9) == 109
+      arr(3) == 103 && arr(4) == 104 && arr(5) == 105 &&
+      arr(6) == 106 && arr(7) == 107 && arr(8) == 108 &&
+      arr(9) == 109
     )
   }
 
@@ -34,9 +34,9 @@ class ArrayIntCopyTest {
     java.lang.System.arraycopy(arr, 0, arr2, 1, 10)
     assertTrue(
       arr2(0) == 0 && arr2(1) == 100 && arr2(2) == 101 &&
-        arr2(3) == 102 && arr2(4) == 103 && arr2(5) == 104 &&
-        arr2(6) == 105 && arr2(7) == 106 && arr2(8) == 107 &&
-        arr2(9) == 108 && arr2(10) == 109 && arr2(11) == 0
+      arr2(3) == 102 && arr2(4) == 103 && arr2(5) == 104 &&
+      arr2(6) == 105 && arr2(7) == 106 && arr2(8) == 107 &&
+      arr2(9) == 108 && arr2(10) == 109 && arr2(11) == 0
     )
   }
 
@@ -45,9 +45,9 @@ class ArrayIntCopyTest {
     java.lang.System.arraycopy(arrEmpty, 0, arr2, 5, 0)
     assertTrue(
       arr2(0) == 0 && arr2(1) == 1 && arr2(2) == 2 &&
-        arr2(3) == 3 && arr2(4) == 4 && arr2(5) == 5 &&
-        arr2(6) == 6 && arr2(7) == 7 && arr2(8) == 8 &&
-        arr2(9) == 9 && arr2(10) == 10 && arr2(11) == 11
+      arr2(3) == 3 && arr2(4) == 4 && arr2(5) == 5 &&
+      arr2(6) == 6 && arr2(7) == 7 && arr2(8) == 8 &&
+      arr2(9) == 9 && arr2(10) == 10 && arr2(11) == 11
     )
   }
 
@@ -56,8 +56,8 @@ class ArrayIntCopyTest {
     java.lang.System.arraycopy(arr, 0, arr, 5, 5)
     assertTrue(
       arr(0) == 0 && arr(1) == 1 && arr(2) == 2 && arr(3) == 3 &&
-        arr(4) == 4 && arr(5) == 0 && arr(6) == 1 && arr(7) == 2 &&
-        arr(8) == 3 && arr(9) == 4
+      arr(4) == 4 && arr(5) == 0 && arr(6) == 1 && arr(7) == 2 &&
+      arr(8) == 3 && arr(9) == 4
     )
   }
 
@@ -66,8 +66,8 @@ class ArrayIntCopyTest {
     java.lang.System.arraycopy(arr, 6, arr, 4, 2)
     assertTrue(
       arr(0) == 0 && arr(1) == 1 && arr(2) == 2 && arr(3) == 3 &&
-        arr(4) == 6 && arr(5) == 7 && arr(6) == 6 && arr(7) == 7 &&
-        arr(8) == 8 && arr(9) == 9
+      arr(4) == 6 && arr(5) == 7 && arr(6) == 6 && arr(7) == 7 &&
+      arr(8) == 8 && arr(9) == 9
     )
   }
 
@@ -76,8 +76,8 @@ class ArrayIntCopyTest {
     java.lang.System.arraycopy(arr, 0, arr, 2, 6)
     assertTrue(
       arr(0) == 0 && arr(1) == 1 && arr(2) == 0 && arr(3) == 1 &&
-        arr(4) == 2 && arr(5) == 3 && arr(6) == 4 && arr(7) == 5 &&
-        arr(8) == 8 && arr(9) == 9
+      arr(4) == 2 && arr(5) == 3 && arr(6) == 4 && arr(7) == 5 &&
+      arr(8) == 8 && arr(9) == 9
     )
   }
 
@@ -86,8 +86,8 @@ class ArrayIntCopyTest {
     java.lang.System.arraycopy(arr, 2, arr, 0, 6)
     assertTrue(
       arr(0) == 2 && arr(1) == 3 && arr(2) == 4 && arr(3) == 5 &&
-        arr(4) == 6 && arr(5) == 7 && arr(6) == 6 && arr(7) == 7 &&
-        arr(8) == 8 && arr(9) == 9
+      arr(4) == 6 && arr(5) == 7 && arr(6) == 6 && arr(7) == 7 &&
+      arr(8) == 8 && arr(9) == 9
     )
   }
 

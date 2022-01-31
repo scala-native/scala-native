@@ -49,11 +49,11 @@ final case class VirtualInstance(
   override def equals(other: Any): Boolean = other match {
     case other: VirtualInstance =>
       kind == other.kind &&
-      cls == other.cls &&
-      Arrays.equals(
-        values.asInstanceOf[Array[Object]],
-        other.values.asInstanceOf[Array[Object]]
-      )
+        cls == other.cls &&
+        Arrays.equals(
+          values.asInstanceOf[Array[Object]],
+          other.values.asInstanceOf[Array[Object]]
+        )
     case _ =>
       false
   }

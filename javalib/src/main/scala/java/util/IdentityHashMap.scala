@@ -274,7 +274,7 @@ object IdentityHashMap {
       other match {
         case other: Map.Entry[_, _] =>
           same(this.getKey(), other.getKey()) &&
-          same(this.getValue(), other.getValue())
+            same(this.getValue(), other.getValue())
         case _ =>
           false
       }
