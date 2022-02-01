@@ -40,20 +40,18 @@ abstract class Calendar
   @stub
   def getTimeInMillis(): Long = ???
 
-  @stub
-  def getTimeZone(): TimeZone = ???
+  // def getTimeZone(): TimeZone = ???
 
   @stub
   def setTime(date: Date): Unit = ???
 
-  @stub
-  def setTimeZone(timezone: TimeZone): Unit = ???
+  // def setTimeZone(timezone: TimeZone): Unit = ???
 }
 
 object Calendar {
   def getInstance(locale: Locale): Calendar = ???
 
-  def getInstance(zone: TimeZone, locale: Locale): Calendar = ???
+  // def getInstance(zone: TimeZone, locale: Locale): Calendar = ???
 
   val YEAR: Int = 0
   val MONTH: Int = 0
