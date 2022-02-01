@@ -20,7 +20,7 @@ class Issue2025 {
 
   // from LazyListTest.slice
   @Test def implicitFailsAtRuntime(): Unit = {
-    //There is no real array wrapper in Scala 2.12- collections
+    // There is no real array wrapper in Scala 2.12- collections
     implicit def array2ArraySeq[T](array: Array[T]): ArraySeq[T] =
       genericArrayOps(array).to[ArraySeq]
 

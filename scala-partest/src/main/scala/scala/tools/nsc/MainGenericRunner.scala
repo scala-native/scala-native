@@ -93,7 +93,7 @@ class MainGenericRunner {
       .sorted(Comparator.reverseOrder[Path]())
       .map[Boolean](deleteFn)
       .reduce(true, reduceBool) &&
-    Files.deleteIfExists(dir)
+      Files.deleteIfExists(dir)
 
     res
   }

@@ -2069,7 +2069,7 @@ trait NirGenExpr(using Context) {
         case Apply(
               Select(
                 Apply(
-                  _, //Ident(CQuote),
+                  _, // Ident(CQuote),
                   List(
                     Apply(
                       _,

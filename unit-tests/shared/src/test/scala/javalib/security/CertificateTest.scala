@@ -31,7 +31,7 @@ class CertificateTest {
     assertTrue(c1 == c2 && c2 == c1)
     assertFalse(c1.equals(null))
 
-    //noinspection ComparingUnrelatedTypes
+    // noinspection ComparingUnrelatedTypes
     assertFalse(c1.equals("TEST_TYPE"))
   }
 

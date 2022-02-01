@@ -78,7 +78,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone { implicit z =>
       if (isWindows)
         checkWindowsAccess(FILE_GENERIC_WRITE) &&
-        fileAttributeIsSet(FILE_ATTRIBUTE_READONLY, checkIsNotSet = true)
+          fileAttributeIsSet(FILE_ATTRIBUTE_READONLY, checkIsNotSet = true)
       else access(toCString(path), unistd.W_OK) == 0
     }
 

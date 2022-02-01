@@ -11,7 +11,7 @@ object FileOutputStreamTest {
     }
   }
 
-  //when passing only a file, it is in mode WRONLY, so overwriting.
+  // when passing only a file, it is in mode WRONLY, so overwriting.
   def constructorWithFileTest(): Unit = {
     val file: File = new File("test.txt")
     val fop: FileOutputStream = new FileOutputStream(file)

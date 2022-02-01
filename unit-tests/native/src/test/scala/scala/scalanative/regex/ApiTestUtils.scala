@@ -30,7 +30,7 @@ object ApiTestUtils {
    *  doesn't match {@code nonMatch}
    *
    *  @param regexp
-   *    @param match
+   *  @param match
    *  @param nonMatch
    */
   def testMatches(regexp: String, `match`: String, nonMatch: String): Unit = {

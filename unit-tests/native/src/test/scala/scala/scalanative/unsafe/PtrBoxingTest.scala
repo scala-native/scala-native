@@ -213,7 +213,7 @@ class PtrBoxingTest {
 
 object PtrBoxingTest {
   type Functions = CStruct2[GetInt, StringLength]
-  //In 2.11 this method needs to be statically known
+  // In 2.11 this method needs to be statically known
 
   type GetInt = CFuncPtr0[Int]
   def getInt(): Int = 42
