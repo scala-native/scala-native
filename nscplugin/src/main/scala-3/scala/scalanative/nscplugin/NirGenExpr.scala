@@ -2325,8 +2325,8 @@ trait NirGenExpr(using Context) {
 
         val params = paramtys.map(ty => Val.Local(fresh(), ty))
         buf.label(fresh(), params)
-
-        val origTypes = if (funSym.isStaticInNIR) origtys else origtys.tail
+        val origTypes =
+          if (funSym.isStaticInNIR || isAdapted) origtys else origtys.tail
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val argsp = boxedParams.map(ValTree(_))
         val res =
