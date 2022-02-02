@@ -2243,6 +2243,7 @@ trait NirGenExpr(using Context) {
           generatedDefns += genFuncExternForwarder(
             className,
             target.symbol,
+            fn,
             paramTypes
           )
           fnRef
@@ -2285,6 +2286,7 @@ trait NirGenExpr(using Context) {
     private def genFuncExternForwarder(
         funcName: Global,
         funSym: Symbol,
+        funTree: Tree,
         evidences: List[SimpleType]
     )(using nir.Position): Defn = {
       val attrs = Attrs(isExtern = true)
@@ -2330,6 +2332,15 @@ trait NirGenExpr(using Context) {
           if (funSym.isStaticInNIR || isAdapted) origtys else origtys.tail
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val argsp = boxedParams.map(ValTree(_))
+
+        if (evidences.length - 1 != argsp.size) {
+          // If number of arguments does not match number of argument evidences we would get link time error.
+          report.error(
+            "Failed to create scalanative.unsafe.CFuncPtr from scala.Function, report this issue to Scala Native team.",
+            funTree.srcPos
+          )
+        }
+
         val res =
           if (funSym.isStaticInNIR)
             buf.genApplyStaticMethod(funSym, NoSymbol, argsp)
