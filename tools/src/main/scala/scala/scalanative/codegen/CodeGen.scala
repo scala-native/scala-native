@@ -21,7 +21,8 @@ object CodeGen {
     implicit val meta: Metadata = new Metadata(linked, proxies)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
-    val lowered = lower(generated)
+    val embedded = ResourceEmbedder(config)
+    val lowered = lower(generated ++ embedded)
     dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }
