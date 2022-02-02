@@ -2286,7 +2286,7 @@ trait NirGenExpr(using Context) {
     private def genFuncExternForwarder(
         funcName: Global,
         funSym: Symbol,
-        funTree: Tree,
+        funTree: Closure,
         evidences: List[SimpleType]
     )(using nir.Position): Defn = {
       val attrs = Attrs(isExtern = true)
@@ -2333,8 +2333,10 @@ trait NirGenExpr(using Context) {
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val argsp = boxedParams.map(ValTree(_))
 
-        if (evidences.length - 1 != argsp.size) {
-          // If number of arguments does not match number of argument evidences we would get link time error.
+        // Check number of arguments that would be be used in a call to the function,
+        // it should be equal to the quantity of implicit evidences (without return type evidence)
+        // and arguments passed via closure env.
+        if (argsp.size != evidences.length - 1 + funTree.env.size) {
           report.error(
             "Failed to create scalanative.unsafe.CFuncPtr from scala.Function, report this issue to Scala Native team.",
             funTree.srcPos
