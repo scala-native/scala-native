@@ -2156,6 +2156,7 @@ trait NirGenExpr(using Context) {
 
     def toExtern(expectedTy: nir.Type, value: Val)(using nir.Position): Val =
       (expectedTy, value.ty) match {
+        case (Type.Unit, _) => Val.Unit
         case (_, refty: Type.Ref)
             if Type.boxClasses.contains(refty.name)
               && Type.unbox(Type.Ref(refty.name)) == expectedTy =>
