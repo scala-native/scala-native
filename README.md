@@ -27,4 +27,4 @@ Getting Started and full documentation can be found at [http://www.scala-native.
 ## License
 
 Scala Native is distributed under the Apache License.
-[See LICENSE.md for details](https://github.com/scala-native/scala-native/blob/master/LICENSE.md)
+[See LICENSE.md for details](https://github.com/scala-native/scala-native/blob/main/LICENSE.md)

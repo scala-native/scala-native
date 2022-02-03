@@ -42,7 +42,7 @@ def main(
     "log",
     s"$firstTag..$lastTag",
     "--first-parent",
-    "master",
+    "main",
     "--pretty=format:%H"
   )
 

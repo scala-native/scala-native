@@ -26,7 +26,7 @@ This will:
 * prompt for a project name
 
 * use the `.g8 template
-  <https://github.com/scala-native/scala-native.g8/tree/master/src/main/g8>`_.
+  <https://github.com/scala-native/scala-native.g8/tree/main/src/main/g8>`_.
   to generate a basic project with that name.
 
 * create a project sub-directory with the project name.
@@ -35,19 +35,19 @@ This will:
   in this new project sub-directory.
 
   * `project/plugins.sbt
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/plugins.sbt>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/plugins.sbt>`_
     adds the Scala Native plugin dependency and its version.
 
   * `project/build.properties
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/build.properties>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/build.properties>`_
     specifies the sbt version.
 
   * `build.sbt
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/build.sbt>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/build.sbt>`_
     enables the plugin and specifies the Scala version.
 
   * `src/main/scala/Main.scala
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/src/main/scala/Main.scala>`_
     is a minimal application.
     ::
      
@@ -356,7 +356,7 @@ platforms in Scala: JVM, JavaScript via Scala.js, and native via Scala Native.
 It is based on the original cross-project idea from Scala.js and supports the
 same syntax for existing JVM/JavaScript cross-projects. Please refer to the
 project's
-`README <https://github.com/portable-scala/sbt-crossproject/blob/master/README.md>`_
+`README <https://github.com/portable-scala/sbt-crossproject/blob/main/README.md>`_
 for details.
 
 Continue to :ref:`lang`.
