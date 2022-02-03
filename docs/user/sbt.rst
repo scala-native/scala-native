@@ -356,7 +356,7 @@ platforms in Scala: JVM, JavaScript via Scala.js, and native via Scala Native.
 It is based on the original cross-project idea from Scala.js and supports the
 same syntax for existing JVM/JavaScript cross-projects. Please refer to the
 project's
-`README <https://github.com/portable-scala/sbt-crossproject/blob/main/README.md>`_
+`README <https://github.com/portable-scala/sbt-crossproject/blob/master/README.md>`_
 for details.
 
 Continue to :ref:`lang`.
