@@ -2156,6 +2156,7 @@ trait NirGenExpr(using Context) {
 
     def toExtern(expectedTy: nir.Type, value: Val)(using nir.Position): Val =
       (expectedTy, value.ty) match {
+        case (Type.Unit, _) => Val.Unit
         case (_, refty: Type.Ref)
             if Type.boxClasses.contains(refty.name)
               && Type.unbox(Type.Ref(refty.name)) == expectedTy =>
@@ -2242,6 +2243,7 @@ trait NirGenExpr(using Context) {
           generatedDefns += genFuncExternForwarder(
             className,
             target.symbol,
+            fn,
             paramTypes
           )
           fnRef
@@ -2284,6 +2286,7 @@ trait NirGenExpr(using Context) {
     private def genFuncExternForwarder(
         funcName: Global,
         funSym: Symbol,
+        funTree: Closure,
         evidences: List[SimpleType]
     )(using nir.Position): Defn = {
       val attrs = Attrs(isExtern = true)
@@ -2325,10 +2328,21 @@ trait NirGenExpr(using Context) {
 
         val params = paramtys.map(ty => Val.Local(fresh(), ty))
         buf.label(fresh(), params)
-
-        val origTypes = if (funSym.isStaticInNIR) origtys else origtys.tail
+        val origTypes =
+          if (funSym.isStaticInNIR || isAdapted) origtys else origtys.tail
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val argsp = boxedParams.map(ValTree(_))
+
+        // Check number of arguments that would be be used in a call to the function,
+        // it should be equal to the quantity of implicit evidences (without return type evidence)
+        // and arguments passed via closure env.
+        if (argsp.size != evidences.length - 1 + funTree.env.size) {
+          report.error(
+            "Failed to create scalanative.unsafe.CFuncPtr from scala.Function, report this issue to Scala Native team.",
+            funTree.srcPos
+          )
+        }
+
         val res =
           if (funSym.isStaticInNIR)
             buf.genApplyStaticMethod(funSym, NoSymbol, argsp)

@@ -516,6 +516,31 @@ class IssuesTest {
     }
   }
 
+  @Test def test_Issue2550(): Unit = {
+    // The code was failing to link
+    // There were 2 reasons:
+    // 1. Incorrect number of arguments (tested in all cases)
+    // 2. Incorrect return type j.l.Object instead of nir Unit (tested in Func)
+    type Func = CFuncPtr2[Ptr[Byte], Int, Unit]
+    type Func1 = CFuncPtr2[Ptr[Byte], Int, Ptr[Byte]]
+    type Func2 = CFuncPtr2[Ptr[Byte], Int, Int]
+    type Func3 = CFuncPtr2[Ptr[Byte], Int, java.lang.Integer]
+
+    val func0: Func = (handle: Ptr[Byte], i: Int) => ()
+    val func1: Func1 = (handle: Ptr[Byte], i: Int) => handle
+    val func2: Func2 = (handle: Ptr[Byte], i: Int) => i
+    val func3: Func3 = (handle: Ptr[Byte], i: Int) =>
+      java.lang.Integer.valueOf(i)
+
+    val stub = stackalloc[Byte]()
+    val n = 10
+
+    assertEquals((), func0(stub, n))
+    assertEquals(stub, func1(stub, n))
+    assertEquals(n, func2(stub, n))
+    assertEquals(n, func3(stub, n))
+  }
+
 }
 
 package issue1090 {
