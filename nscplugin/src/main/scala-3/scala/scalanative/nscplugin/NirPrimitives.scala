@@ -79,7 +79,10 @@ object NirPrimitives {
 
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
 
-  final val LastNirPrimitiveCode = CLASS_FIELD_RAWPTR
+  final val REFLECT_SELECTABLE_SELECTDYN = CLASS_FIELD_RAWPTR + 1
+  final val REFLECT_SELECTABLE_APPLYDYN = REFLECT_SELECTABLE_SELECTDYN + 1
+
+  final val LastNirPrimitiveCode = REFLECT_SELECTABLE_APPLYDYN
 
   def isNirPrimitive(code: Int): Boolean =
     code >= FirstNirPrimitiveCode && code <= LastNirPrimitiveCode
@@ -181,6 +184,14 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       addPrimitive(_, CFUNCPTR_FROM_FUNCTION)
     )
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
+    addPrimitive(
+      defnNir.ReflectSelectable_selectDynamic,
+      REFLECT_SELECTABLE_SELECTDYN
+    )
+    addPrimitive(
+      defnNir.ReflectSelectable_applyDynamic,
+      REFLECT_SELECTABLE_APPLYDYN
+    )
     primitives
   }
 }

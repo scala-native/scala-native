@@ -1028,6 +1028,12 @@ trait NirGenExpr(using Context) {
       else if (code == STACKALLOC) genStackalloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
+      else if (code == REFLECT_SELECTABLE_SELECTDYN)
+        // scala.reflect.Selectable.selectDynamic
+        genReflectiveCall(app, isSelectDynamic = true)
+      else if (code == REFLECT_SELECTABLE_APPLYDYN)
+        // scala.reflect.Selectable.applyDynamic
+        genReflectiveCall(app, isSelectDynamic = false)
       else {
         report.error(
           s"Unknown primitive operation: ${sym.fullName}(${fun.symbol.showName})",
@@ -2357,6 +2363,115 @@ trait NirGenExpr(using Context) {
         buf.toSeq
       }
       Defn.Define(attrs, forwarderName, forwarderSig, forwarderBody)
+    }
+
+    private object WrapArray {
+      lazy val isWrapArray: Set[Symbol] = {
+        val names = defn
+          .ScalaValueClasses()
+          .map(sym => nme.wrapXArray(sym.name))
+          .concat(Set(nme.wrapRefArray, nme.genericWrapArray))
+        val symsInPredef = names.map(defn.ScalaPredefModule.requiredMethod(_))
+        val symsInScalaRunTime =
+          names.map(defn.ScalaRuntimeModule.requiredMethod(_))
+        (symsInPredef ++ symsInScalaRunTime).toSet
+      }
+
+      def unapply(tree: Apply): Option[Tree] = tree match {
+        case Apply(wrapArray_?, List(wrapped))
+            if isWrapArray(wrapArray_?.symbol) =>
+          Some(wrapped)
+        case _ =>
+          None
+      }
+    }
+
+    private def genReflectiveCall(
+        tree: Apply,
+        isSelectDynamic: Boolean
+    ): Val = {
+      given nir.Position = tree.span
+      val Apply(fun @ Select(receiver, _), args) = tree
+
+      val selectedValue = genApplyMethod(
+        defnNir.ReflectSelectable_selectedValue,
+        statically = false,
+        genExpr(receiver),
+        Seq()
+      )
+
+      // Extract the method name as a String
+      val methodNameStr = args.head match {
+        case Literal(Constants.Constant(name: String)) => name
+        case _ =>
+          report.error(
+            "The method name given to Selectable.selectDynamic or Selectable.applyDynamic " +
+              "must be a literal string. " +
+              "Other uses are not supported in Scala Native.",
+            args.head.sourcePos
+          )
+          "erroneous"
+      }
+
+      val (formalParamTypeRefs, actualArgs) =
+        if (isSelectDynamic) (Nil, Nil)
+        else
+          args.tail match {
+            // Extract the param type refs and actual args from the 2nd and 3rd argument to applyDynamic
+            case WrapArray(classOfsArray: JavaSeqLiteral) ::
+                WrapArray(actualArgsAnyArray: JavaSeqLiteral) :: Nil =>
+              // Extract nir.Type's from the classOf[_] trees
+              val formalParamTypes = classOfsArray.elems.map {
+                // classOf[tp] -> tp
+                case Literal(const) if const.tag == Constants.ClazzTag =>
+                  genType(const.typeValue)
+
+                // Anything else is invalid
+                case otherTree =>
+                  report.error(
+                    "The java.lang.Class[_] arguments passed to Selectable.applyDynamic must be " +
+                      "literal classOf[T] expressions (typically compiler-generated). " +
+                      "Other uses are not supported in Scala Native.",
+                    otherTree.sourcePos
+                  )
+                  Rt.Object
+              }
+
+              // Gen the actual args, downcasting them to the formal param types
+              val actualArgs =
+                actualArgsAnyArray.elems
+                  .zip(formalParamTypes)
+                  .map { (actualArgAny, formalParamType) =>
+                    val genActualArgAny = genExpr(actualArgAny)
+                    buf.as(
+                      formalParamType,
+                      genActualArgAny,
+                      unwind
+                    )
+                  }
+
+              (formalParamTypes, actualArgs)
+
+            case _ =>
+              report.error(
+                "Passing the varargs of Selectable.applyDynamic with `: _*` " +
+                  "is not supported in Scala Native.",
+                tree.sourcePos
+              )
+              (Nil, Nil)
+          }
+
+      val dynMethod = buf.dynmethod(
+        selectedValue,
+        Sig.Proxy(methodNameStr, formalParamTypeRefs),
+        unwind
+      )
+      buf.call(
+        Type.Function(selectedValue.ty :: formalParamTypeRefs, Rt.Object),
+        dynMethod,
+        selectedValue :: actualArgs,
+        unwind
+      )
     }
 
     private object LinktimeProperty {

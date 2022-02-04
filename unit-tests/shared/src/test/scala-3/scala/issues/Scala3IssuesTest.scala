@@ -51,6 +51,15 @@ class Scala3IssuesTest:
       CallByNeed.instance.map(CallByNeed(2))(_ + 3).value
     )
   }
+
+  @Test def issue2543(): Unit = {
+    import scala.reflect.Selectable.reflectiveSelectable
+    def collectionClassName(i: Iterable[_]): String =
+      i.asInstanceOf[{ def collectionClassName: String }].collectionClassName
+
+    assertEquals("List", collectionClassName(List(1, 2, 3)))
+  }
+
 end Scala3IssuesTest
 
 private object issue2484 {

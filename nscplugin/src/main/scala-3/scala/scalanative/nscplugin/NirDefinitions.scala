@@ -361,6 +361,15 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val NothingClassTag = ClasstagModule.requiredMethod("Nothing")
   @tu lazy val NullClassTag = ClasstagModule.requiredMethod("Null")
 
+  @tu lazy val ReflectSelectableType: TypeRef = requiredClassRef("scala.reflect.Selectable")
+  @tu lazy val ReflectSelectable_selectDynamicR = ReflectSelectableClass.requiredMethodRef("selectDynamic")
+  @tu lazy val ReflectSelectable_applyDynamicR = ReflectSelectableClass.requiredMethodRef("applyDynamic")
+  @tu lazy val ReflectSelectable_selectedValueR = ReflectSelectableClass.requiredMethodRef("selectedValue")
+  def ReflectSelectableClass(using Context) = ReflectSelectableType.symbol.asClass
+  def ReflectSelectable_selectDynamic(using Context) = ReflectSelectable_selectDynamicR.symbol
+  def ReflectSelectable_applyDynamic(using Context) = ReflectSelectable_applyDynamicR.symbol
+  def ReflectSelectable_selectedValue(using Context) = ReflectSelectable_selectedValueR.symbol
+
   // Java library
   @tu lazy val NObjectType = requiredClassRef("java.lang._Object")
   def NObjectClass(using Context) = NObjectType.symbol.asClass
