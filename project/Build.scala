@@ -166,30 +166,40 @@ object Build {
                 CrossVersion.binaryScalaVersion(scalaVersion)
               }
 
-              Def
-                .task(())
+              def publishLocalVersion(ver: String) = {
+                Def
+                  .task(())
+                  .dependsOn(
+                    // Compiler plugins
+                    nscPlugin.forBinaryVersion(ver) / publishLocal,
+                    junitPlugin.forBinaryVersion(ver) / publishLocal,
+                    // Native libraries
+                    nativelib.forBinaryVersion(ver) / publishLocal,
+                    clib.forBinaryVersion(ver) / publishLocal,
+                    posixlib.forBinaryVersion(ver) / publishLocal,
+                    windowslib.forBinaryVersion(ver) / publishLocal,
+                    // Standard language libraries
+                    javalib.forBinaryVersion(ver) / publishLocal,
+                    auxlib.forBinaryVersion(ver) / publishLocal,
+                    scalalib.forBinaryVersion(ver) / publishLocal,
+                    // Testing infrastructure
+                    testInterfaceSbtDefs.forBinaryVersion(ver) / publishLocal,
+                    testInterface.forBinaryVersion(ver) / publishLocal,
+                    junitRuntime.forBinaryVersion(ver) / publishLocal,
+                    // JVM libraries
+                    util.forBinaryVersion(ver) / publishLocal,
+                    nir.forBinaryVersion(ver) / publishLocal,
+                    tools.forBinaryVersion(ver) / publishLocal,
+                    testRunner.forBinaryVersion(ver) / publishLocal
+                  )
+              }
+
+              publishLocalVersion(ver)
                 .dependsOn(
-                  // Compiler plugins
-                  nscPlugin.forBinaryVersion(ver) / publishLocal,
-                  junitPlugin.forBinaryVersion(ver) / publishLocal,
-                  // Native libraries
-                  nativelib.forBinaryVersion(ver) / publishLocal,
-                  clib.forBinaryVersion(ver) / publishLocal,
-                  posixlib.forBinaryVersion(ver) / publishLocal,
-                  windowslib.forBinaryVersion(ver) / publishLocal,
-                  // Standard language libraries
-                  javalib.forBinaryVersion(ver) / publishLocal,
-                  auxlib.forBinaryVersion(ver) / publishLocal,
-                  scalalib.forBinaryVersion(ver) / publishLocal,
-                  // Testing infrastructure
-                  testInterfaceSbtDefs.forBinaryVersion(ver) / publishLocal,
-                  testInterface.forBinaryVersion(ver) / publishLocal,
-                  junitRuntime.forBinaryVersion(ver) / publishLocal,
-                  // JVM libraries
-                  util.forBinaryVersion(ver) / publishLocal,
-                  nir.forBinaryVersion(ver) / publishLocal,
-                  tools.forBinaryVersion(ver) / publishLocal,
-                  testRunner.forBinaryVersion(ver) / publishLocal
+                  // Scala 3 needs 2.13 deps for it's cross version compat tests
+                  if (scalaVersion.value.startsWith("3."))
+                    publishLocalVersion("2.13")
+                  else Def.task(())
                 )
             })
             .value
