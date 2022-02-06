@@ -197,8 +197,7 @@ object Build {
               publishLocalVersion(ver)
                 .dependsOn(
                   // Scala 3 needs 2.13 deps for it's cross version compat tests
-                  if (scalaVersion.value.startsWith("3."))
-                    publishLocalVersion("2.13")
+                  if (ver == "3") publishLocalVersion("2.13")
                   else Def.task(())
                 )
             })
