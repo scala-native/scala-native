@@ -4,7 +4,7 @@
     */
    protected def selectedValue: Any = this
  
-+  private def unreachable(methodName: String): Nothing = 
++  private def unreachable(methodName: String): Nothing =
 +    throw new IllegalStateException(
 +      "Reflection is not fully supported in Scala Native. " +
 +      s"Call to method scala.reflect.Selectable.$methodName should have been " +
@@ -34,7 +34,7 @@
 -    val mth = rcls.getMethod(name, paramTypes: _*)
 -    ensureAccessible(mth)
 -    mth.invoke(selectedValue, args.asInstanceOf[Seq[AnyRef]]: _*)
-+  final def applyDynamic(name: String, paramTypes: Class[_]*)(args: Any*): Any = 
++  final def applyDynamic(name: String, paramTypes: Class[_]*)(args: Any*): Any =
 +    unreachable("applyDynamic")
  
  object Selectable:
