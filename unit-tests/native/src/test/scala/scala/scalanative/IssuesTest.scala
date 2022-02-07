@@ -541,6 +541,14 @@ class IssuesTest {
     assertEquals(n, func3(stub, n))
   }
 
+  @Test def test_Issue2552() = {
+    import issue2552._
+    // Test that methods (lambdas) as reachable, issue reported missing symbols
+    assertEquals("case 0", 0, issue2552.foo(0))
+    assertEquals("case 1", 0, baz())
+    assertEquals("case 2", 0, Bar.bar())
+  }
+
 }
 
 package issue1090 {
@@ -629,5 +637,13 @@ package issue2520 {
     }
 
     def law: Law = new Law {}
+  }
+}
+
+package object issue2552 {
+  def foo(a: Int, b: Int = 0): Int = 0
+  val baz = () => foo(1)
+  object Bar {
+    val bar = () => foo(0)
   }
 }
