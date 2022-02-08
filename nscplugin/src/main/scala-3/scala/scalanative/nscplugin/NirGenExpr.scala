@@ -228,7 +228,7 @@ trait NirGenExpr(using Context) {
         for
           (tree, idx) <- allCaptureValues.zipWithIndex
           tpe = tree match {
-            case This(iden) => genType(curClassSym.get)
+            case This(iden) => genType(fun.symbol.owner)
             case _          => genType(tree.tpe)
           }
           name = anonClassName.member(nir.Sig.Field(s"capture$idx"))
