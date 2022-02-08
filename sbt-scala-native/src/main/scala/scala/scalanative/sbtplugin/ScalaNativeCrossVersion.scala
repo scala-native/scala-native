@@ -7,15 +7,7 @@ import sbt._
 import scala.scalanative.nir.Versions
 
 object ScalaNativeCrossVersion {
-  private final val ReleaseVersion =
-    raw"""(\d+)\.(\d+)\.(\d+)""".r
-
-  val currentBinaryVersion = binaryVersion(Versions.current)
-
-  def binaryVersion(full: String): String = full match {
-    case ReleaseVersion(major, minor, _) => s"$major.$minor"
-    case _                               => full
-  }
+  val currentBinaryVersion = Versions.currentBinaryVersion
 
   private[this] def crossVersionAddPlatformPart(
       cross: CrossVersion,
