@@ -913,14 +913,13 @@ trait NirGenExpr(using Context) {
           case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
           case (_, Type.Nothing) =>
-            val runtimeNothing = genType(defn.NothingClass)
             val isNullL, notNullL = fresh()
             val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
             buf.branch(isNull, Next(isNullL), Next(notNullL))
             buf.label(isNullL)
             buf.raise(Val.Null, unwind)
             buf.label(notNullL)
-            buf.as(runtimeNothing, boxed, unwind)
+            buf.as(Rt.RuntimeNothing, boxed, unwind)
             buf.unreachable(unwind)
             buf.label(fresh())
             Val.Zero(Type.Nothing)
@@ -932,7 +931,6 @@ trait NirGenExpr(using Context) {
         report.error("Unkown case genTypeApply: " + funSym, tree.sourcePos)
         Val.Null
       }
-
     }
 
     def genValDef(vd: ValDef): Val = {
