@@ -48,7 +48,11 @@ class UsingTest {
       }
     }
 
-    check(new UsingVMError(_), behavior = IsSuppressed, allowsSuppression = true)
+    check(
+      new UsingVMError(_),
+      behavior = IsSuppressed,
+      allowsSuppression = true
+    )
     check(new UsingLinkageError(_), onLinkage, allowsSuppression = true)
     check(_ => new UsingInterruption, onInterruption, allowsSuppression = true)
     check(new UsingControl(_), onControl, allowsSuppression = false)
@@ -58,56 +62,68 @@ class UsingTest {
 
   @Test
   def resourceThrowingVMError(): Unit = {
-    genericResourceThrowing(new VMErrorResource,
-                            onLinkage = AcceptsSuppressed,
-                            onInterruption = AcceptsSuppressed,
-                            onControl = AcceptsSuppressed,
-                            onException = AcceptsSuppressed)
+    genericResourceThrowing(
+      new VMErrorResource,
+      onLinkage = AcceptsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def resourceThrowingLinkageError(): Unit = {
-    genericResourceThrowing(new LinkageResource,
-                            onLinkage = IsSuppressed,
-                            onInterruption = AcceptsSuppressed,
-                            onControl = AcceptsSuppressed,
-                            onException = AcceptsSuppressed)
+    genericResourceThrowing(
+      new LinkageResource,
+      onLinkage = IsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def resourceThrowingInterruption(): Unit = {
-    genericResourceThrowing(new InterruptionResource,
-                            onLinkage = IsSuppressed,
-                            onInterruption = IsSuppressed,
-                            onControl = AcceptsSuppressed,
-                            onException = AcceptsSuppressed)
+    genericResourceThrowing(
+      new InterruptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def resourceThrowingControl(): Unit = {
-    genericResourceThrowing(new ControlResource,
-                            onLinkage = IsSuppressed,
-                            onInterruption = IsSuppressed,
-                            onControl = IsSuppressed,
-                            onException = IgnoresSuppressed)
+    genericResourceThrowing(
+      new ControlResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IgnoresSuppressed
+    )
   }
 
   @Test
   def resourceThrowingError(): Unit = {
-    genericResourceThrowing(new ErrorResource,
-                            onLinkage = IsSuppressed,
-                            onInterruption = IsSuppressed,
-                            onControl = IsSuppressed,
-                            onException = IsSuppressed)
+    genericResourceThrowing(
+      new ErrorResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed
+    )
   }
 
   @Test
   def resourceThrowingException(): Unit = {
-    genericResourceThrowing(new ExceptionResource,
-                            onLinkage = IsSuppressed,
-                            onInterruption = IsSuppressed,
-                            onControl = IsSuppressed,
-                            onException = IsSuppressed)
+    genericResourceThrowing(
+      new ExceptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed
+    )
   }
 
   /* `Using.apply` exception preference */
@@ -125,7 +141,9 @@ class UsingTest {
         allowsSuppression: Boolean,
         yieldsTry: Boolean
     ): Unit = {
-      val ex = if (yieldsTry) UseWrapped(resource, t) else UseWrapped.catching(resource, t)
+      val ex =
+        if (yieldsTry) UseWrapped(resource, t)
+        else UseWrapped.catching(resource, t)
       if (behavior == IsSuppressed) {
         assertThrowableClass[UseT](ex)
         if (allowsSuppression) assertSingleSuppressed[CloseT](ex)
@@ -137,72 +155,108 @@ class UsingTest {
       }
     }
 
-    check(new UsingVMError(_), behavior = IsSuppressed, allowsSuppression = true, yieldsTry = false)
-    check(new UsingLinkageError(_), onLinkage, allowsSuppression = true, yieldsTry = false)
-    check(_ => new UsingInterruption, onInterruption, allowsSuppression = true, yieldsTry = false)
-    check(new UsingControl(_), onControl, allowsSuppression = false, yieldsTry = false)
-    check(new UsingError(_),
-          onException,
-          allowsSuppression = true,
-          yieldsTry = onException == IsSuppressed)
-    check(new UsingException(_),
-          onException,
-          allowsSuppression = true,
-          yieldsTry = onException == IsSuppressed)
+    check(
+      new UsingVMError(_),
+      behavior = IsSuppressed,
+      allowsSuppression = true,
+      yieldsTry = false
+    )
+    check(
+      new UsingLinkageError(_),
+      onLinkage,
+      allowsSuppression = true,
+      yieldsTry = false
+    )
+    check(
+      _ => new UsingInterruption,
+      onInterruption,
+      allowsSuppression = true,
+      yieldsTry = false
+    )
+    check(
+      new UsingControl(_),
+      onControl,
+      allowsSuppression = false,
+      yieldsTry = false
+    )
+    check(
+      new UsingError(_),
+      onException,
+      allowsSuppression = true,
+      yieldsTry = onException == IsSuppressed
+    )
+    check(
+      new UsingException(_),
+      onException,
+      allowsSuppression = true,
+      yieldsTry = onException == IsSuppressed
+    )
   }
 
   @Test
   def usingThrowingVMError(): Unit = {
-    genericUsingThrowing(new VMErrorResource,
-                         onLinkage = AcceptsSuppressed,
-                         onInterruption = AcceptsSuppressed,
-                         onControl = AcceptsSuppressed,
-                         onException = AcceptsSuppressed)
+    genericUsingThrowing(
+      new VMErrorResource,
+      onLinkage = AcceptsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def usingThrowingLinkageError(): Unit = {
-    genericUsingThrowing(new LinkageResource,
-                         onLinkage = IsSuppressed,
-                         onInterruption = AcceptsSuppressed,
-                         onControl = AcceptsSuppressed,
-                         onException = AcceptsSuppressed)
+    genericUsingThrowing(
+      new LinkageResource,
+      onLinkage = IsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def usingThrowingInterruption(): Unit = {
-    genericUsingThrowing(new InterruptionResource,
-                         onLinkage = IsSuppressed,
-                         onInterruption = IsSuppressed,
-                         onControl = AcceptsSuppressed,
-                         onException = AcceptsSuppressed)
+    genericUsingThrowing(
+      new InterruptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def usingThrowingControl(): Unit = {
-    genericUsingThrowing(new ControlResource,
-                         onLinkage = IsSuppressed,
-                         onInterruption = IsSuppressed,
-                         onControl = IsSuppressed,
-                         onException = IgnoresSuppressed)
+    genericUsingThrowing(
+      new ControlResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IgnoresSuppressed
+    )
   }
 
   @Test
   def usingThrowingError(): Unit = {
-    genericUsingThrowing(new ErrorResource,
-                         onLinkage = IsSuppressed,
-                         onInterruption = IsSuppressed,
-                         onControl = IsSuppressed,
-                         onException = IsSuppressed)
+    genericUsingThrowing(
+      new ErrorResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed
+    )
   }
 
   @Test
   def usingThrowingException(): Unit = {
-    genericUsingThrowing(new ExceptionResource,
-                         onLinkage = IsSuppressed,
-                         onInterruption = IsSuppressed,
-                         onControl = IsSuppressed,
-                         onException = IsSuppressed)
+    genericUsingThrowing(
+      new ExceptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed
+    )
   }
 
   /* `Using.Manager.apply` exception preference */
@@ -220,7 +274,9 @@ class UsingTest {
         allowsSuppression: Boolean,
         yieldsTry: Boolean
     ): Unit = {
-      val ex = if (yieldsTry) UseManager(resource, t) else UseManager.catching(resource, t)
+      val ex =
+        if (yieldsTry) UseManager(resource, t)
+        else UseManager.catching(resource, t)
       if (behavior == IsSuppressed) {
         assertThrowableClass[UseT](ex)
         if (allowsSuppression) assertSingleSuppressed[CloseT](ex)
@@ -232,77 +288,115 @@ class UsingTest {
       }
     }
 
-    check(new UsingVMError(_), behavior = IsSuppressed, allowsSuppression = true, yieldsTry = false)
-    check(new UsingLinkageError(_), onLinkage, allowsSuppression = true, yieldsTry = false)
-    check(_ => new UsingInterruption, onInterruption, allowsSuppression = true, yieldsTry = false)
-    check(new UsingControl(_), onControl, allowsSuppression = false, yieldsTry = false)
-    check(new UsingError(_),
-          onException,
-          allowsSuppression = true,
-          yieldsTry = onException == IsSuppressed)
-    check(new UsingException(_),
-          onException,
-          allowsSuppression = true,
-          yieldsTry = onException == IsSuppressed)
+    check(
+      new UsingVMError(_),
+      behavior = IsSuppressed,
+      allowsSuppression = true,
+      yieldsTry = false
+    )
+    check(
+      new UsingLinkageError(_),
+      onLinkage,
+      allowsSuppression = true,
+      yieldsTry = false
+    )
+    check(
+      _ => new UsingInterruption,
+      onInterruption,
+      allowsSuppression = true,
+      yieldsTry = false
+    )
+    check(
+      new UsingControl(_),
+      onControl,
+      allowsSuppression = false,
+      yieldsTry = false
+    )
+    check(
+      new UsingError(_),
+      onException,
+      allowsSuppression = true,
+      yieldsTry = onException == IsSuppressed
+    )
+    check(
+      new UsingException(_),
+      onException,
+      allowsSuppression = true,
+      yieldsTry = onException == IsSuppressed
+    )
   }
 
   @Test
   def managerThrowingVMError(): Unit = {
-    genericManagerThrowing(new VMErrorResource,
-                           onLinkage = AcceptsSuppressed,
-                           onInterruption = AcceptsSuppressed,
-                           onControl = AcceptsSuppressed,
-                           onException = AcceptsSuppressed)
+    genericManagerThrowing(
+      new VMErrorResource,
+      onLinkage = AcceptsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def managerThrowingLinkageError(): Unit = {
-    genericManagerThrowing(new LinkageResource,
-                           onLinkage = IsSuppressed,
-                           onInterruption = AcceptsSuppressed,
-                           onControl = AcceptsSuppressed,
-                           onException = AcceptsSuppressed)
+    genericManagerThrowing(
+      new LinkageResource,
+      onLinkage = IsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def managerThrowingInterruption(): Unit = {
-    genericManagerThrowing(new InterruptionResource,
-                           onLinkage = IsSuppressed,
-                           onInterruption = IsSuppressed,
-                           onControl = AcceptsSuppressed,
-                           onException = AcceptsSuppressed)
+    genericManagerThrowing(
+      new InterruptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed
+    )
   }
 
   @Test
   def managerThrowingControl(): Unit = {
-    genericManagerThrowing(new ControlResource,
-                           onLinkage = IsSuppressed,
-                           onInterruption = IsSuppressed,
-                           onControl = IsSuppressed,
-                           onException = IgnoresSuppressed)
+    genericManagerThrowing(
+      new ControlResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IgnoresSuppressed
+    )
   }
 
   @Test
   def managerThrowingError(): Unit = {
-    genericManagerThrowing(new ErrorResource,
-                           onLinkage = IsSuppressed,
-                           onInterruption = IsSuppressed,
-                           onControl = IsSuppressed,
-                           onException = IsSuppressed)
+    genericManagerThrowing(
+      new ErrorResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed
+    )
   }
 
   @Test
   def managerThrowingException(): Unit = {
-    genericManagerThrowing(new ExceptionResource,
-                           onLinkage = IsSuppressed,
-                           onInterruption = IsSuppressed,
-                           onControl = IsSuppressed,
-                           onException = IsSuppressed)
+    genericManagerThrowing(
+      new ExceptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed
+    )
   }
 
   /* nested resource usage returns the correct exception */
 
-  private def checkMultiplePropagatesCorrectlySimple(usingException: Throwable): Unit = {
+  private def checkMultiplePropagatesCorrectlySimple(
+      usingException: Throwable
+  ): Unit = {
     /*
     UsingException
      |- ClosingError
@@ -311,13 +405,15 @@ class UsingTest {
     assertThrowableClass[UsingException](usingException)
     val suppressed = usingException.getSuppressed
     assertEquals(suppressed.length, 2)
-    val closingError     = suppressed(0)
+    val closingError = suppressed(0)
     val closingException = suppressed(1)
     assertThrowableClass[ClosingError](closingError)
     assertThrowableClass[ClosingException](closingException)
   }
 
-  private def checkMultiplePropagatesCorrectlyComplex(vmError: Throwable): Unit = {
+  private def checkMultiplePropagatesCorrectlyComplex(
+      vmError: Throwable
+  ): Unit = {
     /*
     ClosingVMError
      |- UsingException
@@ -327,14 +423,16 @@ class UsingTest {
     assertThrowableClass[ClosingVMError](vmError)
     val firstLevelSuppressed = vmError.getSuppressed
     assertEquals(firstLevelSuppressed.length, 2)
-    val usingException   = firstLevelSuppressed(0)
+    val usingException = firstLevelSuppressed(0)
     val closingException = firstLevelSuppressed(1)
     assertThrowableClass[UsingException](usingException)
     assertThrowableClass[ClosingException](closingException)
     assertSingleSuppressed[ClosingError](usingException)
   }
 
-  private def checkMultiplePropagatesCorrectlyExtremelyComplex(vmError: Throwable): Unit = {
+  private def checkMultiplePropagatesCorrectlyExtremelyComplex(
+      vmError: Throwable
+  ): Unit = {
     /*
     ClosingVMError
      |- ClosingLinkageError
@@ -350,7 +448,7 @@ class UsingTest {
 
     val firstLevelSuppressed = vmError.getSuppressed
     assertEquals(firstLevelSuppressed.length, 2)
-    val closingLinkage    = firstLevelSuppressed(0)
+    val closingLinkage = firstLevelSuppressed(0)
     val closingException1 = firstLevelSuppressed(1)
     assertThrowableClass[ClosingLinkageError](closingLinkage)
     assertThrowableClass[ClosingException](closingException1)
@@ -359,14 +457,14 @@ class UsingTest {
     val secondLevelSuppressed = closingLinkage.getSuppressed
     assertEquals(secondLevelSuppressed.length, 3)
     val closingInterruption = secondLevelSuppressed(0)
-    val closingError2       = secondLevelSuppressed(1)
-    val closingControl      = secondLevelSuppressed(2)
+    val closingError2 = secondLevelSuppressed(1)
+    val closingControl = secondLevelSuppressed(2)
     assertNoSuppressed(closingError2)
     assertNoSuppressed(closingControl)
 
     val thirdLevelSuppressed = closingInterruption.getSuppressed
     assertEquals(thirdLevelSuppressed.length, 2)
-    val usingException    = thirdLevelSuppressed(0)
+    val usingException = thirdLevelSuppressed(0)
     val closingException2 = thirdLevelSuppressed(1)
     assertSingleSuppressed[ClosingError](usingException)
     assertNoSuppressed(closingException2)
@@ -385,7 +483,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //usingException.printStackTrace()
+    // usingException.printStackTrace()
 
     checkMultiplePropagatesCorrectlySimple(usingException)
   }
@@ -403,7 +501,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //vmError.printStackTrace()
+    // vmError.printStackTrace()
 
     checkMultiplePropagatesCorrectlyComplex(vmError)
   }
@@ -431,7 +529,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //vmError.printStackTrace()
+    // vmError.printStackTrace()
 
     checkMultiplePropagatesCorrectlyExtremelyComplex(vmError)
   }
@@ -448,7 +546,7 @@ class UsingTest {
       }
 
     // uncomment to debug actual suppression nesting
-    //usingException.printStackTrace()
+    // usingException.printStackTrace()
 
     checkMultiplePropagatesCorrectlySimple(usingException)
   }
@@ -466,7 +564,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //vmError.printStackTrace()
+    // vmError.printStackTrace()
 
     checkMultiplePropagatesCorrectlyComplex(vmError)
   }
@@ -494,7 +592,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //vmError.printStackTrace()
+    // vmError.printStackTrace()
 
     checkMultiplePropagatesCorrectlyExtremelyComplex(vmError)
   }
@@ -510,7 +608,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //usingException.printStackTrace()
+    // usingException.printStackTrace()
 
     checkMultiplePropagatesCorrectlySimple(usingException)
   }
@@ -527,7 +625,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //vmError.printStackTrace()
+    // vmError.printStackTrace()
 
     checkMultiplePropagatesCorrectlyComplex(vmError)
   }
@@ -549,7 +647,7 @@ class UsingTest {
     }
 
     // uncomment to debug actual suppression nesting
-    //vmError.printStackTrace()
+    // vmError.printStackTrace()
 
     checkMultiplePropagatesCorrectlyExtremelyComplex(vmError)
   }
@@ -744,7 +842,9 @@ class UsingTest {
 
   @Test
   def usingCatchesOpeningException(): Unit = {
-    val ex = Using({ throw new RuntimeException }: AutoCloseable)(_ => "test").failed.get
+    val ex = Using({ throw new RuntimeException }: AutoCloseable)(_ =>
+      "test"
+    ).failed.get
     assertThrowableClass[RuntimeException](ex)
   }
 
@@ -762,20 +862,23 @@ class UsingTest {
 }
 
 object UsingTest {
-  final class ClosingVMError(message: String)      extends VirtualMachineError(message)
-  final class UsingVMError(message: String)        extends VirtualMachineError(message)
+  final class ClosingVMError(message: String)
+      extends VirtualMachineError(message)
+  final class UsingVMError(message: String) extends VirtualMachineError(message)
   final class ClosingLinkageError(message: String) extends LinkageError(message)
-  final class UsingLinkageError(message: String)   extends LinkageError(message)
+  final class UsingLinkageError(message: String) extends LinkageError(message)
   type ClosingInterruption = InterruptedException
-  type UsingInterruption   = ThreadDeath
+  type UsingInterruption = ThreadDeath
   // `NonLocalReturnControl` incorrectly suppresses exceptions, so this tests that
   //   `Using` special-cases it.
-  final class ClosingControl(message: String)   extends NonLocalReturnControl(message, message)
-  final class UsingControl(message: String)     extends NonLocalReturnControl(message, message)
-  final class ClosingError(message: String)     extends Error(message)
-  final class UsingError(message: String)       extends Error(message)
+  final class ClosingControl(message: String)
+      extends NonLocalReturnControl(message, message)
+  final class UsingControl(message: String)
+      extends NonLocalReturnControl(message, message)
+  final class ClosingError(message: String) extends Error(message)
+  final class UsingError(message: String) extends Error(message)
   final class ClosingException(message: String) extends Exception(message)
-  final class UsingException(message: String)   extends Exception(message)
+  final class UsingException(message: String) extends Exception(message)
 
   abstract class BaseResource extends AutoCloseable {
     final def identity[A](a: A): A = a
@@ -785,20 +888,26 @@ object UsingTest {
     override def close(): Unit = ()
   }
 
-  abstract class CustomResource[T <: Throwable](t: String => T) extends BaseResource {
-    override final def close(): Unit = throw t("closing " + getClass.getSimpleName)
+  abstract class CustomResource[T <: Throwable](t: String => T)
+      extends BaseResource {
+    override final def close(): Unit = throw t(
+      "closing " + getClass.getSimpleName
+    )
   }
 
-  final class VMErrorResource      extends CustomResource(new ClosingVMError(_))
-  final class LinkageResource      extends CustomResource(new ClosingLinkageError(_))
-  final class InterruptionResource extends CustomResource(new ClosingInterruption(_))
-  final class ControlResource      extends CustomResource(new ClosingControl(_))
-  final class ErrorResource        extends CustomResource(new ClosingError(_))
-  final class ExceptionResource    extends CustomResource(new ClosingException(_))
+  final class VMErrorResource extends CustomResource(new ClosingVMError(_))
+  final class LinkageResource extends CustomResource(new ClosingLinkageError(_))
+  final class InterruptionResource
+      extends CustomResource(new ClosingInterruption(_))
+  final class ControlResource extends CustomResource(new ClosingControl(_))
+  final class ErrorResource extends CustomResource(new ClosingError(_))
+  final class ExceptionResource extends CustomResource(new ClosingException(_))
 
   sealed trait SuppressionBehavior
 
-  /** is added as a suppressed exception to the other exception, and the other exception is thrown */
+  /** is added as a suppressed exception to the other exception, and the other
+   *  exception is thrown
+   */
   case object IsSuppressed extends SuppressionBehavior
 
   /** is thrown, and the other exception is added to this as suppressed */
@@ -808,7 +917,11 @@ object UsingTest {
   case object IgnoresSuppressed extends SuppressionBehavior
 
   def assertThrowableClass[T <: Throwable: ClassTag](t: Throwable): Unit = {
-    assertEquals(s"Caught [${t.getMessage}]", implicitly[ClassTag[T]].runtimeClass, t.getClass)
+    assertEquals(
+      s"Caught [${t.getMessage}]",
+      implicitly[ClassTag[T]].runtimeClass,
+      t.getClass
+    )
   }
 
   def assertSingleSuppressed[T <: Throwable: ClassTag](t: Throwable): Unit = {
@@ -876,7 +989,8 @@ object UsingTest {
 
     def assertAllClosed(): Unit = assertEquals(openCount, 0)
 
-    private final class CountingResource(countWhenCreated: Int) extends BaseResource {
+    private final class CountingResource(countWhenCreated: Int)
+        extends BaseResource {
       override def close(): Unit = {
         assertEquals(countWhenCreated, openCount)
         openCount -= 1

@@ -8,7 +8,7 @@ object Rt {
   val Class = Ref(Global.Top("java.lang.Class"))
   val String = Ref(Global.Top("java.lang.String"))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
-  val RuntimeNothing= Type.Ref(Global.Top("scala.runtime.Nothing$"))
+  val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
 
   val BoxedPtr = Ref(Global.Top("scala.scalanative.unsafe.Ptr"))
