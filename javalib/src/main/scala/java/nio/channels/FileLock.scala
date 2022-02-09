@@ -1,5 +1,7 @@
 package java.nio.channels
 
+import java.util.Objects
+
 abstract class FileLock private (
     _channel: Channel,
     final val position: Long,
@@ -22,6 +24,7 @@ abstract class FileLock private (
     this(channel: Channel, position, size, shared)
 
   require(position >= 0 && size >= 0, "position and size must be non negative")
+  Objects.requireNonNull(_channel, "Null channel")
 
   final def channel(): FileChannel =
     _channel match {
