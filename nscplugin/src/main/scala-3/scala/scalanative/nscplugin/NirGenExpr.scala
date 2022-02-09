@@ -1044,45 +1044,18 @@ trait NirGenExpr(using Context) {
     }
 
     private def genApplyTypeApply(app: Apply): Val = {
-      val Apply(TypeApply(fun, targs), argsp) = app
+      val Apply(tApply @ TypeApply(fun, targs), argsp) = app
       val Select(receiverp, _) = desugarTree(fun)
       given nir.Position = fun.span
 
       val funSym = fun.symbol
-      val fromty = genType(receiverp.tpe)
-      val toty = genType(targs.head.tpe)
-      def boxty = genBoxType(targs.head.tpe)
       val value = genExpr(receiverp)
       def boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
 
-      if (funSym == defn.Any_isInstanceOf) buf.is(boxty, boxed, unwind)
-      else if (funSym == defn.Any_asInstanceOf)
-        (fromty, toty) match {
-          case _ if boxed.ty == boxty =>
-            boxed
-          case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
-            genCoercion(value, fromty, toty)
-          case (_, Type.Nothing) =>
-            val runtimeNothing = genType(defn.NothingClass)
-            val isNullL, notNullL = fresh()
-            val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
-            buf.branch(isNull, Next(isNullL), Next(notNullL))
-            buf.label(isNullL)
-            buf.raise(Val.Null, unwind)
-            buf.label(notNullL)
-            buf.as(runtimeNothing, boxed, unwind)
-            buf.unreachable(unwind)
-            buf.label(fresh())
-            Val.Zero(Type.Nothing)
-          case _ =>
-            given nir.Position = app.span
-            val cast = buf.as(boxty, boxed, unwind)
-            unboxValue(app.tpe, partial = true, cast)
-        }
-      else if (funSym == defn.Object_synchronized)
+      if (funSym == defn.Object_synchronized)
         assert(argsp.size == 1, "synchronized with wrong number of args")
         genSynchronized(ValTree(boxed), argsp.head)
-      else unsupported("Unkown case for genApplyTypeApply: " + funSym)
+      else genTypeApply(tApply)
     }
 
     private def genApplyNew(app: Apply): Val = {
