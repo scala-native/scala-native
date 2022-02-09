@@ -9,4 +9,3 @@ scalaVersion := {
     )
   else scalaVersion
 }
-

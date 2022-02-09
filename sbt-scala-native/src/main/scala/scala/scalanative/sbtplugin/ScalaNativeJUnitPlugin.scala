@@ -5,10 +5,9 @@ import sbt.Keys._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
-
 object ScalaNativeJUnitPlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
-  
+
   val ScalaNativeTestPlugin = config("scala-native-test-plugin").hide
 
   override def projectSettings: Seq[Setting[_]] = Seq(
@@ -17,12 +16,11 @@ object ScalaNativeJUnitPlugin extends AutoPlugin {
      * it to both `compile` and `test`.
      */
     ivyConfigurations += ScalaNativeTestPlugin,
-
     libraryDependencies ++= Seq(
       "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
-      ("org.scala-native" % "junit-plugin" % nativeVersion % ScalaNativeTestPlugin).cross(CrossVersion.full)
+      ("org.scala-native" % "junit-plugin" % nativeVersion % ScalaNativeTestPlugin)
+        .cross(CrossVersion.full)
     ),
-
     Test / scalacOptions ++= {
       val report = update.value
       val jars = report.select(configurationFilter(ScalaNativeTestPlugin.name))
