@@ -160,7 +160,7 @@ trait NirGenType(using Context) {
     if (sym == defn.ObjectClass) nir.Rt.Object
     else if (sym == defn.UnitClass) nir.Type.Unit
     else if (sym == defn.BoxedUnitClass) nir.Rt.BoxedUnit
-    else if (sym == defn.NullClass) genRefType(defn.NullClass)
+    else if (sym == defn.NullClass) nir.Rt.RuntimeNull
     else if (sym == defn.ArrayClass) nir.Type.Array(genType(targs.head))
     else if (sym.isStruct) genStruct(st)
     else nir.Type.Ref(genTypeName(sym))

@@ -351,8 +351,14 @@ object Settings {
       // baseDirectory = project/{native,jvm}/.{binVersion}
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
       val sharedTestsDir = testsRootDir / "shared/src/test"
+      val extraSharedDirectories =
+        scalaVersionsDependendent(scalaVersion.value)(List.empty[File]) {
+          case (2, 13) => sharedTestsDir / "scala-2.13+" :: Nil
+          case (3, _)  => sharedTestsDir / "scala-2.13+" :: Nil
+        }
       val sharedScalaSources =
         scalaVersionDirectories(sharedTestsDir, "scala", scalaVersion.value)
+          .++(extraSharedDirectories)
           .flatMap(allScalaFromDir(_))
       // Blacklist contains relative paths from inside of scala version directory (scala, scala-2, etc)
       // List content of all scala directories when checking blacklist coherency
