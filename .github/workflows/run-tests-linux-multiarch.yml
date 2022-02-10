@@ -74,7 +74,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [arm64v8]
-        scala: [3.1.0, 2.13.7]
+        scala: [3.1.1, 2.13.8]
         build-mode: [release-fast]
         lto: [thin]
         gc: [immix, commix]

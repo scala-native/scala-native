@@ -17,7 +17,7 @@ RUN sed -i -e "s/deb http/deb [arch=$HOST_ARCHITECTURE] http/g" /etc/apt/host-so
 
 RUN apt-get update && apt-get install -y openjdk-8-jdk-headless
 ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
-ENV SBT_LAUNCHER_VERSION 1.5.8
+ENV SBT_LAUNCHER_VERSION 1.6.2
 ENV SBT_INSTALL_FILE sbt-$SBT_LAUNCHER_VERSION.deb
 ENV SBT_INSTALL_URL https://repo.scala-sbt.org/scalasbt/debian/$SBT_INSTALL_FILE
 
