@@ -172,6 +172,7 @@ private[scalanative] object ResourceEmbedder {
   private val sourceExtensions =
     Seq(
       ".class",
+      ".tasty",
       ".nir",
       ".jar",
       ".scala",
