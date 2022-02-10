@@ -637,7 +637,7 @@ binary file. Please note that files with following extensions cannot be embedded
 and used as a resource:
 
 ```
-".class", ".nir", ".scala", ".java", ".jar",
+".class", ".tasty", ".nir", ".scala", ".java", ".jar",
 ```
 
 This is to avoid unnecesarily embedding source files. If necessary, please
