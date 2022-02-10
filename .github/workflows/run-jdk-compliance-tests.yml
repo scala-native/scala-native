@@ -57,6 +57,7 @@ jobs:
           distribution: "temurin"
           java-version: ${{matrix.java}}
       - uses: ./.github/actions/windows-setup-env
+        id: setup
         with:
           scala-version: ${{matrix.scala}}
 
