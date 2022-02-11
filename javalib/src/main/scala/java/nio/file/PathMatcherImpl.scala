@@ -21,7 +21,7 @@ object PathMatcherImpl {
 
 private class RegexPathMatcher(pattern: Pattern) extends PathMatcher {
   override def matches(p: Path): Boolean =
-    pattern.matcher(p.toString).matches() // does it work on windows ???
+    pattern.matcher(p.toString).matches()
 }
 
 private class GlobPathMatcher(pattern: String) extends PathMatcher {

@@ -9,7 +9,7 @@ class GlobMatcher(pattern: GlobPattern) extends PathMatcher {
 
   def matches(path: Path): Boolean = {
     val input =
-      if(isWindows){
+      if (isWindows) {
         path.toString.replace("\\", "/")
       } else {
         path.toString()
@@ -17,62 +17,92 @@ class GlobMatcher(pattern: GlobPattern) extends PathMatcher {
 
     val glob = pattern.globSpecification
 
-    // Finds states reachable after using one inputChar
+    // Finds states reachable after using one input character
     def reachableStates(
         inputChar: Char,
         node: GlobNode,
         previous: GlobNode
     ): List[GlobNode] =
-      if (!node.isFinal) {
-        node.globSpec match {
-          case Divider if inputChar == '/' => List(node)
-          case NonCrossingName if inputChar != '/' =>
-            List(node, previous) ++ node.next.flatMap(
-              reachableStates(inputChar, _, node)
-            ) // skip
-          case NonCrossingName if inputChar == '/' =>
-            node.next.flatMap(reachableStates(inputChar, _, node))
-          case CrossingName =>
-            List(node, previous) ++ node.next.flatMap(
-              reachableStates(inputChar, _, node)
-            ) // skip
-          case AnyChar if inputChar != '/'                      => List(node)
-          case GlobChar(char) if char == inputChar              => List(node)
-          case Bracket(set) if set.contains(inputChar)          => List(node)
-          case NegationBracket(set) if !set.contains(inputChar) => List(node)
-          case Groups(_) =>
-            node.next.flatMap(reachableStates(inputChar, _, node))
-          case _ => Nil
-        }
-      } else {
-        Nil
+      node match {
+        case EndNode      => Nil
+        case StartNode(_) => Nil
+        case TransitionNode(globSpec, next, _, _) =>
+          globSpec match {
+            case Divider if inputChar == '/' => List(node)
+            case Star if inputChar != '/' =>
+              List(node, previous) ++
+                next.flatMap(reachableStates(inputChar, _, node))
+            case Star if inputChar == '/' =>
+              next.flatMap(reachableStates(inputChar, _, node))
+            case DoubleStar =>
+              List(node, previous) ++
+                next.flatMap(reachableStates(inputChar, _, node))
+            case AnyChar if inputChar != '/'                      => List(node)
+            case GlobChar(char) if char == inputChar              => List(node)
+            case Bracket(set) if set.contains(inputChar)          => List(node)
+            case NegationBracket(set) if !set.contains(inputChar) => List(node)
+            case Groups(_) =>
+              next.flatMap(reachableStates(inputChar, _, node))
+            case _ => Nil
+          }
       }
 
     def isEndReachable(node: GlobNode): Boolean =
-      if (!node.isFinal) {
-        node.globSpec match {
-          case NonCrossingName | CrossingName | Groups(_) => 
-            node.next.exists(isEndReachable(_))
-          case _ => false
-        }
-      } else true
+      node match {
+        case StartNode(nextNode) => isEndReachable(nextNode)
+        case EndNode             => true
+        case TransitionNode(globSpec, next, _, _) =>
+          globSpec match {
+            case Star | DoubleStar | Groups(_) =>
+              next.exists(isEndReachable(_))
+            case _ => false
+          }
+      }
 
     // Matches against one string
     @tailrec
-    def matchesInternal(inputIdx: Int, states: List[GlobNode]): Boolean = { // return if not found
-      val inputChar = input.charAt(inputIdx)
-      val newStates = states.flatMap { node =>
-        val nextList = node.next.flatMap { nextNode =>
-          reachableStates(inputChar, nextNode, node)
+    def matchesInternal(
+        inputIdx: Int,
+        states: List[GlobNode],
+        charsLeft: Int,
+        divsLeft: Int
+    ): Boolean = {
+      if (inputIdx < input.length()) {
+        val inputChar = input.charAt(inputIdx)
+        val newStates = states.flatMap {
+          case EndNode => Nil
+          case node @ (StartNode(nextNode)) =>
+            reachableStates(inputChar, nextNode, node)
+          case node @ (TransitionNode(_, next, _, _)) =>
+            val nextList = next.flatMap { nextNode =>
+              reachableStates(inputChar, nextNode, node)
+            }
+            nextList
         }
-        nextList
-      }
 
-      if (inputIdx == input.length() - 1)
-        newStates.exists(_.next.exists(isEndReachable(_)))
-      else matchesInternal(inputIdx + 1, newStates)
+        val newCharsLeft = charsLeft - 1
+        val newDivsLeft = divsLeft - (if (inputChar == '/') 1 else 0)
+
+        if (inputIdx == input.length() - 1) {
+          newStates.collectFirst {
+            case TransitionNode(_, next, _, _)
+                if next.exists(isEndReachable(_)) =>
+              true
+          }.isDefined
+        } else {
+          val filteredStates = newStates.filter(node =>
+            node.minDivsLeft <= newDivsLeft && node.minCharsLeft <= newCharsLeft
+          )
+          matchesInternal(inputIdx + 1, newStates, newCharsLeft, newDivsLeft)
+        }
+      } else {
+        states.exists(isEndReachable(_))
+      }
     }
 
-    matchesInternal(0, List(glob))
+    val charsLeft = input.length()
+    val divsLeft = input.count(_ == '/')
+
+    matchesInternal(0, List(glob), charsLeft, divsLeft)
   }
 }

@@ -10,19 +10,14 @@ class GlobPattern(pattern: String) {
 
   def matcher(): GlobMatcher = new GlobMatcher(this)
 
-  private[glob] val minDividerAmount = 0 // todo set maybe
-  private[glob] val minCharAmount = 0 // TODO set maybe
+  private[glob] val globSpecification = compileGlobNFA()
 
-  private[glob] lazy val globSpecification = { // Map[(Int, Char), Int] = { // (state, char) -> state, produces NFA
+  private def compileGlobNFA(): GlobNode = {
 
-    // Parse input
     val length = pattern.length
     val parsingList = mutable.ArrayBuffer[GlobSpecification]()
 
     var i = 0
-    var escaping = false
-    var inParentheses = false
-    var inBrackets = false
 
     @alwaysinline def nextTwo(): (Char, Option[Char]) = {
       val first = pattern.charAt(i)
@@ -47,6 +42,7 @@ class GlobPattern(pattern: String) {
         val closedBracket =
           nextThree() match {
             case (']', _, _) =>
+              i += 1
               true
             case ('/', _, _) =>
               throw new PatternSyntaxException(
@@ -59,18 +55,19 @@ class GlobPattern(pattern: String) {
             case (startingChar, Some('-'), Some(endingChar))
                 if (endingChar < startingChar && endingChar != ']') =>
               throw new PatternSyntaxException("Invalid range", pattern, i)
-            case (startingChar, Some('-'), Some(endingChar)) if endingChar != ']' =>
+            case (startingChar, Some('-'), Some(endingChar))
+                if endingChar != ']' =>
               for (j <- startingChar to endingChar) set.add(j)
-              i += 2
+              i += 3
               false
             case (otherChar, _, _) =>
               set.add(otherChar)
+              i += 1
               false
           }
 
-        i += 1
-
-        if (!closedBracket && i >= length) throw new PatternSyntaxException("Missing ']'", pattern, i-1)
+        if (!closedBracket && i >= length)
+          throw new PatternSyntaxException("Missing ']'", pattern, i - 1)
 
         !closedBracket
       }) ()
@@ -79,27 +76,26 @@ class GlobPattern(pattern: String) {
     }
 
     def parseGroups() = {
-      i += 1
       def parseGroupElement() = {
         val groupBuffer = mutable.ArrayBuffer[GlobSpecification]()
-        var toLeave = false
-        var toNext = false
-        while (!toLeave && !toNext) {
+        var toLeaveGroups = false
+        var toNextGroup = false
+        while (!toLeaveGroups && !toNextGroup) {
           nextTwo() match {
             case ('?', _) =>
               groupBuffer.append(AnyChar)
-            case ('*', Some('*')) =>
-              groupBuffer.append(CrossingName)
               i += 1
+            case ('*', Some('*')) =>
+              groupBuffer.append(DoubleStar)
+              i += 2
             case ('*', _) =>
-              groupBuffer.append(NonCrossingName)
+              groupBuffer.append(Star)
+              i += 1
             case ('[', Some('!')) =>
               i += 1
               groupBuffer.append(NegationBracket(parseBracketSet()))
-              i -= 1
             case ('[', _) =>
               groupBuffer.append(Bracket(parseBracketSet()))
-              i -= 1
             case ('{', _) =>
               throw new PatternSyntaxException(
                 s"Cannot nest groups",
@@ -107,30 +103,33 @@ class GlobPattern(pattern: String) {
                 i
               )
             case ('}', _) =>
-              toLeave = true // TODO maybe return/reconsider
+              toLeaveGroups = true
+              i += 1
             case (',', _) =>
-              toNext = true
+              toNextGroup = true
+              i += 1
             case ('\\', Some(char)) =>
               groupBuffer.append(GlobChar(char))
-              i += 1
+              i += 2
             case (char, _) =>
               groupBuffer.append(GlobChar(char))
+              i += 1
           }
 
-          i += 1
-          if(i >= length && !toLeave) throw new PatternSyntaxException("Missing '}'", pattern, i)
+          if (i >= length && !toLeaveGroups)
+            throw new PatternSyntaxException("Missing '}'", pattern, i)
         }
 
-        (groupBuffer.toList, toLeave)
+        (groupBuffer.toList, toLeaveGroups)
       }
 
       val buffer = mutable.ArrayBuffer[List[GlobSpecification]]()
-      var leaving = false // todo redo loop
-      while (i < length && !leaving) { // todo check incorrect todo redo loop
-        val (parsingList, toLeave) = parseGroupElement()
-        leaving = toLeave
+      while ({
+        val (parsingList, toLeaveGroups) = parseGroupElement()
         buffer.append(parsingList)
-      }
+
+        i < length && !toLeaveGroups
+      }) ()
       Groups(buffer.toList)
     }
 
@@ -138,36 +137,41 @@ class GlobPattern(pattern: String) {
       nextTwo() match {
         case ('?', _) =>
           parsingList.append(AnyChar)
-        case ('{', _) =>
-          parsingList.append(parseGroups())
-          i -= 1
-        case ('*', Some('*')) =>
-          parsingList.append(CrossingName)
           i += 1
+        case ('{', _) =>
+          i += 1
+          parsingList.append(parseGroups())
+        case ('*', Some('*')) =>
+          parsingList.append(DoubleStar)
+          i += 2
         case ('*', _) =>
-          parsingList.append(NonCrossingName)
+          parsingList.append(Star)
+          i += 1
         case ('[', Some('!')) =>
           i += 2
           parsingList.append(NegationBracket(parseBracketSet()))
-          i -= 1
         case ('[', _) =>
           i += 1
           parsingList.append(Bracket(parseBracketSet()))
-          i -= 1
         case ('/', _) =>
           parsingList.append(Divider)
+          i += 1
         case ('\\', Some(char)) =>
           parsingList.append(GlobChar(char))
-          i += 1
+          i += 2
         case (char, _) =>
           parsingList.append(GlobChar(char))
+          i += 1
       }
-
-      i += 1
     }
 
-    // Parse to NFA(-like)
-    // @tailrec todo
+    def charsTaken(spec: GlobSpecification): (Int, Int) =
+      spec match {
+        case Divider                                                 => (1, 1)
+        case AnyChar | GlobChar(_) | Bracket(_) | NegationBracket(_) => (1, 0)
+        case Groups(_) | Star | DoubleStar                           => (0, 0)
+      }
+
     def specListToGlobNodes(
         specList: List[GlobSpecification],
         next: GlobNode
@@ -176,35 +180,33 @@ class GlobPattern(pattern: String) {
         case (head @ Groups(lists)) :: tail =>
           val nextGroupNodes =
             lists.map(list => specListToGlobNodes(list.reverse, next))
-          val newNext = GlobNode(head, nextGroupNodes, isFinal = false)
+          val minChars = nextGroupNodes.minBy(_.minDivsLeft).minDivsLeft
+          val minDivs = nextGroupNodes.minBy(_.minCharsLeft).minCharsLeft
+          val newNext = TransitionNode(head, nextGroupNodes, minChars, minDivs)
           specListToGlobNodes(tail, newNext)
-        case head :: Nil => // TODO check if NIL is a list
-          val newNext = GlobNode(head, List(next), isFinal = false)
-          newNext
-        case head :: tail => // TODO reconsider where is specification parsed
-          val newNext = GlobNode(head, List(next), isFinal = false)
+        case head :: tail =>
+          val (chars, divs) = charsTaken(head)
+          val newNext = TransitionNode(
+            head,
+            List(next),
+            next.minCharsLeft + chars,
+            next.minDivsLeft + divs
+          )
           specListToGlobNodes(tail, newNext)
         case Nil => next
       }
 
     val reversedSpecification = parsingList.toList.reverse
-    GlobNode(
-      null,
-      List(
-        specListToGlobNodes(
-          reversedSpecification,
-          GlobNode(null, Nil, isFinal = true)
-        )
-      ),
-      false
-    ) // todo rethink final
+    StartNode(
+      specListToGlobNodes(
+        reversedSpecification,
+        EndNode
+      )
+    )
   }
 }
 
 object GlobPattern {
-  def compile(pattern: String): GlobPattern = {
-    val a = new GlobPattern(pattern)
-    a.globSpecification
-    a
-  }
+  def compile(pattern: String): GlobPattern =
+    new GlobPattern(pattern)
 }

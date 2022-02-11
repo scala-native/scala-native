@@ -121,9 +121,8 @@ class PathMatcherGlobTest {
     fail("b{an,ana,nana}", "ba")
     fail("b{an,ana,nana}", "nan")
   }
-  // TODO what if space
-  @Test def incorrectPattern(): Unit = {
 
+  @Test def incorrectPattern(): Unit = {
     throws("{ba,{na{na}},{na}}", "nested groups")
 
     throws("[c-a]", "incorrect class definition")
@@ -167,7 +166,7 @@ class PathMatcherGlobTest {
     pass("**/*", "a/b")
     pass("**/*", "a/b/c")
     fail("**/*", "ab")
-    // fail("**/*", "") TODO fix
+    fail("**/*", "")
 
     pass("**??/*", "a/aa/a")
     pass("**??/*", "aa/a")
@@ -184,8 +183,8 @@ class PathMatcherGlobTest {
     fail("**/????*/*.ext", "/dir/file.ext")
     fail("**/????*/*.ext", "/dir/file.ext")
 
-    fail("**/{*ab*,*ba*}/", "dir/0ab0/") // why
-    fail("**/{*ab*,*ba*}/", "dir/ba/") // why
+    fail("**/{*ab*,*ba*}/", "dir/0ab0/")
+    fail("**/{*ab*,*ba*}/", "dir/ba/")
     fail("**/{*ab*,*ba*}/", "dir/0a0b0/")
 
     // Standard examples
@@ -195,6 +194,11 @@ class PathMatcherGlobTest {
     fail("**/*/*{.zip,.gz}", "dir/dir2/file.ext")
   }
 
-  // TODO test windows things
+  @Test def emptyGlob(): Unit = {
+    pass("", "")
+    fail("", "a")
+    fail("a", "")
+    pass("*", "")
+  }
 
 }
