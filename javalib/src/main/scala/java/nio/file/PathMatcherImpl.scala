@@ -27,6 +27,5 @@ private class RegexPathMatcher(pattern: Pattern) extends PathMatcher {
 private class GlobPathMatcher(pattern: String) extends PathMatcher {
   val globPattern = GlobPattern.compile(pattern)
   override def matches(p: Path): Boolean =
-    globPattern.matcher().matches(p)
-
+    globPattern.matcher(p.toString).matches()
 }

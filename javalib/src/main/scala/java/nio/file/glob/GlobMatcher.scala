@@ -5,17 +5,12 @@ import scala.util.matching.Regex
 import scala.annotation.tailrec
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
-class GlobMatcher(pattern: GlobPattern) extends PathMatcher {
+class GlobMatcher(glob: GlobNode, inputPath: String) {
 
-  def matches(path: Path): Boolean = {
+  def matches(): Boolean = {
     val input =
-      if (isWindows) {
-        path.toString.replace("\\", "/")
-      } else {
-        path.toString()
-      }
-
-    val glob = pattern.globSpecification
+      if (isWindows) inputPath.replace("\\", "/")
+      else inputPath
 
     // Finds states reachable after using one input character
     def reachableStates(

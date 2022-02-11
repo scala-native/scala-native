@@ -8,9 +8,10 @@ import scala.scalanative.annotation.alwaysinline
 
 class GlobPattern(pattern: String) {
 
-  def matcher(): GlobMatcher = new GlobMatcher(this)
+  def matcher(pathString: String): GlobMatcher =
+    new GlobMatcher(globNFA, pathString)
 
-  private[glob] val globSpecification = compileGlobNFA()
+  private val globNFA = compileGlobNFA()
 
   private def compileGlobNFA(): GlobNode = {
 
