@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 import org.scalanative.testsuite.utils.Platform._
+import scala.scalanative.runtime.{Platform, PlatformExt}
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class ProcessTest {
@@ -182,6 +183,10 @@ class ProcessTest {
   }
 
   @Test def destroy(): Unit = {
+    assumeFalse(
+      "Breaks test runner when executed in emulator",
+      PlatformExt.isArm64 && Platform.isLinux()
+    )
     val proc = processSleep(2.0).start()
 
     assertTrue("process should be alive", proc.isAlive)
@@ -198,6 +203,10 @@ class ProcessTest {
   }
 
   @Test def destroyForcibly(): Unit = {
+    assumeFalse(
+      "Breaks test runner when executed in emulator",
+      PlatformExt.isArm64 && Platform.isLinux()
+    )
     val proc = processSleep(2.0).start()
 
     assertTrue("process should be alive", proc.isAlive)
