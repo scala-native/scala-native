@@ -1,6 +1,6 @@
-package java.util
+// Ported from Scala.js commit: c0be6b6 dated: 2021-12-22
 
-// Ported from Scala.js
+package java.util
 
 import java.io.Serializable
 import java.lang.Long.bitCount
