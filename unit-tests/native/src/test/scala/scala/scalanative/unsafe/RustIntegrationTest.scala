@@ -16,6 +16,17 @@ object RustLib {
   def isEven(v: CInt): Boolean = extern
 }
 
+object RustIntegrationTest {
+  @BeforeClass
+  def assumeSupportsRust() = {
+    // LTO w/ rust requires a newer LLVM than the minimum LLVM version for SN
+    assumeFalse(
+      "RustIntegrationTest not available in the current build",
+      sys.env.get("SCALANATIVE_LTO").exists(_ != "none")
+    )
+  }
+}
+
 class RustIntegrationTest {
   import RustLib._
   @Test
