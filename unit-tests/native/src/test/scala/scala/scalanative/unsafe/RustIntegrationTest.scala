@@ -1,7 +1,8 @@
 package scala.scalanative.unsafe
 
-import org.junit.Test
+import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.libc._
 import scalanative.unsigned._
