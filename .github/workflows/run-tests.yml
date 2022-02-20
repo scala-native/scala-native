@@ -3,7 +3,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - '**'
 
 jobs:
   # Compile all sources for given Scala version
