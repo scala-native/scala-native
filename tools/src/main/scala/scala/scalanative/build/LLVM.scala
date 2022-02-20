@@ -55,8 +55,9 @@ private[scalanative] object LLVM {
           if (config.targetsWindows) Seq("-g")
           else Nil
         }
+        val expectionsHandling = List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
         val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: config.compileOptions
+          stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
