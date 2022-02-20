@@ -30,7 +30,7 @@ object ApiTestUtils {
    *  doesn't match {@code nonMatch}
    *
    *  @param regexp
-   *    @param match
+   *  @param match
    *  @param nonMatch
    */
   def testMatches(regexp: String, `match`: String, nonMatch: String): Unit = {
@@ -72,7 +72,7 @@ object ApiTestUtils {
     val pr = Pattern.compile(regexp)
     assertTrue(
       "Pattern with regexp: " + regexp + " doesn't match: " + `match`,
-      pr.matcher(`match`).matches
+      pr.matcher(`match`).matches()
     )
   }
 
@@ -85,7 +85,7 @@ object ApiTestUtils {
     val pr = Pattern.compile(regexp)
     assertFalse(
       "Pattern with regexp: " + regexp + " matches: " + nonMatch,
-      pr.matcher(nonMatch).matches
+      pr.matcher(nonMatch).matches()
     )
   }
 
@@ -182,11 +182,11 @@ object ApiTestUtils {
     val m = p.matcher("x")
     assertTrue(
       s"pattern: ${pattern} p.groupCount: ${} != expected: ${count}",
-      count == p.groupCount
+      count == p.groupCount()
     )
     assertTrue(
       s"pattern: ${pattern} m.groupCount: ${} != expected: ${count}",
-      count == m.groupCount
+      count == m.groupCount()
     )
 
     // JDK -- SN j.u.regex calls into scalanative.regex, so somethin
@@ -203,12 +203,12 @@ object ApiTestUtils {
 
     val p = Pattern.compile(regexp)
     val matchString = p.matcher(text)
-    assertTrue(s"scalanative.regex find failed", matchString.find)
+    assertTrue(s"scalanative.regex find failed", matchString.find())
 
     // This tests ms.group code path, for loop tests the ms.group(0) path.
     assertTrue(
-      s"output(0): ${output(0)} != expected: ${matchString.group}",
-      output(0) == matchString.group
+      s"output(0): ${output(0)} != expected: ${matchString.group()}",
+      output(0) == matchString.group()
     )
 
     for (i <- 0 until output.length) {
@@ -221,8 +221,8 @@ object ApiTestUtils {
 
     assertTrue(
       s"length - 1: ${output.length - 1} != expected: " +
-        s"${matchString.groupCount}",
-      output.length - 1 == matchString.groupCount
+        s"${matchString.groupCount()}",
+      output.length - 1 == matchString.groupCount()
     )
 
     val pj = java.util.regex.Pattern.compile(regexp)
@@ -255,7 +255,7 @@ object ApiTestUtils {
     // RE2Matcher matchBytes = p.matcher(text.getBytes(Charsets.UTF_8));
     assertTrue(matchString.find(start))
     // assertTrue(matchBytes.find(start));
-    assertTrue(output == matchString.group)
+    assertTrue(output == matchString.group())
     // assertTrue(output == matchBytes.group());
     val pj = java.util.regex.Pattern.compile(regexp)
     val matchStringj = pj.matcher(text)
@@ -276,13 +276,13 @@ object ApiTestUtils {
   def testInvalidGroup(text: String, regexp: String, group: Int): Unit = {
     val p = Pattern.compile(regexp)
     val m = p.matcher(text)
-    m.find
+    m.find()
     m.group(group)
     fail("") // supposed to have exception by now
   }
 
   def verifyLookingAt(text: String, regexp: String, output: Boolean): Unit = {
-    assertTrue(output == Pattern.compile(regexp).matcher(text).lookingAt)
+    assertTrue(output == Pattern.compile(regexp).matcher(text).lookingAt())
     assertTrue(
       output == java.util.regex.Pattern.compile(regexp).matcher(text).lookingAt
     )

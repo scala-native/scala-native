@@ -39,18 +39,42 @@ final class Sig(val mangle: String) {
 
   final def isVirtual = !(isCtor || isClinit || isImplCtor || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
-  final lazy val privateIn: Option[Global.Top] = {
-    unmangled.sigScope match {
-      case Sig.Scope.Private(in: Global.Top) => Some(in)
-      case _                                 => None
+  final def isStatic: Boolean = {
+    def isPublicStatic = mangle.last == 'o'
+    def isPrivateStatic = {
+      val sigEnd = mangle.lastIndexOf('E')
+      val scopeIdx = sigEnd + 1
+      def hasScope = mangle.length() > scopeIdx
+      sigEnd > 0 && hasScope && mangle(sigEnd + 1) == 'p'
     }
+    isPublicStatic || isPrivateStatic
+  }
+  final lazy val privateIn: Option[Global.Top] = {
+    val sigEnd = mangle.lastIndexOf('E')
+    val scopeIdx = sigEnd + 1
+    def hasScope = mangle.length() > scopeIdx
+    def isPrivate = {
+      val scopeIdent = mangle(scopeIdx)
+      scopeIdent == 'p' || scopeIdent == 'P'
+    }
+    if (sigEnd > 0 && hasScope && isPrivate) {
+      val global = Unmangle.unmangleGlobal(mangle.substring(sigEnd + 2))
+      Some(global.top)
+    } else None
   }
 }
 object Sig {
-  sealed trait Scope
+  sealed abstract class Scope(
+      val isStatic: Boolean,
+      val privateIn: Option[Global]
+  ) {
+    def isPublic: Boolean = privateIn.isEmpty
+  }
   object Scope {
-    case object Public extends Scope
-    case class Private(in: Global) extends Scope
+    case object Public extends Scope(false, None)
+    case object PublicStatic extends Scope(true, None)
+    final case class Private(in: Global) extends Scope(false, Some(in))
+    final case class PrivateStatic(in: Global) extends Scope(true, Some(in))
   }
 
   sealed abstract class Unmangled {

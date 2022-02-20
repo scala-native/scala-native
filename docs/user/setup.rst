@@ -107,7 +107,7 @@ installation of FreeBSD.
 
 .. code-block:: shell
 
-    $ wget https://raw.githubusercontent.com/scala-native/scala-native/master/scripts/scala-native.nix
+    $ wget https://raw.githubusercontent.com/scala-native/scala-native/main/scripts/scala-native.nix
     $ nix-shell scala-native.nix -A clangEnv
 
 **Windows**

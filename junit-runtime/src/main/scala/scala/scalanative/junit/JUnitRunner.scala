@@ -7,10 +7,10 @@ import sbt.testing._
 
 private[junit] final class JUnitRunner(
     val args: Array[String],
-    val remoteArgs: Array[String],
+    _remoteArgs: Array[String],
     runSettings: RunSettings
 ) extends Runner {
-
+  def remoteArgs(): Array[String] = _remoteArgs
   def tasks(taskDefs: Array[TaskDef]): Array[Task] =
     taskDefs.map(new JUnitTask(_, runSettings))
 

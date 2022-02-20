@@ -8,15 +8,16 @@ import scalanative.unsigned._
 class StackallocTest {
 
   @Test def stackallocInt(): Unit = {
-    val ptr = stackalloc[Int]
+    val ptr = stackalloc[Int]()
 
     !ptr = 42
 
-    assertFalse(ptr == 42)
+    assertTrue(!ptr == 42)
+    assertFalse(ptr.toInt == 42)
   }
 
   @Test def stackallocInt4(): Unit = {
-    val ptr = stackalloc[Int](4.toUInt)
+    val ptr: Ptr[Int] = stackalloc[Int](4.toUInt)
 
     ptr(0) = 1
     ptr(1) = 2
@@ -30,7 +31,7 @@ class StackallocTest {
   }
 
   @Test def stackallocCStruct2IntInt(): Unit = {
-    val ptr = stackalloc[CStruct2[Int, Int]]
+    val ptr = stackalloc[CStruct2[Int, Int]]()
 
     ptr._1 = 1
     ptr._2 = 2
@@ -40,7 +41,7 @@ class StackallocTest {
   }
 
   @Test def stackallocCArrayIntNat4(): Unit = {
-    val ptr = stackalloc[CArray[Int, Nat._4]]
+    val ptr = stackalloc[CArray[Int, Nat._4]]()
     val arr = !ptr
 
     arr(0) = 1
@@ -76,7 +77,7 @@ class StackallocTest {
     var i = 0
     var head: Ptr[Node] = null
     while (i < 4) {
-      head = stackalloc[Node].init(i, head)
+      head = stackalloc[Node]().init(i, head)
       i += 1
     }
     assertTrue(head.sum == 6)

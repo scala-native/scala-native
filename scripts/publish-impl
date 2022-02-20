@@ -1,32 +1,32 @@
 #!/bin/bash
 # publishSigned or publishLocal
 publish=$1
+projectVersions=(2_11 2_12 2_13 3)
 
 set -ex
-
 sbt clean
 
 # use the latest versions
-for v in 2.11.12 2.12.14 2.13.6; do
+for v in ${projectVersions[@]}; do
   sbt -Dsbt.supershell=false \
-    ++$v \
-    nscplugin/$publish \
-    junitPlugin/$publish \
-    nativelib/$publish \
-    clib/$publish \
-    posixlib/$publish \
-    windowslib/$publish \
-    javalib/$publish \
-    auxlib/$publish \
-    scalalib/$publish \
-    testInterfaceSbtDefs/$publish \
-    testInterface/$publish \
-    junitRuntime/$publish
+    +nscplugin$v/$publish `# Compiler plugins` \
+    +junitPlugin$v/$publish \
+    nativelib$v/$publish `# Native libraries` \
+    clib$v/$publish \
+    posixlib$v/$publish \
+    windowslib$v/$publish \
+    javalib$v/$publish \
+    auxlib$v/$publish \
+    scalalib$v/$publish \
+    testInterfaceSbtDefs$v/$publish `# Testing` \
+    testInterface$v/$publish \
+    testRunner$v/$publish \
+    junitRuntime$v/$publish \
+    util$v/$publish `# Tools` \
+    nir$v/$publish \
+    tools$v/$publish
 done
 
+# Publish sbt plugin
 sbt -Dsbt.supershell=false \
-  util/$publish \
-  nir/$publish \
-  tools/$publish \
-  testRunner/$publish \
   sbtScalaNative/$publish

@@ -5,6 +5,7 @@
 // Needed to find symbols from UCRT - Windows Universal C Runtime
 #pragma comment(lib, "legacy_stdio_definitions.lib")
 
-LANGID scalanative_win32_default_language() { return LANG_USER_DEFAULT; }
+DWORD scalanative_infinite() { return INFINITE; }
+LANGID scalanative_lang_user_default() { return LANG_USER_DEFAULT; }
 
 #endif // defined(Win32)

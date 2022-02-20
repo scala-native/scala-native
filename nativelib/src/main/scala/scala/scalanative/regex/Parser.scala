@@ -10,9 +10,13 @@ package regex
 
 import java.util.ArrayList
 import java.util.Arrays
+import java.util.HashMap
 import java.util.List
+import java.util.Map
 
 import java.util.regex.PatternSyntaxException
+
+import scala.annotation.switch
 
 import Regexp.{Op => ROP}
 
@@ -30,6 +34,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private val stack = new Stack()
   private var free: Regexp = _
   private var numCap = 0 // number of capturing groups seen
+
+  private val namedGroups = new HashMap[String, Int]()
 
   // Allocate a Regexp, from the free list if possible.
   private def newRegexp(op: ROP): Regexp = {
@@ -468,9 +474,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
       lensub = lenout
       s = 0
 
-      // Round 2: Factor out common complex prefixes,
-      // just the first piece of each concatenation,
-      // whatever it is.	This is good enough a lot of the time.
+      // Round 2: Factor out common simple prefixes,
+      // just the first piece of each concatenation.
+      // This will be good enough a lot of the time.
+      //
+      // Complex subexpressions (e.g. involving quantifiers)
+      // are not safe to factor because that collapses their
+      // distinct paths through the automaton, which affects
+      // correctness in some cases.
       start = 0
       lenout = 0
       var first: Regexp = null
@@ -486,7 +497,21 @@ class Parser(wholeRegexp: String, _flags: Int) {
         var continue = false
         if (i < lensub) {
           ifirst = leadingRegexp(array(s + i))
-          if (first != null && first.equals(ifirst)) {
+          // first must be a character class OR a fixed repeat of a
+          // character class.
+
+          /// SN: This hairy next block is adapted for SN directly from
+          /// Go code, dated 2016-01-07. It is not in re2j V1.3, dated
+          /// 2019-07-23:
+          ///     https://github.com/golang/go/commit/
+          ///     5ccaf0255b75063a9c685009e77cee24e26a509e
+          /// Ugly as sin! but it fixes the test cases in its PR (and now in
+          /// sn.regex ParserTest.scala).
+
+          if (first != null && first.equals(ifirst) &&
+              (isCharClass(first) ||
+                (first.op == ROP.REPEAT &&
+                  first.min == first.max && isCharClass(first.subs(0))))) {
             continue = true
           }
         }
@@ -801,9 +826,14 @@ class Parser(wholeRegexp: String, _flags: Int) {
                   if (i >= 0) {
                     lit = lit.substring(0, i)
                   }
+
+                  // Ported directly to Scala Native from Go Repository
+                  // commit 0680e9c0c16a7d900e3564e1836b8cb93d962a2b
+                  // to fix Go issue #11187.
+                  lit.foreach(ch => literal(ch))
+
                   t.skipString(lit)
                   t.skipString("\\E")
-                  push(literalRegexp(lit, flags))
                   breakBigswitch = true
                 case 'z' =>
                   op(ROP.END_TEXT)
@@ -866,6 +896,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
           t.pos()
         )
       }
+      stack.get(0).namedGroups = namedGroups
       stack.get(0)
     }
   }
@@ -877,27 +908,65 @@ class Parser(wholeRegexp: String, _flags: Int) {
   private def parsePerlFlags(t: StringIterator): Unit = {
     val startPos = t.pos()
 
+    /// SN Porting Note:
+    ///     This code has been edited to support both the (?P<name>expr)
+    ///     idiom in the re2j description below and the (?<name>expr)
+    ///     idiom it describes as Perl but which is used by Java.
+    ///
+    // Check for named captures, first introduced in Python's regexp library.
+    // As usual, there are three slightly different syntaxes:
+    //
+    //   (?P<name>expr)   the original, introduced by Python
+    //   (?<name>expr)    the .NET alteration, adopted by Perl 5.10
+    //   (?'name'expr)    another .NET alteration, adopted by Perl 5.10
+    //
+    // Perl 5.10 gave in and implemented the Python version too,
+    // but they claim that the last two are the preferred forms.
+    // PCRE and languages based on it (specifically, PHP and Ruby)
+    // support all three as well.  EcmaScript 4 uses only the Python form.
+    //
+    // In both the open source world (via Code Search) and the
+    // Google source tree, (?P<expr>name) is the dominant form,
+    // so that's the one we implement.  One is enough.
+
     val s = t.rest()
-    if (s.startsWith("(?<")) {
+
+    val (isNamedCapture, namedCaptureStart, namedCaptureSkip) =
+      if (s.startsWith("(?<")) { // Java style is most likely
+        (true, 3, 4)
+      } else if (s.startsWith("(?P<")) { // Perl/Python style
+        (true, 4, 5)
+      } else {
+        (false, -1, 1)
+      }
+
+    if (isNamedCapture) {
       // Pull out name.
       val end = s.indexOf('>')
       if (end < 0) {
         throw new PatternSyntaxException(ERR_INVALID_NAMED_CAPTURE, s, 0)
       }
-      val name = s.substring(3, end) // "name"
+      val name = s.substring(namedCaptureStart, end) // "name"
       t.skipString(name)
-      t.skip(4) // "(?<>"
+      t.skip(namedCaptureSkip) // "(?<>" or "(?P<>"
       if (!isValidCaptureName(name)) {
         throw new PatternSyntaxException(
           ERR_INVALID_NAMED_CAPTURE,
-          s.substring(0, end),
-          0
-        ) // "(?P<name>"
+          s,
+          end
+        ) // "(?<name>" or "(?P<name>"
       }
       // Like ordinary capture, but named.
       val re = op(ROP.LEFT_PAREN)
       numCap += 1
       re.cap = numCap
+      if (namedGroups.put(name, numCap) != 0) {
+        throw new PatternSyntaxException(
+          ERR_DUPLICATE_NAMED_CAPTURE + s" <${name}> " + "is already defined",
+          s,
+          end
+        )
+      }
       re.name = name
     } else {
 
@@ -1116,6 +1185,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
       if (c == 'P') {
         sign = -1
       }
+      if (!t.more()) {
+        val pos = t.pos()
+        t.rewindTo(startPos);
+        throw new PatternSyntaxException(
+          ERR_UNKNOWN_CHARACTER_PROPERTY_NAME,
+          t.rest(),
+          pos
+        )
+      }
       c = t.pop()
       var name: String = ""
       if (c != '{') {
@@ -1126,11 +1204,12 @@ class Parser(wholeRegexp: String, _flags: Int) {
         val rest = t.rest()
         val end = rest.indexOf('}')
         if (end < 0) {
+          val pos = t.pos()
           t.rewindTo(startPos)
           throw new PatternSyntaxException(
-            ERR_INVALID_CHAR_RANGE,
+            ERR_UNKNOWN_CHARACTER_PROPERTY_NAME,
             t.str,
-            t.pos() - 1
+            pos
           )
         }
         name = rest.substring(0, end) // e.g. "Han"
@@ -1319,13 +1398,13 @@ object Parser {
     "Illegal/unsupported escape sequence"
 
   private final val ERR_INVALID_NAMED_CAPTURE =
-    "Bad named capture group"
+    "capturing group name does not start with a Latin letter"
 
   private final val ERR_INVALID_PERL_OP =
     "Unknown inline modifier"
 
   private final val ERR_INVALID_REPEAT_OP =
-    "invalid nested repetition operator"
+    "Invalid nested repetition operator"
 
   private final val ERR_INVALID_REPEAT_SIZE =
     "Dangling meta character '*'"
@@ -1341,6 +1420,12 @@ object Parser {
 
   private final val ERR_UNMATCHED_CLOSING_PAREN =
     "Unmatched closing ')'"
+
+  private final val ERR_UNKNOWN_CHARACTER_PROPERTY_NAME =
+    "Unknown character property name"
+
+  private final val ERR_DUPLICATE_NAMED_CAPTURE =
+    "Named capturing group"
 
   // Hack to expose ArrayList.removeRange().
   private class Stack extends ArrayList[Regexp] {
@@ -1596,25 +1681,31 @@ object Parser {
   // does re match r?
   private def matchRune(re: Regexp, r: Int): Boolean = {
 
-    var matched = false
+    val matched = (re.op: @switch) match {
 
-    (re.op: @scala.annotation.switch) match {
-      case ROP.LITERAL => re.runes.length == 1 && re.runes(0) == r
+      case ROP.LITERAL => (re.runes.length == 1) && (re.runes(0) == r)
 
       case ROP.CHAR_CLASS =>
+        val len = re.runes.length
+        assert((len % 2) == 0, s"matchRune: runs.length ${len} must be even")
+
+        var found = false
         var i = 0
-        while (i < re.runes.length) {
-          if (re.runes(i) <= r && r <= re.runes(i + 1)) {
-            matched = true
+
+        while ((i < len) && (!found)) {
+          if ((re.runes(i) <= r) && (r <= re.runes(i + 1))) {
+            found = true
           }
           i += 2
         }
 
-      case ROP.ANY_CHAR_NOT_NL => r != '\n'
+        found
 
-      case ROP.ANY_CHAR => matched = true
+      case ROP.ANY_CHAR_NOT_NL => (r != '\n')
 
-      case _ =>
+      case ROP.ANY_CHAR => true
+
+      case _ => false
     }
 
     matched

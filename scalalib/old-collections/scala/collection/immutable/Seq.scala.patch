@@ -1,0 +1,16 @@
+--- 2.12.15/scala/collection/immutable/Seq.scala
++++ old-collections/scala/collection/immutable/Seq.scala
+@@ -43,7 +43,11 @@
+  *  @define coll immutable sequence
+  */
+ object Seq extends SeqFactory[Seq] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+   /** genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Seq[A]] = new mutable.ListBuffer
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Seq[A]] = new mutable.ListBuffer
+ }

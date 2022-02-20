@@ -12,6 +12,7 @@
 #include "MemoryInfo.h"
 #include "MemoryMap.h"
 #include <time.h>
+#include "WeakRefStack.h"
 
 void Heap_exitWithOutOfMemory() {
     fprintf(stderr, "Out of heap space\n");
@@ -252,7 +253,7 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 }
 
 void Heap_Collect(Heap *heap, Stack *stack) {
-    uint64_t start_ns, sweep_start_ns, end_ns;
+    uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
     printf("\nCollect\n");
@@ -263,13 +264,19 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     }
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
+        nullify_start_ns = scalanative_nano_time();
+    }
+    WeakRefStack_Nullify(heap);
+    if (stats != NULL) {
         sweep_start_ns = scalanative_nano_time();
     }
     Heap_Recycle(heap);
     if (stats != NULL) {
         end_ns = scalanative_nano_time();
-        Stats_RecordCollection(stats, start_ns, sweep_start_ns, end_ns);
+        Stats_RecordCollection(stats, start_ns, nullify_start_ns,
+                               sweep_start_ns, end_ns);
     }
+    WeakRefStack_CallHandlers(heap);
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);

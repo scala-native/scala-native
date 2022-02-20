@@ -4,6 +4,8 @@ import java.io._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
+import org.scalanative.testsuite.utils.Platform.isWindows
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
@@ -97,6 +99,10 @@ class FileOutputStreamTest {
   }
 
   @Test def attemptToCreateFileInReadonlyDirectory(): Unit = {
+    assumeFalse(
+      "Setting directory read only in Windows does not have affect on creating new files",
+      isWindows
+    )
     withTempDirectory { ro =>
       ro.setReadOnly()
       assertThrows(

@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class InflaterInputStreamTest {
 
@@ -109,6 +110,11 @@ class InflaterInputStreamTest {
     assertTrue(4 == in.read())
     assertTrue(1 == in.available())
     assertTrue(6 == in.read())
+    // Depending on JDK version behaviour here may differ.
+    // On Java 8 `in.available` would now return 1, since it has not yet read
+    // the EOF mark. However, on JDK 15 it would return 0, which would match
+    // our implementation as well as Apache Harmony.
+    assumeNotJVMCompliant()
     assertTrue(0 == in.available())
     assertTrue(-1 == in.read())
     assertTrue(-1 == in.read())
@@ -119,9 +125,12 @@ class InflaterInputStreamTest {
     val deflated =
       Array[Byte](72, -119, 99, 100, 102, 97, 3, 0, 0, 31, 0, 15, 0)
     val in = new InflaterInputStream(new ByteArrayInputStream(deflated))
-    assertTrue(1 == in.available())
-    assertTrue(4 == in.skip(4))
-    assertTrue(0 == in.available())
+    assertEquals(1, in.available())
+    assertEquals(4, in.skip(4))
+    // Depending on JDK version behaviour here may differ.
+    // For detals see comment in availableNonEmptySource
+    assumeNotJVMCompliant()
+    assertEquals(0, in.available())
   }
 
   @Test def availableEmptySource(): Unit = {

@@ -88,12 +88,13 @@ private[jar] class JarVerifier(jarName: String) {
             val hash = attributes.getValue(algorithm + "-Digest")
             if (hash != null) {
               val hashBytes = hash.getBytes("ISO-8859-1")
-              try result = new VerifierEntry(
-                name,
-                MessageDigest.getInstance(algorithm),
-                hashBytes,
-                certs.toArray
-              )
+              try
+                result = new VerifierEntry(
+                  name,
+                  MessageDigest.getInstance(algorithm),
+                  hashBytes,
+                  certs.toArray
+                )
               catch {
                 case _: NoSuchAlgorithmException => // ignored
               }

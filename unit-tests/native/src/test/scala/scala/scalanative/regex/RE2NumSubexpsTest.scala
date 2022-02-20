@@ -23,7 +23,7 @@ class RE2NumSubexpsTest {
       val expected = _expected.toInt
       assertTrue(
         "numberOfCapturingGroups(" + input + ")",
-        expected == RE2.compile(input).numberOfCapturingGroups
+        expected == RE2.compile(input).numberOfCapturingGroups()
       )
     }
   }

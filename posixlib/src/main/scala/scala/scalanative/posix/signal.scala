@@ -334,7 +334,7 @@ object signalOps {
       p._5 = value
   }
 
-  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]
+  def struct_sigevent()(implicit z: Zone): Ptr[sigevent] = alloc[sigevent]()
 
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
     def sival_int: Ptr[CInt] = p.asInstanceOf[Ptr[CInt]]
@@ -344,7 +344,7 @@ object signalOps {
       !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
   }
 
-  def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]
+  def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]()
 
   implicit class sigaction_ops(val p: Ptr[sigaction]) extends AnyVal {
     def sa_handler: CFuncPtr1[CInt, Unit] = p._1
@@ -360,7 +360,7 @@ object signalOps {
       p._4 = value
   }
 
-  def struct_sigaction()(implicit z: Zone): Ptr[sigaction] = alloc[sigaction]
+  def struct_sigaction()(implicit z: Zone): Ptr[sigaction] = alloc[sigaction]()
 
   // mcontext_t - platform specific
 
@@ -375,7 +375,8 @@ object signalOps {
     def uc_mcontext_=(value: mcontext_t): Unit = !p._4
   }
 
-  def struct_ucontext_t()(implicit z: Zone): Ptr[ucontext_t] = alloc[ucontext_t]
+  def struct_ucontext_t()(implicit z: Zone): Ptr[ucontext_t] =
+    alloc[ucontext_t]()
 
   implicit class stack_t_ops(val p: Ptr[stack_t]) extends AnyVal {
     def ss_sp: Ptr[Byte] = p._1
@@ -386,7 +387,7 @@ object signalOps {
     def ss_flags_=(value: CInt): Unit = p._3 = value
   }
 
-  def struct_stack_t()(implicit z: Zone): Ptr[stack_t] = alloc[stack_t]
+  def struct_stack_t()(implicit z: Zone): Ptr[stack_t] = alloc[stack_t]()
 
   implicit class siginfo_t_ops(val p: Ptr[siginfo_t]) extends AnyVal {
     def si_signo: CInt = p._1
@@ -405,10 +406,10 @@ object signalOps {
     def si_status_=(value: CInt): Unit = p._7 = value
     def si_band: CLong = p._8
     def si_band_=(value: CLong): Unit = p._8 = value
-    def si_value: sigval = p._9
+    def si_value: sigval = !(p._9)
     def si_value_=(value: sigval): Unit =
       !p._9.asInstanceOf[Ptr[CArray[Byte, Nat._8]]] = value
   }
 
-  def struct_siginfo_t()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]
+  def struct_siginfo_t()(implicit z: Zone): Ptr[siginfo_t] = alloc[siginfo_t]()
 }

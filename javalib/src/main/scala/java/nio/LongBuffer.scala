@@ -17,6 +17,7 @@ object LongBuffer {
 abstract class LongBuffer private[nio] (
     _capacity: Int,
     private[nio] val _array: Array[Long],
+    private[nio] val _mappedData: MappedByteBufferData,
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[LongBuffer] {
@@ -24,7 +25,9 @@ abstract class LongBuffer private[nio] (
   private[nio] type ElementType = Long
   private[nio] type BufferType = LongBuffer
 
-  def this(_capacity: Int) = this(_capacity, null, -1)
+  private def genBuffer = GenBuffer[LongBuffer](this)
+
+  def this(_capacity: Int) = this(_capacity, null, null, -1)
 
   def slice(): LongBuffer
 
@@ -42,30 +45,30 @@ abstract class LongBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   def get(dst: Array[Long]): LongBuffer =
     get(dst, 0, dst.length)
 
   @noinline
   def put(src: LongBuffer): LongBuffer =
-    GenBuffer(this).generic_put(src)
+    genBuffer.generic_put(src)
 
   @noinline
   def put(src: Array[Long], offset: Int, length: Int): LongBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Long]): LongBuffer =
     put(src, 0, src.length)
 
   @inline final def hasArray(): Boolean =
-    GenBuffer(this).generic_hasArray()
+    genBuffer.generic_hasArray()
 
   @inline final def array(): Array[Long] =
-    GenBuffer(this).generic_array()
+    genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    GenBuffer(this).generic_arrayOffset()
+    genBuffer.generic_arrayOffset()
 
   @inline override def position(newPosition: Int): LongBuffer = {
     super.position(newPosition)
@@ -110,7 +113,7 @@ abstract class LongBuffer private[nio] (
 
   @noinline
   override def hashCode(): Int =
-    GenBuffer(this).generic_hashCode(LongBuffer.HashSeed)
+    genBuffer.generic_hashCode(LongBuffer.HashSeed)
 
   override def equals(that: Any): Boolean = that match {
     case that: LongBuffer => compareTo(that) == 0
@@ -119,7 +122,7 @@ abstract class LongBuffer private[nio] (
 
   @noinline
   def compareTo(that: LongBuffer): Int =
-    GenBuffer(this).generic_compareTo(that)(_.compareTo(_))
+    genBuffer.generic_compareTo(that)(_.compareTo(_))
 
   def order(): ByteOrder
 
@@ -136,7 +139,7 @@ abstract class LongBuffer private[nio] (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_load(startIndex, dst, offset, length)
+    genBuffer.generic_load(startIndex, dst, offset, length)
 
   @inline
   private[nio] def store(
@@ -145,5 +148,5 @@ abstract class LongBuffer private[nio] (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_store(startIndex, src, offset, length)
+    genBuffer.generic_store(startIndex, src, offset, length)
 }

@@ -1,0 +1,37 @@
+name: "Unix tests env setup"
+description: "Used to setup Unix tests environemt"
+inputs:
+  scala-version:
+    description: "Scala version used in the tests"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Calculate binary version
+      shell: bash
+      run: |
+        version=${{ inputs.scala-version }}
+        if [[ $version == 2.* ]]; then
+          binaryVersion=${version%.*}
+          echo "binary-version=${binaryVersion}" >> $GITHUB_ENV
+          echo "project-version=${binaryVersion/./_}" >> $GITHUB_ENV
+        else 
+          echo "binary-version=3" >> $GITHUB_ENV
+          echo "project-version=3" >> $GITHUB_ENV
+        fi
+
+    # Loads cache with dependencies created in test-tools job
+    - name: Cache dependencies
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/coursier
+          ~/.sbt/boot
+        key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+
+    # Loads cached content of local docker registry containing built images.
+    - name: Cache docker
+      uses: actions/cache@v1
+      with:
+        path: /tmp/docker-registry
+        key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}

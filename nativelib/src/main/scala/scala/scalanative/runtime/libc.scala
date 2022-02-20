@@ -9,6 +9,7 @@ import scalanative.unsafe._
 @extern
 object libc {
   def malloc(size: CSize): RawPtr = extern
+  def realloc(ptr: RawPtr, size: CSize): RawPtr = extern
   def free(ptr: RawPtr): Unit = extern
   def strlen(str: CString): CSize = extern
   def wcslen(str: CWideString): CSize = extern

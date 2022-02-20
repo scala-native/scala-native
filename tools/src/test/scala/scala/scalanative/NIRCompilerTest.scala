@@ -84,4 +84,66 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     caught.getMessage should include("extern method foo needs result type")
   }
 
+  it should "report error for intrinsic resolving of not existing field" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.runtime.Intrinsics
+          |class Foo {
+          | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include("class Foo does not contain field myField")
+  }
+
+  it should "report error for intrinsic resolving of immutable field" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.runtime.Intrinsics
+           |class Foo {
+           | val myField = 42
+           | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+           |}""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      "Resolving pointer of immutable field myField in class Foo is not allowed"
+    )
+  }
+
+  it should "report error for intrinsic resolving of immutable field introduced by trait" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.runtime.Intrinsics
+            |trait Foo { val myField = 42}
+            |class Bar extends Foo {
+            | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+            |}""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      // In Scala 3 trait would be inlined into class
+      "Resolving pointer of immutable field myField in "
+    ) // trait Foo is not allowed")
+  }
+
+  it should "report error for intrinsic resolving of immutable field introduced by inheritence" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.runtime.Intrinsics
+             |abstract class Foo { val myField = 42}
+             |class Bar extends Foo {
+             | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+             |}""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      "Resolving pointer of immutable field myField in class Foo is not allowed"
+    )
+  }
+
 }

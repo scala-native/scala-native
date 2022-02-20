@@ -12,8 +12,10 @@ extern long long scalanative_nano_time();
 
 #ifdef ENABLE_GC_STATS
 const char *const Stats_eventNames[] = {
-    "mark",       "sweep",       "concmark",       "concsweep",    "collection",
-    "mark_batch", "sweep_batch", "coalesce_batch", "mark_waiting", "sync"};
+    "mark",        "nullify",        "sweep",        "concmark",
+    "concnullify", "concsweep",      "collection",   "mark_batch",
+    "sweep_batch", "coalesce_batch", "mark_waiting", "nullify_waiting",
+    "sync"};
 
 void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
     stats->outFile = fopen(statsFile, "w");
@@ -70,28 +72,27 @@ void Stats_OnExit(Stats *stats) {
 #endif // ENABLE_GC_STATS
 
 #ifdef ENABLE_GC_STATS_SYNC
-void Stats_MarkStarted(Stats *stats) {
+void Stats_PhaseStarted(Stats *stats) {
     if (stats != NULL) {
-        stats->mark_waiting_start_ns = 0;
-        stats->mark_waiting_end_ns = 0;
+        stats->packet_waiting_start_ns = 0;
+        stats->packet_waiting_end_ns = 0;
     }
 }
-void Stats_MarkerGotFullPacket(Stats *stats, uint64_t end_ns) {
+void Stats_GotNotEmptyPacket(Stats *stats, uint64_t end_ns, eventType event) {
     if (stats != NULL) {
-        if (stats->mark_waiting_start_ns != 0) {
-            Stats_RecordEventSync(stats, mark_waiting,
-                                  stats->mark_waiting_start_ns, end_ns);
-            stats->mark_waiting_start_ns = 0;
+        if (stats->packet_waiting_start_ns != 0) {
+            Stats_RecordEventSync(stats, event, stats->packet_waiting_start_ns,
+                                  end_ns);
+            stats->packet_waiting_start_ns = 0;
         }
     }
 }
-void Stats_MarkerNoFullPacket(Stats *stats, uint64_t start_ns,
-                              uint64_t end_ns) {
+void Stats_NoNotEmptyPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns) {
     if (stats != NULL) {
-        if (stats->mark_waiting_start_ns == 0) {
-            stats->mark_waiting_start_ns = start_ns;
+        if (stats->packet_waiting_start_ns == 0) {
+            stats->packet_waiting_start_ns = start_ns;
         }
-        stats->mark_waiting_end_ns = end_ns;
+        stats->packet_waiting_end_ns = end_ns;
     }
 }
 #endif // ENABLE_GC_STATS_SYNC

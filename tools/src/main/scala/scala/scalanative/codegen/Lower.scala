@@ -336,6 +336,8 @@ object Lower {
 
     def genOp(buf: Buffer, n: Local, op: Op)(implicit pos: Position): Unit = {
       op match {
+        case op: Op.Field =>
+          genFieldOp(buf, n, op)
         case op: Op.Fieldload =>
           genFieldloadOp(buf, n, op)
         case op: Op.Fieldstore =>
@@ -452,6 +454,14 @@ object Lower {
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
       genStoreOp(buf, n, Op.Store(ty, elem, value))
+    }
+
+    def genFieldOp(buf: Buffer, n: Local, op: Op)(implicit
+        pos: Position
+    ) = {
+      val Op.Field(obj, name) = op
+      val elem = genFieldElemOp(buf, obj, name)
+      buf.let(n, Op.Copy(elem), unwind)
     }
 
     def genStoreOp(buf: Buffer, n: Local, op: Op.Store)(implicit

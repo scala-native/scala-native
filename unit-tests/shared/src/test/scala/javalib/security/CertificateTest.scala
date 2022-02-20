@@ -31,7 +31,7 @@ class CertificateTest {
     assertTrue(c1 == c2 && c2 == c1)
     assertFalse(c1.equals(null))
 
-    //noinspection ComparingUnrelatedTypes
+    // noinspection ComparingUnrelatedTypes
     assertFalse(c1.equals("TEST_TYPE"))
   }
 
@@ -58,7 +58,8 @@ class CertificateTest {
     @throws[SignatureException]
     def verify(key: PublicKey, sigProvider: String): Unit = {}
 
-    override def toString: String = s"[My test Certificate, type: $getType]"
+    override def toString(): String =
+      s"[My test Certificate, type: ${this.getType()}]"
 
     def getPublicKey: PublicKey = new PublicKey() {
       override def getAlgorithm: String = "TEST"

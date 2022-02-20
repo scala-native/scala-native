@@ -91,6 +91,10 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   def isDirect(): Boolean
 
+  def slice(): Buffer
+
+  def duplicate(): Buffer
+
   override def toString(): String =
     s"${getClass.getName}[pos=${position()} lim=${limit()} cap=${capacity()}]"
 
@@ -102,6 +106,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   private[nio] def _array: Array[ElementType]
   private[nio] def _arrayOffset: Int
+  private[nio] def _mappedData: MappedByteBufferData // Added to ScalaNative
 
   /** Loads an element at the given absolute, unchecked index. */
   private[nio] def load(index: Int): ElementType

@@ -11,10 +11,17 @@ import scalanative.posix.unistd
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.windows._
+import scala.scalanative.windows.WinSocketApi._
+import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.windows.WinSocketApiOps
+import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import scala.scalanative.libc.errno
+import scala.scalanative.libc.string.strerror
 
 class UdpSocketTest {
   // All tests in this class assume that an IPv4 network is up & running.
@@ -22,8 +29,15 @@ class UdpSocketTest {
   // For some unknown reason inlining content of this method leads to failures
   // on Unix, probably due to bug in linktime conditions.
   private def setSocketBlocking(socket: CInt): Unit = {
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val mode = stackalloc[CInt]()
+      !mode = 1
+      assertNotEquals(
+        "iotctl setBLocking",
+        -1,
+        ioctlSocket(socket.toPtr[Byte], FIONBIO, mode)
+      )
+    } else {
       assertNotEquals(
         s"fcntl set blocking",
         -1,
@@ -33,8 +47,18 @@ class UdpSocketTest {
   }
 
   private def createAndCheckUdpSocket(): CInt = {
-    if (isWindows) ???
-    else {
+    if (isWindows) {
+      val socket = WSASocketW(
+        addressFamily = AF_INET,
+        socketType = SOCK_DGRAM,
+        protocol = IPPROTO_UDP,
+        protocolInfo = null,
+        group = 0.toUInt,
+        flags = WSA_FLAG_OVERLAPPED
+      )
+      assertNotEquals("socket create", InvalidSocket, socket)
+      socket.toInt
+    } else {
       val sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
       assertNotEquals("socket create", -1, sock)
       sock
@@ -42,18 +66,21 @@ class UdpSocketTest {
   }
 
   private def closeSocket(socket: CInt): Unit = {
-    if (isWindows) ???
+    if (isWindows) WinSocketApi.closeSocket(socket.toPtr[Byte])
     else unistd.close(socket)
   }
 
   @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
+    if (isWindows) {
+      WinSocketApiOps.init()
+    }
     val localhost = c"127.0.0.1"
     val localhostInetAddr = inet_addr(localhost)
 
     val inSocket: CInt = createAndCheckUdpSocket()
 
     try {
-      val inAddr = alloc[sockaddr]
+      val inAddr = alloc[sockaddr]()
       val inAddrInPtr = inAddr.asInstanceOf[Ptr[sockaddr_in]]
 
       inAddrInPtr.sin_family = AF_INET.toUShort
@@ -66,8 +93,8 @@ class UdpSocketTest {
       val bindStatus = bind(inSocket, inAddr, sizeof[sockaddr].toUInt)
       assertNotEquals("bind", -1, bindStatus)
 
-      val inAddrInfo = alloc[sockaddr]
-      val gsnAddrLen = alloc[socklen_t]
+      val inAddrInfo = alloc[sockaddr]()
+      val gsnAddrLen = alloc[socklen_t]()
       !gsnAddrLen = sizeof[sockaddr].toUInt
 
       val gsnStatus = getsockname(inSocket, inAddrInfo, gsnAddrLen)
@@ -77,7 +104,7 @@ class UdpSocketTest {
       val outSocket = createAndCheckUdpSocket()
 
       try {
-        val outAddr = alloc[sockaddr]
+        val outAddr = alloc[sockaddr]()
         val outAddrInPtr = outAddr.asInstanceOf[Ptr[sockaddr_in]]
         outAddrInPtr.sin_family = AF_INET.toUShort
         outAddrInPtr.sin_addr.s_addr = localhostInetAddr
@@ -113,14 +140,23 @@ class UdpSocketTest {
         // failure. Since this is send/recv pair is explicitly loopback,
         // that is highly unlikely.
         //
-        // If this race condition becomes bothersome, a Thead.sleep() can
-        // be inserted here.
-
         /// Two tests using one inbound packet, save test duplication.
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData = alloc[Byte](maxInData)
+        val inData: Ptr[Byte] = alloc[Byte](maxInData)
+
+        // Try to prevent spourious race conditions
+        Thread.sleep(100)
+
+        def checkRecvfromResult(v: CSSize, label: String): Unit = {
+          if (v.toInt < 0) {
+            val reason =
+              if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
+              else fromCString(strerror(errno.errno))
+            fail(s"$label failed - $reason")
+          }
+        }
 
         // Test not fetching remote address. Exercise last two arguments.
         val nBytesPeekedAt =
@@ -132,6 +168,7 @@ class UdpSocketTest {
             null.asInstanceOf[Ptr[sockaddr]],
             null.asInstanceOf[Ptr[socklen_t]]
           )
+        checkRecvfromResult(nBytesPeekedAt, "recvfrom_1")
 
         // Friendlier code here and after the next recvfrom() would loop
         // on partial reads rather than fail.
@@ -140,12 +177,13 @@ class UdpSocketTest {
         assertEquals("recvfrom_1 length", nBytesSent, nBytesPeekedAt)
 
         // Test retrieving remote address.
-        val srcAddr = alloc[sockaddr]
-        val srcAddrLen = alloc[socklen_t]
+        val srcAddr = alloc[sockaddr]()
+        val srcAddrLen = alloc[socklen_t]()
         !srcAddrLen = sizeof[sockaddr].toUInt
         val nBytesRecvd =
           recvfrom(inSocket, inData, maxInData.toUInt, 0, srcAddr, srcAddrLen)
 
+        checkRecvfromResult(nBytesRecvd, "recvfrom_2")
         assertEquals("recvfrom_2 length", nBytesSent, nBytesRecvd)
 
         // Packet came from where we expected, and not Mars.

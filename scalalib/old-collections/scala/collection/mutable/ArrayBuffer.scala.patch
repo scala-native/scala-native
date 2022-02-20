@@ -1,0 +1,17 @@
+--- 2.12.15/scala/collection/mutable/ArrayBuffer.scala
++++ old-collections/scala/collection/mutable/ArrayBuffer.scala
+@@ -190,8 +190,12 @@
+  *  @define Coll `ArrayBuffer`
+  */
+ object ArrayBuffer extends SeqFactory[ArrayBuffer] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayBuffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayBuffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
+ }
+ 

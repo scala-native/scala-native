@@ -13,8 +13,8 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte]
   ): StackTraceElement = {
     val nameMax = 1024
-    val name = stackalloc[CChar](nameMax.toUInt)
-    val offset = stackalloc[scala.Byte](8.toUInt)
+    val name: Ptr[CChar] = stackalloc[CChar](nameMax.toUInt)
+    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
 
     unwind.get_proc_name(cursor, name, nameMax.toUInt, offset)
 
@@ -37,10 +37,10 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor = stackalloc[scala.Byte](2048.toUInt)
-    val context = stackalloc[scala.Byte](2048.toUInt)
-    val offset = stackalloc[scala.Byte](8.toUInt)
-    val ip = stackalloc[CUnsignedLongLong]
+    val cursor: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
+    val context: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
+    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
+    val ip = stackalloc[CUnsignedLongLong]()
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
 
     unwind.get_context(context)
@@ -470,10 +470,6 @@ class NoSuchFieldException(s: String) extends ReflectiveOperationException(s) {
 }
 
 class NoSuchMethodException(s: String) extends ReflectiveOperationException(s) {
-  def this() = this(null)
-}
-
-class NullPointerException(s: String) extends RuntimeException(s) {
   def this() = this(null)
 }
 

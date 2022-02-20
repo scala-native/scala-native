@@ -8,6 +8,7 @@
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
 #include "util/ThreadUtil.h"
+#include "SyncGreyLists.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -34,7 +35,11 @@ extern word_t **__stack_bottom;
 // another from the full packet list and returns the empty one to the empty
 // packet list. Similarly, when the "out" packet get full, marker gets another
 // empty packet and pushes the full one on the full packet list.
-// Marking is done when all the packets are empty and in the empty packet list.
+// Marking is done when all the packets are empty in the empty packet list or
+// with only WeakRefereces in the WeakReference packet list. weakRefOut packets
+// are used to hold weakReferences found during the marking phase. This way, in
+// nullify phase it can be checked if their held objects were marked or not and
+// their fields can be set accordingly.
 //
 // An object can have different number of outgoing pointers. Therefore, the
 // number of objects to check per packet varies and packets take different
@@ -57,35 +62,13 @@ extern word_t **__stack_bottom;
 // threads and not doing any work.
 
 static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyPacket *packet =
-        GreyList_Pop(&heap->mark.empty, heap->greyPacketsStart);
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
-    if (packet != NULL) {
-        // Another thread setting size = 0 might not arrived, just write it now.
-        // Avoiding a memfence.
-        packet->size = 0;
-        packet->type = grey_packet_reflist;
-    }
-    assert(packet != NULL);
-    return packet;
+    return SyncGreyLists_takeEmptyPacket(heap, stats);
 }
 
 static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyPacket *packet = GreyList_Pop(&heap->mark.full, heap->greyPacketsStart);
-    if (packet != NULL) {
-        atomic_thread_fence(memory_order_release);
-    }
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, stats->mark_waiting_start_ns,
-                          end_ns);
-    if (packet == NULL) {
-        Stats_MarkerNoFullPacket(stats, start_ns, end_ns);
-    } else {
-        Stats_MarkerGotFullPacket(stats, end_ns);
-    }
+    GreyPacket *packet = SyncGreyLists_takeNotEmptyPacket(
+        heap, stats, &heap->mark.full, mark_waiting);
+
     assert(packet == NULL || packet->type == grey_packet_refrange ||
            packet->size > 0);
     return packet;
@@ -93,37 +76,44 @@ static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
 
 static inline void Marker_giveEmptyPacket(Heap *heap, Stats *stats,
                                           GreyPacket *packet) {
-    assert(packet->size == 0);
-    // no memfence needed see Marker_takeEmptyPacket
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyList_Push(&heap->mark.empty, heap->greyPacketsStart, packet);
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
+    SyncGreyLists_giveEmptyPacket(heap, stats, packet);
 }
 
 static inline void Marker_giveFullPacket(Heap *heap, Stats *stats,
                                          GreyPacket *packet) {
     assert(packet->type == grey_packet_refrange || packet->size > 0);
-    // make all the contents visible to other threads
-    atomic_thread_fence(memory_order_acquire);
-    uint32_t greyListSize = GreyList_Size(&heap->mark.full);
-    assert(greyListSize <= heap->mark.total);
-    Stats_RecordTimeSync(stats, start_ns);
-    GreyList_Push(&heap->mark.full, heap->greyPacketsStart, packet);
-    Stats_RecordTimeSync(stats, end_ns);
-    Stats_RecordEventSync(stats, event_sync, start_ns, end_ns);
+    SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.full, packet);
+}
+
+static inline void Marker_giveWeakRefPacket(Heap *heap, Stats *stats,
+                                            GreyPacket *packet) {
+    if (!GreyPacket_IsEmpty(packet)) {
+        SyncGreyLists_giveNotEmptyPacket(heap, stats, &heap->mark.foundWeakRefs,
+                                         packet);
+    } else {
+        SyncGreyLists_giveEmptyPacket(heap, stats, packet);
+    }
 }
 
 void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                       Bytemap *bytemap, Object *object,
-                       ObjectMeta *objectMeta) {
+                       GreyPacket **outWeakRefHolder, Bytemap *bytemap,
+                       Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta) ||
            ObjectMeta_IsMarked(objectMeta));
 
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
 
-    GreyPacket *out = *outHolder;
+    GreyPacket *out;
+    if (Object_IsWeakReference(object)) {
+        out = *outWeakRefHolder;
+        if (!GreyPacket_Push(out, object)) {
+            Marker_giveWeakRefPacket(heap, stats, out);
+            *outWeakRefHolder = out = Marker_takeEmptyPacket(heap, stats);
+            GreyPacket_Push(out, object);
+        }
+    }
+    out = *outHolder;
     if (!GreyPacket_Push(out, object)) {
         Marker_giveFullPacket(heap, stats, out);
         *outHolder = out = Marker_takeEmptyPacket(heap, stats);
@@ -132,7 +122,7 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
 }
 
 void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                             word_t *address) {
+                             GreyPacket **outWeakRefHolder, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
     Object *object = Object_GetUnmarkedObject(heap, address);
     Bytemap *bytemap = heap->bytemap;
@@ -140,14 +130,15 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
         ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
         assert(ObjectMeta_IsAllocated(objectMeta));
         if (ObjectMeta_IsAllocated(objectMeta)) {
-            Marker_markObject(heap, stats, outHolder, bytemap, object,
-                              objectMeta);
+            Marker_markObject(heap, stats, outHolder, outWeakRefHolder, bytemap,
+                              object, objectMeta);
         }
     }
 }
 
 int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                     Bytemap *bytemap, word_t **fields, size_t length) {
+                     GreyPacket **outWeakRefHolder, Bytemap *bytemap,
+                     word_t **fields, size_t length) {
     int objectsTraced = 0;
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
@@ -155,8 +146,8 @@ int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
         if (Heap_IsWordInHeap(heap, field)) {
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
             if (ObjectMeta_IsAllocated(fieldMeta)) {
-                Marker_markObject(heap, stats, outHolder, bytemap,
-                                  (Object *)field, fieldMeta);
+                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
+                                  bytemap, (Object *)field, fieldMeta);
             }
             objectsTraced += 1;
         }
@@ -165,16 +156,22 @@ int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
 }
 
 int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
-                             GreyPacket **outHolder, Bytemap *bytemap) {
+                             GreyPacket **outHolder,
+                             GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
     int objectsTraced = 0;
     int64_t *ptr_map = object->rtti->refMapStruct;
-    for (int64_t *current = ptr_map; *current != LAST_FIELD_OFFSET; current++) {
-        word_t *field = object->fields[*current];
+
+    for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
+        word_t current = ptr_map[i];
+        if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
+            continue;
+
+        word_t *field = object->fields[current];
         if (Heap_IsWordInHeap(heap, field)) {
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
             if (ObjectMeta_IsAllocated(fieldMeta)) {
-                Marker_markObject(heap, stats, outHolder, bytemap,
-                                  (Object *)field, fieldMeta);
+                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
+                                  bytemap, (Object *)field, fieldMeta);
             }
             objectsTraced += 1;
         }
@@ -183,7 +180,8 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
 }
 
 int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                            Bytemap *bytemap, word_t **fields, size_t length) {
+                            GreyPacket **outWeakRefHolder, Bytemap *bytemap,
+                            word_t **fields, size_t length) {
     word_t **limit = fields + length;
     word_t **lastBatch =
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
@@ -202,26 +200,28 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
     size_t lastBatchSize = limit - lastBatch;
     int objectsTraced = 0;
     if (lastBatchSize > 0) {
-        objectsTraced = Marker_markRange(heap, stats, outHolder, bytemap,
-                                         lastBatch, lastBatchSize);
+        objectsTraced =
+            Marker_markRange(heap, stats, outHolder, outWeakRefHolder, bytemap,
+                             lastBatch, lastBatchSize);
     }
     return objectsTraced;
 }
 
 int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
-                           GreyPacket **outHolder, Bytemap *bytemap) {
+                           GreyPacket **outHolder,
+                           GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t length = arrayHeader->length;
     word_t **fields = (word_t **)(arrayHeader + 1);
     int objectsTraced;
     if (length <= ARRAY_SPLIT_THRESHOLD) {
-        objectsTraced =
-            Marker_markRange(heap, stats, outHolder, bytemap, fields, length);
+        objectsTraced = Marker_markRange(
+            heap, stats, outHolder, outWeakRefHolder, bytemap, fields, length);
     } else {
         // object array is two large, split it into pieces for multiple threads
         // to handle
-        objectsTraced = Marker_splitObjectArray(heap, stats, outHolder, bytemap,
-                                                fields, length);
+        objectsTraced = Marker_splitObjectArray(
+            heap, stats, outHolder, outWeakRefHolder, bytemap, fields, length);
     }
     return objectsTraced;
 }
@@ -237,26 +237,32 @@ static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats,
     }
 }
 
-void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
-                       GreyPacket **outHolder) {
-    Bytemap *bytemap = heap->bytemap;
-    int objectsTraced = 0;
+static inline void Marker_RetakeIfNull(Heap *heap, Stats *stats,
+                                       GreyPacket **outHolder) {
     if (*outHolder == NULL) {
         GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
         assert(fresh != NULL);
         *outHolder = fresh;
     }
+}
+
+void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
+                       GreyPacket **outHolder, GreyPacket **outWeakRefHolder) {
+    Bytemap *bytemap = heap->bytemap;
+    Marker_RetakeIfNull(heap, stats, outHolder);
+    Marker_RetakeIfNull(heap, stats, outWeakRefHolder);
+    int objectsTraced = 0;
     while (!GreyPacket_IsEmpty(in)) {
         Object *object = GreyPacket_Pop(in);
         if (Object_IsArray(object)) {
             if (object->rtti->rt.id == __object_array_id) {
-                objectsTraced += Marker_markObjectArray(heap, stats, object,
-                                                        outHolder, bytemap);
+                objectsTraced += Marker_markObjectArray(
+                    heap, stats, object, outHolder, outWeakRefHolder, bytemap);
             }
             // non-object arrays do not contain pointers
         } else {
-            objectsTraced += Marker_markRegularObject(heap, stats, object,
-                                                      outHolder, bytemap);
+            objectsTraced += Marker_markRegularObject(
+                heap, stats, object, outHolder, outWeakRefHolder, bytemap);
         }
         if (objectsTraced > MARK_MAX_WORK_PER_PACKET) {
             // the packet has a lot of work split the remainder in two
@@ -267,29 +273,28 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
 }
 
 void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket *in,
-                            GreyPacket **outHolder) {
+                            GreyPacket **outHolder,
+                            GreyPacket **outWeakRefHolder) {
     Bytemap *bytemap = heap->bytemap;
-    if (*outHolder == NULL) {
-        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
-        assert(fresh != NULL);
-        *outHolder = fresh;
-    }
+    Marker_RetakeIfNull(heap, stats, outHolder);
+    Marker_RetakeIfNull(heap, stats, outWeakRefHolder);
     word_t **fields = (word_t **)in->items[0];
-    Marker_markRange(heap, stats, outHolder, bytemap, fields,
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, bytemap, fields,
                      ARRAY_SPLIT_BATCH);
     in->type = grey_packet_reflist;
     in->size = 0;
 }
 
 static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket *in,
-                                    GreyPacket **outHolder) {
+                                    GreyPacket **outHolder,
+                                    GreyPacket **outWeakRefHolder) {
     Stats_RecordTimeBatch(stats, start_ns);
     switch (in->type) {
     case grey_packet_reflist:
-        Marker_markPacket(heap, stats, in, outHolder);
+        Marker_markPacket(heap, stats, in, outHolder, outWeakRefHolder);
         break;
     case grey_packet_refrange:
-        Marker_markRangePacket(heap, stats, in, outHolder);
+        Marker_markRangePacket(heap, stats, in, outHolder, outWeakRefHolder);
         break;
     }
     Stats_RecordTimeBatch(stats, end_ns);
@@ -299,8 +304,9 @@ static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket *in,
 void Marker_Mark(Heap *heap, Stats *stats) {
     GreyPacket *in = Marker_takeFullPacket(heap, stats);
     GreyPacket *out = NULL;
+    GreyPacket *weakRefOut = NULL;
     while (in != NULL) {
-        Marker_markBatch(heap, stats, in, &out);
+        Marker_markBatch(heap, stats, in, &out, &weakRefOut);
 
         assert(out != NULL);
         assert(GreyPacket_IsEmpty(in));
@@ -316,6 +322,7 @@ void Marker_Mark(Heap *heap, Stats *stats) {
                 // next == NULL, exits
                 Marker_giveEmptyPacket(heap, stats, in);
                 Marker_giveEmptyPacket(heap, stats, out);
+                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
             }
         }
         in = next;
@@ -325,8 +332,9 @@ void Marker_Mark(Heap *heap, Stats *stats) {
 void Marker_MarkAndScale(Heap *heap, Stats *stats) {
     GreyPacket *in = Marker_takeFullPacket(heap, stats);
     GreyPacket *out = NULL;
+    GreyPacket *weakRefOut = NULL;
     while (in != NULL) {
-        Marker_markBatch(heap, stats, in, &out);
+        Marker_markBatch(heap, stats, in, &out, &weakRefOut);
 
         assert(out != NULL);
         assert(GreyPacket_IsEmpty(in));
@@ -351,6 +359,7 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
                 // next == NULL, exits
                 Marker_giveEmptyPacket(heap, stats, in);
                 Marker_giveEmptyPacket(heap, stats, out);
+                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
             }
         }
         in = next;
@@ -366,7 +375,8 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
-void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder) {
+void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder,
+                             GreyPacket **outWeakRefHolder) {
     // Dumps registers into 'regs' which is on stack
     jmp_buf regs;
     setjmp(regs);
@@ -379,13 +389,15 @@ void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder) {
 
         word_t *stackObject = *current;
         if (Heap_IsWordInHeap(heap, stackObject)) {
-            Marker_markConservative(heap, stats, outHolder, stackObject);
+            Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
+                                    stackObject);
         }
         current += 1;
     }
 }
 
-void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder) {
+void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
+                        GreyPacket **outWeakRefHolder) {
     word_t **modules = &__modules;
     int nb_modules = __modules_size;
     Bytemap *bytemap = heap->bytemap;
@@ -396,8 +408,8 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder) {
             // is within heap
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
             if (ObjectMeta_IsAllocated(objectMeta)) {
-                Marker_markObject(heap, stats, outHolder, bytemap, object,
-                                  objectMeta);
+                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
+                                  bytemap, object, objectMeta);
             }
         }
     }
@@ -405,12 +417,16 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder) {
 
 void Marker_MarkRoots(Heap *heap, Stats *stats) {
     GreyPacket *out = Marker_takeEmptyPacket(heap, stats);
-    Marker_markProgramStack(heap, stats, &out);
-    Marker_markModules(heap, stats, &out);
+    GreyPacket *weakRefOut = Marker_takeEmptyPacket(heap, stats);
+    Marker_markProgramStack(heap, stats, &out, &weakRefOut);
+    Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_giveFullPacket(heap, stats, out);
+    Marker_giveWeakRefPacket(heap, stats, weakRefOut);
 }
 
 bool Marker_IsMarkDone(Heap *heap) {
-    uint32_t size = GreyList_Size(&heap->mark.empty);
+    uint32_t emptySize = GreyList_Size(&heap->mark.empty);
+    uint32_t weakRefSize = GreyList_Size(&heap->mark.foundWeakRefs);
+    uint32_t size = emptySize + weakRefSize;
     return size == heap->mark.total;
 }

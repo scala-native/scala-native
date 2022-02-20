@@ -21,7 +21,8 @@ object CodeGen {
     implicit val meta: Metadata = new Metadata(linked, proxies)
 
     val generated = Generate(Global.Top(config.mainClass), defns ++ proxies)
-    val lowered = lower(generated)
+    val embedded = ResourceEmbedder(config)
+    val lowered = lower(generated ++ embedded)
     dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }
@@ -69,10 +70,12 @@ object CodeGen {
         Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
+      // For some reason in the CI matching for `case _: build.Mode.Relese` throws compile time erros
+      import build.Mode._
       (config.mode, config.LTO) match {
-        case (build.Mode.Debug, _)                   => separate()
-        case (_: build.Mode.Release, build.LTO.None) => single()
-        case (_: build.Mode.Release, _)              => separate()
+        case (Debug, _)                                  => separate()
+        case (ReleaseFast | ReleaseFull, build.LTO.None) => single()
+        case (ReleaseFast | ReleaseFull, _)              => separate()
       }
     }
 

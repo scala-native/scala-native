@@ -16,7 +16,7 @@ val defaultToken = sys.env.get("GITHUB_TOKEN")
 def main(
     firstTag: String,
     lastTag: String,
-    githubToken: Seq[String] = defaultToken.toSeq
+    githubToken: Option[String]
 ) = {
   val author = os.proc(List("git", "config", "user.name")).call().out.trim()
   val commits = os
@@ -42,11 +42,11 @@ def main(
     "log",
     s"$firstTag..$lastTag",
     "--first-parent",
-    "master",
+    "main",
     "--pretty=format:%H"
   )
 
-  val token = githubToken.headOption.getOrElse {
+  val token = githubToken.orElse(defaultToken).getOrElse {
     throw new Exception("No github API token was specified")
   }
 
@@ -86,7 +86,7 @@ def main(
       author,
       firstTag,
       lastTag,
-      mergedPRs.toList,
+      mergedPRs.reverse.toList,
       commits,
       contributors
     )

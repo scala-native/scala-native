@@ -1,5 +1,7 @@
 package java.nio
 
+import scala.scalanative.runtime.ByteArray
+
 // Ported from Scala.js
 private[nio] object GenHeapBufferView {
   def apply[B <: Buffer](self: B): GenHeapBufferView[B] =
@@ -127,7 +129,7 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
       newHeapBufferView: NewThisHeapBufferView
   ): ByteArrayBits = {
     ByteArrayBits(
-      _byteArray,
+      _byteArray.asInstanceOf[ByteArray].at(0),
       _byteArrayOffset,
       isBigEndian,
       newHeapBufferView.bytesPerElem

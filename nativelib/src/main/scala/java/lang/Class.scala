@@ -6,6 +6,11 @@ import scala.language.implicitConversions
 import scalanative.annotation._
 import scalanative.unsafe._
 import scalanative.runtime.{Array => _, _}
+import java.io.InputStream
+import java.lang.resource.EncodedResourceInputStream
+import java.lang.resource.EmbeddedResourceHelper
+import java.util.Base64
+import java.nio.file.Paths
 
 // These two methods are generated at link-time by the toolchain
 // using current closed-world knowledge of classes and traits in
@@ -131,7 +136,7 @@ final class _Class[A] {
   @stub
   def getClassLoader(): java.lang.ClassLoader = ???
   @stub
-  def getConstructor(args: Array[Object]): java.lang.reflect.Constructor[_] =
+  def getConstructor(args: Array[_Class[_]]): java.lang.reflect.Constructor[_] =
     ???
   @stub
   def getConstructors(): Array[Object] = ???
@@ -144,8 +149,37 @@ final class _Class[A] {
   ): java.lang.reflect.Method = ???
   @stub
   def getMethods(): Array[Method] = ???
-  @stub
-  def getResourceAsStream(name: java.lang.String): java.io.InputStream = ???
+
+  def getResourceAsStream(
+      resourceName: java.lang.String
+  ): java.io.InputStream = {
+    if (resourceName.isEmpty()) null
+    else {
+      val absoluteName =
+        if (resourceName(0) == '/') {
+          resourceName
+        } else {
+          Paths.get(this.name.replace(".", "/")).getParent() match {
+            case null       => s"/$resourceName"
+            case parentPath => s"/${parentPath.toString()}/$resourceName"
+          }
+        }
+
+      val path =
+        Paths.get(absoluteName).normalize().toString().replace("\\", "/")
+
+      val absolutePath =
+        if (!path.isEmpty() && path(0) != '/') "/" + path
+        else path
+
+      EmbeddedResourceHelper.resourceFileIdMap
+        .get(absolutePath)
+        .map { fileIndex =>
+          Base64.getDecoder().wrap(new EncodedResourceInputStream(fileIndex))
+        }
+        .orNull
+    }
+  }
 }
 
 object _Class {

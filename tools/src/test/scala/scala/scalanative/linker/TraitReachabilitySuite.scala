@@ -2,37 +2,62 @@ package scala.scalanative
 package linker
 
 import scala.scalanative.NativePlatform
-import scala.scalanative.nir.{Global, Sig, Type}
+import scala.scalanative.nir.{Global, Sig, Type, Rt}
 
 class TraitReachabilitySuite extends ReachabilitySuite {
-  val Parent: Global = g("Parent")
+  val TestClsName = "Test"
+  val TestModuleName = "Test$"
+  val ChildClsName = "Child"
+  val GrandChildClsName = "GrandChild"
+  val ParentClsName = "Parent"
+  val ParentClassClsName = "Parent$class"
+  val ObjectClsName = "java.lang.Object"
+  val ScalaMainNonStaticSig =
+    Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
 
+  val Parent: Global = g(ParentClsName)
   // Scala 2.11.x
-  val ParentClass: Global = g("Parent$class")
+  val ParentClass: Global = g(ParentClassClsName)
   val ParentClassInit: Global =
-    g("Parent$class", Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit)))
+    g(
+      ParentClassClsName,
+      Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit))
+    )
+  val ParentClassMain = g(
+    ParentClassClsName,
+    Sig.Method(
+      "main",
+      Type.Ref(Parent) +: Rt.ScalaMainSig.types,
+      Sig.Scope.Public
+    )
+  )
   val ParentClassFoo: Global =
-    g("Parent$class", Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
-
+    g(ParentClassClsName, Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
+  // val ParentClassMain = g(ParentClassClsName, Sig.Method("main", Type.))
   // Scala 2.12.x
   val ParentInit: Global =
-    g("Parent", Sig.Method("$init$", Seq(Type.Unit)))
-  val ParentFoo: Global =
-    g("Parent", Sig.Method("foo", Seq(Type.Unit)))
+    g(ParentClsName, Sig.Method("$init$", Seq(Type.Unit)))
+  val ParentMain: Global = g(ParentClsName, ScalaMainNonStaticSig)
+  val ParentFoo: Global = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
 
-  val Child: Global = g("Child")
-  val ChildInit: Global = g("Child", Sig.Ctor(Seq.empty))
-  val ChildFoo: Global = g("Child", Sig.Method("foo", Seq(Type.Unit)))
-  val GrandChild: Global = g("GrandChild")
-  val GrandChildInit: Global = g("GrandChild", Sig.Ctor(Seq.empty))
-  val GrandChildFoo: Global = g("GrandChild", Sig.Method("foo", Seq(Type.Unit)))
-  val Object: Global = g("java.lang.Object")
-  val ObjectInit: Global = g("java.lang.Object", Sig.Ctor(Seq.empty))
-  val Test: Global = g("Test$")
-  val TestInit: Global = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain: Global = g("Test$", Sig.Method("main", Seq(Type.Unit)))
+  val Child: Global = g(ChildClsName)
+  val ChildInit: Global = g(ChildClsName, Sig.Ctor(Seq.empty))
+  val ChildFoo: Global = g(ChildClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val GrandChild: Global = g(GrandChildClsName)
+  val GrandChildInit: Global = g(GrandChildClsName, Sig.Ctor(Seq.empty))
+  val GrandChildFoo: Global =
+    g(GrandChildClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val Object: Global = g(ObjectClsName)
+  val ObjectInit: Global = g(ObjectClsName, Sig.Ctor(Seq.empty))
+  val Test: Global = g(TestClsName)
+  val TestModule: Global = g(TestModuleName)
+  val TestInit: Global = g(TestModuleName, Sig.Ctor(Seq.empty))
+  val TestMain: Global = g(TestClsName, Rt.ScalaMainSig)
+  val TestModuleMain: Global = g(TestModuleName, ScalaMainNonStaticSig)
   val TestCallFoo: Global =
-    g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+    g(TestModuleName, Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+  val commonReachable =
+    Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
 
   testReachable("unused traits are discarded") {
     val source = """
@@ -40,18 +65,15 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = ()
+        def main(args: Array[String]): Unit = ()
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("inherited trait is included") {
@@ -60,21 +82,18 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = new Child
+        def main(args: Array[String]): Unit = new Child
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Child,
       ChildInit,
       Parent,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -91,15 +110,12 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Child,
       ChildInit,
@@ -108,7 +124,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -128,7 +144,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           callFoo(new Child)
           callFoo(new GrandChild)
         }
@@ -136,9 +152,6 @@ class TraitReachabilitySuite extends ReachabilitySuite {
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Child,
       ChildInit,
@@ -150,7 +163,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -165,15 +178,12 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Child,
       ChildInit,
@@ -188,6 +198,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           ParentClassInit,
           ParentClassFoo
         )
+      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+        Seq(Parent, ParentFoo)
       } else {
         Seq(
           Parent,
@@ -196,7 +208,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         )
       }
     }
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -213,15 +225,12 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(parent: Parent): Unit =
           parent.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Child,
       ChildInit,
@@ -235,6 +244,8 @@ class TraitReachabilitySuite extends ReachabilitySuite {
           ParentClass,
           ParentClassInit
         )
+      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+        Seq(Parent)
       } else {
         Seq(
           Parent,
@@ -242,6 +253,42 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         )
       }
     }
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
+  }
+
+  // Issue #805
+  testReachable("inherited main methods are reachable") {
+    val source = """
+       trait Parent {
+         def main(args: Array[String]): Unit = ()
+       }
+
+       object Test extends Parent
+       """
+    val entry = TestMain
+    val reachable =
+      Seq(
+        Parent,
+        Object,
+        ObjectInit
+      ) ++ {
+        if (NativePlatform.scalaUsesImplClasses) {
+          Seq(
+            Parent,
+            ParentClass,
+            ParentClassInit,
+            ParentClassMain,
+            TestModuleMain
+          )
+        } else if (NativePlatform.erasesEmptyTraitConstructor) {
+          Seq(ParentMain, TestModuleMain)
+        } else {
+          Seq(
+            ParentInit,
+            ParentMain
+          )
+        }
+      }
+    (source, entry, commonReachable.diff(Seq(TestModuleMain)) ++ reachable)
   }
 }

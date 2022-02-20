@@ -13,8 +13,9 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt.MAX_PATH
 import scala.scalanative.windows.UserEnvApi._
 import scala.scalanative.windows.WinBaseApi._
-import scala.scalanative.windows.ProcessEnv._
+import scala.scalanative.windows.ProcessEnvApi._
 import scala.scalanative.windows.winnt.AccessToken
+import scala.scalanative.windows.WinNlsApi._
 
 final class System private ()
 
@@ -52,40 +53,25 @@ object System {
       "Java Platform API Specification"
     )
     sysProps.setProperty("line.separator", lineSeparator())
-    getCurrentDirectory().map(sysProps.setProperty("user.dir", _))
-    getUserHomeDirectory().map(sysProps.setProperty("user.home", _))
+    getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
+    getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
+    getUserCountry().foreach(sysProps.setProperty("user.country", _))
+    getUserLanguage().foreach(sysProps.setProperty("user.language", _))
 
     if (isWindows) {
       sysProps.setProperty("file.separator", "\\")
       sysProps.setProperty("path.separator", ";")
       sysProps.setProperty(
         "java.io.tmpdir", {
-          val buffer = stackalloc[scala.Byte](MAX_PATH)
+          val buffer: Ptr[scala.Byte] = stackalloc[scala.Byte](MAX_PATH)
           GetTempPathA(MAX_PATH, buffer)
           fromCString(buffer)
         }
       )
-
-      val userLang = fromCString(Platform.windowsGetUserLang())
-      val userCountry = fromCString(Platform.windowsGetUserCountry())
-      sysProps.setProperty("user.language", userLang)
-      sysProps.setProperty("user.country", userCountry)
-
     } else {
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
       sysProps.setProperty("java.io.tmpdir", "/tmp")
-      val userLocale = getenv("LANG")
-      if (userLocale != null) {
-        val userLang = userLocale.takeWhile(_ != '_')
-        // this mess will be updated when Regexes get implemented
-        val userCountry = userLocale
-          .dropWhile(_ != '_')
-          .takeWhile(c => (c != '.') && (c != '@'))
-          .drop(1)
-        sysProps.setProperty("user.language", userLang)
-        sysProps.setProperty("user.country", userCountry)
-      }
     }
 
     sysProps
@@ -126,7 +112,7 @@ object System {
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis
 
   def getenv(): Map[String, String] = envVars
-  def getenv(key: String): String = envVars.get(key)
+  def getenv(key: String): String = envVars.get(key.toUpperCase())
 
   def setIn(in: InputStream): Unit =
     this.in = in
@@ -142,12 +128,12 @@ object System {
   private def getCurrentDirectory(): Option[String] = {
     val bufSize = 1024.toUInt
     if (isWindows) {
-      val buf = stackalloc[CChar16](bufSize)
+      val buf: Ptr[CChar16] = stackalloc[CChar16](bufSize)
       if (GetCurrentDirectoryW(bufSize, buf) != 0.toUInt)
         Some(fromCWideString(buf, StandardCharsets.UTF_16LE))
       else None
     } else {
-      val buf = stackalloc[scala.Byte](bufSize)
+      val buf: Ptr[scala.Byte] = stackalloc[scala.Byte](bufSize)
       val cwd = unistd.getcwd(buf, bufSize)
       Option(cwd).map(fromCString(_))
     }
@@ -156,15 +142,15 @@ object System {
   private def getUserHomeDirectory(): Option[String] = {
     if (isWindows) {
       WindowsHelperMethods.withUserToken(AccessToken.TOKEN_QUERY) { token =>
-        val bufSize = stackalloc[UInt]
+        val bufSize = stackalloc[UInt]()
         !bufSize = 256.toUInt
-        val buf = stackalloc[CChar16](!bufSize)
+        val buf: Ptr[CChar16] = stackalloc[CChar16](!bufSize)
         if (GetUserProfileDirectoryW(token, buf, bufSize))
           Some(fromCWideString(buf, StandardCharsets.UTF_16LE))
         else None
       }
     } else {
-      val buf = stackalloc[pwd.passwd]
+      val buf = stackalloc[pwd.passwd]()
       val uid = unistd.getuid()
       val res = pwd.getpwuid(uid, buf)
       if (res == 0 && buf.pw_dir != null)
@@ -173,26 +159,49 @@ object System {
     }
   }
 
+  private def getUserLocaleInfo(
+      infoCode: LCType,
+      bufSize: UInt
+  ): Option[String] = {
+    val buf: Ptr[CChar16] = stackalloc[CChar16](bufSize)
+    GetLocaleInfoEx(
+      LOCALE_NAME_USER_DEFAULT,
+      infoCode,
+      buf,
+      bufSize
+    ) match {
+      case 0 => None
+      case _ => Some(fromCWideString(buf, StandardCharsets.UTF_16))
+    }
+  }
+
+  private def getUserLanguage(): Option[String] = {
+    if (isWindows) {
+      getUserLocaleInfo(LOCALE_SISO639LANGNAME2, bufSize = 9.toUInt)
+    } else {
+      Option(getenv("LANG")).map(_.takeWhile(_ != '_'))
+    }
+  }
+
+  private def getUserCountry(): Option[String] = {
+    if (isWindows) {
+      getUserLocaleInfo(LOCALE_SISO3166CTRYNAME2, bufSize = 9.toUInt)
+    } else {
+      Option(getenv("LANG")).map(
+        _.dropWhile(_ != '_')
+          .takeWhile(c => (c != '.') && (c != '@'))
+          .drop(1)
+      )
+    }
+  }
+
   private lazy val envVars: Map[String, String] = {
     def getEnvsUnix() = {
-      // workaround since `while(ptr(0) != null)` causes segfault
-      def isDefined(ptr: Ptr[CString]): Boolean = {
-        val s: CString = ptr(0)
-        s != null
-      }
-
-      // Count to preallocate the map
-      var size = 0
-      var sizePtr = unistd.environ
-      while (isDefined(sizePtr)) {
-        size += 1
-        sizePtr += 1
-      }
-
-      val map = new HashMap[String, String](10)
-      var ptr: Ptr[CString] = unistd.environ
-      while (isDefined(ptr)) {
-        val variable = fromCString(ptr(0))
+      val map = new HashMap[String, String]()
+      val ptr: Ptr[CString] = unistd.environ
+      var i = 0
+      while (ptr(i) != null) {
+        val variable = fromCString(ptr(i))
         val name = variable.takeWhile(_ != '=')
         val value =
           if (name.length < variable.length)
@@ -200,7 +209,7 @@ object System {
           else
             ""
         map.put(name, value)
-        ptr = ptr + 1
+        i += 1
       }
       map
     }

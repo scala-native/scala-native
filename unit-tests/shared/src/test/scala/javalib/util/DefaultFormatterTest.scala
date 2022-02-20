@@ -43,7 +43,6 @@ class DefaultFormatterTest {
     if (notExist.exists()) notExist.delete()
     if (fileWithContent.exists()) fileWithContent.delete()
     if (readOnly.exists()) readOnly.delete()
-    // TimeZone.setDefault(defaultTimeZone)
   }
 
   private class MockAppendable extends Appendable {
@@ -196,11 +195,12 @@ class DefaultFormatterTest {
         classOf[UnsupportedEncodingException],
         new Formatter(notExist, "ISO 1111-1")
       )
-    } finally if (notExist.exists()) {
-      // Fail on RI on Windows, because output stream is created and
-      // not closed when exception thrown
-      assertTrue(notExist.delete())
-    }
+    } finally
+      if (notExist.exists()) {
+        // Fail on RI on Windows, because output stream is created and
+        // not closed when exception thrown
+        assertTrue(notExist.delete())
+      }
   }
 
   @Test def constructorPrintStream(): Unit = {
@@ -709,7 +709,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForGeneralConversionType_bB(): Unit = {
-    val triple: Array[Array[Object]] = Array(
+    val triple = Array[Array[Object]](
       Array(Boolean.box(false), "%3.2b", " fa"),
       Array(Boolean.box(false), "%-4.6b", "false"),
       Array(Boolean.box(false), "%.2b", "fa"),
@@ -809,7 +809,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForGeneralConversionType_sS(): Unit = {
-    val triple: Array[Array[Object]] = Array(
+    val triple = Array[Array[Object]](
       Array(Boolean.box(false), "%2.3s", "fal"),
       Array(Boolean.box(false), "%-6.4s", "fals  "),
       Array(Boolean.box(false), "%.5s", "false"),
@@ -2312,7 +2312,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_f(): Unit = {
-    val tripleF: Array[Array[Any]] = Array(
+    val tripleF = Array(
       Array(0f, "%f", "0.000000"),
       Array(0f, "%#.3f", "0.000"),
       Array(0f, "%,5f", "0.000000"),
@@ -2487,7 +2487,7 @@ class DefaultFormatterTest {
       Array(java.lang.Double.NEGATIVE_INFINITY, "%#+0(1.6f", "(Infinity)"),
       Array(java.lang.Double.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
       Array(java.lang.Double.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)")
-    )
+    ).asInstanceOf[Array[Array[Any]]]
     val input: Int = 0
     val pattern: Int = 1
     val output: Int = 2
@@ -2503,10 +2503,10 @@ class DefaultFormatterTest {
 
   @Test def formatForDoubleMinValueConversionType_aA(): Unit = {
 
-    val tripleA: Array[Array[Any]] = Array(
+    val tripleA = Array(
       Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
-    )
+    ).asInstanceOf[Array[Array[Any]]]
     val input: Int = 0
     val pattern: Int = 1
     val output: Int = 2
@@ -2535,7 +2535,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_aA(): Unit = {
-    val tripleA: Array[Array[Any]] = Array(
+    val tripleA = Array(
       Array(-0f, "%a", "-0x0.0p0"),
       Array(-0f, "%#.3a", "-0x0.000p0"),
       Array(-0f, "%5a", "-0x0.0p0"),
@@ -2693,7 +2693,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForBigDecimalConversionType_eE(): Unit = {
-    val tripleE: Array[Array[Any]] = Array(
+    val tripleE = Array(
       Array(BigDecimal.ZERO, "%e", "0.000000e+00"),
       Array(BigDecimal.ZERO, "%#.0e", "0.e+00"),
       Array(BigDecimal.ZERO, "%# 9.8e", " 0.00000000e+00"),
@@ -2759,7 +2759,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForBigDecimalConversionType_gG(): Unit = {
-    val tripleG: Array[Array[Any]] = Array(
+    val tripleG = Array(
       Array(BigDecimal.ZERO, "%g", "0.00000"),
       Array(BigDecimal.ZERO, "%.5g", "0.0000"),
       Array(BigDecimal.ZERO, "%- (,9.8g", " 0.0000000"),
@@ -2808,7 +2808,7 @@ class DefaultFormatterTest {
       Array(new BigDecimal("-5.000E999"), "%+0(,8.4g", "(5.000e+999)"),
       Array(new BigDecimal("-5.000E999"), "%-+10.6g", "-5.00000e+999"),
       Array(new BigDecimal("-5.000E999"), "% 0(,12.0g", "(00005e+999)")
-    )
+    ).asInstanceOf[Array[Array[Any]]]
     val input: Int = 0
     val pattern: Int = 1
     val output: Int = 2
@@ -2849,7 +2849,7 @@ class DefaultFormatterTest {
     val input: Int = 0
     val pattern: Int = 1
     val output: Int = 2
-    val tripleF: Array[Array[Any]] = Array(
+    val tripleF = Array(
       Array(BigDecimal.ZERO, "%f", "0.000000"),
       Array(BigDecimal.ZERO, "%#.3f", "0.000"),
       Array(BigDecimal.ZERO, "%#,5f", "0.000000"),
@@ -2948,7 +2948,7 @@ class DefaultFormatterTest {
         "% 0#(9.8f",
         "(9999999999999999999999999999999999999999999.00000000)"
       )
-    )
+    ).asInstanceOf[Array[Array[Any]]]
     for (i <- 0 until tripleF.length) {
       val f = new Formatter()
       f.format(
@@ -3365,37 +3365,6 @@ class DefaultFormatterTest {
     val decFloat: BigDecimalLayoutForm =
       BigDecimalLayoutForm.valueOf("DECIMAL_FLOAT")
     assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, decFloat)
-  }
-
-  /*
-   * Regression test for Harmony-5845
-   * test the short name for timezone whether uses DaylightTime or not
-   */
-  @Test def daylightTime(): Unit = {
-    // 2018-09-05 Implementation note:
-    // The TimeZone.getAvailableIDs() now stub returns an empty array,
-    // no longer throwing NotImplementedError.That allows his test to be
-    // enabled.
-    //
-    // This test now passes, but the success is may be vacuous/deceiving.
-    // The actual "America" conditions below will not get executed until
-    // getAvailableIDs() is more fully implemented and reports those TimeZones
-    // as available. When that happens, this test may start failing for
-    // "mysterious" but valid reasons.
-    val c1: Calendar = new GregorianCalendar(2007, 0, 1)
-    val c2: Calendar = new GregorianCalendar(2007, 7, 1)
-    for (tz <- TimeZone.getAvailableIDs) {
-      if (tz == "America/Los_Angeles") {
-        c1.setTimeZone(TimeZone.getTimeZone(tz))
-        c2.setTimeZone(TimeZone.getTimeZone(tz))
-        assertTrue(String.format("%1$tZ%2$tZ", c1, c2) == "PSTPDT")
-      }
-      if (tz == "America/Panama") {
-        c1.setTimeZone(TimeZone.getTimeZone(tz))
-        c2.setTimeZone(TimeZone.getTimeZone(tz))
-        assertTrue(String.format("%1$tZ%2$tZ", c1, c2) == "ESTEST")
-      }
-    }
   }
 
   /*

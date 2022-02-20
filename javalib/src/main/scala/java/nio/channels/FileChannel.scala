@@ -6,6 +6,9 @@ import java.nio.file.attribute.FileAttribute
 import spi.AbstractInterruptibleChannel
 
 import java.util.{HashSet, Set}
+import java.io.RandomAccessFile
+
+import java.nio.file._
 
 abstract class FileChannel protected ()
     extends AbstractInterruptibleChannel
@@ -13,13 +16,15 @@ abstract class FileChannel protected ()
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  // def force(metadata: Boolean): Unit
-  // final def lock(): FileLock =
-  //   lock(0L, Long.MaxValue, false)
-  // def lock(position: Long, size: Long, shared: Boolean): FileLock
-  // final def tryLock(): FileLock =
-  //   tryLock(0L, Long.MaxValue, false)
-  // def tryLock(position: Long, size: Long, shared: Boolean): FileLock
+  def force(metadata: Boolean): Unit
+
+  final def lock(): FileLock = lock(0L, Long.MaxValue, false)
+
+  def lock(position: Long, size: Long, shared: Boolean): FileLock
+
+  final def tryLock(): FileLock = tryLock(0L, Long.MaxValue, false)
+
+  def tryLock(position: Long, size: Long, shared: Boolean): FileLock
 
   def map(
       mode: FileChannel.MapMode,
@@ -71,8 +76,62 @@ object FileChannel {
       path: Path,
       options: Set[_ <: OpenOption],
       attrs: Array[FileAttribute[_]]
-  ): FileChannel =
-    new FileChannelImpl(path, options, attrs)
+  ): FileChannel = {
+    import StandardOpenOption._
+
+    if (options.contains(APPEND) && options.contains(TRUNCATE_EXISTING)) {
+      throw new IllegalArgumentException(
+        "APPEND + TRUNCATE_EXISTING not allowed"
+      )
+    }
+
+    if (options.contains(APPEND) && options.contains(READ)) {
+      throw new IllegalArgumentException("APPEND + READ not allowed")
+    }
+
+    val writing = options.contains(WRITE) || options.contains(APPEND)
+
+    val mode = new StringBuilder("r")
+    if (writing) mode.append("w")
+
+    if (!Files.exists(path, Array.empty)) {
+      if (!options.contains(CREATE) && !options.contains(CREATE_NEW)) {
+        throw new NoSuchFileException(path.toString)
+      } else if (writing) {
+        Files.createFile(path, attrs)
+      }
+    } else if (options.contains(CREATE_NEW)) {
+      throw new FileAlreadyExistsException(path.toString)
+    }
+
+    if (writing && options.contains(DSYNC) && !options
+          .contains(SYNC)) {
+      mode.append("d")
+    }
+
+    if (writing && options.contains(SYNC)) {
+      mode.append("s")
+    }
+
+    val file = path.toFile()
+    val raf = new RandomAccessFile(file, mode.toString)
+
+    if (writing && options.contains(TRUNCATE_EXISTING)) {
+      raf.setLength(0L)
+    }
+
+    if (writing && options.contains(APPEND)) {
+      raf.seek(raf.length())
+    }
+
+    new FileChannelImpl(
+      raf.getFD(),
+      Some(file),
+      deleteFileOnClose = options.contains(StandardOpenOption.DELETE_ON_CLOSE),
+      openForReading = true,
+      openForWriting = writing
+    )
+  }
 
   def open(path: Path, options: Array[OpenOption]): FileChannel = {
     var i = 0

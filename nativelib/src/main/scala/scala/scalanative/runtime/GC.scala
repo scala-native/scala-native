@@ -10,6 +10,17 @@ import scalanative.unsafe._
  */
 @extern
 object GC {
+  @deprecated("Marked for removal, use alloc(Class[_], CSize) instead", "0.4.1")
+  @name("scalanative_alloc")
+  def alloc(rawty: RawPtr, size: CSize): RawPtr = extern
+
+  @deprecated(
+    "Marked for removal, use alloc_atomic(Class[_], CSize) instead",
+    "0.4.1"
+  )
+  @name("scalanative_alloc_atomic")
+  def alloc_atomic(rawty: RawPtr, size: CSize): RawPtr = extern
+
   @name("scalanative_alloc")
   def alloc(cls: Class[_], size: CSize): RawPtr = extern
   @name("scalanative_alloc_atomic")
@@ -22,4 +33,6 @@ object GC {
   def collect(): Unit = extern
   @name("scalanative_init")
   def init(): Unit = extern
+  @name("scalanative_register_weak_reference_handler")
+  def registerWeakReferenceHandler(handler: Ptr[Byte]): Unit = extern
 }

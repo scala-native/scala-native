@@ -172,7 +172,7 @@ class PtrBoxingTest {
     type Cons = CStruct2[Int, Ptr[Byte]]
 
     def cons(value: Int, next: Ptr[Cons])(implicit z: Zone): Ptr[Cons] = {
-      val v = alloc[Cons]
+      val v = alloc[Cons]()
       v._1 = value
       v._2 = next.asInstanceOf[Ptr[Byte]]
       v
@@ -191,9 +191,9 @@ class PtrBoxingTest {
 
   @Test def loadAndStoreCFuncPtr(): Unit = {
     Zone { implicit z =>
-      val x: Ptr[Functions] = stackalloc[Functions]
-      x._1 = CFuncPtr0.fromScalaFunction(getInt)
-      x._2 = CFuncPtr1.fromScalaFunction(stringLength)
+      val x: Ptr[Functions] = stackalloc[Functions]()
+      x._1 = CFuncPtr0.fromScalaFunction(getInt _)
+      x._2 = CFuncPtr1.fromScalaFunction(stringLength _)
 
       val loadedGetInt: GetInt = x._1
       val loadedStringLength: StringLength = x._2
@@ -213,7 +213,7 @@ class PtrBoxingTest {
 
 object PtrBoxingTest {
   type Functions = CStruct2[GetInt, StringLength]
-  //In 2.11 this method needs to be statically known
+  // In 2.11 this method needs to be statically known
 
   type GetInt = CFuncPtr0[Int]
   def getInt(): Int = 42

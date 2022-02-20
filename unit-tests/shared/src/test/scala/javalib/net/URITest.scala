@@ -237,4 +237,33 @@ class URITest {
     }
   }
 
+  @Test def normalize(): Unit = {
+    def testNormalize(relative: Boolean): Unit = {
+      val first = if (relative) "" else "/"
+      assertEquals(new URI(s"${first}a/b"), new URI(s"${first}a/b").normalize())
+      assertEquals(
+        new URI(s"${first}a/b"),
+        new URI(s"${first}a/./b").normalize()
+      )
+      assertEquals(
+        new URI(s"${first}b"),
+        new URI(s"${first}a/../b").normalize()
+      )
+      assertEquals(
+        new URI(s"${first}../a/b"),
+        new URI(s"${first}../a/b").normalize()
+      )
+      assertEquals(
+        new URI(s"${first}a/"),
+        new URI(s"${first}a/b/..").normalize()
+      )
+      assertEquals(
+        new URI(s"${first}a/"),
+        new URI(s"${first}a/b/./..").normalize()
+      )
+    }
+    testNormalize(relative = true)
+    testNormalize(relative = false)
+  }
+
 }

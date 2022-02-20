@@ -1,44 +1,55 @@
 package scala.scalanative.linker
 
 import org.scalatest._
-import scalanative.nir.{Sig, Type, Global}
+import scalanative.nir.{Sig, Type, Global, Rt}
 
 class ClassReachabilitySuite extends ReachabilitySuite {
-  val Parent = g("Parent")
-  val ParentInit = g("Parent", Sig.Ctor(Seq.empty))
-  val ParentFoo = g("Parent", Sig.Method("foo", Seq(Type.Unit)))
-  val ParentBar = g("Parent", Sig.Field("bar"))
-  val ParentBarSet = g("Parent", Sig.Method("bar_=", Seq(Type.Int, Type.Unit)))
-  val ParentBarGet = g("Parent", Sig.Method("bar", Seq(Type.Int)))
-  val Child = g("Child")
-  val ChildInit = g("Child", Sig.Ctor(Seq.empty))
-  val ChildFoo = g("Child", Sig.Method("foo", Seq(Type.Unit)))
-  val Object = g("java.lang.Object")
-  val ObjectInit = g("java.lang.Object", Sig.Ctor(Seq.empty))
-  val Test = g("Test$")
-  val TestInit = g("Test$", Sig.Ctor(Seq.empty))
-  val TestMain = g("Test$", Sig.Method("main", Seq(Type.Unit)))
-  val TestCallFoo =
-    g("Test$", Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+  val TestClsName = "Test"
+  val TestModuleName = "Test$"
+  val ChildClsName = "Child"
+  val ParentClsName = "Parent"
+  val ObjectClsName = "java.lang.Object"
+  val ScalaMainNonStaticSig =
+    Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
 
+  val Parent = g(ParentClsName)
+  val ParentInit = g(ParentClsName, Sig.Ctor(Seq.empty))
+  val ParentFoo = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val ParentBar = g(ParentClsName, Sig.Field("bar"))
+  val ParentBarSet =
+    g(ParentClsName, Sig.Method("bar_$eq", Seq(Type.Int, Type.Unit)))
+  val ParentBarGet = g(ParentClsName, Sig.Method("bar", Seq(Type.Int)))
+  val ParentMain = g(ParentClsName, ScalaMainNonStaticSig)
+  val Child = g(ChildClsName)
+  val ChildInit = g(ChildClsName, Sig.Ctor(Seq.empty))
+  val ChildFoo = g(ChildClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val Object = g(ObjectClsName)
+  val ObjectInit = g(ObjectClsName, Sig.Ctor(Seq.empty))
+  val Test = g(TestClsName)
+  val TestModule = g(TestModuleName)
+  val TestInit = g(TestModuleName, Sig.Ctor(Seq.empty))
+  val TestMain = g(TestClsName, Rt.ScalaMainSig)
+  val TestModuleMain = g(TestModuleName, ScalaMainNonStaticSig)
+  val TestCallFoo =
+    g(TestModuleName, Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+
+  val commonReachable =
+    Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
   testReachable("unused classes are discarded") {
     val source = """
       class Parent
       class Child extends Parent
 
       object Test {
-        def main: Unit = ()
+        def main(args: Array[String]): Unit = ()
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("unused class methods are discarded") {
@@ -48,20 +59,17 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = new Parent
+        def main(args: Array[String]): Unit = new Parent
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Parent,
       ParentInit,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("unused class vars are discarded") {
@@ -71,20 +79,17 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = new Parent
+        def main(args: Array[String]): Unit = new Parent
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Parent,
       ParentInit,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("class without parent allocated") {
@@ -93,22 +98,19 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           new Parent
         }
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Parent,
       ParentInit,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("allocating a class includes both the class and its parent") {
@@ -117,14 +119,11 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       class Child extends Parent
 
       object Test {
-        def main: Unit = new Child
+        def main(args: Array[String]): Unit = new Child
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Child,
       ChildInit,
       Parent,
@@ -132,7 +131,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -149,21 +148,18 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(null)
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Parent,
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -180,15 +176,12 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Child)
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Child,
       ChildInit,
@@ -198,7 +191,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -215,15 +208,12 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit =
+        def main(args: Array[String]): Unit =
           callFoo(new Parent)
       }
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Parent,
       ParentInit,
@@ -231,7 +221,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable(
@@ -248,7 +238,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       object Test {
         def callFoo(obj: Parent): Unit =
           obj.foo
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           callFoo(new Parent)
           callFoo(new Child)
         }
@@ -256,9 +246,6 @@ class ClassReachabilitySuite extends ReachabilitySuite {
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       TestCallFoo,
       Child,
       ChildInit,
@@ -269,7 +256,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("class vars are included if written to") {
@@ -279,7 +266,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           val p = new Parent
           p.bar = 42
         }
@@ -287,9 +274,6 @@ class ClassReachabilitySuite extends ReachabilitySuite {
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Parent,
       ParentInit,
       ParentBar,
@@ -297,7 +281,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
   }
 
   testReachable("class vars are included if read from") {
@@ -307,7 +291,7 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       }
 
       object Test {
-        def main: Unit = {
+        def main(args: Array[String]): Unit = {
           val p = new Parent
           p.bar
         }
@@ -315,9 +299,6 @@ class ClassReachabilitySuite extends ReachabilitySuite {
     """
     val entry = TestMain
     val reachable = Seq(
-      Test,
-      TestInit,
-      TestMain,
       Parent,
       ParentInit,
       ParentBar,
@@ -325,6 +306,26 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     )
-    (source, entry, reachable)
+    (source, entry, commonReachable ++ reachable)
+  }
+
+  // Issue #805
+  testReachable("inherited main methods are reachable") {
+    val source = """
+      abstract class Parent {
+        def main(args: Array[String]): Unit = ()
+      }
+
+      object Test extends Parent
+      """
+    val entry = TestMain
+    val reachable = Seq(
+      Parent,
+      ParentInit,
+      ParentMain,
+      Object,
+      ObjectInit
+    )
+    (source, entry, commonReachable.diff(Seq(TestModuleMain)) ++ reachable)
   }
 }

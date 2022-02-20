@@ -187,16 +187,21 @@ private[testinterface] object Serializer {
 
     def deserialize(in: DeserializeState): Fingerprint = in.read[Byte]() match {
       case Annotated =>
+        val _isModule = in.read[Boolean]()
+        val _annotationName = in.read[String]()
         new AnnotatedFingerprint {
-          val isModule: Boolean = in.read[Boolean]()
-          val annotationName: String = in.read[String]()
+          def isModule(): Boolean = _isModule
+          def annotationName(): String = _annotationName
         }
 
       case Subclass =>
+        val _isModule = in.read[Boolean]()
+        val _superclassName: String = in.read[String]()
+        val _requireNoArgConstructor: Boolean = in.read[Boolean]()
         new SubclassFingerprint {
-          val isModule: Boolean = in.read[Boolean]()
-          val superclassName: String = in.read[String]()
-          val requireNoArgConstructor: Boolean = in.read[Boolean]()
+          def isModule(): Boolean = _isModule
+          def superclassName(): String = _superclassName
+          def requireNoArgConstructor(): Boolean = _requireNoArgConstructor
         }
 
       case t =>
@@ -232,7 +237,7 @@ private[testinterface] object Serializer {
         out.write(TestWildcard)
         out.write(sel.testWildcard())
 
-      case _ =>
+      case null | _ =>
         throw new IllegalArgumentException(
           s"Unknown Selector type: ${sel.getClass()}"
         )
@@ -271,7 +276,7 @@ private[testinterface] object Serializer {
     def serialize(x: Status, out: SerializeState): Unit = out.write(x.ordinal)
 
     def deserialize(in: DeserializeState): Status = {
-      val values = Status.values()
+      val values = Status.values
       val ord = in.read[Int]()
       if (ord < 0 || ord >= values.size)
         throw new IOException(s"Got bad status ordinal: $ord")
@@ -303,13 +308,21 @@ private[testinterface] object Serializer {
       out.write(x.duration())
     }
 
-    def deserialize(in: DeserializeState): Event = new Event {
-      val fullyQualifiedName: String = in.read[String]()
-      val fingerprint: Fingerprint = in.read[Fingerprint]()
-      val selector: Selector = in.read[Selector]()
-      val status: Status = in.read[Status]()
-      val throwable: OptionalThrowable = in.read[OptionalThrowable]()
-      val duration: Long = in.read[Long]()
+    def deserialize(in: DeserializeState): Event = {
+      val _fullyQualifiedName: String = in.read[String]()
+      val _fingerprint: Fingerprint = in.read[Fingerprint]()
+      val _selector: Selector = in.read[Selector]()
+      val _status: Status = in.read[Status]()
+      val _throwable: OptionalThrowable = in.read[OptionalThrowable]()
+      val _duration: Long = in.read[Long]()
+      new Event {
+        def fullyQualifiedName(): String = _fullyQualifiedName
+        def fingerprint(): Fingerprint = _fingerprint
+        def selector(): Selector = _selector
+        def status(): Status = _status
+        def throwable(): OptionalThrowable = _throwable
+        def duration(): Long = _duration
+      }
     }
   }
 }

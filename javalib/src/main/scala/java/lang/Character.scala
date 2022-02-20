@@ -264,8 +264,16 @@ object Character {
     }
   }
 
-  def codePointAt(seq: CharSequence, _index: scala.Int): scala.Int = {
-    codePointAt(seq.toString.toArray[scala.Char], _index)
+  def codePointAt(seq: CharSequence, index: scala.Int): scala.Int = {
+    val high = seq.charAt(index)
+    val nextIndex = index + 1
+
+    if (nextIndex >= seq.length()) high
+    else {
+      val low = seq.charAt(nextIndex)
+      if (isSurrogatePair(high, low)) toCodePoint(high, low)
+      else high
+    }
   }
 
   def codePointBefore(seq: Array[scala.Char], index: scala.Int): scala.Int = {
@@ -299,7 +307,16 @@ object Character {
   }
 
   def codePointBefore(seq: CharSequence, index: scala.Int): scala.Int = {
-    codePointBefore(seq.toString.toArray[scala.Char], index)
+    val indexMinus1 = index - 1
+    val indexMinus2 = index - 2
+    val low = seq.charAt(indexMinus1)
+
+    if (indexMinus2 < 0) low
+    else {
+      val high = seq.charAt(indexMinus2)
+      if (isSurrogatePair(high, low)) toCodePoint(high, low)
+      else low
+    }
   }
 
   def codePointCount(
@@ -676,8 +693,8 @@ object Character {
   def isAlphabetic(codePoint: Int): scala.Boolean = {
     val tpe = getType(codePoint)
     tpe == UPPERCASE_LETTER || tpe == LOWERCASE_LETTER ||
-    tpe == TITLECASE_LETTER || tpe == MODIFIER_LETTER ||
-    tpe == OTHER_LETTER || tpe == LETTER_NUMBER
+      tpe == TITLECASE_LETTER || tpe == MODIFIER_LETTER ||
+      tpe == OTHER_LETTER || tpe == LETTER_NUMBER
   }
 
   def isIdeographic(c: Int): scala.Boolean = {
@@ -824,6 +841,18 @@ object Character {
 
   @inline def toString(c: scala.Char): String =
     String.valueOf(c)
+
+  @inline def toString(codePoint: Int): String = {
+    if (isBmpCodePoint(codePoint)) {
+      Character.toString(codePoint.toChar)
+    } else if (isValidCodePoint(codePoint)) {
+      val dst = new Array[Char](2)
+      toSurrogate(codePoint, dst, 0)
+      dst.mkString
+    } else {
+      throw new IllegalArgumentException()
+    }
+  }
 
   @inline def compare(x: scala.Char, y: scala.Char): Int =
     x - y

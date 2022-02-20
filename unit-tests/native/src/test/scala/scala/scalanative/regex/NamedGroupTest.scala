@@ -9,14 +9,20 @@ import org.junit.Assert._
 import scala.scalanative.junit.utils.ThrowsHelper._
 import TestUtils._
 
+import scala.collection.mutable
+
 class NamedGroupTest {
 
   @Test def namedGroupIsStackSafe(): Unit = {
     val buf = new StringBuffer()
+    val added = mutable.Set[String]()
     var i = 0
-    def randomGroupName(): String = Random.alphanumeric.take(5).mkString("")
+    def randomGroupName(): String = Random.alphanumeric.take(10).mkString("")
     while (i < 20000) {
-      buf.append("(?<" + randomGroupName + ">test)")
+      var name = randomGroupName()
+      while (added.contains(name)) name = randomGroupName()
+
+      buf.append("(?<" + name + ">test)")
       i += 1
     }
     Pattern.compile(buf.toString())
@@ -76,10 +82,10 @@ class NamedGroupTest {
     import m._
     find()
     assertThrowsAnd(
-      classOf[IllegalArgumentException],
+      classOf[IllegalStateException],
       appendReplacement(buf, "such open ${S such closed ${D}")
     )(
-      _.getMessage == "named capturing group is missing trailing '}'"
+      _.getMessage == "No match available"
     )
 
   }

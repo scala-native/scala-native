@@ -13,6 +13,8 @@ private[nio] final class StringCharBuffer private (
   position(_initialPosition)
   limit(_initialLimit)
 
+  private def genBuffer = GenBuffer[CharBuffer](this)
+
   def isReadOnly(): Boolean = true
 
   def isDirect(): Boolean = false
@@ -45,21 +47,21 @@ private[nio] final class StringCharBuffer private (
 
   @noinline
   def get(): Char =
-    GenBuffer(this).generic_get()
+    genBuffer.generic_get()
 
   def put(c: Char): CharBuffer =
     throw new ReadOnlyBufferException
 
   @noinline
   def get(index: Int): Char =
-    GenBuffer(this).generic_get(index)
+    genBuffer.generic_get(index)
 
   def put(index: Int, c: Char): CharBuffer =
     throw new ReadOnlyBufferException
 
   @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   override def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
     throw new ReadOnlyBufferException
@@ -91,7 +93,7 @@ private[nio] final class StringCharBuffer private (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_load(startIndex, dst, offset, length)
+    genBuffer.generic_load(startIndex, dst, offset, length)
 
   @inline
   override private[nio] def store(

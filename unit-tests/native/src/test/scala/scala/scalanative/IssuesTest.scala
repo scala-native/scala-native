@@ -218,8 +218,8 @@ class IssuesTest {
     bytes(0) = 'b'.toByte
     bytes(1) = 'a'.toByte
     val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
-    assertFalse(p == 'b'.toByte)
-    assertFalse((p + 1) == 'a'.toByte)
+    assertEquals('b'.toByte, !p)
+    assertEquals('a'.toByte, !(p + 1))
   }
 
   @Test def test_Issue349(): Unit = {
@@ -320,36 +320,6 @@ class IssuesTest {
     assertFalse(iter.hasNext())
   }
 
-  @Test def test_Issue803(): Unit = {
-    val x1: String = null
-    var x2: String = "right"
-    assertTrue(x1 + x2 == "nullright")
-
-    val x3: String = "left"
-    val x4: String = null
-    assertTrue(x3 + x4 == "leftnull")
-
-    val x5: AnyRef = new { override def toString = "custom" }
-    val x6: String = null
-    assertTrue(x5 + x6 == "customnull")
-
-    val x7: String = null
-    val x8: AnyRef = new { override def toString = "custom" }
-    assertTrue(x7 + x8 == "nullcustom")
-
-    val x9: String = null
-    val x10: String = null
-    assertTrue(x9 + x10 == "nullnull")
-
-    val x11: AnyRef = null
-    val x12: String = null
-    assertTrue(x11 + x12 == "nullnull")
-
-    val x13: String = null
-    val x14: AnyRef = null
-    assertTrue(x13 + x14 == "nullnull")
-  }
-
   @Test def test_Issue809(): Unit = {
     assertTrue(null.asInstanceOf[AnyRef].## == 0)
   }
@@ -446,6 +416,139 @@ class IssuesTest {
     assertNotNull(res)
   }
 
+  @Test def test_Issue2504(): Unit = {
+    // In issue 2504 accessing iterator of immutable Java collection, would lead to
+    // infinite loop and segmentation fault.
+    import java.util.Collections
+    import java.util.Map.Entry
+    Seq(
+      Collections.EMPTY_MAP.entrySet().iterator(),
+      Collections.EMPTY_MAP.keySet().iterator(),
+      Collections.EMPTY_MAP.values().iterator(),
+      Collections.EMPTY_SET.iterator(),
+      Collections.EMPTY_LIST.iterator()
+    ).zipWithIndex.foreach {
+      case (iterator, idx) =>
+        assertNotNull(idx.toString, iterator)
+        assertFalse(idx.toString(), iterator.hasNext())
+    }
+
+    val value = "foo"
+    val singletonMap = Collections.singletonMap(value, value)
+    val singletonSet = Collections.singleton(value)
+    val singletonList = Collections.singletonList(value)
+    val unmodifiableMap =
+      Collections.unmodifiableMap[String, String](singletonMap)
+    val unmodifiableSet = Collections.unmodifiableSet(singletonSet)
+    val unmodifiableList = Collections.unmodifiableList(singletonList)
+    val unmodifiableCollection =
+      Collections.unmodifiableCollection(singletonList)
+
+    Seq(
+      singletonMap.entrySet().iterator(),
+      singletonMap.keySet().iterator(),
+      singletonMap.values().iterator(),
+      singletonSet.iterator(),
+      singletonList.iterator(),
+      unmodifiableMap.entrySet().iterator(),
+      unmodifiableMap.keySet().iterator(),
+      unmodifiableMap.values().iterator(),
+      unmodifiableSet.iterator(),
+      unmodifiableList.iterator(),
+      unmodifiableCollection.iterator()
+    ).zipWithIndex.foreach {
+      case (iterator, idx) =>
+        assertNotNull(idx.toString, iterator)
+        assertTrue(idx.toString(), iterator.hasNext())
+        iterator.next() match {
+          case entry: Entry[String, String] @unchecked =>
+            assertEquals(s"$idx key", value, entry.getKey())
+            assertEquals(s"$idx value", value, entry.getValue())
+          case v => assertEquals(idx.toString(), value, v)
+        }
+    }
+  }
+
+  @Test def test_Issue2519(): Unit = {
+    import scala.scalanative.reflect.Reflect
+
+    def isInstantiatableClass(fqcn: String) =
+      Reflect.lookupInstantiatableClass(fqcn).isDefined
+    def isLoadableModule(fqcn: String) =
+      Reflect.lookupLoadableModuleClass(fqcn).isDefined
+
+    assertTrue(
+      "A should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.A")
+    )
+    assertFalse(
+      "B should be not instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.B")
+    )
+    assertTrue(
+      "C should be instantiatable",
+      isInstantiatableClass("scala.scalanative.issue2519.C")
+    )
+    assertTrue(
+      "D should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.D$")
+    )
+    assertTrue(
+      "E should be loadable",
+      isLoadableModule("scala.scalanative.issue2519.E$")
+    )
+  }
+
+  @Test def test_Issue2520(): Unit = {
+    import issue2520._
+    import issue2520.Kleisli.KleisliOpt
+    implicit def instance: Strong[Function1] = new Strong[Function1] {
+      override def first[A, B, C](f: A => B): Function1[(A, C), (B, C)] = {
+        case (a1, a2) => (f(a1), a2)
+      }
+    }
+
+    assertNotNull {
+      val res =
+        implicitly[Strong[KleisliOpt]].law.test[Int, Int, Int, Int](x => x)
+      println(res)
+      res
+    }
+  }
+
+  @Test def test_Issue2550(): Unit = {
+    // The code was failing to link
+    // There were 2 reasons:
+    // 1. Incorrect number of arguments (tested in all cases)
+    // 2. Incorrect return type j.l.Object instead of nir Unit (tested in Func)
+    type Func = CFuncPtr2[Ptr[Byte], Int, Unit]
+    type Func1 = CFuncPtr2[Ptr[Byte], Int, Ptr[Byte]]
+    type Func2 = CFuncPtr2[Ptr[Byte], Int, Int]
+    type Func3 = CFuncPtr2[Ptr[Byte], Int, java.lang.Integer]
+
+    val func0: Func = (handle: Ptr[Byte], i: Int) => ()
+    val func1: Func1 = (handle: Ptr[Byte], i: Int) => handle
+    val func2: Func2 = (handle: Ptr[Byte], i: Int) => i
+    val func3: Func3 = (handle: Ptr[Byte], i: Int) =>
+      java.lang.Integer.valueOf(i)
+
+    val stub = stackalloc[Byte]()
+    val n = 10
+
+    assertEquals((), func0(stub, n))
+    assertEquals(stub, func1(stub, n))
+    assertEquals(n, func2(stub, n))
+    assertEquals(n, func3(stub, n))
+  }
+
+  @Test def test_Issue2552() = {
+    import issue2552._
+    // Test that methods (lambdas) as reachable, issue reported missing symbols
+    assertEquals("case 0", 0, issue2552.foo(0))
+    assertEquals("case 1", 0, baz())
+    assertEquals("case 2", 0, Bar.bar())
+  }
+
 }
 
 package issue1090 {
@@ -495,4 +598,52 @@ package issue1909 {
 package issue1950 {
   final class ValueClass(val value: Float) extends AnyVal
   final case class ValueClass2(string: String) extends AnyVal
+}
+
+package issue2519 {
+  import scala.scalanative.reflect.Reflect
+
+  @scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
+  class A
+  abstract class B extends A
+  class C extends B
+  object D extends A
+  object E extends B
+}
+
+package issue2520 {
+  case class Kleisli[F[_], A, B](run: A => F[B])
+
+  object Kleisli {
+    type KleisliOpt[A, B] = Kleisli[Option, A, B]
+
+    implicit def instance: Strong[KleisliOpt] = new Strong[KleisliOpt] {
+      override def first[A, B, C](
+          f: KleisliOpt[A, B]
+      ): KleisliOpt[(A, C), (B, C)] =
+        Kleisli[Option, (A, C), (B, C)] {
+          case (a1, a2) => f.run(a1).map(_ -> a2)
+        }
+    }
+  }
+
+  trait Strong[F[_, _]] {
+    def first[A, B, C](fa: F[A, B]): F[(A, C), (B, C)]
+
+    trait Law {
+      def test[A, B, C, D](f: C => D)(implicit PF: Strong[Function1]) = {
+        val x: ((C, B)) => (D, B) = PF.first[C, D, B](f)
+      }
+    }
+
+    def law: Law = new Law {}
+  }
+}
+
+package object issue2552 {
+  def foo(a: Int, b: Int = 0): Int = 0
+  val baz = () => foo(1)
+  object Bar {
+    val bar = () => foo(0)
+  }
 }

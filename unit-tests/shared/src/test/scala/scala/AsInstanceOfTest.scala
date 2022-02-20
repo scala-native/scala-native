@@ -10,6 +10,7 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo.scalaVersion
 
 class AsInstanceOfTest {
   val isScala211 = scalaVersion.startsWith("2.11.")
+  val isScala3 = scalaVersion.startsWith("3.")
 
   class C
   val c = new C
@@ -34,7 +35,10 @@ class AsInstanceOfTest {
   }
 
   @Test def nullAsInstanceOfNothing(): Unit = {
-    assertThrows(classOf[NullPointerException], anyNull.asInstanceOf[Nothing])
+    val expected =
+      if (isScala3) classOf[ClassCastException]
+      else classOf[NullPointerException]
+    assertThrows(expected, anyNull.asInstanceOf[Nothing])
   }
 
   @Test def nullAsInstanceOfUnitEqNull(): Unit = {
@@ -48,7 +52,7 @@ class AsInstanceOfTest {
   }
 
   @Test def any42AsInstanceOfObject(): Unit = {
-    assertTrue(any42.asInstanceOf[Object] == 42)
+    assertTrue(any42.asInstanceOf[Object] == java.lang.Integer.valueOf(42))
   }
 
   @Test def any42AsInstanceOfInt(): Unit = {

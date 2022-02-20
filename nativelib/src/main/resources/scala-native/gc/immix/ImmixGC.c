@@ -11,6 +11,7 @@
 #include "utils/MathUtils.h"
 #include "Constants.h"
 #include "Settings.h"
+#include "WeakRefStack.h"
 
 void scalanative_collect();
 
@@ -19,6 +20,7 @@ void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 NOINLINE void scalanative_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
     Stack_Init(&stack, INITIAL_STACK_SIZE);
+    Stack_Init(&weakRefStack, INITIAL_STACK_SIZE);
     atexit(scalanative_afterexit);
 }
 
@@ -51,3 +53,7 @@ INLINE void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 INLINE void scalanative_collect() { Heap_Collect(&heap, &stack); }
+
+INLINE void scalanative_register_weak_reference_handler(void *handler) {
+    WeakRefStack_SetHandler(handler);
+}

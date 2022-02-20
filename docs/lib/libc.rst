@@ -70,15 +70,15 @@ wctype.h_      N/A
 .. _wchar.h: https://en.cppreference.com/w/c/string/wide
 .. _wctype.h: https://en.cppreference.com/w/c/string/wide
 
-.. _scala.scalanative.libc.complex: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/complex.scala
-.. _scala.scalanative.libc.ctype: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/ctype.scala
-.. _scala.scalanative.libc.errno: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/errno.scala
-.. _scala.scalanative.libc.float: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/float.scala
-.. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/math.scala
-.. _scala.scalanative.libc.stdio: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/stdio.scala
-.. _scala.scalanative.libc.stdlib: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/stdlib.scala
-.. _scala.scalanative.libc.string: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/string.scala
-.. _scala.scalanative.libc.signal: https://github.com/scala-native/scala-native/blob/master/clib/src/main/scala/scala/scalanative/libc/signal.scala
+.. _scala.scalanative.libc.complex: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/complex.scala
+.. _scala.scalanative.libc.ctype: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/ctype.scala
+.. _scala.scalanative.libc.errno: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/errno.scala
+.. _scala.scalanative.libc.float: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/float.scala
+.. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
+.. _scala.scalanative.libc.stdio: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stdio.scala
+.. _scala.scalanative.libc.stdlib: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stdlib.scala
+.. _scala.scalanative.libc.string: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/string.scala
+.. _scala.scalanative.libc.signal: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/signal.scala
 
 Continue to :ref:`posixlib`.
 

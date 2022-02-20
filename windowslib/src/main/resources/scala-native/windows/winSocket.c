@@ -5,10 +5,8 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-DWORD scalanative_winsock_wsadata_size() { return sizeof(WSADATA); }
-
-DWORD scalanative_winsocket_fionbio() { return FIONBIO; }
-
 SOCKET scalanative_winsock_invalid_socket() { return INVALID_SOCKET; }
+DWORD scalanative_winsock_wsadata_size() { return sizeof(WSADATA); }
+DWORD scalanative_winsock_fionbio() { return FIONBIO; }
 
 #endif // defined(_WIN32)

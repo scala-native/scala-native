@@ -129,8 +129,8 @@ private[math] object Division {
         var rem = (res >> 32).toInt // the remainder of divideLongByInt
         // decrease guessDigit by 1 while leftHand > rightHand
         if (guessDigit != 0) {
-          //var leftHand: Long = 0
-          //var rightHand: Long = 0
+          // var leftHand: Long = 0
+          // var rightHand: Long = 0
           // var rOverflowed = false
           guessDigit += 1 // to have the proper value in the loop below
 
@@ -411,7 +411,7 @@ private[math] object Division {
         if (res(i) != modulusDigits(i)) {
           doSub = (res(i) != 0) &&
             ((res(i) & UINT_MAX) > (modulusDigits(i) & UINT_MAX))
-          //force break
+          // force break
           i = 0
         }
         i -= 1
@@ -477,10 +477,11 @@ private[math] object Division {
           }
         } else {
           // Use Knuth's algorithm of successive subtract and shifting
-          do {
+          while ({
             Elementary.inplaceSubtract(op2, op1)
             BitLevel.inplaceShiftRight(op2, op2.getLowestSetBit())
-          } while (op2.compareTo(op1) >= BigInteger.EQUALS)
+            op2.compareTo(op1) >= BigInteger.EQUALS
+          }) ()
         }
         // now op1 >= op2
         val swap: BigInteger = op2
@@ -521,7 +522,7 @@ private[math] object Division {
     if (lsb2 != 0)
       op2 >>>= lsb2
 
-    do {
+    while ({
       if (op1 >= op2) {
         op1 -= op2
         op1 >>>= java.lang.Integer.numberOfTrailingZeros(op1)
@@ -529,7 +530,8 @@ private[math] object Division {
         op2 -= op1
         op2 >>>= java.lang.Integer.numberOfTrailingZeros(op2)
       }
-    } while (op1 != 0)
+      op1 != 0
+    }) ()
     op2 << pow2Count
   }
 
@@ -1015,11 +1017,12 @@ private[math] object Division {
     val m0: Long = a.digits(0) & UINT_MAX
     var n2: Long = 1L
     var powerOfTwo: Long = 2L
-    do {
+    while ({
       if (((m0 * n2) & powerOfTwo) != 0)
         n2 |= powerOfTwo
       powerOfTwo <<= 1
-    } while (powerOfTwo < 0x100000000L)
+      powerOfTwo < 0x100000000L
+    }) ()
     n2 = -n2
     (n2 & UINT_MAX).toInt
   }
@@ -1028,7 +1031,7 @@ private[math] object Division {
    *  operation.
    *
    *  @param bi
-   *    @param n
+   *  @param n
    *  @return
    */
   private def howManyIterations(bi: BigInteger, n: Int): Int = {

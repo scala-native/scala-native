@@ -521,7 +521,7 @@ Here is the list of currently available classes:
 
 **Note:** This is an ongoing effort, some of the classes listed here might
 be partially implemented. Please consult `javalib sources
-<https://github.com/scala-native/scala-native/tree/master/javalib/src/main/scala/java>`_
+<https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java>`_
 for details.
 
 Regular expressions (java.util.regex)
@@ -588,7 +588,16 @@ Some notes on the implementation:
      are not supported. Often another pattern ``\p{isAlpha}`` may be used
      instead, ``\p{isAlpha}`` in this case.
 
-3. The following Matcher methods have a minimal implementation:
+3. The reference Java 8 regex package does not support certain commonly used
+   Perl expressions supported by this implementation of RE2. For example,
+   for named capture groups Java uses the expression "(?<foo>)" while
+   Perl uses the expression "(?P<foo>)".
+
+   Scala Native java.util.regex methods accept both forms. This extension
+   is intended to useful but is not strictly Java 8 compliant. Not all RE2
+   Perl expressions may be exposed in this way.
+
+4. The following Matcher methods have a minimal implementation:
 
    * Matcher.hasAnchoringBounds() - always return true.
    * Matcher.hasTransparentBounds() - always throws
@@ -603,11 +612,48 @@ Some notes on the implementation:
    * Matcher.useTransparentBounds(boolean) - always throws
      UnsupportedOperationException because RE2 does not support lookaheads.
 
-4. Scala Native 0.3.8 required POSIX patterns to have the form
+5. Scala Native 0.3.8 required POSIX patterns to have the form
    ``[[:alpha:]]``.
    Now the Java standard form ``\p{Alpha}`` is accepted and the former variant
    pattern is not. This improves compatibility with Java but,
    regrettably, may require code changes when upgrading from Scala Native
    0.3.8.
+
+Embedding Resources
+-------------------
+
+In Scala Native, resources are implemented via embedding a resource in a resulting
+binary file. Only `getClass().getResourceAsInputStream()` is implemented.
+For that to work, you have to specify an additional NativeConfig option:
+
+```scala
+nativeConfig ~= {
+  _.withEmbedResources(true)
+}
+```
+
+This will include the resource files found on the classpath in the resulting
+binary file. Please note that files with following extensions cannot be embedded
+and used as a resource:
+
+```
+".class", ".tasty", ".nir", ".scala", ".java", ".jar",
+```
+
+This is to avoid unnecesarily embedding source files. If necessary, please
+consider using a different file extension for embedding. Files found in the
+resources/scala-native directory will not be embedded as well. It is recommended
+to add the ".c" nad ".h" files there.
+
+Reasoning for the lack of getResource() and getResources():
+
+In Scala Native, the outputted file that can be run is a binary, unlike JVM's
+classfiles and jars. For that reason, if getResources() URI methods would be implemented,
+a new URI format using a seperate FileSystem would have to be added (e.g. instead
+of obtaining `jar:file:path.ext` you would obtain `embedded:path.ext`). As this still
+would provide a meaningful inconsistency between JVM's javalib API and Scala
+Native's reimplementation, this remains not implemented for now. The added
+getClass().getResourceAsInputStream() however is able to be consistent between
+the platforms.
 
 Continue to :ref:`libc`.

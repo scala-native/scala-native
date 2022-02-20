@@ -50,15 +50,18 @@ final class FileDescriptor private[java] (
     def throwSyncFailed(): Unit = {
       throw new SyncFailedException("sync failed")
     }
-    def isStdFileDescriptor: Boolean = {
+
+    def isStdOrInvalidFileDescriptor: Boolean = {
       if (isWindows) {
+        handle == INVALID_HANDLE_VALUE ||
         this == FileDescriptor.in ||
         this == FileDescriptor.out ||
         this == FileDescriptor.err
+
       } else fd <= 2
     }
 
-    if (isStdFileDescriptor) throwSyncFailed()
+    if (isStdOrInvalidFileDescriptor) throwSyncFailed()
     else {
       if (!readOnly) {
         val hasSucceded =
@@ -74,9 +77,9 @@ final class FileDescriptor private[java] (
 
   def valid(): Boolean =
     if (isWindows) {
-      val flags = stackalloc[DWord]
+      val flags = stackalloc[DWord]()
       handle != INVALID_HANDLE_VALUE &&
-      GetHandleInformation(handle, flags)
+        GetHandleInformation(handle, flags)
     } else {
       // inspired by Apache Harmony including filedesc.c
       fcntl.fcntl(fd, fcntl.F_GETFD, 0) != -1

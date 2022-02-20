@@ -196,6 +196,16 @@ final class Check(implicit linked: linker.Result) {
       checkFieldOp(ty, obj, name, None)
     case Op.Fieldstore(ty, obj, name, value) =>
       checkFieldOp(ty, obj, name, Some(value))
+    case Op.Field(obj, name) =>
+      obj.ty match {
+        case ScopeRef(scope) =>
+          scope.implementors.foreach { cls =>
+            if (cls.fields.exists(_.name == name)) ok
+            else error(s"can't acces field '${name.show}' in ${cls.name.show}")
+          }
+        case ty =>
+          error(s"can't access fields of a non-class type ${ty.show}")
+      }
     case Op.Method(obj, sig) =>
       expect(Rt.Object, obj)
       sig match {
@@ -413,7 +423,7 @@ final class Check(implicit linked: linker.Result) {
     obj.ty match {
       case ScopeRef(scope) =>
         scope.implementors.foreach { cls =>
-          cls.fields.collectFirst {
+          val field = cls.fields.collectFirst {
             case fld: Field if fld.name == name =>
               in("field declared type") {
                 expect(ty, fld.ty)
@@ -423,6 +433,11 @@ final class Check(implicit linked: linker.Result) {
                   expect(fld.ty, v)
                 }
               }
+          }
+          if (field.isEmpty) {
+            error(
+              s"class ${scope.name.show} does not define field ${name.show}"
+            )
           }
         }
       case ty =>

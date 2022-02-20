@@ -16,6 +16,7 @@ import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
 import scala.scalanative.build.Platform
+import java.nio.file.Files
 
 object ScalaNativePluginInternal {
 
@@ -25,14 +26,36 @@ object ScalaNativePluginInternal {
   val nativeWorkdir =
     taskKey[File]("Working directory for intermediate build files.")
 
+  private val nativeStandardLibraries =
+    Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
+
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
-      "org.scala-native" %%% "nativelib" % nativeVersion,
-      "org.scala-native" %%% "javalib" % nativeVersion,
-      "org.scala-native" %%% "auxlib" % nativeVersion,
-      "org.scala-native" %%% "scalalib" % nativeVersion,
       "org.scala-native" %%% "test-interface" % nativeVersion % Test
     ),
+    libraryDependencies += CrossVersion
+      .partialVersion(scalaVersion.value)
+      .fold(throw new RuntimeException("Unsupported Scala Version")) {
+        // Add only dependency to scalalib, nativeStanardLibraries would be added transitively
+        case (2, _) => "org.scala-native" %%% "scalalib" % nativeVersion
+        case (3, _) => "org.scala-native" %%% "scala3lib" % nativeVersion
+      },
+    excludeDependencies ++= {
+      // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
+      // When using Scala 3 exclude Scala 2.13 standard native libraries,
+      // when using Scala 2.13 exclude Scala 3 standard native libraries
+      // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
+      nativeStandardLibraries.map { lib =>
+        val scalaBinVersion =
+          if (scalaVersion.value.startsWith("3.")) "2.13"
+          else "3"
+        ExclusionRule()
+          .withOrganization("org.scala-native")
+          .withName(
+            s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}"
+          )
+      }
+    },
     addCompilerPlugin(
       "org.scala-native" % "nscplugin" % nativeVersion cross CrossVersion.full
     )
@@ -62,8 +85,7 @@ object ScalaNativePluginInternal {
       .withLTO(Discover.LTO())
       .withGC(Discover.GC())
       .withMode(Discover.mode())
-      .withOptimize(Discover.optimize())
-      .withLinktimeProperties(Discover.linktimeProperties()),
+      .withOptimize(Discover.optimize()),
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -84,13 +106,13 @@ object ScalaNativePluginInternal {
     }
   )
 
-  lazy val scalaNativeConfigSettings: Seq[Setting[_]] = Seq(
+  def scalaNativeConfigSettings(nameSuffix: String): Seq[Setting[_]] = Seq(
     nativeLink / artifactPath := {
       val ext = if (Platform.isWindows) ".exe" else ""
-      crossTarget.value / (moduleName.value + "-out" + ext)
+      crossTarget.value / s"${moduleName.value}$nameSuffix-out$ext"
     },
     nativeWorkdir := {
-      val workdir = crossTarget.value / "native"
+      val workdir = crossTarget.value / s"native$nameSuffix"
       if (!workdir.exists) {
         IO.createDirectory(workdir)
       }
@@ -110,28 +132,86 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := {
+      val classpath = fullClasspath.value.map(_.data.toPath)
       val outpath = (nativeLink / artifactPath).value
+
       val config = {
         val mainClass = selectMainClass.value.getOrElse {
           throw new MessageOnlyException("No main class detected.")
         }
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val maincls = mainClass + "$"
+
         val cwd = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
         build.Config.empty
           .withLogger(logger)
-          .withMainClass(maincls)
+          .withMainClass(mainClass)
           .withClassPath(classpath)
           .withWorkdir(cwd)
           .withCompilerConfig(nativeConfig.value)
       }
 
-      interceptBuildException {
-        Build.build(config, outpath.toPath)(sharedScope)
+      def buildNew(): Unit = {
+        interceptBuildException {
+          Build.build(config, outpath.toPath)(sharedScope)
+        }
       }
 
+      def buildIfChanged(): Unit = {
+        import sbt.util.CacheImplicits._
+        import NativeLinkCacheImplicits._
+        import collection.JavaConverters._
+
+        // Products of compilation for Scala 2 are always defined in `target/scala-<scalaBinaryVersion` directory,
+        // but in case of Scala 3 there is always a dedicated directory for each (minor) Scala version.
+        // This allows us to cache binaries for each Scala version instead of each binary Scala version.
+        val scalaVersionDir =
+          if (scalaVersion.value.startsWith("2.")) scalaBinaryVersion.value
+          else scalaVersion.value
+        val cacheFactory =
+          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaVersionDir}"
+        val classpathTracker =
+          Tracked.inputChanged[
+            (Seq[HashFileInfo], build.Config),
+            HashFileInfo
+          ](
+            cacheFactory.make("inputFileInfo")
+          ) {
+            case (
+                  changed: Boolean,
+                  (filesInfo: Seq[HashFileInfo], config: build.Config)
+                ) =>
+              val outputTracker =
+                Tracked
+                  .lastOutput[Seq[HashFileInfo], HashFileInfo](
+                    cacheFactory.make("outputFileInfo")
+                  ) { (_, prev) =>
+                    val outputHashInfo = FileInfo.hash(outpath)
+                    if (changed || !prev.contains(outputHashInfo)) {
+                      buildNew()
+                      FileInfo.hash(outpath)
+                    } else outputHashInfo
+                  }
+              outputTracker(filesInfo)
+          }
+
+        val classpathFilesInfo = classpath
+          .flatMap { classpath =>
+            if (Files.exists(classpath))
+              Files
+                .walk(classpath)
+                .iterator()
+                .asScala
+                .filter(path => Files.exists(path) && !Files.isDirectory(path))
+                .toList
+            else Nil
+          }
+          .map(path => FileInfo.hash(path.toFile()))
+
+        classpathTracker(classpathFilesInfo, config)
+      }
+
+      buildIfChanged()
       outpath
     },
     run := {
@@ -141,9 +221,17 @@ object ScalaNativePluginInternal {
       val args = spaceDelimited("<arg>").parsed
 
       logger.running(binary +: args)
-      val exitCode = Process(binary +: args, None, env: _*)
-        .run(connectInput = false)
-        .exitValue
+
+      val exitCode = {
+        // It seems that previously used Scala Process has some bug leading
+        // to possible ignoring of inherited IO and termination of wrapper
+        // thread with an exception. We use java.lang ProcessBuilder instead
+        val proc = new ProcessBuilder()
+          .command((Seq(binary) ++ args): _*)
+          .inheritIO()
+        env.foreach((proc.environment().put(_, _)).tupled)
+        proc.start().waitFor()
+      }
 
       val message =
         if (exitCode == 0) None
@@ -154,10 +242,10 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings
+    scalaNativeConfigSettings(nameSuffix = "")
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings ++
+    scalaNativeConfigSettings(nameSuffix = "-test") ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {

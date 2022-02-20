@@ -437,8 +437,7 @@ object RyuFloat {
   }
 
   /** Compute the exact result of: [m * 5^(-e_2) / 10^q] = [m * 5^(-e_2 - q) /
-   *  2^q]
-   *  = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
+   *  2^q] = [m * [5^(p - q)/2^k] / 2^(q - k)] = [m * POW5[i] / 2^j].
    */
   private def mulPow5divPow2(m: Int, i: Int, j: Int): Long = {
     if (j - POW5_HALF_BITCOUNT < 0) {
@@ -449,8 +448,8 @@ object RyuFloat {
     (bits0 + (bits1 >> POW5_HALF_BITCOUNT)) >> (j - POW5_HALF_BITCOUNT)
   }
 
-  /** Compute the exact result of: [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q]
-   *  = [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
+  /** Compute the exact result of: [m * 2^p / 10^q] = [m * 2^(p - q) / 5 ^ q] =
+   *  [m * [2^k / 5^q] / 2^-(p - q - k)] = [m * POW5_INV[q] / 2^j].
    */
   private def mulPow5InvDivPow2(m: Int, q: Int, j: Int): Long = {
     if (j - POW5_INV_HALF_BITCOUNT < 0) {

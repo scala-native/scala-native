@@ -1,0 +1,34 @@
+--- 2.12.15/scala/collection/immutable/Stream.scala
++++ old-collections/scala/collection/immutable/Stream.scala
+@@ -1087,12 +1087,15 @@
+    */
+   class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A]
+ 
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
+     ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Stream[A]]]
+-  private[this] val ReusableCBF = new StreamCanBuildFrom[Any]
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
+ 
+   /** Creates a new builder for a stream */
+-  def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
++  @inline def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
+ 
+   /** A builder for streams
+    *  @note This builder is lazy only in the sense that it does not go downs the spine
+@@ -1111,10 +1114,10 @@
+   }
+ 
+   /** The empty stream */
+-  override def empty[A]: Stream[A] = Empty
++  @inline override def empty[A]: Stream[A] = Empty
+ 
+   /** A stream consisting of given elements */
+-  override def apply[A](xs: A*): Stream[A] = xs.toStream
++  @inline override def apply[A](xs: A*): Stream[A] = xs.toStream
+ 
+   /** A wrapper class that adds `#::` for cons and `#:::` for concat as operations
+    *  to streams.

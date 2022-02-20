@@ -18,7 +18,10 @@ class UNIXBufferedReader(r: Reader) extends Reader {
     while (true) { // Should we refill the buffer?
       if (inext >= buflen) {
         var n = 0
-        do n = r.read(buf, 0, buf.length) while (n == 0)
+        while ({
+          n = r.read(buf, 0, buf.length)
+          n == 0
+        }) ()
         if (n > 0) {
           buflen = n
           inext = 0

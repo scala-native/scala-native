@@ -1,0 +1,17 @@
+--- 2.12.15/scala/collection/mutable/Iterable.scala
++++ old-collections/scala/collection/mutable/Iterable.scala
+@@ -38,8 +38,12 @@
+  *  @define Coll `mutable.Iterable`
+  */
+ object Iterable extends TraversableFactory[Iterable] {
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
+ }
+ 
+ /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */

@@ -1,0 +1,18 @@
+--- 2.12.15/scala/collection/mutable/ArraySeq.scala
++++ old-collections/scala/collection/mutable/ArraySeq.scala
+@@ -105,9 +105,13 @@
+  *  @define Coll `ArraySeq`
+  */
+ object ArraySeq extends SeqFactory[ArraySeq] {
++  @inline override def ReusableCBF: GenericCanBuildFrom[Nothing] = ReusableCBFInstance
++  private object ReusableCBFInstance extends GenericCanBuildFrom[Nothing] {
++    @inline override def apply() = newBuilder[Nothing]
++  }
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+-  def newBuilder[A]: Builder[A, ArraySeq[A]] =
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline def newBuilder[A]: Builder[A, ArraySeq[A]] =
+     new ArrayBuffer[A] mapResult { buf =>
+       val result = new ArraySeq[A](buf.length)
+       buf.copyToArray(result.array.asInstanceOf[Array[Any]], 0)

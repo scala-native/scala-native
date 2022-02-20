@@ -5,7 +5,6 @@ _build/
 *.dot
 *.ppm
 .idea
-_build/
 scripts/.coursier
 scripts/.scalafmt*
 sbt-crossproject/
@@ -35,3 +34,6 @@ bin/
 
 # vim
 *.swp
+
+# Virtual env generated dependecies, for generating docs
+.venv

@@ -337,6 +337,13 @@ class Properties(protected val defaults: Properties)
 
     while (index < length) {
       val ch = string.charAt(index)
+      def fallback = {
+        if (toHex && (ch < 0x20 || ch > 0x7e)) {
+          buffer.append(unicodeToHexaDecimal(ch))
+        } else {
+          buffer.append(ch)
+        }
+      }
       (ch: @switch) match {
         case '\t' =>
           buffer.append("\\t")
@@ -349,14 +356,11 @@ class Properties(protected val defaults: Properties)
         case '\\' | '#' | '!' | '=' | ':' =>
           buffer.append('\\')
           buffer.append(ch)
-        case ' ' if isKey =>
-          buffer.append("\\ ")
+        case ' ' =>
+          if (isKey) buffer.append("\\ ")
+          else fallback
         case _ =>
-          if (toHex && (ch < 0x20 || ch > 0x7e)) {
-            buffer.append(unicodeToHexaDecimal(ch))
-          } else {
-            buffer.append(ch)
-          }
+          fallback
       }
       index += 1
     }

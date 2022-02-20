@@ -5,6 +5,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.libc._
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.posix.errno._
+import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.socket
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.ioctl._
@@ -18,6 +19,9 @@ import scala.scalanative.posix.sys.time._
 import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
+import scala.scalanative.windows._
+import scala.scalanative.windows.WinSocketApi._
+import scala.scalanative.windows.WinSocketApiExt._
 
 private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   import AbstractPlainSocketImpl._
@@ -53,9 +57,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   }
 
   private def fetchLocalPort(family: Int): Option[Int] = {
-    val len = stackalloc[socket.socklen_t]
+    val len = stackalloc[socket.socklen_t]()
     val portOpt = if (family == socket.AF_INET) {
-      val sin = stackalloc[in.sockaddr_in]
+      val sin = stackalloc[in.sockaddr_in]()
       !len = sizeof[in.sockaddr_in].toUInt
 
       if (socket.getsockname(
@@ -68,7 +72,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         Some(sin.sin_port)
       }
     } else {
-      val sin = stackalloc[in.sockaddr_in6]
+      val sin = stackalloc[in.sockaddr_in6]()
       !len = sizeof[in.sockaddr_in6].toUInt
 
       if (socket.getsockname(
@@ -86,8 +90,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   }
 
   override def bind(addr: InetAddress, port: Int): Unit = {
-    val hints = stackalloc[addrinfo]
-    val ret = stackalloc[Ptr[addrinfo]]
+    val hints = stackalloc[addrinfo]()
+    val ret = stackalloc[Ptr[addrinfo]]()
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST
     hints.ai_socktype = socket.SOCK_STREAM
@@ -129,8 +133,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       tryPollOnAccept()
     }
 
-    val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
-    val len = stackalloc[socket.socklen_t]
+    val storage: Ptr[Byte] = stackalloc[Byte](sizeof[in.sockaddr_in6])
+    val len = stackalloc[socket.socklen_t]()
     !len = sizeof[in.sockaddr_in6].toUInt
 
     val newFd =
@@ -140,7 +144,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
+    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
 
     if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
@@ -182,8 +186,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     throwIfClosed("connect") // Do not send negative fd.fd to poll()
 
     val inetAddr = address.asInstanceOf[InetSocketAddress]
-    val hints = stackalloc[addrinfo]
-    val ret = stackalloc[Ptr[addrinfo]]
+    val hints = stackalloc[addrinfo]()
+    val ret = stackalloc[Ptr[addrinfo]]()
     hints.ai_family = socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV
     hints.ai_socktype = socket.SOCK_STREAM
@@ -205,7 +209,6 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
 
     val family = (!ret).ai_family
-
     if (timeout != 0)
       setSocketFdBlocking(fd, blocking = false)
 
@@ -214,13 +217,20 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     freeaddrinfo(!ret) // Must be after last use of ai_addr.
 
     if (connectRet < 0) {
-      if ((timeout > 0) && (errno.errno == EINPROGRESS)) {
+      def inProgress = mapLastError(
+        onUnix = _ == EINPROGRESS,
+        onWindows = {
+          case WSAEINPROGRESS | WSAEWOULDBLOCK => true
+          case _                               => false
+        }
+      )
+      if (timeout > 0 && inProgress) {
         tryPollOnConnect(timeout)
       } else {
         throw new ConnectException(
           s"Could not connect to address: ${remoteAddress}"
             + s" on port: ${inetAddr.getPort}"
-            + s", errno: ${errno.errno}"
+            + s", errno: ${lastError()}"
         )
       }
     }
@@ -236,8 +246,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def close(): Unit = {
     if (!isClosed) {
-      if (isWindows) ???
-      else fd.close()
+      if (isWindows) WinSocketApi.closeSocket(fd.handle)
+      else unistd.close(fd.fd)
       fd = InvalidSocketDescriptor
       isClosed = true
     }
@@ -307,16 +317,21 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count.toUInt, 0)
         .toInt
 
+      def timeoutDetected = mapLastError(
+        onUnix = { err => err == EAGAIN || err == EWOULDBLOCK },
+        onWindows = { err => err == WSAEWOULDBLOCK || err == WSAETIMEDOUT }
+      )
+
       bytesNum match {
         case _ if (bytesNum > 0) => bytesNum
 
         case 0 => if (count == 0) 0 else -1
 
-        case _ if ((errno.errno == EAGAIN) || (errno.errno == EWOULDBLOCK)) =>
+        case _ if timeoutDetected =>
           throw new SocketTimeoutException("Socket timeout while reading data")
 
         case _ =>
-          throw new SocketException(s"read failed, errno: ${errno.errno}")
+          throw new SocketException(s"read failed, errno: ${lastError()}")
       }
     }
   }
@@ -325,7 +340,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (shutInput) {
       0
     } else {
-      val bytesAvailable = stackalloc[CInt]
+      val bytesAvailable = stackalloc[CInt]()
       ioctl(fd.fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
       !bytesAvailable match {
         case -1 =>
@@ -371,22 +386,22 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     val optValue = nativeValueFromOption(optID)
 
     val opt = if (optID == SocketOptions.SO_LINGER) {
-      stackalloc[socket.linger].asInstanceOf[Ptr[Byte]]
+      stackalloc[socket.linger]().asInstanceOf[Ptr[Byte]]
     } else {
-      stackalloc[CInt].asInstanceOf[Ptr[Byte]]
+      stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
     }
 
-    val len = stackalloc[socket.socklen_t]
+    val len = stackalloc[socket.socklen_t]()
     !len = if (optID == SocketOptions.SO_LINGER) {
       sizeof[socket.linger].toUInt
     } else {
       sizeof[CInt].toUInt
     }
 
-    if (socket.getsockopt(fd.fd, level, optValue, opt, len) == -1) {
+    if (socket.getsockopt(fd.fd, level, optValue, opt, len) != 0) {
       throw new SocketException(
         "Exception while getting socket option with id: "
-          + optValue + ", errno: " + errno.errno
+          + optValue + ", errno: " + lastError()
       )
     }
 
@@ -425,25 +440,25 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val optValue = nativeValueFromOption(optID)
 
-    var opt: Ptr[Byte] = stackalloc[Byte]
-    var len = if (optID == SocketOptions.SO_LINGER) {
-      sizeof[socket.linger].toUInt
-    } else if (optID == SocketOptions.SO_TIMEOUT) {
-      sizeof[timeval].toUInt
-    } else {
-      sizeof[CInt].toUInt
-    }
+    val len = {
+      optID match {
+        case SocketOptions.SO_LINGER => sizeof[socket.linger]
+        case SocketOptions.SO_TIMEOUT =>
+          if (isWindows) sizeof[DWord]
+          else sizeof[timeval]
+        case _ => sizeof[CInt]
+      }
+    }.toUInt
 
-    opt = optID match {
+    val opt = optID match {
       case SocketOptions.TCP_NODELAY | SocketOptions.SO_KEEPALIVE |
           SocketOptions.SO_REUSEADDR | SocketOptions.SO_OOBINLINE =>
-        val ptr = stackalloc[CInt]
+        val ptr = stackalloc[CInt]()
         !ptr = if (value.asInstanceOf[Boolean]) 1 else 0
         ptr.asInstanceOf[Ptr[Byte]]
       case SocketOptions.SO_LINGER =>
-        val ptr = stackalloc[socket.linger]
+        val ptr = stackalloc[socket.linger]()
         val linger = value.asInstanceOf[Int]
-
         if (linger == -1) {
           ptr.l_onoff = 0
           ptr.l_linger = 0
@@ -454,27 +469,44 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
         ptr.asInstanceOf[Ptr[Byte]]
       case SocketOptions.SO_TIMEOUT =>
-        val ptr = stackalloc[timeval]
         val mseconds = value.asInstanceOf[Int]
-
         this.timeout = mseconds
 
-        ptr.tv_sec = mseconds / 1000
-        ptr.tv_usec = (mseconds % 1000) * 1000
+        if (isWindows) {
+          val ptr = stackalloc[DWord]()
+          !ptr = mseconds.toUInt
+          ptr.asInstanceOf[Ptr[Byte]]
+        } else {
+          val ptr = stackalloc[timeval]()
 
-        ptr.asInstanceOf[Ptr[Byte]]
+          ptr.tv_sec = mseconds / 1000
+          ptr.tv_usec = (mseconds % 1000) * 1000
+
+          ptr.asInstanceOf[Ptr[Byte]]
+        }
       case _ =>
-        val ptr = stackalloc[CInt]
+        val ptr = stackalloc[CInt]()
         !ptr = value.asInstanceOf[Int]
         ptr.asInstanceOf[Ptr[Byte]]
     }
 
-    if (socket.setsockopt(fd.fd, level, optValue, opt, len) == -1) {
+    if (socket.setsockopt(fd.fd, level, optValue, opt, len) != 0) {
       throw new SocketException(
         "Exception while setting socket option with id: "
-          + optID + ", errno: " + errno.errno
+          + optID + ", errno: " + lastError()
       )
     }
+  }
+
+  private def lastError(): CInt = mapLastError(identity, identity)
+  private def mapLastError[T](
+      onUnix: CInt => T,
+      onWindows: CInt => T
+  ): T = {
+    if (isWindows)
+      onWindows(WSAGetLastError())
+    else
+      onUnix(errno.errno)
   }
 }
 

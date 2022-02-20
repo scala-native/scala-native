@@ -60,10 +60,10 @@ object Date {
 
   private def secondsToString(seconds: Long, default: => String): String =
     Zone { implicit z =>
-      val ttPtr = alloc[time_t]
+      val ttPtr = alloc[time_t]()
       !ttPtr = seconds
 
-      val tmPtr = alloc[tm]
+      val tmPtr = alloc[tm]()
       def getLocalTime() =
         if (isWindows) winTime.localtime_s(tmPtr, ttPtr) != 0
         else localtime_r(ttPtr, tmPtr) == null
@@ -75,7 +75,7 @@ object Date {
         // Most result strings should be about 28 + 1 for terminal NULL
         // + 2 because some IANA timezone abbreviation can have 5 characters.
         val bufSize = 40.toULong // no toSize_t() yet
-        val buf = alloc[Byte](bufSize)
+        val buf: Ptr[Byte] = alloc[Byte](bufSize)
 
         val n = {
           // %Z on Windows might produce long, localized names of variable length

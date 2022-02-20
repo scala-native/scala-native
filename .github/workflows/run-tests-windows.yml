@@ -1,138 +1,126 @@
-name: Windows tests
+name: Run tests Windows
 on:
   pull_request:
   push:
     branches:
-      - master
+      - main
+concurrency: 
+  group: windows-${{ github.head_ref }}
+  cancel-in-progress: true
+
 
 jobs:
-  compile-native-source:
-    name: Compile native sources
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v2
-      #Prepare environment, clang needs to be installed
-      #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
-      - name: Cache LLVM
-        id: cache-llvm
-        uses: actions/cache@v2
-        with:
-          path: |
-            C:\Program Files\LLVM\
-          key: ${{ runner.os }}-llvm-11
-      - name: Install LLVM
-        if: steps.cache-llvm.outputs.cache-hit != 'true'
-        run: choco install llvm --version=11.0.0
-
-      - name: Add LLVM on Path
-        run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Assert clang installed and on path
-        run: clang --version
-
-      # Compile all files in GC and included shared directories using clang.
-      - name: Compile GCs
-        run: |
-          $gcRoot       = (Resolve-Path -Path ".\nativelib\src\main\resources\scala-native\gc").Path
-          $gcIncludes   = @{}
-          $gcIncludes.Add('none',   @('shared'))
-          $gcIncludes.Add('immix',  @('shared', 'immix_commix'))
-          $gcIncludes.Add('commix', @('shared', 'immix_commix'))
-          $gcIncludes
-
-          ForEach($gcName in $gcIncludes.Keys){
-            $gcDir        = Join-Path $gcRoot $gcName
-            $includeDirs  = $gcIncludes[$gcName] | ForEach-Object{ Join-Path $gcRoot $_ }
-            $includes     = $includeDirs | %{"-I" + $_ }
-            $compiledDirs = @($gcDir) + $includeDirs
-
-            echo "Compiling $gcName"
-            Get-ChildItem -Path $compiledDirs -Filter *.c -Recurse -File `
-            | ForEach-Object {clang -std=gnu11 -Wno-override-module $includes -c "$_"}
-            Get-ChildItem -Path $compiledDirs -Filter *.cpp -Recurse -File `
-            | ForEach-Object {clang++ -std=c++14 -Wno-override-module $includes -c "$_"}
-          }
-
-      - name: Compile clib
-        run: |
-          $codeDir      = (Resolve-Path -Path ".\clib\src\main\resources\scala-native\").Path
-          Get-ChildItem -Path $codeDir -Include *.c -Recurse -File `
-          | ForEach-Object {clang -std=gnu11 -c "$_"}
-
-      - name: Compile posixlib
-        run: |
-          $codeDir      = (Resolve-Path -Path ".\posixlib\src\main\resources\scala-native\").Path
-          Get-ChildItem -Path $codeDir -Include *.c -Recurse -File `
-          | ForEach-Object {clang -std=gnu11 -c "$_"}
-
-      # Compile nativelib excluding GC and optional dependencies
-      - name: Compile nativelib
-        run: |
-          $codeDir      = (Resolve-Path -Path ".\nativelib\src\main\resources\scala-native\").Path
-
-          $cSources = (Get-ChildItem -Path $codeDir -Directory -Exclude gc,optional `
-          | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.c,*.S }`
-          ) + (Get-ChildItem -Path $codeDir -File -Filter *.c)
-
-          $cppSources = (Get-ChildItem -Path $codeDir -Directory -Exclude gc,optional `
-          | ForEach-Object { Get-ChildItem -Path $_.FullName -File -Recurse -Include *.cpp }`
-          ) + (Get-ChildItem -Path $codeDir -File -Filter *.cpp)
-
-          $cSources | ForEach-Object {clang -std=gnu11 -c "$_"}
-          $cppSources | ForEach-Object {clang++ -std=c++14 -c "$_"}
-
   run-tests:
-    name: Run tests
+    name: Test runtime
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-2019 ]
-        scala: [ 2.13.6, 2.12.14, 2.11.12 ]
-        gc: [none, immix, commix]
+        os: [windows-2019]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
+        gc: [none, boehm, immix, commix]
     steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v2
-
-      #Prepare environment, clang needs to be installed
-      #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
-      #Cache commonly used files: Coursier, ivy cache
-      - name: Resolve env variables
-        id: resolve-env
-        run: |
-          echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
-          echo "::set-output name=LocalAppData::${env:LocalAppData}"
-          echo "::set-output name=UserProfile::${env:UserProfile}"
-          echo "::set-output name=VcpkgLibs::${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static"
-
-      - name: Cache dependencies
-        id: cache-deps
-        uses: actions/cache@v2
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
         with:
-          path: |
-            ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
-            ${{steps.resolve-env.outputs.LocalAppData}}\Coursier\Cache\v1\
-            ${{steps.resolve-env.outputs.UserProfile}}\.ivy2\cache
-          key: ${{ runner.os }}-${{ matrix.scala }}-deps
-      # Install LLVM in case if cache is missing
-      - name: Install LLVM
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: choco install llvm --version=11.0.0
+          scala-version: ${{matrix.scala}}
 
-      - name: Add LLVM on Path
-        run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - name: Assert clang installed and on path
-        run: clang --version
+      # None GC takes too much memory on Windows to execute partest JUnit tests
+      # leading to spurious failures in the CI. Perform subset of tests instead
+      - name: Test runtime None GC
+        if: matrix.gc == 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          sandbox${{env.project-version}}/run
+          testsJVM${{env.project-version}}/test
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
+          testsExtJVM${{env.project-version}}/test
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
 
-      - name: Install libs
-        run: vcpkg install zlib --triplet=x64-windows-static
+      - name: Test runtime
+        if: matrix.gc != 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          "test-runtime ${{matrix.scala}}"
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
+
+  run-scripted-tests:
+    name: Scripted tests
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        scala: [2.12.15, 3.1.1]
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/windows-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test scripted
+        run: sbt "++${{matrix.scala}}" "test-scripted ${{matrix.scala}}"
+        shell: cmd
+
+  test-runtime-lto:
+    name: Test LTO
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
+        build-mode: [release-fast]
+        lto: [thin]
+        optimize: [true]
+        include:
+          - scala: 3.1.1
+            lto: full
+            optimize: true
+          - scala: 2.13.8
+            lto: full
+            optimize: true
+          - scala: 2.12.15
+            lto: full
+            optimize: false
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
 
       - name: Test runtime
         run: >
-          set SCALANATIVE_GC=${{matrix.gc}}&
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.resolve-env.outputs.VcpkgLibs}}\lib&
+          set SCALANATIVE_GC=immix&
+          set SCALANATIVE_MODE=release-fast&
+          set SCALANATIVE_OPTIMIZE=${{matrix.optimize}}&
+          set SCALANATIVE_LTO=${{matrix.lto}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=${{matrix.lto == 'full'}}&
           set SCALANATIVE &
           sbt ++${{matrix.scala}}
-          sandbox/run
-          "tests/testOnly javalib.math.* javalib.security.*"
-          testsExt/test
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
         shell: cmd

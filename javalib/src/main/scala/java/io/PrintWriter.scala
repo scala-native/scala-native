@@ -1,14 +1,18 @@
 package java.io
 
 import java.util.Formatter
+import java.nio.charset.Charset
 
 class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
     extends Writer {
 
   def this(out: Writer) = this(out, false)
 
+  def this(out: OutputStream, autoFlush: Boolean, charset: Charset) =
+    this(new OutputStreamWriter(out, charset), autoFlush)
+
   def this(out: OutputStream, autoFlush: Boolean) =
-    this(new OutputStreamWriter(out), autoFlush)
+    this(out, autoFlush, Charset.defaultCharset())
 
   def this(out: OutputStream) =
     this(out, false)
@@ -29,15 +33,20 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   def this(file: File) =
     this(new BufferedOutputStream(new FileOutputStream(file)))
 
-  def this(file: File, csn: String) =
+  def this(file: File, charset: Charset) =
     this(
       new OutputStreamWriter(
         new BufferedOutputStream(new FileOutputStream(file)),
-        csn
+        charset
       )
     )
 
+  def this(file: File, csn: String) = this(file, Charset.forName(csn))
+
   def this(fileName: String) = this(new File(fileName))
+
+  def this(fileName: String, charset: Charset) =
+    this(new File(fileName), charset)
 
   def this(fileName: String, csn: String) = this(new File(fileName), csn)
 
@@ -105,7 +114,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   def print(obj: AnyRef): Unit = write(String.valueOf(obj))
 
   def println(): Unit = {
-    write('\n') // In Scala.js the line separator is always LF
+    write(System.lineSeparator())
     if (autoFlush)
       flush()
   }
@@ -124,7 +133,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
     format(fmt, args)
 
   // Not implemented:
-  //def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
+  // def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
 
   def format(fmt: String, args: Array[Object]): PrintWriter = {
     new Formatter(this).format(fmt, args)
@@ -134,7 +143,7 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   }
 
   // Not implemented:
-  //def format(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
+  // def format(l: java.util.Locale, fmt: String, args: Array[Object]): PrintWriter = ???
 
   override def append(csq: CharSequence): PrintWriter = {
     super.append(csq)

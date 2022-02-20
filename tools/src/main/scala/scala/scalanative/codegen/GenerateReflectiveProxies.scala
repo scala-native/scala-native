@@ -112,7 +112,7 @@ object GenerateReflectiveProxies {
     val toProxy =
       dynimpls
         .foldLeft(Map[(Global, Sig), Global]()) {
-          case (acc, g @ Global.Member(owner, sig)) =>
+          case (acc, g @ Global.Member(owner, sig)) if !sig.isStatic =>
             val proxySig = sig.toProxy
             if (!acc.contains((owner, proxySig))) {
               acc + ((owner, proxySig) -> g)

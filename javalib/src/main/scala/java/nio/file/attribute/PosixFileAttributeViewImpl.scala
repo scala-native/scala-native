@@ -2,7 +2,6 @@ package java.nio.file.attribute
 
 import java.{util => ju}
 import java.util.{HashMap, HashSet, Set}
-
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path, PosixException}
 import java.nio.file.attribute._
@@ -20,7 +19,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
   private def throwIOException() =
     throw PosixException(path.toString, errno.errno)
 
-  override val name: String = "posix"
+  override def name(): String = "posix"
 
   override def setTimes(
       lastModifiedTime: FileTime,
@@ -29,7 +28,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
   ): Unit = Zone { implicit z =>
     val sb = getStat()
 
-    val buf = alloc[utime.utimbuf]
+    val buf = alloc[utime.utimbuf]()
     buf._1 =
       if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
       else sb._7
@@ -108,17 +107,17 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
       override def fileKey() = st_ino.asInstanceOf[Object]
 
-      override lazy val isDirectory =
-        stat.S_ISDIR(st_mode) == 1
+      private lazy val isDir = stat.S_ISDIR(st_mode) == 1
+      override def isDirectory() = isDir
 
-      override lazy val isRegularFile =
-        stat.S_ISREG(st_mode) == 1
+      private lazy val isRegular = stat.S_ISREG(st_mode) == 1
+      override def isRegularFile() = isRegular
 
-      override lazy val isSymbolicLink =
-        stat.S_ISLNK(st_mode) == 1
+      private lazy val isSymLink = stat.S_ISLNK(st_mode) == 1
+      override def isSymbolicLink() = isSymLink
 
-      override lazy val isOther =
-        !isDirectory && !isRegularFile && !isSymbolicLink
+      override def isOther() =
+        !isDirectory() && !isRegularFile() && !isSymbolicLink()
 
       override def lastAccessTime() =
         FileTime.from(st_atime, TimeUnit.SECONDS)
@@ -160,10 +159,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         "lastAccessTime" -> attrs.lastAccessTime(),
         "creationTime" -> attrs.creationTime(),
         "size" -> Long.box(attrs.size()),
-        "isRegularFile" -> Boolean.box(attrs.isRegularFile),
-        "isDirectory" -> Boolean.box(attrs.isDirectory),
-        "isSymbolicLink" -> Boolean.box(attrs.isSymbolicLink),
-        "isOther" -> Boolean.box(attrs.isOther),
+        "isRegularFile" -> Boolean.box(attrs.isRegularFile()),
+        "isDirectory" -> Boolean.box(attrs.isDirectory()),
+        "isSymbolicLink" -> Boolean.box(attrs.isSymbolicLink()),
+        "isOther" -> Boolean.box(attrs.isOther()),
         "fileKey" -> attrs.fileKey(),
         "permissions" -> attrs.permissions(),
         "group" -> attrs.group()
@@ -191,7 +190,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     }
 
   private def getStat()(implicit z: Zone): Ptr[stat.stat] = {
-    val buf = alloc[stat.stat]
+    val buf = alloc[stat.stat]()
     val err =
       if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
         stat.lstat(toCString(path.toString), buf)

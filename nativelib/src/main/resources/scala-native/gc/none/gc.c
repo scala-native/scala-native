@@ -1,3 +1,10 @@
+// sscanf and getEnv is deprecated in WinCRT, disable warnings
+// These functions are not used directly, but are included in "Parsing.h".
+// The definition used to disable warnings needs to be placed before the first
+// include of Windows.h, depending on the version of Windows runtime
+// it might happen while preprocessing some of stdlib headers.
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "MemoryMap.h"
@@ -100,3 +107,5 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 void scalanative_collect() {}
+
+void scalanative_register_weak_reference_handler(void *handler) {}

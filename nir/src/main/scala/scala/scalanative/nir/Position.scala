@@ -8,7 +8,13 @@ final case class Position(
     /** Zero-based column number. */
     column: Int
 ) {
-  def show: String = s"$line:$column"
+
+  /** One-based line number */
+  def sourceLine: Int = line + 1
+
+  /** One-based column number */
+  def sourceColumn: Int = column + 1
+  def show: String = s"$source:$sourceLine:$sourceColumn"
 
   def isEmpty: Boolean = {
     def isEmptySlowPath(): Boolean = {

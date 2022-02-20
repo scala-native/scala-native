@@ -1,0 +1,14 @@
+--- 2.12.15/scala/collection/mutable/DoubleLinkedList.scala
++++ old-collections/scala/collection/mutable/DoubleLinkedList.scala
+@@ -82,9 +82,9 @@
+ @deprecated("low-level linked lists are deprecated", "2.11.0")
+ object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
+   /** $genericCanBuildFromInfo */
+-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
++  @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+ 
+-  def newBuilder[A]: Builder[A, DoubleLinkedList[A]] =
++  @inline def newBuilder[A]: Builder[A, DoubleLinkedList[A]] =
+     new Builder[A, DoubleLinkedList[A]] {
+       def emptyList() = new DoubleLinkedList[A]()
+       var current = emptyList()

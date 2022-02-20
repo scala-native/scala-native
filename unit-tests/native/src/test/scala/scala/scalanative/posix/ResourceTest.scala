@@ -89,7 +89,7 @@ class ResourceTest {
   @Test def getrlimitInvalidArgResource() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
-      val rlimPtr = alloc[rlimit]
+      val rlimPtr = alloc[rlimit]()
 
       getrlimit(Integer.MAX_VALUE, rlimPtr)
 
@@ -111,7 +111,7 @@ class ResourceTest {
 
       for (c <- cases) {
         errno.errno = 0
-        val rlimPtr = alloc[rlimit] // start each pass with all bytes 0.
+        val rlimPtr = alloc[rlimit]() // start each pass with all bytes 0.
 
         val result = getrlimit(c.value, rlimPtr)
 
@@ -143,7 +143,7 @@ class ResourceTest {
   @Test def getrusageInvalidArgWho() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
-      val rusagePtr = alloc[rusage]
+      val rusagePtr = alloc[rusage]()
 
       getrusage(Integer.MIN_VALUE, rusagePtr)
 
@@ -154,7 +154,7 @@ class ResourceTest {
   @Test def getrusageSelf() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
-      val rusagePtr = alloc[rusage]
+      val rusagePtr = alloc[rusage]()
 
       val result = getrusage(RUSAGE_SELF, rusagePtr)
 
@@ -186,7 +186,7 @@ class ResourceTest {
   @Test def getrusageChildren() = if (!isWindows) {
     Zone { implicit z =>
       errno.errno = 0
-      val rusagePtr = alloc[rusage]
+      val rusagePtr = alloc[rusage]()
 
       val result = getrusage(RUSAGE_CHILDREN, rusagePtr)
 

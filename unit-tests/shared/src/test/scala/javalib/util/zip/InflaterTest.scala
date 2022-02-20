@@ -117,8 +117,8 @@ class InflaterTest {
     outPutBuff1 = Array[Byte](120, 94, 99, 100, 102, 97, -25, 72, 45, 42, -87,
       52, 5, 0, 6, -12, 2, 17) ++ Array.fill[Byte](483)(0)
     outPutDiction = Array[Byte](120, 63, 13, 10, 107, 2, 20, 99, 97, 101, 102,
-      74, 76, 98, 99, -25, -32, 100, 40, 54, 46, 47, 2, 13, 112, 2,
-      127) ++ Array.fill[Byte](474)(0)
+      74, 76, 98, 99, -25, -32, 100, 40, 54, 46, 47, 2, 13, 112, 2, 127) ++
+      Array.fill[Byte](474)(0)
   }
 
   @Test def finished(): Unit = {
@@ -348,7 +348,7 @@ class InflaterTest {
     inflater.end()
 
     assertThrows(
-      classOf[IllegalStateException],
+      classOf[NullPointerException],
       inflater.inflate(outPutInf, offSet, 1)
     )
   }
@@ -689,7 +689,7 @@ class InflaterTest {
     )
     infl1.end()
     assertThrows(
-      classOf[IllegalStateException],
+      classOf[NullPointerException],
       infl1.setDictionary(dictionary2.getBytes())
     )
   }
@@ -702,14 +702,14 @@ class InflaterTest {
     inflate.setInput(byteArray)
     inflate.end()
 
-    assertThrows(classOf[IllegalStateException], inflate.getAdler())
+    assertThrows(classOf[NullPointerException], inflate.getAdler())
 
     assertThrows(classOf[NullPointerException], inflate.getBytesRead())
 
     assertThrows(classOf[NullPointerException], inflate.getBytesWritten())
 
-    assertThrows(classOf[IllegalStateException], inflate.getTotalIn())
+    assertThrows(classOf[NullPointerException], inflate.getTotalIn())
 
-    assertThrows(classOf[IllegalStateException], inflate.getTotalOut())
+    assertThrows(classOf[NullPointerException], inflate.getTotalOut())
   }
 }

@@ -95,7 +95,7 @@ class ServerSocket(
     impl.listen(backlog)
   }
 
-  //def getChannel: ServerSocketChannel
+  // def getChannel: ServerSocketChannel
   def getInetAddress: InetAddress = bindAddr
   def getLocalSocketAddress: SocketAddress =
     new InetSocketAddress(bindAddr, port)
@@ -119,7 +119,7 @@ class ServerSocket(
   def isBound: Boolean = bound
   def isClosed: Boolean = closed
 
-  //def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
+  // def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
 
   def setReceiveBufferSize(size: Int): Unit = {
     checkClosedAndCreate

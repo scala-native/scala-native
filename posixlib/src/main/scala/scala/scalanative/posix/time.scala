@@ -54,6 +54,9 @@ object time {
   @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern
 
+  def nanosleep(requested: Ptr[timespec], remaining: Ptr[timespec]): CInt =
+    extern
+
   @name("scalanative_strftime")
   def strftime(
       str: Ptr[CChar],

@@ -56,7 +56,7 @@ private[math] object BitLevel {
    *    BigInteger#bitCount()
    *
    *  @param bi
-   *    @return
+   *  @return
    */
   def bitCount(bi: BigInteger): Int = {
     var bCount = 0
@@ -88,7 +88,7 @@ private[math] object BitLevel {
    *    BigInteger#bitLength()
    *
    *  @param bi
-   *    @return
+   *  @return
    */
   def bitLength(bi: BigInteger): Int = {
     if (bi.sign == 0) {
@@ -222,7 +222,7 @@ private[math] object BitLevel {
    *    BigInteger#shiftLeft(int).
    *
    *  @param source
-   *    @param count
+   *  @param count
    *  @return
    */
   def shiftLeft(source: BigInteger, count: Int): BigInteger = {
@@ -317,7 +317,7 @@ private[math] object BitLevel {
    *    BigInteger#shiftRight(int).
    *
    *  @param source
-   *    @param count
+   *  @param count
    *  @return
    */
   def shiftRight(source: BigInteger, count: Int): BigInteger = {

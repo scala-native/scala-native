@@ -22,6 +22,7 @@ object CharBuffer {
 abstract class CharBuffer private[nio] (
     _capacity: Int,
     private[nio] val _array: Array[Char],
+    private[nio] val _mappedData: MappedByteBufferData,
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[CharBuffer]
@@ -32,7 +33,9 @@ abstract class CharBuffer private[nio] (
   private[nio] type ElementType = Char
   private[nio] type BufferType = CharBuffer
 
-  def this(_capacity: Int) = this(_capacity, null, -1)
+  private def genBuffer = GenBuffer[CharBuffer](this)
+
+  def this(_capacity: Int) = this(_capacity, null, null, -1)
 
   def read(target: CharBuffer): Int = {
     // Attention: this method must not change this buffer's position
@@ -40,7 +43,7 @@ abstract class CharBuffer private[nio] (
     if (n == 0) -1
     else if (_array != null) {
       // even if read-only
-      target.put(_array, _arrayOffset, n)
+      genBuffer.generic_put(_array, _arrayOffset, n)
       n
     } else {
       val savedPos = position()
@@ -66,18 +69,18 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_get(dst, offset, length)
+    genBuffer.generic_get(dst, offset, length)
 
   def get(dst: Array[Char]): CharBuffer =
     get(dst, 0, dst.length)
 
   @noinline
   def put(src: CharBuffer): CharBuffer =
-    GenBuffer(this).generic_put(src)
+    genBuffer.generic_put(src)
 
   @noinline
   def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
-    GenBuffer(this).generic_put(src, offset, length)
+    genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Char]): CharBuffer =
     put(src, 0, src.length)
@@ -89,13 +92,13 @@ abstract class CharBuffer private[nio] (
     put(src, 0, src.length)
 
   @inline final def hasArray(): Boolean =
-    GenBuffer(this).generic_hasArray()
+    genBuffer.generic_hasArray()
 
   @inline final def array(): Array[Char] =
-    GenBuffer(this).generic_array()
+    genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    GenBuffer(this).generic_arrayOffset()
+    genBuffer.generic_arrayOffset()
 
   @inline override def position(newPosition: Int): CharBuffer = {
     super.position(newPosition)
@@ -138,7 +141,7 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   override def hashCode(): Int =
-    GenBuffer(this).generic_hashCode(CharBuffer.HashSeed)
+    genBuffer.generic_hashCode(CharBuffer.HashSeed)
 
   override def equals(that: Any): Boolean = that match {
     case that: CharBuffer => compareTo(that) == 0
@@ -147,7 +150,7 @@ abstract class CharBuffer private[nio] (
 
   @noinline
   def compareTo(that: CharBuffer): Int =
-    GenBuffer(this).generic_compareTo(that)(_.compareTo(_))
+    genBuffer.generic_compareTo(that)(_.compareTo(_))
 
   override def toString(): String = {
     if (_array != null) {
@@ -192,7 +195,7 @@ abstract class CharBuffer private[nio] (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_load(startIndex, dst, offset, length)
+    genBuffer.generic_load(startIndex, dst, offset, length)
 
   @inline
   private[nio] def store(
@@ -201,5 +204,5 @@ abstract class CharBuffer private[nio] (
       offset: Int,
       length: Int
   ): Unit =
-    GenBuffer(this).generic_store(startIndex, src, offset, length)
+    genBuffer.generic_store(startIndex, src, offset, length)
 }

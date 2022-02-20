@@ -26,7 +26,7 @@ private[testinterface] object SignalConfig {
 
     def printError(str: CString): Unit =
       if (isWindows) {
-        val written = stackalloc[DWord]
+        val written = stackalloc[DWord]()
         FileApi.WriteFile(
           ConsoleApiExt.stdErr,
           str,
@@ -43,7 +43,7 @@ private[testinterface] object SignalConfig {
       }
 
     def signalToCString(str: CString, signal: Int): Unit = {
-      val reversedStr = stackalloc[CChar](8.toUInt)
+      val reversedStr: Ptr[CChar] = stackalloc[CChar](8.toUInt)
       var index = 0
       var signalPart = signal
       while (signalPart > 0) {
@@ -59,10 +59,10 @@ private[testinterface] object SignalConfig {
       str(index) = 0.toByte
     }
 
-    val signalNumberStr = stackalloc[CChar](8.toUInt)
+    val signalNumberStr: Ptr[CChar] = stackalloc[CChar](8.toUInt)
     signalToCString(signalNumberStr, sig)
 
-    val stackTraceHeader = stackalloc[CChar](2048.toUInt)
+    val stackTraceHeader: Ptr[CChar] = stackalloc[CChar](2048.toUInt)
     stackTraceHeader(0.toUInt) = 0.toByte
     strcat(stackTraceHeader, errorTag)
     strcat(stackTraceHeader, c" Fatal signal ")
@@ -70,19 +70,18 @@ private[testinterface] object SignalConfig {
     strcat(stackTraceHeader, c" caught\n")
     printError(stackTraceHeader)
 
-    val cursor = stackalloc[scala.Byte](2048.toUInt)
-    val context = stackalloc[scala.Byte](2048.toUInt)
+    val cursor: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
+    val context: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
     unwind.get_context(context)
     unwind.init_local(cursor, context)
 
     while (unwind.step(cursor) > 0) {
-      val offset = stackalloc[scala.Byte](8.toUInt)
-      val pc = stackalloc[CUnsignedLongLong]
+      val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
+      val pc = stackalloc[CUnsignedLongLong]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
-      if (pc == 0)
-        return
+      if (!pc == 0.toUInt) return
       val symMax = 1024
-      val sym = stackalloc[CChar](symMax.toUInt)
+      val sym: Ptr[CChar] = stackalloc[CChar](symMax.toUInt)
       if (unwind.get_proc_name(
             cursor,
             sym,
@@ -90,11 +89,11 @@ private[testinterface] object SignalConfig {
             offset
           ) == 0) {
         sym(symMax - 1) = 0.toByte
-        val className = stackalloc[CChar](1024.toUInt)
-        val methodName = stackalloc[CChar](1024.toUInt)
+        val className: Ptr[CChar] = stackalloc[CChar](1024.toUInt)
+        val methodName: Ptr[CChar] = stackalloc[CChar](1024.toUInt)
         SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
 
-        val formattedSymbol = stackalloc[CChar](2048.toUInt)
+        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](2048.toUInt)
         formattedSymbol(0) = 0.toByte
         strcat(formattedSymbol, errorTag)
         strcat(formattedSymbol, c"   at ")
