@@ -40,24 +40,24 @@ private[scalanative] object ResourceEmbedder {
 
           virtualDir.files
             .flatMap { path =>
-              val pathName =
+              val (pathName, correctedPath) =
                 if (!path.toString().startsWith("/")) { // local file
-                  "/" + path.toString()
+                  ("/" + path.toString(), classpath.resolve(path))
                 } else { // other file (f.e in jar)
-                  path.toString()
+                  (path.toString(), path)
                 }
 
               if (isInIgnoredDirectory(path)) {
                 config.logger.debug(
-                  s"Did not embed: $pathName. Source file extension detected."
+                  s"Did not embed: $pathName - file in the ignored \'scala-native\' folder."
                 )
                 None
-              } else if (isSourceFile(path)) {
+              } else if (isSourceFile((path))) {
                 config.logger.debug(
-                  s"Did not embed: $pathName. File in the ignored scala-native folder."
+                  s"Did not embed: $pathName - source file extension detected."
                 )
                 None
-              } else if (Files.isDirectory(path)) {
+              } else if (Files.isDirectory(correctedPath)) {
                 None
               } else {
                 Some(ClasspathFile(path, pathName, virtualDir))
