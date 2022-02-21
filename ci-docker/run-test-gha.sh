@@ -46,10 +46,6 @@ docker run -i "${FULL_IMAGE_NAME}" java -version
 docker run --mount type=bind,source=$HOME/.cache,target=/home/scala-native/.cache \
            --mount type=bind,source=$HOME/.sbt,target=/home/scala-native/.sbt \
            --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
-           -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
-           -e SCALANATIVE_GC="$SCALANATIVE_GC" \
-           -e SCALANATIVE_OPTIMIZE="$SCALANATIVE_OPTIMIZE" \
-           -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \
            -e SCALA_VERSION="$SCALA_VERSION" \
            -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
            -e TEST_COMMAND="$TEST_COMMAND" \
