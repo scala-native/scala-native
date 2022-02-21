@@ -8,6 +8,7 @@ if [ $# -eq 0 ]
 fi
 
 IMAGE_NAME=$1
+TARGET_EMULATOR=$2
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
@@ -24,18 +25,17 @@ docker run -d -p 5000:5000 \
 # CI jobs failing due to missing image.
 if ! docker pull $FULL_IMAGE_NAME;then
   echo "Image not found found in cache, building locally"
-  imageNamePattern="scala-native-testing:linux-(.*)"
+  imageNamePattern="scala-native-testing:(.*)"
 
   if [[ "$IMAGE_NAME" =~ $imageNamePattern ]];then
     arch=${BASH_REMATCH[1]}
 
-    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     docker build \
     -t ${FULL_IMAGE_NAME} \
-    --build-arg TARGET_DOCKER_PLATFORM=${arch} \
-    --build-arg HOST_ARCHITECTURE=amd64  \
-    --cpuset-cpus=0 \
-    ci-docker
+    --build-arg TARGET_PLATFORM=${arch} \
+    ci-docker \
+    && docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} \
+    && docker push localhost:5000/${FULL_IMAGE_NAME}
   else
     >&2 echo "$IMAGE_NAME is not regular testing image name"
     exit 1
@@ -50,6 +50,7 @@ docker run --mount type=bind,source=$HOME/.cache,target=/home/scala-native/.cach
            -e SCALANATIVE_GC="$SCALANATIVE_GC" \
            -e SCALANATIVE_OPTIMIZE="$SCALANATIVE_OPTIMIZE" \
            -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \
-           -e TEST_COMMAND="$TEST_COMMAND" \
            -e SCALA_VERSION="$SCALA_VERSION" \
+           -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
+           -e TEST_COMMAND="$TEST_COMMAND" \
            -i "${FULL_IMAGE_NAME}"

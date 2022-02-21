@@ -18,7 +18,7 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [arm64v8]
+        arch: [linux-arm64]
 
     steps:
       - uses: actions/checkout@v2
@@ -42,19 +42,16 @@ jobs:
       - name: Build image
         id: build-image
         run: |
-          imageBase="scala-native-testing:linux"
-          imageName="${imageBase}-${{ matrix.arch }}"
+          imageBase="scala-native-testing"
+          imageName="${imageBase}:${{ matrix.arch }}"
           echo "::set-output name=image-base-name::${imageBase}"
           echo "::set-output name=image-full-name::${imageName}"
 
-          docker run --rm --privileged multiarch/qemu-user-static:register
           docker pull localhost:5000/${imageName} || true
           docker build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
-          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.arch}} \
-          --build-arg HOST_ARCHITECTURE=amd64  \
-          --cpuset-cpus=0 \
+          --build-arg TARGET_PLATFORM=${{ matrix.arch}} \
           ci-docker
 
       - name: Store image in cache
@@ -73,25 +70,62 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [arm64v8]
-        scala: [3.1.1, 2.13.8]
-        build-mode: [release-fast]
-        lto: [thin]
+        arch: [{ name: linux-arm64, emulator: qemu-aarch64-static }]
+        scala: [2.13.8, 3.1.1]
+        build-mode: [releaseFast]
+        lto: [thin, none]
         gc: [immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
-          - scala: 3.1.0
-            build-mode: debug
-            gc: immix
-          - scala: 2.13.7
-            build-mode: debug
-            gc: commix
+          - gc: immix
+            lto: none
+          - gc: commix
+            lto: thin
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+
+      - name: Prepare common options
+        shell: bash
+        # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
+        # Becouse of that we need to build it whole config from scratch
+        # There is no other way for passing compile and linking opts (we ignore deprecated sbt keys)
+        # Following envs CROSS_ are always present in docker container
+        run: |
+          targetEnv='sys.env("CROSS_TRIPLE")'
+          target='${sys.env("CROSS_TRIPLE")}'
+          crossRoot='${sys.env("CROSS_ROOT")}'
+
+          gccToolchainFlag=s\"--gcc-toolchain=${crossRoot}\"
+          sysRootFlag=s\"--sysroot=${crossRoot}/${target}/sysroot\"
+          useLdFlg=\"-fuse-ld=lld\"
+          crossOptions="List($gccToolchainFlag, $sysRootFlag, $useLdFlg)"
+
+          emptyConfig="scalanative.build.NativeConfig.empty"
+          withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
+          withGC="withGC(scalanative.build.GC.${{matrix.gc}})"
+          withLTO="withLTO(scalanative.build.LTO.${{matrix.lto}})"
+          withToolchain="withClang(scalanative.build.Discover.clang()).withClangPP(scalanative.build.Discover.clangpp())"
+          withOpts="withEmbedResources(true).withOptimize(true).withCheck(true).withCheckFatalWarnings(true)"
+          withTarget="withTargetTriple(${targetEnv})"
+          withCompileOpts="withCompileOptions(scalanative.build.Discover.compileOptions() ++ $crossOptions)"
+          withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
+          config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
+
+          echo "native-config=${config}" >> $GITHUB_ENV
+
+      # Conditionally disable some of the tests (Scala 2 only)
+      - name: Set filters for partests
+        shell: bash
+        if: ${{ !startsWith(matrix.scala, '3.') }}
+        run: |
+          ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
+          if [[ ${{matrix.lto}} == "thin" ]]; then
+            echo "junit/scala/util/SortingTest.scala" >> ${ignoredTestsFile}
+          fi
 
       - name: Run tests
         env:
@@ -100,5 +134,13 @@ jobs:
           SCALANATIVE_OPTIMIZE: true
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.arch }}"
+          # Limit commands only to native tests, tests would use amd64 JDK anyway
+          # Don't run partest junit tests with lto - fails in scala.util.SortingTest.testSortConsistency on arm64
+          TEST_COMMAND: >
+            set every nativeConfig := ${{env.native-config}};
+            show sandbox${{env.project-version}}/nativeConfig;
+            tests${{env.project-version}}/test;
+            testsExt${{env.project-version}}/test;
+            junitTestOutputsNative${{env.project-version}}/test;
+            scalaPartestJunitTests${{env.project-version}}/test
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" "${{matrix.arch.emulator}}"
