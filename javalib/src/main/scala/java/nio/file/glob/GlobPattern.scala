@@ -87,10 +87,10 @@ class GlobPattern(pattern: String) {
               groupBuffer.append(AnyChar)
               i += 1
             case ('*', Some('*')) =>
-              groupBuffer.append(DoubleStar)
+              groupBuffer.append(DoubleAsterisk)
               i += 2
             case ('*', _) =>
-              groupBuffer.append(Star)
+              groupBuffer.append(Asterisk)
               i += 1
             case ('[', Some('!')) =>
               i += 1
@@ -143,10 +143,10 @@ class GlobPattern(pattern: String) {
           i += 1
           parsingList.append(parseGroups())
         case ('*', Some('*')) =>
-          parsingList.append(DoubleStar)
+          parsingList.append(DoubleAsterisk)
           i += 2
         case ('*', _) =>
-          parsingList.append(Star)
+          parsingList.append(Asterisk)
           i += 1
         case ('[', Some('!')) =>
           i += 2
@@ -155,7 +155,7 @@ class GlobPattern(pattern: String) {
           i += 1
           parsingList.append(Bracket(parseBracketSet()))
         case ('/', _) =>
-          parsingList.append(Divider)
+          parsingList.append(Separator)
           i += 1
         case ('\\', Some(char)) =>
           parsingList.append(GlobChar(char))
@@ -168,9 +168,9 @@ class GlobPattern(pattern: String) {
 
     def charsTaken(spec: GlobSpecification): (Int, Int) =
       spec match {
-        case Divider                                                 => (1, 1)
+        case Separator                                               => (1, 1)
         case AnyChar | GlobChar(_) | Bracket(_) | NegationBracket(_) => (1, 0)
-        case Groups(_) | Star | DoubleStar                           => (0, 0)
+        case Groups(_) | Asterisk | DoubleAsterisk                   => (0, 0)
       }
 
     def specListToGlobNodes(
@@ -181,17 +181,17 @@ class GlobPattern(pattern: String) {
         case (head @ Groups(lists)) :: tail =>
           val nextGroupNodes =
             lists.map(list => specListToGlobNodes(list.reverse, next))
-          val minChars = nextGroupNodes.minBy(_.minDivsLeft).minDivsLeft
-          val minDivs = nextGroupNodes.minBy(_.minCharsLeft).minCharsLeft
-          val newNext = TransitionNode(head, nextGroupNodes, minChars, minDivs)
+          val minChars = nextGroupNodes.minBy(_.minSepsLeft).minSepsLeft
+          val minSeps = nextGroupNodes.minBy(_.minCharsLeft).minCharsLeft
+          val newNext = TransitionNode(head, nextGroupNodes, minChars, minSeps)
           specListToGlobNodes(tail, newNext)
         case head :: tail =>
-          val (chars, divs) = charsTaken(head)
+          val (chars, seps) = charsTaken(head)
           val newNext = TransitionNode(
             head,
             List(next),
             next.minCharsLeft + chars,
-            next.minDivsLeft + divs
+            next.minSepsLeft + seps
           )
           specListToGlobNodes(tail, newNext)
         case Nil => next

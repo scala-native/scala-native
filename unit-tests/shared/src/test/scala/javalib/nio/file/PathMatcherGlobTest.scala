@@ -4,6 +4,7 @@ import java.nio.file._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import java.util.regex.PatternSyntaxException
 
@@ -13,33 +14,31 @@ import org.scalanative.testsuite.utils.Platform.isWindows
 class PathMatcherGlobTest {
 
   @inline def pass(glob: String, path: String, onWindows: Boolean = true) = {
-    if (isWindows && !onWindows) {
-      // incompatible on windows
-      println("Skipping pass($glob, $path) on Windows")
-    } else {
-      val pattern = s"glob:$glob"
-      val matched = Paths.get(path)
-      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
-      assertTrue(
-        s"glob: $glob, path: $path should be matched",
-        matcher.matches(matched)
-      )
-    }
+    assumeFalse(
+      s"Skipping pass($glob, $path) on Windows",
+      isWindows && !onWindows
+    )
+    val pattern = s"glob:$glob"
+    val matched = Paths.get(path)
+    val matcher = FileSystems.getDefault().getPathMatcher(pattern)
+    assertTrue(
+      s"glob: $glob, path: $path should be matched",
+      matcher.matches(matched)
+    )
   }
 
   @inline def fail(glob: String, path: String, onWindows: Boolean = true) = {
-    if (isWindows && !onWindows) {
-      // incompatible on windows
-      println("Skipping pass($glob, $path) on Windows")
-    } else {
-      val pattern = s"glob:$glob"
-      val matched = Paths.get(path)
-      val matcher = FileSystems.getDefault().getPathMatcher(pattern)
-      assertFalse(
-        s"glob: $glob, path: $path should not be matched",
-        matcher.matches(matched)
-      )
-    }
+    assumeFalse(
+      s"Skipping fail($glob, $path) on Windows",
+      isWindows && !onWindows
+    )
+    val pattern = s"glob:$glob"
+    val matched = Paths.get(path)
+    val matcher = FileSystems.getDefault().getPathMatcher(pattern)
+    assertFalse(
+      s"glob: $glob, path: $path should not be matched",
+      matcher.matches(matched)
+    )
   }
 
   @inline def throws[T <: Throwable](glob: String, message: String) = {
@@ -147,7 +146,7 @@ class PathMatcherGlobTest {
     fail("*.?", "any.")
   }
 
-  @Test def correctMatchingOfStar(): Unit = {
+  @Test def correctMatchingOfAsterisk(): Unit = {
     pass("*.ext", "banana.ext")
     pass("*.ext", ".ext")
     fail("*.ext", "/banana.ext")
@@ -160,7 +159,7 @@ class PathMatcherGlobTest {
     fail("*/*", "banana/")
   }
 
-  @Test def correctMatchingOfDoubleStar(): Unit = {
+  @Test def correctMatchingOfDoubleAsterisk(): Unit = {
     pass("**/*", "/a")
     fail("**/*", "a/")
     pass("**/*", "a/b")

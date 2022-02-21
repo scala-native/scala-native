@@ -23,13 +23,13 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
         case StartNode(_) => Nil
         case TransitionNode(globSpec, next, _, _) =>
           globSpec match {
-            case Divider if inputChar == '/' => List(node)
-            case Star if inputChar != '/' =>
+            case Separator if inputChar == '/' => List(node)
+            case Asterisk if inputChar != '/' =>
               List(node, previous) ++
                 next.flatMap(reachableStates(inputChar, _, node))
-            case Star if inputChar == '/' =>
+            case Asterisk if inputChar == '/' =>
               next.flatMap(reachableStates(inputChar, _, node))
-            case DoubleStar =>
+            case DoubleAsterisk =>
               List(node, previous) ++
                 next.flatMap(reachableStates(inputChar, _, node))
             case AnyChar if inputChar != '/'                      => List(node)
@@ -48,7 +48,7 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
         case EndNode             => true
         case TransitionNode(globSpec, next, _, _) =>
           globSpec match {
-            case Star | DoubleStar | Groups(_) =>
+            case Asterisk | DoubleAsterisk | Groups(_) =>
               next.exists(isEndReachable(_))
             case _ => false
           }
@@ -60,7 +60,7 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
         inputIdx: Int,
         states: List[GlobNode],
         charsLeft: Int,
-        divsLeft: Int
+        sepsLeft: Int
     ): Boolean = {
       if (inputIdx < input.length()) {
         val inputChar = input.charAt(inputIdx)
@@ -76,7 +76,7 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
         }
 
         val newCharsLeft = charsLeft - 1
-        val newDivsLeft = divsLeft - (if (inputChar == '/') 1 else 0)
+        val newSepsLeft = sepsLeft - (if (inputChar == '/') 1 else 0)
 
         if (inputIdx == input.length() - 1) {
           newStates.collectFirst {
@@ -86,9 +86,9 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
           }.isDefined
         } else {
           val filteredStates = newStates.filter(node =>
-            node.minDivsLeft <= newDivsLeft && node.minCharsLeft <= newCharsLeft
+            node.minSepsLeft <= newSepsLeft && node.minCharsLeft <= newCharsLeft
           )
-          matchesInternal(inputIdx + 1, newStates, newCharsLeft, newDivsLeft)
+          matchesInternal(inputIdx + 1, newStates, newCharsLeft, newSepsLeft)
         }
       } else {
         states.exists(isEndReachable(_))
@@ -96,8 +96,8 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
     }
 
     val charsLeft = input.length()
-    val divsLeft = input.count(_ == '/')
+    val sepsLeft = input.count(_ == '/')
 
-    matchesInternal(0, List(glob), charsLeft, divsLeft)
+    matchesInternal(0, List(glob), charsLeft, sepsLeft)
   }
 }
