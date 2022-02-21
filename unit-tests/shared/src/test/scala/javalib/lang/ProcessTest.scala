@@ -182,6 +182,10 @@ class ProcessTest {
   }
 
   @Test def destroy(): Unit = {
+    assumeFalse(
+      "Breaks test runner when executed in emulator",
+      !executingInJVM && isArm64
+    )
     val proc = processSleep(2.0).start()
 
     assertTrue("process should be alive", proc.isAlive)
@@ -198,6 +202,10 @@ class ProcessTest {
   }
 
   @Test def destroyForcibly(): Unit = {
+    assumeFalse(
+      "Breaks test runner when executed in emulator",
+      !executingInJVM && isArm64
+    )
     val proc = processSleep(2.0).start()
 
     assertTrue("process should be alive", proc.isAlive)
