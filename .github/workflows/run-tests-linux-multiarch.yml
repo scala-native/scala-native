@@ -55,7 +55,6 @@ jobs:
           ci-docker
 
       - name: Store image in cache
-        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           imageName=${{ steps.build-image.outputs.image-full-name }}
           docker tag $imageName localhost:5000/${imageName} && \
@@ -119,12 +118,11 @@ jobs:
 
       - name: Run tests
         env:
-          SCALA_VERSION: ${{ matrix.scala }}
           # Limit commands only to native tests, tests would use amd64 JDK anyway
           # Currently real tests are disabled until fixing arm64 issues
           # Just run native test runner and exit
           TEST_COMMAND: >
             set every nativeConfig := ${{env.native-config}};
             show sandbox${{env.project-version}}/nativeConfig;
-            tests${{env.project-version}}/testOnly "nothing";
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" "${{matrix.arch.emulator}}"
+            tests${{env.project-version}}/testOnly "nothing"
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"

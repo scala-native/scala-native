@@ -2,13 +2,14 @@
 set -e
 set -x
 
-if [ $# -eq 0 ]
-  then echo "Expected single argument with docker image version"
+if [ $# -ne 3 ]
+  then echo "Expected exactly 3 arguments: <docker image> <scala version> <emulator>"
   exit 1
 fi
 
 IMAGE_NAME=$1
-TARGET_EMULATOR=$2
+SCALA_VERSION=$2
+TARGET_EMULATOR=$3
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
