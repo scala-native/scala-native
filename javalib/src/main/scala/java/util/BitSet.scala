@@ -52,7 +52,9 @@ private object BitSet {
   }
 }
 
-class BitSet private (private var bits: Array[Long]) extends Serializable with Cloneable {
+class BitSet private (private var bits: Array[Long])
+    extends Serializable
+    with Cloneable {
   import BitSet.{AddressBitsPerWord, ElementSize, RightBits}
 
   def this(nbits: Int) = {
@@ -453,7 +455,9 @@ class BitSet private (private var bits: Array[Long]) extends Serializable with C
     if (len == 0)
       0
     else
-      (len << AddressBitsPerWord) - java.lang.Long.numberOfLeadingZeros(bits(len - 1))
+      (len << AddressBitsPerWord) - java.lang.Long.numberOfLeadingZeros(
+        bits(len - 1)
+      )
   }
 
   def isEmpty(): Boolean = getActualArrayLength() == 0
@@ -576,9 +580,8 @@ class BitSet private (private var bits: Array[Long]) extends Serializable with C
 
   def size(): Int = bits.length << AddressBitsPerWord
 
-  /**
-   * If one of the BitSets is larger than the other, check to see if
-   * any of its extra bits are set. If so return false.
+  /** If one of the BitSets is larger than the other, check to see if any of its
+   *  extra bits are set. If so return false.
    */
   private def equalsImpl(other: BitSet): Boolean = {
     // scalastyle:off return
@@ -614,7 +617,7 @@ class BitSet private (private var bits: Array[Long]) extends Serializable with C
   override def equals(obj: Any): Boolean = {
     obj match {
       case bs: BitSet => equalsImpl(bs)
-      case _ => false
+      case _          => false
     }
   }
 
@@ -663,7 +666,9 @@ class BitSet private (private var bits: Array[Long]) extends Serializable with C
       throw new IndexOutOfBoundsException(s"toIndex < 0: $toIndex")
 
     if (toIndex < fromIndex)
-      throw new IndexOutOfBoundsException(s"fromIndex: $fromIndex > toIndex: $toIndex")
+      throw new IndexOutOfBoundsException(
+        s"fromIndex: $fromIndex > toIndex: $toIndex"
+      )
   }
 
   private def checkFromIndex(fromIndex: Int): Unit = {
