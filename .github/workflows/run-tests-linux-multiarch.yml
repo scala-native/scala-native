@@ -116,13 +116,25 @@ jobs:
 
           echo "native-config=${config}" >> $GITHUB_ENV
 
+      # Conditionally disable some of the tests (Scala 2 only)
+      - name: Set filters for partests
+        shell: bash
+        if: ${{ !startsWith(matrix.scala, '3.') }}
+        run: |
+          ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
+          if [[ ${{matrix.lto}} == "thin" ]]; then
+            echo -e "\n" >> ${ignoredTestsFile}
+            echo -e "junit/scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
+          fi
+
       - name: Run tests
         env:
           # Limit commands only to native tests, tests would use amd64 JDK anyway
-          # Currently real tests are disabled until fixing arm64 issues
-          # Just run native test runner and exit
           TEST_COMMAND: >
             set every nativeConfig := ${{env.native-config}};
             show sandbox${{env.project-version}}/nativeConfig;
-            tests${{env.project-version}}/testOnly "nothing"
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"
+            tests${{env.project-version}}/test;
+            testsExt${{env.project-version}}/test;
+            junitTestOutputsNative${{env.project-version}}/test;
+            scalaPartestJunitTests${{env.project-version}}/test
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" "${{matrix.arch.emulator}}"
