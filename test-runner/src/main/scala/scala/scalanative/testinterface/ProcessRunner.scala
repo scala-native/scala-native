@@ -13,8 +13,27 @@ private[testinterface] class ProcessRunner(
 ) extends AutoCloseable {
 
   private[this] val process = {
+    // Optional emualator config used internally for testing non amd64 architectures
+    val emulatorOpts: List[String] = {
+      val optEmulator =
+        sys.props.get("scala.scalanative.testinterface.processrunner.emulator")
+      val optEmulatorOptions = sys.props
+        .get("scala.scalanative.testinterface.processrunner.emulator-args")
+        .map(_.split(" ").toList)
+        .getOrElse(Nil)
+      optEmulator.toList ++ optEmulatorOptions
+    }
+    if (emulatorOpts.nonEmpty) {
+      logger.info(s"Using test process emulator: ${emulatorOpts.mkString(" ")}")
+    }
+
     val builder =
-      new ProcessBuilder(executableFile.toString +: port.toString +: args: _*)
+      new ProcessBuilder(
+        emulatorOpts ++:
+          executableFile.getAbsolutePath() +:
+          port.toString +:
+          args: _*
+      )
         .inheritIO()
 
     envVars.foreach {
