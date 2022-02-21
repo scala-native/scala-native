@@ -76,42 +76,13 @@ jobs:
             build-mode: debug
             gc: immix
           - scala: 2.12.15
-            build-mode: debug
             gc: immix
+          - scala: 2.12.15
+            gc: boehm
           - scala: 2.11.12
-            build-mode: debug
             gc: commix
-        include:
-          - scala: 2.12.13
-            build-mode: debug
-            gc: immix
-          - scala: 2.12.13
-            build-mode: release-fast
-            gc: commix
-          - scala: 2.12.14
-            build-mode: debug
-            gc: immix
-          - scala: 2.12.14
-            build-mode: release-fast
-            gc: commix
-          - scala: 2.13.4
-            build-mode: debug
-            gc: immix
-          - scala: 2.13.4
-            build-mode: release-fast
-            gc: commix
-          - scala: 2.13.5
-            build-mode: debug
-            gc: immix
-          - scala: 2.13.5
-            build-mode: release-fast
-            gc: commix
-          - scala: 2.13.6
-            build-mode: debug
-            gc: commix
-          - scala: 2.13.6
-            build-mode: release-fast
-            gc: immix
+          - scala: 2.11.12
+            gc: boehm
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -135,15 +106,9 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
-        build-mode: [debug, release-fast]
+        build-mode: [debug]
         include:
-          - scala: 2.12.13
-            build-mode: release-fast
-          - scala: 2.13.4
-            build-mode: release-fast
-          - scala: 2.13.5
-            build-mode: release-fast
-          - scala: 2.13.6
+          - scala: 2.13.8
             build-mode: release-fast
     steps:
       - uses: actions/checkout@v2
