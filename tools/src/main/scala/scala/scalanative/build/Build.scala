@@ -103,10 +103,18 @@ object Build {
       linkerResult: linker.Result
   ): Seq[CompilationResult] = {
     import NativeLib._
-    findNativeLibs(config.classPath, config.workdir)
+    findNativeLibs(
+      config.classPath,
+      config.workdir,
+      config.compilerConfig.nativeSourcePlugins
+    )
       .map(unpackNativeCode)
       .flatMap { destPath =>
-        val paths = findNativePaths(config.workdir, destPath)
+        val paths = findNativePaths(
+          config.workdir,
+          destPath,
+          config.compilerConfig.nativeSourcePlugins
+        )
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
         LLVM.compile(projConfig, projPaths)

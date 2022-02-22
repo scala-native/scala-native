@@ -33,12 +33,6 @@ sealed abstract class ClangSourcePlugin extends NativeSourcePlugin {
 
   protected def forceRebuild: Boolean = false
 
-  private def target(config: Config): Seq[String] =
-    config.compilerConfig.targetTriple match {
-      case Some(tt) => Seq("-target", tt)
-      case None     => Seq("-Wno-override-module")
-    }
-
   private def opt(config: Config): String =
     config.mode match {
       case Mode.Debug       => "-O0"
@@ -61,7 +55,7 @@ sealed abstract class ClangSourcePlugin extends NativeSourcePlugin {
         command = Seq(compiler(config)) ++
           LLVM.flto(config) ++
           flags ++
-          target(config) ++
+          LLVM.target(config) ++
           Seq("-c", inpath.abs, "-o", outpath.abs),
         result = ObjectFile(outpath)
       )

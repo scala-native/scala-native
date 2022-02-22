@@ -30,10 +30,14 @@ private[scalanative] object NativeLib {
    *  @return
    *    The Seq of NativeLib objects
    */
-  def findNativeLibs(classpath: Seq[Path], workdir: Path): Seq[NativeLib] = {
+  def findNativeLibs(
+      classpath: Seq[Path],
+      workdir: Path,
+      plugins: Seq[NativeSourcePlugin]
+  ): Seq[NativeLib] = {
     val nativeLibPaths = classpath.flatMap { path =>
-      if (isJar(path)) readJar(path)
-      else readDir(path)
+      if (isJar(path)) readJar(path, plugins)
+      else readDir(path, plugins)
     }
 
     val extractPaths =
@@ -64,8 +68,12 @@ private[scalanative] object NativeLib {
    *  @return
    *    All file paths to compile
    */
-  def findNativePaths(workdir: Path, destPath: Path): Seq[Path] = {
-    val srcPatterns = destSrcPattern(workdir, destPath)
+  def findNativePaths(
+      workdir: Path,
+      destPath: Path,
+      plugins: Seq[NativeSourcePlugin]
+  ): Seq[Path] = {
+    val srcPatterns = destSrcPattern(workdir, destPath, plugins)
     IO.getAll(workdir, srcPatterns)
   }
 
@@ -166,33 +174,55 @@ private[scalanative] object NativeLib {
   /** Is this NativeLib in a jar file */
   private def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
 
+  private def srcExtensions(plugins: Seq[NativeSourcePlugin]): Seq[String] =
+    plugins.flatMap(_.extensions)
+
   /** Used to find native source files in jar files */
-  private val jarSrcRegex: String = {
-    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
+  private def jarSrcRegex(plugins: Seq[NativeSourcePlugin]): String = {
+    val regexExtensions =
+      srcExtensions(plugins).mkString("""(\""", """|\""", ")")
     // Paths in jars always contains '/' separator instead of OS specific one.
     s"""^$nativeCodeDir/(.+)$regexExtensions$$"""
   }
 
-  private val jarPattern = Pattern.compile(jarSrcRegex)
+  private def jarPattern(plugins: Seq[NativeSourcePlugin]) =
+    Pattern.compile(jarSrcRegex(plugins))
 
-  private def isNativeFile(name: String): Boolean =
-    jarPattern.matcher(name).matches()
+  private def isNativeFile(
+      plugins: Seq[NativeSourcePlugin]
+  ): String => Boolean = {
+    val pattern = jarPattern(plugins)
+    name => pattern.matcher(name).matches()
+  }
 
-  private def readDir(path: Path): Option[Path] =
-    IO.existsInDir(path, srcPatterns(path)) match {
+  private def readDir(
+      path: Path,
+      plugins: Seq[NativeSourcePlugin]
+  ): Option[Path] =
+    IO.existsInDir(path, srcPatterns(path, plugins)) match {
       case true  => Some(path)
       case false => None
     }
 
-  private def readJar(path: Path): Option[Path] =
-    IO.existsInJar(path, isNativeFile) match {
+  private def readJar(
+      path: Path,
+      plugins: Seq[NativeSourcePlugin]
+  ): Option[Path] =
+    IO.existsInJar(path, isNativeFile(plugins)) match {
       case true  => Some(path)
       case false => None
     }
 
   /** Used to find native source files in directories */
-  private def srcPatterns(path: Path): String =
-    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
+  private def srcPatterns(
+      path: Path,
+      plugins: Seq[NativeSourcePlugin]
+  ): String =
+    srcExtensions(plugins).mkString(
+      s"glob:${srcPathPattern(path)}**{",
+      ",",
+      "}"
+    )
 
   private def srcPathPattern(path: Path): String =
     makeDirPath(path, nativeCodeDir)
@@ -218,10 +248,14 @@ private[scalanative] object NativeLib {
    *  @return
    *    The source pattern
    */
-  private def destSrcPattern(workdir: Path, destPath: Path): String = {
+  private def destSrcPattern(
+      workdir: Path,
+      destPath: Path,
+      plugins: Seq[NativeSourcePlugin]
+  ): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
     val pathPat = makeDirPath(workdir, dirPattern, nativeCodeDir)
-    srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
+    srcExtensions(plugins).mkString(s"glob:$pathPat**{", ",", "}")
   }
 
   private def makeDirPath(path: Path, elems: String*): String = {
