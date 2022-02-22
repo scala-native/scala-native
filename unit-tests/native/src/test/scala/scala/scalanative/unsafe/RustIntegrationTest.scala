@@ -1,8 +1,7 @@
 package scala.scalanative.unsafe
 
-import org.junit.{Test, BeforeClass}
+import org.junit.Test
 import org.junit.Assert._
-import org.junit.Assume._
 
 import scalanative.libc._
 import scalanative.unsigned._
@@ -15,17 +14,6 @@ object RustLib {
 
   //from cargo build
   def isEven(v: CInt): Boolean = extern
-}
-
-object RustIntegrationTest {
-  @BeforeClass
-  def assumeSupportsRust() = {
-    // LTO w/ rust requires a newer LLVM than the minimum LLVM version for SN
-    assumeFalse(
-      "RustIntegrationTest not available in the current build",
-      sys.env.get("SCALANATIVE_LTO").exists(_ != "none")
-    )
-  }
 }
 
 class RustIntegrationTest {
