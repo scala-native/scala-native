@@ -145,7 +145,7 @@ private[scalanative] object LLVM {
     outpath
   }
 
-  private def flto(config: Config): Seq[String] =
+  private[build] def flto(config: Config): Seq[String] =
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
       case lto      => Seq(s"-flto=${lto.name}")

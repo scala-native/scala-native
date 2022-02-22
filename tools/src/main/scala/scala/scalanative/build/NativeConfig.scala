@@ -56,6 +56,8 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
+  def nativeSourcePlugins: Seq[NativeSourcePlugin]
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -106,6 +108,11 @@ sealed trait NativeConfig {
   def withEmbedResources(
       value: Boolean
   ): NativeConfig
+
+  def withNativeSourcePlugins(plugins: Seq[NativeSourcePlugin]): NativeConfig
+
+  def withNativeSourcePlugin(plugin: NativeSourcePlugin): NativeConfig =
+    withNativeSourcePlugins(nativeSourcePlugins :+ plugin)
 }
 
 object NativeConfig {
@@ -128,7 +135,9 @@ object NativeConfig {
       linkStubs = false,
       optimize = true,
       linktimeProperties = Map.empty,
-      embedResources = false
+      embedResources = false,
+      nativeSourcePlugins =
+        Seq(CSourcePlugin, CppSourcePlugin, RustSourcePlugin)
     )
 
   private final case class Impl(
@@ -146,7 +155,8 @@ object NativeConfig {
       dump: Boolean,
       optimize: Boolean,
       linktimeProperties: LinktimeProperites,
-      embedResources: Boolean
+      embedResources: Boolean,
+      nativeSourcePlugins: Seq[NativeSourcePlugin]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -201,6 +211,12 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
+    def withNativeSourcePlugins(
+        plugins: Seq[NativeSourcePlugin]
+    ): NativeConfig = {
+      copy(nativeSourcePlugins = plugins)
+    }
+
     override def toString: String = {
       val listLinktimeProperties = {
         if (linktimeProperties.isEmpty) ""
@@ -232,6 +248,7 @@ object NativeConfig {
         | - optimize:           $optimize
         | - linktimeProperties: $listLinktimeProperties
         | - embedResources:     $embedResources
+        | - nativeSourcePlugins:${nativeSourcePlugins.mkString(",")}
         |)""".stripMargin
     }
   }
