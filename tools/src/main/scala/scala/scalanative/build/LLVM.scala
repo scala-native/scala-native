@@ -1,10 +1,12 @@
 package scala.scalanative
 package build
 
+import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
+import scala.scalanative.build.Mode._
 import scalanative.nir.Attr.Link
 
 /** Internal utilities to interact with LLVM command-line tools. */
@@ -16,11 +18,19 @@ private[scalanative] object LLVM {
   /** C++ file extension: ".cpp" */
   val cppExt = ".cpp"
 
+  /** Rust source file extension */
+  val rustExt = ".rs"
+
   /** LLVM intermediate file extension: ".ll" */
   val llExt = ".ll"
 
   /** List of source patterns used: ".c, .cpp, .S" */
-  val srcExtensions = Seq(".c", cppExt, ".S")
+  val srcExtensions = Seq(".c", cppExt, ".S", rustExt)
+
+  private case class CompilationContext(
+      command: Seq[String],
+      result: CompilationResult
+  )
 
   /** Compile the given files to object files
    *
@@ -31,44 +41,34 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+  def compile(
+      config: Config,
+      paths: Seq[Path]
+  ): Seq[CompilationResult] = {
     // generate .o files for all included source files in parallel
-    paths.par.map { path =>
-      val inpath = path.abs
-      val outpath = inpath + oExt
-      val isCpp = inpath.endsWith(cppExt)
-      val isLl = inpath.endsWith(llExt)
-      val objPath = Paths.get(outpath)
-      // LL is generated so always rebuild
-      if (isLl || !Files.exists(objPath)) {
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag = {
-          if (isLl) Seq()
-          else if (isCpp) {
-            // C++14 or newer standard is needed to compile code using Windows API
-            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-            if (config.targetsWindows) Seq("-std=c++14")
-            else Seq("-std=c++11")
-          } else Seq("-std=gnu11")
-        }
-        val platformFlags = {
-          if (config.targetsWindows) Seq("-g")
-          else Nil
-        }
-        val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
-            Seq("-c", inpath, "-o", outpath)
+    paths.par.flatMap { path =>
+      val inpath = path.toAbsolutePath()
+      val isRust = inpath.toString.endsWith(rustExt)
 
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) !
-          Logger.toProcessLogger(config.logger)
-        if (result != 0) {
-          throw new BuildException(s"Failed to compile ${inpath}")
+      val compilationCtx =
+        if (isRust)
+          compileWithRustc(config, inpath)
+        else
+          compileWithClang(config, inpath)
+
+      for {
+        CompilationContext(cmd, output) <- compilationCtx
+      } yield {
+        if (cmd.nonEmpty) {
+          config.logger.running(cmd)
+          val proc = Process(cmd, config.workdir.toFile)
+          val result = proc ! Logger.toProcessLogger(config.logger)
+          if (result != 0) {
+            throw new BuildException(s"Failed to compile ${inpath}")
+          }
         }
+        output
       }
-      objPath
     }.seq
   }
 
@@ -90,7 +90,7 @@ private[scalanative] object LLVM {
   def link(
       config: Config,
       linkerResult: linker.Result,
-      objectsPaths: Seq[Path],
+      compilationOutput: Seq[CompilationResult],
       outpath: Path
   ): Path = {
     val links = {
@@ -124,7 +124,12 @@ private[scalanative] object LLVM {
         } else Seq("-rdynamic")
       flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
     }
-    val paths = objectsPaths.map(_.abs)
+    // Make sure that libraries are linked as the last ones
+    val paths = {
+      compilationOutput.filter(_.isInstanceOf[ObjectFile]) ++
+        compilationOutput.filter(_.isInstanceOf[Library])
+    }.map(_.path.abs)
+
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
 
     config.logger.time(
@@ -158,4 +163,177 @@ private[scalanative] object LLVM {
       case Mode.ReleaseFast => "-O2"
       case Mode.ReleaseFull => "-O3"
     }
+
+  private def compileWithClang(
+      config: Config,
+      inpath: Path
+  ): Option[CompilationContext] = {
+    val isCpp = inpath.toString.endsWith(cppExt)
+    val isLl = inpath.toString.endsWith(llExt)
+    val outpath = Paths.get(inpath.abs + oExt)
+    val alreadyExists = Files.exists(outpath)
+    // LL is generated so always rebuild
+    if (isLl || !alreadyExists) Some {
+      val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+      val stdflag = {
+        if (isLl) Seq()
+        else if (isCpp) {
+          // C++14 or newer standard is needed to compile code using Windows API
+          // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+          if (config.targetsWindows) Seq("-std=c++14")
+          else Seq("-std=c++11")
+        } else Seq("-std=gnu11")
+      }
+      val platformFlags = {
+        if (config.targetsWindows) Seq("-g")
+        else Nil
+      }
+      val flags = opt(config) +: "-fvisibility=hidden" +:
+        stdflag ++: platformFlags ++: config.compileOptions
+
+      CompilationContext(
+        command = Seq(compiler) ++
+          flto(config) ++
+          flags ++
+          target(config) ++
+          Seq("-c", inpath.abs, "-o", outpath.abs),
+        result = ObjectFile(outpath)
+      )
+    }
+    else if (alreadyExists) Some(CompilationContext(Nil, ObjectFile(outpath)))
+    else None
+  }
+
+  private val compiledCargoCrates = collection.mutable.Set.empty[File]
+  private def compileWithRustc(
+      config: Config,
+      inPath: Path
+  ): Option[CompilationContext] = {
+    val optional = List(
+      config.compilerConfig.targetTriple.map("--target=" + _)
+    ).collect {
+      case Some(config) => config
+    }
+
+    def genStaticLibraryName(name: String): String = {
+      if (Platform.isWindows) s"$name.lib"
+      else s"lib$name.a"
+    }
+
+    val cargoDefinition = {
+      def loop(currentDir: Path): Option[File] = {
+        if (currentDir.endsWith(NativeLib.nativeCodeDir)) None
+        else {
+          currentDir
+            .toFile()
+            .listFiles()
+            .find(_.getName().toLowerCase == "cargo.toml")
+            .orElse(loop(currentDir.getParent()))
+        }
+      }
+      loop(inPath.getParent())
+    }
+
+    def compileUsingCargo(cargoFile: File) = {
+      val shouldBuildCrate = compiledCargoCrates.synchronized {
+        compiledCargoCrates.add(cargoFile)
+      }
+      if (!shouldBuildCrate) None
+      else
+        Some {
+          val content = scala.io.Source.fromFile(cargoFile).getLines().toList
+          def getScope(name: String) = {
+            val header = s"[$name]"
+            content
+              .dropWhile(!_.trim().startsWith(header))
+              .drop(1)
+              .takeWhile(!_.trim().startsWith("["))
+          }
+
+          def findValue(
+              prefix: String
+          )(scopeContent: List[String]): Option[String] = {
+            scopeContent
+              .find(_.trim().startsWith(prefix))
+              .map(_.split("="))
+              .map {
+                case Array(_, rhs) => rhs.trim()
+                case arr           => arr.tail.mkString("=")
+              }
+          }
+
+          def findInLibOrPackage(field: String) =
+            findValue(field)(getScope("lib")) orElse
+              findValue(field)(getScope("package"))
+
+          val name = findInLibOrPackage("name").map(_.replace("\"", ""))
+          val crateTypes = findInLibOrPackage("crate-type").toList.flatMap {
+            _.replace("\"", "")
+              .stripPrefix("[")
+              .stripSuffix("]")
+              .split(",")
+              .map(_.trim())
+          }.toSet
+
+          if (!crateTypes.contains("staticlib")) {
+            throw new BuildException(
+              s"Rust crete needs to be published as staticlib, currently published as: ${crateTypes
+                .mkString(", ")};"
+            )
+          }
+
+          val (releaseDir, releaseOptions) = config.mode match {
+            case Debug                     => "debug" -> None
+            case ReleaseFast | ReleaseFull => "release" -> Some("--release")
+          }
+
+          val outPath = name
+            .fold {
+              throw new BuildException(
+                "Failed to compute expected name of cargo artifact"
+              )
+            } { name =>
+              Paths.get(
+                cargoFile.getParent(),
+                "target",
+                releaseDir,
+                genStaticLibraryName(name)
+              )
+            }
+
+          CompilationContext(
+            command = Discover.cargo.abs ::
+              "build" ::
+              "--lib" ::
+              s"--manifest-path=${cargoFile.getAbsolutePath()}" ::
+              "--quiet" ::
+              releaseOptions.toList :::
+              optional,
+            result = Library(outPath)
+          )
+        }
+    }
+
+    def compileStandalone = Some {
+      val outPath = inPath.resolveSibling(
+        genStaticLibraryName(
+          inPath.getFileName().toString.stripSuffix(rustExt)
+        )
+      )
+
+      CompilationContext(
+        command = Discover.rustc.abs ::
+          inPath.abs ::
+          "-o" + outPath.abs ::
+          "--crate-type=staticlib" :: // Need to be compiled as staticlib to include rust stdlib
+          optional,
+        result = Library(outPath)
+      )
+    }
+
+    cargoDefinition match {
+      case None       => compileStandalone
+      case Some(path) => compileUsingCargo(path)
+    }
+  }
 }
