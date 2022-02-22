@@ -12,7 +12,7 @@ object RustLib {
   @name("check_test_string")
   def checkTestString(string: CString): Boolean = extern
 
-  //from cargo build
+  // from cargo build
   def isEven(v: CInt): Boolean = extern
 }
 
