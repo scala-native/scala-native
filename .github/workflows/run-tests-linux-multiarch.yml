@@ -137,4 +137,4 @@ jobs:
             testsExt${{env.project-version}}/test;
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" "${{matrix.arch.emulator}}"
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"
