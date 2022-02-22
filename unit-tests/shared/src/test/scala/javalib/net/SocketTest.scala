@@ -72,7 +72,9 @@ class SocketTest {
   @Test def soTimeout(): Unit = {
     assumeFalse(
       "getsockopt return not yet supported error on aarch64-linux-gnu",
-      !Platform.executingInJVM && Platform.isArm64
+      Platform.isArm64 &&
+        !Platform.executingInJVM &&
+        !(Platform.isWindows || Platform.isMacOs)
     )
     val s = new Socket()
     try {
