@@ -124,7 +124,7 @@ jobs:
           ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
           if [[ ${{matrix.lto}} == "thin" ]]; then
             echo -e "\n" >> ${ignoredTestsFile}
-            echo -e "junit/scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
+            echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
           fi
 
       - name: Run tests
