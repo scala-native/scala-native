@@ -32,7 +32,7 @@ sealed abstract class ClangSourcesCompilerPlugin
 
   protected def compiler(config: Config): String = config.clang.abs
 
-  protected def forceRebuild: Boolean = false
+  protected def forceRebuild(input: Path): Boolean = false
 
   private def opt(config: Config): String =
     config.mode match {
@@ -44,7 +44,7 @@ sealed abstract class ClangSourcesCompilerPlugin
   def compile(config: Config, inpath: Path): Option[CompilationContext] = {
     val outpath = Paths.get(inpath.abs + LLVM.oExt)
 
-    val context = if (forceRebuild || !Files.exists(outpath)) {
+    val context = if (forceRebuild(inpath) || !Files.exists(outpath)) {
       val platformFlags = {
         if (config.targetsWindows) Seq("-g")
         else Nil
@@ -81,7 +81,8 @@ case object LlSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
   val extensions = Seq(llExt)
 
   // LL is generated so always rebuild
-  override def forceRebuild = true
+  // TODO check if `input` is an SN-generated file
+  override def forceRebuild(input: Path) = true
 
   protected def stdflag(config: Config): Seq[String] = Seq()
 
