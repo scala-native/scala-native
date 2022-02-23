@@ -53,9 +53,11 @@ object Build {
    */
   def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
     config.logger.time("Total") {
+      val nativeLibUtil =
+        new NativeLibUtil(config.compilerConfig.nativeSourcePlugins)
       // validate classpath
       val fconfig = {
-        val fclasspath = NativeLib.filterClasspath(config.classPath)
+        val fclasspath = nativeLibUtil.filterClasspath(config.classPath)
         config.withClassPath(fclasspath)
       }
 
@@ -102,19 +104,14 @@ object Build {
       config: Config,
       linkerResult: linker.Result
   ): Seq[CompilationResult] = {
-    import NativeLib._
-    findNativeLibs(
-      config.classPath,
-      config.workdir,
+    val nativeLibUtil = new NativeLibUtil(
       config.compilerConfig.nativeSourcePlugins
     )
+    import nativeLibUtil._
+    findNativeLibs(config.classPath, config.workdir)
       .map(unpackNativeCode)
       .flatMap { destPath =>
-        val paths = findNativePaths(
-          config.workdir,
-          destPath,
-          config.compilerConfig.nativeSourcePlugins
-        )
+        val paths = findNativePaths(config.workdir, destPath)
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
         LLVM.compile(projConfig, projPaths)

@@ -11,12 +11,20 @@ import scalanative.build.LLVM._
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
 
-/** Utilities for dealing with native library code */
+/** Constants for dealing with native library code */
 private[scalanative] object NativeLib {
 
   /** Name of directory that contains native code: "scala-native"
    */
   val nativeCodeDir = "scala-native"
+}
+
+/** Utilities for dealing with native library code */
+private[scalanative] class NativeLibUtil(
+    plugins: Seq[NativeSourcesCompilerPlugin]
+) {
+
+  import NativeLib._
 
   /** Finds all the native libs on the classpath.
    *
@@ -32,12 +40,11 @@ private[scalanative] object NativeLib {
    */
   def findNativeLibs(
       classpath: Seq[Path],
-      workdir: Path,
-      plugins: Seq[NativeSourcesCompilerPlugin]
+      workdir: Path
   ): Seq[NativeLib] = {
     val nativeLibPaths = classpath.flatMap { path =>
-      if (isJar(path)) readJar(path, plugins)
-      else readDir(path, plugins)
+      if (isJar(path)) readJar(path)
+      else readDir(path)
     }
 
     val extractPaths =
@@ -70,10 +77,9 @@ private[scalanative] object NativeLib {
    */
   def findNativePaths(
       workdir: Path,
-      destPath: Path,
-      plugins: Seq[NativeSourcesCompilerPlugin]
+      destPath: Path
   ): Seq[Path] = {
-    val srcPatterns = destSrcPattern(workdir, destPath, plugins)
+    val srcPatterns = destSrcPattern(workdir, destPath)
     IO.getAll(workdir, srcPatterns)
   }
 
@@ -174,51 +180,39 @@ private[scalanative] object NativeLib {
   /** Is this NativeLib in a jar file */
   private def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
 
-  private def srcExtensions(plugins: Seq[NativeSourcesCompilerPlugin]): Seq[String] =
+  private val srcExtensions: Seq[String] =
     plugins.flatMap(_.extensions)
 
   /** Used to find native source files in jar files */
-  private def jarSrcRegex(plugins: Seq[NativeSourcesCompilerPlugin]): String = {
-    val regexExtensions =
-      srcExtensions(plugins).mkString("""(\""", """|\""", ")")
+  private val jarSrcRegex: String = {
+    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
     // Paths in jars always contains '/' separator instead of OS specific one.
     s"""^$nativeCodeDir/(.+)$regexExtensions$$"""
   }
 
-  private def jarPattern(plugins: Seq[NativeSourcesCompilerPlugin]) =
-    Pattern.compile(jarSrcRegex(plugins))
+  private val jarPattern = Pattern.compile(jarSrcRegex)
 
-  private def isNativeFile(
-      plugins: Seq[NativeSourcesCompilerPlugin]
-  ): String => Boolean = {
-    val pattern = jarPattern(plugins)
-    name => pattern.matcher(name).matches()
+  private def isNativeFile(name: String): Boolean = {
+    jarPattern.matcher(name).matches()
   }
 
   private def readDir(
-      path: Path,
-      plugins: Seq[NativeSourcesCompilerPlugin]
+      path: Path
   ): Option[Path] =
-    IO.existsInDir(path, srcPatterns(path, plugins)) match {
+    IO.existsInDir(path, srcPatterns(path)) match {
       case true  => Some(path)
       case false => None
     }
 
-  private def readJar(
-      path: Path,
-      plugins: Seq[NativeSourcesCompilerPlugin]
-  ): Option[Path] =
-    IO.existsInJar(path, isNativeFile(plugins)) match {
+  private def readJar(path: Path): Option[Path] =
+    IO.existsInJar(path, isNativeFile) match {
       case true  => Some(path)
       case false => None
     }
 
   /** Used to find native source files in directories */
-  private def srcPatterns(
-      path: Path,
-      plugins: Seq[NativeSourcesCompilerPlugin]
-  ): String =
-    srcExtensions(plugins).mkString(
+  private def srcPatterns(path: Path): String =
+    srcExtensions.mkString(
       s"glob:${srcPathPattern(path)}**{",
       ",",
       "}"
@@ -250,12 +244,11 @@ private[scalanative] object NativeLib {
    */
   private def destSrcPattern(
       workdir: Path,
-      destPath: Path,
-      plugins: Seq[NativeSourcesCompilerPlugin]
+      destPath: Path
   ): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
     val pathPat = makeDirPath(workdir, dirPattern, nativeCodeDir)
-    srcExtensions(plugins).mkString(s"glob:$pathPat**{", ",", "}")
+    srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 
   private def makeDirPath(path: Path, elems: String*): String = {
