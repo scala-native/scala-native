@@ -56,7 +56,7 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
-  def nativeSourcePlugins: Seq[NativeSourcesCompilerPlugin]
+  def nativeSourcesCompilerPlugins: Seq[NativeSourcesCompilerPlugin]
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
@@ -116,7 +116,7 @@ sealed trait NativeConfig {
   def withNativeSourcesCompilerPlugin(
       plugin: NativeSourcesCompilerPlugin
   ): NativeConfig =
-    withNativeSourcesCompilerPlugins(nativeSourcePlugins :+ plugin)
+    withNativeSourcesCompilerPlugins(nativeSourcesCompilerPlugins :+ plugin)
 }
 
 object NativeConfig {
@@ -140,7 +140,7 @@ object NativeConfig {
       optimize = true,
       linktimeProperties = Map.empty,
       embedResources = false,
-      nativeSourcePlugins = Seq(
+      nativeSourcesCompilerPlugins = Seq(
         CSourcesCompilerPlugin,
         CppSourcesCompilerPlugin,
         RustSourcesCompilerPlugin
@@ -163,7 +163,7 @@ object NativeConfig {
       optimize: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
-      nativeSourcePlugins: Seq[NativeSourcesCompilerPlugin]
+      nativeSourcesCompilerPlugins: Seq[NativeSourcesCompilerPlugin]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -221,7 +221,7 @@ object NativeConfig {
     def withNativeSourcesCompilerPlugins(
         plugins: Seq[NativeSourcesCompilerPlugin]
     ): NativeConfig = {
-      copy(nativeSourcePlugins = plugins)
+      copy(nativeSourcesCompilerPlugins = plugins)
     }
 
     override def toString: String = {
@@ -240,7 +240,7 @@ object NativeConfig {
         }
       }
       val listNativeSourcePlugins =
-        nativeSourcePlugins.map(_.name).mkString("[", ", ", "]")
+        nativeSourcesCompilerPlugins.map(_.name).mkString("[", ", ", "]")
       s"""NativeConfig(
         | - clang:               $clang
         | - clangPP:             $clangPP
@@ -257,7 +257,7 @@ object NativeConfig {
         | - optimize:            $optimize
         | - linktimeProperties:  $listLinktimeProperties
         | - embedResources:      $embedResources
-        | - nativeSourcePlugins: $listNativeSourcePlugins
+        | - nativeSourcesCompilerPlugins: $listNativeSourcePlugins
         |)""".stripMargin
     }
   }

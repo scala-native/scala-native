@@ -33,7 +33,7 @@ private[scalanative] object LLVM {
     val defaultPlugins: Map[String, NativeSourcesCompilerPlugin] =
       LlSourcesCompilerPlugin.extensions.map(_ -> LlSourcesCompilerPlugin).toMap
 
-    val plugins = config.compilerConfig.nativeSourcePlugins
+    val plugins = config.compilerConfig.nativeSourcesCompilerPlugins
       .flatMap(p => p.extensions.map(_ -> p))
       .foldLeft(defaultPlugins) {
         case (plugins, (ext, plugin)) =>

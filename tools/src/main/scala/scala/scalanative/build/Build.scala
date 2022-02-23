@@ -54,7 +54,7 @@ object Build {
   def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
     config.logger.time("Total") {
       val nativeLibUtil =
-        new NativeLibUtil(config.compilerConfig.nativeSourcePlugins)
+        new NativeLibUtil(config.compilerConfig.nativeSourcesCompilerPlugins)
       // validate classpath
       val fconfig = {
         val fclasspath = nativeLibUtil.filterClasspath(config.classPath)
@@ -105,7 +105,7 @@ object Build {
       linkerResult: linker.Result
   ): Seq[CompilationResult] = {
     val nativeLibUtil = new NativeLibUtil(
-      config.compilerConfig.nativeSourcePlugins
+      config.compilerConfig.nativeSourcesCompilerPlugins
     )
     import nativeLibUtil._
     findNativeLibs(config.classPath, config.workdir)
