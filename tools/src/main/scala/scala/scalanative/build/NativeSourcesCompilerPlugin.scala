@@ -25,7 +25,8 @@ object NativeSourcesCompilerPlugin {
 
 }
 
-sealed abstract class ClangSourcesCompilerPlugin extends NativeSourcesCompilerPlugin {
+sealed abstract class ClangSourcesCompilerPlugin
+    extends NativeSourcesCompilerPlugin {
 
   protected def stdflag(config: Config): Seq[String]
 
@@ -42,8 +43,8 @@ sealed abstract class ClangSourcesCompilerPlugin extends NativeSourcesCompilerPl
 
   def compile(config: Config, inpath: Path): Option[CompilationContext] = {
     val outpath = Paths.get(inpath.abs + LLVM.oExt)
-    val alreadyExists = Files.exists(outpath)
-    if (forceRebuild || !alreadyExists) Some {
+
+    val context = if (forceRebuild || !Files.exists(outpath)) {
       val platformFlags = {
         if (config.targetsWindows) Seq("-g")
         else Nil
@@ -65,9 +66,9 @@ sealed abstract class ClangSourcesCompilerPlugin extends NativeSourcesCompilerPl
           Seq("-c", inpath.abs, "-o", outpath.abs),
         result = ObjectFile(outpath)
       )
-    }
-    else if (alreadyExists) Some(CompilationContext(Nil, ObjectFile(outpath)))
-    else None
+    } else CompilationContext(Nil, ObjectFile(outpath))
+
+    Some(context)
   }
 
 }
