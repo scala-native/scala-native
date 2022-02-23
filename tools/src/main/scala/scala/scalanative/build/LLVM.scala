@@ -30,15 +30,32 @@ private[scalanative] object LLVM {
   ): Seq[CompilationResult] = {
     import NativeSourcesCompilerPlugin._
 
-    val plugins =
-      LlSourcesCompilerPlugin +: config.compilerConfig.nativeSourcePlugins
+    val defaultPlugins: Map[String, NativeSourcesCompilerPlugin] =
+      LlSourcesCompilerPlugin.extensions.map(_ -> LlSourcesCompilerPlugin).toMap
+
+    val plugins = config.compilerConfig.nativeSourcePlugins
+      .flatMap(p => p.extensions.map(_ -> p))
+      .foldLeft(defaultPlugins) {
+        case (plugins, (ext, plugin)) =>
+          if (plugins.contains(ext)) {
+            val msg =
+              s"Multiple compiler plugins for extension $ext: ${plugins(ext).name} and ${plugin.name}"
+            throw new BuildException(msg)
+          } else {
+            plugins + (ext -> plugin)
+          }
+      }
+
     // generate .o files for all included source files in parallel
     paths.par.flatMap { path =>
       val inpath = path.toAbsolutePath()
 
-      val compiler = plugins
-        .find(p => p.extensions.exists(ext => inpath.toString.endsWith(ext)))
-        .getOrElse(throw new BuildException(s"Failed to compile ${inpath}"))
+      val ext = inpath.toString.split('.').lastOption
+      val compiler = ext
+        .flatMap(ext => plugins.get(s".$ext"))
+        .getOrElse(
+          throw new BuildException(s"Unable to find compiler for ${inpath}")
+        )
 
       val compilationCtx = compiler.compile(config, inpath)
 
