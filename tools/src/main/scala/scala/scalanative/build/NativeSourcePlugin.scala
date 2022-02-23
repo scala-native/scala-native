@@ -48,8 +48,14 @@ sealed abstract class ClangSourcePlugin extends NativeSourcePlugin {
         if (config.targetsWindows) Seq("-g")
         else Nil
       }
-      val flags = opt(config) +: "-fvisibility=hidden" +:
-        stdflag(config) ++: platformFlags ++: config.compileOptions
+      val exceptionsHandling =
+        List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+      val flags = opt(config) +:
+        "-fvisibility=hidden" +:
+        stdflag(config) ++:
+        platformFlags ++:
+        exceptionsHandling ++:
+        config.compileOptions
 
       CompilationContext(
         command = Seq(compiler(config)) ++

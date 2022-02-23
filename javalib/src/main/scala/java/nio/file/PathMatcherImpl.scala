@@ -1,6 +1,7 @@
 package java.nio.file
 
 import java.util.regex.Pattern
+import java.nio.file.glob.GlobPattern
 
 object PathMatcherImpl {
   def apply(syntaxAndPattern: String): PathMatcher = {
@@ -13,6 +14,7 @@ object PathMatcherImpl {
       syntaxAndPattern.substring(colonIndex + 1, syntaxAndPattern.length())
 
     if (syntax == "regex") new RegexPathMatcher(Pattern.compile(pattern))
+    else if (syntax == "glob") new GlobPathMatcher(pattern)
     else throw new UnsupportedOperationException()
   }
 }
@@ -20,4 +22,10 @@ object PathMatcherImpl {
 private class RegexPathMatcher(pattern: Pattern) extends PathMatcher {
   override def matches(p: Path): Boolean =
     pattern.matcher(p.toString).matches()
+}
+
+private class GlobPathMatcher(pattern: String) extends PathMatcher {
+  val globPattern = GlobPattern.compile(pattern)
+  override def matches(p: Path): Boolean =
+    globPattern.matcher(p.toString).matches()
 }

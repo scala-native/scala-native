@@ -1,0 +1,138 @@
+name: Run tests Linux multiarch
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+concurrency:
+  group: linux-multiarch-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build testing image that would be used to build and run against different platforms
+  # Currently only Linux x64 is tested
+  build-image:
+    name: Build image
+    runs-on: ubuntu-18.04
+    outputs:
+      image-name: ${{ steps.build-image.outputs.image-base-name }}
+    strategy:
+      matrix:
+        arch: [linux-arm64]
+
+    steps:
+      - uses: actions/checkout@v2
+      # In order to minimize time spend in image build loading we're caching directory of local repository
+      # Starting local registry from cache is faster then loading image tars
+      # https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei
+      # This and next stage (start registry) should be used in every step using built images
+      # Images are cached based on content of Dockerfile
+
+      # Cache automatically saves content specified paths after executing all steps defined after this one.
+      # It will not update cache on hit.
+      - name: Cache docker
+        uses: actions/cache@v1
+        with:
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.arch }}
+      - name: Run local image registry
+        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
+
+      # Builds images and saves image base name in output - it allows to re-use it in other steps.
+      - name: Build image
+        id: build-image
+        run: |
+          imageBase="scala-native-testing"
+          imageName="${imageBase}:${{ matrix.arch }}"
+          echo "::set-output name=image-base-name::${imageBase}"
+          echo "::set-output name=image-full-name::${imageName}"
+
+          docker pull localhost:5000/${imageName} || true
+          docker build \
+          -t ${imageName} \
+          --cache-from=localhost:5000/${imageName} \
+          --build-arg TARGET_PLATFORM=${{ matrix.arch}} \
+          ci-docker
+
+      - name: Store image in cache
+        run: |
+          imageName=${{ steps.build-image.outputs.image-full-name }}
+          docker tag $imageName localhost:5000/${imageName} && \
+          docker push localhost:5000/${imageName}
+
+  #Main tests grid. Builds and runs tests agains multiple combination of GC, Build mode and Scala Version
+  #It can be extended to test against different OS and Arch settings
+  test-runtime:
+    name: Test runtime
+    runs-on: ubuntu-18.04
+    needs: build-image
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [{ name: linux-arm64, emulator: qemu-aarch64-static }]
+        scala: [2.13.8, 3.1.1]
+        build-mode: [releaseFast]
+        lto: [thin, none]
+        gc: [immix, commix]
+        # Create holes in grid to lower number of tests.
+        # Excluded entries should have low impact on overall project coverage
+        exclude:
+          - gc: immix
+            lto: none
+          - gc: commix
+            lto: thin
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Prepare common options
+        shell: bash
+        # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
+        # Becouse of that we need to build it whole config from scratch
+        # There is no other way for passing compile and linking opts (we ignore deprecated sbt keys)
+        # Following envs CROSS_ are always present in docker container
+        run: |
+          targetEnv='sys.env("CROSS_TRIPLE")'
+          target='${sys.env("CROSS_TRIPLE")}'
+          crossRoot='${sys.env("CROSS_ROOT")}'
+
+          gccToolchainFlag=s\"--gcc-toolchain=${crossRoot}\"
+          sysRootFlag=s\"--sysroot=${crossRoot}/${target}/sysroot\"
+          useLdFlg=\"-fuse-ld=lld\"
+          crossOptions="List($gccToolchainFlag, $sysRootFlag, $useLdFlg)"
+
+          emptyConfig="scalanative.build.NativeConfig.empty"
+          withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
+          withGC="withGC(scalanative.build.GC.${{matrix.gc}})"
+          withLTO="withLTO(scalanative.build.LTO.${{matrix.lto}})"
+          withToolchain="withClang(scalanative.build.Discover.clang()).withClangPP(scalanative.build.Discover.clangpp())"
+          withOpts="withEmbedResources(true).withOptimize(true).withCheck(true).withCheckFatalWarnings(true)"
+          withTarget="withTargetTriple(${targetEnv})"
+          withCompileOpts="withCompileOptions(scalanative.build.Discover.compileOptions() ++ $crossOptions)"
+          withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
+          config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
+
+          echo "native-config=${config}" >> $GITHUB_ENV
+
+      # Conditionally disable some of the tests (Scala 2 only)
+      - name: Set filters for partests
+        shell: bash
+        if: ${{ !startsWith(matrix.scala, '3.') }}
+        run: |
+          ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
+          echo "" >> ${ignoredTestsFile}
+          echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
+
+      - name: Run tests
+        env:
+          # Limit commands only to native tests, tests would use amd64 JDK anyway
+          TEST_COMMAND: >
+            set every nativeConfig := ${{env.native-config}};
+            show sandbox${{env.project-version}}/nativeConfig;
+            tests${{env.project-version}}/test;
+            testsExt${{env.project-version}}/test;
+            junitTestOutputsNative${{env.project-version}}/test;
+            scalaPartestJunitTests${{env.project-version}}/test
+        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"

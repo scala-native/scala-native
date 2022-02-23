@@ -23,4 +23,7 @@ object Platform {
   private val osNameProp = System.getProperty("os.name")
   final val isFreeBSD = osNameProp.equals("FreeBSD")
   final val isWindows = osNameProp.toLowerCase.startsWith("windows")
+  final val isMacOs = osNameProp.toLowerCase.contains("mac")
+
+  final val isArm64 = scalanative.runtime.PlatformExt.isArm64
 }

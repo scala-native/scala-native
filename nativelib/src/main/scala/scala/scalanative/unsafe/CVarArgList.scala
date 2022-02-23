@@ -38,9 +38,30 @@ object CVarArgList {
     def regSaveArea_=(value: Ptr[Long]): Unit = ptr._4 = value
   }
 
-  private final val countGPRegisters = 6
+  // Arm64 specific struct
+  private type CVaList = CStruct5[Ptr[Word], Ptr[Word], Ptr[Word], Int, Int]
+  private implicit class CVaListOps(val ptr: Ptr[CVaList]) extends AnyVal {
+    def stack: Ptr[Word] = ptr._1
+    def grTop: Ptr[Word] = ptr._2
+    def vrTop: Ptr[Word] = ptr._3
+    def grOffset: Int = ptr._4
+    def vrOffset: Int = ptr._5
+
+    def stack_=(value: Ptr[Word]): Unit = ptr._1 = value
+    def grTop_=(value: Ptr[Word]): Unit = ptr._2 = value
+    def vrTop_=(value: Ptr[Word]): Unit = ptr._3 = value
+    def grOffset_=(value: Int): Unit = ptr._4 = value
+    def vrOffset_=(value: Int): Unit = ptr._5 = value
+  }
+
+  val isWindowsOrMac = Platform.isWindows() || Platform.isMac()
+  private final val countGPRegisters =
+    if (PlatformExt.isArm64 && !isWindowsOrMac) 8
+    else 6
   private final val countFPRegisters = 8
-  private final val fpRegisterWords = 2
+  private final val fpRegisterWords =
+    if (PlatformExt.isArm64 && !isWindowsOrMac) 16 / sizeof[Word].toInt
+    else 2
   private final val registerSaveWords =
     countGPRegisters + countFPRegisters * fpRegisterWords
 
@@ -106,15 +127,20 @@ object CVarArgList {
       val isDouble = isPassedAsDouble(vararg)
 
       if (isDouble && fpRegistersUsed < countFPRegisters) {
+        val fpRegistersSize = fpRegistersUsed * fpRegisterWords
         var startIndex =
-          countGPRegisters + (fpRegistersUsed * fpRegisterWords)
+          if (PlatformExt.isArm64) fpRegistersSize
+          else countGPRegisters + fpRegistersSize
         encoded.foreach { w =>
           storage(startIndex) = w
           startIndex += 1
         }
         fpRegistersUsed += 1
       } else if (encoded.size == 1 && !isDouble && gpRegistersUsed < countGPRegisters) {
-        val startIndex = gpRegistersUsed
+        val startIndex =
+          if (PlatformExt.isArm64)
+            fpRegisterWords * countFPRegisters + gpRegistersUsed
+          else gpRegistersUsed
         storage(startIndex) = encoded(0)
         gpRegistersUsed += 1
       } else {
@@ -129,17 +155,28 @@ object CVarArgList {
       toRawPtr(storageStart),
       wordsUsed.toULong * sizeof[Long]
     )
-
-    if (PlatformExt.isArm64 && Platform.isMac())
-      new CVarArgList(toRawPtr(storageStart))
-    else {
+    val rawPtr = if (PlatformExt.isArm64) {
+      if (Platform.isMac()) toRawPtr(storageStart)
+      else {
+        val vrTop = resultStorage + fpRegisterWords * countFPRegisters
+        val grTop = vrTop + countGPRegisters
+        val va = z.alloc(sizeof[CVaList]).asInstanceOf[Ptr[CVaList]]
+        va.stack = grTop
+        va.grTop = grTop
+        va.vrTop = vrTop
+        va.grOffset = -64 // Constants copy pasted from Swift
+        va.vrOffset = -128
+        toRawPtr(va)
+      }
+    } else {
       val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = 0.toUInt
       resultHeader.fpOffset = (countGPRegisters.toULong * sizeof[Long]).toUInt
       resultHeader.regSaveArea = resultStorage
       resultHeader.overflowArgArea = resultStorage + registerSaveWords
-      new CVarArgList(toRawPtr(resultHeader))
+      toRawPtr(resultHeader)
     }
+    new CVarArgList(rawPtr)
   }
 
   private def toCVarArgList_X86_64_Windows(

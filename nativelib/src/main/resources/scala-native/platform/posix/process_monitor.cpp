@@ -13,6 +13,7 @@
 #else
 #include <semaphore.h>
 #include <errno.h>
+#include <sys/mman.h>
 #endif
 
 struct Monitor {
@@ -35,7 +36,7 @@ static std::unordered_map<int, int> finished_procs;
 #ifdef __APPLE__
 static dispatch_semaphore_t active_procs;
 #else
-static sem_t active_procs;
+static sem_t *active_procs;
 #endif
 
 static void *wait_loop(void *arg) {
@@ -47,7 +48,7 @@ static void *wait_loop(void *arg) {
 #else
         int wait_result;
         do {
-            wait_result = sem_wait(&active_procs);
+            wait_result = sem_wait(active_procs);
         } while (wait_result == -1 && errno == EINTR);
 #endif
 
@@ -90,7 +91,7 @@ void scalanative_process_monitor_notify() {
 #ifdef __APPLE__
     dispatch_semaphore_signal(active_procs);
 #else
-    sem_post(&active_procs);
+    sem_post(active_procs);
 #endif
 }
 
@@ -130,7 +131,10 @@ void scalanative_process_monitor_init() {
 #ifdef __APPLE__
     active_procs = dispatch_semaphore_create(0);
 #else
-    sem_init(&active_procs, 1, 0);
+    // place semaphore in shared memory (needed for arm64)
+    active_procs = (sem_t *)mmap(NULL, sizeof(sem_t *), PROT_READ | PROT_WRITE,
+                                 MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    sem_init(active_procs, 1, 0);
 #endif
     pthread_create(&thread, NULL, wait_loop, NULL);
     pthread_detach(thread);

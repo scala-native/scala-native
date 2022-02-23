@@ -20,6 +20,12 @@ runs:
           echo "project-version=3" >> $GITHUB_ENV
         fi
 
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgc-dev
+
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
       uses: actions/cache@v2
@@ -28,10 +34,3 @@ runs:
           ~/.cache/coursier
           ~/.sbt/boot
         key: ${{ runner.os }}-deps-${{ env.binary-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
-
-    # Loads cached content of local docker registry containing built images.
-    - name: Cache docker
-      uses: actions/cache@v1
-      with:
-        path: /tmp/docker-registry
-        key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}
