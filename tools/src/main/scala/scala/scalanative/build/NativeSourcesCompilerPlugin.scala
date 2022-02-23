@@ -8,18 +8,26 @@ import scalanative.build.Mode._
 
 import NativeSourcesCompilerPlugin._
 
+/** A plugin interface for compiling native sources, such as C, C++, and Rust.
+ */
 trait NativeSourcesCompilerPlugin {
 
+  /** The name of this plugin */
   def name: String
 
+  /** The extensions this plugin accepts. e.g. `.c` */
   def extensions: Seq[String]
 
+  /** Return a command to compile the given file and the result.
+   */
   def compile(config: Config, path: Path): Option[CompilationContext]
 
 }
 
 object NativeSourcesCompilerPlugin {
 
+  /** The command to compile a file and the result.
+   */
   case class CompilationContext(
       command: Seq[String],
       result: CompilationResult
@@ -102,7 +110,7 @@ case object CSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
   /** Assembler file extension: ".S" */
   val assemblerExt = ".S"
 
-  /** List of source patterns used: ".c, .cpp, .S" */
+  /** List of source patterns used: ".c, .S" */
   val extensions = Seq(cExt, assemblerExt)
 
   protected def stdflag(config: Config): Seq[String] = Seq("-std=gnu11")
