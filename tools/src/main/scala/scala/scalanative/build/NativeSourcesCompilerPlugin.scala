@@ -10,6 +10,8 @@ import NativeSourcesCompilerPlugin._
 
 trait NativeSourcesCompilerPlugin {
 
+  def name: String
+
   def extensions: Seq[String]
 
   def compile(config: Config, path: Path): Option[CompilationContext]
@@ -73,7 +75,9 @@ sealed abstract class ClangSourcesCompilerPlugin
 
 }
 
-case object LlSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
+object LlSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
+
+  override def name = "LlSourcesCompilerPlugin"
 
   /** LLVM intermediate file extension: ".ll" */
   val llExt = ".ll"
@@ -90,6 +94,8 @@ case object LlSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 
 case object CSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 
+  override def name = "CSourcesCompilerPlugin"
+
   /** C file extension: ".c" */
   val cExt = ".c"
 
@@ -104,6 +110,8 @@ case object CSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 }
 
 case object CppSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
+
+  override def name = "CppSourcesCompilerPlugin"
 
   /** C++ file extension: ".cpp" */
   val cppExt = ".cpp"
@@ -121,6 +129,8 @@ case object CppSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 }
 
 case object RustSourcesCompilerPlugin extends NativeSourcesCompilerPlugin {
+
+  override def name = "RustSourcesCompilerPlugin"
 
   /** Rust source file extension */
   val rustExt = ".rs"
