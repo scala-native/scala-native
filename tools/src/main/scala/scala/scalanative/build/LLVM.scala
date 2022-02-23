@@ -28,9 +28,10 @@ private[scalanative] object LLVM {
       config: Config,
       paths: Seq[Path]
   ): Seq[CompilationResult] = {
-    import NativeSourcePlugin._
+    import NativeSourcesCompilerPlugin._
 
-    val plugins = LlSourcePlugin +: config.compilerConfig.nativeSourcePlugins
+    val plugins =
+      LlSourcesCompilerPlugin +: config.compilerConfig.nativeSourcePlugins
     // generate .o files for all included source files in parallel
     paths.par.flatMap { path =>
       val inpath = path.toAbsolutePath()

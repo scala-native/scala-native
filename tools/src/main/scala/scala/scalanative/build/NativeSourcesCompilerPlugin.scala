@@ -6,9 +6,9 @@ import java.nio.file.{Files, Path, Paths}
 import scalanative.build.IO.RichPath
 import scalanative.build.Mode._
 
-import NativeSourcePlugin._
+import NativeSourcesCompilerPlugin._
 
-trait NativeSourcePlugin {
+trait NativeSourcesCompilerPlugin {
 
   def extensions: Seq[String]
 
@@ -16,7 +16,7 @@ trait NativeSourcePlugin {
 
 }
 
-object NativeSourcePlugin {
+object NativeSourcesCompilerPlugin {
 
   case class CompilationContext(
       command: Seq[String],
@@ -25,7 +25,7 @@ object NativeSourcePlugin {
 
 }
 
-sealed abstract class ClangSourcePlugin extends NativeSourcePlugin {
+sealed abstract class ClangSourcesCompilerPlugin extends NativeSourcesCompilerPlugin {
 
   protected def stdflag(config: Config): Seq[String]
 
@@ -72,7 +72,7 @@ sealed abstract class ClangSourcePlugin extends NativeSourcePlugin {
 
 }
 
-case object LlSourcePlugin extends ClangSourcePlugin {
+case object LlSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 
   /** LLVM intermediate file extension: ".ll" */
   val llExt = ".ll"
@@ -86,7 +86,7 @@ case object LlSourcePlugin extends ClangSourcePlugin {
 
 }
 
-case object CSourcePlugin extends ClangSourcePlugin {
+case object CSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 
   /** C file extension: ".c" */
   val cExt = ".c"
@@ -101,7 +101,7 @@ case object CSourcePlugin extends ClangSourcePlugin {
 
 }
 
-case object CppSourcePlugin extends ClangSourcePlugin {
+case object CppSourcesCompilerPlugin extends ClangSourcesCompilerPlugin {
 
   /** C++ file extension: ".cpp" */
   val cppExt = ".cpp"
@@ -118,7 +118,7 @@ case object CppSourcePlugin extends ClangSourcePlugin {
 
 }
 
-case object RustSourcePlugin extends NativeSourcePlugin {
+case object RustSourcesCompilerPlugin extends NativeSourcesCompilerPlugin {
 
   /** Rust source file extension */
   val rustExt = ".rs"

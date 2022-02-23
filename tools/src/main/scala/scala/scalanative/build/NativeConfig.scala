@@ -56,7 +56,7 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
-  def nativeSourcePlugins: Seq[NativeSourcePlugin]
+  def nativeSourcePlugins: Seq[NativeSourcesCompilerPlugin]
 
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
@@ -109,10 +109,14 @@ sealed trait NativeConfig {
       value: Boolean
   ): NativeConfig
 
-  def withNativeSourcePlugins(plugins: Seq[NativeSourcePlugin]): NativeConfig
+  def withNativeSourcesCompilerPlugins(
+      plugins: Seq[NativeSourcesCompilerPlugin]
+  ): NativeConfig
 
-  def withNativeSourcePlugin(plugin: NativeSourcePlugin): NativeConfig =
-    withNativeSourcePlugins(nativeSourcePlugins :+ plugin)
+  def withNativeSourcesCompilerPlugin(
+      plugin: NativeSourcesCompilerPlugin
+  ): NativeConfig =
+    withNativeSourcesCompilerPlugins(nativeSourcePlugins :+ plugin)
 }
 
 object NativeConfig {
@@ -136,8 +140,11 @@ object NativeConfig {
       optimize = true,
       linktimeProperties = Map.empty,
       embedResources = false,
-      nativeSourcePlugins =
-        Seq(CSourcePlugin, CppSourcePlugin, RustSourcePlugin)
+      nativeSourcePlugins = Seq(
+        CSourcesCompilerPlugin,
+        CppSourcesCompilerPlugin,
+        RustSourcesCompilerPlugin
+      )
     )
 
   private final case class Impl(
@@ -156,7 +163,7 @@ object NativeConfig {
       optimize: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
-      nativeSourcePlugins: Seq[NativeSourcePlugin]
+      nativeSourcePlugins: Seq[NativeSourcesCompilerPlugin]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -211,8 +218,8 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
-    def withNativeSourcePlugins(
-        plugins: Seq[NativeSourcePlugin]
+    def withNativeSourcesCompilerPlugins(
+        plugins: Seq[NativeSourcesCompilerPlugin]
     ): NativeConfig = {
       copy(nativeSourcePlugins = plugins)
     }
