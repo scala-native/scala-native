@@ -1,3 +1,5 @@
+// format: off
+
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -9,6 +11,7 @@
 //
 //   scripts/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
+//     --line-directive '' \
 //     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
 //
 //  After executing the script, you may want to edit this file to remove
@@ -43,7 +46,6 @@ object Boxes {
     if (o == null) 0.to${P} else o.asInstanceOf[${U}].underlying
 
 % end
-
   @inline def boxToPtr[T](v: RawPtr): Ptr[T] =
     if (v == null) null else new Ptr[T](v)
   @inline def unboxToPtr(o: java.lang.Object): RawPtr =
