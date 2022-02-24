@@ -23,12 +23,3 @@ gyb $scalanativeUnsafe/CFuncPtr.scala.gyb
 gyb $scalanativeRuntime/Arrays.scala.gyb
 gyb $scalanativeRuntime/Boxes.scala.gyb
 gyb $scalanativeRuntime/Primitives.scala.gyb
-
-scripts/scalafmt \
-  $scalanativeUnsafe/Tag.scala \
-  $scalanativeUnsafe/Nat.scala \
-  $scalanativeUnsafe/CStruct.scala \
-  $scalanativeUnsafe/CFuncPtr.scala \
-  $scalanativeRuntime/Arrays.scala \
-  $scalanativeRuntime/Boxes.scala \
-  $scalanativeRuntime/Primitives.scala

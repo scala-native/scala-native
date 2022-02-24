@@ -1,3 +1,4 @@
+// format: off
 
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
@@ -10,6 +11,7 @@
 //
 //   scripts/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
+//     --line-directive '' \
 //     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
 //
 //  After executing the script, you may want to edit this file to remove
@@ -31,7 +33,6 @@ import scalanative.runtime.Intrinsics._
 
 % sizePtr = 8
 % sizeHeader = 16
-
 sealed abstract class Array[T]
     extends java.io.Serializable
     with java.lang.Cloneable {
@@ -165,9 +166,7 @@ object Array {
 % #         
 % #	    To reduce time consuming git differences, python >= 3.6 should be
 % #         used to run this script.
-
 % for T, sizeT in types.items():
-
 %{
    alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
