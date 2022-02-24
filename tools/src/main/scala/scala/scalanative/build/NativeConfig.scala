@@ -242,21 +242,21 @@ object NativeConfig {
       val listNativeSourcePlugins =
         nativeSourcesCompilerPlugins.map(_.name).mkString("[", ", ", "]")
       s"""NativeConfig(
-        | - clang:               $clang
-        | - clangPP:             $clangPP
-        | - linkingOptions:      $linkingOptions
-        | - compileOptions:      $compileOptions
-        | - targetTriple:        $targetTriple
-        | - GC:                  $gc
-        | - mode:                $mode
-        | - LTO:                 $lto
-        | - linkStubs:           $linkStubs
-        | - check:               $check
-        | - checkFatalWarnings:  $checkFatalWarnings
-        | - dump:                $dump
-        | - optimize:            $optimize
-        | - linktimeProperties:  $listLinktimeProperties
-        | - embedResources:      $embedResources
+        | - clang:                        $clang
+        | - clangPP:                      $clangPP
+        | - linkingOptions:               $linkingOptions
+        | - compileOptions:               $compileOptions
+        | - targetTriple:                 $targetTriple
+        | - GC:                           $gc
+        | - mode:                         $mode
+        | - LTO:                          $lto
+        | - linkStubs:                    $linkStubs
+        | - check:                        $check
+        | - checkFatalWarnings:           $checkFatalWarnings
+        | - dump:                         $dump
+        | - optimize:                     $optimize
+        | - linktimeProperties:           $listLinktimeProperties
+        | - embedResources:               $embedResources
         | - nativeSourcesCompilerPlugins: $listNativeSourcePlugins
         |)""".stripMargin
     }
