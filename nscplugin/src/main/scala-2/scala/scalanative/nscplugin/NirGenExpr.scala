@@ -1379,7 +1379,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def negateInt(value: nir.Val)(implicit pos: nir.Position): Val =
       buf.bin(Bin.Isub, value.ty, numOfType(0, value.ty), value, unwind)
     def negateFloat(value: nir.Val)(implicit pos: nir.Position): Val =
-      buf.bin(Bin.Fsub, value.ty, numOfType(0, value.ty), value, unwind)
+      buf.bin(Bin.Fmul, value.ty, numOfType(-1, value.ty), value, unwind)
     def negateBits(value: nir.Val)(implicit pos: nir.Position): Val =
       buf.bin(Bin.Xor, value.ty, numOfType(-1, value.ty), value, unwind)
     def negateBool(value: nir.Val)(implicit pos: nir.Position): Val =
