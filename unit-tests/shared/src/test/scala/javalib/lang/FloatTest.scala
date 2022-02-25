@@ -375,7 +375,7 @@ class FloatTest {
     assertFalse("Can distinguish negated zero", 0.0f.equals(-0.0f))
     assertTrue("negate zero", -0.0f.equals(-x))
     assertTrue("negate minus zero", 0.0f.equals(-(-x)))
-    
+
     assertEquals(
       "negate minValue",
       scala.Float.MaxValue,
