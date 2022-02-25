@@ -131,8 +131,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CArray[T, N]], value: unsafe.CArray[T, N]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size)
+      } else storeRawPtr(dst, null)
     }
   }
   
@@ -187,8 +189,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}], value: unsafe.CStruct${N}${JustTs}): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -205,9 +209,11 @@ object Tag {
     @alwaysinline def alignment: CSize = 8.toULong
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
-    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
-      storeRawPtr(toRawPtr(ptr), value.rawptr)
+    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit = {
+      val valuePtr = if(value != null) value.rawptr else null
+      storeRawPtr(toRawPtr(ptr), valuePtr)
     }
+  }
 
   % for N in range(0, 23):
   %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])

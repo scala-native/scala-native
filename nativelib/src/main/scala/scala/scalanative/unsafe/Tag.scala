@@ -373,8 +373,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CArray[T, N]], value: unsafe.CArray[T, N]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size)
+      } else storeRawPtr(dst, null)
     }
   }
   
@@ -410,8 +412,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct0], value: unsafe.CStruct0): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -441,8 +445,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct1[T1]], value: unsafe.CStruct1[T1]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -478,8 +484,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct2[T1, T2]], value: unsafe.CStruct2[T1, T2]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -522,8 +530,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct3[T1, T2, T3]], value: unsafe.CStruct3[T1, T2, T3]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -574,8 +584,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct4[T1, T2, T3, T4]], value: unsafe.CStruct4[T1, T2, T3, T4]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -635,8 +647,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct5[T1, T2, T3, T4, T5]], value: unsafe.CStruct5[T1, T2, T3, T4, T5]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -706,8 +720,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct6[T1, T2, T3, T4, T5, T6]], value: unsafe.CStruct6[T1, T2, T3, T4, T5, T6]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -788,8 +804,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7]], value: unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -882,8 +900,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]], value: unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -989,8 +1009,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]], value: unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -1110,8 +1132,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]], value: unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -1246,8 +1270,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]], value: unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -1398,8 +1424,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]], value: unsafe.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -1567,8 +1595,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]], value: unsafe.CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -1754,8 +1784,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]], value: unsafe.CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -1960,8 +1992,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15]], value: unsafe.CStruct15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -2186,8 +2220,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16]], value: unsafe.CStruct16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -2433,8 +2469,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17]], value: unsafe.CStruct17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -2702,8 +2740,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18]], value: unsafe.CStruct18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -2994,8 +3034,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19]], value: unsafe.CStruct19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -3310,8 +3352,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20]], value: unsafe.CStruct20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -3651,8 +3695,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]], value: unsafe.CStruct21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -4018,8 +4064,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]], value: unsafe.CStruct22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size.toULong)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size.toULong)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -4035,9 +4083,11 @@ object Tag {
     @alwaysinline def alignment: CSize = 8.toULong
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
-    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
-      storeRawPtr(toRawPtr(ptr), value.rawptr)
+    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit = {
+      val valuePtr = if(value != null) value.rawptr else null
+      storeRawPtr(toRawPtr(ptr), valuePtr)
     }
+  }
 
   abstract class CFuncPtr0[R]
       extends CFuncPtrTag[unsafe.CFuncPtr0[R]]

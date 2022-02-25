@@ -52,4 +52,20 @@ class CArrayOpsTest {
     val carr4096 = stackalloc[CArray[Int, Digit4[_4, _0, _9, _6]]]()
     assertTrue(carr4096.length == 4096)
   }
+
+  @Test def canBeSetToNull(): Unit = {
+    type Array4Byte = CArray[Byte, _4]
+    type Array2D = CArray[Array4Byte, _4]
+
+    // In the folloing we just want to check in NullPointerException is not being thrown
+    val simpleArray = stackalloc[Array4Byte]()
+    assertNotNull("Can assign null to Ptr[CArray]", !simpleArray = null)
+
+    val array = stackalloc[Array2D]()
+    assertNotNull(
+      "Can assign null to Ptr[CArray] in array",
+      !array.at(0) = null
+    )
+    assertNotNull("Can assign null to CArray in array 2", array(0) = null)
+  }
 }
