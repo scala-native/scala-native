@@ -50,4 +50,23 @@ class CStructOpsTest {
     assertTrue(struct._4 == 40)
     assertTrue(ptr(3) == 40)
   }
+
+  // issue #2564
+  @Test def canBeSetToNull(): Unit = {
+    type IntStruct = CStruct1[Int]
+    type BigStruct = CStruct2[Ptr[IntStruct], IntStruct]
+
+    // In the folloing we just want to check in NullPointerException is not being thrown
+    val simpleStruct = stackalloc[IntStruct]()
+    assertNotNull("Can assign null to Ptr[CStruct]", !simpleStruct = null)
+
+    val struct = stackalloc[BigStruct]()
+    assertNotNull("Can assign null to Ptr[CStruct] in struct", struct._1 = null)
+    assertNotNull(
+      "Can assign null to Ptr[CStruct] in struct 2",
+      (!struct)._1 = null
+    )
+    assertNotNull("Can assign null to CStruct in struct", struct._2 = null)
+    assertNotNull("Can assign null to CStruct in struct 2", (!struct)._2 = null)
+  }
 }
