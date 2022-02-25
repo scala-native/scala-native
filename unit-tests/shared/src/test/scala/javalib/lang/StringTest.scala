@@ -40,6 +40,12 @@ class StringTest {
     )
   }
 
+  @Test def stringArrayByteHighByte(): Unit = {
+    val str = "this constrcutor is deprecated"
+    assertEquals(str, new String(str.getBytes(), 0))
+    assertEquals(str, new String(str.getBytes(), 0, 0, str.length()))
+  }
+
   @Test def stringArrayByteStartLengthWithInvalidStartOrLength(): Unit = {
     val chars: Array[Char] = Array('a', 'b', 'c')
 
