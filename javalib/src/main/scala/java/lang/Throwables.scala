@@ -199,7 +199,7 @@ class Throwable protected (
         i += 1
       }
     } else {
-      println("\t<no stack trace available>")
+      println("")
     }
 
     // Print causes
@@ -220,7 +220,7 @@ class Throwable protected (
           println("\t... " + duplicates + " more")
         }
       } else {
-        println("\t<no stack trace available>")
+        println("")
       }
 
       parentStack = currentStack
