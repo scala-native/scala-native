@@ -149,7 +149,7 @@ class MissingResourceException private[util] (
 }
 
 class NoSuchElementException(s: String) extends RuntimeException(s) {
-  def this() = this(null, null)
+  def this() = this(null)
 }
 
 class TooManyListenersException(s: String) extends Exception(s) {

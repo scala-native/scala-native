@@ -1,7 +1,6 @@
 package java.net
 
 import java.io.{IOException, InterruptedIOException}
-import java.rmi.RemoteException
 
 class URISyntaxException(input: String, reason: String, index: Int)
     extends Exception(s"$reason in $input at $index") {
@@ -24,7 +23,7 @@ class MalformedURLException(msg: String) extends IOException(msg) {
   def this() = this(null)
 }
 
-class UnknownHostException(s: String) extends RemoteException(s) {
+class UnknownHostException(private val host: String) extends IOException(host) {
   def this() = this(null)
 }
 
@@ -40,7 +39,7 @@ class BindException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 
-class ConnectException(msg: String) extends RemoteException(msg) {
+class ConnectException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 
