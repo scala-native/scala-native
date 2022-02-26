@@ -13,8 +13,6 @@ class UncheckedIOException(message: String, cause: IOException)
 }
 
 class FileNotFoundException(s: String) extends IOException(s) {
-  def this(path: String, reason: String) =
-    this(path + (if (reason == null) "" else s" ($reason)"))
   def this() = this(null)
 }
 

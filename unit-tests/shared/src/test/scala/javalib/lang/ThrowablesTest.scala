@@ -10,6 +10,8 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+import java.net.ConnectException
+import java.rmi.RemoteException
 
 class ThrowablesTest {
 
@@ -412,15 +414,30 @@ class ThrowablesTest {
   }
 
   @Test def commonConstructors(): Unit = {
+    import java.rmi._
     // In the folling tests we only check that all required constructors are defined
-    val throwable = new RuntimeException()
+    val throwable = new Throwable() {}
+    val exception = new Exception()
     val msg = "msg"
     Seq(
+      // Errors
       new Error(),
       new Error(msg),
       new Error(throwable),
       new Error(msg, throwable),
       new Error(msg, throwable, false, false) {},
+      new VirtualMachineError() {},
+      new VirtualMachineError(msg) {},
+      new VirtualMachineError(throwable) {},
+      new VirtualMachineError(msg, throwable) {},
+      new InternalError(),
+      new InternalError(msg),
+      new InternalError(throwable),
+      new InternalError(msg, throwable),
+      new LinkageError(),
+      new LinkageError(msg),
+      new LinkageError(msg, throwable),
+      // Exceptions
       new Exception(),
       new Exception(msg),
       new Exception(throwable),
@@ -430,7 +447,11 @@ class ThrowablesTest {
       new RuntimeException(msg),
       new RuntimeException(throwable),
       new RuntimeException(msg, throwable),
-      new RuntimeException(msg, throwable, false, false) {}
+      new RuntimeException(msg, throwable, false, false) {},
+      // java.rmi
+      new RemoteException(),
+      new RemoteException(msg),
+      new RemoteException(msg, throwable)
     ).foreach(assertNotNull(_))
   }
 }

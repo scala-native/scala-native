@@ -11,6 +11,6 @@ class RemoteException(s: String, exception: Throwable)
     if (exception == null) super.getMessage()
     else s"${super.getMessage()}; nested exception is: \n\t ${exception}"
   }
-  
+
   override def getCause(): Throwable = exception
 }

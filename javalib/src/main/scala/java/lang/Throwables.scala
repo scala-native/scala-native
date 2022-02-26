@@ -540,10 +540,7 @@ class TypeNotPresentException(t: String, e: Throwable)
 
 class UnsupportedOperationException(s: String, e: Throwable)
     extends RuntimeException(s, e) {
-  def this() = this(null: String, null: Throwable)
+  def this() = this(null, null)
   def this(s: String) = this(s, null)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-  def this(driver: Class[_], operator: Class[_]) = this(
-    s"${driver.getName()} operators are not supported by ${operator.getName()} driver!"
-  )
 }

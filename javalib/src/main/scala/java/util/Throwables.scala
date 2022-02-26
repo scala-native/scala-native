@@ -148,10 +148,8 @@ class MissingResourceException private[util] (
   def getKey(): String = key
 }
 
-class NoSuchElementException(s: String, e: Throwable) extends RuntimeException(s,e) {
-  def this(s: String) = this(s, null)
-  def this(e: Throwable) = this(null, e)
-  def this() = this(null,null)
+class NoSuchElementException(s: String) extends RuntimeException(s) {
+  def this() = this(null, null)
 }
 
 class TooManyListenersException(s: String) extends Exception(s) {

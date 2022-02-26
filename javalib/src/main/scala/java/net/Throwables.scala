@@ -24,9 +24,7 @@ class MalformedURLException(msg: String) extends IOException(msg) {
   def this() = this(null)
 }
 
-class UnknownHostException(s: String, e: Exception)
-    extends RemoteException(s, e) {
-  def this(s: String) = this(s, null)
+class UnknownHostException(s: String) extends RemoteException(s) {
   def this() = this(null)
 }
 
@@ -42,9 +40,7 @@ class BindException(msg: String) extends SocketException(msg) {
   def this() = this(null)
 }
 
-class ConnectException(msg: String, ex: Exception)
-    extends RemoteException(msg, ex) {
-  def this(msg: String) = this(msg, null)
+class ConnectException(msg: String) extends RemoteException(msg) {
   def this() = this(null)
 }
 
