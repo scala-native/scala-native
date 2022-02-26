@@ -1,4 +1,4 @@
-package java.lang
+package javalib.lang
 
 // Portions of this Suite were ported, with thanks & gratitude,
 // from Scala.js testsuite/javalib/lang/ThrowablesTestOnJDK7.scala
@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class ThrowablesTest {
 
@@ -46,27 +47,37 @@ class ThrowablesTest {
     )
   }
 
-  private def checkStackTraceString(trace: String): Unit = {
-    val startText = "java.lang.Throwable"
+  private def checkStackTraceString(
+      trace: String,
+      usesAnonymousThrowable: Boolean = false
+  ): Unit = {
+    val startText =
+      if (usesAnonymousThrowable) "javalib.lang.ThrowablesTest$$anon"
+      else "java.lang.Throwable"
     assertTrue(
-      s"Expected trace to start with '${startText}' and it did not.",
+      s"Expected trace to start with '${startText}' and it did not. - `$trace`",
       trace.startsWith(startText)
     )
 
-    val containsText = "\tat <none>.main(Unknown Source)"
-    assertTrue(
-      s"Expected trace to contain '${containsText}' and it did not.",
-      trace.contains(containsText)
-    )
+    if (!Platform.executingInJVM) {
+      val containsText = "\tat <none>.main(Unknown Source)"
+      assertTrue(
+        s"Expected trace to contain '${containsText}' and it did not.",
+        trace.contains(containsText)
+      )
+    }
   }
 
-  private def checkStackTrace(throwable: Throwable): Unit = {
+  private def checkStackTrace(
+      throwable: Throwable,
+      usesAnonymousThrowable: Boolean = false
+  ): Unit = {
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
 
     throwable.printStackTrace(pw)
 
-    checkStackTraceString(sw.toString)
+    checkStackTraceString(sw.toString, usesAnonymousThrowable)
   }
 
   private def checkSuppressed(
@@ -85,12 +96,13 @@ class ThrowablesTest {
       throwable: Throwable,
       expectedMessage: String,
       expectedCause: Throwable,
-      expectedSuppressedLength: Int
+      expectedSuppressedLength: Int,
+      usesAnonymousThrowable: Boolean = false
   ): Unit = {
     checkMessage(throwable, expectedMessage)
     checkCause(throwable, expectedCause)
     checkSuppressed(throwable, 0)
-    checkStackTrace(throwable)
+    checkStackTrace(throwable, usesAnonymousThrowable)
   }
 
   // Zero & two argument constructor tests will exercise cases where
@@ -100,9 +112,16 @@ class ThrowablesTest {
     val expectedMessage = "Athchomar chomakea"
     val expectedCause = new Throwable("Khal Drogo")
 
-    val throwable = new Throwable(expectedMessage, expectedCause, false, false)
+    val throwable =
+      new Throwable(expectedMessage, expectedCause, false, false) {}
 
-    checkConstructed(throwable, expectedMessage, expectedCause, 0)
+    checkConstructed(
+      throwable,
+      expectedMessage,
+      expectedCause,
+      0,
+      usesAnonymousThrowable = true
+    )
   }
 
   @Test def throwableMessage(): Unit = {
@@ -195,7 +214,7 @@ class ThrowablesTest {
   }
 
   @Test def addSuppressedExceptionEnabledEqualsFalse(): Unit = {
-    val throwable = new Throwable(null, null, false, true)
+    val throwable = new Throwable(null, null, false, true) {}
 
     val sl0 = throwable.getSuppressed().length
     assertTrue(s"starting  suppressed length: ${sl0} != expected: 0", sl0 == 0)
@@ -297,7 +316,7 @@ class ThrowablesTest {
   }
 
   @Test def setStackTraceStackTraceWritableTrue(): Unit = {
-    val throwable = new Throwable(null, null, true, true)
+    val throwable = new Throwable(null, null, true, true) {}
 
     val newStackTrace = Array(
       new StackTraceElement("Zero", "noMethod", "noFile", 0),
@@ -324,7 +343,7 @@ class ThrowablesTest {
   }
 
   @Test def setStackTraceStackTraceWritableFalse(): Unit = {
-    val throwable = new Throwable(null, null, true, false)
+    val throwable = new Throwable(null, null, true, false) {}
 
     val newStackTrace = Array(
       new StackTraceElement("Zero", "noMethod", "noFile", 0),
