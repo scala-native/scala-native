@@ -410,4 +410,27 @@ class ThrowablesTest {
       )
     }
   }
+
+  @Test def commonConstructors(): Unit = {
+    // In the folling tests we only check that all required constructors are defined
+    val throwable = new RuntimeException()
+    val msg = "msg"
+    Seq(
+      new Error(),
+      new Error(msg),
+      new Error(throwable),
+      new Error(msg, throwable),
+      new Error(msg, throwable, false, false) {},
+      new Exception(),
+      new Exception(msg),
+      new Exception(throwable),
+      new Exception(msg, throwable),
+      new Exception(msg, throwable, false, false) {},
+      new RuntimeException(),
+      new RuntimeException(msg),
+      new RuntimeException(throwable),
+      new RuntimeException(msg, throwable),
+      new RuntimeException(msg, throwable, false, false) {}
+    ).foreach(assertNotNull(_))
+  }
 }
