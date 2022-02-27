@@ -7,13 +7,17 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <unordered_map>
-#ifdef __APPLE__
-// Semaphores on OSX are deprectated
-#include <dispatch/dispatch.h>
-#else
 #include <semaphore.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <unistd.h>
+
+// The +1 accounts for the null char at the end of the name
+#ifdef __APPLE__
+#include <sys/posix_sem.h>
+#define SEM_MAX_LENGTH PSEMNAMLEN + 1
+#else
+#define SEM_MAX_LENGTH _POSIX_PATH_MAX + 1
 #endif
 
 struct Monitor {
@@ -33,24 +37,16 @@ struct Monitor {
 static pthread_mutex_t shared_mutex;
 static std::unordered_map<int, std::shared_ptr<Monitor>> waiting_procs;
 static std::unordered_map<int, int> finished_procs;
-#ifdef __APPLE__
-static dispatch_semaphore_t active_procs;
-#else
 static sem_t *active_procs;
-#endif
 
 static void *wait_loop(void *arg) {
     while (1) {
 
-// Wait until there is at least 1 active process
-#ifdef __APPLE__
-        dispatch_semaphore_wait(active_procs, DISPATCH_TIME_FOREVER);
-#else
+        // Wait until there is at least 1 active process
         int wait_result;
         do {
             wait_result = sem_wait(active_procs);
         } while (wait_result == -1 && errno == EINTR);
-#endif
 
         int status;
         const int pid = waitpid(-1, &status, 0);
@@ -87,13 +83,7 @@ static int check_result(const int pid, pthread_mutex_t *lock) {
 
 extern "C" {
 /* Notify process monitor about spawning new process */
-void scalanative_process_monitor_notify() {
-#ifdef __APPLE__
-    dispatch_semaphore_signal(active_procs);
-#else
-    sem_post(active_procs);
-#endif
-}
+void scalanative_process_monitor_notify() { sem_post(active_procs); }
 
 int scalanative_process_monitor_check_result(const int pid) {
     pthread_mutex_lock(&shared_mutex);
@@ -128,14 +118,22 @@ int scalanative_process_monitor_wait_for_pid(const int pid, timespec *ts,
 void scalanative_process_monitor_init() {
     pthread_t thread;
     pthread_mutex_init(&shared_mutex, NULL);
-#ifdef __APPLE__
-    active_procs = dispatch_semaphore_create(0);
-#else
-    // place semaphore in shared memory (needed for arm64)
-    active_procs = (sem_t *)mmap(NULL, sizeof(sem_t *), PROT_READ | PROT_WRITE,
-                                 MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    sem_init(active_procs, 1, 0);
-#endif
+
+    // MacOs might not allow for usage of anonymous semaphores (not implemented
+    // on M1 chips) leading to deadlocks
+    char semaphoreName[SEM_MAX_LENGTH];
+    snprintf(semaphoreName, SEM_MAX_LENGTH, "__sn_%d-process-monitor",
+             getpid());
+    active_procs = sem_open(semaphoreName, O_CREAT | O_EXCL, 0644, 0);
+    if (active_procs == SEM_FAILED) {
+        perror("Failed to create or open process monitor semaphore");
+    }
+    // Delete semaphore on exit
+    if (sem_unlink(semaphoreName) != 0) {
+        fprintf(stderr, "Unlinking process monitor semaphore failed\n");
+        exit(errno);
+    }
+
     pthread_create(&thread, NULL, wait_loop, NULL);
     pthread_detach(thread);
 }
