@@ -258,9 +258,8 @@ object CVarArgList {
       )
       currentIndex += tag.size
     }
-    
+
     new CVarArgList(toRawPtr(argListStorage))
   }
 
 }
- 
