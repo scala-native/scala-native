@@ -17,6 +17,8 @@ object ExternTest {
    */
   @extern
   object Ext1 {
+    // Previously snprintf method was used here, however on MacOs Arm64
+    // it is defined as a macro and takes some additional implicit arguments
     def vsnprintf(
         buf: CString,
         size: CSize,
