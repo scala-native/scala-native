@@ -11,12 +11,16 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 // The +1 accounts for the null char at the end of the name
 #ifdef __APPLE__
 #include <sys/posix_sem.h>
 #define SEM_MAX_LENGTH PSEMNAMLEN + 1
 #else
+#include <limits.h>
 #define SEM_MAX_LENGTH _POSIX_PATH_MAX + 1
 #endif
 
