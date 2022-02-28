@@ -75,12 +75,14 @@ int scalanative_fcntl(int fd, int cmd, struct scalanative_flock *flock_struct) {
     return fcntl(fd, cmd, &flock_buf);
 }
 
-/* In Scala Native we don't support ... C syntax. On some plaforms e.g. MacOs
- * Arm64 (M1) we need to replace the calls to fcntl with the proxy taking
- * positional args.
- */
-int scalanative_fcntl2(int fd, int cmd, int flags) {
+// On MacOS Arm64 it is defined as macro taking varargs delegating to _fcntl
+int scalanative_fcntl_i(int fd, int cmd, int flags) {
     return fcntl(fd, cmd, flags);
+}
+
+// On MacOS Arm64 is's defined as macro taking varargs delagating to _open
+int scalanative_open_m(const char *pathname, int flags, mode_t mode) {
+    return open(pathname, flags, mode);
 }
 
 #endif // Unix or Mac OS
