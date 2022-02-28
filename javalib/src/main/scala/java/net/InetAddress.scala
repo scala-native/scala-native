@@ -1,6 +1,7 @@
 package java.net
 
 import scala.scalanative.unsafe._
+import scala.scalanative.posix.time.{time_t, time, difftime}
 import scala.collection.mutable.ArrayBuffer
 
 import java.util.StringTokenizer
@@ -563,11 +564,15 @@ private[net] trait InetAddressBase {
   }
 }
 
-object InetAddress extends InetAddressBase
+object InetAddress extends InetAddressBase {
+  // cached host values are discarded after this amount of time
+  private val HostTimeoutSeconds: Double = 30.0
+}
 
 class InetAddress private[net] (
     ipAddress: Array[Byte],
-    private var host: String
+    private var host: String,
+    private var hostLastAccessed: time_t = 0
 ) extends Serializable {
   import InetAddress._
 
@@ -576,13 +581,15 @@ class InetAddress private[net] (
   def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
 
   def getHostName(): String = {
-    if (host == null) {
+    val timeNow = time(null)
+    if (host == null || difftime(timeNow, hostLastAccessed) > HostTimeoutSeconds) {
       val ipString = createIPStringFromByteArray(ipAddress)
       host = SocketHelpers
         .ipToHost(ipString, isValidIPv6Address(ipString))
         .getOrElse {
           ipString
         }
+      hostLastAccessed = timeNow
     }
     host
   }
