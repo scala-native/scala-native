@@ -84,7 +84,7 @@ object Files {
 
     try {
       val copyResult = copy(in, out)
-      // Make sure that created fi
+      // Make sure that created file has correct permissions
       if (!targetExists) {
         targetFile.setReadable(true, ownerOnly = false)
         targetFile.setWritable(true, ownerOnly = true)
