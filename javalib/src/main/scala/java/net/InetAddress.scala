@@ -565,31 +565,52 @@ private[net] trait InetAddressBase {
 }
 
 object InetAddress extends InetAddressBase {
-  // cached host values are discarded after this amount of time
-  private val HostTimeoutSeconds: Double = 30.0
+  // cached host values are discarded after this amount of time (seconds)
+  private val HostTimeout: Int =
+    sys.props
+      .get("networkaddress.cache.ttl")
+      .map(_.toInt)
+      .getOrElse(30)
+
+  // failed lookups are retried after this amount of time (seconds)
+  private val NegativeHostTimeout: Int =
+    sys.props
+      .get("networkaddress.cache.negative.ttl")
+      .map(_.toInt)
+      .getOrElse(10)
 }
 
 class InetAddress private[net] (
     ipAddress: Array[Byte],
-    private var host: String,
-    private var hostLastAccessed: time_t = 0
+    private var host: String
 ) extends Serializable {
   import InetAddress._
+
+  private var hostLastAccessed: time_t = 0
+  private var lastLookupFailed = false
 
   private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
   def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
 
+  private def hostTimeoutExpired(timeNow: time_t): Boolean = {
+    val timeout = if (lastLookupFailed) NegativeHostTimeout else HostTimeout
+    difftime(timeNow, hostLastAccessed) > timeout
+  }
+
   def getHostName(): String = {
     val timeNow = time(null)
-    if (host == null || difftime(timeNow, hostLastAccessed) > HostTimeoutSeconds) {
-      val ipString = createIPStringFromByteArray(ipAddress)
-      host = SocketHelpers
-        .ipToHost(ipString, isValidIPv6Address(ipString))
-        .getOrElse {
-          ipString
-        }
+    if (host == null || hostTimeoutExpired(timeNow)) {
       hostLastAccessed = timeNow
+      val ipString = createIPStringFromByteArray(ipAddress)
+      SocketHelpers.ipToHost(ipString, isValidIPv6Address(ipString)) match {
+        case None =>
+          lastLookupFailed = true
+          host = ipString
+        case Some(hostName) =>
+          lastLookupFailed = false
+          host = hostName
+      }
     }
     host
   }
