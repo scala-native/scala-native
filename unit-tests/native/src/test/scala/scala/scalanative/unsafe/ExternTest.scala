@@ -17,25 +17,36 @@ object ExternTest {
    */
   @extern
   object Ext1 {
-    def snprintf(buf: CString, size: CSize, format: CString, l: CString): Int =
+    // Previously snprintf method was used here, however on MacOs Arm64
+    // it is defined as a macro and takes some additional implicit arguments
+    def vsnprintf(
+        buf: CString,
+        size: CSize,
+        format: CString,
+        args: CVarArgList
+    ): Int =
       extern
   }
   @extern
   object Ext2 {
-    @name("snprintf")
-    def p(buf: CString, size: CSize, format: CString, i: Int): Int = extern
+    @name("vsnprintf")
+    def p(buf: CString, size: CSize, format: CString, args: CVarArgList): Int =
+      extern
   }
 
   // workaround for CI
-  def runTest(): Unit = {
+  def runTest(): Unit = Zone { implicit z: Zone =>
     import scalanative.libc.string
     val bufsize = 10.toUInt
     val buf1: Ptr[Byte] = stackalloc[Byte](bufsize)
     val buf2: Ptr[Byte] = stackalloc[Byte](bufsize)
-    Ext1.snprintf(buf1, bufsize, c"%s", c"hello")
-    assertTrue(string.strcmp(buf1, c"hello") == 0)
-    Ext2.p(buf2, bufsize, c"%d", 1)
-    assertTrue(string.strcmp(buf2, c"1") == 0)
+
+    val arg1 = c"hello"
+    Ext1.vsnprintf(buf1, bufsize, c"%s", toCVarArgList(arg1))
+    assertEquals("case 1", 0, string.strcmp(buf1, arg1))
+
+    Ext2.p(buf2, bufsize, c"%d", toCVarArgList(1))
+    assertEquals("case 2", 0, string.strcmp(buf2, c"1"))
   }
 }
 

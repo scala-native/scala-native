@@ -64,9 +64,10 @@ object Files {
       else throw new UnsupportedOperationException()
 
     val targetFile = target.toFile()
+    val targetExists = targetFile.exists()
 
     val out =
-      if (!targetFile.exists() || (targetFile.isFile() && replaceExisting)) {
+      if (!targetExists || (targetFile.isFile() && replaceExisting)) {
         new FileOutputStream(targetFile, append = false)
       } else if (targetFile.isDirectory() &&
           targetFile.list().isEmpty &&
@@ -81,8 +82,15 @@ object Files {
         throw new FileAlreadyExistsException(targetFile.getAbsolutePath())
       }
 
-    try copy(in, out)
-    finally out.close()
+    try {
+      val copyResult = copy(in, out)
+      // Make sure that created file has correct permissions
+      if (!targetExists) {
+        targetFile.setReadable(true, ownerOnly = false)
+        targetFile.setWritable(true, ownerOnly = true)
+      }
+      copyResult
+    } finally out.close()
   }
 
   def copy(source: Path, out: OutputStream): Long = {

@@ -8,6 +8,7 @@ import java.io.IOException
 
 import org.scalanative.testsuite.utils.Platform
 import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.runtime.PlatformExt
 
 import scalanative.libc.{errno => libcErrno, string}
 import scala.scalanative.unsafe._
@@ -328,7 +329,7 @@ class TimeTest {
         // different time zone.
 
         val cp =
-          if (Platform.isFreeBSD)
+          if (Platform.isFreeBSD || (Platform.isMacOs && PlatformExt.isArm64))
             strptime(c"Fri Mar 31 14:47:44 2017", c"%a %b %d %T %Y", tmPtr)
           else
             strptime(

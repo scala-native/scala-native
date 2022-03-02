@@ -75,4 +75,14 @@ int scalanative_fcntl(int fd, int cmd, struct scalanative_flock *flock_struct) {
     return fcntl(fd, cmd, &flock_buf);
 }
 
+// On MacOS Arm64 it is defined as macro taking varargs delegating to _fcntl
+int scalanative_fcntl_i(int fd, int cmd, int flags) {
+    return fcntl(fd, cmd, flags);
+}
+
+// On MacOS Arm64 is's defined as macro taking varargs delagating to _open
+int scalanative_open_m(const char *pathname, int flags, mode_t mode) {
+    return open(pathname, flags, mode);
+}
+
 #endif // Unix or Mac OS
