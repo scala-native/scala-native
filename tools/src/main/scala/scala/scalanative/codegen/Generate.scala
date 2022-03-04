@@ -19,7 +19,7 @@ object Generate {
     meta.linked
   private implicit val pos: Position = Position.NoPosition
 
-  private class Impl(entry: Option[Global.Top], defns: Seq[Defn])(implicit
+  private class Impl(maybeEntry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
@@ -27,7 +27,7 @@ object Generate {
     def generate(): Seq[Defn] = {
       genDefnsExcludingGenerated()
       genInjects()
-      entry.fold(genLibraryInit())(genMain)
+      maybeEntry.fold(genLibraryInit())(genMain(_))
       genClassMetadata()
       genClassHasTrait()
       genTraitMetadata()
@@ -202,90 +202,87 @@ object Generate {
                 unwind
               )
             ) ++
-              initializers ++
-              Seq(
-                Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-              )
+                initializers ++
+                Seq(
+                  Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+                )
           }
         }
       )
     }
 
-    /* Injects definition of program main loop, delegating to user defined method upon successful initialization.
-     * After execution of main loop runs remaining Runnables in ExecutionContext loop
-     * Injects basic handling of exceptions, prints stack trace and returns non-zero value of exception or 0 otherwise */
     def genMain(entry: Global.Top): Unit = {
-      validateMainEntry()implicit val fresh: Fresh = Fresh()
+      validateMainEntry(entry)
+
+      implicit val fresh = Fresh()
       buf += Defn.Define(
         Attrs.None,
         MainName,
         MainSig,
         withExceptionHandler { unwindFn =>
-          withClassInitializers(unwindFn) { initializers =>
-            def unwind: Next = unwindFn()
+        withClassInitializers(unwindFn) { initializers =>
+          val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
+          val entryMainMethod = Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
 
-              val entryMainTy =
-                Type.Function(Seq( ObjectArray), Type.Unit)
-              val entryMainMethod = Val.
-                Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
-              val stackBottom = Val.Local(fresh(), Type.Ptr)
+          val stackBottom = Val.Local(fresh(), Type.Ptr)
+          val argc = Val.Local(fresh(), Type.Int)
+          val argv = Val.Local(fresh(), Type.Ptr)
+          val rt = Val.Local(fresh(), Runtime)
+          val arr = Val.Local(fresh(), ObjectArray)
+          val exc = Val.Local(fresh(), nir.Rt.Object)
+          val handler = fresh()
 
-              val argc   = Val.Local(fresh(), Type.Int)
-              val argv   = Val.Local(fresh(), Type.Ptr)
-
-              val rt     = Val.Local(fresh(), Runtime)
-              val arr    = Val.Local(fresh(), ObjectArray)
-
-              Seq(
-                Inst.Label(fresh(), Seq(argc, argv)),
-                // init stack bottom
-                Inst.Let(
-            stackBottom.name,
-                         Op.Stackalloc(Type.Ptr, Val.Size(0)),
-            unwind
-          ),
-          Inst.Let(
-            Op.Store(
-              Type.Ptr,
-              Val.Global(stackBottomName, Type.Ptr),
-              stackBottom
-            ),
-            unwind
-          ),
-          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-        ) ++ // generate the class initialisers
-          defns.collect {
-            case Defn.Define(_, name: Global.Member, _, _)
-                if name.sig.isClinit =>
+          def unwind = unwindFn()
+            Seq(
+              Inst.Label(fresh(), Seq(argc, argv)),
               Inst.Let(
-                Op.Call(
-                  Type.Function(Seq(), Type.Unit),
-                  Val.Global(name, Type.Ref(name)),
-                  Seq()
+                stackBottom.name,
+                Op.Stackalloc(Type.Ptr, Val.Size(0)),
+                unwind
+              ),
+              Inst.Let(
+                Op.Store(
+                  Type.Ptr,
+                  Val.Global(stackBottomName, Type.Ptr),
+                  stackBottom
                 ),
                 unwind
-              )
-          } ++ Seq(
-            Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
-            Inst.Let(
-              arr.name,
-              Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
-              unwind
-            ),
-            Inst.Let(
-              Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
-              unwind
-            ),
-            Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
-            Inst.Ret(Val.Int(0)),
-            Inst.Label(handler, Seq(exc)),
-            Inst.Let(
-              Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
-              Next.None
-            ),
-            Inst.Ret(Val.Int(1))
-          )
-      )
+              ),
+              Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+            ) ++ initializers ++
+                defns.collect {
+                  case Defn.Define(_, name: Global.Member, _, _)
+                    if name.sig.isClinit =>
+                    Inst.Let(
+                      Op.Call(
+                        Type.Function(Seq(), Type.Unit),
+                        Val.Global(name, Type.Ref(name)),
+                        Seq()
+                      ),
+                      unwind
+                    )
+                } ++ Seq(
+              Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
+              Inst.Let(
+                arr.name,
+                Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
+                unwind
+              ),
+              Inst.Let(
+                Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
+                unwind
+              ),
+              Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
+              Inst.Ret(Val.Int(0)),
+              Inst.Label(handler, Seq(exc)),
+              Inst.Let(
+                Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+                Next.None
+              ),
+              Inst.Ret(Val.Int(1))
+            )
+        }
+      })
     }
 
     def genStackBottom(): Unit =
@@ -486,7 +483,7 @@ object Generate {
       buf += meta.hasTraitTables.traitHasTraitDefn
     }
 
-    private def validateMainEntry(): Unit = {
+    private def validateMainEntry(entry: Global.Top): Unit = {
       def fail(reason: String): Nothing =
         util.unsupported(s"Entry ${entry.id} $reason")
 
