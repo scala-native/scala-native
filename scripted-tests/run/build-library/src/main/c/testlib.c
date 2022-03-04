@@ -6,6 +6,7 @@
 #include "libtest.h"
 
 int main() {
+    fprintf(stderr, "xxx1\n");
     assert(ScalaNativeInit() == 0);
 
     sayHello();
@@ -20,7 +21,11 @@ int main() {
     assert(p->arg4 == 14.4556);
     assert(strcmp(p->arg5, "ScalaNativeRocks!") == 0);
 
+    fprintf(stderr, "%p\n", (void *)p);
+
     updateStruct(p);
+
+
     assert(p != NULL);
     assert(p->arg1 == 42);
     assert(p->arg2 == 2021);

@@ -302,7 +302,7 @@ As an example, to link it as dynamic library use the following command:
 
 2. **libraryDynamic**
 
-   Results in dynamic library being built based on entry point methods annotated with `@export`,
+   Results in dynamic library being built based on entry point methods annotated with `@exported`,
    for details see :ref:`interop`.
 
 Publishing

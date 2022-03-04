@@ -253,6 +253,6 @@ private[scalanative] object LLVM {
   private def buildLinkOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
       case BuildTarget.Application    => Nil
-      case BuildTarget.LibraryDynamic => Seq("-shared")
+      case BuildTarget.LibraryDynamic => Seq("-shared", "-fPIC")
     }
 }

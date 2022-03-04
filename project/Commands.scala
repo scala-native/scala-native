@@ -85,9 +85,9 @@ object Commands {
       // Older versions set incorrect binary version
       val isScala3 = version.startsWith("3.")
       val overrideSbtVersion =
-        if (isScala3)
+        //if (isScala3)
           """set sbtScalaNative/sbtVersion := "1.5.0" """ :: Nil
-        else Nil
+        //else Nil
       val scalaVersionTests =
         if (isScala3) "scala3/*"
         else ""

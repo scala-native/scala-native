@@ -78,7 +78,7 @@ trait NirGenName(using Context) {
       .map(genType)
 
     if (sym == defn.`String_+`) genMethodName(defnNir.String_concat)
-    else if (sym.isExtern)
+    else if (sym.isExternallyKnown)
       if (sym.isSetter)
         val id = nativeIdOf(sym.getter)
         owner.member(nir.Sig.Extern(id))

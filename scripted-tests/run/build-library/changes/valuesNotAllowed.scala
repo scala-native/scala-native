@@ -1,5 +1,5 @@
 import scala.scalanative.unsafe._
 
 object valuesNotAllowed {
-  @export val foo: Int = 0
+  @exported val foo: Int = 0
 }

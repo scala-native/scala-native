@@ -1,6 +1,6 @@
 import scala.scalanative.unsafe._
 
 class ExportInClass() {
-  @export
+  @exported
   def foo(l: Int): Int = l
 }

@@ -272,7 +272,8 @@ class Reach(
     reachGlobalNow(name)
     for {
       cls <- infos.get(name)
-      (name, defn) <- loaded(cls.name) if defn.attrs.isExported
+      (name, defn) <- loaded(cls.name)
+      if defn.attrs.isExported
     } reachGlobal(name)
   }
 

@@ -21,7 +21,9 @@ void sayHello(void);
 void sayHello(void);
 long addLongs(long l, long r);
 struct Foo *retStructPtr(void);
+struct Foo *allocFoo(void);
 void updateStruct(struct Foo *p);
+void updateAgainStruct(struct Foo *p);
 void fail();
 void sn_runGC(void);
 }

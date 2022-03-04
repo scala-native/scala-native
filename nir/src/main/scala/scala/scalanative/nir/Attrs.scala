@@ -38,11 +38,11 @@ final case class Attrs(
     specialize: Specialize = MaySpecialize,
     opt: Opt = UnOpt,
     isExtern: Boolean = false,
-    isExported: Boolean = false,
     isDyn: Boolean = false,
     isStub: Boolean = false,
     isAbstract: Boolean = false,
-    links: Seq[Attr.Link] = Seq()
+    links: Seq[Attr.Link] = Seq(),
+    isExported: Boolean = false,
 ) {
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]
@@ -91,11 +91,11 @@ object Attrs {
       specialize = specialize,
       opt = opt,
       isExtern = isExtern,
-      isExported = isExported,
       isDyn = isDyn,
       isStub = isStub,
       isAbstract = isAbstract,
-      links = links.result()
+      links = links.result(),
+      isExported = isExported
     )
   }
 }

@@ -158,7 +158,7 @@ And then call it just like a regular Scala function:
 Exported methods
 ----------------
 
-When linking Scala Native as library, you can mark its entry point functions with ``@export`` annotation,
+When linking Scala Native as library, you can mark its entry point functions with ``@exported`` annotation,
 to make these definitions C ABI compatible. Name of resulting function would match name of the method or it can be enforced
 using ``@name`` annotation.
 
@@ -170,10 +170,10 @@ in Scala Native. It returns `0` on successful initialization and non-zero value 
     import scala.scalanative.unsafe._
 
     object myLib{
-      @export
+      @exported
       def addLongs(l: Long, r: Long): Long = l + r
 
-      @export
+      @exported
       @name("mylib_addInts")
       def addInts(l: Int, r: Int): Int = l + r
     }

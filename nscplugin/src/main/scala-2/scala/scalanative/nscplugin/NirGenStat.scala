@@ -621,7 +621,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val owner = curClassSym.get
         val attrs = genMethodAttrs(sym)
         val name = genMethodName(sym)
-        val sig = genMethodSig(sym)
+        def sig = if (attrs.isExported) genExternMethodSig(sym) else genMethodSig(sym)
 
         dd.rhs match {
           case EmptyTree
@@ -655,6 +655,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 sym.pos,
                 "Method cannot be both declared as extern and exported"
               )
+              None
             } else {
               checkExplicitReturnTypeAnnotation(dd, "extern method")
               genExternMethod(attrs, name, sig, rhs)
@@ -671,29 +672,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
 
-          case rhs if attrs.isExported =>
-            scoped(
-              curMethodSig := sig
-            ) {
-              if (!owner.isScalaModule) {
-                reporter.error(
-                  sym.pos,
-                  "Exported methods needs to be statically accessible"
-                )
-              } else {
-                buf += Defn.Define(
-                  attrs,
-                  name,
-                  genExternMethodSig(sym),
-                  genMethodBody(dd, rhs, isStatic, isExtern = true)
-                )
-              }
-            }
-
           case rhs =>
             scoped(
               curMethodSig := sig
             ) {
+              if (attrs.isExported && !owner.isScalaModule) {
+                reporter.error(
+                  sym.pos,
+                  "Exported methods needs to be statically accessible"
+                )
+              }
               val body = genMethodBody(dd, rhs)
               Some(Defn.Define(attrs, name, sig, body))
             }
@@ -830,24 +818,24 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodBody(
         dd: DefDef,
-        bodyp: Tree
+        bodyp: Tree,
     ): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner) ||
-        dd.symbolsym.isExternallyKnown
-      val isExtern = dd.symbol.owner.isExternModule || dd.attrs.isExported
+      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner) || dd.symbol.isExternallyKnown
+      val isExtern = dd.symbol.isExternallyKnown
 
       implicit val pos: nir.Position = bodyp.pos
 
       val paramSyms = genParamSyms(dd, isStatic)
+      println(s"paramSyms ${dd.symbol} :: ${paramSyms} ${isStatic} ${isExtern}")
       val params = paramSyms.map {
         case None =>
           val ty = genType(curClassSym.tpe)
           Val.Local(fresh(), ty)
         case Some(sym) =>
-          val ty = genType(sym.tpe)
+          val ty = if (dd.symbol.isExported) genExternType(sym.tpe) else genType(sym.tpe)
           val param = Val.Local(fresh(), ty)
           curMethodEnv.enter(sym, param)
           param
@@ -855,6 +843,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       def genEntry(): Unit = {
         buf.label(fresh(), params)
+        if (dd.symbol.isExported) {
+          paramSyms.zip(params).foreach {
+            case (Some(sym), param) =>
+              val ty = genType(sym.tpe)
+              val value = buf.fromExtern(ty, param)
+              curMethodEnv.enter(sym, value)
+            case _ =>
+              ()
+          }
+        }
       }
 
       def genVars(): Unit = {
@@ -1046,7 +1044,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
-        m.owner.isExternModule ||
+        m.isExternallyKnown ||
         isOfJLObject
     }
 

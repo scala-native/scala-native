@@ -230,7 +230,6 @@ object Generate {
           val rt = Val.Local(fresh(), Runtime)
           val arr = Val.Local(fresh(), ObjectArray)
           val exc = Val.Local(fresh(), nir.Rt.Object)
-          val handler = fresh()
 
           def unwind = unwindFn()
             Seq(
@@ -249,19 +248,7 @@ object Generate {
                 unwind
               ),
               Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-            ) ++ initializers ++
-                defns.collect {
-                  case Defn.Define(_, name: Global.Member, _, _)
-                    if name.sig.isClinit =>
-                    Inst.Let(
-                      Op.Call(
-                        Type.Function(Seq(), Type.Unit),
-                        Val.Global(name, Type.Ref(name)),
-                        Seq()
-                      ),
-                      unwind
-                    )
-                } ++ Seq(
+            ) ++ initializers ++ Seq(
               Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
               Inst.Let(
                 arr.name,
@@ -273,13 +260,6 @@ object Generate {
                 unwind
               ),
               Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
-              Inst.Ret(Val.Int(0)),
-              Inst.Label(handler, Seq(exc)),
-              Inst.Let(
-                Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
-                Next.None
-              ),
-              Inst.Ret(Val.Int(1))
             )
         }
       })

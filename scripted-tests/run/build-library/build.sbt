@@ -72,6 +72,7 @@ def compileAndTest(
       sourcePath.absolutePath,
       "-o",
       outFile.absolutePath,
+      //"/Users/adpauls/sm/git/scorch/exec.out",
       s"-L${libPath.absolutePath}",
       "-ltest"
     )
@@ -87,5 +88,5 @@ def compileAndTest(
   val testRes =
     Process(outFile.absolutePath, libPath, ("LD_LIBRARY_PATH", ldPath)).!
 
-  assert(testRes == 0, s"tests in ${outFile} failed")
+  assert(testRes == 0, s"tests in ${outFile} failed with code ${testRes}")
 }

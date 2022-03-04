@@ -134,7 +134,7 @@ object ScalaNativePluginInternal {
 
       val config = build.Config.empty
         .withLogger(logger)
-        .withMainClass(mainClass)
+        .withMainClass(mainClassOpt)
         .withClassPath(classpath)
         .withBasedir(crossTarget.value.toPath())
         .withTestConfig(testConfig)

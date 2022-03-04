@@ -8,7 +8,7 @@ object libtest {
 
   type Foo = CStruct5[Short, Int, Long, Double, CString]
 
-  @export
+  @exported
   def sayHello(): Unit = {
     println(s"""
          |==============================
@@ -18,11 +18,19 @@ object libtest {
     """.stripMargin)
   }
 
-  @export
+  @exported
   def addLongs(l: Long, r: Long): Long = l + r
 
-  @export
+  @exported
+  def allocFoo(): Ptr[Foo] = {
+    val ptr = fromRawPtr[Foo](libc.malloc(sizeof[Foo]))
+    println("zzzb " + ptr)
+    ptr
+  }
+
+  @exported
   def retStructPtr(): Ptr[Foo] = {
+    println("zzz")
     val ptr = fromRawPtr[Foo](libc.malloc(sizeof[Foo]))
 
     ptr._1 = fourtyTwo
@@ -30,12 +38,22 @@ object libtest {
     ptr._3 = 27
     ptr._4 = 14.4556
     ptr._5 = snRocks
+    println("zzza " + ptr)
     ptr
   }
 
-  @export
-  def updateStruct(ptr: Ptr[Foo]): Unit = {
-    updateInternally(ptr)
+  @exported
+  def updateStruct(ptrxx: Ptr[Foo]): Unit = {
+    println("yyy")
+    updateInternally(ptrxx)
+    //println("yyyx " + ptrxx._2)
+    //updateInternally(ptrxx)
+    //val x = addLongs(2020, 1).toInt
+    //println("yyya " + x)
+    //println("yyyb " + !ptr)
+    //println("yyyc " + (!ptr)._2)
+    //ptrxx._2 = x
+    //println("yyy2")
   }
 
   @noinline
@@ -43,12 +61,12 @@ object libtest {
     ptr._2 = addLongs(2020, 1).toInt
   }
 
-  @export
+  @exported
   def fail(): Unit = {
     throw new RuntimeException("Exception from ScalaNative")
   }
 
-  @export
+  @exported
   @name("sn_runGC")
   @noinline
   def enforceGC(): Unit = System.gc()

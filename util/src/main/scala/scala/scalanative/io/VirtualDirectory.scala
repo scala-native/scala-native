@@ -103,6 +103,10 @@ object VirtualDirectory {
       val writer = Files.newBufferedWriter(fullPath)
       try fn(writer)
       finally writer.close()
+      val str = scala.io.Source.fromFile(fullPath.toFile)(java.nio.charset.StandardCharsets.UTF_8).mkString
+      if (str.contains("ScalaNativeInit")) {
+        println(s"wrote ${fullPath} $str")
+      }
       fullPath
     }
 
