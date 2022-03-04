@@ -30,7 +30,7 @@ object Attr {
   case object Extern extends Attr
   final case class Link(name: String) extends Attr
   case object Abstract extends Attr
-  case object Export extends Attr
+  case object Exported extends Attr
 }
 
 final case class Attrs(
@@ -42,7 +42,7 @@ final case class Attrs(
     isStub: Boolean = false,
     isAbstract: Boolean = false,
     links: Seq[Attr.Link] = Seq(),
-    isExported: Boolean = false,
+    isExported: Boolean = false
 ) {
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]
@@ -51,7 +51,7 @@ final case class Attrs(
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
     if (isExtern) out += Extern
-    if (isExported) out += Export
+    if (isExported) out += Exported
     if (isDyn) out += Dyn
     if (isStub) out += Stub
     if (isAbstract) out += Abstract

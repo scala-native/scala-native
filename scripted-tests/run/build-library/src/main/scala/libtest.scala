@@ -22,15 +22,7 @@ object libtest {
   def addLongs(l: Long, r: Long): Long = l + r
 
   @exported
-  def allocFoo(): Ptr[Foo] = {
-    val ptr = fromRawPtr[Foo](libc.malloc(sizeof[Foo]))
-    println("zzzb " + ptr)
-    ptr
-  }
-
-  @exported
   def retStructPtr(): Ptr[Foo] = {
-    println("zzz")
     val ptr = fromRawPtr[Foo](libc.malloc(sizeof[Foo]))
 
     ptr._1 = fourtyTwo
@@ -38,22 +30,12 @@ object libtest {
     ptr._3 = 27
     ptr._4 = 14.4556
     ptr._5 = snRocks
-    println("zzza " + ptr)
     ptr
   }
 
   @exported
-  def updateStruct(ptrxx: Ptr[Foo]): Unit = {
-    println("yyy")
-    updateInternally(ptrxx)
-    //println("yyyx " + ptrxx._2)
-    //updateInternally(ptrxx)
-    //val x = addLongs(2020, 1).toInt
-    //println("yyya " + x)
-    //println("yyyb " + !ptr)
-    //println("yyyc " + (!ptr)._2)
-    //ptrxx._2 = x
-    //println("yyy2")
+  def updateStruct(ptr: Ptr[Foo]): Unit = {
+    updateInternally(ptr)
   }
 
   @noinline

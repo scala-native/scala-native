@@ -621,7 +621,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val owner = curClassSym.get
         val attrs = genMethodAttrs(sym)
         val name = genMethodName(sym)
-        def sig = if (attrs.isExported) genExternMethodSig(sym) else genMethodSig(sym)
+        val sig = if (attrs.isExported) genExternMethodSig(sym) else genMethodSig(sym)
 
         dd.rhs match {
           case EmptyTree
@@ -829,7 +829,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val pos: nir.Position = bodyp.pos
 
       val paramSyms = genParamSyms(dd, isStatic)
-      println(s"paramSyms ${dd.symbol} :: ${paramSyms} ${isStatic} ${isExtern}")
       val params = paramSyms.map {
         case None =>
           val ty = genType(curClassSym.tpe)

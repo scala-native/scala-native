@@ -3,8 +3,14 @@
 #include <exception>
 
 namespace scalanative {
-class ExceptionWrapper : std::exception {};
+class ExceptionWrapper : public std::exception {
+  public:
+    ExceptionWrapper(void *_obj) : obj(_obj) {}
+    void *obj;
+};
 } // namespace scalanative
+
+
 
 struct Foo {
     short arg1;
@@ -21,9 +27,7 @@ void sayHello(void);
 void sayHello(void);
 long addLongs(long l, long r);
 struct Foo *retStructPtr(void);
-struct Foo *allocFoo(void);
 void updateStruct(struct Foo *p);
-void updateAgainStruct(struct Foo *p);
 void fail();
 void sn_runGC(void);
 }

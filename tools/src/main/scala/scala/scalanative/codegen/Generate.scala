@@ -229,7 +229,6 @@ object Generate {
           val argv = Val.Local(fresh(), Type.Ptr)
           val rt = Val.Local(fresh(), Runtime)
           val arr = Val.Local(fresh(), ObjectArray)
-          val exc = Val.Local(fresh(), nir.Rt.Object)
 
           def unwind = unwindFn()
             Seq(
