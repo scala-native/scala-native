@@ -582,12 +582,13 @@ object InetAddress extends InetAddressBase {
 
 class InetAddress private[net] (
     ipAddress: Array[Byte],
-    private var host: String
+    private val originalHost: String
 ) extends Serializable {
   import InetAddress._
 
-  private var hostLastAccessed: time_t = 0
-  private var lastLookupFailed = false
+  private var hostLastUpdated: time_t = 0
+  private var cachedHost: String = null
+  private var lastLookupFailed = true
 
   private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
@@ -595,24 +596,30 @@ class InetAddress private[net] (
 
   private def hostTimeoutExpired(timeNow: time_t): Boolean = {
     val timeout = if (lastLookupFailed) NegativeHostTimeout else HostTimeout
-    difftime(timeNow, hostLastAccessed) > timeout
+    difftime(timeNow, hostLastUpdated) > timeout
   }
 
   def getHostName(): String = {
-    val timeNow = time(null)
-    if (host == null || hostTimeoutExpired(timeNow)) {
-      hostLastAccessed = timeNow
-      val ipString = createIPStringFromByteArray(ipAddress)
-      SocketHelpers.ipToHost(ipString, isValidIPv6Address(ipString)) match {
-        case None =>
-          lastLookupFailed = true
-          host = ipString
-        case Some(hostName) =>
-          lastLookupFailed = false
-          host = hostName
+    if (originalHost != null) {
+      // remember the host given to the constructor
+      originalHost
+    } else {
+      // reverse name lookup with cache
+      val timeNow = time(null)
+      if (cachedHost == null || hostTimeoutExpired(timeNow)) {
+        hostLastUpdated = timeNow
+        val ipString = createIPStringFromByteArray(ipAddress)
+        SocketHelpers.ipToHost(ipString, isValidIPv6Address(ipString)) match {
+          case None =>
+            lastLookupFailed = true
+            cachedHost = ipString
+          case Some(hostName) =>
+            lastLookupFailed = false
+            cachedHost = hostName
+        }
       }
+      cachedHost
     }
-    host
   }
 
   def getAddress() = ipAddress.clone
@@ -629,10 +636,12 @@ class InetAddress private[net] (
   override def hashCode(): Int = InetAddress.bytesToInt(ipAddress, 0)
 
   override def toString(): String = {
-    if (host == null)
-      return "/" + getHostAddress()
-    else
-      return host + "/" + getHostAddress()
+    val hostName =
+      if (originalHost != null) originalHost
+      else if (!lastLookupFailed) cachedHost
+      else ""
+
+    hostName + "/" + getHostAddress()
   }
 
   def isReachable(timeout: Int): Boolean = {
