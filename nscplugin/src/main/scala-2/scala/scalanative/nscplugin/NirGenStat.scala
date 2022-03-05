@@ -792,30 +792,21 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodAttrs(sym: Symbol): Attrs = {
       val inlineAttrs =
-        if (sym.isBridge || sym.hasFlag(ACCESSOR)) {
-          Seq(Attr.AlwaysInline)
-        } else {
-          sym.annotations.collect {
-            case ann if ann.symbol == NoInlineClass     => Attr.NoInline
-            case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-            case ann if ann.symbol == InlineClass       => Attr.InlineHint
-          }
-        }
-      val stubAttrs =
+        if (sym.isBridge || sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
+        else Nil
+
+      val annotatedAttrs =
         sym.annotations.collect {
-          case ann if ann.symbol == StubClass => Attr.Stub
-        }
-      val optAttrs =
-        sym.annotations.collect {
+          case ann if ann.symbol == NoInlineClass     => Attr.NoInline
+          case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
+          case ann if ann.symbol == InlineClass       => Attr.InlineHint
+          case ann if ann.symbol == StubClass         => Attr.Stub
           case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
           case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
+          case ann if ann.symbol == ExportClass       => Attr.Exported
         }
 
-      val externAttrs = sym.annotations.collect {
-        case ann if ann.symbol == ExportClass => Attr.Export
-      }
-
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs ++ externAttrs)
+      Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
     }
 
     def genMethodBody(
@@ -838,7 +829,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val ty = genType(curClassSym.tpe)
           Val.Local(fresh(), ty)
         case Some(sym) =>
-          val ty = if (dd.symbol.isExported) genExternType(sym.tpe) else genType(sym.tpe)
+          val ty =
+            if (dd.symbol.isExported) genExternType(sym.tpe)
+            else genType(sym.tpe)
           val param = Val.Local(fresh(), ty)
           curMethodEnv.enter(sym, param)
           param
