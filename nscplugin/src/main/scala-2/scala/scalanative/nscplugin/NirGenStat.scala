@@ -621,7 +621,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val owner = curClassSym.get
         val attrs = genMethodAttrs(sym)
         val name = genMethodName(sym)
-        val sig = if (attrs.isExported) genExternMethodSig(sym) else genMethodSig(sym)
+        val sig =
+          if (attrs.isExported) genExternMethodSig(sym)
+          else genMethodSig(sym)
 
         dd.rhs match {
           case EmptyTree
@@ -818,12 +820,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodBody(
         dd: DefDef,
-        bodyp: Tree,
+        bodyp: Tree
     ): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner) || dd.symbol.isExternallyKnown
+      val isStatic = dd.symbol.isStaticInNIR ||
+        isImplClass(dd.symbol.owner) ||
+        dd.symbol.isExternallyKnown
       val isExtern = dd.symbol.isExternallyKnown
 
       implicit val pos: nir.Position = bodyp.pos

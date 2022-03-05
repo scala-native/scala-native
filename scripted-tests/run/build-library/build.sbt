@@ -72,7 +72,6 @@ def compileAndTest(
       sourcePath.absolutePath,
       "-o",
       outFile.absolutePath,
-      //"/Users/adpauls/sm/git/scorch/exec.out",
       s"-L${libPath.absolutePath}",
       "-ltest"
     )

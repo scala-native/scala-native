@@ -25,7 +25,7 @@ object CodeGen {
 
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)
-    val lowered       = lower(generated ++ embedded)
+    val lowered = lower(generated ++ embedded)
     dumpDefns(config, "lowered", lowered)
     emit(config, lowered)
   }

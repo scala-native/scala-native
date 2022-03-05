@@ -56,24 +56,25 @@ private[scalanative] object LLVM {
     val isLl = inpath.endsWith(llExt)
     val workdir = config.workdir
 
-    val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-    val stdflag = {
-      if (isLl) Seq()
-      else if (isCpp) {
-        // C++14 or newer standard is needed to compile code using Windows API
-        // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-        if (config.targetsWindows) Seq("-std=c++14")
-        else Seq("-std=c++11")
-      } else Seq("-std=gnu11")
-    }
-    val platformFlags = {
-      if (config.targetsWindows) Seq("-g")
-      else Nil
-    }
-    val expectionsHandling =
-      List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-    val flags = opt(config) +: "-fvisibility=hidden" +:
-      stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
+        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+        val stdflag = {
+          if (isLl) Seq()
+          else if (isCpp) {
+            // C++14 or newer standard is needed to compile code using Windows API
+            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+            if (config.targetsWindows) Seq("-std=c++14")
+            else Seq("-std=c++11")
+          } else Seq("-std=gnu11")
+        }
+        val platformFlags = {
+          if (config.targetsWindows) Seq("-g")
+          else Nil
+        }
+        val expectionsHandling =
+          List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+        val flags = opt(config) +: "-fvisibility=hidden" +:
+          stdflag ++: platformFlags ++: expectionsHandling ++:
+           config.compileOptions
     val compilec =
       Seq(compiler) ++
             buildCompileOpts(config) ++ flags ++
@@ -177,10 +178,12 @@ private[scalanative] object LLVM {
 
     // link
     config.logger.running(compile)
-    val result = Process(compile, workdir.toFile) !
-      Logger.toProcessLogger(config.logger)
-    if (result != 0) {
-      throw new BuildException(s"Failed to link ${outpath}")
+      val result =
+        Process(compile,workdir.toFile) !
+          Logger.toProcessLogger(config.logger)
+      if (result != 0) {
+        throw new BuildException(s"Failed to link ${outpath}")
+
     }
 
     outpath

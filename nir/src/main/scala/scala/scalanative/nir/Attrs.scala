@@ -79,7 +79,7 @@ object Attrs {
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
       case Extern           => isExtern = true
-      case Export           => isExported = true
+      case Exported         => isExported = true
       case Dyn              => isDyn = true
       case Stub             => isStub = true
       case link: Attr.Link  => links += link

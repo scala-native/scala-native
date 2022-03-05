@@ -202,10 +202,10 @@ object Generate {
                 unwind
               )
             ) ++
-                initializers ++
-                Seq(
-                  Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-                )
+              initializers ++
+              Seq(
+                Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+              )
           }
         }
       )
@@ -220,17 +220,18 @@ object Generate {
         MainName,
         MainSig,
         withExceptionHandler { unwindFn =>
-        withClassInitializers(unwindFn) { initializers =>
-          val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
-          val entryMainMethod = Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
+          withClassInitializers(unwindFn) { initializers =>
+            val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
+            val entryMainMethod =
+              Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
 
-          val stackBottom = Val.Local(fresh(), Type.Ptr)
-          val argc = Val.Local(fresh(), Type.Int)
-          val argv = Val.Local(fresh(), Type.Ptr)
-          val rt = Val.Local(fresh(), Runtime)
-          val arr = Val.Local(fresh(), ObjectArray)
+            val stackBottom = Val.Local(fresh(), Type.Ptr)
+            val argc = Val.Local(fresh(), Type.Int)
+            val argv = Val.Local(fresh(), Type.Ptr)
+            val rt = Val.Local(fresh(), Runtime)
+            val arr = Val.Local(fresh(), ObjectArray)
 
-          def unwind = unwindFn()
+            def unwind = unwindFn()
             Seq(
               Inst.Label(fresh(), Seq(argc, argv)),
               Inst.Let(
@@ -258,10 +259,11 @@ object Generate {
                 Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
                 unwind
               ),
-              Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
+              Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind)
             )
+          }
         }
-      })
+      )
     }
 
     def genStackBottom(): Unit =
