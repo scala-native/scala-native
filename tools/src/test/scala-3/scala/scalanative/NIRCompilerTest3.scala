@@ -53,6 +53,19 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("extern field foo needs result type")
   }
 
+  it should "report error for top-level exported extern" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+        |import scala.scalanative.unsafe.{extern, exported}
+        |
+        |@exported
+        |def foo: Int = extern
+        |""".stripMargin))
+    }.getMessage should include(
+      "Method cannot be both declared as extern and exported"
+    )
+  }
+
   it should "allow to inline function passed to CFuncPtr.fromScalaFunction" in nativeCompilation(
     """
         |import scala.scalanative.unsafe.*

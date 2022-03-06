@@ -174,4 +174,81 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     )
   }
 
+  it should "allow to export module method" in {
+    try
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+              |object ExportInModule {
+              |  @exported
+              |  def foo(l: Int): Int = l
+              |}""".stripMargin
+        )
+      )
+    catch {
+      case ex: CompilationFailedException =>
+        fail(s"Unexpected compilation failure: ${ex.getMessage()}", ex)
+    }
+  }
+
+  it should "report error when exporting class method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+            |class ExportInClass() {
+            |  @exported
+            |  def foo(l: Int): Int = l
+            |}""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      "Exported methods needs to be statically accessible"
+    )
+  }
+
+  it should "report error when exporting non static module method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+          |class Wrapper() {
+          | object inner {
+          |   @exported
+          |   def foo(l: Int): Int = l
+          | }
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      "Exported methods needs to be statically accessible"
+    )
+  }
+
+  it should "report error when exporting module field" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+          |object valuesNotAllowed {
+          |  @exported val foo: Int = 0
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include("Exporting class fields is not allowed")
+  }
+
+  it should "report error when exporting module variable" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+          |object variableNotAllowed {
+          |  @exported var foo: Int = 0
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include("Exporting class fields is not allowed")
+  }
+
 }
