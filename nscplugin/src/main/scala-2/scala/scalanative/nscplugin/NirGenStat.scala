@@ -181,7 +181,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val pos: nir.Position = f.pos
 
         if (f.isExported) {
-          reporter.error(f.pos, "Exporting variables and values is not allowed")
+          reporter.error(f.pos, "Exporting class fields is not allowed")
         }
 
         buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
@@ -674,16 +674,17 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
 
+          case rhs if (attrs.isExported && !owner.isScalaModule) =>
+            reporter.error(
+              sym.pos,
+              "Exported methods needs to be statically accessible"
+            )
+            None
           case rhs =>
             scoped(
               curMethodSig := sig
             ) {
-              if (attrs.isExported && !owner.isScalaModule) {
-                reporter.error(
-                  sym.pos,
-                  "Exported methods needs to be statically accessible"
-                )
-              }
+
               val body = genMethodBody(dd, rhs)
               Some(Defn.Define(attrs, name, sig, body))
             }
@@ -796,14 +797,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         else Nil
 
       val annotatedAttrs =
-        sym.annotations.collect {
-          case ann if ann.symbol == NoInlineClass     => Attr.NoInline
-          case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-          case ann if ann.symbol == InlineClass       => Attr.InlineHint
-          case ann if ann.symbol == StubClass         => Attr.Stub
-          case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
-          case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
-          case ann if ann.symbol == ExportClass       => Attr.Exported
+        sym.annotations.map(_.symbol).collect {
+          case NoInlineClass     => Attr.NoInline
+          case AlwaysInlineClass => Attr.AlwaysInline
+          case InlineClass       => Attr.InlineHint
+          case StubClass         => Attr.Stub
+          case NoOptimizeClass   => Attr.NoOpt
+          case NoSpecializeClass => Attr.NoSpecialize
+          case ExportedClass     => Attr.Exported
         }
 
       Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
@@ -816,9 +817,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isStatic = dd.symbol.isStaticInNIR ||
-        isImplClass(dd.symbol.owner) ||
-        dd.symbol.isExternallyKnown
+      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner)
       val isExtern = dd.symbol.isExternallyKnown
 
       implicit val pos: nir.Position = bodyp.pos

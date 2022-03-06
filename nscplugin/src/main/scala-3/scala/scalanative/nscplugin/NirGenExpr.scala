@@ -742,9 +742,8 @@ trait NirGenExpr(using Context) {
       def canUseCurrentThis = currentThis.nonEmpty &&
         (sym == currentClass || currentMethod.owner == currentClass)
       val canLoadAsModule =
-        sym != currentClass &&
-          sym.is(ModuleClass, butNot = Package) ||
-          sym.isPackageObject
+        (sym != currentClass || currentMethod.isExported) &&
+          (sym.is(ModuleClass, butNot = Package) || sym.isPackageObject)
 
       if (canLoadAsModule) genModule(sym)
       else if (canUseCurrentThis) currentThis.get
@@ -1133,26 +1132,27 @@ trait NirGenExpr(using Context) {
       assert(!sym.isStaticMethod, sym)
       val owner = sym.owner.asClass
       val name = genMethodName(sym)
+      val isExtern = sym.isExternallyKnown
 
       val origSig = genMethodSig(sym)
       val sig =
-        if (sym.isExtern) genExternMethodSig(sym)
+        if isExtern then genExternMethodSig(sym)
         else origSig
       val args = genMethodArgs(sym, argsp)
 
-      val isStaticCall = statically || owner.isStruct || sym.isExtern
+      val isStaticCall = statically || owner.isStruct || isExtern
       val method =
         if (isStaticCall) Val.Global(name, nir.Type.Ptr)
         else
           val Global.Member(_, sig) = name: @unchecked
           buf.method(self, sig, unwind)
       val values =
-        if (sym.isExtern) args
+        if isExtern then args
         else self +: args
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!sym.isExtern) res
+      if !isExtern then res
       else {
         val Type.Function(_, retty) = origSig
         fromExtern(retty, res)
@@ -1453,7 +1453,7 @@ trait NirGenExpr(using Context) {
     }
 
     def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] = {
-      if (!sym.isExtern) genSimpleArgs(argsp)
+      if !sym.isExternallyKnown then genSimpleArgs(argsp)
       else {
         val res = Seq.newBuilder[Val]
         argsp.zip(sym.paramInfo.paramInfoss.flatten).foreach {

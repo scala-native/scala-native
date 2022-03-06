@@ -20,13 +20,17 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
 
     def isStaticInNIR: Boolean =
-      sym.owner.isExternModule || sym.isStaticMember || isImplClass(sym.owner)
+      sym.owner.isExternModule || sym.isStaticMember || isImplClass(
+        sym.owner
+      ) || isExternallyKnown
 
     def isExternModule: Boolean =
       isScalaModule && sym.annotations.exists(_.symbol == ExternClass)
 
     def isExported: Boolean =
-      sym.owner.isScalaModule && sym.annotations.exists(_.symbol == ExportClass)
+      sym.owner.isScalaModule && sym.annotations.exists(
+        _.symbol == ExportedClass
+      )
 
     def isExternallyKnown: Boolean = sym.isExported || sym.owner.isExternModule
 
