@@ -100,7 +100,7 @@ trait NirGenName[G <: Global with Singleton] {
 
     if (sym == String_+) {
       genMethodName(StringConcatMethod)
-    } else if (sym.isExternallyKnown) {
+    } else if (sym.owner.isExternModule) {
       if (sym.isSetter) {
         val id = nativeIdOf(sym.getter)
         owner.member(nir.Sig.Extern(id))

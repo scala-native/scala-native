@@ -39,11 +39,9 @@ class Reach(
     .get("scala.scalanative.linker.reachStaticConstructors")
     .flatMap(v => scala.util.Try(v.toBoolean).toOption)
     .forall(_ == true)
-  if (reachStaticConstructors) {
-    loader.classesWithEntryPoints.foreach { clsName =>
-      reachClinit(clsName)
-      reachExported(clsName)
-    }
+  loader.classesWithEntryPoints.foreach { clsName =>
+    if (reachStaticConstructors) reachClinit(clsName)
+    reachExported(clsName)
   }
 
   def result(): Result = {
@@ -269,11 +267,17 @@ class Reach(
   }
 
   def reachExported(name: Global): Unit = {
+    def isExported(defn: Defn) = defn match {
+      case Defn.Define(attrs, Global.Member(_, sig), _, _) =>
+        attrs.isExtern || sig.isExtern
+      case _ => false
+    }
     reachGlobalNow(name)
     for {
       cls <- infos.get(name)
-      (name, defn) <- loaded(cls.name)
-      if defn.attrs.isExported
+      defns <- loaded.get(cls.name)
+      (name, defn) <- defns
+      if isExported(defn)
     } reachGlobal(name)
   }
 

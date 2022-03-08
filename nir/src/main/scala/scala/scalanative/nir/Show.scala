@@ -95,8 +95,6 @@ object Show {
         str("stub")
       case Attr.Extern =>
         str("extern")
-      case Attr.Exported =>
-        str("exported")
       case Attr.Link(name) =>
         str("link(\"")
         str(escapeQuotes(name))

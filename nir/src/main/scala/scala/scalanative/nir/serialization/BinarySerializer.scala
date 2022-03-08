@@ -107,7 +107,6 @@ final class BinarySerializer {
     case Attr.Dyn      => putInt(T.DynAttr)
     case Attr.Stub     => putInt(T.StubAttr)
     case Attr.Extern   => putInt(T.ExternAttr)
-    case Attr.Exported => putInt(T.ExportedAttr)
     case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
   }

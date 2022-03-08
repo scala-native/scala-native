@@ -113,9 +113,7 @@ trait NirGenStat(using Context) {
       val isStatic = f.is(JavaStatic) || f.isScalaStatic
       val isExtern = f.isExtern
       val mutable = isStatic || f.is(Mutable)
-      val attrs = nir.Attrs(isExtern = f.isExtern, isExported = f.isExported)
-      if attrs.isExported then
-        report.error("Exporting class fields is not allowed", f.srcPos)
+      val attrs = nir.Attrs(isExtern = f.isExtern)
       val ty = genType(f.info.resultType)
       val fieldName @ Global.Member(owner, sig) = genFieldName(f): @unchecked
       generatedDefns += Defn.Var(attrs, fieldName, ty, Val.Zero(ty))
@@ -157,6 +155,8 @@ trait NirGenStat(using Context) {
     }
 
     val forwarders = genStaticMethodForwarders(td, methods)
+    val exported = genTopLevelExports(td)
+    generatedDefns ++= exported
     generatedDefns ++= methods
     generatedDefns ++= forwarders
   }
@@ -178,9 +178,7 @@ trait NirGenStat(using Context) {
 
       val attrs = genMethodAttrs(sym)
       val name = genMethodName(sym)
-      val sig =
-        if sym.isExported then genExternMethodSig(sym)
-        else genMethodSig(sym)
+      val sig = genMethodSig(sym)
 
       dd.rhs match {
         case EmptyTree => Some(Defn.Declare(attrs, name, sig))
@@ -192,25 +190,11 @@ trait NirGenStat(using Context) {
           None
 
         case rhs if sym.isExtern =>
-          if attrs.isExported then
-            report.error(
-              "Method cannot be both declared as extern and exported",
-              sym.srcPos
-            )
-            None
-          else
-            checkExplicitReturnTypeAnnotation(dd, "extern method")
-            genExternMethod(attrs, name, sig, rhs)
+          checkExplicitReturnTypeAnnotation(dd, "extern method")
+          genExternMethod(attrs, name, sig, rhs)
 
         case _ if sym.hasAnnotation(defnNir.ResolvedAtLinktimeClass) =>
           genLinktimeResolved(dd, name)
-
-        case rhs if attrs.isExported && !owner.isStaticModule =>
-          report.error(
-            "Exported methods needs to be statically accessible",
-            sym.srcPos
-          )
-          None
 
         case rhs =>
           scoped(
@@ -242,7 +226,6 @@ trait NirGenStat(using Context) {
         case defnNir.NoSpecializeType => Attr.NoSpecialize
         case defnNir.StubType         => Attr.Stub
         case defnNir.ExternType       => Attr.Extern
-        case defnNir.ExportedType     => Attr.Exported
       }
 
     Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
@@ -256,8 +239,7 @@ trait NirGenStat(using Context) {
     given nir.Position = bodyp.span
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
-    val isExtern = dd.symbol.isExternallyKnown
-    val isExported = dd.symbol.isExported
+    val isExtern = dd.symbol.isExtern
     val isStatic = dd.symbol.isStaticInNIR
     val isSynchronized = dd.symbol.is(Synchronized)
 
@@ -268,7 +250,7 @@ trait NirGenStat(using Context) {
     } yield param.symbol
     val argParams = argParamSyms.map { sym =>
       val tpe = sym.info.resultType
-      val ty = if isExported then genExternType(tpe) else genType(tpe)
+      val ty = genType(tpe)
       val param = Val.Local(fresh(), ty)
       curMethodEnv.enter(sym, param)
       param
@@ -282,12 +264,6 @@ trait NirGenStat(using Context) {
 
     def genEntry(): Unit = {
       buf.label(fresh(), params)
-      if isExported then
-        for (sym, param) <- argParamSyms.zip(argParams)
-        do
-          val ty = genType(sym.info.resultType)
-          val value = buf.fromExtern(ty, param)
-          curMethodEnv.enter(sym, value)
     }
 
     def genVars(): Unit = {

@@ -742,8 +742,9 @@ trait NirGenExpr(using Context) {
       def canUseCurrentThis = currentThis.nonEmpty &&
         (sym == currentClass || currentMethod.owner == currentClass)
       val canLoadAsModule =
-        (sym != currentClass || currentMethod.isExported) &&
-          (sym.is(ModuleClass, butNot = Package) || sym.isPackageObject)
+        sym != currentClass &&
+          sym.is(ModuleClass, butNot = Package) ||
+          sym.isPackageObject
 
       if (canLoadAsModule) genModule(sym)
       else if (canUseCurrentThis) currentThis.get
@@ -1132,7 +1133,7 @@ trait NirGenExpr(using Context) {
       assert(!sym.isStaticMethod, sym)
       val owner = sym.owner.asClass
       val name = genMethodName(sym)
-      val isExtern = sym.isExternallyKnown
+      val isExtern = sym.isExtern
 
       val origSig = genMethodSig(sym)
       val sig =
@@ -1159,7 +1160,7 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genApplyStaticMethod(
+    def genApplyStaticMethod(
         sym: Symbol,
         receiver: Symbol,
         argsp: Seq[Tree]
@@ -1453,7 +1454,7 @@ trait NirGenExpr(using Context) {
     }
 
     def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] = {
-      if !sym.isExternallyKnown then genSimpleArgs(argsp)
+      if !sym.isExtern then genSimpleArgs(argsp)
       else {
         val res = Seq.newBuilder[Val]
         argsp.zip(sym.paramInfo.paramInfoss.flatten).foreach {

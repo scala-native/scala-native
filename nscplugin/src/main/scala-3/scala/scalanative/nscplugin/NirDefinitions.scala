@@ -36,6 +36,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val StructType = requiredClassRef("scala.scalanative.runtime.struct")
   @tu lazy val ResolvedAtLinktimeType = requiredClassRef("scala.scalanative.unsafe.resolvedAtLinktime")
   @tu lazy val ExportedType = requiredClassRef("scala.scalanative.unsafe.exported")
+  @tu lazy val ExportedAccessorType = requiredClassRef("scala.scalanative.unsafe.exportedAccessor")
   def StubClass(using Context) = StubType.symbol.asClass
   def NameClass(using Context) = NameType.symbol.asClass
   def LinkClass(using Context) = LinkType.symbol.asClass
@@ -43,6 +44,7 @@ final class NirDefinitions()(using ctx: Context) {
   def StructClass(using Context) = StructType.symbol.asClass
   def ResolvedAtLinktimeClass(using Context) = ResolvedAtLinktimeType.symbol.asClass
   def ExportedClass(using Context) = ExportedType.symbol.asClass
+  def ExportedAccessorClass(using Context) = ExportedAccessorType.symbol.asClass
 
   // Unsigned types
   @tu lazy val UByteClassVal = requiredClassRef("scala.scalanative.unsigned.UByte")

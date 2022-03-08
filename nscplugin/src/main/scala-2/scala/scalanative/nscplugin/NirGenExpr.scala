@@ -2434,29 +2434,28 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val owner = sym.owner
       val name = genMethodName(sym)
       val origSig = genMethodSig(sym)
-      val isExternal = sym.isExternallyKnown
+      val isExtern = sym.isExternModule
       val sig =
-        if (isExternal) {
+        if (isExtern) {
           genExternMethodSig(sym)
         } else {
           origSig
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct ||
-            isExternal) {
+        if (isImplClass(owner) || statically || owner.isStruct || isExtern) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
           buf.method(self, sig, unwind)
         }
       val values =
-        if (isExternal || sym.isStaticInNIR) args
+        if (sym.isStaticInNIR) args
         else self +: args
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!isExternal) {
+      if (!isExtern) {
         res
       } else {
         val Type.Function(_, retty) = origSig
@@ -2465,7 +2464,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] =
-      if (!sym.isExternallyKnown) {
+      if (!sym.owner.isExternModule) {
         genSimpleArgs(argsp)
       } else {
         val res = Seq.newBuilder[Val]
