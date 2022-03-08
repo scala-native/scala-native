@@ -6,12 +6,17 @@
 #include "libtest.h"
 
 int main() {
-    fprintf(stderr, "xxx1\n");
     assert(ScalaNativeInit() == 0);
 
     sayHello();
 
-    assert(addLongs(123456789L, 876543210L) == 999999999L);
+    assert(strcmp(native_constant_string(), "ScalaNativeRocks!") == 0);
+
+    assert(native_number() == 42);
+    native_set_number(84);
+    assert(native_number() == 84);
+
+    assert(add_longs(123456789L, 876543210L) == 999999999L);
 
     struct Foo *p = retStructPtr();
     assert(p != NULL);
@@ -24,7 +29,6 @@ int main() {
     fprintf(stderr, "%p\n", (void *)p);
 
     updateStruct(p);
-
 
     assert(p != NULL);
     assert(p->arg1 == 42);

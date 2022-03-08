@@ -66,6 +66,25 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     )
   }
 
+  it should "all to define to level exports" in {
+    try NIRCompiler(_.compile("""
+      |import scala.scalanative.unsafe.*
+      |
+      |@exported
+      |def foo: Int = 42
+      |
+      |@exportedAelsewhereccessor("get_bar")
+      |val bar: Long = 42L
+      |
+      |@exportedAccessor("get_baz", "set_baz")
+      |var baz: Byte = 42
+      |""".stripMargin))
+    catch {
+      case ex: Exception =>
+        fail("Unexpected compilation failure", ex)
+    }
+  }
+
   it should "allow to inline function passed to CFuncPtr.fromScalaFunction" in nativeCompilation(
     """
         |import scala.scalanative.unsafe.*

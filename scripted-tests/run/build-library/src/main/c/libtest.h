@@ -11,8 +11,11 @@ struct Foo {
 
 int ScalaNativeInit(); // needs to be called before first SN heap allocation
                        // (GC)
+short native_number();
+void native_set_number(short);
+const char *native_constant_string();
 void sayHello(void);
-long addLongs(long l, long r);
+long add_longs(long l, long r);
 struct Foo *retStructPtr(void);
 void updateStruct(struct Foo *p);
 void sn_runGC(void);

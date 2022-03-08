@@ -10,7 +10,13 @@ int main() {
 
     sayHello();
 
-    assert(addLongs(123456789L, 876543210L) == 999999999L);
+    assert(strcmp(native_constant_string(), "ScalaNativeRocks!") == 0);
+
+    assert(native_number() == 42);
+    native_set_number(84);
+    assert(native_number() == 84);
+
+    assert(add_longs(123456789L, 876543210L) == 999999999L);
 
     struct Foo *p = retStructPtr();
     assert(p != NULL);
@@ -34,9 +40,14 @@ int main() {
     bool exceptionCaught = false;
     try {
         fail();
-        // TODO this fails to catch right now. There must be some mismatch between the specification of
-        //   scalanative::ExceptionWrapper in eh.cpp and the one in libtest.hpp
-//    } catch (const scalanative::ExceptionWrapper &e) {
+    } catch (const scalanative::ExceptionWrapper &e) {
+        exceptionCaught = true;
+    }
+    assert(exceptionCaught);
+
+    exceptionCaught = false;
+    try {
+        fail();
     } catch (const std::exception &e) {
         exceptionCaught = true;
     }
