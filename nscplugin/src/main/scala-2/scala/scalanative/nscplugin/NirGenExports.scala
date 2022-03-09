@@ -14,7 +14,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
   import nirAddons._
   import nirDefinitions._
   import SimpleType._
-  
+
   case class ExportedSymbol(symbol: Symbol, defn: Defn.Define)
 
   def isExported(s: Symbol) = {
@@ -22,8 +22,8 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
     s.hasAnnotation(ExportedAccessorClass)
   }
 
-  def genTopLevelExports(td: TypeDef): Seq[nir.Defn] = {
-    val owner = td.symbol
+  def genTopLevelExports(cd: ClassDef): Seq[nir.Defn] = {
+    val owner = cd.symbol
     val generated =
       for {
         member <- owner.info.members
@@ -31,7 +31,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
         if !owner.isExternModule
         // Externs combined with exports are not allowed, exception is handled in externs
         exported <-
-          if (owner.isStaticModule) genModuleMember(owner, member)
+          if (owner.isScalaModule) genModuleMember(owner, member)
           else genClassExport(member)
       } yield exported
 
@@ -110,8 +110,8 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
             .map(Sig.Extern(_))
             .getOrElse(accessorExternSig("set_"))
 
-          def externGetter = genModuleMethod(owner,member.getter, getterName)
-          def externSetter = genModuleMethod(owner,member.setter, setterName)
+          def externGetter = genModuleMethod(owner, member.getter, getterName)
+          def externSetter = genModuleMethod(owner, member.setter, setterName)
 
           if (member.isVar) Seq(externGetter, externSetter)
           else if (!member.getterIn(owner).exists) {

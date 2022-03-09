@@ -2434,7 +2434,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val owner = sym.owner
       val name = genMethodName(sym)
       val origSig = genMethodSig(sym)
-      val isExtern = sym.isExternModule
+      val isExtern = owner.isExternModule
       val sig =
         if (isExtern) {
           genExternMethodSig(sym)

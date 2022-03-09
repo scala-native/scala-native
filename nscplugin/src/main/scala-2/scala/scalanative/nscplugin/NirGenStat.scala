@@ -558,9 +558,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case dd: DefDef => genMethod(dd)
         case _          => Nil
       }
-      val forwarders = genStaticMethodForwarders(cd, methods)
       buf ++= methods
-      buf ++= forwarders
+      buf ++= genStaticMethodForwarders(cd, methods)
+      buf ++= genTopLevelExports(cd)
     }
 
     private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {

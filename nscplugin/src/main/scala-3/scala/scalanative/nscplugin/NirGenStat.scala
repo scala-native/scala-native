@@ -154,11 +154,9 @@ trait NirGenStat(using Context) {
         throw new FatalError("Illegal tree in body of genMethods():" + tree)
     }
 
-    val forwarders = genStaticMethodForwarders(td, methods)
-    val exported = genTopLevelExports(td)
-    generatedDefns ++= exported
     generatedDefns ++= methods
-    generatedDefns ++= forwarders
+    generatedDefns ++= genStaticMethodForwarders(td, methods)
+    generatedDefns ++= genTopLevelExports(td)
   }
 
   private def genMethod(dd: DefDef): Option[Defn] = {

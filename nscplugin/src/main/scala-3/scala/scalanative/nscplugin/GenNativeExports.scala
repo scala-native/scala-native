@@ -32,7 +32,7 @@ trait GenNativeExports(using Context):
       for
         member <- owner.denot.info.allMembers.map(_.symbol)
         if isExported(member)
-        if !member.isExtern
+        if !checkAndReportWhenIsExtern(member)
         // Externs combined with exports are not allowed, exception is handled in externs
         exported <-
           if owner.isStaticModule then genModuleMember(member)
@@ -51,7 +51,7 @@ trait GenNativeExports(using Context):
         }
       case (_, _) => ()
     }
-    generated.map(_._2)
+    generated.map(_.defn)
   end genTopLevelExports
 
   private def genClassExport(member: Symbol): Seq[ExportedSymbol] =
@@ -65,6 +65,15 @@ trait GenNativeExports(using Context):
 
   private def isMethod(s: Symbol): Boolean =
     s.isOneOf(Method | Module) && s.isTerm
+
+  private def checkAndReportWhenIsExtern(s: Symbol) =
+    val isExtern = s.isExtern
+    if isExtern then
+      report.error(
+        "Member cannot be defined both exported and extern, use `@extern` for symbols with external definition, and `@exported` for symbols that should be accessible via library",
+        s.srcPos
+      )
+    isExtern
 
   private def checkIsPublic(s: Symbol): Unit =
     if !s.isPublic then
