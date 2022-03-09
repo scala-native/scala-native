@@ -2,11 +2,13 @@ package scala.scalanative
 
 import java.nio.file.Files
 
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.scalanative.api.CompilationFailedException
+import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
+import scala.scalanative.nir.*
 
 class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
   def nativeCompilation(source: String): Unit = {
@@ -53,6 +55,9 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("extern field foo needs result type")
   }
 
+  val ErrorBothExternAndExported =
+    "Member cannot be defined both exported and extern"
+
   it should "report error for top-level exported extern" in {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
@@ -61,27 +66,49 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
         |@exported
         |def foo: Int = extern
         |""".stripMargin))
-    }.getMessage should include(
-      "Method cannot be both declared as extern and exported"
-    )
+    }.getMessage should startWith(ErrorBothExternAndExported)
   }
 
-  it should "all to define to level exports" in {
-    try NIRCompiler(_.compile("""
+  it should "report error for top-level exported accessor extern" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+         |import scala.scalanative.unsafe.*
+         |
+         |@exportedAccessor
+         |var foo: Int = extern
+         |""".stripMargin))
+    }.getMessage should startWith(ErrorBothExternAndExported)
+  }
+
+  it should "all to define top level exports" in {
+    compileAndLoad("source.scala" -> """
       |import scala.scalanative.unsafe.*
       |
       |@exported
       |def foo: Int = 42
       |
-      |@exportedAelsewhereccessor("get_bar")
+      |@exportedAccessor("my_get_bar")
       |val bar: Long = 42L
       |
-      |@exportedAccessor("get_baz", "set_baz")
+      |@exportedAccessor("my_get_baz", "my_set_baz")
       |var baz: Byte = 42
-      |""".stripMargin))
-    catch {
-      case ex: Exception =>
-        fail("Unexpected compilation failure", ex)
+      |""".stripMargin) { defns =>
+      val Owner = Global.Top("source$package$")
+      val expected = Seq(
+        Sig.Method("foo", Seq(Type.Int)),
+        Sig.Extern("foo"),
+        Sig.Field("bar", Sig.Scope.Private(Owner)),
+        Sig.Method("bar", Seq(Type.Long)),
+        Sig.Extern("my_get_bar"),
+        Sig.Field("baz"),
+        Sig.Method("baz", Seq(Type.Byte)),
+        Sig.Method("baz_$eq", Seq(Type.Byte, Type.Unit)),
+        Sig.Extern("my_get_baz"),
+        Sig.Extern("my_set_baz")
+      ).map(Owner.member(_))
+
+      val loaded = defns.map(_.name)
+      assert(expected.diff(loaded).isEmpty)
     }
   }
 

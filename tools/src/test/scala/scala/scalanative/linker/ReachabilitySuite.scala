@@ -111,6 +111,6 @@ trait ReachabilitySuite extends AnyFunSuite {
       .withCompilerConfig {
         _.withTargetTriple("x86_64-unknown-unknown")
       }
-      .withMainClass(Some(mainClass))
+      .withMainClass(mainClass)
   }
 }
