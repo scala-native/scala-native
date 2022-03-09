@@ -39,9 +39,13 @@ class Reach(
     .get("scala.scalanative.linker.reachStaticConstructors")
     .flatMap(v => scala.util.Try(v.toBoolean).toOption)
     .forall(_ == true)
+
   loader.classesWithEntryPoints.foreach { clsName =>
     if (reachStaticConstructors) reachClinit(clsName)
-    reachExported(clsName)
+    config.compilerConfig.buildTarget match {
+      case scalanative.build.BuildTarget.Application => ()
+      case _                                         => reachExported(clsName)
+    }
   }
 
   def result(): Result = {
@@ -272,7 +276,7 @@ class Reach(
         attrs.isExtern || sig.isExtern
       case _ => false
     }
-    reachGlobalNow(name)
+
     for {
       cls <- infos.get(name)
       defns <- loaded.get(cls.name)
