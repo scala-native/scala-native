@@ -65,7 +65,6 @@ object Attrs {
     var specialize = None.specialize
     var opt = None.opt
     var isExtern = false
-    var isExported = false
     var isDyn = false
     var isStub = false
     var isAbstract = false
