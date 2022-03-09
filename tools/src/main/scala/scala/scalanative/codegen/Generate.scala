@@ -4,7 +4,6 @@ package codegen
 import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.linker.{Class, ScopeInfo, Unavailable}
-import scala.ref.WeakReferenceWithWrapper
 import scala.scalanative.build.Logger
 
 object Generate {
@@ -393,40 +392,29 @@ object Generate {
             Type.Int,
             Val.Int(value)
           )
-      val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
 
-      val (
-        weakRefId,
-        weakRefFieldOffset
-      ) =
-        if (linked.infos.contains(weakRefGlobal)) {
+      val (weakRefId, modifiedFieldOffset) = linked.infos
+        .get(Global.Top("java.lang.ref.WeakReference"))
+        .map(_.asInstanceOf[Class])
+        .filter(_.allocated)
+        .fold((-1, -1)) { weakRef =>
           // if WeakReferences are being compiled and therefore supported
-          def gcModifiedFieldIndexes(clazz: Class): Seq[Int] =
-            meta.layout(clazz).entries.zipWithIndex.collect {
+          val gcModifiedFieldIndexes: Seq[Int] =
+            meta.layout(weakRef).entries.zipWithIndex.collect {
               case (field, index)
                   if field.name.mangle.contains("_gc_modified_") =>
                 index
             }
 
-          val weakRef = linked
-            .infos(weakRefGlobal)
-            .asInstanceOf[Class]
-
-          val weakRefFieldIndexes = gcModifiedFieldIndexes(weakRef)
-          if (weakRefFieldIndexes.size != 1)
+          if (gcModifiedFieldIndexes.size != 1)
             throw new Exception(
               "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
             )
 
-          (
-            meta.ids(weakRef),
-            weakRefFieldIndexes.head
-          )
-        } else {
-          (-1, -1)
+          (meta.ids(weakRef), gcModifiedFieldIndexes.head)
         }
       addToBuf(weakRefIdName, weakRefId)
-      addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)
+      addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)
     }
 
     def genArrayIds(): Unit = {
