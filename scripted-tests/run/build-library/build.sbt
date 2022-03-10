@@ -15,23 +15,27 @@ scalaVersion := {
 
 nativeConfig := {
   val prev = nativeConfig.value
-  val outPath = crossTarget.value / "libtest.so"
+  val filename = if (Platform.isWindows) "test.dll" else "libtest.so"
+  val outPath = crossTarget.value / filename
 
   prev
     .withBuildTarget(scalanative.build.BuildTarget.libraryDynamic)
     .withLinkingOptions(Seq("-o", outPath.absolutePath))
 }
 
+val outExt = if (Platform.isWindows) "exe" else "out"
 lazy val testC = taskKey[Unit]("Build test application using SN library for C")
 testC := {
+  sLog.value.info("Testing dynamic library from C")
   discover("clang", "CLANG_PATH").fold {
-    sLog.value.info("clang not found, skipping test")
+    sLog.value.error("clang not found")
+    sys.exit(1)
   } {
     compileAndTest(
       _,
       libPath = crossTarget.value,
       sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.c",
-      outFile = baseDirectory.value / "testC.out"
+      outFile = baseDirectory.value / s"testC.$outExt"
     )
   }
 }
@@ -39,22 +43,24 @@ testC := {
 lazy val testCpp =
   taskKey[Unit]("Build test application using SN library for C++")
 testCpp := {
+  sLog.value.info("Testing dynamic library from C++")
   discover("clang++", "CLANGPP_PATH").fold {
-    sLog.value.info("clang not found, skipping test")
+    sLog.value.error("clang not found")
+    sys.exit(1)
   } {
-
     compileAndTest(
       _,
       libPath = crossTarget.value,
       sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.cpp",
-      outFile = baseDirectory.value / "testCpp.out"
+      outFile = baseDirectory.value / s"testCpp.$outExt"
     )
   }
 }
 
 def discover(binaryName: String, envPath: String): Option[Path] = {
   val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
-  val path = Process(s"which $binaryNameOrPath").lineStream.map { p =>
+  val which = if (Platform.isWindows) "where" else "which"
+  val path = Process(s"$which $binaryNameOrPath").lineStream.map { p =>
     Paths.get(p)
   }.headOption
   path

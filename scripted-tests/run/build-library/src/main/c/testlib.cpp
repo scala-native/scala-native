@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include "libtest.hpp"
@@ -40,7 +39,7 @@ int main() {
     bool exceptionCaught = false;
     try {
         fail();
-    } catch (const scalanative::ExceptionWrapper &e) {
+    } catch (const std::exception &e) {
         exceptionCaught = true;
     }
     assert(exceptionCaught);
@@ -48,7 +47,7 @@ int main() {
     exceptionCaught = false;
     try {
         fail();
-    } catch (const std::exception &e) {
+    } catch (const scalanative::ExceptionWrapper &e) {
         exceptionCaught = true;
     }
     assert(exceptionCaught);
