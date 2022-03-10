@@ -70,10 +70,12 @@ private[scalanative] object LLVM {
           if (config.targetsWindows) Seq("-g")
           else Nil
         }
-        val expectionsHandling =
-          List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+        val excepctionsHandling = {
+          val opt = if (isCpp) List("-fcxx-exceptions") else Nil
+          List("-fexceptions", "-funwind-tables") ::: opt
+        }
         val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: expectionsHandling ++:
+          stdflag ++: platformFlags ++: excepctionsHandling ++:
            config.compileOptions
     val compilec =
       Seq(compiler) ++
