@@ -180,8 +180,7 @@ in Scala Native. It returns `0` on successful initialization and non-zero value 
       @exported
       def addLongs(l: Long, r: Long): Long = l + r
 
-      @exported
-      @name("mylib_addInts")
+      @exported("mylib_addInts")
       def addInts(l: Int, r: Int): Int = l + r
     }
 
