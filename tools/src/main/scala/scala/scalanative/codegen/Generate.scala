@@ -175,7 +175,7 @@ object Generate {
       implicit val fresh: Fresh = Fresh()
 
       buf += Defn.Define(
-        Attrs(), // TODO: It shoudl be extern, but it fails to compile due to missing gxx_personality
+        Attrs(isExtern = true),
         LibraryInitName,
         LibraryInitSig,
         withExceptionHandler { unwindFn =>

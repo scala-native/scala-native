@@ -201,11 +201,9 @@ private[codegen] abstract class AbstractCodeGen(
         genAttr(attrs.inlineHint)
       }
     }
-    if (!attrs.isExtern && !isDecl) {
+    if (!isDecl) {
       str(" ")
       str(os.gxxPersonality)
-    }
-    if (!isDecl) {
       str(" {")
 
       insts.foreach {
