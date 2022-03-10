@@ -182,11 +182,10 @@ private[scalanative] object LLVM {
         Process(compile,workdir.toFile) !
           Logger.toProcessLogger(config.logger)
       if (result != 0) {
-        throw new BuildException(s"Failed to link ${outpath}")
-
+        throw new BuildException(s"Failed to link ${finalOutpath}")
     }
 
-    outpath
+    finalOutpath
   }
 
   /** Checks the input timestamp to see if the file needs compiling. The call to
@@ -246,6 +245,26 @@ private[scalanative] object LLVM {
       case Mode.ReleaseFast => "-O2"
       case Mode.ReleaseFull => "-O3"
     }
+
+  private class LinkOutput(originalOutPath: Path, config: Config) {
+    val directory = Option(originalOutPath.toAbsolutePath.getParent())
+      .getOrElse(originalOutPath.getRoot())
+    val filename = originalOutPath.getFileName().toString()
+    val baseFilename = filename.lastIndexOf(".") match {
+      case -1  => filename
+      case idx => filename.substring(0, idx)
+    }
+
+    val buildTargetExtension: String = {
+      config.compilerConfig.buildTarget match {
+        case BuildTarget.Application =>
+          if (config.targetsWindows) ".exe" else ".out"
+        case BuildTarget.LibraryDynamic =>
+          if (config.targetsWindows) ".dll" else ".so"
+      }
+    }
+    val finalPath: Path = directory.resolve(baseFilename + buildTargetExtension)
+  }
 
   private def buildCompileOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
