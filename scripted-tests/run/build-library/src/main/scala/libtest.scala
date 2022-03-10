@@ -2,9 +2,9 @@ import scala.scalanative.runtime.{fromRawPtr, libc}
 import scala.scalanative.unsafe._
 
 object libtest {
-  @exportedAccessor("native_number", "native_set_number")
+  @exportAccessors("native_number", "native_set_number")
   var fourtyTwo = 42.toShort
-  @exportedAccessor("native_constant_string")
+  @exportAccessors("native_constant_string")
   val snRocks: CString = c"ScalaNativeRocks!"
 
   println(fourtyTwo)

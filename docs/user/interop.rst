@@ -160,7 +160,7 @@ Exported methods
 
 When linking Scala Native as library, you can mark functions that should visible in created library with ``@exported(name: String)`` annotation. In case if you omit or use null as the argument for name 
 extern function name match the name of the method.
-Currently, only static object methods can be exported. To export accessors of field or variable in static object use ``@exportedAccessor(getterName: String, setterName: String)``. 
+Currently, only static object methods can be exported. To export accessors of field or variable in static object use ``@exportAccessors(getterName: String, setterName: String)``. 
 If you omit the explicit names in the annotation constructor, Scala Native would create exported methods with ``set_`` and ``get_`` prefixes and name of field.
 
 `int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined
@@ -171,10 +171,10 @@ in Scala Native. It returns `0` on successful initialization and non-zero value 
     import scala.scalanative.unsafe._
 
     object myLib{
-      @exportedAccessor("mylib_current_count", "mylib_set_counter")
+      @exportAccessors("mylib_current_count", "mylib_set_counter")
       var counter: Int = 0
 
-      @exportedAccessor("error_message")
+      @exportAccessors("error_message")
       val ErrorMessage: CString = c"Something bad just happend!"
 
       @exported

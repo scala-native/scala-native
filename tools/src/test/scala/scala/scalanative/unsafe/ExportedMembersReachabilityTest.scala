@@ -39,10 +39,10 @@ class ExportedMembersReachabilityTest extends LinkerSpec {
       "Test.scala" -> s"""
         |import scala.scalanative.unsafe._
         |object lib {
-        |  @exportedAccessor 
+        |  @exportAccessors 
         |  val foo: CString = c"Hello world"
         |  
-        |  @exportedAccessor("native_constant") 
+        |  @exportAccessors("native_constant") 
         |  val bar: Long = 42L
         |}
         |""".stripMargin
@@ -64,13 +64,13 @@ class ExportedMembersReachabilityTest extends LinkerSpec {
       "Test.scala" -> s"""
          |import scala.scalanative.unsafe._
          |object lib {
-         |  @exportedAccessor 
+         |  @exportAccessors 
          |  var foo: CString = c"Hello world"
          |  
-         |  @exportedAccessor("native_variable") 
+         |  @exportAccessors("native_variable") 
          |  var bar: Long = 42L
          |
-         |  @exportedAccessor("native_get_baz", "native_set_baz")
+         |  @exportAccessors("native_get_baz", "native_set_baz")
          |  var baz: Byte = 42.toByte
          |}
          |""".stripMargin

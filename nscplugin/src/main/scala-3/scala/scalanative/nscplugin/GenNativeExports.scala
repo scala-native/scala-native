@@ -24,7 +24,7 @@ trait GenNativeExports(using Context):
 
   def isExported(s: Symbol) =
     s.hasAnnotation(defnNir.ExportedClass) ||
-      s.hasAnnotation(defnNir.ExportedAccessorClass)
+      s.hasAnnotation(defnNir.ExportAccessorsClass)
 
   def genTopLevelExports(td: TypeDef): Seq[nir.Defn] =
     given owner: OwnerSymbol = td.symbol
@@ -90,9 +90,9 @@ trait GenNativeExports(using Context):
       )
 
   private def checkAccessorAnnotation(s: Symbol): Unit =
-    if !s.hasAnnotation(defnNir.ExportedAccessorClass) then
+    if !s.hasAnnotation(defnNir.ExportAccessorsClass) then
       report.error(
-        "Cannot export field, use `@exportedAccessor()` annotation to generate external accessors",
+        "Cannot export field, use `@exportAccessors()` annotation to generate external accessors",
         s.srcPos
       )
 
@@ -109,7 +109,7 @@ trait GenNativeExports(using Context):
       Seq(genModuleMethod(member, name))
     else
       checkAccessorAnnotation(member)
-      member.getAnnotation(defnNir.ExportedAccessorClass) match {
+      member.getAnnotation(defnNir.ExportAccessorsClass) match {
         case None => Nil
         case Some(annotation) =>
           def accessorExternSig(prefix: String) =

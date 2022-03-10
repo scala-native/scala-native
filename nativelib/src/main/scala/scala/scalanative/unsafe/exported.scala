@@ -10,7 +10,7 @@ final class exported(name: String) extends scala.annotation.StaticAnnotation {
 /** An annotation that is used to mark static fields for which should be
  *  generated external accesor (entry points in library)
  */
-final class exportedAccessor(getterName: String, setterName: String)
+final class exportAccessors(getterName: String, setterName: String)
     extends scala.annotation.StaticAnnotation {
   def this(name: String) = this(getterName = name, null)
   def this() = this(null, null)

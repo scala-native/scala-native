@@ -33,8 +33,8 @@ trait NirDefinitions {
     lazy val ExportedClass = getRequiredClass(
       "scala.scalanative.unsafe.exported"
     )
-    lazy val ExportedAccessorClass = getRequiredClass(
-      "scala.scalanative.unsafe.exportedAccessor"
+    lazy val ExportAccessorsClass = getRequiredClass(
+      "scala.scalanative.unsafe.exportAccessors"
     )
     lazy val StubClass = getRequiredClass("scala.scalanative.annotation.stub")
 

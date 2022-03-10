@@ -19,7 +19,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
 
   def isExported(s: Symbol) = {
     s.hasAnnotation(ExportedClass) ||
-    s.hasAnnotation(ExportedAccessorClass)
+    s.hasAnnotation(ExportAccessorsClass)
   }
 
   def genTopLevelExports(cd: ClassDef): Seq[nir.Defn] = {
@@ -80,10 +80,10 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
     }
 
   private def checkAccessorAnnotation(s: Symbol): Unit =
-    if (!s.hasAnnotation(ExportedAccessorClass)) {
+    if (!s.hasAnnotation(ExportAccessorsClass)) {
       reporter.error(
         s.pos,
-        "Cannot export field, use `@exportedAccessor()` annotation to generate external accessors"
+        "Cannot export field, use `@exportAccessors()` annotation to generate external accessors"
       )
     }
 
@@ -93,7 +93,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
   ): Seq[ExportedSymbol] = {
     if (isField(member)) {
       checkAccessorAnnotation(member)
-      member.getAnnotation(ExportedAccessorClass) match {
+      member.getAnnotation(ExportAccessorsClass) match {
         case None => Nil
         case Some(annotation) =>
           def accessorExternSig(prefix: String) = {

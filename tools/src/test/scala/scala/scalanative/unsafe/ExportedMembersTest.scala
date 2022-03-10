@@ -17,7 +17,7 @@ class ExportedMembersTest extends AnyFlatSpec with Matchers {
   val NonPublicMethod = "Exported members needs to be defined in public scope"
   val DuplicatedNames = "dupl"
   val IncorrectAccessorAnnotation =
-    "Cannot export field, use `@exportedAccessor()` annotation to generate external accessors"
+    "Cannot export field, use `@exportAccessors()` annotation to generate external accessors"
   val IncorrectMethodAnnotation =
     "Incorrect annotation found, to export method use `@exported` annotation"
 
@@ -70,7 +70,7 @@ class ExportedMembersTest extends AnyFlatSpec with Matchers {
         _.compile(
           """import scala.scalanative.unsafe._
          |object lib {
-         | @exportedAccessor 
+         | @exportAccessors 
          | private val foo: Int = 42
          | 
          | // Without this in Scala 3 foo would be defined as val in <init> method
@@ -87,7 +87,7 @@ class ExportedMembersTest extends AnyFlatSpec with Matchers {
         _.compile(
           """import scala.scalanative.unsafe._
          |object lib {
-         | @exportedAccessor protected val foo: Int = 42
+         | @exportAccessors protected val foo: Int = 42
          |}""".stripMargin
         )
       )
@@ -100,7 +100,7 @@ class ExportedMembersTest extends AnyFlatSpec with Matchers {
         _.compile(
           """import scala.scalanative.unsafe._
           |object lib {
-          | @exportedAccessor protected var foo: Int = 42
+          | @exportAccessors protected var foo: Int = 42
           |}""".stripMargin
         )
       )
@@ -113,7 +113,7 @@ class ExportedMembersTest extends AnyFlatSpec with Matchers {
         _.compile(
           """import scala.scalanative.unsafe._
           |object lib {
-          | @exportedAccessor protected var foo: Int = 42
+          | @exportAccessors protected var foo: Int = 42
           |}""".stripMargin
         )
       )
@@ -166,7 +166,7 @@ class ExportedMembersTest extends AnyFlatSpec with Matchers {
         _.compile(
           """import scala.scalanative.unsafe._
           |object lib {
-          | @exportedAccessor def foo(): Int = 42
+          | @exportAccessors def foo(): Int = 42
           |}""".stripMargin
         )
       )

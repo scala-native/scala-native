@@ -74,7 +74,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
       NIRCompiler(_.compile("""
          |import scala.scalanative.unsafe.*
          |
-         |@exportedAccessor
+         |@exportAccessors
          |var foo: Int = extern
          |""".stripMargin))
     }.getMessage should startWith(ErrorBothExternAndExported)
@@ -87,10 +87,10 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
       |@exported
       |def foo: Int = 42
       |
-      |@exportedAccessor("my_get_bar")
+      |@exportAccessors("my_get_bar")
       |val bar: Long = 42L
       |
-      |@exportedAccessor("my_get_baz", "my_set_baz")
+      |@exportAccessors("my_get_baz", "my_set_baz")
       |var baz: Byte = 42
       |""".stripMargin) { defns =>
       val Owner = Global.Top("source$package$")
