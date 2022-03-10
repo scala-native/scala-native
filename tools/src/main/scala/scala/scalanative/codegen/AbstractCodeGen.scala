@@ -175,6 +175,9 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
+    if(config.targetsWindows && !isDecl && sig.isExtern) {
+      str("dllexport ")
+    }
     genFunctionReturnType(retty)
     str(" @")
     genGlobal(name)
