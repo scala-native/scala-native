@@ -269,12 +269,18 @@ private[scalanative] object LLVM {
   private def buildCompileOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
       case BuildTarget.Application    => Nil
-      case BuildTarget.LibraryDynamic => Seq("-fPIC")
+      case BuildTarget.LibraryDynamic => optionalPICflag(config)
     }
 
   private def buildLinkOpts(config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application    => Nil
-      case BuildTarget.LibraryDynamic => Seq("-shared", "-fPIC")
+      case BuildTarget.Application => Nil
+      case BuildTarget.LibraryDynamic =>
+        Seq("-shared") ++ optionalPICflag(config)
     }
+
+  private def optionalPICflag(config: Config): Seq[String] =
+    if (config.targetsWindows) Nil
+    else Seq("-fPIC")
+
 }
