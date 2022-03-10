@@ -175,8 +175,10 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
-    if(config.targetsWindows && !isDecl && sig.isExtern) {
-      str("dllexport ")
+    if (config.targetsWindows && !isDecl && attrs.isExtern) {
+      // Generate export modifier only for extern (C-ABI compliant) signatures
+      val Global.Member(_, sig) = name
+      if (sig.isExtern) str("dllexport ")
     }
     genFunctionReturnType(retty)
     str(" @")
