@@ -152,10 +152,10 @@ object Generate {
     }
 
     /* Generate class initializers to handle class instantiated using reflection */
-    private def withClassInitializers(
+    private def genClassInitializersCalls(
         unwind: () => Next
-    )(body: Seq[Inst] => Seq[Inst])(implicit fresh: Fresh): Seq[Inst] = {
-      val classInitializers = defns.collect {
+    )(implicit fresh: Fresh): Seq[Inst] = {
+      defns.collect {
         case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
           Inst.Let(
             Op.Call(
@@ -166,7 +166,27 @@ object Generate {
             unwind()
           )
       }
-      body(classInitializers)
+    }
+
+    private def genGcInit(unwindProvider: () => Next)(implicit fresh: Fresh) = {
+      def unwind: Next = unwindProvider()
+      val stackBottom = Val.Local(fresh(), Type.Ptr)
+
+      val init = fresh()
+      val afterInit = fresh()
+      val cond = Val.Local(fresh(), Type.Bool)
+
+      Seq(
+        // init __stack_bottom variable
+        Inst.Let(
+          stackBottom.name,
+          Op.Stackalloc(Type.Ptr, Val.Long(0)),
+          unwind
+        ),
+        Inst.Let(Op.Store(Type.Ptr, StackBottomVar, stackBottom), unwind),
+        // Init GC
+        Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+      )
     }
 
     /* Injects definition of library initializers that needs to be called, when using Scala Native as shared library.
@@ -178,33 +198,28 @@ object Generate {
         Attrs(isExtern = true),
         LibraryInitName,
         LibraryInitSig,
-        withExceptionHandler { unwindFn =>
-          withClassInitializers(unwindFn) { initializers =>
-            def unwind: Next = unwindFn()
-
-            val stackBottom = Val.Local(fresh(), Type.Ptr)
-
+        withExceptionHandler { unwindProvider =>
+          def unwind: Next = unwindProvider()
+          // Make sure that initialization can happen only once, to prevent undefined behaviour after re-calling ScalaNativeInit
+          def initOnce(body: Seq[Inst]) = {
+            val initL = fresh()
+            val afterInitL = fresh()
+            val cond = Val.Local(fresh(), Type.Bool)
+            val initCond = Op.Comp(Comp.Ieq, Type.Ptr, StackBottomVar, Val.Null)
             Seq(
-              Inst.Label(fresh(), Seq()),
-              // init stack bottom needed by immix/commix
-              Inst.Let(
-                stackBottom.name,
-                Op.Stackalloc(Type.Ptr, Val.Long(0)),
-                unwind
-              ),
-              Inst.Let(
-                Op.Store(
-                  Type.Ptr,
-                  Val.Global(stackBottomName, Type.Ptr),
-                  stackBottom
-                ),
-                unwind
-              ),
-              Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-            ) ++
-              initializers ++
-              Seq(
-              )
+              // __stack_bottom is set only when initializing
+              Inst.Let(cond.name, initCond, unwind),
+              Inst.If(cond, Next(initL), Next(afterInitL)),
+              Inst.Label(initL, Nil)
+            ) ++ body ++ Seq(
+              Inst.Jump(Next(afterInitL)),
+              Inst.Label(afterInitL, Nil)
+            )
+          }
+
+          Inst.Label(fresh(), Nil) +: initOnce {
+            genGcInit(unwindProvider) ++
+              genClassInitializersCalls(unwindProvider)
           }
         }
       )
@@ -218,36 +233,22 @@ object Generate {
         Attrs.None,
         MainName,
         MainSig,
-        withExceptionHandler { unwindFn =>
-          withClassInitializers(unwindFn) { initializers =>
-            val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
-            val entryMainMethod =
-              Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
+        withExceptionHandler { unwindProvider =>
+          val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
+          val entryMainMethod =
+            Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
 
-            val stackBottom = Val.Local(fresh(), Type.Ptr)
-            val argc = Val.Local(fresh(), Type.Int)
-            val argv = Val.Local(fresh(), Type.Ptr)
-            val rt = Val.Local(fresh(), Runtime)
-            val arr = Val.Local(fresh(), ObjectArray)
+          val argc = Val.Local(fresh(), Type.Int)
+          val argv = Val.Local(fresh(), Type.Ptr)
+          val rt = Val.Local(fresh(), Runtime)
+          val arr = Val.Local(fresh(), ObjectArray)
 
-            def unwind = unwindFn()
+          def unwind = unwindProvider()
+
+          Seq(Inst.Label(fresh(), Seq(argc, argv))) ++
+            genGcInit(unwindProvider) ++
+            genClassInitializersCalls(unwindProvider) ++
             Seq(
-              Inst.Label(fresh(), Seq(argc, argv)),
-              Inst.Let(
-                stackBottom.name,
-                Op.Stackalloc(Type.Ptr, Val.Size(0)),
-                unwind
-              ),
-              Inst.Let(
-                Op.Store(
-                  Type.Ptr,
-                  Val.Global(stackBottomName, Type.Ptr),
-                  stackBottom
-                ),
-                unwind
-              ),
-              Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-            ) ++ initializers ++ Seq(
               Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
               Inst.Let(
                 arr.name,
@@ -260,7 +261,6 @@ object Generate {
               ),
               Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind)
             )
-          }
         }
       )
     }
@@ -520,6 +520,7 @@ object Generate {
     val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
     val stackBottomName = extern("__stack_bottom")
+    val StackBottomVar = Val.Global(stackBottomName, Type.Ptr)
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
