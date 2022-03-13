@@ -20,34 +20,51 @@ class FEnvTest {
   }
 
   @Test def raiseCheckClearException(): Unit = {
-    val exs = List(
-      fenv.FE_DIVBYZERO,
-      fenv.FE_INEXACT,
-      fenv.FE_INVALID,
-      fenv.FE_OVERFLOW,
-      fenv.FE_UNDERFLOW
-    )
-    for {
-      n <- 1 to exs.length
-      comb <- exs.combinations(n)
-    } yield {
-      val flag = comb.foldLeft(0) { case (acc, f) => acc | f }
-      assertEquals(
-        0,
-        fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
+    if (fenv.FE_ALL_EXCEPT == 0) {
+      // floating-point exceptions are not supported by the implementation.
+    } else {
+      def assertEqFlags(expected: CInt, actual: CInt): Unit = {
+        assertTrue(
+          s"""expected: $expected
+        |actual: $actual
+        |FE_DIVBYZERO: ${fenv.FE_DIVBYZERO}
+        |FE_INEXACT: ${fenv.FE_INEXACT}
+        |FE_INVALID: ${fenv.FE_INVALID}
+        |FE_OVERFLOW: ${fenv.FE_OVERFLOW}
+        |FE_UNDERFLOW: ${fenv.FE_UNDERFLOW}
+        |""".stripMargin,
+          expected == actual
+        )
+      }
+      val exs = List(
+        fenv.FE_DIVBYZERO,
+        fenv.FE_INEXACT,
+        fenv.FE_INVALID,
+        fenv.FE_OVERFLOW,
+        fenv.FE_UNDERFLOW
       )
-      assertEquals(
-        0,
-        fenv.feraiseexcept(flag)
-      )
-      assertEquals(
-        flag,
-        fenv.fetestexcept(fenv.FE_ALL_EXCEPT)
-      )
-      assertEquals(
-        0,
-        fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
-      )
+      for {
+        n <- 1 to exs.length
+        comb <- exs.combinations(n)
+      } yield {
+        val flag = comb.foldLeft(0) { case (acc, f) => acc | f }
+        assertEquals(
+          0,
+          fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
+        )
+        assertEquals(
+          0,
+          fenv.feraiseexcept(flag)
+        )
+        assertEqFlags(
+          flag,
+          fenv.fetestexcept(fenv.FE_ALL_EXCEPT)
+        )
+        assertEquals(
+          0,
+          fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
+        )
+      }
     }
   }
 
