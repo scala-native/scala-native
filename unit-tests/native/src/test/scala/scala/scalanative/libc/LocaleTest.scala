@@ -1,0 +1,95 @@
+package scala.scalanative.libc
+
+import org.junit.Test
+import org.junit.Assert._
+
+import scalanative.unsafe._
+import scalanative.libc.locale._
+
+class LocaleTest {
+  @Test def categoryConstantsReturnCorrectValue(): Unit = {
+    // check LC_* constants are unique
+    assertEquals(
+      6,
+      Set(
+        locale.LC_ALL,
+        locale.LC_COLLATE,
+        locale.LC_CTYPE,
+        locale.LC_MONETARY,
+        locale.LC_NUMERIC,
+        locale.LC_TIME
+      ).size
+    )
+  }
+  @Test def lconvInCLocale(): Unit = {
+    Zone { implicit z =>
+      locale.setlocale(locale.LC_ALL, toCString("C"))
+    }
+    import LConv.LConvOps
+    val clocale = locale.localeconv()
+    Zone { implicit z =>
+      assertEquals(
+        !toCString("."),
+        !clocale.decimal_point
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.thousands_sep
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.grouping
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.int_curr_symbol
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.mon_decimal_point
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.mon_thousands_sep
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.mon_grouping
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.positive_sign
+      )
+      assertEquals(
+        !toCString(""),
+        !clocale.negative_sign
+      )
+      // CHAR_MAX
+      assertEquals(
+        127,
+        clocale.int_frac_digits
+      )
+      assertEquals(
+        1,
+        Set(
+          clocale.int_frac_digits,
+          clocale.frac_digits,
+          clocale.p_cs_precedes,
+          clocale.p_sep_by_space,
+          clocale.n_cs_precedes,
+          clocale.n_sep_by_space,
+          clocale.p_sign_posn,
+          clocale.n_sign_posn,
+          clocale.int_frac_digits,
+          clocale.int_p_cs_precedes,
+          clocale.int_p_sep_by_space,
+          clocale.int_n_cs_precedes,
+          clocale.int_n_sep_by_space,
+          clocale.int_p_sign_posn,
+          clocale.int_n_sign_posn
+        ).size
+      )
+    }
+
+  }
+}
