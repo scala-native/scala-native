@@ -69,26 +69,24 @@ class LocaleTest {
         127,
         clocale.int_frac_digits
       )
-      assertEquals(
-        1,
-        Set(
-          clocale.int_frac_digits,
-          clocale.frac_digits,
-          clocale.p_cs_precedes,
-          clocale.p_sep_by_space,
-          clocale.n_cs_precedes,
-          clocale.n_sep_by_space,
-          clocale.p_sign_posn,
-          clocale.n_sign_posn,
-          clocale.int_frac_digits,
-          clocale.int_p_cs_precedes,
-          clocale.int_p_sep_by_space,
-          clocale.int_n_cs_precedes,
-          clocale.int_n_sep_by_space,
-          clocale.int_p_sign_posn,
-          clocale.int_n_sign_posn
-        ).size
+      def assertEq(exp: Any, act: Any) = assertTrue(
+        s"Failure. Expected: ${exp}. Actual: ${act}",
+        exp == act
       )
+
+      assertEq(clocale.int_frac_digits, clocale.frac_digits)
+      assertEq(clocale.int_frac_digits, clocale.p_cs_precedes)
+      assertEq(clocale.int_frac_digits, clocale.p_sep_by_space)
+      assertEq(clocale.int_frac_digits, clocale.n_cs_precedes)
+      assertEq(clocale.int_frac_digits, clocale.n_sep_by_space)
+      assertEq(clocale.int_frac_digits, clocale.p_sign_posn)
+      assertEq(clocale.int_frac_digits, clocale.n_sign_posn)
+      assertEq(clocale.int_frac_digits, clocale.int_p_cs_precedes)
+      assertEq(clocale.int_frac_digits, clocale.int_p_sep_by_space)
+      assertEq(clocale.int_frac_digits, clocale.int_n_cs_precedes)
+      assertEq(clocale.int_frac_digits, clocale.int_n_sep_by_space)
+      assertEq(clocale.int_frac_digits, clocale.int_p_sign_posn)
+      assertEq(clocale.int_frac_digits, clocale.int_n_sign_posn)
     }
 
   }
