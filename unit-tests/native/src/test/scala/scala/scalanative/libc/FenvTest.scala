@@ -20,18 +20,35 @@ class FEnvTest {
   }
 
   @Test def raiseCheckClearException(): Unit = {
-    assertEquals(
-      0,
-      fenv.feraiseexcept(fenv.FE_DIVBYZERO | fenv.FE_INEXACT)
+    val exs = List(
+      fenv.FE_DIVBYZERO,
+      fenv.FE_INEXACT,
+      fenv.FE_INVALID,
+      fenv.FE_OVERFLOW,
+      fenv.FE_UNDERFLOW
     )
-    assertEquals(
-      fenv.FE_DIVBYZERO | fenv.FE_INEXACT,
-      fenv.fetestexcept(fenv.FE_ALL_EXCEPT)
-    )
-    assertEquals(
-      0,
-      fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
-    )
+    for {
+      n <- 1 to exs.length
+      comb <- exs.combinations(n)
+    } yield {
+      val flag = comb.foldLeft(0) { case (acc, f) => acc | f }
+      assertEquals(
+        0,
+        fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
+      )
+      assertEquals(
+        0,
+        fenv.feraiseexcept(flag)
+      )
+      assertEquals(
+        flag,
+        fenv.fetestexcept(fenv.FE_ALL_EXCEPT)
+      )
+      assertEquals(
+        0,
+        fenv.feclearexcept(fenv.FE_ALL_EXCEPT)
+      )
+    }
   }
 
   @Test def roundingFlagsAreUnique(): Unit = {
@@ -46,13 +63,22 @@ class FEnvTest {
     )
   }
   @Test def setAndGetRoundingFlag(): Unit = {
-    assertEquals(
-      0,
-      fenv.fesetround(fenv.FE_DOWNWARD)
-    )
-    assertEquals(
-      fenv.FE_DOWNWARD,
-      fenv.fegetround()
-    )
+    for {
+      flag <- List(
+        fenv.FE_DOWNWARD,
+        fenv.FE_TONEAREST,
+        fenv.FE_TOWARDZERO,
+        fenv.FE_UPWARD
+      )
+    } yield {
+      assertEquals(
+        0,
+        fenv.fesetround(flag)
+      )
+      assertEquals(
+        flag,
+        fenv.fegetround()
+      )
+    }
   }
 }
