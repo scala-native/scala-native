@@ -152,6 +152,7 @@ object LConv {
     def n_sign_posn: CChar = !p.at(87).asInstanceOf[Ptr[CChar]]
     def n_sign_posn_=(value: CChar): Unit =
       !p.at(87).asInstanceOf[Ptr[CChar]] = value
+    // following fields are available since c99
     def int_p_cs_precedes: CChar = !p.at(88).asInstanceOf[Ptr[CChar]]
     def int_p_cs_precedes_=(value: CChar): Unit =
       !p.at(88).asInstanceOf[Ptr[CChar]] = value
