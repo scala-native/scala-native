@@ -73,9 +73,9 @@ class LocaleTest {
         s"Failure. Expected: ${exp}. Actual: ${act}",
         exp == act
       )
-      def assertIn(act:Any,exp:Any*) :Unit = assertTrue(
-      s"Failure. Expected values:${exp.toSeq.mkString("(",",",")")} do not contain $act.",
-      exp.toSeq.contains(act)
+      def assertIn(act: Any, exp: Any*): Unit = assertTrue(
+        s"Failure. Expected values:${exp.toSeq.mkString("(", ",", ")")} do not contain $act.",
+        exp.toSeq.contains(act)
       )
 
       assertEq(clocale.int_frac_digits, clocale.frac_digits)
