@@ -35,7 +35,7 @@ class TGMathTest {
       )
     }
   }
-
+  // |n| >= 0, |n| = |-n|
   @Test def fabs(): Unit = {
     val ns = List.fill(100)(scala.util.Random.nextDouble() * 100)
     ns.foreach { n =>
@@ -51,9 +51,18 @@ class TGMathTest {
       )
       assertTrue(tgmath.fabs(n) >= 0)
       assertTrue(tgmath.fabs(n.toFloat) >= 0)
+      assertTrue(tgmath.fabs(n) >= n)
+      assertTrue(tgmath.fabs(n.toFloat) >= n.toFloat)
+      assertTrue(tgmath.fabs(n) == n || tgmath.fabs(n) == -n)
+      assertTrue(
+        tgmath.fabs(n.toFloat) == n.toFloat || tgmath.fabs(
+          n.toFloat
+        ) == -n.toFloat
+      )
     }
   }
-
+  // max(a,b) == max(b,a), max(a,b) >= a && max(a,b) >= b
+  // min(a,b) == min(b,a), min(a,b) <= a && min(a,b) <= b
   @Test def maxAndMin(): Unit = {
     val ns = List.fill(100)(scala.util.Random.nextDouble() * 100)
     val ms = List.fill(100)(scala.util.Random.nextDouble() * 100)
@@ -61,6 +70,18 @@ class TGMathTest {
       n <- ns
       m <- ms
     } yield {
+      assertEquals(
+        tgmath.max(n, m),
+        tgmath.max(m, n)
+      )
+      assertEquals(
+        tgmath.min(n, m),
+        tgmath.min(m, n)
+      )
+      assertEquals(
+        tgmath.min(n.toFloat, m.toFloat),
+        tgmath.min(m.toFloat, n.toFloat)
+      )
       assertTrue(
         tgmath.fmax(n, m) == n || tgmath.fmax(n, m) == m
       )
@@ -206,6 +227,11 @@ class TGMathTest {
       0.00001
     )
     assertEquals(
+      0,
+      tgmath.sin(0f),
+      0.00001
+    )
+    assertEquals(
       1.0,
       tgmath.sin(half_Pi),
       TestUtils.eps(1, tgmath.sin(half_Pi))
@@ -218,17 +244,22 @@ class TGMathTest {
     assertEquals(
       0,
       tgmath.sin(PI),
-      TestUtils.eps(tgmath.sin(PI), 0)
+      0.00001
     )
     assertEquals(
       1,
       tgmath.cos(0),
-      TestUtils.eps(tgmath.cos(0), 1)
+      TestUtils.eps(tgmath.cos(0), 1.0)
+    )
+    assertEquals(
+      1,
+      tgmath.cos(0f),
+      TestUtils.eps(tgmath.cos(0f), 1.0)
     )
     assertEquals(
       0,
       tgmath.cos(half_Pi),
-      TestUtils.eps(tgmath.cos(half_Pi), 1)
+      TestUtils.eps(tgmath.cos(half_Pi), 1.0)
     )
     assertEquals(
       -1,
