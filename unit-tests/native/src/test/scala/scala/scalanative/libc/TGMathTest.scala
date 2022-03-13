@@ -70,18 +70,35 @@ class TGMathTest {
       n <- ns
       m <- ms
     } yield {
+      val maxNM = tgmath.fmax(n, m)
+      val maxMN = tgmath.fmax(m, n)
       assertEquals(
-        tgmath.max(n, m),
-        tgmath.max(m, n)
+        maxNM,
+        maxMN,
+        TestUtils.eps(maxNM, maxMN)
       )
+      val minNM = tgmath.fmin(n, m)
+      val minMN = tgmath.fmin(m, n)
       assertEquals(
-        tgmath.min(n, m),
-        tgmath.min(m, n)
+        minNM,
+        minMN,
+        TestUtils.eps(minNM, minMN)
       )
+      val maxNMf = tgmath.fmax(n.toFloat, m.toFloat)
+      val maxMNf = tgmath.fmax(m.toFloat, n.toFloat)
       assertEquals(
-        tgmath.min(n.toFloat, m.toFloat),
-        tgmath.min(m.toFloat, n.toFloat)
+        maxNMf,
+        maxMNf,
+        TestUtils.eps(maxNMf, maxMNf)
       )
+      val minNMf = tgmath.fmin(n.toFloat, m.toFloat)
+      val minMNf = tgmath.fmin(m.toFloat, n.toFloat)
+      assertEquals(
+        minNMf,
+        minMNf,
+        TestUtils.eps(minNMf, minMNf)
+      )
+
       assertTrue(
         tgmath.fmax(n, m) == n || tgmath.fmax(n, m) == m
       )
