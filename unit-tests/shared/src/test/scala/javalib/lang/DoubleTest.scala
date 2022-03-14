@@ -393,4 +393,43 @@ class DoubleTest {
     assertFalse(f(3.0))
     assertFalse(f(-1.5))
   }
+
+  @Test def negateTest(): Unit = {
+    val delta = 0.000000001
+    val one = 1.0
+    assertEquals("negate one", -1.0, -one, delta)
+    assertEquals("negate minus one", 1.0, -(-one), delta)
+
+    val x = 0.0
+    assertTrue("Negated value is equal to zero", 0.0 == -0.0)
+    assertFalse("Can distinguish negated zero", 0.0.equals(-0.0))
+    assertTrue("negate zero", -0.0.equals(-x))
+    assertTrue("negate minus zero", 0.0.equals(-(-x)))
+
+    assertEquals(
+      "negate minValue",
+      scala.Double.MaxValue,
+      -scala.Double.MinValue,
+      delta
+    )
+    assertEquals(
+      "negate maxValue",
+      scala.Double.MinValue,
+      -scala.Double.MaxValue,
+      delta
+    )
+
+    assertEquals(
+      "negate infinity",
+      scala.Double.NegativeInfinity,
+      -scala.Double.PositiveInfinity,
+      delta
+    )
+    assertEquals(
+      "negate neg inf",
+      scala.Double.PositiveInfinity,
+      -scala.Double.NegativeInfinity,
+      delta
+    )
+  }
 }

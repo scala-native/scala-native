@@ -6,13 +6,13 @@ on:
       - main
 jobs:
   check-lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Install clang-format
         run: |
           sudo apt update
-          sudo apt install clang-format-6.0
+          sudo apt install clang-format-10
       - uses: actions/checkout@v2
       - run: ./scripts/check-lint.sh
         env:
-          CLANG_FORMAT_PATH: "/usr/bin/clang-format-6.0"
+          CLANG_FORMAT_PATH: "/usr/bin/clang-format-10"

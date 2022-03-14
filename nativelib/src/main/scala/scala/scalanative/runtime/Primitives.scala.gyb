@@ -1,3 +1,4 @@
+// format: off
 
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
@@ -9,14 +10,11 @@
 
 package scala.scalanative
 package runtime
-
 %{
     primitives = ['Boolean', 'Char', 'Byte', 'Short',
                   'Int', 'Long', 'Float', 'Double', 'Unit']
 }%
-
 % for T in primitives:
 
 final abstract class Primitive${T}
-
 % end

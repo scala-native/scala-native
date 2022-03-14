@@ -11,8 +11,8 @@
 
 set -euo pipefail
 
-# The required version of clang-format (matches minimum clang version) for CI
-CLANG_FORMAT_VERSION=6
+# The minimum version of clang-format with the new options
+CLANG_FORMAT_VERSION=10
 
 die() {
   while [ "$#" -gt 0 ]; do
@@ -32,7 +32,7 @@ check_clang_format_version() {
     | grep -E -i -o "[0-9]+.[0-9]+")
 
   major=${version%%.*}
-  [ $major -eq $CLANG_FORMAT_VERSION ]
+  [ $major -ge $CLANG_FORMAT_VERSION ]
 }
 
 clang_format=
@@ -74,17 +74,13 @@ while [ "$#" -gt 0 ]; do
 done
 
 # Use this block for version 10 and above
-# if [ "$test_mode" = true ]; then
-#   opts="--dry-run"
-#   err="--Werror"
-# else
-#   opts="-i"
-#   err=
-# fi
-
-# Remove for version 10 and above
-opts="-i"
-err=
+if [ "$test_mode" = true ]; then
+  opts="--dry-run"
+  err="--Werror"
+else
+  opts="-i"
+  err=
+fi
 
 if [ "$#" -gt 0 ]; then
   "$clang_format" --style=file "$opts" "$@"
@@ -93,11 +89,4 @@ else
     xargs "$clang_format" --style=file "$opts" $err || \
       die "C/C++ code formatting changes detected" \
           "Run '$0' to reformat."
-fi
-
-# Remove for version 10 and above
-if [ "$test_mode" = true ]; then
-  git diff --quiet --exit-code || \
-    die "C/C++ code formatting changes detected" \
-        "Run '$0' to reformat."
 fi

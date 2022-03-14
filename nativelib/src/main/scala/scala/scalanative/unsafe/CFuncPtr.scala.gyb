@@ -1,3 +1,4 @@
+// format: off
 
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
@@ -18,15 +19,13 @@ import scala.scalanative.runtime.{RawPtr, intrinsic}
 sealed abstract class CFuncPtr private[unsafe] (private[scalanative] val rawptr: RawPtr)
 
 object CFuncPtr {
-  @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[Byte])(
-      implicit tag: Tag.CFuncPtrTag[F]): F =
+  @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[Byte])(implicit tag: Tag.CFuncPtrTag[F]): F =
     tag.fromRawPtr(ptr.rawptr)
 
   @alwaysinline def toPtr(ptr: CFuncPtr): Ptr[Byte] = {
     boxToPtr[Byte](ptr.rawptr)
   }
 }
-
 % for N in range(0, 23):
 %   args      = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
 %   allTps    = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
@@ -38,7 +37,7 @@ final class ${CFuncPtrN} private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
   def apply(${args})(implicit ${evidences}): R = intrinsic
 }
 
-object CFuncPtr${N}{
+object CFuncPtr${N} {
   implicit def fromScalaFunction[${allTps}](fn: ${FunctionN})(implicit ${evidences}): ${CFuncPtrN} = intrinsic
 
   private[scalanative] def fromRawPtr[${allTps}](ptr: RawPtr): ${CFuncPtrN} = {

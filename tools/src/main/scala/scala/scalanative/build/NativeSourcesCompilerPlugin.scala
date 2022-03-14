@@ -220,7 +220,7 @@ case object RustSourcesCompilerPlugin extends NativeSourcesCompilerPlugin {
           if (!crateTypes.contains("staticlib")) {
             throw new BuildException(
               s"Rust crete needs to be published as staticlib, currently published as: ${crateTypes
-                .mkString(", ")};"
+                  .mkString(", ")};"
             )
           }
 

@@ -363,4 +363,43 @@ class FloatTest {
     assertFalse(f(3f))
     assertFalse(f(-1.5f))
   }
+
+  @Test def negateTest(): Unit = {
+    val delta = 0.000000001f
+    val one = 1.0f
+    assertEquals("negate one", -1.0f, -one, delta)
+    assertEquals("negate minus one", 1.0f, -(-one), delta)
+
+    val x = 0.0f
+    assertTrue("Negated value is equal to zero", 0.0f == -0.0f)
+    assertFalse("Can distinguish negated zero", 0.0f.equals(-0.0f))
+    assertTrue("negate zero", -0.0f.equals(-x))
+    assertTrue("negate minus zero", 0.0f.equals(-(-x)))
+
+    assertEquals(
+      "negate minValue",
+      scala.Float.MaxValue,
+      -scala.Float.MinValue,
+      delta
+    )
+    assertEquals(
+      "negate maxValue",
+      scala.Float.MinValue,
+      -scala.Float.MaxValue,
+      delta
+    )
+
+    assertEquals(
+      "negate infinity",
+      scala.Float.NegativeInfinity,
+      -scala.Float.PositiveInfinity,
+      delta
+    )
+    assertEquals(
+      "negate neg inf",
+      scala.Float.PositiveInfinity,
+      -scala.Float.NegativeInfinity,
+      delta
+    )
+  }
 }

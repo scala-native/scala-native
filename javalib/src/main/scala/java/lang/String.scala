@@ -26,11 +26,13 @@ final class _String()
     this()
     if (length <= data.length - start && start >= 0 && 0 <= length) {
       offset = 0
+      count = length
       value = {
         val value = new Array[Char](length)
+        val highByte = (high & 0xff) << 8
         var i = 0
         while (i < length) {
-          value(i) = ((high & 0xff) << 8 | (data(start + i) & 0xff)).toChar
+          value(i) = (highByte | (data(start + i) & 0xff)).toChar
           i += 1
         }
         value

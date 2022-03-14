@@ -1257,7 +1257,7 @@ trait NirGenExpr(using Context) {
         case (_: Type.I, NOT) =>
           buf.bin(Bin.Xor, tpe, numOfType(-1, tpe), coerced, unwind)
         case (_: Type.F, NEG) =>
-          buf.bin(Bin.Fsub, tpe, numOfType(0, tpe), coerced, unwind)
+          buf.bin(Bin.Fmul, tpe, numOfType(-1, tpe), coerced, unwind)
         case (_: Type.I, NEG) =>
           buf.bin(Bin.Isub, tpe, numOfType(0, tpe), coerced, unwind)
         case (Type.Bool, ZNOT) => negateBool(coerced)

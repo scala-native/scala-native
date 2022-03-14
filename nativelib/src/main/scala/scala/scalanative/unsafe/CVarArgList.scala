@@ -71,6 +71,8 @@ object CVarArgList {
   )(implicit z: Zone): CVarArgList = {
     if (isWindows)
       toCVarArgList_X86_64_Windows(varargs)
+    else if (PlatformExt.isArm64 && Platform.isMac())
+      toCVarArgList_Arm64_MacOS(varargs)
     else
       toCVarArgList_Unix(varargs)
   }
@@ -214,6 +216,50 @@ object CVarArgList {
     )
     libc.free(toRawPtr(storage))
     new CVarArgList(resultStorage)
+  }
+
+  private def toCVarArgList_Arm64_MacOS(
+      varargs: Seq[CVarArg]
+  )(implicit z: Zone) = {
+    val alignedArgs = varargs.map { arg =>
+      arg.value match {
+        case value: Byte =>
+          value.toLong: CVarArg
+        case value: Short =>
+          value.toLong: CVarArg
+        case value: Int =>
+          value.toLong: CVarArg
+        case value: UByte =>
+          value.toULong: CVarArg
+        case value: UShort =>
+          value.toULong: CVarArg
+        case value: UInt =>
+          value.toULong: CVarArg
+        case value: Float =>
+          value.toDouble: CVarArg
+        case o => arg
+      }
+    }
+
+    var totalSize = 0.toULong
+    alignedArgs.foreach { vararg =>
+      val tag = vararg.tag
+      totalSize = Tag.align(totalSize, tag.alignment) + tag.size
+    }
+
+    val argListStorage = z.alloc(totalSize).asInstanceOf[Ptr[Byte]]
+    var currentIndex = 0.toULong
+    alignedArgs.foreach { vararg =>
+      val tag = vararg.tag
+      currentIndex = Tag.align(currentIndex, tag.alignment)
+      tag.store(
+        (argListStorage + currentIndex).asInstanceOf[Ptr[Any]],
+        vararg.value
+      )
+      currentIndex += tag.size
+    }
+
+    new CVarArgList(toRawPtr(argListStorage))
   }
 
 }

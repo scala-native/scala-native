@@ -1,3 +1,4 @@
+// format: off
 
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
@@ -20,7 +21,6 @@ sealed abstract class CStruct
 % for N in range(0, 23):
 %    Ts = "" if N == 0 else "[" + ", ".join("T" + str(i) for i in range(1, N + 1)) + "]"
 %    underscores = "" if N == 0 else "[" + ", ".join("_" for i in range(0, N)) + "]"
-
 final class CStruct${N}${Ts} private[scalanative] (private[scalanative] val rawptr: RawPtr) extends CStruct {
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
@@ -40,7 +40,6 @@ final class CStruct${N}${Ts} private[scalanative] (private[scalanative] val rawp
     fromRawPtr[CStruct${N}${Ts}](rawptr)
 
   % for F in range(1, N + 1):
-
   /** Load a value of a field number ${F}. */
   @alwaysinline def at${F}(implicit tag: Tag.CStruct${N}${Ts}): Ptr[T${F}] = 
     new Ptr[T${F}](elemRawPtr(rawptr, tag.offset(${F - 1}.toULong).toLong))

@@ -104,9 +104,11 @@ object Discover {
         .lineStream_!(silentLogger())
         .headOption
         .getOrElse {
-          throw new BuildException(s"""Problem running '${versionCommand
-            .mkString(" ")}'. Please check clang setup.
-               |Refer to ($docSetup)""".stripMargin)
+          throw new BuildException(
+            s"""Problem running '${versionCommand
+                .mkString(" ")}'. Please check clang setup.
+               |Refer to ($docSetup)""".stripMargin
+          )
         }
       // Apple macOS clang is different vs brew installed or Linux
       // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
