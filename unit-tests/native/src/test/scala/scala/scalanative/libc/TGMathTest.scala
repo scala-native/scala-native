@@ -208,13 +208,13 @@ class TGMathTest {
       assertEquals(
         n,
         nd,
-        TestUtils.eps(n, nd)
+        1000 * TestUtils.eps(n, nd)
       )
       val nf = tgmath.cbrt(tgmath.pow(n, 3).toFloat).toFloat
       assertEquals(
         n.toFloat,
         nf,
-        TestUtils.eps(n.toFloat, nf)
+        1000 * TestUtils.eps(n.toFloat, nf)
       )
     }
   }
@@ -227,7 +227,7 @@ class TGMathTest {
       assertEquals(
         lgamma,
         lgammaFromTgamma,
-        100.00 * TestUtils.eps(lgamma, lgammaFromTgamma)
+        0.00001
       )
     }
   }
@@ -339,7 +339,7 @@ class TGMathTest {
       assertEquals(
         tnh0,
         tnh1,
-        TestUtils.eps(tnh0, tnh1)
+        0.00001
       )
     }
 
@@ -496,14 +496,14 @@ class TGMathTest {
       assertEquals(
         log10d,
         log2d,
-        TestUtils.eps(log10d, log2d)
+        1000 * TestUtils.eps(log10d, log2d)
       )
       val log10f = tgmath.log10(ns.toFloat)
       val log2f = tgmath.log2(ns.toFloat) / tgmath.log2(10.0f)
       assertEquals(
         log10f,
         log2f,
-        TestUtils.eps(log10f, log2f)
+        1000 * TestUtils.eps(log10f, log2f)
       )
     }
   }
