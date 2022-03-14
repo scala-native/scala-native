@@ -129,9 +129,13 @@ private[scalanative] object LLVM {
     }
     // Make sure that libraries are linked as the last ones
     val paths = {
-      compilationOutput.filter(_.isInstanceOf[ObjectFile]) ++
-        compilationOutput.filter(_.isInstanceOf[Library])
-    }.map(_.path.abs)
+      val (objectFiles, libraries) =
+        compilationOutput.partition {
+          case _: ObjectFile => true
+          case _: Library    => false
+        }
+      (objectFiles ++ libraries).map(_.path.abs)
+    }
 
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
 
