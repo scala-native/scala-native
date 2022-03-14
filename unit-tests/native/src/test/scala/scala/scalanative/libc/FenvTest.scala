@@ -1,6 +1,7 @@
 package scala.scalanative.libc
 import scala.scalanative.unsafe._
 import scala.scalanative.libc._
+import scala.scalanative.meta.LinktimeInfo
 import org.junit.Test
 import org.junit.Assert._
 class FEnvTest {
@@ -20,10 +21,11 @@ class FEnvTest {
   }
 
   @Test def raiseCheckClearException(): Unit = {
-    if (fenv.FE_ALL_EXCEPT == 0) {
-      // floating-point exceptions are not supported by the implementation.
+    if (LinktimeInfo.isWindows) {
+      // Avoid link time error --`fe_raiseexcept` does not exists-- because it is not supported on Windows.
     } else {
-      def assertEqFlags(expected: CInt, actual: CInt): Unit = {
+
+      def assertContainsFlags(expected: CInt, actual: CInt): Unit = {
         assertTrue(
           s"""expected: $expected
         |actual: $actual
@@ -33,7 +35,7 @@ class FEnvTest {
         |FE_OVERFLOW: ${fenv.FE_OVERFLOW}
         |FE_UNDERFLOW: ${fenv.FE_UNDERFLOW}
         |""".stripMargin,
-          expected == actual
+          (actual & expected) == expected
         )
       }
       val exs = List(
@@ -56,7 +58,7 @@ class FEnvTest {
           0,
           fenv.feraiseexcept(flag)
         )
-        assertEqFlags(
+        assertContainsFlags(
           flag,
           fenv.fetestexcept(fenv.FE_ALL_EXCEPT)
         )
