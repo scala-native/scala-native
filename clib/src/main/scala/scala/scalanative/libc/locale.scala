@@ -11,7 +11,8 @@ import scala.scalanative.unsafe.{
   toCString,
   alloc,
   Zone,
-  Nat
+  Nat,
+  sizeof
 }
 
 @extern
@@ -97,81 +98,142 @@ object LConv {
     def decimal_point: CString = !p.at(0).asInstanceOf[Ptr[CString]]
     def decimal_point_=(value: CString): Unit =
       !p.at(0).asInstanceOf[Ptr[CString]] = value
-    def thousands_sep: CString = !p.at(8).asInstanceOf[Ptr[CString]]
+    def thousands_sep: CString =
+      !p.at(sizeof[Ptr[CString]].underlying.toInt).asInstanceOf[Ptr[CString]]
     def thousands_sep_=(value: CString): Unit =
-      !p.at(8).asInstanceOf[Ptr[CString]] = value
-    def grouping: CString = !p.at(16).asInstanceOf[Ptr[CString]]
+      !p.at(sizeof[Ptr[CString]].underlying.toInt).asInstanceOf[Ptr[CString]] =
+        value
+    def grouping: CString = !p
+      .at(2 * sizeof[Ptr[CString]].underlying.toInt)
+      .asInstanceOf[Ptr[CString]]
     def grouping_=(value: CString): Unit =
-      !p.at(16).asInstanceOf[Ptr[CString]] = value
+      !p.at(2 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
     def int_curr_symbol: CString =
-      !p.at(24).asInstanceOf[Ptr[CString]]
+      !p.at(3 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]]
     def int_curr_symbol_=(value: CString): Unit =
-      !p.at(24).asInstanceOf[Ptr[CString]] = value
+      !p.at(3 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
     def currency_symbol: CString =
-      !p.at(32).asInstanceOf[Ptr[CString]]
+      !p.at(4 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]]
     def currency_symbol_=(value: CString): Unit =
-      !p.at(32).asInstanceOf[Ptr[CString]] = value
+      !p.at(4 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
     def mon_decimal_point: CString =
-      !p.at(40).asInstanceOf[Ptr[CString]]
+      !p.at(5 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]]
     def mon_decimal_point_=(value: CString): Unit =
-      !p.at(40).asInstanceOf[Ptr[CString]] = value
+      !p.at(5 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
     def mon_thousands_sep: CString =
-      !p.at(48).asInstanceOf[Ptr[CString]]
+      !p.at(6 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]]
     def mon_thousands_sep_=(value: CString): Unit =
-      !p.at(48).asInstanceOf[Ptr[CString]] = value
-    def mon_grouping: CString = !p.at(56).asInstanceOf[Ptr[CString]]
+      !p.at(6 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
+    def mon_grouping: CString = !p
+      .at(7 * sizeof[Ptr[CString]].underlying.toInt)
+      .asInstanceOf[Ptr[CString]]
     def mon_grouping_=(value: CString): Unit =
-      !p.at(56).asInstanceOf[Ptr[CString]] = value
-    def positive_sign: CString = !p.at(64).asInstanceOf[Ptr[CString]]
+      !p.at(7 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
+    def positive_sign: CString = !p
+      .at(8 * sizeof[Ptr[CString]].underlying.toInt)
+      .asInstanceOf[Ptr[CString]]
     def positive_sign_=(value: CString): Unit =
-      !p.at(64).asInstanceOf[Ptr[CString]] = value
-    def negative_sign: CString = !p.at(72).asInstanceOf[Ptr[CString]]
+      !p.at(8 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
+    def negative_sign: CString = !p
+      .at(9 * sizeof[Ptr[CString]].underlying.toInt)
+      .asInstanceOf[Ptr[CString]]
     def negative_sign_=(value: CString): Unit =
-      !p.at(72).asInstanceOf[Ptr[CString]] = value
-    def int_frac_digits: CChar = !p.at(80).asInstanceOf[Ptr[CChar]]
+      !p.at(9 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CString]] = value
+    def int_frac_digits: CChar =
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt).asInstanceOf[Ptr[CChar]]
     def int_frac_digits_=(value: CChar): Unit =
-      !p.at(80).asInstanceOf[Ptr[CChar]] = value
-    def frac_digits: CChar = !p.at(81).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt)
+        .asInstanceOf[Ptr[CChar]] = value
+    def frac_digits: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 1)
+      .asInstanceOf[Ptr[CChar]]
     def frac_digits_=(value: CChar): Unit =
-      !p.at(81).asInstanceOf[Ptr[CChar]] = value
-    def p_cs_precedes: CChar = !p.at(82).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 1)
+        .asInstanceOf[Ptr[CChar]] = value
+    def p_cs_precedes: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 2)
+      .asInstanceOf[Ptr[CChar]]
     def p_cs_precedes_=(value: CChar): Unit =
-      !p.at(82).asInstanceOf[Ptr[CChar]] = value
-    def p_sep_by_space: CChar = !p.at(83).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 2)
+        .asInstanceOf[Ptr[CChar]] = value
+    def p_sep_by_space: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 3)
+      .asInstanceOf[Ptr[CChar]]
     def p_sep_by_space_=(value: CChar): Unit =
-      !p.at(83).asInstanceOf[Ptr[CChar]] = value
-    def n_cs_precedes: CChar = !p.at(84).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 3)
+        .asInstanceOf[Ptr[CChar]] = value
+    def n_cs_precedes: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 4)
+      .asInstanceOf[Ptr[CChar]]
     def n_cs_precedes_=(value: CChar): Unit =
-      !p.at(84).asInstanceOf[Ptr[CChar]] = value
-    def n_sep_by_space: CChar = !p.at(85).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 4)
+        .asInstanceOf[Ptr[CChar]] = value
+    def n_sep_by_space: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 5)
+      .asInstanceOf[Ptr[CChar]]
     def n_sep_by_space_=(value: CChar): Unit =
-      !p.at(85).asInstanceOf[Ptr[CChar]] = value
-    def p_sign_posn: CChar = !p.at(86).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 5)
+        .asInstanceOf[Ptr[CChar]] = value
+    def p_sign_posn: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 6)
+      .asInstanceOf[Ptr[CChar]]
     def p_sign_posn_=(value: CChar): Unit =
-      !p.at(86).asInstanceOf[Ptr[CChar]] = value
-    def n_sign_posn: CChar = !p.at(87).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 6)
+        .asInstanceOf[Ptr[CChar]] = value
+    def n_sign_posn: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 7)
+      .asInstanceOf[Ptr[CChar]]
     def n_sign_posn_=(value: CChar): Unit =
-      !p.at(87).asInstanceOf[Ptr[CChar]] = value
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 7)
+        .asInstanceOf[Ptr[CChar]] = value
     // following fields are available since c99
-    def int_p_cs_precedes: CChar = !p.at(88).asInstanceOf[Ptr[CChar]]
+    def int_p_cs_precedes: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 8)
+      .asInstanceOf[Ptr[CChar]]
     def int_p_cs_precedes_=(value: CChar): Unit =
-      !p.at(88).asInstanceOf[Ptr[CChar]] = value
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 8)
+        .asInstanceOf[Ptr[CChar]] = value
     def int_p_sep_by_space: CChar =
-      !p.at(89).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 9)
+        .asInstanceOf[Ptr[CChar]]
     def int_p_sep_by_space_=(value: CChar): Unit =
-      !p.at(89).asInstanceOf[Ptr[CChar]] = value
-    def int_n_cs_precedes: CChar = !p.at(90).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 9)
+        .asInstanceOf[Ptr[CChar]] = value
+    def int_n_cs_precedes: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 10)
+      .asInstanceOf[Ptr[CChar]]
     def int_n_cs_precedes_=(value: CChar): Unit =
-      !p.at(90).asInstanceOf[Ptr[CChar]] = value
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 10)
+        .asInstanceOf[Ptr[CChar]] = value
     def int_n_sep_by_space: CChar =
-      !p.at(91).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 11)
+        .asInstanceOf[Ptr[CChar]]
     def int_n_sep_by_space_=(value: CChar): Unit =
-      !p.at(91).asInstanceOf[Ptr[CChar]] = value
-    def int_p_sign_posn: CChar = !p.at(92).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 11)
+        .asInstanceOf[Ptr[CChar]] = value
+    def int_p_sign_posn: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 12)
+      .asInstanceOf[Ptr[CChar]]
     def int_p_sign_posn_=(value: CChar): Unit =
-      !p.at(92).asInstanceOf[Ptr[CChar]] = value
-    def int_n_sign_posn: CChar = !p.at(93).asInstanceOf[Ptr[CChar]]
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 12)
+        .asInstanceOf[Ptr[CChar]] = value
+    def int_n_sign_posn: CChar = !p
+      .at(10 * sizeof[Ptr[CString]].underlying.toInt + 13)
+      .asInstanceOf[Ptr[CChar]]
     def int_n_sign_posn_=(value: CChar): Unit =
-      !p.at(93).asInstanceOf[Ptr[CChar]] = value
+      !p.at(10 * sizeof[Ptr[CString]].underlying.toInt + 13)
+        .asInstanceOf[Ptr[CChar]] = value
   }
 }
