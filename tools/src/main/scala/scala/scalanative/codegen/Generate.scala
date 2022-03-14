@@ -171,6 +171,7 @@ object Generate {
     private def genGcInit(unwindProvider: () => Next)(implicit fresh: Fresh) = {
       def unwind: Next = unwindProvider()
       val stackBottom = Val.Local(fresh(), Type.Ptr)
+      val StackBottomVar = Val.Global(stackBottomName, Type.Ptr)
 
       val init = fresh()
       val afterInit = fresh()
@@ -200,27 +201,10 @@ object Generate {
         LibraryInitSig,
         withExceptionHandler { unwindProvider =>
           def unwind: Next = unwindProvider()
-          // Make sure that initialization can happen only once, to prevent undefined behaviour after re-calling ScalaNativeInit
-          def initOnce(body: Seq[Inst]) = {
-            val initL = fresh()
-            val afterInitL = fresh()
-            val cond = Val.Local(fresh(), Type.Bool)
-            val initCond = Op.Comp(Comp.Ieq, Type.Ptr, StackBottomVar, Val.Null)
-            Seq(
-              // __stack_bottom is set only when initializing
-              Inst.Let(cond.name, initCond, unwind),
-              Inst.If(cond, Next(initL), Next(afterInitL)),
-              Inst.Label(initL, Nil)
-            ) ++ body ++ Seq(
-              Inst.Jump(Next(afterInitL)),
-              Inst.Label(afterInitL, Nil)
-            )
-          }
 
-          Inst.Label(fresh(), Nil) +: initOnce {
+          Seq(Inst.Label(fresh(), Nil)) ++
             genGcInit(unwindProvider) ++
-              genClassInitializersCalls(unwindProvider)
-          }
+            genClassInitializersCalls(unwindProvider)
         }
       )
     }
@@ -520,7 +504,6 @@ object Generate {
     val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
 
     val stackBottomName = extern("__stack_bottom")
-    val StackBottomVar = Val.Global(stackBottomName, Type.Ptr)
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
