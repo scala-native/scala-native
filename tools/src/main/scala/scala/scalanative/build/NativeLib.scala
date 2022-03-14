@@ -192,13 +192,10 @@ private[scalanative] class NativeLibUtil(
 
   private val jarPattern = Pattern.compile(jarSrcRegex)
 
-  private def isNativeFile(name: String): Boolean = {
+  private def isNativeFile(name: String): Boolean =
     jarPattern.matcher(name).matches()
-  }
 
-  private def readDir(
-      path: Path
-  ): Option[Path] =
+  private def readDir(path: Path): Option[Path] =
     IO.existsInDir(path, srcPatterns(path)) match {
       case true  => Some(path)
       case false => None
@@ -212,11 +209,7 @@ private[scalanative] class NativeLibUtil(
 
   /** Used to find native source files in directories */
   private def srcPatterns(path: Path): String =
-    srcExtensions.mkString(
-      s"glob:${srcPathPattern(path)}**{",
-      ",",
-      "}"
-    )
+    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
 
   private def srcPathPattern(path: Path): String =
     makeDirPath(path, nativeCodeDir)
@@ -242,10 +235,7 @@ private[scalanative] class NativeLibUtil(
    *  @return
    *    The source pattern
    */
-  private def destSrcPattern(
-      workdir: Path,
-      destPath: Path
-  ): String = {
+  private def destSrcPattern(workdir: Path, destPath: Path): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
     val pathPat = makeDirPath(workdir, dirPattern, nativeCodeDir)
     srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
