@@ -82,6 +82,7 @@ class FEnvTest {
     )
   }
   @Test def setAndGetRoundingFlag(): Unit = {
+    val original = fenv.fegetround()
     for {
       flag <- List(
         fenv.FE_DOWNWARD,
@@ -99,5 +100,7 @@ class FEnvTest {
         fenv.fegetround()
       )
     }
+    // restore fenv
+    fenv.fesetround(original)
   }
 }
