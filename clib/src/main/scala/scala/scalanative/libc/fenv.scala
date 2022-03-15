@@ -159,56 +159,56 @@ object fenv {
 
   /** pole error occurred in an earlier floating-point operation
    */
-  @name("scalanative_fenv_fe_divbyzero")
+  @name("scalanative_fe_divbyzero")
   def FE_DIVBYZERO: CInt = extern
 
   /** inexact result: rounding was necessary to store the result of an earlier
    *  floating-point operation
    */
-  @name("scalanative_fenv_fe_inexact")
+  @name("scalanative_fe_inexact")
   def FE_INEXACT: CInt = extern
 
   /** domain error occurred in an earlier floating-point operation
    */
-  @name("scalanative_fenv_fe_invalid")
+  @name("scalanative_fe_invalid")
   def FE_INVALID: CInt = extern
 
   /** the result of an earlier floating-point operation was too large to be
    *  representable
    */
-  @name("scalanative_fenv_fe_overflow")
+  @name("scalanative_fe_overflow")
   def FE_OVERFLOW: CInt = extern
 
   /** the result of an earlier floating-point operation was subnormal with a
    *  loss of precision
    */
-  @name("scalanative_fenv_fe_underflow")
+  @name("scalanative_fe_underflow")
   def FE_UNDERFLOW: CInt = extern
 
   /** bitwise OR of all supported floating-point exceptions
    */
-  @name("scalanative_fenv_fe_all_except")
+  @name("scalanative_fe_all_except")
   def FE_ALL_EXCEPT: CInt = extern
 
   // floating-point rounding direction
   /** rounding towards negative infinity
    */
-  @name("scalanative_fenv_fe_downward")
+  @name("scalanative_fe_downward")
   def FE_DOWNWARD: CInt = extern
 
   /** rounding towards nearest representable value
    */
-  @name("scalanative_fenv_fe_tonearest")
+  @name("scalanative_fe_tonearest")
   def FE_TONEAREST: CInt = extern
 
   /** rounding towards zero
    */
-  @name("scalanative_fenv_fe_towardzero")
+  @name("scalanative_fe_towardzero")
   def FE_TOWARDZERO: CInt = extern
 
   /** rounding towards positive infinity
    */
-  @name("scalanative_fenv_fe_upward")
+  @name("scalanative_fe_upward")
   def FE_UPWARD: CInt = extern
 
 }
