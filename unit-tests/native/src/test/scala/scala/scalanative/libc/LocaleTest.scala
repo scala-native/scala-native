@@ -5,6 +5,7 @@ import org.junit.Assert._
 
 import scalanative.unsafe._
 import scalanative.libc.locale._
+import scala.scalanative.libc.limits
 
 class LocaleTest {
   @Test def categoryConstantsReturnCorrectValue(): Unit = {
@@ -64,9 +65,9 @@ class LocaleTest {
         !toCString(""),
         !clocale.negative_sign
       )
-      // CHAR_MAX
+      
       assertEquals(
-        127,
+        limits.CHAR_MAX,
         clocale.int_frac_digits
       )
       def assertEq(exp: Any, act: Any) = assertTrue(
