@@ -44,10 +44,6 @@ int main() {
     }
     assert(exceptionCaught);
 
-#ifndef __APPLE__
-    // For some unknown reason on macOS our exception wrapper is not being
-    // caught. It works fine on Linux and Windows however.
-    // It's still possible to catch std::exception though
     exceptionCaught = false;
     try {
         fail();
@@ -55,7 +51,6 @@ int main() {
         exceptionCaught = true;
     }
     assert(exceptionCaught);
-#endif
 
     return 0;
 }
