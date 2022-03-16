@@ -92,12 +92,17 @@ sealed trait Config {
 
   protected def nameSuffix = if (testConfig) testSuffix else ""
 
-  private[scalanative] def targetsWindows: Boolean = {
+  private[scalanative] lazy val targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||
       customTriple.contains("windows")
     }
   }
+
+  private[scalanative] lazy val targetsMac =
+    compilerConfig.targetTriple.fold(Platform.isMac) { customTriple =>
+      Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
+    }
 }
 
 object Config {

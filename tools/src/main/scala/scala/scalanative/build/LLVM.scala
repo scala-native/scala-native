@@ -262,7 +262,9 @@ private[scalanative] object LLVM {
         case BuildTarget.Application =>
           if (config.targetsWindows) ".exe" else ".out"
         case BuildTarget.LibraryDynamic =>
-          if (config.targetsWindows) ".dll" else ".so"
+          if (config.targetsWindows) ".dll"
+          else if (config.targetsMac) ".dylib"
+          else ".so"
       }
     }
     val finalPath: Path = directory.resolve(baseFilename + buildTargetExtension)
@@ -278,7 +280,8 @@ private[scalanative] object LLVM {
     config.compilerConfig.buildTarget match {
       case BuildTarget.Application => Nil
       case BuildTarget.LibraryDynamic =>
-        Seq("-shared") ++ optionalPICflag(config)
+        val libFlag = if (config.targetsMac) "-shared" else "-dynamiclib"
+        Seq(libFlag) ++ optionalPICflag(config)
     }
 
   private def optionalPICflag(config: Config): Seq[String] =

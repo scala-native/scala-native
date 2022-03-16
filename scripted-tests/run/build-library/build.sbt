@@ -15,7 +15,10 @@ scalaVersion := {
 
 nativeConfig := {
   val prev = nativeConfig.value
-  val filename = if (Platform.isWindows) "test.dll" else "libtest.so"
+  val filename =
+    if (Platform.isWindows) "test.dll"
+    else if (Platform.isMac) "libtest.dylib"
+    else "libtest.so"
   val outPath = crossTarget.value / filename
 
   prev
