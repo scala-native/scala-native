@@ -2,8 +2,10 @@
 import java.util.Locale
 
 object Platform {
-  val isWindows = System
+  val osName = System
     .getProperty("os.name", "unknown")
     .toLowerCase(Locale.ROOT)
-    .startsWith("windows")
+
+  val isWindows = osName.startsWith("windows")
+  val isMac = osName.startsWith("mac")
 }
