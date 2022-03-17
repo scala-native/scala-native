@@ -280,7 +280,7 @@ private[scalanative] object LLVM {
     config.compilerConfig.buildTarget match {
       case BuildTarget.Application => Nil
       case BuildTarget.LibraryDynamic =>
-        val libFlag = if (config.targetsMac) "-shared" else "-dynamiclib"
+        val libFlag = if (config.targetsMac) "-dynamiclib" else "-shared"
         Seq(libFlag) ++ optionalPICflag(config)
     }
 
