@@ -3,15 +3,21 @@ ARG TARGET_PLATFORM
 FROM dockcross/$TARGET_PLATFORM
 ENV DEFAULT_DOCKCROSS_IMAGE testing-container
 
-RUN apt-get update && apt-get install -y clang lld
-# We cannot easily install dependencies, clone and build zlib locally
-# We might need to do the same for Boehmc GC if we would use it in the future
-# Use default user so you can have acess to /cxx/ cross directory
+RUN apt-get update && apt-get install -y clang lld unzip
+
+# We cannot easily install dependencies, clone and build zlib and Boehm locally
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
   && cd /tmp/zlib/ \
   && ./configure \
   && make install prefix=$CROSS_ROOT/${CROSS_TRIPLE}/sysroot \
   && rm -rf /tmp/zlib
+
+RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
+  && cd /tmp/bdwgc/ \
+  && ./autogen.sh \
+  && ./configure \
+  && make install prefix=$CROSS_ROOT/${CROSS_TRIPLE}/sysroot \
+  && rm -rf /tmp/bdwgc
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
