@@ -127,7 +127,7 @@ private[scalanative] object LLVM {
             case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
           }
           Seq("-g") ++ ltoSupport
-        } else Seq("-rdynamic", "--rtlib=compiler-rt")
+        } else Seq("-rdynamic")
       flto(config) ++ platformFlags ++
         Seq("-o", outpath.abs) ++
         unwindSettings ++ asan(config) ++ target(config)
