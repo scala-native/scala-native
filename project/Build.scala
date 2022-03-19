@@ -313,7 +313,7 @@ object Build {
       noPublishSettings,
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
-      javaVersionBasedTestSources,
+      javaVersionSharedTestSources,
       nativeConfig ~= {
         _.withLinkStubs(true)
           .withEmbedResources(true)
@@ -345,7 +345,7 @@ object Build {
         noPublishSettings,
         testsCommonSettings,
         sharedTestSource(withBlacklist = true),
-        javaVersionBasedTestSources,
+        javaVersionSharedTestSources,
         Test / fork := true,
         Test / parallelExecution := false,
         libraryDependencies ++= Deps.JUnitJvm

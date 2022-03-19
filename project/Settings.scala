@@ -349,7 +349,7 @@ object Settings {
 
       // start from scala to avoid jdk specific tests
       // baseDirectory = project/{native,jvm}/.{binVersion}
-      val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
+      val testsRootDir = baseDirectory.value.getParentFile.getParentFile
       val sharedTestsDir = testsRootDir / "shared/src/test"
       val extraSharedDirectories =
         scalaVersionsDependendent(scalaVersion.value)(List.empty[File]) {
@@ -374,15 +374,15 @@ object Settings {
       }
     },
     Test / unmanagedResourceDirectories += {
-      val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
+      val testsRootDir = baseDirectory.value.getParentFile.getParentFile
       testsRootDir / "shared/src/test/resources"
     }
   )
 
-  lazy val javaVersionBasedTestSources = Def.settings(
+  lazy val javaVersionSharedTestSources = Def.settings(
     Test / unmanagedSourceDirectories ++= {
-      val testDir = (Test / baseDirectory).value
-      val sharedTestDir = testDir.getParentFile / "shared/src/test"
+      val testsRootDir = baseDirectory.value.getParentFile.getParentFile
+      val sharedTestDir = testsRootDir / "shared/src/test"
       // Java 8 is reference so start at 9
       (9 to (Global / javaVersion).value).map { v =>
         sharedTestDir / s"require-jdk$v"

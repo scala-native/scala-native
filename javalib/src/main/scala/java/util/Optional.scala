@@ -1,10 +1,6 @@
-/*
- * Ported from Scala.js
- *   commit SHA1: 9c79cb9
- *   dated: 2022-03-18
- */
-
 package java.util
+
+// Ported from Scala.js commit SHA1: 9c79cb9 dated: 2022-03-18
 
 import java.util.function._
 
@@ -70,7 +66,7 @@ final class Optional[T] private (value: T) {
     obj match {
       case opt: Optional[_] =>
         (!isPresent() && !opt.isPresent()) ||
-          (isPresent() && opt.isPresent() && value.equals(opt.get()))
+          (isPresent() && opt.isPresent() && value == opt.get())
       case _ => false
     }
   }

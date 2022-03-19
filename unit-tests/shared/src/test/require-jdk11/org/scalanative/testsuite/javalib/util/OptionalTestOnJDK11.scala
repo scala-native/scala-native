@@ -1,10 +1,6 @@
-/*
- * Ported from Scala.js
- *   commit SHA1: 9c79cb9
- *   dated: 2022-03-18
- */
+package org.scalanative.testsuite.javalib.util
 
-package org.scalajs.testsuite.javalib.util
+// Ported from Scala.js commit SHA1: 9c79cb9 dated: 2022-03-18
 
 import org.junit.Assert._
 import org.junit.Test
@@ -12,7 +8,7 @@ import org.junit.Test
 import java.util.Optional
 import java.util.function._
 
-import org.scalajs.testsuite.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
 
 /* Optional was added in 1.8 but new methods were added from 9 to 11 */
 
