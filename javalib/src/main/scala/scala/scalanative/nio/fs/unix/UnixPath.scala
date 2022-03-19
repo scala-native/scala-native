@@ -165,16 +165,19 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
   override def relativize(other: Path): Path = {
     if (isAbsolute() ^ other.isAbsolute()) {
       throw new IllegalArgumentException("'other' is different type of Path")
-    } else if (path.isEmpty()) {
-      other
-    } else if (other.startsWith(this)) {
-      other.subpath(getNameCount(), other.getNameCount())
-    } else if (getParent() == null) {
-      new UnixPath(fs, "../" + other.toString())
     } else {
-      val next = getParent().relativize(other).toString()
-      if (next.isEmpty()) new UnixPath(fs, "..")
-      else new UnixPath(fs, "../" + next)
+      val normThis = new UnixPath(fs, UnixPath.normalized(this))
+      if (normThis.toString.isEmpty()) {
+        other
+      } else if (other.startsWith(normThis)) {
+        other.subpath(getNameCount(), other.getNameCount())
+      } else if (normThis.getParent() == null) {
+        new UnixPath(fs, "../" + other.toString())
+      } else {
+        val next = normThis.getParent().relativize(other).toString()
+        if (next.isEmpty()) new UnixPath(fs, "..")
+        else new UnixPath(fs, "../" + next)
+      }
     }
   }
 
@@ -258,7 +261,7 @@ private object UnixPath {
       str.indexOf("//") match {
         case -1 =>
           if (str.endsWith("/")) str.substring(0, str.length - 1)
-          else str //length > 1
+          else str // length > 1
         case idx =>
           val buffer: StringBuffer = new StringBuffer(str)
           var previous = '/'

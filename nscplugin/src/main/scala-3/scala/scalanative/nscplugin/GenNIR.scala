@@ -6,13 +6,18 @@ import plugins._
 import core._
 import Contexts._
 
-object GenNIR extends PluginPhase {
-  val phaseName = "scalanative-genNIR"
+class GenNIR(settings: GenNIR.Settings) extends PluginPhase {
+  val phaseName = GenNIR.name
 
   override val runsAfter = Set(transform.MoveStatics.name)
   override val runsBefore = Set(backend.jvm.GenBCode.name)
 
   override def run(using Context): Unit = {
-    NirCodeGen().run()
+    NirCodeGen(settings).run()
   }
+}
+
+object GenNIR {
+  val name = "scalanative-genNIR"
+  case class Settings(genStaticForwardersForNonTopLevelObjects: Boolean = false)
 }

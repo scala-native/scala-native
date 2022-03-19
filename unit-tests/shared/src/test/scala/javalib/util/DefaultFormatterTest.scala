@@ -43,7 +43,6 @@ class DefaultFormatterTest {
     if (notExist.exists()) notExist.delete()
     if (fileWithContent.exists()) fileWithContent.delete()
     if (readOnly.exists()) readOnly.delete()
-    // TimeZone.setDefault(defaultTimeZone)
   }
 
   private class MockAppendable extends Appendable {
@@ -196,11 +195,12 @@ class DefaultFormatterTest {
         classOf[UnsupportedEncodingException],
         new Formatter(notExist, "ISO 1111-1")
       )
-    } finally if (notExist.exists()) {
-      // Fail on RI on Windows, because output stream is created and
-      // not closed when exception thrown
-      assertTrue(notExist.delete())
-    }
+    } finally
+      if (notExist.exists()) {
+        // Fail on RI on Windows, because output stream is created and
+        // not closed when exception thrown
+        assertTrue(notExist.delete())
+      }
   }
 
   @Test def constructorPrintStream(): Unit = {
@@ -3365,37 +3365,6 @@ class DefaultFormatterTest {
     val decFloat: BigDecimalLayoutForm =
       BigDecimalLayoutForm.valueOf("DECIMAL_FLOAT")
     assertEquals(BigDecimalLayoutForm.DECIMAL_FLOAT, decFloat)
-  }
-
-  /*
-   * Regression test for Harmony-5845
-   * test the short name for timezone whether uses DaylightTime or not
-   */
-  @Test def daylightTime(): Unit = {
-    // 2018-09-05 Implementation note:
-    // The TimeZone.getAvailableIDs() now stub returns an empty array,
-    // no longer throwing NotImplementedError.That allows his test to be
-    // enabled.
-    //
-    // This test now passes, but the success is may be vacuous/deceiving.
-    // The actual "America" conditions below will not get executed until
-    // getAvailableIDs() is more fully implemented and reports those TimeZones
-    // as available. When that happens, this test may start failing for
-    // "mysterious" but valid reasons.
-    val c1: Calendar = new GregorianCalendar(2007, 0, 1)
-    val c2: Calendar = new GregorianCalendar(2007, 7, 1)
-    for (tz <- TimeZone.getAvailableIDs) {
-      if (tz == "America/Los_Angeles") {
-        c1.setTimeZone(TimeZone.getTimeZone(tz))
-        c2.setTimeZone(TimeZone.getTimeZone(tz))
-        assertTrue(String.format("%1$tZ%2$tZ", c1, c2) == "PSTPDT")
-      }
-      if (tz == "America/Panama") {
-        c1.setTimeZone(TimeZone.getTimeZone(tz))
-        c2.setTimeZone(TimeZone.getTimeZone(tz))
-        assertTrue(String.format("%1$tZ%2$tZ", c1, c2) == "ESTEST")
-      }
-    }
   }
 
   /*

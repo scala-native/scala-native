@@ -289,7 +289,7 @@ class Machine(re2: RE2) {
       } else {
         var t = entry.thread
         if (t == null) {
-          () //continue
+          () // continue
         } else {
           if (longest && matched && t.cap.length > 0 &&
               matchcap(0) < t.cap(0)) {

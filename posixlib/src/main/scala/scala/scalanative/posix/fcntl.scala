@@ -11,8 +11,10 @@ object fcntl {
 
   def open(pathname: CString, flags: CInt): CInt = extern
 
+  @name("scalanative_open_m")
   def open(pathname: CString, flags: CInt, mode: mode_t): CInt = extern
 
+  @name("scalanative_fcntl_i")
   def fcntl(fd: CInt, cmd: CInt, flags: CInt): CInt = extern
 
   @name("scalanative_fcntl")

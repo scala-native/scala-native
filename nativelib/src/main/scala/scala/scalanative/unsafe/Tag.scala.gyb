@@ -1,3 +1,4 @@
+// format: off 
 
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
@@ -115,7 +116,6 @@ object Tag {
   }
 
   % for N in range(0, 10):
-
   object Nat${N} extends Tag[unsafe.Nat._${N}] with NatTag {
     @noinline def size: CSize = throwUndefined()
     @noinline def alignment: CSize = throwUndefined()
@@ -123,18 +123,15 @@ object Tag {
   }
 
   % end
-
   % for N in range(2, 10):
   %   Ns      = ["N" + str(i) for i in range(1, N + 1)]
   %   BoundNs = "[" + ", ".join(N + " <: Nat.Base" for N in Ns) + "]"
   %   JustNs  = "[" + ", ".join(Ns) + "]"
   %   TagNs   = ["Tag[{}]".format(n) for n in Ns]
   %   args    = ", ".join("_{}: {}".format(i + 1, T) for (i, T) in enumerate(TagNs))
-
   final case class Digit${N}${BoundNs}(${args})
       extends Tag[unsafe.Nat.Digit${N}${JustNs}]
-      with NatTag
-  {
+      with NatTag {
     @alwaysinline def size: CSize = throwUndefined()
     @alwaysinline def alignment: CSize = throwUndefined()
     @alwaysinline def toInt: Int = {
@@ -159,8 +156,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CArray[T, N]], value: unsafe.CArray[T, N]): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size)
+      } else storeRawPtr(dst, null)
     }
   }
   
@@ -183,8 +182,7 @@ object Tag {
 
   final case class CStruct${N}${JustTs}(${args})
     extends Tag[unsafe.CStruct${N}${JustTs}]
-    with StructTag
-  {
+    with StructTag {
     @alwaysinline def size: CSize = {
       var res = 0.toUSize
       % for i in range(1, N + 1):
@@ -216,8 +214,10 @@ object Tag {
     }
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}], value: unsafe.CStruct${N}${JustTs}): Unit = {
       val dst = ptr.rawptr
-      val src = value.rawptr
-      libc.memcpy(dst, src, size)
+      if (value != null) {
+        val src = value.rawptr
+        libc.memcpy(dst, src, size)
+      } else storeRawPtr(dst, null)
     }
   }
 
@@ -234,9 +234,11 @@ object Tag {
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
-    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit =
-      storeRawPtr(toRawPtr(ptr), value.rawptr)
+    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit = {
+      val valuePtr = if(value != null) value.rawptr else null
+      storeRawPtr(toRawPtr(ptr), valuePtr)
     }
+  }
 
   % for N in range(0, 23):
   %   targs = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])

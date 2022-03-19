@@ -18,6 +18,7 @@ template.  In an empty working directory, execute::
   In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
 
   In the WSL2 environment, it is recommended to create projects in the user files path, e.g /home/<USER>/sn-projects.
+
 This will:
 
 * start sbt.
@@ -25,7 +26,7 @@ This will:
 * prompt for a project name
 
 * use the `.g8 template
-  <https://github.com/scala-native/scala-native.g8/tree/master/src/main/g8>`_.
+  <https://github.com/scala-native/scala-native.g8/tree/main/src/main/g8>`_.
   to generate a basic project with that name.
 
 * create a project sub-directory with the project name.
@@ -34,19 +35,19 @@ This will:
   in this new project sub-directory.
 
   * `project/plugins.sbt
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/plugins.sbt>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/plugins.sbt>`_
     adds the Scala Native plugin dependency and its version.
 
   * `project/build.properties
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/project/build.properties>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/build.properties>`_
     specifies the sbt version.
 
   * `build.sbt
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/build.sbt>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/build.sbt>`_
     enables the plugin and specifies the Scala version.
 
   * `src/main/scala/Main.scala
-    <https://github.com/scala-native/scala-native.g8/blob/master/src/main/g8/src/main/scala/Main.scala>`_
+    <https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/src/main/scala/Main.scala>`_
     is a minimal application.
     ::
      
@@ -79,16 +80,19 @@ Scala versions
 
 Scala Native supports following Scala versions for corresponding releases:
 
-========================== ================================
+========================== ===============================================
 Scala Native Version       Scala Versions
-========================== ================================
+========================== ===============================================
 0.1.x                      2.11.8
 0.2.x                      2.11.8, 2.11.11
 0.3.0-0.3.3                2.11.8, 2.11.11
 0.3.4+, 0.4.0-M1, 0.4.0-M2 2.11.8, 2.11.11, 2.11.12
 0.4.0                      2.11.12, 2.12.13, 2.13.4
 0.4.1                      2.11.12, 2.12.13, 2.13.4, 2.13.5
-========================== ================================
+0.4.2                      2.11.12, 2.12.{13..15}, 2.13.{4..8}
+0.4.3-RC1, 0.4.3-RC2       2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.0
+0.4.3                      2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.{0..1}
+========================== ===============================================
 
 Sbt settings and tasks
 ----------------------

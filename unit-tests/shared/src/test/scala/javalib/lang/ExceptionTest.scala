@@ -5,6 +5,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 
 import scala.scalanative.junit.utils.AssumesHelper._
+import org.scalanative.testsuite.utils.Platform
 
 class DummyNoStackTraceException extends scala.util.control.NoStackTrace
 
@@ -16,7 +17,9 @@ class ExceptionTest {
     (new Exception).printStackTrace(pw)
     val trace = sw.toString
     assertTrue(trace.startsWith("java.lang.Exception"))
-    assertTrue(trace.contains("\tat <none>.main(Unknown Source)"))
+    if (!Platform.executingInJVM) {
+      assertTrue(trace.contains("\tat <none>.main(Unknown Source)"))
+    }
   }
 
   @Test def printStackTraceNoStackTraceAvailable(): Unit = {
@@ -26,7 +29,7 @@ class ExceptionTest {
     val trace = sw.toString
     val expected = Seq(
       "javalib.lang.DummyNoStackTraceException",
-      "\t<no stack trace available>"
+      ""
     ).mkString(System.lineSeparator()).trim()
     assertTrue(
       s"expected to start with '$expected', got `$trace`",

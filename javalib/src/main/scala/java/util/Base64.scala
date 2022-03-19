@@ -257,6 +257,15 @@ object Base64 {
     private var out = 0
     private var shift = DecodeState18
 
+    override def skip(n: Long): Long = {
+      if (n <= 0) 0
+      else {
+        var skipped = 0
+        while (skipped < n && read() != -1) skipped += 1
+        skipped
+      }
+    }
+
     override def read(): Int =
       if (read(oneBuf, 0, 1) == -1) -1
       else oneBuf(0) & 0xff

@@ -3,7 +3,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
 concurrency:
   group: linux-${{ github.head_ref }}
   cancel-in-progress: true
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -40,6 +40,8 @@ jobs:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
 
       - name: Check partest disabled tests list
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3.') }}
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
@@ -49,78 +51,24 @@ jobs:
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.
       - name: Run subset of partest tests
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3.') }}
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
-  # Build testing image that would be used to build and run against different platforms
-  # Currently only Linux x64 is tested
-  build-image:
-    name: Build image
-    runs-on: ubuntu-18.04
-    outputs:
-      image-name: ${{ steps.build-image.outputs.image-base-name }}
-    strategy:
-      matrix:
-        host_arch: [ amd64 ]
-        docker_arch: [ library, i386 ]
-    steps:
-      - uses: actions/checkout@v2
-      # In order to minimize time spend in image build loading we're caching directory of local repository
-      # Starting local registry from cache is faster then loading image tars
-      # https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei
-      # This and next stage (start registry) should be used in every step using built images
-      # Images are cached based on content of Dockerfile
-
-      # Cache automatically saves content specified paths after executing all steps defined after this one.
-      # It will not update cache on hit.
-      - name: Cache docker
-        id: cache
-        uses: actions/cache@v1
-        with:
-          path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.host_arch }}-${{ matrix.docker_arch }}
-      - name: Run local image registry
-        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
-
-      # Builds images and saves image base name in output - it allows to re-use it in other steps.
-      - name: Build image
-        id: build-image
-        run: |
-          imageBase="scala-native-testing:linux"
-          imageName="${imageBase}-${{ matrix.docker_arch }}"
-          echo "::set-output name=image-base-name::${imageBase}"
-          echo "::set-output name=image-full-name::${imageName}"
-
-          docker run --rm --privileged multiarch/qemu-user-static:register
-          docker pull localhost:5000/${imageName} || true
-          docker build \
-          -t ${imageName} \
-          --cache-from=localhost:5000/${imageName} \
-          --build-arg TARGET_DOCKER_PLATFORM=${{ matrix.docker_arch }} \
-          --build-arg HOST_ARCHITECTURE=${{ matrix.host_arch }}  \
-          --cpuset-cpus=0 \
-          ci-docker
-
-      - name: Store image in cache
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          imageName=${{ steps.build-image.outputs.image-full-name }}
-          docker tag $imageName localhost:5000/${imageName} && \
-          docker push localhost:5000/${imageName}
-
   #Main tests grid. Builds and runs tests agains multiple combination of GC, Build mode and Scala Version
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
     runs-on: ubuntu-18.04
-    needs: [tests-tools, build-image]
+    needs: tests-tools
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         build-mode: [debug, release-fast]
         gc: [boehm, immix, commix]
         host_arch: [ amd64 ]
@@ -128,70 +76,17 @@ jobs:
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
-          - scala: 2.13.7
+          - scala: 2.13.8
             build-mode: debug
             gc: immix
           - scala: 2.12.15
-            build-mode: debug
             gc: immix
+          - scala: 2.12.15
+            gc: boehm
           - scala: 2.11.12
-            build-mode: debug
             gc: commix
-          - docker_arch: i386
-            gc: immix
-          - docker_arch: i386
-            gc: commix
-        include:
-          - scala: 2.12.13
-            build-mode: debug
-            gc: immix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.12.13
-            build-mode: release-fast
-            gc: commix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.12.14
-            build-mode: debug
-            gc: immix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.12.14
-            build-mode: release-fast
-            gc: commix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.4
-            build-mode: debug
-            gc: immix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.4
-            build-mode: release-fast
-            gc: commix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.5
-            build-mode: debug
-            gc: immix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.5
-            build-mode: release-fast
-            gc: commix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.6
-            build-mode: debug
-            gc: commix
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.6
-            build-mode: release-fast
-            gc: immix
-            host_arch: amd64
-            docker_arch: library
+          - scala: 2.11.12
+            gc: boehm
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -205,37 +100,21 @@ jobs:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_OPTIMIZE: true
-          SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
+        run: sbt "test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
     runs-on: ubuntu-18.04
-    needs: [tests-tools, build-image]
+    needs: tests-tools
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
-        build-mode: [debug, release-fast]
-        host_arch: [ amd64 ]
-        docker_arch: [ library ]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
+        build-mode: [debug]
         include:
-          - scala: 2.12.13
-            build-mode: release-fast
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.4
-            build-mode: release-fast
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.5
-            build-mode: release-fast
-            host_arch: amd64
-            docker_arch: library
-          - scala: 2.13.6
+          - scala: 2.13.8
             build-mode: release-fast
             host_arch: amd64
             docker_arch: library
@@ -252,22 +131,21 @@ jobs:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: false
-          SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
+        run: sbt "test-runtime ${{ matrix.scala }}"
 
   test-runtime-lto:
     name: Test runtime LTO
     runs-on: ubuntu-18.04
-    needs: [tests-tools, build-image]
+    needs: tests-tools
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13.7, 2.12.15, 2.11.12]
+        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         lto: [thin]
         optimize: [true]
         include:
-          - scala: 2.13.7
+          # LTO full fails with 3.1 in the CI - we were not able to reproduce it locally
+          - scala: 2.13.8
             lto: full
             optimize: true
           - scala: 2.12.15
@@ -288,22 +166,17 @@ jobs:
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: ${{matrix.optimize}}
           SCALANATIVE_LTO: ${{matrix.lto}}
-          SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: "test-runtime ${{ matrix.scala }}"
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-amd64"
+        run: sbt "test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
     runs-on: ubuntu-18.04
-    needs: [tests-tools, build-image]
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.15]
-        host_arch: [ amd64 ]
-        docker_arch: [ library ]
+        scala: [2.12.15, 3.1.1]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -317,27 +190,4 @@ jobs:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
-          SCALA_VERSION: ${{ matrix.scala}}
-          TEST_COMMAND: "test-scripted ${{matrix.scala}}"
-        run: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}-${{ matrix.docker_arch }}"
-
-  experimental-scala3:
-    name: Scala3 experimental tests
-    runs-on: ubuntu-18.04
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3.1.0]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-
-      - name: Run Scala 3 tests
-        run: >
-          sbt "++ ${{ matrix.scala }} -v"
-          "-no-colors"
-          "-J-Xmx3G"
-          "test-tools 3"
-          "test-runtime 3"
+        run: sbt "test-scripted ${{matrix.scala}}"

@@ -122,8 +122,8 @@ abstract class BaseDescription extends Description {
 
   private def toJavaSyntax(unformatted: String): String =
     s""""${unformatted.map((ch: Char) =>
-      toJavaSyntax(ch)
-    )}"""" // Note the four "
+        toJavaSyntax(ch)
+      )}"""" // Note the four "
 
   private def toJavaSyntax(ch: Char): String = {
     ch match {

@@ -62,7 +62,7 @@ abstract class JUnitTest {
 
           if (want != out) {
             fail(s"Bad output (args: $args)\n\nWant:\n${want
-              .mkString("\n")}\n\nGot:\n${out.mkString("\n")}\n\n")
+                .mkString("\n")}\n\nGot:\n${out.mkString("\n")}\n\n")
           }
         }
       }

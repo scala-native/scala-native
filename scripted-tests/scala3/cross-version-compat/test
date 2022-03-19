@@ -1,0 +1,27 @@
+> +base/publishLocal
+
+# Publish projects using crossVersion
+## No CrossVerison
+> +projectA/publishLocal
+> +projectA/test
+
+## Use CrossVersion.for3use2_13
+> +projectB/publishLocal
+> +projectB/test
+
+## Use CrossVersion.for2_13use3
+> +projectC/publishLocal
+> +projectC/test
+
+# Use published projects
+## No CrossVersion
+> +projectD/compile
+> +projectD/test
+
+## Use CrossVersion.for3use2_13
+> +projectE/compile
+> +projectE/test
+
+## Use CrossVersion.for2_13use3
+> +projectF/compile
+> +projectF/test

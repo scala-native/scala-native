@@ -100,14 +100,14 @@ object Discover {
     val versionString = processLines.headOption
       .getOrElse {
         throw new BuildException(s"""Problem running '${versionCommand
-          .mkString(" ")}'. Please check clang setup.
+                                     .mkString(" ")}'. Please check clang setup.
               |Refer to ($docSetup)""".stripMargin)
       }
 
     val targetString = processLines.tail.headOption
       .getOrElse {
         throw new BuildException(s"""Problem running '${versionCommand
-          .mkString(" ")}'. Please check clang setup.
+                                     .mkString(" ")}'. Please check clang setup.
               |Refer to ($docSetup)""".stripMargin)
       }
 

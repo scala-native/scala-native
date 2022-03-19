@@ -1,55 +1,35 @@
-ARG TARGET_DOCKER_PLATFORM
+# For list of supported platforms check https://github.com/dockcross/dockcross#summary-cross-compilers
+ARG TARGET_PLATFORM
+FROM dockcross/$TARGET_PLATFORM
+ENV DEFAULT_DOCKCROSS_IMAGE testing-container
 
-FROM ubuntu:18.04
+RUN apt-get update && apt-get install -y clang lld
+# We cannot easily install dependencies, clone and build zlib locally
+# We might need to do the same for Boehmc GC if we would use it in the future
+# Use default user so you can have acess to /cxx/ cross directory
+RUN git clone https://github.com/madler/zlib /tmp/zlib \
+  && cd /tmp/zlib/ \
+  && ./configure \
+  && make install prefix=$CROSS_ROOT/${CROSS_TRIPLE}/sysroot \
+  && rm -rf /tmp/zlib
 
-RUN apt-get update && apt-get install -y qemu-user-static
-
-FROM $TARGET_DOCKER_PLATFORM/ubuntu:18.04
-
-ARG HOST_ARCHITECTURE
-
-COPY --from=0 /usr/bin/qemu-* /usr/bin/
-COPY --from=0 /etc/apt/sources.list /etc/apt/host-sources.list
-
-RUN dpkg --add-architecture $HOST_ARCHITECTURE
-
-# Add lists for the host platform and mark architectures
-RUN sed -i -e "s/deb http/deb [arch=$HOST_ARCHITECTURE] http/g" /etc/apt/host-sources.list && \
-    TARGET_UBUNTU_ARCH=$(dpkg --print-architecture) && \
-    sed -i -e "s/deb http/deb [arch=$TARGET_UBUNTU_ARCH] http/g" /etc/apt/sources.list && \
-    cat /etc/apt/host-sources.list >> /etc/apt/sources.list && \
-    rm /etc/apt/host-sources.list
-
-RUN apt-get update
-
-RUN apt-get install -y openjdk-8-jdk-headless:$HOST_ARCHITECTURE
-ENV PATH "/usr/lib/jvm/java-8-openjdk-$HOST_ARCHITECTURE/bin:$PATH"
-
-ENV SBT_LAUNCHER_VERSION 1.3.7
-ENV SBT_INSTALL_FILE sbt-$SBT_LAUNCHER_VERSION.deb
-ENV SBT_INSTALL_URL \
-        https://repo.scala-sbt.org/scalasbt/debian/$SBT_INSTALL_FILE
-
-RUN apt-get install -y curl
-
-# Install sbt
-RUN \
-  curl -L -O $SBT_INSTALL_URL && \
-  dpkg -i $SBT_INSTALL_FILE && \
-  rm $SBT_INSTALL_FILE
-
-RUN apt-get install -y clang-6.0 zlib1g-dev libgc-dev git
-
-ENV LC_ALL "C.UTF-8"
-
-ENV LANG "C.UTF-8"
-
-ENV PATH=/usr/lib/llvm-6.0/bin:${PATH}
-
+# Switch shell and user to allow for usage of sdk and installed by it binaries 
+SHELL ["/bin/bash", "-c"]
 RUN useradd -ms /bin/bash scala-native
-
 USER scala-native
-
 WORKDIR /home/scala-native/scala-native
 
-CMD sbt "++ $SCALA_VERSION -v" -no-colors -J-Xmx5G "set sbtScalaNative/scriptedBufferLog := false" "$TEST_COMMAND"
+RUN curl -s "https://get.sdkman.io" | bash  \
+  && . "$HOME/.sdkman/bin/sdkman-init.sh" \
+  && sdk install sbt 1.6.2 \ 
+  && sdk install java 8.0.275.hs-adpt
+
+ENV LC_ALL "C.UTF-8"
+ENV LANG "C.UTF-8"
+ENV PATH=/usr/lib/llvm-6.0/bin:~/.sdkman/candidates/java/current/bin:~/.sdkman/candidates/sbt/current/bin:${PATH}
+
+CMD sbt "++ $SCALA_VERSION -v" \
+  "-Dscala.scalanative.testinterface.processrunner.emulator=$TARGET_EMULATOR" \
+  "-J-Xmx5G" \
+  "set sbtScalaNative/scriptedBufferLog := false" \
+  "$TEST_COMMAND"

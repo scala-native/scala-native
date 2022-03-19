@@ -44,8 +44,9 @@ private[math] object Conversion {
   /** Precomputed maximal powers of radices.
    *
    *  BigRadices values are precomputed maximal powers of radices (integer
-   *  numbers from 2 to 36) that fit into unsigned int (32 bits). bigRadices[0]
-   *  = 2 ^ 31, bigRadices[8] = 10 ^ 9, etc.
+   *  numbers from 2 to 36) that fit into unsigned int (32 bits).
+   *
+   *  bigRadices[0] = 2 ^ 31, bigRadices[8] = 10 ^ 9, etc.
    */
   final val BigRadices = Array[Int](-2147483648, 1162261467, 1073741824,
     1220703125, 362797056, 1977326743, 1073741824, 387420489, 1000000000,

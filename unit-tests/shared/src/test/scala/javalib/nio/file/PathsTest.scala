@@ -64,6 +64,15 @@ class PathsTest {
     assertEquals(expected2, path2.toString)
   }
 
+  @Test def driveRelativePathToStringShownAsAbsolute() = {
+    val absolutePath = "/absolute/file"
+    val expected = if (isWindows) "\\absolute\\file" else "/absolute/file"
+
+    val path = Paths.get(absolutePath)
+
+    assertEquals(expected, path.toString)
+  }
+
   // issue #2433
   @Test def spaceAllowedInPath() = {
     val withSpaces = "space dir/space file"

@@ -69,7 +69,7 @@ class MainGenericRunner {
 
           commandClasspath ++ nativeClasspath
         }
-        .withMainClass(command.thingToRun + "$")
+        .withMainClass(command.thingToRun)
         .withWorkdir(dir)
 
       Scope { implicit s => Build.build(config, dir.resolve("output")) }
@@ -93,7 +93,7 @@ class MainGenericRunner {
       .sorted(Comparator.reverseOrder[Path]())
       .map[Boolean](deleteFn)
       .reduce(true, reduceBool) &&
-    Files.deleteIfExists(dir)
+      Files.deleteIfExists(dir)
 
     res
   }

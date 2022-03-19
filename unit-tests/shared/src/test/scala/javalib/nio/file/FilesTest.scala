@@ -1157,7 +1157,7 @@ class FilesTest {
       Files
         .find(d1, 10, predicate, FileVisitOption.FOLLOW_LINKS)
         .iterator
-        .hasNext //used to materialize underlying LazyList (since 2.13)
+        .hasNext // used to materialize underlying LazyList (since 2.13)
 
       val itNotFollowBad = Files.find(d1, 10, predicate).iterator
 

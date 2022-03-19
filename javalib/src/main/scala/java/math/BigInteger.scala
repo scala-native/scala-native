@@ -471,8 +471,7 @@ class BigInteger extends Number with Comparable[BigInteger] {
         )
         val result0 =
           new BigInteger(quotientSign, quotientLength, quotientDigits)
-        val result1 =
-          new BigInteger(thisSign, remainderLength, remainderDigits)
+        val result1 = new BigInteger(thisSign, remainderLength, remainderDigits)
         result0.cutOffLeadingZeroes()
         result1.cutOffLeadingZeroes()
         new QuotAndRem(result0, result1)
@@ -485,7 +484,8 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   override def equals(x: Any): Boolean = x match {
     case that: BigInteger =>
-      this.sign == that.sign && this.numberLength == that.numberLength &&
+      this.sign == that.sign &&
+        this.numberLength == that.numberLength &&
         this.equalsArrays(that.digits)
     case _ => false
   }
@@ -695,8 +695,14 @@ class BigInteger extends Number with Comparable[BigInteger] {
           Division.remainderArrayByInt(digits, thisLen, divisor.digits(0))
       } else {
         val qLen = thisLen - divisorLen + 1
-        resDigits = Division
-          .divide(null, qLen, digits, thisLen, divisor.digits, divisorLen)
+        resDigits = Division.divide(
+          null,
+          qLen,
+          digits,
+          thisLen,
+          divisor.digits,
+          divisorLen
+        )
       }
       val result = new BigInteger(sign, resLength, resDigits)
       result.cutOffLeadingZeroes()
@@ -754,7 +760,7 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   def toByteArray(): Array[Byte] = {
     if (this.sign == 0)
-      return Array[Byte](0) // scalastyle:ignore
+      return Array(0.toByte) // scalastyle:ignore
 
     val temp: BigInteger = this
     val bitLen = bitLength()
@@ -847,8 +853,17 @@ class BigInteger extends Number with Comparable[BigInteger] {
     numberLength += 1
   }
 
-  private[math] def equalsArrays(b: Array[Int]): Boolean =
-    (0 until numberLength).forall(i => digits(i) == b(i))
+  private[math] def equalsArrays(b: Array[Int]): Boolean = {
+    // scalastyle:off return
+    var i = 0
+    while (i != numberLength) {
+      if (digits(i) != b(i))
+        return false
+      i += 1
+    }
+    true
+    // scalastyle:on return
+  }
 
   private[math] def getFirstNonzeroDigit(): Int = {
     if (firstNonzeroDigit == firstNonzeroDigitNotSet) {

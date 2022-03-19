@@ -129,8 +129,8 @@ private[math] object Division {
         var rem = (res >> 32).toInt // the remainder of divideLongByInt
         // decrease guessDigit by 1 while leftHand > rightHand
         if (guessDigit != 0) {
-          //var leftHand: Long = 0
-          //var rightHand: Long = 0
+          // var leftHand: Long = 0
+          // var rightHand: Long = 0
           // var rOverflowed = false
           guessDigit += 1 // to have the proper value in the loop below
 
@@ -411,7 +411,7 @@ private[math] object Division {
         if (res(i) != modulusDigits(i)) {
           doSub = (res(i) != 0) &&
             ((res(i) & UINT_MAX) > (modulusDigits(i) & UINT_MAX))
-          //force break
+          // force break
           i = 0
         }
         i -= 1
@@ -1031,7 +1031,7 @@ private[math] object Division {
    *  operation.
    *
    *  @param bi
-   *    @param n
+   *  @param n
    *  @return
    */
   private def howManyIterations(bi: BigInteger, n: Int): Int = {

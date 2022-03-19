@@ -35,7 +35,7 @@ object MinWinBaseApiOps {
   object FileTimeOps {
     private final val EpochPerSecond = 10000000L.toULong
     private final val EpochPerMilis = 10000L.toULong
-    final val EpochInterval = 100L //ns
+    final val EpochInterval = 100L // ns
     final val UnixEpochDifference = 116444736000000000L
     final val UnixEpochDifferenceMillis = 11644473600000L
     final val UnixEpochDifferenceSeconds = 11644473600L

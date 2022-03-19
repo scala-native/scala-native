@@ -198,7 +198,7 @@ class PrintStream private (
     format(fmt, args)
 
   // Not implemented:
-  //def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintStream = ???
+  // def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintStream = ???
 
   def format(fmt: String, args: Array[Object]): PrintStream = {
     new Formatter(this).format(fmt, args)
@@ -206,7 +206,7 @@ class PrintStream private (
   }
 
   // Not implemented:
-  //def format(l: java.util.Locale, fmt: String, args: Array[Object]): PrintStream = ???
+  // def format(l: java.util.Locale, fmt: String, args: Array[Object]): PrintStream = ???
 
   def append(csq: CharSequence): PrintStream = {
     print(if (csq == null) "null" else csq.toString)

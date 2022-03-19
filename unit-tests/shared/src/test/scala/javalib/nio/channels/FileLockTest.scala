@@ -11,6 +11,10 @@ import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.AssumesHelper._
+import org.scalanative.testsuite.utils.Platform.{
+  executingInJVM,
+  executingInJVMOnJDK8OrLower
+}
 
 class FileLockTest {
 
@@ -48,8 +52,16 @@ class FileLockTest {
   }
 
   @Test def testConstructorLjava_nio_channels_FileChannelJJZ(): Unit = {
-    val fileLock1 = new MockFileLock(null, 0, 0, false)
-    assertNull(fileLock1.channel())
+    if (executingInJVM && executingInJVMOnJDK8OrLower) {
+      val fileLock1 = new MockFileLock(null, 0, 0, false)
+      assertNull(fileLock1.channel())
+    } else {
+      assertThrows(
+        classOf[NullPointerException],
+        new MockFileLock(null, 0, 0, false)
+      )
+    }
+
     assertThrows(
       classOf[IllegalArgumentException],
       new MockFileLock(readWriteChannel, -1, 0, false)
@@ -62,8 +74,10 @@ class FileLockTest {
 
   @Test def testChannel(): Unit = {
     assertSame(readWriteChannel, mockLock.channel())
-    val lock = new MockFileLock(null, 0, 10, true)
-    assertNull(lock.channel())
+    if (executingInJVM && executingInJVMOnJDK8OrLower) {
+      val lock = new MockFileLock(null, 0, 10, true)
+      assertNull(lock.channel())
+    } // not possible on JDK 11+ would require not yet implemented asynchronous channe;
   }
 
   @Test def testPosition(): Unit = {
@@ -87,7 +101,7 @@ class FileLockTest {
 
   @Test def testIsShared(): Unit = {
     assertFalse(mockLock.isShared())
-    val lock = new MockFileLock(null, 0, 10, true)
+    val lock = new MockFileLock(readWriteChannel, 0, 10, true)
     assertTrue(lock.isShared())
   }
 

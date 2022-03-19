@@ -83,7 +83,7 @@ private[lang] class WindowsProcess private (
       }
 
     !isAlive() ||
-    (hasValidTimeout && hasFinished)
+      (hasValidTimeout && hasFinished)
   }
 
   private[this] val _inputStream =

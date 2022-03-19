@@ -204,7 +204,7 @@ class Throwable protected (
         i += 1
       }
     } else {
-      println("\t<no stack trace available>")
+      println("")
     }
 
     // Print causes
@@ -225,7 +225,7 @@ class Throwable protected (
           println("\t... " + duplicates + " more")
         }
       } else {
-        println("\t<no stack trace available>")
+        println("")
       }
 
       parentStack = currentStack
@@ -306,7 +306,13 @@ class ClassFormatError(s: String) extends LinkageError(s) {
   def this() = this(null)
 }
 
-class Error(s: String, e: Throwable) extends Throwable(s, e) {
+class Error protected (
+    s: String,
+    e: Throwable,
+    enabledSuppression: scala.Boolean,
+    writableStackTrace: scala.Boolean
+) extends Throwable(s, e, enabledSuppression, writableStackTrace) {
+  def this(s: String, e: Throwable) = this(s, e, true, true)
   def this() = this(null, null)
   def this(s: String) = this(s, null)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
@@ -333,11 +339,14 @@ class InstantiationError(s: String) extends IncompatibleClassChangeError(s) {
   def this() = this(null)
 }
 
-class InternalError(s: String) extends VirtualMachineError(s) {
-  def this() = this(null)
+class InternalError(s: String, e: Throwable) extends VirtualMachineError(s, e) {
+  def this(s: String) = this(s, null)
+  def this(e: Throwable) = this(null, e)
+  def this() = this(null, null)
 }
 
-class LinkageError(s: String) extends Error(s) {
+class LinkageError(s: String, e: Throwable) extends Error(s, e) {
+  def this(s: String) = this(s, null)
   def this() = this(null)
 }
 
@@ -377,8 +386,10 @@ class VerifyError(s: String) extends LinkageError(s) {
   def this() = this(null)
 }
 
-abstract class VirtualMachineError(s: String) extends Error(s) {
-  def this() = this(null)
+abstract class VirtualMachineError(s: String, e: Throwable) extends Error(s) {
+  def this(s: String) = this(s, null)
+  def this(e: Throwable) = this(null, e)
+  def this() = this(null, null)
 }
 
 /* java.lang.*Exception.java */
@@ -419,7 +430,13 @@ class EnumConstantNotPresentException(e: Class[_ <: Enum[_]], c: String)
   def constantName(): String = c
 }
 
-class Exception(s: String, e: Throwable) extends Throwable(s, e) {
+class Exception protected (
+    s: String,
+    e: Throwable,
+    enabledSuppression: scala.Boolean,
+    writableStackTrace: scala.Boolean
+) extends Throwable(s, e, enabledSuppression, writableStackTrace) {
+  def this(s: String, e: Throwable) = this(s, e, true, true)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
   def this(s: String) = this(s, null)
   def this() = this(null, null)
@@ -496,7 +513,13 @@ class RejectedExecutionException(s: String, e: Throwable)
   def this() = this(null, null)
 }
 
-class RuntimeException(s: String, e: Throwable) extends Exception(s, e) {
+class RuntimeException protected (
+    s: String,
+    e: Throwable,
+    enabledSuppression: scala.Boolean,
+    writableStackTrace: scala.Boolean
+) extends Exception(s, e) {
+  def this(s: String, e: Throwable) = this(s, e, true, true)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
   def this(s: String) = this(s, null)
   def this() = this(null, null)

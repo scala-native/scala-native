@@ -7,8 +7,6 @@ javalib/lang/IntegerTest.scala
 javalib/lang/ShortTest.scala
 javalib/lang/LongTest.scala
 javalib/lang/StringTest.scala
-javalib/lang/ThrowablesTest.scala
-javalib/lang/ExceptionTest.scala
 
 javalib/net/ServerSocketTest.scala
 

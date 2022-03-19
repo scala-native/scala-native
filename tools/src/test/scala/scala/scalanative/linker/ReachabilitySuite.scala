@@ -27,12 +27,25 @@ trait ReachabilitySuite extends AnyFunSuite {
   def testReachable(label: String)(f: => (String, Global, Seq[Global])) =
     test(label) {
       val (source, entry, expected) = f
-      link(Seq(entry), Seq(source), entry.top.id) { res =>
-        val left = res.defns.map(_.name).toSet
-        val right = expected.toSet ++ MainMethodDependencies
-        assert(res.unavailable.isEmpty, "unavailable")
-        assert((left -- right).isEmpty, "underapproximation")
-        assert((right -- left).isEmpty, "overapproximation")
+      // When running reachability tests disable loading static constructors
+      // ReachabilitySuite tests are designed to check that exactly given group
+      // of symbols is reachable. By default we always try to load all static
+      // constructrs - this mechanism is used by junit-plugin to mitigate lack
+      // of reflection. We need to disable it, otherwise we would be swarmed
+      // with definitions introduced by static constructors
+      val reachStaticConstructorsKey =
+        "scala.scalanative.linker.reachStaticConstructors"
+      sys.props += reachStaticConstructorsKey -> false.toString()
+      try {
+        link(Seq(entry), Seq(source), entry.top.id) { res =>
+          val left = res.defns.map(_.name).toSet
+          val right = expected.toSet ++ MainMethodDependencies
+          assert(res.unavailable.isEmpty, "unavailable")
+          assert((left -- right).isEmpty, "underapproximation")
+          assert((right -- left).isEmpty, "overapproximation")
+        }
+      } finally {
+        sys.props -= reachStaticConstructorsKey
       }
     }
 

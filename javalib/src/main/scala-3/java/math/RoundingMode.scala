@@ -39,4 +39,10 @@ enum RoundingMode extends Enum[RoundingMode]():
 end RoundingMode
 
 object RoundingMode:
-  def valueOf(ordinal: Int): RoundingMode = RoundingMode.fromOrdinal(ordinal)
+  def valueOf(ordinal: Int): RoundingMode = {
+    RoundingMode.values
+      .find(_.ordinal == ordinal)
+      .getOrElse {
+        throw new IllegalArgumentException("Invalid rounding mode")
+      }
+  }

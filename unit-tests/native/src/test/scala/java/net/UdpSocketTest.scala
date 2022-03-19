@@ -80,7 +80,7 @@ class UdpSocketTest {
     val inSocket: CInt = createAndCheckUdpSocket()
 
     try {
-      val inAddr = alloc[sockaddr]
+      val inAddr = alloc[sockaddr]()
       val inAddrInPtr = inAddr.asInstanceOf[Ptr[sockaddr_in]]
 
       inAddrInPtr.sin_family = AF_INET.toUShort
@@ -93,8 +93,8 @@ class UdpSocketTest {
       val bindStatus = bind(inSocket, inAddr, sizeof[sockaddr].toUInt)
       assertNotEquals("bind", -1, bindStatus)
 
-      val inAddrInfo = alloc[sockaddr]
-      val gsnAddrLen = alloc[socklen_t]
+      val inAddrInfo = alloc[sockaddr]()
+      val gsnAddrLen = alloc[socklen_t]()
       !gsnAddrLen = sizeof[sockaddr].toUInt
 
       val gsnStatus = getsockname(inSocket, inAddrInfo, gsnAddrLen)
@@ -104,7 +104,7 @@ class UdpSocketTest {
       val outSocket = createAndCheckUdpSocket()
 
       try {
-        val outAddr = alloc[sockaddr]
+        val outAddr = alloc[sockaddr]()
         val outAddrInPtr = outAddr.asInstanceOf[Ptr[sockaddr_in]]
         outAddrInPtr.sin_family = AF_INET.toUShort
         outAddrInPtr.sin_addr.s_addr = localhostInetAddr
@@ -177,8 +177,8 @@ class UdpSocketTest {
         assertEquals("recvfrom_1 length", nBytesSent, nBytesPeekedAt)
 
         // Test retrieving remote address.
-        val srcAddr = alloc[sockaddr]
-        val srcAddrLen = alloc[socklen_t]
+        val srcAddr = alloc[sockaddr]()
+        val srcAddrLen = alloc[socklen_t]()
         !srcAddrLen = sizeof[sockaddr].toUInt
         val nBytesRecvd =
           recvfrom(inSocket, inData, maxInData.toUInt, 0, srcAddr, srcAddrLen)

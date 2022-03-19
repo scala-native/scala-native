@@ -218,7 +218,7 @@ private[java] final class FileChannelImpl(
       def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
 
       def tryRead(count: Int)(fallback: => Int) = {
-        val readBytes = stackalloc[windows.DWord]
+        val readBytes = stackalloc[windows.DWord]()
         if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
           (!readBytes).toInt match {
             case 0     => -1 // EOF
@@ -232,7 +232,7 @@ private[java] final class FileChannelImpl(
           case ErrorCodes.ERROR_BROKEN_PIPE =>
             // Pipe was closed, but it still can contain some unread data
             available() match {
-              case 0     => -1 //EOF
+              case 0     => -1 // EOF
               case count => tryRead(count)(fallback = fail())
             }
 
@@ -258,7 +258,7 @@ private[java] final class FileChannelImpl(
 
   override def size(): Long = {
     if (isWindows) {
-      val size = stackalloc[windows.LargeInteger]
+      val size = stackalloc[windows.LargeInteger]()
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
     } else {
@@ -387,7 +387,7 @@ private[java] final class FileChannelImpl(
 
   def available(): Int = {
     if (isWindows) {
-      val currentPosition, lastPosition = stackalloc[windows.LargeInteger]
+      val currentPosition, lastPosition = stackalloc[windows.LargeInteger]()
       SetFilePointerEx(
         fd.handle,
         distanceToMove = 0,

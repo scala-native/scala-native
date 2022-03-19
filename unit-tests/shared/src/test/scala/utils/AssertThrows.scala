@@ -27,4 +27,18 @@ object AssertThrows {
       }
     )
   }
+
+  def assertThrows[T <: Throwable, U](
+      message: String,
+      expectedThrowable: Class[T],
+      code: => U
+  ): T = {
+    Assert.assertThrows(
+      message,
+      expectedThrowable,
+      new ThrowingRunnable {
+        def run(): Unit = code
+      }
+    )
+  }
 }

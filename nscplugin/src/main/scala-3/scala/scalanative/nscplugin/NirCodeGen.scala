@@ -15,7 +15,7 @@ import dotty.tools.FatalError
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-class NirCodeGen()(using ctx: Context)
+class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     extends NirGenStat
     with NirGenExpr
     with NirGenType
@@ -25,7 +25,7 @@ class NirCodeGen()(using ctx: Context)
   import tpd._
   import nir._
 
-  protected val defnNir = NirDefinitions.defnNir
+  protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
   protected val positionsConversions = new NirPositions()
 
@@ -33,7 +33,6 @@ class NirCodeGen()(using ctx: Context)
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]
 
   protected val curMethodSym = new util.ScopedVar[Symbol]
-  protected val curMethodOuterSym = new util.ScopedVar[Option[Symbol]]
   protected val curMethodSig = new util.ScopedVar[nir.Type]
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
@@ -43,6 +42,8 @@ class NirCodeGen()(using ctx: Context)
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
+
+  protected val lazyValsAdapter = AdaptLazyVals(defnNir)
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get
@@ -56,11 +57,13 @@ class NirCodeGen()(using ctx: Context)
       genCompilationUnit(ctx.compilationUnit)
     } finally {
       generatedDefns.clear()
+      generatedStaticForwarderClasses.clear()
       reflectiveInstantiationBuffers.clear()
     }
   }
 
   private def genCompilationUnit(cunit: CompilationUnit): Unit = {
+    lazyValsAdapter.clean()
     def collectTypeDefs(tree: Tree): List[TypeDef] = {
       tree match {
         case EmptyTree            => Nil
@@ -80,6 +83,47 @@ class NirCodeGen()(using ctx: Context)
     reflectiveInstantiationBuffers
       .groupMapReduce(buf => getFileFor(cunit, buf.name.top))(_.toSeq)(_ ++ _)
       .foreach(genIRFile(_, _))
+
+    if (generatedStaticForwarderClasses.nonEmpty) {
+      // Ported from Scala.js
+      /* #4148 Add generated static forwarder classes, except those that
+       * would collide with regular classes on case insensitive file systems.
+       */
+
+      /* I could not find any reference anywhere about what locale is used
+       * by case insensitive file systems to compare case-insensitively.
+       * In doubt, force the English locale, which is probably going to do
+       * the right thing in virtually all cases (especially if users stick
+       * to ASCII class names), and it has the merit of being deterministic,
+       * as opposed to using the OS' default locale.
+       * The JVM backend performs a similar test to emit a warning for
+       * conflicting top-level classes. However, it uses `toLowerCase()`
+       * without argument, which is not deterministic.
+       */
+      def caseInsensitiveNameOf(classDef: nir.Defn.Class): String =
+        classDef.name.mangle.toLowerCase(java.util.Locale.ENGLISH)
+
+      val generatedCaseInsensitiveNames =
+        generatedDefns.collect {
+          case cls: Defn.Class => caseInsensitiveNameOf(cls)
+        }.toSet
+
+      for ((site, staticCls) <- generatedStaticForwarderClasses) {
+        val StaticForwarderClass(classDef, forwarders) = staticCls
+        val caseInsensitiveName = caseInsensitiveNameOf(classDef)
+        if (!generatedCaseInsensitiveNames.contains(caseInsensitiveName)) {
+          val file = getFileFor(cunit, classDef.name)
+          val defs = classDef +: forwarders
+          genIRFile(file, defs)
+        } else {
+          report.warning(
+            s"Not generating the static forwarders of ${classDef.name} " +
+              "because its name differs only in case from the name of another class or trait in this compilation unit.",
+            site.srcPos
+          )
+        }
+      }
+    }
   }
 
   private def genIRFile(

@@ -107,7 +107,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
   def readAttributes(): DosFileAttributes = attributes
 
   private lazy val attributes: DosFileAttributes = Zone { implicit z: Zone =>
-    val fileInfo = alloc[ByHandleFileInformation]
+    val fileInfo = alloc[ByHandleFileInformation]()
 
     withFileOpen(
       pathAbs,
@@ -137,7 +137,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
       def fileKey(): Object = dosFileKey
       def size(): Long = fileSize.toLong
 
-      //to replace with checking reparse tag
+      // to replace with checking reparse tag
       def isSymbolicLink(): Boolean = hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT)
       def isDirectory(): Boolean = hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
       def isOther(): Boolean =

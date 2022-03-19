@@ -64,7 +64,7 @@ object WindowsHelperMethods {
       token: Handle,
       informationClass: TokenInformationClass
   )(fn: Ptr[T] => R)(implicit z: Zone): R = {
-    val dataSize = alloc[DWord]
+    val dataSize = alloc[DWord]()
     !dataSize = 0.toUInt
 
     if (!GetTokenInformation(

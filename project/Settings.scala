@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 
 import scala.collection.mutable
+import scala.scalanative.build.Platform
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -77,10 +78,16 @@ object Settings {
         scalaVersion.value
       )(Seq.empty[String]) {
         case (2, 11) => Seq("-Xfatal-warnings")
-        case (3, _)  =>
-          // Remove all plugins as they lead to exceptions
-          (Compile / doc / scalacOptions).value
-            .filter(_.contains("-Xplugin"))
+        case (3, 0 | 1) =>
+          val prev = (Compile / doc / scalacOptions).value
+          val version = scalaVersion.value
+          // Remove all plugins as they lead to throwing exceptions by the compiler
+          // Bug was fixes in 3.1.1
+          if (version.startsWith("3.1.") &&
+              version.stripPrefix("3.1.").takeWhile(_.isDigit).toInt < 1)
+            prev.filter(_.contains("-Xplugin"))
+          else Seq.empty
+        case (3, _) => Seq.empty
       },
       // Add Java Scaladoc mapping
       apiMappings ++= {
@@ -113,7 +120,15 @@ object Settings {
       /* Add a second Java Scaladoc mapping for cases where Scala actually
        * understands the jrt:/ filesystem of Java 9.
        */
-      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL)
+      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL),
+      Compile / doc / sources := {
+        val prev = (Compile / doc / sources).value
+        if (Platform.isWindows &&
+            sys.env.contains("CI") && // Always present in GitHub Actions
+            scalaVersion.value.startsWith("3.") // Bug in Scala 3 scaladoc
+        ) Nil
+        else prev
+      }
     )
   }
 
@@ -122,23 +137,46 @@ object Settings {
   )
 
   // MiMa
-  lazy val mimaSettings = {
-    // The previous releases of Scala Native with which this version is binary compatible.
-    val binCompatVersions = Set()
+  lazy val mimaSettings = Seq(
+    mimaFailOnNoPrevious := false,
+    mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(
+      name.value
+    ),
+    mimaPreviousArtifacts ++= {
+      // The previous releases of Scala Native with which this version is binary compatible.
+      val binCompatVersions = Set("0.4.0", "0.4.1", "0.4.2", "0.4.3", "0.4.4")
+      val toolsProjects = Set("util", "tools", "nir", "test-runner")
+      lazy val neverPublishedProjects040 = Map(
+        "2.11" -> (toolsProjects ++ Set("windowslib", "scala3lib")),
+        "2.12" -> Set("windowslib", "scala3lib"),
+        "2.13" -> (toolsProjects ++ Set("windowslib", "scala3lib"))
+      )
+      lazy val neverPublishedProjects041 = neverPublishedProjects040
+        .mapValues(_.diff(Set("windowslib")))
+      lazy val neverPublishedProjects042 = neverPublishedProjects041
+        .mapValues(_.diff(toolsProjects))
 
-    Def.settings(
-      mimaFailOnNoPrevious := false,
-      mimaBinaryIssueFilters ++=
-        BinaryIncompatibilities.moduleFilters(name.value),
-      mimaPreviousArtifacts ++= {
-        binCompatVersions
-          .map { version =>
-            ModuleID(organization.value, moduleName.value, version)
-              .cross(crossVersion.value)
-          }
+      def wasPublishedInRelease(
+          notPublishedProjectsInRelease: Map[String, Set[String]]
+      ): Boolean = {
+        notPublishedProjectsInRelease
+          .get(scalaBinaryVersion.value)
+          .exists(!_.contains((thisProject / name).value))
       }
-    )
-  }
+      def wasPreviouslyPublished(version: String) = version match {
+        case "0.4.0" => wasPublishedInRelease(neverPublishedProjects040)
+        case "0.4.1" => wasPublishedInRelease(neverPublishedProjects041)
+        case "0.4.2" => wasPublishedInRelease(neverPublishedProjects042)
+        case _       => true // all projects were published
+      }
+      binCompatVersions
+        .filter(wasPreviouslyPublished)
+        .map { version =>
+          ModuleID(organization.value, moduleName.value, version)
+            .cross(crossVersion.value)
+        }
+    }
+  )
 
   // Publishing
   lazy val publishSettings: Seq[Setting[_]] = Seq(
@@ -313,8 +351,14 @@ object Settings {
       // baseDirectory = project/{native,jvm}/.{binVersion}
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
       val sharedTestsDir = testsRootDir / "shared/src/test"
+      val extraSharedDirectories =
+        scalaVersionsDependendent(scalaVersion.value)(List.empty[File]) {
+          case (2, 13) => sharedTestsDir / "scala-2.13+" :: Nil
+          case (3, _)  => sharedTestsDir / "scala-2.13+" :: Nil
+        }
       val sharedScalaSources =
         scalaVersionDirectories(sharedTestsDir, "scala", scalaVersion.value)
+          .++(extraSharedDirectories)
           .flatMap(allScalaFromDir(_))
       // Blacklist contains relative paths from inside of scala version directory (scala, scala-2, etc)
       // List content of all scala directories when checking blacklist coherency
@@ -328,6 +372,10 @@ object Settings {
       sharedScalaSources.collect {
         case (path, file) if !blacklist.contains(path) => file
       }
+    },
+    Test / unmanagedResourceDirectories += {
+      val testsRootDir = baseDirectory.value.getParentFile.getParentFile()
+      testsRootDir / "shared/src/test/resources"
     }
   )
 
@@ -405,6 +453,9 @@ object Settings {
       val separator = sys.props("path.separator")
       "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
     },
+    Compile / scalacOptions ++= scalaNativeCompilerOptions(
+      "genStaticForwardersForNonTopLevelObjects"
+    ),
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value
@@ -676,6 +727,10 @@ object Settings {
       }
     }
   )
+
+  def scalaNativeCompilerOptions(options: String*): Seq[String] = {
+    options.map(opt => s"-P:scalanative:$opt")
+  }
 
   def scalaVersionsDependendent[T](scalaVersion: String)(default: T)(
       matching: PartialFunction[(Long, Long), T]

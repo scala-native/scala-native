@@ -21,7 +21,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
   import definitions._
   import nirAddons.nirDefinitions._
 
-  val phaseName: String = "nativeinterop"
+  val phaseName: String = "scalanative-prepareInterop"
   override def description: String = "prepare ASTs for Native interop"
 
   override def newPhase(p: nsc.Phase): StdPhase = new NativeInteropPhase(p)

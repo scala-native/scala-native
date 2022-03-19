@@ -71,7 +71,14 @@ object System {
     } else {
       sysProps.setProperty("file.separator", "/")
       sysProps.setProperty("path.separator", ":")
-      sysProps.setProperty("java.io.tmpdir", "/tmp")
+      // MacOS uses TMPDIR to specify tmp directory, other formats are also used in the Unix system
+      def env(name: String): Option[String] = Option(envVars.get(name))
+      val tmpDirectory = env("TMPDIR")
+        .orElse(env("TEMPDIR"))
+        .orElse(env("TMP"))
+        .orElse(env("TEMP"))
+        .getOrElse("/tmp")
+      sysProps.setProperty("java.io.tmpdir", tmpDirectory)
     }
 
     sysProps
@@ -150,7 +157,7 @@ object System {
         else None
       }
     } else {
-      val buf = stackalloc[pwd.passwd]
+      val buf = stackalloc[pwd.passwd]()
       val uid = unistd.getuid()
       val res = pwd.getpwuid(uid, buf)
       if (res == 0 && buf.pw_dir != null)

@@ -10,10 +10,11 @@ import scala.annotation.threadUnsafe
 
 object JUnitDefinitions {
   private var cached: JUnitDefinitions = _
-  private var lastContext = Option.empty[Context]
+  private var lastContext: Context = _
   def defnJUnit(using ctx: Context): JUnitDefinitions = {
-    if (!lastContext.contains(ctx)) {
+    if (lastContext != ctx) {
       cached = JUnitDefinitions()
+      lastContext = ctx
     }
     cached
   }

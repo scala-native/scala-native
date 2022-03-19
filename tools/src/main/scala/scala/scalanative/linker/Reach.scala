@@ -32,7 +32,16 @@ class Reach(
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   entries.foreach(reachEntry)
-  loader.classesWithEntryPoints.foreach(reachClinit)
+
+  // Internal hack used inside linker tests, for more information
+  // check out comment in scala.scalanative.linker.ReachabilitySuite
+  val reachStaticConstructors = sys.props
+    .get("scala.scalanative.linker.reachStaticConstructors")
+    .flatMap(v => scala.util.Try(v.toBoolean).toOption)
+    .forall(_ == true)
+  if (reachStaticConstructors) {
+    loader.classesWithEntryPoints.foreach(reachClinit)
+  }
 
   def result(): Result = {
     reportMissing()
@@ -44,26 +53,9 @@ class Reach(
     // in reachUnavailable
     defns ++= done.valuesIterator.filter(_ != null)
 
-    val resultEntries = {
-      // If main method is introduced via class inheritance we need to resolve
-      // actual entry point. Initial owner also needs to be passed as entry,
-      // otherwise it would be marked as an unreachable
-      val mainObject = Global.Top(config.mainClass)
-      val mainMethod = Global.Member(mainObject, Rt.ScalaMainSig)
-      val mainMethodIdx = entries.indexOf(mainMethod)
-      assert(mainMethodIdx >= 0, "Main method not defined in entries")
-
-      infos(mainObject)
-        .asInstanceOf[Class]
-        .resolve(Rt.ScalaMainSig)
-        .foldLeft(entries) {
-          _.updated(mainMethodIdx, _) :+ mainObject
-        }
-    }
-
     new Result(
       infos,
-      resultEntries,
+      entries,
       unavailable.toSeq,
       from,
       links.toSeq,
@@ -102,13 +94,21 @@ class Reach(
     }
   }
 
-  def lookup(global: Global): Option[Defn] = {
+  def lookup(global: Global): Option[Defn] =
+    lookup(global, ignoreIfUnavailable = false)
+
+  private def lookup(
+      global: Global,
+      ignoreIfUnavailable: Boolean
+  ): Option[Defn] = {
     val owner = global.top
     if (!loaded.contains(owner) && !unavailable.contains(owner)) {
       loader
         .load(owner)
         .fold[Unit] {
-          unavailable += owner
+          if (!ignoreIfUnavailable) {
+            unavailable += owner
+          }
         } { defns =>
           val scope = mutable.Map.empty[Global, Defn]
           defns.foreach { defn => scope(defn.name) = defn }
@@ -117,12 +117,17 @@ class Reach(
     }
     def fallback = global match {
       case Global.Member(owner, sig) =>
-        infos(owner)
-          .asInstanceOf[ScopeInfo]
-          .linearized
-          .find(_.responds.contains(sig))
-          .map(_.responds(sig))
-          .flatMap(lookup)
+        infos
+          .get(owner)
+          .collect {
+            case scope: ScopeInfo =>
+              scope.linearized
+                .find(_.responds.contains(sig))
+                .map(_.responds(sig))
+                .flatMap(lookup)
+          }
+          .flatten
+
       case _ => None
     }
 
@@ -130,6 +135,17 @@ class Reach(
       .get(owner)
       .flatMap(_.get(global))
       .orElse(fallback)
+      .orElse {
+        if (!ignoreIfUnavailable) {
+          val resolvedPosition = for {
+            invokedFrom <- from.get(global)
+            callerInfo <- infos.get(invokedFrom)
+          } yield callerInfo.position
+          val pos = resolvedPosition.getOrElse(nir.Position.NoPosition)
+          addMissing(global, pos)
+        }
+        None
+      }
   }
 
   def process(): Unit =
@@ -151,14 +167,15 @@ class Reach(
        */
       delayedMethods.foreach {
         case DelayedMethod(top, sig, position) =>
-          scopeInfo(top).foreach { info =>
+          def addMissing() = this.addMissing(top.member(sig), position)
+          scopeInfo(top).fold(addMissing()) { info =>
             val wasAllocated = info match {
               case value: Trait => value.implementors.exists(_.allocated)
               case clazz: Class => clazz.allocated
             }
             val targets = info.targets(sig)
             if (targets.isEmpty && wasAllocated) {
-              addMissing(top.member(sig), position)
+              addMissing()
             } else {
               todo ++= targets
             }
@@ -179,11 +196,14 @@ class Reach(
       if (defn.attrs.isStub && !config.linkStubs) {
         reachUnavailable(name)
       } else {
-        val maybeResolvedDefn = defn match {
-          case defn: Defn.Define => resolveLinktimeDefine(defn)
-          case _                 => defn
+        val maybeFixedDefn = defn match {
+          case defn: Defn.Define =>
+            (resolveLinktimeDefine _)
+              .andThen(mitigateStaticCalls _)
+              .apply(defn)
+          case _ => defn
         }
-        reachDefn(maybeResolvedDefn)
+        reachDefn(maybeFixedDefn)
       }
     }
     stack = stack.tail
@@ -261,8 +281,7 @@ class Reach(
     } else {
       val lines = (s"cyclic reference to ${name.show}:" +:
         stack.map(el => s"* ${el.show}"))
-      val msg = lines.mkString("\n")
-      throw new Exception(msg)
+      fail(lines.mkString("\n"))
     }
 
   def newInfo(info: Info): Unit = {
@@ -330,7 +349,10 @@ class Reach(
           case (_, defn: Defn.Define) =>
             val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
-              info.responds(sig) = lookup(info, sig).get
+              info.responds(sig) = lookup(info, sig)
+                .getOrElse(
+                  fail(s"Required method ${sig} not found in ${info.name}")
+                )
             }
             sig match {
               case Rt.JavaEqualsSig =>
@@ -446,9 +468,9 @@ class Reach(
   }
 
   def classInfoOrObject(name: Global): Class =
-    classInfo(name).getOrElse {
-      classInfo(Rt.Object.name).get
-    }
+    classInfo(name)
+      .orElse(classInfo(Rt.Object.name))
+      .getOrElse(fail(s"Class info not available for $name"))
 
   def traitInfo(name: Global): Option[Trait] = {
     reachGlobalNow(name)
@@ -529,6 +551,83 @@ class Reach(
     )
     reachAttrs(attrs)
     reachType(ty)
+  }
+
+  // Mitigate static calls to methods compiled with Scala Native older then 0.4.3
+  // If given static method in not rechable replace it with call to method with the same
+  // name in the companion module
+  private def mitigateStaticCalls(defn: Defn.Define): Defn.Define = {
+    lazy val fresh = Fresh(defn.insts)
+    val newInsts = defn.insts.flatMap {
+      case inst @ Inst.Let(
+            n,
+            Op.Call(
+              ty: Type.Function,
+              Val.Global(
+                methodName @ Global.Member(Global.Top(methodOwner), sig),
+                _
+              ),
+              args
+            ),
+            unwind
+          )
+          if sig.isStatic && lookup(
+            methodName,
+            ignoreIfUnavailable = true
+          ).isEmpty =>
+        def findRewriteCandidate(inModule: Boolean): Option[List[Inst]] = {
+          val owner =
+            if (inModule) Global.Top(methodOwner + "$")
+            else Global.Top(methodOwner)
+          val newMethod = {
+            val Sig.Method(id, tps, scope) = sig.unmangled
+            val newScope = scope match {
+              case Sig.Scope.PublicStatic      => Sig.Scope.Public
+              case Sig.Scope.PrivateStatic(in) => Sig.Scope.Private(in)
+              case scope                       => scope
+            }
+            val newSig = Sig.Method(id, tps, newScope)
+            Val.Global(owner.member(newSig), Type.Ptr)
+          }
+          // Make sure that candidate exists
+          lookup(newMethod.name, ignoreIfUnavailable = true)
+            .map { _ =>
+              implicit val pos: nir.Position = defn.pos
+              val newType = {
+                val newArgsTpe = Type.Ref(owner) +: ty.args
+                Type.Function(newArgsTpe, ty.ret)
+              }
+
+              if (inModule) {
+                val moduleV = Val.Local(fresh(), Type.Ref(owner))
+                val newArgs = moduleV +: args
+                Inst.Let(moduleV.name, Op.Module(owner), Next.None) ::
+                  Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind) ::
+                  Nil
+              } else {
+                Inst.Let(n, Op.Call(newType, newMethod, args), unwind) :: Nil
+              }
+            }
+        }
+
+        findRewriteCandidate(inModule = true)
+          //  special case for lifted methods
+          .orElse(findRewriteCandidate(inModule = false))
+          .getOrElse {
+            config.logger.warn(
+              s"Found a call to not defined static method ${methodName}. " +
+                "Static methods are generated since Scala Native 0.4.3, " +
+                "report this bug in the Scala Native issues. " +
+                s"Call defined at ${inst.pos.show}"
+            )
+            addMissing(methodName, inst.pos)
+            inst :: Nil
+          }
+
+      case inst =>
+        inst :: Nil
+    }
+    defn.copy(insts = newInsts)(defn.pos)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
@@ -811,6 +910,9 @@ class Reach(
       }
     }
 
+    def lookupRequired(sig: Sig) = lookupSig(cls, sig)
+      .getOrElse(fail(s"Not found required definition ${cls.name} ${sig}"))
+
     sig match {
       // We short-circuit scala_== and scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
@@ -818,8 +920,8 @@ class Reach(
       // as implementation of scala_== on java.lang.Object assumes it's only
       // called on classes which don't overrider java_==.
       case Rt.ScalaEqualsSig =>
-        val scalaImpl = lookupSig(cls, Rt.ScalaEqualsSig).get
-        val javaImpl = lookupSig(cls, Rt.JavaEqualsSig).get
+        val scalaImpl = lookupRequired(Rt.ScalaEqualsSig)
+        val javaImpl = lookupRequired(Rt.JavaEqualsSig)
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -827,8 +929,8 @@ class Reach(
           Some(scalaImpl)
         }
       case Rt.ScalaHashCodeSig =>
-        val scalaImpl = lookupSig(cls, Rt.ScalaHashCodeSig).get
-        val javaImpl = lookupSig(cls, Rt.JavaHashCodeSig).get
+        val scalaImpl = lookupRequired(Rt.ScalaHashCodeSig)
+        val javaImpl = lookupRequired(Rt.JavaHashCodeSig)
         if (javaImpl.top != Rt.Object.name &&
             scalaImpl.top == Rt.Object.name) {
           Some(javaImpl)
@@ -841,19 +943,23 @@ class Reach(
   }
 
   protected def addMissing(global: Global, pos: Position): Unit = {
-    val prev = missing.getOrElse(global, Set.empty)
-    val position = NonReachablePosition(
-      path = Paths.get(pos.source),
-      line = pos.line + 1
-    )
-    missing(global) = prev + position
+    val prev = missing.getOrElseUpdate(global, Set.empty)
+    if (pos != nir.Position.NoPosition) {
+      val position = NonReachablePosition(
+        path = Paths.get(pos.source),
+        line = pos.sourceLine
+      )
+      missing(global) = prev + position
+    }
   }
 
   private def reportMissing(): Unit = {
     if (missing.nonEmpty) {
+      unavailable
+        .foreach(missing.getOrElseUpdate(_, Set.empty))
       val log = config.logger
       log.error(s"Found ${missing.size} missing definitions while linking")
-      missing.foreach {
+      missing.toSeq.sortBy(_._1).foreach {
         case (global, positions) =>
           log.error(s"Not found $global")
           positions.toList
@@ -862,10 +968,12 @@ class Reach(
               log.error(s"\tat ${pos.path.toString}:${pos.line}")
             }
       }
-      throw new LinkingException(
-        "Undefined definitions found in reachability phase"
-      )
+      fail("Undefined definitions found in reachability phase")
     }
+  }
+
+  private def fail(msg: => String): Nothing = {
+    throw new LinkingException(msg)
   }
 }
 

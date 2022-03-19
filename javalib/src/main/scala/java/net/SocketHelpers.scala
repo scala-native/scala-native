@@ -32,7 +32,7 @@ object SocketHelpers {
 
   private def setSocketNonBlocking(socket: CInt)(implicit z: Zone): CInt = {
     if (isWindows) {
-      val mode = alloc[CInt]
+      val mode = alloc[CInt]()
       !mode = 0
       ioctlSocket(socket.toPtr[Byte], FIONBIO, mode)
     } else {
@@ -44,7 +44,7 @@ object SocketHelpers {
     Zone { implicit z =>
       val cIP = toCString(ip)
       val hints = stackalloc[addrinfo]()
-      val ret = stackalloc[Ptr[addrinfo]]
+      val ret = stackalloc[Ptr[addrinfo]]()
 
       hints.ai_family = AF_UNSPEC
       hints.ai_protocol = 0
@@ -83,7 +83,7 @@ object SocketHelpers {
         }
 
         if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
-          val so_error = stackalloc[CInt].asInstanceOf[Ptr[Byte]]
+          val so_error = stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
           val len = stackalloc[socklen_t]()
           !len = sizeof[CInt].toUInt
           getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
@@ -127,7 +127,7 @@ object SocketHelpers {
   def hostToIp(host: String): Option[String] =
     Zone { implicit z =>
       val hints = stackalloc[addrinfo]()
-      val ret = stackalloc[Ptr[addrinfo]]
+      val ret = stackalloc[Ptr[addrinfo]]()
 
       val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
       hints.ai_family = AF_UNSPEC
@@ -161,7 +161,7 @@ object SocketHelpers {
   def hostToIpArray(host: String): scala.Array[String] =
     Zone { implicit z =>
       val hints = stackalloc[addrinfo]()
-      val ret = stackalloc[Ptr[addrinfo]]
+      val ret = stackalloc[Ptr[addrinfo]]()
 
       hints.ai_family = AF_UNSPEC
       hints.ai_socktype = SOCK_STREAM

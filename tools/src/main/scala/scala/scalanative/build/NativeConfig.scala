@@ -73,6 +73,13 @@ sealed trait NativeConfig {
     }
   }
 
+  /** Shall the resource files be embedded in the resulting binary file? Allows
+   *  the use of getClass().getResourceAsStream() on the included files. Will
+   *  not embed files with certain extensions, including ".c", ".h", ".scala"
+   *  and ".class".
+   */
+  def embedResources: Boolean
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -122,6 +129,10 @@ sealed trait NativeConfig {
   def withLinktimeProperties(
       value: NativeConfig.LinktimeProperites
   ): NativeConfig
+
+  def withEmbedResources(
+      value: Boolean
+  ): NativeConfig
 }
 
 object NativeConfig {
@@ -144,7 +155,8 @@ object NativeConfig {
       asan = false,
       linkStubs = false,
       optimize = true,
-      linktimeProperties = Map.empty
+      linktimeProperties = Map.empty,
+      embedResources = false
     )
 
   private final case class Impl(
@@ -162,7 +174,8 @@ object NativeConfig {
       dump: Boolean,
       asan: Boolean,
       optimize: Boolean,
-      linktimeProperties: LinktimeProperites
+      linktimeProperties: LinktimeProperites,
+      embedResources: Boolean
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -216,6 +229,10 @@ object NativeConfig {
       copy(linktimeProperties = v)
     }
 
+    def withEmbedResources(value: Boolean): NativeConfig = {
+      copy(embedResources = value)
+    }
+
     override def toString: String = {
       val listLinktimeProperties = {
         if (linktimeProperties.isEmpty) ""
@@ -247,6 +264,7 @@ object NativeConfig {
         | - asan:               $asan
         | - optimize            $optimize
         | - linktimeProperties: $listLinktimeProperties
+        | - embedResources:     $embedResources
         |)""".stripMargin
     }
   }

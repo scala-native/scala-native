@@ -116,7 +116,7 @@ class CStringTest {
   @Test def toFromCString(): Unit = {
     Zone { implicit z =>
       type _11 = Nat.Digit2[Nat._1, Nat._1]
-      val arr = unsafe.stackalloc[CArray[Byte, _11]]
+      val arr = unsafe.stackalloc[CArray[Byte, _11]]()
 
       val jstr1 = "a\b\\c\u0064"
       val cstr1 = c"a\b\\c\x64"

@@ -7,38 +7,20 @@ import scala.scalanative.junit.utils.AssertThrows.assertThrows
 import scalanative.unsigned._
 import scalanative.unsafe._
 
-class IssuesTestScala2 {
+class IssuesTestScala3 {
+  @Test def issue2485(): Unit = {
+    import scala.scalanative.issue2485.*
+    import types.MyEnum
 
-  @Test def test_Issue803(): Unit = {
-    val x1: String = null
-    var x2: String = "right"
-    assertTrue(x1 + x2 == "nullright")
-
-    val x3: String = "left"
-    val x4: String = null
-    assertTrue(x3 + x4 == "leftnull")
-
-    val x5: AnyRef = new { override def toString = "custom" }
-    val x6: String = null
-    assertEquals("customnull", x5.toString + x6)
-
-    val x7: String = null
-    val x8: AnyRef = new { override def toString = "custom" }
-    assertEquals("nullcustom", x7 + x8)
-
-    val x9: String = null
-    val x10: String = null
-    assertEquals("nullnull", x9 + x10)
-
-    // This syntax operation does not compile in Scala 3
-    // When using `toString` on null it might throw NullPointerException
-    // val x11: AnyRef = null
-    // val x12: String = null
-    // assertEquals("nullnull", x11 + x12)
-
-    val x13: String = null
-    val x14: AnyRef = null
-    assertEquals("nullnull", x13 + x14)
+    assertEquals(Tag.materializeIntTag, summon[Tag[MyEnum]])
+    // Check if compiles
+    CFuncPtr1.fromScalaFunction[MyEnum, MyEnum] { a => a }
   }
-
 }
+
+object issue2485:
+  object types:
+    opaque type MyEnum = Int
+    object MyEnum:
+      given Tag[MyEnum] = Tag.materializeIntTag
+end issue2485

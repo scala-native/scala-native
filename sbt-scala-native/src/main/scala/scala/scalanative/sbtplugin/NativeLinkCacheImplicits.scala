@@ -136,7 +136,7 @@ private[sbtplugin] object NativeLinkCacheImplicits {
         String
       ] :*: Option[
         String
-      ] :*: Boolean :*: build.LTO :*: Boolean :*: Boolean :*: Boolean :*: Boolean :*: build.NativeConfig.LinktimeProperites :*: LNil
+      ] :*: Boolean :*: build.LTO :*: Boolean :*: Boolean :*: Boolean :*: Boolean :*: build.NativeConfig.LinktimeProperites :*: Boolean :*: LNil
     ](
       { c: build.NativeConfig =>
         ("gc", c.gc) :*: ("mode", c.mode) :*: ("clang", c.clang) :*: (
@@ -157,7 +157,7 @@ private[sbtplugin] object NativeLinkCacheImplicits {
         ) :*: ("optimize", c.optimize) :*: (
           "linktimeProperties",
           c.linktimeProperties
-        ) :*: LNil
+        ) :*: ("embedResources", c.embedResources) :*: LNil
       },
       {
         case (_, gc) :*: (_, mode) :*: (_, clang) :*: (_, clangPP) :*: (
@@ -172,7 +172,7 @@ private[sbtplugin] object NativeLinkCacheImplicits {
             ) :*: (_, checkFatalWarnings) :*: (_, dump) :*: (_, optimize) :*: (
               _,
               linktimeProperties
-            ) :*: LNil =>
+            ) :*: (_, embedResources) :*: LNil =>
           build.NativeConfig.empty
             .withGC(gc)
             .withMode(mode)
@@ -188,6 +188,7 @@ private[sbtplugin] object NativeLinkCacheImplicits {
             .withDump(dump)
             .withOptimize(optimize)
             .withLinktimeProperties(linktimeProperties)
+            .withEmbedResources(embedResources)
       }
     )
 

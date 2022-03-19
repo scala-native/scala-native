@@ -24,10 +24,10 @@ object Commands {
           .map(id => s"$id/run")
 
       val tests = List(
-        Build.tests,
         testsJVM,
-        testsExt,
+        Build.tests,
         testsExtJVM,
+        testsExt,
         junitTestOutputsJVM,
         junitTestOutputsNative,
         scalaPartestJunitTests
@@ -76,9 +76,8 @@ object Commands {
       val version = args.headOption
         .orElse(state.getSetting(scalaVersion))
         .getOrElse(
-          "Used command needs explicit Scala binary version as an argument"
+          "Used command needs explicit Scala version as an argument"
         )
-      val binaryVersion = CrossVersion.binaryScalaVersion(version)
       val setScriptedLaunchOpts =
         s"""set sbtScalaNative/scriptedLaunchOpts := {
             |  (sbtScalaNative/scriptedLaunchOpts).value
@@ -87,14 +86,18 @@ object Commands {
             |}""".stripMargin
       // Scala 3 is supported since sbt 1.5.0
       // Older versions set incorrect binary version
+      val isScala3 = version.startsWith("3.")
       val overrideSbtVersion =
-        if (version.startsWith("3."))
-          """set sbtScalaNative/sbtVersion := "1.5.0"""" :: Nil
+        if (isScala3)
+          """set sbtScalaNative/sbtVersion := "1.5.0" """ :: Nil
         else Nil
+      val scalaVersionTests =
+        if (isScala3) "scala3/*"
+        else ""
 
       setScriptedLaunchOpts ::
         overrideSbtVersion :::
-        "sbtScalaNative/scripted" ::
+        s"sbtScalaNative/scripted ${scalaVersionTests} run/*" ::
         state
   }
 

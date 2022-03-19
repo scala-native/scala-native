@@ -11,15 +11,11 @@ import dotty.tools.backend.jvm.DottyPrimitives
 import scala.annotation.{threadUnsafe => tu}
 import dotty.tools.dotc.parsing.Scanners.IndentWidth.Run
 import dotty.tools.dotc.core.Definitions
+import NirGenUtil.ContextCached
 
 object NirDefinitions {
-  private var cached: NirDefinitions = _
-  def defnNir(using Context): NirDefinitions = {
-    if (cached == null) {
-      cached = NirDefinitions()
-    }
-    cached
-  }
+  private val cached = ContextCached(NirDefinitions())
+  def get(using Context): NirDefinitions = cached.get
 }
 
 // scalafmt: { maxColumn = 120}
@@ -392,6 +388,15 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val AnyRefClassTag = ClasstagModule.requiredMethod("AnyRef")
   @tu lazy val NothingClassTag = ClasstagModule.requiredMethod("Nothing")
   @tu lazy val NullClassTag = ClasstagModule.requiredMethod("Null")
+
+  @tu lazy val ReflectSelectableType: TypeRef = requiredClassRef("scala.reflect.Selectable")
+  @tu lazy val ReflectSelectable_selectDynamicR = ReflectSelectableClass.requiredMethodRef("selectDynamic")
+  @tu lazy val ReflectSelectable_applyDynamicR = ReflectSelectableClass.requiredMethodRef("applyDynamic")
+  @tu lazy val ReflectSelectable_selectedValueR = ReflectSelectableClass.requiredMethodRef("selectedValue")
+  def ReflectSelectableClass(using Context) = ReflectSelectableType.symbol.asClass
+  def ReflectSelectable_selectDynamic(using Context) = ReflectSelectable_selectDynamicR.symbol
+  def ReflectSelectable_applyDynamic(using Context) = ReflectSelectable_applyDynamicR.symbol
+  def ReflectSelectable_selectedValue(using Context) = ReflectSelectable_selectedValueR.symbol
 
   // Java library
   @tu lazy val NObjectType = requiredClassRef("java.lang._Object")

@@ -70,7 +70,7 @@ object FileHelpers {
         null
       } else {
         Zone { implicit z =>
-          var elem = alloc[dirent]
+          var elem = alloc[dirent]()
           var res = 0
           while ({ res = readdir(dir, elem); res == 0 }) {
             val name = fromCString(elem._2.at(0))

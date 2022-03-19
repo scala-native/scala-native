@@ -523,7 +523,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genTypeValue(value.typeValue)
 
         case EnumTag =>
-          genStaticMember(value.symbolValue)
+          genStaticMember(EmptyTree, value.symbolValue)
       }
     }
 
@@ -584,7 +584,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
     def genModule(sym: Symbol)(implicit pos: nir.Position): Val =
-      buf.module(genTypeName(sym), unwind)
+      buf.module(genModuleName(sym), unwind)
 
     def genIdent(tree: Ident): Val = {
       val sym = tree.symbol
@@ -608,7 +608,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       if (sym.isModule) {
         genModule(sym)
       } else if (sym.isStaticMember) {
-        genStaticMember(sym)
+        genStaticMember(qualp, sym)
       } else if (sym.isMethod) {
         genApplyMethod(sym, statically = false, qualp, Seq())
       } else if (owner.isStruct) {
@@ -617,22 +617,25 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         buf.extract(qual, Seq(index), unwind)
       } else {
         val ty = genType(tree.symbol.tpe)
-        val qual = genExpr(qualp)
         val name = genFieldName(tree.symbol)
         if (sym.owner.isExternModule) {
           val externTy = genExternType(tree.symbol.tpe)
           genLoadExtern(ty, externTy, tree.symbol)
         } else {
+          val qual = genExpr(qualp)
           buf.fieldload(ty, qual, name, unwind)
         }
       }
     }
 
-    def genStaticMember(sym: Symbol)(implicit pos: nir.Position): Val = {
+    def genStaticMember(receiver: Tree, sym: Symbol)(implicit
+        pos: nir.Position
+    ): Val = {
       if (sym == BoxedUnit_UNIT) {
         Val.Unit
+      } else if (!isImplClass(sym.owner)) {
+        genApplyStaticMethod(sym, receiver, Seq())
       } else {
-        val ty = genType(sym.tpe)
         val module = genModule(sym.owner)
         genApplyMethod(sym, statically = true, module, Seq())
       }
@@ -644,14 +647,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       lhsp match {
         case sel @ Select(qualp, _) =>
+          val sym = sel.symbol
           val qual = genExpr(qualp)
           val rhs = genExpr(rhsp)
-          val name = genFieldName(sel.symbol)
-          if (sel.symbol.owner.isExternModule) {
-            val externTy = genExternType(sel.symbol.tpe)
-            genStoreExtern(externTy, sel.symbol, rhs)
+          val name = genFieldName(sym)
+          if (sym.owner.isExternModule) {
+            val externTy = genExternType(sym.tpe)
+            genStoreExtern(externTy, sym, rhs)
           } else {
-            val ty = genType(sel.symbol.tpe)
+            val ty = genType(sym.tpe)
+            val qual = genExpr(qualp)
             buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
@@ -1377,7 +1382,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def negateInt(value: nir.Val)(implicit pos: nir.Position): Val =
       buf.bin(Bin.Isub, value.ty, numOfType(0, value.ty), value, unwind)
     def negateFloat(value: nir.Val)(implicit pos: nir.Position): Val =
-      buf.bin(Bin.Fsub, value.ty, numOfType(0, value.ty), value, unwind)
+      buf.bin(Bin.Fmul, value.ty, numOfType(-1, value.ty), value, unwind)
     def negateBits(value: nir.Val)(implicit pos: nir.Position): Val =
       buf.bin(Bin.Xor, value.ty, numOfType(-1, value.ty), value, unwind)
     def negateBool(value: nir.Val)(implicit pos: nir.Position): Val =
@@ -2306,10 +2311,26 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genApplyExternAccessor(sym, argsp)
       } else if (isImplClass(sym.owner)) {
         genApplyMethod(sym, statically = true, Val.Null, argsp)
+      } else if (sym.isStaticMember) {
+        genApplyStaticMethod(sym, selfp, argsp)
       } else {
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
       }
+    }
+
+    private def genApplyStaticMethod(
+        sym: Symbol,
+        receiver: Tree,
+        argsp: Seq[Tree]
+    )(implicit pos: nir.Position): Val = {
+      require(!isImplClass(sym.owner) && !sym.owner.isExternModule, sym.owner)
+      val name = genStaticMemberName(sym, receiver.symbol)
+      val method = Val.Global(name, nir.Type.Ptr)
+
+      val sig = genMethodSig(sym)
+      val args = genMethodArgs(sym, argsp)
+      buf.call(sig, method, args, unwind)
     }
 
     def genApplyExternAccessor(sym: Symbol, argsp: Seq[Tree])(implicit
@@ -2395,10 +2416,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           buf.method(self, sig, unwind)
         }
       val values =
-        if (owner.isExternModule || isImplClass(owner))
-          args
-        else
-          self +: args
+        if (sym.isStaticInNIR) args
+        else self +: args
 
       val res = buf.call(sig, method, values, unwind)
 

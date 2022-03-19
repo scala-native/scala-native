@@ -37,7 +37,7 @@ object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
       !cbSid = 0.toUInt
       !domainSize = 0.toUInt
 
-      val useRef = alloc[SidNameUse]
+      val useRef = alloc[SidNameUse]()
       val accountName = toCWideStringUTF16LE(name).asInstanceOf[CWString]
       LookupAccountNameW(
         systemName = null,

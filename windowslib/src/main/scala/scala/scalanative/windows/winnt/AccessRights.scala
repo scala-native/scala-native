@@ -8,7 +8,7 @@ object AccessRights {
   @name("scalanative_generic_all")
   def FILE_GENERIC_ALL: AccessRights = extern
 
-  //execute
+  // execute
   @name("scalanative_generic_execute")
   def FILE_GENERIC_EXECUTE: AccessRights = extern
 
@@ -18,7 +18,7 @@ object AccessRights {
   @name("scalanative_read_attributes")
   def STANDARD_RIGHTS_EXECUTE: AccessRights = extern
 
-  //read
+  // read
   @name("scalanative_generic_read")
   def FILE_GENERIC_READ: AccessRights = extern
 
@@ -34,7 +34,7 @@ object AccessRights {
   @name("scalanative_standard_rights_read")
   def STANDARD_RIGHTS_READ: AccessRights = extern
 
-  //write
+  // write
   @name("scalanative_generic_write")
   def FILE_GENERIC_WRITE: AccessRights = extern
 

@@ -37,30 +37,36 @@ uses the `.scalafmt.conf` file at the root of the project. No configuration
 is needed.
 
 Formatting C and C++ code uses `clang-format` which requires LLVM library
-dependencies. For `clang-format` we use the same version as the minimum
-version of LLVM and `clang`. This may not be the version of `clang` used
-for development as most developers will use a newer version. In order
+dependencies. For `clang-format` we use any version greater than `10`
+as most developers use a newer version of LLVM and `clang`. In order
 to make this easier we have a environment variable, `CLANG_FORMAT_PATH`
-which can be set to the older version. Another option is to make sure the
+which can be set to a compatible version. Another option is to make sure the
 correct version of `clang-format` is available in your path. Refer to
-:ref:`setup` for the minimum version to install and use.
+:ref:`setup` for the minimum version of `clang` supported.
 
 The following shows examples for two common operating systems. You may add
 the environment variable to your shell startup file for convenience:
 
 **macOS**
 
-.. code-block:: shell
-
-    $ export CLANG_FORMAT_PATH=/usr/local/opt/llvm@6/bin/clang-format
-
-*Note:* Example for `brew`. Other package managers may use different locations.
-
-**Ubuntu**
+Normal macOS tools does not include clang-format so installing via `brew`
+is a good option.
 
 .. code-block:: shell
 
-    $ export CLANG_FORMAT_PATH=/usr/lib/llvm-6.0/bin/clang-format
+    % brew install clang-format
+    % export CLANG_FORMAT_PATH=/opt/homebrew/bin/clang-format
+
+*Note:* `brew` for M1 installs at the above location which is in the PATH so
+the export is not needed and is for reference only. Other package managers may
+use different locations.
+
+**Ubuntu 20.04**
+
+.. code-block:: shell
+
+    $ sudo apt install clang-format-10
+    $ export CLANG_FORMAT_PATH=/usr/lib/llvm-10/bin/clang-format
 
 The script `./scripts/clangfmt` will use the `.clang-format` file
 at the root of the project for settings used in formatting.
@@ -130,10 +136,10 @@ This the general workflow for contributing to Scala Native.
 Git workflow
 ------------
 
-Scala Native repositories maintain a linear merge-free history on the master
+Scala Native repositories maintain a linear merge-free history on the main
 branch. All of the incoming pull requests are merged using squash and merge
 policy (i.e. one merged pull request corresponds to one squashed commit to the
-master branch.)
+main branch.)
 
 You do not need to squash commits manually. It's typical to add new commits
 to the PR branch to accommodate changes that were suggested by the reviewers.
@@ -141,7 +147,7 @@ Squashing things manually and/or rewriting history on the PR branch is all-right
 as long as it's clear that concerns raised by reviewers have been addressed.
 
 Maintaining a long-standing work-in-progress (WIP) branch requires one to rebase
-on top of latest master using ``git rebase --onto`` from time to time.
+on top of latest main using ``git rebase --onto`` from time to time.
 It's strongly recommended not to perform any merges on your branches that you
 are planning to use as a PR branch.
 
@@ -158,7 +164,7 @@ In order for a Pull Request to be considered, it has to meet these requirements:
 
 2.  Be accompanied by appropriate tests.
 
-3.  Be issued from a branch *other than master* (PRs coming from master will not
+3.  Be issued from a branch *other than main* (PRs coming from main will not
     be accepted.)
 
 If not *all* of these requirements are met then the code should **not** be

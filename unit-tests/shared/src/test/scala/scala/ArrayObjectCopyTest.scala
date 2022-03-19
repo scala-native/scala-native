@@ -38,9 +38,9 @@ class ArrayObjectCopyTest {
     initB(arr, 100)
     assertTrue(
       arr(0).i == 100 && arr(1).i == 101 && arr(2).i == 102 &&
-        arr(3).i == 103 && arr(4).i == 104 && arr(5).i == 105 &&
-        arr(6).i == 106 && arr(7).i == 107 && arr(8).i == 108 &&
-        arr(9).i == 109
+      arr(3).i == 103 && arr(4).i == 104 && arr(5).i == 105 &&
+      arr(6).i == 106 && arr(7).i == 107 && arr(8).i == 108 &&
+      arr(9).i == 109
     )
   }
 
@@ -49,9 +49,9 @@ class ArrayObjectCopyTest {
     java.lang.System.arraycopy(arr, 0, arr2, 1, 10)
     assertTrue(
       arr2(0) == null && arr2(1).i == 100 && arr2(2).i == 101 &&
-        arr2(3).i == 102 && arr2(4).i == 103 && arr2(5).i == 104 &&
-        arr2(6).i == 105 && arr2(7).i == 106 && arr2(8).i == 107 &&
-        arr2(9).i == 108 && arr2(10).i == 109 && arr2(11) == null
+      arr2(3).i == 102 && arr2(4).i == 103 && arr2(5).i == 104 &&
+      arr2(6).i == 105 && arr2(7).i == 106 && arr2(8).i == 107 &&
+      arr2(9).i == 108 && arr2(10).i == 109 && arr2(11) == null
     )
   }
 
@@ -60,9 +60,9 @@ class ArrayObjectCopyTest {
     java.lang.System.arraycopy(arrEmpty, 0, arr2, 5, 0)
     assertTrue(
       arr2(0).i == 0 && arr2(1).i == 1 && arr2(2).i == 2 &&
-        arr2(3).i == 3 && arr2(4).i == 4 && arr2(5).i == 5 &&
-        arr2(6).i == 6 && arr2(7).i == 7 && arr2(8).i == 8 &&
-        arr2(9).i == 9 && arr2(10).i == 10 && arr2(11).i == 11
+      arr2(3).i == 3 && arr2(4).i == 4 && arr2(5).i == 5 &&
+      arr2(6).i == 6 && arr2(7).i == 7 && arr2(8).i == 8 &&
+      arr2(9).i == 9 && arr2(10).i == 10 && arr2(11).i == 11
     )
   }
 
@@ -71,8 +71,8 @@ class ArrayObjectCopyTest {
     java.lang.System.arraycopy(arr, 0, arr, 5, 5)
     assertTrue(
       arr(0).i == 0 && arr(1).i == 1 && arr(2).i == 2 && arr(3).i == 3 &&
-        arr(4).i == 4 && arr(5).i == 0 && arr(6).i == 1 && arr(7).i == 2 &&
-        arr(8).i == 3 && arr(9).i == 4
+      arr(4).i == 4 && arr(5).i == 0 && arr(6).i == 1 && arr(7).i == 2 &&
+      arr(8).i == 3 && arr(9).i == 4
     )
   }
 
@@ -81,8 +81,8 @@ class ArrayObjectCopyTest {
     java.lang.System.arraycopy(arr, 6, arr, 4, 2)
     assertTrue(
       arr(0).i == 0 && arr(1).i == 1 && arr(2).i == 2 && arr(3).i == 3 &&
-        arr(4).i == 6 && arr(5).i == 7 && arr(6).i == 6 && arr(7).i == 7 &&
-        arr(8).i == 8 && arr(9).i == 9
+      arr(4).i == 6 && arr(5).i == 7 && arr(6).i == 6 && arr(7).i == 7 &&
+      arr(8).i == 8 && arr(9).i == 9
     )
   }
 
@@ -91,8 +91,8 @@ class ArrayObjectCopyTest {
     java.lang.System.arraycopy(arr, 0, arr, 2, 6)
     assertTrue(
       arr(0).i == 0 && arr(1).i == 1 && arr(2).i == 0 && arr(3).i == 1 &&
-        arr(4).i == 2 && arr(5).i == 3 && arr(6).i == 4 && arr(7).i == 5 &&
-        arr(8).i == 8 && arr(9).i == 9
+      arr(4).i == 2 && arr(5).i == 3 && arr(6).i == 4 && arr(7).i == 5 &&
+      arr(8).i == 8 && arr(9).i == 9
     )
   }
 
@@ -101,8 +101,8 @@ class ArrayObjectCopyTest {
     java.lang.System.arraycopy(arr, 2, arr, 0, 6)
     assertTrue(
       arr(0).i == 2 && arr(1).i == 3 && arr(2).i == 4 && arr(3).i == 5 &&
-        arr(4).i == 6 && arr(5).i == 7 && arr(6).i == 6 && arr(7).i == 7 &&
-        arr(8).i == 8 && arr(9).i == 9
+      arr(4).i == 6 && arr(5).i == 7 && arr(6).i == 6 && arr(7).i == 7 &&
+      arr(8).i == 8 && arr(9).i == 9
     )
   }
 

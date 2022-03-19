@@ -21,6 +21,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
 
+  protected val generatedStaticForwarderClasses =
+    mutable.Map.empty[Symbol, StaticForwarderClass]
+
+  protected case class StaticForwarderClass(
+      defn: nir.Defn.Class,
+      forwarders: Seq[nir.Defn.Define]
+  )
+
   protected val isScala211 = Properties.versionNumberString.startsWith("2.11")
 
   def isStaticModule(sym: Symbol): Boolean =
@@ -545,13 +553,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
     }
 
-    def genMethods(cd: ClassDef): Unit =
-      cd.impl.body.foreach {
-        case dd: DefDef =>
-          genMethod(dd)
-        case _ =>
-          ()
+    def genMethods(cd: ClassDef): Unit = {
+      val methods = cd.impl.body.flatMap {
+        case dd: DefDef => genMethod(dd)
+        case _          => Nil
+
       }
+      val forwarders = genStaticMethodForwarders(cd, methods)
+      buf ++= methods
+      buf ++= forwarders
+    }
 
     private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
       val fresh = Fresh()
@@ -590,7 +601,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.toSeq
     }
 
-    def genMethod(dd: DefDef): Unit = {
+    def genMethod(dd: DefDef): Option[nir.Defn] = {
       val fresh = Fresh()
       val env = new MethodEnv(fresh)
 
@@ -608,7 +619,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val attrs = genMethodAttrs(sym)
         val name = genMethodName(sym)
         val sig = genMethodSig(sym)
-        val isStatic = owner.isExternModule || isImplClass(owner)
 
         dd.rhs match {
           case EmptyTree
@@ -618,23 +628,23 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               curMethodSig := sig
             ) {
               val body = genJavaDefaultMethodBody(dd)
-              buf += Defn.Define(attrs, name, sig, body)
+              Some(Defn.Define(attrs, name, sig, body))
             }
 
           case EmptyTree =>
-            buf += Defn.Declare(attrs, name, sig)
+            Some(Defn.Declare(attrs, name, sig))
 
           case Apply(TypeApply(Select(retBlock, _), _), _)
               if retBlock.tpe == NoType && isScala211 =>
             // Fix issue #2305 Compile error on macro using Scala 2.11.12
-            buf += Defn.Declare(attrs, name, sig)
+            Some(Defn.Declare(attrs, name, sig))
 
           case _ if dd.name == nme.CONSTRUCTOR && owner.isExternModule =>
             validateExternCtor(dd.rhs)
-            ()
+            None
 
           case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
-            ()
+            None
 
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
@@ -644,8 +654,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               if (isScala211 &&
                 sym.hasAnnotation(JavaDefaultMethodAnnotation) &&
                 !isImplClass(sym.owner)) =>
-          // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
-          // Do not emit, not even as abstract.
+            // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
+            // Do not emit, not even as abstract.
+            None
 
           case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
@@ -654,8 +665,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             scoped(
               curMethodSig := sig
             ) {
-              val body = genMethodBody(dd, rhs, isStatic, isExtern = false)
-              buf += Defn.Define(attrs, name, sig, body)
+              val body = genMethodBody(dd, rhs)
+              Some(Defn.Define(attrs, name, sig, body))
             }
         }
       }
@@ -663,7 +674,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     protected def genLinktimeResolved(dd: DefDef, name: Global)(implicit
         pos: nir.Position
-    ): Unit = {
+    ): Option[nir.Defn] = {
       if (dd.symbol.isConstant) {
         globalError(
           dd.pos,
@@ -677,15 +688,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           dd match {
             case LinktimeProperty(propertyName, _) =>
               val retty = genType(dd.tpt.tpe)
-              genLinktimeResolvedMethod(retty, propertyName, name)
-
-            case _ =>
+              val defn = genLinktimeResolvedMethod(retty, propertyName, name)
+              Some(defn)
+            case _ => None
           }
         case _ =>
           globalError(
             dd.pos,
             s"Link-time resolved property must have ${ResolvedMethod.fullName} as body"
           )
+          None
       }
     }
 
@@ -694,7 +706,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         retty: nir.Type,
         propertyName: String,
         methodName: nir.Global
-    )(implicit pos: nir.Position): Unit = {
+    )(implicit pos: nir.Position): nir.Defn = {
       implicit val fresh: Fresh = Fresh()
       val buf = new ExprBuffer()
 
@@ -707,7 +719,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       )
       buf.ret(value)
 
-      curStatBuffer.get += Defn.Define(
+      Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
         methodName,
         Type.Function(Seq(), retty),
@@ -720,21 +732,23 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         name: nir.Global,
         origSig: nir.Type,
         rhs: Tree
-    ): Unit = {
+    ): Option[nir.Defn] = {
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
           val moduleName = genTypeName(curClassSym)
           val externAttrs = Attrs(isExtern = true)
           val externSig = genExternMethodSig(curMethodSym)
           val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
+          Some(externDefn)
 
-          buf += externDefn
-
-        case _ if curMethodSym.hasFlag(ACCESSOR) =>
-          ()
+        case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
         case rhs =>
-          unsupported("methods in extern objects must have extern body")
+          global.reporter.error(
+            rhs.pos,
+            "methods in extern objects must have extern body"
+          )
+          None
       }
     }
 
@@ -783,12 +797,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodBody(
         dd: DefDef,
-        bodyp: Tree,
-        isStatic: Boolean,
-        isExtern: Boolean
+        bodyp: Tree
     ): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
+      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
+      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner)
+      val isExtern = dd.symbol.owner.isExternModule
 
       implicit val pos: nir.Position = bodyp.pos
 
@@ -798,27 +813,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val ty = genType(curClassSym.tpe)
           Val.Local(fresh(), ty)
         case Some(sym) =>
-          val ty = if (isExtern) genExternType(sym.tpe) else genType(sym.tpe)
+          val ty = genType(sym.tpe)
           val param = Val.Local(fresh(), ty)
           curMethodEnv.enter(sym, param)
           param
       }
 
-      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-
       def genEntry(): Unit = {
         buf.label(fresh(), params)
-
-        if (isExtern) {
-          paramSyms.zip(params).foreach {
-            case (Some(sym), param) if isExtern =>
-              val ty = genType(sym.tpe)
-              val value = buf.fromExtern(ty, param)
-              curMethodEnv.enter(sym, value)
-            case _ =>
-              ()
-          }
-        }
       }
 
       def genVars(): Unit = {
@@ -890,6 +892,205 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genVars()
       genBody()
       removeDeadBlocks(buf.toSeq)
+    }
+  }
+
+  // Static forwarders -------------------------------------------------------
+
+  // Ported from Scala.js
+  /* It is important that we always emit forwarders, because some Java APIs
+   * actually have a public static method and a public instance method with
+   * the same name. For example the class `Integer` has a
+   * `def hashCode(): Int` and a `static def hashCode(Int): Int`. The JVM
+   * back-end considers them as colliding because they have the same name,
+   * but we must not.
+   *
+   * By default, we only emit forwarders for top-level objects, like the JVM
+   * back-end. However, if requested via a compiler option, we enable them
+   * for all static objects. This is important so we can implement static
+   * methods of nested static classes of JDK APIs (see scala-js/#3950).
+   */
+
+  /** Is the given Scala class, interface or module class a candidate for static
+   *  forwarders?
+   *
+   *    - the flag `-XnoForwarders` is not set to true, and
+   *    - the symbol is static, and
+   *    - either of both of the following is true:
+   *      - the plugin setting `GenStaticForwardersForNonTopLevelObjects` is set
+   *        to true, or
+   *      - the symbol was originally at the package level
+   *
+   *  Other than the the fact that we also consider interfaces, this performs
+   *  the same tests as the JVM back-end.
+   */
+  private def isCandidateForForwarders(sym: Symbol): Boolean = {
+    !settings.noForwarders && sym.isStatic && !isImplClass(sym) && {
+      // Reject non-top-level objects unless opted in via the appropriate option
+      scalaNativeOpts.genStaticForwardersForNonTopLevelObjects ||
+      !sym.name.containsChar('$') // this is the same test that scalac performs
+    }
+  }
+
+  /** Gen the static forwarders to the members of a class or interface for
+   *  methods of its companion object.
+   *
+   *  This is only done if there exists a companion object and it is not a JS
+   *  type.
+   *
+   *  Precondition: `isCandidateForForwarders(sym)` is true
+   */
+  private def genStaticForwardersForClassOrInterface(
+      existingMembers: Seq[Defn],
+      sym: Symbol
+  ): Seq[Defn.Define] = {
+    /*  Phase travel is necessary for non-top-level classes, because flatten
+     *  breaks their companionModule. This is tracked upstream at
+     *  https://github.com/scala/scala-dev/issues/403
+     */
+    val module = exitingPhase(currentRun.picklerPhase)(sym.companionModule)
+    if (module == NoSymbol) Nil
+    else {
+      val moduleClass = module.moduleClass
+      if (moduleClass.isExternModule) Nil
+      else genStaticForwardersFromModuleClass(existingMembers, moduleClass)
+    }
+  }
+
+  private lazy val dontUseExitingUncurryForForwarders =
+    scala.util.Properties.versionNumberString.startsWith("2.11.")
+
+  /** Gen the static forwarders for the methods of a module class.
+   *
+   *  Precondition: `isCandidateForForwarders(moduleClass)` is true
+   */
+  private def genStaticForwardersFromModuleClass(
+      existingMembers: Seq[Defn],
+      moduleClass: Symbol
+  ): Seq[Defn.Define] = {
+    assert(moduleClass.isModuleClass, moduleClass)
+
+    lazy val existingStaticMethodNames = existingMembers.collect {
+      case nir.Defn.Define(_, name @ Global.Member(_, sig), _, _)
+          if sig.isStatic =>
+        name
+    }
+
+    def listMembersBasedOnFlags = {
+      import scala.tools.nsc.symtab.Flags._
+      // Copy-pasted from BCodeHelpers (it's somewhere else in 2.11.x)
+      val ExcludedForwarderFlags: Long = {
+        SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | PRIVATE | MACRO
+      }
+
+      moduleClass.info.membersBasedOnFlags(
+        ExcludedForwarderFlags,
+        METHOD
+      )
+    }
+
+    /* See BCodeHelprs.addForwarders in 2.12+ for why we normally use
+     * exitingUncurry. In 2.11.x we do not use it, because Scala/JVM did not
+     * use it back then, and using it on that version causes mixed in methods
+     * not to be found (this notably breaks `extends App` as the `main`
+     * method that it defines is not found).
+     *
+     * This means that in 2.11.x we suffer from
+     * https://github.com/scala/bug/issues/10812, like upstream Scala/JVM,
+     * but it does not really affect Scala Native because the NIR methods are not
+     * used for compilation, only for linking, and for linking it is fine to
+     * have additional, unexpected bridges.
+     */
+    val members =
+      if (dontUseExitingUncurryForForwarders) listMembersBasedOnFlags
+      else exitingUncurry(listMembersBasedOnFlags)
+
+    def isExcluded(m: Symbol): Boolean = {
+      def isOfJLObject: Boolean = {
+        val o = m.owner
+        (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass)
+      }
+
+      m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
+        m.owner.isExternModule ||
+        isOfJLObject
+    }
+
+    val forwarders = for {
+      sym <- members
+      if !isExcluded(sym)
+    } yield {
+      implicit val pos: nir.Position = sym.pos
+
+      val methodName = genMethodName(sym)
+      val forwarderName = genStaticMemberName(sym, moduleClass)
+      val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
+      val forwarderParamTypes = paramTypes
+      val forwarderType = Type.Function(forwarderParamTypes, retType)
+
+      if (existingStaticMethodNames.contains(forwarderName)) {
+        reporter.error(
+          curClassSym.get.pos,
+          "Unexpected situation: found existing public static method " +
+            s"${sym} in the companion class of " +
+            s"${moduleClass.fullName}; cannot generate a static forwarder " +
+            "the method of the same name in the object." +
+            "Please report this as a bug in the Scala Native support."
+        )
+      }
+
+      Defn.Define(
+        attrs = Attrs(inlineHint = nir.Attr.InlineHint),
+        name = forwarderName,
+        ty = forwarderType,
+        insts = curStatBuffer
+          .withFreshExprBuffer { buf =>
+            val fresh = curFresh.get
+            scoped(
+              curUnwindHandler := None,
+              curMethodThis := None
+            ) {
+              val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
+              buf.label(fresh(), entryParams)
+              val res =
+                buf.genApplyModuleMethod(
+                  moduleClass,
+                  sym,
+                  entryParams.map(ValTree(_))
+                )
+              buf.ret(res)
+            }
+            buf.toSeq
+          }
+      )
+    }
+
+    forwarders.toList
+  }
+
+  private def genStaticMethodForwarders(
+      td: ClassDef,
+      existingMethods: Seq[Defn]
+  ): Seq[Defn] = {
+    val sym = td.symbol
+    if (!isCandidateForForwarders(sym)) Nil
+    else if (sym.isModuleClass) {
+      if (!sym.linkedClassOfClass.exists) {
+        val forwarders = genStaticForwardersFromModuleClass(Nil, sym)
+        if (forwarders.nonEmpty) {
+          val classDefn = Defn.Class(
+            attrs = Attrs.None,
+            name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
+            parent = Some(Rt.Object.name),
+            traits = Nil
+          )(td.pos)
+          val forwarderClass = StaticForwarderClass(classDefn, forwarders)
+          generatedStaticForwarderClasses += sym -> forwarderClass
+        }
+      }
+      Nil
+    } else {
+      genStaticForwardersForClassOrInterface(existingMethods, sym)
     }
   }
 
