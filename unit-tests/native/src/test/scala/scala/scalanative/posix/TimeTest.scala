@@ -148,7 +148,7 @@ class TimeTest {
       )
 
       val ttPtr = alloc[time_t]()
-      !ttPtr = (1490986064740L / 1000L).toUSize // Fri Mar 31 14:47:44 EDT 2017
+      !ttPtr = (1490986064740L / 1000L).toSize // Fri Mar 31 14:47:44 EDT 2017
 
       // This code is testing for reading past the end of a "short"
       // Scala Native tm, so the linux 56 byte form is necessary here.

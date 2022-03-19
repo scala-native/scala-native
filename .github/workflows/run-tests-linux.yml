@@ -24,8 +24,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          host_arch: amd64
-          docker_arch: library
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-tools ${{ matrix.scala }}"
@@ -71,8 +69,6 @@ jobs:
         scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
         build-mode: [debug, release-fast]
         gc: [boehm, immix, commix]
-        host_arch: [ amd64 ]
-        docker_arch: [ library, i386 ]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
@@ -92,8 +88,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          host_arch: ${{matrix.host_arch}}
-          docker_arch: ${{matrix.docker_arch}}
 
       - name: Run tests
         env:
@@ -116,15 +110,11 @@ jobs:
         include:
           - scala: 2.13.8
             build-mode: release-fast
-            host_arch: amd64
-            docker_arch: library
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          host_arch: ${{matrix.host_arch}}
-          docker_arch: ${{matrix.docker_arch}}
 
       - name: Run tests
         env:
@@ -157,8 +147,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          host_arch: amd64
-          docker_arch: library
 
       - name: Run tests
         env:
@@ -182,8 +170,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          host_arch: ${{matrix.host_arch}}
-          docker_arch: ${{matrix.docker_arch}}
 
       - name: Run tests
         env:
