@@ -9,9 +9,6 @@ import scalanative.nir.Attr.Link
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
-  // settings to make sure that exceptions can be caught and unwinded
-  private val unwindSettings =
-    Seq("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -64,7 +61,7 @@ private[scalanative] object LLVM {
           stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++
-            unwindSettings ++ asan(config) ++ target(config) ++
+            asan(config) ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
@@ -130,7 +127,7 @@ private[scalanative] object LLVM {
         } else Seq("-rdynamic")
       flto(config) ++ platformFlags ++
         Seq("-o", outpath.abs) ++
-        unwindSettings ++ asan(config) ++ target(config)
+        asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)

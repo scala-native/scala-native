@@ -63,6 +63,7 @@ sealed trait NativeConfig {
       .headOption
       .getOrElse("") match {
       case "x86_64" => false
+      case "arm64"  => false
       case "i386"   => true
       case "i686"   => true
       case o =>
