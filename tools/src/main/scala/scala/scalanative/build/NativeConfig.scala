@@ -62,10 +62,10 @@ sealed trait NativeConfig {
       .split('-')
       .headOption
       .getOrElse("") match {
-      case "x86_64" => false
-      case "arm64"  => false
-      case "i386"   => true
-      case "i686"   => true
+      case "x86_64"  => false
+      case "aarch64" => false
+      case "i386"    => true
+      case "i686"    => true
       case o =>
         println(
           s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit"

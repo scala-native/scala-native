@@ -108,7 +108,7 @@ jobs:
           crossRoot='${sys.env("CROSS_ROOT")}'
 
           gccToolchainFlag=s\"--gcc-toolchain=${crossRoot}\"
-          sysRootFlag=s\"--sysroot=${crossRoot}/${target}/sysroot\"
+          sysRootFlag="s\"--sysroot=\${sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim}\""
           useLdFlg=\"-fuse-ld=lld\"
           crossOptions="List($gccToolchainFlag, $sysRootFlag, $useLdFlg)"
 
