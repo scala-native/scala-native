@@ -107,10 +107,9 @@ jobs:
           target='${sys.env("CROSS_TRIPLE")}'
           crossRoot='${sys.env("CROSS_ROOT")}'
 
-          gccToolchainFlag=s\"--gcc-toolchain=${crossRoot}\"
           sysRootFlag="s\"--sysroot=\${sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim}\""
           useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="List($gccToolchainFlag, $sysRootFlag, $useLdFlg)"
+          crossOptions="List($sysRootFlag, $useLdFlg)"
 
           emptyConfig="scalanative.build.NativeConfig.empty"
           withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
