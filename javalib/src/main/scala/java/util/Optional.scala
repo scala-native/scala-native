@@ -66,7 +66,7 @@ final class Optional[T] private (value: T) {
     obj match {
       case opt: Optional[_] =>
         (!isPresent() && !opt.isPresent()) ||
-          (isPresent() && opt.isPresent() && value == opt.get())
+          (isPresent() && opt.isPresent() && Objects.equals(value, opt.get()))
       case _ => false
     }
   }

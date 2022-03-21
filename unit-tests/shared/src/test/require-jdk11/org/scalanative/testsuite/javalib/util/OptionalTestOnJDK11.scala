@@ -107,4 +107,23 @@ class OptionalTestOnJDK11 {
     )
   }
 
+  @Test def testEquals(): Unit = {
+    assertEquals(
+      "null eq null",
+      Optional.ofNullable(null),
+      Optional.ofNullable(null)
+    )
+    assertNotEquals(
+      "'foo' ne null",
+      Optional.of("foo"),
+      Optional.ofNullable(null)
+    )
+    assertNotEquals(
+      "null, ne 'foo'",
+      Optional.ofNullable(null),
+      Optional.of("foo")
+    )
+    assertEquals("'foo' eq 'foo'", Optional.of("foo"), Optional.of("foo"))
+    assertNotEquals("'foo' ne 'bar'", Optional.of("foo"), Optional.of("bar"))
+  }
 }
