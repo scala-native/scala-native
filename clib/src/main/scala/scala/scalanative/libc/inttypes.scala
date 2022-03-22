@@ -14,6 +14,8 @@ object inttypes {
    *  @return
    *    The imaxabs function returns the absolute value of the argument. There's
    *    no error return.
+   *
+   *  See also https://en.cppreference.com/w/cpp/numeric/math/abs
    */
   def imaxabs(j: intmax_t): intmax_t = extern
 
@@ -32,10 +34,12 @@ object inttypes {
    *    The denominator.
    *  @param result
    *    The pointer to struct of type imaxdiv_t to store quotient and remainder.
-   *    C spec defines `imaxdiv` as `intmax_t,intmax_t => imaxdiv_t`, but due to
-   *    the limitation of scala native (scala native not supporting passing
+   *    C spec defines `imaxdiv` as `(intmax_t,intmax_t) => imaxdiv_t`, but due
+   *    to the limitation of scala native (scala native not supporting passing
    *    struct between scalanative and c), this function takes result struct as
    *    workaround.
+   *
+   *  See also https://en.cppreference.com/w/c/numeric/math/div#imaxdiv_t
    */
   @name("scalanative_inttypes_imaxdiv")
   def imaxdiv(
@@ -58,6 +62,8 @@ object inttypes {
    *    the converted value, if any.If no conversion could be performed, zero is
    *    returned. If the correct value is outside the range of representable
    *    values, INTMAX_MAX or INTMAX_MIN is returned
+   *
+   *  See also https://en.cppreference.com/w/c/string/byte/strtoimax
    */
   def strtoimax(
       nptr: CString,
@@ -80,6 +86,8 @@ object inttypes {
    *    the converted value, if any.If no conversion could be performed, zero is
    *    returned. If the correct value is outside the range of representable
    *    values,INTMAX_MAX, INTMAX_MIN, or UINTMAX_MAX is returned.
+   *
+   *  See also https://en.cppreference.com/w/c/string/byte/strtoimax
    */
   def strtoumax(
       nptr: CString,
