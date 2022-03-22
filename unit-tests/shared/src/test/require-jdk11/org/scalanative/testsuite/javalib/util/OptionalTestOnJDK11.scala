@@ -108,22 +108,24 @@ class OptionalTestOnJDK11 {
   }
 
   @Test def testEquals(): Unit = {
-    assertEquals(
+    assertTrue(
       "null eq null",
-      Optional.ofNullable(null),
-      Optional.ofNullable(null)
+      Optional.ofNullable(null).equals(Optional.ofNullable(null))
     )
-    assertNotEquals(
+    assertFalse(
       "'foo' ne null",
-      Optional.of("foo"),
-      Optional.ofNullable(null)
+      Optional.of("foo").equals(Optional.ofNullable(null))
     )
-    assertNotEquals(
+    assertFalse(
       "null, ne 'foo'",
-      Optional.ofNullable(null),
-      Optional.of("foo")
+      Optional.ofNullable(null).equals(Optional.of("foo"))
     )
-    assertEquals("'foo' eq 'foo'", Optional.of("foo"), Optional.of("foo"))
-    assertNotEquals("'foo' ne 'bar'", Optional.of("foo"), Optional.of("bar"))
+
+    assertTrue("'foo' eq 'foo'", Optional.of("foo").equals(Optional.of("foo")))
+    assertFalse("'foo' ne 'bar'", Optional.of("foo").equals(Optional.of("bar")))
+
+    assertTrue("'1 eq 1", Optional.of(1).equals(Optional.of(1)))
+    assertFalse("'1 eq 1L", Optional.of(1).equals(Optional.of(1L)))
+    assertFalse("'1L eq 1", Optional.of(1L).equals(Optional.of(1)))
   }
 }
