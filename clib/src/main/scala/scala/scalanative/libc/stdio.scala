@@ -260,10 +260,10 @@ object stdio {
    *  Internally, the character is converted to unsigned char just before being
    *  written.
    *
-   *  @oaram
-   *    ch character to be written
-   *  @oaram
-   *    stream output stream
+   *  @param ch
+   *    character to be written
+   *  @param stream
+   *    output stream
    *  @return
    *    On success, returns the written character. On failure, returns EOF and
    *    sets the error indicator (see ferror()) on stream.
@@ -280,10 +280,10 @@ object stdio {
    *  Internally, the character is converted to unsigned char just before being
    *  written.
    *
-   *  @oaram
-   *    ch character to be written
-   *  @oaram
-   *    stream output stream
+   *  @param ch
+   *    character to be written
+   *  @param stream
+   *    output stream
    *  @return
    *    On success, returns the written character. On failure, returns EOF and
    *    sets the error indicator (see ferror()) on stream.
