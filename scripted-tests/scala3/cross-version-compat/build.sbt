@@ -1,7 +1,15 @@
+val scala3Version = sys.props.getOrElse(
+  "scala.version",
+  throw new RuntimeException(
+    """The system property 'scala.version' is not defined.
+      |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+  )
+)
+
 inThisBuild(
   Seq(
-    scalaVersion := "3.1.1",
-    crossScalaVersions := Seq("3.1.1", "2.13.8"),
+    scalaVersion := scala3Version,
+    crossScalaVersions := Seq(scala3Version, "2.13.8"),
     version := "0.1.0-SNAPSHOT",
     organization := "org.scala-native.test",
     publishMavenStyle := true
