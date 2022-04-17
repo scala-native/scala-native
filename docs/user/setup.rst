@@ -79,7 +79,7 @@ installation of macOS.
 
 .. code-block:: shell
 
-    $ sudo pacman -S llvm clang build-essential
+    $ sudo pacman -S llvm clang
     $ sudo pacman -S gc # optional
 
 *Note:* A version of zlib that is sufficiently recent comes with the

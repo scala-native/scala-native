@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
         gc: [immix]
         include:
           - scala: 2.13.8
@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.15, 3.1.1]
+        scala: [2.12.15, 3.1.2]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/macos-setup-env

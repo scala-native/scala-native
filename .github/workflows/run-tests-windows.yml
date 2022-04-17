@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-2019]
-        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
         gc: [none, boehm, immix, commix]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -66,7 +66,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-2019]
-        scala: [2.12.15, 3.1.1]
+        scala: [2.12.15, 3.1.2]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -86,12 +86,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.1, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
         build-mode: [release-fast]
         lto: [thin]
         optimize: [true]
         include:
-          - scala: 3.1.1
+          - scala: 3.1.2
             lto: full
             optimize: true
           - scala: 2.13.8
