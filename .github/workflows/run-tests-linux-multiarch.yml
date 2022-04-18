@@ -107,7 +107,7 @@ jobs:
           target='${sys.env("CROSS_TRIPLE")}'
           crossRoot='${sys.env("CROSS_ROOT")}'
 
-          sysrootIncludeFlag=\"-I$crossRoot/$target/sysroot/include\"
+          sysrootIncludeFlag="s\"-I$crossRoot/$target/sysroot/include\""
           sysRootFlag="s\"--sysroot=\${sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim}\""
           useLdFlg=\"-fuse-ld=lld\"
           crossOptions="List($sysrootIncludeFlag, $sysRootFlag, $useLdFlg)"
