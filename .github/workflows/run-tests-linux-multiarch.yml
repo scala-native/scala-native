@@ -71,7 +71,7 @@ jobs:
       matrix:
         arch: [
           { name: linux-arm64, emulator: qemu-aarch64-static },
-          { name: linux-x86, emulator: qemu-i386-static }
+          { name: linux-x86, emulator: "" }
         ]
         scala: [2.13.8, 3.1.2]
         build-mode: [releaseFast]
@@ -87,9 +87,9 @@ jobs:
           - gc: boehm
             arch: { name: linux-arm64, emulator: qemu-aarch64-static }
           - gc: immix
-            arch: { name: linux-x86, emulator: qemu-i386-static }
+            arch: { name: linux-x86, emulator: "" }
           - gc: commix
-            arch: { name: linux-x86, emulator: qemu-i386-static }
+            arch: { name: linux-x86, emulator: "" }
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env

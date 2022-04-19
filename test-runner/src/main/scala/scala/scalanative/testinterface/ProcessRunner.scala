@@ -16,7 +16,9 @@ private[testinterface] class ProcessRunner(
     // Optional emualator config used internally for testing non amd64 architectures
     val emulatorOpts: List[String] = {
       val optEmulator =
-        sys.props.get("scala.scalanative.testinterface.processrunner.emulator")
+        sys.props
+          .get("scala.scalanative.testinterface.processrunner.emulator")
+          .filter(_.nonEmpty)
       val optEmulatorOptions = sys.props
         .get("scala.scalanative.testinterface.processrunner.emulator-args")
         .map(_.split(" ").toList)
