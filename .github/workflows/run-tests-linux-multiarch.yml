@@ -107,12 +107,11 @@ jobs:
           target='${sys.env("CROSS_TRIPLE")}'
           crossRoot='${sys.env("CROSS_ROOT")}'
 
-          gccToolchainFlag=s\"--gcc-toolchain=${crossRoot}\"
           sysrootIncludeFlag="s\"-I$crossRoot/$target/include\", s\"-I$crossRoot/$target/sysroot/include\""
           sysrootLibFlag="s\"-L$crossRoot/$target/sysroot/lib\""
-          sysRootFlag="s\"--sysroot=\${sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim}\""
+          sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
           useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="List($gccToolchainFlag, $sysrootIncludeFlag, $sysrootLibFlag, $sysRootFlag, $useLdFlg)"
+          crossOptions="$sysRootFlag ++ List($sysrootIncludeFlag, $sysrootLibFlag, $useLdFlg)"
 
           emptyConfig="scalanative.build.NativeConfig.empty"
           withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
