@@ -107,11 +107,9 @@ jobs:
           target='${sys.env("CROSS_TRIPLE")}'
           crossRoot='${sys.env("CROSS_ROOT")}'
 
-          sysrootIncludeFlag="s\"-I$crossRoot/$target/include\", s\"-I$crossRoot/$target/sysroot/include\""
-          sysrootLibFlag="s\"-L$crossRoot/$target/sysroot/lib\""
           sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
           useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="$sysRootFlag ++ List($sysrootIncludeFlag, $sysrootLibFlag)"
+          crossOptions="$sysRootFlag"
 
           emptyConfig="scalanative.build.NativeConfig.empty"
           withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"

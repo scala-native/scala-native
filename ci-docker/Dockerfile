@@ -10,7 +10,7 @@ RUN git clone https://github.com/madler/zlib /tmp/zlib \
   && cd /tmp/zlib/ \
   && git checkout v1.2.11 \
   && ./configure \
-  && make install prefix=$CROSS_ROOT/${CROSS_TRIPLE}/sysroot \
+  && make install prefix=$QEMU_LD_PREFIX \
   && rm -rf /tmp/zlib
 
 RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
@@ -22,7 +22,7 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
   && cd .. \
   && ./autogen.sh \
   && ./configure --host $CROSS_TRIPLE \
-  && make install prefix=$CROSS_ROOT/${CROSS_TRIPLE}/sysroot \
+  && make install prefix=$QEMU_LD_PREFIX \
   && rm -rf /tmp/bdwgc
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
