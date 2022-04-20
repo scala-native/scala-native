@@ -179,5 +179,20 @@ object Config {
       val ext = if (Platform.isWindows) ".exe" else ""
       basedir.resolve(s"${basename}$nameSuffix-out$ext")
     }
+
+    override def toString: String = {
+      val classPathFormat =
+        classPath.mkString("List(", "\n".padTo(22, ' '), ")")
+      s"""Config(
+        | - basedir:        $basedir
+        | - basename:       $basename
+        | - testConfig:     $testConfig
+        | - workdir:        ${workdir()}
+        | - artifactPath:   $artifactPath
+        | - compilerConfig: $compilerConfig
+        | - logger:         $logger
+        | - classPath:      $classPathFormat
+        |)""".stripMargin
+    }
   }
 }

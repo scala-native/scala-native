@@ -26,13 +26,6 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  // not needed
-  val nativeWorkdir =
-    taskKey[Path]("Working directory for intermediate build files.")
-
-  val nativeMainConfig =
-    taskKey[Config]("The main Config file.")
-
   private val nativeStandardLibraries =
     Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
 
@@ -127,7 +120,7 @@ object ScalaNativePluginInternal {
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
     },
-    nativeMainConfig := {
+    nativeBuildConfig := {
       val classpath = fullClasspath.value.map(_.data.toPath)
       val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
@@ -144,7 +137,7 @@ object ScalaNativePluginInternal {
         .withCompilerConfig(nativeConfig.value)
     },
     nativeLink := {
-      val config = nativeMainConfig.value
+      val config = nativeBuildConfig.value
       val outpath = config.artifactPath
       val outfile = outpath.toFile()
 
