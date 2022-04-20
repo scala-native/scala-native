@@ -121,6 +121,7 @@ object Config {
       nativelib = Paths.get(""),
       mainClass = "",
       classPath = Seq.empty,
+      workdirOld = Paths.get(""),
       basedir = Paths.get(""),
       basename = "",
       testConfig = false,
@@ -132,6 +133,7 @@ object Config {
       nativelib: Path,
       mainClass: String,
       classPath: Seq[Path],
+      workdirOld: Path,
       basedir: Path,
       basename: String,
       testConfig: Boolean,
@@ -147,8 +149,8 @@ object Config {
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
 
-    def withWorkdir(value: Path): Config = this // no op
-
+    def withWorkdir(value: Path): Config =
+      copy(workdirOld = value)
     def withBasedir(value: Path): Config =
       copy(basedir = value)
 
@@ -168,11 +170,14 @@ object Config {
       copy(compilerConfig = fn(compilerConfig))
 
     override def workdir() = {
-      val workdir = basedir.resolve(s"native$nameSuffix")
-      if (Files.notExists(workdir)) {
-        Files.createDirectory(workdir)
+      val dir = {
+        if (!workdirOld.equals(Paths.get(""))) workdirOld
+        else basedir.resolve(s"native$nameSuffix")
       }
-      workdir
+      if (Files.notExists(dir)) {
+        Files.createDirectory(dir)
+      }
+      dir
     }
 
     override def artifactPath: Path = {

@@ -51,7 +51,7 @@ object CodeGen {
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
-      val workdir = VirtualDirectory.real(config.workdir)
+      val workdir = VirtualDirectory.real(config.workdir())
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
