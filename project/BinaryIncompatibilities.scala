@@ -38,7 +38,8 @@ object BinaryIncompatibilities {
     exclude[ReversedMissingMethodProblem](
       "scala.scalanative.build.NativeConfig*"
     ),
-    exclude[ReversedMissingMethodProblem]("scala.scalanative.build.Config*")
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.build.Config*"),
+    exclude[Problem]("scala.scalanative.build.Config*Impl*")
   )
 
   final val NativeLib = Seq()

@@ -448,7 +448,8 @@ object Settings {
 
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
-      javacOptions ++= Seq("-encoding", "utf8")
+      javacOptions ++= Seq("-encoding", "utf8"),
+      scalacOptions -= "-Xfatal-warnings"
     )
 
   lazy val recompileAllOrNothingSettings = Def.settings(
