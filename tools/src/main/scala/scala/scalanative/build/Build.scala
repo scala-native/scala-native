@@ -119,10 +119,10 @@ object Build {
       linkerResult: linker.Result
   ): Seq[Path] = {
     import NativeLib._
-    findNativeLibs(config.classPath, config.workdir)
+    findNativeLibs(config.classPath, config.workdir())
       .map(unpackNativeCode)
       .flatMap { destPath =>
-        val paths = findNativePaths(config.workdir, destPath)
+        val paths = findNativePaths(config.workdir(), destPath)
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
         implicit val incCompilationContext: IncCompilationContext =
