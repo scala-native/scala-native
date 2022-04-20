@@ -90,6 +90,8 @@ jobs:
             arch: { name: linux-x86, emulator: "" }
           - gc: commix
             arch: { name: linux-x86, emulator: "" }
+          - lto: thin
+            arch: { name: linux-x86, emulator: "" }
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
