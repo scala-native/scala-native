@@ -109,7 +109,7 @@ jobs:
 
           sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
           useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="$sysRootFlag"
+          crossOptions="$sysRootFlag ++ List($useLdFlg)"
 
           emptyConfig="scalanative.build.NativeConfig.empty"
           withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
