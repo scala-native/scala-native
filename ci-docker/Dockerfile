@@ -3,7 +3,12 @@ ARG TARGET_PLATFORM
 FROM dockcross/$TARGET_PLATFORM
 ENV DEFAULT_DOCKCROSS_IMAGE testing-container
 
-RUN apt-get update && apt-get install -y clang lld unzip
+RUN apt-get update && apt-get install -y unzip lsb-release wget software-properties-common
+
+RUN bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
+RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
 
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
