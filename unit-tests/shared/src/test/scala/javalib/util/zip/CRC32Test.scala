@@ -70,4 +70,10 @@ class CRC32Test {
     )
   }
 
+  @Test def updateEmptyArray(): Unit = {
+    val crc = new CRC32()
+    crc.update(Array.emptyByteArray)
+    assertEquals(crc.getValue(), 0)
+  }
+
 }
