@@ -60,7 +60,7 @@ class UdpSocketTest {
       assertNotEquals("socket create", InvalidSocket, socket)
       socket.toInt
     } else {
-      val sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+      val sock = sys.socket.socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
       assertNotEquals("socket create", -1, sock)
       sock
     }
