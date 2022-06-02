@@ -307,12 +307,21 @@ final class Matcher private (private var _pattern: Pattern) {
     }
   }
 
-  def regionSpansInput(): Boolean = {
-    val _regionLength = _regionEnd - _regionStart
-    _regionLength == _inputLength // if true, implies regionStart is 0
-  }
+  def regionSpansInput(): Boolean =
+    (_regionStart == 0) && (_regionEnd == _inputLength)
 
   def anchoredAtStartRegion(): Boolean = (this.start() == regionStart())
+
+  // Note the (this.end() == 0) clause. It handles certain reluctant/lazy
+  // patterns, such as "X??" (zero or more, prefer zero.). The underlying
+  // REcode appears to set the groups() and end() with "minimal" semantics
+  // rather than JVM semantics. A corner case, but a sharp one.
+
+  def anchoredAtEndRegion(): Boolean =
+    (this.end() == regionEnd()) || (this.end() == 0)
+
+  def anchoredAtBothRegion(): Boolean =
+    anchoredAtStartRegion() && anchoredAtEndRegion()
 
   // Design Note:
   //   Implement region support in a way that it can not break
@@ -330,7 +339,7 @@ final class Matcher private (private var _pattern: Pattern) {
     if (regionSpansInput()) {
       genMatch(0, RE2.ANCHOR_BOTH)
     } else {
-      genMatch(_regionStart, RE2.UNANCHORED) && anchoredAtStartRegion()
+      genMatch(_regionStart, RE2.UNANCHORED) && anchoredAtBothRegion()
     }
   }
 
@@ -338,8 +347,6 @@ final class Matcher private (private var _pattern: Pattern) {
   // If there is a match, {@code lookingAt} sets the match state to describe it.
   //
   // @return true if the beginning of the input matches the pattern
-//  def lookingAt(): Boolean = genMatch(0, RE2.ANCHOR_START)
-
   def lookingAt(): Boolean = {
     if (regionSpansInput()) {
       genMatch(0, RE2.ANCHOR_START)
