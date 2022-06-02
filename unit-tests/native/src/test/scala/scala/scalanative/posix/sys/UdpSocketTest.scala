@@ -1,4 +1,5 @@
-package java.net
+package scala.scalanative.posix
+package sys
 
 import scalanative.posix.arpa.inet._
 import scalanative.posix.fcntl
