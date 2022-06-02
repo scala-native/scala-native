@@ -147,7 +147,7 @@ class UdpSocketTest {
         val maxInData = 2 * outData.length
         val inData: Ptr[Byte] = alloc[Byte](maxInData)
 
-        // Try to prevent spourious race conditions
+        // Try to prevent spourious race conditions.
         Thread.sleep(100)
 
         def checkRecvfromResult(v: CSSize, label: String): Unit = {
