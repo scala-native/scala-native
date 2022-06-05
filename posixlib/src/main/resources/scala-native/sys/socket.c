@@ -17,7 +17,7 @@ typedef SSIZE_T ssize_t;
 #warning "Size and order of C structures are not checked when -std < c11."
 #endif
 #else
-// Posix defines the order and type of required fields. Size of fields
+// Posix defines the name and type of required fields. Size of fields
 // and any internal or tail padding are left unspecified. This section
 // verifies that the C and Scala Native definitions match in each compilation
 // environment.
@@ -31,6 +31,9 @@ _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
 _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) ==
                    offsetof(struct sockaddr, sa_data),
                "offset mismatch: sockaddr sa_data");
+
+_Static_assert(sizeof(struct sockaddr_storage) == 128,
+               "unexpected size for sockaddr_storage");
 #endif
 #endif
 

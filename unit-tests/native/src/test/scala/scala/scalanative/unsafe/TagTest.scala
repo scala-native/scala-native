@@ -161,12 +161,23 @@ class TagTest {
 
   type socklen_t = CUnsignedInt
   type sa_family_t = CUnsignedShort
+
   type _14 = Nat.Digit2[Nat._1, Nat._4]
+
   type sockaddr = CStruct2[
     sa_family_t, // sa_family
     CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
   ]
-  type sockaddr_storage = CStruct1[sa_family_t] // ss_family
+
+  type _15 = Nat.Digit2[Nat._1, Nat._5]
+
+  type sockaddr_storage = CStruct4[
+    sa_family_t, // ss_family
+    CUnsignedShort, // opaque, __padTo32
+    CUnsignedInt, // opaque, __padTo64
+    CArray[CUnsignedLongLong, _15] // opaque, align structure to 8 bytes
+  ]
+
   type msghdr = CStruct7[
     Ptr[Byte], // msg_name
     socklen_t, // msg_namelen

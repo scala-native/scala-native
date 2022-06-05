@@ -1,10 +1,16 @@
 #include "../netinet/in.h"
 #include "socket_conversions.h"
+#include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #ifndef _WIN32
 #include <sys/socket.h>
 #endif
+
+_Static_assert(sizeof(struct scalanative_sockaddr_storage) ==
+                   sizeof(struct sockaddr_storage),
+               "Unexpected size: scalanative_storage sa_family");
 
 int scalanative_convert_sockaddr_in(struct scalanative_sockaddr_in *in,
                                     struct sockaddr_in **out, socklen_t *size) {
@@ -36,11 +42,18 @@ int scalanative_convert_sockaddr_in6(struct scalanative_sockaddr_in6 *in,
 int scalanative_convert_sockaddr_storage(
     struct scalanative_sockaddr_storage *in, struct sockaddr_storage **out,
     socklen_t *size) {
-    struct sockaddr_storage *s =
-        (struct sockaddr_storage *)malloc(sizeof(struct sockaddr_storage));
-    *size = sizeof(struct sockaddr_storage);
-    s->ss_family = in->ss_family;
+
+    assert(*size <= sizeof(struct sockaddr_storage));
+
+    void *s = calloc(1, sizeof(struct sockaddr_storage));
+
+    assert(s != NULL);
+
+    memcpy(s, in, *size);
+
     *out = s;
+    *size = sizeof(struct sockaddr_storage);
+
     return 0;
 }
 
@@ -100,8 +113,10 @@ int scalanative_convert_scalanative_sockaddr_in6(
 int scalanative_convert_scalanative_sockaddr_storage(
     struct sockaddr_storage *in, struct scalanative_sockaddr_storage *out,
     socklen_t *size) {
+
     *size = sizeof(struct scalanative_sockaddr_storage);
-    out->ss_family = in->ss_family;
+    memcpy(out, in, *size);
+
     return 0;
 }
 
