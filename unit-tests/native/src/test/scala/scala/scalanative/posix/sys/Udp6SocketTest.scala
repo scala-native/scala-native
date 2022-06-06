@@ -12,6 +12,7 @@ import scalanative.posix.unistd
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.runtime.Platform
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
@@ -32,7 +33,18 @@ class Udp6SocketTest {
     // A Windows expert could probably made this test work.
     // There is Windows code in this file but, for want of skill,
     // it has not been exercised.
+
     false
+
+  } else if (Platform.isMac()) {
+    // Tests are failing on GitHub CI
+    // (errno 47: Address family not supported by protocol).
+    // Disable this until I can distinguish the cause of failure.
+    // Is IPv6 available on SN macOS CI builds?
+    // I think the observed failures are manifestations of SN Issue #2626.
+
+    false
+
   } else {
     // Test only where one can expect a working IPv6 network.
     // The Scala Native GitHub CI environment is known to have a
