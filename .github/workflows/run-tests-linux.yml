@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.16, 2.11.12]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.16, 2.11.12]
         build-mode: [debug, release-fast]
         gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
@@ -75,7 +75,8 @@ jobs:
           - scala: 2.13.8
             build-mode: debug
             gc: immix
-          - scala: 2.12.15
+          - scala: 2.12.16
+            build-mode: debug
             gc: immix
           - scala: 2.12.15
             gc: boehm
@@ -105,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.16, 2.11.12]
         build-mode: [debug]
         include:
           - scala: 2.13.8
@@ -130,7 +131,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.16, 2.11.12]
         lto: [thin]
         optimize: [true]
         include:
@@ -138,7 +139,7 @@ jobs:
           - scala: 2.13.8
             lto: full
             optimize: true
-          - scala: 2.12.15
+          - scala: 2.12.16
             lto: full
             optimize: false
 
@@ -164,7 +165,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.15, 3.1.2]
+        scala: [2.12.16, 3.1.2]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
