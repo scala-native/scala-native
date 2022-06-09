@@ -1,5 +1,20 @@
 #include "netdb.h"
-#include <sys/socket.h> // yes <>, not ""
+
+#ifndef _WIN32
+// FreeBSD wants AF_INET, which is in <sys/socket.h> but not in the local
+// "sys/socket.h".
+//
+// Windows can not find the <> form, and suggests the "" form. However,
+// the later is a local copy which does not define AF_INET.
+// Including that file prevents the system copy with AF_INET from
+// being included.
+//
+// On linux, macOS, etc. the include should provide AF_INET if it has
+// not been previously defined.
+
+#include <sys/socket.h>
+#endif
+
 #include "sys/socket_conversions.h"
 #include <stddef.h>
 #include <stdlib.h>
