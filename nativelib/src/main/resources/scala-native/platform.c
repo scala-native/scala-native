@@ -7,6 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+int scalanative_platform_is_freebsd() {
+#if defined(__FreeBSD__)
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int scalanative_platform_is_linux() {
 #ifdef __linux__
     return 1;
