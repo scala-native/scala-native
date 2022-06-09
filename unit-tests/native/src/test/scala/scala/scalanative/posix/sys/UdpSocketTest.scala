@@ -1,4 +1,5 @@
-package java.net
+package scala.scalanative.posix
+package sys
 
 import scalanative.posix.arpa.inet._
 import scalanative.posix.fcntl
@@ -59,7 +60,7 @@ class UdpSocketTest {
       assertNotEquals("socket create", InvalidSocket, socket)
       socket.toInt
     } else {
-      val sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+      val sock = sys.socket.socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
       assertNotEquals("socket create", -1, sock)
       sock
     }
@@ -146,7 +147,7 @@ class UdpSocketTest {
         val maxInData = 2 * outData.length
         val inData: Ptr[Byte] = alloc[Byte](maxInData)
 
-        // Try to prevent spourious race conditions
+        // Try to prevent spurious race conditions.
         Thread.sleep(100)
 
         def checkRecvfromResult(v: CSSize, label: String): Unit = {
