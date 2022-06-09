@@ -1,4 +1,5 @@
 #include "netdb.h"
+#include <sys/socket.h> // yes <>, not ""
 #include "sys/socket_conversions.h"
 #include <stddef.h>
 #include <stdlib.h>
