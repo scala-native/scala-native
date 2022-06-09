@@ -12,7 +12,9 @@ class PlatformTest {
     val buildEnviron = utils.Platform.isFreeBSD // Test environment
     val runtimeEnviron = runtime.Platform.isFreeBSD() // Unit under test
 
-    assertTrue(s"build: '${buildEnviron}' != runtime: '${runtimeEnviron}'",
-                 buildEnviron == runtimeEnviron)
+    assertTrue(
+      s"build: '${buildEnviron}' != runtime: '${runtimeEnviron}'",
+      buildEnviron == runtimeEnviron
+    )
   }
 }
