@@ -364,7 +364,6 @@ class MatcherTest {
     )
   }
 
-  @Ignore
   @Test def findRegionNeedleBeforeRegion(): Unit = {
     val needle = "a"
     val haystack = "haystack"
@@ -401,7 +400,6 @@ class MatcherTest {
     )
   }
 
-  @Ignore
   @Test def findRegionNeedleAfterRegion(): Unit = {
     val needle = "ck"
     val haystack = "haystack"
@@ -592,7 +590,6 @@ class MatcherTest {
     assertThrows(classOf[UnsupportedOperationException], m.hitEnd())
   }
 
-  @Ignore("no issue")
   @Test def lookingAtRegion(): Unit = {
     val needle = "Boston"
     val haystack = "Boston Boston"
@@ -609,6 +606,31 @@ class MatcherTest {
     assertFalse(
       s"should not be looking at '${needle}' in '${haystack}'",
       m.lookingAt()
+    )
+  }
+
+  // Scala Native issue 2608 provided this reproduction from:
+  // softwaremill/sttp-model#188.
+  //
+  // The license on the original reproducer is Apache 2.0, the same
+  // as Scala Native. To be compliant with that license this notice
+  // is given that the original code has been modified to become a JUnit
+  // test for Scala Native. It is adapted with appreciation & gratitude.
+
+  @Test def issue2608LookingAtRegion(): Unit = {
+    val t = "text/plain; charset=utf-8"
+    val Token = "([a-z-!#$%&'*+.^_`{|}~]+)"
+    val Quoted = "\"([^\"]*)\""
+    val Parameter: Pattern =
+      Pattern.compile(s";\\s*(?:$Token=(?:$Token|$Quoted))?")
+    val parameter = Parameter.matcher(t)
+    parameter.region(10, t.length)
+
+    val slice = t.slice(parameter.regionStart(), parameter.regionEnd())
+
+    assertTrue(
+      s"pattern: '${Parameter}' not found in region '${slice}'",
+      parameter.lookingAt()
     )
   }
 
@@ -631,7 +653,6 @@ class MatcherTest {
     }
   }
 
-  @Ignore("0")
   @Test def matchesRegion(): Unit = {
     locally {
       val needle = "Peace"
@@ -647,6 +668,46 @@ class MatcherTest {
       )
     }
 
+  }
+
+  @Test def loadsGroupsInRegion(): Unit = {
+    // Ensure that the tricky _pattern.re2.match_ call with a region in private
+    // method loadGroup() is exercised with a region containing at least two
+    // groups.
+    // This test exercises group loading only.  Other tests in this suite
+    // check that the match is in the region, neither before nor after.
+
+    val needle = "([A-Z])([a-z]{4})"
+    val haystack = "War & Peace by Lev Tolstoy"
+
+    val m = matcher(needle, haystack)
+    m.region(6, 11)
+
+    assertTrue(
+      s"should have X2 matched '${needle}' in " +
+        s"region '${haystack.slice(6, 11)}'",
+      m.matches()
+    )
+
+    val expectedG0 = "Peace"
+    assertEquals(
+      s"group(0): {group(0)} should be '${expectedG0}'",
+      m.group(0),
+      expectedG0
+    )
+    val expectedG1 = "P"
+    assertEquals(
+      s"group(1): {group(1)} should be '${expectedG1}'",
+      m.group(1),
+      expectedG1
+    )
+
+    val expectedG2 = "eace"
+    assertEquals(
+      s"group(2): {group(2)} should be '${expectedG2}'",
+      m.group(2),
+      expectedG2
+    )
   }
 
   @Test def namedGroupJavaSyntax(): Unit = {

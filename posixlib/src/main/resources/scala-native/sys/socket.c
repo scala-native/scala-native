@@ -124,7 +124,7 @@ int scalanative_af_unspec() { return AF_UNSPEC; }
 
 int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
                             socklen_t *address_len) {
-    struct sockaddr *converted_address;
+    struct sockaddr *converted_address = NULL;
     int convert_result =
         scalanative_convert_sockaddr(address, &converted_address, address_len);
 
@@ -144,7 +144,9 @@ int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
         result = -1;
     }
 
-    free(converted_address);
+    if (converted_address != NULL)
+        free(converted_address);
+
     return result;
 }
 

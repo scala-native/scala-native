@@ -16,12 +16,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.2, 2.13.8, 2.12.15, 2.11.12]
+        scala: [3.1.2, 2.13.8, 2.12.16, 2.11.12]
         gc: [immix]
         include:
           - scala: 2.13.8
             gc: commix
-          - scala: 2.12.15
+          - scala: 2.12.16
             gc: boehm
           - scala: 2.11.12
             gc: none
@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.15, 3.1.2]
+        scala: [2.12.16, 3.1.2]
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/macos-setup-env

@@ -25,8 +25,9 @@ class CRC32 extends Checksum {
     update(buf, 0, buf.length)
 
   def update(buf: Array[Byte], off: Int, nbytes: Int): Unit = {
-    // avoid int overflow, check null buf
-    if (off <= buf.length && nbytes >= 0 && off >= 0 && buf.length - off >= nbytes) {
+    if (nbytes == 0) {
+      ()
+    } else if (off <= buf.length && nbytes > 0 && off >= 0 && buf.length - off >= nbytes) {
       tbytes += nbytes
       crc = updateImpl(buf, off, nbytes, crc)
     } else {
