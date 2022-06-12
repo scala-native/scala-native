@@ -40,7 +40,7 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[File]("Generates native binary without running it.")
 
     val nativeMode =
-      taskKey[String]("Compilation mode, either \"debug\" or \"release\".")
+      taskKey[String]("Compilation mode, either \"debug\", \"release-fast\", or \"release-full\".")
 
     val nativeGC =
       taskKey[String](
@@ -49,7 +49,7 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeLTO =
       taskKey[String](
-        "LTO variant used for release mode (either \"none\", \"thin\" or \"full\")."
+        "LTO variant used for release mode, either \"none\", \"thin\", or \"full\" (legacy)."
       )
 
     val nativeCheck =
