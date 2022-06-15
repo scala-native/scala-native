@@ -40,7 +40,9 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[File]("Generates native binary without running it.")
 
     val nativeMode =
-      taskKey[String]("Compilation mode, either \"debug\", \"release-fast\", or \"release-full\".")
+      taskKey[String](
+        "Compilation mode, either \"debug\", \"release-fast\", or \"release-full\"."
+      )
 
     val nativeGC =
       taskKey[String](
