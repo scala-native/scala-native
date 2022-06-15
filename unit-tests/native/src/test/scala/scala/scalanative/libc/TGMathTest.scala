@@ -6,6 +6,9 @@ import org.junit.Assert._
 
 import scalanative.unsafe._
 import scalanative.libc._
+import scalanative.runtime.Platform
+import scalanative.runtime.PlatformExt
+
 class TGMathTest {
 
   // basic math stuffs
@@ -290,6 +293,7 @@ class TGMathTest {
       TestUtils.eps(pi, PI)
     )
   }
+
   // -1 <= sin theta <=1, -1 <= cos theta <= 1, sin theta^2 + cos theta^2 = 1
   @Test def trigonometrics(): Unit = {
     val ns = List.fill(100)(scala.util.Random.nextDouble() * 100)
@@ -298,6 +302,7 @@ class TGMathTest {
       assertTrue(tgmath.sin(n.toFloat) >= -1.0)
       assertTrue(tgmath.sin(n) <= 1.0)
       assertTrue(tgmath.sin(n.toFloat) <= 1.0)
+
       val sin2_cos2 =
         tgmath.pow(tgmath.sin(n), 2.0) + tgmath.pow(tgmath.cos(n), 2.0)
       assertEquals(
@@ -305,15 +310,36 @@ class TGMathTest {
         sin2_cos2,
         TestUtils.eps(1.0, sin2_cos2)
       )
+
       val tanN0 = tgmath.sin(n) / tgmath.cos(n)
       val tanN1 = tgmath.tan(n)
+
       val tanNf0 = tgmath.sin(n.toFloat) / tgmath.cos(n.toFloat)
       val tanNf1 = tgmath.tan(n.toFloat)
+
+      /* Scala Native Issue #2641
+       *
+       * The tan(double) function on Apple M1 is known, to some and
+       * circa June 2022, as having poor numerical accuracy (> 3 eps).
+       * tan(float) is accurate. See:
+       *   https://members.loria.fr/PZimmermann/papers/accuracy.pdf
+       *
+       * Use wider acceptable bounds for Apple M1 tan(double).
+       */
+      // PlatformExt.isArm64 is currently broken/unreliable.
+      // isMac() test here weakens the bounds on both Intel and Arm64
+      // (i.e. M1). macOS on Intel hardware is known to work within 2 eps.
+      //
+      // The condition when a  truthful isArm64 is available should be:
+      // (Platform.isMac() && PlatformExt.isArm64)
+      val nEps = if (Platform.isMac()) 4 else 2
+
       assertEquals(
         tanN0,
         tanN1,
-        TestUtils.eps(tanN0, tanN1)
+        TestUtils.eps(tanN0, tanN1, nEps)
       )
+
       assertEquals(
         tanNf0,
         tanNf1,
@@ -321,6 +347,7 @@ class TGMathTest {
       )
     }
   }
+
   @Test def hyperbolics(): Unit = {
     val ns = List.fill(100)(scala.util.Random.nextDouble() * 100)
     ns.foreach { n =>
