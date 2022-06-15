@@ -440,8 +440,16 @@ object Settings {
       javacOptions ++= Seq("-encoding", "utf8")
     )
 
+  lazy val recompileAllOrNothingSettings = Def.settings(
+    /* Recompile all sources when at least 1/10,000 of the source files have
+     * changed, i.e., as soon as at least one source file changed.
+     */
+    incOptions ~= { _.withRecompileAllFraction(0.0001) }
+  )
+
   lazy val commonJavalibSettings = Def.settings(
     disabledDocsSettings,
+    recompileAllOrNothingSettings,
     // This is required to have incremental compilation to work in javalib.
     // We put our classes on scalac's `javabootclasspath` so that it uses them
     // when compiling rather than the definitions from the JDK.
@@ -496,6 +504,7 @@ object Settings {
     Def.settings(
       mavenPublishSettings,
       disabledDocsSettings,
+      recompileAllOrNothingSettings,
       // Code to fetch scala sources adapted, with gratitude, from
       // Scala.js Build.scala at the suggestion of @sjrd.
       // https://github.com/scala-js/scala-js/blob/\
