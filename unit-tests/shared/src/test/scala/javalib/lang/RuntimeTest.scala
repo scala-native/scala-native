@@ -28,10 +28,10 @@ class RuntimeTest {
    * A private "ls" being found on the user's path before the
    * system standard "ls" causes similar issues.
    *
-   * Guessing and using a hard coded "/usr/bin/ls" is the least bad
+   * Guessing and using a hard coded "ls" is the least bad
    * of several design alternatives ("dir", "find").
    *
-   * The chosen location should work on unmodified Linux, macOS, and
+   * The chosen locations should work on unmodified Linux, macOS, and
    * FreeBSD systems. Given the variety of system
    * configurations in the wild, some OS or system is bound to have 'ls'
    * in a different location.
@@ -40,8 +40,10 @@ class RuntimeTest {
   private def lsCommand =
     if (isWindows) {
       Array("cmd", "/c", "dir", "/b")
-    } else {
-      Array("/usr/bin/ls") // See /* */ block comment immediately above.
+    } else if (isMacOs || isFreeBSD) {
+      Array("/bin/ls")
+    } else { // Linux
+      Array("/usr/bin/ls")
     }
 
   @Test def execCommand(): Unit = {
