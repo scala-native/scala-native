@@ -15,9 +15,6 @@ class RuntimeTest {
   import ProcessUtils._
   private val EOL = System.lineSeparator()
 
-  private val isLinux =
-    System.getProperty("os.name").toLowerCase.contains("linux")
-
   /* See Issues #2649 & #2652 re use of 'ls'.
    * Avoid a problem with ":.:", or variants in the user's PATH definition.
    * Historically the 'resourceDir' has contained an executable file
