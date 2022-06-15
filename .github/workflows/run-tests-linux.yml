@@ -24,6 +24,12 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+      
+      # Use explicit version of JDK for stable API, otherwise MiMa checks might fail, eg. due to missing Throwable::getStackTraceDepth()
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-tools ${{ matrix.scala }}"
