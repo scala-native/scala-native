@@ -37,7 +37,7 @@ sealed abstract class Op {
       Type.Ref(refty.className, exact = true, nullable = nullable)
     case Op.Unbox(ty, _)      => Type.unbox(ty)
     case Op.Var(ty)           => Type.Var(ty)
-    case Op.Varload(slot)     => val Type.Var(ty) = slot.ty; ty
+    case Op.Varload(slot)     => val Type.Var(ty) = slot.ty: @unchecked; ty
     case Op.Varstore(slot, _) => Type.Unit
     case Op.Arrayalloc(ty, _) =>
       Type.Ref(Type.toArrayClass(ty), exact = true, nullable = false)

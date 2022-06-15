@@ -49,7 +49,7 @@ object Defn {
   def existsEntryPoint(defns: Seq[Defn]): Boolean = {
     defns.exists {
       case defn: Defn.Define =>
-        val Global.Member(_, sig) = defn.name
+        val Global.Member(_, sig) = defn.name: @unchecked
         sig.isClinit
       case _ => false
     }

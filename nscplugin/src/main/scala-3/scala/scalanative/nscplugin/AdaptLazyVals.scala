@@ -41,10 +41,10 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
       .exists(f => isLazyFieldOffset(f.name))
 
     if (hasLazyFields) {
-      val template @ Template(_, _, _, _) = td.rhs
+      val template @ Template(_, _, _, _) = td.rhs: @unchecked
       bitmapFieldNames ++= template.body.collect {
         case vd: ValDef if isLazyFieldOffset(vd.name) =>
-          val Apply(_, List(cls: Literal, fieldname: Literal)) = vd.rhs
+          val Apply(_, List(cls: Literal, fieldname: Literal)) = vd.rhs: @unchecked
           vd.symbol -> fieldname
       }.toMap
     }
@@ -58,7 +58,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     // as they're leading to reachability problems
     // Drop static constructor if empty after filtering
     if (hasLazyFields && dd.symbol.isStaticConstructor) {
-      val DefDef(_, _, _, b @ Block(stats, expr)) = dd
+      val DefDef(_, _, _, b @ Block(stats, expr)) = dd: @unchecked
       val newBlock = cpy.Block(b.asInstanceOf[Tree])(
         stats = b.stats
           .filter {
