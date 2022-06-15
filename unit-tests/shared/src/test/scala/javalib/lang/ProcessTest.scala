@@ -9,7 +9,7 @@ import scala.io.Source
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class ProcessTest {
@@ -183,8 +183,10 @@ class ProcessTest {
 
   @Test def destroy(): Unit = {
     assumeFalse(
-      "Breaks test runner when executed in emulator",
-      !executingInJVM && isArm64
+      // Fails with traceback on mac arm64 and maybe others.
+      // See Issue #2648
+      "Test is available on arm64 hardware only when using JVM",
+      Platform.hasArm64SignalQuirk
     )
     val proc = processSleep(2.0).start()
 
@@ -195,7 +197,7 @@ class ProcessTest {
       proc.waitFor(500, TimeUnit.MILLISECONDS)
     )
     assertEquals(
-      // SIGTERM, excess 143
+      // SIGTERM, use unix signal 'excess 128' convention on non-Windows.
       if (isWindows) 1 else 0x80 + 15,
       proc.exitValue
     )
@@ -203,8 +205,10 @@ class ProcessTest {
 
   @Test def destroyForcibly(): Unit = {
     assumeFalse(
-      "Breaks test runner when executed in emulator",
-      !executingInJVM && isArm64
+      // Fails with traceback on mac arm64 and maybe others.
+      // See Issue #2648
+      "Test is available on arm64 hardware only when using JVM",
+      Platform.hasArm64SignalQuirk
     )
     val proc = processSleep(2.0).start()
 
@@ -215,7 +219,7 @@ class ProcessTest {
       p.waitFor(500, TimeUnit.MILLISECONDS)
     )
     assertEquals(
-      // SIGKILL, excess 128
+      // SIGKILL, use unix signal 'excess 128' convention on non-Windows.
       if (isWindows) 1 else 0x80 + 9,
       proc.exitValue
     )

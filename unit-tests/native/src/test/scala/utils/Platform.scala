@@ -4,6 +4,8 @@ package org.scalanative.testsuite.utils
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
+import scala.scalanative.runtime
+
 object Platform {
 
   def scalaVersion: String = ScalaNativeBuildInfo.scalaVersion
@@ -25,5 +27,17 @@ object Platform {
   final val isWindows = osNameProp.toLowerCase.startsWith("windows")
   final val isMacOs = osNameProp.toLowerCase.contains("mac")
 
-  final val isArm64 = scalanative.runtime.PlatformExt.isArm64
+  final val isArm64 = runtime.PlatformExt.isArm64
+
+  /* Scala Native has problem sending C signals on Apple arm64 hardware.
+   * Hardware reporting in Scala Native is tricky. 'isArm64' reports true
+   * when the process is running directly on 'bare metal' but _not_ when
+   * the process is (Rosetta 2) translated running on arm64.
+   *
+   * The bug in question occurs in either case, so report lowest level
+   * hardware.
+   */
+
+  final val hasArm64SignalQuirk =
+    isArm64 || (runtime.Platform.probeMacX8664IsArm64() > 0)
 }

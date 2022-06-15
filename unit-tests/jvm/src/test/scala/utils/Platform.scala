@@ -32,4 +32,6 @@ object Platform {
   final val isArm64 = {
     osArch == "arm64" || osArch == "aarch64"
   }
+
+  final val hasArm64SignalQuirk = false
 }
