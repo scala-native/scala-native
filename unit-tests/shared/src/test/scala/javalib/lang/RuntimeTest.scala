@@ -40,10 +40,8 @@ class RuntimeTest {
   private def lsCommand =
     if (isWindows) {
       Array("cmd", "/c", "dir", "/b")
-    } else if (isMacOs || isFreeBSD) {
+    } else {
       Array("/bin/ls")
-    } else { // Linux
-      Array("/usr/bin/ls")
     }
 
   @Test def execCommand(): Unit = {
