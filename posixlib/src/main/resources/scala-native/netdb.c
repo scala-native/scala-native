@@ -37,20 +37,25 @@ void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
                                               struct addrinfo *out) {
     // ai_addr and ai_next fields are set to NULL because this function is only
     // used for converting hints parameter for the getaddrinfo function, which
-    // doesn't
-    // care about them
-    out->ai_flags = in->ai_flags;
-    out->ai_family = in->ai_family;
-    out->ai_socktype = in->ai_socktype;
-    out->ai_protocol = in->ai_protocol;
-    out->ai_addrlen = in->ai_addrlen;
-    if (in->ai_canonname == NULL) {
-        out->ai_canonname = NULL;
+    // doesn't care about them
+    if (in == NULL) {
+        // Use of Posix spec of ai_flags being 0, not GNU extension value.
+        memset(out, 0, sizeof(struct addrinfo));
+        out->ai_family = AF_UNSPEC;
     } else {
-        out->ai_canonname = strdup(in->ai_canonname);
+        out->ai_flags = in->ai_flags;
+        out->ai_family = in->ai_family;
+        out->ai_socktype = in->ai_socktype;
+        out->ai_protocol = in->ai_protocol;
+        out->ai_addrlen = in->ai_addrlen;
+        if (in->ai_canonname == NULL) {
+            out->ai_canonname = NULL;
+        } else {
+            out->ai_canonname = strdup(in->ai_canonname);
+        }
+        out->ai_addr = NULL;
+        out->ai_next = NULL;
     }
-    out->ai_addr = NULL;
-    out->ai_next = NULL;
 }
 
 void scalanative_convert_addrinfo(struct addrinfo *in,
