@@ -23,9 +23,10 @@ object Platform {
   final val hasCompliantAsInstanceOfs = true
 
   private val osNameProp = System.getProperty("os.name")
-  final val isFreeBSD = osNameProp.equals("FreeBSD")
-  final val isWindows = osNameProp.toLowerCase.startsWith("windows")
-  final val isMacOs = osNameProp.toLowerCase.contains("mac")
+  final val isFreeBSD = runtime.Platform.isFreeBSD()
+  final val isLinux = runtime.Platform.isLinux()
+  final val isMacOs = runtime.Platform.isMac()
+  final val isWindows = runtime.Platform.isWindows()
 
   final val isArm64 = runtime.PlatformExt.isArm64
 
