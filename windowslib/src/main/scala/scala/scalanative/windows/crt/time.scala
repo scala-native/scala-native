@@ -40,11 +40,11 @@ object time {
   def tzset(): Unit = extern
 
   @name("_daylight")
-  def daylight(): CInt = extern
+  def daylight: CInt = extern
 
   @name("_timezone")
-  def timezone(): CLong = extern
+  def timezone: CLong = extern
 
   @name("_tzname")
-  def tzname(): Ptr[CStruct2[CString, CString]] = extern
+  def tzname: Ptr[CStruct2[CString, CString]] = extern
 }
