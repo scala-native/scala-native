@@ -131,3 +131,25 @@ int scalanative_ai_addrconfig() { return AI_ADDRCONFIG; }
 int scalanative_ai_v4mapped() { return AI_V4MAPPED; }
 
 int scalanative_ai_canonname() { return AI_CANONNAME; }
+
+// EAI_* items are declared in the order of Posix specification
+
+int scalanative_eai_again() { return EAI_AGAIN; }
+
+int scalanative_eai_badflags() { return EAI_BADFLAGS; }
+
+int scalanative_eai_fail() { return EAI_FAIL; }
+
+int scalanative_eai_family() { return EAI_FAMILY; }
+
+int scalanative_eai_memory() { return EAI_MEMORY; }
+
+int scalanative_eai_noname() { return EAI_NONAME; }
+
+int scalanative_eai_service() { return EAI_SERVICE; }
+
+int scalanative_eai_socktype() { return EAI_SOCKTYPE; }
+
+int scalanative_eai_system() { return EAI_SYSTEM; }
+
+int scalanative_eai_overflow() { return EAI_OVERFLOW; }
