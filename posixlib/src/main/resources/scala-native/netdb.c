@@ -1,6 +1,8 @@
 #include "netdb.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <Winerror.h>
+#else // not _WIN32
 // FreeBSD wants AF_INET, which is in <sys/socket.h> but not in the local
 // "sys/socket.h".
 //
@@ -134,6 +136,7 @@ int scalanative_ai_canonname() { return AI_CANONNAME; }
 
 // EAI_* items are declared in the order of Posix specification
 
+#ifndef _WIN32
 int scalanative_eai_again() { return EAI_AGAIN; }
 
 int scalanative_eai_badflags() { return EAI_BADFLAGS; }
@@ -153,3 +156,32 @@ int scalanative_eai_socktype() { return EAI_SOCKTYPE; }
 int scalanative_eai_system() { return EAI_SYSTEM; }
 
 int scalanative_eai_overflow() { return EAI_OVERFLOW; }
+
+#else // _Win32
+/* Reference:  https://docs.microsoft.com/en-us/windows/win32/api
+ *                 /ws2tcpip/nf-ws2tcpip-getaddrinfo
+ */
+
+int scalanative_eai_again() { return WSATRY_AGAIN; }
+
+int scalanative_eai_badflags() { return WSAEINVAL; }
+
+int scalanative_eai_fail() { return WSANO_RECOVERY; }
+
+int scalanative_eai_family() { return WSAEAFNOSUPPORT; }
+
+int scalanative_eai_memory() { return WSA_NOT_ENOUGH_MEMORY; }
+
+int scalanative_eai_noname() { return WSAHOST_NOT_FOUND; }
+
+int scalanative_eai_service() { return WSATYPE_NOT_FOUND; }
+
+int scalanative_eai_socktype() { return WSAESOCKTNOSUPPORT; }
+
+// Windows seems not to have an equivalent, use ubiquitous -1
+int scalanative_eai_system() { return -1; }
+
+// Windows seems not to have an equivalent, use ubiquitous -1
+int scalanative_eai_overflow() { return -1; }
+
+#endif // _Win32
