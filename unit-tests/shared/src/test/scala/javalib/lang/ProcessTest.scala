@@ -138,9 +138,23 @@ class ProcessTest {
   @Test def waitForWithTimeoutCompletes(): Unit = {
     val proc = processSleep(0.1).start()
 
+    /* This is another Receiver Operating Characteristic (ROC) curve
+     * decision, where one tries to balance the rates of true failure
+     * and false failure detection.
+     *
+     * On contemporary machines, even virtual machines, a process should
+     * take only a few seconds to exit. Then there is Windows. Many CI
+     * failures having nothing to do with the PR under test have been seen,
+     * mostly on Windows, to have failed here with the previous
+     * "reasonable & conservative" value of 4. No best guess long survives
+     * first contact with the facts on the ground (actually, I think that
+     * was a 10th, or more, best guess).
+     */
+
+    val timeout = 30
     assertTrue(
-      "process should have exited but timed out",
-      proc.waitFor(4, TimeUnit.SECONDS)
+      s"process should have exited but timed out (limit: ${timeout} seconds)",
+      proc.waitFor(timeout, TimeUnit.SECONDS)
     )
     assertEquals(0, proc.exitValue)
   }
@@ -169,9 +183,11 @@ class ProcessTest {
   @Test def waitForWithTimeoutTimesOut(): Unit = {
     val proc = processSleep(2.0).start()
 
+    val timeout = 500 // Make message distinguished.
     assertTrue(
-      "process should have timed out but exited",
-      !proc.waitFor(500, TimeUnit.MILLISECONDS)
+      "process should have timed out but exited" +
+        s" (limit: ${timeout} milliseconds)",
+      !proc.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertTrue("process should be alive", proc.isAlive)
 
@@ -192,9 +208,12 @@ class ProcessTest {
 
     assertTrue("process should be alive", proc.isAlive)
     proc.destroy()
+
+    val timeout = 501 // Make message distinguished.
     assertTrue(
-      "process should have exited but timed out",
-      proc.waitFor(500, TimeUnit.MILLISECONDS)
+      "process should have exited but timed out" +
+        s" (limit: ${timeout} milliseconds)",
+      proc.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertEquals(
       // SIGTERM, use unix signal 'excess 128' convention on non-Windows.
@@ -214,9 +233,12 @@ class ProcessTest {
 
     assertTrue("process should be alive", proc.isAlive)
     val p = proc.destroyForcibly()
+
+    val timeout = 502 // Make message distinguished.
     assertTrue(
-      "process should have exited but timed out",
-      p.waitFor(500, TimeUnit.MILLISECONDS)
+      "process should have exited but timed out" +
+        s" (limit: ${timeout} milliseconds)",
+      p.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertEquals(
       // SIGKILL, use unix signal 'excess 128' convention on non-Windows.
