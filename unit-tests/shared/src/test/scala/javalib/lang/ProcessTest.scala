@@ -9,7 +9,7 @@ import scala.io.Source
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class ProcessTest {
@@ -138,9 +138,23 @@ class ProcessTest {
   @Test def waitForWithTimeoutCompletes(): Unit = {
     val proc = processSleep(0.1).start()
 
+    /* This is another Receiver Operating Characteristic (ROC) curve
+     * decision, where one tries to balance the rates of true failure
+     * and false failure detection.
+     *
+     * On contemporary machines, even virtual machines, a process should
+     * take only a few seconds to exit. Then there is Windows. Many CI
+     * failures having nothing to do with the PR under test have been seen,
+     * mostly on Windows, to have failed here with the previous
+     * "reasonable & conservative" value of 4. No best guess long survives
+     * first contact with the facts on the ground (actually, I think that
+     * was a 10th, or more, best guess).
+     */
+
+    val timeout = 30
     assertTrue(
-      "process should have exited but timed out",
-      proc.waitFor(4, TimeUnit.SECONDS)
+      s"process should have exited but timed out (limit: ${timeout} seconds)",
+      proc.waitFor(timeout, TimeUnit.SECONDS)
     )
     assertEquals(0, proc.exitValue)
   }
@@ -169,9 +183,11 @@ class ProcessTest {
   @Test def waitForWithTimeoutTimesOut(): Unit = {
     val proc = processSleep(2.0).start()
 
+    val timeout = 500 // Make message distinguished.
     assertTrue(
-      "process should have timed out but exited",
-      !proc.waitFor(500, TimeUnit.MILLISECONDS)
+      "process should have timed out but exited" +
+        s" (limit: ${timeout} milliseconds)",
+      !proc.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertTrue("process should be alive", proc.isAlive)
 
@@ -183,19 +199,24 @@ class ProcessTest {
 
   @Test def destroy(): Unit = {
     assumeFalse(
-      "Breaks test runner when executed in emulator",
-      !executingInJVM && isArm64
+      // Fails with traceback on mac arm64 and maybe others.
+      // See Issue #2648
+      "Test is available on arm64 hardware only when using JVM",
+      Platform.hasArm64SignalQuirk
     )
     val proc = processSleep(2.0).start()
 
     assertTrue("process should be alive", proc.isAlive)
     proc.destroy()
+
+    val timeout = 501 // Make message distinguished.
     assertTrue(
-      "process should have exited but timed out",
-      proc.waitFor(500, TimeUnit.MILLISECONDS)
+      "process should have exited but timed out" +
+        s" (limit: ${timeout} milliseconds)",
+      proc.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertEquals(
-      // SIGTERM, excess 143
+      // SIGTERM, use unix signal 'excess 128' convention on non-Windows.
       if (isWindows) 1 else 0x80 + 15,
       proc.exitValue
     )
@@ -203,19 +224,24 @@ class ProcessTest {
 
   @Test def destroyForcibly(): Unit = {
     assumeFalse(
-      "Breaks test runner when executed in emulator",
-      !executingInJVM && isArm64
+      // Fails with traceback on mac arm64 and maybe others.
+      // See Issue #2648
+      "Test is available on arm64 hardware only when using JVM",
+      Platform.hasArm64SignalQuirk
     )
     val proc = processSleep(2.0).start()
 
     assertTrue("process should be alive", proc.isAlive)
     val p = proc.destroyForcibly()
+
+    val timeout = 502 // Make message distinguished.
     assertTrue(
-      "process should have exited but timed out",
-      p.waitFor(500, TimeUnit.MILLISECONDS)
+      "process should have exited but timed out" +
+        s" (limit: ${timeout} milliseconds)",
+      p.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertEquals(
-      // SIGKILL, excess 128
+      // SIGKILL, use unix signal 'excess 128' convention on non-Windows.
       if (isWindows) 1 else 0x80 + 9,
       proc.exitValue
     )

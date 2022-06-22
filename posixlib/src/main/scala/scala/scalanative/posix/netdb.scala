@@ -13,6 +13,9 @@ object netdb {
   @name("scalanative_freeaddrinfo")
   def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern
 
+  // direct call to C
+  def gai_strerror(errcode: CInt): CString = extern
+
   @name("scalanative_getaddrinfo")
   def getaddrinfo(
       name: CString,
@@ -49,6 +52,38 @@ object netdb {
 
   @name("scalanative_ai_canonname")
   def AI_CANONNAME: CInt = extern
+
+  // EAI_* items are declared in the order of Posix specification
+
+  @name("scalanative_eai_again")
+  def EAI_AGAIN: CInt = extern
+
+  @name("scalanative_eai_badflags")
+  def EAI_BADFLAGS: CInt = extern
+
+  @name("scalanative_eai_fail")
+  def EAI_FAIL: CInt = extern
+
+  @name("scalanative_eai_family")
+  def EAI_FAMILY: CInt = extern
+
+  @name("scalanative_eai_memory")
+  def EAI_MEMORY: CInt = extern
+
+  @name("scalanative_eai_noname")
+  def EAI_NONAME: CInt = extern
+
+  @name("scalanative_eai_service")
+  def EAI_SERVICE: CInt = extern
+
+  @name("scalanative_eai_socktype")
+  def EAI_SOCKTYPE: CInt = extern
+
+  @name("scalanative_eai_system")
+  def EAI_SYSTEM: CInt = extern
+
+  @name("scalanative_eai_overflow")
+  def EAI_OVERFLOW: CInt = extern
 }
 
 object netdbOps {

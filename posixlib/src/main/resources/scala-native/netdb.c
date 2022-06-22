@@ -1,4 +1,22 @@
 #include "netdb.h"
+
+#ifdef _WIN32
+#include <Winerror.h>
+#else // not _WIN32
+// FreeBSD wants AF_INET, which is in <sys/socket.h> but not in the local
+// "sys/socket.h".
+//
+// Windows can not find the <> form, and suggests the "" form. However,
+// the later is a local copy which does not define AF_INET.
+// Including that file prevents the system copy with AF_INET from
+// being included.
+//
+// On linux, macOS, etc. the include should provide AF_INET if it has
+// not been previously defined.
+
+#include <sys/socket.h>
+#endif
+
 #include "sys/socket_conversions.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -19,20 +37,25 @@ void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
                                               struct addrinfo *out) {
     // ai_addr and ai_next fields are set to NULL because this function is only
     // used for converting hints parameter for the getaddrinfo function, which
-    // doesn't
-    // care about them
-    out->ai_flags = in->ai_flags;
-    out->ai_family = in->ai_family;
-    out->ai_socktype = in->ai_socktype;
-    out->ai_protocol = in->ai_protocol;
-    out->ai_addrlen = in->ai_addrlen;
-    if (in->ai_canonname == NULL) {
-        out->ai_canonname = NULL;
+    // doesn't care about them
+    if (in == NULL) {
+        // Use of Posix spec of ai_flags being 0, not GNU extension value.
+        memset(out, 0, sizeof(struct addrinfo));
+        out->ai_family = AF_UNSPEC;
     } else {
-        out->ai_canonname = strdup(in->ai_canonname);
+        out->ai_flags = in->ai_flags;
+        out->ai_family = in->ai_family;
+        out->ai_socktype = in->ai_socktype;
+        out->ai_protocol = in->ai_protocol;
+        out->ai_addrlen = in->ai_addrlen;
+        if (in->ai_canonname == NULL) {
+            out->ai_canonname = NULL;
+        } else {
+            out->ai_canonname = strdup(in->ai_canonname);
+        }
+        out->ai_addr = NULL;
+        out->ai_next = NULL;
     }
-    out->ai_addr = NULL;
-    out->ai_next = NULL;
 }
 
 void scalanative_convert_addrinfo(struct addrinfo *in,
@@ -115,3 +138,55 @@ int scalanative_ai_addrconfig() { return AI_ADDRCONFIG; }
 int scalanative_ai_v4mapped() { return AI_V4MAPPED; }
 
 int scalanative_ai_canonname() { return AI_CANONNAME; }
+
+// EAI_* items are declared in the order of Posix specification
+
+#ifndef _WIN32
+int scalanative_eai_again() { return EAI_AGAIN; }
+
+int scalanative_eai_badflags() { return EAI_BADFLAGS; }
+
+int scalanative_eai_fail() { return EAI_FAIL; }
+
+int scalanative_eai_family() { return EAI_FAMILY; }
+
+int scalanative_eai_memory() { return EAI_MEMORY; }
+
+int scalanative_eai_noname() { return EAI_NONAME; }
+
+int scalanative_eai_service() { return EAI_SERVICE; }
+
+int scalanative_eai_socktype() { return EAI_SOCKTYPE; }
+
+int scalanative_eai_system() { return EAI_SYSTEM; }
+
+int scalanative_eai_overflow() { return EAI_OVERFLOW; }
+
+#else // _Win32
+/* Reference:  https://docs.microsoft.com/en-us/windows/win32/api
+ *                 /ws2tcpip/nf-ws2tcpip-getaddrinfo
+ */
+
+int scalanative_eai_again() { return WSATRY_AGAIN; }
+
+int scalanative_eai_badflags() { return WSAEINVAL; }
+
+int scalanative_eai_fail() { return WSANO_RECOVERY; }
+
+int scalanative_eai_family() { return WSAEAFNOSUPPORT; }
+
+int scalanative_eai_memory() { return WSA_NOT_ENOUGH_MEMORY; }
+
+int scalanative_eai_noname() { return WSAHOST_NOT_FOUND; }
+
+int scalanative_eai_service() { return WSATYPE_NOT_FOUND; }
+
+int scalanative_eai_socktype() { return WSAESOCKTNOSUPPORT; }
+
+// Windows seems not to have an equivalent, use ubiquitous -1
+int scalanative_eai_system() { return -1; }
+
+// Windows seems not to have an equivalent, use ubiquitous -1
+int scalanative_eai_overflow() { return -1; }
+
+#endif // _Win32

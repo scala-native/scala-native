@@ -127,7 +127,7 @@ int scalanative_af_unspec() { return AF_UNSPEC; }
 
 int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
                             socklen_t *address_len) {
-    struct sockaddr *converted_address;
+    struct sockaddr *converted_address = NULL;
     int convert_result =
         scalanative_convert_sockaddr(address, &converted_address, address_len);
 
@@ -147,12 +147,10 @@ int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
         result = -1;
     }
 
-    free(converted_address);
-    return result;
-}
+    if (converted_address != NULL)
+        free(converted_address);
 
-int scalanative_socket(int domain, int type, int protocol) {
-    return socket(domain, type, protocol);
+    return result;
 }
 
 int scalanative_bind(int socket, struct scalanative_sockaddr *address,
@@ -192,10 +190,6 @@ int scalanative_connect(int socket, struct scalanative_sockaddr *address,
     return result;
 }
 
-int scalanative_listen(int socket, int backlog) {
-    return listen(socket, backlog);
-}
-
 int scalanative_accept(int socket, struct scalanative_sockaddr *address,
                        socklen_t *address_len) {
     struct sockaddr *converted_address;
@@ -221,23 +215,3 @@ int scalanative_accept(int socket, struct scalanative_sockaddr *address,
     free(converted_address);
     return result;
 }
-
-int scalanative_setsockopt(int socket, int level, int option_name,
-                           void *option_value, socklen_t option_len) {
-    return setsockopt(socket, level, option_name, option_value, option_len);
-}
-
-int scalanative_getsockopt(int socket, int level, int option_name,
-                           void *option_value, socklen_t *option_len) {
-    return getsockopt(socket, level, option_name, option_value, option_len);
-}
-
-ssize_t scalanative_recv(int socket, void *buffer, size_t length, int flags) {
-    return recv(socket, buffer, length, flags);
-}
-
-ssize_t scalanative_send(int socket, void *buffer, size_t length, int flags) {
-    return send(socket, buffer, length, flags);
-}
-
-int scalanative_shutdown(int socket, int how) { return shutdown(socket, how); }

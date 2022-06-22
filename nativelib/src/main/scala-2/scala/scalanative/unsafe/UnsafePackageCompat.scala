@@ -82,7 +82,7 @@ private object MacroImpl {
     c.warning(
       c.enclosingPosition,
       s"Scala Native method `alloc[T]` is deprecated, " +
-        "in Scala 3 `alloc[T](n)` can be interpretted as " +
+        "in Scala 3 `alloc[T](n)` can be interpreted as " +
         "`alloc[T].apply(n)` leading to runtime erros, " +
         "use `alloc[T]()` instead "
     )
@@ -140,7 +140,7 @@ private object MacroImpl {
     c.warning(
       c.enclosingPosition,
       s"Scala Native method `stackalloc[T]` is deprecated, " +
-        "in Scala 3 `stackalloc[T](n)` can be interpretted as " +
+        "in Scala 3 `stackalloc[T](n)` can be interpreted as " +
         "`stackalloc[T].apply(n)` leading to runtime erros, " +
         "use `stackalloc[T]()` instead "
     )
