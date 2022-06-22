@@ -337,7 +337,9 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
   }
 }
 
-class TreeSetFactory extends AbstractSetFactory with NavigableSetFactory
+class TreeSetFactory
+    extends AbstractSetFactory
+    with NavigableSetFactory
     with SortedSetFactory {
   def implementationName: String =
     "java.util.TreeSet"
@@ -364,12 +366,13 @@ class TreeSetWithNullFactory extends TreeSetFactory {
   case class EvenNullComp[E]() extends Comparator[E] {
     def compare(a: E, b: E): Int =
       (Option(a), Option(b)) match {
-        case (Some(e1), Some(e2)) => e1.asInstanceOf[Comparable[E]].compareTo(e2)
+        case (Some(e1), Some(e2)) =>
+          e1.asInstanceOf[Comparable[E]].compareTo(e2)
         case (Some(e1), None) => -1
         case (None, Some(e2)) => 1
-        case (None, None) => 0
+        case (None, None)     => 0
       }
-    }
+  }
 
   override def empty[E: ClassTag]: ju.TreeSet[E] =
     new TreeSet[E](EvenNullComp[E]())
