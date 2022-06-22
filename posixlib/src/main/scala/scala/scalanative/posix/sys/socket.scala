@@ -9,13 +9,17 @@ import scalanative.meta.LinktimeInfo.isWindows
 @extern
 object socket {
   type socklen_t = CUnsignedInt
+
   type sa_family_t = CUnsignedShort
   type _14 = Nat.Digit2[Nat._1, Nat._4]
+
   type sockaddr = CStruct2[
     sa_family_t, // sa_family
     CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
   ]
+
   type sockaddr_storage = CStruct1[sa_family_t] // ss_family
+
   type msghdr = CStruct7[
     Ptr[Byte], // msg_name
     socklen_t, // msg_namelen
@@ -25,12 +29,15 @@ object socket {
     socklen_t, // msg_crontrollen
     CInt // msg_flags
   ]
+
   type cmsghdr = CStruct3[
     socklen_t, // cmsg_len
     CInt, // cmsg_level
     CInt // cmsg_type
   ]
+
   type iovec = uio.iovec
+
   type linger = CStruct2[
     CInt, // l_onoff
     CInt // l_linger
@@ -141,6 +148,18 @@ object socket {
   @name("scalanative_af_unspec")
   def AF_UNSPEC: CInt = extern
 
+  /* Most methods which do not have arguments which are structures
+   * can be direct calls to C or another implementation language.
+   *
+   * Methods which have _Static_assert statements in socket.c which validate
+   * that the Scala Native structures match the operating system structures
+   * can also be direct calls.
+   *
+   * The other methods need an "@name scalanative_foo" intermediate
+   * layer to handle required conversions. Usually the structure
+   * in question is a sockaddr or pointer to one.
+   */
+
   @name("scalanative_getsockname")
   def getsockname(
       socket: CInt,
@@ -148,7 +167,6 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CInt = extern
 
-  @name("scalanative_socket")
   def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
 
   @name("scalanative_connect")
@@ -162,7 +180,6 @@ object socket {
   def bind(socket: CInt, address: Ptr[sockaddr], address_len: socklen_t): CInt =
     extern
 
-  @name("scalanative_listen")
   def listen(socket: CInt, backlog: CInt): CInt = extern
 
   @name("scalanative_accept")
@@ -172,7 +189,6 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CInt = extern
 
-  @name("scalanative_setsockopt")
   def setsockopt(
       socket: CInt,
       level: CInt,
@@ -181,7 +197,6 @@ object socket {
       option_len: socklen_t
   ): CInt = extern
 
-  @name("scalanative_getsockopt")
   def getsockopt(
       socket: CInt,
       level: CInt,
@@ -190,7 +205,6 @@ object socket {
       option_len: Ptr[socklen_t]
   ): CInt = extern
 
-  @name("scalanative_recv")
   def recv(
       socket: CInt,
       buffer: Ptr[Byte],
@@ -208,7 +222,6 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CSSize = extern
 
-  @name("scalanative_send")
   def send(
       socket: CInt,
       buffer: Ptr[Byte],
@@ -226,7 +239,6 @@ object socket {
       address_len: socklen_t
   ): CSSize = extern
 
-  @name("scalanative_shutdown")
   def shutdown(socket: CInt, how: CInt): CInt = extern
 }
 
