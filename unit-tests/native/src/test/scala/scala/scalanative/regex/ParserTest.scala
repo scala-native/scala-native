@@ -7,6 +7,7 @@ import scala.scalanative.junit.utils.CollectionConverters._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Ignore
 
 import RE2.{
   FOLD_CASE,
@@ -22,6 +23,27 @@ import RE2.{
 
 import Regexp.Op._
 
+/* ParserTest is a focused specialist test.  It is priceless to two groups
+ * of developers.
+ *
+ * To most developers, it is priceless in the sense of "without a price",
+ * that is, worthless.  It is worth keeping this test in CI so that
+ * developers know that it exists, but it is not worth the cost of spending
+ * noticeable execution wall clock time on each and every CI run.  It should
+ * be, and now is, a second, or lower, tier test.
+ *
+ * For developers making changes to the scalanative.regex code, especially
+ * to issues related to parsing, this test is priceless in the sense of
+ * "above any value". The reassurance it gives is well worth the execution
+ * wall clock time. Put the tea kettle on to boil.
+ *
+ * Other, currently enabled, regex.*Test classes
+ * lightly exercise parsing. This test exhaustively tests corner cases.
+ * These developers can enable this class for private testing by
+ * commenting out the '@Ignore'.
+ */
+
+@Ignore
 class ParserTest {
 
   private trait RunePredicate {

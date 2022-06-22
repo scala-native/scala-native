@@ -226,27 +226,67 @@ class FilesTest {
       }
 
       val fooCopy = dirFile.toPath.resolve("foocopy")
-      Files.copy(foo, fooCopy, COPY_ATTRIBUTES)
+
+      // Issue 2620 - Capture attributes of source file _immediately_before_
+      // copying the file. The lastAccessTime of the destination file
+      // will be set to the source access time (atime) at this juncture.
+      //
+      // If the source file attributes are captured after the copy one
+      // can get an intermittent assertion failure.
+      // If the device (probably /tmp) of the source file is mounted with
+      // any time option other than noatime, say relatime, then the act of
+      // reading it will change the atime. This later atime will differ
+      // from the atime to which the copy has been set. If chance and
+      // timing lead to the two atimes to be in different seconds (see below)
+      // one gets the valid but unwanted assertion failure.
+      //
+      // As this test is written, when the file is mounted relatime
+      // the first read of the copy would be the first read after the
+      // last write to the file (see above). This would change atime.
+      // The flow of the mount option strictatime speaks for itself.
+      //
+      // There is an assumption here that this test has exclusive
+      // access to the source file: that is, no other thread or process
+      // touches it in this window.
+
       val attrsCls: Class[_ <: BasicFileAttributes] =
         if (isWindows) classOf[DosFileAttributes]
         else classOf[PosixFileAttributes]
 
       val attrs = Files.readAttributes(foo, attrsCls)
+
+      Files.copy(foo, fooCopy, COPY_ATTRIBUTES)
+
       val copyAttrs = Files.readAttributes(fooCopy, attrsCls)
+
+      // Note Well:
+      //   If/When attempting to verify the matches below by using
+      //   the operating system stat command or equivalent, be
+      //   aware that many Scala Native versions truncate
+      //   file times to seconds. The operating system may report
+      //   microseconds or nanoseconds. The assertions below may
+      //   pass when, at first blush, a visual inspection would lead
+      //   one to wonder why they were passing.
+      //
+      //   File times as seconds can lead to other visual anomalies,
+      //   such as lastModified times being before birth times. Go figure!
+
       assertEquals(
         "lastModifiedTime",
         attrs.lastModifiedTime,
         copyAttrs.lastModifiedTime
       )
-      if (!isWindows) {
-        // Not stable enough on Windows, leads to spourious failures as file can be accessed between calls
-        assertEquals(
-          "lastAccessTime",
-          attrs.lastAccessTime,
-          copyAttrs.lastAccessTime
-        )
-      }
+
+      assertEquals(
+        "lastAccessTime",
+        attrs.lastAccessTime,
+        copyAttrs.lastAccessTime
+      )
+
+      // ctime here is "change time" and should match.
+      // ctime is not "birth time", which may differ.
       assertEquals("creationTime", attrs.creationTime, copyAttrs.creationTime)
+
       (attrs, copyAttrs) match {
         case (attrs: PosixFileAttributes, copyAttrs: PosixFileAttributes) =>
           assertEquals(

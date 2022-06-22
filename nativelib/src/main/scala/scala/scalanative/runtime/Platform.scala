@@ -2,6 +2,7 @@ package scala.scalanative
 package runtime
 
 import scala.scalanative.unsafe.{CSize, CString, CFuncPtr2, extern, name}
+import scala.scalanative.unsafe.CInt
 
 @extern
 object Platform {
@@ -13,6 +14,9 @@ object Platform {
 
   @name("scalanative_platform_is_mac")
   def isMac(): Boolean = extern
+
+  @name("scalanative_platform_probe_mac_x8664_is_arm64")
+  def probeMacX8664IsArm64(): CInt = extern
 
   @name("scalanative_platform_is_windows")
   def isWindows(): Boolean = extern

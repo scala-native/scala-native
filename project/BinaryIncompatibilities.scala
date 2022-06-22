@@ -5,7 +5,15 @@ import com.typesafe.tools.mima.core.ProblemFilters._
 
 object BinaryIncompatibilities {
   type Filters = Seq[ProblemFilter]
-  final val Util: Filters = Nil
+  final val Util: Filters = Seq(
+    // JDK distribution dependent methods, derived from java.lang.Throwable
+    exclude[DirectMissingMethodProblem](
+      "scala.scalanative.util.UnreachableException.getStackTraceDepth"
+    ),
+    exclude[DirectMissingMethodProblem](
+      "scala.scalanative.util.UnreachableException.getStackTraceElement"
+    )
+  )
   final val Nir: Filters = Seq(
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*"),
     // sealed trait replaced with sealed abstract class, used internally
