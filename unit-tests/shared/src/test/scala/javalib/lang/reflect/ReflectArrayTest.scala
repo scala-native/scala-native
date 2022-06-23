@@ -16,6 +16,7 @@ import scala.runtime.BoxedUnit
 
 import org.junit.Test
 import org.junit.Assert._
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class ReflectArrayTest {
 
@@ -104,7 +105,7 @@ class ReflectArrayTest {
         Seq(0),
         Seq(1),
         Seq(1, 2, 3),
-        Seq.fill(255)(1)
+        Seq.fill(if (clazz.isArray) 254 else 255)(1) // Maximal dimension
       )
     } {
       testNewInstanceNoInline(clazz, dims, expectedClazz, sampleElem)
@@ -186,7 +187,11 @@ class ReflectArrayTest {
             assertEquals(sampleElem, array(i))
           }
         case current :: next =>
-          assertEquals(classOf[Array[AnyRef]], array.getClass)
+          if (!executingInJVM) {
+            // Scala Native does not distinguish Array[Array[Int]] from Array[Array[Array[Int]]]
+            // All recursive arrays are stored as Array[AnyRef]
+            assertEquals(classOf[Array[AnyRef]], array.getClass)
+          }
           for (i <- 0 until array.length) {
             assertEquals("incorrect array size", current, array.length)
             check(next, array(i).asInstanceOf[Array[_]])
