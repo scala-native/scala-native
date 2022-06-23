@@ -13,7 +13,8 @@ template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
-.. note:: New project should not be created in `mounted` directories, like external storage devices.
+.. Note:: On Windows, new project should not be created in `mounted`
+  directories, like external storage devices.
 
   In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
 
@@ -92,13 +93,20 @@ Scala Native Version       Scala Versions
 0.4.2                      2.11.12, 2.12.{13..15}, 2.13.{4..8}
 0.4.3-RC1, 0.4.3-RC2       2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.0
 0.4.3                      2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.{0..1}
+0.4.4                      2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.{0..1}
+0.4.5                      2.11.12, 2.12.{13..16}, 2.13.{4..8}, 3.1.{0..3}
 ========================== ===============================================
 
 Sbt settings and tasks
 ----------------------
 
-The settings now should be set via ``nativeConfig`` in `sbt`. Setting
-the options directly is now deprecated.
+Use ``nativeConfig`` in `sbt` to provide settings. This is often
+done in a project's `build.sbt`.
+
+Table 1 gives the available settings and these examples show ways
+of using them. 
+
+To set new value and replace any previous setting:
 
 .. code-block:: scala
 
@@ -110,27 +118,49 @@ the options directly is now deprecated.
         .withGC(GC.commix)
     }
 
-===== ======================== ================ =========================================================
-Since Name                     Type             Description
-===== ======================== ================ =========================================================
-0.1   ``compile``              ``Analysis``     Compile Scala code to NIR
-0.1   ``run``                  ``Unit``         Compile, link and run the generated binary
-0.1   ``package``              ``File``         Similar to standard package with addition of NIR
-0.1   ``publish``              ``Unit``         Similar to standard publish with addition of NIR (1)
-0.1   ``nativeLink``           ``File``         Link NIR and generate native binary
-0.1   ``nativeClang``          ``File``         Path to ``clang`` command
-0.1   ``nativeClangPP``        ``File``         Path to ``clang++`` command
-0.1   ``nativeCompileOptions`` ``Seq[String]``  Extra options passed to clang verbatim during compilation
-0.1   ``nativeLinkingOptions`` ``Seq[String]``  Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
-0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
-0.3.3 ``nativeLinkStubs``      ``Boolean``      Whether to link ``@stub`` definitions, or to ignore them
-0.4.0 ``nativeConfig``         ``NativeConfig`` Configuration of the Scala Native plugin
-0.4.0 ``nativeLTO``            ``String``       One of ``"none"``, ``"full"`` or ``"thin"`` (4)
-0.4.0 ``targetTriple``         ``String``       The platform LLVM target triple
-0.4.0 ``nativeCheck``          ``Boolean``      Shall the linker check intermediate results for correctness?
-0.4.0 ``nativeDump``           ``Boolean``      Shall the linker dump intermediate results to disk?
-===== ======================== ================ =========================================================
+To append a value to the right of any previous setting:
+
+.. code-block:: scala
+
+    import scala.scalanative.build._
+
+    // Enable verbose reporting during compilation
+    nativeConfig ~= { c =>
+      c.withCompileOptions(c.compileOptions ++ Seq("-v"))
+    }
+
+    // Use an alternate linker
+    nativeConfig ~= { c =>
+      c.withLinkingOptions(c.linkingOptions ++ Seq("-fuse-ld=mold"))
+    }
+
+The "Since" column in Table 1 gives the Scala Native version where a concept was introduced.
+The "Name" column gives the name of the current method.
+For prior names and practice, see the documentation for the indicated Scala Native version.
+
+===== ============================ ================  ================================================================
+Table 1
+---------------------------------- ----------------  ----------------------------------------------------------------
+Since Name                         Type              Description
+===== ============================ ================  ================================================================
+0.1   ``withCompile``              ``Analysis``      Compile Scala code to NIR
+0.1   ``withRun``                  ``Unit``          Compile, link and run the generated binary
+0.1   ``withPackage``              ``File``          Similar to standard package with addition of NIR
+0.1   ``withPublish``              ``Unit``          Similar to standard publish with addition of NIR (1)
+0.1   ``withNativeLink``           ``File``          Link NIR and generate native binary
+0.1   ``withNativeClang``          ``File``          Path to ``clang`` command
+0.1   ``withNativeClangPP``        ``File``          Path to ``clang++`` command
+0.1   ``withNativeCompileOptions`` ``Seq[String]``   Extra options passed to clang verbatim during compilation
+0.1   ``withNativeLinkingOptions`` ``Seq[String]``   Extra options passed to clang verbatim during linking
+0.1   ``withNativeMode``           ``String``        One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.2   ``withNativeGC``             ``String``        One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
+0.3.3 ``withNativeLinkStubs``      ``Boolean``       Whether to link ``@stub`` definitions, or to ignore them
+0.4.0 ``withNativeConfig``         ``NativeConfig``  Configuration of the Scala Native plugin
+0.4.0 ``withNativeLTO``            ``String``        One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``withTargetTriple``         ``String``        The platform LLVM target triple
+0.4.0 ``withNativeCheck``          ``Boolean``       Shall the linker check intermediate results for correctness?
+0.4.0 ``withNativeDump``           ``Boolean``       Shall the linker dump intermediate results to disk?
+===== ============================ ================  ================================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
