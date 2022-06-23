@@ -139,6 +139,12 @@ class SocketTest {
   }
 
   @Test def trafficClass(): Unit = {
+    // When execution on Windows with Java 17 trafficClass is not set.
+    // s.getTrafficClass returns 0 instead of 0x28
+    assumeFalse(
+      "Skipped due to unexpected behaviour in JDK 17 on Windows",
+      Platform.isWindows && Platform.executingInJVMOnJDK17
+    )
     val s = new Socket()
     try {
       s.setTrafficClass(0x28)
