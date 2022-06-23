@@ -20,7 +20,7 @@ class ConstantDescTest {
     test(true, 1.4)
     test(true, "foo")
 
-    // In Scala.js Byte and Short is transitively ConstantDesc, 
+    // In Scala.js Byte and Short is transitively ConstantDesc,
     // in Scala Native we match JVM behaviour
     test(false, 5.toByte)
     test(false, 300.toShort)
