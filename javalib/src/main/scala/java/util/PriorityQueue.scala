@@ -14,7 +14,7 @@
 package java.util
 
 import scala.annotation.tailrec
-import scala.annotation.nowarn
+import scala.scalanative.compat.annotation.nowarn
 
 class PriorityQueue[E] private (
     private val comp: Comparator[_ >: E],
@@ -82,8 +82,10 @@ class PriorityQueue[E] private (
   override def add(e: E): Boolean = {
     if (e == null)
       throw new NullPointerException()
-    if (innerNextIdx >= innerNextIdx) {
-      inner = Array.copyOf(inner, innerNextIdx * 2)
+    if (innerNextIdx >= inner.length) {
+      val cpy = new Array[Any](inner.length * 2).asInstanceOf[Array[E]]
+      Array.copy(inner, 0, cpy, 0, innerNextIdx)
+      inner = cpy
     }
     inner(innerNextIdx) = e
     fixUp(innerNextIdx)
@@ -103,7 +105,7 @@ class PriorityQueue[E] private (
     } else {
       val len = innerNextIdx
       var i = 1
-      while (i != len && !o.equals(inner(i): @nowarn)) {
+      while (i != len && !o.equals(inner(i)): @nowarn) {
         i += 1
       }
 
