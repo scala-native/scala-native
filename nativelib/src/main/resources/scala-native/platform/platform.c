@@ -4,8 +4,21 @@
 #else
 #include <sys/utsname.h>
 #endif
+
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
+int scalanative_platform_is_freebsd() {
+#if defined(__FreeBSD__)
+    return 1;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_platform_is_linux() {
 #ifdef __linux__
@@ -21,6 +34,47 @@ int scalanative_platform_is_mac() {
 #else
     return 0;
 #endif
+}
+
+/* 'scalanative_platform_probe_mac_x8664_is_arm64' is original work
+ * for Scala Native.  It has been informed by information at these URLs:
+ *   https://developer.apple.com/documentation/kernel/1387446-sysctlbyname
+ *   https://developer.apple.com/documentation/apple-silicon/
+ *     about-the-rosetta-translation-environment#
+ *     Determine-Whether-Your-App-Is-Running-as-a-Translated-Binary
+ */
+
+// Three expected conditions, error: -1, not emulated: 0, emulated: > 0.
+
+int scalanative_platform_probe_mac_x8664_is_arm64() {
+    int translated = 0;
+
+#ifdef __APPLE__
+    size_t translatedLen = sizeof(translated);
+
+    int ret = sysctlbyname("sysctl.proc_translated", &translated,
+                           &translatedLen, NULL, 0);
+
+    if (ret < 0) {
+        /* 'errno' has been set.
+         * Do not raise C signal here because such are not Scala Native
+         * exceptions and do not play nicely.
+         * Return failure to caller and let it ignore error or
+         * raise proper Scala Native exception.
+         */
+        translated = -1;
+    }
+    // else 'translated' has been set by sysctlbyname
+
+    /* Getting the real hardware architecture is __hard__.
+     * This test assumes 'translated == 1' means "Rosetta 2 on arm64".
+     * This should be a safe assumption on any macOS more recent than
+     * 2011 or so. PowerPC translation was removed about then.
+     */
+
+#endif
+
+    return translated;
 }
 
 int scalanative_platform_is_windows() {

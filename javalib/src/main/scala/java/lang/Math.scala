@@ -209,7 +209,7 @@ object Math {
       copySign(0.0d, a)
     } else if (Double.isInfinite(a) && babs < aabs) {
       copySign(Double.MAX_VALUE, a)
-    } else if (aabs == Double.MAX_VALUE && babs > aabs) {
+    } else if (aabs == Double.MAX_VALUE && babs > aabs && copySign(a, b) == a) {
       copySign(Double.POSITIVE_INFINITY, a)
     } else {
       cmath.nextafter(a, b)

@@ -307,17 +307,53 @@ final class Matcher private (private var _pattern: Pattern) {
     }
   }
 
+  def regionSpansInput(): Boolean =
+    (_regionStart == 0) && (_regionEnd == _inputLength)
+
+  def anchoredAtStartRegion(): Boolean = (this.start() == regionStart())
+
+  // Note the (this.end() == 0) clause. It handles certain reluctant/lazy
+  // patterns, such as "X??" (zero or more, prefer zero.). The underlying
+  // REcode appears to set the groups() and end() with "minimal" semantics
+  // rather than JVM semantics. A corner case, but a sharp one.
+
+  def anchoredAtEndRegion(): Boolean =
+    (this.end() == regionEnd()) || (this.end() == 0)
+
+  def anchoredAtBothRegion(): Boolean =
+    anchoredAtStartRegion() && anchoredAtEndRegion()
+
+  // Design Note:
+  //   Implement region support in a way that it can not break
+  //   prior art. Ugly and paranoid, but contains introduced defects.
+  //
+  //   To aid understanding of the description of "entire input"
+  //   in matches(), lookingAt(), and find() below, mentally substitute
+  //   "entire input region".
+
   // Matches the entire input against the pattern (anchored start and end).
   // If there is a match, {@code matches} sets the match state to describe it.
   //
   // @return true if the entire input matches the pattern
-  def matches(): Boolean = genMatch(0, RE2.ANCHOR_BOTH)
+  def matches(): Boolean = {
+    if (regionSpansInput()) {
+      genMatch(0, RE2.ANCHOR_BOTH)
+    } else {
+      genMatch(_regionStart, RE2.UNANCHORED) && anchoredAtBothRegion()
+    }
+  }
 
   // Matches the beginning of input against the pattern (anchored start).
   // If there is a match, {@code lookingAt} sets the match state to describe it.
   //
   // @return true if the beginning of the input matches the pattern
-  def lookingAt(): Boolean = genMatch(0, RE2.ANCHOR_START)
+  def lookingAt(): Boolean = {
+    if (regionSpansInput()) {
+      genMatch(0, RE2.ANCHOR_START)
+    } else {
+      genMatch(_regionStart, RE2.UNANCHORED) && anchoredAtStartRegion()
+    }
+  }
 
   // Matches the input against the pattern (unanchored).
   // The search begins at the end of the last match, or else the beginning
@@ -326,7 +362,8 @@ final class Matcher private (private var _pattern: Pattern) {
   //
   // @return true if it finds a match
   def find(): Boolean = {
-    var start = 0
+    // find() respects the region and does not change it.
+    var start = _regionStart
     if (_hasMatch) {
       start = _groups(1)
       if (_groups(0) == _groups(1)) { // empty match - nudge forward
@@ -345,9 +382,11 @@ final class Matcher private (private var _pattern: Pattern) {
   // @throws IndexOutOfBoundsException if start is not a valid input position
   def find(start: Int): Boolean = {
     if (start < 0 || start > _inputLength) {
-      throw new IndexOutOfBoundsException("start index out of bounds: " + start)
+      throw new IndexOutOfBoundsException(
+        s"start index '${start}' out of bounds: [0, ${_inputLength}]"
+      )
     }
-    reset()
+    reset() // find(index) is documented to reset/nuke the region.
     genMatch(start, 0)
   }
 
@@ -356,7 +395,7 @@ final class Matcher private (private var _pattern: Pattern) {
     val ok = _pattern.re2.match_(
       _inputSequence,
       startByte,
-      _inputLength,
+      _regionEnd,
       anchor,
       _groups,
       1
