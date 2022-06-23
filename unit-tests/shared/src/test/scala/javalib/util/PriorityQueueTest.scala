@@ -149,21 +149,20 @@ class PriorityQueueTest extends CollectionTest {
     assertTrue(pq2.isEmpty)
   }
 
-  // Todo: Restare after implementing ConcurrentSkipListSet
-  // @Test def ctorSortedSetInt(): Unit = {
-  //   val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
-  //   val ss = new java.util.concurrent.ConcurrentSkipListSet[Int](l)
-  //   val pq1 = new PriorityQueue[Int](l)
-  //   val pq2 = new PriorityQueue[Int](ss)
+  @Test def ctorSortedSetInt(): Unit = {
+    val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
+    val ss = new java.util.concurrent.ConcurrentSkipListSet[Int](l)
+    val pq1 = new PriorityQueue[Int](l)
+    val pq2 = new PriorityQueue[Int](ss)
 
-  //   assertEquals(5, pq1.size())
-  //   assertEquals(5, pq2.size())
-  //   for (i <- 1 to 5) {
-  //     assertEquals(pq2.poll(), pq1.poll())
-  //   }
-  //   assertTrue(pq1.isEmpty)
-  //   assertTrue(pq2.isEmpty)
-  // }
+    assertEquals(5, pq1.size())
+    assertEquals(5, pq2.size())
+    for (i <- 1 to 5) {
+      assertEquals(pq2.poll(), pq1.poll())
+    }
+    assertTrue(pq1.isEmpty)
+    assertTrue(pq2.isEmpty)
+  }
 
   @Test def testClear(): Unit = {
     val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
