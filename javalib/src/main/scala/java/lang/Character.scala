@@ -1,11 +1,13 @@
 package java.lang
 
 import java.util.Arrays
+import java.lang.constant.Constable
 
 class Character(val _value: scala.Char)
     extends _Object
     with java.io.Serializable
-    with Comparable[Character] {
+    with Comparable[Character]
+    with Constable {
   def charValue(): scala.Char =
     _value
 

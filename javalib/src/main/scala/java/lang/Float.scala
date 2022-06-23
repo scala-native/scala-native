@@ -7,10 +7,13 @@ import scalanative.runtime.Intrinsics
 import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuFloat}
 
 import java.lang.IEEE754Helpers.parseIEEE754
+import java.lang.constant.{Constable, ConstantDesc}
 
 final class Float(val _value: scala.Float)
     extends Number
-    with Comparable[Float] {
+    with Comparable[Float]
+    with Constable
+    with ConstantDesc {
   @inline def this(s: String) =
     this(Float.parseFloat(s))
 
