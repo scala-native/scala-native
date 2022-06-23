@@ -2,6 +2,7 @@ package java.lang.reflect
 
 import scalanative.runtime.{Array => _, _}
 import java.lang._Class
+import scala.annotation.tailrec
 
 object Array {
   def newInstance(componentType: _Class[_], length: Int): AnyRef = {
@@ -26,6 +27,43 @@ object Array {
     } else {
       new scala.Array[Object](length)
     }
+  }
+
+  def newInstance(
+      componentType: _Class[_],
+      dimensions: scala.Array[Int]
+  ): AnyRef = {
+    import scala.scalanative.runtime.{Array => NativeArray, ObjectArray}
+    val ty = componentType
+    if (componentType eq null)
+      throw new NullPointerException()
+    if (dimensions.length == 0 || dimensions.length > 255)
+      throw new IllegalArgumentException()
+
+    @tailrec def fill(
+        idx: Int,
+        prevDimension: NativeArray[_]
+    ): NativeArray[_] = {
+      if (idx < 0) prevDimension
+      else {
+        val length = dimensions(idx)
+        if (length < 0) throw new NegativeArraySizeException()
+
+        // In Scala Native Array[Array[<PrimitiveType>]] and it's higher dimensions are always represented as ObjectArray
+        val arr = ObjectArray.alloc(length)
+        arr.update(0, prevDimension)
+        var i = 1
+        while (i != length) {
+          arr.update(i, prevDimension.clone())
+          i += 1
+        }
+        fill(idx - 1, arr)
+      }
+    }
+
+    val lastDimension = newInstance(componentType, dimensions.last)
+    if (dimensions.length == 1) lastDimension
+    else fill(dimensions.length - 2, lastDimension.asInstanceOf[NativeArray[_]])
   }
 
   def getLength(array: AnyRef): Int = array match {
