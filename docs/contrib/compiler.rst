@@ -37,7 +37,10 @@ To compile the sandbox project run the following in the sbt shell::
 
     sbt> sandbox3/clean; sandbox3/nativeLink
 
-After compiling the sandbox project you can inspect the ``.ll`` files below
+Compiling will generate a number of files. The ``.ll`` LLVM assembly
+language files can be inspected to see what was passed to LLVM use.
+
+You can inspect the ``.ll`` files in the directories below
 ``sandbox/.3/target/``. Because Scala Native is under active development,
 the directory layout, names of files and their specific content may change.
 
