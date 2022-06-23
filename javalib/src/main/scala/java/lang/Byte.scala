@@ -1,8 +1,13 @@
 package java.lang
 
+import java.lang.constant.Constable
+
 import scalanative.runtime.Intrinsics.{byteToUInt, byteToULong}
 
-final class Byte(val _value: scala.Byte) extends Number with Comparable[Byte] {
+final class Byte(val _value: scala.Byte)
+    extends Number
+    with Comparable[Byte]
+    with Constable {
   @inline def this(s: String) =
     this(Byte.parseByte(s))
 

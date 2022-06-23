@@ -1,6 +1,10 @@
 package java.lang
 
-final class Boolean(val _value: scala.Boolean) extends Comparable[Boolean] {
+import java.lang.constant.Constable
+
+final class Boolean(val _value: scala.Boolean)
+    extends Comparable[Boolean]
+    with Constable {
   def booleanValue(): scala.Boolean =
     _value
 

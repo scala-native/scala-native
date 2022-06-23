@@ -10,13 +10,16 @@ import java.util.regex._
 import java.nio._
 import java.nio.charset._
 import java.util.Objects
+import java.lang.constant.{Constable, ConstantDesc}
 import scala.annotation.{switch, tailrec}
 import _String.{string2_string, _string2string}
 
 final class _String()
     extends Serializable
     with Comparable[_String]
-    with CharSequence {
+    with CharSequence
+    with Constable
+    with ConstantDesc {
   protected[_String] var value: Array[Char] = _
   protected[_String] var offset: Int = 0
   protected[_String] var count: Int = 0

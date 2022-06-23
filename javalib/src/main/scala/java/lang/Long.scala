@@ -2,8 +2,13 @@ package java.lang
 
 import scalanative.runtime.Intrinsics.{divULong, remULong}
 import scalanative.runtime.LLVMIntrinsics
+import java.lang.constant.{Constable, ConstantDesc}
 
-final class Long(val _value: scala.Long) extends Number with Comparable[Long] {
+final class Long(val _value: scala.Long)
+    extends Number
+    with Comparable[Long]
+    with Constable
+    with ConstantDesc {
   @inline def this(s: String) =
     this(Long.parseLong(s))
 

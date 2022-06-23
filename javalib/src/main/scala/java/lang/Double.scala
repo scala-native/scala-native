@@ -7,10 +7,13 @@ import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble}
 import scalanative.runtime.Intrinsics
 
 import java.lang.IEEE754Helpers.parseIEEE754
+import java.lang.constant.{Constable, ConstantDesc}
 
 final class Double(val _value: scala.Double)
     extends Number
-    with Comparable[Double] {
+    with Comparable[Double]
+    with Constable
+    with ConstantDesc {
   @inline def this(s: String) =
     this(Double.parseDouble(s))
 

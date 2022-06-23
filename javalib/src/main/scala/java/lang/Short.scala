@@ -2,10 +2,12 @@ package java.lang
 
 import scalanative.runtime.Intrinsics.{shortToUInt, shortToULong}
 import scalanative.runtime.LLVMIntrinsics
+import java.lang.constant.Constable
 
 final class Short(val _value: scala.Short)
     extends Number
-    with Comparable[Short] {
+    with Comparable[Short]
+    with Constable {
   @inline def this(s: String) =
     this(Short.parseShort(s))
 
