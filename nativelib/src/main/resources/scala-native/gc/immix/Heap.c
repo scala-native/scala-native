@@ -266,7 +266,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     if (stats != NULL) {
         nullify_start_ns = scalanative_nano_time();
     }
-    WeakRefStack_Nullify(heap);
+    WeakRefStack_Nullify();
     if (stats != NULL) {
         sweep_start_ns = scalanative_nano_time();
     }
@@ -276,7 +276,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         Stats_RecordCollection(stats, start_ns, nullify_start_ns,
                                sweep_start_ns, end_ns);
     }
-    WeakRefStack_CallHandlers(heap);
+    WeakRefStack_CallHandlers();
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);

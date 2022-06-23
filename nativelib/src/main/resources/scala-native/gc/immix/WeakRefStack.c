@@ -13,7 +13,7 @@ void (*handlerFn)() = NULL;
 // Used to correctly set "NULL" values in place of cleaned objects
 // and to call other handler functions with WeakRefStack_CallHandlers.
 
-void WeakRefStack_Nullify() {
+void WeakRefStack_Nullify(void) {
     visited = false;
     Bytemap *bytemap = heap.bytemap;
     while (!Stack_IsEmpty(&weakRefStack)) {
@@ -34,7 +34,7 @@ void WeakRefStack_Nullify() {
 
 void WeakRefStack_SetHandler(void *handler) { handlerFn = handler; }
 
-void WeakRefStack_CallHandlers(Heap *heap) {
+void WeakRefStack_CallHandlers(void) {
     if (visited && handlerFn != NULL) {
         visited = false;
 
