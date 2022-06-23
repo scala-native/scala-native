@@ -1,4 +1,15 @@
 // Ported from Scala.js commit: bbf0314 dated: Mon, 13 Jun 2022
+/*
+ * Scala.js (https://www.scala-js.org/)
+ *
+ * Copyright EPFL.
+ *
+ * Licensed under Apache License 2.0
+ * (https://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package org.scalanative.testsuite.javalib.util
 
@@ -6,8 +17,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import java.{util => ju}
-
-import org.scalanative.testsuite.javalib.util.concurrent.ConcurrentSkipListSetFactory
 
 import scala.reflect.ClassTag
 
