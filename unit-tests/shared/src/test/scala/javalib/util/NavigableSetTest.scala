@@ -1,4 +1,4 @@
-// Ported from Scala.js, revision cbf86bb, dated 24 Oct 2020
+// Ported from Scala.js commit: bbf0314 dated: Mon, 13 Jun 2022
 /*
  * Scala.js (https://www.scala-js.org/)
  *
