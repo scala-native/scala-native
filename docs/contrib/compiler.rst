@@ -38,13 +38,14 @@ To compile the sandbox project run the following in the sbt shell::
     sbt> sandbox3/clean; sandbox3/nativeLink
 
 Compiling will generate a number of files. The ``.ll`` LLVM assembly
-language files can be inspected to see what was passed to LLVM use.
+language files can be inspected to see what was passed to the LLVM step.
 
 You can inspect the ``.ll`` files in the directories below
 ``sandbox/.3/target/``. Because Scala Native is under active development,
 the directory layout, names of files and their specific content may change.
 
-A Linux example, where the actual file names found may vary::
+All definitions are generated into 1 or N=(number of CPUs) ``*.ll`` files. 
+A Linux example on system with 4 CPUs::
 
     $ # on command line, with project root as current working directory.
     $ find sandbox/.3/target -name "*.ll"
@@ -53,8 +54,12 @@ A Linux example, where the actual file names found may vary::
     sandbox/.3/target/scala-3.1.3/native/1.ll
     sandbox/.3/target/scala-3.1.3/native/0.ll
 
+Any method, including the ``main`` method, might be defined in any of
+these files.    
+
 Locating the code you are interested in will require that
-you are familiar with the `LLVM assembly language <http://llvm.org/docs/LangRef.html>`_.
+you are familiar with the `LLVM assembly language <http://llvm.org/docs/LangRef.html>`_. As NIR is a subset of the LLVM assembly language, :ref:`nir` may
+be a gentler starting point.
 
 When working on the compiler plugin you'll need to clean the sandbox (or other
 Scala Native projects) if you want it to be recompiled with the newer version
