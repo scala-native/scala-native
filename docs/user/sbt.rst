@@ -97,16 +97,45 @@ Scala Native Version       Scala Versions
 0.4.5                      2.11.12, 2.12.{13..16}, 2.13.{4..8}, 3.1.{0..3}
 ========================== ===============================================
 
-Sbt settings and tasks
-----------------------
+Sbt commands and settings
+-------------------------
+Commands
+^^^^^^^^
+
+Some standard sbt commands behave differently when using the Scala Native plugin.
+
+===== ======================== ================ =========================================================
+Since Name                     Type             Description
+===== ======================== ================ =========================================================
+0.1   ``compile``              ``Analysis``     Compile Scala code to NIR
+0.1   ``run``                  ``Unit``         Compile, link and run the generated binary
+0.1   ``package``              ``File``         Similar to standard package with addition of NIR
+0.1   ``publish``              ``Unit``         Similar to standard publish with addition of NIR (1)
+0.1   ``nativeLink``           ``File``         Link NIR and generate native binary
+===== ======================== ================ =========================================================
+
+Settings
+^^^^^^^^
 
 Use ``nativeConfig`` in `sbt` to provide settings. This is often
 done in a project's `build.sbt`.
 
-Table 1 gives the available settings and these examples show ways
-of using them. 
+``Table 1`` gives the available settings.
 
-To set new value and replace any previous setting:
+Scala Native starts execution with a NativeConfig object, called nativeConfig,
+filled with default values::
+
+  show ThisBuild / nativeConfig
+
+Each ``withX()`` method creates a new
+NativeConfig with the indicated ``X`` value set.  All other settings are taken
+from the Config object being accessed. 
+
+To show nativeConfig values active in current scope at any point in time:
+
+  sbt> show nativeConfig
+
+To set a new value and replace any previous setting:
 
 .. code-block:: scala
 
@@ -134,33 +163,47 @@ To append a value to the right of any previous setting:
       c.withLinkingOptions(c.linkingOptions ++ Seq("-fuse-ld=mold"))
     }
 
-The "Since" column in Table 1 gives the Scala Native version where a concept was introduced.
-The "Name" column gives the name of the current method.
-For prior names and practice, see the documentation for the indicated Scala Native version.
-
-===== ============================ ================  ================================================================
+===== ============================ ==================== ================================================================
 Table 1
----------------------------------- ----------------  ----------------------------------------------------------------
-Since Name                         Type              Description
-===== ============================ ================  ================================================================
-0.1   ``withCompile``              ``Analysis``      Compile Scala code to NIR
-0.1   ``withRun``                  ``Unit``          Compile, link and run the generated binary
-0.1   ``withPackage``              ``File``          Similar to standard package with addition of NIR
-0.1   ``withPublish``              ``Unit``          Similar to standard publish with addition of NIR (1)
-0.1   ``withNativeLink``           ``File``          Link NIR and generate native binary
-0.1   ``withNativeClang``          ``File``          Path to ``clang`` command
-0.1   ``withNativeClangPP``        ``File``          Path to ``clang++`` command
-0.1   ``withNativeCompileOptions`` ``Seq[String]``   Extra options passed to clang verbatim during compilation
-0.1   ``withNativeLinkingOptions`` ``Seq[String]``   Extra options passed to clang verbatim during linking
-0.1   ``withNativeMode``           ``String``        One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
-0.2   ``withNativeGC``             ``String``        One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
-0.3.3 ``withNativeLinkStubs``      ``Boolean``       Whether to link ``@stub`` definitions, or to ignore them
-0.4.0 ``withNativeConfig``         ``NativeConfig``  Configuration of the Scala Native plugin
-0.4.0 ``withNativeLTO``            ``String``        One of ``"none"``, ``"full"`` or ``"thin"`` (4)
-0.4.0 ``withTargetTriple``         ``String``        The platform LLVM target triple
-0.4.0 ``withNativeCheck``          ``Boolean``       Shall the linker check intermediate results for correctness?
-0.4.0 ``withNativeDump``           ``Boolean``       Shall the linker dump intermediate results to disk?
-===== ============================ ================  ================================================================
+---------------------------------- -------------------- ----------------------------------------------------------------
+Since Name                         Type                 Description
+===== ============================ ==================== ================================================================
+0.4.0 ``withClang``                ``File``             Path to ``clang`` command
+0.4.0 ``withClangPP``              ``File``             Path to ``clang++`` command
+0.4.0 ``withCompileOptions``       ``Seq[String]``      Extra options passed to clang verbatim during compilation
+0.4.0 ``withLinkingOptions``       ``Seq[String]``      Extra options passed to clang verbatim during linking
+0.4.0 ``withMode``                 ``String``           One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.4.0 ``withGC``                   ``String``           One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
+0.4.0 ``withLinkStubs``            ``NativeConfig``     Configuration of the Scala Native plugin
+0.4.0 ``withLTO``                  ``String``           One of ``"none"``, ``"full"`` or ``"thin"`` (4)
+0.4.0 ``withTargetTriple``         ``String``           The platform LLVM target triple: OS, ABI and CPU architecture
+0.4.0 ``withCheck``                ``Boolean``          Shall the linker check intermediate results for correctness?
+0.4.0 ``withDump``                 ``Boolean``          Shall the linker dump intermediate results to disk?
+0.4.0 ``withOptimize``             ``Boolean``          Enable or disable code optimization passes
+0.4.1 ``withLinktimeProperties``   ``Map[String, Any]`` Map of properties resolved at linktime 
+0.4.1 ``withCheckFatalWarnings``   ``Boolean``          Shall the linker NIR check treat warnings as errors?
+0.4.4 ``withEmbedResources``       ``Boolean``          Shall resource files be embedded in the resulting binary file?
+===== ============================ ==================== ================================================================
+
+Deprecated settings
+;;;;;;;;;;;;;;;;;;;
+
+``nativeConfig`` was introduced  in Scala Native version 0.4.0. It superseded
+prior practice and made the settings in ``Table 2`` deprecated and subject to removal.
+
+===== ======================== ================ =========================================================
+Table 2
+------------------------------ ---------------- ---------------------------------------------------------
+Since Name                     Type             Description
+===== ======================== ================ =========================================================
+0.1   ``nativeClang``          ``File``         Path to ``clang`` command
+0.1   ``nativeClangPP``        ``File``         Path to ``clang++`` command
+0.1   ``nativeCompileOptions`` ``Seq[String]``  Extra options passed to clang verbatim during compilation
+0.1   ``nativeLinkingOptions`` ``Seq[String]``  Extra options passed to clang verbatim during linking
+0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
+0.3.3 ``nativeLinkStubs``      ``Boolean``      Whether to link ``@stub`` definitions, or to ignore them
+===== ======================== ================ =========================================================
 
 1. See `Publishing`_ and `Cross compilation`_ for details.
 2. See `Compilation modes`_ for details.
@@ -192,8 +235,8 @@ Scala Native supports three distinct linking modes:
 3. **release-full.** (introduced in 0.4.0)
 
    Optimized for best runtime performance, even if hurts compilation
-   time and code size. This modes includes a number of more aggresive optimizations
-   such type-driven method duplication and more aggresive inliner.
+   time and code size. This modes includes a number of more aggressive optimizations
+   such type-driven method duplication and more aggressive inliner.
    Similar to clang's ``-O3`` with addition of link-time optimization over
    the whole application code.
 
