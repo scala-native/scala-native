@@ -55,10 +55,12 @@ A Linux example on system with 4 CPUs::
     sandbox/.3/target/scala-3.1.3/native/0.ll
 
 Any method, including the ``main`` method, might be defined in any of
-these files.    
+these files. :ref:`appendix_a`  will help locating the code you are
+interested in.
 
-Locating the code you are interested in will require that
-you are familiar with the `LLVM assembly language <http://llvm.org/docs/LangRef.html>`_. As NIR is a subset of the LLVM assembly language, :ref:`nir` may
+Once you have located the code, you must be familiar with the
+`LLVM assembly language <http://llvm.org/docs/LangRef.html>`_.
+NIR is a subset of the LLVM assembly language, so :ref:`nir` may
 be a gentler starting point.
 
 When working on the compiler plugin you'll need to clean the sandbox (or other

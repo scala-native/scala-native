@@ -12,3 +12,4 @@ Contributor's Guide
   nir
   mangling
   ides
+  appendices
