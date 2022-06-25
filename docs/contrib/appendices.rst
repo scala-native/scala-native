@@ -38,7 +38,7 @@ yielding::
 
 `LAL16java.lang.String_uEo` is the return type.
 
-scala 2 style main methods
+Scala 2 style main methods
 --------------------------
 
 The following code
