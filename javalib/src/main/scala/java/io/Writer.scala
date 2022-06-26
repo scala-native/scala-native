@@ -1,14 +1,16 @@
 package java.io
 
-abstract class Writer private[this] (_lock: Option[Object])
-    extends Appendable
-    with Closeable
-    with Flushable {
+// Ported from Scala.js, commit: 7d7a621, dated 2022-03-07
 
-  protected val lock = _lock.getOrElse(this)
+abstract class Writer() extends Appendable with Closeable with Flushable {
+  protected var lock: Object = this
 
-  protected def this(lock: Object) = this(Some(lock))
-  protected def this() = this(None)
+  protected def this(lock: Object) = {
+    this()
+    if (lock eq null)
+      throw new NullPointerException()
+    this.lock = lock
+  }
 
   def write(c: Int): Unit =
     write(Array(c.toChar))
@@ -43,4 +45,5 @@ abstract class Writer private[this] (_lock: Option[Object])
   def flush(): Unit
 
   def close(): Unit
+
 }
