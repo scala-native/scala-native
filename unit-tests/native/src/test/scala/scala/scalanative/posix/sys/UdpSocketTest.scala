@@ -17,7 +17,7 @@ import scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.windows.WinSocketApiOps
+import scala.scalanative.windows.WinSocketApiOps._
 import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Test
@@ -85,29 +85,40 @@ class UdpSocketTest {
   // Make available to Udp6SocketTest.scala
   private[sys] def pollReadyToRecv(fd: CInt, timeout: CInt) = {
     // timeout is in milliseconds
-    val fds = stackalloc[struct_pollfd](1)
-    (fds + 0).fd = fd
-    (fds + 0).events = POLLIN | POLLRDNORM
 
-    errno.errno = 0
+    if (isWindows) {
+//        Thread.sleep(5 * 1000) // remove line when WSAPool() is working.
 
-    // poll() sounds like a nasty busy wait loop, but is event driven in kernel
+      val fds = stackalloc[WSAPollFd](1)
+      fds.socket = fd.asInstanceOf[WinSocketApi.Socket]
+      fds.events = WinSocketApiExt.POLLIN
 
-    val ret = if (isWindows) {
-      WSAPoll(fds.asInstanceOf[Ptr[WSAPollFd]], 1.toUInt, timeout)
+      val ret = WSAPoll(fds, 1.toUInt, timeout)
+
+      if (ret == 0) {
+        fail(s"poll timed out after ${timeout} milliseconds")
+      } else if (ret < 0) {
+        val reason = ErrorHandlingApiOps.errorMessage(GetLastError())
+        fail(s"poll for input failed - $reason")
+      }
     } else {
-      poll(fds, 1.toUInt, timeout)
-    }
+      val fds = stackalloc[struct_pollfd](1)
+      (fds + 0).fd = fd
+      (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
 
-    if (ret == 0) {
-      fail(s"poll timed out after ${timeout} milliseconds")
-    } else if (ret < 0) {
-      val reason =
-        if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
-        else fromCString(strerror(errno.errno))
-      fail(s"poll for input failed - $reason")
+      errno.errno = 0
+      // poll() sounds like a nasty busy wait loop, but is event driven in kernel
+
+      val ret = poll(fds, 1.toUInt, timeout)
+
+      if (ret == 0) {
+        fail(s"poll timed out after ${timeout} milliseconds")
+      } else if (ret < 0) {
+        val reason = fromCString(strerror(errno.errno))
+        fail(s"poll for input failed - $reason")
+      }
+      // else good to go
     }
-    // else good to go
   }
 
   @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
