@@ -87,10 +87,8 @@ class UdpSocketTest {
     // timeout is in milliseconds
 
     if (isWindows) {
-//        Thread.sleep(5 * 1000) // remove line when WSAPool() is working.
-
       val fds = stackalloc[WSAPollFd](1)
-      fds.socket = fd.asInstanceOf[WinSocketApi.Socket]
+      fds.socket = fd.toPtr[Byte]
       fds.events = WinSocketApiExt.POLLIN
 
       val ret = WSAPoll(fds, 1.toUInt, timeout)
