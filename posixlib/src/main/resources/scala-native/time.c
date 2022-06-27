@@ -5,6 +5,7 @@
 
 #define _XOPEN_SOURCE 700
 
+#include <stdbool.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
@@ -163,21 +164,86 @@ char *scalanative_strptime(const char *s, const char *format,
 
 char **scalanative_tzname() { return tzname; }
 
+#if defined(__FreeBSD__)
+
+/* The synthesized 'timezone' and 'daylight' may or may not match
+ * the behavior of Linux/macOS when tzset() has not been previouly call.
+ * Only acceptance tests are likely to notice the difference.
+ *
+ * Linux reports 'timezone' as zero and both tzname[0] and tzname[1]
+ * as 'GMT'.
+ *
+ * Depending on if daylight savings are in effect and the behavior
+ * of localtime_r(), the synthesized 'timezone' can match or not.
+ * Calling when daylight saving time is not in effect should yield a
+ * match. Calling when daylight saving time is in effect should act
+ * as if tzset() had been called. In the latter case, mktime() eventually
+ * gets called, and that acts as if it calls tzset().
+ *
+ * Usually, not having called tzset, implicitly or explicitly, is a
+ * bug and giving the 'expected', after tzset(), result is better for
+ * the user.
+ */
+
+// Rely upon FreeBSD tm_isdst to be more reliable than POSIX version.
+
+static bool find_offset(int year, int month, struct tm *tm) {
+    tm->tm_year = year;
+    tm->tm_mon = month;
+
+    time_t t = mktime(tm);
+    localtime_r(&t, tm);
+
+    return tm->tm_isdst == 0;
+}
+
+static long synthesize_timezone() {
+    // An expensive routine, especially if called frequently.
+
+    long tm_gmtoff = 0;
+    time_t t = time(NULL);
+    struct tm lt = {0};
+
+    localtime_r(&t, &lt);
+
+    if (lt.tm_isdst == 0) { // It is Standard time now.
+        tm_gmtoff = lt.tm_gmtoff;
+    } else {
+        struct tm tmJan = {0};
+
+        // Is Standard time in January?
+        if (find_offset(lt.tm_year, 0, &tmJan)) {
+            tm_gmtoff = tmJan.tm_gmtoff;
+        } else {
+            struct tm tmJuly = {0};
+
+            // Current location must be south of Equator.
+            if (find_offset(lt.tm_year, 6, &tmJuly)) {
+                tm_gmtoff = tmJuly.tm_gmtoff;
+            }
+        }
+    }
+    // Posix 'timezone' is + WEST of prime meridian, tm_gmtoff is + EAST.
+    return -tm_gmtoff;
+}
+#endif
+
 // XSI
 long scalanative_timezone() {
-#if defined(__FreeBSD__)
-    return 0;
-#else
+#if !defined(__FreeBSD__)
     return timezone;
+#else
+    return synthesize_timezone();
 #endif
 }
 
 // XSI
 int scalanative_daylight() {
-#if defined(__FreeBSD__)
-    return 0;
-#else
+#if !defined(__FreeBSD__)
     return daylight;
+#else
+    return (tzname[0] != NULL) && (tzname[1] != NULL) &&
+           (strcmp(tzname[0], tzname[1]) != 0);
 #endif
 }
 
