@@ -33,7 +33,14 @@ object unistd {
   def sleep(seconds: CUnsignedInt): CUnsignedInt = extern
   def truncate(path: CString, length: off_t): CInt = extern
   def unlink(path: CString): CInt = extern
+
+  // Maintainer: See 'Developer Note' in Issue #2395 about complete removal.
+  @deprecated(
+    "Removed in POSIX.1-2008. Use POSIX time.h nanosleep().",
+    "posixlib 0.4.5"
+  )
   def usleep(usecs: CUnsignedInt): CInt = extern
+
   def vfork(): CInt = extern
   def write(fildes: CInt, buf: Ptr[_], nbyte: CSize): CInt = extern
 

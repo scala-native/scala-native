@@ -19,6 +19,7 @@ object Platform {
   final val hasCompliantArrayIndexOutOfBounds = true
 
   final val executingInJVMOnJDK8OrLower = false
+  final val executingInJVMOnJDK17 = false
 
   final val hasCompliantAsInstanceOfs = true
 

@@ -1,5 +1,7 @@
 package java.lang
 
+import java.util.function.Supplier
+
 class ThreadLocal[T] {
   private var hasValue: Boolean = false
   private var v: T = _
@@ -21,4 +23,13 @@ class ThreadLocal[T] {
     hasValue = false
     v = null.asInstanceOf[T] // for gc
   }
+}
+
+object ThreadLocal {
+
+  def withInitial[S](supplier: Supplier[S]): ThreadLocal[S] =
+    new ThreadLocal[S] {
+      override protected def initialValue(): S = supplier.get()
+    }
+
 }

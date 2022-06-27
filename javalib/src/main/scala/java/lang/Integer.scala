@@ -2,10 +2,13 @@ package java.lang
 
 import scalanative.runtime.Intrinsics.{divUInt, remUInt, intToULong}
 import scalanative.runtime.LLVMIntrinsics
+import java.lang.constant.{Constable, ConstantDesc}
 
 final class Integer(val _value: scala.Int)
     extends Number
-    with Comparable[Integer] {
+    with Comparable[Integer]
+    with Constable
+    with ConstantDesc {
   @inline def this(s: String) =
     this(Integer.parseInt(s))
 

@@ -21,7 +21,9 @@ trait ReachabilitySuite extends AnyFunSuite {
     Global.Top("java.lang.String"),
     Global.Top("java.lang.CharSequence"),
     Global.Top("java.lang.Comparable"),
-    Global.Top("java.io.Serializable")
+    Global.Top("java.io.Serializable"),
+    Global.Top("java.lang.constant.Constable"),
+    Global.Top("java.lang.constant.ConstantDesc")
   )
 
   def testReachable(label: String)(f: => (String, Global, Seq[Global])) =
