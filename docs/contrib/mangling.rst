@@ -1,3 +1,5 @@
+.. _name_mangling:
+
 Name mangling
 -------------
 
