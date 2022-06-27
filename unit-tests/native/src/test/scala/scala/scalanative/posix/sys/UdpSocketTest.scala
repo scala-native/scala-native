@@ -87,7 +87,7 @@ class UdpSocketTest {
     // timeout is in milliseconds
 
     if (isWindows) {
-      val fds = stackalloc[WSAPollFd](1)
+      val fds = stackalloc[WSAPollFd]()
       fds.socket = fd.toPtr[Byte]
       fds.events = WinSocketApiExt.POLLIN
 
@@ -100,7 +100,7 @@ class UdpSocketTest {
         fail(s"poll for input failed - $reason")
       }
     } else {
-      val fds = stackalloc[struct_pollfd](1)
+      val fds = stackalloc[struct_pollfd]()
       (fds + 0).fd = fd
       (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
 
