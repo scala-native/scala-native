@@ -6,6 +6,8 @@ import scalanative.posix.fcntl
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
+import scalanative.posix.poll._
+import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.socketOps._
 import scalanative.posix.unistd
@@ -15,7 +17,7 @@ import scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.windows.WinSocketApiOps
+import scala.scalanative.windows.WinSocketApiOps._
 import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Test
@@ -69,6 +71,52 @@ class UdpSocketTest {
   private def closeSocket(socket: CInt): Unit = {
     if (isWindows) WinSocketApi.closeSocket(socket.toPtr[Byte])
     else unistd.close(socket)
+  }
+
+  private def checkRecvfromResult(v: CSSize, label: String): Unit = {
+    if (v.toInt < 0) {
+      val reason =
+        if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
+        else fromCString(strerror(errno.errno))
+      fail(s"$label failed - $reason")
+    }
+  }
+
+  // Make available to Udp6SocketTest.scala
+  private[sys] def pollReadyToRecv(fd: CInt, timeout: CInt) = {
+    // timeout is in milliseconds
+
+    if (isWindows) {
+      val fds = stackalloc[WSAPollFd](1)
+      fds.socket = fd.toPtr[Byte]
+      fds.events = WinSocketApiExt.POLLIN
+
+      val ret = WSAPoll(fds, 1.toUInt, timeout)
+
+      if (ret == 0) {
+        fail(s"poll timed out after ${timeout} milliseconds")
+      } else if (ret < 0) {
+        val reason = ErrorHandlingApiOps.errorMessage(GetLastError())
+        fail(s"poll for input failed - $reason")
+      }
+    } else {
+      val fds = stackalloc[struct_pollfd](1)
+      (fds + 0).fd = fd
+      (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
+
+      errno.errno = 0
+      // poll() sounds like a nasty busy wait loop, but is event driven in kernel
+
+      val ret = poll(fds, 1.toUInt, timeout)
+
+      if (ret == 0) {
+        fail(s"poll timed out after ${timeout} milliseconds")
+      } else if (ret < 0) {
+        val reason = fromCString(strerror(errno.errno))
+        fail(s"poll for input failed - $reason")
+      }
+      // else good to go
+    }
   }
 
   @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
@@ -131,35 +179,16 @@ class UdpSocketTest {
         )
         assertEquals("sendto", outData.size, nBytesSent)
 
-        // There is a "pick your poison" design choice here.
-        // inSocket is set O_NONBLOCK to eliminate the possibility
-        // that a bad sendto() or readfrom() implemenation would hang
-        // for a long time.
-        //
-        // This introduces the theoretical possiblity the sendto() above
-        // does not complete before recvfrom() looks for data, causing
-        // failure. Since this is send/recv pair is explicitly loopback,
-        // that is highly unlikely.
-        //
+        // If inSocket did not get data by timeout, it probably never will.
+        pollReadyToRecv(inSocket, 30 * 1000) // assert fail on error or timeout
+
         /// Two tests using one inbound packet, save test duplication.
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
         val inData: Ptr[Byte] = alloc[Byte](maxInData)
 
-        // Try to prevent spurious race conditions.
-        Thread.sleep(100)
-
-        def checkRecvfromResult(v: CSSize, label: String): Unit = {
-          if (v.toInt < 0) {
-            val reason =
-              if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
-              else fromCString(strerror(errno.errno))
-            fail(s"$label failed - $reason")
-          }
-        }
-
-        // Test not fetching remote address. Exercise last two arguments.
+        // Test not fetching remote address. Exercise last two args as nulls.
         val nBytesPeekedAt =
           recvfrom(
             inSocket,
