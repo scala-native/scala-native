@@ -109,10 +109,11 @@ def template(
     commits: Int,
     contributos: List[String]
 ) = {
+  val version = lastTag.stripPrefix("v")
   s"""|
-      |# Release $lastTag ($today)
+      |# $version ($today)
       |
-      |We're happy to announce the release of Scala Native $lastTag, which
+      |We're happy to announce the release of Scala Native $version, which
       |
       |
       |Scala standard library used by this release is based on the following versions:
