@@ -92,7 +92,7 @@ def main(
     )
 
   val pathToReleaseNotes =
-    os.pwd / os.up / "docs" / "changelog" / s"$today-release-$lastTag.md"
+    os.pwd / "docs" / "changelog" / s"$today-release-$lastTag.md"
   os.write(pathToReleaseNotes, releaseNotes)
 }
 
@@ -109,10 +109,38 @@ def template(
     commits: Int,
     contributos: List[String]
 ) = {
+  val version = lastTag.stripPrefix("v")
   s"""|
-      |# Release $lastTag ($today)
+      |# $version ($today)
       |
-      |We're happy to announce the release of Scala Native $lastTag, which
+      |We're happy to announce the release of Scala Native $version, which
+      |
+      |
+      |Scala standard library used by this release is based on the following versions:
+      |<table>
+      |<tbody>
+      |  <tr>
+      |    <td>Scala binary version</td>
+      |    <td>Scala release</td>
+      |  </tr>
+      |  <tr>
+      |    <td align="center">2.11</td>
+      |    <td align="center">2.11.12</td>
+      |  </tr>
+      |  <tr>
+      |    <td align="center">2.12</td>
+      |    <td align="center"></td>
+      |  </tr>
+      |  <tr>
+      |    <td align="center">2.13</td>
+      |    <td align="center"></td>
+      |  </tr>
+      |  <tr>
+      |    <td align="center">3</td>
+      |    <td align="center"></td>
+      |  </tr>
+      |</tbody>
+      |</table>
       |
       |<table>
       |<tbody>
@@ -127,14 +155,6 @@ def template(
       |    <tr>
       |    <td>Contributors</td>
       |    <td align="center">${contributos.size}</td>
-      |  </tr>
-      |  <tr>
-      |    <td>Closed issues</td>
-      |    <td align="center"></td>
-      |  </tr>
-      |  <tr>
-      |    <td>New features</td>
-      |    <td align="center"></td>
       |  </tr>
       |</tbody>
       |</table>

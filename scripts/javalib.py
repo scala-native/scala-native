@@ -8,7 +8,7 @@ import subprocess,os
 
 cwd = os.getcwd()
 
-target = cwd + "/javalib/target/scala-2.11/classes/"
+target = cwd + "/javalib/.2.11/target/scala-2.11/classes/"
 
 paths = subprocess.check_output(["find", target, "-name", "*.nir"])
 

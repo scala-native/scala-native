@@ -9,6 +9,7 @@ scripts/.coursier
 scripts/.scalafmt*
 sbt-crossproject/
 local.sbt
+.ammonite/
 
 CMakeLists.txt
 cmake-build-debug/
