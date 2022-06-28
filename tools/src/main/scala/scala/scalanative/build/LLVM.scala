@@ -42,7 +42,7 @@ private[scalanative] object LLVM {
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      val packageName = (config.workdir relativize path).toString
+      val packageName = (config.workdir() relativize path).toString
         .replace(File.separator, ".")
         .split('.')
         .init
@@ -102,17 +102,15 @@ private[scalanative] object LLVM {
    *    The results from the linker.
    *  @param objectPaths
    *    The paths to all the `.o` files.
-   *  @param outpath
-   *    The path where to write the resulting binary.
    *  @return
-   *    `outpath`
+   *    `outpath` The config.artifactPath
    */
   def link(
       config: Config,
       linkerResult: linker.Result,
-      objectsPaths: Seq[Path],
-      outpath: Path
+      objectsPaths: Seq[Path]
   ): Path = {
+    val outpath = config.artifactPath
     val links = {
       val srclinks = linkerResult.links.collect {
         case Link("z") if config.targetsWindows => "zlib"
@@ -152,7 +150,7 @@ private[scalanative] object LLVM {
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
     locally {
-      val pw = new PrintWriter(config.workdir.resolve("llvmLinkInfo").toFile)
+      val pw = new PrintWriter(config.workdir().resolve("llvmLinkInfo").toFile)
       try
         llvmLinkInfo.foreach {
           // in windows system, the file separator doesn't work very well, so we

@@ -44,13 +44,11 @@ object Build {
    *      .withClassPath(classpath)
    *      .withWorkdir(workdir)
    *
-   *  Build.build(config, outpath)
+   *  Build.build(config)
    *  }}}
    *
    *  @param config
    *    The configuration of the toolchain.
-   *  @param outpath
-   *    The path to the resulting native binary.
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
@@ -73,7 +71,7 @@ object Build {
       }
 
       implicit val incCompilationContext: IncCompilationContext =
-        new IncCompilationContext(fconfig.workdir)
+        new IncCompilationContext(fconfig.workdir())
       if (config.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.collectFromPreviousState()
       }
@@ -111,7 +109,7 @@ object Build {
       if (config.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.clear()
       }
-      LLVM.link(fconfig, linked, objectPaths, outpath)
+      LLVM.link(fconfig, linked, objectPaths)
     }
 
   def findAndCompileNativeSources(
@@ -126,7 +124,7 @@ object Build {
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
         implicit val incCompilationContext: IncCompilationContext =
-          new IncCompilationContext(config.workdir)
+          new IncCompilationContext(config.workdir())
         LLVM.compile(projConfig, projPaths)
       }
   }

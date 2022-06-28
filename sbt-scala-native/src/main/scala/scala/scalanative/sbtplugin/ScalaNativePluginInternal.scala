@@ -119,6 +119,7 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
+        .withBasename(moduleName.value)
     },
     nativeBuildConfig := {
       val classpath = fullClasspath.value.map(_.data.toPath)
@@ -132,18 +133,16 @@ object ScalaNativePluginInternal {
         .withMainClass(mainClass)
         .withClassPath(classpath)
         .withBasedir(crossTarget.value.toPath())
-        .withBasename(moduleName.value)
         .withTestConfig(testConfig)
         .withCompilerConfig(nativeConfig.value)
     },
     nativeLink := {
       val config = nativeBuildConfig.value
-      val outpath = config.artifactPath
-      val outfile = outpath.toFile()
+      val outfile = config.artifactPath.toFile()
 
       def buildNew(): Unit = {
         interceptBuildException {
-          Build.build(config, outpath)(sharedScope)
+          Build.build(config)(sharedScope)
         }
       }
 

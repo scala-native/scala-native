@@ -90,6 +90,9 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
+  /** Base name for executable or library, typically the project name. */
+  def basename: String
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -143,9 +146,10 @@ sealed trait NativeConfig {
       value: NativeConfig.LinktimeProperites
   ): NativeConfig
 
-  def withEmbedResources(
-      value: Boolean
-  ): NativeConfig
+  def withEmbedResources(value: Boolean): NativeConfig
+
+  /** Create a new config with given base artifact name. */
+  def withBasename(value: String): NativeConfig
 }
 
 object NativeConfig {
@@ -170,7 +174,8 @@ object NativeConfig {
       optimize = true,
       useIncrementalCompilation = true,
       linktimeProperties = Map.empty,
-      embedResources = false
+      embedResources = false,
+      basename = ""
     )
 
   private final case class Impl(
@@ -190,7 +195,8 @@ object NativeConfig {
       optimize: Boolean,
       useIncrementalCompilation: Boolean,
       linktimeProperties: LinktimeProperites,
-      embedResources: Boolean
+      embedResources: Boolean,
+      basename: String
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -251,6 +257,10 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
+    def withBasename(value: String): NativeConfig = {
+      copy(basename = value)
+    }
+
     override def toString: String = {
       val listLinktimeProperties = {
         if (linktimeProperties.isEmpty) ""
@@ -267,23 +277,24 @@ object NativeConfig {
         }
       }
       s"""NativeConfig(
-        | - clang:              $clang
-        | - clangPP:            $clangPP
-        | - linkingOptions:     $linkingOptions
-        | - compileOptions:     $compileOptions
-        | - targetTriple:       $targetTriple
-        | - GC:                 $gc
-        | - mode:               $mode
-        | - LTO:                $lto
-        | - linkStubs:          $linkStubs
-        | - check:              $check
-        | - checkFatalWarnings: $checkFatalWarnings
-        | - dump:               $dump
-        | - asan:               $asan
-        | - optimize            $optimize
-        | - linktimeProperties: $listLinktimeProperties
-        | - embedResources:     $embedResources
+        | - clang:                  $clang
+        | - clangPP:                $clangPP
+        | - linkingOptions:         $linkingOptions
+        | - compileOptions:         $compileOptions
+        | - targetTriple:           $targetTriple
+        | - GC:                     $gc
+        | - mode:                   $mode
+        | - LTO:                    $lto
+        | - linkStubs:              $linkStubs
+        | - check:                  $check
+        | - checkFatalWarnings:     $checkFatalWarnings
+        | - dump:                   $dump
+        | - asan:                   $asan
+        | - optimize                $optimize
+        | - linktimeProperties:     $listLinktimeProperties
+        | - embedResources:         $embedResources
         | - incrementalCompilation: $useIncrementalCompilation
+        | - basename:               $basename
         |)""".stripMargin
     }
   }

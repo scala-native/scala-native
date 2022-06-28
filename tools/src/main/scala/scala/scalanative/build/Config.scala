@@ -11,9 +11,6 @@ sealed trait Config {
   /** Base Directory for native work products. */
   def basedir: Path
 
-  /** Base name for executable or library, typically the project name. */
-  def basename: String
-
   /** Indicates whether this is a test config or not. */
   def testConfig: Boolean
 
@@ -53,9 +50,6 @@ sealed trait Config {
 
   /** Create a new config with given base directory. */
   def withBasedir(value: Path): Config
-
-  /** Create a new config with given base artifact name. */
-  def withBasename(value: String): Config
 
   /** Create a new config with test (true) or normal config (false). */
   def withTestConfig(value: Boolean): Config
@@ -123,7 +117,6 @@ object Config {
       classPath = Seq.empty,
       workdirOld = Paths.get(""),
       basedir = Paths.get(""),
-      basename = "",
       testConfig = false,
       logger = Logger.default,
       compilerConfig = NativeConfig.empty
@@ -135,7 +128,6 @@ object Config {
       classPath: Seq[Path],
       workdirOld: Path,
       basedir: Path,
-      basename: String,
       testConfig: Boolean,
       logger: Logger,
       compilerConfig: NativeConfig
@@ -151,11 +143,9 @@ object Config {
 
     def withWorkdir(value: Path): Config =
       copy(workdirOld = value)
+
     def withBasedir(value: Path): Config =
       copy(basedir = value)
-
-    def withBasename(value: String): Config =
-      copy(basename = value)
 
     def withTestConfig(value: Boolean): Config =
       copy(testConfig = value)
@@ -182,7 +172,7 @@ object Config {
 
     override def artifactPath: Path = {
       val ext = if (Platform.isWindows) ".exe" else ""
-      basedir.resolve(s"${basename}$nameSuffix-out$ext")
+      basedir.resolve(s"${compilerConfig.basename}$nameSuffix-out$ext")
     }
 
     override def toString: String = {
@@ -190,13 +180,12 @@ object Config {
         classPath.mkString("List(", "\n".padTo(22, ' '), ")")
       s"""Config(
         | - basedir:        $basedir
-        | - basename:       $basename
         | - testConfig:     $testConfig
         | - workdir:        ${workdir()}
         | - artifactPath:   $artifactPath
-        | - compilerConfig: $compilerConfig
         | - logger:         $logger
         | - classPath:      $classPathFormat
+        | - compilerConfig: $compilerConfig
         |)""".stripMargin
     }
   }
