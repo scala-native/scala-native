@@ -47,7 +47,8 @@ class Udp6SocketTest {
     false
 
   } else {
-    hasLoopbackAddress(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
+//    hasLoopbackAddress(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
+    true
   }
 
   @Before
