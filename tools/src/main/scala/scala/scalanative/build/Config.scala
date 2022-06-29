@@ -166,7 +166,7 @@ object Config {
 
     override def artifactPath: Path = {
       val ext = if (Platform.isWindows) ".exe" else ""
-      basedir.resolve(s"${compilerConfig.basename}$nameSuffix-out$ext")
+      basedir.resolve(s"${compilerConfig.basename}$nameSuffix$ext")
     }
 
     override def toString: String = {
