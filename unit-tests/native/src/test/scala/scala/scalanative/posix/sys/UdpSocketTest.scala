@@ -111,7 +111,7 @@ class UdpSocketTest {
 
       // Get port for sendto() to use.
       val bindStatus = bind(inSocket, inAddr, sizeof[sockaddr].toUInt)
-      assertNotEquals("bind", -1, bindStatus)
+      assertNotEquals(s"bind failed,  errno: ${errno.errno}", -1, bindStatus)
 
       val inAddrInfo = alloc[sockaddr]()
       val gsnAddrLen = alloc[socklen_t]()

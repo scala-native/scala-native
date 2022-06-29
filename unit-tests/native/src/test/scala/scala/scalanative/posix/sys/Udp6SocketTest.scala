@@ -164,7 +164,7 @@ class Udp6SocketTest {
         sizeof[sockaddr_in6].toUInt
       )
 
-      assertNotEquals("bind status", -1, bindStatus)
+      assertNotEquals(s"bind failed,  errno: ${errno.errno}", -1, bindStatus)
 
       val inAddrInfo = alloc[sockaddr_in6]()
       val gsnAddrLen = alloc[socklen_t]()
