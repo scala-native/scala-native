@@ -210,7 +210,7 @@ private[sbtplugin] object NativeLinkCacheImplicits {
           build.Config.empty
             .withMainClass(mainClass)
             .withClassPath(classPath)
-            .withWorkdir(workdir)
+            .withBasedir(workdir)
             .withCompilerConfig(compilerConfig)
       }
     )

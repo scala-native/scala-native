@@ -70,9 +70,9 @@ class MainGenericRunner {
           commandClasspath ++ nativeClasspath
         }
         .withMainClass(command.thingToRun)
-        .withWorkdir(dir)
+        .withBasedir(dir.resolve("output"))
 
-      Scope { implicit s => Build.build(config, dir.resolve("output")) }
+      Scope { implicit s => Build.build(config) }
     }
 
     val res = {

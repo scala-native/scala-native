@@ -39,10 +39,12 @@ object Build {
    *        .withLinkingOptions(linkopts)
    *        .withCompileOptions(compopts)
    *        .withLinkStubs(true)
+   *        .withTestConfig(false)
+   *        .withBasename("myapp")
    *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withWorkdir(workdir)
+   *      .withBasedir(workdir)
    *
    *  Build.build(config)
    *  }}}
