@@ -34,7 +34,8 @@ object SocketTestHelpers {
       protocol: CInt
   ): Boolean = {
     if (isWindows) {
-      false // Not implemented on Windows; an exercise for the reader.
+      // Discovery is not implemented on Windows; an exercise for the reader.
+      family == AF_INET // assume/require IPv4 present. Force IPv6 absent.
     } else
       Zone { implicit z =>
         /* Test where a working IPv6 or IPv4 network is available.
@@ -59,11 +60,6 @@ object SocketTestHelpers {
           s"IP protocol ${protocol} is not supported",
           (protocol == IPPROTO_UDP) || (protocol == IPPROTO_TCP)
         )
-
-        val in6SockAddr = alloc[sockaddr_in6]()
-        in6SockAddr.sin6_family = family.toUShort
-        // sin6_port is already the desired 0; "find a free port".
-        // all other fields, including ai_flags, are already 0.
 
         val localhost =
           if (family == AF_INET) c"127.0.0.1"
