@@ -12,7 +12,7 @@ import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
-import scalanative.posix.sys.SocketTestHelpers.pollReadyToRecv
+import scalanative.posix.sys.SocketTestHelpers._
 import scalanative.posix.unistd
 
 import scalanative.meta.LinktimeInfo.isWindows
@@ -25,9 +25,17 @@ import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.Before
 
 class UdpSocketTest {
-  // All tests in this class assume that an IPv4 network is up & running.
+
+  val isIPv4Available = hasLoopbackAddress(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+
+  @Before
+  def before(): Unit = {
+    assumeTrue("IPv4 UDP loopback is not available", isIPv4Available)
+  }
 
   // For some unknown reason inlining content of this method leads to failures
   // on Unix, probably due to bug in linktime conditions.

@@ -41,13 +41,13 @@ class Udp6SocketTest {
   } else if (Platform.isMac()) {
     // Tests are failing on GitHub CI
     // (errno 47: Address family not supported by protocol).
-    // This is caused by SN not properly handling sin6_len handling on BSD
-    // See SN Issue #2626. Disable IPv6 testing until that Issue is fixed.
+    // This is caused by SN not properly handling sin6_len on BSD.
+    // See SN Issue #2626. Disable testing on IPv6 until that Issue is fixed.
 
     false
 
   } else {
-    hasIPv6LoopbackAddress(SOCK_DGRAM, IPPROTO_UDP)
+    hasLoopbackAddress(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
   }
 
   @Before

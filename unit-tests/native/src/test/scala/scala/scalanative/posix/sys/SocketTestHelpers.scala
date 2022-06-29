@@ -24,15 +24,20 @@ import scala.scalanative.windows.WinSocketApiOps._
 import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Assert._
+import org.junit.Assume._
 
 object SocketTestHelpers {
 
-  def hasIPv6LoopbackAddress(socktype: CInt, protocol: CInt): Boolean = {
+  def hasLoopbackAddress(
+      family: CInt,
+      socktype: CInt,
+      protocol: CInt
+  ): Boolean = {
     if (isWindows) {
       false // Not implemented on Windows; an exercise for the reader.
     } else
       Zone { implicit z =>
-        /* Test where a working IPv6 network is available.
+        /* Test where a working IPv6 or IPv4 network is available.
          * The Scala Native GitHub CI environment is known to have a
          * working IPv6 network. Arbitrary local systems may not.
          *
@@ -42,15 +47,30 @@ object SocketTestHelpers {
          * can be found.
          */
 
+        assumeTrue(
+          s"Address family ${family} is not supported",
+          (family == AF_INET6) || (family == AF_INET)
+        )
+        assumeTrue(
+          s"Socket type ${socktype} is not supported",
+          (socktype == SOCK_DGRAM) || (socktype == SOCK_STREAM)
+        )
+        assumeTrue(
+          s"IP protocol ${protocol} is not supported",
+          (protocol == IPPROTO_UDP) || (protocol == IPPROTO_TCP)
+        )
+
         val in6SockAddr = alloc[sockaddr_in6]()
-        in6SockAddr.sin6_family = AF_INET6.toUShort
+        in6SockAddr.sin6_family = family.toUShort
         // sin6_port is already the desired 0; "find a free port".
         // all other fields, including ai_flags, are already 0.
 
-        val localhost = c"::1"
+        val localhost =
+          if (family == AF_INET) c"127.0.0.1"
+          else c"::1"
 
         val hints = stackalloc[addrinfo]()
-        hints.ai_family = AF_INET6
+        hints.ai_family = family
         hints.ai_socktype = socktype
         hints.ai_protocol = protocol
         hints.ai_flags = AI_NUMERICHOST
