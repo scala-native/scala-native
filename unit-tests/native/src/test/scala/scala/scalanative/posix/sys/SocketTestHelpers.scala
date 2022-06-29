@@ -28,16 +28,17 @@ import org.junit.Assert._
 object SocketTestHelpers {
 
   def hasIPv6LoopbackAddress(socktype: CInt, protocol: CInt): Boolean = {
-      if (isWindows) {
-        false // Not implemented on Windows; an exercise for the reader.
-      } else Zone { implicit z =>
+    if (isWindows) {
+      false // Not implemented on Windows; an exercise for the reader.
+    } else
+      Zone { implicit z =>
         /* Test where a working IPv6 network is available.
          * The Scala Native GitHub CI environment is known to have a
          * working IPv6 network. Arbitrary local systems may not.
          *
          * The JVM sets a system property "java.net.preferIPv4Stack=false"
          * when an IPv6 interface is active. Scala Native does not
-         * set this property. One has to see if an IPv6 loopback address 
+         * set this property. One has to see if an IPv6 loopback address
          * can be found.
          */
 
@@ -60,8 +61,7 @@ object SocketTestHelpers {
 
         if (status == 0) {
           freeaddrinfo(!resultPtr) // leak not, want not!
-        } else if ((status != EAI_FAMILY) && (
-                     status != EAI_SOCKTYPE)) {
+        } else if ((status != EAI_FAMILY) && (status != EAI_SOCKTYPE)) {
           val msg = s"getaddrinfo failed: ${fromCString(gai_strerror(status))}"
           assertEquals(msg, 0, status)
         }
@@ -70,11 +70,11 @@ object SocketTestHelpers {
          * status EAI_FAMILY means 'not found'.
          * status EAI_SOCKTYPE means not only 'not found' but not even
          *          supported. i.e. Looking for IPv6 with IPv4 single stack.
-         */ 
+         */
 
         status == 0
       }
-    }
+  }
 
   def pollReadyToRecv(fd: CInt, timeout: CInt): Unit = {
     // timeout is in milliseconds.
