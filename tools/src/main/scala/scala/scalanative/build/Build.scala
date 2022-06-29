@@ -60,7 +60,7 @@ object Build {
     config.logger.time("Total") {
       // create workdir if needed
       if (Files.notExists(config.workdir)) {
-        Files.createDirectory(config.workdir)
+        Files.createDirectories(config.workdir)
       }
       // validate classpath
       val fconfig = {
