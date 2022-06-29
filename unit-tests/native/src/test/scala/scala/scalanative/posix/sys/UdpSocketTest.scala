@@ -1,19 +1,22 @@
 package scala.scalanative.posix
 package sys
 
-import scalanative.posix.arpa.inet._
-import scalanative.posix.fcntl
+import scalanative.unsafe._
+import scalanative.unsigned._
+
+import scalanative.libc.errno
+import scalanative.libc.string.strerror
+
+import scalanative.posix.arpa.inet.inet_addr
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
-import scalanative.posix.poll._
-import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
-import scalanative.posix.sys.socketOps._
+import scalanative.posix.sys.SocketTestHelpers.pollReadyToRecv
 import scalanative.posix.unistd
-import scalanative.unsafe._
-import scalanative.unsigned._
+
 import scalanative.meta.LinktimeInfo.isWindows
+
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
@@ -22,9 +25,6 @@ import scala.scalanative.windows.ErrorHandlingApi._
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.Assume._
-import scala.scalanative.libc.errno
-import scala.scalanative.libc.string.strerror
 
 class UdpSocketTest {
   // All tests in this class assume that an IPv4 network is up & running.
@@ -79,43 +79,6 @@ class UdpSocketTest {
         if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
         else fromCString(strerror(errno.errno))
       fail(s"$label failed - $reason")
-    }
-  }
-
-  // Make available to Udp6SocketTest.scala
-  private[sys] def pollReadyToRecv(fd: CInt, timeout: CInt) = {
-    // timeout is in milliseconds
-
-    if (isWindows) {
-      val fds = stackalloc[WSAPollFd](1)
-      fds.socket = fd.toPtr[Byte]
-      fds.events = WinSocketApiExt.POLLIN
-
-      val ret = WSAPoll(fds, 1.toUInt, timeout)
-
-      if (ret == 0) {
-        fail(s"poll timed out after ${timeout} milliseconds")
-      } else if (ret < 0) {
-        val reason = ErrorHandlingApiOps.errorMessage(GetLastError())
-        fail(s"poll for input failed - $reason")
-      }
-    } else {
-      val fds = stackalloc[struct_pollfd](1)
-      (fds + 0).fd = fd
-      (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
-
-      errno.errno = 0
-      // poll() sounds like a nasty busy wait loop, but is event driven in kernel
-
-      val ret = poll(fds, 1.toUInt, timeout)
-
-      if (ret == 0) {
-        fail(s"poll timed out after ${timeout} milliseconds")
-      } else if (ret < 0) {
-        val reason = fromCString(strerror(errno.errno))
-        fail(s"poll for input failed - $reason")
-      }
-      // else good to go
     }
   }
 
@@ -177,6 +140,7 @@ class UdpSocketTest {
           outAddr,
           sizeof[sockaddr].toUInt
         )
+        assertTrue(s"sendto failed errno: ${errno.errno}\n", (nBytesSent >= 0))
         assertEquals("sendto", outData.size, nBytesSent)
 
         // If inSocket did not get data by timeout, it probably never will.
