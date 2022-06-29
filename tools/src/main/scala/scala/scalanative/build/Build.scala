@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
 import scala.scalanative.build.core.Filter
 import scala.scalanative.build.core.NativeLib
@@ -56,6 +56,10 @@ object Build {
       scope: Scope
   ): Path =
     config.logger.time("Total") {
+      // create workdir if needed
+      if (Files.notExists(config.workdir)) {
+        Files.createDirectory(config.workdir)
+      }
       // validate classpath
       val fconfig = {
         val fclasspath = NativeLib.filterClasspath(config.classPath)
@@ -117,10 +121,10 @@ object Build {
       linkerResult: linker.Result
   ): Seq[Path] = {
     import NativeLib._
-    findNativeLibs(config.classPath, config.workdir())
+    findNativeLibs(config.classPath, config.workdir)
       .map(unpackNativeCode)
       .flatMap { destPath =>
-        val paths = findNativePaths(config.workdir(), destPath)
+        val paths = findNativePaths(config.workdir, destPath)
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
         implicit val incCompilationContext: IncCompilationContext =

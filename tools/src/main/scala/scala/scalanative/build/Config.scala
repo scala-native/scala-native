@@ -15,13 +15,14 @@ sealed trait Config {
   def testConfig: Boolean
 
   /** Directory to emit intermediate compilation results. Calculated based on
-   *  [[basedir]], [[basename]], [[testConfig]] and Platform. Creates
+   *  [[basedir]] / native or native-test if a test project. The build creates
    *  directories if they do not exist.
    */
-  def workdir(): Path
+  def workdir: Path
 
   /** Path to the output file, executable or library. Calculated based on
-   *  [[basedir]], [[basename]], [[testConfig]], and Platform.
+   *  [[basedir]] / [[basename]] or [[basename]]-test, and extension based on
+   *  the platform.
    */
   def artifactPath: Path
 
@@ -159,16 +160,9 @@ object Config {
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
 
-    override def workdir() = {
-      val dir = {
-        if (!workdirOld.equals(Paths.get(""))) workdirOld
-        else basedir.resolve(s"native$nameSuffix")
-      }
-      if (Files.notExists(dir)) {
-        Files.createDirectory(dir)
-      }
-      dir
-    }
+    override def workdir =
+      if (!workdirOld.equals(Paths.get(""))) workdirOld
+      else basedir.resolve(s"native$nameSuffix")
 
     override def artifactPath: Path = {
       val ext = if (Platform.isWindows) ".exe" else ""
@@ -181,7 +175,7 @@ object Config {
       s"""Config(
         | - basedir:        $basedir
         | - testConfig:     $testConfig
-        | - workdir:        ${workdir()}
+        | - workdir:        $workdir
         | - artifactPath:   $artifactPath
         | - logger:         $logger
         | - classPath:      $classPathFormat

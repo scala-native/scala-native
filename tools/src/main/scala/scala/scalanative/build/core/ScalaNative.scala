@@ -93,7 +93,7 @@ private[scalanative] object ScalaNative {
   ): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
       // currently, always clean ll files
-      IO.getAll(config.workdir(), "glob:**.ll").foreach(Files.delete)
+      IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
       CodeGen(config, linked)
     }
     config.logger.info(s"Produced ${llPaths.length} files")
@@ -173,7 +173,7 @@ private[scalanative] object ScalaNative {
   def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
       config.logger.time(s"Dumping intermediate code ($phase)") {
-        val path = config.workdir().resolve(phase + ".hnir")
+        val path = config.workdir.resolve(phase + ".hnir")
         nir.Show.dump(defns, path.toFile.getAbsolutePath)
       }
     }
