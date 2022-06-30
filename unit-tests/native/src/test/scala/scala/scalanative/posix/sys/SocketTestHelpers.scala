@@ -82,6 +82,11 @@ object SocketTestHelpers {
           assertEquals(msg, 0, status)
         }
 
+        printf(s"\n\n")
+        printf(s"Lee T DEBUG: hasLoopbackAddress status: ${status}\n")
+        printf(s"Lee T DEBUG: hasLoopbackAddress errno: ${errno.errno}\n")
+        printf(s"\n\n")
+
         /* status 0 means 'found'
          * status EAI_FAMILY means 'not found'.
          * status EAI_SOCKTYPE means not only 'not found' but not even
