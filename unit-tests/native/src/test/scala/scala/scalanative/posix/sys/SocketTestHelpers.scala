@@ -35,7 +35,8 @@ object SocketTestHelpers {
   ): Boolean = {
     if (isWindows) {
       // Discovery is not implemented on Windows; an exercise for the reader.
-      family == AF_INET // assume/require IPv4 present. Force IPv6 absent.
+//      family == AF_INET // assume/require IPv4 present. Force IPv6 absent.
+      true // LeeT DEBUG
     } else
       Zone { implicit z =>
         /* Test where a working IPv6 or IPv4 network is available.
@@ -81,11 +82,6 @@ object SocketTestHelpers {
           val msg = s"getaddrinfo failed: ${fromCString(gai_strerror(status))}"
           assertEquals(msg, 0, status)
         }
-
-        printf(s"\n\n")
-        printf(s"Lee T DEBUG: hasLoopbackAddress status: ${status}\n")
-        printf(s"Lee T DEBUG: hasLoopbackAddress errno: ${errno.errno}\n")
-        printf(s"\n\n")
 
         /* status 0 means 'found'
          * status EAI_FAMILY means 'not found'.

@@ -17,12 +17,13 @@ import scalanative.posix.sys.SocketTestHelpers._
 
 import scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.runtime.Platform
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 import scala.scalanative.windows.WinSocketApiOps
 import scala.scalanative.windows.ErrorHandlingApi._
+
+import org.scalanative.testsuite.utils.Platform
 
 import org.junit.Test
 import org.junit.Assert._
@@ -32,17 +33,20 @@ import org.junit.Before
 class Udp6SocketTest {
 
   val isIPv6Available = if (isWindows) {
-    // A Windows expert could probably made this test work.
-    // There is Windows code in this file but, for want of skill,
-    // it has not been exercised.
+    /* A Windows expert could probably made this test work.
+     * There is Windows code in this file but, for want of skill,
+     * it has not been exercised.
+     */
 
-    false
+//    false
+    true // LeeT DEBUG
 
-  } else if (Platform.isMac()) {
-    // Tests are failing on GitHub CI
-    // (errno 47: Address family not supported by protocol).
-    // This is caused by SN not properly handling sin6_len on BSD.
-    // See SN Issue #2626. Disable testing on IPv6 until that Issue is fixed.
+  } else if (Platform.isMacOs) {
+    /* Tests are failing on GitHub CI
+     * (errno 47: Address family not supported by protocol).
+     * This is caused by SN not properly handling sin6_len on BSD.
+     * See SN Issue #2626. Disable testing on IPv6 until that Issue is fixed.
+     */
 
     false
 
@@ -53,6 +57,25 @@ class Udp6SocketTest {
   @Before
   def before(): Unit = {
     assumeTrue("IPv6 UDP loopback is not available", isIPv6Available)
+
+    /* Scala Native Continuous Integration linux-arm64 multiarch runs
+     * fail, where they succeed on other test configurations.
+     *
+     * The failing tests use qemu emulator. Test should succeed on real
+     * hardware. Disable everywhere because GITHUB_* environment variables
+     * are not passed to qemu.
+     *
+     * The failing tests report that an IPv6 loopback address is available
+     * but fail when these tests attempt to bind() to it. Private debugging
+     * indicates that the address passed to bind() should be good.
+     * Probably a problem with qemu configuration & IPv6. Which is why
+     * we run test matrices.
+     */
+
+    assumeFalse(
+      "IPv6 UDP loopback is not available on linux-arm64",
+      Platform.isLinux && Platform.isArm64
+    )
   }
 
   // For some unknown reason inlining content of this method leads to failures
@@ -132,12 +155,13 @@ class Udp6SocketTest {
     val in6SockAddr = alloc[sockaddr_in6]()
     in6SockAddr.sin6_family = AF_INET6.toUShort
 
-    // Scala Native currently implements neither inaddr_loopback
-    // nor IN6ADDR_LOOPBACK_INIT. When they become available,
-    // this code can be simplified by using the former instead
-    // of the inet_pton(code below). All things in due time.
-    //
-    // in6SockAddr.sin6_addr = in6addr_loopback
+    /* Scala Native currently implements neither inaddr_loopback
+     * nor IN6ADDR_LOOPBACK_INIT. When they become available,
+     * this code can be simplified by using the former instead
+     * of the inet_pton(code below). All things in due time.
+     *
+     * in6SockAddr.sin6_addr = in6addr_loopback
+     */
 
     // sin6_port is already the desired 0; "find a free port".
     // all other fields already 0.
@@ -150,13 +174,6 @@ class Udp6SocketTest {
     )
 
     assertEquals(s"inet_pton failed errno: ${errno.errno}", ptonStatus, 1)
-
-    printf(s"\n\n")
-    printf(
-      "Lee T DEBUG: Udp6SocketTest addr: |%s|\n",
-      formatIn6addr(in6SockAddr.sin6_addr)
-    )
-    printf(s"\n\n")
 
     val inSocket: CInt = createAndCheckUdpSocket()
 
@@ -243,10 +260,11 @@ class Udp6SocketTest {
 
         checkRecvfromResult(nBytesPeekedAt, "recvfrom_1")
 
-        // Friendlier code here and after the next recvfrom() would loop
-        // on partial reads rather than fail.
-        // Punt to a future generation. Since this is loopback and
-        // writes are small, if any bytes are ready, all should be.
+        /* Friendlier code here and after the next recvfrom() would loop
+         *  on partial reads rather than fail.
+         *  Punt to a future generation. Since this is loopback and
+         *  writes are small, if any bytes are ready, all should be.
+         */
         assertEquals("recvfrom_1 length", nBytesSent, nBytesPeekedAt)
 
         // Test retrieving remote address.
