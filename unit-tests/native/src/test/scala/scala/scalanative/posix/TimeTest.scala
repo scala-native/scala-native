@@ -15,7 +15,6 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
 import scala.scalanative.posix.errno.{EINVAL, EINTR}
-import scala.scalanative.posix.signal
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
 
@@ -449,7 +448,7 @@ class TimeTest {
     val timespecP = stackalloc[timespec]()
     timespecP.tv_nsec = Long.MinValue // initialize with known bad value
 
-    val now = time(null) // Seconds since Epoch
+    val now = scala.scalanative.posix.time.time(null) // Seconds since Epoch
 
     val result = clock_gettime(CLOCK_REALTIME, timespecP)
 
