@@ -72,7 +72,7 @@ C Header          Scala Native Module
 `sys/socket.h`_   scala.scalanative.posix.sys.socket_
 `sys/stat.h`_     scala.scalanative.posix.sys.stat_
 `sys/statvfs.h`_  scala.scalanative.posix.sys.statvfs_
-`sys/time.h`_     scala.scalanative.posix.sys.time_
+`sys/time.h`_     scala.scalanative.posix.sys.time_  [#time_mac]_ [#time_link]_
 `sys/times.h`_    N/A
 `sys/types.h`_    scala.scalanative.posix.sys.types_
 `sys/uio.h`_      scala.scalanative.posix.sys.uio_
@@ -222,5 +222,15 @@ C Header          Scala Native Module
                 specification because Scala Native supports only
                 passing structures by reference.  See code for details
 		and usage.
+
+.. [#time_mac]  macOS does not implement 
+                `clock_nanosleep` and the five `timer_` methods.
+		For each of these methods, Scala Native on macOS
+		always returns -1 and sets errno to EINVAL.
+
+.. [#time_link]
+		Where the operating system provides them,
+                the `timer_` methods require the link option "-lrt".
+
 
 Continue to :ref:`communitylib`.
