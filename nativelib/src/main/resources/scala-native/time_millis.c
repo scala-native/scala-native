@@ -1,3 +1,4 @@
+#include <time.h>
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -26,13 +27,13 @@ long long scalanative_current_time_millis() {
 
     current_time_millis = (li.QuadPart - UNIX_TIME_START) / TICKS_PER_MILLIS;
 #else
-#define MILLIS_PER_SEC 1000LL
-#define MICROS_PER_MILLI 1000LL
+    int MILLIS_PER_SEC = 1000LL;
+    int NANOS_PER_MILLI = 1000000LL;
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
     current_time_millis =
-        tv.tv_sec * MILLIS_PER_SEC + tv.tv_usec / MICROS_PER_MILLI;
+        ts.tv_sec * MILLIS_PER_SEC + ts.tv_nsec / NANOS_PER_MILLI;
 #endif
     return current_time_millis;
 }
