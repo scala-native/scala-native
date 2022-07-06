@@ -42,6 +42,9 @@ object Discover {
     path
   }
 
+  def rustc: Path = discover("rustc", "RUSTC")
+  def cargo: Path = discover("cargo", "CARGO_HOME")
+
   private def filterExisting(paths: Seq[String]): Seq[String] =
     paths.filter(new File(_).exists())
 

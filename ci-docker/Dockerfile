@@ -17,6 +17,11 @@ RUN git clone https://github.com/madler/zlib /tmp/zlib \
 SHELL ["/bin/bash", "-c"]
 RUN useradd -ms /bin/bash scala-native
 USER scala-native
+
+# Install Rust for integration tests
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+ENV PATH=/home/scala-native/.cargo/bin:${PATH}
+
 WORKDIR /home/scala-native/scala-native
 
 RUN curl -s "https://get.sdkman.io" | bash  \

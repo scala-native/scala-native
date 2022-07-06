@@ -53,9 +53,11 @@ object Build {
    */
   def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
     config.logger.time("Total") {
+      val nativeLibUtil =
+        new NativeLibUtil(config.compilerConfig.nativeSourcesCompilerPlugins)
       // validate classpath
       val fconfig = {
-        val fclasspath = NativeLib.filterClasspath(config.classPath)
+        val fclasspath = nativeLibUtil.filterClasspath(config.classPath)
         config.withClassPath(fclasspath)
       }
 
@@ -73,14 +75,14 @@ object Build {
         ScalaNative.codegen(fconfig, optimized)
       }
 
-      val objectPaths = config.logger.time("Compiling to native code") {
+      val compilationOutput = config.logger.time("Compiling to native code") {
         // compile generated LLVM IR
-        val llObjectPaths = LLVM.compile(fconfig, generated)
+        val llCompilationOutput = LLVM.compile(fconfig, generated)
 
         /* Used to pass alternative paths of compiled native (lib) sources,
          * eg: reused native sources used in partests.
          */
-        val libObjectPaths = scala.util.Properties
+        val libObjectOutput = scala.util.Properties
           .propOrNone("scalanative.build.paths.libobj") match {
           case None =>
             findAndCompileNativeSources(fconfig, linked)
@@ -89,19 +91,23 @@ object Build {
               .split(java.io.File.pathSeparatorChar)
               .toSeq
               .map(Paths.get(_))
+              .map(ObjectFile)
         }
 
-        libObjectPaths ++ llObjectPaths
+        libObjectOutput ++ llCompilationOutput
       }
 
-      LLVM.link(fconfig, linked, objectPaths, outpath)
+      LLVM.link(fconfig, linked, compilationOutput, outpath)
     }
 
   def findAndCompileNativeSources(
       config: Config,
       linkerResult: linker.Result
-  ): Seq[Path] = {
-    import NativeLib._
+  ): Seq[CompilationResult] = {
+    val nativeLibUtil = new NativeLibUtil(
+      config.compilerConfig.nativeSourcesCompilerPlugins
+    )
+    import nativeLibUtil._
     findNativeLibs(config.classPath, config.workdir)
       .map(unpackNativeCode)
       .flatMap { destPath =>

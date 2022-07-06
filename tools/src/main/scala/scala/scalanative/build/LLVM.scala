@@ -1,10 +1,12 @@
 package scala.scalanative
 package build
 
+import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
+import scala.scalanative.build.Mode._
 import scalanative.nir.Attr.Link
 
 /** Internal utilities to interact with LLVM command-line tools. */
@@ -12,15 +14,6 @@ private[scalanative] object LLVM {
 
   /** Object file extension: ".o" */
   val oExt = ".o"
-
-  /** C++ file extension: ".cpp" */
-  val cppExt = ".cpp"
-
-  /** LLVM intermediate file extension: ".ll" */
-  val llExt = ".ll"
-
-  /** List of source patterns used: ".c, .cpp, .S" */
-  val srcExtensions = Seq(".c", cppExt, ".S")
 
   /** Compile the given files to object files
    *
@@ -31,46 +24,54 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
-    // generate .o files for all included source files in parallel
-    paths.par.map { path =>
-      val inpath = path.abs
-      val outpath = inpath + oExt
-      val isCpp = inpath.endsWith(cppExt)
-      val isLl = inpath.endsWith(llExt)
-      val objPath = Paths.get(outpath)
-      // LL is generated so always rebuild
-      if (isLl || !Files.exists(objPath)) {
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag = {
-          if (isLl) Seq()
-          else if (isCpp) {
-            // C++14 or newer standard is needed to compile code using Windows API
-            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-            if (config.targetsWindows) Seq("-std=c++14")
-            else Seq("-std=c++11")
-          } else Seq("-std=gnu11")
-        }
-        val platformFlags = {
-          if (config.targetsWindows) Seq("-g")
-          else Nil
-        }
-        val expectionsHandling =
-          List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-        val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
-            Seq("-c", inpath, "-o", outpath)
+  def compile(
+      config: Config,
+      paths: Seq[Path]
+  ): Seq[CompilationResult] = {
+    import NativeSourcesCompilerPlugin._
 
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) !
-          Logger.toProcessLogger(config.logger)
-        if (result != 0) {
-          throw new BuildException(s"Failed to compile ${inpath}")
-        }
+    val defaultPlugins: Map[String, NativeSourcesCompilerPlugin] =
+      LlSourcesCompilerPlugin.extensions.map(_ -> LlSourcesCompilerPlugin).toMap
+
+    val plugins = config.compilerConfig.nativeSourcesCompilerPlugins
+      .flatMap(p => p.extensions.map(_ -> p))
+      .foldLeft(defaultPlugins) {
+        case (plugins, (ext, plugin)) =>
+          if (plugins.contains(ext)) {
+            val msg =
+              s"Multiple compiler plugins for extension $ext: ${plugins(ext).name} and ${plugin.name}"
+            throw new BuildException(msg)
+          } else {
+            plugins + (ext -> plugin)
+          }
       }
-      objPath
+
+    // generate .o files for all included source files in parallel
+    paths.par.flatMap { path =>
+      val inpath = path.toAbsolutePath()
+
+      val ext = inpath.toString.split('.').lastOption
+      val compiler = ext
+        .flatMap(ext => plugins.get(s".$ext"))
+        .getOrElse(
+          throw new BuildException(s"Unable to find compiler for ${inpath}")
+        )
+
+      val compilationCtx = compiler.compile(config, inpath)
+
+      for {
+        CompilationContext(cmd, output) <- compilationCtx
+      } yield {
+        if (cmd.nonEmpty) {
+          config.logger.running(cmd)
+          val proc = Process(cmd, config.workdir.toFile)
+          val result = proc ! Logger.toProcessLogger(config.logger)
+          if (result != 0) {
+            throw new BuildException(s"Failed to compile ${inpath}")
+          }
+        }
+        output
+      }
     }.seq
   }
 
@@ -92,7 +93,7 @@ private[scalanative] object LLVM {
   def link(
       config: Config,
       linkerResult: linker.Result,
-      objectsPaths: Seq[Path],
+      compilationOutput: Seq[CompilationResult],
       outpath: Path
   ): Path = {
     val links = {
@@ -126,7 +127,16 @@ private[scalanative] object LLVM {
         } else Seq("-rdynamic")
       flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
     }
-    val paths = objectsPaths.map(_.abs)
+    // Make sure that libraries are linked as the last ones
+    val paths = {
+      val (objectFiles, libraries) =
+        compilationOutput.partition {
+          case _: ObjectFile => true
+          case _: Library    => false
+        }
+      (objectFiles ++ libraries).map(_.path.abs)
+    }
+
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
 
     config.logger.time(
@@ -142,22 +152,16 @@ private[scalanative] object LLVM {
     outpath
   }
 
-  private def flto(config: Config): Seq[String] =
+  private[build] def flto(config: Config): Seq[String] =
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
       case lto      => Seq(s"-flto=${lto.name}")
     }
 
-  private def target(config: Config): Seq[String] =
+  private[build] def target(config: Config): Seq[String] =
     config.compilerConfig.targetTriple match {
       case Some(tt) => Seq("-target", tt)
       case None     => Seq("-Wno-override-module")
     }
 
-  private def opt(config: Config): String =
-    config.mode match {
-      case Mode.Debug       => "-O0"
-      case Mode.ReleaseFast => "-O2"
-      case Mode.ReleaseFull => "-O3"
-    }
 }

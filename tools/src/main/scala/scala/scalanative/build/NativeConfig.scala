@@ -56,6 +56,8 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
+  def nativeSourcesCompilerPlugins: Seq[NativeSourcesCompilerPlugin]
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -106,6 +108,15 @@ sealed trait NativeConfig {
   def withEmbedResources(
       value: Boolean
   ): NativeConfig
+
+  def withNativeSourcesCompilerPlugins(
+      plugins: Seq[NativeSourcesCompilerPlugin]
+  ): NativeConfig
+
+  def withNativeSourcesCompilerPlugin(
+      plugin: NativeSourcesCompilerPlugin
+  ): NativeConfig =
+    withNativeSourcesCompilerPlugins(nativeSourcesCompilerPlugins :+ plugin)
 }
 
 object NativeConfig {
@@ -128,7 +139,12 @@ object NativeConfig {
       linkStubs = false,
       optimize = true,
       linktimeProperties = Map.empty,
-      embedResources = false
+      embedResources = false,
+      nativeSourcesCompilerPlugins = Seq(
+        CSourcesCompilerPlugin,
+        CppSourcesCompilerPlugin,
+        RustSourcesCompilerPlugin
+      )
     )
 
   private final case class Impl(
@@ -146,7 +162,8 @@ object NativeConfig {
       dump: Boolean,
       optimize: Boolean,
       linktimeProperties: LinktimeProperites,
-      embedResources: Boolean
+      embedResources: Boolean,
+      nativeSourcesCompilerPlugins: Seq[NativeSourcesCompilerPlugin]
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -201,6 +218,12 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
+    def withNativeSourcesCompilerPlugins(
+        plugins: Seq[NativeSourcesCompilerPlugin]
+    ): NativeConfig = {
+      copy(nativeSourcesCompilerPlugins = plugins)
+    }
+
     override def toString: String = {
       val listLinktimeProperties = {
         if (linktimeProperties.isEmpty) ""
@@ -216,22 +239,25 @@ object NativeConfig {
             .mkString("\n")
         }
       }
+      val listNativeSourcePlugins =
+        nativeSourcesCompilerPlugins.map(_.name).mkString("[", ", ", "]")
       s"""NativeConfig(
-        | - clang:              $clang
-        | - clangPP:            $clangPP
-        | - linkingOptions:     $linkingOptions
-        | - compileOptions:     $compileOptions
-        | - targetTriple:       $targetTriple
-        | - GC:                 $gc
-        | - mode:               $mode
-        | - LTO:                $lto
-        | - linkStubs:          $linkStubs
-        | - check:              $check
-        | - checkFatalWarnings: $checkFatalWarnings
-        | - dump:               $dump
-        | - optimize:           $optimize
-        | - linktimeProperties: $listLinktimeProperties
-        | - embedResources:     $embedResources
+        | - clang:                        $clang
+        | - clangPP:                      $clangPP
+        | - linkingOptions:               $linkingOptions
+        | - compileOptions:               $compileOptions
+        | - targetTriple:                 $targetTriple
+        | - GC:                           $gc
+        | - mode:                         $mode
+        | - LTO:                          $lto
+        | - linkStubs:                    $linkStubs
+        | - check:                        $check
+        | - checkFatalWarnings:           $checkFatalWarnings
+        | - dump:                         $dump
+        | - optimize:                     $optimize
+        | - linktimeProperties:           $listLinktimeProperties
+        | - embedResources:               $embedResources
+        | - nativeSourcesCompilerPlugins: $listNativeSourcePlugins
         |)""".stripMargin
     }
   }

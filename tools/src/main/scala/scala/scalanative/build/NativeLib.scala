@@ -11,12 +11,20 @@ import scalanative.build.LLVM._
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
 
-/** Utilities for dealing with native library code */
+/** Constants for dealing with native library code */
 private[scalanative] object NativeLib {
 
   /** Name of directory that contains native code: "scala-native"
    */
   val nativeCodeDir = "scala-native"
+}
+
+/** Utilities for dealing with native library code */
+private[scalanative] class NativeLibUtil(
+    plugins: Seq[NativeSourcesCompilerPlugin]
+) {
+
+  import NativeLib._
 
   /** Finds all the native libs on the classpath.
    *
@@ -30,7 +38,10 @@ private[scalanative] object NativeLib {
    *  @return
    *    The Seq of NativeLib objects
    */
-  def findNativeLibs(classpath: Seq[Path], workdir: Path): Seq[NativeLib] = {
+  def findNativeLibs(
+      classpath: Seq[Path],
+      workdir: Path
+  ): Seq[NativeLib] = {
     val nativeLibPaths = classpath.flatMap { path =>
       if (isJar(path)) readJar(path)
       else readDir(path)
@@ -64,7 +75,10 @@ private[scalanative] object NativeLib {
    *  @return
    *    All file paths to compile
    */
-  def findNativePaths(workdir: Path, destPath: Path): Seq[Path] = {
+  def findNativePaths(
+      workdir: Path,
+      destPath: Path
+  ): Seq[Path] = {
     val srcPatterns = destSrcPattern(workdir, destPath)
     IO.getAll(workdir, srcPatterns)
   }
@@ -165,6 +179,9 @@ private[scalanative] object NativeLib {
 
   /** Is this NativeLib in a jar file */
   private def isJar(nativelib: NativeLib): Boolean = isJar(nativelib.src)
+
+  private val srcExtensions: Seq[String] =
+    plugins.flatMap(_.extensions)
 
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
