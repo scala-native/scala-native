@@ -353,75 +353,6 @@ int scalanative_daylight() {
 #endif
 }
 
-/* Users of the five timer_() methods on operating systems other than
- * macOS need to provide the "-lrt" link option so that the real time
- * library "librt" is available.
- *
- * The timer_() methods are not implemented on macOS. This code
- * provides stubs which alway return -1 and set errno to EINVAL.
- * This simplifies linking and Test suites.
- *
- * Someday, some developer is going to spend days wondering why unix
- * code containing timer_() methods is always failing on macOS.
- */
-
-#if defined(__APPLE__)
-// Definitions just for compilation on macOS. timer_* calls will all return -1.
-typedef int timer_t;
-struct itimerspec {
-    struct timespec it_interval;
-    struct timespec it_value;
-};
-#endif // __APPLE
-
-int scalanative_timer_create(clockid_t clockid, struct sigevent *sevp,
-                             timer_t *timerid) {
-#if !defined(__APPLE__)
-    return timer_create(clockid, sevp, timerid);
-#else
-    errno = EINVAL; // No timer_* on Apple.
-    return -1;
-#endif
-}
-
-int scalanative_timer_delete(timer_t timerid) {
-#if !defined(__APPLE__)
-    return timer_delete(timerid);
-#else
-    errno = EINVAL; // No timer_* on Apple.
-    return -1;
-#endif
-}
-
-int scalanative_timer_getoverrun(timer_t timerid) {
-#if !defined(__APPLE__)
-    return timer_getoverrun(timerid);
-#else
-    errno = EINVAL; // No timer_* on Apple.
-    return -1;
-#endif
-}
-
-int scalanative_timer_gettime(timer_t timerid, struct itimerspec *curr_value) {
-#if !defined(__APPLE__)
-    return timer_gettime(timerid, curr_value);
-#else
-    errno = EINVAL; // No timer_* on Apple.
-    return -1;
-#endif
-}
-
-int scalanative_timer_settime(timer_t timerid, int flags,
-                              struct itimerspec *new_value,
-                              struct itimerspec *old_value) {
-#if !defined(__APPLE__)
-    return timer_settime(timerid, flags, new_value, old_value);
-#else
-    errno = EINVAL; // No timer_* on Apple.
-    return -1;
-#endif
-}
-
 // Macros
 int scalanative_clocks_per_sec() { return CLOCKS_PER_SEC; }
 
@@ -436,7 +367,7 @@ int scalanative_timer_abstime() {
 #if !defined(__APPLE__)
     return TIMER_ABSTIME;
 #else
-    return 0; // Fake it. timer_create() will have given error status anyway.
+    return 1; // Fake it, using "know" value on some systems.
 #endif
 }
 

@@ -52,10 +52,7 @@ object time {
     CInt // tm_isdst
   ]
 
-  type itimerspec = CStruct2[
-    timespec, // it_interval
-    timespec // it_value
-  ]
+  // See separate timer object below for itimerspec type and timer_*() methods.
 
   /* Some methods here have a @name annotation and some do not.
    * Methods where a @name extern "glue" layer would simply pass through
@@ -85,7 +82,7 @@ object time {
 
   def clock_gettime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
 
-  @name("scalanative_clock_nanosleep") // glue handles clock_nanosleep on macOS
+  @name("scalanative_clock_nanosleep") // glue stubs clock_nanosleep on macOS
   def clock_nanosleep(
       clockid: clockid_t,
       flags: CInt,
@@ -133,39 +130,7 @@ object time {
 
   def time(arg: Ptr[time_t]): time_t = extern
 
-  /* Users of the five timer_() methods on operating systems other than
-   * macOS need to provide the "-lrt" link option so that the real time
-   * library "librt" is available.
-   */
-
-  /* The five timer_() methods need "@name" to provide "always -1"
-   * stubs on macOS. Unfortunate overhead in execution time sensitive methods.
-   */
-
-  @name("scalanative_timer_create")
-  def timer_create(
-      clockid: clockid_t,
-      sevp: sigevent,
-      timerid: Ptr[timer_t]
-  ): CInt = extern
-
-  @name("scalanative_timer_delete")
-  def timer_delete(timerid: timer_t): CInt = extern
-
-  @name("scalanative_timer_getoverrun")
-  def timer_getoverrun(timerid: timer_t): CInt = extern
-
-  @name("scalanative_timer_gettime")
-  def timer_gettime(timerid: timer_t, curr_value: Ptr[itimerspec]): CInt =
-    extern
-
-  @name("scalanative_timer_settime")
-  def timer_settime(
-      timerid: timer_t,
-      flags: CInt,
-      new_value: Ptr[itimerspec],
-      old_value: Ptr[itimerspec]
-  ): CInt = extern
+  // See separate timer object below for timer_*() methods.
 
   def tzset(): Unit = extern
 
@@ -181,11 +146,14 @@ object time {
   // XSI
   @name("scalanative_tzname")
   def tzname(): Ptr[CStruct2[CString, CString]] = extern
+
 // Macros
+
   @name("scalanative_clocks_per_sec")
   def CLOCKS_PER_SEC: CInt = extern
 
 // Symbolic constants
+
   @name("scalanative_clock_monotonic")
   def CLOCK_MONOTONIC: clockid_t = extern
 
@@ -231,5 +199,67 @@ object timeOps {
     def tm_wday_=(v: CInt): Unit = ptr._7 = v
     def tm_yday_=(v: CInt): Unit = ptr._8 = v
     def tm_isdst_=(v: CInt): Unit = ptr._9 = v
+  }
+}
+
+@extern
+object timer {
+  /* The five timer_*() methods are in this separate object to simplify
+   * the use of the more frequently used methods in time.h. Yes, at the
+   * cost of having to import this separate, not-described-by-POSIX object.
+   *
+   * 1) Some operating systems provide the timer_* symbols in a way that
+   *    no special linking is needed.  Include this object and link away.
+   *
+   * 2) Many/most operating systems require that the linker "-lrt" be specified
+   *    so that the real time library, librt, is can be used to resolve the
+   *    timer_* symbols.
+   *
+   * 3) macOS does not provide librt and has it own, entirely different, way of
+   *    handling timers.
+   */
+
+  import time.timespec
+
+  type itimerspec = CStruct2[
+    timespec, // it_interval
+    timespec // it_value
+  ]
+
+  def timer_create(
+      clockid: clockid_t,
+      sevp: sigevent,
+      timerid: Ptr[timer_t]
+  ): CInt = extern
+
+  def timer_delete(timerid: timer_t): CInt = extern
+
+  def timer_getoverrun(timerid: timer_t): CInt = extern
+
+  def timer_gettime(timerid: timer_t, curr_value: Ptr[itimerspec]): CInt =
+    extern
+
+  def timer_settime(
+      timerid: timer_t,
+      flags: CInt,
+      new_value: Ptr[itimerspec],
+      old_value: Ptr[itimerspec]
+  ): CInt = extern
+
+// Symbolic constants
+
+  @name("scalanative_timer_abstime")
+  def TIMER_ABSTIME: CInt = extern
+}
+
+object timerOps {
+  import time.timespec
+  import timer.itimerspec
+
+  implicit class itimerspecOps(val ptr: Ptr[itimerspec]) extends AnyVal {
+    def it_interval: timespec = ptr._1
+    def it_value: timespec = ptr._2
+    def it_interval_=(v: timespec): Unit = ptr._1 = v
+    def it_value_=(v: timespec): Unit = ptr._2 = v
   }
 }
