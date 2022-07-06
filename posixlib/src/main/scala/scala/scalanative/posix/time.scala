@@ -82,7 +82,8 @@ object time {
 
   def clock_gettime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
 
-  @name("scalanative_clock_nanosleep") // glue stubs clock_nanosleep on macOS
+  // No clock_nanosleep on macOS. time.c provides a stub always returning -1.
+  @name("scalanative_clock_nanosleep")
   def clock_nanosleep(
       clockid: clockid_t,
       flags: CInt,
