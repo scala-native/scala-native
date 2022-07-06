@@ -508,7 +508,7 @@ class TimeTest {
     } else if (libcErrno.errno == EINTR) {
       // EINTR means sleep was interrupted, clock_nanosleep() executed.
     } else if (Platform.isMacOs) {
-      // No clock_nanosleep() on macOS. stub in time.c always return EINVAL.
+      // No clock_nanosleep() on macOS. stub in time.c always returns EINVAL.
       assertEquals(
         s"clock_nanosleep unexpected macOS errno: ${libcErrno.errno}",
         EINVAL,
@@ -534,14 +534,14 @@ class TimeTest {
       result
     )
 
-    // __Somebody__ _always_ has to be different.
-    val expectedErrno =
-      if (Platform.isArm64 && Platform.isLinux) EPERM
-      else EINVAL
-    assertEquals(
+    /* Testing for a specific errno tends to quickly run into OS differences.
+     * EINVAL is the "expected" result.
+     * aarch64-linux-gnu and probably others return EPERM.
+     */
+
+    assertTrue(
       s"clock_settime failed with errno: ${libcErrno.errno}",
-      expectedErrno,
-      libcErrno.errno
+      libcErrno.errno == (EINVAL) || libcErrno.errno == (EPERM)
     )
   }
 }
