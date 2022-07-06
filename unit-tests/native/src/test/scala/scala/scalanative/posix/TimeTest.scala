@@ -14,7 +14,7 @@ import scalanative.libc.{errno => libcErrno, string}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.posix.errno.{EINVAL, EINTR}
+import scala.scalanative.posix.errno.{EINVAL, EINTR, EPERM}
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
 
@@ -534,9 +534,11 @@ class TimeTest {
       result
     )
 
-    assertEquals(
+      val expectedErrno = if (Platform.isFreeBSD) EPERM else EINVAL
+
+      assertEquals(
       s"clock_settime failed with errno: ${libcErrno.errno}",
-      EINVAL,
+      expectedErrno,
       libcErrno.errno
     )
   }
