@@ -534,9 +534,11 @@ class TimeTest {
       result
     )
 
-      val expectedErrno = if (Platform.isFreeBSD) EPERM else EINVAL
-
-      assertEquals(
+    // __Somebody__ _always_ has to be different.
+    val expectedErrno =
+      if (Platform.isArm64 && Platform.isLinux) EPERM
+      else EINVAL
+    assertEquals(
       s"clock_settime failed with errno: ${libcErrno.errno}",
       expectedErrno,
       libcErrno.errno

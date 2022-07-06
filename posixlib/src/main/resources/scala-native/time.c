@@ -166,12 +166,6 @@ int scalanative_clock_nanosleep(clockid_t clockid, int flags,
 #if !defined(__APPLE__)
     return clock_nanosleep(clockid, flags, request, remain);
 #else
-    _Static_assert(EINVAL != 2,
-               "Apple clock_nanosleep() EINVAL == 2");
-
-    _Static_assert(EINVAL == 22,
-               "Apple clock_nanosleep() EINVAL != 22");
-
     errno = EINVAL; // No clock_nanosleep() on Apple.
     return -1;
 #endif
