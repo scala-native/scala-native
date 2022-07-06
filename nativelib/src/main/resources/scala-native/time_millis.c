@@ -12,11 +12,17 @@ long long scalanative_current_time_millis() {
 
 #if defined(_WIN32)
     // January 1, 1970 (start of Unix epoch) in "ticks"
-    long long UNIX_TIME_START = 0x019DB1DED53E8000;
-    long long TICKS_PER_MILLIS = 10000; // a tick is 100ns
+#define UNIX_TIME_START 0x019DB1DED53E8000LL
+#define MILLIS_PER_NANO 1000000
+#define NANOSECONDS_PER_SECOND 1000000000
 
     FILETIME filetime;
     GetSystemTimeAsFileTime(&filetime); // returns ticks in UTC
+    LARGE_INTEGER freq;                 // hertz
+    QueryPerformanceFrequency(&freq);
+
+    int ticksPerMilli =
+        MILLIS_PER_NANO / (NANOSECONDS_PER_SECOND / freq.QuadPart);
 
     // Copy the low and high parts of FILETIME into a LARGE_INTEGER
     // This is so we can access the full 64-bits as an Int64 without causing
@@ -25,10 +31,10 @@ long long scalanative_current_time_millis() {
     li.LowPart = filetime.dwLowDateTime;
     li.HighPart = filetime.dwHighDateTime;
 
-    current_time_millis = (li.QuadPart - UNIX_TIME_START) / TICKS_PER_MILLIS;
+    current_time_millis = (li.QuadPart - UNIX_TIME_START) / ticksPerMilli;
 #else
-    int MILLIS_PER_SEC = 1000LL;
-    int NANOS_PER_MILLI = 1000000LL;
+#define MILLIS_PER_SEC 1000
+#define NANOS_PER_MILLI 1000000
 
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);

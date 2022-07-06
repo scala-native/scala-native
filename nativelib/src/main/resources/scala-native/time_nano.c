@@ -12,7 +12,7 @@
 
 long long scalanative_nano_time() {
     long long nano_time;
-    const long long NANOSECONDS_PER_SECOND = 1000000000LL;
+#define NANOSECONDS_PER_SECOND 1000000000
 
 #if defined(_WIN32)
     LARGE_INTEGER count;
