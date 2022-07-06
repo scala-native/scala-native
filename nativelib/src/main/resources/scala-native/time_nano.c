@@ -1,6 +1,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include "win_freq.h"
 #else
 #include <time.h>
 #if defined(__APPLE__)
@@ -16,10 +17,8 @@ long long scalanative_nano_time() {
 
 #if defined(_WIN32)
     LARGE_INTEGER count;
-    LARGE_INTEGER freq;
     QueryPerformanceCounter(&count);
-    QueryPerformanceFrequency(&freq);
-    int nanosPerCount = NANOSECONDS_PER_SECOND / freq.QuadPart;
+    int nanosPerCount = NANOSECONDS_PER_SECOND / winFreqQuadPart();
     nano_time = count.QuadPart * nanosPerCount;
 #else
     struct timespec ts;

@@ -2,6 +2,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include "win_freq.h"
 #else
 #include <stdio.h>
 #include <sys/time.h>
@@ -18,11 +19,9 @@ long long scalanative_current_time_millis() {
 
     FILETIME filetime;
     GetSystemTimeAsFileTime(&filetime); // returns ticks in UTC
-    LARGE_INTEGER freq;                 // hertz
-    QueryPerformanceFrequency(&freq);
 
     int ticksPerMilli =
-        MILLIS_PER_NANO / (NANOSECONDS_PER_SECOND / freq.QuadPart);
+        MILLIS_PER_NANO / (NANOSECONDS_PER_SECOND / winFreqQuadPart());
 
     // Copy the low and high parts of FILETIME into a LARGE_INTEGER
     // This is so we can access the full 64-bits as an Int64 without causing
