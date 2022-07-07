@@ -19,7 +19,7 @@ long long scalanative_nano_time() {
 #if defined(_WIN32)
     LARGE_INTEGER count;
     QueryPerformanceCounter(&count);
-    int nanosPerCount = NANOSECONDS_PER_SECOND / winFreqQuadPart();
+    int nanosPerCount = NANOS_PER_SEC / winFreqQuadPart();
     nano_time = count.QuadPart * nanosPerCount;
 #else
     struct timespec ts;
