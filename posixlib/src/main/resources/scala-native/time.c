@@ -166,8 +166,8 @@ int scalanative_clock_nanosleep(clockid_t clockid, int flags,
 #if !defined(__APPLE__)
     return clock_nanosleep(clockid, flags, request, remain);
 #else
-    errno = EINVAL; // No clock_nanosleep() on Apple.
-    return -1;
+    errno = ENOTSUP; // No clock_nanosleep() on Apple.
+    return ENOTSUP;
 #endif
 }
 

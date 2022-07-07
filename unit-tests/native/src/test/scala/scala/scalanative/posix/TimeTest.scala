@@ -14,7 +14,7 @@ import scalanative.libc.{errno => libcErrno, string}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.posix.errno.{EINVAL, EINTR, EPERM}
+import scala.scalanative.posix.errno._
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
 
@@ -505,32 +505,17 @@ class TimeTest {
        * even rounded up to clock granularity, are exceedingly small
        * compared to background of OS & hardware, especialy VM, noise.
        */
-    } else if (libcErrno.errno == EINTR) {
+    } else if (result == EINTR) {
       // EINTR means sleep was interrupted, clock_nanosleep() executed.
     } else if (Platform.isMacOs) {
-      // No clock_nanosleep() on macOS. stub in time.c always returns EINVAL.
-
-      /* There may be a race condition in the Test enviroment on macOS.
-       * The expected errno value here is the EINVAL from the stub.
-       * Most of the time that is what happens.
-       * Unfortunately, intermittently it has the "unexplainable"
-       * value of ENOENT (2).
-       *
-       * POSIX indicates that setting and reading errno should be thread safe.
-       * The testing environment is multi-threaded so all should work.
-       * The intermittent unexpected value shows something is wrong somewhere.
-       *
-       * Do not make the ENOENT a fatal error and break CI at j-random times.
-       * However, do make it visible so the condition can be tracked.
-       */
-
+      // No macOS clock_nanosleep(). time.c stub should always return ENOTSUP.
       assumeTrue(
-        s"clock_nanosleep unexpected macOS errno: ${libcErrno.errno}",
-        libcErrno.errno == EINVAL
+        s"macOS clock_nanosleep failed with return code: ${result}",
+        result == ENOTSUP
       )
     } else {
       assertTrue(
-        s"clock_nanosleep failed with errno: ${libcErrno.errno}",
+        s"clock_nanosleep failed with return code: ${result}",
         false
       )
     }
