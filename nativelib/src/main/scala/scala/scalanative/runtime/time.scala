@@ -21,7 +21,8 @@ object time {
    */
   def scalanative_current_time_millis(): CLongLong = extern
 
-  /** Time zone offset in seconds, designed to be used by [[java.util.Date]]
+  /** Time zone offset in seconds from UTC. Negative to the west and positive to
+   *  the East. Designed to be used by [[java.util.Date]] by adding to UTC.
    *
    *  @return
    *    offset in seconds from UTC
