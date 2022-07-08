@@ -14,7 +14,7 @@
  * Function return values are ignored. Failure is unlikely and
  * there currently is no consensus on handling the failure.
  *
- * @return milliseconds from the UNIX epoch - presumable 0 if it fails
+ * @return milliseconds from the UNIX epoch - presumably 0 if it fails
  */
 long long scalanative_current_time_millis() {
     long long current_time_millis;
