@@ -11,7 +11,14 @@
 #endif // defined(__APPLE__)
 #endif // defined(_WIN32)
 
-/* Refer to javadoc for System.nanoTime() */
+/**
+ * Refer to javadoc for System.nanoTime()
+ *
+ * Function return values are ignored. Failure is unlikely and
+ * there currently is no consensus on handling the failure.
+ *
+ * @return nanoseconds of uptime - presumable 0 if it fails
+ */
 long long scalanative_nano_time() {
     long long nano_time;
 #define NANOS_PER_SEC 1000000000

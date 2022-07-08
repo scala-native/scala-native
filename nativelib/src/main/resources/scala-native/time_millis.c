@@ -8,7 +8,14 @@
 #include <sys/time.h>
 #endif
 
-/* Refer to javadoc for System.currentTimeMillis() */
+/**
+ * Refer to javadoc for System.currentTimeMillis()
+ *
+ * Function return values are ignored. Failure is unlikely and
+ * there currently is no consensus on handling the failure.
+ *
+ * @return milliseconds from the UNIX epoch - presumable 0 if it fails
+ */
 long long scalanative_current_time_millis() {
     long long current_time_millis;
 #define NANOS_PER_MILLI 1000000
