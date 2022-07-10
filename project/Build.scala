@@ -226,7 +226,7 @@ object Build {
   lazy val posixlib = MultiScalaProject("posixlib")
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
-    .dependsOn(nativelib)
+    .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val windowslib =

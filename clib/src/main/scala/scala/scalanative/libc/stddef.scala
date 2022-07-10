@@ -1,15 +1,13 @@
 package scala.scalanative
-package posix
+package libc
 
-import scala.scalanative.libc
-import scala.scalanative.posix.sys.types
 import scala.scalanative.unsafe._
 
 @extern
 object stddef {
-  type ptrdiff_t = libc.stddef.ptrdiff_t
-  type wchar_t = libc.stddef.ptrdiff_t
-  type size_t = types.size_t
+  type ptrdiff_t = CLong
+  type wchar_t = CInt
+  type size_t = CSize
 
 // Macros
 
