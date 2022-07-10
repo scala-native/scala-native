@@ -12,7 +12,7 @@ object stddef {
 // Macros
 
   // Ptr[Byte] is Scala Native convention for C (void *).
-  @name("scalanative_posix_null")
+  @name("scalanative_clib_null")
   def NULL: Ptr[Byte] = extern
 
   // offsetof() is not implemented in Scala Native.
