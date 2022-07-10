@@ -1,13 +1,16 @@
 #include <errno.h>
 
-// Omitting EDOM EILSEQ and ERANGE since they are in clib
+// Omitting EDOM EILSEQ and ERANGE since they are in clib.
 // Includes errno compat with Windows errors, not all of them are actually
-// defined
+// defined.
+
 int scalanative_e2big() { return E2BIG; }
 
 int scalanative_eacces() { return EACCES; }
 
 int scalanative_eaddrinuse() { return EADDRINUSE; }
+
+int scalanative_eaddrnotavail() { return EADDRNOTAVAIL; }
 
 int scalanative_eafnosupport() { return EAFNOSUPPORT; }
 
