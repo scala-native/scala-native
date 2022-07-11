@@ -4,7 +4,11 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.libc._
 import scalanative.posix.dirent._
-import scalanative.posix.{errno => e, fcntl, unistd}, e._, unistd.access
+
+// Import posix name errno as variable, not class or type.
+import scalanative.posix.{errno => posixErrno}, posixErrno._
+import scalanative.posix.{fcntl, unistd}, unistd.access
+
 import scalanative.unsafe._, stdlib._, stdio._, string._
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.mutable.UnrolledBuffer
@@ -66,7 +70,7 @@ object FileHelpers {
       val dir = opendir(toCString(path))
 
       if (dir == null) {
-        if (!allowEmpty) throw UnixException(path, errno.errno)
+        if (!allowEmpty) throw UnixException(path, posixErrno.errno)
         null
       } else {
         Zone { implicit z =>
@@ -154,7 +158,7 @@ object FileHelpers {
         } else {
           fopen(toCString(path), c"w") match {
             case null =>
-              if (throwOnError) throw UnixException(path, errno.errno)
+              if (throwOnError) throw UnixException(path, posixErrno.errno)
               else false
             case fd => fclose(fd); exists(path)
           }

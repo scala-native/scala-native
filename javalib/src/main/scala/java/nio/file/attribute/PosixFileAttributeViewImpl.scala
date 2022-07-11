@@ -9,15 +9,19 @@ import java.io.IOException
 
 import scalanative.unsigned._
 import scalanative.unsafe._
-import scalanative.libc._
-import scalanative.posix.{errno => e, grp, pwd, unistd, time, utime}, e._
+
+import scalanative.posix._
+
+// Import posix name errno as variable, not class or type.
+import scala.scalanative.posix.{errno => posixErrno}, posixErrno.errno
+
 import scalanative.posix.sys.stat
 
 final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     extends PosixFileAttributeView
     with FileOwnerAttributeView {
   private def throwIOException() =
-    throw PosixException(path.toString, errno.errno)
+    throw PosixException(path.toString, errno)
 
   override def name(): String = "posix"
 

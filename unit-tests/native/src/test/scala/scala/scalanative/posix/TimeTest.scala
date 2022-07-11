@@ -10,7 +10,11 @@ import org.scalanative.testsuite.utils.Platform
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.PlatformExt
 
-import scalanative.libc.{errno => libcErrno, string}
+import scala.scalanative.libc.string
+
+// Import posix name errno as variable, not class or type.
+import scala.scalanative.posix.{errno => posixErrno}, posixErrno.errno
+
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -150,7 +154,7 @@ class TimeTest {
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
         if (localtime_r(ttPtr, tmPtr) == null) {
-          throw new IOException(fromCString(string.strerror(libcErrno.errno)))
+          throw new IOException(fromCString(string.strerror(errno)))
         } else {
           val unexpected = "BOGUS"
 
