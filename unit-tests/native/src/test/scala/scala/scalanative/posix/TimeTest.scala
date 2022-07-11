@@ -12,8 +12,11 @@ import scala.scalanative.runtime.PlatformExt
 
 import scala.scalanative.libc.string
 
-// Import posix name errno as variable, not class or type.
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno.errno
+/* Scala 2.11.n & 2.12.n complain about import of posixErrno.errno.
+ * To span many Scala versions with same code used as
+ * qualified posixErrno.errno below.
+ */
+import scala.scalanative.posix.{errno => posixErrno}
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -154,7 +157,7 @@ class TimeTest {
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
         if (localtime_r(ttPtr, tmPtr) == null) {
-          throw new IOException(fromCString(string.strerror(errno)))
+          throw new IOException(fromCString(string.strerror(posixErrno.errno)))
         } else {
           val unexpected = "BOGUS"
 
