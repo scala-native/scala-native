@@ -32,7 +32,7 @@ object JUnitTestPlatformImpl {
       recorder: Logger with EventHandler
   ): Future[Array[Task]] = {
     val p = Promise[Array[Task]]()
-    p.success(task.execute(recorder, Array(recorder)))
+    task.execute(recorder, Array(recorder), p.success _)
     p.future
   }
 

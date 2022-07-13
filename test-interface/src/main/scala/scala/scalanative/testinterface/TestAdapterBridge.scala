@@ -7,6 +7,10 @@ import scala.scalanative.testinterface.common.JVMEndpoints._
 import scala.scalanative.testinterface.common.NativeEndpoints._
 import scala.scalanative.testinterface.common._
 
+import scala.concurrent.Promise
+import scala.util.control.NonFatal
+import scala.util.Try
+
 private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
 
   private[this] val mux = new RunMuxRPC(rpcClient)
@@ -47,7 +51,7 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
     }
 
     mux.attach(NativeEndpoints.tasks, runID)(tasksFun(runner))
-    mux.attach(NativeEndpoints.execute, runID)(executeFun(runID, runner))
+    mux.attachAsync(NativeEndpoints.execute, runID)(executeFun(runID, runner))
     mux.attach(NativeEndpoints.done, runID)(
       doneFun(runID, runner, isController)
     )
@@ -89,8 +93,23 @@ private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
         (withColor, i) <- req.loggerColorSupport.zipWithIndex
       } yield new RemoteLogger(runID, i, withColor)
 
-      val tasks = task.execute(eventHandler, loggers.toArray)
-      tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList
+      val promise = Promise[List[TaskInfo]]()
+
+      def cont(tasks: Array[Task]) = {
+        val result = Try(
+          tasks.map(TaskInfoBuilder.detachTask(_, runner)).toList
+        )
+        promise.complete(result)
+      }
+
+      try {
+        task.execute(eventHandler, loggers.toArray, cont)
+      } catch {
+        case NonFatal(t) =>
+          promise.tryFailure(t)
+      }
+
+      promise.future
   }
 
   private def doneFun(
