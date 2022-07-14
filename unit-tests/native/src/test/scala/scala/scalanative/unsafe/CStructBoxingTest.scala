@@ -14,9 +14,9 @@ class CStructBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullStruct: CStruct2[Int, Int] = null
-  @noinline lazy val struct: CStruct2[Int, Int] = !malloc(64.toULong)
+  @noinline lazy val struct: CStruct2[Int, Int] = !malloc(64.toUSize)
     .asInstanceOf[Ptr[CStruct2[Int, Int]]]
-  @noinline lazy val struct2: CStruct2[Int, Int] = !malloc(64.toULong)
+  @noinline lazy val struct2: CStruct2[Int, Int] = !malloc(64.toUSize)
     .asInstanceOf[Ptr[CStruct2[Int, Int]]]
 
   @noinline def f[T](x: T): T = x

@@ -2,9 +2,10 @@ package java.net
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc._
 import scala.scalanative.runtime.ByteArray
-import scala.scalanative.posix.errno._
+
+// Import posix name errno as variable, not class or type.
+import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
 import scala.scalanative.posix.unistd
 import scala.scalanative.posix.sys.socket
 import scala.scalanative.posix.sys.socketOps._
@@ -17,6 +18,7 @@ import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
 import scala.scalanative.posix.sys.time._
 import scala.scalanative.posix.sys.timeOps._
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 import scala.scalanative.windows._
@@ -144,7 +146,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN.toULong)
+    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN.toUSize)
 
     if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
@@ -506,7 +508,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (isWindows)
       onWindows(WSAGetLastError())
     else
-      onUnix(errno.errno)
+      onUnix(errno)
   }
 }
 

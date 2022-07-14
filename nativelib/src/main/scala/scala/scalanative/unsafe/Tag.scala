@@ -25,138 +25,175 @@ sealed abstract class Tag[T] {
   @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
 }
 
+// Separate object to avoid dependency cycles
+private[unsafe] object TagUtil {
+  val ptrSize = new USize(scala.scalanative.meta.LinktimeInfo.sizeOfPtr)
+}
+
 object Tag {
+  import TagUtil._
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Ptr[T]], value: unsafe.Ptr[T]): Unit =
       storeRawPtr(toRawPtr(ptr), toRawPtr(value))
   }
 
+  case object Size extends Tag[unsafe.Size] {
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Size]): unsafe.Size =
+      new Size(loadRawSize(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Size], value: unsafe.Size): Unit =
+      storeRawSize(toRawPtr(ptr), value.rawSize)
+  }
+
+  case object USize extends Tag[unsigned.USize] {
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.USize]): unsigned.USize =
+      new USize(loadRawSize(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.USize], value: unsigned.USize): Unit =
+      storeRawSize(toRawPtr(ptr), value.rawSize)
+  }
+
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
       loadObject(toRawPtr(ptr)).asInstanceOf[T]
     @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
   }
 
+
   object Unit extends Tag[scala.Unit] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Unit]): scala.Unit =
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Unit], value: scala.Unit): Unit =
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
   }
 
+
   object Boolean extends Tag[scala.Boolean] {
-    @alwaysinline def size: CSize = 1.toULong
-    @alwaysinline def alignment: CSize = 1.toULong
+    @alwaysinline def size: CSize = 1.toUSize
+    @alwaysinline def alignment: CSize = 1.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Boolean]): scala.Boolean =
       loadBoolean(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Boolean], value: scala.Boolean): Unit =
       storeBoolean(toRawPtr(ptr), value)
   }
 
+
   object Char extends Tag[scala.Char] {
-    @alwaysinline def size: CSize = 2.toULong
-    @alwaysinline def alignment: CSize = 2.toULong
+    @alwaysinline def size: CSize = 2.toUSize
+    @alwaysinline def alignment: CSize = 2.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Char]): scala.Char =
       loadChar(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Char], value: scala.Char): Unit =
       storeChar(toRawPtr(ptr), value)
   }
 
+
   object Byte extends Tag[scala.Byte] {
-    @alwaysinline def size: CSize = 1.toULong
-    @alwaysinline def alignment: CSize = 1.toULong
+    @alwaysinline def size: CSize = 1.toUSize
+    @alwaysinline def alignment: CSize = 1.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Byte]): scala.Byte =
       loadByte(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Byte], value: scala.Byte): Unit =
       storeByte(toRawPtr(ptr), value)
   }
 
+
   object UByte extends Tag[unsigned.UByte] {
-    @alwaysinline def size: CSize = 1.toULong
-    @alwaysinline def alignment: CSize = 1.toULong
+    @alwaysinline def size: CSize = 1.toUSize
+    @alwaysinline def alignment: CSize = 1.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.UByte]): unsigned.UByte =
       loadByte(toRawPtr(ptr)).toUByte
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UByte], value: unsigned.UByte): Unit =
       storeByte(toRawPtr(ptr), value.toByte)
   }
 
+
   object Short extends Tag[scala.Short] {
-    @alwaysinline def size: CSize = 2.toULong
-    @alwaysinline def alignment: CSize = 2.toULong
+    @alwaysinline def size: CSize = 2.toUSize
+    @alwaysinline def alignment: CSize = 2.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Short]): scala.Short =
       loadShort(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Short], value: scala.Short): Unit =
       storeShort(toRawPtr(ptr), value)
   }
 
+
   object UShort extends Tag[unsigned.UShort] {
-    @alwaysinline def size: CSize = 2.toULong
-    @alwaysinline def alignment: CSize = 2.toULong
+    @alwaysinline def size: CSize = 2.toUSize
+    @alwaysinline def alignment: CSize = 2.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.UShort]): unsigned.UShort =
       loadShort(toRawPtr(ptr)).toUShort
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UShort], value: unsigned.UShort): Unit =
       storeShort(toRawPtr(ptr), value.toShort)
   }
 
+
   object Int extends Tag[scala.Int] {
-    @alwaysinline def size: CSize = 4.toULong
-    @alwaysinline def alignment: CSize = 4.toULong
+    @alwaysinline def size: CSize = 4.toUSize
+    @alwaysinline def alignment: CSize = 4.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Int]): scala.Int =
       loadInt(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Int], value: scala.Int): Unit =
       storeInt(toRawPtr(ptr), value)
   }
 
+
   object UInt extends Tag[unsigned.UInt] {
-    @alwaysinline def size: CSize = 4.toULong
-    @alwaysinline def alignment: CSize = 4.toULong
+    @alwaysinline def size: CSize = 4.toUSize
+    @alwaysinline def alignment: CSize = 4.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.UInt]): unsigned.UInt =
       loadInt(toRawPtr(ptr)).toUInt
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.UInt], value: unsigned.UInt): Unit =
       storeInt(toRawPtr(ptr), value.toInt)
   }
 
+
   object Long extends Tag[scala.Long] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = 8.toUSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Long]): scala.Long =
       loadLong(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Long], value: scala.Long): Unit =
       storeLong(toRawPtr(ptr), value)
   }
 
+
   object ULong extends Tag[unsigned.ULong] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = 8.toUSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.ULong]): unsigned.ULong =
       loadLong(toRawPtr(ptr)).toULong
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.ULong], value: unsigned.ULong): Unit =
       storeLong(toRawPtr(ptr), value.toLong)
   }
 
+
   object Float extends Tag[scala.Float] {
-    @alwaysinline def size: CSize = 4.toULong
-    @alwaysinline def alignment: CSize = 4.toULong
+    @alwaysinline def size: CSize = 4.toUSize
+    @alwaysinline def alignment: CSize = 4.toUSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Float]): scala.Float =
       loadFloat(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Float], value: scala.Float): Unit =
       storeFloat(toRawPtr(ptr), value)
   }
 
+
   object Double extends Tag[scala.Double] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = 8.toUSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[scala.Double]): scala.Double =
       loadDouble(toRawPtr(ptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[scala.Double], value: scala.Double): Unit =
@@ -383,8 +420,8 @@ object Tag {
   private[scalanative] sealed trait StructTag
 
   @alwaysinline private[scalanative] def align(offset: CSize, alignment: CSize) = {
-    val alignmentMask = alignment - 1.toULong
-    val zeroUL = 0.toULong
+    val alignmentMask = alignment - 1.toUSize
+    val zeroUL = 0.toUSize
     val padding =
       if ((offset & alignmentMask) == zeroUL) zeroUL
       else alignment - (offset & alignmentMask)
@@ -396,11 +433,11 @@ object Tag {
     extends Tag[unsafe.CStruct0]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
@@ -414,7 +451,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -424,18 +461,18 @@ object Tag {
     extends Tag[unsafe.CStruct1[T1]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case _ =>
         throwUndefined()
@@ -447,7 +484,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -457,23 +494,23 @@ object Tag {
     extends Tag[unsafe.CStruct2[T1, T2]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case _ =>
@@ -486,7 +523,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -496,14 +533,14 @@ object Tag {
     extends Tag[unsafe.CStruct3[T1, T2, T3]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -511,14 +548,14 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
@@ -532,7 +569,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -542,7 +579,7 @@ object Tag {
     extends Tag[unsafe.CStruct4[T1, T2, T3, T4]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -550,7 +587,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -559,19 +596,19 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -586,7 +623,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -596,7 +633,7 @@ object Tag {
     extends Tag[unsafe.CStruct5[T1, T2, T3, T4, T5]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -605,7 +642,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -615,25 +652,25 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -649,7 +686,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -659,7 +696,7 @@ object Tag {
     extends Tag[unsafe.CStruct6[T1, T2, T3, T4, T5, T6]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -669,7 +706,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -680,32 +717,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -722,7 +759,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -732,7 +769,7 @@ object Tag {
     extends Tag[unsafe.CStruct7[T1, T2, T3, T4, T5, T6, T7]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -743,7 +780,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -755,32 +792,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -788,7 +825,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -806,7 +843,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -816,7 +853,7 @@ object Tag {
     extends Tag[unsafe.CStruct8[T1, T2, T3, T4, T5, T6, T7, T8]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -828,7 +865,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -841,32 +878,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -874,7 +911,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -883,7 +920,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -902,7 +939,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -912,7 +949,7 @@ object Tag {
     extends Tag[unsafe.CStruct9[T1, T2, T3, T4, T5, T6, T7, T8, T9]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -925,7 +962,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -939,32 +976,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -972,7 +1009,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -981,7 +1018,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -991,7 +1028,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1011,7 +1048,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -1021,7 +1058,7 @@ object Tag {
     extends Tag[unsafe.CStruct10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -1035,7 +1072,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -1050,32 +1087,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1083,7 +1120,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1092,7 +1129,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1102,7 +1139,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1113,7 +1150,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1134,7 +1171,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -1144,7 +1181,7 @@ object Tag {
     extends Tag[unsafe.CStruct11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -1159,7 +1196,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -1175,32 +1212,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1208,7 +1245,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1217,7 +1254,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1227,7 +1264,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1238,7 +1275,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1250,7 +1287,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1272,7 +1309,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -1282,7 +1319,7 @@ object Tag {
     extends Tag[unsafe.CStruct12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -1298,7 +1335,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -1315,32 +1352,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1348,7 +1385,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1357,7 +1394,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1367,7 +1404,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1378,7 +1415,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1390,7 +1427,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1403,7 +1440,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1426,7 +1463,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -1436,7 +1473,7 @@ object Tag {
     extends Tag[unsafe.CStruct13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -1453,7 +1490,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -1471,32 +1508,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1504,7 +1541,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1513,7 +1550,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1523,7 +1560,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1534,7 +1571,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1546,7 +1583,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1559,7 +1596,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1573,7 +1610,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1597,7 +1634,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -1607,7 +1644,7 @@ object Tag {
     extends Tag[unsafe.CStruct14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -1625,7 +1662,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -1644,32 +1681,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1677,7 +1714,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1686,7 +1723,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1696,7 +1733,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1707,7 +1744,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1719,7 +1756,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1732,7 +1769,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1746,7 +1783,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1761,7 +1798,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1786,7 +1823,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -1796,7 +1833,7 @@ object Tag {
     extends Tag[unsafe.CStruct15[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -1815,7 +1852,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -1835,32 +1872,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1868,7 +1905,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1877,7 +1914,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1887,7 +1924,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1898,7 +1935,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1910,7 +1947,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1923,7 +1960,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1937,7 +1974,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1952,7 +1989,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1968,7 +2005,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -1994,7 +2031,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -2004,7 +2041,7 @@ object Tag {
     extends Tag[unsafe.CStruct16[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -2024,7 +2061,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -2045,32 +2082,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2078,7 +2115,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2087,7 +2124,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2097,7 +2134,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2108,7 +2145,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2120,7 +2157,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2133,7 +2170,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2147,7 +2184,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2162,7 +2199,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2178,7 +2215,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2195,7 +2232,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2222,7 +2259,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -2232,7 +2269,7 @@ object Tag {
     extends Tag[unsafe.CStruct17[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -2253,7 +2290,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -2275,32 +2312,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2308,7 +2345,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2317,7 +2354,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2327,7 +2364,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2338,7 +2375,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2350,7 +2387,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2363,7 +2400,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2377,7 +2414,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2392,7 +2429,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2408,7 +2445,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2425,7 +2462,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2443,7 +2480,7 @@ object Tag {
         res = align(res, _15.alignment) + _15.size
         align(res, _16.alignment)
       case 16 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2471,7 +2508,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -2481,7 +2518,7 @@ object Tag {
     extends Tag[unsafe.CStruct18[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -2503,7 +2540,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -2526,32 +2563,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2559,7 +2596,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2568,7 +2605,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2578,7 +2615,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2589,7 +2626,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2601,7 +2638,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2614,7 +2651,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2628,7 +2665,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2643,7 +2680,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2659,7 +2696,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2676,7 +2713,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2694,7 +2731,7 @@ object Tag {
         res = align(res, _15.alignment) + _15.size
         align(res, _16.alignment)
       case 16 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2713,7 +2750,7 @@ object Tag {
         res = align(res, _16.alignment) + _16.size
         align(res, _17.alignment)
       case 17 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2742,7 +2779,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -2752,7 +2789,7 @@ object Tag {
     extends Tag[unsafe.CStruct19[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -2775,7 +2812,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -2799,32 +2836,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2832,7 +2869,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2841,7 +2878,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2851,7 +2888,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2862,7 +2899,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2874,7 +2911,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2887,7 +2924,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2901,7 +2938,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2916,7 +2953,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2932,7 +2969,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2949,7 +2986,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2967,7 +3004,7 @@ object Tag {
         res = align(res, _15.alignment) + _15.size
         align(res, _16.alignment)
       case 16 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -2986,7 +3023,7 @@ object Tag {
         res = align(res, _16.alignment) + _16.size
         align(res, _17.alignment)
       case 17 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3006,7 +3043,7 @@ object Tag {
         res = align(res, _17.alignment) + _17.size
         align(res, _18.alignment)
       case 18 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3036,7 +3073,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -3046,7 +3083,7 @@ object Tag {
     extends Tag[unsafe.CStruct20[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -3070,7 +3107,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -3095,32 +3132,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3128,7 +3165,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3137,7 +3174,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3147,7 +3184,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3158,7 +3195,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3170,7 +3207,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3183,7 +3220,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3197,7 +3234,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3212,7 +3249,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3228,7 +3265,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3245,7 +3282,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3263,7 +3300,7 @@ object Tag {
         res = align(res, _15.alignment) + _15.size
         align(res, _16.alignment)
       case 16 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3282,7 +3319,7 @@ object Tag {
         res = align(res, _16.alignment) + _16.size
         align(res, _17.alignment)
       case 17 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3302,7 +3339,7 @@ object Tag {
         res = align(res, _17.alignment) + _17.size
         align(res, _18.alignment)
       case 18 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3323,7 +3360,7 @@ object Tag {
         res = align(res, _18.alignment) + _18.size
         align(res, _19.alignment)
       case 19 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3354,7 +3391,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -3364,7 +3401,7 @@ object Tag {
     extends Tag[unsafe.CStruct21[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -3389,7 +3426,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -3415,32 +3452,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3448,7 +3485,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3457,7 +3494,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3467,7 +3504,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3478,7 +3515,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3490,7 +3527,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3503,7 +3540,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3517,7 +3554,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3532,7 +3569,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3548,7 +3585,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3565,7 +3602,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3583,7 +3620,7 @@ object Tag {
         res = align(res, _15.alignment) + _15.size
         align(res, _16.alignment)
       case 16 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3602,7 +3639,7 @@ object Tag {
         res = align(res, _16.alignment) + _16.size
         align(res, _17.alignment)
       case 17 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3622,7 +3659,7 @@ object Tag {
         res = align(res, _17.alignment) + _17.size
         align(res, _18.alignment)
       case 18 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3643,7 +3680,7 @@ object Tag {
         res = align(res, _18.alignment) + _18.size
         align(res, _19.alignment)
       case 19 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3665,7 +3702,7 @@ object Tag {
         res = align(res, _19.alignment) + _19.size
         align(res, _20.alignment)
       case 20 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3697,7 +3734,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -3707,7 +3744,7 @@ object Tag {
     extends Tag[unsafe.CStruct22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       res = align(res, _1.alignment) + _1.size
       res = align(res, _2.alignment) + _2.size
       res = align(res, _3.alignment) + _3.size
@@ -3733,7 +3770,7 @@ object Tag {
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       res = res.max(_1.alignment)
       res = res.max(_2.alignment)
       res = res.max(_3.alignment)
@@ -3760,32 +3797,32 @@ object Tag {
     }
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       case 0 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         align(res, _1.alignment)
       case 1 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         align(res, _2.alignment)
       case 2 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         align(res, _3.alignment)
       case 3 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         align(res, _4.alignment)
       case 4 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
         res = align(res, _4.alignment) + _4.size
         align(res, _5.alignment)
       case 5 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3793,7 +3830,7 @@ object Tag {
         res = align(res, _5.alignment) + _5.size
         align(res, _6.alignment)
       case 6 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3802,7 +3839,7 @@ object Tag {
         res = align(res, _6.alignment) + _6.size
         align(res, _7.alignment)
       case 7 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3812,7 +3849,7 @@ object Tag {
         res = align(res, _7.alignment) + _7.size
         align(res, _8.alignment)
       case 8 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3823,7 +3860,7 @@ object Tag {
         res = align(res, _8.alignment) + _8.size
         align(res, _9.alignment)
       case 9 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3835,7 +3872,7 @@ object Tag {
         res = align(res, _9.alignment) + _9.size
         align(res, _10.alignment)
       case 10 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3848,7 +3885,7 @@ object Tag {
         res = align(res, _10.alignment) + _10.size
         align(res, _11.alignment)
       case 11 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3862,7 +3899,7 @@ object Tag {
         res = align(res, _11.alignment) + _11.size
         align(res, _12.alignment)
       case 12 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3877,7 +3914,7 @@ object Tag {
         res = align(res, _12.alignment) + _12.size
         align(res, _13.alignment)
       case 13 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3893,7 +3930,7 @@ object Tag {
         res = align(res, _13.alignment) + _13.size
         align(res, _14.alignment)
       case 14 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3910,7 +3947,7 @@ object Tag {
         res = align(res, _14.alignment) + _14.size
         align(res, _15.alignment)
       case 15 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3928,7 +3965,7 @@ object Tag {
         res = align(res, _15.alignment) + _15.size
         align(res, _16.alignment)
       case 16 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3947,7 +3984,7 @@ object Tag {
         res = align(res, _16.alignment) + _16.size
         align(res, _17.alignment)
       case 17 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3967,7 +4004,7 @@ object Tag {
         res = align(res, _17.alignment) + _17.size
         align(res, _18.alignment)
       case 18 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -3988,7 +4025,7 @@ object Tag {
         res = align(res, _18.alignment) + _18.size
         align(res, _19.alignment)
       case 19 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -4010,7 +4047,7 @@ object Tag {
         res = align(res, _19.alignment) + _19.size
         align(res, _20.alignment)
       case 20 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -4033,7 +4070,7 @@ object Tag {
         res = align(res, _20.alignment) + _20.size
         align(res, _21.alignment)
       case 21 =>
-        var res = 0.toULong
+        var res = 0.toUSize
         res = align(res, _1.alignment) + _1.size
         res = align(res, _2.alignment) + _2.size
         res = align(res, _3.alignment) + _3.size
@@ -4066,7 +4103,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -4079,8 +4116,8 @@ object Tag {
      */
     private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit = {
@@ -4140,6 +4177,10 @@ object Tag {
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
     Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
+  @alwaysinline implicit def materializeSizeTag: Tag[unsafe.Size] =
+    Tag.Size
+  @alwaysinline implicit def materializeUSizeTag: Tag[unsigned.USize] =
+    Tag.USize
   @alwaysinline implicit def materializeUnitTag: Tag[scala.Unit] =
     Unit
   @alwaysinline implicit def materializeBooleanTag: Tag[scala.Boolean] =

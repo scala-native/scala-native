@@ -5,6 +5,15 @@ import scalanative.unsafe.{CInt, extern, name}
 
 @extern
 object errno {
+
+  // errno and errno_= will use common scala.scalanative.libc implementation.
+
+  @name("scalanative_errno")
+  def errno: CInt = extern
+
+  @name("scalanative_set_errno")
+  def errno_=(value: CInt): Unit = extern
+
   // Macros
 
   @name("scalanative_e2big")

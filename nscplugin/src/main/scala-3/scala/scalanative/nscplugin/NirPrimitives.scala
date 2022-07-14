@@ -48,7 +48,8 @@ object NirPrimitives {
   final val LOAD_FLOAT = 1 + LOAD_LONG
   final val LOAD_DOUBLE = 1 + LOAD_FLOAT
   final val LOAD_RAW_PTR = 1 + LOAD_DOUBLE
-  final val LOAD_OBJECT = 1 + LOAD_RAW_PTR
+  final val LOAD_RAW_SIZE = 1 + LOAD_RAW_PTR
+  final val LOAD_OBJECT = 1 + LOAD_RAW_SIZE
 
   final val STORE_BOOL = 1 + LOAD_OBJECT
   final val STORE_CHAR = 1 + STORE_BOOL
@@ -59,7 +60,8 @@ object NirPrimitives {
   final val STORE_FLOAT = 1 + STORE_LONG
   final val STORE_DOUBLE = 1 + STORE_FLOAT
   final val STORE_RAW_PTR = 1 + STORE_DOUBLE
-  final val STORE_OBJECT = 1 + STORE_RAW_PTR
+  final val STORE_RAW_SIZE = 1 + STORE_RAW_PTR
+  final val STORE_OBJECT = 1 + STORE_RAW_SIZE
 
   final val ELEM_RAW_PTR = 1 + STORE_OBJECT
 
@@ -73,8 +75,14 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR = 1 + CAST_INT_TO_RAWPTR
+  final val CAST_RAWSIZE_TO_INT = 1 + CAST_LONG_TO_RAWPTR
+  final val CAST_RAWSIZE_TO_LONG = 1 + CAST_RAWSIZE_TO_INT
+  final val CAST_RAWSIZE_TO_LONG_UNSIGNED = 1 + CAST_RAWSIZE_TO_LONG
+  final val CAST_INT_TO_RAWSIZE = 1 + CAST_RAWSIZE_TO_LONG_UNSIGNED
+  final val CAST_INT_TO_RAWSIZE_UNSIGNED = 1 + CAST_INT_TO_RAWSIZE
+  final val CAST_LONG_TO_RAWSIZE = 1 + CAST_INT_TO_RAWSIZE_UNSIGNED
 
-  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
+  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
 
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
@@ -96,8 +104,11 @@ object NirPrimitives {
   def isRawPtrStoreOp(code: Int): Boolean =
     code >= STORE_BOOL && code <= STORE_OBJECT
 
-  def isRawCastOp(code: Int): Boolean =
+  def isRawPtrCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
+
+  def isRawSizeCastOp(code: Int): Boolean =
+    code >= CAST_RAWSIZE_TO_INT && code <= CAST_LONG_TO_RAWSIZE
 
   def isUnsignedOp(code: Int): Boolean =
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
@@ -130,6 +141,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       primitives(s) = code
     }
 
+    // scalafmt: { maxColumn = 120}
     addPrimitive(defn.throwMethod, THROW)
     addPrimitive(defn.BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(defn.Array_clone, ARRAY_CLONE)
@@ -157,6 +169,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_loadFloat, LOAD_FLOAT)
     addPrimitive(defnNir.Intrinsics_loadDouble, LOAD_DOUBLE)
     addPrimitive(defnNir.Intrinsics_loadRawPtr, LOAD_RAW_PTR)
+    addPrimitive(defnNir.Intrinsics_loadRawSize, LOAD_RAW_SIZE)
     addPrimitive(defnNir.Intrinsics_loadObject, LOAD_OBJECT)
     addPrimitive(defnNir.Intrinsics_storeBool, STORE_BOOL)
     addPrimitive(defnNir.Intrinsics_storeChar, STORE_CHAR)
@@ -167,6 +180,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_storeFloat, STORE_FLOAT)
     addPrimitive(defnNir.Intrinsics_storeDouble, STORE_DOUBLE)
     addPrimitive(defnNir.Intrinsics_storeRawPtr, STORE_RAW_PTR)
+    addPrimitive(defnNir.Intrinsics_storeRawSize, STORE_RAW_SIZE)
     addPrimitive(defnNir.Intrinsics_storeObject, STORE_OBJECT)
     addPrimitive(defnNir.Intrinsics_elemRawPtr, ELEM_RAW_PTR)
     addPrimitive(defnNir.Intrinsics_castRawPtrToObject, CAST_RAW_PTR_TO_OBJECT)
@@ -179,10 +193,14 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_castRawPtrToLong, CAST_RAWPTR_TO_LONG)
     addPrimitive(defnNir.Intrinsics_castIntToRawPtr, CAST_INT_TO_RAWPTR)
     addPrimitive(defnNir.Intrinsics_castLongToRawPtr, CAST_LONG_TO_RAWPTR)
+    addPrimitive(defnNir.Intrinsics_castRawSizeToInt, CAST_RAWSIZE_TO_INT)
+    addPrimitive(defnNir.Intrinsics_castRawSizeToLong, CAST_RAWSIZE_TO_LONG)
+    addPrimitive(defnNir.Intrinsics_castRawSizeToLongUnsigned, CAST_RAWSIZE_TO_LONG_UNSIGNED)
+    addPrimitive(defnNir.Intrinsics_castIntToRawSize, CAST_INT_TO_RAWSIZE)
+    addPrimitive(defnNir.Intrinsics_castIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
+    addPrimitive(defnNir.Intrinsics_castLongToRawSize, CAST_LONG_TO_RAWSIZE)
     defnNir.CFuncPtr_apply.foreach(addPrimitive(_, CFUNCPTR_APPLY))
-    defnNir.CFuncPtr_fromScalaFunction.foreach(
-      addPrimitive(_, CFUNCPTR_FROM_FUNCTION)
-    )
+    defnNir.CFuncPtr_fromScalaFunction.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
     addPrimitive(
       defnNir.ReflectSelectable_selectDynamic,

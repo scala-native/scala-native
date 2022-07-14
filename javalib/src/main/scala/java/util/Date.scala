@@ -61,7 +61,7 @@ object Date {
   private def secondsToString(seconds: Long, default: => String): String =
     Zone { implicit z =>
       val ttPtr = alloc[time_t]()
-      !ttPtr = seconds
+      !ttPtr = seconds.toSize
 
       val tmPtr = alloc[tm]()
       def getLocalTime() =
@@ -74,7 +74,7 @@ object Date {
         // 40 is over-provisioning.
         // Most result strings should be about 28 + 1 for terminal NULL
         // + 2 because some IANA timezone abbreviation can have 5 characters.
-        val bufSize = 40.toULong // no toSize_t() yet
+        val bufSize = 40.toUSize
         val buf: Ptr[Byte] = alloc[Byte](bufSize)
 
         val n = {

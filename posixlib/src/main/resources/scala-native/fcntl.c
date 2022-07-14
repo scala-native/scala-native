@@ -53,11 +53,11 @@ int scalanative_o_rdwr() { return O_RDWR; }
 int scalanative_o_wronly() { return O_WRONLY; }
 
 struct scalanative_flock {
-    off_t l_start;  /* starting offset */
-    off_t l_len;    /* len = 0 means until end of file */
-    pid_t l_pid;    /* lock owner */
-    short l_type;   /* lock type: read/write, etc. */
-    short l_whence; /* type of l_start */
+    off_t l_start; /* starting offset */
+    off_t l_len;   /* len = 0 means until end of file */
+    pid_t l_pid;   /* lock owner */
+    int l_type;    /* lock type: read/write, etc. */
+    int l_whence;  /* type of l_start */
 };
 /* POSIX does not define the order of fields in flock, and there can be an
  * unidentified amount of additional ones. Because of this, we have to access
@@ -69,8 +69,8 @@ int scalanative_fcntl(int fd, int cmd, struct scalanative_flock *flock_struct) {
     flock_buf.l_start = flock_struct->l_start;
     flock_buf.l_len = flock_struct->l_len;
     flock_buf.l_pid = flock_struct->l_pid;
-    flock_buf.l_type = flock_struct->l_type;
-    flock_buf.l_whence = flock_struct->l_whence;
+    flock_buf.l_type = (short)flock_struct->l_type;
+    flock_buf.l_whence = (short)flock_struct->l_whence;
 
     return fcntl(fd, cmd, &flock_buf);
 }

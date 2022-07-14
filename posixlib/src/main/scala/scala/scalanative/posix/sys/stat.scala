@@ -4,7 +4,6 @@ package sys
 
 import scalanative.unsafe._
 import scalanative.posix.time._
-import scalanative.posix.unistd.off_t
 
 @extern
 object stat {
@@ -14,6 +13,7 @@ object stat {
   type nlink_t = CUnsignedLong
   type uid_t = CUnsignedInt
   type gid_t = CUnsignedInt
+  type off_t = CLongLong
   type blksize_t = CLong
   type blkcnt_t = CLongLong
   type stat = CStruct13[

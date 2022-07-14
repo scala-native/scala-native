@@ -310,7 +310,7 @@ private[nio] object MappedByteBufferImpl {
       prot,
       isPrivate,
       fd.fd,
-      position
+      position.toSize
     )
     if (ptr.toInt == -1) failMapping()
 

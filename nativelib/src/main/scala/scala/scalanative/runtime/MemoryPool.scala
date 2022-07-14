@@ -14,7 +14,7 @@ import scala.scalanative.unsigned._
  *  Memory is reclaimed back to underlying allocator once the pool is finalized.
  */
 final class MemoryPool private {
-  private[this] var chunkPageCount: ULong = MemoryPool.MIN_PAGE_COUNT
+  private[this] var chunkPageCount: USize = MemoryPool.MIN_PAGE_COUNT
   private[this] var chunk: MemoryPool.Chunk = null
   private[this] var page: MemoryPool.Page = null
   allocateChunk()
@@ -22,18 +22,18 @@ final class MemoryPool private {
   /** Allocate a chunk of memory from system allocator. */
   private def allocateChunk(): Unit = {
     if (chunkPageCount < MemoryPool.MAX_PAGE_COUNT) {
-      chunkPageCount *= 2.toULong
+      chunkPageCount *= 2.toUSize
     }
     val chunkSize = MemoryPool.PAGE_SIZE * chunkPageCount
     val start = libc.malloc(chunkSize)
-    chunk = new MemoryPool.Chunk(start, 0.toULong, chunkSize, chunk)
+    chunk = new MemoryPool.Chunk(start, 0.toUSize, chunkSize, chunk)
   }
 
   /** Allocate a single page as a fraction of a larger chunk allocation. */
   private def allocatePage(): Unit = {
     if (chunk.offset >= chunk.size) allocateChunk()
-    val start = Intrinsics.elemRawPtr(chunk.start, chunk.offset.toLong)
-    page = new MemoryPool.Page(start, 0.toULong, page)
+    val start = Intrinsics.elemRawPtr(chunk.start, chunk.offset.rawSize)
+    page = new MemoryPool.Page(start, 0.toUSize, page)
     chunk.offset += MemoryPool.PAGE_SIZE
   }
 
@@ -43,7 +43,7 @@ final class MemoryPool private {
     val result = page
     page = result.next
     result.next = null
-    result.offset = 0.toULong
+    result.offset = 0.toUSize
     result
   }
 
@@ -55,9 +55,9 @@ final class MemoryPool private {
     }
 }
 object MemoryPool {
-  final val PAGE_SIZE = 4096.toULong
-  final val MIN_PAGE_COUNT = 4.toULong
-  final val MAX_PAGE_COUNT = 256.toULong
+  final val PAGE_SIZE = 4096.toUSize
+  final val MIN_PAGE_COUNT = 4.toUSize
+  final val MAX_PAGE_COUNT = 256.toUSize
 
   lazy val defaultMemoryPool: MemoryPool = new MemoryPool()
 
@@ -86,9 +86,9 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
       throw new IllegalStateException("Zone {this} is already closed.")
 
   private def pad(addr: CSize, alignment: CSize): CSize = {
-    val alignmentMask: CSize = alignment - 1.toULong
+    val alignmentMask: CSize = alignment - 1.toUSize
     val padding: CSize =
-      if ((addr & alignmentMask) == 0.toULong) 0.toULong
+      if ((addr & alignmentMask) == 0.toUSize) 0.toUSize
       else alignment - (addr & alignmentMask)
     addr + padding
   }
@@ -118,11 +118,11 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
 
   def alloc(size: CSize): Ptr[Byte] = {
     val alignment =
-      if (size >= 16.toULong) 16.toULong
-      else if (size >= 8.toULong) 8.toULong
-      else if (size >= 4.toULong) 4.toULong
-      else if (size >= 2.toULong) 2.toULong
-      else 1.toULong
+      if (size >= 16.toUSize) 16.toUSize
+      else if (size >= 8.toUSize) 8.toUSize
+      else if (size >= 4.toUSize) 4.toUSize
+      else if (size >= 2.toUSize) 2.toUSize
+      else 1.toUSize
 
     alloc(size, alignment)
   }
@@ -142,17 +142,17 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
     val paddedOffset = pad(currentOffset, alignment)
     val resOffset: CSize =
       if (paddedOffset + size <= MemoryPool.PAGE_SIZE) {
-        headPage.offset = paddedOffset.toULong + size
+        headPage.offset = paddedOffset + size
         paddedOffset
       } else {
         val newPage = pool.claim()
         newPage.next = headPage
         newPage.offset = size
         headPage = newPage
-        0L.toULong
+        0L.toUSize
       }
 
-    fromRawPtr[Byte](Intrinsics.elemRawPtr(headPage.start, resOffset.toLong))
+    fromRawPtr[Byte](Intrinsics.elemRawPtr(headPage.start, resOffset.rawSize))
   }
 
   private def allocLarge(size: CSize): Ptr[Byte] = {

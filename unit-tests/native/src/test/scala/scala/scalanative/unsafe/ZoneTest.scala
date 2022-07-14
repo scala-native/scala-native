@@ -28,7 +28,7 @@ class ZoneTest {
 
   @Test def zoneAllocatorAllocWithApply(): Unit = {
     Zone { implicit z =>
-      val ptr = z.alloc(64.toUInt * sizeof[Int])
+      val ptr = z.alloc(64.toUSize * sizeof[Int])
 
       assertAccessible(ptr, 64)
 
@@ -43,7 +43,7 @@ class ZoneTest {
     assertTrue(zone.isOpen)
     assertFalse(zone.isClosed)
 
-    val ptr = zone.alloc(64.toUInt * sizeof[Int])
+    val ptr = zone.alloc(64.toUSize * sizeof[Int])
 
     assertAccessible(ptr, 64)
 
@@ -59,13 +59,13 @@ class ZoneTest {
   @Test def allocThrowsExceptionIfZoneAllocatorIsClosed(): Unit = {
     implicit val zone: Zone = Zone.open()
 
-    zone.alloc(64.toUInt * sizeof[Int])
+    zone.alloc(64.toUSize * sizeof[Int])
 
     zone.close()
 
     assertThrows(
       classOf[IllegalStateException],
-      zone.alloc(64.toUInt * sizeof[Int])
+      zone.alloc(64.toUSize * sizeof[Int])
     )
     assertThrows(classOf[IllegalStateException], zone.close())
   }

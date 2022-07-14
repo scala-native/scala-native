@@ -35,7 +35,7 @@ final class CArray[T, N <: Nat] private[scalanative] (
 
   @alwaysinline def update(idx: Int, value: T)(implicit tag: Tag[T]): Unit = {
     val ptr = new Ptr[T](rawptr)
-    ptr(idx.toUInt) = value
+    ptr(idx) = value
   }
 
   @alwaysinline def length(implicit tag: Tag[N]): Int = {

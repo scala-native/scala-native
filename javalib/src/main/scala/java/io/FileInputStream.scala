@@ -2,6 +2,7 @@ package java.io
 import scala.scalanative.libc.stdio._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.unistd.lseek
+import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
@@ -64,7 +65,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
           moveMethod = FILE_CURRENT
         )
       } else
-        lseek(fd.fd, bytesToSkip, SEEK_CUR)
+        lseek(fd.fd, bytesToSkip.toSize, SEEK_CUR)
       bytesToSkip
     }
 

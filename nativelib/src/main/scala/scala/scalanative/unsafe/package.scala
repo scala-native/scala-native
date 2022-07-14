@@ -3,16 +3,25 @@ package scala.scalanative
 import java.nio.charset.{Charset, StandardCharsets}
 import scalanative.annotation.alwaysinline
 import scalanative.runtime.{Platform, fromRawPtr, intrinsic, libc}
-import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
+import scalanative.runtime.Intrinsics.{
+  castIntToRawPtr,
+  castIntToRawSize,
+  castLongToRawPtr,
+  castLongToRawSize
+}
 import scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo
 
 package object unsafe extends unsafe.UnsafePackageCompat {
+  val is32BitPlatform = LinktimeInfo.is32BitPlatform
 
   /** Int on 32-bit architectures and Long on 64-bit ones. */
-  type Word = Long
+  @deprecated("Word type is deprecated, use Size instead", since = "0.5.0")
+  type Word = Size
 
   /** UInt on 32-bit architectures and ULong on 64-bit ones. */
-  type UWord = ULong
+  @deprecated("UWord type is deprecated, use USize instead", since = "0.5.0")
+  type UWord = USize
 
   /** The C 'char' type. */
   type CChar = Byte
@@ -27,10 +36,10 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   type CUnsignedInt = UInt
 
   /** The C 'unsigned long' type. */
-  type CUnsignedLong = UWord
+  type CUnsignedLong = USize
 
   /** The C 'unsigned long int' type. */
-  type CUnsignedLongInt = ULong
+  type CUnsignedLongInt = USize
 
   /** The C 'unsigned long long' type. */
   type CUnsignedLongLong = ULong
@@ -45,10 +54,10 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   type CInt = Int
 
   /** The C 'long' type. */
-  type CLong = Word
+  type CLong = Size
 
   /** The C 'long int' type. */
-  type CLongInt = Long
+  type CLongInt = Size
 
   /** The C 'long long' type. */
   type CLongLong = Long
@@ -72,13 +81,13 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   type CBool = Boolean
 
   /** The C/C++ 'size_t' type. */
-  type CSize = UWord
+  type CSize = USize
 
   /** The C/C++ 'ssize_t' type. */
-  type CSSize = Word
+  type CSSize = Size
 
   /** The C/C++ 'ptrdiff_t' type. */
-  type CPtrDiff = Long
+  type CPtrDiff = Size
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
@@ -93,7 +102,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   @alwaysinline def sizeof[T](implicit tag: Tag[T]): CSize = tag.size
 
   /** The C 'ssizeof' operator. */
-  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toLong
+  @alwaysinline def ssizeof[T](implicit tag: Tag[T]): CSSize = tag.size.toSize
 
   /** C-style alignment operator. */
   @alwaysinline def alignmentof[T](implicit tag: Tag[T]): CSize = tag.alignment
@@ -114,14 +123,26 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     def c(): CString = intrinsic
   }
 
+  /** Scala Native unsafe extensions to the standard Byte. */
+  implicit class UnsafeRichByte(val value: Byte) extends AnyVal {
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
+  }
+
+  /** Scala Native unsafe extensions to the standard Short. */
+  implicit class UnsafeRichShort(val value: Short) extends AnyVal {
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
+  }
+
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
+    @inline def toSize: Size = new Size(castIntToRawSize(value))
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
+    @inline def toSize: Size = new Size(castLongToRawSize(value))
   }
 
   /** Convert a CString to a String using given charset. */
@@ -158,7 +179,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr = z.alloc((bytes.length + 1).toULong)
+      val cstr = z.alloc((bytes.length + 1).toUSize)
 
       var c = 0
       while (c < bytes.length) {
@@ -200,7 +221,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr = z.alloc((bytes.length + charSize).toULong)
+      val cstr = z.alloc((bytes.length + charSize).toUSize)
 
       var c = 0
       while (c < bytes.length) {

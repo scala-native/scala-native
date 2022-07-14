@@ -7,8 +7,10 @@ package javalib.lang
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 import org.scalanative.testsuite.utils.Platform
 
 class ThrowablesTest {
@@ -23,6 +25,7 @@ class ThrowablesTest {
       throwable: Throwable,
       expectedCause: Throwable
   ): Unit = {
+    assumeNotASAN()
     val resultCause = throwable.getCause
 
     val causeMessage = getThrowableMessage(throwable)
@@ -39,6 +42,7 @@ class ThrowablesTest {
       throwable: Throwable,
       expectedMessage: String
   ): Unit = {
+    assumeNotASAN()
     val resultMessage = throwable.getMessage
 
     assertTrue(
@@ -51,6 +55,7 @@ class ThrowablesTest {
       trace: String,
       usesAnonymousThrowable: Boolean = false
   ): Unit = {
+    assumeNotASAN()
     val startText =
       if (usesAnonymousThrowable) "javalib.lang.ThrowablesTest$$anon"
       else "java.lang.Throwable"
@@ -72,6 +77,7 @@ class ThrowablesTest {
       throwable: Throwable,
       usesAnonymousThrowable: Boolean = false
   ): Unit = {
+    assumeNotASAN()
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
 
@@ -84,6 +90,7 @@ class ThrowablesTest {
       throwable: Throwable,
       expectedLength: Int
   ): Unit = {
+    assumeNotASAN()
     val getSuppressedLength = throwable.getSuppressed.length
     assertTrue(
       s"getSuppressed.length: ${getSuppressedLength} != " +
@@ -282,6 +289,7 @@ class ThrowablesTest {
   }
 
   @Test def printStackTracePrintStream(): Unit = {
+    assumeNotASAN()
     val throwable = new Throwable("Dev-Em")
     val baos = new java.io.ByteArrayOutputStream
     val ps = new java.io.PrintStream(baos)
@@ -365,6 +373,7 @@ class ThrowablesTest {
   }
 
   @Test def setStackTraceStackTraceWriteToReturnedStack(): Unit = {
+    assumeNotASAN()
     val throwable = new Throwable()
     val trace1 = throwable.getStackTrace()
 

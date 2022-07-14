@@ -14,6 +14,9 @@ struct scalanative_sockaddr {
 
 struct scalanative_sockaddr_storage {
     scalanative_sa_family_t ss_family;
+    unsigned short __opaquePadTo32;
+    unsigned int __opaquePadTo64;
+    unsigned long long __opaqueAlignStructure[15];
 };
 
 int scalanative_convert_sockaddr_in(struct scalanative_sockaddr_in *in,

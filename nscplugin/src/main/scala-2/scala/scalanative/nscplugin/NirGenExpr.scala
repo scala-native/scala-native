@@ -1137,12 +1137,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genArrayOp(app, code)
       } else if (nirPrimitives.isRawPtrOp(code)) {
         genRawPtrOp(app, code)
-      } else if (nirPrimitives.isRawCastOp(code)) {
-        genRawCastOp(app, code)
+      } else if (nirPrimitives.isRawPtrCastOp(code)) {
+        genRawPtrCastOp(app, code)
       } else if (code == CFUNCPTR_APPLY) {
         genCFuncPtrApply(app, code)
       } else if (code == CFUNCPTR_FROM_FUNCTION) {
         genCFuncFromScalaFunction(app)
+      } else if (nirPrimitives.isRawSizeCastOp(code)) {
+        genRawSizeCastOp(app, args.head, code)
       } else if (isCoercion(code)) {
         genCoercion(app, receiver, code)
       } else if (code == SYNCHRONIZED) {
@@ -1359,6 +1361,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       case Type.Short | Type.Char => Val.Short(num.toShort)
       case Type.Int               => Val.Int(num)
       case Type.Long              => Val.Long(num.toLong)
+      case Type.Size              => Val.Size(num.toLong)
       case Type.Float             => Val.Float(num.toFloat)
       case Type.Double            => Val.Double(num.toDouble)
       case _                      => unsupported(s"num = $num, ty = ${ty.show}")
@@ -1607,14 +1610,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         rty
       case (nir.Type.Bool, nir.Type.Bool) =>
         nir.Type.Bool
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _))
+      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _))
           if lwidth < 32 && rwidth < 32 =>
         nir.Type.Int
-      case (nir.Type.I(lwidth, _), nir.Type.I(rwidth, _)) =>
+      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _)) =>
         if (lwidth >= rwidth) lty else rty
-      case (nir.Type.I(_, _), nir.Type.F(_)) =>
+      case (nir.Type.FixedSizeI(_, _), nir.Type.F(_)) =>
         rty
-      case (nir.Type.F(_), nir.Type.I(_, _)) =>
+      case (nir.Type.F(_), nir.Type.FixedSizeI(_, _)) =>
         lty
       case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
         if (lwidth >= rwidth) lty else rty
@@ -1710,7 +1713,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def boxValue(st: SimpleType, value: Val)(implicit pos: nir.Position): Val =
       st.sym match {
-        case UByteClass | UShortClass | UIntClass | ULongClass =>
+        case UByteClass | UShortClass | UIntClass | ULongClass | USizeClass =>
           genApplyModuleMethod(
             RuntimeBoxesModule,
             BoxUnsignedMethod(st.sym),
@@ -1727,7 +1730,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def unboxValue(st: SimpleType, partial: Boolean, value: Val)(implicit
         pos: nir.Position
     ): Val = st.sym match {
-      case UByteClass | UShortClass | UIntClass | ULongClass =>
+      case UByteClass | UShortClass | UIntClass | ULongClass | USizeClass =>
         // Results of asInstanceOfs are partially unboxed, meaning
         // that non-standard value types remain to be boxed.
         if (partial) {
@@ -1767,16 +1770,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val ptr = genExpr(ptrp)
 
       val ty = code match {
-        case LOAD_BOOL    => nir.Type.Bool
-        case LOAD_CHAR    => nir.Type.Char
-        case LOAD_BYTE    => nir.Type.Byte
-        case LOAD_SHORT   => nir.Type.Short
-        case LOAD_INT     => nir.Type.Int
-        case LOAD_LONG    => nir.Type.Long
-        case LOAD_FLOAT   => nir.Type.Float
-        case LOAD_DOUBLE  => nir.Type.Double
-        case LOAD_RAW_PTR => nir.Type.Ptr
-        case LOAD_OBJECT  => Rt.Object
+        case LOAD_BOOL     => nir.Type.Bool
+        case LOAD_CHAR     => nir.Type.Char
+        case LOAD_BYTE     => nir.Type.Byte
+        case LOAD_SHORT    => nir.Type.Short
+        case LOAD_INT      => nir.Type.Int
+        case LOAD_LONG     => nir.Type.Long
+        case LOAD_FLOAT    => nir.Type.Float
+        case LOAD_DOUBLE   => nir.Type.Double
+        case LOAD_RAW_PTR  => nir.Type.Ptr
+        case LOAD_RAW_SIZE => nir.Type.Size
+        case LOAD_OBJECT   => Rt.Object
       }
 
       buf.load(ty, ptr, unwind)(app.pos)
@@ -1789,16 +1793,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val value = genExpr(valuep)
 
       val ty = code match {
-        case STORE_BOOL    => nir.Type.Bool
-        case STORE_CHAR    => nir.Type.Char
-        case STORE_BYTE    => nir.Type.Byte
-        case STORE_SHORT   => nir.Type.Short
-        case STORE_INT     => nir.Type.Int
-        case STORE_LONG    => nir.Type.Long
-        case STORE_FLOAT   => nir.Type.Float
-        case STORE_DOUBLE  => nir.Type.Double
-        case STORE_RAW_PTR => nir.Type.Ptr
-        case STORE_OBJECT  => Rt.Object
+        case STORE_BOOL     => nir.Type.Bool
+        case STORE_CHAR     => nir.Type.Char
+        case STORE_BYTE     => nir.Type.Byte
+        case STORE_SHORT    => nir.Type.Short
+        case STORE_INT      => nir.Type.Int
+        case STORE_LONG     => nir.Type.Long
+        case STORE_FLOAT    => nir.Type.Float
+        case STORE_DOUBLE   => nir.Type.Double
+        case STORE_RAW_PTR  => nir.Type.Ptr
+        case STORE_RAW_SIZE => nir.Type.Size
+        case STORE_OBJECT   => Rt.Object
       }
 
       buf.store(ty, ptr, value, unwind)(app.pos)
@@ -1813,7 +1818,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.elem(Type.Byte, ptr, Seq(offset), unwind)(app.pos)
     }
 
-    def genRawCastOp(app: Apply, code: Int): Val = {
+    def genRawPtrCastOp(app: Apply, code: Int): Val = {
       val Apply(_, Seq(argp)) = app
 
       val fromty = genType(argp.tpe)
@@ -1823,18 +1828,40 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genCastOp(fromty, toty, value)(app.pos)
     }
 
+    def genRawSizeCastOp(app: Apply, receiver: Tree, code: Int): Val = {
+      val rec = genExpr(receiver)
+      val (fromty, toty, conv) = code match {
+        case CAST_RAWSIZE_TO_INT =>
+          (nir.Type.Size, nir.Type.Int, Conv.SSizeCast)
+        case CAST_RAWSIZE_TO_LONG =>
+          (nir.Type.Size, nir.Type.Long, Conv.SSizeCast)
+        case CAST_RAWSIZE_TO_LONG_UNSIGNED =>
+          (nir.Type.Size, nir.Type.Long, Conv.ZSizeCast)
+        case CAST_INT_TO_RAWSIZE =>
+          (nir.Type.Int, nir.Type.Size, Conv.SSizeCast)
+        case CAST_INT_TO_RAWSIZE_UNSIGNED =>
+          (nir.Type.Int, nir.Type.Size, Conv.ZSizeCast)
+        case CAST_LONG_TO_RAWSIZE =>
+          (nir.Type.Long, nir.Type.Size, Conv.SSizeCast)
+      }
+
+      buf.conv(conv, toty, rec, unwind)(app.pos)
+    }
+
     def castConv(fromty: nir.Type, toty: nir.Type): Option[nir.Conv] =
       (fromty, toty) match {
-        case (_: Type.I, Type.Ptr)                   => Some(nir.Conv.Inttoptr)
-        case (Type.Ptr, _: Type.I)                   => Some(nir.Conv.Ptrtoint)
-        case (_: Type.RefKind, Type.Ptr)             => Some(nir.Conv.Bitcast)
-        case (Type.Ptr, _: Type.RefKind)             => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, _: Type.RefKind)      => Some(nir.Conv.Bitcast)
-        case (_: Type.RefKind, _: Type.I)            => Some(nir.Conv.Ptrtoint)
-        case (_: Type.I, _: Type.RefKind)            => Some(nir.Conv.Inttoptr)
-        case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case _ if fromty == toty                     => None
+        case (_: Type.I, Type.Ptr)              => Some(nir.Conv.Inttoptr)
+        case (Type.Ptr, _: Type.I)              => Some(nir.Conv.Ptrtoint)
+        case (_: Type.RefKind, Type.Ptr)        => Some(nir.Conv.Bitcast)
+        case (Type.Ptr, _: Type.RefKind)        => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, _: Type.RefKind) => Some(nir.Conv.Bitcast)
+        case (_: Type.RefKind, _: Type.I)       => Some(nir.Conv.Ptrtoint)
+        case (_: Type.I, _: Type.RefKind)       => Some(nir.Conv.Inttoptr)
+        case (Type.FixedSizeI(w1, _), Type.F(w2)) if w1 == w2 =>
+          Some(nir.Conv.Bitcast)
+        case (Type.F(w1), Type.FixedSizeI(w2, _)) if w1 == w2 =>
+          Some(nir.Conv.Bitcast)
+        case _ if fromty == toty => None
         case _ =>
           unsupported(s"cast from $fromty to $toty")
       }
@@ -2072,7 +2099,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             Conv.Bitcast
-          case (nir.Type.I(fromw, froms), nir.Type.I(tow, tos)) =>
+          case (
+                nir.Type.FixedSizeI(fromw, froms),
+                nir.Type.FixedSizeI(tow, tos)
+              ) =>
             if (fromw < tow) {
               if (froms) {
                 Conv.Sext
@@ -2084,17 +2114,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             } else {
               Conv.Bitcast
             }
-          case (nir.Type.I(_, true), _: nir.Type.F) =>
+          case (i: nir.Type.I, _: nir.Type.F) if i.signed =>
             Conv.Sitofp
-          case (nir.Type.I(_, false), _: nir.Type.F) =>
+          case (i: nir.Type.I, _: nir.Type.F) if !i.signed =>
             Conv.Uitofp
-          case (_: nir.Type.F, nir.Type.I(iwidth, true)) =>
+          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, true)) =>
             if (iwidth < 32) {
               val ivalue = genCoercion(value, fromty, Type.Int)
               return genCoercion(ivalue, Type.Int, toty)
             }
             Conv.Fptosi
-          case (_: nir.Type.F, nir.Type.I(iwidth, false)) =>
+          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, false)) =>
             if (iwidth < 32) {
               val ivalue = genCoercion(value, fromty, Type.Int)
               return genCoercion(ivalue, Type.Int, toty)

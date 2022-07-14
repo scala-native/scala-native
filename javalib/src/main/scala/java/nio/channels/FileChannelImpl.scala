@@ -73,8 +73,8 @@ private[java] final class FileChannelImpl(
       command: CInt
   ): FileLock = {
     val fl = stackalloc[flock]()
-    fl.l_start = position
-    fl.l_len = size
+    fl.l_start = position.toSize
+    fl.l_len = size.toSize
     fl.l_pid = 0
     fl.l_type = F_WRLCK
     fl.l_whence = stdio.SEEK_SET
@@ -137,7 +137,7 @@ private[java] final class FileChannelImpl(
         null,
         FILE_BEGIN
       )
-    else unistd.lseek(fd.fd, offset, stdio.SEEK_SET)
+    else unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
     this
   }
 
@@ -262,9 +262,9 @@ private[java] final class FileChannelImpl(
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
     } else {
-      val size = unistd.lseek(fd.fd, 0L, stdio.SEEK_END);
-      unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
-      size
+      val size = unistd.lseek(fd.fd, 0, stdio.SEEK_END);
+      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
+      size.toLong
     }
   }
 
@@ -308,7 +308,7 @@ private[java] final class FileChannelImpl(
           ) &&
           FileApi.SetEndOfFile(fd.handle)
         } else {
-          unistd.ftruncate(fd.fd, size) == 0
+          unistd.ftruncate(fd.fd, size.toSize) == 0
         }
       if (!hasSucceded) {
         throw new IOException("Failed to truncate file")

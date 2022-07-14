@@ -403,8 +403,8 @@ type instead of throwing a NullPointerException.
 Platform-specific types
 -----------------------
 
-Scala Native defines the type ``Word`` and its unsigned counterpart, ``UWord``.
-A word corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
+Scala Native defines the type ``Size`` and its unsigned counterpart, ``USize``.
+A size corresponds to ``Int`` on 32-bit architectures and to ``Long`` on 64-bit
 ones.
 
 Size and alignment of types
@@ -445,14 +445,15 @@ Scala Native provides support for four unsigned integer types:
 2. ``unsigned.UShort``
 3. ``unsigned.UInt``
 4. ``unsigned.ULong``
+5. ``unsigned.USize``
 
 They share the same primitive operations as signed integer types.
 Primitive operation between two integer values are supported only
 if they have the same signedness (they must both signed or both unsigned.)
 
 Conversions between signed and unsigned integers must be done explicitly
-using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``longValue.toULong``
+using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``longValue.toULong``, ``sizeValue.toUSize``
 and conversely ``unsignedByteValue.toByte``, ``unsignedShortValue.toShort``, ``unsignedIntValue.toInt``,
-``unsignedLongValue.toLong``.
+``unsignedLongValue.toLong``, ``unsignedSizeValue.toSize``.
 
 Continue to :ref:`lib`.

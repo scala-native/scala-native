@@ -108,7 +108,7 @@ object SocketHelpers {
         if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
           return false
         } else {
-          val buf: Ptr[CChar] = stackalloc[CChar](5.toUInt)
+          val buf: Ptr[CChar] = stackalloc[CChar](5.toUSize)
           val recBytes = recv(sock, buf, 5.toUInt, 0)
           if (recBytes < 4) {
             return false

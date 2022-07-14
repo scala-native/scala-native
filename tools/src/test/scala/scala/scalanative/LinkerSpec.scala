@@ -60,7 +60,12 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withWorkdir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(entry)
-      .withCompilerConfig(setupNativeConfig)
+      .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
+  }
+
+  private def withDefaults(config: NativeConfig): NativeConfig = {
+    config
+      .withTargetTriple("x86_64-unknown-unknown")
   }
 
   protected implicit def String2MapStringString(

@@ -15,8 +15,8 @@ class PtrBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullPtr: Ptr[Byte] = null
-  @noinline lazy val ptr: Ptr[Byte] = malloc(64.toULong)
-  @noinline lazy val ptr2: Ptr[Byte] = malloc(64.toULong)
+  @noinline lazy val ptr: Ptr[Byte] = malloc(64.toUSize)
+  @noinline lazy val ptr2: Ptr[Byte] = malloc(64.toUSize)
 
   @noinline def f[T](x: T): T = x
   @noinline def cond(): Boolean = true
@@ -200,7 +200,7 @@ class PtrBoxingTest {
 
       val testStr = toCString("hello_native")
       val expectedInt = 42
-      val expectedLength = 12.toULong
+      val expectedLength = 12.toUSize
 
       assertEquals(expectedInt, x._1.apply())
       assertEquals(expectedInt, loadedGetInt())

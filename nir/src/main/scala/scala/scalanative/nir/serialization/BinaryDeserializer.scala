@@ -141,18 +141,20 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   }
 
   private def getConv(): Conv = getInt match {
-    case T.TruncConv    => Conv.Trunc
-    case T.ZextConv     => Conv.Zext
-    case T.SextConv     => Conv.Sext
-    case T.FptruncConv  => Conv.Fptrunc
-    case T.FpextConv    => Conv.Fpext
-    case T.FptouiConv   => Conv.Fptoui
-    case T.FptosiConv   => Conv.Fptosi
-    case T.UitofpConv   => Conv.Uitofp
-    case T.SitofpConv   => Conv.Sitofp
-    case T.PtrtointConv => Conv.Ptrtoint
-    case T.InttoptrConv => Conv.Inttoptr
-    case T.BitcastConv  => Conv.Bitcast
+    case T.TruncConv     => Conv.Trunc
+    case T.ZextConv      => Conv.Zext
+    case T.SextConv      => Conv.Sext
+    case T.FptruncConv   => Conv.Fptrunc
+    case T.FpextConv     => Conv.Fpext
+    case T.FptouiConv    => Conv.Fptoui
+    case T.FptosiConv    => Conv.Fptosi
+    case T.UitofpConv    => Conv.Uitofp
+    case T.SitofpConv    => Conv.Sitofp
+    case T.PtrtointConv  => Conv.Ptrtoint
+    case T.InttoptrConv  => Conv.Inttoptr
+    case T.BitcastConv   => Conv.Bitcast
+    case T.SSizeCastConv => Conv.SSizeCast
+    case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
   private def getDefns(): Seq[Defn] = getSeq(getDefn())
@@ -277,6 +279,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.UnitType    => Type.Unit
     case T.ArrayType   => Type.Array(getType(), getBool())
     case T.RefType     => Type.Ref(getGlobal(), getBool(), getBool())
+    case T.SizeType    => Type.Size
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal())
@@ -307,6 +310,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       }
     case T.VirtualVal => Val.Virtual(getLong)
     case T.ClassOfVal => Val.ClassOf(getGlobal())
+    case T.SizeVal    => Val.Size(getLong)
   }
 
   private def getLinktimeCondition(): LinktimeCondition = getInt() match {

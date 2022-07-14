@@ -18,7 +18,7 @@ jobs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [linux-arm64]
+        arch: [linux-arm64, linux-x86]
 
     steps:
       - uses: actions/checkout@v2
@@ -69,11 +69,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [{ name: linux-arm64, emulator: qemu-aarch64-static }]
+        arch: [
+          { name: linux-arm64, emulator: qemu-aarch64-static },
+          { name: linux-x86, emulator: "" }
+        ]
         scala: [2.13.8, 3.1.3]
         build-mode: [releaseFast]
         lto: [thin, none]
-        gc: [immix, commix]
+        gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
@@ -81,6 +84,14 @@ jobs:
             lto: none
           - gc: commix
             lto: thin
+          - gc: boehm
+            arch: { name: linux-arm64, emulator: qemu-aarch64-static }
+          - gc: immix
+            arch: { name: linux-x86, emulator: "" }
+          - gc: commix
+            arch: { name: linux-x86, emulator: "" }
+          - lto: thin
+            arch: { name: linux-x86, emulator: "" }
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
@@ -98,10 +109,9 @@ jobs:
           target='${sys.env("CROSS_TRIPLE")}'
           crossRoot='${sys.env("CROSS_ROOT")}'
 
-          gccToolchainFlag=s\"--gcc-toolchain=${crossRoot}\"
-          sysRootFlag=s\"--sysroot=${crossRoot}/${target}/sysroot\"
+          sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
           useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="List($gccToolchainFlag, $sysRootFlag, $useLdFlg)"
+          crossOptions="$sysRootFlag ++ List($useLdFlg)"
 
           emptyConfig="scalanative.build.NativeConfig.empty"
           withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"

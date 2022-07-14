@@ -189,7 +189,7 @@ abstract class JUnitTest {
   }
 
   private val colorRE = """\u001B\[\d\d?m""".r
-  private val timeRE = """\d+(\.\d+)?( sec|s)\b""".r
+  private val timeRE = """\d+(\.\d+)?(E\-\d+)?( sec|s)\b""".r
 
   def replaceTime(out: Output): Output = out match {
     case Log(level, msg) =>

@@ -24,8 +24,8 @@ private[lang] object PosixThread {
     }
 
     val requestedTime = stackalloc[timespec]()
-    requestedTime.tv_sec = millis / 1000
-    requestedTime.tv_nsec = (millis % 1000) * 1e6.toInt + nanos
+    requestedTime.tv_sec = millis.toSize / 1000
+    requestedTime.tv_nsec = (millis.toSize % 1000) * 1e6.toInt + nanos
     doSleep(requestedTime)
   }
 

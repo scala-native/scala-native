@@ -7,7 +7,7 @@ import scalanative.posix.sys.stat.{uid_t, gid_t}
 @extern
 object unistd {
 
-  type off_t = CLongLong
+  type off_t = CLong
 
   def _exit(status: CInt): Unit = extern
   def access(pathname: CString, mode: CInt): CInt = extern

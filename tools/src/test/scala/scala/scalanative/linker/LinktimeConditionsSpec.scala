@@ -64,7 +64,10 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       Entry("inner.countFrom", 123456L, Val.Long(123456L)),
       Entry("secret.performance.multiplier", 9.99, Val.Double(9.99)),
       // Always required linktime properties
-      Entry(s"$linktimeInfo.isWindows", false, Val.False)
+      Entry(s"$linktimeInfo.isWindows", false, Val.False),
+      Entry(s"$linktimeInfo.is32BitPlatform", false, Val.False),
+      Entry(s"$linktimeInfo.sizeOfPtr", Val.Size(8), Val.Size(8)),
+      Entry(s"$linktimeInfo.asanEnabled", false, Val.False)
     )
   }
   val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
@@ -451,6 +454,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)
+        .withTargetTriple("x86_64-unknown-linux-gnu")
         .withLinkStubs(false)
     }
     link(entry, sources.toMap, setupConfig = setupConfig)(body)
@@ -462,6 +466,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)
+        .withTargetTriple("x86_64-unknown-linux-gnu")
         .withLinkStubs(false)
         .withOptimize(true)
         .withMode(scalanative.build.Mode.releaseFull)

@@ -31,6 +31,9 @@ _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
 _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) ==
                    offsetof(struct sockaddr, sa_data),
                "offset mismatch: sockaddr sa_data");
+
+_Static_assert(sizeof(struct sockaddr_storage) == 128,
+               "unexpected size for sockaddr_storage");
 #endif
 #endif
 

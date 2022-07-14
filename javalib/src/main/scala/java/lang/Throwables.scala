@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.unwind
+import scala.scalanative.meta.LinktimeInfo
 
 private[lang] object StackTrace {
   private val cache =
@@ -13,10 +14,10 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte]
   ): StackTraceElement = {
     val nameMax = 1024
-    val name: Ptr[CChar] = stackalloc[CChar](nameMax.toUInt)
-    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
+    val name: Ptr[CChar] = stackalloc[CChar](nameMax.toUSize)
+    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUSize)
 
-    unwind.get_proc_name(cursor, name, nameMax.toUInt, offset)
+    unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
@@ -37,17 +38,21 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    val cursor: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
-    val context: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
-    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
-    val ip = stackalloc[CUnsignedLongLong]()
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+    if (!LinktimeInfo.asanEnabled) {
+      Zone { implicit z =>
+        val cursor: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
+        val context: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
+        val offset: Ptr[scala.Byte] = alloc[scala.Byte](8.toUSize)
+        val ip = alloc[CUnsignedLong]()
 
-    unwind.get_context(context)
-    unwind.init_local(cursor, context)
-    while (unwind.step(cursor) > 0) {
-      unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-      buffer += cachedStackTraceElement(cursor, !ip)
+        unwind.get_context(context)
+        unwind.init_local(cursor, context)
+        while (unwind.step(cursor) > 0) {
+          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+          buffer += cachedStackTraceElement(cursor, !ip)
+        }
+      }
     }
 
     buffer.toArray

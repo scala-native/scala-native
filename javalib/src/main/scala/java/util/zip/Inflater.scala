@@ -199,7 +199,7 @@ private object Inflater {
 
   def createStream(noHeader: Boolean): z_streamp = {
     val stream = stdlib
-      .calloc(1.toULong, z_stream.size)
+      .calloc(1.toUSize, z_stream.size)
       .asInstanceOf[z_streamp]
     val wbits: Int =
       if (noHeader) 15 / -1

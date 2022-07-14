@@ -9,10 +9,10 @@ import scalanative.unsigned._
 class TagTest {
 
   @Test def tagSize(): Unit = {
-    assertTrue(tagof[Ptr[_]].size == 8.toULong)
-    assertTrue(tagof[Object].size == 8.toULong)
-    assertTrue(tagof[Array[Any]].size == 8.toULong)
-    assertTrue(tagof[Unit].size == 8.toULong)
+    assertTrue(tagof[Ptr[_]].size == sizeof[Size])
+    assertTrue(tagof[Object].size == sizeof[Size])
+    assertTrue(tagof[Array[Any]].size == sizeof[Size])
+    assertTrue(tagof[Unit].size == sizeof[Size])
     assertTrue(tagof[Boolean].size == 1.toULong)
     assertTrue(tagof[Char].size == 2.toULong)
     assertTrue(tagof[Byte].size == 1.toULong)
@@ -63,10 +63,10 @@ class TagTest {
   }
 
   @Test def tagAlignment(): Unit = {
-    assertTrue(tagof[Ptr[_]].alignment == 8.toULong)
-    assertTrue(tagof[Object].alignment == 8.toULong)
-    assertTrue(tagof[Array[_]].alignment == 8.toULong)
-    assertTrue(tagof[Unit].alignment == 8.toULong)
+    assertTrue(tagof[Ptr[_]].alignment == sizeof[Size])
+    assertTrue(tagof[Object].alignment == sizeof[Size])
+    assertTrue(tagof[Array[_]].alignment == sizeof[Size])
+    assertTrue(tagof[Unit].alignment == sizeof[Size])
     assertTrue(tagof[Boolean].alignment == 1.toULong)
     assertTrue(tagof[Char].alignment == 2.toULong)
     assertTrue(tagof[Byte].alignment == 1.toULong)
@@ -75,10 +75,10 @@ class TagTest {
     assertTrue(tagof[UShort].alignment == 2.toULong)
     assertTrue(tagof[Int].alignment == 4.toULong)
     assertTrue(tagof[UInt].alignment == 4.toULong)
-    assertTrue(tagof[Long].alignment == 8.toULong)
-    assertTrue(tagof[ULong].alignment == 8.toULong)
+    assertTrue(tagof[Long].alignment == sizeof[Size])
+    assertTrue(tagof[ULong].alignment == sizeof[Size])
     assertTrue(tagof[Float].alignment == 4.toULong)
-    assertTrue(tagof[Double].alignment == 8.toULong)
+    assertTrue(tagof[Double].alignment == sizeof[Size])
     assertTrue(tagof[CArray[Int, Nat._0]].alignment == 4.toULong)
     assertTrue(tagof[CArray[Int, Nat._3]].alignment == 4.toULong)
     assertTrue(tagof[CArray[Int, Nat._9]].alignment == 4.toULong)
@@ -127,25 +127,25 @@ class TagTest {
   }
 
   @Test def tagOffset(): Unit = {
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(0.toULong) == 0.toULong)
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(1.toULong) == 1.toULong)
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(42.toULong) == 42.toULong)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(0.toULong) == 0.toULong)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(1.toULong) == 4.toULong)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(0.toUSize) == 0.toULong)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(1.toUSize) == 1.toULong)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(42.toUSize) == 42.toULong)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(0.toUSize) == 0.toULong)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(1.toUSize) == 4.toULong)
     assertTrue(
-      tagof[CArray[Int, Nat._0]].offset(42.toULong) == (4 * 42).toULong
+      tagof[CArray[Int, Nat._0]].offset(42.toUSize) == (4 * 42).toULong
     )
-    assertTrue(tagof[CStruct1[Int]].offset(0.toULong) == 0.toULong)
-    assertTrue(tagof[CStruct2[Byte, Int]].offset(0.toULong) == 0.toULong)
-    assertTrue(tagof[CStruct2[Byte, Int]].offset(1.toULong) == 4.toULong)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(0.toULong) == 0.toULong)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1.toULong) == 1.toULong)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2.toULong) == 4.toULong)
+    assertTrue(tagof[CStruct1[Int]].offset(0.toUSize) == 0.toULong)
+    assertTrue(tagof[CStruct2[Byte, Int]].offset(0.toUSize) == 0.toULong)
+    assertTrue(tagof[CStruct2[Byte, Int]].offset(1.toUSize) == 4.toULong)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(0.toUSize) == 0.toULong)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1.toUSize) == 1.toULong)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2.toUSize) == 4.toULong)
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0.toULong) == 0.toULong
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0.toUSize) == 0.toULong
     )
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1.toULong) == 4.toULong
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1.toUSize) == 4.toULong
     )
   }
 
@@ -161,12 +161,23 @@ class TagTest {
 
   type socklen_t = CUnsignedInt
   type sa_family_t = CUnsignedShort
+
   type _14 = Nat.Digit2[Nat._1, Nat._4]
+
   type sockaddr = CStruct2[
     sa_family_t, // sa_family
     CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
   ]
-  type sockaddr_storage = CStruct1[sa_family_t] // ss_family
+
+  type _15 = Nat.Digit2[Nat._1, Nat._5]
+
+  type sockaddr_storage = CStruct4[
+    sa_family_t, // ss_family
+    CUnsignedShort, // opaque, __padTo32
+    CUnsignedInt, // opaque, __padTo64
+    CArray[CUnsignedLongLong, _15] // opaque, align structure to 8 bytes
+  ]
+
   type msghdr = CStruct7[
     Ptr[Byte], // msg_name
     socklen_t, // msg_namelen

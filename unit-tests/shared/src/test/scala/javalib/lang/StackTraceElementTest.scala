@@ -6,6 +6,8 @@ import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
 
+import scala.scalanative.junit.utils.AssumesHelper._
+
 object StackTraceElementTest {
   @BeforeClass
   def assumeSupportsStackTraces() = {
@@ -16,6 +18,9 @@ object StackTraceElementTest {
       "StackTrace tests not available in the current build",
       sys.env.get("SCALANATIVE_CI_NO_DEBUG_SYMBOLS").exists(_.toBoolean)
     )
+
+    // libunwind does not work with AddressSanitizer
+    assumeNotASAN()
   }
 }
 

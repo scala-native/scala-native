@@ -60,7 +60,8 @@ private[scalanative] object LLVM {
         val flags = opt(config) +: "-fvisibility=hidden" +:
           stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
         val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++ target(config) ++
+          Seq(compiler) ++ flto(config) ++ flags ++
+            asan(config) ++ target(config) ++
             Seq("-c", inpath, "-o", outpath)
 
         config.logger.running(compilec)
@@ -124,7 +125,9 @@ private[scalanative] object LLVM {
           }
           Seq("-g") ++ ltoSupport
         } else Seq("-rdynamic")
-      flto(config) ++ platformFlags ++ Seq("-o", outpath.abs) ++ target(config)
+      flto(config) ++ platformFlags ++
+        Seq("-o", outpath.abs) ++
+        asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
     val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
@@ -146,6 +149,12 @@ private[scalanative] object LLVM {
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
       case lto      => Seq(s"-flto=${lto.name}")
+    }
+
+  private def asan(config: Config): Seq[String] =
+    config.compilerConfig.asan match {
+      case true  => Seq("-fsanitize=address", "-fno-omit-frame-pointer")
+      case false => Seq.empty
     }
 
   private def target(config: Config): Seq[String] =

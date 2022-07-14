@@ -5,7 +5,11 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker.{Trait, Class}
 
-class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
+class Metadata(
+    val linked: linker.Result,
+    proxies: Seq[Defn],
+    val is32BitPlatform: Boolean
+) {
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
