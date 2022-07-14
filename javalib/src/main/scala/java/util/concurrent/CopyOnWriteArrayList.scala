@@ -49,8 +49,15 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
   def indexOf(o: scala.Any): Int =
     indexOf(o.asInstanceOf[E], 0)
 
-  def indexOf(e: E, index: Int): Int =
-    inner.indexOf(e, index)
+  def indexOf(e: E, index: Int): Int = {
+    @tailrec
+    def findIndex(iter: ListIterator[E]): Int = {
+      if (!iter.hasNext()) -1
+      else if (Objects.equals(iter.next(), e)) iter.previousIndex()
+      else findIndex(iter)
+    }
+    findIndex(listIterator(index))
+  }
 
   def lastIndexOf(o: scala.Any): Int =
     lastIndexOf(o.asInstanceOf[E], 0)
