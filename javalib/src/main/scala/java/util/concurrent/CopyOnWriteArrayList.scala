@@ -1,4 +1,5 @@
 // Ported from Scala.js commit: e7f1ff7 dated: 2022-06-01
+// Modified to use ju.ArrayList instead of js.Array
 
 package java.util.concurrent
 
@@ -9,12 +10,9 @@ import java.util.function.{Predicate, UnaryOperator}
 
 import scala.annotation.tailrec
 
-import ScalaOps._
-
-import scala.scalajs._
-
-class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
-    extends List[E]
+class CopyOnWriteArrayList[E <: AnyRef] private (
+    private var inner: ArrayList[E]
+) extends List[E]
     with RandomAccess
     with Cloneable
     with Serializable {
@@ -25,7 +23,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   private var requiresCopyOnWrite = false
 
   def this() = {
-    this(new js.Array[E])
+    this(new ArrayList[E])
   }
 
   def this(c: Collection[_ <: E]) = {
@@ -40,21 +38,19 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   }
 
   def size(): Int =
-    inner.size
+    inner.size()
 
   def isEmpty(): Boolean =
     size() == 0
 
   def contains(o: scala.Any): Boolean =
-    iterator.scalaOps.exists(Objects.equals(o, _))
+    inner.contains(o)
 
   def indexOf(o: scala.Any): Int =
     indexOf(o.asInstanceOf[E], 0)
 
-  def indexOf(e: E, index: Int): Int = {
-    checkIndexInBounds(index)
-    index + listIterator(index).scalaOps.indexWhere(Objects.equals(_, e))
-  }
+  def indexOf(e: E, index: Int): Int =
+    inner.indexOf(e, index)
 
   def lastIndexOf(o: scala.Any): Int =
     lastIndexOf(o.asInstanceOf[E], 0)
@@ -81,7 +77,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
       if (a.length >= size()) a
       else jlr.Array.newInstance(componentType, size()).asInstanceOf[Array[T]]
 
-    val iter = iterator
+    val iter = iterator()
     for (i <- 0 until size())
       toFill(i) = iter.next().asInstanceOf[T]
     if (toFill.length > size())
@@ -139,29 +135,21 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   }
 
   def containsAll(c: Collection[_]): Boolean =
-    c.iterator.scalaOps.forall(this.contains(_))
+    inner.containsAll(c)
 
   def removeAll(c: Collection[_]): Boolean = {
     copyIfNeeded()
-    c.scalaOps.foldLeft(false)((prev, elem) => remove(elem) || prev)
+    inner.removeAll(c)
   }
 
   def retainAll(c: Collection[_]): Boolean = {
-    val iter = iterator()
-    clear()
-    var modified = false
-    for (elem <- iter.scalaOps) {
-      if (c.contains(elem))
-        innerPush(elem)
-      else
-        modified = true
-    }
-    modified
+    copyIfNeeded()
+    inner.retainAll(c)
   }
 
   def addAllAbsent(c: Collection[_ <: E]): Int = {
     var added = 0
-    for (e <- c.iterator().scalaOps) {
+    c.forEach { e =>
       if (addIfAbsent(e))
         added += 1
     }
@@ -169,7 +157,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   }
 
   def clear(): Unit = {
-    inner = new js.Array[E]
+    inner = new ArrayList[E]
     requiresCopyOnWrite = false
   }
 
@@ -229,28 +217,18 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   }
 
   override def toString: String =
-    iterator().scalaOps.mkString("[", ", ", "]")
+    inner.toString()
 
   override def equals(obj: Any): Boolean = {
     if (obj.asInstanceOf[AnyRef] eq this) {
       true
     } else {
-      obj match {
-        case obj: List[_] =>
-          val oIter = obj.listIterator()
-          this.scalaOps.forall(elem =>
-            oIter.hasNext() && Objects.equals(elem, oIter.next())
-          ) && !oIter.hasNext()
-        case _ => false
-      }
+      inner.equals(obj)
     }
   }
 
-  override def hashCode(): Int = {
-    iterator().scalaOps.foldLeft(1) { (prev, elem) =>
-      31 * prev + Objects.hashCode(elem)
-    }
-  }
+  override def hashCode(): Int =
+    inner.hashCode()
 
   def iterator(): Iterator[E] =
     listIterator()
@@ -270,37 +248,34 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   }
 
   protected def innerGet(index: Int): E =
-    inner(index)
+    inner.get(index)
 
   protected def innerSet(index: Int, elem: E): Unit =
-    inner(index) = elem
+    inner.set(index, elem)
 
   protected def innerPush(elem: E): Unit =
-    inner.push(elem)
+    inner.add(elem)
 
   protected def innerInsert(index: Int, elem: E): Unit =
-    inner.splice(index, 0, elem)
+    inner.add(index, elem)
 
-  protected def innerInsertMany(index: Int, items: Collection[_ <: E]): Unit = {
-    val itemsArray = js.Array[E]()
-    items.scalaOps.foreach(itemsArray.push(_))
-    inner.splice(index, 0, itemsArray.toSeq: _*)
-  }
+  protected def innerInsertMany(index: Int, items: Collection[_ <: E]): Unit =
+    inner.addAll(index, items)
 
   protected def innerRemove(index: Int): E =
-    inner.splice(index, 1)(0)
+    inner.remove(index)
 
   protected def innerRemoveMany(index: Int, count: Int): Unit =
-    inner.splice(index, count)
+    inner.removeRange(index, index + count)
 
   protected def copyIfNeeded(): Unit = {
     if (requiresCopyOnWrite) {
-      inner = inner.jsSlice()
+      inner = new ArrayList(inner)
       requiresCopyOnWrite = false
     }
   }
 
-  protected def innerSnapshot(): js.Array[E] = {
+  protected def innerSnapshot(): ArrayList[E] = {
     requiresCopyOnWrite = true
     inner
   }
@@ -308,7 +283,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
   private class CopyOnWriteArrayListView(
       fromIndex: Int,
       private var toIndex: Int
-  ) extends CopyOnWriteArrayList[E](null: js.Array[E]) {
+  ) extends CopyOnWriteArrayList[E](null: ArrayList[E]) {
     viewSelf =>
 
     override def size(): Int =
@@ -389,7 +364,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
     override protected def copyIfNeeded(): Unit =
       self.copyIfNeeded()
 
-    override protected def innerSnapshot(): js.Array[E] =
+    override protected def innerSnapshot(): ArrayList[E] =
       self.innerSnapshot()
 
     protected def changeSize(delta: Int): Unit =
@@ -408,7 +383,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (private var inner: js.Array[E])
 }
 
 private class CopyOnWriteArrayListIterator[E](
-    arraySnapshot: js.Array[E],
+    arraySnapshot: ArrayList[E],
     i: Int,
     start: Int,
     end: Int
@@ -423,7 +398,7 @@ private class CopyOnWriteArrayListIterator[E](
     throw new UnsupportedOperationException
 
   protected def get(index: Int): E =
-    arraySnapshot(index)
+    arraySnapshot.get(index)
 
   protected def remove(index: Int): Unit =
     throw new UnsupportedOperationException
