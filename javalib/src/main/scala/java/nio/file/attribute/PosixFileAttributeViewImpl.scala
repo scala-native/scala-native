@@ -30,10 +30,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
     val buf = alloc[utime.utimbuf]()
     buf._1 =
-      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS)
+      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS).toSize
       else sb._7
     buf._2 =
-      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS)
+      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS).toSize
       else sb._8
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
@@ -87,7 +87,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       private[this] var st_ino: stat.ino_t = _
       private[this] var st_uid: stat.uid_t = _
       private[this] var st_gid: stat.gid_t = _
-      private[this] var st_size: unistd.off_t = _
+      private[this] var st_size: stat.off_t = _
       private[this] var st_atime: time.time_t = _
       private[this] var st_mtime: time.time_t = _
       private[this] var st_mode: stat.mode_t = _
@@ -120,10 +120,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         !isDirectory() && !isRegularFile() && !isSymbolicLink()
 
       override def lastAccessTime() =
-        FileTime.from(st_atime, TimeUnit.SECONDS)
+        FileTime.from(st_atime.toLong, TimeUnit.SECONDS)
 
       override def lastModifiedTime() =
-        FileTime.from(st_mtime, TimeUnit.SECONDS)
+        FileTime.from(st_mtime.toLong, TimeUnit.SECONDS)
 
       override def creationTime() = {
         // True file creationTime is not accessible in Posix.
@@ -132,7 +132,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         // for creationTime(). It allows the use of  last-modified-time
         // as a fallback when the true creationTime is unobtainable.
 
-        FileTime.from(st_mtime, TimeUnit.SECONDS)
+        FileTime.from(st_mtime.toLong, TimeUnit.SECONDS)
       }
 
       override def group() = PosixGroupPrincipal(st_gid)(None)
@@ -148,7 +148,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         set
       }
 
-      override def size() = st_size
+      override def size() = st_size.toLong
     }
 
   override def asMap: ju.HashMap[String, Object] = {

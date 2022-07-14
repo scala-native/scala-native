@@ -36,7 +36,8 @@ object NirPrimitives {
   final val LOAD_FLOAT = 1 + LOAD_LONG
   final val LOAD_DOUBLE = 1 + LOAD_FLOAT
   final val LOAD_RAW_PTR = 1 + LOAD_DOUBLE
-  final val LOAD_OBJECT = 1 + LOAD_RAW_PTR
+  final val LOAD_RAW_SIZE = 1 + LOAD_RAW_PTR
+  final val LOAD_OBJECT = 1 + LOAD_RAW_SIZE
 
   final val STORE_BOOL = 1 + LOAD_OBJECT
   final val STORE_CHAR = 1 + STORE_BOOL
@@ -47,7 +48,8 @@ object NirPrimitives {
   final val STORE_FLOAT = 1 + STORE_LONG
   final val STORE_DOUBLE = 1 + STORE_FLOAT
   final val STORE_RAW_PTR = 1 + STORE_DOUBLE
-  final val STORE_OBJECT = 1 + STORE_RAW_PTR
+  final val STORE_RAW_SIZE = 1 + STORE_RAW_PTR
+  final val STORE_OBJECT = 1 + STORE_RAW_SIZE
 
   final val ELEM_RAW_PTR = 1 + STORE_OBJECT
 
@@ -61,8 +63,14 @@ object NirPrimitives {
   final val CAST_RAWPTR_TO_LONG = 1 + CAST_RAWPTR_TO_INT
   final val CAST_INT_TO_RAWPTR = 1 + CAST_RAWPTR_TO_LONG
   final val CAST_LONG_TO_RAWPTR = 1 + CAST_INT_TO_RAWPTR
+  final val CAST_RAWSIZE_TO_INT = 1 + CAST_LONG_TO_RAWPTR
+  final val CAST_RAWSIZE_TO_LONG = 1 + CAST_RAWSIZE_TO_INT
+  final val CAST_RAWSIZE_TO_LONG_UNSIGNED = 1 + CAST_RAWSIZE_TO_LONG
+  final val CAST_INT_TO_RAWSIZE = 1 + CAST_RAWSIZE_TO_LONG_UNSIGNED
+  final val CAST_INT_TO_RAWSIZE_UNSIGNED = 1 + CAST_INT_TO_RAWSIZE
+  final val CAST_LONG_TO_RAWSIZE = 1 + CAST_INT_TO_RAWSIZE_UNSIGNED
 
-  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWPTR
+  final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
 }
@@ -107,8 +115,11 @@ abstract class NirPrimitives {
   def isRawPtrStoreOp(code: Int): Boolean =
     code >= STORE_BOOL && code <= STORE_OBJECT
 
-  def isRawCastOp(code: Int): Boolean =
+  def isRawPtrCastOp(code: Int): Boolean =
     code >= CAST_RAW_PTR_TO_OBJECT && code <= CAST_LONG_TO_RAWPTR
+
+  def isRawSizeCastOp(code: Int): Boolean =
+    code >= CAST_RAWSIZE_TO_INT && code <= CAST_LONG_TO_RAWSIZE
 
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
@@ -149,7 +160,9 @@ abstract class NirPrimitives {
     addPrimitive(LoadFloatMethod, LOAD_FLOAT)
     addPrimitive(LoadDoubleMethod, LOAD_DOUBLE)
     addPrimitive(LoadRawPtrMethod, LOAD_RAW_PTR)
+    addPrimitive(LoadRawSizeMethod, LOAD_RAW_SIZE)
     addPrimitive(LoadObjectMethod, LOAD_OBJECT)
+
     addPrimitive(StoreBoolMethod, STORE_BOOL)
     addPrimitive(StoreCharMethod, STORE_CHAR)
     addPrimitive(StoreByteMethod, STORE_BYTE)
@@ -159,8 +172,11 @@ abstract class NirPrimitives {
     addPrimitive(StoreFloatMethod, STORE_FLOAT)
     addPrimitive(StoreDoubleMethod, STORE_DOUBLE)
     addPrimitive(StoreRawPtrMethod, STORE_RAW_PTR)
+    addPrimitive(StoreRawSizeMethod, STORE_RAW_SIZE)
     addPrimitive(StoreObjectMethod, STORE_OBJECT)
+
     addPrimitive(ElemRawPtrMethod, ELEM_RAW_PTR)
+
     addPrimitive(CastRawPtrToObjectMethod, CAST_RAW_PTR_TO_OBJECT)
     addPrimitive(CastObjectToRawPtrMethod, CAST_OBJECT_TO_RAW_PTR)
     addPrimitive(CastIntToFloatMethod, CAST_INT_TO_FLOAT)
@@ -171,6 +187,13 @@ abstract class NirPrimitives {
     addPrimitive(CastRawPtrToLongMethod, CAST_RAWPTR_TO_LONG)
     addPrimitive(CastIntToRawPtrMethod, CAST_INT_TO_RAWPTR)
     addPrimitive(CastLongToRawPtrMethod, CAST_LONG_TO_RAWPTR)
+    addPrimitive(CastRawSizeToInt, CAST_RAWSIZE_TO_INT)
+    addPrimitive(CastRawSizeToLong, CAST_RAWSIZE_TO_LONG)
+    addPrimitive(CastRawSizeToLongUnsigned, CAST_RAWSIZE_TO_LONG_UNSIGNED)
+    addPrimitive(CastIntToRawSize, CAST_INT_TO_RAWSIZE)
+    addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
+    addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWSIZE)
+
     CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
     CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)

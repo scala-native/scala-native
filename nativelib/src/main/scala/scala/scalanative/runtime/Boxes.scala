@@ -31,6 +31,15 @@ import scalanative.unsigned._
 import scalanative.unsafe._
 
 object Boxes {
+  @inline def boxToSize(v: RawSize): Size   = new Size(v)
+  @inline def boxToUSize(v: RawSize): USize = new USize(v)
+
+  @inline def unboxToSize(o: java.lang.Object): RawSize =
+    if (o == null) Intrinsics.castIntToRawSize(0)
+    else o.asInstanceOf[Size].rawSize
+  @inline def unboxToUSize(o: java.lang.Object): RawSize =
+    if (o == null) Intrinsics.castIntToRawSize(0)
+    else o.asInstanceOf[USize].rawSize
 
   @inline def boxToUByte(v: Byte): UByte = new UByte(v)
   @inline def unboxToUByte(o: java.lang.Object): Byte =

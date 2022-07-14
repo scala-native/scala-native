@@ -19,6 +19,7 @@ private[codegen] abstract class AbstractCodeGen(
   val os: OsCompat
 
   private val targetTriple: Option[String] = config.compilerConfig.targetTriple
+  private val is32BitPlatform: Boolean = config.compilerConfig.is32BitPlatform
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _
@@ -363,7 +364,10 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Vararg                                           => str("...")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
       case Type.Bool                                             => str("i1")
-      case i: Type.I   => str("i"); str(i.width)
+      case i: Type.FixedSizeI => str("i"); str(i.width)
+      case Type.Size =>
+        if (is32BitPlatform) str("i32")
+        else str("i64")
       case Type.Float  => str("float")
       case Type.Double => str("double")
       case Type.ArrayValue(ty, n) =>
@@ -416,11 +420,15 @@ private[codegen] abstract class AbstractCodeGen(
     import sb._
 
     deconstify(v) match {
-      case Val.True      => str("true")
-      case Val.False     => str("false")
-      case Val.Null      => str("null")
-      case Val.Zero(ty)  => str("zeroinitializer")
-      case Val.Byte(v)   => str(v)
+      case Val.True     => str("true")
+      case Val.False    => str("false")
+      case Val.Null     => str("null")
+      case Val.Zero(ty) => str("zeroinitializer")
+      case Val.Byte(v)  => str(v)
+      case Val.Size(v) =>
+        if (!is32BitPlatform) str(v)
+        else if (v.toInt == v) str(v.toInt)
+        else unsupported("Emitting size values that exceed the platform bounds")
       case Val.Char(v)   => str(v.toInt)
       case Val.Short(v)  => str(v)
       case Val.Int(v)    => str(v)
@@ -670,7 +678,8 @@ private[codegen] abstract class AbstractCodeGen(
             }
             str(", !")
             str(deref)
-            str(" !{i64 ")
+            if (is32BitPlatform) str(" !{i32 ")
+            else str(" !{i64 ")
             str(size)
             str("}")
           case _ =>
@@ -741,7 +750,7 @@ private[codegen] abstract class AbstractCodeGen(
         genType(ty)
         str(", ")
         genVal(n)
-        str(", align 8")
+        str(if (is32BitPlatform) ", align 4" else ", align 8")
 
         newline()
         genBind()
@@ -921,7 +930,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(", ")
         genJustVal(r)
       case Op.Conv(conv, ty, v) =>
-        genConv(conv)
+        genConv(conv, v.ty, ty)
         str(" ")
         genVal(v)
         str(" to ")
@@ -950,8 +959,34 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genConv(conv: Conv)(implicit sb: ShowBuilder): Unit =
-    sb.str(conv.show)
+  private[codegen] def genConv(conv: Conv, fromType: Type, toType: Type)(
+      implicit sb: ShowBuilder
+  ): Unit = conv match {
+    case Conv.ZSizeCast | Conv.SSizeCast =>
+      val fromSize = fromType match {
+        case Type.Size =>
+          if (is32BitPlatform) 32 else 64
+        case Type.FixedSizeI(s, _) => s
+        case o                     => unsupported(o)
+      }
+
+      val toSize = toType match {
+        case Type.Size =>
+          if (is32BitPlatform) 32 else 64
+        case Type.FixedSizeI(s, _) => s
+        case o                     => unsupported(o)
+      }
+
+      val castOp =
+        if (fromSize == toSize) "bitcast"
+        else if (fromSize > toSize) "trunc"
+        else if (conv == Conv.ZSizeCast) "zext"
+        else "sext"
+
+      sb.str(castOp)
+
+    case o => sb.str(o.show)
+  }
 
   private[codegen] def genAttr(attr: Attr)(implicit sb: ShowBuilder): Unit =
     sb.str(attr.show)

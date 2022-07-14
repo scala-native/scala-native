@@ -1,4 +1,3 @@
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 1)
 // BEWARE: This file is generated - direct edits will be lost.
 // Do not edit this it directly other than to remove
 // personally identifiable information in sourceLocation lines.
@@ -22,7 +21,6 @@ trait JProcedure0 extends scala.Function0[Object] with java.io.Serializable {
   }
 }
 
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure1[T1]
     extends scala.Function1[T1, Object]
     with java.io.Serializable {
@@ -34,7 +32,6 @@ trait JProcedure1[T1]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure2[T1, T2]
     extends scala.Function2[T1, T2, Object]
     with java.io.Serializable {
@@ -46,7 +43,6 @@ trait JProcedure2[T1, T2]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure3[T1, T2, T3]
     extends scala.Function3[T1, T2, T3, Object]
     with java.io.Serializable {
@@ -58,7 +54,6 @@ trait JProcedure3[T1, T2, T3]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure4[T1, T2, T3, T4]
     extends scala.Function4[T1, T2, T3, T4, Object]
     with java.io.Serializable {
@@ -70,7 +65,6 @@ trait JProcedure4[T1, T2, T3, T4]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure5[T1, T2, T3, T4, T5]
     extends scala.Function5[T1, T2, T3, T4, T5, Object]
     with java.io.Serializable {
@@ -82,7 +76,6 @@ trait JProcedure5[T1, T2, T3, T4, T5]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure6[T1, T2, T3, T4, T5, T6]
     extends scala.Function6[T1, T2, T3, T4, T5, T6, Object]
     with java.io.Serializable {
@@ -94,7 +87,6 @@ trait JProcedure6[T1, T2, T3, T4, T5, T6]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure7[T1, T2, T3, T4, T5, T6, T7]
     extends scala.Function7[T1, T2, T3, T4, T5, T6, T7, Object]
     with java.io.Serializable {
@@ -106,7 +98,6 @@ trait JProcedure7[T1, T2, T3, T4, T5, T6, T7]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure8[T1, T2, T3, T4, T5, T6, T7, T8]
     extends scala.Function8[T1, T2, T3, T4, T5, T6, T7, T8, Object]
     with java.io.Serializable {
@@ -120,7 +111,6 @@ trait JProcedure8[T1, T2, T3, T4, T5, T6, T7, T8]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure9[T1, T2, T3, T4, T5, T6, T7, T8, T9]
     extends scala.Function9[T1, T2, T3, T4, T5, T6, T7, T8, T9, Object]
     with java.io.Serializable {
@@ -152,7 +142,6 @@ trait JProcedure9[T1, T2, T3, T4, T5, T6, T7, T8, T9]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]
     extends scala.Function10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, Object]
     with java.io.Serializable {
@@ -186,7 +175,6 @@ trait JProcedure10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]
     extends scala.Function11[
       T1,
@@ -235,7 +223,6 @@ trait JProcedure11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]
     extends scala.Function12[
       T1,
@@ -287,7 +274,6 @@ trait JProcedure12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]
     extends scala.Function13[
       T1,
@@ -342,7 +328,6 @@ trait JProcedure13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
     extends scala.Function14[
       T1,
@@ -400,7 +385,6 @@ trait JProcedure14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure15[
     T1,
     T2,
@@ -476,7 +460,6 @@ trait JProcedure15[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure16[
     T1,
     T2,
@@ -573,7 +556,6 @@ trait JProcedure16[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure17[
     T1,
     T2,
@@ -675,7 +657,6 @@ trait JProcedure17[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure18[
     T1,
     T2,
@@ -782,7 +763,6 @@ trait JProcedure18[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure19[
     T1,
     T2,
@@ -894,7 +874,6 @@ trait JProcedure19[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure20[
     T1,
     T2,
@@ -1011,7 +990,6 @@ trait JProcedure20[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure21[
     T1,
     T2,
@@ -1133,7 +1111,6 @@ trait JProcedure21[
     return BoxedUnit.UNIT
   }
 }
-// ###sourceLocation(file: "scala/runtime/function/JProcedure.scala.gyb", line: 30)
 trait JProcedure22[
     T1,
     T2,

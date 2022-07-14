@@ -24,12 +24,15 @@ object Platform {
   final val hasCompliantAsInstanceOfs = true
 
   private val osNameProp = System.getProperty("os.name")
+
   final val isFreeBSD = runtime.Platform.isFreeBSD()
   final val isLinux = runtime.Platform.isLinux()
   final val isMacOs = runtime.Platform.isMac()
   final val isWindows = runtime.Platform.isWindows()
 
   final val isArm64 = runtime.PlatformExt.isArm64
+  final val is32BitPlatform = scala.scalanative.unsafe.is32BitPlatform
+  final val asanEnabled = scala.scalanative.meta.LinktimeInfo.asanEnabled
 
   /* Scala Native has problem sending C signals on Apple arm64 hardware.
    * Hardware reporting in Scala Native is tricky. 'isArm64' reports true

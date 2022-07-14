@@ -43,8 +43,8 @@ private[java] final class FileLockImpl(
         throw new IOException()
     } else {
       val fl = stackalloc[flock]()
-      fl.l_start = position
-      fl.l_len = size
+      fl.l_start = position.toSize
+      fl.l_len = size.toSize
       fl.l_pid = 0
       fl.l_type = F_UNLCK
       fl.l_whence = stdio.SEEK_SET

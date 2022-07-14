@@ -2,6 +2,7 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Paths}
+import scala.scalanative.nir.Val
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
@@ -43,11 +44,35 @@ sealed trait NativeConfig {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
+  /** Should address sanitizer be used? */
+  def asan: Boolean
+
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
+
+  private lazy val detectedTriple = Discover.targetTriple(clang)
+
+  /** Are we targeting a 32-bit platform? */
+  def is32BitPlatform = {
+    targetTriple
+      .getOrElse(detectedTriple)
+      .split('-')
+      .headOption
+      .getOrElse("") match {
+      case "x86_64"  => false
+      case "aarch64" => false
+      case "i386"    => true
+      case "i686"    => true
+      case o =>
+        println(
+          s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit"
+        )
+        false
+    }
+  }
 
   /** Shall the resource files be embedded in the resulting binary file? Allows
    *  the use of getClass().getResourceAsStream() on the included files. Will
@@ -95,6 +120,9 @@ sealed trait NativeConfig {
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
 
+  /** Create a new config with given asan value. */
+  def withASAN(value: Boolean): NativeConfig
+
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
 
@@ -125,6 +153,7 @@ object NativeConfig {
       check = false,
       checkFatalWarnings = false,
       dump = false,
+      asan = false,
       linkStubs = false,
       optimize = true,
       linktimeProperties = Map.empty,
@@ -144,6 +173,7 @@ object NativeConfig {
       check: Boolean,
       checkFatalWarnings: Boolean,
       dump: Boolean,
+      asan: Boolean,
       optimize: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean
@@ -189,6 +219,9 @@ object NativeConfig {
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
 
+    def withASAN(value: Boolean): NativeConfig =
+      copy(asan = value)
+
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
@@ -229,7 +262,8 @@ object NativeConfig {
         | - check:              $check
         | - checkFatalWarnings: $checkFatalWarnings
         | - dump:               $dump
-        | - optimize:           $optimize
+        | - asan:               $asan
+        | - optimize            $optimize
         | - linktimeProperties: $listLinktimeProperties
         | - embedResources:     $embedResources
         |)""".stripMargin
@@ -240,7 +274,7 @@ object NativeConfig {
     def isNumberOrString(value: Any) = {
       value match {
         case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
-            _: Float | _: Double | _: String =>
+            _: Float | _: Double | _: String | _: Val =>
           true
         case _ => false
       }

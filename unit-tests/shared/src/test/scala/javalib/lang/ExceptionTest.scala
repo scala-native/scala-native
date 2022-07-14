@@ -2,12 +2,16 @@ package javalib.lang
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
+
+import scala.scalanative.junit.utils.AssumesHelper._
 import org.scalanative.testsuite.utils.Platform
 
 class DummyNoStackTraceException extends scala.util.control.NoStackTrace
 
 class ExceptionTest {
   @Test def printStackTrace(): Unit = {
+    assumeNotASAN()
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
     (new Exception).printStackTrace(pw)

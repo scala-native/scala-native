@@ -87,7 +87,7 @@ class UdpSocketTest {
     // timeout is in milliseconds
 
     if (isWindows) {
-      val fds = stackalloc[WSAPollFd](1)
+      val fds = stackalloc[WSAPollFd](1.toUSize)
       fds.socket = fd.toPtr[Byte]
       fds.events = WinSocketApiExt.POLLIN
 
@@ -100,7 +100,7 @@ class UdpSocketTest {
         fail(s"poll for input failed - $reason")
       }
     } else {
-      val fds = stackalloc[struct_pollfd](1)
+      val fds = stackalloc[struct_pollfd](1.toUSize)
       (fds + 0).fd = fd
       (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
 
@@ -172,12 +172,12 @@ class UdpSocketTest {
         val nBytesSent = sendto(
           outSocket,
           toCString(outData),
-          outData.length.toULong,
+          outData.length.toUSize,
           0,
           outAddr,
           sizeof[sockaddr].toUInt
         )
-        assertEquals("sendto", outData.size, nBytesSent)
+        assertEquals("sendto", outData.size.toSize, nBytesSent)
 
         // If inSocket did not get data by timeout, it probably never will.
         pollReadyToRecv(inSocket, 30 * 1000) // assert fail on error or timeout
@@ -186,7 +186,7 @@ class UdpSocketTest {
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData: Ptr[Byte] = alloc[Byte](maxInData)
+        val inData: Ptr[Byte] = alloc[Byte](maxInData.toUSize)
 
         // Test not fetching remote address. Exercise last two args as nulls.
         val nBytesPeekedAt =
@@ -223,7 +223,7 @@ class UdpSocketTest {
           srcAddr.asInstanceOf[Ptr[sockaddr_in]].sin_addr.s_addr
         )
 
-        assertEquals("inData NUL termination", 0, inData(nBytesRecvd))
+        assertEquals("inData NUL termination", 0, inData(nBytesRecvd.toUSize))
 
         // Contents are good.
         assertEquals("recvfrom content", outData, fromCString(inData))

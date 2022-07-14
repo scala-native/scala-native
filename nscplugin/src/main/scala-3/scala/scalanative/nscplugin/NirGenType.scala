@@ -22,7 +22,8 @@ trait NirGenType(using Context) {
     defnNir.UByteClass,
     defnNir.UShortClass,
     defnNir.UIntClass,
-    defnNir.ULongClass
+    defnNir.ULongClass,
+    defnNir.USizeClass
   )
 
   extension (sym: Symbol)
@@ -152,7 +153,8 @@ trait NirGenType(using Context) {
     defn.DoubleClass -> nir.Type.Double,
     defn.NullClass -> nir.Type.Null,
     defn.NothingClass -> nir.Type.Nothing,
-    defnNir.RawPtrClass -> nir.Type.Ptr
+    defnNir.RawPtrClass -> nir.Type.Ptr,
+    defnNir.RawSizeClass -> nir.Type.Size
   )
 
   def genRefType(st: SimpleType): nir.Type = {

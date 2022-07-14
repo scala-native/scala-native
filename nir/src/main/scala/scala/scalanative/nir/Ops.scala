@@ -31,7 +31,7 @@ sealed abstract class Op {
     case Op.As(ty, _) => ty
     case Op.Is(_, _)  => Type.Bool
     case Op.Copy(v)   => v.ty
-    case Op.Sizeof(_) => Type.Long
+    case Op.Sizeof(_) => Type.Size
     case Op.Box(refty: Type.RefKind, _) =>
       val nullable = Type.isPtrBox(refty)
       Type.Ref(refty.className, exact = true, nullable = nullable)

@@ -227,7 +227,7 @@ object FileHelpers {
   ): File = {
     val id = random.nextLong() match {
       case l if l == java.lang.Long.MIN_VALUE => 0
-      case l                                  => math.labs(l)
+      case l                                  => math.llabs(l)
     }
     val fileName = prefix + id + suffix
     new File(directory, fileName)

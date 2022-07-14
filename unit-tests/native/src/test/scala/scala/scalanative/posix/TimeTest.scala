@@ -25,7 +25,7 @@ class TimeTest {
   // In 2.11/2.12 time was resolved to posix.time.type, in 2.13 to
   // posix.time.time method.
   val now_time_t: time_t = scala.scalanative.posix.time.time(null)
-  val epoch: time_t = 0L
+  val epoch: time_t = 0
 
   @Test def asctimeWithGivenKnownStateShouldMatchItsRepresentation(): Unit =
     if (!isWindows) {
@@ -45,7 +45,7 @@ class TimeTest {
         val anno_zero_ptr = alloc[tm]()
         anno_zero_ptr.tm_mday = 1
         anno_zero_ptr.tm_wday = 1
-        val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26))
+        val cstr: CString = asctime_r(anno_zero_ptr, alloc[Byte](26.toUSize))
         val str: String = fromCString(cstr)
         assertEquals("Mon Jan  1 00:00:00 1900\n", str)
       }
@@ -91,7 +91,7 @@ class TimeTest {
         val time_ptr = stackalloc[time_t]()
         !time_ptr = epoch + timezone()
         val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm]())
-        val cstr: CString = asctime_r(time, alloc[Byte](26))
+        val cstr: CString = asctime_r(time, alloc[Byte](26.toUSize))
         val str: String = fromCString(cstr)
 
         assertEquals("Thu Jan  1 00:00:00 1970\n", str)
@@ -135,15 +135,15 @@ class TimeTest {
         assertEquals(
           "Review test! sizeof[Scala Native struct tm] changed",
           sizeof[tm],
-          36.toULong
+          36.toUSize
         )
 
         val ttPtr = alloc[time_t]()
-        !ttPtr = 1490986064740L / 1000L // Fri Mar 31 14:47:44 EDT 2017
+        !ttPtr = (1490986064740L / 1000L).toSize // Fri Mar 31 14:47:44 EDT 2017
 
         // This code is testing for reading past the end of a "short"
         // Scala Native tm, so the linux 56 byte form is necessary here.
-        val tmBufCount = 7.toULong
+        val tmBufCount = 7.toUSize
 
         val tmBuf: Ptr[Ptr[Byte]] = alloc[Ptr[Byte]](tmBufCount)
 
@@ -160,7 +160,7 @@ class TimeTest {
           tmBuf(6) = toCString(unexpected)
 
           // grossly over-provision rather than chase fencepost bugs.
-          val bufSize = 70.toULong
+          val bufSize = 70.toUSize
           val buf: Ptr[Byte] = alloc[Byte](bufSize)
 
           val n = strftime(buf, bufSize, c"%a %b %d %T %Z %Y", tmPtr)
@@ -178,22 +178,24 @@ class TimeTest {
             "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 2017"
 
           // time.c strftime() zeroed excess bytes in BSD/glibc struct tm.
-          assertTrue(
-            s"result: '${result}' does not match regex: '${regex}'",
-            result.matches(regex)
-          )
+          if (!is32BitPlatform) {
+            assertTrue(
+              s"result: '${result}' does not match regex: '${regex}'",
+              result.matches(regex)
+            )
+          }
         }
       }
     }
 
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
+      val isoDatePtr: Ptr[CChar] = alloc[CChar](70.toUSize)
       val timePtr = alloc[tm]()
 
       timePtr.tm_mday = 1
 
-      strftime(isoDatePtr, 70.toULong, c"%FT%TZ", timePtr)
+      strftime(isoDatePtr, 70.toUSize, c"%FT%TZ", timePtr)
 
       val isoDateString: String = fromCString(isoDatePtr)
 
@@ -204,12 +206,12 @@ class TimeTest {
   @Test def strftimeForMondayJanOne1990ZeroTime(): Unit = if (!isWindows) {
     Zone { implicit z =>
       val timePtr = alloc[tm]()
-      val datePtr: Ptr[CChar] = alloc[CChar](70)
+      val datePtr: Ptr[CChar] = alloc[CChar](70.toUSize)
 
       timePtr.tm_mday = 1
       timePtr.tm_wday = 1
 
-      strftime(datePtr, 70.toULong, c"%A %c", timePtr)
+      strftime(datePtr, 70.toUSize, c"%A %c", timePtr)
 
       val dateString: String = fromCString(datePtr)
       assertEquals("Monday Mon Jan  1 00:00:00 1900", dateString)
@@ -284,21 +286,21 @@ class TimeTest {
         assertEquals(
           "Review test! sizeof[Scala Native struct tm] changed",
           sizeof[tm],
-          36.toULong
+          36.toUSize
         )
 
-        val tmBufSize = 56.toULong
+        val tmBufSize = 56.toUSize
         val tmBuf: Ptr[Byte] = alloc[Byte](tmBufSize)
 
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
-        val gmtIndex = 36.toULong
+        val gmtIndex = 36.toUSize
 
         // To detect the case where SN strptime() is writing tm_gmtoff
         // use a value outside the known range of valid values.
         // This can happen if "@name" annotation has gone missing.
 
-        val expectedGmtOff = Long.MaxValue
+        val expectedGmtOff = Long.MaxValue.toSize
         (tmBuf + gmtIndex).asInstanceOf[Ptr[CLong]](0) = expectedGmtOff
 
         // %Z is not a supported posix conversion specification, but

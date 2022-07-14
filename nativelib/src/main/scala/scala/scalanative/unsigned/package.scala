@@ -3,7 +3,7 @@ package scala.scalanative
 import java.nio.charset.Charset
 import scala.language.experimental.macros
 import scalanative.runtime.{libc, intrinsic, fromRawPtr}
-import scalanative.runtime.Intrinsics.{castIntToRawPtr, castLongToRawPtr}
+import scalanative.runtime.Intrinsics.castLongToRawSize
 
 package object unsigned {
 
@@ -29,6 +29,7 @@ package object unsigned {
     @inline def toUShort: UShort = toUInt.toUShort
     @inline def toUInt: UInt = new UInt(value)
     @inline def toULong: ULong = toUInt.toULong
+    @inline def toUSize: USize = toUInt.toUSize
   }
 
   /** Scala Native unsigned extensions to the standard Long. */
@@ -37,5 +38,6 @@ package object unsigned {
     @inline def toUShort: UShort = toULong.toUShort
     @inline def toUInt: UInt = toULong.toUInt
     @inline def toULong: ULong = new ULong(value)
+    @inline def toUSize: USize = toULong.toUSize
   }
 }

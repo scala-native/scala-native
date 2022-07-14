@@ -2,11 +2,12 @@ package scala.scalanative
 package runtime
 
 import scalanative.unsafe._
+import scalanative.unsigned.USize
 
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: CSize): RawPtr = intrinsic
+  def stackalloc(size: USize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -74,11 +75,16 @@ object Intrinsics {
   /** Intrinsified raw memory load of rawptr. */
   def loadRawPtr(rawptr: RawPtr): RawPtr = intrinsic
 
+  /** Intrinsified raw memory load of RawSize. */
+  def loadRawSize(rawptr: RawPtr): RawSize = intrinsic
+
   /** Intrinsified raw memory load of object. */
   def loadObject(rawptr: RawPtr): Object = intrinsic
 
   /** Intrinsified raw memory store of boolean. */
   def storeBoolean(rawptr: RawPtr, value: Boolean): Unit = intrinsic
+
+  def storeRawSize(rawptr: RawPtr, value: RawSize): Unit = intrinsic
 
   /** Intrinsified raw memory store of char. */
   def storeChar(rawptr: RawPtr, value: Char): Unit = intrinsic
@@ -108,7 +114,8 @@ object Intrinsics {
   def storeObject(rawptr: RawPtr, value: Object): Unit = intrinsic
 
   /** Intrinsified computation of derived raw pointer. */
-  def elemRawPtr(rawptr: RawPtr, offset: Long): RawPtr = intrinsic
+  def elemRawPtr(rawptr: RawPtr, offset: RawSize): RawPtr =
+    intrinsic
 
   /** Intrinsified cast that reinterprets raw pointer as an object. */
   def castRawPtrToObject(rawptr: RawPtr): Object = intrinsic
@@ -139,6 +146,24 @@ object Intrinsics {
 
   /** Intrinsified cast that reinterprets long as a raw pointer. */
   def castLongToRawPtr(int: Long): RawPtr = intrinsic
+
+  /** Intrinsified cast that reinterprets raw size as an int. */
+  def castRawSizeToInt(rawSize: RawSize): Int = intrinsic
+
+  /** Intrinsified cast that reinterprets raw size as a signed long. */
+  def castRawSizeToLong(rawSize: RawSize): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets raw size as an unsigned long. */
+  def castRawSizeToLongUnsigned(rawSize: RawSize): Long = intrinsic
+
+  /** Intrinsified cast that reinterprets int as a signed raw size. */
+  def castIntToRawSize(int: Int): RawSize = intrinsic
+
+  /** Intrinsified cast that reinterprets int as an unsigned raw size. */
+  def castIntToRawSizeUnsigned(int: Int): RawSize = intrinsic
+
+  /** Intrinsified cast that reinterprets long as a raw size. */
+  def castLongToRawSize(long: Long): RawSize = intrinsic
 
   /** Intrinsified resolving of class field as a raw pointer */
   def classFieldRawPtr[T <: AnyRef](obj: T, fieldName: String): RawPtr =

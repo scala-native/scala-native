@@ -25,44 +25,69 @@ sealed abstract class Tag[T] {
   @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
 }
 
+// Separate object to avoid dependency cycles
+private[unsafe] object TagUtil {
+  val ptrSize = new USize(scala.scalanative.meta.LinktimeInfo.sizeOfPtr)
+}
+
 object Tag {
+  import TagUtil._
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Ptr[T]], value: unsafe.Ptr[T]): Unit =
       storeRawPtr(toRawPtr(ptr), toRawPtr(value))
   }
 
+  case object Size extends Tag[unsafe.Size] {
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Size]): unsafe.Size =
+      new Size(loadRawSize(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Size], value: unsafe.Size): Unit =
+      storeRawSize(toRawPtr(ptr), value.rawSize)
+  }
+
+  case object USize extends Tag[unsigned.USize] {
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.USize]): unsigned.USize =
+      new USize(loadRawSize(toRawPtr(ptr)))
+    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.USize], value: unsigned.USize): Unit =
+      storeRawSize(toRawPtr(ptr), value.rawSize)
+  }
+
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
       loadObject(toRawPtr(ptr)).asInstanceOf[T]
     @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
       storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
   }
 
-  % prims = [('Unit', 'scala.Unit', 8),
-  %          ('Boolean', 'scala.Boolean', 1),
-  %          ('Char', 'scala.Char', 2),
-  %          ('Byte', 'scala.Byte', 1),
-  %          ('UByte', 'unsigned.UByte', 1),
-  %          ('Short', 'scala.Short', 2),
-  %          ('UShort', 'unsigned.UShort', 2),
-  %          ('Int', 'scala.Int', 4),
-  %          ('UInt', 'unsigned.UInt', 4),
-  %          ('Long', 'scala.Long', 8),
-  %          ('ULong', 'unsigned.ULong', 8),
-  %          ('Float', 'scala.Float', 4),
-  %          ('Double', 'scala.Double', 8)]
-  % for (name, T, size) in prims:
+  % prims = [('Unit', 'scala.Unit', 'ptrSize', 'ptrSize'),
+  %          ('Boolean', 'scala.Boolean', '1.toUSize', '1.toUSize'),
+  %          ('Char', 'scala.Char', '2.toUSize', '2.toUSize'),
+  %          ('Byte', 'scala.Byte', '1.toUSize', '1.toUSize'),
+  %          ('UByte', 'unsigned.UByte', '1.toUSize', '1.toUSize'),
+  %          ('Short', 'scala.Short', '2.toUSize', '2.toUSize'),
+  %          ('UShort', 'unsigned.UShort', '2.toUSize', '2.toUSize'),
+  %          ('Int', 'scala.Int', '4.toUSize', '4.toUSize'),
+  %          ('UInt', 'unsigned.UInt', '4.toUSize', '4.toUSize'),
+  %          ('Long', 'scala.Long', '8.toUSize', 'ptrSize'),
+  %          ('ULong', 'unsigned.ULong', '8.toUSize', 'ptrSize'),
+  %          ('Float', 'scala.Float', '4.toUSize', '4.toUSize'),
+  %          ('Double', 'scala.Double', '8.toUSize', 'ptrSize')]
+  % for (name, T, size, align) in prims:
+
   object ${name} extends Tag[${T}] {
-    @alwaysinline def size: CSize = ${size}.toULong
-    @alwaysinline def alignment: CSize = ${size}.toULong
+    @alwaysinline def size: CSize = ${size}
+    @alwaysinline def alignment: CSize = ${align}
     @alwaysinline override def load(ptr: unsafe.Ptr[${T}]): ${T} =
       % if name == 'Unit':
       loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
@@ -141,8 +166,8 @@ object Tag {
   private[scalanative] sealed trait StructTag
 
   @alwaysinline private[scalanative] def align(offset: CSize, alignment: CSize) = {
-    val alignmentMask = alignment - 1.toULong
-    val zeroUL = 0.toULong
+    val alignmentMask = alignment - 1.toUSize
+    val zeroUL = 0.toUSize
     val padding =
       if ((offset & alignmentMask) == zeroUL) zeroUL
       else alignment - (offset & alignmentMask)
@@ -159,14 +184,14 @@ object Tag {
     extends Tag[unsafe.CStruct${N}${JustTs}]
     with StructTag {
     @alwaysinline def size: CSize = {
-      var res = 0.toULong
+      var res = 0.toUSize
       % for i in range(1, N + 1):
       res = align(res, _${i}.alignment) + _${i}.size
       % end
       align(res, alignment)
     }
     @alwaysinline def alignment: CSize = {
-      var res = 1.toULong
+      var res = 1.toUSize
       % for i in range(1, N + 1):
       res = res.max(_${i}.alignment)
       % end
@@ -175,7 +200,7 @@ object Tag {
     @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
       % for fld in range(1, N + 1):
       case ${fld - 1} =>
-        var res = 0.toULong
+        var res = 0.toUSize
         % for i in range(1, fld):
         res = align(res, _${i}.alignment) + _${i}.size
         % end
@@ -191,7 +216,7 @@ object Tag {
       val dst = ptr.rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, size.toULong)
+        libc.memcpy(dst, src, size)
       } else storeRawPtr(dst, null)
     }
   }
@@ -205,8 +230,8 @@ object Tag {
      */
     private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-    @alwaysinline def size: CSize = 8.toULong
-    @alwaysinline def alignment: CSize = 8.toULong
+    @alwaysinline def size: CSize = ptrSize
+    @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
       fromRawPtr(loadRawPtr(ptr.rawptr))
     @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit = {
@@ -227,7 +252,11 @@ object Tag {
     Tag.Ptr(tag)
   @alwaysinline implicit def materializeClassTag[T <: AnyRef: ClassTag]: Tag[T] =
     Tag.Class(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[java.lang.Class[T]])
-  % for (name, T, _) in prims:
+  @alwaysinline implicit def materializeSizeTag: Tag[unsafe.Size] =
+    Tag.Size
+  @alwaysinline implicit def materializeUSizeTag: Tag[unsigned.USize] =
+    Tag.USize
+  % for (name, T, _, _) in prims:
   @alwaysinline implicit def materialize${name}Tag: Tag[${T}] =
     ${name}
   % end

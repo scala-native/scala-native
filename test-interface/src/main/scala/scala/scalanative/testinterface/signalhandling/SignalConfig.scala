@@ -77,7 +77,7 @@ private[testinterface] object SignalConfig {
 
     while (unwind.step(cursor) > 0) {
       val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
-      val pc = stackalloc[CUnsignedLongLong]()
+      val pc = stackalloc[CUnsignedLong]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
       if (!pc == 0.toUInt) return
       val symMax = 1024

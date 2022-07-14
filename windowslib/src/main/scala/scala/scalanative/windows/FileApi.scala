@@ -1,7 +1,7 @@
 package scala.scalanative.windows
 
 import scala.language.implicitConversions
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.{Word => _, _}
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi.Handle
 import MinWinBaseApi._

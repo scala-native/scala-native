@@ -479,13 +479,13 @@ trait Combine { self: Interflow =>
         Val.False
       case (Ule, lhs, v) if v.isUnsignedMaxValue =>
         Val.True
-      case (Sgt, lhs, v) if v.isSignedMaxValue =>
+      case (Sgt, lhs, v) if v.isSignedMaxValue(is32BitPlatform) =>
         Val.False
-      case (Sge, lhs, v) if v.isSignedMinValue =>
+      case (Sge, lhs, v) if v.isSignedMinValue(is32BitPlatform) =>
         Val.True
-      case (Slt, lhs, v) if v.isSignedMinValue =>
+      case (Slt, lhs, v) if v.isSignedMinValue(is32BitPlatform) =>
         Val.False
-      case (Sle, lhs, v) if v.isSignedMaxValue =>
+      case (Sle, lhs, v) if v.isSignedMaxValue(is32BitPlatform) =>
         Val.True
 
       // ((x xor y) == 0) ==> (x == y)
@@ -562,15 +562,27 @@ trait Combine { self: Interflow =>
 
     (conv, ty, value) match {
       // trunc[iN] (trunc[iM] x) ==> trunc[iN] x if N < M
-      case (Trunc, Type.I(n, _), ConvRef(Trunc, Type.I(m, _), x)) if n < m =>
+      case (
+            Trunc,
+            Type.FixedSizeI(n, _),
+            ConvRef(Trunc, Type.FixedSizeI(m, _), x)
+          ) if n < m =>
         combine(Trunc, ty, x)
 
       // sext[iN] (sext[iM] x) ==> sext[iN] x if N > M
-      case (Sext, Type.I(n, _), ConvRef(Sext, Type.I(m, _), x)) if n > m =>
+      case (
+            Sext,
+            Type.FixedSizeI(n, _),
+            ConvRef(Sext, Type.FixedSizeI(m, _), x)
+          ) if n > m =>
         combine(Sext, ty, x)
 
       // zext[iN] (zext[iM] x) ==> zext[iN] x if N > M
-      case (Zext, Type.I(n, _), ConvRef(Zext, Type.I(m, _), x)) if n > m =>
+      case (
+            Zext,
+            Type.FixedSizeI(n, _),
+            ConvRef(Zext, Type.FixedSizeI(m, _), x)
+          ) if n > m =>
         combine(Zext, ty, x)
 
       // ptrtoint[long] (inttoptr[long] x) ==> x

@@ -5,7 +5,8 @@ import scalanative.runtime.Intrinsics.{
   divULong,
   remULong,
   ulongToFloat,
-  ulongToDouble
+  ulongToDouble,
+  castLongToRawSize
 }
 import java.lang.{Long => JLong}
 
@@ -27,6 +28,7 @@ final class ULong private[scalanative] (
   @inline final def toUShort: UShort = new UShort(toShort)
   @inline final def toUInt: UInt = new UInt(toInt)
   @inline final def toULong: ULong = this
+  @inline final def toUSize: USize = new USize(castLongToRawSize(underlying))
 
   /** Returns the bitwise negation of this value.
    */

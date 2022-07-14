@@ -28,18 +28,26 @@ object Type {
   /** Primitive value types. */
   sealed abstract class PrimitiveKind(val width: Int) extends ValueKind
   case object Bool extends PrimitiveKind(1)
-  case object Ptr extends PrimitiveKind(64)
+  case object Ptr extends ValueKind
 
-  sealed abstract class I(width: Int, val signed: Boolean)
-      extends PrimitiveKind(width)
-  object I {
-    def unapply(i: I): Some[(Int, Boolean)] = Some((i.width, i.signed))
+  sealed trait I extends ValueKind {
+    val signed: Boolean
   }
-  case object Char extends I(16, signed = false)
-  case object Byte extends I(8, signed = true)
-  case object Short extends I(16, signed = true)
-  case object Int extends I(32, signed = true)
-  case object Long extends I(64, signed = true)
+
+  sealed abstract class FixedSizeI(width: Int, val signed: Boolean)
+      extends PrimitiveKind(width)
+      with I
+  object FixedSizeI {
+    def unapply(i: FixedSizeI): Some[(Int, Boolean)] = Some((i.width, i.signed))
+  }
+  case object Size extends I {
+    val signed = true;
+  }
+  case object Char extends FixedSizeI(16, signed = false)
+  case object Byte extends FixedSizeI(8, signed = true)
+  case object Short extends FixedSizeI(16, signed = true)
+  case object Int extends FixedSizeI(32, signed = true)
+  case object Long extends FixedSizeI(64, signed = true)
 
   sealed abstract class F(width: Int) extends PrimitiveKind(width)
   object F { def unapply(f: F): Some[Int] = Some(f.width) }
@@ -90,6 +98,7 @@ object Type {
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
   val boxesTo = Seq[(Type, Type)](
+    Type.Ref(Global.Top("scala.scalanative.unsigned.USize")) -> Type.Size,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UByte")) -> Type.Byte,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UShort")) -> Type.Short,
     Type.Ref(Global.Top("scala.scalanative.unsigned.UInt")) -> Type.Int,
@@ -99,6 +108,7 @@ object Type {
     Type.Ref(Global.Top("scala.scalanative.unsafe.Ptr")) -> Type.Ptr,
     Type.Ref(Global.Top("java.lang.Boolean")) -> Type.Bool,
     Type.Ref(Global.Top("java.lang.Character")) -> Type.Char,
+    Type.Ref(Global.Top("scala.scalanative.unsafe.Size")) -> Type.Size,
     Type.Ref(Global.Top("java.lang.Byte")) -> Type.Byte,
     Type.Ref(Global.Top("java.lang.Short")) -> Type.Short,
     Type.Ref(Global.Top("java.lang.Integer")) -> Type.Int,

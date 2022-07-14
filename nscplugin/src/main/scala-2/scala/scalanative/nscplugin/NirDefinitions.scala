@@ -17,6 +17,11 @@ trait NirDefinitions {
     lazy val UShortClass = getRequiredClass("scala.scalanative.unsigned.UShort")
     lazy val UIntClass = getRequiredClass("scala.scalanative.unsigned.UInt")
     lazy val ULongClass = getRequiredClass("scala.scalanative.unsigned.ULong")
+    lazy val SizeClass = getRequiredClass("scala.scalanative.unsafe.Size")
+    lazy val USizeClass = getRequiredClass("scala.scalanative.unsigned.USize")
+    lazy val RawSizeClass = getRequiredClass(
+      "scala.scalanative.runtime.RawSize"
+    )
     lazy val PtrClass = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
@@ -75,6 +80,9 @@ trait NirDefinitions {
     lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
     lazy val BooleanTagMethod =
       getDecl(TagModule, TermName("materializeBooleanTag"))
+    lazy val SizeTagMethod = getDecl(TagModule, TermName("materializeSizeTag"))
+    lazy val USizeTagMethod =
+      getDecl(TagModule, TermName("materializeUSizeTag"))
     lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
     lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
     lazy val UByteTagMethod =
@@ -166,6 +174,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("ulongToDouble"))
     lazy val LoadBoolMethod =
       getMember(IntrinsicsModule, TermName("loadBoolean"))
+    lazy val LoadRawSizeMethod =
+      getMember(IntrinsicsModule, TermName("loadRawSize"))
     lazy val LoadCharMethod = getMember(IntrinsicsModule, TermName("loadChar"))
     lazy val LoadByteMethod = getMember(IntrinsicsModule, TermName("loadByte"))
     lazy val LoadShortMethod =
@@ -184,6 +194,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("storeBoolean"))
     lazy val StoreCharMethod =
       getMember(IntrinsicsModule, TermName("storeChar"))
+    lazy val StoreRawSizeMethod =
+      getMember(IntrinsicsModule, TermName("storeRawSize"))
     lazy val StoreByteMethod =
       getMember(IntrinsicsModule, TermName("storeByte"))
     lazy val StoreShortMethod =
@@ -235,6 +247,19 @@ trait NirDefinitions {
         case (module, n) =>
           getMember(module, TermName(s"fromScalaFunction"))
       }
+
+    lazy val CastRawSizeToInt =
+      getMember(IntrinsicsModule, TermName("castRawSizeToInt"))
+    lazy val CastRawSizeToLong =
+      getMember(IntrinsicsModule, TermName("castRawSizeToLong"))
+    lazy val CastRawSizeToLongUnsigned =
+      getMember(IntrinsicsModule, TermName("castRawSizeToLongUnsigned"))
+    lazy val CastIntToRawSize =
+      getMember(IntrinsicsModule, TermName("castIntToRawSize"))
+    lazy val CastIntToRawSizeUnsigned =
+      getMember(IntrinsicsModule, TermName("castIntToRawSizeUnsigned"))
+    lazy val CastLongToRawSize =
+      getMember(IntrinsicsModule, TermName("castLongToRawSize"))
 
     lazy val ResolvedAtLinktimeClass = getRequiredClass(
       "scala.scalanative.unsafe.resolvedAtLinktime"
@@ -327,7 +352,8 @@ trait NirDefinitions {
       UByteClass -> getDecl(RuntimeBoxesModule, TermName("boxToUByte")),
       UShortClass -> getDecl(RuntimeBoxesModule, TermName("boxToUShort")),
       UIntClass -> getDecl(RuntimeBoxesModule, TermName("boxToUInt")),
-      ULongClass -> getDecl(RuntimeBoxesModule, TermName("boxToULong"))
+      ULongClass -> getDecl(RuntimeBoxesModule, TermName("boxToULong")),
+      USizeClass -> getDecl(RuntimeBoxesModule, TermName("boxToUSize"))
     )
 
     lazy val HashMethods = Seq(
@@ -353,7 +379,8 @@ trait NirDefinitions {
       UByteClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUByte")),
       UShortClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUShort")),
       UIntClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUInt")),
-      ULongClass -> getDecl(RuntimeBoxesModule, TermName("unboxToULong"))
+      ULongClass -> getDecl(RuntimeBoxesModule, TermName("unboxToULong")),
+      USizeClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUSize"))
     )
 
     lazy val ClassTagModule = getRequiredModule("scala.reflect.ClassTag")

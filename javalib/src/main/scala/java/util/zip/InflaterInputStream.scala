@@ -9,15 +9,21 @@ class InflaterInputStream private (
     protected var inf: Inflater,
     protected var buf: Array[Byte]
 ) extends FilterInputStream(in) {
-  def this(in: InputStream, inf: Inflater, len: Int) =
-    this(in, inf, new Array[Byte](len))
+  def this(in: InputStream, inf: Inflater, len: Int) = {
+    this(
+      in,
+      inf, {
+        if (len <= 0) {
+          throw new IllegalArgumentException()
+        }
+        new Array[Byte](len)
+      }
+    )
+  }
+
   def this(in: InputStream, inf: Inflater) =
     this(in, inf, InflaterInputStream.BUF_SIZE)
   def this(in: InputStream) = this(in, new Inflater())
-
-  if (buf.length <= 0) {
-    throw new IllegalArgumentException()
-  }
 
   protected var len: Int = 0
   private[zip] var closed: Boolean = false

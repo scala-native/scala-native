@@ -6,6 +6,8 @@ sealed abstract class Conv {
 }
 
 object Conv {
+  case object ZSizeCast extends Conv
+  case object SSizeCast extends Conv
   case object Trunc extends Conv
   case object Zext extends Conv
   case object Sext extends Conv

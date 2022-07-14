@@ -3,6 +3,7 @@
 set -e
 
 scalanativeUnsafe=nativelib/src/main/scala/scala/scalanative/unsafe
+scalanativeUnsigned=nativelib/src/main/scala/scala/scalanative/unsigned
 scalanativeRuntime=nativelib/src/main/scala/scala/scalanative/runtime
 
 function gyb {
@@ -19,6 +20,9 @@ gyb $scalanativeUnsafe/Tag.scala.gyb
 gyb $scalanativeUnsafe/Nat.scala.gyb
 gyb $scalanativeUnsafe/CStruct.scala.gyb
 gyb $scalanativeUnsafe/CFuncPtr.scala.gyb
+gyb $scalanativeUnsafe/Size.scala.gyb
+
+gyb $scalanativeUnsigned/USize.scala.gyb
 
 gyb $scalanativeRuntime/Arrays.scala.gyb
 gyb $scalanativeRuntime/Boxes.scala.gyb
