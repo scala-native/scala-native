@@ -310,9 +310,8 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
         fromIndex,
         toIndex
       ) {
-        override protected def onSizeChanged(delta: Int): Unit = changeSize(
-          delta
-        )
+        override protected def onSizeChanged(delta: Int): Unit =
+          viewSelf.changeSize(delta)
       }
     }
 
