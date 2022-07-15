@@ -120,7 +120,7 @@ class Udp6SocketTest {
 
   private def formatIn6addr(addr: in6_addr): String = Zone { implicit z =>
     val dstSize = INET6_ADDRSTRLEN + 1
-    val dst = alloc[Byte](dstSize)
+    val dst = alloc[Byte](dstSize.toUSize)
 
     val result = inet_ntop(
       AF_INET6,
@@ -232,7 +232,7 @@ class Udp6SocketTest {
 
         // Provide extra room to allow detecting extra junk being sent.
         val maxInData = 2 * outData.length
-        val inData: Ptr[Byte] = alloc[Byte](maxInData)
+        val inData: Ptr[Byte] = alloc[Byte](maxInData.toUSize)
 
         // Test not fetching remote address. Exercise last two arguments.
         val nBytesPeekedAt =
