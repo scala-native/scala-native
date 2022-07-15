@@ -439,7 +439,7 @@ class TimeTest {
     assertEquals(
       s"clock_getres tv_sec ${timespecP.tv_sec} != 0",
       0,
-      timespecP.tv_sec.toInt
+      timespecP.tv_sec.toLong
     )
 
     // Apparently silly test ensures CLOCKS_PER_SEC is exercised.
@@ -489,8 +489,8 @@ class TimeTest {
      * test, not to stress either race conditions or developers.
      */
 
-    val acceptableDiff = 5
-    val secondsDiff = Math.abs(timespecP.tv_sec.toInt - now.toInt)
+    val acceptableDiff = 5L
+    val secondsDiff = Math.abs((timespecP.tv_sec - now).toLong)
 
     assertTrue(
       s"clock_gettime seconds ${secondsDiff} not within ${acceptableDiff}",
