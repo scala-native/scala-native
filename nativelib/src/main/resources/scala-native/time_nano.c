@@ -21,7 +21,7 @@
  */
 long long scalanative_nano_time() {
     long long nano_time;
-#define NANOS_PER_SEC 1000000000
+#define NANOS_PER_SEC 1000000000LL
 
 #if defined(_WIN32)
     LARGE_INTEGER count;
