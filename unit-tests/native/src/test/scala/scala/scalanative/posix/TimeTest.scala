@@ -425,13 +425,13 @@ class TimeTest {
 
   @Test def clockGetresReturnsBelievableResults(): Unit = if (!isWindows) {
     val timespecP = stackalloc[timespec]()
-    timespecP.tv_sec = Long.MinValue // initialize with known bad values
-    timespecP.tv_nsec = Long.MinValue
+    timespecP.tv_sec = Int.MinValue // initialize with known bad values
+    timespecP.tv_nsec = Int.MinValue
 
     val result = clock_getres(CLOCK_REALTIME, timespecP)
 
     assertEquals(
-      s"clock_getres failed with errno: ${libcErrno.errno}",
+      s"clock_getres failed with errno: ${posixErrno.errno}",
       0,
       result
     )
@@ -439,7 +439,7 @@ class TimeTest {
     assertEquals(
       s"clock_getres tv_sec ${timespecP.tv_sec} != 0",
       0,
-      timespecP.tv_sec
+      timespecP.tv_sec.toInt
     )
 
     // Apparently silly test ensures CLOCKS_PER_SEC is exercised.
@@ -458,14 +458,14 @@ class TimeTest {
 
   @Test def clockGettimeReturnsBelievableResults(): Unit = if (!isWindows) {
     val timespecP = stackalloc[timespec]()
-    timespecP.tv_nsec = Long.MinValue // initialize with known bad value
+    timespecP.tv_nsec = Int.MinValue // initialize with known bad value
 
     val now = scala.scalanative.posix.time.time(null) // Seconds since Epoch
 
     val result = clock_gettime(CLOCK_REALTIME, timespecP)
 
     assertEquals(
-      s"clock_gettime failed with errno: ${libcErrno.errno}",
+      s"clock_gettime failed with errno: ${posixErrno.errno}",
       0,
       result
     )
@@ -489,8 +489,8 @@ class TimeTest {
      * test, not to stress either race conditions or developers.
      */
 
-    val acceptableDiff = 5L
-    val secondsDiff = Math.abs(timespecP.tv_sec - now)
+    val acceptableDiff = 5
+    val secondsDiff = Math.abs(timespecP.tv_sec.toInt - now.toInt)
 
     assertTrue(
       s"clock_gettime seconds ${secondsDiff} not within ${acceptableDiff}",
@@ -506,8 +506,8 @@ class TimeTest {
 
   @Test def clockNanosleepShouldExecute(): Unit = if (!isWindows) {
     val requestP = stackalloc[timespec]()
-    requestP.tv_sec = 0L
-    requestP.tv_nsec = 1L // will be rounded up to minimum clock resolution.
+    requestP.tv_sec = 0
+    requestP.tv_nsec = 1 // will be rounded up to minimum clock resolution.
 
     val result = clock_nanosleep(CLOCK_MONOTONIC, flags = 0, requestP, null)
 
@@ -551,8 +551,8 @@ class TimeTest {
      */
 
     assertTrue(
-      s"clock_settime failed with errno: ${libcErrno.errno}",
-      libcErrno.errno == (EINVAL) || libcErrno.errno == (EPERM)
+      s"clock_settime failed with errno: ${posixErrno.errno}",
+      posixErrno.errno == (EINVAL) || posixErrno.errno == (EPERM)
     )
   }
 }
