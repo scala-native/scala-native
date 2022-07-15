@@ -21,21 +21,21 @@ object dirent {
   def closedir(dirp: Ptr[DIR]): CInt = extern
 
   @name("scalanative_dt_unknown")
-  def DT_UNKNOWN(): CInt = extern
+  def DT_UNKNOWN: CInt = extern
   @name("scalanative_dt_fifo")
-  def DT_FIFO(): CInt = extern
+  def DT_FIFO: CInt = extern
   @name("scalanative_dt_chr")
-  def DT_CHR(): CInt = extern
+  def DT_CHR: CInt = extern
   @name("scalanative_dt_dir")
-  def DT_DIR(): CInt = extern
+  def DT_DIR: CInt = extern
   @name("scalanative_dt_blk")
-  def DT_BLK(): CInt = extern
+  def DT_BLK: CInt = extern
   @name("scalanative_dt_reg")
-  def DT_REG(): CInt = extern
+  def DT_REG: CInt = extern
   @name("scalanative_dt_lnk")
-  def DT_LNK(): CInt = extern
+  def DT_LNK: CInt = extern
   @name("scalanative_dt_sock")
-  def DT_SOCK(): CInt = extern
+  def DT_SOCK: CInt = extern
   @name("scalanative_dt_wht")
-  def DT_WHT(): CInt = extern
+  def DT_WHT: CInt = extern
 }

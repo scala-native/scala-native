@@ -35,8 +35,8 @@ object FileHelpers {
     case object Link extends FileType
 
     private[scalanative] def unixFileType(tpe: CInt) =
-      if (tpe == DT_LNK()) Link
-      else if (tpe == DT_DIR()) Directory
+      if (tpe == DT_LNK) Link
+      else if (tpe == DT_DIR) Directory
       else Normal
 
     private[scalanative] def windowsFileType(attributes: DWord) = {
