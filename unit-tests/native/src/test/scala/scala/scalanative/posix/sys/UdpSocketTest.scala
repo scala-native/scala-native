@@ -11,6 +11,8 @@ import scalanative.posix.arpa.inet.inet_addr
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
+import scalanative.posix.poll._
+import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.SocketTestHelpers._
 import scalanative.posix.unistd
@@ -187,7 +189,7 @@ class UdpSocketTest {
         )
 
         assertTrue(s"sendto failed errno: ${errno.errno}\n", (nBytesSent >= 0))
-        assertEquals("sendto", outData.size, nBytesSent)
+        assertEquals("sendto", outData.size, nBytesSent.toInt)
 
         // If inSocket did not get data by timeout, it probably never will.
         pollReadyToRecv(inSocket, 30 * 1000) // assert fail on error or timeout

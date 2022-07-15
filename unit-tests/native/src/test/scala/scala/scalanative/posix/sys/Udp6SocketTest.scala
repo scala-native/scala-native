@@ -216,14 +216,14 @@ class Udp6SocketTest {
         val nBytesSent = sendto(
           outSocket,
           toCString(outData),
-          outData.length.toULong,
+          outData.length.toUSize,
           0,
           out6Addr.asInstanceOf[Ptr[sockaddr]],
           sizeof[sockaddr_in6].toUInt
         )
 
         assertTrue(s"sendto failed errno: ${errno.errno}\n", (nBytesSent >= 0))
-        assertEquals("sendto length", outData.size, nBytesSent)
+        assertEquals("sendto length", outData.size, nBytesSent.toInt)
 
         // If inSocket did not get data by timeout, it probably never will.
         pollReadyToRecv(inSocket, 30 * 1000) // assert fail on error or timeout
