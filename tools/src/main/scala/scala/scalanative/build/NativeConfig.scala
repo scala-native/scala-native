@@ -55,7 +55,12 @@ sealed trait NativeConfig {
 
   private lazy val detectedTriple = Discover.targetTriple(clang)
 
-  /** Are we targeting a 32-bit platform? */
+  /** Are we targeting a 32-bit platform?
+   *
+   *  This should perhaps list known 32-bit architectures and search for others
+   *  containing "32" and assume everything else is 64-bit. Printing the
+   *  architecture for a name that is not found seems excessive perhaps?
+   */
   def is32BitPlatform = {
     targetTriple
       .getOrElse(detectedTriple)
@@ -64,6 +69,7 @@ sealed trait NativeConfig {
       .getOrElse("") match {
       case "x86_64"  => false
       case "aarch64" => false
+      case "arm64"   => false
       case "i386"    => true
       case "i686"    => true
       case o =>
