@@ -59,10 +59,17 @@ class Udp6SocketTest {
      * we run test matrices.
      */
 
-    assumeFalse(
-      "IPv6 UDP loopback is not available on linux-arm64 CI",
-      Platform.isLinux && Platform.isArm64
-    )
+    if (Platform.isLinux) {
+      // IPv6 appears to not be configured on CI Docker/qemu
+      assumeFalse(
+        "IPv6 UDP loopback is not available on linux-arm64 CI",
+        Platform.isArm64
+      )
+      assumeFalse(
+        "IPv6 UDP loopback is not available on linux-x86 CI",
+        Platform.is32BitPlatform
+      )
+    }
   }
 
   // For some unknown reason inlining content of this method leads to failures
