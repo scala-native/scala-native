@@ -13,26 +13,36 @@
 
 /**
  * Refer to javadoc for System.nanoTime()
+
+ * Note: For UNIX based systems this uses CLOCK_MONOTONIC_RAW which
+ * has no NTP adjustments to match how Windows works. Systems tested
+ * have this non-standard feature but CLOCK_MONOTONIC would need
+ * to be used otherwise, perhaps with a conditional compilation
+ * block.
  *
- * Function return values are ignored. Failure is unlikely and
- * there currently is no consensus on handling the failure.
+ * Failure is unlikely and there currently is no consensus on handling
+ * failure upstream.
  *
- * @return nanoseconds of uptime - presumably 0 if it fails
+ * @return nanoseconds of uptime - 0 if it fails
  */
 long long scalanative_nano_time() {
-    long long nano_time;
+    long long nano_time = 0LL;
 #define NANOS_PER_SEC 1000000000LL
 
 #if defined(_WIN32)
     LARGE_INTEGER count;
-    QueryPerformanceCounter(&count);
-    int nanosPerCount = NANOS_PER_SEC / winFreqQuadPart();
-    nano_time = count.QuadPart * nanosPerCount;
+    int quad;
+    if (QueryPerformanceCounter(&count)) {
+        if (winFreqQuadPart(&quad)) {
+            int nanosPerCount = NANOS_PER_SEC / quad;
+            nano_time = count.QuadPart * nanosPerCount;
+        }
+    }
 #else
     struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    nano_time = (ts.tv_sec * NANOS_PER_SEC) + ts.tv_nsec;
+    if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) == 0) {
+        nano_time = (ts.tv_sec * NANOS_PER_SEC) + ts.tv_nsec;
+    }
 #endif
-
     return nano_time;
 }
