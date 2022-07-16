@@ -10,7 +10,8 @@ import org.scalanative.testsuite.utils.Platform
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.PlatformExt
 
-import scala.scalanative.libc.string
+// libc.string is hidden by posix.string
+import scala.scalanative.libc.{string => libcString}
 
 /* Scala 2.11.n & 2.12.n complain about import of posixErrno.errno.
  * To span many Scala versions with same code used as
@@ -157,7 +158,9 @@ class TimeTest {
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
         if (localtime_r(ttPtr, tmPtr) == null) {
-          throw new IOException(fromCString(string.strerror(posixErrno.errno)))
+          throw new IOException(
+            fromCString(libcString.strerror(posixErrno.errno))
+          )
         } else {
           val unexpected = "BOGUS"
 
