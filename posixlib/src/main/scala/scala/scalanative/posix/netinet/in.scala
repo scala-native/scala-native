@@ -23,10 +23,10 @@ object in {
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
   type sockaddr_in6 = CStruct5[
-    in6_addr, // sin6_addr
     socket.sa_family_t, // sin6_family
     in_port_t, // sin6_port
     uint32_t, // sin6_flowinfo
+    in6_addr, // sin6_addr
     uint32_t // sin6_scope_id
   ]
 
@@ -130,7 +130,6 @@ object in {
 
   @name("scalanative_in6_is_addr_mc_global")
   def IN6_IS_ADDR_MC_GLOBAL(arg: Ptr[in6_addr]): CInt = extern
-
 }
 
 object inOps {
@@ -151,15 +150,15 @@ object inOps {
   }
 
   implicit class sockaddr_in6Ops(val ptr: Ptr[sockaddr_in6]) extends AnyVal {
-    def sin6_addr: in6_addr = ptr._1
-    def sin6_family: socket.sa_family_t = ptr._2
-    def sin6_port: in_port_t = ptr._3
-    def sin6_flowinfo: uint32_t = ptr._4
+    def sin6_family: socket.sa_family_t = ptr._1
+    def sin6_port: in_port_t = ptr._2
+    def sin6_flowinfo: uint32_t = ptr._3
+    def sin6_addr: in6_addr = ptr._4
     def sin6_scope_id: uint32_t = ptr._5
-    def sin6_addr_=(v: in6_addr): Unit = ptr._1 = v
-    def sin6_family_=(v: socket.sa_family_t): Unit = ptr._2 = v
-    def sin6_port_=(v: in_port_t): Unit = ptr._3 = v
-    def sin6_flowinfo_=(v: uint32_t): Unit = ptr._4 = v
+    def sin6_family_=(v: socket.sa_family_t): Unit = ptr._1 = v
+    def sin6_port_=(v: in_port_t): Unit = ptr._2 = v
+    def sin6_flowinfo_=(v: uint32_t): Unit = ptr._3 = v
+    def sin6_addr_=(v: in6_addr): Unit = ptr._4 = v
     def sin6_scope_id_=(v: uint32_t): Unit = ptr._5 = v
   }
 

@@ -1,19 +1,24 @@
 package scala.scalanative.posix
 package sys
 
-import scalanative.posix.arpa.inet._
-import scalanative.posix.fcntl
+import scalanative.unsafe._
+import scalanative.unsigned._
+
+import scalanative.libc.errno
+import scalanative.libc.string.strerror
+
+import scalanative.posix.arpa.inet.inet_addr
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
-import scalanative.posix.sys.socketOps._
+import scalanative.posix.sys.SocketTestHelpers._
 import scalanative.posix.unistd
-import scalanative.unsafe._
-import scalanative.unsigned._
+
 import scalanative.meta.LinktimeInfo.isWindows
+
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
@@ -23,11 +28,16 @@ import scala.scalanative.windows.ErrorHandlingApi._
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import scala.scalanative.libc.errno
-import scala.scalanative.libc.string.strerror
+import org.junit.Before
 
 class UdpSocketTest {
-  // All tests in this class assume that an IPv4 network is up & running.
+
+  val isIPv4Available = hasLoopbackAddress(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+
+  @Before
+  def before(): Unit = {
+    assumeTrue("IPv4 UDP loopback is not available", isIPv4Available)
+  }
 
   // For some unknown reason inlining content of this method leads to failures
   // on Unix, probably due to bug in linktime conditions.
@@ -140,7 +150,7 @@ class UdpSocketTest {
 
       // Get port for sendto() to use.
       val bindStatus = bind(inSocket, inAddr, sizeof[sockaddr].toUInt)
-      assertNotEquals("bind", -1, bindStatus)
+      assertNotEquals(s"bind failed,  errno: ${errno.errno}", -1, bindStatus)
 
       val inAddrInfo = alloc[sockaddr]()
       val gsnAddrLen = alloc[socklen_t]()
@@ -177,7 +187,9 @@ class UdpSocketTest {
           outAddr,
           sizeof[sockaddr].toUInt
         )
-        assertEquals("sendto", outData.size.toSize, nBytesSent)
+
+        assertTrue(s"sendto failed errno: ${errno.errno}\n", (nBytesSent >= 0))
+        assertEquals("sendto", outData.size, nBytesSent.toInt)
 
         // If inSocket did not get data by timeout, it probably never will.
         pollReadyToRecv(inSocket, 30 * 1000) // assert fail on error or timeout
