@@ -29,20 +29,18 @@ long long scalanative_current_time_millis() {
     FILETIME filetime;
     int quad;
     // returns ticks in UTC
-    if (GetSystemTimeAsFileTime(&filetime)) {
-        if (winFreqQuadPart(&quad)) {
-            int ticksPerMilli = NANOS_PER_MILLI / (NANOS_PER_SEC / quad);
+    GetSystemTimeAsFileTime(&filetime);
+    if (winFreqQuadPart(&quad)) {
+        int ticksPerMilli = NANOS_PER_MILLI / (NANOS_PER_SEC / quad);
 
-            // Copy the low and high parts of FILETIME into a LARGE_INTEGER
-            // This is so we can access the full 64-bits as an Int64 without
-            // causing an alignment fault
-            LARGE_INTEGER li;
-            li.LowPart = filetime.dwLowDateTime;
-            li.HighPart = filetime.dwHighDateTime;
+        // Copy the low and high parts of FILETIME into a LARGE_INTEGER
+        // This is so we can access the full 64-bits as an Int64 without
+        // causing an alignment fault
+        LARGE_INTEGER li;
+        li.LowPart = filetime.dwLowDateTime;
+        li.HighPart = filetime.dwHighDateTime;
 
-            current_time_millis =
-                (li.QuadPart - UNIX_TIME_START) / ticksPerMilli;
-        }
+        current_time_millis = (li.QuadPart - UNIX_TIME_START) / ticksPerMilli;
     }
 #else
 #define MILLIS_PER_SEC 1000LL
