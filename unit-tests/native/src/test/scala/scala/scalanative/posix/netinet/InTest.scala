@@ -8,7 +8,7 @@ import scalanative.posix.inttypes._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.socketOps._
 
-import scalanative.unsafe.{alloc, sizeof, Zone}
+import scalanative.unsafe._
 import scalanative.unsigned._
 
 import org.junit.Test
