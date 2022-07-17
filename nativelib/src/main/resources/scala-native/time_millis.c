@@ -28,9 +28,9 @@ long long scalanative_current_time_millis() {
 
     FILETIME filetime;
     int quad;
-    // returns ticks in UTC
+    // returns ticks in UTC - no return value
     GetSystemTimeAsFileTime(&filetime);
-    if (winFreqQuadPart(&quad)) {
+    if (winFreqQuadPart(&quad) != 0) {
         int ticksPerMilli = NANOS_PER_MILLI / (NANOS_PER_SEC / quad);
 
         // Copy the low and high parts of FILETIME into a LARGE_INTEGER

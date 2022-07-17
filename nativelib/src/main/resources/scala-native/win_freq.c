@@ -6,18 +6,20 @@
 static int winFreqQuadPartValue = 0;
 
 int winFreqQuadPart(int *quad) {
-    int ret = 0;
+    int retval = 1; // assume ok for caching
     // check if cache is set
     if (winFreqQuadPartValue == 0) {
         LARGE_INTEGER freq;
-        ret = QueryPerformanceFrequency(&freq);
-        if (ret) {
+        retval = QueryPerformanceFrequency(&freq);
+        if (retval != 0) {
+            // set cache value
             winFreqQuadPartValue = freq.QuadPart;
         }
     }
+    // assign cache value or default 0 on failure
     *quad = winFreqQuadPartValue;
 
-    return ret;
+    return retval;
 }
 
 #endif

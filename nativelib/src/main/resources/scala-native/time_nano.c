@@ -21,7 +21,7 @@
  * block.
  *
  * Failure is unlikely and there currently is no consensus on handling
- * failure upstream.
+ * failure by the caller.
  *
  * @return nanoseconds of uptime - 0 if it fails
  */
@@ -30,15 +30,17 @@ long long scalanative_nano_time() {
 #define NANOS_PER_SEC 1000000000LL
 
 #if defined(_WIN32)
+    // return value of 0 is failure
     LARGE_INTEGER count;
     int quad;
-    if (QueryPerformanceCounter(&count)) {
-        if (winFreqQuadPart(&quad)) {
+    if (QueryPerformanceCounter(&count) != 0) {
+        if (winFreqQuadPart(&quad) != 0) {
             int nanosPerCount = NANOS_PER_SEC / quad;
             nano_time = count.QuadPart * nanosPerCount;
         }
     }
 #else
+    // return value of 0 is success
     struct timespec ts;
     if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) == 0) {
         nano_time = (ts.tv_sec * NANOS_PER_SEC) + ts.tv_nsec;
