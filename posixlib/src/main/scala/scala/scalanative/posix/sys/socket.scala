@@ -2,20 +2,22 @@ package scala.scalanative
 package posix
 package sys
 
+import scalanative.runtime.Platform
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
 
 @extern
 object socket {
+  type _14 = Nat.Digit2[Nat._1, Nat._4]
+  type _15 = Nat.Digit2[Nat._1, Nat._5]
+
   type socklen_t = CUnsignedInt
 
   type sa_family_t = CUnsignedShort
 
-  type _14 = Nat.Digit2[Nat._1, Nat._4]
-
   type sockaddr = CStruct2[
-    sa_family_t, // sa_family
+    sa_family_t, // sa_family, sa_len is synthisized if needed
     CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
   ]
 
@@ -24,10 +26,8 @@ object socket {
    * If/when changing, keep the two in correspondence.
    */
 
-  type _15 = Nat.Digit2[Nat._1, Nat._5]
-
   type sockaddr_storage = CStruct4[
-    sa_family_t, // ss_family
+    sa_family_t, // ss_family, // ss_family, sa_len is synthisized if needed
     CUnsignedShort, // __opaquePadTo32
     CUnsignedInt, // opaque, __opaquePadTo64
     CArray[CUnsignedLongLong, _15] // __opaqueAlignStructure to 8 bytes
@@ -257,18 +257,65 @@ object socket {
 
 object socketOps {
   import socket._
+  import posix.inttypes.uint8_t
+
+  // Also used by posixlib netinet/in.scala
+  val useSinXLen = !Platform.isLinux() &&
+    (Platform.isMac() || Platform.isFreeBSD())
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
-    def sa_family: sa_family_t = ptr._1
+    def sa_len: uint8_t = if (!useSinXLen) {
+      sizeof[sockaddr].toUByte // length is synthesized
+    } else {
+      ptr._1.toUByte
+    }
+
+    def sa_family: sa_family_t = if (!useSinXLen) {
+      ptr._1
+    } else {
+      (ptr._1 >>> 8).toUByte
+    }
+
     def sa_data: CArray[CChar, _14] = ptr._2
-    def sa_family_=(v: sa_family_t): Unit = ptr._1 = v
+
+    def sa_len_=(v: uint8_t): Unit = if (useSinXLen) {
+      ptr._1 = ((ptr._1 & 0xff00.toUShort) + v).toUShort
+    } // else silently do nothing
+
+    def sa_family_=(v: sa_family_t): Unit =
+      if (!useSinXLen) {
+        ptr._1 = v
+      } else {
+        ptr._1 = ((v << 8) + ptr.sa_len).toUShort
+      }
+
     def sa_data_=(v: CArray[CChar, _14]): Unit = ptr._2 = v
   }
 
   implicit class sockaddr_storageOps(val ptr: Ptr[sockaddr_storage])
       extends AnyVal {
-    def ss_family: sa_family_t = ptr._1
-    def ss_family_=(v: sa_family_t): Unit = ptr._1 = v
+    def ss_len: uint8_t = if (!useSinXLen) {
+      sizeof[sockaddr].toUByte // length is synthesized
+    } else {
+      ptr._1.toUByte
+    }
+
+    def ss_family: sa_family_t = if (!useSinXLen) {
+      ptr._1
+    } else {
+      (ptr._1 >>> 8).toUByte
+    }
+
+    def ss_len_=(v: uint8_t): Unit = if (useSinXLen) {
+      ptr._1 = ((ptr._1 & 0xff00.toUShort) + v).toUShort
+    } // else silently do nothing
+
+    def ss_family_=(v: sa_family_t): Unit =
+      if (!useSinXLen) {
+        ptr._1 = v
+      } else {
+        ptr._1 = ((v << 8) + ptr.ss_len).toUShort
+      }
   }
 
   implicit class msghdrOps(val ptr: Ptr[msghdr]) extends AnyVal {

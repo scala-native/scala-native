@@ -2,30 +2,33 @@ package scala.scalanative
 package posix
 package netinet
 
-import scalanative.runtime.Platform
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.posix.inttypes._
 import scalanative.posix.sys.socket
+import scalanative.posix.sys.socketOps
 
 @extern
 object in {
-  type in_port_t = uint16_t
-  type in_addr_t = uint32_t
   type _8 = Nat._8
   type _16 = Nat.Digit2[Nat._1, Nat._6]
 
+  type in_port_t = uint16_t
+  type in_addr_t = uint32_t
+
   type in_addr = CStruct1[in_addr_t] // s_addr
+
   type sockaddr_in = CStruct4[
-    socket.sa_family_t, // sin_family
+    socket.sa_family_t, // sin_family, sin_len is synthisized if needed
     in_port_t, // sin_port
     in_addr, // sin_addr
     CArray[Byte, _8] // sin_zero, Posix allowed
   ]
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
+
   type sockaddr_in6 = CStruct5[
-    socket.sa_family_t, // sin6_family
+    socket.sa_family_t, // sin6_family, sin6_len is synthisized if needed
     in_port_t, // sin6_port
     uint32_t, // sin6_flowinfo
     in6_addr, // sin6_addr
@@ -136,9 +139,7 @@ object in {
 
 object inOps {
   import in._
-
-  val useSinXLen = !Platform.isLinux() &&
-    (Platform.isMac() || Platform.isFreeBSD())
+  import socketOps.useSinXLen
 
   implicit class sockaddr_inOps(val ptr: Ptr[sockaddr_in]) extends AnyVal {
     def sin_len: uint8_t = if (!useSinXLen) {

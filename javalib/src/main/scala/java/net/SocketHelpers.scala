@@ -201,21 +201,18 @@ object SocketHelpers {
   private def tailorSockaddr(ip: String, isV6: Boolean, addr: Ptr[sockaddr])(
       implicit z: Zone
   ): Boolean = {
-    addr.sa_family = { if (isV6) AF_INET6 else AF_INET }.toUShort
-
+    // By contract the 'sockaddr' argument is cleared/all_zeros.
     val src = toCString(ip)
     val dst =
       if (isV6) {
-        addr
-          .asInstanceOf[Ptr[sockaddr_in6]]
-          .sin6_addr
-          .toPtr
+        val v6addr = addr.asInstanceOf[Ptr[sockaddr_in6]]
+        v6addr.sin6_family = AF_INET6.toUShort
+        v6addr.sin6_addr.toPtr
           .asInstanceOf[Ptr[Byte]]
       } else {
-        addr
-          .asInstanceOf[Ptr[sockaddr_in]]
-          .sin_addr
-          .toPtr
+        val v4addr = addr.asInstanceOf[Ptr[sockaddr_in]]
+        v4addr.sin_family = AF_INET.toUShort
+        v4addr.sin_addr.toPtr
           .asInstanceOf[Ptr[Byte]]
       }
 
@@ -231,8 +228,9 @@ object SocketHelpers {
       // of C function failures here and in tailorSockaddr() is not feasible.
 
       val host: Ptr[CChar] = stackalloc[CChar](MAXHOSTNAMELEN)
-      val addr = stackalloc[sockaddr]()
+      val addr = stackalloc[sockaddr]() // will clear/zero all memory returned
 
+      // By contract 'sockaddr' passed in is cleared/all_zeros.
       if (!tailorSockaddr(ip, isV6, addr)) {
         None
       } else {
