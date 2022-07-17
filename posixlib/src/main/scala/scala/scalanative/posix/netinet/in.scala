@@ -2,7 +2,9 @@ package scala.scalanative
 package posix
 package netinet
 
+import scalanative.runtime.Platform
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.posix.inttypes._
 import scalanative.posix.sys.socket
 
@@ -135,11 +137,36 @@ object in {
 object inOps {
   import in._
 
+  val useSinXLen = !Platform.isLinux() &&
+    (Platform.isMac() || Platform.isFreeBSD())
+
   implicit class sockaddr_inOps(val ptr: Ptr[sockaddr_in]) extends AnyVal {
-    def sin_family: socket.sa_family_t = ptr._1
+    def sin_len: uint8_t = if (!useSinXLen) {
+      sizeof[sockaddr_in].toUByte // length is synthesized
+    } else {
+      ptr._1.toUByte
+    }
+
+    def sin_family: socket.sa_family_t = if (!useSinXLen) {
+      ptr._1
+    } else {
+      (ptr._1 >>> 8).toUByte
+    }
+
     def sin_port: in_port_t = ptr._2
     def sin_addr: in_addr = ptr._3
-    def sin_family_=(v: socket.sa_family_t): Unit = ptr._1 = v
+
+    def sin_len_=(v: uint8_t): Unit = if (useSinXLen) {
+      ptr._1 = ((ptr._1 & 0xff00.toUShort) + v).toUShort
+    } // else silently do nothing
+
+    def sin_family_=(v: socket.sa_family_t): Unit =
+      if (!useSinXLen) {
+        ptr._1 = v
+      } else {
+        ptr._1 = ((v << 8) + ptr.sin_len).toUShort
+      }
+
     def sin_port_=(v: in_port_t): Unit = ptr._2 = v
     def sin_addr_=(v: in_addr): Unit = ptr._3 = v
   }
@@ -150,12 +177,34 @@ object inOps {
   }
 
   implicit class sockaddr_in6Ops(val ptr: Ptr[sockaddr_in6]) extends AnyVal {
-    def sin6_family: socket.sa_family_t = ptr._1
+    def sin6_len: uint8_t = if (!useSinXLen) {
+      sizeof[sockaddr_in6].toUByte // length is synthesized
+    } else {
+      ptr._1.toUByte
+    }
+
+    def sin6_family: socket.sa_family_t = if (!useSinXLen) {
+      ptr._1
+    } else {
+      (ptr._1 >>> 8).toUByte
+    }
+
     def sin6_port: in_port_t = ptr._2
     def sin6_flowinfo: uint32_t = ptr._3
     def sin6_addr: in6_addr = ptr._4
     def sin6_scope_id: uint32_t = ptr._5
-    def sin6_family_=(v: socket.sa_family_t): Unit = ptr._1 = v
+
+    def sin6_len_=(v: uint8_t): Unit = if (useSinXLen) {
+      ptr._1 = ((ptr._1 & 0xff00.toUShort) + v).toUShort
+    } // else silently do nothing
+
+    def sin6_family_=(v: socket.sa_family_t): Unit =
+      if (!useSinXLen) {
+        ptr._1 = v
+      } else {
+        ptr._1 = ((v << 8) + ptr.sin6_len).toUShort
+      }
+
     def sin6_port_=(v: in_port_t): Unit = ptr._2 = v
     def sin6_flowinfo_=(v: uint32_t): Unit = ptr._3 = v
     def sin6_addr_=(v: in6_addr): Unit = ptr._4 = v

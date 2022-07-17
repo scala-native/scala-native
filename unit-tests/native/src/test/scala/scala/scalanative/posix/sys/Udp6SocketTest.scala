@@ -31,19 +31,12 @@ import org.junit.Assume._
 import org.junit.Before
 
 class Udp6SocketTest {
-
-  /* Tests are failing on GitHub CI BSD based systems.
-   * (errno 47: Address family not supported by protocol).
-   * This is caused by SN not properly handling sin6_len on BSD.
-   * See SN Issue #2626. Disable testing on IPv6 until that Issue is fixed.
-   */
-
-  val isIPv6Available = !(Platform.isMacOs || Platform.isFreeBSD) &&
-    hasLoopbackAddress(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
-
   @Before
   def before(): Unit = {
-    assumeTrue("IPv6 UDP loopback is not available", isIPv6Available)
+    assumeTrue(
+      "IPv6 UDP loopback is not available",
+      hasLoopbackAddress(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
+    )
 
     /* Scala Native Continuous Integration linux-arm64 multiarch runs
      * fail, where they succeed on other test configurations.
