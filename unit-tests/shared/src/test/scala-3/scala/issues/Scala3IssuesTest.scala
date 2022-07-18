@@ -66,8 +66,8 @@ class Scala3IssuesTest:
       def bar(i: Int): String = (2 * i).toString
       def baz(i: Integer): String = (2 * i.intValue()).toString()
     }
-    type Qux = { 
-      def bar(i: Int): String 
+    type Qux = {
+      def bar(i: Int): String
       def baz(i: Integer): String
     }
     val z: Any = if true then new Foo else new AnyRef

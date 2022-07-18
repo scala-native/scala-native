@@ -18,7 +18,7 @@ object GenerateReflectiveProxies {
     val proxyTy = genProxyTy(defnType, proxyArgs)
 
     val label = genProxyLabel(proxyArgs)
-    val unboxInsts = genArgUnboxes(label)
+    val unboxInsts = genArgUnboxes(label, defnType.args)
     val method = Inst.Let(Op.Method(label.params.head, sig), Next.None)
     val call = genCall(defnType, method, label.params, unboxInsts)
     val box = genRetValBox(call.name, defnType.ret, proxyTy.ret)
@@ -55,14 +55,18 @@ object GenerateReflectiveProxies {
     Inst.Label(fresh(), argLabels)
   }
 
-  private def genArgUnboxes(label: Inst.Label) = {
+  private def genArgUnboxes(label: Inst.Label, origArgTypes: Seq[nir.Type]) = {
     import label.pos
-    label.params.tail.map {
-      case local: Val.Local if Type.unbox.contains(local.ty) =>
-        Inst.Let(Op.Unbox(local.ty, local), Next.None)
-      case local: Val.Local =>
-        Inst.Let(Op.Copy(local), Next.None)
-    }
+    label.params
+      .zip(origArgTypes)
+      .tail
+      .map {
+        case (local: Val.Local, _: Type.PrimitiveKind)
+            if Type.unbox.contains(local.ty) =>
+          Inst.Let(Op.Unbox(local.ty, local), Next.None)
+        case (local: Val.Local, _) =>
+          Inst.Let(Op.Copy(local), Next.None)
+      }
   }
 
   private def genCall(
@@ -78,7 +82,12 @@ object GenerateReflectiveProxies {
           .zip(params.tail)
           .map {
             case (let, local) =>
-              Val.Local(let.name, Type.unbox.getOrElse(local.ty, local.ty))
+              val resTy = let.op.resty match {
+                case ty: Type.PrimitiveKind =>
+                  Type.unbox.getOrElse(local.ty, local.ty)
+                case ty => ty
+              }
+              Val.Local(let.name, resTy)
           }
           .toList
 
