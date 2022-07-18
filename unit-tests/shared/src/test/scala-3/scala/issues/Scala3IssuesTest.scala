@@ -71,9 +71,9 @@ class Scala3IssuesTest:
       def baz(i: Integer): String
     }
     val z: Any = if true then new Foo else new AnyRef
-    val z: Any = if true then new Foo else new AnyRef
-    assertEquals("42", z.asInstanceOf[Qux].bar(21))
-    assertEquals("42", z.asInstanceOf[Qux].baz(21))
+    val q: Qux = z.asInstanceOf[Qux]
+    assertEquals("42", q.bar(21))
+    assertEquals("42", q.baz(21))
   }
 
 end Scala3IssuesTest
