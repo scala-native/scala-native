@@ -17,11 +17,13 @@ class SystemTest {
     val startTime = System.nanoTime()
     for (_ <- 1 to 100000) {
       t1 = System.nanoTime()
-      assert(t0 - t1 <= 0L)
+      val diff = t1 - t0
+      assertTrue(s"Diff in loop: $diff >= 0L", diff >= 0L)
       t0 = t1
     }
     val endTime = System.nanoTime()
-    assert(startTime - endTime < 0L)
+    val elapsed = endTime - startTime
+    assertTrue(s"After loop elapsed: $elapsed > 0L", elapsed > 0L)
   }
 
   @Test def systemGetenvShouldContainKnownEnvVariables(): Unit = {
