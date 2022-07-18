@@ -60,6 +60,22 @@ class Scala3IssuesTest:
     assertEquals("List", collectionClassName(List(1, 2, 3)))
   }
 
+  @Test def issue2715(): Unit = {
+    import reflect.Selectable.reflectiveSelectable
+    class Foo {
+      def bar(i: Int): String = (2 * i).toString
+      def baz(i: Integer): String = (2 * i.intValue()).toString()
+    }
+    type Qux = { 
+      def bar(i: Int): String 
+      def baz(i: Integer): String
+    }
+    val z: Any = if true then new Foo else new AnyRef
+    val z: Any = if true then new Foo else new AnyRef
+    assertEquals("42", z.asInstanceOf[Qux].bar(21))
+    assertEquals("42", z.asInstanceOf[Qux].baz(21))
+  }
+
 end Scala3IssuesTest
 
 private object issue2484 {
