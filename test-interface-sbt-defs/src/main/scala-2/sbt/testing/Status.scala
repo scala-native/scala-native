@@ -56,7 +56,10 @@ object Status {
   private[this] val _values: Array[Status] =
     Array(Success, Error, Failure, Skipped, Ignored, Canceled, Pending)
 
-  def values(): Array[Status] = _values.clone()
+  /* No () allows to compile without warning on both Scala 2 & 3.
+   * See PR for details.
+   */
+  def values: Array[Status] = _values.clone()
 
   def valueOf(name: String): Status = {
     _values.find(_.name == name).getOrElse {
