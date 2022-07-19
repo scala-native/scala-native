@@ -24,7 +24,7 @@ object CollectionConverters {
     def toJavaMap[K, V](implicit ev: T =:= (K, V)): java.util.Map[K, V] = {
       val m = new LinkedHashMap[K, V]()
       self.iterator.foreach { elem =>
-        val (key, value): (K, V) = elem
+        val (key, value): (K, V) = elem: @unchecked
         m.put(key, value)
       }
       m
