@@ -20,7 +20,10 @@ final case class MultiScalaProject private (
   lazy val v2_11: Project = project("2.11")
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
-  lazy val v3: Project = project("3").settings(Settings.scala3CompatSettings)
+  lazy val v3: Project = project("3").settings(
+    Settings.scala3CompatSettings,
+    scalacOptions -= "-Xfatal-warnings"
+  )
 
   override def componentProjects: Seq[Project] = Seq(v2_11, v2_12, v2_13, v3)
 
