@@ -122,7 +122,7 @@
 -      println(s"getOffset(${field.getDeclaringClass}, ${field.getName}) = $r")
 -    r
 +  def getOffsetStatic(field: java.lang.reflect.Field) =
-+    unexpectedUsage
++    unexpectedUsage()
 +
 +  private def unexpectedUsage() = {
 +    throw new IllegalStateException(
