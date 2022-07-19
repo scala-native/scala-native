@@ -44,7 +44,23 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
       val template @ Template(_, _, _, _) = td.rhs: @unchecked
       bitmapFieldNames ++= template.body.collect {
         case vd: ValDef if isLazyFieldOffset(vd.name) =>
-          val Apply(_, List(cls: Literal, fieldname: Literal)) = vd.rhs: @unchecked
+          import LazyValsNames.{LazyVals, *}
+          val fieldname = vd.rhs match {
+            // Scala 3.1.x
+            case Apply(
+                  Select(_, GetOffset),
+                  List(cls: Literal, fieldname: Literal)
+                ) =>
+              fieldname
+            // Scala 3.2.x
+            case Apply(
+                  Select(_, GetOffsetStatic),
+                  List(
+                    Apply(Select(_, GetDeclaredField), List(fieldname: Literal))
+                  )
+                ) =>
+              fieldname
+          }
           vd.symbol -> fieldname
       }.toMap
     }
@@ -114,6 +130,12 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
         args = List(classFieldPtr(target, fieldRef), value, ord)
       )
     else tree
+  }
+  object LazyValsNames {
+    val LazyVals = typeName("LazyVals")
+    val GetOffset = termName("getOffset")
+    val GetOffsetStatic = termName("getOffsetStatic")
+    val GetDeclaredField = termName("getDeclaredField")
   }
 
   object LazyValsDefns {
