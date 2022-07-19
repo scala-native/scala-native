@@ -84,6 +84,13 @@ jobs:
             gc: commix
           - scala: 2.11.12
             gc: boehm
+        include:
+          - scala: 3.2.0-RC2
+            build-mode: debug
+            gc: immix
+          - scala: 3.2.0-RC2
+            build-mode: release-fast
+            gc: commix
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/linux-setup-env
