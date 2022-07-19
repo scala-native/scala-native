@@ -74,7 +74,8 @@ trait NirGenStat(using Context) {
       case ann if ann.symbol == defnNir.ExternClass => Attr.Extern
       case ann if ann.symbol == defnNir.StubClass   => Attr.Stub
       case ann if ann.symbol == defnNir.LinkClass =>
-        val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree: @unchecked
+        val Apply(_, Seq(Literal(Constant(name: String)))) =
+          ann.tree: @unchecked
         Attr.Link(name)
     }
     val isAbstract = Option.when(sym.is(Abstract))(Attr.Abstract)
@@ -538,7 +539,8 @@ trait NirGenStat(using Context) {
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym, moduleClass)
-      val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym): @unchecked
+      val Type.Function(_ +: paramTypes, retType) =
+        genMethodSig(sym): @unchecked
       val forwarderParamTypes = paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
 

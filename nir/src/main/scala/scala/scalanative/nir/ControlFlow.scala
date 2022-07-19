@@ -100,7 +100,7 @@ object ControlFlow {
         )
 
       def visit(node: Block): Unit = {
-        val insts :+ cf = node.insts: @unchecked 
+        val insts :+ cf = node.insts: @unchecked
         insts.foreach {
           case inst @ Inst.Let(_, op, unwind) if unwind ne Next.None =>
             edge(node, block(unwind.name)(inst.pos), unwind)

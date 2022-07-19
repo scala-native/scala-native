@@ -1084,9 +1084,8 @@ trait NirGenExpr(using Context) {
       val args = genSimpleArgs(argsp)
       var res: Val = Val.Zero(ty)
 
-      for
-        ((arg, argp), idx) <- args.zip(argsp).zipWithIndex
-      do 
+      for ((arg, argp), idx) <- args.zip(argsp).zipWithIndex
+      do
         given nir.Position = argp.span
         res = buf.insert(res, arg, Seq(idx), unwind)
       res
@@ -2092,7 +2091,8 @@ trait NirGenExpr(using Context) {
               _
             ) =>
           given nir.Position = app.span
-          val List(Literal(Constant(str: String))) = javaSeqLiteral.elems: @unchecked
+          val List(Literal(Constant(str: String))) =
+            javaSeqLiteral.elems: @unchecked
           val chars = Val.Chars(StringUtils.processEscapes(str).toIndexedSeq)
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
