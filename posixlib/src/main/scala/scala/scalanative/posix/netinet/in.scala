@@ -3,27 +3,32 @@ package posix
 package netinet
 
 import scalanative.unsafe._
+import scalanative.unsigned._
 import scalanative.posix.inttypes._
 import scalanative.posix.sys.socket
+import scalanative.posix.sys.socketOps
 
 @extern
 object in {
-  type in_port_t = uint16_t
-  type in_addr_t = uint32_t
   type _8 = Nat._8
   type _16 = Nat.Digit2[Nat._1, Nat._6]
 
+  type in_port_t = uint16_t
+  type in_addr_t = uint32_t
+
   type in_addr = CStruct1[in_addr_t] // s_addr
+
   type sockaddr_in = CStruct4[
-    socket.sa_family_t, // sin_family
+    socket.sa_family_t, // sin_family, sin_len is synthisized if needed
     in_port_t, // sin_port
     in_addr, // sin_addr
     CArray[Byte, _8] // sin_zero, Posix allowed
   ]
 
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
+
   type sockaddr_in6 = CStruct5[
-    socket.sa_family_t, // sin6_family
+    socket.sa_family_t, // sin6_family, sin6_len is synthisized if needed
     in_port_t, // sin6_port
     uint32_t, // sin6_flowinfo
     in6_addr, // sin6_addr
@@ -134,12 +139,35 @@ object in {
 
 object inOps {
   import in._
+  import socketOps.useSinXLen
 
   implicit class sockaddr_inOps(val ptr: Ptr[sockaddr_in]) extends AnyVal {
-    def sin_family: socket.sa_family_t = ptr._1
+    def sin_len: uint8_t = if (!useSinXLen) {
+      sizeof[sockaddr_in].toUByte // length is synthesized
+    } else {
+      ptr._1.toUByte
+    }
+
+    def sin_family: socket.sa_family_t = if (!useSinXLen) {
+      ptr._1
+    } else {
+      (ptr._1 >>> 8).toUByte
+    }
+
     def sin_port: in_port_t = ptr._2
     def sin_addr: in_addr = ptr._3
-    def sin_family_=(v: socket.sa_family_t): Unit = ptr._1 = v
+
+    def sin_len_=(v: uint8_t): Unit = if (useSinXLen) {
+      ptr._1 = ((ptr._1 & 0xff00.toUShort) + v).toUShort
+    } // else silently do nothing
+
+    def sin_family_=(v: socket.sa_family_t): Unit =
+      if (!useSinXLen) {
+        ptr._1 = v
+      } else {
+        ptr._1 = ((v << 8) + ptr.sin_len).toUShort
+      }
+
     def sin_port_=(v: in_port_t): Unit = ptr._2 = v
     def sin_addr_=(v: in_addr): Unit = ptr._3 = v
   }
@@ -150,12 +178,34 @@ object inOps {
   }
 
   implicit class sockaddr_in6Ops(val ptr: Ptr[sockaddr_in6]) extends AnyVal {
-    def sin6_family: socket.sa_family_t = ptr._1
+    def sin6_len: uint8_t = if (!useSinXLen) {
+      sizeof[sockaddr_in6].toUByte // length is synthesized
+    } else {
+      ptr._1.toUByte
+    }
+
+    def sin6_family: socket.sa_family_t = if (!useSinXLen) {
+      ptr._1
+    } else {
+      (ptr._1 >>> 8).toUByte
+    }
+
     def sin6_port: in_port_t = ptr._2
     def sin6_flowinfo: uint32_t = ptr._3
     def sin6_addr: in6_addr = ptr._4
     def sin6_scope_id: uint32_t = ptr._5
-    def sin6_family_=(v: socket.sa_family_t): Unit = ptr._1 = v
+
+    def sin6_len_=(v: uint8_t): Unit = if (useSinXLen) {
+      ptr._1 = ((ptr._1 & 0xff00.toUShort) + v).toUShort
+    } // else silently do nothing
+
+    def sin6_family_=(v: socket.sa_family_t): Unit =
+      if (!useSinXLen) {
+        ptr._1 = v
+      } else {
+        ptr._1 = ((v << 8) + ptr.sin6_len).toUShort
+      }
+
     def sin6_port_=(v: in_port_t): Unit = ptr._2 = v
     def sin6_flowinfo_=(v: uint32_t): Unit = ptr._3 = v
     def sin6_addr_=(v: in6_addr): Unit = ptr._4 = v

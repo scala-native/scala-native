@@ -40,13 +40,4 @@ struct scalanative_sockaddr_in6 {
     uint32_t sin6_scope_id;
 };
 
-void scalanative_convert_in_addr(struct scalanative_in_addr *in,
-                                 struct in_addr *out);
-void scalanative_convert_in6_addr(struct scalanative_in6_addr *in,
-                                  struct in6_addr *out);
-void scalanative_convert_scalanative_in_addr(struct in_addr *in,
-                                             struct scalanative_in_addr *out);
-void scalanative_convert_scalanative_in6_addr(struct in6_addr *in,
-                                              struct scalanative_in6_addr *out);
-
 #endif // __NETINET_IN_H
