@@ -2414,11 +2414,22 @@ trait NirGenExpr(using Context) {
                   .zip(formalParamTypes)
                   .map { (actualArgAny, formalParamType) =>
                     val genActualArgAny = genExpr(actualArgAny)
-                    buf.as(
-                      formalParamType,
-                      genActualArgAny,
-                      unwind
-                    )
+                    (genActualArgAny.ty, formalParamType) match {
+                      case (ty: Type.Ref, formal: Type.Ref) =>
+                        if ty.name == formal.name then genActualArgAny
+                        else
+                          buf.as(
+                            formalParamType,
+                            genActualArgAny,
+                            unwind
+                          )
+
+                      case (ty: Type.Ref, formal: Type.PrimitiveKind) =>
+                        assert(Type.Ref(ty.name) == Type.box(formal))
+                        genActualArgAny
+
+                      case _ => scalanative.util.unreachable
+                    }
                   }
 
               (formalParamTypes, actualArgs)
@@ -2437,8 +2448,15 @@ trait NirGenExpr(using Context) {
         Sig.Proxy(methodNameStr, formalParamTypeRefs),
         unwind
       )
+      // Proxies operate only on boxed types, however formal param types and name of the method
+      // might contain primitive types. With current imlementation of proxies we workaround it
+      // by always using boxed types in function calls
+      val boxedFormalParamTypeRefs = formalParamTypeRefs.map {
+        case ty: Type.PrimitiveKind => Type.box(ty)
+        case ty                     => ty
+      }
       buf.call(
-        Type.Function(selectedValue.ty :: formalParamTypeRefs, Rt.Object),
+        Type.Function(selectedValue.ty :: boxedFormalParamTypeRefs, Rt.Object),
         dynMethod,
         selectedValue :: actualArgs,
         unwind
