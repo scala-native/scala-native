@@ -146,4 +146,19 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     )
   }
 
+  it should "handle extern methods with generic types" in {
+    // issue #2727
+    NIRCompiler(_.compile("""
+      |import scala.scalanative.unsafe._
+      |@extern
+      |object foo {
+      |  def baz[A](a: Ptr[A]): Unit = extern
+      |}
+      |
+      |object Test {
+      |  def main() = foo.baz(???)
+      |}
+      |""".stripMargin))
+  }
+
 }
