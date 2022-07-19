@@ -1454,10 +1454,10 @@ trait NirGenExpr(using Context) {
       if (!sym.isExtern) genSimpleArgs(argsp)
       else {
         val res = Seq.newBuilder[Val]
-        argsp.zip(sym.denot.paramSymss.flatten).foreach {
-          case (argp, paramSym) =>
+        argsp.zip(sym.paramInfo.paramInfoss.flatten).foreach {
+          case (argp, paramTpe) =>
             given nir.Position = argp.span
-            val externType = genExternType(paramSym.info.resultType)
+            val externType = genExternType(paramTpe.finalResultType)
             res += toExtern(externType, genExpr(argp))
         }
         res.result()
