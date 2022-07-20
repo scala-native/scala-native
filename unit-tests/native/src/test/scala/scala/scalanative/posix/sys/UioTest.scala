@@ -17,12 +17,6 @@ import scalanative.posix.sys.uioOps._
 
 import scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.windows._
-import scala.scalanative.windows.WinSocketApi._
-import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.windows.WinSocketApiOps._
-import scala.scalanative.windows.ErrorHandlingApi._
-
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
@@ -32,11 +26,15 @@ class UioTest {
   /* writev() & readv() also work with files. Using sockets here makes
    * it easier to eventually create a unit-test for socket-only methods
    * sendmsg() & recvmsg() and to highlight the parallels.
-   * Avoiding having to learn Windows file I/O is an additional benefit.
    */
 
   @Before
   def before(): Unit = {
+    assumeTrue(
+      "POSIX uio writev() & readv() are not available on Windows",
+      !isWindows
+    )
+
     val isIPv4Available = hasLoopbackAddress(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     assumeTrue("IPv4 UDP loopback is not available", isIPv4Available)
   }
@@ -123,10 +121,7 @@ class UioTest {
           |""".stripMargin
 
   @Test def writevReadvShouldPlayNicely(): Unit = Zone { implicit z =>
-    // writev() should gather, readv() should scatter, & the 2 should connect.
-    if (isWindows) {
-      WinSocketApiOps.init()
-    }
+    // writev() should gather, readv() should scatter, the 2 should pass data.
 
     val (inSocket, outSocket) = getConnectedUdp4LoopbackSockets()
 
