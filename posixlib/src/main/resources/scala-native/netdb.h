@@ -1,6 +1,6 @@
 #ifdef _WIN32
 #include <WinSock2.h>
-#include "sys/socket.h" // socklen_t
+#include <ws2tcpip.h> // socklen_t
 #define strdup(arg1) _strdup(arg1);
 #else
 #include <netdb.h>
