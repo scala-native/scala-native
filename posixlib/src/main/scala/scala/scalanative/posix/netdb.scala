@@ -14,7 +14,7 @@ import scalanative.runtime.Platform
 @extern
 object netdb {
   /* This is the Linux layout. FreeBSD, macOS, and Windows have the same
-   * size but swap ai_addr and ai_cannonname. FreeBSD & Windows document this.
+   * size but swap ai_addr and ai_canonname. FreeBSD & Windows document this.
    * macOS tells whoppers: it documents the Linux order in man pages and
    * implements the FreeBSD layout.
    *
@@ -22,7 +22,7 @@ object netdb {
    */
 
   /* _Static_assert code in netdb.c checks that Scala Native and operating
-   * system structute definitions match "close enough". If you change
+   * system structure definitions match "close enough". If you change
    * something here, please make the corresponding changes there.
    */
 
@@ -113,6 +113,8 @@ object netdb {
   def EAI_OVERFLOW: CInt = extern
 }
 
+/** Allow using C names to access 'addrinfo' structure fields.
+ */
 object netdbOps {
   import netdb._
 
@@ -120,7 +122,7 @@ object netdbOps {
     Platform.isFreeBSD() ||
     Platform.isWindows())
 
-  implicit class addrinfoOps(val ptr: Ptr[addrinfo]) extends AnyVal {
+  implicit class addrinfoOps(private val ptr: Ptr[addrinfo]) extends AnyVal {
     def ai_flags: CInt = ptr._1
     def ai_family: CInt = ptr._2
     def ai_socktype: CInt = ptr._3
