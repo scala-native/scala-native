@@ -3,7 +3,8 @@ package codegen
 
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
-import scalanative.build.{Config, ScalaNative}
+import scalanative.build.Config
+import scalanative.build.core.ScalaNative
 import scalanative.util.Scope
 
 /** Base class to test code generation */

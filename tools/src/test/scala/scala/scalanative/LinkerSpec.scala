@@ -3,7 +3,8 @@ package scala.scalanative
 import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import scalanative.build.{Config, NativeConfig, ScalaNative}
+import scalanative.build.{Config, NativeConfig}
+import scalanative.build.core.ScalaNative
 import scalanative.util.Scope
 import org.scalatest.flatspec.AnyFlatSpec
 
