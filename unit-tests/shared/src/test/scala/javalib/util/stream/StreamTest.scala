@@ -1,7 +1,7 @@
 package javalib.util.stream
 
 import java.util.stream._
-import java.util.function.Function
+import java.util.function.{Consumer, Function}
 
 import org.junit.Test
 import org.junit.Assert._
@@ -49,7 +49,10 @@ class StreamTest {
   @Test def streamForeachWorks(): Unit = {
     val s = Stream.of(1, 2, 3)
     var sum = 0
-    s.forEach(sum += _)
+    val consumer = new Consumer[Int] {
+      def accept(i: Int): Unit = sum += i
+    }
+    s.forEach(consumer)
     assertEquals(6, sum)
   }
 
