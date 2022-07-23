@@ -1,11 +1,12 @@
 package java.util.stream
 
-import java.util.function.{Function, Predicate}
+import java.util.function.{Consumer, Function, Predicate}
 import scala.scalanative.compat.StreamsCompat._
 
 trait Stream[+T] extends BaseStream[T, Stream[T]] {
   def flatMap[R](mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R]
   def filter(pred: Predicate[_ >: T]): Stream[T]
+  def forEach(action: Consumer[_ >: T]): Unit
 }
 
 object Stream {

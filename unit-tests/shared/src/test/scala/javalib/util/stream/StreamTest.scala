@@ -46,6 +46,13 @@ class StreamTest {
     assertFalse(it.hasNext())
   }
 
+  @Test def streamForeachWorks(): Unit = {
+    val s = Stream.of(1, 2, 3)
+    var sum = 0
+    s.forEach(sum += _)
+    assertEquals(6, sum)
+  }
+
   @Test def streamFlatMapWorksTwice(): Unit = {
     val stream = Stream.of(1, 2, 3)
     val mapper1 = new Function[Int, Stream[Int]] {
