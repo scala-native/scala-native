@@ -1,6 +1,7 @@
 package scala.scalanative.nio.fs.windows
 
 import java.lang.Iterable
+import java.lang.StringBuilder
 import java.nio.charset.StandardCharsets
 import java.nio.file.{
   FileStore,

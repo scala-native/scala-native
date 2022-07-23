@@ -2,6 +2,7 @@ package scala.scalanative.nio.fs.unix
 
 import java.io.IOException
 import java.lang.Iterable
+import java.lang.StringBuilder
 import java.nio.file.{
   FileStore,
   FileSystem,
