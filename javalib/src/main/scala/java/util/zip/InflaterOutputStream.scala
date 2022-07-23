@@ -8,22 +8,15 @@ import java.io.OutputStream
 import java.util.Arrays
 
 class InflaterOutputStream private (
+    out: OutputStream,
     protected val inf: Inflater,
     protected val buf: Array[Byte]
-) extends FilterOutputStream {
+) extends FilterOutputStream(out) {
 
   private var closed = false
 
-  def this(out: OutputStream) {
-    this(out, new Inflater())
-  }
-
-  def this(out: OutputStream, inf: Inflater) {
-    this(out, inf, InflaterOutputStream.DEFAULT_BUFFER_SIZE)
-  }
-
-  def this(out: OutputStream, inf: Inflater, bufferSize: Int) {
-    this(out)
+  def this(out: OutputStream, inf: Inflater, bufferSize: Int) = {
+    this(out, inf, new Array[Byte](bufferSize))
     if (out == null) {
       throw new NullPointerException("out == null")
     } else if (inf == null) {
@@ -32,11 +25,17 @@ class InflaterOutputStream private (
     if (bufferSize <= 0) {
       throw new IllegalArgumentException("bufferSize <= 0: " + bufferSize)
     }
-    this.inf = inf
-    this.buf = new byte[bufferSize]
   }
 
-  def close(): Unit = {
+  def this(out: OutputStream, inf: Inflater) = {
+    this(out, inf, InflaterOutputStream.DEFAULT_BUFFER_SIZE)
+  }
+
+  def this(out: OutputStream) = {
+    this(out, new Inflater())
+  }
+
+  override def close(): Unit = {
     if (!closed) {
       finish()
       inf.end()
@@ -45,7 +44,7 @@ class InflaterOutputStream private (
     }
   }
 
-  def flush(): Unit = {
+  override def flush(): Unit = {
     finish()
     out.flush()
   }
@@ -55,15 +54,28 @@ class InflaterOutputStream private (
     write()
   }
 
-  def write(b: Int): Unit = {
+  override def write(b: Int): Unit = {
     write(Array(b.toByte), 0, 1)
   }
 
-  def write(bytes: Array[Byte], offset: Int, byteCount: Int): Unit = {
+  override def write(bytes: Array[Byte], offset: Int, byteCount: Int): Unit = {
     checkClosed()
-    Arrays.checkOffsetAndCount(bytes.length, offset, byteCount)
+    checkOffsetAndCount(bytes.length, offset, byteCount)
     inf.setInput(bytes, offset, byteCount)
     write()
+  }
+
+  private def checkOffsetAndCount(
+      arrayLength: Int,
+      offset: Int,
+      count: Int
+  ): Unit = {
+    if ((offset | count) < 0 || offset > arrayLength || arrayLength - offset < count) {
+      throw new ArrayIndexOutOfBoundsException(
+        "length=" + arrayLength + "; regionStart=" + offset
+          + "; regionLength=" + count
+      )
+    }
   }
 
   private def write(): Unit = {
@@ -73,10 +85,10 @@ class InflaterOutputStream private (
         out.write(buf, 0, inflated)
         inf.inflate(buf)
       }
-    } catch
-      (DataFormatException e) {
+    } catch {
+      case _: DataFormatException =>
         throw new ZipException()
-      }
+    }
   }
 
   private def checkClosed(): Unit = {
