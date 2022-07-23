@@ -45,8 +45,19 @@ class UnixFileSystem(
   override def getUserPrincipalLookupService(): UserPrincipalLookupService =
     PosixUserPrincipalLookupService
 
-  override def getPath(first: String, more: Array[String]): Path =
-    new UnixPath(this, (first +: more).mkString("/"))
+  override def getPath(first: String, more: Array[String]): Path = {
+    if (more.length == 0) new UnixPath(this, first)
+    else {
+      val sb = new StringBuilder(first)
+      more.foreach { element =>
+        if (element.length > 0) {
+          if (sb.length() > 0) sb.append('/')
+          sb.append(element)
+        }
+      }
+      new UnixPath(this, sb.toString())
+    }
+  }
 
   override def getPathMatcher(syntaxAndPattern: String): PathMatcher =
     PathMatcherImpl(syntaxAndPattern)
