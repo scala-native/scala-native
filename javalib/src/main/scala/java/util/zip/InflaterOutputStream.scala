@@ -83,7 +83,7 @@ class InflaterOutputStream private (
       var inflated = inf.inflate(buf)
       while (inflated > 0) {
         out.write(buf, 0, inflated)
-        inf.inflate(buf)
+        inflated = inf.inflate(buf)
       }
     } catch {
       case _: DataFormatException =>

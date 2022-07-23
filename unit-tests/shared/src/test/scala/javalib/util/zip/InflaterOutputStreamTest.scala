@@ -48,49 +48,49 @@ class InflaterOutputStreamTest {
     assertArrayEquals(orgBuffer, baos.toByteArray())
   }
 
-  // @Test def writeByteArray(): Unit = {
-  //   val orgBuffer = Array[Byte](1, 3, 4, 7, 8)
-  //   val infile = Array(0x78, 0x9c, 0x63, 0x64, 0x66, 0x61, 0xe7, 0x00, 0x00,
-  //     0x00, 0x38, 0x00, 0x18, 0x00).map(_.toByte)
-  //   val inflate = new Inflater()
-  //   val baos = new ByteArrayOutputStream(100)
-  //   val ios = new InflaterOutputStream(baos, inflate)
+  @Test def writeByteArray(): Unit = {
+    val orgBuffer = Array[Byte](1, 3, 4, 7, 8)
+    val infile = Array(0x78, 0x9c, 0x63, 0x64, 0x66, 0x61, 0xe7, 0x00, 0x00,
+      0x00, 0x38, 0x00, 0x18, 0x00).map(_.toByte)
+    val inflate = new Inflater()
+    val baos = new ByteArrayOutputStream(100)
+    val ios = new InflaterOutputStream(baos, inflate)
 
-  //   ios.write(infile)
-  //   ios.close()
+    ios.write(infile)
+    ios.close()
 
-  //   assertArrayEquals(orgBuffer, baos.toByteArray())
-  // }
+    assertArrayEquals(orgBuffer, baos.toByteArray())
+  }
 
-  // @Test def writeByteArrayRegion(): Unit = {
-  //   val orgBuffer = Array[Byte](1, 3, 4, 7, 8)
-  //   val infile = Array(-1, -1, -1, 0x78, 0x9c, 0x63, 0x64, 0x66, 0x61, 0xe7,
-  //     0x00, 0x00, 0x00, 0x38, 0x00, 0x18, 0x00, -1, -1, -1).map(_.toByte)
-  //   val inflate = new Inflater()
-  //   val baos = new ByteArrayOutputStream(100)
-  //   val ios = new InflaterOutputStream(baos, inflate)
+  @Test def writeByteArrayRegion(): Unit = {
+    val orgBuffer = Array[Byte](1, 3, 4, 7, 8)
+    val infile = Array(-1, -1, -1, 0x78, 0x9c, 0x63, 0x64, 0x66, 0x61, 0xe7,
+      0x00, 0x00, 0x00, 0x38, 0x00, 0x18, 0x00, -1, -1, -1).map(_.toByte)
+    val inflate = new Inflater()
+    val baos = new ByteArrayOutputStream(100)
+    val ios = new InflaterOutputStream(baos, inflate)
 
-  //   ios.write(infile, 3, infile.length - 6)
-  //   ios.close()
+    ios.write(infile, 3, infile.length - 6)
+    ios.close()
 
-  //   assertArrayEquals(orgBuffer, baos.toByteArray())
-  // }
+    assertArrayEquals(orgBuffer, baos.toByteArray())
+  }
 
-  // @Test def throwsZipExceptionForMalformed(): Unit = {
-  //   val inflate = new Inflater()
-  //   val baos = new ByteArrayOutputStream(100)
-  //   val ios = new InflaterOutputStream(baos, inflate)
+  @Test def throwsZipExceptionForMalformed(): Unit = {
+    val inflate = new Inflater()
+    val baos = new ByteArrayOutputStream(100)
+    val ios = new InflaterOutputStream(baos, inflate)
 
-  //   assertThrows(classOf[ZipException], ios.write(ZipBytes.brokenManifestBytes))
-  // }
+    assertThrows(classOf[ZipException], ios.write(ZipBytes.brokenManifestBytes))
+  }
 
-  // @Test def throwsIOExceptionAfterClosed(): Unit = {
-  //   val inflate = new Inflater()
-  //   val baos = new ByteArrayOutputStream(100)
-  //   val ios = new InflaterOutputStream(baos, inflate)
-  //   ios.close()
+  @Test def throwsIOExceptionAfterClosed(): Unit = {
+    val inflate = new Inflater()
+    val baos = new ByteArrayOutputStream(100)
+    val ios = new InflaterOutputStream(baos, inflate)
+    ios.close()
 
-  //   assertThrows(classOf[IOException], ios.write(1))
-  // }
+    assertThrows(classOf[IOException], ios.write(1))
+  }
 
 }
