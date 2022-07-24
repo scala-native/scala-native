@@ -24,7 +24,7 @@ object netdb {
       res: Ptr[Ptr[addrinfo]]
   ): CInt = extern
 
-  @name("scalanative_getnameinfo")
+  // direct call to C
   def getnameinfo(
       addr: Ptr[socket.sockaddr],
       addrlen: socket.socklen_t,
@@ -98,6 +98,7 @@ object netdbOps {
     def ai_addr: Ptr[socket.sockaddr] = ptr._6
     def ai_canonname: Ptr[CChar] = ptr._7
     def ai_next: Ptr[Byte] = ptr._8
+
     def ai_flags_=(v: CInt): Unit = ptr._1 = v
     def ai_family_=(v: CInt): Unit = ptr._2 = v
     def ai_socktype_=(v: CInt): Unit = ptr._3 = v
