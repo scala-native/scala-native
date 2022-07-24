@@ -40,7 +40,8 @@ class InetAddressTest {
     assertFalse(all == null)
     assertTrue(all.length >= 1)
 
-    for (alias <- all)
+    // TODO remove filter on main
+    for (alias <- all; if alias.isInstanceOf[Inet4Address])
       assertTrue(alias.getCanonicalHostName().startsWith("localhost"))
 
     for (alias <- all)
