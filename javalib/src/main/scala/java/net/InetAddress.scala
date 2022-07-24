@@ -604,22 +604,26 @@ class InetAddress private[net] (
       // remember the host given to the constructor
       originalHost
     } else {
-      // reverse name lookup with cache
-      val timeNow = time(null)
-      if (cachedHost == null || hostTimeoutExpired(timeNow)) {
-        hostLastUpdated = timeNow
-        val ipString = createIPStringFromByteArray(ipAddress)
-        SocketHelpers.ipToHost(ipString, isValidIPv6Address(ipString)) match {
-          case None =>
-            lastLookupFailed = true
-            cachedHost = ipString
-          case Some(hostName) =>
-            lastLookupFailed = false
-            cachedHost = hostName
-        }
-      }
-      cachedHost
+      getCanonicalHostName()
     }
+  }
+
+  def getCanonicalHostName(): String = {
+    // reverse name lookup with cache
+    val timeNow = time(null)
+    if (cachedHost == null || hostTimeoutExpired(timeNow)) {
+      hostLastUpdated = timeNow
+      val ipString = createIPStringFromByteArray(ipAddress)
+      SocketHelpers.ipToHost(ipString, isValidIPv6Address(ipString)) match {
+        case None =>
+          lastLookupFailed = true
+          cachedHost = ipString
+        case Some(hostName) =>
+          lastLookupFailed = false
+          cachedHost = hostName
+      }
+    }
+    cachedHost
   }
 
   def getAddress() = ipAddress.clone
