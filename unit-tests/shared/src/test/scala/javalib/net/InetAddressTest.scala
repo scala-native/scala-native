@@ -41,6 +41,9 @@ class InetAddressTest {
     assertTrue(all.length >= 1)
 
     for (alias <- all)
+      assertTrue(alias.getCanonicalHostName().startsWith("localhost"))
+
+    for (alias <- all)
       assertTrue(alias.getHostName().startsWith("localhost"))
 
     val ias = InetAddress.getAllByName(null)
