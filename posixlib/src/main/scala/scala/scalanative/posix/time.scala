@@ -138,15 +138,15 @@ object time {
 // POSIX variables (vals, not vars)
 
   @name("scalanative_daylight")
-  def daylight(): CInt = extern
+  def daylight: CInt = extern
 
   // XSI
   @name("scalanative_timezone")
-  def timezone(): CLong = extern
+  def timezone: CLong = extern
 
   // XSI
   @name("scalanative_tzname")
-  def tzname(): Ptr[CStruct2[CString, CString]] = extern
+  def tzname: Ptr[CStruct2[CString, CString]] = extern
 
 // Macros
 
