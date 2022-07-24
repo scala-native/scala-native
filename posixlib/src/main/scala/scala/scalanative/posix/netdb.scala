@@ -1,4 +1,4 @@
-<package scala.scalanative.posix
+package scala.scalanative.posix
 
 import scalanative.unsafe._
 
@@ -9,7 +9,7 @@ import scalanative.runtime.Platform
 
 /** netdb.h for Scala
  *  @see
- *    [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]
+ *  [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]
  */
 @extern
 object netdb {
