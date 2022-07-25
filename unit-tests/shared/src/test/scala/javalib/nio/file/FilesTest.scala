@@ -666,7 +666,8 @@ class FilesTest {
       Files.createFile(file)
       assertTrue("a1", Files.exists(subdir))
       assertTrue("a2", Files.isDirectory(subdir))
-      assertThrows(classOf[IOException], Files.delete(subdir))
+
+      assertThrows(classOf[DirectoryNotEmptyException], Files.delete(subdir))
     }
   }
 

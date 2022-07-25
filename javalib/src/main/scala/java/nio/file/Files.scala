@@ -33,6 +33,8 @@ import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}
 import dirent._
+import scalanative.posix.errno.{EEXIST, ENOTEMPTY}
+
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 import scalanative.nio.fs.unix.UnixException
 import scalanative.posix.sys.stat
@@ -331,12 +333,34 @@ object Files {
   ): Path =
     createTempFile(null: File, prefix, suffix, attrs)
 
+  private def windowsDeletePath(path: Path): Unit = {
+    // Optimize for delete() success. Spend cycles fixing up only on failure.
+    if (!path.toFile().delete()) {
+      val targetFile = path.toFile()
+      if (targetFile.isDirectory() && !targetFile.list().isEmpty) {
+        throw new DirectoryNotEmptyException(targetFile.getAbsolutePath())
+      } else {
+        throw new IOException(s"Failed to remove $path")
+      }
+    }
+  }
+
+  private def unixDeletePath(path: Path): Unit = Zone { implicit z =>
+    val ps = path.toString
+    if (stdio.remove(toCString(ps)) == -1) {
+      // For historical reasons, some systems report ENOTEMPTY as EEXIST
+      val fixedErrno = if (errno.errno == EEXIST) ENOTEMPTY else errno.errno
+      throw PosixException(ps, fixedErrno)
+    }
+  }
+
   def delete(path: Path): Unit = {
     if (!exists(path, Array.empty)) {
       throw new NoSuchFileException(path.toString)
+    } else if (isWindows) {
+      windowsDeletePath(path)
     } else {
-      if (path.toFile().delete()) ()
-      else throw new IOException(s"Failed to remove $path")
+      unixDeletePath(path) // give more information on unanticipated failure
     }
   }
 
