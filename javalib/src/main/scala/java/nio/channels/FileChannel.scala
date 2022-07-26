@@ -145,7 +145,11 @@ object FileChannel {
       )
     } catch {
       case e: Throwable =>
-        raf.close()
+        try {
+          raf.close()
+        } catch {
+          case _: Throwable => // caller interested in original e not this one.
+        }
         throw e
     }
   }
