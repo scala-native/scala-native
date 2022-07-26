@@ -4,6 +4,7 @@ import java.nio.channels._
 
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Path, StandardOpenOption}
+import java.nio.file.AccessDeniedException
 import java.io.File
 
 import org.junit.Test
@@ -225,6 +226,22 @@ class FileChannelTest {
       channel.close()
       val readb = Files.readAllBytes(f)
       assertTrue(bytes sameElements readb)
+    }
+  }
+
+  @Test def fileChannelThrowsAccessDeniedForReadOnly(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("file")
+      Files.write(f, "hello, world".getBytes("UTF-8"))
+
+      val sroStatus = f.toFile().setReadOnly()
+      assertTrue("setReadOnly failed", sroStatus)
+
+      assertThrows(
+        f.toString(),
+        classOf[AccessDeniedException],
+        FileChannel.open(f, StandardOpenOption.WRITE)
+      )
     }
   }
 
