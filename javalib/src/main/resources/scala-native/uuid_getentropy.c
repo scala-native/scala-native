@@ -1,18 +1,19 @@
-#include <unistd.h>
 #include <errno.h>
 
 #ifdef __APPLE__
 #include <sys/random.h>
 #endif
 
-#ifdef _WIN32
+#ifndef _WIN32
+#include <unistd.h>
+#else // _WIN32
 // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/
 //     realloc?view=msvc-170
 //     rand-s?view=msvc-170
 #define _CRT_RAND_S
 #include <stdlib.h>
 #include <string.h>
-#endif
+#endif // _WIN32
 
 /* This file is not a candidate for either 'posixlib' or 'clib'.
  * 'getentropy()' and 'rand_s1' are not defined in either POSIX, nor IEEE/ISO.
