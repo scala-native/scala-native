@@ -2,6 +2,10 @@ package java.util
 
 import java.lang.{Long => JLong}
 
+import scalanative.libc
+import scalanative.unsigned._
+import scalanative.unsafe._
+
 final class UUID private (
     private val i1: Int,
     private val i2: Int,
@@ -134,14 +138,28 @@ object UUID {
   private final val NameBased = 3
   private final val Random = 4
 
-  private lazy val rng = new Random() // TODO Use java.security.SecureRandom
+  private def get4RandomInts(): Tuple4[Int, Int, Int, Int] = {
+    val nInts = 4
+    val rInts = stackalloc[Int](nInts)
+
+    val buffer = rInts.asInstanceOf[Ptr[Byte]]
+    val nBytes = (4 * nInts).toUInt
+
+    val errorCode = stackalloc[Int]()
+
+    if (UUIDExtern.getEntropy(buffer, nBytes, errorCode) == -1) {
+      val msg = fromCString(libc.string.strerror(!errorCode))
+      throw new RuntimeException(s"getEntropy: ${msg}")
+    }
+
+    (rInts(0), rInts(1), rInts(2), rInts(3))
+  }
 
   def randomUUID(): UUID = {
-    val i1 = rng.nextInt()
-    val i2 = (rng.nextInt() & ~0x0000f000) | 0x00004000
-    val i3 = (rng.nextInt() & ~0xc0000000) | 0x80000000
-    val i4 = rng.nextInt()
-    new UUID(i1, i2, i3, i4, null, null)
+    val (r1, r2, r3, r4) = get4RandomInts()
+    val arg2 = (r2 & ~0x0000f000) | 0x00004000
+    val arg3 = (r3 & ~0xc0000000) | 0x80000000
+    new UUID(r1, arg2, arg3, r4, null, null)
   }
 
   // Not implemented (requires messing with MD5 or SHA-1):
@@ -170,4 +188,15 @@ object UUID {
       case _: NumberFormatException => fail()
     }
   }
+}
+
+@extern
+object UUIDExtern {
+  @name("scalanative_uuid_getentropy")
+  def getEntropy(
+      buffer: Ptr[Byte],
+      length: CUnsignedInt,
+      error: Ptr[CInt]
+  ): CInt =
+    extern
 }
