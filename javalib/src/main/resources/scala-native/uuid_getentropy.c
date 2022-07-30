@@ -1,23 +1,31 @@
+/* This file is not a candidate for either 'posixlib' or 'clib'.
+ * 'getentropy()' and 'rand_s' are not defined in either POSIX, nor IEEE/ISO.
+ */
+
 #include <errno.h>
 
-#ifdef __APPLE__
-#include <sys/random.h>
-#endif
-
-#ifndef _WIN32
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <unistd.h>
-#else // _WIN32
+#elif defined(__APPLE__)
+/* getentropy() first appeared in 10.12
+ * The proper include should work with the MacOSX10.15.sdk used in CI,
+ * but it fails, probably because of ancient bugs in that sdk.
+ *
+ * The include works just file on Monteray 12.n.
+ */
+// #include <sys/random.h> // documented include
+#include <stddef.h>
+int getentropy(void *buffer, size_t size);
+#elif defined(_WIN32)
 // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/
 //     realloc?view=msvc-170
 //     rand-s?view=msvc-170
 #define _CRT_RAND_S
 #include <stdlib.h>
 #include <string.h>
-#endif // _WIN32
-
-/* This file is not a candidate for either 'posixlib' or 'clib'.
- * 'getentropy()' and 'rand_s1' are not defined in either POSIX, nor IEEE/ISO.
- */
+#else
+#warning "Unknown OS, not Linux, FreeBSD, macOS, or Windows"
+#endif // OS specific configuration
 
 int scalanative_uuid_getentropy(void *buffer, size_t length, int *error) {
 
