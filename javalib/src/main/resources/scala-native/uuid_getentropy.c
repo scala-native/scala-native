@@ -36,7 +36,7 @@ int scalanative_uuid_getentropy(void *buffer, size_t length, int *error) {
      * Other BSDs should work but have not been tested.
      *
      * On macOS there is no real need for the overhead of "arc4random()"
-     * because only a small number of bytes are being fetched,
+     * because only a small number of bytes are being fetched.
      */
 
     int status = getentropy(buffer, length);
