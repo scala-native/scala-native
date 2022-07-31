@@ -1,5 +1,5 @@
 /* This file is not a candidate for either 'posixlib' or 'clib'.
- * 'getentropy()' and 'rand_s' are not defined in either POSIX, nor IEEE/ISO.
+ * 'getentropy()' and 'rand_s' are not defined in either POSIX or IEEE/ISO.
  */
 
 #include <errno.h>
@@ -24,7 +24,7 @@ int getentropy(void *buffer, size_t size);
 #include <stdlib.h>
 #include <string.h>
 #else
-#warning "Unknown OS, not Linux, FreeBSD, macOS, or Windows"
+#warning "Unknown OS: not Linux, FreeBSD, macOS, or Windows"
 #endif // OS specific configuration
 
 int scalanative_uuid_getentropy(void *buffer, size_t length, int *error) {
@@ -75,9 +75,28 @@ int scalanative_uuid_getentropy(void *buffer, size_t length, int *error) {
 
 #else
 #warning "Unknown OS, not Linux, FreeBSD, macOS, or Windows"
-    /* If ENOSYS available on OS, code should compile & and link,
-     * but fail unit-test.
-     * Compilation failure will focus attention of person porting new OS here.
+    /* An application end user using an officially released version
+     * of Scala Native should never enter this section.
+     * unit-tests would have failed during Continuous Integration,
+     * preventing official release.
+     *
+     * This section exists so that people porting Scala Native
+     * to new operating systems are given the opportunity (i.e. forced)
+     * to consider the security implications of this method. This is
+     * explicit opt-in rather than silently providing something
+     * unexamined & untested in that environment.
+     *
+     * There is an attempt to 'soft fail' in local development environments.
+     * so that such developers can skip over the two "#warning"s and
+     * link applications, including unit-tests.
+     *
+     * By intent, if ENOSYS is available, UUIDTest will fail until an
+     * implementation for the new  operating system is provided, if only
+     * by supplying a suitable '#if defined(__NEW_OS)'. Meanwhile,
+     * other tests can run and provide value.
+     *
+     * If ENOSYS is not available on OS, this branch will not compile,
+     * forcing attention to the issue at hand.
      */
     *error = ENOSYS;
     return status;
