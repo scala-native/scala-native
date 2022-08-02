@@ -1,5 +1,6 @@
 package scala.scalanative
 package build
+package core
 
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
