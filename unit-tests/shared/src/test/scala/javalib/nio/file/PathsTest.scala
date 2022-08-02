@@ -81,4 +81,8 @@ class PathsTest {
     val path = Paths.get("space dir/space file")
     assertEquals(expected, path.toString)
   }
+
+  @Test def joiningEmptyIsEmpty() = {
+    assertEquals(Paths.get(""), Paths.get("", ""))
+  }
 }

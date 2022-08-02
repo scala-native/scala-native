@@ -1,6 +1,7 @@
 package scala.scalanative.nio.fs.windows
 
 import java.lang.Iterable
+import java.lang.StringBuilder
 import java.nio.charset.StandardCharsets
 import java.nio.file.{
   FileStore,
@@ -30,8 +31,20 @@ class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)
   @stub
   override def getFileStores(): Iterable[FileStore] = ???
 
-  override def getPath(first: String, more: Array[String]): Path =
-    WindowsPathParser((first +: more).mkString(getSeparator()))(this)
+  override def getPath(first: String, more: Array[String]): Path = {
+    if (more.length == 0) WindowsPathParser(first)(this)
+    else {
+      val sep = getSeparator()
+      val sb = new StringBuilder(first)
+      more.foreach { element =>
+        if (element.length > 0) {
+          if (sb.length() > 0) sb.append(sep)
+          sb.append(element)
+        }
+      }
+      WindowsPathParser(sb.toString())(this)
+    }
+  }
 
   override def getPathMatcher(syntaxAndPattern: String): PathMatcher =
     PathMatcherImpl(syntaxAndPattern)
