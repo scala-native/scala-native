@@ -8,8 +8,10 @@ import java.nio.file.{
   LinkOption,
   NoSuchFileException,
   Path,
+  ProviderMismatchException,
   WatchEvent,
-  WatchKey
+  WatchKey,
+  WatchService
 }
 import java.util.Iterator
 import scala.scalanative.nio.fs.unix._
@@ -195,6 +197,19 @@ class WindowsPath private[windows] (
       }
     }
   }
+
+  def register(
+      watcher: WatchService,
+      events: Array[WatchEvent.Kind[_]]
+  ): WatchKey =
+    register(watcher, events, Array.empty)
+
+  def register(
+      watcher: WatchService,
+      events: Array[WatchEvent.Kind[_]],
+      modifiers: Array[WatchEvent.Modifier]
+  ): WatchKey =
+    throw new ProviderMismatchException
 
   override def toFile(): File = new File(path)
 
