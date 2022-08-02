@@ -1,10 +1,11 @@
 package scala.scalanative
 package build
+package core
 
 import java.nio.file.{Files, Path, Paths}
 
-import scalanative.build.IO.RichPath
-import scalanative.build.NativeLib._
+import scalanative.build.core.IO.RichPath
+import scalanative.build.core.NativeLib._
 import scalanative.build.LLVM._
 
 private[scalanative] object Filter {

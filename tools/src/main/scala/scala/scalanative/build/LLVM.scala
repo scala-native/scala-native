@@ -3,7 +3,7 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
-import scalanative.build.IO.RichPath
+import scalanative.build.core.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
 import scalanative.nir.Attr.Link
 

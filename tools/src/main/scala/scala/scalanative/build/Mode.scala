@@ -1,4 +1,5 @@
-package scala.scalanative.build
+package scala.scalanative
+package build
 
 /** Compilation mode. Either of the two:
  *
