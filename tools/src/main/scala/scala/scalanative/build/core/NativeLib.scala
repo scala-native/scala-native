@@ -1,5 +1,6 @@
 package scala.scalanative
 package build
+package core
 
 import java.io.File
 import java.nio.file.{Files, Path}

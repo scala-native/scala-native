@@ -4,7 +4,7 @@ package codegen
 import java.nio.file.Path
 import scala.collection.mutable
 import scala.scalanative.build.Config
-import scala.scalanative.build.ScalaNative.dumpDefns
+import scala.scalanative.build.core.ScalaNative.dumpDefns
 
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
