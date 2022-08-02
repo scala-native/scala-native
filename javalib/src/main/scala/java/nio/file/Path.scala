@@ -5,7 +5,7 @@ import java.util.Iterator
 import java.io.File
 import java.net.URI
 
-trait Path extends Comparable[Path] with Iterable[Path] /*with Watchable*/ {
+trait Path extends Comparable[Path] with Iterable[Path] with Watchable {
 
   def compareTo(other: Path): Int
   def endsWith(other: Path): Boolean

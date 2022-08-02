@@ -193,6 +193,19 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     }
   }
 
+  def register(
+      watcher: WatchService,
+      events: Array[WatchEvent.Kind[_]]
+  ): WatchKey =
+    register(watcher, events, Array.empty)
+
+  def register(
+      watcher: WatchService,
+      events: Array[WatchEvent.Kind[_]],
+      modifiers: Array[WatchEvent.Modifier]
+  ): WatchKey =
+    throw new ProviderMismatchException
+
   override def toFile(): File = file
 
   override def toUri(): URI = uri
