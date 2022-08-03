@@ -3,10 +3,15 @@ ARG TARGET_PLATFORM
 FROM dockcross/$TARGET_PLATFORM
 ENV DEFAULT_DOCKCROSS_IMAGE testing-container
 
-RUN apt-get update && apt-get install -y clang lld
-# We cannot easily install dependencies, clone and build zlib locally
-# We might need to do the same for Boehmc GC if we would use it in the future
-# Use default user so you can have acess to /cxx/ cross directory
+RUN apt-get update && apt-get install -y unzip lsb-release wget software-properties-common
+
+# Install clang-14, by default llvm.sh install latest stable version
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin 14
+
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
+RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
+
+# We cannot easily install dependencies, clone and build zlib and Boehm locally
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
   && cd /tmp/zlib/ \
   && ./configure \
