@@ -8,8 +8,6 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.posix.sys.types
-
 /** socket.h for Scala
  *  @see
  *    [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]

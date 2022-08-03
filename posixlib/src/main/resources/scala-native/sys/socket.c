@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stddef.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 
@@ -252,24 +252,54 @@ int scalanative_af_unix() { return AF_UNIX; }
 
 int scalanative_af_unspec() { return AF_UNSPEC; }
 
-int scalanative_shut_rd() { return SHUT_RD; }
+int scalanative_shut_rd() {
+#ifdef SHUT_RD
+    return SHUT_RD;
+#else // _WIN32
+    return 0;
+#endif
+}
 
-int scalanative_shut_rdwr() { return SHUT_RDWR; }
+int scalanative_shut_rdwr() {
+#ifdef SHUT_RDWR
+    return SHUT_RDWR;
+#else // _WIN32
+    return 0;
+#endif
+}
 
-int scalanative_shut_wr() { return SHUT_WR; }
+int scalanative_shut_wr() {
+#ifdef SHUT_WR
+    return SHUT_WR;
+#else // _WIN32
+    return 0;
+#endif
+}
 
 // Macros
 unsigned char *scalanative_cmsg_data(struct cmsghdr *cmsg) {
+#ifdef _WIN32
+    return NULL;
+#else
     return CMSG_DATA(cmsg);
+#endif
 }
 
 struct cmsghdr *scalanative_cmsg_nxthdr(struct msghdr *mhdr,
                                         struct cmsghdr *cmsg) {
+#ifdef _WIN32
+    return NULL;
+#else
     return CMSG_NXTHDR(mhdr, cmsg);
+#endif
 }
 
 struct cmsghdr *scalanative_cmsg_firsthdr(struct msghdr *mhdr) {
+#ifdef _WIN32
+    return NULL;
+#else
     return CMSG_FIRSTHDR(mhdr);
+#endif
 }
 
 // Functions
