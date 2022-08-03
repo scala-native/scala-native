@@ -277,17 +277,16 @@ int scalanative_shut_wr() {
 }
 
 // Macros
-unsigned char *scalanative_cmsg_data(struct cmsghdr *cmsg) {
 #ifdef _WIN32
-    return NULL;
+void *scalanative_cmsg_data(void *cmsg) { return NULL; }
 #else
+unsigned char *scalanative_cmsg_data(struct cmsghdr *cmsg) {
     return CMSG_DATA(cmsg);
-#endif
 }
+#endif
 
 #ifdef _WIN32
-void *scalanative_cmsg_nxthdr(void *mhdr, void *cmsg) {
-    return NULL;
+void *scalanative_cmsg_nxthdr(void *mhdr, void *cmsg) { return NULL; }
 #else
 struct cmsghdr *scalanative_cmsg_nxthdr(struct msghdr *mhdr,
                                         struct cmsghdr *cmsg) {
@@ -296,18 +295,18 @@ struct cmsghdr *scalanative_cmsg_nxthdr(struct msghdr *mhdr,
 #endif
 
 #ifdef _WIN32
-    void *scalanative_cmsg_firsthdr(void *mhdr) { return NULL; }
+void *scalanative_cmsg_firsthdr(void *mhdr) { return NULL; }
 #else
 struct cmsghdr *scalanative_cmsg_firsthdr(struct msghdr *mhdr) {
     return CMSG_FIRSTHDR(mhdr);
 }
 #endif
 
-    // Functions
-    long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
+// Functions
+long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
 #if defined(_WIN32)
-        errno = ENOTSUP;
-        return -1;
+    errno = ENOTSUP;
+    return -1;
 #elif !defined(__linux__) || !defined(__LP64__)
     return recvmsg(socket, (struct msghdr *)msg, flags);
 #else // Linux 64 bits
@@ -346,12 +345,12 @@ struct cmsghdr *scalanative_cmsg_firsthdr(struct msghdr *mhdr) {
 
     return status;
 #endif
-    }
+}
 
-    long scalanative_sendmsg(int socket, struct msghdr *msg, int flags) {
+long scalanative_sendmsg(int socket, struct msghdr *msg, int flags) {
 #if defined(_WIN32)
-        errno = ENOTSUP;
-        return -1;
+    errno = ENOTSUP;
+    return -1;
 #elif !defined(__linux__) || !defined(__LP64__)
     return sendmsg(socket, (struct msghdr *)msg, flags);
 #else // Linux 64 bits
@@ -379,22 +378,22 @@ struct cmsghdr *scalanative_cmsg_firsthdr(struct msghdr *mhdr) {
 
     return status;
 #endif
-    }
+}
 
-    int scalanative_sockatmark(int socket) {
+int scalanative_sockatmark(int socket) {
 #if defined(_WIN32)
-        errno = ENOTSUP;
-        return -1;
+    errno = ENOTSUP;
+    return -1;
 #else
     return sockatmark(socket);
 #endif
-    }
+}
 
-    int scalanative_socketpair(int domain, int type, int protocol, int *sv) {
+int scalanative_socketpair(int domain, int type, int protocol, int *sv) {
 #if defined(_WIN32)
-        errno = ENOTSUP;
-        return -1;
+    errno = ENOTSUP;
+    return -1;
 #else
     return socketpair(domain, type, protocol, sv);
 #endif
-    }
+}
