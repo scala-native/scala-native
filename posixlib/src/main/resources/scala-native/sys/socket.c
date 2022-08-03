@@ -303,11 +303,14 @@ struct cmsghdr *scalanative_cmsg_firsthdr(struct msghdr *mhdr) {
 #endif
 
 // Functions
-long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
-#if defined(_WIN32)
+#ifdef _WIN32
+long scalanative_recvmsg(int socket, void *msg, int flags) {
     errno = ENOTSUP;
     return -1;
-#elif !defined(__linux__) || !defined(__LP64__)
+}
+#else // unix
+long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
+#if !defined(__linux__) || !defined(__LP64__)
     return recvmsg(socket, (struct msghdr *)msg, flags);
 #else // Linux 64 bits
     /* BEWARE: Embedded control messages are not converted!
@@ -346,12 +349,16 @@ long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
     return status;
 #endif
 }
+#endif // unix
 
+#ifdef _WIN32
 long scalanative_sendmsg(int socket, struct msghdr *msg, int flags) {
-#if defined(_WIN32)
     errno = ENOTSUP;
     return -1;
-#elif !defined(__linux__) || !defined(__LP64__)
+}
+#else // unix
+long scalanative_sendmsg(int socket, struct msghdr *msg, int flags) {
+#if !defined(__linux__) || !defined(__LP64__)
     return sendmsg(socket, (struct msghdr *)msg, flags);
 #else // Linux 64 bits
     /* BEWARE: Embedded control messages are not converted!
@@ -379,6 +386,7 @@ long scalanative_sendmsg(int socket, struct msghdr *msg, int flags) {
     return status;
 #endif
 }
+#endif // unix
 
 int scalanative_sockatmark(int socket) {
 #if defined(_WIN32)
