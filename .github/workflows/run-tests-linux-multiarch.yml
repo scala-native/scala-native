@@ -13,7 +13,7 @@ jobs:
   # Currently only Linux x64 is tested
   build-image:
     name: Build image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-18.04
     outputs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
@@ -64,7 +64,7 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-18.04
     needs: build-image
     strategy:
       fail-fast: false
