@@ -15,7 +15,7 @@ typedef SSIZE_T ssize_t;
 #ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
 #warning "Size and order of C structures are not checked when -std < c11."
 #endif
-#else
+#else // POSIX
 /* POSIX defines the name and type of required fields. Size of fields
  * and any internal or tail padding are left unspecified. This section
  * verifies that the C and Scala Native definitions match in each compilation
