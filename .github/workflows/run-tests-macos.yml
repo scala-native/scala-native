@@ -12,7 +12,7 @@ concurrency:
 jobs:
   run-tests:
     name: Test runtime
-    runs-on: macos-10.15
+    runs-on: macos-12
     strategy:
       fail-fast: false
       matrix:
