@@ -3,10 +3,17 @@ package posix
 package sys
 
 import scalanative.runtime.Platform
+
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
 
+import scala.scalanative.posix.sys.types
+
+/** socket.h for Scala
+ *  @see
+ *    [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]
+ */
 @extern
 object socket {
   type _14 = Nat.Digit2[Nat._1, Nat._4]
@@ -29,12 +36,26 @@ object socket {
    *  does the work once at compilation, rather than at each runtime call.
    */
 
+  // posix requires this file declares these types. Use single point of truth.
+  type size_t = types.size_t
+  type ssize_t = types.ssize_t
+
   type socklen_t = CUnsignedInt
 
   type sa_family_t = CUnsignedShort
 
+  /* Code in socket.c checks that shadow copies of the Scala Native structures
+   * here and those used by the operating system match, close enough for
+   * purpose.
+   * For this to work, the scalanative_foo "shadow" C declarations in
+   * socket.c must match the Scala ones here. If you change a structure
+   * in this file, you must change the structure in socket.c.
+   * Check also if the structure exists in TagTest.scala and needs
+   * synchronization.
+   */
+
   type sockaddr = CStruct2[
-    sa_family_t, // sa_family, sa_len is synthisized if needed
+    sa_family_t, // sa_family, sa_len is synthesized if needed
     CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
   ]
 
@@ -42,11 +63,24 @@ object socket {
    * with an overall alignment so that pointers have natural (64 )alignment.
    */
   type sockaddr_storage = CStruct4[
-    sa_family_t, // ss_family, // ss_family, sa_len is synthisized if needed
+    sa_family_t, // ss_family, // ss_family, sa_len is synthesized if needed
     CUnsignedShort, // __opaquePadTo32
     CUnsignedInt, // opaque, __opaquePadTo64
     CArray[CUnsignedLongLong, _15] // __opaqueAlignStructure to 8 bytes
   ]
+
+  /* This is the POSIX 2018 & prior definition. Because SN 'naturally'
+   * pads, the way that C would, this is 48 bytes on 64 bit and 40 on 32 bit
+   * machines.
+   * POSIX specifies socklen_t for fields msg_iovlen and msg_controllen.
+   *
+   * Linux varies by using size_t for those two fields.
+   * size_t is 64 bits on 64 bit Linux, so the resultant size is 56
+   * bytes and everything after msg_iov has the 'wrong' offset.
+   *
+   * See comments below on methods sendmsg() and recvmsg() about
+   * using those routines on 64 bit Linux & like.
+   */
 
   type msghdr = CStruct7[
     Ptr[Byte], // msg_name
@@ -58,6 +92,24 @@ object socket {
     CInt // msg_flags
   ]
 
+  /* The Open Group recommends using the CMSG macros below
+   * for parsing a buffer of cmsghdrs. See comments above the
+   * declaration of those macros, especially if using 64 bit Linux.
+   */
+
+  /* POSIX 2018 specifies cmsg_len as socklen_t, which is usually 32 bits.
+   *
+   * Linux defines cmsg_len as size_t, because of its kernel definition.
+   * On 64 bit Linux size_t is 64 bits, not 32.
+   * Linux code can use the CMSG macros below to parse and read parts
+   * of a buffer of (OS) cmsghdrs passed back by the OS.  It must use
+   * recommended against, OS specific, hand parsing to access the
+   * cmsg_level & cmsg_type fields. That access is usually done to
+   * check if the cmsg returned is the one expected or to parse
+   * through a buffer of (OS) cmsg to get to the one expected.
+   */
+
+  // POSIX 2018 & prior 12 byte definition, Linux uses 16 bytes.
   type cmsghdr = CStruct3[
     socklen_t, // cmsg_len
     CInt, // cmsg_level
@@ -70,6 +122,8 @@ object socket {
     CInt, // l_onoff
     CInt // l_linger
   ]
+
+// Symbolic constants, roughly in POSIX declaration order
 
   @name("scalanative_scm_rights")
   def SCM_RIGHTS: CInt = extern
@@ -176,17 +230,28 @@ object socket {
   @name("scalanative_af_unspec")
   def AF_UNSPEC: CInt = extern
 
-  /* Most methods which do not have arguments which are structures
-   * can be direct calls to C or another implementation language.
-   *
-   * Methods which have _Static_assert statements in socket.c which validate
-   * that the Scala Native structures match the operating system structures
-   * can also be direct calls.
-   *
-   * The other methods need an "@name scalanative_foo" intermediate
-   * layer to handle required conversions. Usually the structure
-   * in question is a sockaddr or pointer to one.
-   */
+  @name("scalanative_shut_rd")
+  def SHUT_RD: CInt = extern
+
+  @name("scalanative_shut_rdwr")
+  def SHUT_RDWR: CInt = extern
+
+  @name("scalanative_shut_wr")
+  def SHUT_WR: CInt = extern
+
+// POSIX "Macros"
+
+  @name("scalanative_cmsg_data")
+  def CMSG_DATA(cmsg: Ptr[cmsghdr]): Ptr[CUnsignedChar] = extern
+
+  @name("scalanative_cmsg_nxthdr")
+  def CMSG_NXTHDR(mhdr: Ptr[msghdr], cmsg: Ptr[cmsghdr]): Ptr[cmsghdr] = extern
+
+  @name("scalanative_cmsg_firsthdr")
+  def CMSG_FIRSTHDR(mhdr: Ptr[msghdr]): Ptr[cmsghdr] = extern
+
+// Methods
+
   /* Design Note:
    *   Most of these are fast, direct call to C. See 'Design Note' at
    *   top of this file.
@@ -200,28 +265,13 @@ object socket {
    *   as arguments in direct calls to the OS.
    *
    *   Scala methods which need their arguments transformed use a
-   *   '@name' annotation. See (Pending future) methods 'sendmsg()' &
-   *   'recvmsg'.
+   *   '@name' annotation. See methods 'sendmsg()' & 'recvmsg()'.
+   *
+   *   Methods for which there is no direct Windows equivalent use '@name'
+   *   to call into stubs. The stubs dispatch on executing OS, calling
+   *   on non-Windows. On Windows, the stubs always return -1 and set errno
+   *   to ENOTSUP.
    */
-
-  def getsockname(
-      socket: CInt,
-      address: Ptr[sockaddr],
-      address_len: Ptr[socklen_t]
-  ): CInt = extern
-
-  def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
-
-  def connect(
-      socket: CInt,
-      address: Ptr[sockaddr],
-      address_len: socklen_t
-  ): CInt = extern
-
-  def bind(socket: CInt, address: Ptr[sockaddr], address_len: socklen_t): CInt =
-    extern
-
-  def listen(socket: CInt, backlog: CInt): CInt = extern
 
   def accept(
       socket: CInt,
@@ -229,12 +279,25 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CInt = extern
 
-  def setsockopt(
+  def bind(socket: CInt, address: Ptr[sockaddr], address_len: socklen_t): CInt =
+    extern
+
+  def connect(
       socket: CInt,
-      level: CInt,
-      option_name: CInt,
-      options_value: Ptr[Byte],
-      option_len: socklen_t
+      address: Ptr[sockaddr],
+      address_len: socklen_t
+  ): CInt = extern
+
+  def getpeername(
+      socket: CInt,
+      address: Ptr[sockaddr],
+      address_len: Ptr[socklen_t]
+  ): CInt = extern
+
+  def getsockname(
+      socket: CInt,
+      address: Ptr[sockaddr],
+      address_len: Ptr[socklen_t]
   ): CInt = extern
 
   def getsockopt(
@@ -244,6 +307,8 @@ object socket {
       options_value: Ptr[Byte],
       option_len: Ptr[socklen_t]
   ): CInt = extern
+
+  def listen(socket: CInt, backlog: CInt): CInt = extern
 
   def recv(
       socket: CInt,
@@ -261,10 +326,26 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CSSize = extern
 
+  // See comments above msghdr declaration at top of file, re: fixup & sizeof
+  @name("scalanative_recvmsg")
+  def recvmsg(
+      socket: CInt,
+      buffer: Ptr[msghdr],
+      flags: CInt
+  ): CSSize = extern
+
   def send(
       socket: CInt,
       buffer: Ptr[Byte],
       length: CSize,
+      flags: CInt
+  ): CSSize = extern
+
+  // See comments above msghdr declaration at top of file, re: fixup & sizeof
+  @name("scalanative_sendmsg")
+  def sendmsg(
+      socket: CInt,
+      buffer: Ptr[msghdr],
       flags: CInt
   ): CSSize = extern
 
@@ -277,9 +358,28 @@ object socket {
       address_len: socklen_t
   ): CSSize = extern
 
+  def setsockopt(
+      socket: CInt,
+      level: CInt,
+      option_name: CInt,
+      options_value: Ptr[Byte],
+      option_len: socklen_t
+  ): CInt = extern
+
   def shutdown(socket: CInt, how: CInt): CInt = extern
+
+  @name("scalanative_sockatmark") // A stub on Win32, see top of file
+  def sockatmark(socket: CInt): CInt = extern
+
+  def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
+
+  @name("scalanative_socketpair") // A stub on Win32, see top of file
+  def socketpair(domain: CInt, tpe: CInt, protocol: CInt, sv: Ptr[Int]): CInt =
+    extern
 }
 
+/** Allow using C names to access socket structure fields.
+ */
 object socketOps {
   import socket._
   import posix.inttypes.uint8_t
