@@ -88,6 +88,8 @@ object Lower {
         super.onDefn(defn)
     }
 
+    override def onType(ty: Type): Type = ty
+
     def genNext(buf: Buffer, next: Next)(implicit pos: Position): Next = {
       next match {
         case Next.Unwind(exc, next) => Next.Unwind(exc, genNext(buf, next))
