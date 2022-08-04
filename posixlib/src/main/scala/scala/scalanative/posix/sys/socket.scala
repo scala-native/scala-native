@@ -64,7 +64,7 @@ object socket {
     sa_family_t, // ss_family, // ss_family, sa_len is synthesized if needed
     CUnsignedShort, // __opaquePadTo32
     CUnsignedInt, // opaque, __opaquePadTo64
-    CArray[CUnsignedLongLong, _15] // __opaqueAlignStructure to 8 bytes
+    CArray[CUnsignedLongLong, _15] // __opaqueAlignStructure to 8 bytes.
   ]
 
   /* This is the POSIX 2018 & prior definition. Because SN 'naturally'
