@@ -9,6 +9,8 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
+import org.scalanative.testsuite.utils.Platform
+
 class InetAddressTest {
 
   @Test def equalsShouldWorkOnLocalhostsFromGetByName(): Unit = {
@@ -39,6 +41,12 @@ class InetAddressTest {
     val all = InetAddress.getAllByName("localhost")
     assertFalse(all == null)
     assertTrue(all.length >= 1)
+
+    if (!Platform.isWindows) {
+      // TODO remove filter on main
+      for (alias <- all; if alias.isInstanceOf[Inet4Address])
+        assertTrue(alias.getCanonicalHostName().startsWith("localhost"))
+    }
 
     for (alias <- all)
       assertTrue(alias.getHostName().startsWith("localhost"))

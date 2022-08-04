@@ -239,7 +239,8 @@ object SocketHelpers {
         val status =
           getnameinfo(
             addr,
-            sizeof[sockaddr].toUInt,
+            if (isV6) sizeof[sockaddr_in6].toUInt
+            else sizeof[sockaddr_in].toUInt,
             host,
             MAXHOSTNAMELEN,
             null, // 'service' is not used; do not retrieve
