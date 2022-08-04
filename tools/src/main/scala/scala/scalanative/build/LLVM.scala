@@ -1,7 +1,9 @@
 package scala.scalanative
 package build
 
+import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
+import scala.scalanative.nir.Global.Top
 import scala.sys.process._
 import scalanative.build.core.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
@@ -31,7 +33,8 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+  def compile(config: Config, paths: Seq[Path])
+     (implicit incCompilationContext: IncCompilationContext = null): Seq[Path] = {
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
       val inpath = path.abs
@@ -39,36 +42,44 @@ private[scalanative] object LLVM {
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
+      val packageName = (config.workdir relativize path)
+        .toString
+        .replace(File.separator, ".")
+        .split("\\.").dropRight(1)
+        .mkString(".")
+
       // LL is generated so always rebuild
       if (isLl || !Files.exists(objPath)) {
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag = {
-          if (isLl) Seq()
-          else if (isCpp) {
-            // C++14 or newer standard is needed to compile code using Windows API
-            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-            if (config.targetsWindows) Seq("-std=c++14")
-            else Seq("-std=c++11")
-          } else Seq("-std=gnu11")
-        }
-        val platformFlags = {
-          if (config.targetsWindows) Seq("-g")
-          else Nil
-        }
-        val expectionsHandling =
-          List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-        val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++
-            asan(config) ++ target(config) ++
-            Seq("-c", inpath, "-o", outpath)
+        if(incCompilationContext == null || incCompilationContext.isChanged(packageName)) {
+          val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+          val stdflag = {
+            if (isLl) Seq()
+            else if (isCpp) {
+              // C++14 or newer standard is needed to compile code using Windows API
+              // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+              if (config.targetsWindows) Seq("-std=c++14")
+              else Seq("-std=c++11")
+            } else Seq("-std=gnu11")
+          }
+          val platformFlags = {
+            if (config.targetsWindows) Seq("-g")
+            else Nil
+          }
+          val expectionsHandling =
+            List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+          val flags = opt(config) +: "-fvisibility=hidden" +:
+            stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
+          val compilec =
+            Seq(compiler) ++ flto(config) ++ flags ++
+              asan(config) ++ target(config) ++
+              Seq("-c", inpath, "-o", outpath)
 
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) !
-          Logger.toProcessLogger(config.logger)
-        if (result != 0) {
-          throw new BuildException(s"Failed to compile ${inpath}")
+          config.logger.running(compilec)
+          val result = Process(compilec, config.workdir.toFile) !
+            Logger.toProcessLogger(config.logger)
+          if (result != 0) {
+            throw new BuildException(s"Failed to compile ${inpath}")
+          }
         }
       }
       objPath
@@ -130,7 +141,21 @@ private[scalanative] object LLVM {
         asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
-    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    val llvmLinkInfo = flags ++ paths ++ linkopts
+    def dump(strings: Seq[String], fileName: String): Unit = {
+      val dumpFile = config.workdir resolve Path.of(fileName)
+      val pw = new PrintWriter(
+        new File(dumpFile.toUri)
+      )
+      strings.foreach {
+        // in windows system, the file separator doesn't work very well, so we
+        // replace it to linux file separator
+        str => pw.write(str.replace("\\", "/") + " ")
+      }
+      pw.close()
+    }
+    dump(llvmLinkInfo, "llvmLinkInfo")
+    val compile = config.clangPP.abs +: Seq(s"@llvmLinkInfo")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"

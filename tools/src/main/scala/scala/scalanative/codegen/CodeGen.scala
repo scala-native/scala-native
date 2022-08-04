@@ -1,11 +1,11 @@
 package scala.scalanative
 package codegen
 
-import java.nio.file.Path
+import java.io.File
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable
-import scala.scalanative.build.Config
+import scala.scalanative.build.{Config, IncCompilationContext}
 import scala.scalanative.build.core.ScalaNative.dumpDefns
-
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.util.{Scope, partitionBy, procs}
@@ -14,7 +14,8 @@ import scala.scalanative.compat.CompatParColls.Converters._
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
+  def apply(config: build.Config, linked: linker.Result)
+      (implicit incCompilationContext: IncCompilationContext = null): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
@@ -44,7 +45,7 @@ object CodeGen {
 
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
-      meta: Metadata
+      meta: Metadata, incCompilationContext: IncCompilationContext = null
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -54,14 +55,38 @@ object CodeGen {
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
       def separate(): Seq[Path] =
-        partitionBy(assembly, procs)(_.name.top.mangle).par
-          .map {
-            case (id, defns) =>
+        assembly.groupBy {
+          defn =>
+            val packageName = defn.name.top.id.split("\\.").dropRight(1).mkString(".")
+            packageName
+        }.map {
+          case (pack, defns) =>
+            if(incCompilationContext != null) {
+              incCompilationContext.collectFromCurr(pack, defns)
+            }
+            if(incCompilationContext == null ||
+              incCompilationContext.isChanged(pack)) {
               val sorted = defns.sortBy(_.name.show)
-              Impl(config, env, sorted).gen(id.toString, workdir)
-          }
-          .toSeq
-          .seq
+              val packagePrefix = config.workdir resolve
+                Path.of(pack.split(s"\\.")
+                  .dropRight(1).mkString(File.separatorChar.toString))
+              if (!packagePrefix.toFile.exists()) {
+                packagePrefix.toFile.mkdirs()
+              }
+              val packagePath = pack.split(s"\\.")
+                .mkString(File.separatorChar.toString)
+              Impl(config, env, sorted).gen(packagePath, workdir)
+            } else {
+              val packagePrefix = Path.of(pack.split(s"\\.")
+                .dropRight(1).mkString(File.separatorChar.toString)).toFile
+              if (!packagePrefix.exists()) {
+                packagePrefix.mkdir()
+              }
+              val packagePath = pack.split(s"\\.")
+                .mkString(File.separatorChar.toString)
+              config.workdir.resolve(Paths.get(s"$packagePath.ll"))
+            }
+        }.toSeq
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if
