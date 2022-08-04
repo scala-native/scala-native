@@ -386,9 +386,16 @@ object Build {
       )
       .dependsOn(junitAsyncJVM % "test")
 
+  import scala.scalanative.build._
+
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
+      .settings(nativeConfig ~= {
+        _.withLTO(LTO.default)
+          .withMode(Mode.default)
+          .withGC(GC.default)
+      })
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .dependsOn(scalalib, testInterface % "test")
@@ -542,7 +549,7 @@ object Build {
             s.log.info(s"Fetching Scala source version $ver")
 
             // Make parent dirs and stuff
-            IO.createDirectory(trgDir)
+            sbt.IO.createDirectory(trgDir)
 
             // Clone scala source code
             new CloneCommand()
