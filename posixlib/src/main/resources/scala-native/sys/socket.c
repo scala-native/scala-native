@@ -64,7 +64,7 @@ _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) ==
 _Static_assert(sizeof(struct sockaddr_storage) == 128,
                "unexpected size for sockaddr_storage");
 
-// struct msghdr - POSIX 48 byte (padding) on 64 bit machines, 40 on 32 bit.
+// struct msghdr - POSIX 48 byte (padding) on 64 bit machines, 28 on 32 bit.
 struct scalanative_msghdr {
     void *msg_name;
     uint32_t msg_namelen;
@@ -80,8 +80,10 @@ struct scalanative_msghdr {
 #endif
 
 #if defined(__ILP32__)
-_Static_assert(sizeof(struct msghdr) == 40,
-               "Unexpected size: struct msghdr, expected 40");
+_Static_assert(sizeof(struct msghdr) == 28,
+               "Unexpected size: struct msghdr, expected 28");
+_Static_assert(sizeof(struct msghdr) == sizeof(struct scalanative_msghdr),
+               "sizeof mismatch: OS & SN msghdr");
 #elif defined(__linux__) // __LP64__
 // Only do a rough check, will use conversion mapping routines in C code.
 _Static_assert(sizeof(struct msghdr) == 56,
