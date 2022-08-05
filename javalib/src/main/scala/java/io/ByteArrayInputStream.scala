@@ -39,6 +39,18 @@ class ByteArrayInputStream(
     }
   }
 
+  def readNBytes(b: Array[Byte], off: Int, len: Int): Int = {
+    val n = read(b, off, len)
+    if (n == -1) 0 else n
+  }
+
+  def readNBytes(len: Int): Array[Byte] = {
+    if (len < 0) throw new IllegalArgumentException("can't read negative bytes")
+    val result = Array.ofDim[Byte](len)
+    read(result, 0, len)
+    result
+  }
+
   override def skip(n: Long): Long = {
     val k = Math.max(0, Math.min(n, count - pos))
     pos += k.toInt
