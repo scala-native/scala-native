@@ -54,7 +54,9 @@ object Build {
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path, useIncCompilation: Boolean = true)(implicit scope: Scope): Path =
+  def build(config: Config, outpath: Path, useIncCompilation: Boolean = true)(
+      implicit scope: Scope
+  ): Path =
     config.logger.time("Total") {
       // validate classpath
       val fconfig = {
@@ -71,7 +73,7 @@ object Build {
       }
 
       implicit var incCompilationContext: IncCompilationContext = null
-      if(useIncCompilation) {
+      if (useIncCompilation) {
         incCompilationContext = new IncCompilationContext(config.workdir)
       }
 
@@ -81,7 +83,7 @@ object Build {
         ScalaNative.codegen(fconfig, optimized)
       }
 
-      if(useIncCompilation) {
+      if (useIncCompilation) {
         incCompilationContext.dump()
       }
 

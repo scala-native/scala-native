@@ -33,8 +33,9 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path])
-     (implicit incCompilationContext: IncCompilationContext = null): Seq[Path] = {
+  def compile(config: Config, paths: Seq[Path])(implicit
+      incCompilationContext: IncCompilationContext = null
+  ): Seq[Path] = {
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
       val inpath = path.abs
@@ -42,15 +43,17 @@ private[scalanative] object LLVM {
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      val packageName = (config.workdir relativize path)
-        .toString
+      val packageName = (config.workdir relativize path).toString
         .replace(File.separator, ".")
-        .split("\\.").dropRight(1)
+        .split("\\.")
+        .dropRight(1)
         .mkString(".")
 
       // LL is generated so always rebuild
       if (isLl || !Files.exists(objPath)) {
-        if(incCompilationContext == null || incCompilationContext.isChanged(packageName)) {
+        if (incCompilationContext == null || incCompilationContext.isChanged(
+              packageName
+            )) {
           val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
           val stdflag = {
             if (isLl) Seq()
