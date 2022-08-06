@@ -3,7 +3,6 @@ package build
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.nir.Global.Top
 import scala.sys.process._
 import scalanative.build.core.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
