@@ -197,16 +197,64 @@ class ProcessTest {
       proc.destroyForcibly()
   }
 
-  @Test def destroy(): Unit = {
-    assumeFalse(
-      // Fails with traceback on mac arm64 and maybe others.
-      // See Issue #2648
-      "Test is available on arm64 hardware only when using JVM",
-      Platform.hasArm64SignalQuirk
-    )
-    val proc = processSleep(2.0).start()
+  private def processForDestruction(): Process = {
+    /* Return a Process that is suitable to receive a SIGTERM or SIGKILL
+     * signal and return that signal as its exit code.
+     *
+     * The underlying operating system (OS) process must be in the prime of
+     * its life; not too young, not too old.
+     *
+     * Specifically,the signal must be delivered after OS process calls one
+     * of the 'exec' family and before it completes on its own and exits
+     * with an "unexpected" exit code.
+     *
+     * See Issue #2759 for an extended discussion.
+     */
+
+    /* Whenever you see timing code like this, you know both that you
+     * are in for a good time in the present and that you are destined
+     * to return to it time & time again.
+     *
+     * initialDelaySeconds:
+     *   With the current, a hack but done, wait-for-ready implementation
+     *   this value is chosen to drastically decrease the chance of
+     *   the signal arriving before the 'exec' and causing failure.
+     *   Agreed, it is currently wasteful of CI time but the hope
+     *   is that it will not incur developer time chasing race
+     *   issues.
+     *
+     * lifetimeSeconds:
+     *   It is OK for lifetimeSeconds to be on the large side. The
+     *   returned process is destined to be destroyed on receipt.
+     *   Making it too small makes the window for receiving the signal
+     *   smaller, increasing the chance for the signal not hitting the
+     *   window and reporting errors.  Hence, the high side is the better path.
+     *
+     * Again, see Issue #2759 for an extended discussion.
+     */
+
+    val initialDelaySeconds = 5
+    val lifetimeSeconds = 10.0 + initialDelaySeconds
+
+    val proc = processSleep(lifetimeSeconds).start()
 
     assertTrue("process should be alive", proc.isAlive)
+
+    /* Give time for OS child to get past exec*() call.
+     * Agreed, this hasty implementation is sub-optimal & wasteful but
+     * it has the saving virtue of being implemented.
+     *
+     * A better implementation is left as an exercise for the reader.
+     * See Issue #2759 for more complex alternatives.
+     */
+    Thread.sleep(initialDelaySeconds * 1000)
+
+    return proc
+  }
+
+  @Test def destroy(): Unit = {
+    val proc = processForDestruction()
+
     proc.destroy()
 
     val timeout = 501 // Make message distinguished.
@@ -223,22 +271,15 @@ class ProcessTest {
   }
 
   @Test def destroyForcibly(): Unit = {
-    assumeFalse(
-      // Fails with traceback on mac arm64 and maybe others.
-      // See Issue #2648
-      "Test is available on arm64 hardware only when using JVM",
-      Platform.hasArm64SignalQuirk
-    )
-    val proc = processSleep(2.0).start()
+    val proc = processForDestruction()
 
-    assertTrue("process should be alive", proc.isAlive)
-    val p = proc.destroyForcibly()
+    proc.destroyForcibly()
 
     val timeout = 502 // Make message distinguished.
     assertTrue(
       "process should have exited but timed out" +
         s" (limit: ${timeout} milliseconds)",
-      p.waitFor(timeout, TimeUnit.MILLISECONDS)
+      proc.waitFor(timeout, TimeUnit.MILLISECONDS)
     )
     assertEquals(
       // SIGKILL, use unix signal 'excess 128' convention on non-Windows.

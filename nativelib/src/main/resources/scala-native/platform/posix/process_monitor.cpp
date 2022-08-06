@@ -56,8 +56,13 @@ static void *wait_loop(void *arg) {
         const int pid = waitpid(-1, &status, 0);
         if (pid != -1) {
             pthread_mutex_lock(&shared_mutex);
-            const int last_result =
-                WIFSIGNALED(status) ? 0x80 + status : status;
+
+            const int last_result = WIFEXITED(status) ? WEXITSTATUS(status)
+                                    : WIFSIGNALED(status)
+                                        ? 0x80 + WTERMSIG(status)
+                                        : status; // other cases probably yield
+                                                  // garbage but let it flow.
+
             const auto monitor = waiting_procs.find(pid);
             if (monitor != waiting_procs.end()) {
                 auto m = monitor->second;
