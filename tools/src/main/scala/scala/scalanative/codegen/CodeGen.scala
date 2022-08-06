@@ -59,7 +59,7 @@ object CodeGen {
           defn =>
             val packageName = defn.name.top.id.split("\\.").dropRight(1).mkString(".")
             packageName
-        }.map {
+        }.par.map {
           case (pack, defns) =>
             if(incCompilationContext != null) {
               incCompilationContext.collectFromCurr(pack, defns)
@@ -86,7 +86,7 @@ object CodeGen {
                 .mkString(File.separatorChar.toString)
               config.workdir.resolve(Paths.get(s"$packagePath.ll"))
             }
-        }.toSeq
+        }.seq.toSeq
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if

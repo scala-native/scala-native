@@ -11,7 +11,7 @@ abstract class Benchmark {
   def main(args: Array[String]): Unit = {
     assert(
       args.length == 4,
-      "54 arguments expected: number of batches, batch size, input and expected output")
+      "44 arguments expected: number of batches, batch size, input and expected output")
     val batches   = args(0).toInt
     val batchSize = args(1).toInt
     val input     = args(2)

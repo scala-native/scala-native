@@ -2,7 +2,7 @@ package scala.scalanative.build
 import java.io.{ByteArrayOutputStream, File, ObjectOutputStream, PrintWriter}
 import java.nio.ByteBuffer
 import java.nio.file.Path
-
+import scala.collection.concurrent.TrieMap
 import scala.io.Source
 import scala.scalanative.nir.Global.Top
 import scala.language.implicitConversions
@@ -10,9 +10,9 @@ import scala.scalanative.nir.Defn
 
 
 class IncCompilationContext(workDir: Path) {
-  var package2hash: Map[String, Long] = Map[String, Long]()
-  var pack2hashPrev: Map[String, Long] = Map[String, Long]()
-  var changed: Set[String] = Set[String]()
+  val package2hash: TrieMap[String, Long] = TrieMap[String, Long]()
+  val top2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
+  val changed: TrieMap[String, Long] = TrieMap[String, Long]()
   val dumpChanged: Path = workDir.resolve(Path.of("changed"))
   val dumpPackage2hash: Path = workDir.resolve(Path.of("package2hash"))
 
@@ -24,19 +24,19 @@ class IncCompilationContext(workDir: Path) {
           val eachLine = vec.strip().split(",")
           val packageName = eachLine(0)
           val hashCodeStr = eachLine(1)
-          pack2hashPrev += packageName -> hashCodeStr.toLong
+          top2hashPrev.put(packageName, hashCodeStr.toLong)
         }
       }
     }
   }
   collectFromPrev()
 
-  def collectFromCurr(pack: String, defns: Seq[Defn]): Unit = {
-    if(!package2hash.contains(pack)) {
+  def collectFromCurr(top: String, defns: Seq[Defn]): Unit = {
+    if(!package2hash.contains(top)) {
       val hash = defns.foldLeft(0)((prevhash, defn) => prevhash + defn.hashCode())
-      package2hash += pack -> hash
-      if(!pack2hashPrev.contains(pack) || pack2hashPrev(pack) != hash) {
-        changed += pack
+      package2hash.put(top, hash)
+      if(!top2hashPrev.contains(top) || top2hashPrev(top) != hash) {
+        changed.put(top, hash)
       }
     }
   }
@@ -60,7 +60,7 @@ class IncCompilationContext(workDir: Path) {
     val pwChanged = new PrintWriter(
       new File(dumpChanged.toUri)
     )
-    changed.toList.foreach { top => pwChanged.write(top + "\n") }
+    changed.toList.foreach { top => pwChanged.write(top._1 + "\n") }
     pwChanged.close()
   }
 }
