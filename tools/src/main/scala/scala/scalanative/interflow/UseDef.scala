@@ -51,7 +51,7 @@ object UseDef {
     }
 
     override def onType(ty: Type): Type = ty
-    
+
   }
 
   private def collect(inst: Inst): Seq[Local] = {
