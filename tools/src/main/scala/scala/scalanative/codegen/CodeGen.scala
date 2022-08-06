@@ -77,11 +77,9 @@ object CodeGen {
                 .mkString(File.separatorChar.toString)
               Impl(config, env, sorted).gen(packagePath, workdir)
             } else {
-              val packagePrefix = Path.of(pack.split(s"\\.")
-                .dropRight(1).mkString(File.separatorChar.toString)).toFile
-              if (!packagePrefix.exists()) {
-                packagePrefix.mkdir()
-              }
+              val packagePrefix = config.workdir resolve Path.of(pack.split(s"\\.")
+                .dropRight(1).mkString(File.separatorChar.toString)).toFile.toPath
+              assert(packagePrefix.toFile.exists())
               val packagePath = pack.split(s"\\.")
                 .mkString(File.separatorChar.toString)
               config.workdir.resolve(Paths.get(s"$packagePath.ll"))
