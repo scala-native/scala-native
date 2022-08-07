@@ -184,16 +184,21 @@ object UnixProcess {
         throw new IOException("Unable to fork process")
 
       case 0 =>
-        /* 2022-08-06 Old unattributed requirement from prior 'vfork'
-         *     implementation. Probably from older FreeBSD documentation.
-         *     Probably unnecessary but harmless in current 'fork()'
-         *     implementation. Someday a braver soul with time on their hands
-         *     can try removing it.
+        /* The ">" quoted section below describes an unattributed requirement
+         * from the prior 'vfork' implementation. The requirement probably
+         * comes from older FreeBSD documentation. It is quoted here to
+         * give historical context to "that is strange, why did they do
+         * that???" invokeChildProcess code. Child code after 'fork()' is
+         * usually inline.
+         * 
+         * In the current 'fork()' implementation the inner method is now
+         * probably "unnecessary but harmless". Someday a braver soul with
+         * time on their hands can try removing it.
          *
-         * It is unsafe to directly run any code in vfork2 on top of the
-         * parent's stack without creating a new stack frame on the child.
-         * To fix this, put all of the code that needs to run on the child
-         * before execve inside of a method.
+         * > It is unsafe to directly run any code in vfork2 on top of the
+         * > parent's stack without creating a new stack frame on the child.
+         * > To fix this, put all of the code that needs to run on the child
+         * > before execve inside of a method.
          */
         def invokeChildProcess(): Process = {
           if (dir != null) unistd.chdir(toCString(dir.toString))
@@ -223,12 +228,12 @@ object UnixProcess {
               unistd.execve(c"/bin/sh", newArgv, envp)
             }
           }
-          /* Older, definitely FreeBSD requirement. No such written
-           * requirement with fork(), but it is probably good idea anyway.
-           *   // The spec of vfork requires calling _exit if the child process
-           *   // fails to execve.
+
+          /* execve failed. FreeBSD "man" recommends fast exit.
+           * Linux says nada.
+           * Code 127 is "Command not found", the convention for exec failure.
            */
-          unistd._exit(1)
+          unistd._exit(127)
           throw new IOException(s"Failed to create process for command: $cmd")
         }
 
@@ -314,7 +319,8 @@ object UnixProcess {
     }
   }
 
-  // The execvpe function isn't available on all platforms so find the possible binaries to exec.
+  // The execvpe function isn't available on all platforms so find the
+  // possible binaries to exec.
   private def binaryPaths(
       environment: java.util.Map[String, String],
       bin: String
