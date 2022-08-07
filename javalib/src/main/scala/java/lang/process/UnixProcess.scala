@@ -190,7 +190,7 @@ object UnixProcess {
          * give historical context to "that is strange, why did they do
          * that???" invokeChildProcess code. Child code after 'fork()' is
          * usually inline.
-         * 
+         *
          * In the current 'fork()' implementation the inner method is now
          * probably "unnecessary but harmless". Someday a braver soul with
          * time on their hands can try removing it.
