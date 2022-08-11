@@ -21,13 +21,18 @@ object Settings {
     "Whether we should partest the current scala version (or skip if we can't)"
   )
 
+  lazy val scalaNativeVersion = settingKey[String](
+    "The version of Scala Native plugin used for building."
+  )
+
   lazy val javaVersion = settingKey[Int](
     "The major Java SDK version that should be assumed for compatibility. " +
       "Defaults to what sbt is running with."
   )
 
-  // JDK version we are running with
+  // Scala Native plugin & JDK versions we are running with
   lazy val thisBuildSettings = Def.settings(
+    Global / scalaNativeVersion := nativeVersion,
     Global / javaVersion := {
       val fullVersion = System.getProperty("java.version")
       val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
@@ -52,7 +57,8 @@ object Settings {
   lazy val commonSettings = Def.settings(
     organization := "org.scala-native",
     name := projectName(thisProject.value.id),
-    version := nativeVersion,
+    version :=
+      scalaNativeVersion.value, // odd RHS silences sbt "unused settingKey".
     scalacOptions ++= Seq(
       "-deprecation",
       "-unchecked",
