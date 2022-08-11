@@ -391,8 +391,8 @@ object Build {
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(nativeConfig ~= {
-        _.withLTO(LTO.default)
+      .settings(nativeConfig ~= { c =>
+        c.withLTO(LTO.default)
           .withMode(Mode.default)
           .withGC(GC.default)
       })
