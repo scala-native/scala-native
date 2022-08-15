@@ -145,7 +145,7 @@ private[scalanative] object LLVM {
     val paths = objectsPaths.map(_.abs)
     val llvmLinkInfo = flags ++ paths ++ linkopts
     def dump(strings: Seq[String], fileName: String): Unit = {
-      val dumpFile = config.workdir resolve Path.of(fileName)
+      val dumpFile = config.workdir resolve Paths.get(fileName)
       val pw = new PrintWriter(
         new File(dumpFile.toUri)
       )

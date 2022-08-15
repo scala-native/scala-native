@@ -1,7 +1,7 @@
 package scala.scalanative.build
 import java.io.{ByteArrayOutputStream, File, ObjectOutputStream, PrintWriter}
 import java.nio.ByteBuffer
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import scala.collection.concurrent.TrieMap
 import scala.io.Source
 import scala.language.implicitConversions
@@ -11,15 +11,15 @@ class IncCompilationContext(workDir: Path) {
   val package2hash: TrieMap[String, Long] = TrieMap[String, Long]()
   val pack2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
   val changed: TrieMap[String, Long] = TrieMap[String, Long]()
-  val dumpChanged: Path = workDir.resolve(Path.of("changed"))
-  val dumpPackage2hash: Path = workDir.resolve(Path.of("package2hash"))
+  val dumpChanged: Path = workDir.resolve(Paths.get("changed"))
+  val dumpPackage2hash: Path = workDir.resolve(Paths.get("package2hash"))
 
   def collectFromPrev(): Unit = {
     if (new java.io.File(dumpPackage2hash.toUri).exists) {
       val resultPrev = Source.fromFile(dumpPackage2hash.toUri)
       resultPrev.getLines().toList.foreach { vec =>
         {
-          val eachLine = vec.strip().split(",")
+          val eachLine = vec.replace("\n", "").split(",")
           val packageName = eachLine(0)
           val hashCodeStr = eachLine(1)
           pack2hashPrev.put(packageName, hashCodeStr.toLong)

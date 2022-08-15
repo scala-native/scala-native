@@ -73,7 +73,7 @@ object CodeGen {
                   incCompilationContext.isChanged(pack)) {
                 val sorted = defns.sortBy(_.name.show)
                 val packagePrefix = config.workdir resolve
-                  Path.of(
+                  Paths.get(
                     pack
                       .split(s"\\.")
                       .dropRight(1)
@@ -87,8 +87,7 @@ object CodeGen {
                   .mkString(File.separatorChar.toString)
                 Impl(config, env, sorted).gen(packagePath, workdir)
               } else {
-                val packagePrefix = config.workdir resolve Path
-                  .of(
+                val packagePrefix = config.workdir resolve Paths.get(
                     pack
                       .split(s"\\.")
                       .dropRight(1)
@@ -118,7 +117,7 @@ object CodeGen {
       import build.Mode._
       (config.mode, config.LTO) match {
         case (Debug, _)                                  => separate()
-        case (ReleaseFast | ReleaseFull, build.LTO.None) => single()
+        case (ReleaseFast | ReleaseFull, build.LTO.None) => separate()
         case (ReleaseFast | ReleaseFull, _)              => separate()
       }
     }
