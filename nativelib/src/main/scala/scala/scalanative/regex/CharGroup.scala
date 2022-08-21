@@ -10,8 +10,8 @@ object CharGroup {
   private val code2 = Array(0x9, 0xa, 0xc, 0xd, 0x20, 0x20) // \s
   private val code3 =
     Array(0x30, 0x39, 0x41, 0x5a, 0x5f, 0x5f, 0x61, 0x7a) // \w
-  private val code4 = Array(0x30, 0x39, 0x41, 0x5a, 0x61, 0x7a) // p{Alpha}
-  private val code5 = Array(0x41, 0x5a, 0x61, 0x7a) // p{Alnum}
+  private val code4 = Array(0x30, 0x39, 0x41, 0x5a, 0x61, 0x7a) // p{Alnum}
+  private val code5 = Array(0x41, 0x5a, 0x61, 0x7a) // p{Alpha}
   private val code6 = Array(0x0, 0x7f) // p{ASCII}
   private val code7 = Array(0x9, 0x9, 0x20, 0x20) // p{Blank}
   private val code8 = Array(0x0, 0x1f, 0x7f, 0x7f) // p{Cntrl}
@@ -35,8 +35,8 @@ object CharGroup {
   )
 
   val POSIX_GROUPS = Map(
-    "Alpha" -> new CharGroup(+1, code4),
-    "Alnum" -> new CharGroup(+1, code5),
+    "Alnum" -> new CharGroup(+1, code4),
+    "Alpha" -> new CharGroup(+1, code5),
     "ASCII" -> new CharGroup(+1, code6),
     "Blank" -> new CharGroup(+1, code7),
     "Cntrl" -> new CharGroup(+1, code8),
