@@ -14,6 +14,7 @@ RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 1
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
   && cd /tmp/zlib/ \
+  && git checkout v1.2.11 \
   && ./configure \
   && make install prefix=$CROSS_ROOT/${CROSS_TRIPLE}/sysroot \
   && rm -rf /tmp/zlib
