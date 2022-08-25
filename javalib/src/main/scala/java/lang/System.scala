@@ -36,6 +36,47 @@ object System {
     java.lang.Long
       .hashCode(Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(x)))
 
+  private def loadPropsFromEnvVar(
+      envVar: String,
+      systemProperties: Properties
+  ): Unit = {
+
+    // read local properties from a file.
+    Option(getenv(envVar)).foreach { fileName =>
+      val exceptionMsg =
+        s"Error loading properties from environment: '${envVar}=${fileName}'"
+
+      try {
+        val inReader = new BufferedReader(new FileReader(fileName));
+
+        try {
+          val props = new Properties()
+          props.load(inReader)
+
+          /* By design and intent:
+           *   When a key is present only in props, the entry will be added to
+           *   systemProperties.
+           *   When a key is present in both sets, the props value
+           *   will supersede the existing systemProperties value.
+           *   Other entries in systemProperties are preserved unchanged.
+           */
+          systemProperties.putAll(props)
+
+        } catch {
+          case _: IOException =>
+            throw new FileNotFoundException(exceptionMsg)
+          case _: IllegalArgumentException =>
+            throw new IllegalArgumentException(exceptionMsg)
+        } finally {
+          inReader.close()
+        }
+      } catch {
+        case _: FileNotFoundException =>
+          throw new FileNotFoundException(exceptionMsg)
+      }
+    }
+  }
+
   private def loadProperties() = {
     val sysProps = new Properties()
     sysProps.setProperty("java.version", "1.8")
@@ -80,6 +121,8 @@ object System {
         .getOrElse("/tmp")
       sysProps.setProperty("java.io.tmpdir", tmpDirectory)
     }
+
+    loadPropsFromEnvVar("SCALANATIVE_SYSTEM_PROPERTIES_FILE", sysProps)
 
     sysProps
   }
