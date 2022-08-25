@@ -63,8 +63,6 @@ object System {
           systemProperties.putAll(props)
 
         } catch {
-          case _: IOException =>
-            throw new FileNotFoundException(exceptionMsg)
           case _: IllegalArgumentException =>
             throw new IllegalArgumentException(exceptionMsg)
         } finally {
