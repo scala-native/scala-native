@@ -3,6 +3,7 @@ package java.lang
 import java.io._
 import java.nio.charset.StandardCharsets
 import java.util.{Collections, HashMap, Map, Properties, WindowsHelperMethods}
+
 import scala.scalanative.posix.pwdOps._
 import scala.scalanative.posix.{pwd, unistd}
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -36,7 +37,48 @@ object System {
     java.lang.Long
       .hashCode(Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(x)))
 
-  private def loadPropsFromEnvVar(
+  /* Reference URL:
+   *  https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html
+   *  Topic: tooloptions
+   */
+  private def loadPropsFromJavaEnvVar(
+      envVar: String,
+      systemProperties: Properties
+  ): Unit = {
+    Option(getenv(envVar)).foreach { line =>
+      // Both Java & ScalaJVM give this message. Sbt gives it twice.
+      System.err.println(s"Picked up JAVA_TOOL_OPTIONS: ${line}\n")
+      // System.err.printf has more difficult arguments. Beware changing to it.
+
+      val sb = new StringBuffer(line.length)
+
+      line.trim
+        .split("\\s+")
+        .filter(_.startsWith("-D"))
+        .foreach(opt => sb.append(opt, 2, opt.length).append("\n"))
+
+      val reader = new StringReader(sb.toString)
+
+      try {
+        val props = new Properties()
+        props.load(reader)
+
+        /* When a key is present in both sets, the props value
+         * will supersede the existing systemProperties value.
+         */
+        systemProperties.putAll(props)
+      } catch {
+        case _: IllegalArgumentException =>
+          val exceptionMsg = "Error loading properties from environment: " +
+            s"'${envVar}=${line}'"
+          throw new IllegalArgumentException(exceptionMsg)
+      } finally {
+        reader.close()
+      }
+    }
+  }
+
+  private def loadPropsFromScalaEnvVar(
       envVar: String,
       systemProperties: Properties
   ): Unit = {
@@ -57,7 +99,7 @@ object System {
          *    there an invalid UTF-8 byte sequence is detected. That is
          *    not done here and left as an exercise for the reader.
          */
-        val inReader = new BufferedReader(
+        val reader = new BufferedReader(
           new InputStreamReader(
             new FileInputStream(fileName),
             StandardCharsets.UTF_8
@@ -66,7 +108,7 @@ object System {
 
         try {
           val props = new Properties()
-          props.load(inReader)
+          props.load(reader)
 
           /* By design and intent:
            *   When a key is present only in props, the entry will be added to
@@ -81,7 +123,7 @@ object System {
           case _: IllegalArgumentException =>
             throw new IllegalArgumentException(exceptionMsg)
         } finally {
-          inReader.close()
+          reader.close()
         }
       } catch {
         case _: FileNotFoundException =>
@@ -135,7 +177,9 @@ object System {
       sysProps.setProperty("java.io.tmpdir", tmpDirectory)
     }
 
-    loadPropsFromEnvVar("SCALANATIVE_SYSTEM_PROPERTIES_FILE", sysProps)
+    loadPropsFromScalaEnvVar("SCALANATIVE_SYSTEM_PROPERTIES_FILE", sysProps)
+
+    loadPropsFromJavaEnvVar("JAVA_TOOL_OPTIONS", sysProps)
 
     sysProps
   }
