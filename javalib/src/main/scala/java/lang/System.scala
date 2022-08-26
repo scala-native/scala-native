@@ -47,7 +47,22 @@ object System {
         s"Error loading properties from environment: '${envVar}=${fileName}'"
 
       try {
-        val inReader = new BufferedReader(new FileReader(fileName));
+        /* There 2 slight variances from Java 8 spec here.
+         * 1) Java 8 reads properties files as ISO-8859-1, a.k.a Latin-1.
+         *    Java 9 and above read them as UTF-8. UTF-8 and ISO-8859-1 have
+         *    the same encoding for ASCII characters. UTF-8 is more useful
+         *    in an international world. You can not put emojis in properties.
+         *
+         * 2) The Java 9 specifies re-reading the file as ISO-8859-1 if
+         *    there an invalid UTF-8 byte sequence is detected. That is
+         *    not done here and left as an exercise for the reader.
+         */
+        val inReader = new BufferedReader(
+          new InputStreamReader(
+            new FileInputStream(fileName),
+            StandardCharsets.UTF_8
+          )
+        )
 
         try {
           val props = new Properties()
