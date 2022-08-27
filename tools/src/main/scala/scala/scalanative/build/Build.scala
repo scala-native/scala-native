@@ -72,9 +72,10 @@ object Build {
         linked
       }
 
-      implicit var incCompilationContext: IncCompilationContext = null
+      implicit val incCompilationContext: IncCompilationContext
+        = new IncCompilationContext
       if (config.compilerConfig.incrementalCompilation) {
-        incCompilationContext = new IncCompilationContext(config.workdir)
+        incCompilationContext.initialize(fconfig.workdir)
       }
 
       // optimize and generate ll

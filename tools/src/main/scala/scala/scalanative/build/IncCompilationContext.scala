@@ -7,13 +7,18 @@ import scala.io.Source
 import scala.language.implicitConversions
 import scala.scalanative.nir.Defn
 
-class IncCompilationContext(workDir: Path) {
+class IncCompilationContext {
   val package2hash: TrieMap[String, Long] = TrieMap[String, Long]()
   val pack2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
   val changed: TrieMap[String, Long] = TrieMap[String, Long]()
-  val dumpChanged: Path = workDir.resolve(Paths.get("changed"))
-  val dumpPackage2hash: Path = workDir.resolve(Paths.get("package2hash"))
+  var dumpChanged: Path = Paths.get("")
+  var dumpPackage2hash: Path = Paths.get("")
 
+  def initialize(workDir: Path): Unit = {
+    dumpChanged = workDir.resolve(Paths.get("changed"))
+    dumpPackage2hash = workDir.resolve(Paths.get("package2hash"))
+    collectFromPrev()
+  }
   def collectFromPrev(): Unit = {
     if (new java.io.File(dumpPackage2hash.toUri).exists) {
       val resultPrev = Source.fromFile(dumpPackage2hash.toUri)
@@ -27,7 +32,7 @@ class IncCompilationContext(workDir: Path) {
       }
     }
   }
-  collectFromPrev()
+
 
   def collectFromCurr(pack: String, defns: Seq[Defn]): Unit = {
     if (!package2hash.contains(pack)) {

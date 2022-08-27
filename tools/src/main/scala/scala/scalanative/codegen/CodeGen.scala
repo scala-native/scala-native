@@ -15,7 +15,7 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext = null
+      incCompilationContext: IncCompilationContext = new IncCompilationContext
   ): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
@@ -47,7 +47,7 @@ object CodeGen {
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
       meta: Metadata,
-      incCompilationContext: IncCompilationContext = null
+      incCompilationContext: IncCompilationContext = new IncCompilationContext
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -57,6 +57,17 @@ object CodeGen {
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
       def separate(): Seq[Path] =
+        partitionBy(assembly, procs)(_.name.top.mangle).par
+          .map {
+            case (id, defns) =>
+              val sorted = defns.sortBy(_.name.show)
+              Impl(config, env, sorted).gen(id.toString, workdir)
+          }
+          .toSeq
+          .seq
+
+      // Incremental compilation code generation
+      def separateInc(): Seq[Path] =
         assembly
           .groupBy { defn =>
             val packageName =
@@ -66,11 +77,8 @@ object CodeGen {
           .par
           .map {
             case (pack, defns) =>
-              if (incCompilationContext != null) {
-                incCompilationContext.collectFromCurr(pack, defns)
-              }
-              if (incCompilationContext == null ||
-                  incCompilationContext.isChanged(pack)) {
+              incCompilationContext.collectFromCurr(pack, defns)
+              if (incCompilationContext.isChanged(pack)) {
                 val sorted = defns.sortBy(_.name.show)
                 val packagePrefix = config.workdir resolve
                   Paths.get(
@@ -113,12 +121,13 @@ object CodeGen {
         Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
-      // For some reason in the CI matching for `case _: build.Mode.Relese` throws compile time erros
+      // For some reason in the CI matching for `case _: build.Mode.Release` throws compile time erros
       import build.Mode._
-      (config.mode, config.LTO) match {
-        case (Debug, _)                                  => separate()
-        case (ReleaseFast | ReleaseFull, build.LTO.None) => separate()
-        case (ReleaseFast | ReleaseFull, _)              => separate()
+      (config.mode, config.LTO, config.compilerConfig.incrementalCompilation) match {
+        case (_, _, true)                                   => separateInc()
+        case (Debug, _, _)                                  => separate()
+        case (ReleaseFast | ReleaseFull, build.LTO.None, _) => single()
+        case (ReleaseFast | ReleaseFull, _, _)              => separate()
       }
     }
 

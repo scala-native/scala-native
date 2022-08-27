@@ -40,7 +40,7 @@ object Mode {
   def releaseFull: Mode = ReleaseFull
 
   /** Default compilation mode. */
-  def default: Mode = ReleaseFull
+  def default: Mode = Debug
 
   /** Get a compilation mode with given name. */
   def apply(name: String): Mode = name match {

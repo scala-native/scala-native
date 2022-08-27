@@ -89,7 +89,7 @@ private[scalanative] object ScalaNative {
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext = null
+      incCompilationContext: IncCompilationContext = new IncCompilationContext
   ): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
       // currently, always clean ll files
