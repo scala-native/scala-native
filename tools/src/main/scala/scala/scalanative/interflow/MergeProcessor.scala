@@ -18,7 +18,8 @@ final class MergeProcessor(
         local -> offset
     }.toMap
   val blocks = mutable.Map.empty[Local, MergeBlock]
-  var todo = mutable.Set.empty[Local]
+  val todoOrdering: Ordering[Local] = Ordering.by(offsets)
+  var todo = mutable.SortedSet.empty[Local](todoOrdering)
 
   def currentSize(): Int =
     blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
@@ -381,11 +382,8 @@ final class MergeProcessor(
   }
 
   def advance(): Unit = {
-    val sortedTodo = todo.toArray.sortBy(n => offsets(n))
-    val block = findMergeBlock(sortedTodo.head)
-    todo.clear()
-    todo ++= sortedTodo.tail
-
+    val block = findMergeBlock(todo.head)
+    todo = todo.tail
     val (newPhis, newState) = merge(block)
     block.phis = newPhis
 

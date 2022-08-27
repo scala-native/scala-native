@@ -35,6 +35,12 @@ sealed trait NativeConfig {
   /** The LTO mode to use used during a release build. */
   def lto: LTO
 
+  /** The maximum inline depth during the optimization phase */
+  def maxInlineDepth: Int
+
+  /** The maximum caller and callee size during the optimization phase */
+  def maxCallerSize: Int
+
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
 
@@ -123,6 +129,12 @@ sealed trait NativeConfig {
   /** Create a new config with the given lto mode. */
   def withLTO(value: LTO): NativeConfig
 
+  /** Create a new config with the given max inline depth. */
+  def withMaxInlineDepth(value: Int): NativeConfig
+
+  /** Create a new config with the max caller size. */
+  def withMaxCallerSize(value: Int): NativeConfig
+
   /** Create a new config with given check value. */
   def withCheck(value: Boolean): NativeConfig
 
@@ -165,6 +177,8 @@ object NativeConfig {
       targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
+      maxInlineDepth = -1,
+      maxCallerSize = 8192,
       mode = Mode.default,
       check = false,
       checkFatalWarnings = false,
@@ -187,6 +201,8 @@ object NativeConfig {
       gc: GC,
       mode: Mode,
       lto: LTO,
+      maxInlineDepth: Int,
+      maxCallerSize: Int,
       linkStubs: Boolean,
       check: Boolean,
       checkFatalWarnings: Boolean,
@@ -229,6 +245,12 @@ object NativeConfig {
 
     def withLTO(value: LTO): NativeConfig =
       copy(lto = value)
+
+    def withMaxInlineDepth(value: Int): NativeConfig =
+      copy(maxInlineDepth = value)
+
+    def withMaxCallerSize(value: Int): NativeConfig =
+      copy(maxCallerSize = value)
 
     def withCheck(value: Boolean): NativeConfig =
       copy(check = value)

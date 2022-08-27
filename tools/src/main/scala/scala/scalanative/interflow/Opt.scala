@@ -15,7 +15,6 @@ trait Opt { self: Interflow =>
       case Inst.Unreachable(unwind) => unwind == Next.None
       case _                        => true
     }
-
     defn.attrs.opt != Attr.NoOpt && noUnwind
   }
 

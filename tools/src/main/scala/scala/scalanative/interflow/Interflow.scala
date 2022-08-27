@@ -28,6 +28,7 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
   private val done = mutable.Map.empty[Global, Defn.Define]
   private val started = mutable.Set.empty[Global]
   private val blacklist = mutable.Set.empty[Global]
+  private val unique = mutable.Set.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
   private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
@@ -59,7 +60,10 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
   def pushTodo(name: Global): Unit =
     todo.synchronized {
       assert(name ne Global.None)
-      todo.enqueue(name)
+      if(!unique.contains(name)) {
+        todo.enqueue(name)
+        unique += name
+      }
     }
   def allTodo(): Seq[Global] =
     todo.synchronized {
