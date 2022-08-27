@@ -54,8 +54,8 @@ object Build {
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path)(
-      implicit scope: Scope
+  def build(config: Config, outpath: Path)(implicit
+      scope: Scope
   ): Path =
     config.logger.time("Total") {
       // validate classpath
@@ -72,8 +72,8 @@ object Build {
         linked
       }
 
-      implicit val incCompilationContext: IncCompilationContext
-        = new IncCompilationContext
+      implicit val incCompilationContext: IncCompilationContext =
+        new IncCompilationContext
       if (config.compilerConfig.incrementalCompilation) {
         incCompilationContext.initialize(fconfig.workdir)
       }

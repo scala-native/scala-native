@@ -71,7 +71,7 @@ object CodeGen {
         assembly
           .groupBy { defn =>
             val packageName =
-              defn.name.top.id.split("\\.").dropRight(1).mkString(".")
+              defn.name.top.id.split('.').init.mkString(".")
             packageName
           }
           .par
@@ -80,34 +80,22 @@ object CodeGen {
               incCompilationContext.collectFromCurr(pack, defns)
               if (incCompilationContext.isChanged(pack)) {
                 val sorted = defns.sortBy(_.name.show)
-                val packagePrefix = config.workdir resolve
-                  Paths.get(
-                    pack
-                      .split(s"\\.")
-                      .dropRight(1)
-                      .mkString(File.separatorChar.toString)
-                  )
+                val packagePrefix = config.workdir.resolve(
+                  pack.split('.').init.mkString(File.separator)
+                )
                 if (!packagePrefix.toFile.exists()) {
                   packagePrefix.toFile.mkdirs()
                 }
-                val packagePath = pack
-                  .split(s"\\.")
-                  .mkString(File.separatorChar.toString)
+                val packagePath = pack.replace(".", File.separator)
                 Impl(config, env, sorted).gen(packagePath, workdir)
               } else {
-                val packagePrefix = config.workdir resolve Paths.get(
-                    pack
-                      .split(s"\\.")
-                      .dropRight(1)
-                      .mkString(File.separatorChar.toString)
-                  )
-                  .toFile
-                  .toPath
+                val packagePrefix = config.workdir
+                  .resolve(pack.replace(".", File.separator))
+                  .resolve("..")
+                  .normalize
                 assert(packagePrefix.toFile.exists())
-                val packagePath = pack
-                  .split(s"\\.")
-                  .mkString(File.separatorChar.toString)
-                config.workdir.resolve(Paths.get(s"$packagePath.ll"))
+                val packagePath = pack.replace(".", File.separator)
+                config.workdir.resolve(s"$packagePath.ll")
               }
           }
           .seq
@@ -123,7 +111,11 @@ object CodeGen {
 
       // For some reason in the CI matching for `case _: build.Mode.Release` throws compile time erros
       import build.Mode._
-      (config.mode, config.LTO, config.compilerConfig.incrementalCompilation) match {
+      (
+        config.mode,
+        config.LTO,
+        config.compilerConfig.incrementalCompilation
+      ) match {
         case (_, _, true)                                   => separateInc()
         case (Debug, _, _)                                  => separate()
         case (ReleaseFast | ReleaseFull, build.LTO.None, _) => single()

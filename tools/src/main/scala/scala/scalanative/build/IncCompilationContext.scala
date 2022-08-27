@@ -33,7 +33,6 @@ class IncCompilationContext {
     }
   }
 
-
   def collectFromCurr(pack: String, defns: Seq[Defn]): Unit = {
     if (!package2hash.contains(pack)) {
       val hash =

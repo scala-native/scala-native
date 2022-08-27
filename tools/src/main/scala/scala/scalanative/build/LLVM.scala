@@ -50,49 +50,47 @@ private[scalanative] object LLVM {
           def hasNext(): Boolean = it.hasNext;
           def next(): Path = it.next()
         }
-        .mkString(".")
+          .mkString(".")
       }
       // LL is generated so always rebuild
-      if (isLl || !Files.exists(objPath)) {
-        // If pack2hashPrev is empty, here are two cases:
-        // 1. This is the first compilation time.
-        // 2. We don't use incremental compilation.
-        // In these two cases, we should compile them to object files.
-        // If pack2hashPrev is not empty, we don't recompile native library.
-        // Even if native library changes(This is very rare case). If native library
-        // changes, we should clean the project first.
-        if (incCompilationContext.pack2hashPrev.isEmpty ||
-          incCompilationContext.isChanged(packageName)
-        ) {
-          val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-          val stdflag = {
-            if (isLl) Seq()
-            else if (isCpp) {
-              // C++14 or newer standard is needed to compile code using Windows API
-              // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-              if (config.targetsWindows) Seq("-std=c++14")
-              else Seq("-std=c++11")
-            } else Seq("-std=gnu11")
-          }
-          val platformFlags = {
-            if (config.targetsWindows) Seq("-g")
-            else Nil
-          }
-          val expectionsHandling =
-            List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-          val flags = opt(config) +: "-fvisibility=hidden" +:
-            stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
-          val compilec =
-            Seq(compiler) ++ flto(config) ++ flags ++
-              asan(config) ++ target(config) ++
-              Seq("-c", inpath, "-o", outpath)
+      // If pack2hashPrev is empty, here are two cases:
+      // 1. This is the first compilation time.
+      // 2. We don't use incremental compilation.
+      // In these two cases, we should compile them to object files.
+      // If pack2hashPrev is not empty, we don't recompile native library.
+      // Even if native library changes(This is very rare case). If native library
+      // changes, we should clean the project first.
+      if ((isLl || !Files.exists(objPath)) &&
+          (incCompilationContext.pack2hashPrev.isEmpty ||
+            incCompilationContext.isChanged(packageName))) {
+        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+        val stdflag = {
+          if (isLl) Seq()
+          else if (isCpp) {
+            // C++14 or newer standard is needed to compile code using Windows API
+            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+            if (config.targetsWindows) Seq("-std=c++14")
+            else Seq("-std=c++11")
+          } else Seq("-std=gnu11")
+        }
+        val platformFlags = {
+          if (config.targetsWindows) Seq("-g")
+          else Nil
+        }
+        val expectionsHandling =
+          List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+        val flags = opt(config) +: "-fvisibility=hidden" +:
+          stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
+        val compilec =
+          Seq(compiler) ++ flto(config) ++ flags ++
+            asan(config) ++ target(config) ++
+            Seq("-c", inpath, "-o", outpath)
 
-          config.logger.running(compilec)
-          val result = Process(compilec, config.workdir.toFile) !
-            Logger.toProcessLogger(config.logger)
-          if (result != 0) {
-            throw new BuildException(s"Failed to compile ${inpath}")
-          }
+        config.logger.running(compilec)
+        val result = Process(compilec, config.workdir.toFile) !
+          Logger.toProcessLogger(config.logger)
+        if (result != 0) {
+          throw new BuildException(s"Failed to compile ${inpath}")
         }
       }
       objPath
@@ -154,20 +152,22 @@ private[scalanative] object LLVM {
         asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
+    // it's a fix for passing too many file paths to the clang compiler,
+    // If too many packages are compiled and the platform is windows, windows
+    // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
-    def dump(strings: Seq[String], fileName: String): Unit = {
-      val dumpFile = config.workdir resolve Paths.get(fileName)
+    locally {
+      val dumpFile = config.workdir.resolve("llvmLinkInfo")
       val pw = new PrintWriter(
         new File(dumpFile.toUri)
       )
-      strings.foreach {
+      llvmLinkInfo.foreach {
         // in windows system, the file separator doesn't work very well, so we
         // replace it to linux file separator
         str => pw.write(str.replace("\\", "/") + " ")
       }
       pw.close()
     }
-    dump(llvmLinkInfo, "llvmLinkInfo")
     val compile = config.clangPP.abs +: Seq(s"@llvmLinkInfo")
 
     config.logger.time(

@@ -70,7 +70,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
         "B.scala" -> """class B {
                        |  def add(): Int = 3
                        |  def sub(): Int = 4
-                       |}""".stripMargin,
+                       |}""".stripMargin
       )
       val entry = "A"
       val changedTop = Set[String]("A", "A$")
@@ -98,13 +98,13 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
     }
 
   }
-  private def makeChanged(outDir: Path, changedTop: Set[String])
-                         (implicit  in: Scope): Unit = {
+  private def makeChanged(outDir: Path, changedTop: Set[String])(implicit
+      in: Scope
+  ): Unit = {
     val pw = new PrintWriter(
-      new File(outDir.toFile,  "changed")
+      new File(outDir.toFile, "changed")
     )
-    changedTop.foreach(changedTop =>
-      pw.write(changedTop + "\n"))
+    changedTop.foreach(changedTop => pw.write(changedTop + "\n"))
     pw.close()
   }
 
@@ -119,10 +119,10 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
   }
 
   private def makeConfig(
-                          outDir: Path,
-                          entry: String,
-                          setupNativeConfig: NativeConfig
-                        )(implicit in: Scope): Config = {
+      outDir: Path,
+      entry: String,
+      setupNativeConfig: NativeConfig
+  )(implicit in: Scope): Config = {
     val classpath = makeClasspath(outDir)
     Config.empty
       .withWorkdir(outDir)
