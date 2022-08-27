@@ -47,8 +47,8 @@ private[scalanative] object LLVM {
         val it = relPath.subpath(0, relPath.getNameCount).iterator
         // conversion from java to scala iterator
         new Iterator[Path] {
-          def hasNext(): Boolean = it.hasNext;
-          def next(): Path = it.next()
+          def hasNext: Boolean = it.hasNext;
+          def next: Path = it.next()
         }
           .mkString(".")
       }
