@@ -42,12 +42,16 @@ private[scalanative] object LLVM {
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      val packageName = (config.workdir relativize path).toString
-        .replace(File.separator, ".")
-        .split("\\.")
-        .dropRight(1)
+      val packageName = {
+        val relPath = config.workdir relativize path
+        val it = relPath.subpath(0, relPath.getNameCount).iterator
+        // conversion from java to scala iterator
+        new Iterator[Path] {
+          def hasNext(): Boolean = it.hasNext;
+          def next(): Path = it.next()
+        }
         .mkString(".")
-
+      }
       // LL is generated so always rebuild
       if (isLl || !Files.exists(objPath)) {
         // If pack2hashPrev is empty, here are two cases:

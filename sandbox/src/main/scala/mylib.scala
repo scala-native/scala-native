@@ -1,5 +1,5 @@
 class mylib {
   def print(): Unit = {
-    println("hellow11")
+    println("hellow11l")
   }
 }
