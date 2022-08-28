@@ -36,7 +36,7 @@ private[scalanative] object LLVM {
       incCompilationContext: IncCompilationContext = new IncCompilationContext
   ): Seq[Path] = {
     // generate .o files for all included source files in parallel
-    paths.map { path =>
+    paths.par.map { path =>
       val inpath = path.abs
       val outpath = inpath + oExt
       val isCpp = inpath.endsWith(cppExt)
