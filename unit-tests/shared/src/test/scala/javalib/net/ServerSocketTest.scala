@@ -10,7 +10,7 @@ import scalanative.junit.utils.AssertThrows.assertThrows
 class ServerSocketTest {
 
   @Test def bind(): Unit = {
-    val s1 = new ServerSocket
+    val s1 = new ServerSocket()
     try {
       val addr = new InetSocketAddress(InetAddress.getLoopbackAddress, 0)
 
@@ -23,8 +23,8 @@ class ServerSocketTest {
       )
       assertTrue(s1.isBound)
 
-      val s2 = new ServerSocket
-      val s3 = new ServerSocket // creating new socket unlikely to throw.
+      val s2 = new ServerSocket()
+      val s3 = new ServerSocket() // creating new socket unlikely to throw.
       try {
         s2.bind(addr)
         assertThrows(classOf[BindException], s3.bind(s2.getLocalSocketAddress))
@@ -36,7 +36,7 @@ class ServerSocketTest {
       s1.close()
     }
 
-    val s4 = new ServerSocket
+    val s4 = new ServerSocket()
     try {
       assertThrows(
         classOf[BindException],
@@ -48,7 +48,7 @@ class ServerSocketTest {
 
     class UnsupportedSocketAddress extends SocketAddress {}
 
-    val s5 = new ServerSocket
+    val s5 = new ServerSocket()
     try {
       assertThrows(
         classOf[IllegalArgumentException],
@@ -97,7 +97,7 @@ class ServerSocketTest {
         s1.toString
       )
 
-      val s2 = new ServerSocket
+      val s2 = new ServerSocket()
       try {
         assertEquals("ServerSocket[unbound]", s2.toString)
 

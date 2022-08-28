@@ -26,30 +26,8 @@ class Socket protected (
     )
   }
 
-  if (shouldStartup) {
+  if (shouldStartup)
     startup(addr, port)
-  }
-
-  private def startup(dstAddr: InetAddress, dstPort: Int, timeout: Int = 0) = {
-    if (dstPort < 0 || dstPort > 65535)
-      throw new IllegalArgumentException(
-        "Socket port must be between 0 and 65535"
-      )
-
-    impl.create(streaming)
-    created = true
-    try {
-      bound = true
-      impl.connect(new InetSocketAddress(dstAddr, dstPort), timeout)
-      localPort = impl.localport
-      connected = true
-    } catch {
-      case e: IOException => {
-        close()
-        throw e
-      }
-    }
-  }
 
   def this() =
     this(AbstractPlainSocketImpl(), null, -1, null, 0, true, false)
@@ -114,15 +92,39 @@ class Socket protected (
 
   // def this(proxy: Proxy)
 
-  private def checkClosedAndCreate(): Unit = {
-    if (closed) {
-      throw new SocketException("Socket is closed")
-    }
+  private def create(): Unit = {
+    // Sockets & ServerSockets always stream. See Exception in constructor.
+    impl.create(stream = true)
+    created = true
+  }
 
-    if (!created) {
-      impl.create(true)
-      created = true
+  private def startup(dstAddr: InetAddress, dstPort: Int, timeout: Int = 0) = {
+    if (dstPort < 0 || dstPort > 65535)
+      throw new IllegalArgumentException(
+        "Socket port must be between 0 and 65535"
+      )
+
+    this.create()
+
+    try {
+      impl.connect(new InetSocketAddress(dstAddr, dstPort), timeout)
+      localPort = impl.localport
+      bound = true
+      connected = true
+    } catch {
+      case e: IOException => {
+        close()
+        throw e
+      }
     }
+  }
+
+  private def checkClosedAndCreate(): Unit = {
+    if (closed)
+      throw new SocketException("Socket is closed")
+
+    if (!created)
+      this.create()
   }
 
   def bind(bindpoint: SocketAddress): Unit = {

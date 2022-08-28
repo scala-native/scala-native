@@ -67,7 +67,7 @@ object SocketHelpers {
         }
         setSocketNonBlocking(sock)
         // stackalloc is documented as returning zeroed memory
-        val fdsetPtr = stackalloc[fd_set]() //  No need to FD_ZERO
+        val fdsetPtr = stackalloc[fd_set]() // No need to FD_ZERO
         FD_SET(sock, fdsetPtr)
 
         // calculate once and use a second time below.
@@ -124,15 +124,25 @@ object SocketHelpers {
       true
     }
 
+  private def getGaiHintsAddressFamily(): Int = {
+    if (preferIPv4Stack) {
+      AF_INET
+    } else if (preferIPv6Addresses) {
+      AF_INET6
+    } else {
+      AF_UNSPEC // let getaddrinfo() decide what is returned and its order.
+    }
+  }
+
   def hostToIp(host: String): Option[String] =
     Zone { implicit z =>
-      val hints = stackalloc[addrinfo]()
       val ret = stackalloc[Ptr[addrinfo]]()
-
       val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-      hints.ai_family = AF_UNSPEC
-      hints.ai_socktype = 0
-      hints.ai_next = null
+
+      val hints = stackalloc[addrinfo]()
+      hints.ai_family = getGaiHintsAddressFamily()
+      hints.ai_socktype = SOCK_STREAM
+      hints.ai_flags = AI_ADDRCONFIG
 
       val status = getaddrinfo(toCString(host), null, hints, ret)
       if (status != 0)
@@ -248,4 +258,72 @@ object SocketHelpers {
         if (status == 0) Some(fromCString(host)) else None
       }
     }
+
+  // True if at least one non-loopback interface has an IPv6 address.
+  private def isIPv6Configured(): Boolean = {
+    if (isWindows) {
+      false // Support for IPv6 is neither implemented nor tested.
+    } else
+      Zone { implicit z =>
+        /* The lookup can not be a local address. This one of two IPv6
+         * addresses for the famous, in the IPv6 world, www.kame.net
+         * IPv6 dancing kame (turtle). The url from Ipv6 for fun some time
+         */
+        val kameIPv6Addr = c"2001:2F0:0:8800:0:0:1:1"
+
+        val hints = stackalloc[addrinfo]() // stackalloc clears its memory
+        val ret = stackalloc[Ptr[addrinfo]]()
+
+        hints.ai_family = AF_INET6
+        hints.ai_flags = AI_NUMERICHOST | AI_ADDRCONFIG
+        hints.ai_socktype = SOCK_STREAM
+
+        val gaiStatus = getaddrinfo(kameIPv6Addr, null, hints, ret)
+        val result =
+          try {
+            if (gaiStatus != 0) {
+              val msg = fromCString(gai_strerror(gaiStatus))
+              throw new java.io.IOException(
+                s"Could not determine if IPv6 is configured: ${msg}"
+              )
+            }
+
+            val ai = !ret
+            if ((ai == null) || (ai.ai_addr == null)) {
+              false
+            } else {
+              ai.ai_addr.sa_family == AF_INET6.toUShort
+            }
+          } finally {
+            freeaddrinfo(!ret)
+          }
+
+        result
+      }
+  }
+
+  // A Single Point of Truth to toggle IPv4/IPv6 underlying transport protocol.
+  private lazy val preferIPv4Stack: Boolean = {
+    val prop = System.getProperty("java.net.preferIPv4Stack")
+    // Java defaults to "false", did System properties override?
+    val forceIPv4 = ((prop != null) && (prop == "true"))
+    forceIPv4 || !isIPv6Configured() // Do the expensive test last.
+  }
+
+  /* Leave preferIPv4 stack at its default while this code is a
+   * Work In Progress (WIP).  Toggle to "true" before code is accepted
+   * as a final Pull Request (PR). This default is the opposite of the
+   * long standing Java practice, but reduces the chance of hosing people.
+   * If people have to opt-in, they are more likely to be prepared.
+   */
+//  private[net] def getPreferIPv4Stack(): Boolean = true
+  private[net] def getPreferIPv4Stack(): Boolean = preferIPv4Stack
+
+  private lazy val preferIPv6Addresses: Boolean = {
+    val prop = System.getProperty("java.net.preferIPv6Addresses")
+    (prop != null) && (prop == "true") // Java default of "false"
+  }
+
+  private[net] def getPreferIPv6Addresses(): Boolean = preferIPv6Addresses
+
 }

@@ -5,6 +5,7 @@ import java.net._
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.Platform
 import scalanative.junit.utils.AssertThrows.assertThrows
@@ -167,20 +168,21 @@ class SocketTest {
   }
 
   @Test def bind(): Unit = {
-    val s1 = new Socket
+    val s1 = new Socket()
     try {
       val nonLocalAddr =
         new InetSocketAddress(InetAddress.getByName("123.123.123.123"), 0)
-      assertThrows(classOf[BindException], s1.bind(nonLocalAddr))
+      assertThrows("a1", classOf[BindException], s1.bind(nonLocalAddr))
     } finally {
       s1.close()
     }
 
-    val s2 = new Socket
+    val s2 = new Socket()
     try {
       s2.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
       val port = s2.getLocalPort
       assertEquals(
+        "a2",
         new InetSocketAddress(InetAddress.getLoopbackAddress, port),
         s2.getLocalSocketAddress
       )
@@ -188,20 +190,24 @@ class SocketTest {
       s2.close()
     }
 
-    val s3 = new Socket
+    val s3 = new Socket()
     try {
       s3.bind(null)
-      assertTrue(s3.getLocalSocketAddress != null)
+      assertTrue("a3", s3.getLocalSocketAddress != null)
     } finally {
       s3.close()
     }
 
-    val s4 = new Socket
+    val s4 = new Socket()
     try {
       s4.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
-      val s5 = new Socket
+      val s5 = new Socket()
       try {
-        assertThrows(classOf[BindException], s5.bind(s4.getLocalSocketAddress))
+        assertThrows(
+          "a4",
+          classOf[BindException],
+          s5.bind(s4.getLocalSocketAddress)
+        )
       } finally {
         s5.close()
       }
@@ -210,9 +216,10 @@ class SocketTest {
     }
 
     class UnsupportedSocketAddress extends SocketAddress
-    val s6 = new Socket
+    val s6 = new Socket()
     try {
       assertThrows(
+        "a5",
         classOf[IllegalArgumentException],
         s6.bind(new UnsupportedSocketAddress)
       )

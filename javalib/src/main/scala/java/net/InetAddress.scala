@@ -9,9 +9,6 @@ import java.util.StringTokenizer
 // Ported from Apache Harmony
 private[net] trait InetAddressBase {
 
-  private[net] val wildcard =
-    new Inet4Address(Array[Byte](0, 0, 0, 0), "0.0.0.0")
-
   def getByName(host: String): InetAddress = {
 
     if (host == null || host.length == 0)
@@ -349,9 +346,26 @@ private[net] trait InetAddressBase {
     true
   }
 
-  private val loopback = new Inet4Address(Array[Byte](127, 0, 0, 1))
+  private lazy val loopbackIPv4 = new Inet4Address(Array[Byte](127, 0, 0, 1))
+  private lazy val loopbackIPv6 = new Inet6Address(
+    Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
+  )
 
-  def getLoopbackAddress(): InetAddress = loopback
+  def getLoopbackAddress(): InetAddress =
+    if (SocketHelpers.getPreferIPv6Addresses()) loopbackIPv6
+    else loopbackIPv4
+
+  private lazy val wildcardIPv4 =
+    new Inet4Address(Array[Byte](0, 0, 0, 0), "0.0.0.0")
+
+  private lazy val wildcardIPv6 = new Inet6Address(
+    Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    "0:0:0:0:0:0:0:0"
+  )
+
+  private[net] def getWildcardAddress(): InetAddress =
+    if (SocketHelpers.getPreferIPv6Addresses()) wildcardIPv6
+    else wildcardIPv4
 
   private def byteArrayFromIPString(ip: String): Array[Byte] = {
     if (isValidIPv4Address(ip))
