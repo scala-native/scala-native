@@ -80,11 +80,13 @@ class Inet6AddressTest {
 
   @Test def getByAddress(): Unit = {
     assertThrows(
+      "123: Name or service not known",
       classOf[UnknownHostException],
       Inet6Address.getByAddress("123", null, 0)
     )
     val addr1 = Array[Byte](127.toByte, 0.toByte, 0.toByte, 1.toByte)
     assertThrows(
+      "123: Name or service not known",
       classOf[UnknownHostException],
       Inet6Address.getByAddress("123", addr1, 0)
     )
