@@ -146,12 +146,36 @@ class SocketTest {
       "Skipped due to unexpected behaviour in JDK 17 on Windows",
       Platform.isWindows && Platform.executingInJVMOnJDK17
     )
-    val s = new Socket()
-    try {
-      s.setTrafficClass(0x28)
-      assertEquals(s.getTrafficClass, 0x28)
-    } finally {
-      s.close()
+
+    val prop = System.getProperty("java.net.preferIPv4Stack")
+    val useIPv4 = (prop != null) && (prop.toLowerCase() == "true")
+
+    /* Linux allows setting IPv4 type of service (TOS) on IPv6 sockets
+     * but macOS and possibly others do not.
+     *
+     * IPv6 uses the concept of "traffic class mapping".
+     */
+    if (useIPv4) {
+      val s = new Socket()
+      try {
+        /* Reference:
+         *   https://docs.oracle.com/javase/8/docs/api/
+         *       java/net/Socket.html#setTrafficClass-int
+         *
+         *  The value 0x28 has been in this test for eons. Interpreting
+         *  its meaning on-sight is difficult. The left most three bits
+         *  are "precedence" bits, resolving to "Critical". The rightmost
+         *  5 resolve to IPTOS_THROUGHPUT (0x08).
+         *
+         *  That wild guess and $5.00 might get you a cup of coffee.
+         *  Obscurity keeps the weenies and follow-on maintainers out.
+         */
+        val tc = 0x28
+        s.setTrafficClass(tc)
+        assertEquals(s.getTrafficClass, tc)
+      } finally {
+        s.close()
+      }
     }
   }
 

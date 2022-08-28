@@ -263,31 +263,26 @@ object SocketHelpers {
   private def isIPv6Configured(): Boolean = {
     if (isWindows) {
       false // Support for IPv6 is neither implemented nor tested.
-    } else
-      Zone { implicit z =>
-        /* The lookup can not be a local address. This one of two IPv6
-         * addresses for the famous, in the IPv6 world, www.kame.net
-         * IPv6 dancing kame (turtle). The url from Ipv6 for fun some time
-         */
-        val kameIPv6Addr = c"2001:2F0:0:8800:0:0:1:1"
+    } else {
+      /* The lookup can not be a local address. This one of two IPv6
+       * addresses for the famous, in the IPv6 world, www.kame.net
+       * IPv6 dancing kame (turtle). The url from Ipv6 for fun some time
+       */
+      val kameIPv6Addr = c"2001:2F0:0:8800:0:0:1:1"
 
-        val hints = stackalloc[addrinfo]() // stackalloc clears its memory
-        val ret = stackalloc[Ptr[addrinfo]]()
+      val hints = stackalloc[addrinfo]() // stackalloc clears its memory
+      val ret = stackalloc[Ptr[addrinfo]]()
 
-        hints.ai_family = AF_INET6
-        hints.ai_flags = AI_NUMERICHOST | AI_ADDRCONFIG
-        hints.ai_socktype = SOCK_STREAM
+      hints.ai_family = AF_INET6
+      hints.ai_flags = AI_NUMERICHOST | AI_ADDRCONFIG
+      hints.ai_socktype = SOCK_STREAM
 
-        val gaiStatus = getaddrinfo(kameIPv6Addr, null, hints, ret)
-        val result =
+      val gaiStatus = getaddrinfo(kameIPv6Addr, null, hints, ret)
+      val result =
+        if (gaiStatus != 0) {
+          false
+        } else {
           try {
-            if (gaiStatus != 0) {
-              val msg = fromCString(gai_strerror(gaiStatus))
-              throw new java.io.IOException(
-                s"Could not determine if IPv6 is configured: ${msg}"
-              )
-            }
-
             val ai = !ret
             if ((ai == null) || (ai.ai_addr == null)) {
               false
@@ -297,16 +292,17 @@ object SocketHelpers {
           } finally {
             freeaddrinfo(!ret)
           }
+        }
 
-        result
-      }
+      result
+    }
   }
 
   // A Single Point of Truth to toggle IPv4/IPv6 underlying transport protocol.
   private lazy val preferIPv4Stack: Boolean = {
     val prop = System.getProperty("java.net.preferIPv4Stack")
     // Java defaults to "false", did System properties override?
-    val forceIPv4 = ((prop != null) && (prop == "true"))
+    val forceIPv4 = ((prop != null) && (prop.toLowerCase() == "true"))
     forceIPv4 || !isIPv6Configured() // Do the expensive test last.
   }
 
@@ -321,7 +317,7 @@ object SocketHelpers {
 
   private lazy val preferIPv6Addresses: Boolean = {
     val prop = System.getProperty("java.net.preferIPv6Addresses")
-    (prop != null) && (prop == "true") // Java default of "false"
+    (prop != null) && (prop.toLowerCase() == "true") // Java default of "false"
   }
 
   private[net] def getPreferIPv6Addresses(): Boolean = preferIPv6Addresses
