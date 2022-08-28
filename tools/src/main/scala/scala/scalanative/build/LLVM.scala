@@ -36,22 +36,18 @@ private[scalanative] object LLVM {
       incCompilationContext: IncCompilationContext = new IncCompilationContext
   ): Seq[Path] = {
     // generate .o files for all included source files in parallel
-    paths.par.map { path =>
+    paths.map { path =>
       val inpath = path.abs
       val outpath = inpath + oExt
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      val packageName = {
-        val relPath = config.workdir relativize path
-        val it = relPath.subpath(0, relPath.getNameCount).iterator
-        // conversion from java to scala iterator
-        new Iterator[Path] {
-          def hasNext: Boolean = it.hasNext;
-          def next: Path = it.next()
-        }
-          .mkString(".")
-      }
+      val packageName = (config.workdir relativize path).toString
+        .replace(File.separator, ".")
+        .split('.')
+        .init
+        .mkString(".")
+
       // LL is generated so always rebuild
       // If pack2hashPrev is empty, here are two cases:
       // 1. This is the first compilation time.
