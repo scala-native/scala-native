@@ -76,7 +76,13 @@ int scalanative_so_rcvtimeo() { return SO_RCVTIMEO; }
 
 int scalanative_so_reuseaddr() { return SO_REUSEADDR; }
 
-int scalanative_so_reuseport() { return SO_REUSEPORT; }
+int scalanative_so_reuseport() {
+#ifdef SO_REUSEPORT
+    return SO_REUSEPORT;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_so_sndbuf() { return SO_SNDBUF; }
 
