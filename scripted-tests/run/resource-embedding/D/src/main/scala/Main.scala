@@ -4,5 +4,10 @@ object Main {
       getClass().getResourceAsStream("dir/d-res") != null,
       "d-res should be embedded"
     )
+
+    assert(
+      getClass().getResourceAsStream("dir\\d-res") != null,
+      "d-res should be embedded"
+    )
   }
 }
