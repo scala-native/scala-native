@@ -12,6 +12,6 @@
 #include <assert.h>
 #include <inttypes.h>
 
-//#define DEBUG_PRINT
+// #define DEBUG_PRINT
 
 #endif // IMMIX_LOG_H
