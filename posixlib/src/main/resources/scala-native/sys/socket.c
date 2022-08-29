@@ -198,15 +198,19 @@ int scalanative_connect(int socket, struct scalanative_sockaddr *address,
 int scalanative_accept(int socket, struct scalanative_sockaddr *address,
                        socklen_t *address_len) {
     struct sockaddr *converted_address;
-    int convert_result =
-        scalanative_convert_sockaddr(address, &converted_address, address_len);
+    int convert_result = address != NULL ? // addr and addr_len can be NULL
+                             scalanative_convert_sockaddr(
+                                 address, &converted_address, address_len)
+                                         : 0;
 
     int result;
 
     if (convert_result == 0) {
         result = accept(socket, converted_address, address_len);
-        convert_result = scalanative_convert_scalanative_sockaddr(
-            converted_address, address, address_len);
+        convert_result = address != NULL
+                             ? scalanative_convert_scalanative_sockaddr(
+                                   converted_address, address, address_len)
+                             : 0;
 
         if (convert_result != 0) {
             errno = convert_result;
@@ -217,6 +221,7 @@ int scalanative_accept(int socket, struct scalanative_sockaddr *address,
         result = -1;
     }
 
-    free(converted_address);
+    if (address != NULL)
+        free(converted_address);
     return result;
 }
