@@ -170,6 +170,13 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CInt = extern
 
+  @name("scalanative_getpeername")
+  def getpeername(
+      socket: CInt,
+      address: Ptr[sockaddr],
+      address_len: Ptr[socklen_t]
+  ): CInt = extern
+
   def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
 
   @name("scalanative_connect")
