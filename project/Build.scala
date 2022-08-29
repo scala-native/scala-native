@@ -262,9 +262,12 @@ object Build {
       .settings(mavenPublishSettings, disabledDocsSettings)
       .withNativeCompilerPlugin
       .mapBinaryVersions {
-        case "2.11" | "2.12" | "2.13" =>
+        case version @ ("2.11" | "2.12" | "2.13") =>
           _.settings(
-            commonScalalibSettings("scala-library"),
+            commonScalalibSettings(
+              "scala-library",
+              MultiScalaProject.scalaVersions(version)
+            ),
             scalacOptions ++= Seq(
               "-deprecation:false",
               "-language:postfixOps",
@@ -289,7 +292,7 @@ object Build {
         case "3" =>
           _.settings(
             name := "scala3lib",
-            commonScalalibSettings("scala3-library_3"),
+            commonScalalibSettings("scala3-library_3", scala3libSourcesVersion),
             scalacOptions ++= Seq(
               "-language:implicitConversions"
             ),

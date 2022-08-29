@@ -85,10 +85,10 @@ jobs:
           - scala: 2.11.12
             gc: boehm
         include:
-          - scala: 3.2.0-RC2
+          - scala: 3.2.0-RC4
             build-mode: debug
             gc: immix
-          - scala: 3.2.0-RC2
+          - scala: 3.2.0-RC4
             build-mode: release-fast
             gc: commix
     steps:

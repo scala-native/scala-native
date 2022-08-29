@@ -118,11 +118,18 @@ object MultiScalaProject {
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
-  private final val versions = Map[String, Seq[String]](
+  final val scalaCrossVersions = Map[String, Seq[String]](
     "2.11" -> ScalaVersions.crossScala211,
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
     "3" -> ScalaVersions.crossScala3
+  )
+
+  final val scalaVersions = Map[String, String](
+    "2.11" -> ScalaVersions.scala211,
+    "2.12" -> ScalaVersions.scala212,
+    "2.13" -> ScalaVersions.scala213,
+    "3" -> ScalaVersions.scala3
   )
 
   private def projectID(id: String, major: String) =
@@ -135,7 +142,7 @@ object MultiScalaProject {
       base: File
   ): MultiScalaProject = {
     val projects = for {
-      (major, minors) <- versions
+      (major, minors) <- scalaCrossVersions
     } yield {
       major -> Project(
         id = projectID(id, major),
@@ -143,7 +150,7 @@ object MultiScalaProject {
       ).settings(
         Settings.commonSettings,
         name := Settings.projectName(id),
-        scalaVersion := minors.last,
+        scalaVersion := scalaVersions(major),
         crossScalaVersions := minors
       )
     }

@@ -326,10 +326,13 @@ object Settings {
       // baseDirectory = project/{native,jvm}/.{binVersion}
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile
       val sharedTestsDir = testsRootDir / "shared/src/test"
+      def sources2_13OrAbove = sharedTestsDir / "scala-2.13+"
+      def sources3_2 = sharedTestsDir / "scala-3.2"
       val extraSharedDirectories =
         scalaVersionsDependendent(scalaVersion.value)(List.empty[File]) {
-          case (2, 13) => sharedTestsDir / "scala-2.13+" :: Nil
-          case (3, _)  => sharedTestsDir / "scala-2.13+" :: Nil
+          case (2, 13) => sources2_13OrAbove :: Nil
+          case (3, 1)  => sources2_13OrAbove :: Nil
+          case (3, _)  => sources2_13OrAbove :: sources3_2 :: Nil
         }
       val sharedScalaSources =
         scalaVersionDirectories(sharedTestsDir, "scala", scalaVersion.value)
@@ -483,7 +486,10 @@ object Settings {
     dirs.toSeq // most specific shadow less specific
   }
 
-  def commonScalalibSettings(libraryName: String): Seq[Setting[_]] =
+  def commonScalalibSettings(
+      libraryName: String,
+      scalaVersion: String
+  ): Seq[Setting[_]] =
     Def.settings(
       mavenPublishSettings,
       disabledDocsSettings,
@@ -497,9 +503,9 @@ object Settings {
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
+      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion classifier "sources",
       fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
+        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion,
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -509,13 +515,13 @@ object Settings {
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        val version = scalaVersion.value
+        val version = scalaVersion
         val usedScalaVersion = scala.util.Properties.versionNumberString
         if (version == usedScalaVersion) updateClassifiers
         else update
       }.value,
       fetchScalaSource := {
-        val version = scalaVersion.value
+        val version = scalaVersion
         val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
@@ -550,7 +556,7 @@ object Settings {
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
         baseDirectory.value.getParentFile(),
         "overrides",
-        scalaVersion.value
+        scalaVersion
       ),
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
