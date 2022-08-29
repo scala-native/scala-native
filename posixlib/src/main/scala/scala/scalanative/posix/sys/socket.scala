@@ -177,6 +177,9 @@ object socket {
   @name("scalanative_so_reuseaddr")
   def SO_REUSEADDR: CInt = extern
 
+  @name("scalanative_so_reuseport")
+  def SO_REUSEPORT: CInt = extern
+
   @name("scalanative_so_sndbuf")
   def SO_SNDBUF: CInt = extern
 
