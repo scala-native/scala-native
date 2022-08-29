@@ -132,7 +132,7 @@ private[net] trait InetAddressBase {
     } else {
       val ip = SocketHelpers.hostToIp(host).getOrElse {
         throw new UnknownHostException(
-          "No IP address could be found for the specified host: " + host
+          host + ": Name or service not known"
         )
       }
       if (isValidIPv4Address(ip))
@@ -158,7 +158,7 @@ private[net] trait InetAddressBase {
     val ips: Array[String] = SocketHelpers.hostToIpArray(host)
     if (ips.isEmpty) {
       throw new UnknownHostException(
-        "No IP address could be found for the specified host: " + host
+        host + ": Name or service not known"
       )
     }
 
