@@ -43,8 +43,7 @@ class InetAddressTest {
     assertTrue(all.length >= 1)
 
     if (!Platform.isWindows) {
-      // TODO remove filter on main
-      for (alias <- all; if alias.isInstanceOf[Inet4Address])
+      for (alias <- all)
         assertTrue(alias.getCanonicalHostName().startsWith("localhost"))
     }
 
