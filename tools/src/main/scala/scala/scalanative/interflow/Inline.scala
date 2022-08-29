@@ -46,9 +46,9 @@ trait Inline { self: Interflow =>
         def isBlacklisted =
           this.isBlacklisted(name)
         def calleeTooBig =
-          defn.insts.size > 8192
+          defn.insts.size > maxCallerSize
         def callerTooBig =
-          mergeProcessor.currentSize() > 8192
+          mergeProcessor.currentSize() > maxCallerSize
         def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
@@ -131,7 +131,7 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def `inline`(name: Global, args: Seq[Val])(implicit
+  def `inline`(name: Global, args: Seq[Val], inlineDepth: Int = 0)(implicit
       state: State,
       linked: linker.Result,
       origPos: Position
@@ -148,7 +148,7 @@ trait Inline { self: Interflow =>
       val inlineArgs = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks =
-        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
+        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy, inlineDepth)
 
       val emit = new nir.Buffer()(state.fresh)
 

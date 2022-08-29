@@ -361,8 +361,8 @@ final class MergeProcessor(
   def visit(
       block: MergeBlock,
       newPhis: Seq[MergePhi],
-      newState: State
-  ): Unit = {
+      newState: State,
+      inlineDepth: Int = 0): Unit = {
     if (block.invalidations > 128) {
       throw BailOut("too many block invalidations")
     } else {
@@ -374,21 +374,21 @@ final class MergeProcessor(
 
     block.start = newState.fullClone(block.name)
     block.end = newState
-    block.cf = eval.run(insts, offsets, block.label.name)(block.end)
+    block.cf = eval.run(insts, offsets, block.label.name, inlineDepth)(block.end)
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
     todo = todo.filter(n => findMergeBlock(n).incoming.nonEmpty)
   }
 
-  def advance(): Unit = {
+  def advance(inlineDepth: Int = 0): Unit = {
     val block = findMergeBlock(todo.head)
     todo = todo.tail
     val (newPhis, newState) = merge(block)
     block.phis = newPhis
 
     if (newState != block.start) {
-      visit(block, newPhis, newState)
+      visit(block, newPhis, newState, inlineDepth)
     }
   }
 

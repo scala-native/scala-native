@@ -8,7 +8,8 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(implicit
+  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local,
+          inlineDepth: Int = 0)(implicit
       state: State
   ): Inst.Cf = {
     import state.{materialize, delay}
@@ -27,7 +28,7 @@ trait Eval { self: Interflow =>
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
-          val value = eval(op)
+          val value = eval(op, inlineDepth)
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)(inst.pos)
           } else {
@@ -104,8 +105,9 @@ trait Eval { self: Interflow =>
   }
 
   def eval(
-      op: Op
-  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
+      op: Op, inlineDepth: Int = 0
+  )(implicit state: State, linked: linker.Result, origPos: Position,
+      ): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -144,8 +146,12 @@ trait Eval { self: Interflow =>
           }
 
           dtarget match {
-            case Val.Global(name, _) if shallInline(name, eargs) =>
-              `inline`(name, eargs)
+            case Val.Global(name, _) if shallInline(name, eargs)
+              && inlineDepth < maxInlineDepth =>
+              `inline`(name, eargs, inlineDepth + 1)
+
+
+
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
               polyInline(op, eargs)
             case _ =>

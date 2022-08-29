@@ -177,7 +177,7 @@ object NativeConfig {
       targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
-      maxInlineDepth = -1,
+      maxInlineDepth = 1000,
       maxCallerSize = 8192,
       mode = Mode.default,
       check = false,
