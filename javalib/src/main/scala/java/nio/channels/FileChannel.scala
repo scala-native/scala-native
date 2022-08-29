@@ -1,14 +1,13 @@
 package java.nio.channels
 
+import java.io.{RandomAccessFile, FileNotFoundException}
+
 import java.nio.{ByteBuffer, MappedByteBuffer}
-import java.nio.file.{OpenOption, Path}
+import java.nio.channels.spi.AbstractInterruptibleChannel
+import java.nio.file._
 import java.nio.file.attribute.FileAttribute
-import spi.AbstractInterruptibleChannel
 
 import java.util.{HashSet, Set}
-import java.io.RandomAccessFile
-
-import java.nio.file._
 
 abstract class FileChannel protected ()
     extends AbstractInterruptibleChannel
@@ -72,6 +71,18 @@ object FileChannel {
     final val READ_WRITE = new MapMode {}
   }
 
+  private def tryRandomAccessFile(
+      fileName: String,
+      mode: String
+  ): RandomAccessFile = {
+    try {
+      new RandomAccessFile(fileName, mode)
+    } catch {
+      case fnf: FileNotFoundException =>
+        throw new AccessDeniedException(fileName)
+    }
+  }
+
   def open(
       path: Path,
       options: Set[_ <: OpenOption],
@@ -113,24 +124,34 @@ object FileChannel {
       mode.append("s")
     }
 
-    val file = path.toFile()
-    val raf = new RandomAccessFile(file, mode.toString)
+    val raf = tryRandomAccessFile(path.toString, mode.toString)
 
-    if (writing && options.contains(TRUNCATE_EXISTING)) {
-      raf.setLength(0L)
+    try {
+      if (writing && options.contains(TRUNCATE_EXISTING)) {
+        raf.setLength(0L)
+      }
+
+      if (writing && options.contains(APPEND)) {
+        raf.seek(raf.length())
+      }
+
+      new FileChannelImpl(
+        raf.getFD(),
+        Some(path.toFile()),
+        deleteFileOnClose =
+          options.contains(StandardOpenOption.DELETE_ON_CLOSE),
+        openForReading = true,
+        openForWriting = writing
+      )
+    } catch {
+      case e: Throwable =>
+        try {
+          raf.close()
+        } catch {
+          case _: Throwable => // caller interested in original e not this one.
+        }
+        throw e
     }
-
-    if (writing && options.contains(APPEND)) {
-      raf.seek(raf.length())
-    }
-
-    new FileChannelImpl(
-      raf.getFD(),
-      Some(file),
-      deleteFileOnClose = options.contains(StandardOpenOption.DELETE_ON_CLOSE),
-      openForReading = true,
-      openForWriting = writing
-    )
   }
 
   def open(path: Path, options: Array[OpenOption]): FileChannel = {
