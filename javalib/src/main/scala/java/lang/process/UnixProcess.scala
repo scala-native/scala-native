@@ -1,32 +1,19 @@
 package java.lang.process
 
+import java.lang.ProcessBuilder.Redirect
 import java.io.{File, IOException, InputStream, OutputStream}
+import java.io.FileDescriptor
 import java.util.concurrent.TimeUnit
 import java.util.ScalaOps._
+
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.{errno => err, signal => sig, _}
-import sig._
+import scala.scalanative.libc.{errno => err, signal => sig}
 import err.errno
-import scala.scalanative.posix.{
-  fcntl,
-  pthread,
-  signal,
-  sys,
-  time,
-  unistd,
-  errno => e
-}
+import scala.scalanative.posix.{fcntl, signal, sys, time, unistd, errno => e}
+import signal.{kill, SIGKILL}
 import time._
 import sys.time._
-import e.ETIMEDOUT
-import UnixProcess._
-import java.lang.ProcessBuilder.Redirect
-import pthread._
-import scala.collection.mutable.ArraySeq
-import scala.scalanative.posix.sys.types.{pthread_cond_t, pthread_mutex_t}
-import java.io.FileDescriptor
-import scala.scalanative.posix
 
 private[lang] class UnixProcess private (
     pid: CInt,
@@ -35,10 +22,9 @@ private[lang] class UnixProcess private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends GenericProcess {
-  override def destroy(): Unit = posix.signal.kill(pid, SIGTERM)
+  override def destroy(): Unit = kill(pid, sig.SIGTERM)
 
   override def destroyForcibly(): Process = {
-    import posix.signal._
     kill(pid, SIGKILL)
     this
   }
@@ -76,7 +62,10 @@ private[lang] class UnixProcess private (
       case -1 =>
         val ts = stackalloc[timespec]()
         val tv = stackalloc[timeval]()
-        throwOnError(gettimeofday(tv, null), "Failed to set time of day.")
+        UnixProcess.throwOnError(
+          gettimeofday(tv, null),
+          "Failed to set time of day."
+        )
         val nsec =
           unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
         val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
@@ -93,7 +82,7 @@ private[lang] class UnixProcess private (
       res = f()
       res match {
         case 0   => _exitValue == -1
-        case res => res != ETIMEDOUT
+        case res => res != e.ETIMEDOUT
       }
     }) ()
     res
@@ -181,68 +170,68 @@ object UnixProcess {
         .map(e => s"${e.getKey()}=${e.getValue()}")
     }
 
-    /*
-     * Use vfork rather than fork to avoid copying the parent process memory to the child. It also
-     * ensures that the parent won't try to read or write to the child file descriptors before the
-     * child process has called execve. In an ideal world, we'd use posix_spawn, but it doesn't
-     * support changing the working directory of the child process or closing all of the unused
-     * parent file descriptors. Using posix_spawn would require adding an additional step in which
-     * we spawned a new process that called execve with a helper binary. This may be necessary
-     * eventually to increase portability but, for now, just use vfork, which is suppported on
-     * OSX and Linux (despite warnings about vfork's future, it seems somewhat unlikely that support
-     * will be dropped soon.
-     */
-    unistd.vfork() match {
+    unistd.fork() match {
       case -1 =>
         throw new IOException("Unable to fork process")
-      case 0 =>
-        /*
-         * It is unsafe to directly run any code in vfork2 on top of the parent's stack without
-         * creating a new stack frame on the child. To fix this, put all of the code that needs
-         * to run on the child before execve inside of a method.
-         */
-        def invokeChildProcess(): Process = {
-          ProcessMonitor.notifyMonitor()
-          if (dir != null) unistd.chdir(toCString(dir.toString))
-          setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
-          setupChildFDS(
-            !(outfds + 1),
-            builder.redirectOutput(),
-            unistd.STDOUT_FILENO
-          )
-          setupChildFDS(
-            !(errfds + 1),
-            if (builder.redirectErrorStream()) Redirect.PIPE
-            else builder.redirectError(),
-            unistd.STDERR_FILENO
-          )
-          unistd.close(!infds)
-          unistd.close(!(infds + 1))
-          unistd.close(!outfds)
-          unistd.close(!(outfds + 1))
-          unistd.close(!errfds)
-          unistd.close(!(errfds + 1))
 
-          binaries.foreach { b =>
-            val bin = toCString(b)
-            if (unistd.execve(bin, argv, envp) == -1 && errno == e.ENOEXEC) {
-              val newArgv = nullTerminate(Seq("/bin/sh", "-c", b))
-              unistd.execve(c"/bin/sh", newArgv, envp)
-            }
+      case 0 =>
+        if (dir != null)
+          unistd.chdir(toCString(dir.toString))
+
+        setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+        setupChildFDS(
+          !(outfds + 1),
+          builder.redirectOutput(),
+          unistd.STDOUT_FILENO
+        )
+        setupChildFDS(
+          !(errfds + 1),
+          if (builder.redirectErrorStream()) Redirect.PIPE
+          else builder.redirectError(),
+          unistd.STDERR_FILENO
+        )
+        unistd.close(!infds)
+        unistd.close(!(infds + 1))
+        unistd.close(!outfds)
+        unistd.close(!(outfds + 1))
+        unistd.close(!errfds)
+        unistd.close(!(errfds + 1))
+
+        binaries.foreach { b =>
+          val bin = toCString(b)
+          if (unistd.execve(bin, argv, envp) == -1 && errno == e.ENOEXEC) {
+            val newArgv = nullTerminate(Seq("/bin/sh", "-c", b))
+            unistd.execve(c"/bin/sh", newArgv, envp)
           }
-          // The spec of vfork requires calling _exit if the child process fails to execve.
-          unistd._exit(1)
-          throw new IOException(s"Failed to create process for command: $cmd")
         }
-        invokeChildProcess()
+
+        /* execve failed. FreeBSD "man" recommends fast exit.
+         * Linux says nada.
+         * Code 127 is "Command not found", the convention for exec failure.
+         */
+        unistd._exit(127)
+        throw new IOException(s"Failed to create process for command: $cmd")
+
       case pid =>
+        /* Being here, we know that a child process exists, or existed.
+         * ProcessMonitor needs to know about it. It is _far_ better
+         * to do the notification in this parent.
+         *
+         * Implementations of 'fork' can be very restrictive about what
+         * can run in the child before it calls one of the 'exec*' methods.
+         * 'notifyMonitor' may or may not follow those rules. Even if it
+         * currently does, that could easily change with future maintenance
+         * make it no longer compliant, leading to shrapnel & wasted
+         * developer time.
+         */
+        ProcessMonitor.notifyMonitor()
         Seq(!(outfds + 1), !(errfds + 1), !infds) foreach unistd.close
         new UnixProcess(pid, builder, infds, outfds, errfds)
     }
   }
 
   @inline
-  private[lang] def throwOnError(rc: CInt, msg: => String): CInt = {
+  private def throwOnError(rc: CInt, msg: => String): CInt = {
     if (rc != 0) {
       throw new IOException(s"$msg Error code: $rc, Error number: $errno")
     } else {
@@ -303,7 +292,8 @@ object UnixProcess {
     }
   }
 
-  // The execvpe function isn't available on all platforms so find the possible binaries to exec.
+  // The execvpe function isn't available on all platforms so find the
+  // possible binaries to exec.
   private def binaryPaths(
       environment: java.util.Map[String, String],
       bin: String
