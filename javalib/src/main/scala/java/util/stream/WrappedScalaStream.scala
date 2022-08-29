@@ -2,7 +2,7 @@ package java.util.stream
 
 import java.util.Iterator
 import scalanative.compat.StreamsCompat._
-import java.util.function.{Function, Predicate}
+import java.util.function.{Consumer, Function, Predicate}
 
 class WrappedScalaStream[T](
     private val underlying: SStream[T],
@@ -27,6 +27,9 @@ class WrappedScalaStream[T](
 
   override def filter(pred: Predicate[_ >: T]): Stream[T] =
     new WrappedScalaStream(underlying.filter(pred.test), closeHandler)
+
+  override def forEach(action: Consumer[_ >: T]): Unit =
+    underlying.foreach(action.accept(_))
 }
 
 object WrappedScalaStream {
@@ -97,6 +100,9 @@ private final class CompositeStream[T](
     val newStreams: Seq[Stream[T]] = substreams.map(s => s.filter(pred))
     new CompositeStream(newStreams, closeHandler)
   }
+
+  override def forEach(action: Consumer[_ >: T]): Unit =
+    substreams.foreach(_.forEach(action))
 }
 
 private object EmptyIterator extends Iterator[Nothing] {

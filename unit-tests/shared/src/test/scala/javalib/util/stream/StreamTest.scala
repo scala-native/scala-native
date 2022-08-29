@@ -1,7 +1,7 @@
 package javalib.util.stream
 
 import java.util.stream._
-import java.util.function.Function
+import java.util.function.{Consumer, Function}
 
 import org.junit.Test
 import org.junit.Assert._
@@ -44,6 +44,16 @@ class StreamTest {
     assertTrue(it.next() == 2)
     assertTrue(it.next() == 3)
     assertFalse(it.hasNext())
+  }
+
+  @Test def streamForeachWorks(): Unit = {
+    val s = Stream.of(1, 2, 3)
+    var sum = 0
+    val consumer = new Consumer[Int] {
+      def accept(i: Int): Unit = sum += i
+    }
+    s.forEach(consumer)
+    assertEquals(6, sum)
   }
 
   @Test def streamFlatMapWorksTwice(): Unit = {
