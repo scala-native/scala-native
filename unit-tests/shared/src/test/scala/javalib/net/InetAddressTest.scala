@@ -77,6 +77,12 @@ class InetAddressTest {
 
     val i3 = InetAddress.getByName(String.valueOf(0xffffffffL))
     assertEquals("255.255.255.255", i3.getHostAddress())
+
+    assertThrows(
+      "not.example.com: Name or service not known",
+      classOf[UnknownHostException],
+      InetAddress.getByName("not.example.com")
+    )
   }
 
   @Test def getHostAddress(): Unit = {
