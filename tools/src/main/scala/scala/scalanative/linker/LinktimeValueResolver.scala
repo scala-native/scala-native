@@ -12,6 +12,9 @@ trait LinktimeValueResolver { self: Reach =>
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.isWindows" -> Platform.isWindows,
+      s"$linktimeInfo.isLinux" -> Platform.isLinux,
+      s"$linktimeInfo.isMac" -> Platform.isMac,
+      s"$linktimeInfo.isFreeBSD" -> Platform.isFreeBSD,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix

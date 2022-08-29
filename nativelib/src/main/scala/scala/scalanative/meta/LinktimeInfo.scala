@@ -10,6 +10,15 @@ object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
   def isWindows: Boolean = resolved
 
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isLinux")
+  def isLinux: Boolean = resolved
+
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isMac")
+  def isMac: Boolean = resolved
+
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isFreeBSD")
+  def isFreeBSD: Boolean = resolved
+
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
   def is32BitPlatform: Boolean = resolved
 
