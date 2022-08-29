@@ -1,14 +1,19 @@
 package java.io
 
 import java.{lang => jl}
+import java.nio.channels.{FileChannelImpl, FileChannel}
+
 import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
+
+import scalanative.libc.errno
+
 import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows
 import windows._
 import windows.FileApiExt._
-import java.nio.channels.{FileChannelImpl, FileChannel}
+import windows.HandleApiExt
 
 class RandomAccessFile private (
     file: File,
@@ -253,7 +258,12 @@ private object RandomAccessFile {
         case _                    => invalidFlags()
       }
       val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+
       val fd = open(toCString(file.getPath()), flags, mode)
+
+      if (fd == -1)
+        throw new FileNotFoundException(file.getName())
+
       new FileDescriptor(FileDescriptor.FileHandle(fd), readOnly = false)
     }
 
@@ -275,6 +285,10 @@ private object RandomAccessFile {
         flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
         templateFile = null
       )
+
+      if (handle == HandleApiExt.INVALID_HANDLE_VALUE)
+        throw new FileNotFoundException(file.getName())
+
       new FileDescriptor(
         FileDescriptor.FileHandle(handle),
         readOnly = _flags == "r"
