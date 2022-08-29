@@ -1,6 +1,7 @@
 package java.util
 
 import java.lang.{Long => JLong}
+import java.security.SecureRandom
 
 final class UUID private (
     private val i1: Int,
@@ -134,14 +135,35 @@ object UUID {
   private final val NameBased = 3
   private final val Random = 4
 
-  private lazy val rng = new Random() // TODO Use java.security.SecureRandom
+  private lazy val rng = new SecureRandom()
 
   def randomUUID(): UUID = {
-    val i1 = rng.nextInt()
-    val i2 = (rng.nextInt() & ~0x0000f000) | 0x00004000
-    val i3 = (rng.nextInt() & ~0xc0000000) | 0x80000000
-    val i4 = rng.nextInt()
-    new UUID(i1, i2, i3, i4, null, null)
+    // ported from Apache Harmony
+
+    val data = new Array[Byte](16)
+    rng.nextBytes(data)
+
+    var msb = (data(0) & 0xffL) << 56
+    msb |= (data(1) & 0xffL) << 48
+    msb |= (data(2) & 0xffL) << 40
+    msb |= (data(3) & 0xffL) << 32
+    msb |= (data(4) & 0xffL) << 24
+    msb |= (data(5) & 0xffL) << 16
+    msb |= (data(6) & 0x0fL) << 8
+    msb |= (0x4L << 12) // set the version to 4
+    msb |= (data(7) & 0xffL)
+
+    var lsb = (data(8) & 0x3fL) << 56
+    lsb |= (0x2L << 62) // set the variant to bits 01
+    lsb |= (data(9) & 0xffL) << 48
+    lsb |= (data(10) & 0xffL) << 40
+    lsb |= (data(11) & 0xffL) << 32
+    lsb |= (data(12) & 0xffL) << 24
+    lsb |= (data(13) & 0xffL) << 16
+    lsb |= (data(14) & 0xffL) << 8
+    lsb |= (data(15) & 0xffL)
+
+    new UUID(msb, lsb)
   }
 
   // Not implemented (requires messing with MD5 or SHA-1):
