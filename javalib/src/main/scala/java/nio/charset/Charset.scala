@@ -1,12 +1,20 @@
 package java.nio.charset
 
 import scala.collection.mutable
+import java.util.{Collections, HashSet, Arrays}
 import java.nio.{ByteBuffer, CharBuffer}
 
-abstract class Charset protected (canonicalName: String, aliases: Array[String])
-    extends AnyRef
+abstract class Charset protected (
+    canonicalName: String,
+    _aliases: Array[String]
+) extends AnyRef
     with Comparable[Charset] {
+  private lazy val aliasesSet =
+    Collections.unmodifiableSet(new HashSet(Arrays.asList(_aliases)))
+
   final def name(): String = canonicalName
+
+  final def aliases(): java.util.Set[String] = aliasesSet
 
   override final def equals(that: Any): Boolean = that match {
     case that: Charset => this.name() == that.name()
