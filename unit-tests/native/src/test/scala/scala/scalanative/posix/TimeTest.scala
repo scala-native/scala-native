@@ -171,7 +171,9 @@ class TimeTest {
         val tmPtr = tmBuf.asInstanceOf[Ptr[tm]]
 
         if (localtime_r(ttPtr, tmPtr) == null) {
-          throw new IOException(fromCString(string.strerror(libcErrno.errno)))
+          throw new IOException(
+            fromCString(libcString.strerror(libcErrno.errno))
+          )
         } else {
           val unexpected = "BOGUS"
 
@@ -429,7 +431,7 @@ class TimeTest {
     val result = clock_getres(CLOCK_REALTIME, timespecP)
 
     assertEquals(
-      s"clock_getres failed with errno: ${posixErrno.errno}",
+      s"clock_getres failed with errno: ${libcErrno.errno}",
       0,
       result
     )
@@ -463,7 +465,7 @@ class TimeTest {
     val result = clock_gettime(CLOCK_REALTIME, timespecP)
 
     assertEquals(
-      s"clock_gettime failed with errno: ${posixErrno.errno}",
+      s"clock_gettime failed with errno: ${libcErrno.errno}",
       0,
       result
     )
@@ -549,8 +551,8 @@ class TimeTest {
      */
 
     assertTrue(
-      s"clock_settime failed with errno: ${posixErrno.errno}",
-      posixErrno.errno == (EINVAL) || posixErrno.errno == (EPERM)
+      s"clock_settime failed with errno: ${libcErrno.errno}",
+      libcErrno.errno == (EINVAL) || libcErrno.errno == (EPERM)
     )
   }
 }
