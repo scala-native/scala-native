@@ -360,6 +360,39 @@ long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
 }
 #endif // unix
 
+int scalanative_getpeername(int socket, struct scalanative_sockaddr *address,
+                            socklen_t *address_len) {
+    struct sockaddr *converted_address = NULL;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, address_len);
+
+    int result;
+
+    if (convert_result == 0) {
+        result = getpeername(socket, converted_address, address_len);
+        convert_result = scalanative_convert_scalanative_sockaddr(
+            converted_address, address, address_len);
+
+        if (convert_result != 0) {
+            errno = convert_result;
+            result = -1;
+        }
+    } else {
+        errno = convert_result;
+        result = -1;
+    }
+
+    if (converted_address != NULL)
+        free(converted_address);
+
+    return result;
+}
+
+int scalanative_bind(int socket, struct scalanative_sockaddr *address,
+                     socklen_t address_len) {
+    struct sockaddr *converted_address;
+    int convert_result =
+        scalanative_convert_sockaddr(address, &converted_address, &address_len);
 #ifdef _WIN32
 long scalanative_sendmsg(int socket, void *msg, int flags) {
     errno = ENOTSUP;
