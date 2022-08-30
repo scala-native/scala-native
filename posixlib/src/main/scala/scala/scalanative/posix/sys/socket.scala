@@ -192,6 +192,14 @@ object socket {
       address_len: Ptr[socklen_t]
   ): CInt = extern
 
+  @name("scalanative_accept4")
+  def accept4(
+      socket: CInt,
+      address: Ptr[sockaddr],
+      address_len: Ptr[socklen_t],
+      flags: CInt
+  ): CInt = extern
+
   def setsockopt(
       socket: CInt,
       level: CInt,
