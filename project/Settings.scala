@@ -488,7 +488,7 @@ object Settings {
 
   def commonScalalibSettings(
       libraryName: String,
-      scalaVersion: String
+      sourcesScalaVersion: String
   ): Seq[Setting[_]] =
     Def.settings(
       mavenPublishSettings,
@@ -503,9 +503,9 @@ object Settings {
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion classifier "sources",
+      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion,
+        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesScalaVersion,
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -515,24 +515,32 @@ object Settings {
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        val version = scalaVersion
-        val usedScalaVersion = scala.util.Properties.versionNumberString
+        val version = sourcesScalaVersion
+        val usedScalaVersion = scalaVersion.value
         if (version == usedScalaVersion) updateClassifiers
         else update
       }.value,
       fetchScalaSource := {
-        val version = scalaVersion
+        val version = sourcesScalaVersion
         val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
-        val scalaLibSourcesJar = report
-          .select(
-            configuration = configurationFilter("compile"),
-            module = moduleFilter(name = libraryName),
-            artifact = artifactFilter(classifier = "sources")
+        lazy val lm = {
+          import sbt.librarymanagement.ivy._
+          val ivyConfig = InlineIvyConfiguration().withLog(s.log)
+          IvyDependencyResolution(ivyConfig)
+        }
+        lazy val scalaLibSourcesJar = lm
+          .retrieve(
+            "org.scala-lang" % libraryName % sourcesScalaVersion classifier "sources",
+            scalaModuleInfo = None,
+            retrieveDirectory = IO.temporaryDirectory,
+            log = s.log
           )
-          .headOption
+          .map(_.find(_.name.endsWith(s"$libraryName-$version-sources.jar")))
+          .toOption
+          .flatten
           .getOrElse {
             throw new Exception(
               s"Could not fetch $libraryName sources for version $version"
@@ -556,7 +564,7 @@ object Settings {
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
         baseDirectory.value.getParentFile(),
         "overrides",
-        scalaVersion
+        sourcesScalaVersion
       ),
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
