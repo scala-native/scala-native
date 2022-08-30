@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "socket_conversions.h"
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -17,14 +16,44 @@ typedef SSIZE_T ssize_t;
 #warning "Size and order of C structures are not checked when -std < c11."
 #endif
 #else
-// Posix defines the name and type of required fields. Size of fields
-// and any internal or tail padding are left unspecified. This section
-// verifies that the C and Scala Native definitions match in each compilation
-// environment.
-//
-// The first sockaddr field in C has had size 2 and no padding after it
-// since time immemorial. Verify that the Scala Native field has the same.
+/* POSIX defines the name and type of required fields. Size of fields
+ * and any internal or tail padding are left unspecified. This section
+ * verifies that the C and Scala Native definitions match in each compilation
+ * environment.
+ *
+ * With such assurance, Scala Native code can call directly into C or
+ * C like code without an expensive conversion layer.
+ *
+ * The first sockaddr field in C has had size 2 and no padding after it
+ * since time immemorial.
+ *
+ * BSD operating systems changed. macOS & FreeBSD kept the two byte prologue
+ * by shortening sa_family to one byte and adding a one byte
+ * sin_len/sin6_len field (editorial snark deleted).
+ *
+ * Here the traditional 2 bytes are declared. On BSD systems, code in
+ * Socket.scala handles reading and writing the "short" sa_family and
+ * synthesizes the sin*_len fields.
+ *
+ * If scalanative_sa_family_t _ever_ changes here, keep in sync with
+ * netinet/in.h.
+ */
 
+typedef unsigned short scalanative_sa_family_t;
+
+struct scalanative_sockaddr {
+    scalanative_sa_family_t sa_family;
+    char sa_data[14];
+};
+
+struct scalanative_sockaddr_storage {
+    scalanative_sa_family_t ss_family;
+    unsigned short __opaquePadTo32;
+    unsigned int __opaquePadTo64;
+    unsigned long long __opaqueAlignStructure[15];
+};
+
+// Also verifies that Scala Native sa_family field has the traditional size.
 _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) == 2,
                "Unexpected size: scalanative_sockaddr sa_family");
 
@@ -124,94 +153,3 @@ int scalanative_af_inet6() { return AF_INET6; }
 int scalanative_af_unix() { return AF_UNIX; }
 
 int scalanative_af_unspec() { return AF_UNSPEC; }
-
-int scalanative_getsockname(int socket, struct scalanative_sockaddr *address,
-                            socklen_t *address_len) {
-    struct sockaddr *converted_address = NULL;
-    int convert_result =
-        scalanative_convert_sockaddr(address, &converted_address, address_len);
-
-    int result;
-
-    if (convert_result == 0) {
-        result = getsockname(socket, converted_address, address_len);
-        convert_result = scalanative_convert_scalanative_sockaddr(
-            converted_address, address, address_len);
-
-        if (convert_result != 0) {
-            errno = convert_result;
-            result = -1;
-        }
-    } else {
-        errno = convert_result;
-        result = -1;
-    }
-
-    if (converted_address != NULL)
-        free(converted_address);
-
-    return result;
-}
-
-int scalanative_bind(int socket, struct scalanative_sockaddr *address,
-                     socklen_t address_len) {
-    struct sockaddr *converted_address;
-    int convert_result =
-        scalanative_convert_sockaddr(address, &converted_address, &address_len);
-
-    int result;
-
-    if (convert_result == 0) {
-        result = bind(socket, converted_address, address_len);
-    } else {
-        errno = convert_result;
-        result = -1;
-    }
-
-    free(converted_address);
-    return result;
-}
-
-int scalanative_connect(int socket, struct scalanative_sockaddr *address,
-                        socklen_t address_len) {
-    struct sockaddr *converted_address;
-    int convert_result =
-        scalanative_convert_sockaddr(address, &converted_address, &address_len);
-
-    int result;
-
-    if (convert_result == 0) {
-        result = connect(socket, converted_address, address_len);
-    } else {
-        errno = convert_result;
-        result = -1;
-    }
-    free(converted_address);
-    return result;
-}
-
-int scalanative_accept(int socket, struct scalanative_sockaddr *address,
-                       socklen_t *address_len) {
-    struct sockaddr *converted_address;
-    int convert_result =
-        scalanative_convert_sockaddr(address, &converted_address, address_len);
-
-    int result;
-
-    if (convert_result == 0) {
-        result = accept(socket, converted_address, address_len);
-        convert_result = scalanative_convert_scalanative_sockaddr(
-            converted_address, address, address_len);
-
-        if (convert_result != 0) {
-            errno = convert_result;
-            result = -1;
-        }
-    } else {
-        errno = convert_result;
-        result = -1;
-    }
-
-    free(converted_address);
-    return result;
-}

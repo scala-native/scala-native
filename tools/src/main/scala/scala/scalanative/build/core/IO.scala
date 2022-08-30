@@ -1,4 +1,6 @@
-package scala.scalanative.build
+package scala.scalanative
+package build
+package core
 
 import java.io.IOException
 import java.nio.file.{

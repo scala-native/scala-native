@@ -39,3 +39,13 @@ lazy val projectC = (project in file("C"))
     scalaVersion := commonScalaVersion
   )
   .dependsOn(projectA)
+
+// Embedded in a directory
+lazy val projectD = (project in file("D"))
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+    },
+    scalaVersion := commonScalaVersion
+  )

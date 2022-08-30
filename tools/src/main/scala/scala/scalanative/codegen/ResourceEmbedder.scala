@@ -1,24 +1,25 @@
 package scala.scalanative.codegen
 
-import java.nio.file.Files._
-import java.nio.file.SimpleFileVisitor
-import java.nio.file.attribute.BasicFileAttributes
-import java.util.EnumSet
-import java.nio.file.Files
-import java.nio.file.Path
+import java.io.File
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.nio.file.FileVisitResult
 import java.nio.file.FileVisitResult._
-import scala.collection.mutable.ArrayBuffer
-import scala.scalanative.nir._
+import java.nio.file.Files
+import java.nio.file.Files._
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
-import java.nio.ByteBuffer
+import java.util.EnumSet
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.scalanative.build.Config
 import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.nir._
 import scala.scalanative.util.Scope
-import java.nio.file.Paths
-import scala.collection.mutable
-import scala.annotation.tailrec
 
 private[scalanative] object ResourceEmbedder {
 
@@ -40,11 +41,13 @@ private[scalanative] object ResourceEmbedder {
 
           virtualDir.files
             .flatMap { path =>
+              // Use the same path separator on all OSs
+              val pathString = path.toString().replace(File.separator, "/")
               val (pathName, correctedPath) =
-                if (!path.toString().startsWith("/")) { // local file
-                  ("/" + path.toString(), classpath.resolve(path))
+                if (!pathString.startsWith("/")) { // local file
+                  ("/" + pathString, classpath.resolve(path))
                 } else { // other file (f.e in jar)
-                  (path.toString(), path)
+                  (pathString, path)
                 }
 
               if (isInIgnoredDirectory(path)) {

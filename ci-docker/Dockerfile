@@ -5,7 +5,8 @@ ENV DEFAULT_DOCKCROSS_IMAGE testing-container
 
 RUN apt-get update && apt-get install -y unzip lsb-release wget software-properties-common
 
-RUN bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+# Install clang-14, by default llvm.sh install latest stable version
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin 14
 
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
@@ -39,7 +40,7 @@ WORKDIR /home/scala-native/scala-native
 RUN curl -s "https://get.sdkman.io" | bash  \
   && . "$HOME/.sdkman/bin/sdkman-init.sh" \
   && sdk install sbt 1.6.2 \ 
-  && sdk install java 8.0.275.hs-adpt
+  && sdk install java 8.0.332-tem
 
 ENV LC_ALL "C.UTF-8"
 ENV LANG "C.UTF-8"

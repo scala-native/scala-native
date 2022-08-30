@@ -1,4 +1,5 @@
-package scala.scalanative.build
+package scala.scalanative
+package build
 
 /** Link Time Optimization (LTO) mode to be used when during a release build.
  */

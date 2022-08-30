@@ -4,7 +4,7 @@ C POSIX Library
 ===============
 
 Scala Native provides bindings for a core subset of the
-`POSIX library <https://pubs.opengroup.org/onlinepubs/9699919799/idx/head.html>`_:
+`POSIX library <https://pubs.opengroup.org/onlinepubs/9699919799/idx/head.html>`_. See indicated source module for limitations, if any, and usage:
 
 ================= ==================================
 C Header          Scala Native Module

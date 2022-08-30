@@ -1,12 +1,23 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
+#if !defined(_WIN32)
+
+#if defined(__APPLE__)
+// clock_gettime() & ilk were introduced in MacOS 10.12
+#if (__MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_12)
+#error "macOS version must be 10.12 or greater"
+#endif
+#endif // defined(__APPLE__)
+
 // X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
 // Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.
 
 #define _XOPEN_SOURCE 700
 
 #include <stdbool.h>
+#include <stddef.h>
+
+#include <errno.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -21,6 +32,91 @@ struct scalanative_tm {
     int tm_yday;
     int tm_isdst;
 };
+
+struct scalanative_timespec {
+    long tv_sec;
+    long tv_nsec;
+};
+
+struct scalanative_itimerspec {
+    struct scalanative_timespec it_interval;
+    struct scalanative_timespec it_value;
+};
+
+#if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+#ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
+#warning "Size and order of C structures are not checked when -std < c11."
+#endif
+#else
+
+// struct tm
+_Static_assert(sizeof(struct scalanative_tm) <= sizeof(struct tm),
+               "Unexpected size: struct tm");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_sec) ==
+                   offsetof(struct tm, tm_sec),
+               "offset mismatch: tm.tm_sec");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_min) ==
+                   offsetof(struct tm, tm_min),
+               "offset mismatch: tm.tm_min");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_hour) ==
+                   offsetof(struct tm, tm_hour),
+               "offset mismatch: tm.tm_hour");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_mday) ==
+                   offsetof(struct tm, tm_mday),
+               "offset mismatch: tm.tm_mday");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_mon) ==
+                   offsetof(struct tm, tm_mon),
+               "offset mismatch: tm.tm_mon");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_year) ==
+                   offsetof(struct tm, tm_year),
+               "offset mismatch: tm.tm_year");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_wday) ==
+                   offsetof(struct tm, tm_wday),
+               "offset mismatch: tm.tm_wday");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_yday) ==
+                   offsetof(struct tm, tm_yday),
+               "offset mismatch: tm.tm_yday");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_isdst) ==
+                   offsetof(struct tm, tm_isdst),
+               "offset mismatch: tm.tm_isdst");
+
+// struct timespec
+_Static_assert(sizeof(struct scalanative_timespec) == sizeof(struct timespec),
+               "Unexpected size: struct timespec");
+
+_Static_assert(offsetof(struct scalanative_timespec, tv_sec) ==
+                   offsetof(struct timespec, tv_sec),
+               "offset mismatch: timespec.tv_sec");
+
+_Static_assert(offsetof(struct scalanative_timespec, tv_nsec) ==
+                   offsetof(struct timespec, tv_nsec),
+               "offset mismatch: timespec.tv_nsec");
+
+// struct itimer
+
+#if !defined(__APPLE__) // no itimer on Apple
+_Static_assert(sizeof(struct scalanative_itimerspec) ==
+                   sizeof(struct itimerspec),
+               "Unexpected size: struct itimer");
+
+_Static_assert(offsetof(struct scalanative_itimerspec, it_interval) ==
+                   offsetof(struct itimerspec, it_interval),
+               "offset mismatch: itimer.it_interval");
+
+_Static_assert(offsetof(struct scalanative_itimerspec, it_value) ==
+                   offsetof(struct itimerspec, it_value),
+               "offset mismatch: itimer.it_value");
+#endif
+#endif // __STDC_VERSION__
 
 static struct scalanative_tm scalanative_shared_tm_buf;
 
@@ -63,6 +159,16 @@ char *scalanative_asctime(struct scalanative_tm *scala_tm) {
     struct tm tm;
     tm_init(&tm, scala_tm);
     return asctime(&tm);
+}
+int scalanative_clock_nanosleep(clockid_t clockid, int flags,
+                                struct timespec *request,
+                                struct timespec *remain) {
+#if !defined(__APPLE__)
+    return clock_nanosleep(clockid, flags, request, remain);
+#else
+    errno = ENOTSUP; // No clock_nanosleep() on Apple.
+    return ENOTSUP;
+#endif
 }
 
 struct scalanative_tm *scalanative_gmtime_r(const time_t *clock,
@@ -244,6 +350,24 @@ int scalanative_daylight() {
 #else
     return (tzname[0] != NULL) && (tzname[1] != NULL) &&
            (strcmp(tzname[0], tzname[1]) != 0);
+#endif
+}
+
+// Macros
+int scalanative_clocks_per_sec() { return CLOCKS_PER_SEC; }
+
+// Symbolic constants
+
+int scalanative_clock_monotonic() { return CLOCK_MONOTONIC; }
+int scalanative_clock_process_cputime_id() { return CLOCK_PROCESS_CPUTIME_ID; }
+int scalanative_clock_realtime() { return CLOCK_REALTIME; }
+int scalanative_clock_thread_cputime_id() { return CLOCK_THREAD_CPUTIME_ID; }
+
+int scalanative_timer_abstime() {
+#if !defined(__APPLE__)
+    return TIMER_ABSTIME;
+#else
+    return 1; // Fake it, using "know" value on some systems.
 #endif
 }
 
