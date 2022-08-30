@@ -15,3 +15,9 @@
 > projectC/nativeLink
 # includes simple tests
 > projectC/run
+
+# -- links and runs tests without conflicts
+> projectD/compile
+> projectD/nativeLink
+# includes simple tests
+> projectD/run
