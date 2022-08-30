@@ -2,7 +2,6 @@
 #define __NETINET_IN_H
 
 #include <inttypes.h>
-#include "../sys/socket.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -15,6 +14,9 @@ typedef uint16_t in_port_t;
 #else
 #include <netinet/in.h>
 #endif
+
+// See comment on this type in sys/socket.c. Keep in sync.
+typedef unsigned short scalanative_sa_family_t;
 
 struct scalanative_in_addr {
     in_addr_t so_addr;

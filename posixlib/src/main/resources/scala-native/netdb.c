@@ -1,130 +1,92 @@
-#include "netdb.h"
-
 #ifdef _WIN32
-#include <Winerror.h>
+#include <WinSock2.h>
+#include <ws2tcpip.h> // socklen_t
+// #include <Winerror.h>
 #else // not _WIN32
-// FreeBSD wants AF_INET, which is in <sys/socket.h> but not in the local
-// "sys/socket.h".
-//
-// Windows can not find the <> form, and suggests the "" form. However,
-// the later is a local copy which does not define AF_INET.
-// Including that file prevents the system copy with AF_INET from
-// being included.
-//
-// On linux, macOS, etc. the include should provide AF_INET if it has
-// not been previously defined.
+/* FreeBSD wants AF_INET, which is in <sys/socket.h>
+ *
+ * Windows can not find the <> form, and suggests the "" form.
+ *
+ * On linux, macOS, etc. This include should provide AF_INET if it has
+ * not been previously defined.
+ */
 
 #include <sys/socket.h>
+#include <netdb.h>
 #endif
 
-#include "sys/socket_conversions.h"
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
 
-int scalanative_getnameinfo(struct scalanative_sockaddr *addr,
-                            socklen_t addrlen, char *host, socklen_t hostlen,
-                            char *serv, socklen_t servlen, int flags) {
-    struct sockaddr *converted_addr;
-    scalanative_convert_sockaddr(addr, &converted_addr, &addrlen);
-    int status = getnameinfo(converted_addr, addrlen, host, hostlen, serv,
-                             servlen, flags);
-    free(converted_addr);
-    return status;
-}
+struct scalanative_addrinfo {
+    int ai_flags;         /* Input flags.  */
+    int ai_family;        /* Protocol family for socket.  */
+    int ai_socktype;      /* Socket type.  */
+    int ai_protocol;      /* Protocol for socket.  */
+    socklen_t ai_addrlen; /* Length of socket address.  */
+    void *ai_addr;        /* Socket address for socket.  */
+    char *ai_canonname;   /* Canonical name for service location.  */
+    void *ai_next;        /* Pointer to next in list.  */
+};
 
-void scalanative_convert_scalanative_addrinfo(struct scalanative_addrinfo *in,
-                                              struct addrinfo *out) {
-    // ai_addr and ai_next fields are set to NULL because this function is only
-    // used for converting hints parameter for the getaddrinfo function, which
-    // doesn't care about them
-    if (in == NULL) {
-        // Use of Posix spec of ai_flags being 0, not GNU extension value.
-        memset(out, 0, sizeof(struct addrinfo));
-        out->ai_family = AF_UNSPEC;
-    } else {
-        out->ai_flags = in->ai_flags;
-        out->ai_family = in->ai_family;
-        out->ai_socktype = in->ai_socktype;
-        out->ai_protocol = in->ai_protocol;
-        out->ai_addrlen = in->ai_addrlen;
-        if (in->ai_canonname == NULL) {
-            out->ai_canonname = NULL;
-        } else {
-            out->ai_canonname = strdup(in->ai_canonname);
-        }
-        out->ai_addr = NULL;
-        out->ai_next = NULL;
-    }
-}
+_Static_assert(sizeof(struct scalanative_addrinfo) == sizeof(struct addrinfo),
+               "Unexpected size: os addrinfo");
 
-void scalanative_convert_addrinfo(struct addrinfo *in,
-                                  struct scalanative_addrinfo *out) {
-    out->ai_flags = in->ai_flags;
-    out->ai_family = in->ai_family;
-    out->ai_socktype = in->ai_socktype;
-    out->ai_protocol = in->ai_protocol;
-    if (in->ai_addr == NULL) {
-        out->ai_addr = NULL;
-        out->ai_addrlen = in->ai_addrlen;
-    } else {
-        socklen_t size;
-        if (in->ai_addr->sa_family == AF_INET) {
-            struct scalanative_sockaddr_in *addr =
-                malloc(sizeof(struct scalanative_sockaddr_in));
-            scalanative_convert_scalanative_sockaddr_in(
-                (struct sockaddr_in *)in->ai_addr, addr, &size);
-            out->ai_addr = (struct scalanative_sockaddr *)addr;
-        } else {
-            struct scalanative_sockaddr_in6 *addr =
-                malloc(sizeof(struct scalanative_sockaddr_in6));
-            scalanative_convert_scalanative_sockaddr_in6(
-                (struct sockaddr_in6 *)in->ai_addr, addr, &size);
-            out->ai_addr = (struct scalanative_sockaddr *)addr;
-        }
-        out->ai_addrlen = size;
-    }
-    if (in->ai_canonname == NULL) {
-        out->ai_canonname = NULL;
-    } else {
-        out->ai_canonname = strdup(in->ai_canonname);
-    }
-    if (in->ai_next == NULL) {
-        out->ai_next = NULL;
-    } else {
-        struct scalanative_addrinfo *next_native =
-            malloc(sizeof(struct scalanative_addrinfo));
-        scalanative_convert_addrinfo(in->ai_next, next_native);
-        out->ai_next = next_native;
-    }
-}
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_flags) ==
+                   offsetof(struct addrinfo, ai_flags),
+               "Unexpected offset: scalanative_addrinfo.ai_flags");
 
-void scalanative_freeaddrinfo(struct scalanative_addrinfo *addr) {
-    if (addr != NULL) {
-        free(addr->ai_canonname);
-        free(addr->ai_addr);
-        scalanative_freeaddrinfo((struct scalanative_addrinfo *)addr->ai_next);
-        free(addr);
-    }
-}
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_family) ==
+                   offsetof(struct addrinfo, ai_family),
+               "Unexpected offset: scalanative_addrinfo.ai_family");
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_socktype) ==
+                   offsetof(struct addrinfo, ai_socktype),
+               "Unexpected offset: scalanative_addrinfo.ai_socktype");
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_protocol) ==
+                   offsetof(struct addrinfo, ai_protocol),
+               "Unexpected offset: scalanative_addrinfo.ai_protocol");
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_addrlen) ==
+                   offsetof(struct addrinfo, ai_addrlen),
+               "Unexpected offset: scalanative_addrinfo.ai_addrlen");
+
+#if !(defined(__APPLE__) || defined(__FreeBSD__) || defined(_WIN32))
+// Linux, etc.
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_addr) ==
+                   offsetof(struct addrinfo, ai_addr),
+               "Unexpected offset: scalanative_addrinfo.ai_addr");
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_canonname) ==
+                   offsetof(struct addrinfo, ai_canonname),
+               "Unexpected offset: scalanative_addrinfo.ai_canonname");
+#else
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_addr) ==
+                   offsetof(struct addrinfo, ai_canonname),
+               "Unexpected offset: BSD addrinfo ai_addr fixup");
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_canonname) ==
+                   offsetof(struct addrinfo, ai_addr),
+               "Unexpected offset: BSD addrinfo ai_canonname fixup");
+
+#endif // (defined(__APPLE__) || defined(__FreeBSD__) || defined(_WIN32))
+
+_Static_assert(offsetof(struct scalanative_addrinfo, ai_next) ==
+                   offsetof(struct addrinfo, ai_next),
+               "Unexpected offset: scalanative_addrinfo.ai_next");
 
 int scalanative_getaddrinfo(char *name, char *service,
                             struct scalanative_addrinfo *hints,
                             struct scalanative_addrinfo **res) {
-    struct addrinfo hints_c;
-    struct addrinfo *res_c;
-    scalanative_convert_scalanative_addrinfo(hints, &hints_c);
-    int status = getaddrinfo(name, service, &hints_c, &res_c);
-    free(hints_c.ai_canonname);
-    if (status != 0) {
-        return status;
-    }
-    struct scalanative_addrinfo *res_native =
-        malloc(sizeof(struct scalanative_addrinfo));
-    scalanative_convert_addrinfo(res_c, res_native);
-    freeaddrinfo(res_c);
-    *res = res_native;
-    return status;
+
+    // ai_flags, ai_socktype, and ai_protocol and all else will be zero.
+    struct addrinfo posixHints = {.ai_flags = AF_UNSPEC};
+
+    struct addrinfo *vettedHints =
+        (hints != NULL) ? (struct addrinfo *)hints : &posixHints;
+
+    return getaddrinfo(name, service, vettedHints, (struct addrinfo **)res);
 }
 
 int scalanative_ai_numerichost() { return AI_NUMERICHOST; }

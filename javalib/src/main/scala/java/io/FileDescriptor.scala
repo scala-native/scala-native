@@ -85,7 +85,8 @@ final class FileDescriptor private[java] (
       fcntl.fcntl(fd, fcntl.F_GETFD, 0) != -1
     }
 
-  def close(): Unit = {
+  // Not in the Java API. Called by java.nio.channels.FileChannelImpl.scala
+  private[java] def close(): Unit = {
     if (isWindows) CloseHandle(handle)
     else unistd.close(fd)
   }
