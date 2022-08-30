@@ -7,8 +7,12 @@ import scalanative.linker._
 import scalanative.util.ScopedVar
 import java.util.function.Supplier
 
-class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean,
-                val maxInlineDepth: Int, val maxCallerSize: Int)(implicit
+class Interflow(
+    val mode: build.Mode,
+    val is32BitPlatform: Boolean,
+    val maxInlineDepth: Int,
+    val maxCallerSize: Int
+)(implicit
     val linked: linker.Result
 ) extends Visit
     with Opt
@@ -61,7 +65,7 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean,
   def pushTodo(name: Global): Unit =
     todo.synchronized {
       assert(name ne Global.None)
-      if(!unique.contains(name)) {
+      if (!unique.contains(name)) {
         todo.enqueue(name)
         unique += name
       }
@@ -152,10 +156,12 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean,
 object Interflow {
   def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
     val interflow =
-      new Interflow(config.mode,
+      new Interflow(
+        config.mode,
         config.compilerConfig.is32BitPlatform,
         config.compilerConfig.maxInlineDepth,
-        config.compilerConfig.maxCallerSize)(linked)
+        config.compilerConfig.maxCallerSize
+      )(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

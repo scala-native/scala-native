@@ -8,8 +8,12 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local,
-          inlineDepth: Int = 0)(implicit
+  def run(
+      insts: Array[Inst],
+      offsets: Map[Local, Int],
+      from: Local,
+      inlineDepth: Int = 0
+  )(implicit
       state: State
   ): Inst.Cf = {
     import state.{materialize, delay}
@@ -105,9 +109,9 @@ trait Eval { self: Interflow =>
   }
 
   def eval(
-      op: Op, inlineDepth: Int = 0
-  )(implicit state: State, linked: linker.Result, origPos: Position,
-      ): Val = {
+      op: Op,
+      inlineDepth: Int = 0
+  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -146,11 +150,10 @@ trait Eval { self: Interflow =>
           }
 
           dtarget match {
-            case Val.Global(name, _) if shallInline(name, eargs)
-              && inlineDepth < maxInlineDepth =>
+            case Val.Global(name, _)
+                if shallInline(name, eargs)
+                  && inlineDepth < maxInlineDepth =>
               `inline`(name, eargs, inlineDepth + 1)
-
-
 
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
               polyInline(op, eargs)

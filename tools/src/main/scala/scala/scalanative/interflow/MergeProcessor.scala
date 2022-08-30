@@ -362,7 +362,8 @@ final class MergeProcessor(
       block: MergeBlock,
       newPhis: Seq[MergePhi],
       newState: State,
-      inlineDepth: Int = 0): Unit = {
+      inlineDepth: Int = 0
+  ): Unit = {
     if (block.invalidations > 128) {
       throw BailOut("too many block invalidations")
     } else {
@@ -374,7 +375,8 @@ final class MergeProcessor(
 
     block.start = newState.fullClone(block.name)
     block.end = newState
-    block.cf = eval.run(insts, offsets, block.label.name, inlineDepth)(block.end)
+    block.cf =
+      eval.run(insts, offsets, block.label.name, inlineDepth)(block.end)
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
