@@ -43,9 +43,16 @@ if ! docker pull $FULL_IMAGE_NAME;then
   fi
 fi
 
+# Make sure the binded directories are present
+CacheDir=$HOME/.cache
+IvyDir=$HOME/.ivy
+SbtDir=$HOME/.sbt
+mkdir -p $CacheDir $IvyDir $SbtDir
+
 docker run -i "${FULL_IMAGE_NAME}" java -version
-docker run --mount type=bind,source=$HOME/.cache,target=/home/scala-native/.cache \
-           --mount type=bind,source=$HOME/.sbt,target=/home/scala-native/.sbt \
+docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
+           --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
+           --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
            --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
            -e SCALA_VERSION="$SCALA_VERSION" \
            -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
