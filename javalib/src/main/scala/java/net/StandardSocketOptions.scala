@@ -29,6 +29,10 @@ object StandardSocketOptions {
   val IP_MULTICAST_TTL: SocketOption[java.lang.Integer] =
     new StdSocketOption("IP_MULTICAST_TTL", classOf)
 
+  /* Quoting from both the Java 8 & 17 documentation:
+   *   The behavior of this socket option on a stream-oriented socket,
+   *   or an IPv6 socket, is not defined in this release.
+   */
   val IP_TOS: SocketOption[java.lang.Integer] =
     new StdSocketOption("IP_TOS", classOf)
 
