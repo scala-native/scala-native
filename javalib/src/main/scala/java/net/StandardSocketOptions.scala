@@ -15,7 +15,12 @@ package java.net
 
 object StandardSocketOptions {
 
-  val IP_MULTICAST_IF: SocketOption[java.net.NetworkInterface] =
+  /* NetworkInterface is not-yet-implemented.
+   * IP_MULTICAST_IF is defined for completeness.
+   * Any code using it before NetworkInterface is implemented will
+   * encounter a 'symbol not found' error at link time.
+   */
+  val IP_MULTICAST_IF: SocketOption[java.net.NetworkInterface] = // BEWARE!
     new StdSocketOption("IP_MULTICAST_IF", classOf)
 
   val IP_MULTICAST_LOOP: SocketOption[java.lang.Boolean] =
