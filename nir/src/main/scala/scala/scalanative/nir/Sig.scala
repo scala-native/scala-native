@@ -7,7 +7,7 @@ import scala.language.implicitConversions
 final class Sig(val mangle: String) {
   final def toProxy: Sig =
     if (isMethod) {
-      val Sig.Method(id, types, _) = this.unmangled
+      val Sig.Method(id, types, _) = this.unmangled: @unchecked
       Sig.Proxy(id, types.init).mangled
     } else {
       util.unsupported(
