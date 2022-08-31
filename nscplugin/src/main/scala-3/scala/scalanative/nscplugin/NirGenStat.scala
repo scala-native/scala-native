@@ -74,7 +74,8 @@ trait NirGenStat(using Context) {
       case ann if ann.symbol == defnNir.ExternClass => Attr.Extern
       case ann if ann.symbol == defnNir.StubClass   => Attr.Stub
       case ann if ann.symbol == defnNir.LinkClass =>
-        val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
+        val Apply(_, Seq(Literal(Constant(name: String)))) =
+          ann.tree: @unchecked
         Attr.Link(name)
     }
     val isAbstract = Option.when(sym.is(Abstract))(Attr.Abstract)
@@ -113,7 +114,7 @@ trait NirGenStat(using Context) {
       val mutable = isStatic || f.is(Mutable)
       val attrs = nir.Attrs(isExtern = f.isExtern)
       val ty = genType(f.info.resultType)
-      val fieldName @ Global.Member(owner, sig) = genFieldName(f)
+      val fieldName @ Global.Member(owner, sig) = genFieldName(f): @unchecked
       generatedDefns += Defn.Var(attrs, fieldName, ty, Val.Zero(ty))
 
       if (isStatic) {
@@ -422,7 +423,7 @@ trait NirGenStat(using Context) {
   }
 
   def validateExternCtor(rhs: Tree): Unit = {
-    val Block(_ +: init, _) = rhs
+    val Block(_ +: init, _) = rhs: @unchecked
     val externs = init.map {
       case Assign(ref: RefTree, Apply(extern, Seq()))
           if extern.symbol == defnNir.UnsafePackage_extern =>
@@ -538,7 +539,8 @@ trait NirGenStat(using Context) {
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym, moduleClass)
-      val Type.Function(_ +: paramTypes, retType) = genMethodSig(sym)
+      val Type.Function(_ +: paramTypes, retType) =
+        genMethodSig(sym): @unchecked
       val forwarderParamTypes = paramTypes
       val forwarderType = Type.Function(forwarderParamTypes, retType)
 

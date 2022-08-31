@@ -73,7 +73,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
         val s = ref.symbol
         materializeClassTagTypes.get(s).orElse {
           if s == defnNir.ClassTagApply then
-            val Literal(const) = args.head
+            val Literal(const) = args.head: @unchecked
             Some(const.typeValue.typeSymbol)
           else None
         }

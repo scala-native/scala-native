@@ -1,7 +1,7 @@
 package scala.scalanative.nscplugin
 
 import scala.language.implicitConversions
-import scala.annotation._
+import scala.annotation.tailrec
 
 import dotty.tools.dotc.ast
 import ast.tpd._
@@ -102,7 +102,7 @@ trait NirGenExpr(using Context) {
             Literal(componentType: Constant),
             arrayType,
             SeqLiteral(dimensions, _)
-          ) = args
+          ) = args: @unchecked
           if (dimensions.size == 1)
             val length = genExpr(dimensions.head)
             buf.arrayalloc(genType(componentType.typeValue), length, unwind)
@@ -306,8 +306,8 @@ trait NirGenExpr(using Context) {
       }
 
       def genAnonClassMethod(sym: Symbol): nir.Defn = {
-        val Global.Member(_, funSig) = genName(sym)
-        val Sig.Method(_, sigTypes :+ retType, _) = funSig.unmangled
+        val Global.Member(_, funSig) = genName(sym): @unchecked
+        val Sig.Method(_, sigTypes :+ retType, _) = funSig.unmangled: @unchecked
 
         val selfType = Type.Ref(anonClassName)
         val methodName = anonClassName.member(funSig)
@@ -352,7 +352,7 @@ trait NirGenExpr(using Context) {
                 )
               }
             } else {
-              val thisVal :: argVals = allVals
+              val thisVal :: argVals = allVals: @unchecked
               scoped(curMethodThis := Some(thisVal.value)) {
                 buf.genApplyMethod(
                   funSym,
@@ -465,7 +465,7 @@ trait NirGenExpr(using Context) {
     }
 
     def genJavaSeqLiteral(tree: JavaSeqLiteral): Val = {
-      val JavaArrayType(elemTpe) = tree.tpe
+      val JavaArrayType(elemTpe) = tree.tpe: @unchecked
       val arrayLength = Val.Int(tree.elems.length)
 
       val elems = tree.elems
@@ -896,7 +896,7 @@ trait NirGenExpr(using Context) {
 
     def genTypeApply(tree: TypeApply): Val = {
       given nir.Position = tree.span
-      val TypeApply(fun @ Select(receiverp, _), targs) = tree
+      val TypeApply(fun @ Select(receiverp, _), targs) = tree: @unchecked
 
       val funSym = fun.symbol
       val fromty = genType(receiverp.tpe)
@@ -1005,7 +1005,7 @@ trait NirGenExpr(using Context) {
       import dotty.tools.backend.ScalaPrimitivesOps._
       given nir.Position = app.span
       val Apply(fun, args) = app
-      val Select(receiver, _) = desugarTree(fun)
+      val Select(receiver, _) = desugarTree(fun): @unchecked
 
       val sym = app.symbol
       val code = nirPrimitives.getPrimitive(app, receiver.tpe)
@@ -1042,8 +1042,8 @@ trait NirGenExpr(using Context) {
     }
 
     private def genApplyTypeApply(app: Apply): Val = {
-      val Apply(tApply @ TypeApply(fun, targs), argsp) = app
-      val Select(receiverp, _) = desugarTree(fun)
+      val Apply(tApply @ TypeApply(fun, targs), argsp) = app: @unchecked
+      val Select(receiverp, _) = desugarTree(fun): @unchecked
       given nir.Position = fun.span
 
       val funSym = fun.symbol
@@ -1057,7 +1057,7 @@ trait NirGenExpr(using Context) {
     }
 
     private def genApplyNew(app: Apply): Val = {
-      val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
+      val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app: @unchecked
       given nir.Position = app.span
 
       fromType(tpt.tpe) match {
@@ -1083,10 +1083,10 @@ trait NirGenExpr(using Context) {
       val args = genSimpleArgs(argsp)
       var res: Val = Val.Zero(ty)
 
-      for
-        ((arg, argp), idx) <- args.zip(argsp).zipWithIndex
+      for ((arg, argp), idx) <- args.zip(argsp).zipWithIndex
+      do
         given nir.Position = argp.span
-      do res = buf.insert(res, arg, Seq(idx), unwind)
+        res = buf.insert(res, arg, Seq(idx), unwind)
       res
     }
 
@@ -1143,7 +1143,7 @@ trait NirGenExpr(using Context) {
       val method =
         if (isStaticCall) Val.Global(name, nir.Type.Ptr)
         else
-          val Global.Member(_, sig) = name
+          val Global.Member(_, sig) = name: @unchecked
           buf.method(self, sig, unwind)
       val values =
         if (sym.isExtern) args
@@ -1472,8 +1472,8 @@ trait NirGenExpr(using Context) {
       import NirPrimitives._
       import dotty.tools.backend.ScalaPrimitivesOps._
 
-      val Apply(Select(arrayp, _), argsp) = app
-      val Type.Array(elemty, _) = genType(arrayp.tpe)
+      val Apply(Select(arrayp, _), argsp) = app: @unchecked
+      val Type.Array(elemty, _) = genType(arrayp.tpe): @unchecked
       given nir.Position = app.span
 
       def elemcode = genArrayCode(arrayp.tpe)
@@ -2059,7 +2059,8 @@ trait NirGenExpr(using Context) {
               _
             ) =>
           given nir.Position = app.span
-          val List(Literal(Constant(str: String))) = javaSeqLiteral.elems
+          val List(Literal(Constant(str: String))) =
+            javaSeqLiteral.elems: @unchecked
           val chars = Val.Chars(StringUtils.processEscapes(str).toIndexedSeq)
           val const = Val.Const(chars)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
@@ -2072,7 +2073,7 @@ trait NirGenExpr(using Context) {
 
     def genClassFieldRawPtr(app: Apply): Val = {
       given nir.Position = app.span
-      val Apply(_, List(target, fieldName: Literal)) = app
+      val Apply(_, List(target, fieldName: Literal)) = app: @unchecked
       val fieldNameId = fieldName.const.stringValue
       val classInfo = target.tpe.finalResultType
       val classInfoSym = classInfo.typeSymbol.asClass
@@ -2161,7 +2162,7 @@ trait NirGenExpr(using Context) {
      */
     private def genCFuncPtrApply(app: Apply): Val = {
       given nir.Position = app.span
-      val Apply(appRec @ Select(receiverp, _), aargs) = app
+      val Apply(appRec @ Select(receiverp, _), aargs) = app: @unchecked
 
       val argsp = if (aargs.size > 2) aargs.take(aargs.length / 2) else Nil
       val evidences = aargs.drop(aargs.length / 2)
@@ -2206,7 +2207,7 @@ trait NirGenExpr(using Context) {
 
     private def genCFuncFromScalaFunction(app: Apply): Val = {
       given pos: nir.Position = app.span
-      val fn :: evidences = app.args
+      val fn :: evidences = app.args: @unchecked
       val paramTypes = evidences.map(unwrapTag)
 
       @tailrec
@@ -2215,7 +2216,7 @@ trait NirGenExpr(using Context) {
         case Block(_, expr) => resolveFunction(expr)
         case fn @ Closure(_, target, _) =>
           val fnRef = genClosure(fn)
-          val Type.Ref(className, _, _) = fnRef.ty
+          val Type.Ref(className, _, _) = fnRef.ty: @unchecked
 
           generatedDefns += genFuncExternForwarder(
             className,
@@ -2280,7 +2281,7 @@ trait NirGenExpr(using Context) {
         else {
           val params :+ retty = evidences
             .map(genType)
-            .map(t => nir.Type.box.getOrElse(t, t))
+            .map(t => nir.Type.box.getOrElse(t, t)): @unchecked
           Type.Function(params, retty)
         }
 
@@ -2289,7 +2290,7 @@ trait NirGenExpr(using Context) {
         else {
           val params :+ retty = evidences
             .map(genExternType)
-            .map(t => nir.Type.unbox.getOrElse(t, t))
+            .map(t => nir.Type.unbox.getOrElse(t, t)): @unchecked
           Type.Function(params, retty)
         }
 
@@ -2362,7 +2363,7 @@ trait NirGenExpr(using Context) {
         isSelectDynamic: Boolean
     ): Val = {
       given nir.Position = tree.span
-      val Apply(fun @ Select(receiver, _), args) = tree
+      val Apply(fun @ Select(receiver, _), args) = tree: @unchecked
 
       val selectedValue = genApplyMethod(
         defnNir.ReflectSelectable_selectedValue,
