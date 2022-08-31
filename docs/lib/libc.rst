@@ -26,7 +26,7 @@ stdalign.h_    N/A
 stdarg.h_      N/A
 stdatomic.h_   N/A
 stdbool.h_     N/A
-stddef.h_      N/A
+stddef.h_      scala.scalanative.libc.stddef_
 stdint.h_      N/A
 stdio.h_       scala.scalanative.libc.stdio_
 stdlib.h_      scala.scalanative.libc.stdlib_
@@ -59,6 +59,7 @@ wctype.h_      N/A
 .. _stdbool.h: https://en.cppreference.com/w/c/types/boolean
 .. _stddef.h: https://en.cppreference.com/w/c/types
 .. _stdint.h: https://en.cppreference.com/w/c/types/integer
+.. _stddef.h: https://en.cppreference.com/w/c/types
 .. _stdio.h: https://en.cppreference.com/w/c/io
 .. _stdlib.h: https://en.cppreference.com/w/cpp/header/cstdlib
 .. _stdnoreturn.h: https://en.cppreference.com/w/c/types
@@ -75,6 +76,7 @@ wctype.h_      N/A
 .. _scala.scalanative.libc.errno: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/errno.scala
 .. _scala.scalanative.libc.float: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/float.scala
 .. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
+.. _scala.scalanative.libc.stddef: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stddef.scala
 .. _scala.scalanative.libc.stdio: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stdio.scala
 .. _scala.scalanative.libc.stdlib: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stdlib.scala
 .. _scala.scalanative.libc.string: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/string.scala
