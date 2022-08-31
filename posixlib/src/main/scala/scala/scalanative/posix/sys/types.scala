@@ -4,6 +4,8 @@ package posix.sys
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
+import scala.scalanative.libc
+
 @extern
 object types {
 
@@ -63,7 +65,7 @@ object types {
 
   type pthread_t = ULong
 
-  type size_t = CSize
+  type size_t = libc.stddef.size_t
 
   type ssize_t = CSSize
 
