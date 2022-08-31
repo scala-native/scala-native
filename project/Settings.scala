@@ -520,6 +520,13 @@ object Settings {
         if (version == usedScalaVersion) updateClassifiers
         else update
       }.value,
+      // Scala.js always uses the same version of sources as used in the runtime
+      // In Scala Native to 0.4.x we don't make a full cross version of Scala standard library
+      // This means we need to have only 1 version of scalalib to not break current build tools
+      // We cannot publish artifacts with 3.2.x, becouse it would not be usable from 3.1.x projects
+      // Becouse of that we compile Scala 3.2.x or newer sources with 3.1.3 compiler
+      // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
+      // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := {
         val version = sourcesScalaVersion
         val trgDir = (fetchScalaSource / artifactPath).value
