@@ -970,7 +970,8 @@ class MatcherTest {
   @Test def issue852StringIndexOutOfBoundsException(): Unit = {
     val JsonNumberRegex =
       """(-)?((?:[1-9][0-9]*|0))(?:\.([0-9]+))?(?:[eE]([-+]?[0-9]+))?""".r
-    val JsonNumberRegex(negative, intStr, decStr, expStr) = "0.000000"
+    val JsonNumberRegex(negative, intStr, decStr, expStr) =
+      "0.000000": @unchecked
     assertTrue("Assert_1", negative == null)
     assertTrue("Assert_2", intStr == "0")
     assertTrue("Assert_3", decStr == "000000")

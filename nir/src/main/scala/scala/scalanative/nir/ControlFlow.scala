@@ -80,7 +80,7 @@ object ControlFlow {
         blocks.getOrElse(
           local, {
             val k = locations(local)
-            val Inst.Label(n, params) = insts(k)
+            val Inst.Label(n, params) = insts(k): @unchecked
 
             // copy all instruction up until and including
             // first control-flow instruction after the label
@@ -100,7 +100,7 @@ object ControlFlow {
         )
 
       def visit(node: Block): Unit = {
-        val insts :+ cf = node.insts
+        val insts :+ cf = node.insts: @unchecked
         insts.foreach {
           case inst @ Inst.Let(_, op, unwind) if unwind ne Next.None =>
             edge(node, block(unwind.name)(inst.pos), unwind)

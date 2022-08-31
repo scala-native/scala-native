@@ -1,6 +1,6 @@
---- 3.2.0-RC1/scala/runtime/LazyVals.scala
+--- 3.1.2/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
-@@ -1,39 +1,12 @@
+@@ -1,111 +1,48 @@
  package scala.runtime
  
 +import scala.scalanative.runtime.*
@@ -42,8 +42,8 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -41,78 +14,39 @@
- 
+   final val BITS_PER_LAZY_VAL = 2L
+-
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK
 -    if (debug)
@@ -116,22 +116,13 @@
 +    unexpectedUsage()
    }
  
--  def getOffsetStatic(field: java.lang.reflect.Field) =
--    val r = unsafe.objectFieldOffset(field)
--    if (debug)
--      println(s"getOffset(${field.getDeclaringClass}, ${field.getName}) = $r")
--    r
-+  def getOffsetStatic(field: java.lang.reflect.Field) =
-+    unexpectedUsage()
-+
 +  private def unexpectedUsage() = {
 +    throw new IllegalStateException(
 +      "Unexpected usage of scala.runtime.LazyVals method, " +
 +      "in Scala Native lazy vals use overriden version of this class"
 +    )
 +  }
- 
--
++
    object Names {
      final val state = "STATE"
      final val cas = "CAS"

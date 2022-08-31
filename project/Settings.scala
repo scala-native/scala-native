@@ -352,10 +352,13 @@ object Settings {
       // baseDirectory = project/{native,jvm}/.{binVersion}
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile
       val sharedTestsDir = testsRootDir / "shared/src/test"
+      def sources2_13OrAbove = sharedTestsDir / "scala-2.13+"
+      def sources3_2 = sharedTestsDir / "scala-3.2"
       val extraSharedDirectories =
         scalaVersionsDependendent(scalaVersion.value)(List.empty[File]) {
-          case (2, 13) => sharedTestsDir / "scala-2.13+" :: Nil
-          case (3, _)  => sharedTestsDir / "scala-2.13+" :: Nil
+          case (2, 13) => sources2_13OrAbove :: Nil
+          case (3, 1)  => sources2_13OrAbove :: Nil
+          case (3, _)  => sources2_13OrAbove :: sources3_2 :: Nil
         }
       val sharedScalaSources =
         scalaVersionDirectories(sharedTestsDir, "scala", scalaVersion.value)
@@ -509,7 +512,10 @@ object Settings {
     dirs.toSeq // most specific shadow less specific
   }
 
-  def commonScalalibSettings(libraryName: String): Seq[Setting[_]] =
+  def commonScalalibSettings(
+      libraryName: String,
+      sourcesScalaVersion: String
+  ): Seq[Setting[_]] =
     Def.settings(
       mavenPublishSettings,
       disabledDocsSettings,
@@ -523,9 +529,9 @@ object Settings {
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
+      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
+        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesScalaVersion,
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -535,24 +541,39 @@ object Settings {
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        val version = scalaVersion.value
-        val usedScalaVersion = scala.util.Properties.versionNumberString
+        val version = sourcesScalaVersion
+        val usedScalaVersion = scalaVersion.value
         if (version == usedScalaVersion) updateClassifiers
         else update
       }.value,
+      // Scala.js always uses the same version of sources as used in the runtime
+      // In Scala Native to 0.4.x we don't make a full cross version of Scala standard library
+      // This means we need to have only 1 version of scalalib to not break current build tools
+      // We cannot publish artifacts with 3.2.x, becouse it would not be usable from 3.1.x projects
+      // Becouse of that we compile Scala 3.2.x or newer sources with 3.1.3 compiler
+      // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
+      // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := {
-        val version = scalaVersion.value
+        val version = sourcesScalaVersion
         val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
-        val scalaLibSourcesJar = report
-          .select(
-            configuration = configurationFilter("compile"),
-            module = moduleFilter(name = libraryName),
-            artifact = artifactFilter(classifier = "sources")
+        lazy val lm = {
+          import sbt.librarymanagement.ivy._
+          val ivyConfig = InlineIvyConfiguration().withLog(s.log)
+          IvyDependencyResolution(ivyConfig)
+        }
+        lazy val scalaLibSourcesJar = lm
+          .retrieve(
+            "org.scala-lang" % libraryName % sourcesScalaVersion classifier "sources",
+            scalaModuleInfo = None,
+            retrieveDirectory = IO.temporaryDirectory,
+            log = s.log
           )
-          .headOption
+          .map(_.find(_.name.endsWith(s"$libraryName-$version-sources.jar")))
+          .toOption
+          .flatten
           .getOrElse {
             throw new Exception(
               s"Could not fetch $libraryName sources for version $version"
@@ -576,7 +597,7 @@ object Settings {
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
         baseDirectory.value.getParentFile(),
         "overrides",
-        scalaVersion.value
+        sourcesScalaVersion
       ),
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
