@@ -139,33 +139,64 @@ class SocketTest {
     }
   }
 
+  /* The Oracle documentation for Socket method traffic class in both
+   * Java 8 and 17 describe setTrafficClass as providing a hint
+   * and that a setTrafficClass followed by a getTrafficClass of the
+   * might not return the same value.
+   *
+   * But wait! It gets better.
+   *
+   * The setTrafficClass and getTrafficClass methods both use
+   * the StandardSystemsOption IP_TOS field. Both Java 8 and 17
+   * describe this field:
+   *   "The behavior of this socket option on a stream-oriented socket,
+   *   or an IPv6 socket, is not defined in this release."
+   *
+   * This file is testing Sockets() which means stream (TCP) sockets. Strike 1.
+   * The default underlying protocol is now IPv6. Strike 2.
+   *
+   * In the general case and inherent design, this test is bogus.
+   * It is executed only in cases where it has historically passed.
+   * Some day they may break and need to be skipped.
+   *
+   * Other cases are silently skipped, so as to not cause anxiety
+   * over a 'normal' situation.
+   */
   @Test def trafficClass(): Unit = {
-    // When execution on Windows with Java 17 trafficClass is not set.
-    // s.getTrafficClass returns 0 instead of 0x28
-    assumeFalse(
-      "Skipped due to unexpected behaviour in JDK 17 on Windows",
-      Platform.isWindows && Platform.executingInJVMOnJDK17
-    )
 
     val prop = System.getProperty("java.net.preferIPv4Stack")
     val useIPv4 = (prop != null) && (prop.toLowerCase() == "true")
 
-    /* Linux allows setting IPv4 type of service (TOS) on IPv6 sockets
-     * but macOS and possibly others do not.
-     *
-     * IPv6 uses the concept of "traffic class mapping".
-     */
-    if (useIPv4) {
+    val disabled = if (!Platform.isWindows) {
+      false
+    } else { // No sense testing in these cases
+      /* Windows lacks support for setoption IPV6_TCLASS.
+       *
+       * When execution on Windows with Java 17 trafficClass is not set.
+       * s.getTrafficClass returns 0 instead of 0x28
+       * See above, it is normal for some network implementations to not
+       * take the hint.
+       */
+      (!useIPv4) || (Platform.executingInJVMOnJDK17)
+    }
+
+    if (!disabled) { // yes, enIPv6 will be tested, if available.
       val s = new Socket()
       try {
         /* Reference:
          *   https://docs.oracle.com/javase/8/docs/api/
-         *       java/net/Socket.html#setTrafficClass-int
+         *       java/net/Socket.html#setTrafficClass
          *
          *  The value 0x28 has been in this test for eons. Interpreting
-         *  its meaning on-sight is difficult. The left most three bits
-         *  are "precedence" bits, resolving to "Critical". The rightmost
-         *  5 resolve to IPTOS_THROUGHPUT (0x08).
+         *  its meaning on-sight is difficult.
+         *
+         *  It is possibly a six leftmost bit DSCP AF11 (0xA) with
+         *  the low (rightmost) ECN 2 bits as 0. (0xA << 2 == 0x28)
+         *
+         *  Jargon:
+         *     AF11 -> Priority Precedence, Low drop probability.
+         *     DSCP - Differentiated Serviddes Code Point, RFC 2474
+         *     ECN - Explicit Congestion Notification, RFC 3168
          *
          *  That wild guess and $5.00 might get you a cup of coffee.
          *  Obscurity keeps the weenies and follow-on maintainers out.

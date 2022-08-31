@@ -666,4 +666,35 @@ Native's reimplementation, this remains not implemented for now. The added
 ``getClass().getResourceAsInputStream()`` however is able to be consistent between
 the platforms.
 
+
+Internet Protocol Version 6 (IPv6) Networking
+---------------------------------------------
+
+IPv6 provides network features which are more efficient and gradually
+replacing its worthy, but venerable, predecessor IPv4.
+
+The Scala Native Java library now supports IPv6 as it is described in the
+original `Java Networking IPv6 User Guide  <https://docs.oracle.com/javase/8/docs/technotes/guides/net/ipv6_guide/index.html/>`_. The design center is that
+a Scala Java Virtual Machine (JVM) program using networking 
+will run almost identically using Scala Native.
+
+IPv6 will be used if any network interface on a system/node/host, other
+than the loopback interface, is configured to enable IPv6. Otherwise,
+IPv4 is used as before. Java has been using this approach for decades.
+
+Most people will not be able to determine if IPv6 or IPv4 is in use.
+Networks experts will, by using specialist tools.
+
+Scala Native checks and honors the two System Properties described in
+the ipv6_guide above: ``java.net.preferIPv4Stack`` and
+``java.net.preferIPv6Addresses``. This check is done once, when the
+network is first used.
+
+* If there is ever a reason to use only IPv4, a program can
+  set the ``java.net.preferIPv4Stack``  to ``true`` at runtime
+  before the first use of the network.  There is no way to accomplish
+  this from the command line or environment.::
+
+      System.setProperty("java.net.preferIPv6Addresses", "true") 
+
 Continue to :ref:`libc`.

@@ -41,6 +41,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   protected var timeout = 0
   private var listening = false
 
+  private final val useIPv4Only = SocketHelpers.getPreferIPv4Stack()
+
   override def getInetAddress: InetAddress = address
   override def getFileDescriptor: FileDescriptor = fd
   final protected var isClosed: Boolean =
@@ -187,13 +189,12 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
   }
 
+  private lazy val bindFunc =
+    if (useIPv4Only) bind4(_: InetAddress, _: Int)
+    else bind6(_: InetAddress, _: Int)
+
   override def bind(addr: InetAddress, port: Int): Unit = {
     throwIfClosed("bind")
-
-    val useIPv4Only = SocketHelpers.getPreferIPv4Stack()
-    val bindFunc =
-      if (useIPv4Only) bind4(_: InetAddress, _: Int)
-      else bind6(_: InetAddress, _: Int)
 
     bindFunc(addr, port)
   }
@@ -368,13 +369,13 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
   }
 
+  private lazy val connectFunc =
+    if (useIPv4Only) connect4(_: SocketAddress, _: Int)
+    else connect6(_: SocketAddress, _: Int)
+
   override def connect(address: SocketAddress, timeout: Int): Unit = {
     throwIfClosed("connect") // Do not send negative fd.fd to poll()
 
-    val useIPv4Only = SocketHelpers.getPreferIPv4Stack()
-    val connectFunc =
-      if (useIPv4Only) connect4(_: SocketAddress, _: Int)
-      else connect6(_: SocketAddress, _: Int)
     connectFunc(address, timeout)
   }
 
@@ -490,7 +491,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   // because some of them have the same value, but require different levels
   // for example IP_TOS and TCP_NODELAY have the same value on my machine
   private def nativeValueFromOption(option: Int) = option match {
-    case SocketOptions.IP_TOS       => in.IP_TOS
+    case SocketOptions.IP_TOS =>
+      SocketHelpers.getTrafficClassSocketOption()
     case SocketOptions.SO_KEEPALIVE => socket.SO_KEEPALIVE
     case SocketOptions.SO_LINGER    => socket.SO_LINGER
     case SocketOptions.SO_TIMEOUT   => socket.SO_RCVTIMEO
@@ -513,7 +515,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
     val level = optID match {
       case SocketOptions.TCP_NODELAY => in.IPPROTO_TCP
-      case SocketOptions.IP_TOS      => in.IPPROTO_IP
+      case SocketOptions.IP_TOS      => SocketHelpers.getIPPROTO()
       case _                         => socket.SOL_SOCKET
     }
 
@@ -568,7 +570,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
 
     val level = optID match {
-      case SocketOptions.IP_TOS      => in.IPPROTO_IP
+      case SocketOptions.IP_TOS      => SocketHelpers.getIPPROTO()
       case SocketOptions.TCP_NODELAY => in.IPPROTO_TCP
       case _                         => socket.SOL_SOCKET
     }
@@ -618,6 +620,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
           ptr.asInstanceOf[Ptr[Byte]]
         }
+
       case _ =>
         val ptr = stackalloc[CInt]()
         !ptr = value.asInstanceOf[Int]

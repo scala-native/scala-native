@@ -306,13 +306,6 @@ object SocketHelpers {
     forceIPv4 || !isIPv6Configured() // Do the expensive test last.
   }
 
-  /* Leave preferIPv4 stack at its default while this code is a
-   * Work In Progress (WIP).  Toggle to "true" before code is accepted
-   * as a final Pull Request (PR). This default is the opposite of the
-   * long standing Java practice, but reduces the chance of hosing people.
-   * If people have to opt-in, they are more likely to be prepared.
-   */
-//  private[net] def getPreferIPv4Stack(): Boolean = true
   private[net] def getPreferIPv4Stack(): Boolean = preferIPv4Stack
 
   private lazy val preferIPv6Addresses: Boolean = {
@@ -322,4 +315,41 @@ object SocketHelpers {
 
   private[net] def getPreferIPv6Addresses(): Boolean = preferIPv6Addresses
 
+  // Protocol used to set IP layer socket options must match active net stack.
+  private lazy val stackIpproto: Int =
+    if (getPreferIPv4Stack()) in.IPPROTO_IP else in.IPPROTO_IPV6
+
+  private[net] def getIPPROTO(): Int = stackIpproto
+
+  private lazy val trafficClassSocketOption: Int =
+    if (getPreferIPv4Stack()) in.IP_TOS else in6.IPV6_TCLASS
+
+  private[net] def getTrafficClassSocketOption(): Int =
+    trafficClassSocketOption
+}
+
+/* Normally 'object in6' would be in a separate file.
+ * The way that Scala Native javalib gets built means that can not be
+ * easily done here.
+ */
+
+/* As of this writing, there is no good home for this object in Scala Native.
+ * This is and its matching C code are the Scala Native rendition of
+ * ip6.h described in RFC 2553 and follow-ons.
+ *
+ * It is IETF (Internet Engineering Task Force) and neither POSIX nor
+ * ISO C. The value it describes varies by operating system. Linux, macOS,
+ * and FreeBSD each us a different one. The RFC suggests that it be
+ * accessed by including netinet/in.h.
+ *
+ * This object implements only the IPV6_TCLASS needed by java.net. The
+ * full implementation is complex and does not belong in javalib.
+ *
+ * When creativity strikes someone and a good home is found, this code
+ * can and should be moved there.
+ */
+@extern
+private[net] object in6 {
+  @name("scalanative_ipv6_tclass")
+  def IPV6_TCLASS: CInt = extern
 }
