@@ -145,8 +145,7 @@ object Settings {
     ),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
-      val binCompatVersions =
-        Set("0.4.0", "0.4.1", "0.4.2", "0.4.3", "0.4.4", "0.4.5")
+      val binCompatVersions = (0 to 7).map(v => s"0.4.$v").toSet
       val toolsProjects = Set("util", "tools", "nir", "test-runner")
       lazy val neverPublishedProjects040 = Map(
         "2.11" -> (toolsProjects ++ Set("windowslib", "scala3lib")),
