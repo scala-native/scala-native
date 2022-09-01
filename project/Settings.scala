@@ -62,6 +62,7 @@ object Settings {
       "-encoding",
       "utf8"
     ),
+    javacOptions ++= Seq("-source", "8"),
     publishSettings,
     mimaSettings,
     docsSettings

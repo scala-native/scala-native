@@ -30,6 +30,7 @@ object Build {
           val allProjects: Seq[Project] = Seq(
               sbtScalaNative
             ) ++ Seq(
+                nir, util, tools,
                 nscPlugin, junitPlugin,
                 nativelib, clib, posixlib, windowslib,
                 auxlib, javalib, javalibExtDummies, scalalib,
