@@ -159,7 +159,7 @@ object System {
   }
 
   private def getUserName(): Option[String] = {
-    val key = if (isWindows) "%USERNAME%" else "USER"
+    val key = if (isWindows) "USERNAME" else "USER"
     Option(envVars.get(key))
   }
 
