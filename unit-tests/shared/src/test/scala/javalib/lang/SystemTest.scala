@@ -55,6 +55,10 @@ class SystemTest {
 
   }
 
+  @Test def propertyUserNameShouldBeSet(): Unit = {
+    assertNotNull(System.getProperty("user.name"))
+  }
+
   @Test def propertyUserHomeShouldBeSet(): Unit = {
     assertEquals(
       System.getProperty("user.home").toLowerCase(),

@@ -37,6 +37,15 @@ object System {
       .hashCode(Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(x)))
 
   private def loadProperties() = {
+    /* For the curious, or those with a fixation on complete understanding,
+     * this method does not load all System properties.
+     *
+     * "os.name", "os.arch", and possibly others are added by a
+     * Platform.setOSProps() call after this method returns.
+     * That method is not setting Props in the OS, it is reading Props
+     * from the OS and setting them here.
+     */
+
     val sysProps = new Properties()
     sysProps.setProperty("java.version", "1.8")
     sysProps.setProperty("java.vm.specification.version", "1.8")
@@ -52,8 +61,11 @@ object System {
       "java.specification.name",
       "Java Platform API Specification"
     )
+
     sysProps.setProperty("line.separator", lineSeparator())
     getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
+
+    getUserName().foreach(sysProps.setProperty("user.name", _))
     getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
     getUserCountry().foreach(sysProps.setProperty("user.country", _))
     getUserLanguage().foreach(sysProps.setProperty("user.language", _))
@@ -144,6 +156,11 @@ object System {
       val cwd = unistd.getcwd(buf, bufSize)
       Option(cwd).map(fromCString(_))
     }
+  }
+
+  private def getUserName(): Option[String] = {
+    val key = if (isWindows) "%USERNAME%" else "USER"
+    Option(envVars.get(key))
   }
 
   private def getUserHomeDirectory(): Option[String] = {
