@@ -1,4 +1,6 @@
+#ifndef _WIN32
 #include <netinet/in.h>
+#endif
 
 /* Internet Engineering Task Force (IETF) RFC2553 describes in6.h
  * being accessed via netinet/in.h, which includes it, and not directly.
