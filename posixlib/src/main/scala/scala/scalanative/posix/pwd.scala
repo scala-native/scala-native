@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 
 import scalanative.unsafe.{CInt, CString, CStruct5, extern, name, Ptr}
-import scalanative.posix.sys.stat.{uid_t, gid_t}
+import scalanative.posix.sys.types.{uid_t, gid_t}
 
 @extern
 object pwd {

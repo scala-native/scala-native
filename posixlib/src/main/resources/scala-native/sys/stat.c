@@ -81,14 +81,6 @@ int scalanative_lstat(char *path, struct scalanative_stat *buf) {
     }
 }
 
-int scalanative_mkdir(char *path, mode_t mode) { return mkdir(path, mode); }
-
-int scalanative_chmod(char *pathname, mode_t mode) {
-    return chmod(pathname, mode);
-}
-
-int scalanative_fchmod(int fd, mode_t mode) { return fchmod(fd, mode); }
-
 mode_t scalanative_s_isuid() { return S_ISUID; }
 
 mode_t scalanative_s_isgid() { return S_ISGID; }
