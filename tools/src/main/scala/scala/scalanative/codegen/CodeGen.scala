@@ -15,7 +15,8 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext = new IncCompilationContext
+      incCompilationContext: IncCompilationContext
+        = new IncCompilationContext(config.workdir)
   ): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
@@ -47,7 +48,8 @@ object CodeGen {
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
       meta: Metadata,
-      incCompilationContext: IncCompilationContext = new IncCompilationContext
+      incCompilationContext: IncCompilationContext
+        = new IncCompilationContext(config.workdir)
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -77,7 +79,7 @@ object CodeGen {
           .par
           .map {
             case (pack, defns) =>
-              incCompilationContext.collectFromCurr(pack, defns)
+              incCompilationContext.addEntry(pack, defns)
               if (incCompilationContext.isChanged(pack)) {
                 val sorted = defns.sortBy(_.name.show)
                 val packagePrefix = config.workdir.resolve(
@@ -116,10 +118,9 @@ object CodeGen {
         config.LTO,
         config.compilerConfig.incrementalCompilation
       ) match {
-        case (_, _, true)                                   => separateInc()
-        case (Debug, _, _)                                  => separate()
         case (ReleaseFast | ReleaseFull, build.LTO.None, _) => single()
-        case (ReleaseFast | ReleaseFull, _, _)              => separate()
+        case (_, _, true)                                   => separateInc()
+        case _                                              => separate()
       }
     }
 

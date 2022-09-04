@@ -73,9 +73,9 @@ object Build {
       }
 
       implicit val incCompilationContext: IncCompilationContext =
-        new IncCompilationContext
+        new IncCompilationContext(fconfig.workdir)
       if (config.compilerConfig.incrementalCompilation) {
-        incCompilationContext.initialize(fconfig.workdir)
+        incCompilationContext.collectFromPreviousState()
       }
 
       // optimize and generate ll
