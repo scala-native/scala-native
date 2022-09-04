@@ -74,7 +74,7 @@ object Build {
 
       implicit val incCompilationContext: IncCompilationContext =
         new IncCompilationContext(fconfig.workdir)
-      if (config.compilerConfig.incrementalCompilation) {
+      if (config.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.collectFromPreviousState()
       }
 
@@ -84,7 +84,7 @@ object Build {
         ScalaNative.codegen(fconfig, optimized)
       }
 
-      if (config.compilerConfig.incrementalCompilation) {
+      if (config.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.dump()
       }
 

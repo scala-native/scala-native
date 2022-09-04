@@ -15,8 +15,9 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext
-        = new IncCompilationContext(config.workdir)
+      incCompilationContext: IncCompilationContext = new IncCompilationContext(
+        config.workdir
+      )
   ): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
@@ -48,8 +49,9 @@ object CodeGen {
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
       meta: Metadata,
-      incCompilationContext: IncCompilationContext
-        = new IncCompilationContext(config.workdir)
+      incCompilationContext: IncCompilationContext = new IncCompilationContext(
+        config.workdir
+      )
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -69,7 +71,7 @@ object CodeGen {
           .seq
 
       // Incremental compilation code generation
-      def separateInc(): Seq[Path] =
+      def seperateIncrementally(): Seq[Path] =
         assembly
           .groupBy { defn =>
             val packageName =
@@ -78,25 +80,25 @@ object CodeGen {
           }
           .par
           .map {
-            case (pack, defns) =>
-              incCompilationContext.addEntry(pack, defns)
-              if (incCompilationContext.isChanged(pack)) {
+            case (packageName, defns) =>
+              incCompilationContext.addEntry(packageName, defns)
+              if (incCompilationContext.shouldCompile(packageName)) {
                 val sorted = defns.sortBy(_.name.show)
                 val packagePrefix = config.workdir.resolve(
-                  pack.split('.').init.mkString(File.separator)
+                  packageName.split('.').init.mkString(File.separator)
                 )
                 if (!packagePrefix.toFile.exists()) {
                   packagePrefix.toFile.mkdirs()
                 }
-                val packagePath = pack.replace(".", File.separator)
+                val packagePath = packageName.replace(".", File.separator)
                 Impl(config, env, sorted).gen(packagePath, workdir)
               } else {
                 val packagePrefix = config.workdir
-                  .resolve(pack.replace(".", File.separator))
+                  .resolve(packageName.replace(".", File.separator))
                   .resolve("..")
                   .normalize
                 assert(packagePrefix.toFile.exists())
-                val packagePath = pack.replace(".", File.separator)
+                val packagePath = packageName.replace(".", File.separator)
                 config.workdir.resolve(s"$packagePath.ll")
               }
           }
@@ -116,11 +118,11 @@ object CodeGen {
       (
         config.mode,
         config.LTO,
-        config.compilerConfig.incrementalCompilation
+        config.compilerConfig.useIncrementalCompilation
       ) match {
         case (ReleaseFast | ReleaseFull, build.LTO.None, _) => single()
-        case (_, _, true)                                   => separateInc()
-        case _                                              => separate()
+        case (_, _, true) => seperateIncrementally()
+        case _            => separate()
       }
     }
 

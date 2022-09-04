@@ -33,8 +33,9 @@ private[scalanative] object LLVM {
    *    The paths of the `.o` files.
    */
   def compile(config: Config, paths: Seq[Path])(implicit
-      incCompilationContext: IncCompilationContext
-        = new IncCompilationContext(config.workdir)
+      incCompilationContext: IncCompilationContext = new IncCompilationContext(
+        config.workdir
+      )
   ): Seq[Path] = {
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
@@ -57,9 +58,8 @@ private[scalanative] object LLVM {
       // If pack2hashPrev is not empty, we don't recompile native library.
       // Even if native library changes(This is very rare case). If native library
       // changes, we should clean the project first.
-      if ((isLl || !Files.exists(objPath)) &&
-          (incCompilationContext.isFirstCompilation ||
-            incCompilationContext.isChanged(packageName))) {
+      if ((isLl || !Files.exists(objPath)) && incCompilationContext
+            .shouldCompile(packageName)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag = {
           if (isLl) Seq()

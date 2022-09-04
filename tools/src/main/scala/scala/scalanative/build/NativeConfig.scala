@@ -51,7 +51,7 @@ sealed trait NativeConfig {
   def optimize: Boolean
 
   /** Shall we use the incremental compilation? */
-  def incrementalCompilation: Boolean
+  def useIncrementalCompilation: Boolean
 
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
@@ -136,7 +136,7 @@ sealed trait NativeConfig {
   def withOptimize(value: Boolean): NativeConfig
 
   /** Create a new config with given incrementalCompilation value */
-  def withIncrementalCompilation(value: Boolean): NativeConfig
+  def withUseIncrementalCompilation(value: Boolean): NativeConfig
 
   /** Create a new config with given linktime properites */
   def withLinktimeProperties(
@@ -168,7 +168,7 @@ object NativeConfig {
       asan = false,
       linkStubs = false,
       optimize = true,
-      incrementalCompilation = true,
+      useIncrementalCompilation = true,
       linktimeProperties = Map.empty,
       embedResources = false
     )
@@ -188,7 +188,7 @@ object NativeConfig {
       dump: Boolean,
       asan: Boolean,
       optimize: Boolean,
-      incrementalCompilation: Boolean,
+      useIncrementalCompilation: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean
   ) extends NativeConfig {
@@ -239,8 +239,8 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    override def withIncrementalCompilation(value: Boolean): NativeConfig =
-      copy(incrementalCompilation = value)
+    override def withUseIncrementalCompilation(value: Boolean): NativeConfig =
+      copy(useIncrementalCompilation = value)
 
     def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {
       checkLinktimeProperties(v)

@@ -27,26 +27,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       val entry = "A"
       val changedTop = Set[String]("A", "A$")
       val outDir = Files.createTempDirectory("native-test-out")
-      println(outDir)
-      val compiler = NIRCompiler.getCompiler(outDir)
-      val sourcesDir = NIRCompiler.writeSources(sources)
-      val files = compiler.compile(sourcesDir)
-      makeChanged(outDir, changedTop)
-      val classpath = makeClasspath(outDir)
-      val nativeConfig = build.NativeConfig.empty
-        .withClang(Discover.clang())
-        .withClangPP(Discover.clangpp())
-        .withCompileOptions(Discover.compileOptions())
-        .withLinkingOptions(Discover.linkingOptions())
-        .withLTO(Discover.LTO())
-        .withGC(Discover.GC())
-        .withMode(Discover.mode())
-        .withOptimize(Discover.optimize())
-      val config = makeConfig(outDir, entry, nativeConfig)
-      val ext = if (Platform.isWindows) ".exe" else ""
-      val artifact = outDir.resolve("result" + ext)
-
-      Build.build(config, artifact)
+      nativeLink(outDir, sources, entry)
     }
 
   }
@@ -73,28 +54,9 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
                        |}""".stripMargin
       )
       val entry = "A"
-      val changedTop = Set[String]("A", "A$")
-      val outDir = Files.createTempDirectory("native-test-out")
-      println(outDir)
-      val compiler = NIRCompiler.getCompiler(outDir)
-      val sourcesDir = NIRCompiler.writeSources(sources)
-      val files = compiler.compile(sourcesDir)
-      makeChanged(outDir, changedTop)
-      val classpath = makeClasspath(outDir)
-      val nativeConfig = build.NativeConfig.empty
-        .withClang(Discover.clang())
-        .withClangPP(Discover.clangpp())
-        .withCompileOptions(Discover.compileOptions())
-        .withLinkingOptions(Discover.linkingOptions())
-        .withLTO(Discover.LTO())
-        .withGC(Discover.GC())
-        .withMode(Discover.mode())
-        .withOptimize(Discover.optimize())
-      val config = makeConfig(outDir, entry, nativeConfig)
-      val ext = if (Platform.isWindows) ".exe" else ""
-      val artifact = outDir.resolve("result" + ext)
 
-      Build.build(config, artifact)
+      val outDir = Files.createTempDirectory("native-test-out")
+      nativeLink(outDir, sources, entry)
     }
 
   }
@@ -131,4 +93,29 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       .withCompilerConfig(setupNativeConfig)
   }
 
+  private def nativeLink(
+      outDir: Path,
+      sources: Map[String, String],
+      entry: String
+  )(implicit scope: Scope): Unit = {
+    val compiler = NIRCompiler.getCompiler(outDir)
+    val sourcesDir = NIRCompiler.writeSources(sources)
+    val files = compiler.compile(sourcesDir)
+
+    val classpath = makeClasspath(outDir)
+    val nativeConfig = build.NativeConfig.empty
+      .withClang(Discover.clang())
+      .withClangPP(Discover.clangpp())
+      .withCompileOptions(Discover.compileOptions())
+      .withLinkingOptions(Discover.linkingOptions())
+      .withLTO(Discover.LTO())
+      .withGC(Discover.GC())
+      .withMode(Discover.mode())
+      .withOptimize(Discover.optimize())
+    val config = makeConfig(outDir, entry, nativeConfig)
+    val ext = if (Platform.isWindows) ".exe" else ""
+    val artifact = outDir.resolve("result" + ext)
+
+    Build.build(config, artifact)
+  }
 }

@@ -12,12 +12,8 @@ class IncCompilationContext(workDir: Path) {
   private val pack2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
   private val changed: TrieMap[String, Long] = TrieMap[String, Long]()
   private val dumpChanged: Path = workDir.resolve(Paths.get("changed"))
-  private val dumpPackage2hash: Path = workDir.resolve(Paths.get("package2hash"))
-
-
-  def isFirstCompilation: Boolean = {
-    pack2hashPrev.isEmpty
-  }
+  private val dumpPackage2hash: Path =
+    workDir.resolve(Paths.get("package2hash"))
 
   def collectFromPreviousState(): Unit = {
     if (new java.io.File(dumpPackage2hash.toUri).exists) {
@@ -37,14 +33,15 @@ class IncCompilationContext(workDir: Path) {
       val hash =
         defns.foldLeft(0)((prevhash, defn) => prevhash + defn.hashCode())
       package2hash.put(packageName, hash)
-      if (!pack2hashPrev.contains(packageName) || pack2hashPrev(packageName) != hash) {
+      if (!pack2hashPrev
+            .contains(packageName) || pack2hashPrev(packageName) != hash) {
         changed.put(packageName, hash)
       }
     }
   }
 
-  def isChanged(pack: String): Boolean = {
-    changed.contains(pack)
+  def shouldCompile(packageName: String): Boolean = {
+    pack2hashPrev.isEmpty || changed.contains(packageName)
   }
 
   def dump(): Unit = {
