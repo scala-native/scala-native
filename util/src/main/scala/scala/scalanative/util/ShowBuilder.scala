@@ -32,7 +32,9 @@ sealed trait ShowBuilder {
 
   def newline(): Unit = {
     out.append("\n")
-    out.append("  " * indentation)
+    for (_ <- 0.until(indentation)) {
+      out.append("  ")
+    }
   }
 
 }
