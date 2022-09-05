@@ -354,7 +354,7 @@ long scalanative_recvmsg(int socket, struct msghdr *msg, int flags) {
 #endif // unix
 
 #ifdef _WIN32
-long scalanative_sendmsg(int socket, struct msghdr *msg, int flags) {
+long scalanative_sendmsg(int socket, void *msg, int flags) {
     errno = ENOTSUP;
     return -1;
 }

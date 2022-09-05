@@ -9,6 +9,8 @@ import org.junit.Assert._
 
 import scalanative.junit.utils.AssertThrows.assertThrows
 
+import org.scalanative.testsuite.utils.Platform
+
 class InetAddressTest {
 
   @Test def equalsShouldWorkOnLocalhostsFromGetByName(): Unit = {
@@ -40,6 +42,12 @@ class InetAddressTest {
     assertFalse(all == null)
     assertTrue(all.length >= 1)
 
+    if (!Platform.isWindows) {
+      // TODO remove filter on main
+      for (alias <- all; if alias.isInstanceOf[Inet4Address])
+        assertTrue(alias.getCanonicalHostName().startsWith("localhost"))
+    }
+
     for (alias <- all)
       assertTrue(alias.getHostName().startsWith("localhost"))
 
@@ -69,6 +77,12 @@ class InetAddressTest {
 
     val i3 = InetAddress.getByName(String.valueOf(0xffffffffL))
     assertEquals("255.255.255.255", i3.getHostAddress())
+
+    assertThrows(
+      "not.example.com: Name or service not known",
+      classOf[UnknownHostException],
+      InetAddress.getByName("not.example.com")
+    )
   }
 
   @Test def getHostAddress(): Unit = {
