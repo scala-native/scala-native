@@ -65,21 +65,13 @@ object time {
    * _Static_assert code now in time.c checks the match of scalanative
    * structures such as timespec and tm with the operating system definition.
    * "clock_*" & "timer_*" use this assurance to avoid "glue".
-   *
-   * Some methods which now do not strictly need "@name" annotations
-   * retain them for historical reasons.
    */
 
-  @name("scalanative_asctime")
   def asctime(time_ptr: Ptr[tm]): CString = extern
-
-  @name("scalanative_asctime_r")
   def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
 
   def clock(): clock_t = extern
-
   def clock_getres(clockid: clockid_t, res: Ptr[timespec]): CInt = extern
-
   def clock_gettime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
 
   // No clock_nanosleep on macOS. time.c provides a stub always returning -1.
@@ -92,25 +84,17 @@ object time {
   ): CInt = extern
 
   def clock_settime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
-
   def ctime(time: Ptr[time_t]): CString = extern
   def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString = extern
 
   def difftime(time_end: CLong, time_beg: CLong): CDouble = extern
 
-  @name("scalanative_gmtime")
   def gmtime(time: Ptr[time_t]): Ptr[tm] = extern
-
-  @name("scalanative_gmtime_r")
   def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
 
-  @name("scalanative_localtime")
   def localtime(time: Ptr[time_t]): Ptr[tm] = extern
-
-  @name("scalanative_localtime_r")
   def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
 
-  @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern
 
   def nanosleep(requested: Ptr[timespec], remaining: Ptr[timespec]): CInt =
@@ -213,7 +197,7 @@ object timer {
    *    no special linking is needed.  Include this object and link away.
    *
    * 2) Many/most operating systems require that the linker "-lrt" be specified
-   *    so that the real time library, librt, is can be used to resolve the
+   *    so that the real time library, librt, is used to resolve the
    *    timer_* symbols.
    *
    * 3) macOS does not provide librt and has it own, entirely different, way of
