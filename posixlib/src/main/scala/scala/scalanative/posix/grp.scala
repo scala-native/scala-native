@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 
 import scalanative.unsafe.{CInt, CString, CStruct3, extern, name, Ptr}
-import scalanative.posix.sys.stat.gid_t
+import scalanative.posix.sys.types.gid_t
 
 @extern
 object grp {
