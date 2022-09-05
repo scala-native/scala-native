@@ -51,7 +51,7 @@ private[scalanative] object Filter {
       def include(path: String) = {
         if (path.contains(optPath)) {
           val name = Paths.get(path).toFile.getName.split("\\.").head
-          linkerResult.links.map(_.name).contains(name)
+          linkerResult.links.exists(_.name == name)
         } else if (path.contains(gcPath)) {
           gcSelectedPaths.exists(path.contains)
         } else {
