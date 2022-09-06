@@ -91,7 +91,7 @@ class TimeTest {
        */
 
       val time_ptr = stackalloc[time_t]()
-      !time_ptr = epoch + timezone()
+      !time_ptr = epoch + timezone
       val time: Ptr[tm] = localtime(time_ptr)
       val cstr: CString = asctime(time)
       val str: String = fromCString(cstr)
@@ -110,7 +110,7 @@ class TimeTest {
         // See _essential_ comment in corresponding localtime test about logic.
 
         val time_ptr = stackalloc[time_t]()
-        !time_ptr = epoch + timezone()
+        !time_ptr = epoch + timezone
         val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm]())
         val cstr: CString = asctime_r(time, alloc[Byte](26.toUSize))
         val str: String = fromCString(cstr)
