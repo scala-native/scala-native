@@ -119,7 +119,6 @@ trait Opt { self: Interflow =>
   ): Seq[MergeBlock] = {
     val processor =
       MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)
-
     try {
       pushMergeProcessor(processor)
 

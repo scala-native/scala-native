@@ -236,7 +236,7 @@ final class MergeProcessor(
         mergeState.heap = mergeHeap
         mergeState.delayed = mergeDelayed
         mergeState.emitted = mergeEmitted
-
+        mergeState.inlineDepth = incoming.head._2._2.inlineDepth
         (mergePhis.toSeq, mergeState)
     }
   }
@@ -388,7 +388,9 @@ final class MergeProcessor(
     todo = todo.tail
     val (newPhis, newState) = merge(block)
     block.phis = newPhis
-
+    if(inlineDepth != newState.inlineDepth) {
+      println("whatdddddddddddd")
+    }
     if (newState != block.start) {
       visit(block, newPhis, newState, inlineDepth)
     }
@@ -482,6 +484,11 @@ object MergeProcessor {
     val entryMergeBlock = builder.findMergeBlock(entryName)
     val entryState = new State(entryMergeBlock.name)
     entryState.inherit(state, args)
+    entryState.inlineDepth = state.inlineDepth
+    if(doInline) {
+      entryState.inlineDepth += 1
+    }
+
     entryMergeBlock.incoming(Local(-1)) = (args, entryState)
     builder.todo += entryName
     builder

@@ -21,6 +21,7 @@ trait Eval { self: Interflow =>
     var pc = offsets(from) + 1
 
     while (true) {
+      val xxx = state.inlineDepth
       val inst = insts(pc)
       implicit val pos: Position = inst.pos
       def bailOut =
@@ -118,7 +119,6 @@ trait Eval { self: Interflow =>
     op match {
       case Op.Call(sig, meth, args) =>
         val emeth = eval(meth)
-
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
@@ -148,7 +148,6 @@ trait Eval { self: Interflow =>
 
             emit(Op.Call(dsig, mtarget, margs))
           }
-
           dtarget match {
             case Val.Global(name, _)
                 if shallInline(name, eargs)
