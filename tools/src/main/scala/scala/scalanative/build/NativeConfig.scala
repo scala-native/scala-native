@@ -136,7 +136,7 @@ sealed trait NativeConfig {
   def withOptimize(value: Boolean): NativeConfig
 
   /** Create a new config with given incrementalCompilation value */
-  def withUseIncrementalCompilation(value: Boolean): NativeConfig
+  def withIncrementalCompilation(value: Boolean): NativeConfig
 
   /** Create a new config with given linktime properites */
   def withLinktimeProperties(
@@ -239,7 +239,7 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
-    override def withUseIncrementalCompilation(value: Boolean): NativeConfig =
+    override def withIncrementalCompilation(value: Boolean): NativeConfig =
       copy(useIncrementalCompilation = value)
 
     def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {

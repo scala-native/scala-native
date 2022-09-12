@@ -63,4 +63,10 @@ class IncCompilationContext(workDir: Path) {
       pwChanged.close()
     }
   }
+
+  def clear(): Unit = {
+    package2hash.clear()
+    pack2hashPrev.clear()
+    changed.clear()
+  }
 }

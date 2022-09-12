@@ -38,5 +38,3 @@ bin/
 
 # Virtual env generated dependecies, for generating docs
 .venv
-
-log

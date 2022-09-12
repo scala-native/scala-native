@@ -108,7 +108,9 @@ object Build {
 
         libObjectPaths ++ llObjectPaths
       }
-
+      if (config.compilerConfig.useIncrementalCompilation) {
+        incCompilationContext.clear()
+      }
       LLVM.link(fconfig, linked, objectPaths, outpath)
     }
 
@@ -123,6 +125,8 @@ object Build {
         val paths = findNativePaths(config.workdir, destPath)
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
+        implicit val incCompilationContext: IncCompilationContext =
+          new IncCompilationContext(config.workdir)
         LLVM.compile(projConfig, projPaths)
       }
   }

@@ -15,9 +15,7 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext = new IncCompilationContext(
-        config.workdir
-      )
+      incCompilationContext: IncCompilationContext
   ): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
@@ -49,9 +47,7 @@ object CodeGen {
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
       meta: Metadata,
-      incCompilationContext: IncCompilationContext = new IncCompilationContext(
-        config.workdir
-      )
+      incCompilationContext: IncCompilationContext
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -117,12 +113,13 @@ object CodeGen {
       import build.Mode._
       (
         config.mode,
-        config.LTO,
-        config.compilerConfig.useIncrementalCompilation
+        config.LTO
       ) match {
-        case (ReleaseFast | ReleaseFull, build.LTO.None, _) => single()
-        case (_, _, true) => seperateIncrementally()
-        case _            => separate()
+        case (ReleaseFast | ReleaseFull, build.LTO.None) => single()
+        case _ =>
+          if (config.compilerConfig.useIncrementalCompilation)
+            seperateIncrementally()
+          else separate()
       }
     }
 
