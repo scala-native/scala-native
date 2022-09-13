@@ -46,7 +46,7 @@ object SocketHelpers {
       val hints = stackalloc[addrinfo]()
       val ret = stackalloc[Ptr[addrinfo]]()
 
-      hints.ai_family = AF_UNSPEC
+      hints.ai_family = AF_INET
       hints.ai_protocol = 0
       hints.ai_addr = null
       hints.ai_flags = 4 // AI_NUMERICHOST
@@ -130,7 +130,7 @@ object SocketHelpers {
       val ret = stackalloc[Ptr[addrinfo]]()
 
       val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-      hints.ai_family = AF_UNSPEC
+      hints.ai_family = AF_INET
       hints.ai_socktype = 0
       hints.ai_next = null
 
@@ -163,7 +163,7 @@ object SocketHelpers {
       val hints = stackalloc[addrinfo]()
       val ret = stackalloc[Ptr[addrinfo]]()
 
-      hints.ai_family = AF_UNSPEC
+      hints.ai_family = AF_INET
       hints.ai_socktype = SOCK_STREAM
       hints.ai_protocol = 0
       hints.ai_next = null
