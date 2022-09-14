@@ -36,7 +36,7 @@ sealed trait NativeConfig {
   def lto: LTO
 
   /** The maximum inline depth during the optimization phase */
-  def maxInlineDepth: Int
+  def maxInlineDepth: Option[Int]
 
   /** The maximum caller and callee size during the optimization phase */
   def maxCallerSize: Int

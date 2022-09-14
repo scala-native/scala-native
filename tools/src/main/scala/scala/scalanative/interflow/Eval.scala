@@ -21,7 +21,6 @@ trait Eval { self: Interflow =>
     var pc = offsets(from) + 1
 
     while (true) {
-      val xxx = state.inlineDepth
       val inst = insts(pc)
       implicit val pos: Position = inst.pos
       def bailOut =
