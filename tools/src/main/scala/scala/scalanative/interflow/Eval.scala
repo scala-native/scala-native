@@ -786,9 +786,11 @@ trait Eval { self: Interflow =>
           case (Val.Long(v), Type.Char)  => Val.Char(v.toChar)
           case (Val.Size(v), Type.Byte)  => Val.Byte(v.toByte)
           case (Val.Size(v), Type.Short) => Val.Short(v.toShort)
-          case (Val.Size(v), Type.Int) if !config.compilerConfig.is32BitPlatform => Val.Int(v.toInt)
-          case (Val.Size(v), Type.Char)                    => Val.Char(v.toChar)
-          case _                                           => bailOut
+          case (Val.Size(v), Type.Int)
+              if !config.compilerConfig.is32BitPlatform =>
+            Val.Int(v.toInt)
+          case (Val.Size(v), Type.Char) => Val.Char(v.toChar)
+          case _                        => bailOut
         }
       case Conv.Zext =>
         (value, ty) match {
@@ -802,7 +804,8 @@ trait Eval { self: Interflow =>
             Val.Long(v.toChar.toLong)
           case (Val.Int(v), Type.Long) =>
             Val.Long(java.lang.Integer.toUnsignedLong(v))
-          case (Val.Size(v), Type.Long) if config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(v), Type.Long)
+              if config.compilerConfig.is32BitPlatform =>
             Val.Long(java.lang.Integer.toUnsignedLong(v.toInt))
           case _ =>
             bailOut
@@ -816,7 +819,8 @@ trait Eval { self: Interflow =>
           case (Val.Short(v), Type.Int)  => Val.Int(v.toInt)
           case (Val.Short(v), Type.Long) => Val.Long(v.toLong)
           case (Val.Int(v), Type.Long)   => Val.Long(v.toLong)
-          case (Val.Size(v), Type.Long) if config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(v), Type.Long)
+              if config.compilerConfig.is32BitPlatform =>
             Val.Long(v.toInt.toLong)
           case _ => bailOut
         }
@@ -888,13 +892,17 @@ trait Eval { self: Interflow =>
             Val.Int(java.lang.Float.floatToRawIntBits(value))
           case (Val.Double(value), Type.Long) =>
             Val.Long(java.lang.Double.doubleToRawLongBits(value))
-          case (Val.Size(value), Type.Int) if config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(value), Type.Int)
+              if config.compilerConfig.is32BitPlatform =>
             Val.Int(value.toInt)
-          case (Val.Int(value), Type.Size) if config.compilerConfig.is32BitPlatform =>
+          case (Val.Int(value), Type.Size)
+              if config.compilerConfig.is32BitPlatform =>
             Val.Size(value.toLong)
-          case (Val.Size(value), Type.Long) if !config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(value), Type.Long)
+              if !config.compilerConfig.is32BitPlatform =>
             Val.Long(value)
-          case (Val.Long(value), Type.Size) if !config.compilerConfig.is32BitPlatform =>
+          case (Val.Long(value), Type.Size)
+              if !config.compilerConfig.is32BitPlatform =>
             Val.Size(value)
           case (Val.Null, Type.Ptr) =>
             Val.Null

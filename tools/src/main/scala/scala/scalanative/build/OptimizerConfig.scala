@@ -26,16 +26,17 @@ sealed trait OptimizerConfig {
 object OptimizerConfig {
   def empty: OptimizerConfig =
     Impl(
-      maxInlineDepth = Option(0),
+      maxInlineDepth = None,
       maxCallerSize = 8196,
       maxInlineSize = 8
     )
 
   private final case class Impl(
-    maxInlineDepth: Option[Int],
-    maxCallerSize: Int,
-    maxInlineSize: Int
+      maxInlineDepth: Option[Int],
+      maxCallerSize: Int,
+      maxInlineSize: Int
   ) extends OptimizerConfig {
+
     /** Create a new config with the given max inline depth. */
     override def withMaxInlineDepth(value: Int): OptimizerConfig =
       copy(maxInlineDepth = Option(value))
@@ -57,4 +58,3 @@ object OptimizerConfig {
     }
   }
 }
-

@@ -214,7 +214,6 @@ trait Inline { self: Interflow =>
       }
 
       state.emit ++= emit
-      val oriInlineDepth = state.inlineDepth
       state.inherit(endState, res +: args)
 
       val Type.Function(_, retty) = defn.ty: @unchecked

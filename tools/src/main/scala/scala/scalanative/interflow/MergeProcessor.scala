@@ -12,14 +12,42 @@ final class MergeProcessor(
     doInline: Boolean,
     eval: Eval
 )(implicit linked: linker.Result) {
+  class SortedSetWrapper[A](ordering: Ordering[A]) {
+    private val sortedSet: mutable.Set[A] = mutable.SortedSet.empty[A](ordering)
+    def +=(elem: A): Unit = {
+      sortedSet += elem
+    }
+    def isEmpty: Boolean = sortedSet.isEmpty
+    def head: A = sortedSet.head
+    def removeHead(): Unit = {
+      sortedSet -= sortedSet.head
+    }
+    def filterNot(p: A => Boolean): Unit = {
+      if (sortedSet.nonEmpty) {
+        for (elem <- sortedSet.iterator) {
+          if (p(elem)) {
+            sortedSet -= elem
+          }
+        }
+      }
+    }
+    def filter(p: A => Boolean): Unit = {
+      if (sortedSet.nonEmpty) {
+        for (elem <- sortedSet.iterator) {
+          if (!p(elem)) {
+            sortedSet -= elem
+          }
+        }
+      }
+    }
+  }
   val offsets: Map[Local, Int] =
     insts.zipWithIndex.collect {
       case (Inst.Label(local, _), offset) =>
         local -> offset
     }.toMap
   val blocks = mutable.Map.empty[Local, MergeBlock]
-  val todoOrdering: Ordering[Local] = Ordering.by(offsets)
-  var todo = mutable.SortedSet.empty[Local](todoOrdering)
+  val todo = new SortedSetWrapper[Local](Ordering.by(offsets))
 
   def currentSize(): Int =
     blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
@@ -314,7 +342,7 @@ final class MergeProcessor(
       block.cf = null
     }
 
-    todo = todo.filterNot(n => invalid.contains(n))
+    todo.filterNot(n => invalid.contains(n))
   }
 
   def updateDirectSuccessors(block: MergeBlock): Unit = {
@@ -361,7 +389,7 @@ final class MergeProcessor(
   def visit(
       block: MergeBlock,
       newPhis: Seq[MergePhi],
-      newState: State,
+      newState: State
   ): Unit = {
     if (block.invalidations > 128) {
       throw BailOut("too many block invalidations")
@@ -374,17 +402,16 @@ final class MergeProcessor(
 
     block.start = newState.fullClone(block.name)
     block.end = newState
-    block.cf =
-      eval.run(insts, offsets, block.label.name)(block.end)
+    block.cf = eval.run(insts, offsets, block.label.name)(block.end)
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
-    todo = todo.filter(n => findMergeBlock(n).incoming.nonEmpty)
+    todo.filter(n => findMergeBlock(n).incoming.nonEmpty)
   }
 
   def advance(): Unit = {
     val block = findMergeBlock(todo.head)
-    todo = todo.tail
+    todo.removeHead()
     val (newPhis, newState) = merge(block)
     block.phis = newPhis
     if (newState != block.start) {
@@ -481,7 +508,7 @@ object MergeProcessor {
     val entryState = new State(entryMergeBlock.name)
     entryState.inherit(state, args)
     entryState.inlineDepth = state.inlineDepth
-    if(doInline) {
+    if (doInline) {
       entryState.inlineDepth += 1
     }
 
