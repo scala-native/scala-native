@@ -36,6 +36,9 @@ sealed trait Config {
 
   def compilerConfig: NativeConfig
 
+  /** The configuration for Scala Native optimizer */
+  def optimizerConfig: OptimizerConfig
+
   /** Create a new config with given base directory. */
   def withBasedir(value: Path): Config
 
@@ -54,6 +57,8 @@ sealed trait Config {
   def withCompilerConfig(value: NativeConfig): Config
 
   def withCompilerConfig(fn: NativeConfig => NativeConfig): Config
+
+  def withOptimizerConfig(value: OptimizerConfig): Config
 
   /** The garbage collector to use. */
   def gc: GC = compilerConfig.gc
@@ -106,7 +111,8 @@ object Config {
       basedir = Paths.get(""),
       testConfig = false,
       logger = Logger.default,
-      compilerConfig = NativeConfig.empty
+      compilerConfig = NativeConfig.empty,
+      optimizerConfig = OptimizerConfig.empty
     )
 
   private final case class Impl(
@@ -116,7 +122,8 @@ object Config {
       basedir: Path,
       testConfig: Boolean,
       logger: Logger,
-      compilerConfig: NativeConfig
+      compilerConfig: NativeConfig,
+      optimizerConfig: OptimizerConfig
   ) extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
@@ -142,6 +149,9 @@ object Config {
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
 
+    override def withOptimizerConfig(value: OptimizerConfig): Config =
+      copy(optimizerConfig = value)
+
     override def workdir: Path =
       basedir.resolve(s"native$nameSuffix")
 
@@ -163,5 +173,6 @@ object Config {
         | - compilerConfig: $compilerConfig
         |)""".stripMargin
     }
+
   }
 }

@@ -10,7 +10,7 @@ trait Inline { self: Interflow =>
       state: State,
       linked: linker.Result
   ): Boolean = {
-    val maybeDefn = mode match {
+    val maybeDefn = config.mode match {
       case build.Mode.Debug =>
         maybeOriginal(name)
       case _: build.Mode.Release =>
@@ -28,7 +28,7 @@ trait Inline { self: Interflow =>
             false
         }
         def isSmall =
-          defn.insts.size <= 8
+          defn.insts.size <= config.optimizerConfig.maxInlineSize
         val isExtern =
           defn.attrs.isExtern
         def hasVirtualArgs =
@@ -46,9 +46,9 @@ trait Inline { self: Interflow =>
         def isBlacklisted =
           this.isBlacklisted(name)
         def calleeTooBig =
-          defn.insts.size > maxCallerSize
+          defn.insts.size > config.optimizerConfig.maxCallerSize
         def callerTooBig =
-          mergeProcessor.currentSize() > maxCallerSize
+          mergeProcessor.currentSize() > config.optimizerConfig.maxCallerSize
         def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
@@ -56,7 +56,7 @@ trait Inline { self: Interflow =>
           case _                        => false
         }
 
-        val shall = mode match {
+        val shall = config.mode match {
           case build.Mode.Debug =>
             alwaysInline || isCtor
           case build.Mode.ReleaseFast =>
@@ -137,7 +137,7 @@ trait Inline { self: Interflow =>
       origPos: Position
   ): Val =
     in(s"inlining ${name.show}") {
-      val defn = mode match {
+      val defn = config.mode match {
         case build.Mode.Debug =>
           getOriginal(name)
         case _: build.Mode.Release =>

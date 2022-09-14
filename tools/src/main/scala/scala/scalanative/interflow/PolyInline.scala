@@ -43,7 +43,7 @@ trait PolyInline { self: Interflow =>
   def shallPolyInline(op: Op.Method, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result
-  ): Boolean = mode match {
+  ): Boolean = config.compilerConfig.mode match {
     case build.Mode.Debug =>
       false
 
@@ -52,7 +52,7 @@ trait PolyInline { self: Interflow =>
       val classCount = targets.map(_._1).size
       val implCount = targets.map(_._2).distinct.size
 
-      if (mode == build.Mode.ReleaseFast) {
+      if (config.compilerConfig.mode == build.Mode.ReleaseFast) {
         classCount <= 8 && implCount == 2
       } else {
         classCount <= 16 && implCount >= 2 && implCount <= 4
