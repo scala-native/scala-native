@@ -11,8 +11,7 @@ trait Eval { self: Interflow =>
   def run(
       insts: Array[Inst],
       offsets: Map[Local, Int],
-      from: Local,
-      inlineDepth: Int = 0
+      from: Local
   )(implicit
       state: State
   ): Inst.Cf = {
@@ -32,7 +31,7 @@ trait Eval { self: Interflow =>
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
-          val value = eval(op, inlineDepth)
+          val value = eval(op)
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)(inst.pos)
           } else {
@@ -109,8 +108,7 @@ trait Eval { self: Interflow =>
   }
 
   def eval(
-      op: Op,
-      inlineDepth: Int = 0
+      op: Op
   )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
@@ -150,8 +148,8 @@ trait Eval { self: Interflow =>
           dtarget match {
             case Val.Global(name, _)
                 if shallInline(name, eargs)
-                  && inlineDepth < maxInlineDepth =>
-              `inline`(name, eargs, inlineDepth + 1)
+                  && state.inlineDepth < maxInlineDepth =>
+              `inline`(name, eargs)
 
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
               polyInline(op, eargs)

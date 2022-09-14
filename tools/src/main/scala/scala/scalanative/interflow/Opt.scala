@@ -112,8 +112,7 @@ trait Opt { self: Interflow =>
       args: Seq[Val],
       state: State,
       doInline: Boolean,
-      retTy: Type,
-      inlineDepth: Int = 0
+      retTy: Type
   )(implicit
       originDefnPos: nir.Position
   ): Seq[MergeBlock] = {
@@ -123,7 +122,7 @@ trait Opt { self: Interflow =>
       pushMergeProcessor(processor)
 
       while (!processor.done()) {
-        processor.advance(inlineDepth)
+        processor.advance()
       }
     } finally {
       popMergeProcessor()

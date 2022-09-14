@@ -131,7 +131,7 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def `inline`(name: Global, args: Seq[Val], inlineDepth: Int = 0)(implicit
+  def `inline`(name: Global, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result,
       origPos: Position
@@ -153,8 +153,7 @@ trait Inline { self: Interflow =>
           inlineArgs,
           state,
           doInline = true,
-          origRetTy,
-          inlineDepth
+          origRetTy
         )
 
       val emit = new nir.Buffer()(state.fresh)
