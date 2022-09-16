@@ -86,6 +86,7 @@ object ScalaNativePluginInternal {
       .withGC(Discover.GC())
       .withMode(Discover.mode())
       .withOptimize(Discover.optimize()),
+    optimizerConfig := build.OptimizerConfig.empty,
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
