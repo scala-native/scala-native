@@ -3,6 +3,7 @@ package build
 import sbt._
 import sbt.Keys._
 import sbt.nio.Keys.fileTreeView
+import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
@@ -142,6 +143,11 @@ object Settings {
     mimaFailOnNoPrevious := false,
     mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(
       name.value
+    ),
+    mimaBinaryIssueFilters ++= Seq(
+      // This package is not actually part of Java's stdlib, it only contains private classes
+      // to handle embedded resources.
+      ProblemFilters.exclude[Problem]("java.lang.resource.*")
     ),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
