@@ -3,9 +3,12 @@ package scala.scalanative.posix
 import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types
 
-// The Open Group Base Specifications Issue 7, 2018 edition
-
-/* An XSI comment before method indicates it is defined in
+/** POSIX strings.h for Scala
+ *
+ * The Open Group Base Specifications Issue 7, 2018 edition
+ *     https://pubs.opengroup.org/onlinepubs/9699919799
+ *
+ * An XSI comment before a method indicates it is defined in
  * extended POSIX X/Open System Interfaces, not base POSIX.
  */
 
@@ -15,9 +18,8 @@ object strings {
   type size_t = types.size_t
   type locale_t = locale.locale_t
 
-// XSI - Begin
+/** XSI */
   def ffs(i: CInt): CInt = extern
-// XSI - End
 
   def strcasecmp(s1: CString, s2: CString): CInt = extern
   def strcasecmp_l(s1: CString, s2: CString, locale: locale_t): CInt = extern
