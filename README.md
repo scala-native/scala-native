@@ -11,7 +11,7 @@ Scala Native is an optimizing ahead-of-time compiler and lightweight managed run
 
 [![Discord](https://img.shields.io/discord/632150470000902164.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/scala)
 
-Getting Started and full documentation can be found at [http://www.scala-native.org/](http://www.scala-native.org/
+Getting Started and full documentation can be found at [http://www.scala-native.org/](http://www.scala-native.org/)
 
 ## Online Scaladoc
 
