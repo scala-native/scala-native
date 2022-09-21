@@ -5,10 +5,10 @@ import scala.scalanative.posix.sys.types
 
 /** POSIX strings.h for Scala
  *
- *  The Open Group Base Specifications Issue 7, 2018 edition
- *  https://pubs.opengroup.org/onlinepubs/9699919799
+ *  The Open Group Base Specifications
+ *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
  *
- *  An XSI comment before a method indicates it is defined in extended POSIX
+ *  A method with an XSI comment indicates it is defined in extended POSIX
  *  X/Open System Interfaces, not base POSIX.
  */
 
