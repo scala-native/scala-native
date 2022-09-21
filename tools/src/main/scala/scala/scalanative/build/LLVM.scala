@@ -57,7 +57,7 @@ private[scalanative] object LLVM {
         }
         val expectionsHandling =
           List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-        val flags = opt(config) +: "-fvisibility=hidden" +:
+        val flags = opt(config, isLl) +: "-fvisibility=hidden" +:
           stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
         val compilec =
           Seq(compiler) ++ flto(config) ++ flags ++
@@ -163,10 +163,10 @@ private[scalanative] object LLVM {
       case None     => Seq("-Wno-override-module")
     }
 
-  private def opt(config: Config): String =
+  private def opt(config: Config, isLl: Boolean): String =
     config.mode match {
-      case Mode.Debug       => "-O0"
-      case Mode.ReleaseFast => "-O2"
-      case Mode.ReleaseFull => "-O3"
+      case Mode.Debug if isLl            => "-O0"
+      case Mode.Debug | Mode.ReleaseFast => "-O2"
+      case Mode.ReleaseFull              => "-O3"
     }
 }
