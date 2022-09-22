@@ -1,10 +1,9 @@
 package java.lang.resource
 
 import java.io.InputStream
-import java.util.Base64
 import scala.scalanative.runtime._
 
-private[lang] class EncodedResourceInputStream(resourceId: Int)
+private[lang] class EmbeddedResourceInputStream(resourceId: Int)
     extends InputStream {
 
   // Position in Base64 encoded bytes
@@ -19,12 +18,12 @@ private[lang] class EncodedResourceInputStream(resourceId: Int)
   override def close(): Unit = ()
 
   override def read(): Int = {
-    if (position == size) {
+    if (position >= size) {
       -1
     } else {
       val res = EmbeddedResourceHelper.getContentPtr(resourceId)(position)
       position += 1
-      res
+      java.lang.Byte.toUnsignedInt(res)
     }
   }
 
