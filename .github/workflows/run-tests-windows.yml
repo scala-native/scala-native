@@ -13,11 +13,10 @@ concurrency:
 jobs:
   run-tests:
     name: Test runtime
-    runs-on: ${{matrix.os}}
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019]
         scala: [3.2.0, 2.13.8]
         gc: [boehm, immix, commix]
         include: 
