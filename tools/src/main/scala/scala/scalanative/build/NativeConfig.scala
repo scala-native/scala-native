@@ -283,6 +283,7 @@ object NativeConfig {
         | - optimize            $optimize
         | - linktimeProperties: $listLinktimeProperties
         | - embedResources:     $embedResources
+        | - incrementalCompilation: $useIncrementalCompilation
         |)""".stripMargin
     }
   }
