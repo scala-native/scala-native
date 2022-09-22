@@ -49,3 +49,13 @@ lazy val projectD = (project in file("D"))
     },
     scalaVersion := commonScalaVersion
   )
+
+// Binary files with bytes 0x00 and 0xFF
+lazy val projectE = (project in file("E"))
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+    },
+    scalaVersion := commonScalaVersion
+  )

@@ -7,9 +7,8 @@ import scalanative.annotation._
 import scalanative.unsafe._
 import scalanative.runtime.{Array => _, _}
 import java.io.InputStream
-import java.lang.resource.EncodedResourceInputStream
+import java.lang.resource.EmbeddedResourceInputStream
 import java.lang.resource.EmbeddedResourceHelper
-import java.util.Base64
 import java.nio.file.Paths
 
 // These two methods are generated at link-time by the toolchain
@@ -175,7 +174,7 @@ final class _Class[A] {
       EmbeddedResourceHelper.resourceFileIdMap
         .get(absolutePath)
         .map { fileIndex =>
-          Base64.getDecoder().wrap(new EncodedResourceInputStream(fileIndex))
+          new EmbeddedResourceInputStream(fileIndex)
         }
         .orNull
     }
