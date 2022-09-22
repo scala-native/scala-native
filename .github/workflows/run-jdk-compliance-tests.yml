@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 0.4.x
 concurrency:
   group: jdk-compliance-${{ github.head_ref }}
   cancel-in-progress: true
