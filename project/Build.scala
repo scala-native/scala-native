@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.build._
 import ScriptedPlugin.autoImport._
 
 object Build {
@@ -318,8 +319,8 @@ object Build {
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
       javaVersionSharedTestSources,
-      nativeConfig ~= {
-        _.withLinkStubs(true)
+      nativeConfig ~= { c =>
+        c.withLinkStubs(true)
           .withEmbedResources(true)
       },
       Test / unmanagedSourceDirectories ++= {
@@ -389,6 +390,11 @@ object Build {
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
+      .settings(nativeConfig ~= { c =>
+        c.withLTO(LTO.default)
+          .withMode(Mode.default)
+          .withGC(GC.default)
+      })
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .dependsOn(scalalib, testInterface % "test")
@@ -542,7 +548,7 @@ object Build {
             s.log.info(s"Fetching Scala source version $ver")
 
             // Make parent dirs and stuff
-            IO.createDirectory(trgDir)
+            sbt.IO.createDirectory(trgDir)
 
             // Clone scala source code
             new CloneCommand()
