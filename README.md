@@ -10,19 +10,15 @@ Scala Native is an optimizing ahead-of-time compiler and lightweight managed run
 ## Chat and Documentation
 
 [![Discord](https://img.shields.io/discord/632150470000902164.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/scala)
-[![Join chat https://gitter.im/scala-native/scala-native](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala-native/scala-native?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Getting Started and full documentation can be found at [http://www.scala-native.org/](http://www.scala-native.org/)
 
-
 ## Online Scaladoc
 
-[![Scaladoc nativelib](https://javadoc.io/badge2/org.scala-native/nativelib_native0.4_2.13/javadoc.svg?label=nativelib)](https://javadoc.io/doc/org.scala-native/nativelib_native0.4_2.13)
-[![Scaladoc clib](https://javadoc.io/badge2/org.scala-native/clib_native0.4_2.13/javadoc.svg?label=clib)](https://javadoc.io/doc/org.scala-native/clib_native0.4_2.13)
-[![Scaladoc posixlib](https://javadoc.io/badge2/org.scala-native/posixlib_native0.4_2.13/javadoc.svg?label=posixlib)](https://javadoc.io/doc/org.scala-native/posixlib_native0.4_2.13)
-[![Scaladoc windowslib](https://javadoc.io/badge2/org.scala-native/windowslib_native0.4_2.13/javadoc.svg?label=windowslib)](https://javadoc.io/doc/org.scala-native/windowslib_native0.4_2.13)
-
-
+[![Scaladoc nativelib](https://javadoc.io/badge2/org.scala-native/nativelib_native0.4_3/javadoc.svg?label=nativelib)](https://javadoc.io/doc/org.scala-native/nativelib_native0.4_3)
+[![Scaladoc clib](https://javadoc.io/badge2/org.scala-native/clib_native0.4_3/javadoc.svg?label=clib)](https://javadoc.io/doc/org.scala-native/clib_native0.4_3)
+[![Scaladoc posixlib](https://javadoc.io/badge2/org.scala-native/posixlib_native0.4_3/javadoc.svg?label=posixlib)](https://javadoc.io/doc/org.scala-native/posixlib_native0.4_3)
+[![Scaladoc windowslib](https://javadoc.io/badge2/org.scala-native/windowslib_native0.4_3/javadoc.svg?label=windowslib)](https://javadoc.io/doc/org.scala-native/windowslib_native0.4_3)
 
 ## License
 

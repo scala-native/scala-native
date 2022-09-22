@@ -124,8 +124,7 @@ object Settings {
       Compile / doc / sources := {
         val prev = (Compile / doc / sources).value
         if (Platform.isWindows &&
-            sys.env.contains("CI") && // Always present in GitHub Actions
-            scalaVersion.value.startsWith("3.") // Bug in Scala 3 scaladoc
+            sys.env.contains("CI") // Always present in GitHub Actions
         ) Nil
         else prev
       }
