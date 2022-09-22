@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.build._
 import ScriptedPlugin.autoImport._
 
 object Build {
@@ -318,8 +319,8 @@ object Build {
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
       javaVersionSharedTestSources,
-      nativeConfig ~= {
-        _.withLinkStubs(true)
+      nativeConfig ~= { c =>
+        c.withLinkStubs(true)
           .withEmbedResources(true)
       },
       Test / unmanagedSourceDirectories ++= {
@@ -385,8 +386,6 @@ object Build {
         libraryDependencies ++= Deps.JUnitJvm
       )
       .dependsOn(junitAsyncJVM % "test")
-
-  import scala.scalanative.build._
 
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
