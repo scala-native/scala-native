@@ -14,11 +14,7 @@ object time {
   type clock_t = types.clock_t
   type clockid_t = types.clockid_t
 
-  /* locale_t is required by POSIX stanard but otherwise unused in this file.
-   * C (void *) which can be cast if/when posixlib locale.h is implemented.
-   */
-
-  type locale_t = Ptr[Byte]
+  type locale_t = locale.locale_t
 
   /* NULL is required by the POSIX standard but is not directly implemented
    * here. It is implemented in posix/stddef.scala.
