@@ -30,7 +30,7 @@ jobs:
             gc: immix
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
         id: setup
         with:
@@ -57,7 +57,7 @@ jobs:
       matrix:
         scala: [2.12.16, 3.1.3]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}

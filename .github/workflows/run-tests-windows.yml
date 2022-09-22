@@ -36,7 +36,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
@@ -84,7 +84,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/windows-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -117,7 +117,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:

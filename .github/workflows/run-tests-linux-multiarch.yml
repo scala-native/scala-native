@@ -22,7 +22,7 @@ jobs:
         arch: [linux-arm64, linux-x86]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # In order to minimize time spend in image build loading we're caching directory of local repository
       # Starting local registry from cache is faster then loading image tars
       # https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei
@@ -94,7 +94,7 @@ jobs:
           - lto: thin
             arch: { name: linux-x86, emulator: "" }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
