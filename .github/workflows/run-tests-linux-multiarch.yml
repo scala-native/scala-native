@@ -147,7 +147,7 @@ jobs:
             scalaPartestJunitTests${{env.project-version}}/test
         uses: nick-fields/retry@v2
         with:
-          timeout_minutes: 60
+          timeout_minutes: 120
           max_attempts: 2
           retry_on: error
           command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"
