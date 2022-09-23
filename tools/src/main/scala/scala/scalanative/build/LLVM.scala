@@ -152,16 +152,14 @@ private[scalanative] object LLVM {
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
     locally {
-      val dumpFile = config.workdir.resolve("llvmLinkInfo")
-      val pw = new PrintWriter(
-        new File(dumpFile.toUri)
-      )
-      llvmLinkInfo.foreach {
-        // in windows system, the file separator doesn't work very well, so we
-        // replace it to linux file separator
-        str => pw.write(str.replace("\\", "/") + " ")
-      }
-      pw.close()
+      val pw = new PrintWriter(config.workdir.resolve("llvmLinkInfo").toFile)
+      try
+        llvmLinkInfo.foreach {
+          // in windows system, the file separator doesn't work very well, so we
+          // replace it to linux file separator
+          str => pw.println(str.replace("\\", "/"))
+        }
+      finally pw.close()
     }
     val compile = config.clangPP.abs +: Seq(s"@llvmLinkInfo")
 

@@ -69,33 +69,32 @@ object CodeGen {
       // Incremental compilation code generation
       def seperateIncrementally(): Seq[Path] =
         assembly
-          .groupBy { defn =>
-            val packageName =
-              defn.name.top.id.split('.').init.mkString(".")
-            packageName
-          }
+          .groupBy(
+            _.name.top.id
+              .split('.')
+              .init // last segment is class name
+              .takeWhile(!_.contains("$")) // ignore nested classes
+              .mkString(".")
+          )
           .par
           .map {
             case (packageName, defns) =>
+              val packagePath = packageName.replace(".", File.separator)
+              val ownerDirectory = config.workdir
+                .resolve(Paths.get(packagePath, ".."))
+                .normalize
+              val packageOrEmptyPath =
+                if (packageName.isEmpty) "__"
+                else packagePath
               incCompilationContext.addEntry(packageName, defns)
               if (incCompilationContext.shouldCompile(packageName)) {
                 val sorted = defns.sortBy(_.name.show)
-                val packagePrefix = config.workdir.resolve(
-                  packageName.split('.').init.mkString(File.separator)
-                )
-                if (!packagePrefix.toFile.exists()) {
-                  packagePrefix.toFile.mkdirs()
-                }
-                val packagePath = packageName.replace(".", File.separator)
-                Impl(config, env, sorted).gen(packagePath, workdir)
+                if (!ownerDirectory.toFile.exists())
+                  ownerDirectory.toFile.mkdirs()
+                Impl(config, env, sorted).gen(packageOrEmptyPath, workdir)
               } else {
-                val packagePrefix = config.workdir
-                  .resolve(packageName.replace(".", File.separator))
-                  .resolve("..")
-                  .normalize
-                assert(packagePrefix.toFile.exists())
-                val packagePath = packageName.replace(".", File.separator)
-                config.workdir.resolve(s"$packagePath.ll")
+                assert(ownerDirectory.toFile.exists())
+                config.workdir.resolve(s"$packageOrEmptyPath.ll")
               }
           }
           .seq
