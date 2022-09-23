@@ -83,18 +83,15 @@ object CodeGen {
               val ownerDirectory = config.workdir
                 .resolve(Paths.get(packagePath, ".."))
                 .normalize
-              val packageOrEmptyPath =
-                if (packageName.isEmpty) "__"
-                else packagePath
               incCompilationContext.addEntry(packageName, defns)
               if (incCompilationContext.shouldCompile(packageName)) {
                 val sorted = defns.sortBy(_.name.show)
                 if (!ownerDirectory.toFile.exists())
                   ownerDirectory.toFile.mkdirs()
-                Impl(config, env, sorted).gen(packageOrEmptyPath, workdir)
+                Impl(config, env, sorted).gen(packagePath, workdir)
               } else {
                 assert(ownerDirectory.toFile.exists())
-                config.workdir.resolve(s"$packageOrEmptyPath.ll")
+                config.workdir.resolve(s"$packagePath.ll")
               }
           }
           .seq
