@@ -12,7 +12,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install clang-format-10
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: ./scripts/check-lint.sh
         env:
           CLANG_FORMAT_PATH: "/usr/bin/clang-format-10"

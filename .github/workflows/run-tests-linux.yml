@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 0.4.x
 concurrency:
   group: linux-${{ github.head_ref }}
   cancel-in-progress: true
@@ -14,13 +15,13 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         scala: [3.2.0, 2.13.8, 2.12.16, 2.11.12]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -59,7 +60,7 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     needs: tests-tools
     strategy:
       fail-fast: false
@@ -93,7 +94,7 @@ jobs:
             build-mode: release-fast
             gc: commix
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -109,7 +110,7 @@ jobs:
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     needs: tests-tools
     strategy:
       fail-fast: false
@@ -120,7 +121,7 @@ jobs:
           - scala: 2.13.8
             build-mode: release-fast
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -134,7 +135,7 @@ jobs:
 
   test-runtime-lto:
     name: Test runtime LTO
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     needs: tests-tools
     strategy:
       fail-fast: false
@@ -152,7 +153,7 @@ jobs:
             optimize: false
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -169,13 +170,13 @@ jobs:
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         scala: [2.12.16, 3.1.3]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}

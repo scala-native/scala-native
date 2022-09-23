@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 0.4.x
 concurrency: 
   group: windows-${{ github.head_ref }}
   cancel-in-progress: true
@@ -12,11 +13,10 @@ concurrency:
 jobs:
   run-tests:
     name: Test runtime
-    runs-on: ${{matrix.os}}
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019]
         scala: [3.2.0, 2.13.8]
         gc: [boehm, immix, commix]
         include: 
@@ -36,7 +36,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
@@ -84,7 +84,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/windows-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -117,7 +117,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:

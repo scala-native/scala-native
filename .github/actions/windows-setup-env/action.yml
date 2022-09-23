@@ -4,6 +4,9 @@ inputs:
   scala-version:
     description: "Scala version used in the tests"
     required: true
+  java-version:
+    description: "Java version to use in tests"
+    default: "8"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries"
@@ -11,6 +14,10 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: ${{inputs.java-version}}
     # We need to set proper Pagefile limits in advance.
     # Github actions default page file size is quite small,
     # it's not enough to run all tests, especially when using None GC.
