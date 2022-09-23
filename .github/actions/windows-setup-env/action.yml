@@ -17,7 +17,7 @@ runs:
     - uses: actions/setup-java@v3
       with:
         distribution: "temurin"
-        java-version: ${{inputs.java-version}}"
+        java-version: ${{inputs.java-version}}
     # We need to set proper Pagefile limits in advance.
     # Github actions default page file size is quite small,
     # it's not enough to run all tests, especially when using None GC.

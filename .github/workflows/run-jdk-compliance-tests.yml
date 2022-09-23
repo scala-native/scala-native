@@ -50,10 +50,6 @@ jobs:
       - name: Setup git config
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: ${{matrix.java}}
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
