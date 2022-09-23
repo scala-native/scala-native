@@ -49,6 +49,9 @@ sealed trait NativeConfig {
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
+  /** Shall we use the incremental compilation? */
+  def useIncrementalCompilation: Boolean
+
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
 
@@ -107,6 +110,9 @@ sealed trait NativeConfig {
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
 
+  /** Create a new config with given incrementalCompilation value */
+  def withIncrementalCompilation(value: Boolean): NativeConfig
+
   /** Create a new config with given linktime properites */
   def withLinktimeProperties(
       value: NativeConfig.LinktimeProperites
@@ -140,6 +146,7 @@ object NativeConfig {
       dump = false,
       linkStubs = false,
       optimize = true,
+      useIncrementalCompilation = false,
       linktimeProperties = Map.empty,
       embedResources = false,
       optimizerConfig = OptimizerConfig.empty
@@ -160,6 +167,7 @@ object NativeConfig {
       checkFatalWarnings: Boolean,
       dump: Boolean,
       optimize: Boolean,
+      useIncrementalCompilation: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
       optimizerConfig: OptimizerConfig
@@ -211,6 +219,9 @@ object NativeConfig {
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
 
+    override def withIncrementalCompilation(value: Boolean): NativeConfig =
+      copy(useIncrementalCompilation = value)
+
     def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {
       checkLinktimeProperties(v)
       copy(linktimeProperties = v)
@@ -257,6 +268,7 @@ object NativeConfig {
         | - linktimeProperties:     $listLinktimeProperties
         | - embedResources:         $embedResources
         | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
+        | - incrementalCompilation: $useIncrementalCompilation
         |)""".stripMargin
     }
   }
