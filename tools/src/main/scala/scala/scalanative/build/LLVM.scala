@@ -1,6 +1,7 @@
 package scala.scalanative
 package build
 
+import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
 import scala.sys.process._
 import scalanative.build.core.IO.RichPath
@@ -31,7 +32,9 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+  def compile(config: Config, paths: Seq[Path])(implicit
+      incCompilationContext: IncCompilationContext
+  ): Seq[Path] = {
     // generate .o files for all included source files in parallel
     paths.par.map { path =>
       val inpath = path.abs
@@ -39,8 +42,22 @@ private[scalanative] object LLVM {
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
+      val packageName = (config.workdir relativize path).toString
+        .replace(File.separator, ".")
+        .split('.')
+        .init
+        .mkString(".")
+
       // LL is generated so always rebuild
-      if (isLl || !Files.exists(objPath)) {
+      // If pack2hashPrev is empty, here are two cases:
+      // 1. This is the first compilation time.
+      // 2. We don't use incremental compilation.
+      // In these two cases, we should compile them to object files.
+      // If pack2hashPrev is not empty, we don't recompile native library.
+      // Even if native library changes(This is very rare case). If native library
+      // changes, we should clean the project first.
+      if ((isLl || !Files.exists(objPath)) &&
+          incCompilationContext.shouldCompile(packageName)) {
         val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
         val stdflag = {
           if (isLl) Seq()
@@ -130,7 +147,21 @@ private[scalanative] object LLVM {
         asan(config) ++ target(config)
     }
     val paths = objectsPaths.map(_.abs)
-    val compile = config.clangPP.abs +: (flags ++ paths ++ linkopts)
+    // it's a fix for passing too many file paths to the clang compiler,
+    // If too many packages are compiled and the platform is windows, windows
+    // terminal doesn't support too many characters, which will cause an error.
+    val llvmLinkInfo = flags ++ paths ++ linkopts
+    locally {
+      val pw = new PrintWriter(config.workdir.resolve("llvmLinkInfo").toFile)
+      try
+        llvmLinkInfo.foreach {
+          // in windows system, the file separator doesn't work very well, so we
+          // replace it to linux file separator
+          str => pw.println(str.replace("\\", "/"))
+        }
+      finally pw.close()
+    }
+    val compile = config.clangPP.abs +: Seq(s"@llvmLinkInfo")
 
     config.logger.time(
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"

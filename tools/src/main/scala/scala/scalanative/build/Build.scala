@@ -54,7 +54,9 @@ object Build {
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path)(implicit scope: Scope): Path =
+  def build(config: Config, outpath: Path)(implicit
+      scope: Scope
+  ): Path =
     config.logger.time("Total") {
       // validate classpath
       val fconfig = {
@@ -70,10 +72,20 @@ object Build {
         linked
       }
 
+      implicit val incCompilationContext: IncCompilationContext =
+        new IncCompilationContext(fconfig.workdir)
+      if (config.compilerConfig.useIncrementalCompilation) {
+        incCompilationContext.collectFromPreviousState()
+      }
+
       // optimize and generate ll
       val generated = {
         val optimized = ScalaNative.optimize(fconfig, linked)
         ScalaNative.codegen(fconfig, optimized)
+      }
+
+      if (config.compilerConfig.useIncrementalCompilation) {
+        incCompilationContext.dump()
       }
 
       val objectPaths = config.logger.time("Compiling to native code") {
@@ -96,7 +108,9 @@ object Build {
 
         libObjectPaths ++ llObjectPaths
       }
-
+      if (config.compilerConfig.useIncrementalCompilation) {
+        incCompilationContext.clear()
+      }
       LLVM.link(fconfig, linked, objectPaths, outpath)
     }
 
@@ -111,6 +125,8 @@ object Build {
         val paths = findNativePaths(config.workdir, destPath)
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
+        implicit val incCompilationContext: IncCompilationContext =
+          new IncCompilationContext(config.workdir)
         LLVM.compile(projConfig, projPaths)
       }
   }
