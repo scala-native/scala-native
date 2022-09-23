@@ -80,7 +80,8 @@ object CodeGen {
           .map {
             case (packageName, defns) =>
               val packagePath = packageName.replace(".", File.separator)
-              val ownerDirectory = config.workdir()
+              val ownerDirectory = config
+                .workdir()
                 .resolve(Paths.get(packagePath, ".."))
                 .normalize
               incCompilationContext.addEntry(packageName, defns)
