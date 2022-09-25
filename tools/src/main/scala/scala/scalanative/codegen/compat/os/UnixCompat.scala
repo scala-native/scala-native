@@ -24,7 +24,13 @@ private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
 
   def genLandingPad(
       unwind: Next.Unwind
-  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder, gidx: GenIdx, dwf: DwarfSection.Builder[Global]): Unit = {
+  )(implicit
+      fresh: Fresh,
+      pos: Position,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind
 
