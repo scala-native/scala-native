@@ -1,9 +1,11 @@
-package scala.scalanative.codegen
+package scala.scalanative.codegen.dwarf
 
 import DwarfSection._
 import DwarfDef._
 import Val.Str
 import Val.Num
+import scala.scalanative.nir.Position
+import scala.reflect.ClassTag
 
 trait GenIdx {
   def id(tok: DwarfSection.Token): Int
@@ -33,21 +35,29 @@ case class I[+T](tok: DwarfSection.Token, value: T) {
 sealed trait Val {
   import Val._
   def render = this match {
-    case Str(raw) => s""" "$raw" """.trim // TODO: escaping!!
-    case Num(raw) => raw.toString
-    case Ref(raw) => "!" + raw.toString
+    case Str(raw)   => s"""  "$raw" """.trim // TODO: escaping!!
+    case Num(raw)   => raw.toString
+    case Const(raw) => raw.toString
+    case Bool(raw) => raw.toString
+    case Ref(raw)   => "!" + raw.toString
   }
 }
 object Val {
   case class Str(raw: String) extends Val
+  case class Const(raw: String) extends Val
   case class Num(raw: Int) extends Val
   case class Ref(raw: Int) extends Val
+  case class Bool(raw: Boolean) extends Val
 
   implicit class IOps(i: Int) {
     def v: Val = Num(i)
   }
+  implicit class BOps(i: Boolean) {
+    def v: Val = Bool(i)
+  }
   implicit class SOps(s: String) {
     def v: Val = Str(s)
+    def const = Const(s)
   }
   implicit class TOps(s: Token) {
     def v(implicit gidx: GenIdx): Val = Ref(gidx.id(s))
@@ -64,7 +74,31 @@ sealed trait DwarfDef extends Product with Serializable {
   private def inst(nm: String, mp: (String, Val)*) =
     "!" + nm + fields(mp: _*)
 
+  private def tuple(values: String*) =
+    "!" + values.mkString("{", ", ", "}")
+
   def render(implicit gidx: GenIdx): String = this match {
+    case `llvm.dbg.cu`(cus) =>
+      tuple(cus.map(_.tok.v.render): _*)
+
+    case dic: DICompileUnit =>
+      "distinct " + inst(
+        "DICompileUnit",
+        "producer" -> dic.producer.v,
+        "file" -> dic.file.tok.v,
+        "language" -> "DW_LANG_C_plus_plus".const // TODO: update once SN has its own DWARF language code
+      )
+
+    case fb: FlagBag =>
+      tuple(fb.flags.map(_.tok.render): _*)
+
+    case IntAttr(conflictType, name, value) =>
+      tuple(
+        s"i32 $conflictType",
+        "!" + Val.Str(name).render,
+        s"i32 $value"
+      )
+
     case DILocation(line, column, scope) =>
       inst(
         "DILocation",
@@ -76,14 +110,20 @@ sealed trait DwarfDef extends Product with Serializable {
     case DIFile(name, directory) =>
       inst("DIFile", "filename" -> name.v, "directory" -> directory.v)
 
-    case DISubprogram(name, scope, file, line, tpe) =>
-      inst(
+    case dis: DISubprogram =>
+      import dis._
+      val dst = if (distinct) "distinct " else ""
+      dst + inst(
         "DISubprogram",
-        "name" -> name.v,
+        // "name" -> name.v,
+        "linkageName" -> linkageName.v,
+        "isDefinition" -> true.v,
         "scope" -> scope.tok.v,
+        "unit" -> unit.tok.v,
         "file" -> file.tok.v,
         "line" -> line.v,
-        "type" -> tpe.tok.v
+        "type" -> tpe.tok.v,
+        "spFlags" -> "DISPFlagDefinition".const
       )
 
     case DILocalVariable(name, scope, file, line, tpe) =>
@@ -97,7 +137,15 @@ sealed trait DwarfDef extends Product with Serializable {
       )
 
     case DIBasicType(name, size) =>
-      inst("DIBasicType", "name" -> "int".v, "size" -> size.v)
+      inst("DIBasicType", "name" -> name.v, "size" -> size.v)
+
+    case DIDerivedType(tag, baseType, size) =>
+      inst(
+        "DIDerivedType",
+        "tag" -> tag.tg.const,
+        "baseType" -> baseType.tok.v,
+        "size" -> size.v
+      )
 
     case DISubroutineType(types) =>
       inst("DISubroutineType", "types" -> types.tok.v)
@@ -109,6 +157,25 @@ sealed trait DwarfDef extends Product with Serializable {
 object DwarfDef {
   sealed trait Type extends DwarfDef
   sealed trait Scope extends DwarfDef
+  sealed abstract class Named(val name: String) extends DwarfDef
+
+  case class IntAttr(conflictType: Int, name: String, value: Int)
+      extends DwarfDef
+
+  abstract class FlagBag(override val name: String, val flags: Seq[I[IntAttr]])
+      extends Named(name)
+
+  case class `llvm.module.flags`(override val flags: Seq[I[IntAttr]])
+      extends FlagBag("llvm.module.flags", flags)
+
+  case class `llvm.dbg.cu`(cus: Seq[I[DICompileUnit]])
+      extends Named("llvm.dbg.cu")
+
+  case class DICompileUnit(
+      file: I[DIFile],
+      producer: String,
+      isOptimised: Boolean
+  ) extends Scope
 
   case class DILocation(line: Int, column: Int, scope: I[Scope])
       extends DwarfDef
@@ -117,10 +184,13 @@ object DwarfDef {
 
   case class DISubprogram(
       name: String,
+      linkageName: String,
       scope: I[Scope],
       file: I[DIFile],
       line: Int,
-      tpe: I[DISubroutineType]
+      tpe: I[DISubroutineType],
+      unit: I[DICompileUnit],
+      distinct: Boolean
   ) extends Scope
 
   case class DILocalVariable(
@@ -132,21 +202,21 @@ object DwarfDef {
   ) extends DwarfDef
 
   case class DIBasicType(name: String, size: Int) extends Type
+
+  sealed abstract class DWTag(val tg: String)
+      extends Product
+      with Serializable {}
+
+  object DWTag {
+    case object Pointer extends DWTag("DW_TAG_pointer_type")
+  }
+
+  case class DIDerivedType(tag: DWTag, baseType: I[Type], size: Int)
+      extends Type
   case class DISubroutineType(types: I[DITypes]) extends Type
   case class DITypes(retTpe: I[Type], arguments: Seq[I[Type]]) extends DwarfDef
 }
 
-case class DwarfSection private (tips: Seq[I[DwarfDef]]) {
-  def render(implicit gidx: GenIdx): List[String] =
-    tips
-      .map(i => i.id -> i)
-      .sortBy(_._1)
-      .map {
-        case (id, I(_, dfn)) =>
-          s"!$id = ${dfn.render}"
-      }
-      .toList
-}
 object DwarfSection {
   class Token {
     def render(implicit gidx: GenIdx) = s"!${gidx.id(this)}"
@@ -160,14 +230,57 @@ object DwarfSection {
     private val globals = collection.mutable.Map
       .empty[DwarfDef, I[DwarfDef]]
 
-    def register(in: In)(dwarf: DwarfDef) = {
-      val newTok = gidx.gen
+    private val keyCache = collection.mutable.Map.empty[Any, I[DwarfDef]]
 
-      b.update(in, I(newTok, dwarf))
+    def register[T <: DwarfDef](in: In, dwarf: T): I[T] = {
+      val newTok = gidx.gen
+      b.synchronized {
+        if (b.contains(in))
+          throw new Exception(s"[dwarf] attempt to overwrite `$in` key")
+
+        val computed = I(newTok, dwarf)
+        b.update(in, computed)
+
+        computed
+      }
     }
 
-    def cached[T <: DwarfDef](in: DwarfDef): I[T] =
+    def put(in: In, dwarf: I[DwarfDef]) = {
+      b.synchronized {
+        b.update(in, dwarf)
+      }
+    }
+
+    def fileFromPosition(pos: Position): I[DwarfDef.DIFile] = {
+      cachedBy(pos.source, DwarfDef.DIFile(pos.filename, pos.dir))
+    }
+
+    def fileLocation(pos: Position): I[DwarfDef.DILocation] =
+      cachedBy(
+        pos,
+        DwarfDef.DILocation(pos.line, pos.column, fileFromPosition(pos))
+      )
+    def scopeLocation(
+        pos: Position,
+        scope: I[DwarfDef.Scope]
+    ): I[DwarfDef.DILocation] =
+      cachedBy(
+        pos,
+        DwarfDef.DILocation(pos.line, pos.column, scope)
+      )
+
+    def cached[T <: DwarfDef](in: DwarfDef): I[T] = globals.synchronized {
       globals.getOrElseUpdate(in, I(gidx.gen, in)).asInstanceOf[I[T]]
+    }
+
+    def cachedBy[K, T <: DwarfDef](k: K, in: => DwarfDef)(implicit
+        ct: ClassTag[T]
+    ): I[T] =
+      keyCache.synchronized {
+        keyCache
+          .getOrElseUpdate(k -> ct, I(gidx.gen, in))
+          .asInstanceOf[I[T]]
+      }
 
     def anon[T <: DwarfDef](dwarf: T): I[T] = {
       val newTok = gidx.gen
@@ -181,10 +294,29 @@ object DwarfSection {
     def get[T <: DwarfDef](in: In) =
       b(in).asInstanceOf[I[T]]
 
-    def build: DwarfSection = DwarfSection(
-      b.values.toSeq ++ globals.values.toSeq ++ anon.result()
-    )
+    import scalanative.util.ShowBuilder
+
+    def render(implicit show: ShowBuilder) = {
+      val tips = b.values.toSeq ++
+        anon.result() ++ globals.values.toSeq ++ keyCache.values.toSeq
+
+      val compileUnits = anon(`llvm.dbg.cu`(tips.collect {
+        case cu @ I(tok, dic: DICompileUnit) =>
+          I(tok, dic)
+      }))
+
+      show.newline()
+      (compileUnits +: tips)
+        .map(i => i.id -> i)
+        .sortBy(_._1)
+        .foreach {
+          case (_, I(_, dfn: Named)) =>
+            show.line(s"!${dfn.name} = ${dfn.render}")
+          case (id, I(_, dfn)) =>
+            show.line(s"!$id = ${dfn.render}")
+        }
+    }
   }
 
-  def builder[In](implicit gidx: GenIdx) = new Builder[In]
+  def builder[In]()(implicit gidx: GenIdx) = new Builder[In]
 }

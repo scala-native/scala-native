@@ -11,6 +11,20 @@ import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
+import dwarf.DwarfSection
+import scala.scalanative.codegen.dwarf.GenIdx
+import scala.scalanative.nir.Type.Ref
+import scala.scalanative.nir.Type.Vararg
+import scala.scalanative.nir.Type.Var
+import scala.scalanative.nir.Type.Virtual
+import scala.scalanative.nir.Type.Bool
+import scala.scalanative.nir.Type.Size
+import scala.scalanative.nir.Type.Ptr
+import scala.scalanative.nir.Type.ArrayValue
+import scala.scalanative.nir.Type.StructValue
+import scala.scalanative.codegen.dwarf.DwarfDef
+import scala.scalanative.codegen.dwarf.I
+import scala.util.control.NonFatal
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[Global, Defn],
@@ -31,8 +45,13 @@ private[codegen] abstract class AbstractCodeGen(
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
   def gen(id: String, dir: VirtualDirectory): Path = {
+    implicit val gidx: GenIdx = GenIdx.create
+    implicit val db: DwarfSection.Builder[Global] =
+      DwarfSection.builder[Global]()
+
     val body = dir.write(Paths.get(s"$id-body.ll")) { writer =>
-      genDefns(defns)(new FileShowBuilder(writer))
+      implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
+      genDefns(defns)
     }
 
     val headers = dir.write(Paths.get(s"$id.ll")) { writer =>
@@ -42,11 +61,30 @@ private[codegen] abstract class AbstractCodeGen(
       genDeps()
     }
 
-    dir.merge(Seq(body), headers)
+    val debugInfo = dir.write(Paths.get(s"$id-debug.ll")) { writer =>
+      implicit val sb: ShowBuilder = new FileShowBuilder(writer)
+
+      db.anon(
+        DwarfDef.`llvm.module.flags`(
+          Seq(
+            db.anon(DwarfDef.IntAttr(7, "Dwarf Version", 3)),
+            db.anon(DwarfDef.IntAttr(2, "Debug Info Version", 3))
+          )
+        )
+      )
+
+      db.render
+    }
+
+    dir.merge(Seq(body, debugInfo), headers)
     headers
   }
 
-  private def genDeps()(implicit sb: ShowBuilder): Unit = deps.foreach { n =>
+  private def genDeps()(implicit
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = deps.foreach { n =>
     val mn = mangled(n)
     if (!generated.contains(mn)) {
       sb.newline()
@@ -70,12 +108,20 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private def genDefns(defns: Seq[Defn])(implicit sb: ShowBuilder): Unit = {
+  private def genDefns(
+      defns: Seq[Defn]
+  )(implicit
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
     def onDefn(defn: Defn): Unit = {
       val mn = mangled(defn.name)
       if (!generated.contains(mn)) {
         newline()
+        if (defn.pos != Position.NoPosition)
+          dwf.fileFromPosition(defn.pos)
         genDefn(defn)
         generated += mn
       }
@@ -85,6 +131,14 @@ private[codegen] abstract class AbstractCodeGen(
     defns.foreach { defn => if (defn.isInstanceOf[Defn.Var]) onDefn(defn) }
     defns.foreach { defn => if (defn.isInstanceOf[Defn.Declare]) onDefn(defn) }
     defns.foreach { defn => if (defn.isInstanceOf[Defn.Define]) onDefn(defn) }
+
+    // defns.foreach {
+    //   case defn: Defn.Const => onDefn(defn)
+    //   case defn: Defn.Var => onDefn(defn)
+    //   case defn: Defn.Declare => onDefn(defn)
+    //   case defn: Defn.Define => onDefn(defn)
+    //   case _ =>
+    // }
   }
 
   protected final def touch(n: Global): Unit =
@@ -127,15 +181,19 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private def genDefn(defn: Defn)(implicit sb: ShowBuilder): Unit = defn match {
+  private def genDefn(defn: Defn)(implicit
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = defn match {
     case Defn.Var(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = false, ty, rhs)
     case Defn.Const(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
-      genFunctionDefn(attrs, name, sig, Seq.empty, Fresh())
+      genFunctionDefn(attrs, name, sig, Seq.empty, Fresh(), defn.pos)
     case Defn.Define(attrs, name, sig, insts) =>
-      genFunctionDefn(attrs, name, sig, insts, Fresh(insts))
+      genFunctionDefn(attrs, name, sig, insts, Fresh(insts), defn.pos)
     case defn =>
       unsupported(defn)
   }
@@ -166,8 +224,13 @@ private[codegen] abstract class AbstractCodeGen(
       name: Global,
       sig: Type,
       insts: Seq[Inst],
-      fresh: Fresh
-  )(implicit sb: ShowBuilder): Unit = {
+      fresh: Fresh,
+      pos: Position
+  )(implicit
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
 
     val Type.Function(argtys, retty) = sig: @unchecked
@@ -207,6 +270,17 @@ private[codegen] abstract class AbstractCodeGen(
     if (!isDecl) {
       str(" ")
       str(os.gxxPersonality)
+    }
+
+    val debugInfo =
+      if (!isDecl)
+        dwarfFunctionDefine(pos, name, retty, argtys)
+      else None
+
+    debugInfo.foreach { dbg =>
+      str(s" !dbg !${dbg.id}")
+    }
+    if (!isDecl) {
       str(" {")
 
       insts.foreach {
@@ -217,13 +291,62 @@ private[codegen] abstract class AbstractCodeGen(
       }
 
       val cfg = CFG(insts)
-      cfg.all.foreach { block => genBlock(block)(cfg, fresh, sb) }
-      cfg.all.foreach { block => genBlockLandingPads(block)(cfg, fresh, sb) }
+      cfg.all.foreach { block =>
+        genBlock(block, scope = debugInfo)(cfg, fresh, sb, gidx, dwf)
+      }
+      cfg.all.foreach { block =>
+        genBlockLandingPads(block)(cfg, fresh, sb, gidx, dwf)
+      }
       newline()
 
       str("}")
 
       copies.clear()
+    }
+  }
+
+  private def dwarfFunctionDefine(
+      pos: Position,
+      name: Global,
+      rettype: Type,
+      argtypes: Seq[Type]
+  )(implicit
+      dwf: DwarfSection.Builder[Global]
+  ): Option[I[DwarfDef.DISubprogram]] = {
+    try {
+      val diTypes = dwf.anon(
+        DwarfDef.DITypes(dwarfType(rettype).get, argtypes.map(dwarfType(_).get))
+      )
+      val subType = dwf.anon(DwarfDef.DISubroutineType(diTypes))
+
+      val file = dwf.fileFromPosition(pos)
+
+      val unit = dwf.cached(
+        DwarfDef.DICompileUnit(
+          file = file,
+          producer = "Scala Native :)",
+          isOptimised = false // TODO: propagate debug/release-fast information
+        )
+      )
+      val func =
+        dwf.register(
+          name,
+          DwarfDef.DISubprogram(
+            name = name.top.id,
+            linkageName = mangled(name),
+            scope = unit,
+            file = file,
+            unit = unit,
+            line = pos.line,
+            tpe = subType,
+            distinct = true
+          )
+        )
+      Option(func)
+    } catch {
+      case NonFatal(ex) =>
+        println(s"failed to render ${name} $ex")
+        None
     }
   }
 
@@ -272,8 +395,15 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genBlock(
-      block: Block
-  )(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
+      block: Block,
+      scope: Option[I[DwarfDef.Scope]] = None
+  )(implicit
+      cfg: CFG,
+      fresh: Fresh,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
     val Block(name, params, insts, isEntry) = block
     currentBlockName = name
@@ -283,7 +413,7 @@ private[codegen] abstract class AbstractCodeGen(
     indent()
     os.genBlockAlloca(block)
     genBlockPrologue(block)
-    rep(insts) { inst => genInst(inst) }
+    rep(insts) { inst => genInst(inst, scope) }
     unindent()
   }
 
@@ -353,12 +483,49 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genBlockLandingPads(
       block: Block
-  )(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
+  )(implicit
+      cfg: CFG,
+      fresh: Fresh,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
         import inst.pos
         os.genLandingPad(unwind)
       case _ => ()
+    }
+  }
+
+  private def dwarfType(
+      ty: Type
+  )(implicit dwf: DwarfSection.Builder[Global]): Option[I[DwarfDef.Type]] = {
+    @inline def basic(name: String, size: Int): I[DwarfDef.DIBasicType] =
+      dwf.cached(DwarfDef.DIBasicType(name, size * 8))
+
+    // @inline def pointer(name: String, size: Int): I[DwarfDef.DIBasicType] =
+    //   dwf.cached(DwarfDef.DIBasicType(name, size))
+
+    PartialFunction.condOpt(ty) {
+      case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
+        dwf.cached(
+          DwarfDef.DIDerivedType(
+            tag = DwarfDef.DWTag.Pointer,
+            baseType = basic("i8", 4),
+            size = 64
+          )
+        )
+
+      case Type.Float         => basic("float", 4)
+      case Type.Double        => basic("double", 8)
+      case Type.Bool          => basic("i1", 1)
+      case i: Type.FixedSizeI => basic(s"i${i.width}", i.width)
+      case Type.Size =>
+        if (is32BitPlatform) basic("i32", 4)
+        else basic("i64", 8)
+      case other =>
+        throw new NotImplementedError(s"No idea how to dwarfise $other")
     }
   }
 
@@ -545,12 +712,18 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genInst(
-      inst: Inst
-  )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
+      inst: Inst,
+      scope: Option[I[DwarfDef.Scope]] = None
+  )(implicit
+      fresh: Fresh,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
     inst match {
       case inst: Inst.Let =>
-        genLet(inst)
+        genLet(inst, scope)
 
       case Inst.Unreachable(unwind) =>
         assert(unwind eq Next.None)
@@ -626,8 +799,14 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genLet(
-      inst: Inst.Let
-  )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
+      inst: Inst.Let,
+      scope: Option[I[DwarfDef.Scope]] = None
+  )(implicit
+      fresh: Fresh,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
     def isVoid(ty: Type): Boolean =
       ty == Type.Unit || ty == Type.Nothing
@@ -663,7 +842,13 @@ private[codegen] abstract class AbstractCodeGen(
             else call.copy(ptr = Val.Global(glob, valty))
           case _ => call
         }
-        genCall(genBind, callDef, unwind)
+        genCall(
+          genBind,
+          callDef,
+          unwind,
+          if (inst.pos == Position.NoPosition) None else Some(inst.pos),
+          scope
+        )
 
       case Op.Load(ty, ptr, syncAttrs) =>
         val pointee = fresh()
@@ -843,9 +1028,22 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genCall(
       genBind: () => Unit,
       call: Op.Call,
-      unwind: Next
-  )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
+      unwind: Next,
+      pos: Option[Position] = None,
+      scope: Option[I[DwarfDef.Scope]] = None
+  )(implicit
+      fresh: Fresh,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import sb._
+    def addDebug() =
+      pos.zip(scope).foreach {
+        case (position, subprogram) =>
+          str(s", !dbg !${dwf.scopeLocation(position, subprogram).id}")
+      }
+
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty: @unchecked
@@ -860,6 +1058,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("(")
         rep(args, sep = ", ")(genCallArgument)
         str(")")
+        if (unwind eq Next.None) addDebug()
 
         if (unwind ne Next.None) {
           str(" to label %")
@@ -902,6 +1101,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("(")
         rep(args, sep = ", ")(genCallArgument)
         str(")")
+        if (unwind eq Next.None) addDebug()
 
         if (unwind ne Next.None) {
           str(" to label %")
