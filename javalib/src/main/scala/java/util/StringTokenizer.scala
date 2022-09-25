@@ -43,17 +43,20 @@ class StringTokenizer(
     if (delimiters == null) {
       throw new NullPointerException()
     }
+
+    var found = false
     val length = string.length
     if (position < length) {
-      if (returnDelimiters)
-        return true
-
-      for (i <- position until length) {
-        if (delimiters.indexOf(string.charAt(i), 0) == -1)
-          return true
+      if (returnDelimiters) {
+        found = true
+      } else {
+        for (i <- position until length if !found) {
+          if (delimiters.indexOf(string.charAt(i), 0) == -1)
+            found = true
+        }
       }
     }
-    false
+    found
   }
 
   def nextElement(): Object = nextToken()
