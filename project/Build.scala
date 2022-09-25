@@ -448,6 +448,8 @@ object Build {
       })
       .withNativeCompilerPlugin
       .withJUnitPlugin
+      .settings(nativeLinkingOptions += "-g")
+      .settings(nativeCompileOptions += "-g")
       .dependsOn(scalalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------

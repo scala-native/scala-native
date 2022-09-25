@@ -4,6 +4,8 @@ import scala.scalanative.codegen.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder
+import scala.scalanative.codegen.dwarf.GenIdx
+import scala.scalanative.codegen.dwarf.DwarfSection
 
 private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
@@ -22,7 +24,7 @@ private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
 
   def genLandingPad(
       unwind: Next.Unwind
-  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder): Unit = {
+  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder, gidx: GenIdx, dwf: DwarfSection.Builder[Global]): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind
 

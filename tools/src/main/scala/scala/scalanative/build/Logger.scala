@@ -51,7 +51,7 @@ object Logger {
     def debug(msg: String): Unit = err.println(s"[debug] $msg")
     def info(msg: String): Unit = out.println(s"[info] $msg")
     def warn(msg: String): Unit = out.println(s"[warn] $msg")
-    def error(msg: String): Unit = err.println(s"[error] $msg")
+    def error(msg: String): Unit = err.println(s"[error!] $msg")
   }
 
   /** A 'Logger' that discards all messagess

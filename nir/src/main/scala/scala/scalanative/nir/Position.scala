@@ -1,5 +1,8 @@
 package scala.scalanative.nir
 
+import java.nio.file.Paths
+import scala.util.Try
+
 final case class Position(
     /** Source file. */
     source: Position.SourceFile,
@@ -8,6 +11,11 @@ final case class Position(
     /** Zero-based column number. */
     column: Int
 ) {
+
+  lazy val path = Paths.get(source)
+
+  def filename = path.getFileName().toString
+  def dir = path.getParent().toString
 
   /** One-based line number */
   def sourceLine: Int = line + 1
