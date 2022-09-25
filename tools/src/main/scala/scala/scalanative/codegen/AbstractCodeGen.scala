@@ -512,7 +512,7 @@ private[codegen] abstract class AbstractCodeGen(
         dwf.cached(
           DwarfDef.DIDerivedType(
             tag = DwarfDef.DWTag.Pointer,
-            baseType = basic("i8", 4),
+            baseType = basic("i8", 8),
             size = 64
           )
         )
@@ -520,7 +520,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Float         => basic("float", 4)
       case Type.Double        => basic("double", 8)
       case Type.Bool          => basic("i1", 1)
-      case i: Type.FixedSizeI => basic(s"i${i.width}", i.width)
+      case i: Type.FixedSizeI => basic(s"i${i.width / 8}", i.width / 8)
       case Type.Size =>
         if (is32BitPlatform) basic("i32", 4)
         else basic("i64", 8)
