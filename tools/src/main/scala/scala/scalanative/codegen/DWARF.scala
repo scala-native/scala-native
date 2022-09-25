@@ -38,7 +38,7 @@ sealed trait Val {
     case Str(raw)   => s"""  "$raw" """.trim // TODO: escaping!!
     case Num(raw)   => raw.toString
     case Const(raw) => raw.toString
-    case Bool(raw) => raw.toString
+    case Bool(raw)  => raw.toString
     case Ref(raw)   => "!" + raw.toString
   }
 }
@@ -122,6 +122,7 @@ sealed trait DwarfDef extends Product with Serializable {
         "unit" -> unit.tok.v,
         "file" -> file.tok.v,
         "line" -> line.v,
+        "scopeLine" -> line.v,
         "type" -> tpe.tok.v,
         "spFlags" -> "DISPFlagDefinition".const
       )
