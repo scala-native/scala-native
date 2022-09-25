@@ -52,7 +52,13 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
 
   override def genLandingPad(
       unwind: Next.Unwind
-  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder, gidx: GenIdx, dwf: DwarfSection.Builder[Global]): Unit = {
+  )(implicit
+      fresh: Fresh,
+      pos: Position,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit = {
     import codegen._
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind

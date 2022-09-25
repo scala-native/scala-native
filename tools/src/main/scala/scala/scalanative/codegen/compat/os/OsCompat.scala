@@ -18,7 +18,13 @@ private[codegen] trait OsCompat {
   def genPrelude()(implicit sb: ShowBuilder): Unit
   def genLandingPad(
       unwind: Next.Unwind
-  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder, gidx: GenIdx, dwf: DwarfSection.Builder[Global]): Unit
+  )(implicit
+      fresh: Fresh,
+      pos: Position,
+      sb: ShowBuilder,
+      gidx: GenIdx,
+      dwf: DwarfSection.Builder[Global]
+  ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 
   final lazy val gxxPersonality =
