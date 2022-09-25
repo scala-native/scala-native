@@ -86,6 +86,8 @@ sealed trait DwarfDef extends Product with Serializable {
         "DICompileUnit",
         "producer" -> dic.producer.v,
         "file" -> dic.file.tok.v,
+        "isOptimized" -> false.v,
+        "emissionKind" -> "FullDebug".const,
         "language" -> "DW_LANG_C_plus_plus".const // TODO: update once SN has its own DWARF language code
       )
 
