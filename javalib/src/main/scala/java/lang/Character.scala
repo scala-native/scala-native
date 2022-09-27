@@ -835,11 +835,22 @@ object Character {
       dstIndex: Int
   ): Unit = {
     val cpPrime = codePoint - 0x10000
-    val high = 0xd800 | ((cpPrime >> 10) & 0x3ff)
-    val low = 0xdc00 | (cpPrime & 0x3ff)
-    dst(dstIndex) = high.toChar
-    dst(dstIndex + 1) = low.toChar
+    dst(dstIndex) = highSurrogateFromNormalised(cpPrime)
+    dst(dstIndex + 1) = lowSurrogateFromNormalised(cpPrime)
   }
+
+  // These both allow for the logic in toSurrogate to not change, the codepoint must be normalised first with -0x10000
+  @inline private[this] def highSurrogateFromNormalised(cp: Int): Char =
+    (0xd800 | ((cp >> 10) & 0x3ff)).toChar
+    
+  @inline private[this] def lowSurrogateFromNormalised(cp: Int): Char =
+    (0xdc00 | (cp & 0x3ff)).toChar
+
+  @inline def highSurrogate(codePoint: Int): Char =
+    highSurrogateFromNormalised(codePoint - 0x10000)
+
+  @inline def lowSurrogate(codePoint: Int): Char =
+    lowSurrogateFromNormalised(codePoint - 0x10000)
 
   @inline def toString(c: scala.Char): String =
     String.valueOf(c)
@@ -1237,7 +1248,7 @@ object Character {
   private[lang] final val CombiningClassIsNone = 0
   private[lang] final val CombiningClassIsAbove = 1
   private[lang] final val CombiningClassIsOther = 2
-  
+
   /* Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
    * Indices representing the start of ranges of codePoint that have the same
    * `combiningClassNoneOrAboveOrOther` result. The results cycle modulo 3 at
