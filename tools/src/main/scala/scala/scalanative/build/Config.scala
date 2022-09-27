@@ -21,14 +21,9 @@ sealed trait Config {
   def workdir: Path
 
   /** Path to the output file, executable or library. Calculated based on
-   *  [[basedir]] / [[basename]] or [[basename]]-test, and extension based on
-   *  the platform.
+   *  [[basedir]] / [[NativeConfig#basename]] and -test, if a test project.
    */
   def artifactPath: Path
-
-  /** Path to the nativelib jar. */
-  @deprecated("Not needed: discovery is internal", "0.4.0")
-  def nativelib: Path
 
   /** Entry point for linking. */
   def mainClass: String
@@ -40,14 +35,6 @@ sealed trait Config {
   def logger: Logger
 
   def compilerConfig: NativeConfig
-
-  /** Create a new config with given directory. */
-  @deprecated("Use withBasedir, withBasename, withTestConfig", "0.4.5")
-  def withWorkdir(value: Path): Config
-
-  /** Create a new config with given path to nativelib. */
-  @deprecated("Not needed: discovery is internal", "0.4.0")
-  def withNativelib(value: Path): Config
 
   /** Create a new config with given base directory. */
   def withBasedir(value: Path): Config
@@ -116,7 +103,6 @@ object Config {
       nativelib = Paths.get(""),
       mainClass = "",
       classPath = Seq.empty,
-      workdirOld = Paths.get(""),
       basedir = Paths.get(""),
       testConfig = false,
       logger = Logger.default,
@@ -127,7 +113,6 @@ object Config {
       nativelib: Path,
       mainClass: String,
       classPath: Seq[Path],
-      workdirOld: Path,
       basedir: Path,
       testConfig: Boolean,
       logger: Logger,
@@ -141,9 +126,6 @@ object Config {
 
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
-
-    def withWorkdir(value: Path): Config =
-      copy(workdirOld = value)
 
     def withBasedir(value: Path): Config =
       copy(basedir = value)
@@ -161,8 +143,7 @@ object Config {
       copy(compilerConfig = fn(compilerConfig))
 
     override def workdir =
-      if (!workdirOld.equals(Paths.get(""))) workdirOld
-      else basedir.resolve(s"native$nameSuffix")
+      basedir.resolve(s"native$nameSuffix")
 
     override def artifactPath: Path = {
       val ext = if (Platform.isWindows) ".exe" else ""

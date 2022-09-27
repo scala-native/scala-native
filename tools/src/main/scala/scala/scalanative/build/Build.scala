@@ -54,9 +54,7 @@ object Build {
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path)(implicit
-      scope: Scope
-  ): Path =
+  def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
       // create workdir if needed
       if (Files.notExists(config.workdir)) {
@@ -77,7 +75,7 @@ object Build {
       }
 
       implicit val incCompilationContext: IncCompilationContext =
-        new IncCompilationContext(fconfig.workdir())
+        new IncCompilationContext(fconfig.workdir)
       if (config.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.collectFromPreviousState()
       }
@@ -130,7 +128,7 @@ object Build {
         val (projPaths, projConfig) =
           Filter.filterNativelib(config, linkerResult, destPath, paths)
         implicit val incCompilationContext: IncCompilationContext =
-          new IncCompilationContext(config.workdir())
+          new IncCompilationContext(config.workdir)
         LLVM.compile(projConfig, projPaths)
       }
   }

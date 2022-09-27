@@ -42,7 +42,7 @@ private[scalanative] object LLVM {
       val isCpp = inpath.endsWith(cppExt)
       val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      val packageName = (config.workdir() relativize path).toString
+      val packageName = (config.workdir relativize path).toString
         .replace(File.separator, ".")
         .split('.')
         .init
@@ -150,7 +150,7 @@ private[scalanative] object LLVM {
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
     locally {
-      val pw = new PrintWriter(config.workdir().resolve("llvmLinkInfo").toFile)
+      val pw = new PrintWriter(config.workdir.resolve("llvmLinkInfo").toFile)
       try
         llvmLinkInfo.foreach {
           // in windows system, the file separator doesn't work very well, so we
