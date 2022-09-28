@@ -842,7 +842,7 @@ object Character {
   // These both allow for the logic in toSurrogate to not change, the codepoint must be normalised first with -0x10000
   @inline private[this] def highSurrogateFromNormalised(cp: Int): Char =
     (0xd800 | ((cp >> 10) & 0x3ff)).toChar
-    
+
   @inline private[this] def lowSurrogateFromNormalised(cp: Int): Char =
     (0xdc00 | (cp & 0x3ff)).toChar
 
