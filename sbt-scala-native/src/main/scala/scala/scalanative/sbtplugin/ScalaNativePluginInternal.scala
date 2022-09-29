@@ -234,7 +234,7 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings(false)
   }
 
-  lazy val scalaNativeTestSettings: Seq[Setting[_]] = {
+  lazy val scalaNativeTestSettings: Seq[Setting[_]] =
     scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
@@ -271,7 +271,6 @@ object ScalaNativePluginInternal {
             .toMap
         }
       )
-  }
 
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
     scalaNativeDependencySettings ++
