@@ -1,5 +1,7 @@
 package java.util
 
+import scala.annotation.tailrec
+
 class StringTokenizer(
     string: String,
     private var delimiters: String,
@@ -40,23 +42,28 @@ class StringTokenizer(
   def hasMoreElements(): Boolean = hasMoreTokens()
 
   def hasMoreTokens(): Boolean = {
-    if (delimiters == null) {
+    if (delimiters == null)
       throw new NullPointerException()
-    }
 
-    var found = false
-    val length = string.length
-    if (position < length) {
-      if (returnDelimiters) {
-        found = true
+    @tailrec
+    def hasNonDelim(pos: Int, len: Int): Boolean = {
+      if (pos == len) {
+        false
+      } else if (delimiters.indexOf(string.charAt(pos), 0) == -1) {
+        true
       } else {
-        for (i <- position until length if !found) {
-          if (delimiters.indexOf(string.charAt(i), 0) == -1)
-            found = true
-        }
+        hasNonDelim(pos + 1, len)
       }
     }
-    found
+
+    val length = string.length
+    if (position >= length) {
+      false
+    } else if (returnDelimiters) {
+      true
+    } else {
+      hasNonDelim(position, length)
+    }
   }
 
   def nextElement(): Object = nextToken()
@@ -100,6 +107,9 @@ class StringTokenizer(
   }
 
   def nextToken(delims: String): String = {
+    if (delims == null)
+      throw new NullPointerException()
+
     delimiters = delims
     nextToken()
   }
