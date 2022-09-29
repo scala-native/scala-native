@@ -588,4 +588,22 @@ class CharacterTest {
     assertTrue(UnicodeBlock.of('a') equals UnicodeBlock.BASIC_LATIN)
     assertTrue(UnicodeBlock.of('א') equals UnicodeBlock.HEBREW)
   }
+
+  // from scala-js tests
+  @Test def highSurrogate(): Unit = {
+    assertEquals(0xd800, Character.highSurrogate(0x10000))
+    assertEquals(0xd808, Character.highSurrogate(0x12345))
+    assertEquals(0xdbff, Character.highSurrogate(0x10ffff))
+
+    // unspecified for non-supplementary code points
+  }
+
+  @Test def lowSurrogate(): Unit = {
+    assertEquals(0xdc00, Character.lowSurrogate(0x10000))
+    assertEquals(0xdf45, Character.lowSurrogate(0x12345))
+    assertEquals(0xdfff, Character.lowSurrogate(0x10ffff))
+
+    // unspecified for non-supplementary code points
+  }
+
 }
