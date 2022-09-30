@@ -18,7 +18,9 @@ object ScalaNativePlugin extends AutoPlugin {
       taskKey[build.Config]("Full build configuration, Config")
 
     val nativeConfig =
-      taskKey[build.NativeConfig]("User configuration for the native build, NativeConfig")
+      taskKey[build.NativeConfig](
+        "User configuration for the native build, NativeConfig"
+      )
 
     val nativeClang =
       taskKey[File]("Location of the clang compiler.")
