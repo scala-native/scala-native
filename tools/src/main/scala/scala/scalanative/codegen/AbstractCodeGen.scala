@@ -980,8 +980,8 @@ private[codegen] abstract class AbstractCodeGen(
       genBind: () => Unit,
       call: Op.Call,
       unwind: Next,
-      pos: Option[Position] = None,
-      scope: Option[I[DwarfDef.Scope]] = None
+      pos: Option[Position],
+      scope: Option[I[DwarfDef.Scope]]
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
@@ -989,16 +989,36 @@ private[codegen] abstract class AbstractCodeGen(
       dwf: DwarfSection.Builder[Global]
   ): Unit = {
     import sb._
+
+    val dwarfTok = scope
+      .map(subprogram =>
+        dwf.scopeLocation(pos.getOrElse(Position.NoPosition), subprogram)
+      )
+      .map(_.tok)
+
     def addDebug() =
-      pos.zip(scope).foreach {
-        case (position, subprogram) =>
-          str(s", !dbg !${dwf.scopeLocation(position, subprogram).id}")
+      dwarfTok.foreach { tok =>
+        /** There are situations where the position is empty, for example in
+         *  situations where a null check is generated (and the function call is
+         *  throwNullPointer)
+         *
+         *  in this case we can only use NoPosition
+         */
+        str(
+          s", !dbg ${tok.render}"
+        )
       }
 
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty: @unchecked
         touch(pointee)
+
+        if (pos.isEmpty || scope.isEmpty) {
+          // println(
+          //   s"call to ${pointee.show} cannot be made: pos=`$pos`, scope=`$scope`"
+          // )
+        }
 
         newline()
         genBind()
@@ -1016,7 +1036,7 @@ private[codegen] abstract class AbstractCodeGen(
           currentBlockSplit += 1
           genBlockSplitName()
           str(" unwind ")
-          genNext(unwind)
+          genNext(unwind, dwarfTok)
 
           unindent()
           genBlockHeader()
@@ -1187,7 +1207,10 @@ private[codegen] abstract class AbstractCodeGen(
     })
   }
 
-  private[codegen] def genNext(next: Next)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genNext(
+      next: Next,
+      dwarfToken: Option[DwarfSection.Token] = None
+  )(implicit sb: ShowBuilder, gidx: GenIdx): Unit = {
     import sb._
     next match {
       case Next.Case(v, next) =>
@@ -1199,6 +1222,9 @@ private[codegen] abstract class AbstractCodeGen(
         str("label %_")
         str(exc.id)
         str(".landingpad")
+        dwarfToken.foreach { tok =>
+          str(s", !dbg ${tok.render}")
+        }
       case next =>
         str("label %")
         genLocal(next.name)

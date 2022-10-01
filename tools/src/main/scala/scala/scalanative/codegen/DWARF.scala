@@ -29,7 +29,7 @@ object GenIdx {
 }
 
 case class I[+T](tok: DwarfSection.Token, value: T) {
-  def id(implicit gidx: GenIdx) = gidx.id(tok)
+  def id(implicit gidx: GenIdx): Int = gidx.id(tok)
 }
 
 sealed trait Val {
