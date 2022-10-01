@@ -273,7 +273,7 @@ object DwarfSection {
         scope: I[DwarfDef.Scope]
     ): I[DwarfDef.DILocation] =
       cachedBy(
-        pos,
+        pos -> scope.tok,
         DwarfDef.DILocation(pos.line, pos.column, scope)
       )
 
