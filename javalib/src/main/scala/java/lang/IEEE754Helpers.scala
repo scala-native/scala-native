@@ -26,7 +26,7 @@ private[java] object IEEE754Helpers {
   //     https://github.com/scala/scala/pull/8830
   // The second is yet unmerged for Scala 2.13.x.
 
-  private def exceptionMsg(s: String) = "For input string \"" + s + "\""
+  private def exceptionMsg(s: String) = "For input string: \"" + s + "\""
 
   private def bytesToCString(bytes: Array[scala.Byte], n: Int)(implicit
       z: Zone
