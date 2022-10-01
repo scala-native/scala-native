@@ -40,6 +40,7 @@ sealed trait Val {
     case Const(raw) => raw.toString
     case Bool(raw)  => raw.toString
     case Ref(raw)   => "!" + raw.toString
+    case NULL       => "!null"
   }
 }
 object Val {
@@ -48,6 +49,7 @@ object Val {
   case class Num(raw: Int) extends Val
   case class Ref(raw: Int) extends Val
   case class Bool(raw: Boolean) extends Val
+  case object NULL extends Val
 
   implicit class IOps(i: Int) {
     def v: Val = Num(i)
@@ -154,7 +156,9 @@ sealed trait DwarfDef extends Product with Serializable {
       inst("DISubroutineType", "types" -> types.tok.v)
 
     case DITypes(retTpe, arguments) =>
-      (retTpe +: arguments).map(_.tok.v.render).mkString("!{", ", ", "}")
+      (retTpe.map(_.tok.v).getOrElse(Val.NULL) +: arguments.map(_.tok.v))
+        .map(_.render)
+        .mkString("!{", ", ", "}")
   }
 }
 object DwarfDef {
@@ -217,7 +221,8 @@ object DwarfDef {
   case class DIDerivedType(tag: DWTag, baseType: I[Type], size: Int)
       extends Type
   case class DISubroutineType(types: I[DITypes]) extends Type
-  case class DITypes(retTpe: I[Type], arguments: Seq[I[Type]]) extends DwarfDef
+  case class DITypes(retTpe: Option[I[Type]], arguments: Seq[I[Type]])
+      extends DwarfDef
 }
 
 object DwarfSection {

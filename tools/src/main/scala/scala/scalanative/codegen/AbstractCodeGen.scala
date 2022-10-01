@@ -313,7 +313,7 @@ private[codegen] abstract class AbstractCodeGen(
   ): Option[I[DwarfDef.DISubprogram]] = {
     try {
       val diTypes = dwf.anon(
-        DwarfDef.DITypes(dwarfType(rettype).get, argtypes.map(dwarfType(_).get))
+        DwarfDef.DITypes(dwarfType(rettype), argtypes.map(dwarfType(_).get))
       )
       val subType = dwf.anon(DwarfDef.DISubroutineType(diTypes))
 
@@ -503,9 +503,6 @@ private[codegen] abstract class AbstractCodeGen(
     @inline def basic(name: String, size: Int): I[DwarfDef.DIBasicType] =
       dwf.cached(DwarfDef.DIBasicType(name, size * 8))
 
-    // @inline def pointer(name: String, size: Int): I[DwarfDef.DIBasicType] =
-    //   dwf.cached(DwarfDef.DIBasicType(name, size))
-
     PartialFunction.condOpt(ty) {
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
         dwf.cached(
@@ -523,7 +520,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Size =>
         if (is32BitPlatform) basic("i32", 4)
         else basic("i64", 8)
-      case other =>
+      case other if other != Type.Unit =>
         throw new NotImplementedError(s"No idea how to dwarfise $other")
     }
   }
