@@ -200,21 +200,24 @@ class InetAddressTest {
   @Test def isReachable(): Unit = {
     /* Linux disables ICMP requests by default and most addresses do not
      * have echo servers running on port 7, so it's quite difficult
-     * to test this method
+     * to test this method.
      *
      * This test exercises the parts of the code path that it can.
      */
 
     val addr = InetAddress.getByName("127.0.0.1")
     try {
-      addr.isReachable(20) // Unexpected success is OK.
+      addr.isReachable(10) // Unexpected success is OK.
     } catch {
       /* A better test would try to distinguish the varieties of
        * ConnectionException. Local setup, on the network, etc.
        * That would help with supporting users who report problems.
        */
       case ex: ConnectException => // expected, do nothing
-      // Timeout is not expected,even on Windows & CI. Do not catch.
+      // SocketTimeoutException is thrown only on Windows. OK to do nothing
+      case ex: SocketTimeoutException => // do nothing
+      // We want to see other timeouts and exception, let them bubble up.
+
     }
   }
 
