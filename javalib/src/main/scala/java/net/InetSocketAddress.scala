@@ -20,7 +20,7 @@ class InetSocketAddress private[net] (
 
   if (needsResolving) {
     if (addr == null) {
-      addr = InetAddress.getWildcardAddress()
+      addr = SocketHelpers.getWildcardAddress()
     }
     hostName = addr.getHostAddress()
   }
@@ -35,7 +35,7 @@ class InetSocketAddress private[net] (
 
   def this(port: Int) = {
     this(null, port, null, false)
-    addr = InetAddress.getWildcardAddress()
+    addr = SocketHelpers.getWildcardAddress()
     hostName = addr.getHostName()
   }
 

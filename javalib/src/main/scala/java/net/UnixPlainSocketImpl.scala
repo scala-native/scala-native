@@ -15,7 +15,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
 
   override def create(streaming: Boolean): Unit = {
     val af =
-      if (SocketHelpers.getPreferIPv4Stack()) socket.AF_INET
+      if (SocketHelpers.getUseIPv4Stack()) socket.AF_INET
       else socket.AF_INET6
 
     val sockType =
