@@ -123,7 +123,11 @@ object SocketHelpers {
 
   // Return text translation of getaddrinfo (gai) error code.
   private[net] def getGaiErrorMessage(gaiErrorCode: CInt): String = {
-    fromCString(gai_strerror(gaiErrorCode))
+    if (isWindows) {
+      "getAddrInfo error code: ${gaiErrorCode}"
+    } else {
+      fromCString(gai_strerror(gaiErrorCode))
+    }
   }
 
   // Create copies of loopback & wildcard, so that originals never get changed
