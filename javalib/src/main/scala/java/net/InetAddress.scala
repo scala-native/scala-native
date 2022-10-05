@@ -547,14 +547,26 @@ object InetAddress {
        * about difficulties determining if a given string is a numeric
        * hostname or not.
        *
-       * Use a heuristic (a.k.a "weasel") to avoid the complexity of
-       * "double getadderfo" handling here. Not much bad happens when
-       * the heuristic fails.
+       * The "double getadderfo" here is unfortunate (expensive) but
+       * handles corner cases. Room for improvement here.
+       *
+       * Host name should already be in name server cache, since the
+       * caller of this code just looked it up and found it.
        */
 
-      val hostIsNumeric = {
-        val leadingCh = host(0)
-        Character.isDigit(leadingCh) || (leadingCh == ':')
+      lazy val hostIsNumeric: Boolean = {
+        val leadingCh = Character.toUpperCase(host(0))
+
+        val lookupRequired =
+          Character.isDigit(leadingCh) || "ABCDEF".contains(leadingCh)
+
+        if (!lookupRequired) {
+          false
+        } else if (host.contains(":")) {
+          true
+        } else {
+          InetAddress.getByNumericName(host).isDefined
+        }
       }
 
       @tailrec

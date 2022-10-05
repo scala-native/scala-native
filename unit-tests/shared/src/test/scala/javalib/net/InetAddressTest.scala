@@ -74,6 +74,11 @@ class InetAddressTest {
     for (addr <- list)
       assertFalse("a6", addr.getClass == classOf[InetAddress])
     assertEquals("a6.1", 1, list.length)
+
+    // getAllByName does not fill in host field for numeric addresses.
+    val wwwGoogleCom = InetAddress.getAllByName("108.177.11.104")
+    assertTrue("a7", wwwGoogleCom.length >= 1)
+    assertEquals("a7.1", "", wwwGoogleCom(0).getHostName())
   }
 
   @Test def getByName(): Unit = {
@@ -98,6 +103,11 @@ class InetAddressTest {
       classOf[UnknownHostException],
       InetAddress.getByName("not.example.com")
     )
+
+    // getByName does not fill in host field for numeric addresses.
+    val scalaLangOrg = InetAddress.getByName("128.178.218.78")
+    assertEquals("a5.1", "", scalaLangOrg.getHostName())
+
   }
 
   @Test def getByNameInvalidIPv4Addresses(): Unit = {
