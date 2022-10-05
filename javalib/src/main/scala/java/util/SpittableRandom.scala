@@ -14,6 +14,8 @@
 
 package java.util
 
+import java.util.random.RandomGenerator
+
 /*
  * This is a clean room implementation derived from the original paper
  * and Java implementation mentioned there:
@@ -82,7 +84,8 @@ private object SplittableRandom {
 
 }
 
-final class SplittableRandom private (private var seed: Long, gamma: Long) {
+final class SplittableRandom private (private var seed: Long, gamma: Long)
+    extends RandomGenerator {
   import SplittableRandom._
 
   def this(seed: Long) = {
