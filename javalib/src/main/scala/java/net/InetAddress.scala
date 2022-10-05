@@ -216,7 +216,7 @@ object InetAddress {
      * The Scastie JVM and those used for Linux/macOS manual testing seem
      * to leave the host field blank/empty.
      */
-    val effectiveHost = if (isNumeric) "" else host
+    val effectiveHost = if (isNumeric) null else host
 
     if (addrinfoP.ai_family == AF_INET) {
       new Inet4Address(addrinfoToByteArray(addrinfoP), effectiveHost)

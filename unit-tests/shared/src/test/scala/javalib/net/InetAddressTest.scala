@@ -29,7 +29,7 @@ class InetAddressTest {
       for (i <- addr.indices)
         assertEquals("a1", caddr(i), addr(i))
     } catch {
-      case e: UnknownHostException => {}
+      case e: UnknownHostException => // OK
     }
 
     val origBytes = Array[Byte](0.toByte, 1.toByte, 2.toByte, 3.toByte)
@@ -74,11 +74,6 @@ class InetAddressTest {
     for (addr <- list)
       assertFalse("a6", addr.getClass == classOf[InetAddress])
     assertEquals("a6.1", 1, list.length)
-
-    // getAllByName does not fill in host field for numeric addresses.
-    val wwwGoogleCom = InetAddress.getAllByName("108.177.11.104")
-    assertTrue("a7", wwwGoogleCom.length >= 1)
-    assertEquals("a7.1", "", wwwGoogleCom(0).getHostName())
   }
 
   @Test def getByName(): Unit = {
@@ -103,11 +98,6 @@ class InetAddressTest {
       classOf[UnknownHostException],
       InetAddress.getByName("not.example.com")
     )
-
-    // getByName does not fill in host field for numeric addresses.
-    val scalaLangOrg = InetAddress.getByName("128.178.218.78")
-    assertEquals("a5.1", "", scalaLangOrg.getHostName())
-
   }
 
   @Test def getByNameInvalidIPv4Addresses(): Unit = {
@@ -144,6 +134,23 @@ class InetAddressTest {
       "0:0:0:0:0:0:0:1",
       InetAddress.getByName("::1").getHostAddress()
     )
+  }
+
+  @Test def getHostName(): Unit = {
+    /* This test only yields useful information if a capable nameserver
+     * is active.
+     */
+
+    // he.net - Hurricane Electric, CNAME: www.he.net
+    val heNet = "216.218.236.2" // "$dig he.net ANY"
+    val hostName = InetAddress.getByName(heNet).getHostName()
+
+    if (Character.isDigit(hostName(0))) {
+      // Nothing learned, name server could not resolve name, as can happen.
+      assertEquals("a1", heNet, hostName)
+    } else {
+      assertEquals("a1", "he.net", hostName)
+    }
   }
 
   @Test def getLocalHost(): Unit = {
