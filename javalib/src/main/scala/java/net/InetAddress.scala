@@ -498,10 +498,12 @@ object InetAddress {
         // because the FQDN scope is Global, no need to set sin6_scope_id
         val dst = v6addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
         memcpy(dst, from, 16.toUInt)
-      } else {
+      } else if (ipBA.length == 4) {
         val v4addr = addr.asInstanceOf[Ptr[sockaddr_in]]
         v4addr.sin_family = AF_INET.toUShort
         v4addr.sin_addr = !(from.asInstanceOf[Ptr[in_addr]]) // Structure copy
+      } else {
+        throw new IOException("Invalid ipAddress length: ${ipBa.length}")
       }
     }
 
@@ -510,7 +512,8 @@ object InetAddress {
         // Reserve extra space for NUL terminator.
         val hostSize = MAXDNAME + 1.toUInt
         val host: Ptr[CChar] = alloc[CChar](hostSize)
-        val addr = stackalloc[sockaddr]() // will clear/zero all memory returned
+        // will clear/zero all memory
+        val addr = stackalloc[sockaddr_in6]().asInstanceOf[Ptr[sockaddr]]
 
         // By contract 'sockaddr' passed into tailor method is all zeros.
         tailorSockaddr(ipBA, addr)
@@ -526,10 +529,11 @@ object InetAddress {
             0
           )
 
-        if (status != 0) None else Some(fromCString(host))
+        if (status != 0) None
+        else Some(fromCString(host))
       }
 
-    ipToHost(ipByteArray: Array[Byte])
+    ipToHost(ipByteArray)
   }
 
   private def hostToInetAddressArray(host: String): Array[InetAddress] =
