@@ -95,8 +95,10 @@ final class SplittableRandom private (private var seed: Long, gamma: Long) {
     this({
       val s = SplittableRandom.nextDefaultGen()
 
-      (SplittableRandom.mix64(s),
-          SplittableRandom.mixGamma(s + SplittableRandom.GoldenGamma))
+      (
+        SplittableRandom.mix64(s),
+        SplittableRandom.mixGamma(s + SplittableRandom.GoldenGamma)
+      )
     })
   }
 
@@ -110,22 +112,22 @@ final class SplittableRandom private (private var seed: Long, gamma: Long) {
 
   def nextInt(): Int = mix32(nextSeed())
 
-  //def nextInt(bound: Int): Int
+  // def nextInt(bound: Int): Int
 
-  //def nextInt(origin: Int, bound: Int): Int
+  // def nextInt(origin: Int, bound: Int): Int
 
   def nextLong(): Long = mix64(nextSeed())
 
-  //def nextLong(bound: Long): Long
+  // def nextLong(bound: Long): Long
 
-  //def nextLong(origin: Long, bound: Long): Long
+  // def nextLong(origin: Long, bound: Long): Long
 
   def nextDouble(): Double =
     (nextLong() >>> 11).toDouble * DoubleULP
 
-  //def nextDouble(bound: Double): Double
+  // def nextDouble(bound: Double): Double
 
-  //def nextDouble(origin: Double, bound: Double): Double
+  // def nextDouble(origin: Double, bound: Double): Double
 
   // this should be properly tested
   // looks to work but just by chance maybe
