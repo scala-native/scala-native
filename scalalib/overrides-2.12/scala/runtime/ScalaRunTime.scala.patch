@@ -85,3 +85,44 @@
    }
  
    /** Convert an array to an object array.
+@@ -198,9 +170,9 @@
+    */
+   def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
+   def stringOf(arg: Any, maxElements: Int): String = {
+-    def packageOf(x: AnyRef) = x.getClass.getPackage match {
+-      case null   => ""
+-      case p      => p.getName
++    def packageOf(x: AnyRef) = {
++      val name = x.getClass().getName()
++      name.substring(0, name.lastIndexOf("."))
+     }
+     def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
+     def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
+@@ -208,18 +180,6 @@
+     // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
+     def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
+ 
+-    // We use reflection because the scala.xml package might not be available
+-    def isSubClassOf(potentialSubClass: Class[_], ofClass: String) =
+-      try {
+-        val classLoader = potentialSubClass.getClassLoader
+-        val clazz = Class.forName(ofClass, /*initialize =*/ false, classLoader)
+-        clazz.isAssignableFrom(potentialSubClass)
+-      } catch {
+-        case cnfe: ClassNotFoundException => false
+-      }
+-    def isXmlNode(potentialSubClass: Class[_])     = isSubClassOf(potentialSubClass, "scala.xml.Node")
+-    def isXmlMetaData(potentialSubClass: Class[_]) = isSubClassOf(potentialSubClass, "scala.xml.MetaData")
+-
+     // When doing our own iteration is dangerous
+     def useOwnToString(x: Any) = x match {
+       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
+@@ -235,7 +195,7 @@
+       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
+       // collections which may have useful toString methods - ticket #3710
+       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
+-      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
++      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x)
+       // Otherwise, nothing could possibly go wrong
+       case _ => false
+     }
