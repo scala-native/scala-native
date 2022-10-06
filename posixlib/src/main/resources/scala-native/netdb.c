@@ -118,8 +118,8 @@ int scalanative_ni_numericserv() { return NI_NUMERICSERV; }
 int scalanative_ni_numericscope() {
 #if !defined(NI_NUMERICSCOPE)
     /* Silently return a no-op flag.
-     * Do not disturb the tranquility of the vast majority of projects
-     * which have absolutely no interest in NI_NUMERICSCOPE by issuing the
+     * Do not disturb the tranquility of the vast majority of projects,
+     * which have absolutely no interest in NI_NUMERICSCOPE, by issuing the
      * #warning one might expect.
      *
      * NI_NUMERICSCOPE is undefined on Linux and possibly Windows.
