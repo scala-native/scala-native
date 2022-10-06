@@ -22,8 +22,8 @@ struct scalanative_addrinfo {
     int ai_family;        /* Protocol family for socket.  */
     int ai_socktype;      /* Socket type.  */
     int ai_protocol;      /* Protocol for socket.  */
-    socklen_t ai_addrlen; /* Length of socket address.  */
-    void *ai_addr;        /* Socket address for socket.  */
+    socklen_t ai_addrlen; /* Length of socket address.	*/
+    void *ai_addr;        /* Socket address for socket.	 */
     char *ai_canonname;   /* Canonical name for service location.  */
     void *ai_next;        /* Pointer to next in list.  */
 };
@@ -89,17 +89,48 @@ int scalanative_getaddrinfo(char *name, char *service,
     return getaddrinfo(name, service, vettedHints, (struct addrinfo **)res);
 }
 
-int scalanative_ai_numerichost() { return AI_NUMERICHOST; }
+// AI_* items are declared in the order of Posix specification
 
 int scalanative_ai_passive() { return AI_PASSIVE; }
 
-int scalanative_ai_numericserv() { return AI_NUMERICSERV; }
+int scalanative_ai_canonname() { return AI_CANONNAME; }
 
-int scalanative_ai_addrconfig() { return AI_ADDRCONFIG; }
+int scalanative_ai_numerichost() { return AI_NUMERICHOST; }
+
+int scalanative_ai_numericserv() { return AI_NUMERICSERV; }
 
 int scalanative_ai_v4mapped() { return AI_V4MAPPED; }
 
-int scalanative_ai_canonname() { return AI_CANONNAME; }
+int scalanative_ai_all() { return AI_ALL; }
+
+int scalanative_ai_addrconfig() { return AI_ADDRCONFIG; }
+
+// NI_* items are declared in the order of Posix specification
+
+int scalanative_ni_nofqdn() { return NI_NOFQDN; }
+
+int scalanative_ni_numerichost() { return NI_NUMERICHOST; }
+
+int scalanative_ni_namereqd() { return NI_NAMEREQD; }
+
+int scalanative_ni_numericserv() { return NI_NUMERICSERV; }
+
+int scalanative_ni_numericscope() {
+#if !defined(NI_NUMERICSCOPE)
+    /* Silently return a no-op flag.
+     * Do not disturb the tranquility of the vast majority of projects
+     * which have absolutely no interest in NI_NUMERICSCOPE by issuing the
+     * #warning one might expect.
+     *
+     * NI_NUMERICSCOPE is undefined on Linux and possibly Windows.
+     */
+    return 0;
+#else
+    return NI_NUMERICSCOPE;
+#endif
+}
+
+int scalanative_ni_dgram() { return NI_DGRAM; }
 
 // EAI_* items are declared in the order of Posix specification
 
@@ -126,7 +157,7 @@ int scalanative_eai_overflow() { return EAI_OVERFLOW; }
 
 #else // _Win32
 /* Reference:  https://docs.microsoft.com/en-us/windows/win32/api
- *                 /ws2tcpip/nf-ws2tcpip-getaddrinfo
+ *		   /ws2tcpip/nf-ws2tcpip-getaddrinfo
  */
 
 int scalanative_eai_again() { return WSATRY_AGAIN; }
