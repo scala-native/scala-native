@@ -1,11 +1,29 @@
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+
+// #define _POSIX_C_SOURCE 2 // constr
+// #define _X_OPEN // constr
+
 #include <unistd.h>
-#include "types.h"
+#include "types.h" // scalanative_* types, not <sys/types.h>
 
 extern char **environ;
+extern char *optarg;
+extern int opterr, optind, optopt;
 
 char **scalanative_environ() { return environ; }
+
+char *scalanative_optarg() { return optarg; }
+
+int scalanative_opterr() { return opterr; }
+
+int scalanative_optind() { return optind; }
+
+int scalanative_optopt() { return optopt; }
+
+long scalanative__posix_version() { return _POSIX_VERSION; }
+
+int scalanative__xopen_version() { return _XOPEN_VERSION; }
 
 int scalanative_f_ok() { return F_OK; }
 
@@ -15,8 +33,11 @@ int scalanative_w_ok() { return W_OK; }
 
 int scalanative_x_ok() { return X_OK; }
 
-// SEEK_CUR, SEEK_END, SEEK_SET in clib stdio
+// SEEK_CUR, SEEK_END, SEEK_SET implementations are in clib stdio.c
 
+// lockf
+
+// XSI - Begin
 int scalanative_f_lock() { return F_LOCK; }
 
 int scalanative_f_test() { return F_TEST; }
@@ -24,6 +45,7 @@ int scalanative_f_test() { return F_TEST; }
 int scalanative_f_tlock() { return F_TLOCK; }
 
 int scalanative_f_ulock() { return F_ULOCK; }
+// XSI - End
 
 int scalanative_stdin_fileno() { return STDIN_FILENO; }
 
@@ -31,25 +53,346 @@ int scalanative_stdout_fileno() { return STDOUT_FILENO; }
 
 int scalanative_stderr_fileno() { return STDERR_FILENO; }
 
-int scalanative_symlink(char *path1, char *path2) {
-    return symlink(path1, path2);
-}
+int scalanative__posix_vdisable() { return _POSIX_VDISABLE; }
 
-int scalanative_symlinkat(char *path1, int fd, char *path2) {
-    return symlinkat(path1, fd, path2);
-}
+// confstr
 
-int scalanative_link(char *oldpath, char *newpath) {
-    return link(oldpath, newpath);
-}
+int scalanative__cs_path() { return _CS_PATH; };
 
-int scalanative_linkat(int fd1, char *path1, int fd2, char *path2, int flag) {
-    return linkat(fd1, path1, fd2, path2, flag);
-}
+/* Not implemented, not defined on macOS.
+ *	_CS_POSIX_V7_ILP32_OFF32_CFLAGS
+ *	_CS_POSIX_V7_ILP32_OFF32_LDFLAGS:
+ *	_CS_POSIX_V7_ILP32_OFF32_LIBS
+ *	_CS_POSIX_V7_ILP32_OFFBIG_CFLAGS
+ *	_CS_POSIX_V7_ILP32_OFFBIG_LDFLAGS
+ *	_CS_POSIX_V7_ILP32_OFFBIG_LIBS
+ *	_CS_POSIX_V7_LP64_OFF64_CFLAGS
+ *	_CS_POSIX_V7_LP64_OFF64_LDFLAGS
+ *	_CS_POSIX_V7_LP64_OFF64_LIBS
+ *	_CS_POSIX_V7_LPBIG_OFFBIG_CFLAGS
+ *	_CS_POSIX_V7_LPBIG_OFFBIG_LDFLAGS
+ *	_CS_POSIX_V7_LPBIG_OFFBIG_LIBS
+ */
 
-int scalanative_chown(char *path, scalanative_uid_t owner,
-                      scalanative_gid_t group) {
-    return chown(path, owner, group);
-}
+/* Not implemented, not defined on Linux & probably macOS
+ *   _CS_POSIX_V7_THREADS_CFLAGS
+ *   _CS_POSIX_V7_THREADS_LDFLAGS
+ */
+
+/* Not implemented, not defined on macOS.
+ *	_CS_POSIX_V7_WIDTH_RESTRICTED_ENVS
+ *	_CS_V7_ENV
+ */
+
+// pathconf
+
+int scalanative__pc_2_symlinks() { return _PC_2_SYMLINKS; };
+
+int scalanative__pc_alloc_size_min() { return _PC_ALLOC_SIZE_MIN; };
+
+int scalanative__pc_async_io() { return _PC_ASYNC_IO; };
+
+int scalanative__pc_chown_restricted() { return _PC_CHOWN_RESTRICTED; };
+
+int scalanative__pc_filesizebits() { return _PC_FILESIZEBITS; };
+
+int scalanative__pc_link_max() { return _PC_LINK_MAX; };
+
+int scalanative__pc_max_canon() { return _PC_MAX_CANON; };
+
+int scalanative__pc_max_input() { return _PC_MAX_INPUT; };
+
+int scalanative__pc_name_max() { return _PC_NAME_MAX; };
+
+int scalanative__pc_no_trunc() { return _PC_NO_TRUNC; };
+
+int scalanative__pc_path_max() { return _PC_PATH_MAX; };
+
+int scalanative__pc_pipe_buf() { return _PC_PIPE_BUF; };
+
+int scalanative__pc_prio_io() { return _PC_PRIO_IO; };
+
+int scalanative__pc_rec_incr_xfer_size() { return _PC_REC_INCR_XFER_SIZE; };
+
+int scalanative__pc_rec_max_xfer_size() { return _PC_REC_MAX_XFER_SIZE; };
+
+int scalanative__pc_rec_min_xfer_size() { return _PC_REC_MIN_XFER_SIZE; };
+
+int scalanative__pc_rec_xfer_align() { return _PC_REC_XFER_ALIGN; };
+
+int scalanative__pc_symlink_max() { return _PC_SYMLINK_MAX; };
+
+int scalanative__pc_sync_io() { return _PC_SYNC_IO; };
+
+/* Not implemented, not defined on Linux.
+ *   _PC_TIMESTAMP_RESOLUTION
+ */
+
+int scalanative__pc_vdisable() { return _PC_VDISABLE; };
+
+// sysconf
+
+int scalanative__sc_2_c_bind() { return _SC_2_C_BIND; };
+
+int scalanative__sc_2_c_dev() { return _SC_2_C_DEV; };
+
+int scalanative__sc_2_char_term() { return _SC_2_CHAR_TERM; };
+
+int scalanative__sc_2_fort_dev() { return _SC_2_FORT_DEV; };
+
+int scalanative__sc_2_fort_run() { return _SC_2_FORT_RUN; };
+
+int scalanative__sc_2_localedef() { return _SC_2_LOCALEDEF; };
+
+int scalanative__sc_2_pbs() { return _SC_2_PBS; };
+
+int scalanative__sc_2_pbs_accounting() { return _SC_2_PBS_ACCOUNTING; };
+
+int scalanative__sc_2_pbs_checkpoint() { return _SC_2_PBS_CHECKPOINT; };
+
+int scalanative__sc_2_pbs_locate() { return _SC_2_PBS_LOCATE; };
+
+int scalanative__sc_2_pbs_message() { return _SC_2_PBS_MESSAGE; };
+
+int scalanative__sc_2_pbs_track() { return _SC_2_PBS_TRACK; };
+
+int scalanative__sc_2_sw_dev() { return _SC_2_SW_DEV; };
+
+int scalanative__sc_2_upe() { return _SC_2_UPE; };
+
+int scalanative__sc_2_version() { return _SC_2_VERSION; };
+
+int scalanative__sc_advisory_info() { return _SC_ADVISORY_INFO; };
+
+int scalanative__sc_aio_listio_max() { return _SC_AIO_LISTIO_MAX; };
+
+int scalanative__sc_aio_max() { return _SC_AIO_MAX; };
+
+int scalanative__sc_aio_prio_delta_max() { return _SC_AIO_PRIO_DELTA_MAX; };
+
+int scalanative__sc_arg_max() { return _SC_ARG_MAX; };
+
+int scalanative__sc_asynchronous_io() { return _SC_ASYNCHRONOUS_IO; };
+
+int scalanative__sc_atexit_max() { return _SC_ATEXIT_MAX; };
+
+int scalanative__sc_barriers() { return _SC_BARRIERS; };
+
+int scalanative__sc_bc_base_max() { return _SC_BC_BASE_MAX; };
+
+int scalanative__sc_bc_dim_max() { return _SC_BC_DIM_MAX; };
+
+int scalanative__sc_bc_scale_max() { return _SC_BC_SCALE_MAX; };
+
+int scalanative__sc_bc_string_max() { return _SC_BC_STRING_MAX; };
+
+int scalanative__sc_child_max() { return _SC_CHILD_MAX; };
+
+int scalanative__sc_clk_tck() { return _SC_CLK_TCK; };
+
+int scalanative__sc_clock_selection() { return _SC_CLOCK_SELECTION; };
+
+int scalanative__sc_coll_weights_max() { return _SC_COLL_WEIGHTS_MAX; };
+
+int scalanative__sc_cputime() { return _SC_CPUTIME; };
+
+int scalanative__sc_delaytimer_max() { return _SC_DELAYTIMER_MAX; };
+
+int scalanative__sc_expr_nest_max() { return _SC_EXPR_NEST_MAX; };
+
+int scalanative__sc_fsync() { return _SC_FSYNC; };
+
+int scalanative__sc_getgr_r_size_max() { return _SC_GETGR_R_SIZE_MAX; };
+
+int scalanative__sc_getpw_r_size_max() { return _SC_GETPW_R_SIZE_MAX; };
+
+int scalanative__sc_host_name_max() { return _SC_HOST_NAME_MAX; };
+
+int scalanative__sc_iov_max() { return _SC_IOV_MAX; };
+
+int scalanative__sc_ipv6() { return _SC_IPV6; };
+
+int scalanative__sc_job_control() { return _SC_JOB_CONTROL; };
+
+int scalanative__sc_line_max() { return _SC_LINE_MAX; };
+
+int scalanative__sc_login_name_max() { return _SC_LOGIN_NAME_MAX; };
+
+int scalanative__sc_mapped_files() { return _SC_MAPPED_FILES; };
+
+int scalanative__sc_memlock() { return _SC_MEMLOCK; };
+
+int scalanative__sc_memlock_range() { return _SC_MEMLOCK_RANGE; };
+
+int scalanative__sc_memory_protection() { return _SC_MEMORY_PROTECTION; };
+
+int scalanative__sc_message_passing() { return _SC_MESSAGE_PASSING; };
+
+int scalanative__sc_monotonic_clock() { return _SC_MONOTONIC_CLOCK; };
+
+int scalanative__sc_mq_open_max() { return _SC_MQ_OPEN_MAX; };
+
+int scalanative__sc_mq_prio_max() { return _SC_MQ_PRIO_MAX; };
+
+int scalanative__sc_ngroups_max() { return _SC_NGROUPS_MAX; };
+
+int scalanative__sc_open_max() { return _SC_OPEN_MAX; };
+
+int scalanative__sc_page_size() { return _SC_PAGE_SIZE; };
+
+int scalanative__sc_pagesize() { return _SC_PAGESIZE; };
+
+int scalanative__sc_prioritized_io() { return _SC_PRIORITIZED_IO; };
+
+int scalanative__sc_priority_scheduling() { return _SC_PRIORITY_SCHEDULING; };
+
+int scalanative__sc_raw_sockets() { return _SC_RAW_SOCKETS; };
+
+int scalanative__sc_re_dup_max() { return _SC_RE_DUP_MAX; };
+
+int scalanative__sc_reader_writer_locks() { return _SC_READER_WRITER_LOCKS; };
+
+int scalanative__sc_realtime_signals() { return _SC_REALTIME_SIGNALS; };
+
+int scalanative__sc_regexp() { return _SC_REGEXP; };
+
+int scalanative__sc_rtsig_max() { return _SC_RTSIG_MAX; };
+
+int scalanative__sc_saved_ids() { return _SC_SAVED_IDS; };
+
+int scalanative__sc_sem_nsems_max() { return _SC_SEM_NSEMS_MAX; };
+
+int scalanative__sc_sem_value_max() { return _SC_SEM_VALUE_MAX; };
+
+int scalanative__sc_semaphores() { return _SC_SEMAPHORES; };
+
+int scalanative__sc_shared_memory_objects() {
+    return _SC_SHARED_MEMORY_OBJECTS;
+};
+
+int scalanative__sc_shell() { return _SC_SHELL; };
+
+int scalanative__sc_sigqueue_max() { return _SC_SIGQUEUE_MAX; };
+
+int scalanative__sc_spawn() { return _SC_SPAWN; };
+
+int scalanative__sc_spin_locks() { return _SC_SPIN_LOCKS; };
+
+int scalanative__sc_sporadic_server() { return _SC_SPORADIC_SERVER; };
+
+int scalanative__sc_ss_repl_max() { return _SC_SS_REPL_MAX; };
+
+int scalanative__sc_stream_max() { return _SC_STREAM_MAX; };
+
+int scalanative__sc_symloop_max() { return _SC_SYMLOOP_MAX; };
+
+int scalanative__sc_synchronized_io() { return _SC_SYNCHRONIZED_IO; };
+
+int scalanative__sc_thread_attr_stackaddr() {
+    return _SC_THREAD_ATTR_STACKADDR;
+};
+
+int scalanative__sc_thread_attr_stacksize() {
+    return _SC_THREAD_ATTR_STACKSIZE;
+};
+
+int scalanative__sc_thread_cputime() { return _SC_THREAD_CPUTIME; };
+
+int scalanative__sc_thread_destructor_iterations() {
+    return _SC_THREAD_DESTRUCTOR_ITERATIONS;
+};
+
+int scalanative__sc_thread_keys_max() { return _SC_THREAD_KEYS_MAX; };
+
+/* Not implemented, not defined on macOS.
+ *	_SC_THREAD_PRIO_INHERIT
+ *	_SC_THREAD_PRIO_PROTECT
+ */
+
+int scalanative__sc_thread_priority_scheduling() {
+    return _SC_THREAD_PRIORITY_SCHEDULING;
+};
+
+int scalanative__sc_thread_process_shared() {
+    return _SC_THREAD_PROCESS_SHARED;
+};
+
+/* Not implemented, not defined on macOS.
+ *	_SC_THREAD_ROBUST_PRIO_INHERIT
+ *	_SC_THREAD_ROBUST_PRIO_PROTECT
+ */
+
+int scalanative__sc_thread_safe_functions() {
+    return _SC_THREAD_SAFE_FUNCTIONS;
+};
+
+int scalanative__sc_thread_sporadic_server() {
+    return _SC_THREAD_SPORADIC_SERVER;
+};
+
+int scalanative__sc_thread_stack_min() { return _SC_THREAD_STACK_MIN; };
+
+int scalanative__sc_thread_threads_max() { return _SC_THREAD_THREADS_MAX; };
+
+int scalanative__sc_threads() { return _SC_THREADS; };
+
+int scalanative__sc_timeouts() { return _SC_TIMEOUTS; };
+
+int scalanative__sc_timer_max() { return _SC_TIMER_MAX; };
+
+int scalanative__sc_timers() { return _SC_TIMERS; };
+
+int scalanative__sc_trace() { return _SC_TRACE; };
+
+int scalanative__sc_trace_event_filter() { return _SC_TRACE_EVENT_FILTER; };
+
+int scalanative__sc_trace_event_name_max() { return _SC_TRACE_EVENT_NAME_MAX; };
+
+int scalanative__sc_trace_inherit() { return _SC_TRACE_INHERIT; };
+
+int scalanative__sc_trace_log() { return _SC_TRACE_LOG; };
+
+int scalanative__sc_trace_name_max() { return _SC_TRACE_NAME_MAX; };
+
+int scalanative__sc_trace_sys_max() { return _SC_TRACE_SYS_MAX; };
+
+int scalanative__sc_trace_user_event_max() { return _SC_TRACE_USER_EVENT_MAX; };
+
+int scalanative__sc_tty_name_max() { return _SC_TTY_NAME_MAX; };
+
+int scalanative__sc_typed_memory_objects() { return _SC_TYPED_MEMORY_OBJECTS; };
+
+int scalanative__sc_tzname_max() { return _SC_TZNAME_MAX; };
+
+/* Not implemented, not defined on macOS.
+ *	_SC_V7_ILP32_OFF32
+ *	_SC_V7_ILP32_OFFBIG
+ *	_SC_V7_LP64_OFF64
+ *	_SC_V7_LPBIG_OFFBIG
+ */
+
+int scalanative__sc_version() { return _SC_VERSION; };
+
+int scalanative__sc_xopen_crypt() { return _SC_XOPEN_CRYPT; };
+
+int scalanative__sc_xopen_enh_i18n() { return _SC_XOPEN_ENH_I18N; };
+
+int scalanative__sc_xopen_realtime() { return _SC_XOPEN_REALTIME; };
+
+int scalanative__sc_xopen_realtime_threads() {
+    return _SC_XOPEN_REALTIME_THREADS;
+};
+
+int scalanative__sc_xopen_shm() { return _SC_XOPEN_SHM; };
+
+int scalanative__sc_xopen_streams() { return _SC_XOPEN_STREAMS; };
+
+int scalanative__sc_xopen_unix() { return _SC_XOPEN_UNIX; };
+
+/* Not implemented, not defined on Linux.
+ *	_SC_XOPEN_UUCP
+ */
+
+int scalanative__sc_xopen_version() { return _SC_XOPEN_VERSION; };
 
 #endif // Unix or Mac OS

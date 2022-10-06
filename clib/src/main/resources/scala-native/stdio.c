@@ -25,6 +25,7 @@ int scalanative_iolbf() { return _IOLBF; }
 
 int scalanative_ionbf() { return _IONBF; }
 
+// SEEK_SET, SEEK_CUR, and SEEK_END also used by posixlib/unistd.scala
 int scalanative_seek_set() { return SEEK_SET; }
 
 int scalanative_seek_cur() { return SEEK_CUR; }
