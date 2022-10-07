@@ -128,7 +128,7 @@ class Inflater(noHeader: Boolean) {
     if (stream == null) {
       throw new NullPointerException()
     } else {
-      val bytes = buf.asInstanceOf[ByteArray].at(off)
+      val bytes = buf.at(off)
       val err = zlib.inflateSetDictionary(stream, bytes, nbytes.toUInt)
       if (err != zlib.Z_OK) {
         throw new IllegalArgumentException(err.toString)
@@ -146,9 +146,9 @@ class Inflater(noHeader: Boolean) {
       inRead = 0
       inLength = nbytes
       if (buf.length == 0) {
-        stream.nextIn = Inflater.empty.asInstanceOf[ByteArray].at(off)
+        stream.nextIn = Inflater.empty.at(off)
       } else {
-        stream.nextIn = buf.asInstanceOf[ByteArray].at(off)
+        stream.nextIn = buf.at(off)
       }
       stream.availableIn = nbytes.toUInt
     } else {
@@ -160,9 +160,9 @@ class Inflater(noHeader: Boolean) {
     val sin = stream.totalIn
     val sout = stream.totalOut
     if (buf.length == 0) {
-      stream.nextOut = Inflater.empty.asInstanceOf[ByteArray].at(off)
+      stream.nextOut = Inflater.empty.at(off)
     } else {
-      stream.nextOut = buf.asInstanceOf[ByteArray].at(off)
+      stream.nextOut = buf.at(off)
     }
     val err = zlib.inflate(stream, zlib.Z_SYNC_FLUSH)
 

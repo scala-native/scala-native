@@ -217,7 +217,7 @@ class IssuesTest {
     val bytes = new Array[Byte](2)
     bytes(0) = 'b'.toByte
     bytes(1) = 'a'.toByte
-    val p: Ptr[Byte] = bytes.asInstanceOf[ByteArray].at(0)
+    val p: Ptr[Byte] = bytes.at(0)
     assertEquals('b'.toByte, !p)
     assertEquals('a'.toByte, !(p + 1))
   }
