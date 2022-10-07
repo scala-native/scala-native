@@ -85,6 +85,25 @@ class FileChannelTest {
     }
   }
 
+  @Test def fileChannelCanWriteReadOnlyByteBufferToFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val bytes = Array.apply[Byte](1, 2, 3, 4, 5)
+      val src = ByteBuffer.wrap(bytes).asReadOnlyBuffer()
+      val channel =
+        FileChannel.open(f, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+      while (src.remaining() > 0) channel.write(src)
+
+      val in = Files.newInputStream(f)
+      var i = 0
+      while (i < bytes.length) {
+        assertTrue(in.read() == bytes(i))
+        i += 1
+      }
+
+    }
+  }
+
   @Test def fileChannelCanOverwriteFile(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("file")
