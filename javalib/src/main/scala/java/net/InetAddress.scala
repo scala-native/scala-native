@@ -145,7 +145,7 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
 
   def isMulticastAddress(): Boolean = false
 
-  /* Editorial comment: isReachable() is in the Java 8 specification and
+  /* Editorial Comment: isReachable() is in the Java 8 specification and
    * must be implemented for completeness. It has severely limited utility
    * in the 21st century.  Many, if not most, systems now block the
    * echo port (7). ICMP is not used here because it requires elevated
