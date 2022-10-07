@@ -503,7 +503,7 @@ object InetAddress {
         v4addr.sin_family = AF_INET.toUShort
         v4addr.sin_addr = !(from.asInstanceOf[Ptr[in_addr]]) // Structure copy
       } else {
-        throw new IOException(s"Invalid ipAddress length: ${ipBa.length}")
+        throw new IOException(s"Invalid ipAddress length: ${ipBA.length}")
       }
     }
 
