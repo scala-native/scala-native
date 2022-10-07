@@ -338,7 +338,14 @@ private[java] final class FileChannelImpl(
     val srcPos: Int = buffer.position()
     val srcLim: Int = buffer.limit()
     val lim = math.abs(srcLim - srcPos)
-    write(buffer.array(), 0, lim)
+    val bytes = if (buffer.hasArray()) {
+      buffer.array()
+    } else {
+      val bytes = new Array[Byte](lim)
+      buffer.get(bytes)
+      bytes
+    }
+    write(bytes, 0, lim)
     buffer.position(srcPos + lim)
     lim
   }
