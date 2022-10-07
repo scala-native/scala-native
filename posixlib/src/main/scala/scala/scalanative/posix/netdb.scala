@@ -21,6 +21,9 @@ object netdb {
    * Access to the proper field for the OS is handled in netdbOps below.
    */
 
+  type socklen_t = socket.socklen_t
+  type uint32_t = inttypes.uint32_t
+
   /* _Static_assert code in netdb.c checks that Scala Native and operating
    * system structure definitions match "close enough". If you change
    * something here, please make the corresponding changes there.
@@ -62,23 +65,48 @@ object netdb {
       flags: CInt
   ): CInt = extern
 
-  @name("scalanative_ai_numerichost")
-  def AI_NUMERICHOST: CInt = extern
+  // AI_* items are declared in the order of Posix specification
 
   @name("scalanative_ai_passive")
   def AI_PASSIVE: CInt = extern
 
+  @name("scalanative_ai_canonname")
+  def AI_CANONNAME: CInt = extern
+
+  @name("scalanative_ai_numerichost")
+  def AI_NUMERICHOST: CInt = extern
+
   @name("scalanative_ai_numericserv")
   def AI_NUMERICSERV: CInt = extern
-
-  @name("scalanative_ai_addrconfig")
-  def AI_ADDRCONFIG: CInt = extern
 
   @name("scalanative_ai_v4mapped")
   def AI_V4MAPPED: CInt = extern
 
-  @name("scalanative_ai_canonname")
-  def AI_CANONNAME: CInt = extern
+  @name("scalanative_ai_all")
+  def AI_ALL: CInt = extern
+
+  @name("scalanative_ai_addrconfig")
+  def AI_ADDRCONFIG: CInt = extern
+
+  // NI_* items are declared in the order of Posix specification
+
+  @name("scalanative_ni_nofqdn")
+  def NI_NOFQDN: CInt = extern
+
+  @name("scalanative_ni_numerichost")
+  def NI_NUMERICHOST: CInt = extern
+
+  @name("scalanative_ni_namereqd")
+  def NI_NAMEREQD: CInt = extern
+
+  @name("scalanative_ni_numericserv")
+  def NI_NUMERICSERV: CInt = extern
+
+  @name("scalanative_ni_NI_numericscope")
+  def NI_NUMERICSCOPE: CInt = extern
+
+  @name("scalanative_ni_dgram")
+  def NI_DGRAM: CInt = extern
 
   // EAI_* items are declared in the order of Posix specification
 
@@ -111,6 +139,9 @@ object netdb {
 
   @name("scalanative_eai_overflow")
   def EAI_OVERFLOW: CInt = extern
+
+  @name("scalanative_ipport_reserved")
+  def IPPORT_RESERVED: CInt = extern
 }
 
 /** Allow using C names to access 'addrinfo' structure fields.
