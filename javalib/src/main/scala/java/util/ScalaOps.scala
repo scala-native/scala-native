@@ -39,6 +39,7 @@ private[java] object ScalaOps {
     @inline def indexWhere(f: A => Boolean): Int =
       __self.iterator().scalaOps.indexWhere(f)
 
+    @deprecated("Removed in future ScalaOps, use findFold")
     @inline def find(f: A => Boolean): Option[A] =
       __self.iterator().scalaOps.find(f)
 
@@ -51,24 +52,23 @@ private[java] object ScalaOps {
     @inline def mkString(start: String, sep: String, end: String): String =
       __self.iterator().scalaOps.mkString(start, sep, end)
 
+    @deprecated("Removed in future ScalaOps")
     @inline def min(comp: Comparator[_ >: A]): A =
       __self.iterator().scalaOps.min(comp)
 
+    @deprecated("Removed in future ScalaOps")
     @inline def max(comp: Comparator[_ >: A]): A =
       __self.iterator().scalaOps.max(comp)
 
+    @deprecated("Removed in future ScalaOps")
     @inline def headOption: Option[A] =
       __self.iterator().scalaOps.headOption
 
-    @inline def head: A =
-      __self.iterator().scalaOps.head
-
+    @deprecated("Removed in future ScalaOps")
     @inline def lastOption: Option[A] =
       __self.iterator().scalaOps.lastOption
 
-    @inline def last: A =
-      __self.iterator().scalaOps.last
-
+    @deprecated("Removed in future ScalaOps")
     @inline def toSeq: Seq[A] =
       __self.iterator().scalaOps.toSeq
   }
@@ -85,11 +85,6 @@ private[java] object ScalaOps {
     @inline def foreach[U](f: A => U): Unit = {
       while (__self.hasNext())
         f(__self.next())
-    }
-
-    @inline def map[U](f: A => U): Iterator[U] = new Iterator[U] {
-      override def hasNext(): Boolean = __self.hasNext()
-      override def next(): U = f(__self.next())
     }
 
     @inline def count(f: A => Boolean): Int =
@@ -156,11 +151,6 @@ private[java] object ScalaOps {
       else None
     }
 
-    @inline def head: A = {
-      if (__self.hasNext()) __self.next()
-      else throw new NoSuchElementException("empty.head")
-    }
-
     @inline def lastOption: Option[A] = {
       if (!__self.hasNext()) None
       else {
@@ -171,10 +161,6 @@ private[java] object ScalaOps {
         Some(last)
       }
     }
-
-    @inline def last: A =
-      if (__self.hasNext()) lastOption.get
-      else throw new NoSuchElementException("empty.last")
 
     @inline def min(comp: Comparator[_ >: A]): A =
       reduceLeft[A]((l, r) => if (comp.compare(l, r) <= 0) l else r)
