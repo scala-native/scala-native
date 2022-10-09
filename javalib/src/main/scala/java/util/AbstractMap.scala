@@ -1,7 +1,20 @@
-// Ported from Scala.js commit: a6c1451 dated: 2021-10-16
+// Ported from Scala.js commit: 2253950 dated: 2022-10-02
+
+/*
+ * Scala.js (https://www.scala-js.org/)
+ *
+ * Copyright EPFL.
+ *
+ * Licensed under Apache License 2.0
+ * (https://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package java.util
 
+// additional import for Scala Native
 import java.{lang => jl}
 
 import scala.annotation.tailrec
@@ -45,6 +58,9 @@ object AbstractMap {
     override def hashCode(): Int =
       entryHashCode(this)
 
+    /** Scala.js Strings are treated as primitive types so we use
+     *  jl.StringBuilder for Scala Native
+     */
     override def toString(): String =
       new jl.StringBuilder(getKey().toString)
         .append("=")
@@ -73,10 +89,7 @@ object AbstractMap {
       entryHashCode(this)
 
     override def toString(): String =
-      new jl.StringBuilder(getKey().toString)
-        .append("=")
-        .append(getValue().toString)
-        .toString
+      "" + getKey() + "=" + getValue()
   }
 }
 
@@ -94,13 +107,11 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     entrySet().scalaOps.exists(entry => Objects.equals(key, entry.getKey()))
 
   def get(key: Any): V = {
-    entrySet().scalaOps
-      .find(entry => Objects.equals(key, entry.getKey()))
-      .fold[V] {
-        null.asInstanceOf[V]
-      } { entry =>
-        entry.getValue()
-      }
+    entrySet().scalaOps.findFold(entry => Objects.equals(key, entry.getKey())) {
+      null.asInstanceOf[V]
+    } { entry =>
+      entry.getValue()
+    }
   }
 
   def put(key: K, value: V): V =
@@ -183,6 +194,9 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   override def hashCode(): Int =
     entrySet().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
 
+  /** Scala.js Strings are treated as primitive types so we use jl.StringBuilder
+   *  for Scala Native
+   */
   override def toString(): String = {
     // Scala.js Strings are treated as primitive types
     // so we use jl.StringBuilder for Scala Native

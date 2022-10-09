@@ -39,9 +39,8 @@ private[java] object ScalaOps {
     @inline def indexWhere(f: A => Boolean): Int =
       __self.iterator().scalaOps.indexWhere(f)
 
-    @deprecated("Removed in future ScalaOps, use findFold")
-    @inline def find(f: A => Boolean): Option[A] =
-      __self.iterator().scalaOps.find(f)
+    @inline def findFold[B](f: A => Boolean)(default: => B)(g: A => B): B =
+      __self.iterator().scalaOps.findFold(f)(default)(g)
 
     @inline def foldLeft[B](z: B)(f: (B, A) => B): B =
       __self.iterator().scalaOps.foldLeft(z)(f)
@@ -51,14 +50,6 @@ private[java] object ScalaOps {
 
     @inline def mkString(start: String, sep: String, end: String): String =
       __self.iterator().scalaOps.mkString(start, sep, end)
-
-    @deprecated("Removed in future ScalaOps")
-    @inline def min(comp: Comparator[_ >: A]): A =
-      __self.iterator().scalaOps.min(comp)
-
-    @deprecated("Removed in future ScalaOps")
-    @inline def max(comp: Comparator[_ >: A]): A =
-      __self.iterator().scalaOps.max(comp)
 
     @deprecated("Removed in future ScalaOps")
     @inline def headOption: Option[A] =
@@ -111,13 +102,13 @@ private[java] object ScalaOps {
       -1
     }
 
-    @inline def find(f: A => Boolean): Option[A] = {
+    @inline def findFold[B](f: A => Boolean)(default: => B)(g: A => B): B = {
       while (__self.hasNext()) {
         val x = __self.next()
         if (f(x))
-          return Some(x)
+          return g(x)
       }
-      None
+      default
     }
 
     @inline def foldLeft[B](z: B)(f: (B, A) => B): B = {
@@ -161,12 +152,6 @@ private[java] object ScalaOps {
         Some(last)
       }
     }
-
-    @inline def min(comp: Comparator[_ >: A]): A =
-      reduceLeft[A]((l, r) => if (comp.compare(l, r) <= 0) l else r)
-
-    @inline def max(comp: Comparator[_ >: A]): A =
-      reduceLeft[A]((l, r) => if (comp.compare(l, r) >= 0) l else r)
 
     @inline def toSeq: Seq[A] = {
       val buf = Seq.newBuilder[A]
