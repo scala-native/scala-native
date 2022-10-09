@@ -33,8 +33,7 @@ private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind
