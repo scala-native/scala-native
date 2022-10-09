@@ -6,12 +6,13 @@ import Val.Str
 import Val.Num
 import scala.scalanative.nir.Position
 import scala.reflect.ClassTag
+import scala.scalanative.nir.Global
 
-trait GenIdx {
+private[dwarf] trait GenIdx {
   def id(tok: DwarfSection.Token): Int
   def gen: DwarfSection.Token
 }
-object GenIdx {
+private[dwarf] object GenIdx {
   def create = new GenIdx {
     private val mp = collection.mutable.Map.empty[Token, Int]
     override def id(tok: Token): Int = mp(tok)
@@ -29,7 +30,7 @@ object GenIdx {
 }
 
 case class I[+T](tok: DwarfSection.Token, value: T) {
-  def id(implicit gidx: GenIdx): Int = gidx.id(tok)
+  def id(implicit dwf: DwarfSection.Builder): Int = dwf.gidx.id(tok)
 }
 
 sealed trait Val {
@@ -62,7 +63,7 @@ object Val {
     def const = Const(s)
   }
   implicit class TOps(s: Token) {
-    def v(implicit gidx: GenIdx): Val = Ref(gidx.id(s))
+    def v(implicit dwf: DwarfSection.Builder): Val = Ref(dwf.gidx.id(s))
   }
 }
 
@@ -79,7 +80,7 @@ sealed trait DwarfDef extends Product with Serializable {
   private def tuple(values: String*) =
     "!" + values.mkString("{", ", ", "}")
 
-  def render(implicit gidx: GenIdx): String = this match {
+  def render(implicit dwf: DwarfSection.Builder): String = this match {
     case `llvm.dbg.cu`(cus) =>
       tuple(cus.map(_.tok.v.render): _*)
 
@@ -162,6 +163,11 @@ sealed trait DwarfDef extends Product with Serializable {
   }
 }
 object DwarfDef {
+  object Constants {
+    val PRODUCER = "Scala Native"
+    val DWARF_VERSION = 3
+    val DEBUG_INFO_VERSION = 3
+  }
   sealed trait Type extends DwarfDef
   sealed trait Scope extends DwarfDef
   sealed abstract class Named(val name: String) extends DwarfDef
@@ -227,11 +233,11 @@ object DwarfDef {
 
 object DwarfSection {
   class Token {
-    def render(implicit gidx: GenIdx) = s"!${gidx.id(this)}"
+    def render(implicit dwf: DwarfSection.Builder) = s"!${dwf.gidx.id(this)}"
   }
-  class Builder[In](implicit gidx: GenIdx) {
+  class Builder(val gidx: GenIdx) {
     private val b = collection.mutable.Map
-      .empty[In, I[DwarfDef]]
+      .empty[Global, I[DwarfDef]]
 
     private val anon = collection.mutable.ListBuffer.empty[I[DwarfDef]]
 
@@ -240,7 +246,7 @@ object DwarfSection {
 
     private val keyCache = collection.mutable.Map.empty[Any, I[DwarfDef]]
 
-    def register[T <: DwarfDef](in: In, dwarf: T): I[T] = {
+    def register[T <: DwarfDef](in: Global, dwarf: T): I[T] = {
       val newTok = gidx.gen
       b.synchronized {
         if (b.contains(in))
@@ -253,7 +259,7 @@ object DwarfSection {
       }
     }
 
-    def put(in: In, dwarf: I[DwarfDef]) = {
+    def put(in: Global, dwarf: I[DwarfDef]) = {
       b.synchronized {
         b.update(in, dwarf)
       }
@@ -299,7 +305,7 @@ object DwarfSection {
       res
     }
 
-    def get[T <: DwarfDef](in: In) =
+    def get[T <: DwarfDef](in: Global) =
       b(in).asInstanceOf[I[T]]
 
     import scalanative.util.ShowBuilder
@@ -315,16 +321,16 @@ object DwarfSection {
 
       show.newline()
       (compileUnits +: tips)
-        .map(i => i.id -> i)
+        .map(i => i.id(this) -> i)
         .sortBy(_._1)
         .foreach {
           case (_, I(_, dfn: Named)) =>
-            show.line(s"!${dfn.name} = ${dfn.render}")
+            show.line(s"!${dfn.name} = ${dfn.render(this)}")
           case (id, I(_, dfn)) =>
-            show.line(s"!$id = ${dfn.render}")
+            show.line(s"!$id = ${dfn.render(this)}")
         }
     }
   }
 
-  def builder[In]()(implicit gidx: GenIdx) = new Builder[In]
+  def builder() = new Builder(GenIdx.create)
 }

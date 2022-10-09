@@ -43,9 +43,8 @@ private[codegen] abstract class AbstractCodeGen(
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
   def gen(id: String, dir: VirtualDirectory): Path = {
-    implicit val gidx: GenIdx = GenIdx.create
-    implicit val db: DwarfSection.Builder[Global] =
-      DwarfSection.builder[Global]()
+    implicit val db: DwarfSection.Builder =
+      DwarfSection.builder()
 
     val body = dir.write(Paths.get(s"$id-body.ll")) { writer =>
       implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
@@ -65,8 +64,17 @@ private[codegen] abstract class AbstractCodeGen(
       db.anon(
         DwarfDef.`llvm.module.flags`(
           Seq(
-            db.anon(DwarfDef.IntAttr(7, "Dwarf Version", 3)),
-            db.anon(DwarfDef.IntAttr(2, "Debug Info Version", 3))
+            db.anon(
+              DwarfDef
+                .IntAttr(7, "Dwarf Version", DwarfDef.Constants.DWARF_VERSION)
+            ),
+            db.anon(
+              DwarfDef.IntAttr(
+                2,
+                "Debug Info Version",
+                DwarfDef.Constants.DEBUG_INFO_VERSION
+              )
+            )
           )
         )
       )
@@ -80,8 +88,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def genDeps()(implicit
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = deps.foreach { n =>
     val mn = mangled(n)
     if (!generated.contains(mn)) {
@@ -110,8 +117,7 @@ private[codegen] abstract class AbstractCodeGen(
       defns: Seq[Defn]
   )(implicit
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
     def onDefn(defn: Defn): Unit = {
@@ -130,13 +136,6 @@ private[codegen] abstract class AbstractCodeGen(
     defns.foreach { defn => if (defn.isInstanceOf[Defn.Declare]) onDefn(defn) }
     defns.foreach { defn => if (defn.isInstanceOf[Defn.Define]) onDefn(defn) }
 
-    // defns.foreach {
-    //   case defn: Defn.Const => onDefn(defn)
-    //   case defn: Defn.Var => onDefn(defn)
-    //   case defn: Defn.Declare => onDefn(defn)
-    //   case defn: Defn.Define => onDefn(defn)
-    //   case _ =>
-    // }
   }
 
   protected final def touch(n: Global): Unit =
@@ -181,8 +180,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def genDefn(defn: Defn)(implicit
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = defn match {
     case Defn.Var(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = false, ty, rhs)
@@ -226,8 +224,7 @@ private[codegen] abstract class AbstractCodeGen(
       pos: Position
   )(implicit
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
 
@@ -290,10 +287,10 @@ private[codegen] abstract class AbstractCodeGen(
 
       val cfg = CFG(insts)
       cfg.all.foreach { block =>
-        genBlock(block, scope = debugInfo)(cfg, fresh, sb, gidx, dwf)
+        genBlock(block, scope = debugInfo)(cfg, fresh, sb, dwf)
       }
       cfg.all.foreach { block =>
-        genBlockLandingPads(block)(cfg, fresh, sb, gidx, dwf)
+        genBlockLandingPads(block)(cfg, fresh, sb, dwf)
       }
       newline()
 
@@ -309,7 +306,7 @@ private[codegen] abstract class AbstractCodeGen(
       rettype: Type,
       argtypes: Seq[Type]
   )(implicit
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Option[I[DwarfDef.DISubprogram]] = {
     try {
       val diTypes = dwf.anon(
@@ -322,8 +319,8 @@ private[codegen] abstract class AbstractCodeGen(
       val unit = dwf.cached(
         DwarfDef.DICompileUnit(
           file = file,
-          producer = "Scala Native :)",
-          isOptimised = false // TODO: propagate debug/release-fast information
+          producer = DwarfDef.Constants.PRODUCER,
+          isOptimised = config.mode != build.Mode.Debug
         )
       )
       val func =
@@ -343,7 +340,6 @@ private[codegen] abstract class AbstractCodeGen(
       Option(func)
     } catch {
       case NonFatal(ex) =>
-        println(s"failed to render ${name} $ex")
         None
     }
   }
@@ -401,8 +397,7 @@ private[codegen] abstract class AbstractCodeGen(
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
     val Block(name, params, insts, isEntry) = block
@@ -486,8 +481,7 @@ private[codegen] abstract class AbstractCodeGen(
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
@@ -499,7 +493,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def dwarfType(
       ty: Type
-  )(implicit dwf: DwarfSection.Builder[Global]): Option[I[DwarfDef.Type]] = {
+  )(implicit dwf: DwarfSection.Builder): Option[I[DwarfDef.Type]] = {
     @inline def basic(name: String, size: Int): I[DwarfDef.DIBasicType] =
       dwf.cached(DwarfDef.DIBasicType(name, size * 8))
 
@@ -702,8 +696,7 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
     inst match {
@@ -789,8 +782,7 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
     def isVoid(ty: Type): Boolean =
@@ -985,8 +977,7 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import sb._
 
@@ -1210,7 +1201,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genNext(
       next: Next,
       dwarfToken: Option[DwarfSection.Token] = None
-  )(implicit sb: ShowBuilder, gidx: GenIdx): Unit = {
+  )(implicit sb: ShowBuilder, dwf: DwarfSection.Builder): Unit = {
     import sb._
     next match {
       case Next.Case(v, next) =>

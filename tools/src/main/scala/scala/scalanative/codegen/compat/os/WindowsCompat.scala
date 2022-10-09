@@ -51,8 +51,7 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit = {
     import codegen._
     import sb._

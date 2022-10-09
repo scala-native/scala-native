@@ -19,8 +19,7 @@ private[codegen] trait OsCompat {
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      gidx: GenIdx,
-      dwf: DwarfSection.Builder[Global]
+      dwf: DwarfSection.Builder
   ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 
