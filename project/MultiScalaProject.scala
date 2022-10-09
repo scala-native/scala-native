@@ -21,7 +21,6 @@ final case class MultiScalaProject private (
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3").settings(
-    Settings.scala3CompatSettings,
     scalacOptions -= "-Xfatal-warnings"
   )
 
