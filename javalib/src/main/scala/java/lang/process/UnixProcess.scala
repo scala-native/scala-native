@@ -6,7 +6,6 @@ import java.io.FileDescriptor
 import java.util.concurrent.TimeUnit
 import java.util.ScalaOps._
 import java.util.ArrayList
-import java.util.Arrays
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
@@ -16,7 +15,6 @@ import scala.scalanative.posix.{fcntl, signal, sys, time, unistd, errno => e}
 import signal.{kill, SIGKILL}
 import time._
 import sys.time._
-import java.util.stream.Collectors
 
 private[lang] class UnixProcess private (
     pid: CInt,
