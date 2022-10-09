@@ -371,7 +371,6 @@ object Collections {
   }
 
   def indexOfSubList(source: List[_], target: List[_]): Int = {
-    // scalastyle:off return
     val sourceSize = source.size()
     val targetSize = target.size()
     val end = sourceSize - targetSize
@@ -382,11 +381,9 @@ object Collections {
       i += 1
     }
     -1
-    // scalastyle:on return
   }
 
   def lastIndexOfSubList(source: List[_], target: List[_]): Int = {
-    // scalastyle:off return
     val sourceSize = source.size()
     val targetSize = target.size()
     var i = sourceSize - targetSize
@@ -396,7 +393,6 @@ object Collections {
       i -= 1
     }
     -1
-    // scalastyle:on return
   }
 
   def unmodifiableCollection[T](c: Collection[_ <: T]): Collection[T] =

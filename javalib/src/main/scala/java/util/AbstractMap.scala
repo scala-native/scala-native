@@ -1,4 +1,5 @@
 // Ported from Scala.js commit: 2253950 dated: 2022-10-02
+// Note: this file has differences noted below
 
 /*
  * Scala.js (https://www.scala-js.org/)
@@ -13,9 +14,6 @@
  */
 
 package java.util
-
-// additional import for Scala Native
-import java.{lang => jl}
 
 import scala.annotation.tailrec
 
@@ -59,10 +57,10 @@ object AbstractMap {
       entryHashCode(this)
 
     /** Scala.js Strings are treated as primitive types so we use
-     *  jl.StringBuilder for Scala Native
+     *  java.lang.StringBuilder for Scala Native
      */
     override def toString(): String =
-      new jl.StringBuilder(getKey().toString)
+      new java.lang.StringBuilder(getKey().toString)
         .append("=")
         .append(getValue().toString)
         .toString
@@ -194,13 +192,11 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   override def hashCode(): Int =
     entrySet().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
 
-  /** Scala.js Strings are treated as primitive types so we use jl.StringBuilder
-   *  for Scala Native
+  /** Scala.js Strings are treated as primitive types so we use
+   *  java.lang.StringBuilder for Scala Native
    */
   override def toString(): String = {
-    // Scala.js Strings are treated as primitive types
-    // so we use jl.StringBuilder for Scala Native
-    val sb = new jl.StringBuilder("{")
+    val sb = new java.lang.StringBuilder("{")
     var first = true
     val iter = entrySet().iterator()
     while (iter.hasNext()) {
