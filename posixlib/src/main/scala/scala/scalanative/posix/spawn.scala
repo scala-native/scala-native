@@ -3,7 +3,6 @@ package scala.scalanative.posix
 import scalanative.unsafe._
 import scalanative.unsafe.Nat._
 
-import scala.scalanative.posix.sched
 import scala.scalanative.posix.sys.types
 
 /** POSIX spawn.h for Scala
