@@ -74,7 +74,7 @@ jobs:
           { name: linux-arm64, emulator: qemu-aarch64-static },
           { name: linux-x86, emulator: "" }
         ]
-        scala: [2.13.8, 3.2.0]
+        scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
         lto: [thin, none]
         gc: [boehm, immix, commix]
