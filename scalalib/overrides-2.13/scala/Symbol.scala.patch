@@ -1,6 +1,6 @@
---- 2.13.6/scala/Symbol.scala
-+++ overrides-2.13/scala/Symbol.scala
-@@ -32,60 +32,24 @@
+--- 2.13.8/scala/Symbol.scala
++++ overrides-2.13.8/scala/Symbol.scala
+@@ -26,7 +26,7 @@
    override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
  }
  
@@ -9,17 +9,16 @@
    override def apply(name: String): Symbol = super.apply(name)
    protected def valueFromKey(name: String): Symbol = new Symbol(name)
    protected def keyFromValue(sym: Symbol): Option[String] = Some(sym.name)
- }
+@@ -34,51 +34,16 @@
  
  /** This is private so it won't appear in the library API, but
--  * abstracted to offer some hope of reusability.  */
--private[scala] abstract class UniquenessCache[K, V >: Null]
-+ * abstracted to offer some hope of reusability.  */
-+private[scala] abstract class UniquenessCache[V]
- {
+   * abstracted to offer some hope of reusability.  */
+-private[scala] abstract class UniquenessCache[K, V >: Null] {
 -  import java.lang.ref.WeakReference
 -  import java.util.WeakHashMap
 -  import java.util.concurrent.locks.ReentrantReadWriteLock
++private[scala] abstract class UniquenessCache[V]
++{
 +  private val cache = collection.mutable.Map.empty[String, V]
  
 -  private[this] val rwl = new ReentrantReadWriteLock()
@@ -60,10 +59,10 @@
 -      }
 -      finally wlock.unlock
 -    }
--
--    val res = cached()
--    if (res == null) updateCache()
--    else res
+-    cached() match {
+-      case null => updateCache()
+-      case res  => res
+-    }
 +  def apply(name: String): V = {
 +    cache.getOrElseUpdate(name, valueFromKey(name))
    }

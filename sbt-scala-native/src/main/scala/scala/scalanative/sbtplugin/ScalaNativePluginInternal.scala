@@ -10,7 +10,10 @@ import scala.annotation.tailrec
 import scala.scalanative.util.Scope
 import scala.scalanative.build.{Build, BuildException, Discover}
 import scala.scalanative.linker.LinkingException
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
+  ScalaNativeCrossVersion => _,
+  _
+}
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process

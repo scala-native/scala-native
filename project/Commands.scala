@@ -82,7 +82,8 @@ object Commands {
         s"""set sbtScalaNative/scriptedLaunchOpts := {
             |  (sbtScalaNative/scriptedLaunchOpts).value
             |   .filterNot(_.startsWith("-Dscala.version=")) :+
-            |   "-Dscala.version=$version"
+            |   "-Dscala.version=$version" :+
+            |   "-Dscala213.version=${ScalaVersions.scala213}"
             |}""".stripMargin
       // Scala 3 is supported since sbt 1.5.0
       // Older versions set incorrect binary version

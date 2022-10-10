@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 0.4.x
 concurrency:
   group: linux-multiarch-${{ github.head_ref }}
   cancel-in-progress: true
@@ -13,15 +14,15 @@ jobs:
   # Currently only Linux x64 is tested
   build-image:
     name: Build image
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     outputs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
       matrix:
-        arch: [linux-arm64]
+        arch: [linux-arm64, linux-x86]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # In order to minimize time spend in image build loading we're caching directory of local repository
       # Starting local registry from cache is faster then loading image tars
       # https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei
@@ -64,13 +65,13 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     needs: build-image
     strategy:
       fail-fast: false
       matrix:
         arch: [{ name: linux-arm64, emulator: qemu-aarch64-static }]
-        scala: [2.13.8, 3.2.0]
+        scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
         lto: [thin, none]
         gc: [immix, commix]
@@ -137,7 +138,7 @@ jobs:
             scalaPartestJunitTests${{env.project-version}}/test
         uses: nick-fields/retry@v2
         with:
-          timeout_minutes: 60
+          timeout_minutes: 180
           max_attempts: 2
           retry_on: error
           command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"

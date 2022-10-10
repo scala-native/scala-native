@@ -265,10 +265,7 @@ object Build {
       .mapBinaryVersions {
         case version @ ("2.11" | "2.12" | "2.13") =>
           _.settings(
-            commonScalalibSettings(
-              "scala-library",
-              MultiScalaProject.scalaVersions(version)
-            ),
+            commonScalalibSettings("scala-library", None),
             scalacOptions ++= Seq(
               "-deprecation:false",
               "-language:postfixOps",
@@ -293,7 +290,10 @@ object Build {
         case "3" =>
           _.settings(
             name := "scala3lib",
-            commonScalalibSettings("scala3-library_3", scala3libSourcesVersion),
+            commonScalalibSettings(
+              "scala3-library_3",
+              Some(scala3libSourcesVersion)
+            ),
             scalacOptions ++= Seq(
               "-language:implicitConversions"
             ),
