@@ -76,16 +76,21 @@ object Settings {
           scalaVersion.stripPrefix("2.13.").takeWhile(_.isDigit).toInt > 8
       }
       .getOrElse(false)
+    val javacSourceFlags = Seq("-source", "1.8")
+    val scalacReleseFlag = "-release:8"
 
     Def.settings(
-      scalacOptions += {
+      Compile / scalacOptions += {
         if (canUseRelease(scalaVersion.value)) "-release:8"
         else "-target:jvm-1.8"
       },
-      javacOptions ++= {
+      Compile / javacOptions ++= {
         if (canUseRelease(scalaVersion.value)) Nil
-        else Seq("-source:8")
-      }
+        else javacSourceFlags
+      },
+      // Remove -source flags from tests to allow for multi-jdk version compliance tests
+      Test / javacOptions --= javacSourceFlags,
+      Test / javacOptions -= scalacReleseFlag
     )
   }
 
