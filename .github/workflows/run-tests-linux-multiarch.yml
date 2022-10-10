@@ -74,7 +74,7 @@ jobs:
           { name: linux-arm64, emulator: qemu-aarch64-static },
           { name: linux-x86, emulator: "" }
         ]
-        scala: [2.13.8, 3.2.0]
+        scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
         lto: [thin, none]
         gc: [boehm, immix, commix]
@@ -148,7 +148,7 @@ jobs:
             scalaPartestJunitTests${{env.project-version}}/test
         uses: nick-fields/retry@v2
         with:
-          timeout_minutes: 120
+          timeout_minutes: 180
           max_attempts: 2
           retry_on: error
           command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"

@@ -925,7 +925,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
    *  the same tests as the JVM back-end.
    */
   private def isCandidateForForwarders(sym: Symbol): Boolean = {
-    !settings.noForwarders && sym.isStatic && !isImplClass(sym) && {
+    !settings.noForwarders.value && sym.isStatic && !isImplClass(sym) && {
       // Reject non-top-level objects unless opted in via the appropriate option
       scalaNativeOpts.genStaticForwardersForNonTopLevelObjects ||
       !sym.name.containsChar('$') // this is the same test that scalac performs

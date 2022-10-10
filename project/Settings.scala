@@ -58,14 +58,41 @@ object Settings {
       "-unchecked",
       "-feature",
       "-Xfatal-warnings",
-      "-target:jvm-1.8",
       "-encoding",
       "utf8"
     ),
+    javaReleaseSettings,
     publishSettings,
     mimaSettings,
     docsSettings
   )
+
+  def javaReleaseSettings = {
+    def canUseRelease(scalaVersion: String) = CrossVersion
+      .partialVersion(scalaVersion)
+      .collect {
+        case (3, _) => true
+        case (2, 13) =>
+          scalaVersion.stripPrefix("2.13.").takeWhile(_.isDigit).toInt > 8
+      }
+      .getOrElse(false)
+    val javacSourceFlags = Seq("-source", "1.8")
+    val scalacReleaseFlag = "-release:8"
+
+    Def.settings(
+      Compile / scalacOptions += {
+        if (canUseRelease(scalaVersion.value)) scalacReleaseFlag
+        else "-target:jvm-1.8"
+      },
+      Compile / javacOptions ++= {
+        if (canUseRelease(scalaVersion.value)) Nil
+        else javacSourceFlags
+      },
+      // Remove -source flags from tests to allow for multi-jdk version compliance tests
+      Test / javacOptions --= javacSourceFlags,
+      Test / scalacOptions -= scalacReleaseFlag
+    )
+  }
 
   // Docs and API settings
   lazy val docsSettings: Seq[Setting[_]] = {
@@ -487,8 +514,11 @@ object Settings {
 
   def commonScalalibSettings(
       libraryName: String,
-      sourcesScalaVersion: String
-  ): Seq[Setting[_]] =
+      optSourcesScalaVersion: Option[String]
+  ): Seq[Setting[_]] = {
+    def sourcesVersion(scalaVersion: String) =
+      optSourcesScalaVersion.getOrElse(scalaVersion)
+
     Def.settings(
       mavenPublishSettings,
       disabledDocsSettings,
@@ -504,7 +534,9 @@ object Settings {
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesScalaVersion,
+        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesVersion(
+          scalaVersion.value
+        ),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -514,7 +546,7 @@ object Settings {
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        val version = sourcesScalaVersion
+        val version = sourcesVersion(scalaVersion.value)
         val usedScalaVersion = scalaVersion.value
         if (version == usedScalaVersion) updateClassifiers
         else update
@@ -527,7 +559,7 @@ object Settings {
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := {
-        val version = sourcesScalaVersion
+        val version = sourcesVersion(scalaVersion.value)
         val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
@@ -539,7 +571,9 @@ object Settings {
         }
         lazy val scalaLibSourcesJar = lm
           .retrieve(
-            "org.scala-lang" % libraryName % sourcesScalaVersion classifier "sources",
+            "org.scala-lang" % libraryName % sourcesVersion(
+              scalaVersion.value
+            ) classifier "sources",
             scalaModuleInfo = None,
             retrieveDirectory = IO.temporaryDirectory,
             log = s.log
@@ -570,7 +604,7 @@ object Settings {
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
         baseDirectory.value.getParentFile(),
         "overrides",
-        sourcesScalaVersion
+        sourcesVersion(scalaVersion.value)
       ),
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
@@ -704,6 +738,7 @@ object Settings {
       Compile / packageSrc / mappings := Seq.empty,
       exportJars := true
     )
+  }
 
   lazy val commonJUnitTestOutputsSettings = Def.settings(
     noPublishSettings,
@@ -728,17 +763,6 @@ object Settings {
       }.exists()
     )
   }
-
-// Compat
-  lazy val scala3CompatSettings = Def.settings(
-    scalacOptions := {
-      val prev = scalacOptions.value
-      prev.map {
-        case "-target:jvm-1.8" => "-Xtarget:8"
-        case v                 => v
-      }
-    }
-  )
 
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
     options.map(opt => s"-P:scalanative:$opt")

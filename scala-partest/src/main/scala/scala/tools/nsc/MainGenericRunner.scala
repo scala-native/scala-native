@@ -21,7 +21,7 @@ class MainGenericRunner {
       new GenericRunnerCommand(args.toList, (x: String) => errorFn(x))
 
     if (!command.ok) return errorFn("\n" + command.shortUsageMsg)
-    else if (command.settings.version)
+    else if (command.settings.version.value)
       return errorFn(
         "Scala code runner %s -- %s".format(versionString, copyrightString)
       )
