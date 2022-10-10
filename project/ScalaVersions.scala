@@ -3,9 +3,9 @@ package build
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
   val crossScala211 = Seq("2.11.12")
-  val crossScala212 = Seq("2.12.13", "2.12.14", "2.12.15", "2.12.16", "2.12.17")
-  val crossScala213 = Seq("2.13.4", "2.13.5", "2.13.6", "2.13.7", "2.13.8", "2.13.9", "2.13.10")
-  val crossScala3 = Seq("3.1.0", "3.1.1", "3.1.2", "3.1.3", "3.2.0")
+  val crossScala212 = (13 to 17).map(v => s"2.12.$v")
+  val crossScala213 = (4 to 10).map(v => s"2.13.$v")
+  val crossScala3 = (0 to 3).map(v => s"3.1.$v") ++ Seq("3.2.0")
 
   // Version of Scala 3 standard library sources used for publishing
   // Workaround allowing to produce NIR for Scala 3.2.x+ and allowing to consume existing libraries using 3.1.x
