@@ -58,9 +58,9 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean) {
     val sin = stream.totalIn.toInt
     val sout = stream.totalOut.toInt
     if (buf.length == 0) {
-      stream.nextOut = Deflater.empty.asInstanceOf[ByteArray].at(off)
+      stream.nextOut = Deflater.empty.at(off)
     } else {
-      stream.nextOut = buf.asInstanceOf[ByteArray].at(off)
+      stream.nextOut = buf.at(off)
     }
     val err = zlib.deflate(stream, flushParm)
 
@@ -139,7 +139,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean) {
     if (stream == null) {
       throw new IllegalStateException()
     } else if (off <= buf.length && nbytes >= 0 && off >= 0 && buf.length - off >= nbytes) {
-      val bytes = buf.asInstanceOf[ByteArray].at(off)
+      val bytes = buf.at(off)
       val err = zlib.deflateSetDictionary(stream, bytes, nbytes.toUInt)
       if (err != zlib.Z_OK) {
         throw new IllegalArgumentException(err.toString)
@@ -166,9 +166,9 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean) {
       }
       inputBuffer = buf
       if (buf.length == 0) {
-        stream.nextIn = Deflater.empty.asInstanceOf[ByteArray].at(off)
+        stream.nextIn = Deflater.empty.at(off)
       } else {
-        stream.nextIn = buf.asInstanceOf[ByteArray].at(off)
+        stream.nextIn = buf.at(off)
       }
       stream.availableIn = nbytes.toUInt
     } else {
