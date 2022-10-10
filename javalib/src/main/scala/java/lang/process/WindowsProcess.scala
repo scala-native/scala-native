@@ -157,15 +157,13 @@ object WindowsProcess {
     val dir = toCWideStringUTF16LE(builder.directory().getAbsolutePath())
     val argv = toCWideStringUTF16LE(cmd.scalaOps.mkString("", " ", ""))
     val envp = nullTerminatedBlock {
+      val list = new ArrayList[String]
       val it = builder
         .environment()
         .entrySet()
         .iterator()
-      val list = new ArrayList[String]
-      while (it.hasNext()) {
-        val e = it.next()
-        list.add(s"${e.getKey()}=${e.getValue()}")
-      }
+        .scalaOps
+        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
       list
     }.asInstanceOf[Ptr[Byte]]
 

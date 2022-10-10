@@ -163,15 +163,13 @@ object UnixProcess {
     val dir = builder.directory()
     val argv = nullTerminate(cmd)
     val envp = nullTerminate {
+      val list = new ArrayList[String]
       val it = builder
         .environment()
         .entrySet()
         .iterator()
-      val list = new ArrayList[String]
-      while (it.hasNext()) {
-        val e = it.next()
-        list.add(s"${e.getKey()}=${e.getValue()}")
-      }
+        .scalaOps
+        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
       list
     }
 
