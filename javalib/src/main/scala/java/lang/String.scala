@@ -260,12 +260,10 @@ final class _String()
           } else {
             val data1 =
               value
-                .asInstanceOf[CharArray]
                 .at(offset)
                 .asInstanceOf[Ptr[scala.Byte]]
             val data2 =
               s.value
-                .asInstanceOf[CharArray]
                 .at(s.offset)
                 .asInstanceOf[Ptr[scala.Byte]]
             memcmp(data1, data2, (count * 2).toUInt) == 0
@@ -370,7 +368,7 @@ final class _String()
       if (count == 0) {
         0
       } else {
-        val data = value.asInstanceOf[CharArray].at(offset)
+        val data = value.at(offset)
         var hash = 0
         var i = 0
         while (i < count) {
