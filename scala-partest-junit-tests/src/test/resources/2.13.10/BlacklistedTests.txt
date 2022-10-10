@@ -237,3 +237,5 @@ scala/collection/immutable/VectorTest.scala
 scala/math/EquivTest.scala
 scala/sys/process/ParserTest.scala
 scala/util/TryTest.scala
+# https://github.com/scala-native/scala-native/issues/2897
+scala/math/BigIntTest.scala
