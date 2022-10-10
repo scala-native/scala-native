@@ -65,6 +65,8 @@ int scalanative_fd_isset(int fd, struct scalanative_fd_set *set) {
     return FD_ISSET(fd, (fd_set *)set);
 }
 
+//  pselect() is straight call through, so no declaration here.
+
 int scalanative_select(int nfds, struct scalanative_fd_set *readfds,
                        struct scalanative_fd_set *writefds,
                        struct scalanative_fd_set *exceptfds,
