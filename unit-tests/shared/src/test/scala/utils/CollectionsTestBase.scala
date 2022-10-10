@@ -1,13 +1,13 @@
 // Ported from Scala.js commit: e7f1ff7 dated: 2022-06-01
 
-package scala.scalanative.junit.utils
+package org.scalanative.testsuite.utils
 
 import java.{lang => jl, util => ju}
 
+import scala.scalanative.junit.utils.AssertThrows.assertThrows
+
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 import org.scalanative.testsuite.javalib.util.TrivialImmutableMap
-
-import scalanative.junit.utils.AssertThrows.assertThrows
 
 trait CollectionsTestBase {
 

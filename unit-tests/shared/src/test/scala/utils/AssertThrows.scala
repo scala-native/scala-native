@@ -1,3 +1,5 @@
+// Note: has additional method over Scala.js
+
 /*
  * Ported from Scala.js (https://www.scala-js.org/)
  *

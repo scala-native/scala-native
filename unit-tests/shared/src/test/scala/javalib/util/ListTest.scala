@@ -11,7 +11,7 @@ import java.util.function.UnaryOperator
 
 import scala.reflect.ClassTag
 import scalanative.junit.utils.AssertThrows.assertThrows
-import scalanative.junit.utils.CollectionsTestBase
+import org.scalanative.testsuite.utils.CollectionsTestBase
 
 trait ListTest extends CollectionTest with CollectionsTestBase {
 
