@@ -1,10 +1,11 @@
 package java.net
 
 // Ported from Apache Harmony
-final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
+
+final class Inet4Address(ipAddress: Array[Byte], host: String)
     extends InetAddress(ipAddress, host) {
 
-  private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
+  def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
   override def isMulticastAddress(): Boolean =
     (ipAddress(0) & 0xf0) == 0xe0
@@ -26,29 +27,23 @@ final class Inet4Address private[net] (ipAddress: Array[Byte], host: String)
 
   override def isMCGlobal(): Boolean = {
     if (!isMulticastAddress()) return false
-
-    val address = InetAddress.bytesToInt(ipAddress, 0)
-
+    val address = bytesToInt(ipAddress, 0)
     if (address >>> 8 < 0xe00001) return false
-
     if (address >>> 24 > 0xee) return false
-
     true
   }
 
   override def isMCNodeLocal(): Boolean = false
 
   override def isMCLinkLocal(): Boolean =
-    InetAddress.bytesToInt(ipAddress, 0) >>> 8 == 0xe00000
+    bytesToInt(ipAddress, 0) >>> 8 == 0xe00000
 
   override def isMCSiteLocal(): Boolean =
-    (InetAddress.bytesToInt(ipAddress, 0) >>> 16) == 0xefff
+    bytesToInt(ipAddress, 0) >>> 16 == 0xefff
 
   override def isMCOrgLocal(): Boolean = {
-    val prefix = InetAddress.bytesToInt(ipAddress, 0) >>> 16
+    val prefix = bytesToInt(ipAddress, 0) >>> 16
     prefix >= 0xefc0 && prefix <= 0xefc3
   }
 
 }
-
-object Inet4Address extends InetAddressBase {}

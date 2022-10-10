@@ -15,7 +15,7 @@ class ServerSocket(
   private var closed = false
 
   if (bindAddr == null)
-    bindAddr = InetAddress.getWildcardAddress()
+    bindAddr = SocketHelpers.getWildcardAddress()
 
   if (port >= 0)
     startup()

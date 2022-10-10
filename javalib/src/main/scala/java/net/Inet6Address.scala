@@ -1,16 +1,21 @@
 package java.net
 
 // Ported from Apache Harmony
-final class Inet6Address private[net] (
-    ipAddress: Array[Byte],
+
+final class Inet6Address private (
+    val ipAddress: Array[Byte],
     host: String,
-    scopeId: Int
+    scopeId: Int,
+    val zoneIdent: String
 ) extends InetAddress(ipAddress, host) {
 
-  private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null, 0)
+  def this(ipAddress: Array[Byte], host: String, scope: Int) =
+    this(ipAddress, host, scope, "")
 
-  private[net] def this(ipAddress: Array[Byte], host: String) =
+  def this(ipAddress: Array[Byte], host: String) =
     this(ipAddress, host, 0)
+
+  def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
   def getScopeId(): Int = scopeId
 
@@ -50,22 +55,72 @@ final class Inet6Address private[net] (
 
 }
 
-object Inet6Address extends InetAddressBase {
+object Inet6Address {
 
   def getByAddress(
       host: String,
       addr: Array[Byte],
       scope_id: Int
   ): Inet6Address = {
-    if (addr == null || addr.length != 16) {
+    if (addr == null || addr.length != 16)
       throw new UnknownHostException("Illegal IPv6 address")
-    }
-    if (scope_id < 0) {
-      new Inet6Address(addr, host, 0)
-    } else {
-      new Inet6Address(addr, host, scope_id)
-    }
+
+    new Inet6Address(addr, host, Math.max(0, scope_id))
   }
 
-  // def getByAddress(host: String, addr: Array[Byte], nif: NetworkInterface): Inet6Addres
+  private[net] def apply(
+      ipAddress: Array[Byte],
+      host: String,
+      scopeId: Int,
+      zone: String
+  ): Inet6Address = {
+    new Inet6Address(ipAddress, host, scopeId, zone)
+  }
+
+  private val hexCharacters = "0123456789ABCDEF"
+
+  private[net] def formatInet6Address(in6Addr: Inet6Address): String = {
+
+//  private[net] def formatIp6Address(ip6ByteArray: Array[Byte],
+//  zoneId: String): String = {
+    /* ScalaJVM expects the long form of, say "0:0:0:0:0:0:0:1"
+     * inet_pton() and getnameinfo() both return the short form "::1".
+     *
+     * Translate by hand as before but avoid non-local returns.
+     */
+
+    val ia6ByteArray = in6Addr.ipAddress
+
+    val buffer = new StringBuilder()
+    var isFirst = true
+    for (i <- 0 until ia6ByteArray.length) {
+      if ((i & 1) == 0)
+        isFirst = true
+
+      var j = (ia6ByteArray(i) & 0xf0) >>> 4
+      if (j != 0 || !isFirst) {
+        buffer.append(hexCharacters.charAt(j))
+        isFirst = false
+      }
+      j = ia6ByteArray(i) & 0x0f
+      if (j != 0 || !isFirst) {
+        buffer.append(hexCharacters.charAt(j))
+        isFirst = false
+      }
+      if ((i & 1) != 0 && (i + 1) < ia6ByteArray.length) {
+        if (isFirst)
+          buffer.append('0')
+        buffer.append(':')
+      }
+      if ((i & 1) != 0 && (i + 1) == ia6ByteArray.length && isFirst) {
+        buffer.append('0')
+      }
+    }
+
+    if (!in6Addr.zoneIdent.isEmpty)
+      buffer.append(s"%${in6Addr.zoneIdent}")
+
+    buffer.toString
+  }
+
 }

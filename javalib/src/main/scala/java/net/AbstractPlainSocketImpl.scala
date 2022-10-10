@@ -4,6 +4,8 @@ import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.ByteArray
 
+import scalanative.libc.string.memcpy
+
 // Import posix name errno as variable, not class or type.
 import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
 import scala.scalanative.posix.unistd
@@ -41,7 +43,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   protected var timeout = 0
   private var listening = false
 
-  private final val useIPv4Only = SocketHelpers.getPreferIPv4Stack()
+  private final val useIPv4Only = SocketHelpers.getUseIPv4Stack()
 
   override def getInetAddress: InetAddress = address
   override def getFileDescriptor: FileDescriptor = fd
@@ -122,7 +124,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     val src = inetAddress.getAddress()
 
     if (inetAddress.isInstanceOf[Inet6Address]) {
-      sa6.sin6_addr = src.asInstanceOf[in.in6_addr]
+      val from = src.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
+      val dst = sa6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
+      memcpy(dst, from, 16.toUInt)
     } else { // Use IPv4mappedIPv6 address
       val dst = sa6.sin6_addr.toPtr.s6_addr
 
@@ -245,9 +249,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       s.port = inet.ntohs(sa.sin6_port).toInt
     }
 
-    Zone { implicit z =>
-      s.address = InetAddress.getByName(fromCString(ipstr))
-    }
+    s.address = InetAddress.getByName(fromCString(ipstr))
 
     s.fd = new FileDescriptor(newFd)
     s.localport = this.localport
