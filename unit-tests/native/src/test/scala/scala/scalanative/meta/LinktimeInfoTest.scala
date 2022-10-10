@@ -7,6 +7,10 @@ import org.junit.Assert._
 
 class LinktimeInfoTest {
 
+  @Test def testMode(): Unit = {
+    assertEquals(LinktimeInfo.debugMode, !LinktimeInfo.releaseMode)
+  }
+
   @Test def testOS(): Unit = {
     assertEquals(Platform.isFreeBSD(), LinktimeInfo.isFreeBSD)
     assertEquals(Platform.isLinux(), LinktimeInfo.isLinux)
