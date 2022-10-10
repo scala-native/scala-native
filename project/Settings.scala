@@ -77,11 +77,11 @@ object Settings {
       }
       .getOrElse(false)
     val javacSourceFlags = Seq("-source", "1.8")
-    val scalacReleseFlag = "-release:8"
+    val scalacReleaseFlag = "-release:8"
 
     Def.settings(
       Compile / scalacOptions += {
-        if (canUseRelease(scalaVersion.value)) "-release:8"
+        if (canUseRelease(scalaVersion.value)) scalacReleaseFlag
         else "-target:jvm-1.8"
       },
       Compile / javacOptions ++= {
@@ -90,7 +90,7 @@ object Settings {
       },
       // Remove -source flags from tests to allow for multi-jdk version compliance tests
       Test / javacOptions --= javacSourceFlags,
-      Test / javacOptions -= scalacReleseFlag
+      Test / scalacOptions -= scalacReleaseFlag
     )
   }
 
