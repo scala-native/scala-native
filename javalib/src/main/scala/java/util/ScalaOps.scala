@@ -50,18 +50,6 @@ private[java] object ScalaOps {
 
     @inline def mkString(start: String, sep: String, end: String): String =
       __self.iterator().scalaOps.mkString(start, sep, end)
-
-    @deprecated("Removed in future ScalaOps")
-    @inline def headOption: Option[A] =
-      __self.iterator().scalaOps.headOption
-
-    @deprecated("Removed in future ScalaOps")
-    @inline def lastOption: Option[A] =
-      __self.iterator().scalaOps.lastOption
-
-    @deprecated("Removed in future ScalaOps")
-    @inline def toSeq: Seq[A] =
-      __self.iterator().scalaOps.toSeq
   }
 
   implicit class ToJavaIteratorOps[A] private[ScalaOps] (
@@ -135,28 +123,6 @@ private[java] object ScalaOps {
         result += __self.next()
       }
       result + end
-    }
-
-    @inline def headOption: Option[A] = {
-      if (__self.hasNext()) Some(__self.next())
-      else None
-    }
-
-    @inline def lastOption: Option[A] = {
-      if (!__self.hasNext()) None
-      else {
-        var last: A = __self.next()
-        while (__self.hasNext()) {
-          last = __self.next()
-        }
-        Some(last)
-      }
-    }
-
-    @inline def toSeq: Seq[A] = {
-      val buf = Seq.newBuilder[A]
-      foreach(buf += _)
-      buf.result()
     }
   }
 
