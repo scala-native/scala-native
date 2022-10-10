@@ -100,7 +100,7 @@ object CVarArgList {
         val count =
           ((sizeof(tag) + sizeof[Long] - 1.toUSize) / sizeof[Long]).toInt
         val words = new Array[Long](count)
-        val start = words.asInstanceOf[LongArray].at(0).asInstanceOf[Ptr[T]]
+        val start = words.at(0).asInstanceOf[Ptr[T]]
         tag.store(start, value)
         words
     }
@@ -150,7 +150,7 @@ object CVarArgList {
     }
     val resultStorage =
       z.alloc(sizeof[Long] * storage.size.toUSize).asInstanceOf[Ptr[Long]]
-    val storageStart = storage.asInstanceOf[LongArray].at(0)
+    val storageStart = storage.at(0)
     libc.memcpy(
       toRawPtr(resultStorage),
       toRawPtr(storageStart),

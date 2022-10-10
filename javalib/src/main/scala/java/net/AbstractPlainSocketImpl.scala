@@ -432,7 +432,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     } else if (isClosed) {
       0
     } else {
-      val cArr = buffer.asInstanceOf[ByteArray].at(offset)
+      val cArr = buffer.at(offset)
       var sent = 0
       while (sent < count) {
         val ret = socket
@@ -451,7 +451,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (shutInput) -1
     else {
       val bytesNum = socket
-        .recv(fd.fd, buffer.asInstanceOf[ByteArray].at(offset), count.toUInt, 0)
+        .recv(fd.fd, buffer.at(offset), count.toUInt, 0)
         .toInt
 
       def timeoutDetected = mapLastError(
