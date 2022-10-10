@@ -56,13 +56,14 @@ object AbstractMap {
     override def hashCode(): Int =
       entryHashCode(this)
 
-    /** Scala.js Strings are treated as primitive types so we use
-     *  java.lang.StringBuilder for Scala Native
+    /* Scala.js Strings are treated as primitive types so we use
+     * java.lang.StringBuilder for Scala Native
      */
     override def toString(): String =
-      new java.lang.StringBuilder(getKey().toString)
+      new java.lang.StringBuilder()
+        .append(getKey().asInstanceOf[Object])
         .append("=")
-        .append(getValue().toString)
+        .append(getValue().asInstanceOf[Object])
         .toString
   }
 
@@ -86,8 +87,15 @@ object AbstractMap {
     override def hashCode(): Int =
       entryHashCode(this)
 
+    /* Scala.js Strings are treated as primitive types so we use
+     * java.lang.StringBuilder for Scala Native
+     */
     override def toString(): String =
-      "" + getKey() + "=" + getValue()
+      new java.lang.StringBuilder()
+        .append(getKey().asInstanceOf[Object])
+        .append("=")
+        .append(getValue().asInstanceOf[Object])
+        .toString
   }
 }
 
@@ -192,8 +200,8 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   override def hashCode(): Int =
     entrySet().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
 
-  /** Scala.js Strings are treated as primitive types so we use
-   *  java.lang.StringBuilder for Scala Native
+  /* Scala.js Strings are treated as primitive types so we use
+   * java.lang.StringBuilder for Scala Native
    */
   override def toString(): String = {
     val sb = new java.lang.StringBuilder("{")
@@ -205,9 +213,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
         first = false
       else
         sb.append(", ")
-      sb.append(entry.getKey().toString)
-        .append("=")
-        .append(entry.getValue().toString)
+      sb.append(entry.toString)
     }
     sb.append("}").toString
   }

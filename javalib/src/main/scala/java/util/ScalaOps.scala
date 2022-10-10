@@ -1,3 +1,6 @@
+// Ported from Scala.js commit: 2253950 dated: 2022-10-02
+// Note: this file has differences noted below
+
 /*
  * Scala.js (https://www.scala-js.org/)
  *
@@ -14,6 +17,43 @@ package java.util
 
 /** Make some Scala collection APIs available on Java collections. */
 private[java] object ScalaOps {
+
+  /* The following should be left commented out until the point where
+   * we can run the javalib with -Yno-predef
+   * See: https://github.com/scala-native/scala-native/issues/2885
+   */
+
+  // implicit class IntScalaOps private[ScalaOps] (val __self: Int) extends AnyVal {
+  //   @inline def until(end: Int): SimpleRange =
+  //     new SimpleRange(__self, end)
+
+  //   @inline def to(end: Int): SimpleInclusiveRange =
+  //     new SimpleInclusiveRange(__self, end)
+  // }
+
+  // @inline
+  // final class SimpleRange(start: Int, end: Int) {
+  //   @inline
+  //   def foreach[U](f: Int => U): Unit = {
+  //     var i = start
+  //     while (i < end) {
+  //       f(i)
+  //       i += 1
+  //     }
+  //   }
+  // }
+
+  // @inline
+  // final class SimpleInclusiveRange(start: Int, end: Int) {
+  //   @inline
+  //   def foreach[U](f: Int => U): Unit = {
+  //     var i = start
+  //     while (i <= end) {
+  //       f(i)
+  //       i += 1
+  //     }
+  //   }
+  // }
 
   implicit class ToJavaIterableOps[A] private[ScalaOps] (
       val __self: java.lang.Iterable[A]
@@ -112,17 +152,21 @@ private[java] object ScalaOps {
       foldLeft[B](__self.next())(f)
     }
 
+    /* Scala.js Strings are treated as primitive types so we use
+     * java.lang.StringBuilder for Scala Native
+     */
     @inline def mkString(start: String, sep: String, end: String): String = {
-      var result: String = start
+      val sb = new java.lang.StringBuilder(start)
       var first = true
       while (__self.hasNext()) {
         if (first)
           first = false
         else
-          result += sep
-        result += __self.next()
+          sb.append(sep)
+        sb.append(__self.next().asInstanceOf[Object])
       }
-      result + end
+      sb.append(end)
+      sb.toString
     }
   }
 
@@ -140,4 +184,5 @@ private[java] object ScalaOps {
         f(__self.nextElement())
     }
   }
+
 }
