@@ -465,7 +465,6 @@ object Settings {
     // We put our classes on scalac's `javabootclasspath` so that it uses them
     // when compiling rather than the definitions from the JDK.
     recompileAllOrNothingSettings,
-    scalacOptions -= "-Xfatal-warnings", // temp for ScalaOps deprecation
     Compile / scalacOptions := {
       val previous = (Compile / scalacOptions).value
       val javaBootClasspath =
