@@ -11,6 +11,8 @@ trait LinktimeValueResolver { self: Reach =>
     val conf = config.compilerConfig
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     val predefined: NativeConfig.LinktimeProperites = Map(
+      s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
+      s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull),
       s"$linktimeInfo.isWindows" -> Platform.isWindows,
       s"$linktimeInfo.isLinux" -> Platform.isLinux,
       s"$linktimeInfo.isMac" -> Platform.isMac,
