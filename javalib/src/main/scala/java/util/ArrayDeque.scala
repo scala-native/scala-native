@@ -1320,14 +1320,10 @@ class ArrayDeque[E](
    *    a copy of this deque
    */
   override def clone(): ArrayDeque[E] = {
-    try {
-      val result = super.clone().asInstanceOf[ArrayDeque[E]]
-      result.elements = Arrays.copyOf(elements, elements.length)
-      return result
-    } catch {
-      case e: CloneNotSupportedException =>
-        throw new AssertionError()
-    }
+    val result = new ArrayDeque[E](Arrays.copyOf(elements, elements.length))
+    result.head = this.head
+    result.tail = this.tail
+    result
   }
 
   /** debugging */
