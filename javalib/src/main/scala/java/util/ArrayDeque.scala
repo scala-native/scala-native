@@ -1184,7 +1184,7 @@ class ArrayDeque[E](
    *  @return
    *    {@code true} if this deque contained the specified element
    */
-  def remove(o: Object): Boolean = {
+  override def remove(o: Any): Boolean = {
     return removeFirstOccurrence(o)
   }
 

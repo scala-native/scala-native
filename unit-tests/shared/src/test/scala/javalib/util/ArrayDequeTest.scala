@@ -1655,7 +1655,14 @@ class ArrayDequeJSR166Test {
     assertSame(a5, q.toArray(a5))
     val a6 = Array.fill(size + 2)(Integer.valueOf(42))
     assertSame(a6, q.toArray(a6))
-    val as = Array(a1, a2, a3, a4, a5, a6)
+    val as = Array(
+      a1,
+      a2.asInstanceOf[Array[Object]],
+      a3.asInstanceOf[Array[Object]],
+      a4.asInstanceOf[Array[Object]],
+      a5.asInstanceOf[Array[Object]],
+      a6.asInstanceOf[Array[Object]]
+    )
     as.foreach { a =>
       if (a.length > size) assertNull(a(size))
       if (a.length > size + 1) assertEquals(42, a(size + 1))
