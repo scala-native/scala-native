@@ -1127,9 +1127,10 @@ class ArrayDeque[E](
         if (i >= to) {
           if (w == capacity) w = 0 // "corner" case
           continue = false
+        } else {
+          w = 0 // w rejoins i on second leg
         }
       }
-      w = 0 // w rejoins i on second leg
     }
     if (end != tail) throw new ConcurrentModificationException()
     tail = w
