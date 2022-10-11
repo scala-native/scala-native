@@ -760,7 +760,7 @@ class ArrayDeque[E](
       return e
     }
 
-    private def postDelete(leftShifted: Boolean): Unit = {
+    def postDelete(leftShifted: Boolean): Unit = {
       if (leftShifted)
         cursor = dec(cursor, elements.length)
     }
@@ -815,7 +815,7 @@ class ArrayDeque[E](
       return e
     }
 
-    private def postDelete(leftShifted: Boolean): Unit = {
+    override def postDelete(leftShifted: Boolean): Unit = {
       if (!leftShifted)
         cursor = inc(cursor, elements.length)
     }
