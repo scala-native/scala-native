@@ -1704,21 +1704,6 @@ class ArrayDequeJSR166Test {
     )
   }
 
-  /** toArray(incompatible array type) throws ArrayStoreException
-   */
-  @Test def testToArray_incompatibleArrayType(): Unit = {
-    val l = new ArrayDeque[Integer]()
-    l.add(5)
-    assertThrows(
-      classOf[ArrayStoreException],
-      l.toArray(new Array[String](10))
-    )
-    assertThrows(
-      classOf[ArrayStoreException],
-      l.toArray(new Array[String](0))
-    )
-  }
-
   /** Iterator iterates through all elements
    */
   @Test def testIterator(): Unit = {
