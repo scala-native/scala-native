@@ -47,23 +47,15 @@ class StringTokenizer(
 
     @tailrec
     def hasNonDelim(pos: Int, len: Int): Boolean = {
-      if (pos == len) {
-        false
-      } else if (delimiters.indexOf(string.charAt(pos), 0) == -1) {
-        true
-      } else {
-        hasNonDelim(pos + 1, len)
-      }
+      if (pos == len) false
+      else if (delimiters.indexOf(string.charAt(pos), 0) == -1) true
+      else hasNonDelim(pos + 1, len)
     }
 
     val length = string.length
-    if (position >= length) {
-      false
-    } else if (returnDelimiters) {
-      true
-    } else {
-      hasNonDelim(position, length)
-    }
+    if (position >= length) false
+    else if (returnDelimiters) true
+    else hasNonDelim(position, length)
   }
 
   def nextElement(): Object = nextToken()
