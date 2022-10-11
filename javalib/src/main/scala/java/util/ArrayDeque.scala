@@ -1092,16 +1092,17 @@ class ArrayDeque[E](
       }
       if (to == end) continue = false
       else {
+        i = 0
         to = end
         k -= capacity
       }
     }
     // a two-finger traversal, with hare i reading, tortoise w writing
     var w = beg
-    continue = true
     i = beg + 1
     to = if (i <= end) end else es.length
     k = beg
+    continue = true
     while (continue) {
       // In this loop, i and w are on the same leg, with i > w
       while (i < to) {
