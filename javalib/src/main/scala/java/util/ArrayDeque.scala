@@ -510,6 +510,7 @@ class ArrayDeque[E](
       val end = head
       var to = if (i >= end) end else 0
       while (true) {
+        i -= 1
         while (i > to - 1) {
           if (o.equals(es(i))) {
             delete(i)
