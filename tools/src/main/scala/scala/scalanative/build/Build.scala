@@ -18,15 +18,14 @@ object Build {
    *
    *  {{{
    *  val classpath: Seq[Path] = ...
-   *  val workdir: Path        = ...
+   *  val basedir: Path        = ...
    *  val main: String         = ...
+   *  val logger: Logger       = ...
    *
    *  val clang    = Discover.clang()
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *
-   *  val outpath  = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty
@@ -39,12 +38,13 @@ object Build {
    *        .withLinkingOptions(linkopts)
    *        .withCompileOptions(compopts)
    *        .withLinkStubs(true)
-   *        .withTestConfig(false)
    *        .withBasename("myapp")
    *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withBasedir(workdir)
+   *      .withBasedir(basedir)
+   *      .withTestConfig(false)
+   *      .withLogger(logger)
    *
    *  Build.build(config)
    *  }}}
