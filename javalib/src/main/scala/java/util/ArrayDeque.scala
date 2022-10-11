@@ -1089,9 +1089,11 @@ class ArrayDeque[E](
           setBit(doRemove, i - k)
         i += 1
       }
-      to = end
-      k -= capacity
       if (to == end) continue = false
+      else {
+        to = end
+        k -= capacity
+      }
     }
     // a two-finger traversal, with hare i reading, tortoise w writing
     var w = beg
