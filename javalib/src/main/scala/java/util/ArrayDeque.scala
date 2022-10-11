@@ -4,7 +4,7 @@
  */
 
 /*
- * Ported from jsr166 revision 1.138
+ * Ported from JSR 166 revision 1.138
  * https://gee.cs.oswego.edu/dl/concurrency-interest/index.html
  */
 
