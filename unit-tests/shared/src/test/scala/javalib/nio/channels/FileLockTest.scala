@@ -9,7 +9,7 @@ import org.junit.{Test, Before, After}
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.AssumesHelper._
 import org.scalanative.testsuite.utils.Platform.{
   executingInJVM,

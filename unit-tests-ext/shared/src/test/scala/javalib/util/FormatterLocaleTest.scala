@@ -22,7 +22,7 @@ import org.junit.Before
 import org.junit.After
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class FormatterLocaleTest {
   private var root: Boolean = false

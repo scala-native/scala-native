@@ -5,7 +5,7 @@ import java.nio.charset._
 
 import org.junit.Test
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class OutputStreamWriterTest {
   class MockOutputStream extends OutputStream {

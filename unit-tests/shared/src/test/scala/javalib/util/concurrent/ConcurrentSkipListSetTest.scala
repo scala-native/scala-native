@@ -12,7 +12,7 @@ import org.junit.Test
 import org.scalanative.testsuite.javalib.util.NavigableSetFactory
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 import scala.reflect.ClassTag

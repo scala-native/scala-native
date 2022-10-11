@@ -9,7 +9,7 @@ import javalib.nio.BufferFactory.ByteBufferFactory
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 abstract class ByteBufferTest extends BaseBufferTest {
   type Factory = BufferFactory.ByteBufferFactory

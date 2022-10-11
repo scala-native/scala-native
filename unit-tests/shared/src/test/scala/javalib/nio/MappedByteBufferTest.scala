@@ -6,7 +6,8 @@ import java.nio.channels.NonWritableChannelException
 
 import org.junit.{Test, Before}
 import org.junit.Assert._
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import java.io._
 

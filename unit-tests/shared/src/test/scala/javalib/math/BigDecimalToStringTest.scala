@@ -79,7 +79,7 @@ class BigDecimalToStringTest {
 
   @Test def testToStringWithRoundingMode(): Unit = {
     import RoundingMode._
-    import scala.scalanative.junit.utils.AssertThrows.assertThrows
+    import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
     val group1: Seq[RoundingMode] = Seq(UP, CEILING, HALF_UP)
     val group2: Seq[RoundingMode] = Seq(DOWN, FLOOR, HALF_DOWN, HALF_EVEN)

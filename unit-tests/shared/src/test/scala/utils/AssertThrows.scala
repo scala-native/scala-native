@@ -12,7 +12,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.scalanative.junit.utils
+package org.scalanative.testsuite.utils
 
 import org.junit.Assert
 import org.junit.function.ThrowingRunnable

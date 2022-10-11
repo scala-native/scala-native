@@ -3,7 +3,7 @@
 package javalib.net
 
 import org.scalanative.testsuite.utils.Platform._
-import scala.scalanative.junit.utils.AssertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import org.junit.Test
 import org.junit.Assert._
@@ -48,7 +48,7 @@ class URLDecoderTest {
 
     def unsupportedEncoding(encoded: String, enc: String = utf8): Unit = {
       val exception = classOf[UnsupportedEncodingException]
-      AssertThrows.assertThrows(exception, URLDecoder.decode(encoded, enc))
+      assertThrows(exception, URLDecoder.decode(encoded, enc))
     }
 
     // empty string

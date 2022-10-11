@@ -7,7 +7,7 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.ThrowsHelper._
+import org.scalanative.testsuite.utils.ThrowsHelper._
 import TestUtils._
 
 class PatternTest {

@@ -5,7 +5,7 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.ThrowsHelper._
+import org.scalanative.testsuite.utils.ThrowsHelper._
 import TestUtils._
 
 // Tests are inspired by those projects under Apache2 License:

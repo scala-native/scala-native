@@ -8,7 +8,7 @@ import org.junit.Test
 import java.util.Optional
 import java.util.function._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 /* Optional was added in 1.8 but new methods were added from 9 to 11 */
 
