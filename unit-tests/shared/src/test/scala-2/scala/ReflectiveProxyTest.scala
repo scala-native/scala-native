@@ -5,7 +5,7 @@ package scala
 import org.junit.Test
 import org.junit.Assert._
 
-import org.scalanative.testsuite.utils.ThrowsHelper
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scala.language.reflectiveCalls
 

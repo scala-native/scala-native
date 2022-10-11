@@ -2,6 +2,7 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class Scala3_2_StdLibTest:
