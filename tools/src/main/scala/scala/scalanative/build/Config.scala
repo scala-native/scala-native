@@ -142,7 +142,7 @@ object Config {
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
 
-    override def workdir =
+    override def workdir: Path =
       basedir.resolve(s"native$nameSuffix")
 
     override def artifactPath: Path = {
