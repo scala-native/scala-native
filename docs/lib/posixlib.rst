@@ -52,7 +52,7 @@ C Header          Scala Native Module
 `semaphore.h`_    N/A
 `setjmp.h`_       N/A
 `signal.h`_       scala.scalanative.posix.signal_
-`spawn.h`_        N/A
+`spawn.h`_        scala.scalanative.posix.spawn_
 `stdarg.h`_       N/A
 `stdbool.h`_      N/A
 `stddef.h`_       scala.scalanative.posix.stddef_
@@ -200,6 +200,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.regex: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/regex.scala
 .. _scala.scalanative.posix.sched: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sched.scala
 .. _scala.scalanative.posix.signal: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/signal.scala
+.. _scala.scalanative.posix.spawn: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/spawn.scala
 .. _scala.scalanative.posix.stddef: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stddef.scala
 .. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdlib.scala
 .. _scala.scalanative.posix.string: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/string.scala
