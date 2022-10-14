@@ -16,7 +16,7 @@ import java.util.Base64.Decoder
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class Base64Test {
 

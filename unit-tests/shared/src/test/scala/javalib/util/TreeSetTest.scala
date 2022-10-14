@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 import java.{util => ju}

@@ -2,7 +2,7 @@ package scala.scalanative
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scalanative.unsigned._
 import scalanative.unsafe._

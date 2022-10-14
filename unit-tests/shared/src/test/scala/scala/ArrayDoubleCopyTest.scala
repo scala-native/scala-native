@@ -3,7 +3,7 @@ package scala
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class ArrayDoubleCopyTest {
   def init(arr: Array[Double], from: Double = 0.0) = {

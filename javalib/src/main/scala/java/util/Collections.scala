@@ -1,3 +1,17 @@
+// Ported from Scala.js commit: 2253950 dated: 2022-10-02
+
+/*
+ * Scala.js (https://www.scala-js.org/)
+ *
+ * Copyright EPFL.
+ *
+ * Licensed under Apache License 2.0
+ * (https://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package java.util
 
 import java.{lang => jl}
@@ -37,13 +51,15 @@ object Collections {
     })
   }
 
-  private lazy val EMPTY_ITERATOR: Iterator[_] = new EmptyIterator
+  private lazy val EMPTY_ITERATOR: Iterator[_] =
+    new EmptyIterator
 
-  private lazy val EMPTY_LIST_ITERATOR: ListIterator[_] = new EmptyListIterator
+  private lazy val EMPTY_LIST_ITERATOR: ListIterator[_] =
+    new EmptyListIterator
 
   private lazy val EMPTY_ENUMERATION: Enumeration[_] = {
     new Enumeration[Any] {
-      override def hasMoreElements(): Boolean = false
+      def hasMoreElements(): Boolean = false
 
       def nextElement(): Any =
         throw new NoSuchElementException
@@ -52,21 +68,10 @@ object Collections {
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]]
   def sort[T <: jl.Comparable[T]](list: List[T]): Unit =
-    sort(list, naturalComparator[T])
+    list.sort(null)
 
-  def sort[T](list: List[T], c: Comparator[_ >: T]): Unit = {
-    val arrayBuf = list.toArray()
-    Arrays.sort[AnyRef with T](arrayBuf.asInstanceOf[Array[AnyRef with T]], c)
-
-    // The spec of `Arrays.asList()` guarantees that its result implements RandomAccess
-    val sortedList =
-      Arrays.asList(arrayBuf).asInstanceOf[List[T] with RandomAccess]
-
-    list match {
-      case list: RandomAccess => copyImpl(sortedList.iterator(), list)
-      case _ => copyImpl(sortedList.iterator(), list.listIterator())
-    }
-  }
+  def sort[T](list: List[T], c: Comparator[_ >: T]): Unit =
+    list.sort(c)
 
   def binarySearch[T](list: List[_ <: jl.Comparable[_ >: T]], key: T): Int =
     binarySearchImpl(list, (elem: Comparable[_ >: T]) => elem.compareTo(key))
@@ -141,12 +146,12 @@ object Collections {
   def shuffle(list: List[_]): Unit =
     shuffle(list, new Random)
 
+  @noinline
   def shuffle(list: List[_], rnd: Random): Unit =
     shuffleImpl(list, rnd)
 
   @inline
   private def shuffleImpl[T](list: List[T], rnd: Random): Unit = {
-    // ported from Scala.js
     def shuffleInPlace(list: List[T] with RandomAccess): Unit = {
       @inline
       def swap(i1: Int, i2: Int): Unit = {
@@ -268,19 +273,19 @@ object Collections {
     }
   }
 
-  // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]]
-  def min[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): T =
+  // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning T
+  def min[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): AnyRef =
     min(coll, naturalComparator[T])
 
   def min[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
-    coll.scalaOps.min(comp)
+    coll.scalaOps.reduceLeft((a, b) => if (comp.compare(a, b) <= 0) a else b)
 
-  // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]]
-  def max[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): T =
+  // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning T
+  def max[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): AnyRef =
     max(coll, naturalComparator[T])
 
   def max[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
-    coll.scalaOps.max(comp)
+    coll.scalaOps.reduceLeft((a, b) => if (comp.compare(a, b) >= 0) a else b)
 
   def rotate(list: List[_], distance: Int): Unit =
     rotateImpl(list, distance)
@@ -342,7 +347,7 @@ object Collections {
       case _: RandomAccess =>
         var modified = false
         for (i <- 0 until list.size()) {
-          if (list.get(i) === oldVal) {
+          if (Objects.equals(list.get(i), oldVal)) {
             list.set(i, newVal)
             modified = true
           }
@@ -353,7 +358,7 @@ object Collections {
         @tailrec
         def replaceAll(iter: ListIterator[T], mod: Boolean): Boolean = {
           if (iter.hasNext()) {
-            val isEqual = iter.next() === oldVal
+            val isEqual = Objects.equals(iter.next(), oldVal)
             if (isEqual)
               iter.set(newVal)
             replaceAll(iter, mod || isEqual)
@@ -365,29 +370,29 @@ object Collections {
     }
   }
 
-  def indexOfSubList(source: List[_], target: List[_]): Int =
-    indexOfSubListImpl(source, target, fromStart = true)
-
-  def lastIndexOfSubList(source: List[_], target: List[_]): Int =
-    indexOfSubListImpl(source, target, fromStart = false)
-
-  @inline
-  private def indexOfSubListImpl(
-      source: List[_],
-      target: List[_],
-      fromStart: Boolean
-  ): Int = {
+  def indexOfSubList(source: List[_], target: List[_]): Int = {
+    val sourceSize = source.size()
     val targetSize = target.size()
-    if (targetSize == 0) {
-      if (fromStart) 0
-      else source.size()
-    } else {
-      val indices = 0 to source.size() - targetSize
-      val indicesInOrder = if (fromStart) indices else indices.reverse
-      indicesInOrder
-        .find { i => source.subList(i, i + target.size()).equals(target) }
-        .getOrElse(-1)
+    val end = sourceSize - targetSize
+    var i = 0
+    while (i <= end) {
+      if (source.subList(i, i + targetSize).equals(target))
+        return i
+      i += 1
     }
+    -1
+  }
+
+  def lastIndexOfSubList(source: List[_], target: List[_]): Int = {
+    val sourceSize = source.size()
+    val targetSize = target.size()
+    var i = sourceSize - targetSize
+    while (i >= 0) {
+      if (source.subList(i, i + targetSize).equals(target))
+        return i
+      i -= 1
+    }
+    -1
   }
 
   def unmodifiableCollection[T](c: Collection[_ <: T]): Collection[T] =
@@ -518,9 +523,6 @@ object Collections {
             _hasNext = false
             o
           }
-
-          override def remove(): Unit =
-            throw new UnsupportedOperationException
         }
       }
     })
@@ -567,8 +569,12 @@ object Collections {
   }
 
   def reverseOrder[T](cmp: Comparator[T]): Comparator[T] = {
-    new Comparator[T] with Serializable {
-      override def compare(o1: T, o2: T): Int = cmp.compare(o2, o1)
+    if (cmp eq null) {
+      reverseOrder()
+    } else {
+      new Comparator[T] with Serializable {
+        override def compare(o1: T, o2: T): Int = cmp.compare(o2, o1)
+      }
     }
   }
 
@@ -585,12 +591,12 @@ object Collections {
 
   def list[T](e: Enumeration[T]): ArrayList[T] = {
     val arrayList = new ArrayList[T]
-    e.scalaOps.foreach(arrayList.add)
+    e.scalaOps.foreach(arrayList.add(_))
     arrayList
   }
 
   def frequency(c: Collection[_], o: AnyRef): Int =
-    c.scalaOps.count(_ === o)
+    c.scalaOps.count(Objects.equals(_, o))
 
   def disjoint(c1: Collection[_], c2: Collection[_]): Boolean = {
     if (c1.size() < c2.size())
@@ -611,20 +617,22 @@ object Collections {
     added
   }
 
-  def newSetFromMap[E](map: Map[E, jl.Boolean]): Set[E] = {
+  def newSetFromMap[E](map: Map[E, java.lang.Boolean]): Set[E] = {
     if (!map.isEmpty())
       throw new IllegalArgumentException
 
     new WrappedSet[E, Set[E]] {
-      override protected val inner: Set[E] = map.keySet()
+      override protected val inner: Set[E] =
+        map.keySet()
 
       override def add(e: E): Boolean =
-        map.put(e, jl.Boolean.TRUE) == null
+        map.put(e, java.lang.Boolean.TRUE) == null
 
-      override def addAll(c: Collection[_ <: E]): Boolean =
-        c.scalaOps.foldLeft(false)((prev, elem) =>
-          map.put(elem, jl.Boolean.TRUE) == null || prev
-        )
+      override def addAll(c: Collection[_ <: E]): Boolean = {
+        c.scalaOps.foldLeft(false) { (prev, elem) =>
+          map.put(elem, java.lang.Boolean.TRUE) == null || prev
+        }
+      }
     }
   }
 
@@ -635,15 +643,6 @@ object Collections {
   private def naturalComparator[T <: jl.Comparable[T]]: Comparator[T] = {
     new Comparator[T] with Serializable {
       final def compare(o1: T, o2: T): Int = o1.compareTo(o2)
-    }
-  }
-
-  @inline
-  private implicit def comparatorToOrdering[E](
-      cmp: Comparator[E]
-  ): Ordering[E] = {
-    new Ordering[E] {
-      final def compare(x: E, y: E): Int = cmp.compare(x, y)
     }
   }
 
@@ -902,12 +901,11 @@ object Collections {
       if (eagerThrow) {
         throw new UnsupportedOperationException
       } else {
-        val cSet = new HashSet[AnyRef](c.asInstanceOf[Collection[AnyRef]])
-        if (this.scalaOps.exists(cSet.contains)) {
-          throw new UnsupportedOperationException
-        } else {
-          false
+        this.scalaOps.foreach { item =>
+          if (c.contains(item))
+            throw new UnsupportedOperationException()
         }
+        false
       }
     }
 
@@ -915,12 +913,11 @@ object Collections {
       if (eagerThrow) {
         throw new UnsupportedOperationException
       } else {
-        val cSet = new HashSet[AnyRef](c.asInstanceOf[Collection[AnyRef]])
-        if (this.scalaOps.exists(!cSet.contains(_))) {
-          throw new UnsupportedOperationException
-        } else {
-          false
+        this.scalaOps.foreach { item =>
+          if (!c.contains(item))
+            throw new UnsupportedOperationException()
         }
+        false
       }
     }
   }
@@ -1117,9 +1114,9 @@ object Collections {
     }
 
     override def putAll(m: Map[_ <: K, _ <: V]): Unit = {
-      m.entrySet()
-        .scalaOps
-        .foreach(entry => checkKeyAndValue(entry.getKey(), entry.getValue()))
+      m.entrySet().scalaOps.foreach { entry =>
+        checkKeyAndValue(entry.getKey(), entry.getValue())
+      }
       super.putAll(m)
     }
 

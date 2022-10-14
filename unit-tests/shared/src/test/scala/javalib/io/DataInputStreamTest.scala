@@ -8,7 +8,7 @@ package javalib.io
 
 import java.io._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.AssumesHelper._
 
 import org.junit._

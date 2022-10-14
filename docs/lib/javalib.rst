@@ -437,7 +437,6 @@ Here is the list of currently available classes:
 * ``java.util.MissingResourceException``
 * ``java.util.NavigableMap``
 * ``java.util.NavigableSet``
-* ``java.util.NavigableView``
 * ``java.util.NoSuchElementException``
 * ``java.util.Objects``
 * ``java.util.Optional``

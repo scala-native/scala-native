@@ -5,9 +5,9 @@ import java.io._
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.scalanative.testsuite.utils.Platform.isWindows
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.isWindows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class FileOutputStreamTest {
   def withTempFile(f: File => Unit): Unit = {

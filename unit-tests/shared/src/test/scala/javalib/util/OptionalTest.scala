@@ -19,7 +19,7 @@ import org.junit.Test
 import java.util.Optional
 import java.util.function._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class OptionalTest {
 
