@@ -1,8 +1,19 @@
-// Ported from Scala.js commit: a6c1451 dated: 2021-10-16
+// Ported from Scala.js commit: 2253950 dated: 2022-10-02
+// Note: this file has differences noted below
+
+/*
+ * Scala.js (https://www.scala-js.org/)
+ *
+ * Copyright EPFL.
+ *
+ * Licensed under Apache License 2.0
+ * (https://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package java.util
-
-import java.{lang => jl}
 
 import scala.annotation.tailrec
 
@@ -45,10 +56,14 @@ object AbstractMap {
     override def hashCode(): Int =
       entryHashCode(this)
 
+    /* Scala.js Strings are treated as primitive types so we use
+     * java.lang.StringBuilder for Scala Native
+     */
     override def toString(): String =
-      new jl.StringBuilder(getKey().toString)
+      new java.lang.StringBuilder()
+        .append(getKey().asInstanceOf[Object])
         .append("=")
-        .append(getValue().toString)
+        .append(getValue().asInstanceOf[Object])
         .toString
   }
 
@@ -72,10 +87,14 @@ object AbstractMap {
     override def hashCode(): Int =
       entryHashCode(this)
 
+    /* Scala.js Strings are treated as primitive types so we use
+     * java.lang.StringBuilder for Scala Native
+     */
     override def toString(): String =
-      new jl.StringBuilder(getKey().toString)
+      new java.lang.StringBuilder()
+        .append(getKey().asInstanceOf[Object])
         .append("=")
-        .append(getValue().toString)
+        .append(getValue().asInstanceOf[Object])
         .toString
   }
 }
@@ -94,13 +113,11 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     entrySet().scalaOps.exists(entry => Objects.equals(key, entry.getKey()))
 
   def get(key: Any): V = {
-    entrySet().scalaOps
-      .find(entry => Objects.equals(key, entry.getKey()))
-      .fold[V] {
-        null.asInstanceOf[V]
-      } { entry =>
-        entry.getValue()
-      }
+    entrySet().scalaOps.findFold(entry => Objects.equals(key, entry.getKey())) {
+      null.asInstanceOf[V]
+    } { entry =>
+      entry.getValue()
+    }
   }
 
   def put(key: K, value: V): V =
@@ -183,10 +200,11 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
   override def hashCode(): Int =
     entrySet().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
 
+  /* Scala.js Strings are treated as primitive types so we use
+   * java.lang.StringBuilder for Scala Native
+   */
   override def toString(): String = {
-    // Scala.js Strings are treated as primitive types
-    // so we use jl.StringBuilder for Scala Native
-    val sb = new jl.StringBuilder("{")
+    val sb = new java.lang.StringBuilder("{")
     var first = true
     val iter = entrySet().iterator()
     while (iter.hasNext()) {
@@ -195,9 +213,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
         first = false
       else
         sb.append(", ")
-      sb.append(entry.getKey().toString)
-        .append("=")
-        .append(entry.getValue().toString)
+      sb.append(entry.toString)
     }
     sb.append("}").toString
   }

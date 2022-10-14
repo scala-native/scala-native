@@ -8,7 +8,7 @@ import java.nio.channels.{FileChannel, FileLock}
 import org.junit.{Test, Before, After}
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.{
   executingInJVM,
   executingInJVMOnJDK8OrLower

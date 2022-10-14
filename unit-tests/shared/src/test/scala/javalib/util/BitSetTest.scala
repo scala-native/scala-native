@@ -7,7 +7,7 @@ import java.util.BitSet
 import org.junit.Assert.{assertThrows => junitAssertThrows, _}
 import org.junit.Assume._
 import org.junit.Test
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class BitSetTest {
   @Test def test_Constructor_empty(): Unit = {

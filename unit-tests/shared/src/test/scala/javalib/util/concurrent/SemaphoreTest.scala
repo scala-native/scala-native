@@ -18,7 +18,7 @@ import java.util.concurrent.Semaphore
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class SemaphoreTest {
 

@@ -7,7 +7,7 @@ import java.io._
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class PushbackInputStreamTest {
 

@@ -949,13 +949,13 @@ object File {
   private val caseSensitive: Boolean = !Platform.isWindows()
 
   def listRoots(): Array[File] = {
+    val list = new java.util.ArrayList[File]()
     FileSystems
       .getDefault()
       .getRootDirectories()
       .scalaOps
-      .toSeq
-      .map(_.toFile())
-      .toArray
+      .foreach(p => list.add(p.toFile()))
+    list.toArray(new Array[File](0))
   }
 
   @throws(classOf[IOException])

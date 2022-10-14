@@ -1,3 +1,5 @@
+// Note: has additional method over Scala.js
+
 /*
  * Ported from Scala.js (https://www.scala-js.org/)
  *
@@ -10,7 +12,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.scalanative.junit.utils
+package org.scalanative.testsuite.utils
 
 import org.junit.Assert
 import org.junit.function.ThrowingRunnable

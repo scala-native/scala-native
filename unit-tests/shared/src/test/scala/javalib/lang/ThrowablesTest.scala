@@ -8,7 +8,8 @@ package javalib.lang
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 import org.scalanative.testsuite.utils.Platform
 
 class ThrowablesTest {

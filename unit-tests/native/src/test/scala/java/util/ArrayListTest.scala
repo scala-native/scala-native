@@ -5,7 +5,7 @@ import java.util._
 import org.junit.Test
 import org.junit.Assert._
 import scala.scalanative.junit.utils.CollectionConverters._
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class ArrayListTest {
   @Test def constructor(): Unit = {

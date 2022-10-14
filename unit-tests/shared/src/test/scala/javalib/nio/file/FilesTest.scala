@@ -15,7 +15,7 @@ import org.junit.Assume._
 
 import scala.util.{Try, Failure}
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.CollectionConverters._
 import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import org.scalanative.testsuite.utils.Platform.{isWindows, executingInJVM}

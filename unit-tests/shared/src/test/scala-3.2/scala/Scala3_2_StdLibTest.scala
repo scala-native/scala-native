@@ -2,7 +2,8 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class Scala3_2_StdLibTest:
   // Usage of methods added in Scala 3.2

@@ -12,7 +12,7 @@ import org.scalanative.testsuite.javalib.lang.IterableTest
 
 import scala.reflect.ClassTag
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import Utils._
 
 trait CollectionTest extends IterableTest {
