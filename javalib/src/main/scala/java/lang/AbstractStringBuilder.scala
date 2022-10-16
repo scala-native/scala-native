@@ -1,3 +1,4 @@
+// Contains parts ported from Android Luni
 package java.lang
 
 import java.io.InvalidObjectException
