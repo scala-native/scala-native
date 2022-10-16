@@ -489,16 +489,29 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   override def toString(): String = {
-    if (count == 0) {
-      return ""
-    }
+    if (count == 0) return ""
+
+    // --- Optimize String sharing for more performance --- //
+    // Disable "sharing" if the used content is considered small compared to the backing Array
+    // See: https://github.com/scala-native/scala-native/issues/2905
+
+    // Estimate the number of wasted characters (placeholders in the backing Array)
     val wasted = value.length - count
-    if (wasted >= 256 ||
-        (wasted >= INITIAL_CAPACITY && wasted >= (count >> 1))) {
+
+    // Case 1: "sharing" disabled
+    // IF the number of wasted characters is higher than the INITIAL_CAPACITY (16)
+    // AND IF the backing Array (value) contains more placeholder characters (wasted)
+    // than what is added by a single enlargeBuffer() operation
+    // (it may happen if setLength() has been previously called to shrink the number of used characters) 
+    // => copy backing Array in a fresh String
+    if (wasted >= INITIAL_CAPACITY && wasted >= (count >> 1) + 2) { // see enlargeBuffer() for details
       return new String(value, 0, count)
     }
+
+    // Case 2: "sharing" enabled
+    // => put backing Array in a String wrapper
     shared = true
-    return new String(value, 0, count)
+    new String(0, count, value)
   }
 
   def subSequence(start: scala.Int, end: scala.Int): CharSequence =
