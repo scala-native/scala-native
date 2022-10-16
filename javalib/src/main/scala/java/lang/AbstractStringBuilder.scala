@@ -121,15 +121,38 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   final def append0(
-      chars: CharSequence,
-      start: scala.Int,
-      end: scala.Int
+    chars: CharSequence,
+    start: scala.Int,
+    end: scala.Int
   ): Unit = {
     val chars0 = if (chars != null) chars else "null"
-    if (start < 0 || end < 0 || start > end || end > chars0.length()) {
+
+    val nChars = chars0.length()
+    if (nChars == 0) return
+
+    if (start < 0 || end < 0 || start > end || end > nChars)
       throw new IndexOutOfBoundsException()
+    
+    val length = end - start
+    val newCount = count + length
+    if (newCount > value.length)
+      enlargeBuffer(newCount)
+
+    chars match {
+      case str: String => str.getChars(start, end, value, count)
+      case asb: AbstractStringBuilder =>
+        System.arraycopy(asb.value, start, value, count, length)
+      case _ =>
+        var i = start
+        var j = count // Destination index.
+        while (i < end) {
+          value(j) = chars.charAt(i)
+          j += 1
+          i += 1
+        }
     }
-    append0(chars0.subSequence(start, end).toString)
+    
+    this.count = newCount
   }
 
   def capacity(): scala.Int = value.length
