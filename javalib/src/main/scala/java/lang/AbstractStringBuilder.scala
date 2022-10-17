@@ -139,7 +139,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     if (newCount > value.length)
       enlargeBuffer(newCount)
 
-    chars match {
+    chars0 match {
       case str: String => str.getChars(start, end, value, count)
       case asb: AbstractStringBuilder =>
         System.arraycopy(asb.value, start, value, count, length)
@@ -147,7 +147,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
         var i = start
         var j = count // Destination index.
         while (i < end) {
-          value(j) = chars.charAt(i)
+          value(j) = chars0.charAt(i)
           j += 1
           i += 1
         }
