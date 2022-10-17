@@ -14,9 +14,6 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVersion = nir.Versions.current
 
-    val nativeBuildConfig =
-      taskKey[build.Config]("Full build configuration, Config")
-
     val nativeConfig =
       taskKey[build.NativeConfig](
         "User configuration for the native build, NativeConfig"

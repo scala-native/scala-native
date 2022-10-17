@@ -121,23 +121,21 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
         .withBasename(moduleName.value)
     },
-    nativeBuildConfig := {
+    nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
       val mainClass = selectMainClass.value.getOrElse {
         throw new MessageOnlyException("No main class detected.")
       }
       val logger = streams.value.log.toLogger
 
-      build.Config.empty
+      val config = build.Config.empty
         .withLogger(logger)
         .withMainClass(mainClass)
         .withClassPath(classpath)
         .withBasedir(crossTarget.value.toPath())
         .withTestConfig(testConfig)
         .withCompilerConfig(nativeConfig.value)
-    },
-    nativeLink := {
-      val config = nativeBuildConfig.value
+
       val outfile = config.artifactPath.toFile()
 
       def buildNew(): Unit = {
