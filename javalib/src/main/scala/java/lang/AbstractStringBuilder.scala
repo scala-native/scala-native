@@ -509,9 +509,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
 
     // Case 2: "sharing" enabled
-    // => put backing Array in a String wrapper
+    // => put backing Array in a String wrapper (we need to use the _String class because this constructor is hidden)
     shared = true
-    new String(0, count, value)
+    new _String(0, count, value)
   }
 
   def subSequence(start: scala.Int, end: scala.Int): CharSequence =
