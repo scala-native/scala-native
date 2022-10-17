@@ -77,12 +77,9 @@ object Inet6Address {
     new Inet6Address(ipAddress, host, scopeId, zone)
   }
 
-  private val hexCharacters = "0123456789ABCDEF"
+  private val hexCharacters = "0123456789abcdef"
 
   private[net] def formatInet6Address(in6Addr: Inet6Address): String = {
-
-//  private[net] def formatIp6Address(ip6ByteArray: Array[Byte],
-//  zoneId: String): String = {
     /* ScalaJVM expects the long form of, say "0:0:0:0:0:0:0:1"
      * inet_pton() and getnameinfo() both return the short form "::1".
      *
