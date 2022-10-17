@@ -122,9 +122,9 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   final def append0(
-    chars: CharSequence,
-    start: scala.Int,
-    end: scala.Int
+      chars: CharSequence,
+      start: scala.Int,
+      end: scala.Int
   ): Unit = {
     val chars0 = if (chars != null) chars else "null"
 
@@ -133,7 +133,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
 
     if (start < 0 || end < 0 || start > end || end > nChars)
       throw new IndexOutOfBoundsException()
-    
+
     val length = end - start
     val newCount = count + length
     if (newCount > value.length)
@@ -152,7 +152,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
           i += 1
         }
     }
-    
+
     this.count = newCount
   }
 
