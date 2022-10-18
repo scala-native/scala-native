@@ -19,7 +19,7 @@ object in {
   type in_addr = CStruct1[in_addr_t] // s_addr
 
   type sockaddr_in = CStruct4[
-    socket.sa_family_t, // sin_family, sin_len is synthisized if needed
+    socket.sa_family_t, // sin_family, sin_len is synthesized if needed
     in_port_t, // sin_port
     in_addr, // sin_addr
     CArray[Byte, _8] // sin_zero, Posix allowed
@@ -28,7 +28,7 @@ object in {
   type in6_addr = CStruct1[CArray[uint8_t, _16]] // s6_addr
 
   type sockaddr_in6 = CStruct5[
-    socket.sa_family_t, // sin6_family, sin6_len is synthisized if needed
+    socket.sa_family_t, // sin6_family, sin6_len is synthesized if needed
     in_port_t, // sin6_port
     uint32_t, // sin6_flowinfo
     in6_addr, // sin6_addr
