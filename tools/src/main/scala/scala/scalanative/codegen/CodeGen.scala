@@ -105,7 +105,7 @@ object CodeGen {
         Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
-      // For some reason in the CI matching for `case _: build.Mode.Release` throws compile time erros
+      // For some reason in the CI matching for `case _: build.Mode.Release` throws compile time errors
       import build.Mode._
       (
         config.mode,
