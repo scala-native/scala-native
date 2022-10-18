@@ -4,6 +4,8 @@ import java.io.InvalidObjectException
 import java.util.Arrays
 import scala.util.control.Breaks._
 
+import scala.scalanative.runtime.ieee754tostring.ryu._
+
 abstract class AbstractStringBuilder private (unit: Unit) {
   import AbstractStringBuilder._
 
@@ -104,6 +106,36 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
     value(count) = ch
     count += 1
+  }
+
+  // Optimization: use `RyuFloat.floatToChars()` instead of `floatToString()`
+  final def append0(f: scala.Float): Unit = {
+
+    // We first ensure that we have enough space in the backing Array (`value`)
+    this.ensureCapacity(this.count + RyuFloat.RESULT_STRING_MAX_LENGTH)
+
+    // Then we call `RyuFloat.floatToChars()`, which will append chars to `value`
+    this.count = RyuFloat.floatToChars(
+      f,
+      RyuRoundingMode.Conservative,
+      value,
+      this.count
+    )
+  }
+
+  // Optimization: use `RyuFloat.doubleToChars()` instead of `doubleToString()`
+  def append0(d: scala.Double): Unit = {
+
+    // We first ensure that we have enough space in the backing Array (`value`)
+    this.ensureCapacity(this.count + RyuDouble.RESULT_STRING_MAX_LENGTH)
+
+    // Then we call `RyuFloat.doubleToChars()`, which will append chars to `value`
+    this.count = RyuDouble.doubleToChars(
+      d,
+      RyuRoundingMode.Conservative,
+      value,
+      this.count
+    )
   }
 
   final def append0(string: String): Unit = {

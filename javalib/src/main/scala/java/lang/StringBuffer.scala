@@ -43,11 +43,15 @@ final class StringBuffer
       this
     }
 
-  def append(d: scala.Double): StringBuffer =
-    append(Double.toString(d))
+  def append(f: scala.Float): StringBuffer = {
+    append0(f)
+    this
+  }
 
-  def append(f: scala.Float): StringBuffer =
-    append(Float.toString(f))
+  def append(d: scala.Double): StringBuffer = {
+    append0(d)
+    this
+  }
 
   def append(i: scala.Int): StringBuffer =
     append(Integer.toString(i))
