@@ -111,7 +111,16 @@ final class _String()
   def this(data: Array[Char]) =
     this(data, 0, data.length)
 
-  def this(start: Int, length: Int, data: Array[Char]) = {
+  /* Note Well:
+   *   This constructor creates a MUTABLE String. That violates
+   *   the immutable JVM specification, but is useful strictly within the
+   *   confines of "java[lang]".
+   *
+   *   Any code with access to the "data" Array can change the content and
+   *   that change will also be in a String created with this constructor.
+   *   Use with knowledge, wisdom, and discretion.
+   */
+  private[lang] def this(start: Int, length: Int, data: Array[Char]) = {
     this()
     value = data
     offset = start
