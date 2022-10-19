@@ -163,4 +163,21 @@ class Inet6AddressTest {
     assertTrue(addr.getHostAddress().endsWith("0"))
   }
 
+  // Issue 2911
+  @Test def shouldUseOnlyLowercaseHexDigits(): Unit = {
+    val addr = InetAddress.getByName("FEBF::ABCD:EF01:2345:67AB:CDEF")
+    assertNotNull("InetAddress.getByName() failed to find name", addr)
+
+    val addrString = addr.getHostAddress()
+
+    // All JVM non-numeric hexadecimal digits are lowercase. Require the same.
+    val hexDigitsAreAllLowerCase = addrString
+      .forall(ch => (Character.isDigit(ch) || "abcdef:".contains(ch)))
+
+    assertTrue(
+      s"Not all hex characters in ${addrString} are lower case",
+      hexDigitsAreAllLowerCase
+    )
+  }
+
 }
