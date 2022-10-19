@@ -697,7 +697,6 @@ object RyuDouble {
   // format: on
 
   // @deprecated("Use doubleToChars() instead, as it requires no additional String/Array allocations", "0.5.0")
-  @noinline
   def doubleToString(
       value: Double,
       roundingMode: RyuRoundingMode
@@ -739,7 +738,6 @@ object RyuDouble {
    *    new offset as: old offset + number of created chars (i.e. last modified
    *    index + 1)
    */
-  @noinline
   def doubleToChars(
       value: Double,
       roundingMode: RyuRoundingMode,

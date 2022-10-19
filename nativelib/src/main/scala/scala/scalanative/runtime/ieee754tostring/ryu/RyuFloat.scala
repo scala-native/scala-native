@@ -175,7 +175,6 @@ object RyuFloat {
 // format: on
 
   // @deprecated("Use floatToChars() instead, as it requires no additional String/Array allocations", "0.5.0")
-  @noinline
   def floatToString(
       value: Float,
       roundingMode: RyuRoundingMode
@@ -217,7 +216,6 @@ object RyuFloat {
    *    new offset as: old offset + number of created chars (i.e. last modified
    *    index + 1)
    */
-  @noinline
   def floatToChars(
       value: Float,
       roundingMode: RyuRoundingMode,
