@@ -63,7 +63,7 @@ class RyuFloatTest {
       expected == result
     )
 
-    val result2 = floatToString(f, RyuRoundingMode.Conservative)
+    val result2 = floatToString(f)
     assertTrue(
       s"result from RyuFloat.floatToChars: $result2 != expected: $expected",
       expected == result2
@@ -71,12 +71,12 @@ class RyuFloatTest {
   }
 
   private def floatToString(
-      value: Float,
-      roundingMode: RyuRoundingMode
+      value: Float
   ): String = {
 
     val result = new scala.Array[Char](RyuFloat.RESULT_STRING_MAX_LENGTH)
-    val strLen = RyuFloat.floatToChars(value, roundingMode, result, 0)
+    val strLen =
+      RyuFloat.floatToChars(value, RyuRoundingMode.Conservative, result, 0)
 
     new String(result, 0, strLen)
   }
