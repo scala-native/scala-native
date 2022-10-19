@@ -37,6 +37,8 @@ package ieee754tostring.ryu
 
 object RyuDouble {
 
+  // Scala/Java magic number 24 is derived from original RYU C code magic number 25 (which includes NUL terminator).
+  // See https://github.com/ulfjack/ryu/blob/6f85836b6389dce334692829d818cdedb28bfa00/ryu/d2s.c#L506
   final val RESULT_STRING_MAX_LENGTH = 24
 
   final val DOUBLE_MANTISSA_BITS = 52
@@ -694,7 +696,9 @@ object RyuDouble {
 
   // format: on
 
-  @noinline def doubleToString(
+  // @deprecated("Use doubleToChars() instead, as it requires no additional String/Array allocations", "0.5.0")
+  @noinline
+  def doubleToString(
       value: Double,
       roundingMode: RyuRoundingMode
   ): String = {
@@ -703,25 +707,15 @@ object RyuDouble {
     if (value.isNaN) return "NaN"
     if (value == Double.PositiveInfinity) return "Infinity"
     if (value == Double.NegativeInfinity) return "-Infinity"
+
     val bits = java.lang.Double.doubleToLongBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x8000000000000000L) return "-0.0"
 
     val result = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
-    val strLen = doubleToChars(value, roundingMode, result, 0)
+    val strLen = this._doubleToCharsNoCheck(bits, roundingMode, result, 0)
 
     new String(result, 0, strLen)
-  }
-
-  @inline
-  private def copyLitteralToCharArray(
-      litteral: String,
-      litteralLength: Int,
-      result: scala.Array[Char],
-      offset: Int
-  ): Int = {
-    litteral.getChars(0, litteralLength, result, offset)
-    offset + litteralLength
   }
 
   // See: https://github.com/scala-native/scala-native/issues/2902
@@ -745,26 +739,49 @@ object RyuDouble {
    *    new offset as: old offset + number of created chars (i.e. last modified
    *    index + 1)
    */
-  @noinline def doubleToChars(
+  @noinline
+  def doubleToChars(
       value: Double,
       roundingMode: RyuRoundingMode,
       result: scala.Array[Char],
       offset: Int
   ): Int = {
 
-    // First, handle all the trivial cases.
+    // Handle all the trivial cases.
     if (value.isNaN)
-      return copyLitteralToCharArray("NaN", 3, result, offset)
+      return copyLiteralToCharArray("NaN", 3, result, offset)
     if (value == Double.PositiveInfinity)
-      return copyLitteralToCharArray("Infinity", 8, result, offset)
+      return copyLiteralToCharArray("Infinity", 8, result, offset)
     if (value == Double.NegativeInfinity)
-      return copyLitteralToCharArray("-Infinity", 9, result, offset)
+      return copyLiteralToCharArray("-Infinity", 9, result, offset)
 
     val bits = java.lang.Double.doubleToLongBits(value)
     if (bits == 0)
-      return copyLitteralToCharArray("0.0", 3, result, offset)
+      return copyLiteralToCharArray("0.0", 3, result, offset)
     if (bits == 0x8000000000000000L)
-      return copyLitteralToCharArray("-0.0", 4, result, offset)
+      return copyLiteralToCharArray("-0.0", 4, result, offset)
+
+    this._doubleToCharsNoCheck(bits, roundingMode, result, offset)
+  }
+
+  @inline
+  private def copyLiteralToCharArray(
+      literal: String,
+      literalLength: Int,
+      result: scala.Array[Char],
+      offset: Int
+  ): Int = {
+    literal.getChars(0, literalLength, result, offset)
+    offset + literalLength
+  }
+
+  @noinline
+  private def _doubleToCharsNoCheck(
+      bits: Long,
+      roundingMode: RyuRoundingMode,
+      result: scala.Array[Char],
+      offset: Int
+  ): Int = {
 
     // Otherwise extract the mantissa and exponent bits and run the full algorithm.
     // Step 1: Decode the floating point number, and unify normalized and subnormal cases.

@@ -34,9 +34,20 @@ class StringBuilderTest {
     assertEquals("100000", newBuilder.append(100000).toString)
   }
 
-  @Test def appendFloat(): Unit = {
+  @Test def appendFloats(): Unit = {
     assertEquals("2.5", newBuilder.append(2.5f).toString)
+    assertEquals(
+      "2.5 3.5",
+      newBuilder.append(2.5f).append(' ').append(3.5f).toString
+    )
+  }
+
+  @Test def appendDoubles(): Unit = {
     assertEquals("3.5", newBuilder.append(3.5).toString)
+    assertEquals(
+      "2.5 3.5",
+      newBuilder.append(2.5).append(' ').append(3.5).toString
+    )
   }
 
   @Test def insert(): Unit = {
@@ -85,7 +96,7 @@ class StringBuilderTest {
     )
   }
 
-  @Test def insertFloat(): Unit = {
+  @Test def insertFloatOrDouble(): Unit = {
     assertEquals("2.5", newBuilder.insert(0, 2.5f).toString)
     assertEquals("3.5", newBuilder.insert(0, 3.5).toString)
   }

@@ -37,6 +37,8 @@ package ieee754tostring.ryu
 
 object RyuFloat {
 
+  // Scala/Java magic number 15 is derived from original RYU C code magic number 16 (which includes NUL terminator).
+  // See: https://github.com/ulfjack/ryu/blob/6f85836b6389dce334692829d818cdedb28bfa00/ryu/f2s.c#L342
   final val RESULT_STRING_MAX_LENGTH = 15
 
   final val FLOAT_MANTISSA_BITS = 23
@@ -172,7 +174,9 @@ object RyuFloat {
 
 // format: on
 
-  @noinline def floatToString(
+  // @deprecated("Use floatToChars() instead, as it requires no additional String/Array allocations", "0.5.0")
+  @noinline
+  def floatToString(
       value: Float,
       roundingMode: RyuRoundingMode
   ): String = {
@@ -181,25 +185,15 @@ object RyuFloat {
     if (value.isNaN) return "NaN"
     if (value == Float.PositiveInfinity) return "Infinity"
     if (value == Float.NegativeInfinity) return "-Infinity"
+
     val bits = java.lang.Float.floatToIntBits(value)
     if (bits == 0) return "0.0"
     if (bits == 0x80000000) return "-0.0"
 
     val result = new scala.Array[Char](RyuFloat.RESULT_STRING_MAX_LENGTH)
-    val strLen = floatToChars(value, roundingMode, result, 0)
+    val strLen = this._floatToChars(bits, roundingMode, result, 0)
 
     new String(result, 0, strLen)
-  }
-
-  @inline
-  private def copyLitteralToCharArray(
-      litteral: String,
-      litteralLength: Int,
-      result: scala.Array[scala.Char],
-      offset: Int
-  ): Int = {
-    litteral.getChars(0, litteralLength, result, offset)
-    offset + litteralLength
   }
 
   // See: https://github.com/scala-native/scala-native/issues/2902
@@ -231,19 +225,41 @@ object RyuFloat {
       offset: Int
   ): Int = {
 
-    // First, handle all the trivial cases.
+    // Handle all the trivial cases.
     if (value.isNaN)
-      return copyLitteralToCharArray("NaN", 3, result, offset)
+      return copyLiteralToCharArray("NaN", 3, result, offset)
     if (value == Float.PositiveInfinity)
-      return copyLitteralToCharArray("Infinity", 8, result, offset)
+      return copyLiteralToCharArray("Infinity", 8, result, offset)
     if (value == Float.NegativeInfinity)
-      return copyLitteralToCharArray("-Infinity", 9, result, offset)
+      return copyLiteralToCharArray("-Infinity", 9, result, offset)
 
     val bits = java.lang.Float.floatToIntBits(value)
     if (bits == 0)
-      return copyLitteralToCharArray("0.0", 3, result, offset)
+      return copyLiteralToCharArray("0.0", 3, result, offset)
     if (bits == 0x80000000)
-      return copyLitteralToCharArray("-0.0", 4, result, offset)
+      return copyLiteralToCharArray("-0.0", 4, result, offset)
+
+    this._floatToChars(bits, roundingMode, result, offset)
+  }
+
+  @inline
+  private def copyLiteralToCharArray(
+      literal: String,
+      literalLength: Int,
+      result: scala.Array[scala.Char],
+      offset: Int
+  ): Int = {
+    literal.getChars(0, literalLength, result, offset)
+    offset + literalLength
+  }
+
+  @noinline
+  private def _floatToChars(
+      bits: Int,
+      roundingMode: RyuRoundingMode,
+      result: scala.Array[scala.Char],
+      offset: Int
+  ): Int = {
 
     // Otherwise extract the mantissa and exponent bits and run the full algorithm.
     // Step 1: Decode the floating point number, and unify normalized and subnormal cases.
