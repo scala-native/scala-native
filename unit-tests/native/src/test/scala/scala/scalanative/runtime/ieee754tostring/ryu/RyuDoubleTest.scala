@@ -59,18 +59,26 @@ class RyuDoubleTest {
   private def assertD2sEquals(expected: String, d: scala.Double): Unit = {
     val result = d.toString
     assertTrue(
-      s"result from String: $result != expected: $expected",
+      s"result from Double.toString: $result != expected: $expected",
       expected == result
     )
 
-    val charArray = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
-    val strLen =
-      RyuDouble.doubleToChars(d, RyuRoundingMode.Conservative, charArray, 0)
-    val result2 = new String(charArray, 0, strLen)
+    val result2 = doubleToString(d, RyuRoundingMode.Conservative)
     assertTrue(
-      s"result from CharArray: $result2 != expected: $expected",
+      s"result from RyuDouble.doubleToChars: $result2 != expected: $expected",
       expected == result2
     )
+  }
+
+  def doubleToString(
+      value: Double,
+      roundingMode: RyuRoundingMode
+  ): String = {
+
+    val result = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
+    val strLen = RyuDouble.doubleToChars(value, roundingMode, result, 0)
+
+    new String(result, 0, strLen)
   }
 
   @Test def simpleCases(): Unit = {

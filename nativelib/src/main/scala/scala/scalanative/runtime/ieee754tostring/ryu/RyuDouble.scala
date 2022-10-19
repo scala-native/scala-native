@@ -696,25 +696,15 @@ object RyuDouble {
 
   // format: on
 
-  // @deprecated("Use doubleToChars() instead, as it requires no additional String/Array allocations", "0.5.0")
-  def doubleToString(
-      value: Double,
-      roundingMode: RyuRoundingMode
-  ): String = {
-
-    // Handle all the trivial cases.
-    if (value.isNaN) return "NaN"
-    if (value == Double.PositiveInfinity) return "Infinity"
-    if (value == Double.NegativeInfinity) return "-Infinity"
-
-    val bits = java.lang.Double.doubleToLongBits(value)
-    if (bits == 0) return "0.0"
-    if (bits == 0x8000000000000000L) return "-0.0"
-
-    val result = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
-    val strLen = this._doubleToCharsNoCheck(bits, roundingMode, result, 0)
-
-    new String(result, 0, strLen)
+  @inline
+  private def copyLiteralToCharArray(
+      literal: String,
+      literalLength: Int,
+      result: scala.Array[Char],
+      offset: Int
+  ): Int = {
+    literal.getChars(0, literalLength, result, offset)
+    offset + literalLength
   }
 
   // See: https://github.com/scala-native/scala-native/issues/2902
@@ -758,28 +748,6 @@ object RyuDouble {
       return copyLiteralToCharArray("0.0", 3, result, offset)
     if (bits == 0x8000000000000000L)
       return copyLiteralToCharArray("-0.0", 4, result, offset)
-
-    this._doubleToCharsNoCheck(bits, roundingMode, result, offset)
-  }
-
-  @inline
-  private def copyLiteralToCharArray(
-      literal: String,
-      literalLength: Int,
-      result: scala.Array[Char],
-      offset: Int
-  ): Int = {
-    literal.getChars(0, literalLength, result, offset)
-    offset + literalLength
-  }
-
-  @noinline
-  private def _doubleToCharsNoCheck(
-      bits: Long,
-      roundingMode: RyuRoundingMode,
-      result: scala.Array[Char],
-      offset: Int
-  ): Int = {
 
     // Otherwise extract the mantissa and exponent bits and run the full algorithm.
     // Step 1: Decode the floating point number, and unify normalized and subnormal cases.

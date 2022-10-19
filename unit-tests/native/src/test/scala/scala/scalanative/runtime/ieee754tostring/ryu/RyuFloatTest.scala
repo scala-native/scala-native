@@ -59,18 +59,26 @@ class RyuFloatTest {
   private def assertF2sEquals(expected: String, f: scala.Float): Unit = {
     val result = f.toString
     assertTrue(
-      s"result from String: $result != expected: $expected",
+      s"result from Float.toString: $result != expected: $expected",
       expected == result
     )
 
-    val charArray = new scala.Array[Char](RyuFloat.RESULT_STRING_MAX_LENGTH)
-    val strLen =
-      RyuFloat.floatToChars(f, RyuRoundingMode.Conservative, charArray, 0)
-    val result2 = new String(charArray, 0, strLen)
+    val result2 = floatToString(f, RyuRoundingMode.Conservative)
     assertTrue(
-      s"result from CharArray: $result2 != expected: $expected",
+      s"result from RyuFloat.floatToChars: $result2 != expected: $expected",
       expected == result2
     )
+  }
+
+  private def floatToString(
+      value: Float,
+      roundingMode: RyuRoundingMode
+  ): String = {
+
+    val result = new scala.Array[Char](RyuFloat.RESULT_STRING_MAX_LENGTH)
+    val strLen = RyuFloat.floatToChars(value, roundingMode, result, 0)
+
+    new String(result, 0, strLen)
   }
 
   @Test def simpleCases(): Unit = {
