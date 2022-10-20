@@ -623,4 +623,18 @@ class StringTest {
     )
 
   }
+
+  // Issue #2925
+  @Test def createStringThenModifyStringBuffer(): Unit = {
+    val buf = new StringBuffer()
+    buf.append("foobar")
+
+    val s = new String(buf)
+    buf.setCharAt(0, 'm')
+
+    assertTrue(
+      s"foobar should start with 'f' instead of '${s.charAt(0)}''",
+      'f' == s.charAt(0)
+    )
+  }
 }

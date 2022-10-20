@@ -136,9 +136,9 @@ final class _String()
 
   def this(sb: StringBuffer) = {
     this()
-    offset = 0
-    value = sb.getValue()
     count = sb.length()
+    value = new Array[Char](count)
+    sb.getChars(0, count, value, 0)
   }
 
   def this(codePoints: Array[Int], offset: Int, count: Int) = {
@@ -162,7 +162,6 @@ final class _String()
 
   def this(sb: java.lang.StringBuilder) = {
     this()
-    offset = 0
     count = sb.length()
     value = new Array[Char](count)
     sb.getChars(0, count, value, 0)
