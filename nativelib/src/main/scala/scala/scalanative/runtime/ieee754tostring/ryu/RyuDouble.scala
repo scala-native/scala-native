@@ -712,8 +712,9 @@ object RyuDouble {
    *  to [[doubleToString]] this function allows destination passing style. This
    *  means that the result destination (`Array[Char]`) has to be passed as an
    *  argument. The goal is to avoid additional allocations when possible.
-   *  Warning: this function makes no verification of destination bounds (offset
-   *  and length are assumed to be valid).
+   *  Warnings: this function makes no verification of destination bounds
+   *  (offset and length are assumed to be valid). The caller must thus ensure
+   *  that `result.length - offset >= RESULT_STRING_MAX_LENGTH`.
    *
    *  @param value
    *    the value to be converted
