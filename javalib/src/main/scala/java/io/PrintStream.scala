@@ -165,7 +165,18 @@ class PrintStream private (
   def print(f: Float): Unit = printString(String.valueOf(f))
   def print(d: Double): Unit = printString(String.valueOf(d))
   def print(s: String): Unit = printString(if (s == null) "null" else s)
-  def print(obj: AnyRef): Unit = printString(String.valueOf(obj))
+  def print(obj: AnyRef): Unit = {
+    obj match {
+      case csq: CharSequence => printCharSequence(csq)
+      case _                 => printString(String.valueOf(obj))
+    }
+  }
+
+  private def printCharSequence(csq: CharSequence): Unit =
+    ensureOpenAndTrapIOExceptions {
+      encoder.append(csq)
+      encoder.flushBuffer()
+    }
 
   private def printString(s: String): Unit = ensureOpenAndTrapIOExceptions {
     encoder.write(s)
