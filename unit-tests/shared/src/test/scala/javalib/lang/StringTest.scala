@@ -40,12 +40,6 @@ class StringTest {
     )
   }
 
-  @Test def stringArrayByteHighByte(): Unit = {
-    val str = "this constrcutor is deprecated"
-    assertEquals(str, new String(str.getBytes(), 0))
-    assertEquals(str, new String(str.getBytes(), 0, 0, str.length()))
-  }
-
   @Test def stringArrayByteStartLengthWithInvalidStartOrLength(): Unit = {
     val chars: Array[Char] = Array('a', 'b', 'c')
 
@@ -211,7 +205,7 @@ class StringTest {
     )
   }
 
-  @Test def replaceAllLiterallyWithDollarSignInReplacementIssue1070(): Unit = {
+  @Test def replaceWithDollarSignInReplacementIssue1070(): Unit = {
     val literal = "{.0}"
     val replacement = "\\$ipsum"
     val prefix = "Lorem "
@@ -219,7 +213,7 @@ class StringTest {
     val text = prefix + literal + suffix
     val expected = prefix + replacement + suffix
 
-    assertTrue(text.replaceAllLiterally(literal, replacement) == expected)
+    assertTrue(text.replace(literal, replacement) == expected)
   }
 
   private def splitVec(s: String, sep: String, limit: Int = 0) =
@@ -294,13 +288,6 @@ class StringTest {
     splitTest(".", splitExpr = Some("\\."))
     splitTest("ab", splitExpr = Some("ab"))
     splitTest("ab", splitExpr = Some("(ab)"))
-  }
-
-  @Test def getBytes(): Unit = {
-    val b = new Array[scala.Byte](4)
-    // This form of getBytes() has been depricated since JDK 1.1
-    "This is a test".getBytes(10, 14, b, 0)
-    assertTrue(new String(b) equals "test")
   }
 
   def testEncoding(charset: String, expectedInts: Seq[Int]): Unit = {
@@ -626,12 +613,29 @@ class StringTest {
 
   /* --- UNIT TESTS VERIFYING STRING CONSTRUCTORS IMMUTABILITY INTEGRITY ---
    * Issue #2925
-   *
    * These tests are in the order of declaration in the Java 8 specification.
-   *   - The "String()" constructor has no bytes to modify and is not tested.
-   *   - The "String(byte[] ascii, int hibyte, int offset, int count)"
-   *     has been deprecated since Java 1.1 and is not tested.
    */
+
+  /** String() - No Test, no characters to modify.
+   */
+
+  // String(byte[] bytes)
+
+  // String(byte[] bytes, Charset charset)
+
+  /** String(byte[], int) - No test, Deprecated since Java 1.1.
+   */
+
+  // String(byte[] bytes, int offset, int length)
+
+  // String(byte[] bytes, int offset, int length, Charset charset)
+
+  /** String(byte[], int, int, int) - No test, Deprecated since Java 1.1.
+   */
+
+  // String(byte[] bytes, int offset, int length, String charsetName)
+
+  // String(byte[] bytes, String charsetName)
 
   /** Checks that creating a String with an `Array[Char]`, then replacing the
    *  its first character, is not breaking String immutability.
@@ -662,7 +666,7 @@ class StringTest {
     val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
 
     // Create str from a "range" of chars
-    val str = new String(chars, 0, 1)
+    val str = new String(chars, 0, 4)
 
     // Modify chars
     chars(0) = 'm'
@@ -670,6 +674,33 @@ class StringTest {
     assertTrue(
       s"chars should start with 'm' instead of '${chars(0)}'",
       'm' == chars(0)
+    )
+
+    assertTrue(
+      s"str should start with 'f' instead of '${str.charAt(0)}'",
+      'f' == str.charAt(0)
+    )
+  }
+
+  /** Checks that creating a String with an `Array[codePoints]`, then replacing
+   *  the its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromCodepointArrayRange(): Unit = {
+    // Unicode code points are Integers.
+    val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+    val codepoints = chars.map(c => c.toInt)
+
+    // Create str from a "range" of codepoints
+    val str = new String(codepoints, 0, 5)
+
+    val changedCp = 'm'.toInt
+    // Modify codepoints
+    codepoints(0) = changedCp
+
+    assertTrue(
+      s"codepoints should start with ${changedCp} " +
+        s"instead of '${codepoints(0)}'",
+      changedCp == codepoints(0)
     )
 
     assertTrue(
