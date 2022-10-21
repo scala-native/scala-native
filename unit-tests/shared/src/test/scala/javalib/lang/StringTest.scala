@@ -624,17 +624,135 @@ class StringTest {
 
   }
 
-  // Issue #2925
-  @Test def createStringThenModifyStringBuffer(): Unit = {
-    val buf = new StringBuffer()
-    buf.append("foobar")
+  /* --- UNIT TESTS VERIFYING STRING CONSTRUCTORS IMMUTABILITY INTEGRITY ---
+   * Issue #2925
+   *
+   * These tests are in the order of declaration in the Java 8 specification.
+   *   - The "String()" constructor has no bytes to modify and is not tested.
+   *   - The "String(byte[] ascii, int hibyte, int offset, int count)"
+   *     has been deprecated since Java 1.1 and is not tested.
+   */
 
-    val s = new String(buf)
-    buf.setCharAt(0, 'm')
+  /** Checks that creating a String with an `Array[Char]`, then replacing the
+   *  its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromCharArray(): Unit = {
+    val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+
+    // Create str from chars
+    val str = new String(chars)
+    // Modify chars
+    chars(0) = 'm'
 
     assertTrue(
-      s"foobar should start with 'f' instead of '${s.charAt(0)}''",
-      'f' == s.charAt(0)
+      s"chars should start with 'm' instead of '${chars(0)}'",
+      'm' == chars(0)
+    )
+
+    assertTrue(
+      s"str should start with 'f' instead of '${str.charAt(0)}'",
+      'f' == str.charAt(0)
     )
   }
+
+  /** Checks that creating a String with an `Array[Char]`, then replacing the
+   *  its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromCharArrayRange(): Unit = {
+    val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+
+    // Create str from a "range" of chars
+    val str = new String(chars, 0, 1)
+
+    // Modify chars
+    chars(0) = 'm'
+
+    assertTrue(
+      s"chars should start with 'm' instead of '${chars(0)}'",
+      'm' == chars(0)
+    )
+
+    assertTrue(
+      s"str should start with 'f' instead of '${str.charAt(0)}'",
+      'f' == str.charAt(0)
+    )
+  }
+
+  /** Checks that creating a String with an `Array[Char]`, then replacing the
+   *  its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromString(): Unit = {
+    val s1 = "foobar"
+
+    // Create String s2 from a String s1
+    val s2 = new String(s1)
+
+    // Modify String s1
+    val s3 = s1.replace('f', 'm')
+
+    assertTrue(
+      s"s1 should start with 'f' instead of '${s1.charAt(0)}'",
+      'f' == s1.charAt(0)
+    )
+
+    assertTrue(
+      s"s2 should start with 'f' instead of '${s2.charAt(0)}'",
+      'f' == s2.charAt(0)
+    )
+
+    assertTrue(
+      s"s3 should start with 'm' instead of '${s3.charAt(0)}'",
+      'm' == s3.charAt(0)
+    )
+  }
+
+  /** Checks that creating a String with a a StringBuffer, whose backing Array
+   *  is shared with the created String, is not breaking String immutability.
+   *  See: https://github.com/scala-native/scala-native/issues/2925
+   */
+  @Test def checkImmutabilityNewStringFromStringBuffer(): Unit = {
+    val strBuffer = new StringBuffer()
+    strBuffer.append("foobar")
+
+    // Create str from a StringBuffer
+    val str = new String(strBuffer)
+
+    // Modify the StringBuffer
+    strBuffer.setCharAt(0, 'm')
+
+    assertTrue(
+      s"strBuffer should start with 'm' instead of '${strBuffer.charAt(0)}'",
+      'm' == strBuffer.charAt(0)
+    )
+
+    assertTrue(
+      s"str should start with 'f' instead of '${str.charAt(0)}'",
+      'f' == str.charAt(0)
+    )
+  }
+
+  /** Checks that creating a String with a a StringBuilder, whose backing Array
+   *  is shared with the created String, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromStringBuilder(): Unit = {
+    val strBuilder = new StringBuilder()
+    strBuilder.append("foobar")
+
+    // Create str from a StringBuilder
+    val str = new String(strBuilder)
+
+    // Modify the StringBuilder
+    strBuilder.setCharAt(0, 'm')
+
+    assertTrue(
+      s"strBuilder should start with 'm' instead of '${strBuilder.charAt(0)}'",
+      'm' == strBuilder.charAt(0)
+    )
+
+    assertTrue(
+      s"str should start with 'f' instead of '${str.charAt(0)}'",
+      'f' == str.charAt(0)
+    )
+  }
+
 }
