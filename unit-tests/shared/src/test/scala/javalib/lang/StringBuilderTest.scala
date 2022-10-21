@@ -169,4 +169,20 @@ class StringBuilderTest {
     b.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", b.toString)
   }
+
+  /** Checks that modifying a StringBuilder, converted to a String using a
+   *  `.toString` call, is not breaking String immutability.
+   */
+  @Test def toStringThenModifyStringBuilder(): Unit = {
+    val b = newBuilder
+    b.append("foobar")
+
+    val s = b.toString
+    b.setCharAt(0, 'm')
+
+    assertTrue(
+      s"foobar should start with 'f' instead of '${s.charAt(0)}'",
+      'f' == s.charAt(0)
+    )
+  }
 }
