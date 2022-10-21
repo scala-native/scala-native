@@ -1515,10 +1515,9 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     result.toString()
   }
 
+  // Java 15 and above.
   def transform[R](f: java.util.function.Function[String, R]): R =
     f.apply(thisString)
-
-  def getValue(): Array[Char] = value
 }
 
 object _String {
