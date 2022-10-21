@@ -236,7 +236,7 @@ void Heap_Collect(Heap *heap) {
                       heap->mark.currentEnd_ns);
     Phase_Nullify(heap, stats);
     Phase_StartSweep(heap);
-    WeakRefGreyList_CallHandlers(heap);
+    WeakRefGreyList_CallHandlers();
 }
 
 bool Heap_shouldGrow(Heap *heap) {
