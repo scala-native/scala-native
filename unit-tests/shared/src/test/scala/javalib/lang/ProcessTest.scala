@@ -9,9 +9,21 @@ import scala.io.Source
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Ignore
+
 import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
 
+/* Attempt to establish ProcessTest's innocence by disabling it.
+ * If CI continues to have intermittent hangs & 6 hour runs,
+ * ProcessTest may not be innocent, but it is at the very least not the
+ * only malefactor.
+ *
+ * ProcessTest probably has at least one bug attempting to read from
+ * a child. That _should_ not be causing multi-hour hangs but the
+ * Real World is the ultimate arbiter & authority.
+ */
+@Ignore
 class ProcessTest {
   import javalib.lang.ProcessUtils._
 
