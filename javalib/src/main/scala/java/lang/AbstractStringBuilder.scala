@@ -10,10 +10,44 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   protected var value: Array[Char] = _
   protected var count: scala.Int = _
   protected var shared: scala.Boolean = _
+  // previouslyShared indicates if the AbstractStringBuilder has been shared at least once
+  protected var previouslyShared: scala.Boolean = _
 
   final def getValue(): Array[scala.Char] = value
-  final def shareValue(): Array[scala.Char] = {
+
+  /** Decides if the backing Array (`this.value`) should be shared or not.
+   *
+   *  Sharing is enabled if either:
+   *    - the backing Array was never shared before (`previouslyShared` is
+   *      false) So the current entity can be considered as "a non-reused
+   *      entity". In this case, sharing the backing Array with the String is
+   *      the best option (no waste, no garbage).
+   *    - estimated wastage is low and acceptable (lower than wastage introduced
+   *      by the growth algorithm)
+   *
+   *  Warning: for internal use only.
+   *
+   *  See: https://github.com/scala-native/scala-native/issues/2905
+   *
+   *  @return
+   *    the value backing Array (if shared), or null if not shared
+   */
+  private final def shareValueOnce(): Array[scala.Char] = {
+
+    // Estimate the number of wasted characters (placeholders characters)
+    val wastage = value.length - count
+
+    // Check if the wastage limit is exceeded
+    // This limit is aligned with the one introduced by the growth algorithm
+    val wastageLimitExceeded = wastage >= (count >> 1) + 2
+
+    if (previouslyShared || wastageLimitExceeded) {
+      return null
+    }
+
     shared = true
+    previouslyShared = true
+
     value
   }
 
@@ -491,26 +525,17 @@ abstract class AbstractStringBuilder private (unit: Unit) {
   override def toString(): String = {
     if (count == 0) return ""
 
-    // --- Optimize String sharing for more performance --- //
-    // Disable "sharing" if the used content is considered small compared to the backing Array
-    // See: https://github.com/scala-native/scala-native/issues/2905
-
-    // Estimate the number of wasted characters (placeholders in the backing Array)
-    val wasted = value.length - count
+    // Call the value sharing algorithm
+    this.shareValueOnce()
 
     // Case 1: "sharing" disabled
-    // IF the number of wasted characters is higher than the INITIAL_CAPACITY (16)
-    // AND IF the backing Array (value) contains more placeholder characters (wasted)
-    // than what is added by a single enlargeBuffer() operation
-    // (it may happen if setLength() has been previously called to shrink the number of used characters) 
     // => copy backing Array in a fresh String
-    if (wasted >= INITIAL_CAPACITY && wasted >= (count >> 1) + 2) { // see enlargeBuffer() for details
+    if (!shared) {
       return new String(value, 0, count)
     }
 
     // Case 2: "sharing" enabled
-    // => put backing Array in a String wrapper (we need to use the _String class because this constructor is hidden)
-    shared = true
+    // => put backing Array in a String wrapper using its internal constructor
     new _String(0, count, value)
   }
 
