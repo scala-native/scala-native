@@ -58,7 +58,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
   )(implicit in: Scope): Config = {
     val classpath = makeClasspath(outDir)
     Config.empty
-      .withWorkdir(outDir)
+      .withBasedir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(entry)
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))

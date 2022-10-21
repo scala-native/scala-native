@@ -103,7 +103,7 @@ trait ReachabilitySuite extends AnyFunSuite {
     val paths = makeClasspath(outDir)
     val default = build.Config.empty
     default
-      .withWorkdir(outDir)
+      .withBasedir(outDir)
       .withClassPath(paths.toSeq)
       .withCompilerConfig {
         _.withTargetTriple("x86_64-unknown-unknown")

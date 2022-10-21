@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
 import scala.scalanative.build.core.Filter
 import scala.scalanative.build.core.NativeLib
@@ -18,15 +18,14 @@ object Build {
    *
    *  {{{
    *  val classpath: Seq[Path] = ...
-   *  val workdir: Path        = ...
+   *  val basedir: Path        = ...
    *  val main: String         = ...
+   *  val logger: Logger       = ...
    *
    *  val clang    = Discover.clang()
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *
-   *  val outpath  = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty
@@ -39,25 +38,28 @@ object Build {
    *        .withLinkingOptions(linkopts)
    *        .withCompileOptions(compopts)
    *        .withLinkStubs(true)
+   *        .withBasename("myapp")
    *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withWorkdir(workdir)
+   *      .withBasedir(basedir)
+   *      .withTestConfig(false)
+   *      .withLogger(logger)
    *
-   *  Build.build(config, outpath)
+   *  Build.build(config)
    *  }}}
    *
    *  @param config
    *    The configuration of the toolchain.
-   *  @param outpath
-   *    The path to the resulting native binary.
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path)(implicit
-      scope: Scope
-  ): Path =
+  def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
+      // create workdir if needed
+      if (Files.notExists(config.workdir)) {
+        Files.createDirectories(config.workdir)
+      }
       // validate classpath
       val fconfig = {
         val fclasspath = NativeLib.filterClasspath(config.classPath)
@@ -111,7 +113,7 @@ object Build {
       if (config.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.clear()
       }
-      LLVM.link(fconfig, linked, objectPaths, outpath)
+      LLVM.link(fconfig, linked, objectPaths)
     }
 
   def findAndCompileNativeSources(

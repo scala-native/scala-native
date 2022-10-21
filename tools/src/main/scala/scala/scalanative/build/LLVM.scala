@@ -102,17 +102,15 @@ private[scalanative] object LLVM {
    *    The results from the linker.
    *  @param objectPaths
    *    The paths to all the `.o` files.
-   *  @param outpath
-   *    The path where to write the resulting binary.
    *  @return
-   *    `outpath`
+   *    `outpath` The config.artifactPath
    */
   def link(
       config: Config,
       linkerResult: linker.Result,
-      objectsPaths: Seq[Path],
-      outpath: Path
+      objectsPaths: Seq[Path]
   ): Path = {
+    val outpath = config.artifactPath
     val links = {
       val srclinks = linkerResult.links.collect {
         case Link("z") if config.targetsWindows => "zlib"

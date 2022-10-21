@@ -87,7 +87,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
   )(implicit in: Scope): Config = {
     val classpath = makeClasspath(outDir)
     Config.empty
-      .withWorkdir(outDir)
+      .withBasedir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(entry)
       .withCompilerConfig(setupNativeConfig)
@@ -112,10 +112,9 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       .withGC(Discover.GC())
       .withMode(Discover.mode())
       .withOptimize(Discover.optimize())
+      .withBasename("result")
     val config = makeConfig(outDir, entry, nativeConfig)
-    val ext = if (Platform.isWindows) ".exe" else ""
-    val artifact = outDir.resolve("result" + ext)
 
-    Build.build(config, artifact)
+    Build.build(config)
   }
 }

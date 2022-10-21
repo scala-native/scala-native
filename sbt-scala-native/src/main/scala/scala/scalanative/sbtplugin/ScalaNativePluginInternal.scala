@@ -8,7 +8,7 @@ import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.build.{Build, BuildException, Config, Discover}
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _,
@@ -19,15 +19,12 @@ import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
 import scala.scalanative.build.Platform
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
-
-  val nativeWorkdir =
-    taskKey[File]("Working directory for intermediate build files.")
 
   private val nativeStandardLibraries =
     Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
@@ -109,18 +106,7 @@ object ScalaNativePluginInternal {
     }
   )
 
-  def scalaNativeConfigSettings(nameSuffix: String): Seq[Setting[_]] = Seq(
-    nativeLink / artifactPath := {
-      val ext = if (Platform.isWindows) ".exe" else ""
-      crossTarget.value / s"${moduleName.value}$nameSuffix-out$ext"
-    },
-    nativeWorkdir := {
-      val workdir = crossTarget.value / s"native$nameSuffix"
-      if (!workdir.exists) {
-        IO.createDirectory(workdir)
-      }
-      workdir
-    },
+  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
       nativeConfig.value
         .withClang(nativeClang.value.toPath)
@@ -133,30 +119,28 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
+        .withBasename(moduleName.value)
     },
     nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
-      val outpath = (nativeLink / artifactPath).value
-
-      val config = {
-        val mainClass = selectMainClass.value.getOrElse {
-          throw new MessageOnlyException("No main class detected.")
-        }
-
-        val cwd = nativeWorkdir.value.toPath
-
-        val logger = streams.value.log.toLogger
-        build.Config.empty
-          .withLogger(logger)
-          .withMainClass(mainClass)
-          .withClassPath(classpath)
-          .withWorkdir(cwd)
-          .withCompilerConfig(nativeConfig.value)
+      val mainClass = selectMainClass.value.getOrElse {
+        throw new MessageOnlyException("No main class detected.")
       }
+      val logger = streams.value.log.toLogger
+
+      val config = build.Config.empty
+        .withLogger(logger)
+        .withMainClass(mainClass)
+        .withClassPath(classpath)
+        .withBasedir(crossTarget.value.toPath())
+        .withTestConfig(testConfig)
+        .withCompilerConfig(nativeConfig.value)
+
+      val outfile = config.artifactPath.toFile()
 
       def buildNew(): Unit = {
         interceptBuildException {
-          Build.build(config, outpath.toPath)(sharedScope)
+          Build.build(config)(sharedScope)
         }
       }
 
@@ -189,16 +173,16 @@ object ScalaNativePluginInternal {
                   .lastOutput[Seq[HashFileInfo], HashFileInfo](
                     cacheFactory.make("outputFileInfo")
                   ) { (_, prev) =>
-                    val outputHashInfo = FileInfo.hash(outpath)
+                    val outputHashInfo = FileInfo.hash(outfile)
                     if (changed || !prev.contains(outputHashInfo)) {
                       buildNew()
-                      FileInfo.hash(outpath)
+                      FileInfo.hash(outfile)
                     } else outputHashInfo
                   }
               outputTracker(filesInfo)
           }
 
-        val classpathFilesInfo = classpath
+        val classpathFilesInfo = config.classPath
           .flatMap { classpath =>
             if (Files.exists(classpath))
               Files
@@ -215,7 +199,7 @@ object ScalaNativePluginInternal {
       }
 
       buildIfChanged()
-      outpath
+      outfile
     },
     run := {
       val env = (run / envVars).value.toSeq
@@ -244,11 +228,12 @@ object ScalaNativePluginInternal {
     }
   )
 
-  lazy val scalaNativeCompileSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings(nameSuffix = "")
+  lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
+    scalaNativeConfigSettings(false)
+  }
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings(nameSuffix = "-test") ++
+    scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {
