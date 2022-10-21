@@ -74,16 +74,21 @@ private[java] object IEEE754Helpers {
 
         val nSeen = !end - cStr
 
-        // magic: is first char one of D d F f
-        var idx =
-          if ((cStr(nSeen.toUSize) & 0xdd) == 0x44) (nSeen + 1) else nSeen
+        // If we used less bytes than in our input, there is a risk that the input contains invalid characters.
+        // We should thus verify if the input contains only valid characters.
+        // See: https://github.com/scala-native/scala-native/issues/2903
+        if (nSeen != bytesLen) {
+          // magic: is first char one of D d F f
+          var idx =
+            if ((cStr(nSeen.toUSize) & 0xdd) == 0x44) (nSeen + 1) else nSeen
 
-        while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
-          val b = cStr(idx.toUSize)
-          if ((b < 0) || b > 0x20) {
-            throw new NumberFormatException(exceptionMsg(s))
+          while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
+            val b = cStr(idx.toUSize)
+            if ((b < 0) || b > 0x20) {
+              throw new NumberFormatException(exceptionMsg(s))
+            }
+            idx += 1
           }
-          idx += 1
         }
       }
 
