@@ -7,7 +7,7 @@ import org.junit.Assert._
 
 class PrintWriterTest {
 
-  @Test def writerTest(): Unit = {
+  @Test def writeCharSequenceTest(): Unit = {
 
     val out = new StringWriter()
     val writer = new PrintWriter(out)

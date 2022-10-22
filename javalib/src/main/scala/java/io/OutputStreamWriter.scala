@@ -57,15 +57,15 @@ class OutputStreamWriter(
     if (closed) null else enc.charset().name()
 
   override def write(c: Int): Unit =
-    write(c.toChar.toString, 0, 1)
+    writeCharBuffer(CharBuffer.wrap(Array(c.toChar), 0, 1))
 
   override def write(cbuf: Array[Char], off: Int, len: Int): Unit =
-    writeImpl(CharBuffer.wrap(cbuf, off, len))
+    writeCharBuffer(CharBuffer.wrap(cbuf, off, len))
 
   override def write(str: String, off: Int, len: Int): Unit =
-    writeImpl(CharBuffer.wrap(str, off, off + len))
+    writeCharBuffer(CharBuffer.wrap(str, off, off + len))
 
-  private def writeImpl(cbuf: CharBuffer): Unit = {
+  override protected[io] def writeCharBuffer(cbuf: CharBuffer): Unit = {
     ensureOpen()
 
     val cbuf1 = if (inBuf != "") {
