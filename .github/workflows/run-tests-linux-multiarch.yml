@@ -32,7 +32,7 @@ jobs:
       # Cache automatically saves content specified paths after executing all steps defined after this one.
       # It will not update cache on hit.
       - name: Cache docker
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: /tmp/docker-registry
           key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.arch }}

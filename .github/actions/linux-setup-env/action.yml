@@ -35,7 +35,7 @@ runs:
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cache/coursier

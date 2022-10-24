@@ -51,7 +51,7 @@ runs:
 
     - name: Cache dependencies
       id: cache-deps
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
