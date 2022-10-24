@@ -12,15 +12,16 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
 
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
-RUN git clone https://github.com/madler/zlib /tmp/zlib \
-  && cd /tmp/zlib/ \
+RUN git clone https://github.com/madler/zlib zlib \
+  && cd zlib/ \
   && git checkout v1.2.13 \
   && ./configure \
   && make install prefix=$QEMU_LD_PREFIX \
-  && rm -rf /tmp/zlib
+  && cd .. \
+  && rm -rf zlib
 
-RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
-  && cd /tmp/bdwgc/ \
+RUN git clone https://github.com/ivmai/bdwgc bdwgc \
+  && cd bdwgc/ \
   && git checkout v8.2.2 \
   && git clone https://github.com/ivmai/libatomic_ops \
   && cd libatomic_ops/ \
@@ -29,7 +30,8 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
   && ./autogen.sh \
   && ./configure --host $CROSS_TRIPLE \
   && make install prefix=$QEMU_LD_PREFIX \
-  && rm -rf /tmp/bdwgc
+  && cd .. \
+  && rm -rf bdwgc
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
