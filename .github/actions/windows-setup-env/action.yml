@@ -39,10 +39,10 @@ runs:
       id: resolve-env
       shell: pwsh
       run: |
-        echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
-        echo "::set-output name=LocalAppData::${env:LocalAppData}"
-        echo "::set-output name=UserProfile::${env:UserProfile}"
-        echo "::set-output name=VcpkgLibs::${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static"
+        echo "ProgramFiles=${env:ProgramFiles}" >> $GITHUB_OUTPUT
+        echo "LocalAppData=${env:LocalAppData}" >> $GITHUB_OUTPUT
+        echo "UserProfile=${env:UserProfile}" >> $GITHUB_OUTPUT
+        echo "VcpkgLibs=${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static" >> $GITHUB_OUTPUT
         if ("${{inputs.scala-version}}".StartsWith("2.")) {
           echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
         } else {

@@ -45,8 +45,8 @@ jobs:
         run: |
           imageBase="scala-native-testing"
           imageName="${imageBase}:${{ matrix.arch }}"
-          echo "::set-output name=image-base-name::${imageBase}"
-          echo "::set-output name=image-full-name::${imageName}"
+          echo "image-base-name=${imageBase}" >> $GITHUB_OUTPUT
+          echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
 
           docker pull localhost:5000/${imageName} || true
           docker build \
@@ -70,10 +70,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [
-          { name: linux-arm64, emulator: qemu-aarch64-static },
-          { name: linux-x86, emulator: "" }
-        ]
+        arch:
+          [
+            { name: linux-arm64, emulator: qemu-aarch64-static },
+            { name: linux-x86, emulator: "" },
+          ]
         scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
         lto: [thin, none]
