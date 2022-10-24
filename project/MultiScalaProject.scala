@@ -17,16 +17,7 @@ final case class MultiScalaProject private (
     )
   )
 
-  lazy val v2_11: Project = project("2.11").settings(
-    // Ensure SAM support
-    // Exclusion for scalalib needs to be applied here due to the order of resolving settings
-    scalacOptions ++= {
-      moduleName.value match {
-        case "scalalib" => Nil
-        case _          => Seq("-Xexperimental")
-      }
-    }
-  )
+  lazy val v2_11: Project = project("2.11")
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3").settings(

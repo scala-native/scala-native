@@ -439,6 +439,13 @@ object Settings {
     }
   )
 
+  lazy val ensureSAMSupportSetting: Setting[_] = {
+    scalacOptions ++= {
+      if (scalaBinaryVersion.value == "2.11") Seq("-Xexperimental")
+      else Nil
+    }
+  }
+
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
       javacOptions ++= Seq("-encoding", "utf8")
@@ -453,6 +460,7 @@ object Settings {
 
   lazy val commonJavalibSettings = Def.settings(
     disabledDocsSettings,
+    ensureSAMSupportSetting,
     // This is required to have incremental compilation to work in javalib.
     // We put our classes on scalac's `javabootclasspath` so that it uses them
     // when compiling rather than the definitions from the JDK.
