@@ -22,6 +22,7 @@ git checkout v8.2.2
 git clone https://github.com/ivmai/libatomic_ops
 cd libatomic_ops/
 git checkout v7.6.14
+cd $bdwgcDir
 ./autogen.sh
 ./configure --host $CROSS_TRIPLE
 make install prefix=$QEMU_LD_PREFIX

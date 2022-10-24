@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.arch }}
+          key: docker-registry-${{ hashFiles('ci-docker/*') }}-${{ matrix.arch }}
       - name: Run local image registry
         run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
