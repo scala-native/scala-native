@@ -24,6 +24,8 @@ cd libatomic_ops/
 git checkout v7.6.14
 cd $bdwgcDir
 ./autogen.sh
-./configure --host $CROSS_TRIPLE
+./configure --host $CROSS_TRIPLE || {
+  ls -l .libs && exit(1)
+}
 make install prefix=$QEMU_LD_PREFIX
 rm -rf $bdwgcDir
