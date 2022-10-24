@@ -5,7 +5,7 @@ set -x
 workDir=$PWD
 
 # Zlib
-zlibDir=/tmp/zlib
+zlibDir=$workDir/zlib
 git clone https://github.com/madler/zlib $zlibDir
 cd $zlibDir
 git checkout v1.2.13
@@ -14,7 +14,7 @@ make install prefix=$QEMU_LD_PREFIX
 rm -rf $zlibDir
 
 # Boehm GC
-bdwgcDir=/tmp/bdwgc
+bdwgcDir=$workDir/bdwgc
 cd $workDir
 git clone https://github.com/ivmai/bdwgc $bdwgcDir
 cd $bdwgcDir
