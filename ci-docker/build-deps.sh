@@ -19,10 +19,10 @@ cd $workDir
 mkdir .libs
 git clone https://github.com/ivmai/bdwgc $bdwgcDir
 cd $bdwgcDir
-git checkout v8.0.6
+git checkout v8.2.2
 git clone https://github.com/ivmai/libatomic_ops
 cd libatomic_ops/
-git checkout v7.6.12
+git checkout v7.6.14
 cd $bdwgcDir
 ./autogen.sh
 ./configure --host $CROSS_TRIPLE
@@ -31,8 +31,10 @@ if [[ ! -z $QEMU_LD_PREFIX ]]; then
   ldPrefix="prefix=$QEMU_LD_PREFIX"
 fi
 
-make clean
+make 
 make install $ldPrefix || {
+  gcc -v
+  clang -v
   ls -l .libs
   echo ""
   ls -l .
