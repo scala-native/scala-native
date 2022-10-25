@@ -54,9 +54,6 @@ jobs:
             registry:2 && npx wait-on tcp:5000
 
           docker pull localhost:5000/${imageName} || { \
-            echo $?
-            echo docker pull localhost:5000/${imageName}
-            docker pull localhost:5000/${imageName}
             docker buildx ls
             docker run --privileged --rm tonistiigi/binfmt --install all && \
             docker buildx build \
