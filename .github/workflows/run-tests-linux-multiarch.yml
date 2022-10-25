@@ -100,7 +100,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Prepare common options
-        if: matrix.arch != 'linux-x86'
+        if: ${{matrix.arch}} != 'linux-x86'
         shell: bash
         # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
         # Becouse of that we need to build it whole config from scratch
