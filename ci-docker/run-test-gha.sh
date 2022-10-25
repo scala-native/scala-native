@@ -34,7 +34,7 @@ if ! docker pull $FULL_IMAGE_NAME;then
     docker build \
     -t ${FULL_IMAGE_NAME} \
     --build-arg TARGET_PLATFORM=${arch} \
-    ci-docker \
+    ci-docker/${arch} \
     && docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} \
     && docker push localhost:5000/${FULL_IMAGE_NAME}
   else
