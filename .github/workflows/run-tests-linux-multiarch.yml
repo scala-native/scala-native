@@ -46,11 +46,16 @@ jobs:
           echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
           . ./ci-docker/env/${{matrix.arch}}
 
-          docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
+          docker run -d -p 5000:5000 \
+            --restart=always \
+            --name registry \
+            -v /tmp/docker-registry:/var/lib/registry \
+            registry:2 && \
+            npx wait-on tcp:5000
 
           docker pull localhost:5000/${imageName} || { \
             docker buildx ls && \
-            docker run --privileged --rm tonistiigi/binfmt --install all && ]
+            docker run --privileged --rm tonistiigi/binfmt --install all && \
             docker buildx build \
               -t ${imageName} \
               --cache-from=localhost:5000/${imageName} \
