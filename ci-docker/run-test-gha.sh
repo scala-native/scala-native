@@ -30,7 +30,9 @@ if ! docker pull $FULL_IMAGE_NAME; then
   if [[ "$IMAGE_NAME" =~ $imageNamePattern ]]; then
     arch=${BASH_REMATCH[1]}
     . ci-docker/env/${arch}
-
+    
+    docker buildx ls
+    docker run --privileged --rm tonistiigi/binfmt --install all
     docker buildx build \
       -t ${FULL_IMAGE_NAME} \
       --build-arg BASE_IMAGE=$BASE_IMAGE \
