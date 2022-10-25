@@ -21,7 +21,7 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
   && cd .. \
   && autoreconf -vif \
   && ./configure  verbose=true  prefix=$QEMU_LD_PREFIX --host $CROSS_TRIPLE \
-  && make  install prefix=$QEMU_LD_PREFIX\
+  && make SHELL="sh -x" install prefix=$QEMU_LD_PREFIX\
   && rm -rf /tmp/bdwgc
 
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
