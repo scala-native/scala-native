@@ -99,6 +99,10 @@ jobs:
           - gc: commix
             arch: linux-x86
     steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:

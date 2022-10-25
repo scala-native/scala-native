@@ -38,13 +38,13 @@ if ! docker pull $FULL_IMAGE_NAME; then
   docker buildx ls
   docker run --privileged --rm tonistiigi/binfmt --install all
   docker buildx build \
-    -t ${FULL_IMAGE_NAME} \
+    -t ${IMAGE_NAME} \
     --build-arg BASE_IMAGE=$BASE_IMAGE \
     --build-arg LLVM_VERSION=$LLVM_VERSION \
     --platform ${BUILD_PLATFORM} \
     ci-docker &&
-    docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} &&
-    docker push localhost:5000/${FULL_IMAGE_NAME}
+    docker tag ${IMAGE_NAME} ${FULL_IMAGE_NAME} &&
+    docker push ${FULL_IMAGE_NAME}
 fi
 
 # Make sure the binded directories are present
