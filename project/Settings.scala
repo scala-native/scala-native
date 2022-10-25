@@ -690,11 +690,11 @@ object Settings {
               copy(scalaSourcePath, outputFile)
               Some(outputFile)
             } catch {
-              case _: Exception =>
+              case ex: Exception =>
                 // Postpone failing to check which other patches do not apply
                 failedToApplyPatches = true
                 val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
-                s.log.error(s"Cannot apply patch for $path")
+                s.log.error(s"Cannot apply patch for $path - $ex")
                 None
             } finally {
               if (scalaSourceCopyPath.exists()) {
