@@ -20,8 +20,8 @@ else
   echo >&2 "$IMAGE_NAME is not regular testing image name"
   exit 1
 fi
-
 # Start registry containing images built in previous CI steps
+docker kill registry && docker rm registry || true
 docker run -d -p 5000:5000 \
   --restart=always \
   --name registry \
@@ -29,14 +29,15 @@ docker run -d -p 5000:5000 \
   registry:2 &&
   npx wait-on tcp:5000
 
+docker buildx ls
+docker run --privileged --rm tonistiigi/binfmt --install all
+
 # Pull cached image or build locally if image is missing
 # In most cases image should exist, however in the past we have observed single
 # CI jobs failing due to missing image.
-
 if ! docker pull $FULL_IMAGE_NAME; then
   echo "Image not found found in cache, building locally"
-  docker buildx ls
-  docker run --privileged --rm tonistiigi/binfmt --install all
+
   docker buildx build \
     -t ${IMAGE_NAME} \
     --build-arg BASE_IMAGE=$BASE_IMAGE \
