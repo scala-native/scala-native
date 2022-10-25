@@ -36,8 +36,6 @@ jobs:
         with:
           path: /tmp/docker-registry
           key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{matrix.arch}}
-      - name: Run local image registry
-        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
       # Builds images and saves image base name in output - it allows to re-use it in other steps.
       - name: Build image
@@ -45,27 +43,24 @@ jobs:
         run: |
           imageBase="scala-native-testing"
           imageName="${imageBase}:${{ matrix.arch }}"
-          echo "image-base-name=${imageBase}" >> $GITHUB_OUTPUT
           echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
           . ./ci-docker/env/${{matrix.arch}}
 
-          docker buildx ls
-          docker run --privileged --rm tonistiigi/binfmt --install all
+          docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
-          docker pull localhost:5000/${imageName} || \
+          docker pull localhost:5000/${imageName} || { \
+            docker buildx ls && \
+            docker run --privileged --rm tonistiigi/binfmt --install all && ]
             docker buildx build \
               -t ${imageName} \
               --cache-from=localhost:5000/${imageName} \
               --build-arg BASE_IMAGE=$BASE_IMAGE \
               --build-arg LLVM_VERSION=$LLVM_VERSION \
               --platform ${BUILD_PLATFORM} \
-              ci-docker
-
-      - name: Store image in cache
-        run: |
-          imageName=${{ steps.build-image.outputs.image-full-name }}
-          docker tag $imageName localhost:5000/${imageName} && \
-          docker push localhost:5000/${imageName}
+              ci-docker && \
+            docker tag $imageName localhost:5000/${imageName} && \
+            docker push localhost:5000/${imageName} \
+          }
 
   #Main tests grid. Builds and runs tests agains multiple combination of GC, Build mode and Scala Version
   #It can be extended to test against different OS and Arch settings
