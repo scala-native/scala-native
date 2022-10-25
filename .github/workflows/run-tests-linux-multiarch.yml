@@ -50,6 +50,7 @@ jobs:
           . ./ci-docker/env/${{matrix.arch}}
 
           docker pull localhost:5000/${imageName} || true
+          docker buildx ls
           docker buildx build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \

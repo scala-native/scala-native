@@ -2,7 +2,7 @@
 ARG BASE_IMAGE
 ARG LLVM_VERSION
 
-FROM --platform=${TARGETPLATFORM} $BASE_IMAGE as cross
+FROM $BASE_IMAGE
 # Platform args are populated by buildx, needs to be defined after FROM command
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
