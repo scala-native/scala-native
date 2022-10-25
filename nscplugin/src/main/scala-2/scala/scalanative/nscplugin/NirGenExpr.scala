@@ -807,6 +807,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
                 val result =
                   enteringPhase(currentRun.posterasurePhase)(sym.tpe) match {
+                    case tpe if tpe.sym.isPrimitiveValueClass =>
+                      val targetTpe = genType(tpe)
+                      if (targetTpe == value.ty) value
+                      else buf.unbox(genBoxType(tpe), value, Next.None)
+
                     case ErasedValueType(valueClazz, _) =>
                       val unboxMethod = valueClazz.derivedValueClassUnbox
                       val casted =

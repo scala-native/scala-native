@@ -29,11 +29,8 @@ jobs:
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-tools ${{ matrix.scala }}"
 
         # Make sure that Scala partest blacklisted tests contain only valid test names
-      - name: Setup Ammonite
-        uses: yilinwei/setup-ammonite@0.1.1
-        with:
-          ammonite-version: 2.3.8
-          scala-version: 2.13
+      - name: Setup Scala-cli
+        uses: VirtusLab/scala-cli-setup@v0.1
 
       - name: Check partest disabled tests list
         # No partests support for Scala 3
@@ -42,7 +39,7 @@ jobs:
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
           "scalaPartest${{env.project-version}}/fetchScalaSource"
-          amm scripts/partest-check-files.sc ${{ matrix.scala }}
+          ./scripts/partest-check-files.scala ${{ matrix.scala }}
 
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.
