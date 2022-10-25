@@ -3,7 +3,7 @@ ARG TARGET_PLATFORM
 FROM dockcross/$TARGET_PLATFORM
 ENV DEFAULT_DOCKCROSS_IMAGE testing-container
 
-RUN apt-get update && apt-get install -y unzip lsb-release wget software-properties-common
+RUN apt-get update && apt-get install -y unzip lsb-release wget software-properties-common gcc-10
 
 # Install clang-14, by default llvm.sh install latest stable version
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin 14
