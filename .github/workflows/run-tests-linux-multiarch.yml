@@ -55,7 +55,7 @@ jobs:
           --cache-from=localhost:5000/${imageName} \
           --build-arg BASE_IMAGE=$BASE_IMAGE \
           --build-arg LLVM_VERSION=$LLVM_VERSION \
-          --platform=linux/amd64 \
+          --platform ${BUILD_PLATFORM} \
           ci-docker
 
       - name: Store image in cache

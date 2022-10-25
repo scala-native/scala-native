@@ -2,9 +2,7 @@ ARG BASE_IMAGE
 ARG LLVM_VERSION=14
 
 FROM $BASE_IMAGE
-
-RUN apt-get update && \
-  apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev
+RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev
 
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
