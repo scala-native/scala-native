@@ -3,7 +3,7 @@ set -e
 set -x
 
 if [ $# -ne 2 ]; then
-  echo "Expected exactly 3 arguments: <docker image> <scala version>"
+  echo "Expected exactly 2 arguments: <docker image> <scala version>"
   exit 1
 fi
 
@@ -20,8 +20,6 @@ else
   echo >&2 "$IMAGE_NAME is not regular testing image name"
   exit 1
 fi
-
-ls -l /tmp/docker-registry
 
 # Start registry containing images built in previous CI steps
 docker run -d -p 5000:5000 \
@@ -55,7 +53,7 @@ IvyDir=$HOME/.ivy
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
-docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" - bash -c "java -version"
+docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" bash -c "java -version"
 docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
   --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
   --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
