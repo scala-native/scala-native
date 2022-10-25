@@ -56,7 +56,7 @@ SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
 # Precompile tests
-sbt tests${PROJECT_VERSION}/Test/compile; scalaPartestJunitTests${PROJECT_VERSION}/Test/compile
+sbt "tests${PROJECT_VERSION}/Test/compile;scalaPartestJunitTests${PROJECT_VERSION}/Test/compile"
 
 docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" bash -c "java -version"
 docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
