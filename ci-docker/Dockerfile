@@ -2,13 +2,16 @@
 ARG BASE_IMAGE
 ARG LLVM_VERSION
 
-FROM $BASE_IMAGE as cross
+FROM --platform=${TARGETPLATFORM} $BASE_IMAGE as cross
 # Platform args are populated by buildx, needs to be defined after FROM command
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM"
 RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev
 
-RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin ${LLVM_VERSION}
-RUN echo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} 100
-RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${LLVM_VERSION} 100
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
+RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]

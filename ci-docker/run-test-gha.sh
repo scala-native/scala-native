@@ -31,10 +31,11 @@ if ! docker pull $FULL_IMAGE_NAME; then
     arch=${BASH_REMATCH[1]}
     . ci-docker/env/${arch}
 
-    docker build \
+    docker buildx build \
       -t ${FULL_IMAGE_NAME} \
       --build-arg BASE_IMAGE=$BASE_IMAGE \
       --build-arg LLVM_VERSION=$LLVM_VERSION \
+      --platform ${BUILD_PLATFORM} \
       ci-docker &&
       docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} &&
       docker push localhost:5000/${FULL_IMAGE_NAME}
