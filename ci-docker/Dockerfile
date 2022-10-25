@@ -6,7 +6,7 @@ FROM --platform=${TARGETPLATFORM} $BASE_IMAGE as cross
 # Platform args are populated by buildx, needs to be defined after FROM command
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
-RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM"
+RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM, base image: ${BASE_IMAGE}, LLVM toolchain: ${LLVM_VERSION}"
 RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev
 
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
