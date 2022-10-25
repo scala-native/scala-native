@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/${{matrix.arch}}/*}') }}
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile}')-${{matrix.arch}} }}
       - name: Run local image registry
         run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
@@ -47,13 +47,15 @@ jobs:
           imageName="${imageBase}:${{ matrix.arch }}"
           echo "image-base-name=${imageBase}" >> $GITHUB_OUTPUT
           echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
+          . ./ci-docker/env/${{matrix.arch}}
 
           docker pull localhost:5000/${imageName} || true
           docker build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
-          --build-arg TARGET_PLATFORM=${{ matrix.arch}} \
-          ci-docker/${{matrix.arch}}
+          --build-arg BASE_IMAGE=$BASE_IMAGE \
+          --build-arg LLVM_VERSION=$LLVM_VERSION \
+          ci-docker
 
       - name: Store image in cache
         run: |
@@ -70,11 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          [
-            { name: linux-arm64, emulator: qemu-aarch64-static },
-            { name: linux-x86, emulator: "" },
-          ]
+        arch: [linux-arm64, linux-x86]
         scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
         lto: [thin, none]
@@ -87,46 +85,17 @@ jobs:
           - gc: commix
             lto: thin
           - gc: boehm
-            arch: { name: linux-arm64, emulator: qemu-aarch64-static }
+            arch: linux-arm64
           # Immix does not suppoort Immix/Commix GCs
           - gc: immix
-            arch: { name: linux-x86, emulator: "" }
+            arch: linux-x86
           - gc: commix
-            arch: { name: linux-x86, emulator: "" }
+            arch: linux-x86
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-
-      - name: Prepare common options
-        if: ${{matrix.arch}} != 'linux-x86'
-        shell: bash
-        # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
-        # Becouse of that we need to build it whole config from scratch
-        # There is no other way for passing compile and linking opts (we ignore deprecated sbt keys)
-        # Following envs CROSS_ are always present in docker container
-        run: |
-          targetEnv='sys.env("CROSS_TRIPLE")'
-          target='${sys.env("CROSS_TRIPLE")}'
-          crossRoot='${sys.env("CROSS_ROOT")}'
-
-          sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
-          useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="$sysRootFlag ++ List($useLdFlg)"
-
-          emptyConfig="scalanative.build.NativeConfig.empty"
-          withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
-          withGC="withGC(scalanative.build.GC.${{matrix.gc}})"
-          withLTO="withLTO(scalanative.build.LTO.${{matrix.lto}})"
-          withToolchain="withClang(scalanative.build.Discover.clang()).withClangPP(scalanative.build.Discover.clangpp())"
-          withOpts="withEmbedResources(true).withOptimize(true).withCheck(true).withCheckFatalWarnings(true)"
-          withTarget="withTargetTriple(${targetEnv})"
-          withCompileOpts="withCompileOptions(scalanative.build.Discover.compileOptions() ++ $crossOptions)"
-          withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
-          config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
-
-          echo "set-native-config=set every nativeConfig := ${config}" >> $GITHUB_ENV
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
@@ -141,7 +110,6 @@ jobs:
         env:
           # Limit commands only to native tests, tests would use amd64 JDK anyway
           TEST_COMMAND: >
-            ${{env.set-native-config}};
             show sandbox${{env.project-version}}/nativeConfig;
             tests${{env.project-version}}/test;
             testsExt${{env.project-version}}/test;
@@ -152,4 +120,4 @@ jobs:
           timeout_minutes: 180
           max_attempts: 2
           retry_on: error
-          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"
+          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }}

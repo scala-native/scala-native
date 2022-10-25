@@ -1,14 +1,17 @@
-FROM i386/ubuntu:18.04
+ARG BASE_IMAGE
+ARG LLVM_VERSION=14
+
+FROM $BASE_IMAGE
 
 RUN apt-get update && \
   apt-get install -y \
     zip unzip lsb-release curl wget \
-    software-properties-common gcc \
+    software-properties-common \
     libgc-dev libz-dev
 
-RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin 10
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 100
-RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 100
+RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
+RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
@@ -23,7 +26,7 @@ RUN curl -s "https://get.sdkman.io" | bash  \
 
 ENV LC_ALL "C.UTF-8"
 ENV LANG "C.UTF-8"
-ENV PATH=/usr/lib/llvm-10.0/bin:~/.sdkman/candidates/java/current/bin:~/.sdkman/candidates/sbt/current/bin:${PATH}
+ENV PATH=/usr/lib/llvm-$LLVM_VERSION/bin:~/.sdkman/candidates/java/current/bin:~/.sdkman/candidates/sbt/current/bin:${PATH}
 
 CMD sbt "++ $SCALA_VERSION -v" \
   "-J-Xmx5G" \

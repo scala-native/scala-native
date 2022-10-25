@@ -1,0 +1,2 @@
+BASE_IMAGE=arm64v8/ubuntu:22.04
+LLVM_VERSION=14
