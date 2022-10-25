@@ -63,4 +63,7 @@ docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
   -e SCALA_VERSION="$SCALA_VERSION" \
   -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
   -e TEST_COMMAND="$TEST_COMMAND" \
+  -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
+  -e SCALANATIVE_GC="$SCALANATIVE_GC" \
+  -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \
   -i "${FULL_IMAGE_NAME}"

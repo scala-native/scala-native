@@ -78,7 +78,7 @@ jobs:
       matrix:
         arch: [linux-arm64, linux-x86]
         scala: [2.13.10, 3.2.0]
-        build-mode: [releaseFast]
+        build-mode: [release-fast]
         lto: [thin, none]
         gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
@@ -119,11 +119,20 @@ jobs:
           echo "" >> ${ignoredTestsFile}
           echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
 
+      - name: Precompile tests
+        shell: bash
+        if: ${{ !startsWith(matrix.arch, 'linux-x86') }}
+        run: sbt tests${{env.project-version}}/Test/compile
+
       - name: Run tests
         env:
-          # Limit commands only to native tests, tests would use amd64 JDK anyway
+          SCALANATIVE_MODE: ${{matrix.build-mode}}
+          SCALANATIVE_GC: ${{matrix.gc}}
+          SCALANATIVE_LTO: ${{matrix.lto}}
           TEST_COMMAND: >
             show sandbox${{env.project-version}}/nativeConfig;
+            sandbox${{env.project-version}}/run;
+            testsJVM${{env.project-version}}/test;
             tests${{env.project-version}}/test;
             testsExt${{env.project-version}}/test;
             junitTestOutputsNative${{env.project-version}}/test;
