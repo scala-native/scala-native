@@ -25,19 +25,12 @@ cd libatomic_ops/
 git checkout v7.6.14
 cd $bdwgcDir
 ./autogen.sh
-./configure --host $CROSS_TRIPLE
-ldPrefix=""
-if [[ ! -z $QEMU_LD_PREFIX ]]; then
-  ldPrefix="prefix=$QEMU_LD_PREFIX"
-fi
+./configure --host $CROSS_TRIPLE --target $CROSS_TRIPLE
+ldPrefix="prefix=$QEMU_LD_PREFIX"
 
 make 
 make install $ldPrefix || {
-  gcc -v
-  clang -v
   ls -l .libs
-  echo ""
-  ls -l .
   exit 1
 }
 rm -rf $bdwgcDir
