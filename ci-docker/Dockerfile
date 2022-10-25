@@ -1,7 +1,12 @@
+# syntax=docker/dockerfile:1
 ARG BASE_IMAGE
 ARG LLVM_VERSION
 
-FROM --platform=${BUILDPLATFORM} $BASE_IMAGE as cross
+FROM --platform=${TARGETPLATFORM} $BASE_IMAGE as cross
+# Platform args are populated by buildx, needs to be defined after FROM command
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM"
 RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev
 
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
