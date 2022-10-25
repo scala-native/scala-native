@@ -31,11 +31,11 @@ if [[ ! -z $QEMU_LD_PREFIX ]]; then
   ldPrefix="prefix=$QEMU_LD_PREFIX"
 fi
 
+make 
 make install $ldPrefix || {
   ls -l .libs
   echo ""
   ls -l .
-  cat Makefile
   exit 1
 }
 rm -rf $bdwgcDir
