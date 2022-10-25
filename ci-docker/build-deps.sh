@@ -26,10 +26,15 @@ git checkout v7.6.14
 cd $bdwgcDir
 ./autogen.sh
 ./configure --host $CROSS_TRIPLE 
-make install prefix=$QEMU_LD_PREFIX || {
+ldPrefix=""
+if [[ ! -z $QEMU_LD_PREFIX ]]; then
+  ldPrefix="prefix=$QEMU_LD_PREFIX"
+
+make install $ldPrefix || {
   ls -l .libs
   echo ""
   ls -l .
+  cat Makefile
   exit 1
 }
 rm -rf $bdwgcDir
