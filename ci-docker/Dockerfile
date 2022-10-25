@@ -12,18 +12,17 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
 
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
-# RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
-#   && cd /tmp/bdwgc/ \
-#   && git checkout v8.2.2 \
-#   && git clone https://github.com/ivmai/libatomic_ops \
-#   && cd libatomic_ops/ \
-#   && git checkout v7.6.14 \
-#   && cd .. \
-#   && autoreconf -vif \
-#   && ./configure prefix=$QEMU_LD_PREFIX --host $CROSS_TRIPLE \
-#   && make \
-#   && make install prefix=$QEMU_LD_PREFIX \
-#   && rm -rf /tmp/bdwgc
+RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
+  && cd /tmp/bdwgc/ \
+  && git checkout v8.2.2 \
+  && git clone https://github.com/ivmai/libatomic_ops \
+  && cd libatomic_ops/ \
+  && git checkout v7.6.14 \
+  && cd .. \
+  && autoreconf -vif \
+  && ./configure prefix=$QEMU_LD_PREFIX --host $CROSS_TRIPLE \
+  && make  install prefix=$QEMU_LD_PREFIX verbose=true \
+  && rm -rf /tmp/bdwgc
 
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
   && cd /tmp/zlib/ \
