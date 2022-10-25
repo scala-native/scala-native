@@ -50,12 +50,11 @@ jobs:
           . ./ci-docker/env/${{matrix.arch}}
 
           docker pull localhost:5000/${imageName} || true
-          docker buildx build \
+          docker build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
           --build-arg BASE_IMAGE=$BASE_IMAGE \
           --build-arg LLVM_VERSION=$LLVM_VERSION \
-          --platform ${BUILD_PLATFORM} \
           ci-docker
 
       - name: Store image in cache
