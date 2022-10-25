@@ -12,6 +12,7 @@ SCALA_VERSION=$2
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
+imageNamePattern="scala-native-testing:(.*)"
 if [[ "$IMAGE_NAME" =~ $imageNamePattern ]]; then
   arch=${BASH_REMATCH[1]}
   . ci-docker/env/${arch}
@@ -36,8 +37,6 @@ docker run -d -p 5000:5000 \
 
 if ! docker pull $FULL_IMAGE_NAME; then
   echo "Image not found found in cache, building locally"
-  imageNamePattern="scala-native-testing:(.*)"
-
   docker buildx ls
   docker run --privileged --rm tonistiigi/binfmt --install all
   docker buildx build \
