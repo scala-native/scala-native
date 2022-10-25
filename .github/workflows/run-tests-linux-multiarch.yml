@@ -14,7 +14,7 @@ jobs:
   # Currently only Linux x64 is tested
   build-image:
     name: Build image
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     outputs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
@@ -65,7 +65,7 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build-image
     strategy:
       fail-fast: false
@@ -76,16 +76,24 @@ jobs:
             { name: linux-x86, emulator: "" },
           ]
         scala: [2.13.10, 3.2.0]
-        build-mode: [debug, releaseFast]
-        lto: [thin]
-        gc: [immix, commix]
+        build-mode: [releaseFast]
+        lto: [thin, none]
+        gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
           - gc: immix
-            build-mode: debug
+            lto: none
           - gc: commix
-            build-mode: release-fast
+            lto: thin
+          - gc: boehm
+            arch: { name: linux-arm64, emulator: qemu-aarch64-static }
+          - gc: immix
+            arch: { name: linux-x86, emulator: "" }
+          - gc: commix
+            arch: { name: linux-x86, emulator: "" }
+          - lto: thin
+            arch: { name: linux-x86, emulator: "" }
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env

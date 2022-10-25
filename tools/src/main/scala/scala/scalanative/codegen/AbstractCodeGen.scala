@@ -678,7 +678,8 @@ private[codegen] abstract class AbstractCodeGen(
             }
             str(", !")
             str(deref)
-            str(" !{i64 ")
+            if (is32BitPlatform) str(" !{i32 ")
+            else str(" !{i64 ")
             str(size)
             str("}")
           case _ =>
