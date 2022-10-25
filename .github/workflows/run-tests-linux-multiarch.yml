@@ -49,16 +49,17 @@ jobs:
           echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
           . ./ci-docker/env/${{matrix.arch}}
 
-          docker pull localhost:5000/${imageName} || true
           docker buildx ls
           docker run --privileged --rm tonistiigi/binfmt --install all
-          docker buildx build \
-          -t ${imageName} \
-          --cache-from=localhost:5000/${imageName} \
-          --build-arg BASE_IMAGE=$BASE_IMAGE \
-          --build-arg LLVM_VERSION=$LLVM_VERSION \
-          --platform ${BUILD_PLATFORM} \
-          ci-docker
+
+          docker pull localhost:5000/${imageName} || \
+            docker buildx build \
+              -t ${imageName} \
+              --cache-from=localhost:5000/${imageName} \
+              --build-arg BASE_IMAGE=$BASE_IMAGE \
+              --build-arg LLVM_VERSION=$LLVM_VERSION \
+              --platform ${BUILD_PLATFORM} \
+              ci-docker
 
       - name: Store image in cache
         run: |
