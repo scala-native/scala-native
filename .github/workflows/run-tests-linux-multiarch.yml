@@ -77,7 +77,7 @@ jobs:
           ]
         scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
-        lto: [thin, none]
+        lto: [thin]
         gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
