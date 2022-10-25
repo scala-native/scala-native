@@ -51,6 +51,7 @@ jobs:
 
           docker pull localhost:5000/${imageName} || true
           docker buildx ls
+          docker run --privileged --rm tonistiigi/binfmt --install all
           docker buildx build \
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
