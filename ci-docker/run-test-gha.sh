@@ -49,7 +49,7 @@ IvyDir=$HOME/.ivy
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
-docker run -i "${FULL_IMAGE_NAME}" java -version
+docker run -i "${FULL_IMAGE_NAME}" bash -c "java -version"
 docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
            --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
            --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \

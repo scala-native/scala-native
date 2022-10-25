@@ -126,7 +126,7 @@ jobs:
           withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
           config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
 
-          echo "set-native-config=\"set every nativeConfig := ${config}\"" >> $GITHUB_ENV
+          echo "set-native-config=set every nativeConfig := ${config}" >> $GITHUB_ENV
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
