@@ -14,23 +14,22 @@ make install prefix=$QEMU_LD_PREFIX
 rm -rf $zlibDir
 
 # Boehm GC
-bdwgcDir=$workDir/bdwgc
-cd $workDir
-mkdir .libs
-git clone https://github.com/ivmai/bdwgc $bdwgcDir
-cd $bdwgcDir
-git checkout v8.2.2
-git clone https://github.com/ivmai/libatomic_ops
-cd libatomic_ops/
-git checkout v7.6.14
-cd $bdwgcDir
-./autogen.sh
-./configure --host $CROSS_TRIPLE --target $CROSS_TRIPLE
-ldPrefix="prefix=$QEMU_LD_PREFIX"
+# bdwgcDir=$workDir/bdwgc
+# cd $workDir
+# mkdir .libs
+# git clone https://github.com/ivmai/bdwgc $bdwgcDir
+# cd $bdwgcDir
+# git checkout v8.2.2
+# git clone https://github.com/ivmai/libatomic_ops
+# cd libatomic_ops/
+# git checkout v7.6.14
+# cd $bdwgcDir
+# ./autogen.sh
+# ./configure --host $CROSS_TRIPLE
 
-make 
-make install $ldPrefix || {
-  ls -l .libs
-  exit 1
-}
-rm -rf $bdwgcDir
+# make 
+# make install prefix=$QEMU_LD_PREFIX || {
+#   ls -l .libs
+#   exit 1
+# }
+# rm -rf $bdwgcDir
