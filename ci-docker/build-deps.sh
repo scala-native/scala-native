@@ -31,7 +31,7 @@ if [[ ! -z $QEMU_LD_PREFIX ]]; then
   ldPrefix="prefix=$QEMU_LD_PREFIX"
 fi
 
-make 
+make clean
 make install $ldPrefix || {
   ls -l .libs
   echo ""
