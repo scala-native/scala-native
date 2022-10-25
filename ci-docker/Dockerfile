@@ -19,8 +19,9 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
   && cd libatomic_ops/ \
   && git checkout v7.6.14 \
   && cd .. \
-  && ./autogen.sh \
-  && ./configure --host $CROSS_TRIPLE \
+  && autoreconf -vif \
+  && ./configure prefix=$QEMU_LD_PREFIX --host $CROSS_TRIPLE \
+  && make \
   && make install prefix=$QEMU_LD_PREFIX \
   && rm -rf /tmp/bdwgc
 
