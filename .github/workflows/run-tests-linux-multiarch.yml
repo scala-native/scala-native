@@ -96,10 +96,6 @@ jobs:
           - gc: commix
             arch: linux-x86
     steps:
-      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
-      - name: Setup git config
-        run: git config --global core.autocrlf false
-
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
@@ -119,10 +115,6 @@ jobs:
           echo "" >> ${ignoredTestsFile}
           echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
 
-      - name: Precompile tests
-        shell: bash
-        if: ${{ !startsWith(matrix.arch, 'linux-x86') }}
-        run: sbt tests${{env.project-version}}/Test/compile
 
       - name: Run tests
         env:
@@ -142,4 +134,4 @@ jobs:
           timeout_minutes: 180
           max_attempts: 2
           retry_on: error
-          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }}
+          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }} ${{env.project-version}}

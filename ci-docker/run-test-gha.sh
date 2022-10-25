@@ -2,13 +2,14 @@
 set -e
 set -x
 
-if [ $# -ne 2 ]; then
-  echo "Expected exactly 2 arguments: <docker image> <scala version>"
+if [ $# -ne 3 ]; then
+  echo "Expected exactly 3 arguments: <docker image> <scala version> <project-version>"
   exit 1
 fi
 
 IMAGE_NAME=$1
 SCALA_VERSION=$2
+PROJECT_VERSION=$3
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
@@ -53,6 +54,9 @@ CacheDir=$HOME/.cache
 IvyDir=$HOME/.ivy
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
+
+# Precompile tests
+sbt tests${PROJECT_VERSION}/Test/compile; scalaPartestJunitTests${PROJECT_VERSION}/Test/compile
 
 docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" bash -c "java -version"
 docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
