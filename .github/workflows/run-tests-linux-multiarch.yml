@@ -78,7 +78,7 @@ jobs:
         scala: [2.13.10, 3.2.0]
         build-mode: [releaseFast]
         lto: [thin, none]
-        gc: [immix, commix]
+        gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
@@ -86,6 +86,14 @@ jobs:
             lto: none
           - gc: commix
             lto: thin
+          - gc: boehm
+            arch: { name: linux-arm64, emulator: qemu-aarch64-static }
+          - gc: immix
+            arch: { name: linux-x86, emulator: "" }
+          - gc: commix
+            arch: { name: linux-x86, emulator: "" }
+          - lto: thin
+            arch: { name: linux-x86, emulator: "" }
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env

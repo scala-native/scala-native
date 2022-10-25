@@ -11,8 +11,25 @@ RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin 14
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
 
-ADD build-deps.sh build-deps.sh
-RUN sh build-deps.sh
+# We cannot easily install dependencies, clone and build zlib and Boehm locally
+RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
+  && cd /tmp/bdwgc/ \
+  && git checkout v8.2.2 \
+  && git clone https://github.com/ivmai/libatomic_ops \
+  && cd libatomic_ops/ \
+  && git checkout v7.6.14 \
+  && cd .. \
+  && ./autogen.sh \
+  && ./configure --host $CROSS_TRIPLE \
+  && make install prefix=$QEMU_LD_PREFIX \
+  && rm -rf /tmp/bdwgc
+
+RUN git clone https://github.com/madler/zlib /tmp/zlib \
+  && cd /tmp/zlib/ \
+  && git checkout v1.2.11 \
+  && ./configure \
+  && make install prefix=$QEMU_LD_PREFIX \
+  && rm -rf /tmp/zlib
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
