@@ -23,14 +23,13 @@ docker run -d -p 5000:5000 \
 # Pull cached image or build locally if image is missing
 # In most cases image should exist, however in the past we have observed single
 # CI jobs failing due to missing image.
+arch=${BASH_REMATCH[1]}
+. ci-docker/env/${arch}
 if ! docker pull $FULL_IMAGE_NAME; then
   echo "Image not found found in cache, building locally"
   imageNamePattern="scala-native-testing:(.*)"
 
   if [[ "$IMAGE_NAME" =~ $imageNamePattern ]]; then
-    arch=${BASH_REMATCH[1]}
-    . ci-docker/env/${arch}
-    
     docker buildx ls
     docker run --privileged --rm tonistiigi/binfmt --install all
     docker buildx build \
@@ -53,12 +52,12 @@ IvyDir=$HOME/.ivy
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
-docker run -i "${FULL_IMAGE_NAME}" --platform=linux/amd64 bash -c "java -version"
+docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" - bash -c "java -version"
 docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
   --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
   --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
   --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
-  --platform=linux/amd64 \
+  --platform=${BUILD_PLATFORM} \
   -e SCALA_VERSION="$SCALA_VERSION" \
   -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
   -e TEST_COMMAND="$TEST_COMMAND" \

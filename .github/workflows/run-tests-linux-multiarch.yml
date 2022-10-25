@@ -99,6 +99,11 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+      - name: Cache docker
+        uses: actions/cache@v3
+        with:
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{matrix.arch}}
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
