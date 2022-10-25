@@ -53,8 +53,11 @@ jobs:
             -v /tmp/docker-registry:/var/lib/registry \
             registry:2 && npx wait-on tcp:5000
 
-          docker pull localhost:5000/${imageName} || \
-            docker buildx ls && \
+          docker pull localhost:5000/${imageName} || { \
+            echo $?
+            echo docker pull localhost:5000/${imageName}
+            docker pull localhost:5000/${imageName}
+            docker buildx ls
             docker run --privileged --rm tonistiigi/binfmt --install all && \
             docker buildx build \
               -t ${imageName} \
@@ -65,6 +68,7 @@ jobs:
               ci-docker && \
             docker tag $imageName localhost:5000/${imageName} && \
             docker push localhost:5000/${imageName}
+          }
 
   #Main tests grid. Builds and runs tests agains multiple combination of GC, Build mode and Scala Version
   #It can be extended to test against different OS and Arch settings

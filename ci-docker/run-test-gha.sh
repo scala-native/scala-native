@@ -12,6 +12,16 @@ SCALA_VERSION=$2
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
+if [[ "$IMAGE_NAME" =~ $imageNamePattern ]]; then
+  arch=${BASH_REMATCH[1]}
+  . ci-docker/env/${arch}
+else
+  echo >&2 "$IMAGE_NAME is not regular testing image name"
+  exit 1
+fi
+
+ls -l /tmp/docker-registry
+
 # Start registry containing images built in previous CI steps
 docker run -d -p 5000:5000 \
   --restart=always \
@@ -23,27 +33,21 @@ docker run -d -p 5000:5000 \
 # Pull cached image or build locally if image is missing
 # In most cases image should exist, however in the past we have observed single
 # CI jobs failing due to missing image.
-arch=${BASH_REMATCH[1]}
-. ci-docker/env/${arch}
+
 if ! docker pull $FULL_IMAGE_NAME; then
   echo "Image not found found in cache, building locally"
   imageNamePattern="scala-native-testing:(.*)"
 
-  if [[ "$IMAGE_NAME" =~ $imageNamePattern ]]; then
-    docker buildx ls
-    docker run --privileged --rm tonistiigi/binfmt --install all
-    docker buildx build \
-      -t ${FULL_IMAGE_NAME} \
-      --build-arg BASE_IMAGE=$BASE_IMAGE \
-      --build-arg LLVM_VERSION=$LLVM_VERSION \
-      --platform ${BUILD_PLATFORM} \
-      ci-docker &&
-      docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} &&
-      docker push localhost:5000/${FULL_IMAGE_NAME}
-  else
-    echo >&2 "$IMAGE_NAME is not regular testing image name"
-    exit 1
-  fi
+  docker buildx ls
+  docker run --privileged --rm tonistiigi/binfmt --install all
+  docker buildx build \
+    -t ${FULL_IMAGE_NAME} \
+    --build-arg BASE_IMAGE=$BASE_IMAGE \
+    --build-arg LLVM_VERSION=$LLVM_VERSION \
+    --platform ${BUILD_PLATFORM} \
+    ci-docker &&
+    docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} &&
+    docker push localhost:5000/${FULL_IMAGE_NAME}
 fi
 
 # Make sure the binded directories are present
