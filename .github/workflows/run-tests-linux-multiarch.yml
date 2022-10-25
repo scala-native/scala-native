@@ -43,6 +43,7 @@ jobs:
         run: |
           imageBase="scala-native-testing"
           imageName="${imageBase}:${{ matrix.arch }}"
+          echo "image-base-name=${imageBase}" >> $GITHUB_OUTPUT
           echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
           . ./ci-docker/env/${{matrix.arch}}
 
@@ -50,7 +51,7 @@ jobs:
             --restart=always \
             --name registry \
             -v /tmp/docker-registry:/var/lib/registry \
-            registry:2 &&  npx wait-on tcp:5000
+            registry:2 && npx wait-on tcp:5000
 
           docker pull localhost:5000/${imageName} || \
             docker buildx ls && \
