@@ -14,7 +14,7 @@ jobs:
   # Currently only Linux x64 is tested
   build-image:
     name: Build image
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     outputs:
       image-name: ${{ steps.build-image.outputs.image-base-name }}
     strategy:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/*') }}-${{ matrix.arch }}
+          key: docker-registry-${{ hashFiles('ci-docker/${{matrix.arch}}/*}') }}
       - name: Run local image registry
         run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
 
@@ -53,7 +53,7 @@ jobs:
           -t ${imageName} \
           --cache-from=localhost:5000/${imageName} \
           --build-arg TARGET_PLATFORM=${{ matrix.arch}} \
-          ci-docker
+          ci-docker/${{matrix.arch}}
 
       - name: Store image in cache
         run: |
@@ -88,11 +88,10 @@ jobs:
             lto: thin
           - gc: boehm
             arch: { name: linux-arm64, emulator: qemu-aarch64-static }
+          # Immix does not suppoort Immix/Commix GCs
           - gc: immix
             arch: { name: linux-x86, emulator: "" }
           - gc: commix
-            arch: { name: linux-x86, emulator: "" }
-          - lto: thin
             arch: { name: linux-x86, emulator: "" }
     steps:
       - uses: actions/checkout@v3
@@ -101,6 +100,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Prepare common options
+        if: matrix.arch != "linux-x86"
         shell: bash
         # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
         # Becouse of that we need to build it whole config from scratch
@@ -126,7 +126,7 @@ jobs:
           withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
           config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
 
-          echo "native-config=${config}" >> $GITHUB_ENV
+          echo "set-native-config=\"set every nativeConfig := ${config}\"" >> $GITHUB_ENV
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
@@ -141,7 +141,7 @@ jobs:
         env:
           # Limit commands only to native tests, tests would use amd64 JDK anyway
           TEST_COMMAND: >
-            set every nativeConfig := ${{env.native-config}};
+            ${{env.set-native-config}};
             show sandbox${{env.project-version}}/nativeConfig;
             tests${{env.project-version}}/test;
             testsExt${{env.project-version}}/test;
