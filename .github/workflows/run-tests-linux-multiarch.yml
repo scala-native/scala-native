@@ -99,6 +99,8 @@ jobs:
           # Release without LTO produces 1 big file taking long to compile, especially when emulated
           - build-mode: release-fast
             lto: none
+          - build-mode: debug
+            lto: thin
           # Reduce ammount of builds combinations
           - gc: immix
             lto: none
