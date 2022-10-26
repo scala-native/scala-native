@@ -2,45 +2,51 @@
 set -e
 set -x
 
-if [ $# -ne 3 ]
-  then echo "Expected exactly 3 arguments: <docker image> <scala version> <emulator>"
+if [ $# -ne 3 ]; then
+  echo "Expected exactly 3 arguments: <docker image> <scala version> <project-version>"
   exit 1
 fi
 
 IMAGE_NAME=$1
 SCALA_VERSION=$2
-TARGET_EMULATOR=$3
+PROJECT_VERSION=$3
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
+imageNamePattern="scala-native-testing:(.*)"
+if [[ "$IMAGE_NAME" =~ $imageNamePattern ]]; then
+  arch=${BASH_REMATCH[1]}
+  . ci-docker/env/${arch}
+else
+  echo >&2 "$IMAGE_NAME is not regular testing image name"
+  exit 1
+fi
 # Start registry containing images built in previous CI steps
+docker kill registry && docker rm registry || true
 docker run -d -p 5000:5000 \
   --restart=always \
   --name registry \
   -v /tmp/docker-registry:/var/lib/registry \
-  registry:2 && \
+  registry:2 &&
   npx wait-on tcp:5000
+
+docker buildx ls
+docker run --privileged --rm tonistiigi/binfmt --install all
 
 # Pull cached image or build locally if image is missing
 # In most cases image should exist, however in the past we have observed single
 # CI jobs failing due to missing image.
-if ! docker pull $FULL_IMAGE_NAME;then
+if ! docker pull $FULL_IMAGE_NAME; then
   echo "Image not found found in cache, building locally"
-  imageNamePattern="scala-native-testing:(.*)"
-
-  if [[ "$IMAGE_NAME" =~ $imageNamePattern ]];then
-    arch=${BASH_REMATCH[1]}
-
-    docker build \
-    -t ${FULL_IMAGE_NAME} \
-    --build-arg TARGET_PLATFORM=${arch} \
-    ci-docker \
-    && docker tag ${FULL_IMAGE_NAME} localhost:5000/${FULL_IMAGE_NAME} \
-    && docker push localhost:5000/${FULL_IMAGE_NAME}
-  else
-    >&2 echo "$IMAGE_NAME is not regular testing image name"
-    exit 1
-  fi
+  docker buildx build \
+    -t ${IMAGE_NAME} \
+    --build-arg BASE_IMAGE="$BASE_IMAGE" \
+    --build-arg LLVM_VERSION="$LLVM_VERSION" \
+    --build-arg BUILD_DEPS="${BUILD_DEPS}"
+    --platform "${BUILD_PLATFORM}" \
+    ci-docker &&
+    docker tag ${IMAGE_NAME} ${FULL_IMAGE_NAME} &&
+    docker push ${FULL_IMAGE_NAME}
 fi
 
 # Make sure the binded directories are present
@@ -49,12 +55,17 @@ IvyDir=$HOME/.ivy
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
-docker run -i "${FULL_IMAGE_NAME}" java -version
-docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
-           --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
-           --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
-           --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
-           -e SCALA_VERSION="$SCALA_VERSION" \
-           -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
-           -e TEST_COMMAND="$TEST_COMMAND" \
-           -i "${FULL_IMAGE_NAME}"
+docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" bash -c "java -version"
+docker run \
+  --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
+  --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
+  --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
+  --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
+  --platform=${BUILD_PLATFORM} \
+  -e SCALA_VERSION="$SCALA_VERSION" \
+  -e TARGET_EMULATOR="$TARGET_EMULATOR" \
+  -e TEST_COMMAND="$TEST_COMMAND" \
+  -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
+  -e SCALANATIVE_GC="$SCALANATIVE_GC" \
+  -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \
+  -i "${FULL_IMAGE_NAME}"
