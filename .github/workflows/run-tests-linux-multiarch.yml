@@ -82,15 +82,6 @@ jobs:
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
-        # Create holes in grid to lower number of tests.
-        # Excluded entries should have low impact on overall project coverage
-        # include:
-        #   - lto: none
-        #     build-mode: debug
-        #     arch: linux-arm64
-        #   - lto: none
-        #     build-mode: debug
-        #     arch: linux-x86
         exclude:
           # Immix does not suppoort Immix/Commix GCs
           - gc: immix
@@ -115,6 +106,8 @@ jobs:
             build-mode: debug
           - gc: commix
             scala: 3.2.0
+          - gc: boehm
+            build-mode: release-fast
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
