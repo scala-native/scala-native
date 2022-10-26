@@ -78,18 +78,19 @@ jobs:
       matrix:
         arch: [linux-arm64, linux-x86]
         scala: [2.13.10, 3.2.0]
-        build-mode: [release-fast]
-        lto: [thin, none]
+        build-mode: [debug, release-fast]
+        lto: [none, thin]
         gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
         exclude:
-          - gc: immix
+          # releaseFast without lto constructs 1 big .ll file which takes long to compile
+          - build-mode: release-fast
             lto: none
-          - gc: commix
-            lto: thin
-          - gc: boehm
-            arch: linux-arm64
+          - build-mode: debug
+            gc: commix
+          - build-mode: release-fast
+            gc: immix
           # Immix does not suppoort Immix/Commix GCs
           - gc: immix
             arch: linux-x86
@@ -114,7 +115,6 @@ jobs:
           ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
           echo "" >> ${ignoredTestsFile}
           echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
-
 
       - name: Run tests
         env:

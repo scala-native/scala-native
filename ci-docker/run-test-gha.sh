@@ -55,10 +55,6 @@ IvyDir=$HOME/.ivy
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
-# Precompile tests
-sbt "tests${PROJECT_VERSION}/Test/compile;scalaPartestJunitTests${PROJECT_VERSION}/Test/compile"
-sudo chmod a+rwx -R "$HOME"
-
 docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" bash -c "java -version"
 docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
   --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
@@ -66,7 +62,6 @@ docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
   --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
   --platform=${BUILD_PLATFORM} \
   -e SCALA_VERSION="$SCALA_VERSION" \
-  -e TARGET_EMULATOR="${TARGET_EMULATOR}" \
   -e TEST_COMMAND="$TEST_COMMAND" \
   -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
   -e SCALANATIVE_GC="$SCALANATIVE_GC" \
