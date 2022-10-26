@@ -2,7 +2,7 @@ package javalib.lang
 
 import java.lang._
 
-// Ported from Scala.js
+// Ported from Scala.js. Additional code added for Scala Native.
 
 import org.junit.Test
 import org.junit.Assert._
@@ -10,6 +10,34 @@ import org.junit.Assert._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class StringBuilderTest {
+
+  /* Implementation Notes:
+   *
+   * 1) Many of these methods are default methods in
+   *    AbstractStringBuilder.scala.  Many tests of such default
+   *    methods are implemented only in this file, because they would
+   *    be duplicate boilerplate and a maintenance headache in
+   *    StringBufferTest.scala.
+   *
+   * 2) Many of these methods are default methods in
+   *    This file contains a number of "fooShouldNotChangePriorString"
+   *    tests. These are for methods which could potentially change
+   *    a String created before they are called.
+   *
+   *    For methods such as 'capacity()' it is clear that no such tests
+   *    are needed. There are also no "shouldNotChange" tests for the following
+   *    three methods. Their access to the StringBuilder.value Array should be
+   *    strictly read only:
+   *      subSequence(int start, int end)
+   *      substring(int start)
+   *      substring(int start, int end)
+   */
+
+  val expectedString =
+    """
+    |Είναι πλέον κοινά παραδεκτό ότι ένας αναγνώστης αποσπάται από το
+    |περιεχόμενο που διαβάζει, όταν εξετάζει τη διαμόρφωση μίας σελίδας.
+    """
 
   def newBuilder: java.lang.StringBuilder =
     new java.lang.StringBuilder
@@ -37,6 +65,15 @@ class StringBuilderTest {
   @Test def appendFloat(): Unit = {
     assertEquals("2.5", newBuilder.append(2.5f).toString)
     assertEquals("3.5", newBuilder.append(3.5).toString)
+  }
+
+  @Test def appendShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.append("Suffix")
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
   }
 
   @Test def insert(): Unit = {
@@ -97,6 +134,15 @@ class StringBuilderTest {
     )
   }
 
+  @Test def insertShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.insert(10, "Intron")
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
+  }
+
   @Test def shouldAllowStringInterpolationToSurviveNullAndUndefined(): Unit = {
     assertEquals("null", s"${null}")
   }
@@ -115,6 +161,15 @@ class StringBuilderTest {
     )
   }
 
+  @Test def deleteCharAtShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.deleteCharAt(10)
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
+  }
+
   @Test def replace(): Unit = {
     assertEquals("0bc3", initBuilder("0123").replace(1, 3, "bc").toString)
     assertEquals("abcd", initBuilder("0123").replace(0, 4, "abcd").toString)
@@ -128,6 +183,27 @@ class StringBuilderTest {
       classOf[StringIndexOutOfBoundsException],
       initBuilder("0123").replace(-1, 3, "x")
     )
+  }
+
+  @Test def replaceShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    val replacement = "Intruder Alert on deck 20!"
+    val offset = 20
+
+    sb.replace(offset, offset + replacement.length(), replacement)
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
+  }
+
+  @Test def reverseShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.reverse()
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
   }
 
   @Test def setCharAt(): Unit = {
@@ -144,9 +220,27 @@ class StringBuilderTest {
     assertThrows(classOf[StringIndexOutOfBoundsException], b.setCharAt(6, 'h'))
   }
 
+  @Test def setCharAtShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.setCharAt(30, '?')
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
+  }
+
   @Test def ensureCapacity(): Unit = {
-    // test that ensureCapacity is linking
-    newBuilder.ensureCapacity(10)
+    // test that ensureCapacity is linking. And grows first time without throw.
+    newBuilder.ensureCapacity(20)
+  }
+
+  @Test def ensureCapacityNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.ensureCapacity(expectedString.length() * 2)
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
   }
 
   @Test def shouldProperlySetLength(): Unit = {
@@ -157,6 +251,28 @@ class StringBuilderTest {
 
     assertEquals("foo", { b.setLength(3); b.toString })
     assertEquals("foo\u0000\u0000\u0000", { b.setLength(6); b.toString })
+  }
+
+  @Test def setLengthShouldNotChangePriorString(): Unit = {
+    val sb = initBuilder(expectedString)
+    val prior = sb.toString()
+
+    sb.setLength(5)
+
+    assertEquals("Unexpected change in prior string", expectedString, prior)
+  }
+
+  @Test def trimToSizeShouldNotChangePriorString(): Unit = {
+    /* sb.length < InitialCapacity means there are unused Char slots
+     * so "trimToSize()" will compact & change StringBuffer value.
+     */
+    val expected = "Mordor"
+    val sb = initBuilder(expected)
+    val prior = sb.toString()
+
+    sb.trimToSize()
+
+    assertEquals("Unexpected change in prior string", expected, prior)
   }
 
   @Test def appendCodePoint(): Unit = {
