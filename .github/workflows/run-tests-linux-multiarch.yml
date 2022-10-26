@@ -61,6 +61,7 @@ jobs:
               --cache-from=localhost:5000/${imageName} \
               --build-arg BASE_IMAGE=$BASE_IMAGE \
               --build-arg LLVM_VERSION=$LLVM_VERSION \
+              --build-arg BUILD_DEPS="${BUILD_DEPS}" \
               --platform ${BUILD_PLATFORM} \
               ci-docker && \
             docker tag $imageName localhost:5000/${imageName} && \
@@ -124,6 +125,35 @@ jobs:
         with:
           path: /tmp/docker-registry
           key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{matrix.arch}}
+     
+      - name: Prepare native config
+        shell: bash
+        if: ${{ !contains(matrix.arch, 'linux-x86') }}
+        # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
+        # Becouse of that we need to build it whole config from scratch
+        # There is no other way for passing compile and linking opts (we ignore deprecated sbt keys)
+        # Following envs CROSS_ are always present in docker container
+        run: |
+          targetEnv='sys.env("CROSS_TRIPLE")'
+          target='${sys.env("CROSS_TRIPLE")}'
+          crossRoot='${sys.env("CROSS_ROOT")}'
+
+          sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
+          useLdFlg=\"-fuse-ld=lld\"
+          crossOptions="$sysRootFlag ++ List($useLdFlg)"
+
+          emptyConfig="scalanative.build.NativeConfig.empty"
+          withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
+          withGC="withGC(scalanative.build.GC.${{matrix.gc}})"
+          withLTO="withLTO(scalanative.build.LTO.${{matrix.lto}})"
+          withToolchain="withClang(scalanative.build.Discover.clang()).withClangPP(scalanative.build.Discover.clangpp())"
+          withOpts="withEmbedResources(true).withOptimize(true).withCheck(true).withCheckFatalWarnings(true)"
+          withTarget="withTargetTriple(${targetEnv})"
+          withCompileOpts="withCompileOptions(scalanative.build.Discover.compileOptions() ++ $crossOptions)"
+          withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
+          config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
+
+          echo set-native-config=set every nativeConfig := ${config} >> $GITHUB_ENV
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
@@ -143,6 +173,7 @@ jobs:
           # missing __mulodi4 symbol used in j.l.Math.addExact(Long,Long)
           # testsExt${{env.project-version}}/test;
           TEST_COMMAND: >
+            ${{env.set-native-config}};
             show sandbox${{env.project-version}}/nativeConfig;
             sandbox${{env.project-version}}/run;
             testsJVM${{env.project-version}}/test;

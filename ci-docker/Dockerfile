@@ -6,12 +6,33 @@ FROM --platform=${TARGETPLATFORM} $BASE_IMAGE as cross
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 ARG LLVM_VERSION
+ARG BUILD_DEPS
 RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM, LLVM toolchain: $LLVM_VERSION"
 RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev git
 
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
+
+# We cannot easily install dependencies, clone and build zlib and Boehm locally
+RUN ! $BUILD_DEPS || git clone https://github.com/madler/zlib /tmp/zlib \
+  && cd /tmp/zlib/ \
+  && git checkout v1.2.11 \
+  && ./configure \
+  && make install prefix=$QEMU_LD_PREFIX \
+  && rm -rf /tmp/zlib
+
+RUN ! $BUILD_DEPS || git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
+  && cd /tmp/bdwgc/ \
+  && git checkout v8.0.6 \
+  && git clone https://github.com/ivmai/libatomic_ops \
+  && cd libatomic_ops/ \
+  && git checkout v7.6.12 \
+  && cd .. \
+  && ./autogen.sh \
+  && ./configure --host $CROSS_TRIPLE \
+  && make install prefix=$QEMU_LD_PREFIX \
+  && rm -rf /tmp/bdwgc
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
@@ -29,6 +50,7 @@ ENV LANG "C.UTF-8"
 ENV PATH=/usr/lib/llvm-$LLVM_VERSION/bin:~/.sdkman/candidates/java/current/bin:~/.sdkman/candidates/sbt/current/bin:${PATH}
 
 CMD sbt "++ $SCALA_VERSION -v" \
+  "-Dscala.scalanative.testinterface.processrunner.emulator=$TARGET_EMULATOR" \
   "-J-Xmx5G" \
   "set sbtScalaNative/scriptedBufferLog := false" \
   "$TEST_COMMAND"

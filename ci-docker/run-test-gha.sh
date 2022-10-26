@@ -38,12 +38,12 @@ docker run --privileged --rm tonistiigi/binfmt --install all
 # CI jobs failing due to missing image.
 if ! docker pull $FULL_IMAGE_NAME; then
   echo "Image not found found in cache, building locally"
-
   docker buildx build \
     -t ${IMAGE_NAME} \
-    --build-arg BASE_IMAGE=$BASE_IMAGE \
-    --build-arg LLVM_VERSION=$LLVM_VERSION \
-    --platform ${BUILD_PLATFORM} \
+    --build-arg BASE_IMAGE="$BASE_IMAGE" \
+    --build-arg LLVM_VERSION="$LLVM_VERSION" \
+    --build-arg BUILD_DEPS="${BUILD_DEPS}"
+    --platform "${BUILD_PLATFORM}" \
     ci-docker &&
     docker tag ${IMAGE_NAME} ${FULL_IMAGE_NAME} &&
     docker push ${FULL_IMAGE_NAME}
@@ -56,12 +56,14 @@ SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
 
 docker run --platform=${BUILD_PLATFORM} -i "${FULL_IMAGE_NAME}" bash -c "java -version"
-docker run --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
+docker run \
+  --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
   --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
   --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
   --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
   --platform=${BUILD_PLATFORM} \
   -e SCALA_VERSION="$SCALA_VERSION" \
+  -e TARGET_EMULATOR="$TARGET_EMULATOR"
   -e TEST_COMMAND="$TEST_COMMAND" \
   -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
   -e SCALANATIVE_GC="$SCALANATIVE_GC" \
