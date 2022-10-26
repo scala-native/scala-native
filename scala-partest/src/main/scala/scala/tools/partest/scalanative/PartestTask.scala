@@ -159,6 +159,6 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       resolvedVals = mutable.Map.empty
     )
 
-    Build.findAndCompileNativeSources(config, linkerResult)
+    Build.findAndCompileNativeLibs(config, linkerResult)
   }
 }

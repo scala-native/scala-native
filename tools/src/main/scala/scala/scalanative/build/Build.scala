@@ -103,11 +103,7 @@ object Build {
             /* Finds all the libraries on the classpath that contain native
              * code and then compiles them.
              */
-            NativeLib
-              .findNativeLibs(fconfig)
-              .flatMap(nativeLib =>
-                NativeLib.compileNativeLibrary(fconfig, linked, nativeLib)
-              )
+            findAndCompileNativeLibs(fconfig, linked)
           case Some(libObjectPaths) =>
             libObjectPaths
               .split(java.io.File.pathSeparatorChar)
@@ -128,4 +124,24 @@ object Build {
         LLVM.link(fconfig, linked, objectPaths)
       }
     }
+
+  /** Convenience method to combine finding and compiling native libaries.
+   *
+   *  @param config
+   *    the compiler configuration
+   *  @param linkerResult
+   *    the result from the linker
+   *  @return
+   *    a sequence of the object file paths
+   */
+  def findAndCompileNativeLibs(
+      config: Config,
+      linkerResult: linker.Result
+  ): Seq[Path] = {
+    NativeLib
+      .findNativeLibs(config)
+      .flatMap(nativeLib =>
+        NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
+      )
+  }
 }
