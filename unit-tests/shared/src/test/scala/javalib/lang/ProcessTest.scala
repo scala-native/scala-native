@@ -211,45 +211,21 @@ class ProcessTest {
      * See Issue #2759 for an extended discussion.
      */
 
-    /* Whenever you see timing code like this, you know both that you
-     * are in for a good time in the present and that you are destined
-     * to return to it time & time again.
+    /* "ping" is used here as a timing ~~hack~~ felicity, not
+     * to do anything actually sensible with a network.
      *
-     * initialDelaySeconds:
-     *   With the current, a hack but done, wait-for-ready implementation
-     *   this value is chosen to drastically decrease the chance of
-     *   the signal arriving before the 'exec' and causing failure.
-     *   Agreed, it is currently wasteful of CI time but the hope
-     *   is that it will not incur developer time chasing race
-     *   issues.
-     *
-     * lifetimeSeconds:
-     *   It is OK for lifetimeSeconds to be on the large side. The
-     *   returned process is destined to be destroyed on receipt.
-     *   Making it too small makes the window for receiving the signal
-     *   smaller, increasing the chance for the signal not hitting the
-     *   window and reporting errors.  Hence, the high side is the better path.
-     *
-     * Again, see Issue #2759 for an extended discussion.
+     * Send two packets, one immediately sends I/O to parent.
+     * Then the process expects to live long enough to send a second
+     * in 10 seconds. When either SIGTERM or SIGKILL arrives, only the
+     * necessary minimum time will have actually been taken.
      */
+    val proc = processForCommand("ping", "-c", "2", "-i", "10.0", "127.0.0.1")
+      .start()
 
-    val initialDelaySeconds = 5
-    val lifetimeSeconds = 10.0 + initialDelaySeconds
+    // When process has produced a byte of output, it should be past 'exec'.
+    proc.getInputStream().read()
 
-    val proc = processSleep(lifetimeSeconds).start()
-
-    assertTrue("process should be alive", proc.isAlive)
-
-    /* Give time for OS child to get past exec*() call.
-     * Agreed, this hasty implementation is sub-optimal & wasteful but
-     * it has the saving virtue of being implemented.
-     *
-     * A better implementation is left as an exercise for the reader.
-     * See Issue #2759 for more complex alternatives.
-     */
-    Thread.sleep(initialDelaySeconds * 1000)
-
-    return proc
+    proc
   }
 
   @Test def destroy(): Unit = {
