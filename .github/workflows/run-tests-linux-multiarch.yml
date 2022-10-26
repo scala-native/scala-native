@@ -78,19 +78,19 @@ jobs:
       matrix:
         arch: [linux-arm64, linux-x86]
         scala: [2.13.10, 3.2.0]
-        build-mode: [debug, release-fast]
-        lto: [none, thin]
+        build-mode: [release-fast]
+        lto: [thin]
         gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
         # Excluded entries should have low impact on overall project coverage
+        include:
+          - lto: none
+            build-mode: debug
+            arch: linux-arm64
+          - lto: none
+            build-mode: debug
+            arch: linux-x86
         exclude:
-          # releaseFast without lto constructs 1 big .ll file which takes long to compile
-          - build-mode: release-fast
-            lto: none
-          - build-mode: debug
-            gc: commix
-          - build-mode: release-fast
-            gc: immix
           # Immix does not suppoort Immix/Commix GCs
           - gc: immix
             arch: linux-x86
@@ -118,9 +118,9 @@ jobs:
 
       - name: Run tests
         env:
-          SCALANATIVE_MODE: ${{matrix.build-mode}}
-          SCALANATIVE_GC: ${{matrix.gc}}
-          SCALANATIVE_LTO: ${{matrix.lto}}
+          SCALANATIVE_MODE: "${{matrix.build-mode}}"
+          SCALANATIVE_GC: "${{matrix.gc}}"
+          SCALANATIVE_LTO: "${{matrix.lto}}"
           TEST_COMMAND: >
             show sandbox${{env.project-version}}/nativeConfig;
             sandbox${{env.project-version}}/run;
@@ -134,4 +134,4 @@ jobs:
           timeout_minutes: 180
           max_attempts: 2
           retry_on: error
-          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }} ${{env.project-version}}
+          command: printenv && ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }} ${{env.project-version}}
