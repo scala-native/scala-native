@@ -1,0 +1,66 @@
+name: Run tests MacOs
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 0.4.x
+concurrency: 
+  group: macOS-${{ github.head_ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  run-tests:
+    name: Test runtime
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.0, 2.13.10, 2.12.17, 2.11.12]
+        gc: [immix]
+        include:
+          - scala: 2.13.10
+            gc: commix
+          - scala: 2.12.17
+            gc: boehm
+          - scala: 2.11.12
+            gc: none
+          - scala: 3.1.3
+            gc: immix
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/macos-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test runtime
+        run: >
+          export SCALANATIVE_GC=${{matrix.gc}} &&
+          sbt ++${{matrix.scala}}
+          "test-runtime ${{matrix.scala}}"
+
+      - name: Test partests infrastructure
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3.') }}
+        run: >
+          sbt ++${{matrix.scala}}
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+
+  run-scripted-tests:
+    name: Scripted tests
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.12.17, 3.1.3]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test scripted
+        run: sbt "test-scripted ${{matrix.scala}}"

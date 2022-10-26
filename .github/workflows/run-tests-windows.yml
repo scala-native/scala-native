@@ -1,0 +1,140 @@
+name: Run tests Windows
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 0.4.x
+concurrency: 
+  group: windows-${{ github.head_ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  run-tests:
+    name: Test runtime
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        scala: [3.2.0, 2.13.10]
+        gc: [boehm, immix, commix]
+        include: 
+        - scala: 2.11.12
+          gc: immix
+        - scala: 2.11.12
+          gc: commix
+        - scala: 2.12.17
+          gc: immix
+        - scala: 2.12.17
+          gc: commix
+        - scala: 2.13.10
+          gc: none
+        - scala: 3.1.3
+          gc: immix
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      # None GC takes too much memory on Windows to execute partest JUnit tests
+      # leading to spurious failures in the CI. Perform subset of tests instead
+      - name: Test runtime None GC
+        if: matrix.gc == 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          sandbox${{env.project-version}}/run
+          testsJVM${{env.project-version}}/test
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
+          testsExtJVM${{env.project-version}}/test
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
+
+      - name: Test runtime
+        if: matrix.gc != 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          "test-runtime ${{matrix.scala}}"
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
+
+  run-scripted-tests:
+    name: Scripted tests
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019]
+        scala: [2.12.17, 3.1.3]
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test scripted
+        run: sbt "++${{matrix.scala}}" "test-scripted ${{matrix.scala}}"
+        shell: cmd
+
+  test-runtime-lto:
+    name: Test LTO
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.0, 2.13.10]
+        build-mode: [release-fast]
+        lto: [thin]
+        optimize: [true]
+        include:
+          - scala: 3.2.0
+            lto: full
+            optimize: true
+          - scala: 2.13.10
+            lto: full
+            optimize: true
+          - scala: 2.12.17
+            lto: full
+            optimize: false
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test runtime
+        run: >
+          set SCALANATIVE_GC=immix&
+          set SCALANATIVE_MODE=release-fast&
+          set SCALANATIVE_OPTIMIZE=${{matrix.optimize}}&
+          set SCALANATIVE_LTO=${{matrix.lto}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}}
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
+        shell: cmd

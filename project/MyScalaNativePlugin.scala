@@ -20,7 +20,6 @@ object MyScalaNativePlugin extends AutoPlugin {
       _.withCheck(true)
         .withCheckFatalWarnings(true)
         .withDump(true)
-        .withOptimize(false)
     }
   )
 }

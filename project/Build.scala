@@ -18,34 +18,6 @@ object Build {
   import Settings._
   import Deps._
 
-// format: off
-  val publishedMultiScalaProjects = Seq(
-    nir, util, tools,
-    nscPlugin, junitPlugin,
-    nativelib, clib, posixlib, windowslib,
-    auxlib, javalib,  scalalib,
-    testInterface, testInterfaceSbtDefs,
-    testingCompiler, testingCompilerInterface,
-    junitRuntime
-  )
-  val publishedProjects = Seq(sbtScalaNative) ++ publishedMultiScalaProjects.flatMap(_.componentProjects)
-
-  val allProjects: Seq[Project] = publishedProjects ++ Seq(
-    javalibExtDummies,
-    junitAsyncNative, junitAsyncJVM,
-    junitTestOutputsJVM, junitTestOutputsNative,
-    tests, testsJVM, testsExt, testsExtJVM, sandbox,
-    scalaPartest, scalaPartestRuntime,
-    scalaPartestTests, scalaPartestJunitTests
-  ).flatMap(_.componentProjects)
-// format: on
-
-  private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
-    key := key.dependsOn(projects.map(_ / key): _*).value
-  }
-
-  val publishCompilerPlugins = taskKey[Unit]("Publish compiler plugins")
-
   lazy val root: Project =
     Project(id = "scala-native", base = file("."))
       .settings(
@@ -54,11 +26,35 @@ object Build {
         crossScalaVersions := ScalaVersions.libCrossScalaVersions,
         commonSettings,
         noPublishSettings,
-        disabledTestsSettings,
-        setDepenency(clean, allProjects),
-        setDepenency(Compile / compile, allProjects),
-        setDepenency(Test / compile, allProjects),
-        setDepenency(publishLocal, publishedProjects),
+        disabledTestsSettings, {
+// format: off
+          val allProjects: Seq[Project] = Seq(
+              sbtScalaNative
+            ) ++ Seq(
+                nir, util, tools,
+                nscPlugin, junitPlugin,
+                nativelib, clib, posixlib, windowslib,
+                auxlib, javalib, javalibExtDummies, scalalib,
+                testInterface, testInterfaceSbtDefs,
+                testingCompiler, testingCompilerInterface,
+                junitRuntime, junitAsyncNative, junitAsyncJVM,
+                junitTestOutputsJVM, junitTestOutputsNative,
+                tests, testsJVM, testsExt, testsExtJVM, sandbox,
+                scalaPartest, scalaPartestRuntime,
+                scalaPartestTests, scalaPartestJunitTests
+            ).flatMap(_.componentProjects)
+// format: on
+          val keys = Seq[TaskKey[_]](clean)
+          for (key <- keys) yield {
+            /* The match is only used to capture the type parameter `a` of
+             * each individual TaskKey.
+             */
+            key match {
+              case key: TaskKey[a] =>
+                key := key.dependsOn(allProjects.map(_ / key): _*).value
+            }
+          }
+        }
       )
 
   // Compiler plugins

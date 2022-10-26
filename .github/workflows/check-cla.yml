@@ -1,0 +1,8 @@
+name: Check CLA
+on: [pull_request]
+jobs:
+  check-cla:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./scripts/check-cla.sh
