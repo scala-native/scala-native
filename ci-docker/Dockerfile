@@ -15,24 +15,28 @@ RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERS
 RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
 
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
-RUN ! $BUILD_DEPS || git clone https://github.com/madler/zlib /tmp/zlib \
-  && cd /tmp/zlib/ \
-  && git checkout v1.2.11 \
-  && ./configure \
-  && make install prefix=$QEMU_LD_PREFIX \
-  && rm -rf /tmp/zlib
+RUN ! $BUILD_DEPS || { \
+    git clone https://github.com/madler/zlib /tmp/zlib \
+    && cd /tmp/zlib/ \
+    && git checkout v1.2.11 \
+    && ./configure \
+    && make install prefix=$QEMU_LD_PREFIX \
+    && rm -rf /tmp/zlib \
+  }
 
-RUN ! $BUILD_DEPS || git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
-  && cd /tmp/bdwgc/ \
-  && git checkout v8.0.6 \
-  && git clone https://github.com/ivmai/libatomic_ops \
-  && cd libatomic_ops/ \
-  && git checkout v7.6.12 \
-  && cd .. \
-  && ./autogen.sh \
-  && ./configure --host $CROSS_TRIPLE \
-  && make install prefix=$QEMU_LD_PREFIX \
-  && rm -rf /tmp/bdwgc
+RUN ! $BUILD_DEPS || { \
+  git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
+    && cd /tmp/bdwgc/ \
+    && git checkout v8.0.6 \
+    && git clone https://github.com/ivmai/libatomic_ops \
+    && cd libatomic_ops/ \
+    && git checkout v7.6.12 \
+    && cd .. \
+    && ./autogen.sh \
+    && ./configure --host $CROSS_TRIPLE \
+    && make install prefix=$QEMU_LD_PREFIX \
+    && rm -rf /tmp/bdwgc \
+  }
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
