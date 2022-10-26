@@ -39,57 +39,66 @@ private[scalanative] object LLVM {
     paths.par.map { path =>
       val inpath = path.abs
       val outpath = inpath + oExt
-      val isCpp = inpath.endsWith(cppExt)
-      val isLl = inpath.endsWith(llExt)
       val objPath = Paths.get(outpath)
-      val packageName = (config.workdir relativize path).toString
-        .replace(File.separator, ".")
-        .split('.')
-        .init
-        .mkString(".")
-
-      // LL is generated so always rebuild
-      // If pack2hashPrev is empty, here are two cases:
-      // 1. This is the first compilation time.
-      // 2. We don't use incremental compilation.
-      // In these two cases, we should compile them to object files.
-      // If pack2hashPrev is not empty, we don't recompile native library.
-      // Even if native library changes(This is very rare case). If native library
-      // changes, we should clean the project first.
-      if ((isLl || !Files.exists(objPath)) &&
-          incCompilationContext.shouldCompile(packageName)) {
-        val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-        val stdflag = {
-          if (isLl) Seq()
-          else if (isCpp) {
-            // C++14 or newer standard is needed to compile code using Windows API
-            // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-            if (config.targetsWindows) Seq("-std=c++14")
-            else Seq("-std=c++11")
-          } else Seq("-std=gnu11")
-        }
-        val platformFlags = {
-          if (config.targetsWindows) Seq("-g")
-          else Nil
-        }
-        val expectionsHandling =
-          List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-        val flags = opt(config) +: "-fvisibility=hidden" +:
-          stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
-        val compilec =
-          Seq(compiler) ++ flto(config) ++ flags ++
-            asan(config) ++ target(config) ++
-            Seq("-c", inpath, "-o", outpath)
-
-        config.logger.running(compilec)
-        val result = Process(compilec, config.workdir.toFile) !
-          Logger.toProcessLogger(config.logger)
-        if (result != 0) {
-          throw new BuildException(s"Failed to compile ${inpath}")
-        }
-      }
-      objPath
+      if (needsCompiling(path, objPath)) {
+        compileFile(config, path, objPath)
+      } else objPath
     }.seq
+  }
+
+  private def compileFile(config: Config, in: Path, out: Path)(implicit
+      incCompilationContext: IncCompilationContext
+  ): Path = {
+    val inpath = in.abs
+    val outpath = inpath + oExt
+    val isCpp = inpath.endsWith(cppExt)
+    val isLl = inpath.endsWith(llExt)
+    val objPath = Paths.get(outpath)
+    val workdir = config.workdir
+    val packageName = (workdir relativize in).toString
+
+    // LL is generated so always rebuild
+    // If pack2hashPrev is empty, here are two cases:
+    // 1. This is the first compilation time.
+    // 2. We don't use incremental compilation.
+    // In these two cases, we should compile them to object files.
+    // If pack2hashPrev is not empty, we don't recompile native library.
+    // Even if native library changes(This is very rare case). If native library
+    // changes, we should clean the project first.
+    if ((isLl || !Files.exists(objPath)) &&
+        incCompilationContext.shouldCompile(workdir, in)) {
+      val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+      val stdflag = {
+        if (isLl) Seq()
+        else if (isCpp) {
+          // C++14 or newer standard is needed to compile code using Windows API
+          // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+          if (config.targetsWindows) Seq("-std=c++14")
+          else Seq("-std=c++11")
+        } else Seq("-std=gnu11")
+      }
+      val platformFlags = {
+        if (config.targetsWindows) Seq("-g")
+        else Nil
+      }
+      val expectionsHandling =
+        List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+      val flags = opt(config) +: "-fvisibility=hidden" +:
+        stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
+      val compilec =
+        Seq(compiler) ++ flto(config) ++ flags ++
+          asan(config) ++ target(config) ++
+          Seq("-c", inpath, "-o", outpath)
+
+      // compile
+      config.logger.running(compilec)
+      val result = Process(compilec, workdir.toFile) !
+        Logger.toProcessLogger(config.logger)
+      if (result != 0) {
+        throw new BuildException(s"Failed to compile ${inpath}")
+      }
+    }
+    out
   }
 
   /** Links a collection of `.ll.o` files and the `.o` files from the
@@ -111,6 +120,11 @@ private[scalanative] object LLVM {
       objectsPaths: Seq[Path]
   ): Path = {
     val outpath = config.artifactPath
+    val workdir = config.workdir
+
+    // don't link if no changes
+    if (!needsLinking(objectsPaths, outpath)) return outpath
+
     val links = {
       val srclinks = linkerResult.links.collect {
         case Link("z") if config.targetsWindows => "zlib"
@@ -150,7 +164,7 @@ private[scalanative] object LLVM {
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
     locally {
-      val pw = new PrintWriter(config.workdir.resolve("llvmLinkInfo").toFile)
+      val pw = new PrintWriter(workdir.resolve("llvmLinkInfo").toFile)
       try
         llvmLinkInfo.foreach {
           // in windows system, the file separator doesn't work very well, so we
@@ -161,17 +175,25 @@ private[scalanative] object LLVM {
     }
     val compile = config.clangPP.abs +: Seq(s"@llvmLinkInfo")
 
-    config.logger.time(
-      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
-    ) {
-      config.logger.running(compile)
-      val result = Process(compile, config.workdir.toFile) !
-        Logger.toProcessLogger(config.logger)
-      if (result != 0) {
-        throw new BuildException(s"Failed to link ${outpath}")
-      }
+    // link
+    config.logger.running(compile)
+    val result = Process(compile, workdir.toFile) !
+      Logger.toProcessLogger(config.logger)
+    if (result != 0) {
+      throw new BuildException(s"Failed to link ${outpath}")
     }
+
     outpath
+  }
+
+  @inline private def needsCompiling(in: Path, out: Path): Boolean = {
+    in.toFile().lastModified() > out.toFile().lastModified()
+  }
+
+  @inline private def needsLinking(in: Seq[Path], out: Path): Boolean = {
+    val inmax = in.map(_.toFile().lastModified()).max
+    val outmax = out.toFile().lastModified()
+    inmax > outmax
   }
 
   private def flto(config: Config): Seq[String] =

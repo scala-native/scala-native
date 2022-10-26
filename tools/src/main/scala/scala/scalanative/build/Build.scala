@@ -60,7 +60,7 @@ object Build {
       if (Files.notExists(config.workdir)) {
         Files.createDirectories(config.workdir)
       }
-      // validate classpath
+      // validate classpath - use fconfig below
       val fconfig = {
         val fclasspath = NativeLib.filterClasspath(config.classPath)
         config.withClassPath(fclasspath)
@@ -76,7 +76,7 @@ object Build {
 
       implicit val incCompilationContext: IncCompilationContext =
         new IncCompilationContext(fconfig.workdir)
-      if (config.compilerConfig.useIncrementalCompilation) {
+      if (fconfig.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.collectFromPreviousState()
       }
 
@@ -86,11 +86,11 @@ object Build {
         ScalaNative.codegen(fconfig, optimized)
       }
 
-      if (config.compilerConfig.useIncrementalCompilation) {
+      if (fconfig.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.dump()
       }
 
-      val objectPaths = config.logger.time("Compiling to native code") {
+      val objectPaths = fconfig.logger.time("Compiling to native code") {
         // compile generated LLVM IR
         val llObjectPaths = LLVM.compile(fconfig, generated)
 
@@ -100,7 +100,14 @@ object Build {
         val libObjectPaths = scala.util.Properties
           .propOrNone("scalanative.build.paths.libobj") match {
           case None =>
-            findAndCompileNativeSources(fconfig, linked)
+            /* Finds all the libraries on the classpath that contain native
+             * code and then compiles them.
+             */
+            NativeLib
+              .findNativeLibs(fconfig)
+              .flatMap(nativeLib =>
+                NativeLib.compileNativeLibrary(fconfig, linked, nativeLib)
+              )
           case Some(libObjectPaths) =>
             libObjectPaths
               .split(java.io.File.pathSeparatorChar)
@@ -110,26 +117,15 @@ object Build {
 
         libObjectPaths ++ llObjectPaths
       }
-      if (config.compilerConfig.useIncrementalCompilation) {
+      if (fconfig.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.clear()
       }
-      LLVM.link(fconfig, linked, objectPaths)
-    }
 
-  def findAndCompileNativeSources(
-      config: Config,
-      linkerResult: linker.Result
-  ): Seq[Path] = {
-    import NativeLib._
-    findNativeLibs(config.classPath, config.workdir)
-      .map(unpackNativeCode)
-      .flatMap { destPath =>
-        val paths = findNativePaths(config.workdir, destPath)
-        val (projPaths, projConfig) =
-          Filter.filterNativelib(config, linkerResult, destPath, paths)
-        implicit val incCompilationContext: IncCompilationContext =
-          new IncCompilationContext(config.workdir)
-        LLVM.compile(projConfig, projPaths)
+      // finally link
+      fconfig.logger.time(
+        s"Linking native code (${fconfig.gc.name} gc, ${fconfig.LTO.name} lto)"
+      ) {
+        LLVM.link(fconfig, linked, objectPaths)
       }
-  }
+    }
 }

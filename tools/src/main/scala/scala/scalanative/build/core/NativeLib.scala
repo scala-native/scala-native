@@ -7,7 +7,7 @@ import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
 
-import scalanative.build.LLVM._
+import scalanative.build.LLVM
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
@@ -18,6 +18,31 @@ private[scalanative] object NativeLib {
   /** Name of directory that contains native code: "scala-native"
    */
   val nativeCodeDir = "scala-native"
+
+  /** Compiles the native code from the library
+   *
+   *  @param config
+   *    the configuration options
+   *  @param linkerResult
+   *    needed for filtering
+   *  @param nativeLib
+   *    the native lib to unpack
+   *  @return
+   *    the paths to the objects
+   */
+  def compileNativeLibrary(
+      config: Config,
+      linkerResult: linker.Result,
+      nativeLib: NativeLib
+  ): Seq[Path] = {
+    val destPath = NativeLib.unpackNativeCode(nativeLib)
+    val paths = NativeLib.findNativePaths(config.workdir, destPath)
+    val (projPaths, projConfig) =
+      Filter.filterNativelib(config, linkerResult, destPath, paths)
+    implicit val incCompilationContext: IncCompilationContext =
+      new IncCompilationContext(config.workdir)
+    LLVM.compile(projConfig, projPaths)
+  }
 
   /** Finds all the native libs on the classpath.
    *
@@ -31,7 +56,10 @@ private[scalanative] object NativeLib {
    *  @return
    *    The Seq of NativeLib objects
    */
-  def findNativeLibs(classpath: Seq[Path], workdir: Path): Seq[NativeLib] = {
+  def findNativeLibs(config: Config): Seq[NativeLib] = {
+    val workdir = config.workdir
+    val classpath = config.classPath
+
     val nativeLibPaths = classpath.flatMap { path =>
       if (isJar(path)) readJar(path)
       else readDir(path)
@@ -88,10 +116,13 @@ private[scalanative] object NativeLib {
   def filterClasspath(classpath: Seq[Path]): Seq[Path] =
     classpath.filter(p => Files.exists(p) && (isJar(p) || Files.isDirectory(p)))
 
-  /** Called to unpack jars and copy native code.
+  /** Called to unpack jars and copy native code. Creates a hash of the jar or
+   *  directory and then only replaces the code when changes occur. The function
+   *  does a full replace and not a diff change. This makes sure deleted files
+   *  are removed from the work area.
    *
    *  @param nativelib
-   *    the native lib to copy/unpack
+   *    the native lib directory/jar to copy/unpack respectively
    *  @return
    *    The destination path of the directory
    */
@@ -169,7 +200,7 @@ private[scalanative] object NativeLib {
 
   /** Used to find native source files in jar files */
   private val jarSrcRegex: String = {
-    val regexExtensions = srcExtensions.mkString("""(\""", """|\""", ")")
+    val regexExtensions = LLVM.srcExtensions.mkString("""(\""", """|\""", ")")
     // Paths in jars always contains '/' separator instead of OS specific one.
     s"""^$nativeCodeDir/(.+)$regexExtensions$$"""
   }
@@ -193,7 +224,7 @@ private[scalanative] object NativeLib {
 
   /** Used to find native source files in directories */
   private def srcPatterns(path: Path): String =
-    srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
+    LLVM.srcExtensions.mkString(s"glob:${srcPathPattern(path)}**{", ",", "}")
 
   private def srcPathPattern(path: Path): String =
     makeDirPath(path, nativeCodeDir)
@@ -222,7 +253,7 @@ private[scalanative] object NativeLib {
   private def destSrcPattern(workdir: Path, destPath: Path): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
     val pathPat = makeDirPath(workdir, dirPattern, nativeCodeDir)
-    srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
+    LLVM.srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 
   private def makeDirPath(path: Path, elems: String*): String = {
