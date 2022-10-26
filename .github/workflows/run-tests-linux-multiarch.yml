@@ -147,7 +147,7 @@ jobs:
           fi
 
           emptyConfig="scalanative.build.NativeConfig.empty"
-          withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
+          withMode="withMode(scalanative.build.Mode.${buildMode})"
           withGC="withGC(scalanative.build.GC.${{matrix.gc}})"
           withLTO="withLTO(scalanative.build.LTO.${{matrix.lto}})"
           withToolchain="withClang(scalanative.build.Discover.clang()).withClangPP(scalanative.build.Discover.clangpp())"
