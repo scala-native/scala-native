@@ -40,12 +40,6 @@ class StringTest {
     )
   }
 
-  @Test def stringArrayByteHighByte(): Unit = {
-    val str = "this constrcutor is deprecated"
-    assertEquals(str, new String(str.getBytes(), 0))
-    assertEquals(str, new String(str.getBytes(), 0, 0, str.length()))
-  }
-
   @Test def stringArrayByteStartLengthWithInvalidStartOrLength(): Unit = {
     val chars: Array[Char] = Array('a', 'b', 'c')
 
@@ -211,7 +205,7 @@ class StringTest {
     )
   }
 
-  @Test def replaceAllLiterallyWithDollarSignInReplacementIssue1070(): Unit = {
+  @Test def replaceWithDollarSignInReplacementIssue1070(): Unit = {
     val literal = "{.0}"
     val replacement = "\\$ipsum"
     val prefix = "Lorem "
@@ -219,7 +213,7 @@ class StringTest {
     val text = prefix + literal + suffix
     val expected = prefix + replacement + suffix
 
-    assertTrue(text.replaceAllLiterally(literal, replacement) == expected)
+    assertTrue(text.replace(literal, replacement) == expected)
   }
 
   private def splitVec(s: String, sep: String, limit: Int = 0) =
@@ -294,13 +288,6 @@ class StringTest {
     splitTest(".", splitExpr = Some("\\."))
     splitTest("ab", splitExpr = Some("ab"))
     splitTest("ab", splitExpr = Some("(ab)"))
-  }
-
-  @Test def getBytes(): Unit = {
-    val b = new Array[scala.Byte](4)
-    // This form of getBytes() has been depricated since JDK 1.1
-    "This is a test".getBytes(10, 14, b, 0)
-    assertTrue(new String(b) equals "test")
   }
 
   def testEncoding(charset: String, expectedInts: Seq[Int]): Unit = {
@@ -628,58 +615,270 @@ class StringTest {
    * Issue #2925
    *
    * These tests are in the order of declaration in the Java 8 specification.
-   *   - The "String()" constructor has no bytes to modify and is not tested.
-   *   - The "String(byte[] ascii, int hibyte, int offset, int count)"
-   *     has been deprecated since Java 1.1 and is not tested.
    */
 
-  /** Checks that creating a String with an `Array[Char]`, then replacing the
-   *  its first character, is not breaking String immutability.
+
+// format: off  
+    val testByteArray = Array(
+      'f'.toByte, 0.toByte,
+      'o'.toByte, 0.toByte,
+      'o'.toByte, 0.toByte,
+      'b'.toByte, 0.toByte,
+      'a'.toByte, 0.toByte,
+      'r'.toByte, 0.toByte
+    )
+// format: on
+
+  /** String() - No Test, no characters to modify.
+   */
+
+  /** Checks that creating a String with an `Array[Byte]`, then replacing its
+   *  first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromByteArray(): Unit = {
+    val bytes = testByteArray.clone
+    val offset = 0 // 'f'
+
+    // Create str from bytes
+    val str = new String(bytes)
+
+    // Modify bytes
+    bytes(offset) = 'm'.toByte
+
+    assertEquals(
+      s"bytes should start with ${'m'.toByte} instead of '${bytes(offset)}'",
+      'm'.toByte,
+      bytes(offset)
+    )
+
+    assertEquals(
+      s"str should start with 'f' instead of '${str.charAt(offset)}'",
+      'f',
+      str.charAt(offset)
+    )
+  }
+
+  /** Checks that creating a String with an `Array[Byte]` using a Charset, then
+   *  replacing its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromByteArrayCharset(): Unit = {
+    val bytes = testByteArray.clone
+    val offset = 0 // 'f'
+
+    // Create str from bytes
+    val str = new String(bytes, StandardCharsets.UTF_8)
+
+    // Modify bytes
+    bytes(offset) = 'm'.toByte
+
+    assertEquals(
+      s"bytes should start with ${'m'.toByte} instead of '${bytes(offset)}'",
+      'm'.toByte,
+      bytes(offset)
+    )
+
+    assertEquals(
+      s"str should start with 'f' instead of '${str.charAt(offset)}'",
+      'f',
+      str.charAt(offset)
+    )
+  }
+
+  /** String(byte[], int) - No test, Deprecated since Java 1.1.
+   */
+
+  /** Checks that creating a String with sub-Array of `Array[Byte]` then
+   *  replacing its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromByteArrayExtract(): Unit = {
+    val bytes = testByteArray.clone
+    val offset = 3 // 'b'
+
+    // Create str from bytes
+    val str = new String(bytes, offset, 6)
+
+    // Modify bytes
+    bytes(offset) = 'm'.toByte
+
+    assertEquals(
+      s"bytes should start with ${'m'.toByte} instead of '${bytes(offset)}'",
+      'm'.toByte,
+      bytes(offset)
+    )
+
+    assertEquals(
+      s"str should start with 'b' instead of '${str.charAt(offset)}'",
+      'b',
+      str.charAt(offset)
+    )
+  }
+
+  /** Checks that creating a String with sub-Array of `Array[Byte]` using a
+   *  Charset, then replacing its first character, is not breaking String
+   *  immutability.
+   */
+  @Test def checkImmutabilityNewStringFromByteArrayExtractCharset(): Unit = {
+    val bytes = testByteArray.clone
+    val offset = 3 // 'b'
+
+    // Create str from bytes
+    val str = new String(bytes, offset, 6, StandardCharsets.UTF_8)
+
+    // Modify bytes
+    bytes(offset) = 'm'.toByte
+
+    assertEquals(
+      s"bytes should start with ${'m'.toByte} instead of '${bytes(offset)}'",
+      'm'.toByte,
+      bytes(offset)
+    )
+
+    assertEquals(
+      s"str should start with 'b' instead of '${str.charAt(offset)}'",
+      'b',
+      str.charAt(offset)
+    )
+  }
+
+  /** String(byte[], int, int, int) - No test, Deprecated since Java 1.1.
+   */
+
+  /** Checks that creating a String with sub-Array of `Array[Byte]` using a
+   *  CharsetName, then replacing its first character, is not breaking String
+   *  immutability.
+   */
+  @Test def checkImmutabilityNewStringFromByteArrayExtractCharsetName()
+      : Unit = {
+    val bytes = testByteArray.clone
+    val offset = 3 // 'b'
+
+    // Create str from bytes
+    val str = new String(bytes, offset, 6, "UTF-8")
+
+    // Modify bytes
+    bytes(offset) = 'm'.toByte
+
+    assertEquals(
+      s"bytes should start with ${'m'.toByte} instead of '${bytes(offset)}'",
+      'm'.toByte,
+      bytes(offset)
+    )
+
+    assertEquals(
+      s"str should start with 'b' instead of '${str.charAt(offset)}'",
+      'b',
+      str.charAt(offset)
+    )
+  }
+
+  /** Checks that creating a String with an `Array[Byte]` using a CharsetName,
+   *  then replacing its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromByteArrayCharsetName(): Unit = {
+    val bytes = testByteArray.clone
+    val offset = 0 // 'f'
+
+    // Create str from bytes
+    val str = new String(bytes, "UTF-8")
+
+    // Modify bytes
+    bytes(offset) = 'm'.toByte
+
+    assertEquals(
+      s"bytes should start with ${'m'.toByte} instead of '${bytes(offset)}'",
+      'm'.toByte,
+      bytes(offset)
+    )
+
+    assertEquals(
+      s"str should start with 'f' instead of '${str.charAt(offset)}'",
+      'f',
+      str.charAt(offset)
+    )
+  }
+
+  /** Checks that creating a String with an `Array[Char]`, then replacing its
+   *  first character, is not breaking String immutability.
    */
   @Test def checkImmutabilityNewStringFromCharArray(): Unit = {
     val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+    val offset = 0 // 'f'
 
     // Create str from chars
     val str = new String(chars)
     // Modify chars
-    chars(0) = 'm'
+    chars(offset) = 'm'
 
-    assertTrue(
-      s"chars should start with 'm' instead of '${chars(0)}'",
-      'm' == chars(0)
+    assertEquals(
+      s"chars should start with 'm' instead of '${chars(offset)}'",
+      'm',
+      chars(offset)
     )
 
-    assertTrue(
-      s"str should start with 'f' instead of '${str.charAt(0)}'",
-      'f' == str.charAt(0)
+    assertEquals(
+      s"str should start with 'f' instead of '${str.charAt(offset)}'",
+      'f',
+      str.charAt(offset)
     )
   }
 
-  /** Checks that creating a String with an `Array[Char]`, then replacing the
-   *  its first character, is not breaking String immutability.
+  /** Checks that creating a String with an `Array[Char]`, then replacing its
+   *  first character, is not breaking String immutability.
    */
   @Test def checkImmutabilityNewStringFromCharArrayRange(): Unit = {
     val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+    val offset = 0 // 'f'
 
     // Create str from a "range" of chars
-    val str = new String(chars, 0, 1)
+    val str = new String(chars, offset, 1)
 
     // Modify chars
-    chars(0) = 'm'
+    chars(offset) = 'm'
 
-    assertTrue(
-      s"chars should start with 'm' instead of '${chars(0)}'",
-      'm' == chars(0)
+    assertEquals(
+      s"chars should start with 'm' instead of '${chars(offset)}'",
+      'm',
+      chars(offset)
     )
 
-    assertTrue(
-      s"str should start with 'f' instead of '${str.charAt(0)}'",
-      'f' == str.charAt(0)
+    assertEquals(
+      s"str should start with 'f' instead of '${str.charAt(offset)}'",
+      'f',
+      str.charAt(offset)
     )
   }
 
-  /** Checks that creating a String with an `Array[Char]`, then replacing the
+  /** Checks that creating a String with an `Array[codePoints]`, then replacing
    *  its first character, is not breaking String immutability.
+   */
+  @Test def checkImmutabilityNewStringFromCodepointArrayRange(): Unit = {
+    // Unicode code points are Integers.
+    val chars = Array('f', 'o', 'o', 'b', 'a', 'r')
+    val codepoints = chars.map(c => c.toInt)
+
+    // Create str from a "range" of codepoints
+    val str = new String(codepoints, 0, 5)
+
+    val changedCp = 'm'.toInt
+    // Modify codepoints
+    codepoints(0) = changedCp
+
+    assertEquals(
+      s"codepoints should start with ${changedCp} " +
+        s"instead of '${codepoints(0)}'",
+      changedCp,
+      codepoints(0)
+    )
+
+    assertEquals(
+      s"str should start with 'f' instead of '${str.charAt(0)}'",
+      'f',
+      str.charAt(0)
+    )
+  }
+
+  /** Checks that creating a String with a `String`, then replacing its first
+   *  character, is not breaking String immutability.
    */
   @Test def checkImmutabilityNewStringFromString(): Unit = {
     val s1 = "foobar"
@@ -690,25 +889,28 @@ class StringTest {
     // Modify String s1
     val s3 = s1.replace('f', 'm')
 
-    assertTrue(
+    assertEquals(
       s"s1 should start with 'f' instead of '${s1.charAt(0)}'",
-      'f' == s1.charAt(0)
+      'f',
+      s1.charAt(0)
     )
 
-    assertTrue(
+    assertEquals(
       s"s2 should start with 'f' instead of '${s2.charAt(0)}'",
-      'f' == s2.charAt(0)
+      'f',
+      s2.charAt(0)
     )
 
-    assertTrue(
+    assertEquals(
       s"s3 should start with 'm' instead of '${s3.charAt(0)}'",
-      'm' == s3.charAt(0)
+      'm',
+      s3.charAt(0)
     )
   }
 
-  /** Checks that creating a String with a a StringBuffer, whose backing Array
-   *  is shared with the created String, is not breaking String immutability.
-   *  See: https://github.com/scala-native/scala-native/issues/2925
+  /** Checks that creating a String with a StringBuffer, whose backing Array is
+   *  shared with the created String, is not breaking String immutability. See:
+   *  https://github.com/scala-native/scala-native/issues/2925
    */
   @Test def checkImmutabilityNewStringFromStringBuffer(): Unit = {
     val strBuffer = new StringBuffer()
@@ -720,19 +922,21 @@ class StringTest {
     // Modify the StringBuffer
     strBuffer.setCharAt(0, 'm')
 
-    assertTrue(
+    assertEquals(
       s"strBuffer should start with 'm' instead of '${strBuffer.charAt(0)}'",
-      'm' == strBuffer.charAt(0)
+      'm',
+      strBuffer.charAt(0)
     )
 
-    assertTrue(
+    assertEquals(
       s"str should start with 'f' instead of '${str.charAt(0)}'",
-      'f' == str.charAt(0)
+      'f',
+      str.charAt(0)
     )
   }
 
-  /** Checks that creating a String with a a StringBuilder, whose backing Array
-   *  is shared with the created String, is not breaking String immutability.
+  /** Checks that creating a String with a StringBuilder, whose backing Array is
+   *  shared with the created String, is not breaking String immutability.
    */
   @Test def checkImmutabilityNewStringFromStringBuilder(): Unit = {
     val strBuilder = new StringBuilder()
@@ -744,14 +948,16 @@ class StringTest {
     // Modify the StringBuilder
     strBuilder.setCharAt(0, 'm')
 
-    assertTrue(
+    assertEquals(
       s"strBuilder should start with 'm' instead of '${strBuilder.charAt(0)}'",
-      'm' == strBuilder.charAt(0)
+      'm',
+      strBuilder.charAt(0)
     )
 
-    assertTrue(
+    assertEquals(
       s"str should start with 'f' instead of '${str.charAt(0)}'",
-      'f' == str.charAt(0)
+      'f',
+      str.charAt(0)
     )
   }
 
