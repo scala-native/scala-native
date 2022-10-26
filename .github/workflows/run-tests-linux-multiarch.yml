@@ -170,8 +170,8 @@ jobs:
             }
           EOM
           )
-          
-          if [[ "${{matrix.arch}} == "linux-x86" ]]; then
+
+          if [[ "${{matrix.arch}}" == "linux-x86" ]]; then
             echo set-native-config=nativeConfig ~= identity >> $GITHUB_ENV
           else
             echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
