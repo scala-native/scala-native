@@ -122,7 +122,7 @@ final class _String()
     this()
     value = string.value
     offset = string.offset
-    count = string.length()
+    count = string.count
   }
 
   def this(sb: StringBuffer) = {

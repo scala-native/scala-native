@@ -158,4 +158,21 @@ class StringBufferTest {
     buf.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", buf.toString)
   }
+
+  /** Checks that modifying a StringBuffer, converted to a String using a
+   *  `.toString` call, is not breaking String immutability. See:
+   *  https://github.com/scala-native/scala-native/issues/2925
+   */
+  @Test def toStringThenModifyStringBuffer(): Unit = {
+    val buf = new StringBuffer()
+    buf.append("foobar")
+
+    val s = buf.toString
+    buf.setCharAt(0, 'm')
+
+    assertTrue(
+      s"foobar should start with 'f' instead of '${s.charAt(0)}'",
+      'f' == s.charAt(0)
+    )
+  }
 }
