@@ -40,7 +40,7 @@ private[java] object IEEE754Helpers {
     memcpy(cStr, bytesPtr, n.toUSize)
 
     // add NUL-terminator to CString
-    !(cStr + n) = 0.toByte
+    cStr(n) = 0.toByte
 
     cStr
   }
