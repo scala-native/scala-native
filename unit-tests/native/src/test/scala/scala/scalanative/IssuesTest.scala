@@ -555,6 +555,16 @@ class IssuesTest {
     assertEquals("class scala.runtime.Null$", classOf[Null].toString())
   }
 
+  @Test def test_Issue2866() = {
+    // In the issue the calls to malloc and srand would fail
+    // becouse null would be passed to extern method taking unboxed type Size/Int
+    import scala.scalanative.libc.stdlib.{malloc, free, srand}
+    val ptr = malloc(null) // CSize -> RawSize should equal to malloc(0)
+    free(ptr)
+    srand(null) // CUnsignedInt -> Int should equal to  srand(0UL)
+    free(null)
+  }
+
 }
 
 package issue1090 {
