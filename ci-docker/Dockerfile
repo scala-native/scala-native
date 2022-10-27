@@ -8,7 +8,7 @@ ARG TARGETPLATFORM
 ARG LLVM_VERSION
 ARG BUILD_DEPS
 RUN echo "Running on $BUILDPLATFORM, building for $TARGETPLATFORM, LLVM toolchain: $LLVM_VERSION"
-RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common libgc-dev libz-dev git
+RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common iputils-ping libgc-dev libz-dev git
 
 RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
