@@ -78,7 +78,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [linux-arm64]
-        scala: [2.13.10, 3.2.0]
+        scala: [2.13.10, 3.2.1]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -159,7 +159,11 @@ jobs:
           EOM
           )
 
-          echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
+          if [[ "${{matrix.arch}}" == "linux-x86" ]]; then
+            echo set-native-config=nativeConfig ~= identity >> $GITHUB_ENV
+          else
+            echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
+          fi
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
@@ -175,6 +179,9 @@ jobs:
           SCALANATIVE_MODE: "${{matrix.build-mode}}"
           SCALANATIVE_GC: "${{matrix.gc}}"
           SCALANATIVE_LTO: "${{matrix.lto}}"
+          # Temporaly excluded due to failures in linux-x86,
+          # missing __mulodi4 symbol used in j.l.Math.addExact(Long,Long)
+          # testsExt${{env.project-version}}/test;
           TEST_COMMAND: >
             set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
             set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
