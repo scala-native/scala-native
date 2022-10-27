@@ -1793,7 +1793,15 @@ THE SOFTWARE.
 
 # License notice for Android Luni
 
-Implementation of `InflaterOutputStream` is taken based on the [Android Luni](https://android.googlesource.com/platform/libcore/) project.
+Scala Native's `javalib/` contains parts that are derived from either:
+* the latest "Apache 2.0 licensed" [libcore snapshot](https://android.googlesource.com/platform/libcore/+/2e317a02b5a8f9b319488ab9311521e8b4f87a0a/luni/) of the Android Luni project.
+* the "Apache 2.0 licensed" [libcore2 archive](https://android.googlesource.com/platform/libcore2/+/master/luni/) of the Android Luni project.
+
+Those parts are either marked with `// ported from Android Luni` or include the full copyright preamble in the source code file.
+
+For instance, the implementation of `InflaterOutputStream` is based on this source file:
+https://android.googlesource.com/platform/libcore/+/2e317a02b5a8f9b319488ab9311521e8b4f87a0a/luni/src/main/java/java/util/zip/InflaterInputStream.java
+
 The original license notice is included below:
 
 ```

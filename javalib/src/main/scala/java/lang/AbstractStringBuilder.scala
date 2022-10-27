@@ -1,23 +1,25 @@
+// Contains parts ported from Android Luni
 package java.lang
 
 import java.io.InvalidObjectException
 import java.util.Arrays
 import scala.util.control.Breaks._
 
-abstract class AbstractStringBuilder private (unit: Unit) {
+protected abstract class AbstractStringBuilder private (unit: Unit) {
   import AbstractStringBuilder._
 
   protected var value: Array[Char] = _
   protected var count: scala.Int = _
   protected var shared: scala.Boolean = _
 
-  final def getValue(): Array[scala.Char] = value
+  private[lang] final def getValue(): Array[scala.Char] = value
+
   final def shareValue(): Array[scala.Char] = {
     shared = true
     value
   }
 
-  final def set(chars: Array[scala.Char], len: scala.Int): Unit = {
+  /*final def set(chars: Array[scala.Char], len: scala.Int): Unit = {
     val chars0 = if (chars != null) chars else new Array[scala.Char](0)
     if (chars0.length < len) {
       throw new InvalidObjectException("")
@@ -26,7 +28,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     shared = false
     value = chars0
     count = len
-  }
+  }*/
 
   def this() = {
     this(())
@@ -54,7 +56,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     shared = false
   }
 
-  final def appendNull(): Unit = {
+  protected final def appendNull(): Unit = {
     val newSize = count + 4
     if (newSize > value.length) {
       enlargeBuffer(newSize)
@@ -69,7 +71,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count += 1
   }
 
-  final def append0(chars: Array[Char]): Unit = {
+  protected final def append0(chars: Array[Char]): Unit = {
     val newSize = count + chars.length
     if (newSize > value.length) {
       enlargeBuffer(newSize)
@@ -78,7 +80,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(
+  protected final def append0(
       chars: Array[Char],
       offset: scala.Int,
       length: scala.Int
@@ -98,7 +100,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(ch: Char): Unit = {
+  protected final def append0(ch: Char): Unit = {
     if (count == value.length) {
       enlargeBuffer(count + 1)
     }
@@ -106,7 +108,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count += 1
   }
 
-  final def append0(string: String): Unit = {
+  protected final def append0(string: String): Unit = {
     if (string == null) {
       appendNull()
       return
@@ -120,16 +122,39 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count = newSize
   }
 
-  final def append0(
+  protected final def append0(
       chars: CharSequence,
       start: scala.Int,
       end: scala.Int
   ): Unit = {
     val chars0 = if (chars != null) chars else "null"
-    if (start < 0 || end < 0 || start > end || end > chars0.length()) {
+
+    val nChars = chars0.length()
+    if (nChars == 0) return
+
+    if (start < 0 || end < 0 || start > end || end > nChars)
       throw new IndexOutOfBoundsException()
+
+    val length = end - start
+    val newCount = count + length
+    if (newCount > value.length)
+      enlargeBuffer(newCount)
+
+    chars0 match {
+      case str: String => str.getChars(start, end, value, count)
+      case asb: AbstractStringBuilder =>
+        System.arraycopy(asb.value, start, value, count, length)
+      case _ =>
+        var i = start
+        var j = count // Destination index.
+        while (i < end) {
+          value(j) = chars0.charAt(i)
+          j += 1
+          i += 1
+        }
     }
-    append0(chars0.subSequence(start, end).toString)
+
+    this.count = newCount
   }
 
   def capacity(): scala.Int = value.length
@@ -141,7 +166,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     return value(index)
   }
 
-  final def delete0(start: scala.Int, _end: scala.Int): Unit = {
+  protected final def delete0(start: scala.Int, _end: scala.Int): Unit = {
     var end = _end
     if (start >= 0) {
       if (end > count) {
@@ -170,7 +195,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     throw new StringIndexOutOfBoundsException()
   }
 
-  final def deleteCharAt0(location: scala.Int): scala.Unit = {
+  protected final def deleteCharAt0(location: scala.Int): scala.Unit = {
     if (0 > location || location >= count) {
       throw new StringIndexOutOfBoundsException(location)
     }
@@ -208,7 +233,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 
-  final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
+  protected final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
     if (0 > index || index > count) {
       throw new StringIndexOutOfBoundsException(index)
     }
@@ -219,7 +244,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  final def insert0(
+  protected final def insert0(
       index: scala.Int,
       chars: Array[Char],
       start: scala.Int,
@@ -242,7 +267,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     throw new StringIndexOutOfBoundsException(index)
   }
 
-  final def insert0(index: scala.Int, ch: scala.Char): Unit = {
+  protected final def insert0(index: scala.Int, ch: scala.Char): Unit = {
     if (0 > index || index > count) {
       throw new ArrayIndexOutOfBoundsException(index)
     }
@@ -251,7 +276,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     count += 1
   }
 
-  final def insert0(index: scala.Int, string: String): Unit = {
+  protected final def insert0(index: scala.Int, string: String): Unit = {
     if (0 <= index && index <= count) {
       val string0 = if (string != null) string else "null"
       val min = string0.length
@@ -265,7 +290,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  final def insert0(
+  protected final def insert0(
       index: scala.Int,
       chars: CharSequence,
       start: scala.Int,
@@ -301,7 +326,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     shared = false
   }
 
-  final def replace0(
+  protected final def replace0(
       start: scala.Int,
       _end: scala.Int,
       string: String
@@ -352,7 +377,7 @@ abstract class AbstractStringBuilder private (unit: Unit) {
     throw new StringIndexOutOfBoundsException()
   }
 
-  final def reverse0(): Unit = {
+  protected final def reverse0(): Unit = {
     if (count < 2)
       return
     if (!shared) {
