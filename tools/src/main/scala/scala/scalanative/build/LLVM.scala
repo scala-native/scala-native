@@ -36,28 +36,27 @@ private[scalanative] object LLVM {
       incCompilationContext: IncCompilationContext
   ): Seq[Path] = {
     // generate .o files for all included source files in parallel
-    paths.par.map { path =>
-      val inpath = path.abs
+    paths.par.map { srcPath =>
+      val inpath = srcPath.abs
       val outpath = inpath + oExt
       val objPath = Paths.get(outpath)
-      if (needsCompiling(path, objPath)) {
-        compileFile(config, path, objPath)
+      // compile if out of date or no object file
+      if (needsCompiling(srcPath, objPath)) {
+        compileFile(config, srcPath, objPath)
       } else objPath
     }.seq
   }
 
-  private def compileFile(config: Config, in: Path, out: Path)(implicit
+  private def compileFile(config: Config, srcPath: Path, objPath: Path)(implicit
       incCompilationContext: IncCompilationContext
   ): Path = {
-    val inpath = in.abs
-    val outpath = inpath + oExt
+    val inpath = srcPath.abs
+    val outpath = objPath.abs
     val isCpp = inpath.endsWith(cppExt)
     val isLl = inpath.endsWith(llExt)
-    val objPath = Paths.get(outpath)
     val workdir = config.workdir
-    val packageName = (workdir relativize in).toString
 
-    // LL is generated so always rebuild
+    // LL is generated so always rebuilt
     // If pack2hashPrev is empty, here are two cases:
     // 1. This is the first compilation time.
     // 2. We don't use incremental compilation.
@@ -66,7 +65,7 @@ private[scalanative] object LLVM {
     // Even if native library changes(This is very rare case). If native library
     // changes, we should clean the project first.
     if ((isLl || !Files.exists(objPath)) &&
-        incCompilationContext.shouldCompile(workdir, in)) {
+        incCompilationContext.shouldCompile(workdir, srcPath)) {
       val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
       val stdflag = {
         if (isLl) Seq()
@@ -98,7 +97,7 @@ private[scalanative] object LLVM {
         throw new BuildException(s"Failed to compile ${inpath}")
       }
     }
-    out
+    objPath
   }
 
   /** Links a collection of `.ll.o` files and the `.o` files from the
@@ -186,10 +185,33 @@ private[scalanative] object LLVM {
     outpath
   }
 
+  /** Checks the input timestamp to see if the file needs compiling. The call to
+   *  lastModified will return 0 for a non existent output file but that makes
+   *  the timestamp always less forcing a recompile.
+   *
+   *  @param in
+   *    the source file
+   *  @param out
+   *    the object file
+   *  @return
+   *    true if it needs compiling false otherwise.
+   */
   @inline private def needsCompiling(in: Path, out: Path): Boolean = {
     in.toFile().lastModified() > out.toFile().lastModified()
   }
 
+  /** Looks at all the object files to see if one is newer than the output
+   *  (executable). All object files will be compiled at this time so
+   *  lastModified will always be a real time stamp. The output executable
+   *  lastModified can be 0 but that forces the link to occur.
+   *
+   *  @param in
+   *    the list of object file to link
+   *  @param out
+   *    the executable
+   *  @return
+   *    true if it need linking
+   */
   @inline private def needsLinking(in: Seq[Path], out: Path): Boolean = {
     val inmax = in.map(_.toFile().lastModified()).max
     val outmax = out.toFile().lastModified()
