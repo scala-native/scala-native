@@ -70,7 +70,10 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.runtime.ClassInstancesRegistry*"),
     exclude[Problem]("scala.scalanative.runtime.package*TypeOps*"),
     // Stub with incorrect signature
-    exclude[Problem]("java.lang._Class.getConstructor")
+    exclude[Problem]("java.lang._Class.getConstructor"),
+    // This package is not actually part of Java's stdlib, it only contains private classes
+    // to handle embedded resources.
+    exclude[Problem]("java.lang.resource.*")
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq(

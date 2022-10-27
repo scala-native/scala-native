@@ -33,11 +33,11 @@ private[java] object IEEE754Helpers {
   private def bytesToCString(bytes: Array[scala.Byte], n: Int)(implicit
       z: Zone
   ): CString = {
-    val cStr = z.alloc((n + 1).toUSize) // z.alloc() does not clear bytes.
+    val cStr = z.alloc((n + 1).toULong) // z.alloc() does not clear bytes.
 
     // memcpy bytes from Array to CString
     val bytesPtr = bytes.asInstanceOf[ByteArray].at(0)
-    memcpy(cStr, bytesPtr, n.toUSize)
+    memcpy(cStr, bytesPtr, n.toULong)
 
     // add NUL-terminator to CString
     cStr(n) = 0.toByte
