@@ -169,11 +169,6 @@ object Settings {
     mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(
       name.value
     ),
-    mimaBinaryIssueFilters ++= Seq(
-      // This package is not actually part of Java's stdlib, it only contains private classes
-      // to handle embedded resources.
-      ProblemFilters.exclude[Problem]("java.lang.resource.*")
-    ),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
       val binCompatVersions = Set()
