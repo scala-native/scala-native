@@ -5,7 +5,10 @@ object ScalaVersions {
   val crossScala211 = Seq("2.11.12")
   val crossScala212 = (13 to 17).map(v => s"2.12.$v")
   val crossScala213 = (4 to 10).map(v => s"2.13.$v")
-  val crossScala3 = (0 to 3).map(v => s"3.1.$v") ++ Seq("3.2.0")
+  val crossScala3 = List(
+    (0 to 3).map(v => s"3.1.$v"),
+    (0 to 1).map(v => s"3.2.$v")
+  ).flatten
 
   // Version of Scala 3 standard library sources used for publishing
   // Workaround allowing to produce NIR for Scala 3.2.x+ and allowing to consume existing libraries using 3.1.x
