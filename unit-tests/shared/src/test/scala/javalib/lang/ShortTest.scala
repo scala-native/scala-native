@@ -6,7 +6,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.ThrowsHelper._
 
 class ShortTest {
   val signedMaxValue = Short.MAX_VALUE
@@ -21,8 +20,7 @@ class ShortTest {
       expectedThrowable: Class[T],
       code: => U
   )(expectedMsg: String): Unit = {
-    val exception = assertThrows(expectedThrowable, code)
-    assertEquals(expectedMsg, exception.toString)
+    assertThrows(expectedMsg, expectedThrowable, code)
   }
 
   @Test def decodeTest(): Unit = {
