@@ -180,7 +180,8 @@ private[scalanative] object ScalaNative {
 
   private[scalanative] def encodedMainClass(config: Config): Global.Top = {
     import scala.reflect.NameTransformer.encode
-    Global.Top(encode(config.mainClass))
+    val encoded = config.mainClass.split('.').map(encode).mkString(".")
+    Global.Top(encoded)
   }
 
 }

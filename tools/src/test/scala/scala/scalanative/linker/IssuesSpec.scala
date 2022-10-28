@@ -26,11 +26,17 @@ class IssuesSpec extends LinkerSpec with Matchers {
     }
 
   "Issue #2790" should "link main classes using encoded characters" in {
-    // All encoded character and an example of unciode encode character '.'
-    val mainClass = raw"Test-native~=<>!#%^&|*/+-:'?@.sc"
+    // All encoded character and an example of unciode encode character ';'
+    val packageName = "foo.`b~a-r`.`b;a;z`"
+    val mainClass = raw"Test-native~=<>!#%^&|*/+-:'?@;sc"
+    val fqcn = s"$packageName.$mainClass".replace("`", "")
     checkNoLinkageErrors(
-      mainClass = mainClass,
-      source = s"object `$mainClass`{ def main(args: Array[String]) = () }"
+      mainClass = fqcn,
+      source = s"""package $packageName
+      |object `$mainClass`{ 
+      |  def main(args: Array[String]) = () 
+      |}
+      |""".stripMargin
     )
   }
 
