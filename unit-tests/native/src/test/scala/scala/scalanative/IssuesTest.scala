@@ -555,6 +555,18 @@ class IssuesTest {
     assertEquals("class scala.runtime.Null$", classOf[Null].toString())
   }
 
+  @Test def test_Issue2712() = {
+    import issue2712._
+    def f[A]: Refined[A] => Refined[A] =
+      x => new Refined(x.value)
+
+    def g: Refined[Byte] => Boolean =
+      x => (x.value == 126.toByte)
+
+    val x = new Refined[Byte](126.toByte)
+    assertTrue(g(f(x)))
+  }
+
 }
 
 package issue1090 {
@@ -652,4 +664,8 @@ package object issue2552 {
   object Bar {
     val bar = () => foo(0)
   }
+}
+
+package object issue2712 {
+  final class Refined[A](val value: A) extends AnyVal
 }
