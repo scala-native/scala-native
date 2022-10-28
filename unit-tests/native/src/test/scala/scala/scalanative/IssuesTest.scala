@@ -560,8 +560,8 @@ class IssuesTest {
     // becouse null would be passed to extern method taking unboxed type Size/Int
     import scala.scalanative.libc.stdlib.{malloc, free, srand}
     val ptr = malloc(null) // CSize -> RawSize should equal to malloc(0)
-    free(ptr)
-    srand(null) // CUnsignedInt -> Int should equal to  srand(0UL)
+    free(ptr) // memory allocated by malloc(0) should always be safe to free
+    srand(null) // CUnsignedInt -> Int should equal to srand(0UL)
     free(null)
   }
 
