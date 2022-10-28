@@ -163,7 +163,9 @@ object NirGenName {
     "java.lang._Object" -> "java.lang.Object",
     "java.lang._String" -> "java.lang.String",
     "java.lang.annotation._Retention" -> "java.lang.annotation.Retention",
-    "java.io._Serializable" -> "java.io.Serializable"
+    "java.io._Serializable" -> "java.io.Serializable",
+    "scala.Nothing" -> "scala.runtime.Nothing$",
+    "scala.Null" -> "scala.runtime.Null$"
   ).flatMap {
     case classEntry @ (nativeName, javaName) =>
       List(

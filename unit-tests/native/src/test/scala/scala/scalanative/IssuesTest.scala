@@ -549,6 +549,12 @@ class IssuesTest {
     assertEquals("case 2", 0, Bar.bar())
   }
 
+  @Test def test_Issue2858() = {
+    // In the reported issue symbols for scala.Nothing and scala.Null
+    assertEquals("class scala.runtime.Nothing$", classOf[Nothing].toString())
+    assertEquals("class scala.runtime.Null$", classOf[Null].toString())
+  }
+
 }
 
 package issue1090 {
