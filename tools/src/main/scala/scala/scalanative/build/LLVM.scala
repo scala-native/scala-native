@@ -56,47 +56,37 @@ private[scalanative] object LLVM {
     val isLl = inpath.endsWith(llExt)
     val workdir = config.workdir
 
-    // LL is generated so always rebuilt
-    // If pack2hashPrev is empty, here are two cases:
-    // 1. This is the first compilation time.
-    // 2. We don't use incremental compilation.
-    // In these two cases, we should compile them to object files.
-    // If pack2hashPrev is not empty, we don't recompile native library.
-    // Even if native library changes(This is very rare case). If native library
-    // changes, we should clean the project first.
-    if ((isLl || !Files.exists(objPath)) &&
-        incCompilationContext.shouldCompile(workdir, srcPath)) {
-      val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-      val stdflag = {
-        if (isLl) Seq()
-        else if (isCpp) {
-          // C++14 or newer standard is needed to compile code using Windows API
-          // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-          if (config.targetsWindows) Seq("-std=c++14")
-          else Seq("-std=c++11")
-        } else Seq("-std=gnu11")
-      }
-      val platformFlags = {
-        if (config.targetsWindows) Seq("-g")
-        else Nil
-      }
-      val expectionsHandling =
-        List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
-      val flags = opt(config) +: "-fvisibility=hidden" +:
-        stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
-      val compilec =
-        Seq(compiler) ++ flto(config) ++ flags ++
-          asan(config) ++ target(config) ++
-          Seq("-c", inpath, "-o", outpath)
-
-      // compile
-      config.logger.running(compilec)
-      val result = Process(compilec, workdir.toFile) !
-        Logger.toProcessLogger(config.logger)
-      if (result != 0) {
-        throw new BuildException(s"Failed to compile ${inpath}")
-      }
+    val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
+    val stdflag = {
+      if (isLl) Seq()
+      else if (isCpp) {
+        // C++14 or newer standard is needed to compile code using Windows API
+        // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+        if (config.targetsWindows) Seq("-std=c++14")
+        else Seq("-std=c++11")
+      } else Seq("-std=gnu11")
     }
+    val platformFlags = {
+      if (config.targetsWindows) Seq("-g")
+      else Nil
+    }
+    val expectionsHandling =
+      List("-fexceptions", "-fcxx-exceptions", "-funwind-tables")
+    val flags = opt(config) +: "-fvisibility=hidden" +:
+      stdflag ++: platformFlags ++: expectionsHandling ++: config.compileOptions
+    val compilec =
+      Seq(compiler) ++ flto(config) ++ flags ++
+        asan(config) ++ target(config) ++
+        Seq("-c", inpath, "-o", outpath)
+
+    // compile
+    config.logger.running(compilec)
+    val result = Process(compilec, workdir.toFile) !
+      Logger.toProcessLogger(config.logger)
+    if (result != 0) {
+      throw new BuildException(s"Failed to compile ${inpath}")
+    }
+
     objPath
   }
 
