@@ -24,8 +24,7 @@ class LongTest {
       expectedThrowable: Class[T],
       code: => U
   )(expectedMsg: String): Unit = {
-    val exception = assertThrows(expectedThrowable, code)
-    assertEquals(expectedMsg, exception.toString)
+    assertThrows(expectedMsg, expectedThrowable, code)
   }
 
   @Test def decodeTest(): Unit = {
