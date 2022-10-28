@@ -13,7 +13,6 @@ import org.junit.Assert._
 
 import scala.scalanative.junit.utils.CollectionConverters._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.ThrowsHelper._
 
 class PatternTest {
 
