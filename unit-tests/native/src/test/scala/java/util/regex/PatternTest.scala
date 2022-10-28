@@ -13,7 +13,6 @@ import org.junit.Assert._
 
 import scala.scalanative.junit.utils.CollectionConverters._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.ThrowsHelper._
 
 class PatternTest {
 
@@ -601,17 +600,25 @@ class PatternTest {
   }
 
   @Test def syntaxExceptions(): Unit = {
-    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile("foo\\L"))(
-      e => {
-        e.getDescription == "Illegal/unsupported escape sequence" &&
-        e.getIndex == 4 &&
-        e.getPattern == "foo\\L" &&
-        e.getMessage ==
+    try {
+      Pattern.compile("foo\\L")
+    } catch {
+      case e: PatternSyntaxException =>
+        assertEquals(
+          "Illegal/unsupported escape sequence",
+          e.getDescription
+        )
+
+        assertEquals(4, e.getIndex)
+        assertEquals("foo\\L", e.getPattern)
+
+        assertEquals(
           """|Illegal/unsupported escape sequence near index 4
              |foo\L
-             |    ^""".stripMargin
-      }
-    )
+             |    ^""".stripMargin,
+          e.getMessage
+        )
+    }
 
     /// Ordered alphabetical by description (second arg).
     /// Helps ensuring that each scalanative/regex Parser description
@@ -650,13 +657,14 @@ class PatternTest {
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
-    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile(pattern))(
-      e => {
-        (e.getDescription == description) &&
-        (e.getPattern == pattern) &&
-        (e.getIndex == index)
-      }
-    )
+    try {
+      Pattern.compile(pattern)
+    } catch {
+      case e: PatternSyntaxException =>
+        assertEquals(description, e.getDescription)
+        assertEquals(pattern, e.getPattern)
+        assertEquals(index, e.getIndex)
+    }
   }
 
   private def pass(pattern: String, input: String): Unit =
