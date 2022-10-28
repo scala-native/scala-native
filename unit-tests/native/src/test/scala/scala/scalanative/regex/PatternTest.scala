@@ -7,7 +7,8 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
-import org.scalanative.testsuite.utils.ThrowsHelper._
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import TestUtils._
 
 class PatternTest {
@@ -110,11 +111,10 @@ class PatternTest {
   @Ignore
   @Test def pending(): Unit = {
     // The prefix In should only allow blocks like Mongolian
-    assertThrowsAnd(
+    assertThrows(
+      "Unknown character block name {Latin} near index 10",
       classOf[PatternSyntaxException],
       Pattern.compile("\\p{InLatin}")
-    )(
-      _.getMessage == "Unknown character block name {Latin} near index 10"
     )
 
     // Binary Properties
@@ -386,18 +386,25 @@ class PatternTest {
   }
 
   @Test def syntaxExceptions(): Unit = {
+    try {
+      Pattern.compile("foo\\L")
+    } catch {
+      case e: PatternSyntaxException =>
+        assertEquals(
+          "Illegal/unsupported escape sequence",
+          e.getDescription
+        )
 
-    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile("foo\\L"))(
-      e => {
-        e.getDescription == "Illegal/unsupported escape sequence" &&
-        e.getIndex == 4 &&
-        e.getPattern == "foo\\L" &&
-        e.getMessage ==
+        assertEquals(4, e.getIndex)
+        assertEquals("foo\\L", e.getPattern)
+
+        assertEquals(
           """|Illegal/unsupported escape sequence near index 4
-	     |foo\L
-	     |    ^""".stripMargin
-      }
-    )
+             |foo\L
+             |    ^""".stripMargin,
+          e.getMessage
+        )
+    }
 
     /// Ordered alphabetical by description (second arg).
     /// Helps ensuring that each scalanative/regex Parser description
@@ -436,13 +443,14 @@ class PatternTest {
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
-    assertThrowsAnd(classOf[PatternSyntaxException], Pattern.compile(pattern))(
-      e => {
-        (e.getDescription == description) &&
-        (e.getPattern == pattern) &&
-        (e.getIndex == index)
-      }
-    )
+    try {
+      Pattern.compile(pattern)
+    } catch {
+      case e: PatternSyntaxException =>
+        assertEquals(description, e.getDescription)
+        assertEquals(pattern, e.getPattern)
+        assertEquals(index, e.getIndex)
+    }
   }
 
   private def pass(pattern: String, input: String): Unit =
