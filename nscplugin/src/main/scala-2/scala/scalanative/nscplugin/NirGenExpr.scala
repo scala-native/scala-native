@@ -1331,10 +1331,19 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             genFunction(fn)
           }(targetTree.symbol)
 
-        case fn @ Apply(_, args) => // Scala 2.11 only
-          if (args.nonEmpty) 
-            reportClosingOverLocalState(args)
-          
+        case fn @ Apply(target, args) => // Scala 2.11 only
+          if (args.nonEmpty) {
+            args match {
+              case This(_) :: Nil
+                  if args.map(_.tpe.sym) == target.tpe.paramTypes.map(_.sym) =>
+                // Ignore, Scala 2.11 needs reference to outer class to create an instance of ananymous function,
+                // does not lead to undefined behaviour. However we cannot detect access to member of outer class.
+                ()
+              case _ =>
+                reportClosingOverLocalState(args)
+            }
+          }
+
           val alternatives = fn.tpe
             .member(nme.apply)
             .alternatives
