@@ -2246,7 +2246,13 @@ trait NirGenExpr(using Context) {
       def resolveFunction(tree: Tree): Val = tree match {
         case Typed(expr, _) => resolveFunction(expr)
         case Block(_, expr) => resolveFunction(expr)
-        case fn @ Closure(_, target, _) =>
+        case fn @ Closure(env, target, _) =>
+          if env.nonEmpty then
+            report.error(
+              s"Closing over local state of ${env.map(_.symbol.show).mkString(", ")} in function transformed to CFuncPtr results in undefined behaviour.",
+              fn.srcPos
+            )
+
           val fnRef = genClosure(fn)
           val Type.Ref(className, _, _) = fnRef.ty: @unchecked
 

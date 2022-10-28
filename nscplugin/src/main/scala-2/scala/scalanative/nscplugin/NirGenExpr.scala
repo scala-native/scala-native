@@ -1307,16 +1307,34 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         fnRef
       }
 
+      def reportClosingOverLocalState(args: Seq[Tree]): Unit =
+        reporter.error(
+          fn.pos,
+          s"Closing over local state of ${args.map(v => show(v.symbol)).mkString(", ")} in function transformed to CFuncPtr results in undefined behaviour."
+        )
+
       @tailrec
       def resolveFunction(tree: Tree): Val = tree match {
         case Typed(expr, _) => resolveFunction(expr)
         case Block(_, expr) => resolveFunction(expr)
-        case fn @ Function(_, Apply(targetTree, _)) => // Scala 2.12+
+        case fn @ Function(
+              params,
+              Apply(targetTree, targetArgs)
+            ) => // Scala 2.12+
+          val paramTermNames = params.map(_.name)
+          val localStateParams = targetArgs
+            .filter(arg => !paramTermNames.contains(arg.symbol.name))
+          if (localStateParams.nonEmpty)
+            reportClosingOverLocalState(localStateParams)
+
           withGeneratedForwarder {
             genFunction(fn)
           }(targetTree.symbol)
 
-        case fn: Apply => // Scala 2.11 only
+        case fn @ Apply(_, args) => // Scala 2.11 only
+          if (args.nonEmpty) 
+            reportClosingOverLocalState(args)
+          
           val alternatives = fn.tpe
             .member(nme.apply)
             .alternatives
