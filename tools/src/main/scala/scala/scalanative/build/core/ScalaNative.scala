@@ -17,8 +17,7 @@ private[scalanative] object ScalaNative {
   /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
-    val mainClass = Global.Top(config.mainClass)
-    val entry = mainClass.member(Rt.ScalaMainSig)
+    val entry = encodedMainClass(config).member(Rt.ScalaMainSig)
     entry +: CodeGen.depends
   }
 
@@ -178,4 +177,35 @@ private[scalanative] object ScalaNative {
       }
     }
   }
+
+  private[scalanative] def encodedMainClass(config: build.Config): Global.Top =
+    Global.Top(encodeClassName(config.mainClass))
+
+  private def encodeClassName(className: String): String = {
+    // Based on https://github.com/scala/scala/blob/b8b6c05efce99611b4a8e558260c7f74e6196b97/src/library/scala/reflect/NameTransformer.scala#L44-L97
+    className.flatMap {
+      case '~'  => "$tilde"
+      case '='  => "$eq"
+      case '<'  => "$less"
+      case '>'  => "$greater"
+      case '!'  => "$bang"
+      case '#'  => "$hash"
+      case '%'  => "$percent"
+      case '^'  => "$up"
+      case '&'  => "$amp"
+      case '|'  => "$bar"
+      case '*'  => "$times"
+      case '/'  => "$div"
+      case '+'  => "$plus"
+      case '-'  => "$minus"
+      case ':'  => "$colon"
+      case '\\' => "$bslash"
+      case '?'  => "$qmark"
+      case '@'  => "$at"
+      case c =>
+        if (!Character.isJavaIdentifierPart(c)) "$u%04X".format(c.toInt)
+        else c.toString
+    }
+  }
+
 }
