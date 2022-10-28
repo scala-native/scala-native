@@ -424,7 +424,8 @@ final class URI private () extends Comparable[URI] with Serializable {
     }
 
     def validateUserinfo(uri: String, userInfo: String, index: Int): Unit = {
-      for (i <- 0 until userInfo.length()) {
+      var i: Int = 0
+      while (i < userInfo.length()) {
         val ch: Char = userInfo.charAt(i)
         if (ch == ']' || ch == '[') {
           throw new URISyntaxException(
@@ -433,6 +434,7 @@ final class URI private () extends Comparable[URI] with Serializable {
             index + i
           )
         }
+        i += 1
       }
     }
 
@@ -543,7 +545,8 @@ final class URI private () extends Comparable[URI] with Serializable {
       if (length < 2) {
         return false
       }
-      for (i <- 0 until length) {
+      var i: Int = 0
+      while (i < length) {
         prevChar = c
         c = ipAddress.charAt(i)
         c match {
@@ -609,6 +612,7 @@ final class URI private () extends Comparable[URI] with Serializable {
             word += c
 
         }
+        i += 1
       }
       if (numberOfPeriods > 0) {
         if (numberOfPeriods != 3 || !isValidIP4Word(word)) {
@@ -631,11 +635,13 @@ final class URI private () extends Comparable[URI] with Serializable {
       if (word.length() < 1 || word.length() > 3) {
         return false
       }
-      for (i <- 0 until word.length()) {
+      var i: Int = 0
+      while (i < word.length()) {
         c = word.charAt(i)
         if (!(c >= '0' && c <= '9')) {
           return false
         }
+        i += 1
       }
       if (java.lang.Integer.parseInt(word) > 255) {
         return false
