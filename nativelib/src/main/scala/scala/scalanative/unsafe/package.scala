@@ -159,9 +159,9 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       null
     } else {
       val len = libc.strlen(cstr)
-      val intlen = len.toInt
-      if (intlen > 0) {
-        val bytes = new Array[Byte](len.toInt)
+      val intLen = len.toInt
+      if (intLen > 0) {
+        val bytes = new Array[Byte](intLen)
 
         libc.memcpy(bytes.at(0), cstr, len)
 
