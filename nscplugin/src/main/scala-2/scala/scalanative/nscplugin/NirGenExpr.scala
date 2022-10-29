@@ -2413,7 +2413,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         argsp.zip(sym.tpe.params).foreach {
           case (argp, paramSym) =>
             val externType = genExternType(paramSym.tpe)
-            res += toExtern(externType, genExpr(argp))(argp.pos)
+            val arg = (genExpr(argp), Type.box.get(externType)) match {
+              case (value @ Val.Null, Some(unboxedType)) =>
+                externType match {
+                  case Type.Ptr | _: Type.RefKind => value
+                  case _ =>
+                    reporter.warning(
+                      argp.pos,
+                      s"Passing null as argument of ${paramSym}: ${paramSym.tpe} to the extern method is unsafe. " +
+                        s"The argument would be unboxed to primitive value of type $externType."
+                    )
+                    Val.Zero(unboxedType)
+                }
+              case (value, _) => value
+            }
+            res += toExtern(externType, arg)(argp.pos)
         }
 
         res.result()

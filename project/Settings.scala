@@ -429,12 +429,6 @@ object Settings {
     Test / unmanagedSourceDirectories += baseDirectory.value
       .getParentFile()
       .getParentFile() / "test-interface-common/src/test/scala",
-    scalacOptions --= scalaVersionsDependendent(scalaVersion.value)(
-      Seq.empty[String]
-    ) {
-      // In Scala 2 enum `Status.value` is defined as `values()`, however in Scala 3 it's `values`
-      case (2, 13) => Seq("-Xfatal-warnings")
-    }
   )
 
   // Projects

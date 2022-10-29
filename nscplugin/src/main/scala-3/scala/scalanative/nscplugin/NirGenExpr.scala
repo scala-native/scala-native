@@ -1458,7 +1458,21 @@ trait NirGenExpr(using Context) {
           case (argp, paramTpe) =>
             given nir.Position = argp.span
             val externType = genExternType(paramTpe.finalResultType)
-            res += toExtern(externType, genExpr(argp))
+            val arg = (genExpr(argp), Type.box.get(externType)) match {
+              case (value @ Val.Null, Some(unboxedType)) =>
+                externType match {
+                  case Type.Ptr | _: Type.RefKind => value
+                  case _ =>
+                    report.warning(
+                      s"Passing null as argument of type ${paramTpe.show} to the extern method is unsafe. " +
+                        s"The argument would be unboxed to primitive value of type $externType.",
+                      argp.srcPos
+                    )
+                    Val.Zero(unboxedType)
+                }
+              case (value, _) => value
+            }
+            res += toExtern(externType, arg)
         }
         res.result()
       }
