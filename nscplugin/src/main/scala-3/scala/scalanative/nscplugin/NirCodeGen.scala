@@ -57,7 +57,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       genCompilationUnit(ctx.compilationUnit)
     } finally {
       generatedDefns.clear()
-      generatedStaticForwarderClasses.clear()
+      generatedMirrorClasses.clear()
       reflectiveInstantiationBuffers.clear()
     }
   }
@@ -84,7 +84,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       .groupMapReduce(buf => getFileFor(cunit, buf.name.top))(_.toSeq)(_ ++ _)
       .foreach(genIRFile(_, _))
 
-    if (generatedStaticForwarderClasses.nonEmpty) {
+    if (generatedMirrorClasses.nonEmpty) {
       // Ported from Scala.js
       /* #4148 Add generated static forwarder classes, except those that
        * would collide with regular classes on case insensitive file systems.
@@ -108,8 +108,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
           case cls: Defn.Class => caseInsensitiveNameOf(cls)
         }.toSet
 
-      for ((site, staticCls) <- generatedStaticForwarderClasses) {
-        val StaticForwarderClass(classDef, forwarders) = staticCls
+      for ((site, staticCls) <- generatedMirrorClasses) {
+        val MirrorClass(classDef, forwarders) = staticCls
         val caseInsensitiveName = caseInsensitiveNameOf(classDef)
         if (!generatedCaseInsensitiveNames.contains(caseInsensitiveName)) {
           val file = getFileFor(cunit, classDef.name)

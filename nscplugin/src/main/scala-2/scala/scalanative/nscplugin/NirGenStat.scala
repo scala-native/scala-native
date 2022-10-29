@@ -21,10 +21,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
 
-  protected val generatedStaticForwarderClasses =
-    mutable.Map.empty[Symbol, StaticForwarderClass]
+  protected val generatedMirrorClasses = mutable.Map.empty[Symbol, MirrorClass]
 
-  protected case class StaticForwarderClass(
+  protected case class MirrorClass(
       defn: nir.Defn.Class,
       forwarders: Seq[nir.Defn.Define]
   )
@@ -124,6 +123,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genReflectiveInstantiation(cd)
       genClassFields(cd)
       genMethods(cd)
+      genMirrorClass(cd)
 
       buf += {
         if (sym.isScalaModule) {
@@ -557,7 +557,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val methods = cd.impl.body.flatMap {
         case dd: DefDef => genMethod(dd)
         case _          => Nil
-
       }
       val forwarders = genStaticMethodForwarders(cd, methods)
       buf ++= methods
@@ -1074,23 +1073,34 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   ): Seq[Defn] = {
     val sym = td.symbol
     if (!isCandidateForForwarders(sym)) Nil
-    else if (sym.isModuleClass) {
-      if (!sym.linkedClassOfClass.exists) {
-        val forwarders = genStaticForwardersFromModuleClass(Nil, sym)
-        if (forwarders.nonEmpty) {
-          val classDefn = Defn.Class(
-            attrs = Attrs.None,
-            name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
-            parent = Some(Rt.Object.name),
-            traits = Nil
-          )(td.pos)
-          val forwarderClass = StaticForwarderClass(classDefn, forwarders)
-          generatedStaticForwarderClasses += sym -> forwarderClass
-        }
-      }
-      Nil
-    } else {
-      genStaticForwardersForClassOrInterface(existingMethods, sym)
+    else if (sym.isModuleClass) Nil
+    else genStaticForwardersForClassOrInterface(existingMethods, sym)
+  }
+
+  /** Create a mirror class for top level module that has no defined companion
+   *  class. A mirror class is a class containing only static methods that
+   *  forward to the corresponding method on the MODULE instance of the given
+   *  Scala object. It will only be generated if there is no companion class: if
+   *  there is, an attempt will instead be made to add the forwarder methods to
+   *  the companion class.
+   */
+  private def genMirrorClass(cd: ClassDef) = {
+    val sym = cd.symbol
+    // phase travel to pickler required for isNestedClass (looks at owner)
+    val isTopLevelModuleClass = exitingPickler {
+      sym.isModuleClass && !sym.isNestedClass
+    }
+    if (isTopLevelModuleClass && sym.companionClass == NoSymbol) {
+      val classDefn = Defn.Class(
+        attrs = Attrs.None,
+        name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
+        parent = Some(Rt.Object.name),
+        traits = Nil
+      )(cd.pos)
+      generatedMirrorClasses += sym -> MirrorClass(
+        classDefn,
+        genStaticForwardersFromModuleClass(Nil, sym)
+      )
     }
   }
 
