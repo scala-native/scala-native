@@ -549,12 +549,6 @@ class IssuesTest {
     assertEquals("case 2", 0, Bar.bar())
   }
 
-  @Test def test_Issue2858() = {
-    // In the reported issue symbols for scala.Nothing and scala.Null
-    assertEquals("class scala.runtime.Nothing$", classOf[Nothing].toString())
-    assertEquals("class scala.runtime.Null$", classOf[Null].toString())
-  }
-
   @Test def test_Issue2712() = {
     import issue2712._
     def f[A]: Refined[A] => Refined[A] =
@@ -565,6 +559,22 @@ class IssuesTest {
 
     val x = new Refined[Byte](126.toByte)
     assertTrue(g(f(x)))
+  }
+
+  @Test def test_Issue2858() = {
+    // In the reported issue symbols for scala.Nothing and scala.Null
+    assertEquals("class scala.runtime.Nothing$", classOf[Nothing].toString())
+    assertEquals("class scala.runtime.Null$", classOf[Null].toString())
+  }
+
+  @Test def test_Issue2866() = {
+    // In the issue the calls to malloc and srand would fail
+    // becouse null would be passed to extern method taking unboxed type Size/Int
+    import scala.scalanative.libc.stdlib.{malloc, free, srand}
+    val ptr = malloc(null) // CSize -> RawSize should equal to malloc(0)
+    free(ptr) // memory allocated by malloc(0) should always be safe to free
+    srand(null) // CUnsignedInt -> Int should equal to srand(0UL)
+    free(null)
   }
 
 }
