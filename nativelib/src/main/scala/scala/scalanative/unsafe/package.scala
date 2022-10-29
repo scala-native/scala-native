@@ -192,7 +192,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
         !(cstr + len) = 0.toByte
 
         cstr
-      } else c"\u0000"
+      } else c""
     }
   }
 
