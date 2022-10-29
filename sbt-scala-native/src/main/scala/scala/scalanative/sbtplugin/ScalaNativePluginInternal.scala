@@ -136,70 +136,10 @@ object ScalaNativePluginInternal {
         .withTestConfig(testConfig)
         .withCompilerConfig(nativeConfig.value)
 
-      val outfile = config.artifactPath.toFile()
-
-      def buildNew(): Unit = {
-        interceptBuildException {
-          Build.build(config)(sharedScope)
-        }
+      interceptBuildException {
+        // returns config.artifactPath
+        Build.build(config)(sharedScope).toFile()
       }
-
-      def buildIfChanged(): Unit = {
-        import sbt.util.CacheImplicits._
-        import NativeLinkCacheImplicits._
-        import collection.JavaConverters._
-
-        // Products of compilation for Scala 2 are always defined in `target/scala-<scalaBinaryVersion` directory,
-        // but in case of Scala 3 there is always a dedicated directory for each (minor) Scala version.
-        // This allows us to cache binaries for each Scala version instead of each binary Scala version.
-        val scalaVersionDir =
-          if (scalaVersion.value.startsWith("2.")) scalaBinaryVersion.value
-          else scalaVersion.value
-        val cacheFactory =
-          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaVersionDir}"
-        val classpathTracker =
-          Tracked.inputChanged[
-            (Seq[HashFileInfo], build.Config),
-            HashFileInfo
-          ](
-            cacheFactory.make("inputFileInfo")
-          ) {
-            case (
-                  changed: Boolean,
-                  (filesInfo: Seq[HashFileInfo], config: build.Config)
-                ) =>
-              val outputTracker =
-                Tracked
-                  .lastOutput[Seq[HashFileInfo], HashFileInfo](
-                    cacheFactory.make("outputFileInfo")
-                  ) { (_, prev) =>
-                    val outputHashInfo = FileInfo.hash(outfile)
-                    if (changed || !prev.contains(outputHashInfo)) {
-                      buildNew()
-                      FileInfo.hash(outfile)
-                    } else outputHashInfo
-                  }
-              outputTracker(filesInfo)
-          }
-
-        val classpathFilesInfo = config.classPath
-          .flatMap { classpath =>
-            if (Files.exists(classpath))
-              Files
-                .walk(classpath)
-                .iterator()
-                .asScala
-                .filter(path => Files.exists(path) && !Files.isDirectory(path))
-                .toList
-            else Nil
-          }
-          .map(path => FileInfo.hash(path.toFile()))
-
-        classpathTracker(classpathFilesInfo, config)
-      }
-
-      buildIfChanged()
-      outfile
     },
     run := {
       val env = (run / envVars).value.toSeq

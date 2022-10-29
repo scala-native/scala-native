@@ -40,6 +40,17 @@ class IncCompilationContext(workDir: Path) {
     }
   }
 
+  def shouldCompile(workdir: Path, in: Path): Boolean = {
+    val packageName = workdir
+      .relativize(in)
+      .toString
+      .replace(File.separator, ".")
+      .split('.')
+      .init
+      .mkString(".")
+    shouldCompile(packageName)
+  }
+
   def shouldCompile(packageName: String): Boolean = {
     pack2hashPrev.isEmpty || changed.contains(packageName)
   }

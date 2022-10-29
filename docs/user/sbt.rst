@@ -101,6 +101,9 @@ Sbt settings and tasks
 Use ``nativeConfig`` in `sbt` to provide settings. This is often
 done in a project's `build.sbt`.
 
+**Warning**: If you change settings you should clean your project to remove generated
+code to be safe.
+
 Scala Native starts execution with a NativeConfig object, called nativeConfig,
 filled with default values::
 

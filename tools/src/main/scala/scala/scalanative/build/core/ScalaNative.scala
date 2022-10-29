@@ -92,8 +92,6 @@ private[scalanative] object ScalaNative {
       incCompilationContext: IncCompilationContext
   ): Seq[Path] = {
     val llPaths = config.logger.time("Generating intermediate code") {
-      // currently, always clean ll files
-      IO.getAll(config.workdir, "glob:**.ll").foreach(Files.delete)
       CodeGen(config, linked)
     }
     config.logger.info(s"Produced ${llPaths.length} files")
