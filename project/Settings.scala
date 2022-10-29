@@ -5,10 +5,13 @@ import sbt.Keys._
 import sbt.nio.Keys.fileTreeView
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
+import Build.{crossPublishSigned, crossPublishLocal}
 
 import scala.collection.mutable
 import scala.scalanative.build.Platform
@@ -193,6 +196,12 @@ object Settings {
       name = "Denys Shabalin",
       url = url("http://den.sh")
     ),
+    developers += Developer(
+      id = "wojciechmazur",
+      name = "Wojciech Mazur",
+      email = "wmazur@virtuslab.com",
+      url = url("https://github.com/WojciechMazur")
+    ),
     scmInfo := Some(
       ScmInfo(
         browseUrl = url("https://github.com/scala-native/scala-native"),
@@ -222,11 +231,14 @@ object Settings {
     },
     credentials ++= {
       for {
-        realm <- sys.env.get("MAVEN_REALM")
-        domain <- sys.env.get("MAVEN_DOMAIN")
         user <- sys.env.get("MAVEN_USER")
         password <- sys.env.get("MAVEN_PASSWORD")
-      } yield Credentials(realm, domain, user, password)
+      } yield Credentials(
+        realm = "Sonatype Nexus Repository Manager",
+        host = "oss.sonatype.org",
+        userName = user,
+        passwd = password
+      )
     }.toSeq
   )
 
@@ -410,8 +422,42 @@ object Settings {
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     mavenPublishSettings,
-    exportJars := true
+    exportJars := true,
+    crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value,
+    crossPublishLocal := crossPublishCompilerPlugin(publishLocal).value
   )
+
+  private def crossPublishCompilerPlugin(publishKey: TaskKey[Unit]) = Def.task {
+    val currentVersion = scalaVersion.value
+    val s = state.value
+    val extracted = sbt.Project.extract(s)
+    val id = thisProjectRef.value.project
+    val selfRef = thisProjectRef.value
+    val _ = crossScalaVersions.value.foldLeft(s) {
+      case (state, `currentVersion`) =>
+        println(
+          s"Skip publish $id ${currentVersion} - it should be already published"
+        )
+        state
+      case (state, crossVersion) =>
+        println(s"Try publish $id ${crossVersion}")
+        val (newState, result) = sbt.Project
+          .runTask(
+            selfRef / publishKey,
+            state = extracted.appendWithSession(
+              Seq(
+                selfRef / scalaVersion := crossVersion
+              ),
+              state
+            )
+          )
+          .get
+        result.toEither match {
+          case Left(value) => throw new RuntimeException(value.toString)
+          case Right(_)    => newState
+        }
+    }
+  }
 
   lazy val sbtPluginSettings = Def.settings(
     commonSettings,

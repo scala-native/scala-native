@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# Locally publishSigned won't work because sbt-pgp isn't in project/build.sbt.
-# It's in the global plugins.sbt of the machine running the publishing.
-
-scripts/publish-impl publishSigned
