@@ -4,7 +4,6 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.libc.errno
 import scalanative.libc.string.memcpy
-import scalanative.runtime.ByteArray
 
 import scalanative.posix.errno.ERANGE
 
@@ -36,7 +35,7 @@ private[java] object IEEE754Helpers {
     val cStr = z.alloc((n + 1).toUSize) // z.alloc() does not clear bytes.
 
     // memcpy bytes from Array to CString
-    val bytesPtr = bytes.asInstanceOf[ByteArray].at(0)
+    val bytesPtr = bytes.at(0)
     memcpy(cStr, bytesPtr, n.toUSize)
 
     // add NUL-terminator to CString
