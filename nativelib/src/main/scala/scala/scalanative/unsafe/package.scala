@@ -158,14 +158,10 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     if (cstr == null) {
       null
     } else {
-      val len = libc.strlen(cstr).toInt
-      val bytes = new Array[Byte](len)
+      val len = libc.strlen(cstr)
+      val bytes = new Array[Byte](len.toInt)
 
-      var c = 0
-      while (c < len) {
-        bytes(c) = !(cstr + c)
-        c += 1
-      }
+      libc.memcpy(bytes.at(0), cstr, len)
 
       new String(bytes, charset)
     }
@@ -184,15 +180,12 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       null
     } else {
       val bytes = str.getBytes(charset)
-      val cstr = z.alloc((bytes.length + 1).toUSize)
+      val len = bytes.length.toUSize
+      val cstr = z.alloc(len + 1.toUInt)
 
-      var c = 0
-      while (c < bytes.length) {
-        !(cstr + c) = bytes(c)
-        c += 1
-      }
+      libc.memcpy(cstr, bytes.at(0), len)
 
-      !(cstr + c) = 0.toByte
+      !(cstr + len) = 0.toByte
 
       cstr
     }
