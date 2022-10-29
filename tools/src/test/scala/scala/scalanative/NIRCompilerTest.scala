@@ -161,4 +161,29 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       |""".stripMargin))
   }
 
+  it should "report error when closing over local statein CFuncPtr" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """
+          |import scala.scalanative.unsafe._
+          |object Main {
+          |  val z = 12
+          |  def f(ptr: CFuncPtr1[CInt, CInt]): Unit = println(ptr(3))
+          |
+          |  def test(): Unit = {
+          |    val x = 10
+          |    f(CFuncPtr1.fromScalaFunction(y => x + y + z))
+          |  }
+          |
+          |  def main(args: Array[String]): Unit = test()
+          |}
+          |""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      "Closing over local state of value x in function transformed to CFuncPtr results in undefined behaviour"
+    )
+  }
+
 }
