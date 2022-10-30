@@ -88,7 +88,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
-      val allRegularDefns = if (generatedStaticForwarderClasses.isEmpty) {
+      val allRegularDefns = if (generatedMirrorClasses.isEmpty) {
         /* Fast path, applicable under -Xno-forwarders, as well as when all
          * the `object`s of a compilation unit have a companion class.
          */
@@ -121,9 +121,9 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
           }.toSet
 
         val staticForwarderDefns: List[nir.Defn] =
-          generatedStaticForwarderClasses
+          generatedMirrorClasses
             .collect {
-              case (site, StaticForwarderClass(classDef, forwarders)) =>
+              case (site, MirrorClass(classDef, forwarders)) =>
                 val name = caseInsensitiveNameOf(classDef)
                 if (!generatedCaseInsensitiveNames.contains(name)) {
                   classDef +: forwarders
@@ -164,7 +164,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
         .parallel()
         .forEach(generateIRFile)
     } finally {
-      generatedStaticForwarderClasses.clear()
+      generatedMirrorClasses.clear()
     }
   }
 

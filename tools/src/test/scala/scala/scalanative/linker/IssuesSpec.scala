@@ -6,19 +6,39 @@ import scala.scalanative.LinkerSpec
 import org.scalatest.matchers.should._
 
 class IssuesSpec extends LinkerSpec with Matchers {
-  private val mainClass = "Test$"
+  private val mainClass = "Test"
   private val sourceFile = "Test.scala"
 
-  private def testLinked(source: String)(fn: Result => Unit): Unit =
-    link("Test", sources = Map("Test.scala" -> source)) {
+  private def testLinked(source: String, mainClass: String = mainClass)(
+      fn: Result => Unit
+  ): Unit =
+    link(mainClass, sources = Map("Test.scala" -> source)) {
       case (_, result) => fn(result)
     }
 
-  private def checkNoLinkageErrors(source: String) =
-    testLinked(source.stripMargin) { result =>
+  private def checkNoLinkageErrors(
+      source: String,
+      mainClass: String = mainClass
+  ) =
+    testLinked(source.stripMargin, mainClass) { result =>
       val erros = Check(result)
       erros shouldBe empty
     }
+
+  "Issue #2790" should "link main classes using encoded characters" in {
+    // All encoded character and an example of unciode encode character ';'
+    val packageName = "foo.`b~a-r`.`b;a;z`"
+    val mainClass = raw"Test-native~=<>!#%^&|*/+-:'?@;sc"
+    val fqcn = s"$packageName.$mainClass".replace("`", "")
+    checkNoLinkageErrors(
+      mainClass = fqcn,
+      source = s"""package $packageName
+      |object `$mainClass`{ 
+      |  def main(args: Array[String]) = () 
+      |}
+      |""".stripMargin
+    )
+  }
 
   "Issue #2880" should "handle lambas correctly" in checkNoLinkageErrors {
     """
