@@ -39,7 +39,7 @@ jobs:
           sbt "++ ${{ matrix.scala }} -v" \
           "-no-colors" \
           "scalaPartest${{env.project-version}}/fetchScalaSource"
-          ./scripts/partest-check-files.scala ${{ matrix.scala }}
+          scala-cli scripts/partest-check-files.scala -- ${{ matrix.scala }}
 
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.

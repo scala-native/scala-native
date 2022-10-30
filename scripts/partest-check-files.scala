@@ -1,5 +1,3 @@
-#!/usr/bin/env -S scala-cli shebang
-
 //> using scala "3"
 //> using lib "com.lihaoyi::os-lib:0.8.1"
 
