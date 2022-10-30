@@ -4,4 +4,4 @@ set -e
 
 scripts/clangfmt --test
 
-scripts/scalafmt --test --non-interactive
+scripts/scalafmt --test
