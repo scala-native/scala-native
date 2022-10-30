@@ -33,20 +33,8 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         val nirFiles =
           compiler.compile(sourcesDir) filter (Files
             .isRegularFile(_)) map (_.getFileName.toString)
-        val expectedNames =
-          Seq(
-            "A.class",
-            "A.nir",
-            "B.class",
-            "B.nir",
-            "C.class",
-            "C.nir",
-            "D.class",
-            "D.nir",
-            "E$.class",
-            "E$.nir",
-            "E.class"
-          )
+        val expectedNames = Seq("A", "B", "C", "D", "E", "E$")
+          .flatMap(name => Seq(s"$name.class", s"$name.nir"))
         nirFiles should contain theSameElementsAs expectedNames
     }
   }

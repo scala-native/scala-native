@@ -17,8 +17,7 @@ private[scalanative] object ScalaNative {
   /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
-    val mainClass = Global.Top(config.mainClass)
-    val entry = mainClass.member(Rt.ScalaMainSig)
+    val entry = encodedMainClass(config).member(Rt.ScalaMainSig)
     entry +: CodeGen.depends
   }
 
@@ -176,4 +175,11 @@ private[scalanative] object ScalaNative {
       }
     }
   }
+
+  private[scalanative] def encodedMainClass(config: Config): Global.Top = {
+    import scala.reflect.NameTransformer.encode
+    val encoded = config.mainClass.split('.').map(encode).mkString(".")
+    Global.Top(encoded)
+  }
+
 }
