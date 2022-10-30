@@ -812,16 +812,20 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                       if (targetTpe == value.ty) value
                       else buf.unbox(genBoxType(tpe), value, Next.None)
 
-                    case ErasedValueType(valueClazz, _) =>
+                    case ErasedValueType(valueClazz, underlying) =>
                       val unboxMethod = valueClazz.derivedValueClassUnbox
                       val casted =
                         buf.genCastOp(value.ty, genType(valueClazz), value)
-                      buf.genApplyMethod(
+                      val unboxed = buf.genApplyMethod(
                         sym = unboxMethod,
                         statically = false,
                         self = casted,
                         argsp = Nil
                       )
+                      if (unboxMethod.tpe.resultType == underlying)
+                        unboxed
+                      else
+                        buf.genCastOp(unboxed.ty, genType(underlying), unboxed)
 
                     case _ =>
                       val unboxed =
@@ -846,23 +850,22 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val sig = genMethodSig(sym)
           val res = buf.call(sig, method, values, Next.None)
 
-          val retValue =
-            if (retType == res.ty) res
-            else {
-              // Get the result type of the lambda after erasure, when entering posterasure.
-              // This allows to recover the correct type in case value classes are involved.
-              // In that case, the type will be an ErasedValueType.
-              val resTyEnteringPosterasure =
-                enteringPhase(currentRun.posterasurePhase) {
-                  targetTree.symbol.tpe.resultType
-                }
-
+          // Get the result type of the lambda after erasure, when entering posterasure.
+          // This allows to recover the correct type in case value classes are involved.
+          // In that case, the type will be an ErasedValueType.
+          val resTyEnteringPosterasure =
+            enteringPhase(currentRun.posterasurePhase) {
+              targetTree.symbol.tpe.resultType
+            }
+          buf.ret(
+            if (retType == res.ty && resTyEnteringPosterasure == sym.tpe.resultType)
+              res
+            else
               ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(
                 buf,
                 callTree.pos
               )
-            }
-          buf.ret(retValue)
+          )
           buf.toSeq
         }
 
@@ -923,7 +926,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     // Compute a set of method symbols that SAM-generated class needs to implement.
     def functionMethodSymbols(tree: Function): Seq[Symbol] = {
       val funSym = tree.tpe.typeSymbolDirect
-
       if (isFunctionSymbol(funSym)) {
         unspecializedSymbol(funSym).info.members
           .filter(_.name.toString == "apply")
