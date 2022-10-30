@@ -395,15 +395,22 @@ object Settings {
     }
   )
 
-  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Def.settings(
-    Compile / unmanagedSourceDirectories +=
-      baseDirectory.value
-        .getParentFile()
-        .getParentFile() / "test-interface-common/src/main/scala",
-    Test / unmanagedSourceDirectories += baseDirectory.value
+  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = {
+    def unmanagedSources(baseDirectory: File, dir: String) = baseDirectory
       .getParentFile()
-      .getParentFile() / "test-interface-common/src/test/scala",
-  )
+      .getParentFile() / s"test-interface-common/src/$dir/scala"
+
+    Def.settings(
+      Compile / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        "main"
+      ),
+      Test / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        "test"
+      )
+    )
+  }
 
   // Projects
   lazy val compilerPluginSettings = Def.settings(
