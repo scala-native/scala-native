@@ -20,25 +20,27 @@ object Build {
   import Deps._
 
 // format: off
-  lazy val compilerMultiScalaPlugins =  Seq(nscPlugin, junitPlugin)
-  lazy val publishedMultiScalaProjects = compilerMultiScalaPlugins ++ Seq(
+  lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
+  lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
     nativelib, clib, posixlib, windowslib,
-    auxlib, javalib,  scalalib,
-    testInterface, testInterfaceSbtDefs,
-    testingCompiler, testingCompilerInterface,
+    auxlib, javalib, scalalib,
+    testInterface, testInterfaceSbtDefs, testRunner,
     junitRuntime
   )
-  lazy val publishedProjects = Seq(sbtScalaNative) ++ publishedMultiScalaProjects.flatMap(_.componentProjects)
+  lazy val publishedProjects = 
+    sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
 
-  lazy val allProjects: Seq[Project] = publishedProjects ++ Seq(
-    javalibExtDummies,
-    junitAsyncNative, junitAsyncJVM,
-    junitTestOutputsJVM, junitTestOutputsNative,
-    tests, testsJVM, testsExt, testsExtJVM, sandbox,
-    scalaPartest, scalaPartestRuntime,
-    scalaPartestTests, scalaPartestJunitTests
-  ).flatMap(_.componentProjects)
+  lazy val allProjects: Seq[Project] =  
+    publishedProjects ::: List(
+      javalibExtDummies,
+      testingCompiler, testingCompilerInterface,
+      junitAsyncNative, junitAsyncJVM,
+      junitTestOutputsJVM, junitTestOutputsNative,
+      tests, testsJVM, testsExt, testsExtJVM, sandbox,
+      scalaPartest, scalaPartestRuntime,
+      scalaPartestTests, scalaPartestJunitTests
+    ).flatMap(_.componentProjects)
 // format: on
 
   private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
@@ -97,14 +99,8 @@ object Build {
           publishSigned,
           publishedMultiScalaProjects
         ),
-        setDepenencyForCurrentBinVersion(
-          crossPublishLocal,
-          compilerMultiScalaPlugins
-        ),
-        setDepenencyForCurrentBinVersion(
-          crossPublishSigned,
-          compilerMultiScalaPlugins
-        )
+        setDepenencyForCurrentBinVersion(crossPublishLocal, compilerPlugins),
+        setDepenencyForCurrentBinVersion(crossPublishSigned, compilerPlugins)
       )
 
   // Compiler plugins
