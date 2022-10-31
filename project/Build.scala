@@ -313,8 +313,6 @@ object Build {
       buildInfoSettings,
       noPublishSettings,
       testsCommonSettings,
-      // To silence warnings when testing ScalaNative specific features
-      scalacOptions -= "-Xfatal-warnings",
       sharedTestSource(withBlacklist = false),
       javaVersionSharedTestSources,
       nativeConfig ~= { c =>

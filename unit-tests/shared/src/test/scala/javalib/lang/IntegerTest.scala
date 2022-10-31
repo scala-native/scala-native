@@ -277,7 +277,7 @@ class IntegerTest {
     assertEquals(unsignedMaxValueText, toStr(unsignedMaxValue))
   }
 
-  @Test def testEquals(): Unit = {
+  @deprecated @Test def testEquals(): Unit = {
     assertEquals(new Integer(0), new Integer(0))
     assertEquals(new Integer(1), new Integer(1))
     assertEquals(new Integer(-1), new Integer(-1))
