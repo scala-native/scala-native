@@ -28,11 +28,7 @@ object Build {
     testInterface, testInterfaceSbtDefs, testRunner,
     junitRuntime
   )
-  lazy val publishedProjects = 
-    sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
-
-  lazy val allProjects: Seq[Project] =  
-    publishedProjects ::: List(
+  lazy val testMultiScalaProjects = List(
       javalibExtDummies,
       testingCompiler, testingCompilerInterface,
       junitAsyncNative, junitAsyncJVM,
@@ -40,37 +36,43 @@ object Build {
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
       scalaPartest, scalaPartestRuntime,
       scalaPartestTests, scalaPartestJunitTests
-    ).flatMap(_.componentProjects)
+    )
 // format: on
+  lazy val allMultiScalaProjects =
+    publishedMultiScalaProjects ::: testMultiScalaProjects
+
+  lazy val publishedProjects =
+    sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
+  lazy val testProjects = testMultiScalaProjects.flatMap(_.componentProjects)
+  lazy val allProjects = publishedProjects ::: testProjects
 
   private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
     key := key.dependsOn(projects.map(_ / key): _*).value
   }
 
   private def setDepenencyForCurrentBinVersion[T](
-      key: TaskKey[Unit],
-      projects: Seq[MultiScalaProject],
-      extraBinVersionDeps: String => Seq[Project] = _ => Nil
+      key: TaskKey[T],
+      projects: Seq[MultiScalaProject]
   ) = {
     key := Def.taskDyn {
       val binVersion = scalaBinaryVersion.value
+      val optSbtPlugin = Seq(sbtScalaNative).filter(_ => binVersion == "2.12")
+      val dependenices =
+        optSbtPlugin ++ projects.map(_.forBinaryVersion(binVersion))
+      val prev = key.value
       Def
-        .task {}
-        .dependsOn(
-          extraBinVersionDeps(binVersion)
-            .++(projects.map(_.forBinaryVersion(binVersion)))
-            .map(_ / key): _*
-        )
+        .task { prev }
+        .dependsOn(dependenices.map(_ / key): _*)
     }.value
   }
 
+  val crossPublish =
+    taskKey[Unit](
+      "Cross publish compiler plugin project without signing and excluding currently used version"
+    )
   val crossPublishSigned =
     taskKey[Unit](
       "Cross publish signed compiler plugin project excluding currently used version"
-    )
-  val crossPublishLocal =
-    taskKey[Unit](
-      "Cross publish compiler plugin project locally excluding currently used version"
     )
 
   lazy val root: Project =
@@ -83,24 +85,17 @@ object Build {
         noPublishSettings,
         disabledTestsSettings,
         setDepenency(clean, allProjects),
-        setDepenency(Compile / compile, allProjects),
-        setDepenency(Test / compile, allProjects),
-        crossPublishLocal := {},
+        Seq(Compile / compile, Test / compile).map(
+          setDepenencyForCurrentBinVersion(_, allMultiScalaProjects)
+        ),
+        crossPublish := {},
         crossPublishSigned := {},
-        setDepenencyForCurrentBinVersion(
-          publishLocal,
-          publishedMultiScalaProjects,
-          extraBinVersionDeps = _ match {
-            case "2.12" => Seq(sbtScalaNative)
-            case _      => Nil
-          }
+        Seq(publish, publishSigned, publishLocal).map(
+          setDepenencyForCurrentBinVersion(_, publishedMultiScalaProjects)
         ),
-        setDepenencyForCurrentBinVersion(
-          publishSigned,
-          publishedMultiScalaProjects
-        ),
-        setDepenencyForCurrentBinVersion(crossPublishLocal, compilerPlugins),
-        setDepenencyForCurrentBinVersion(crossPublishSigned, compilerPlugins)
+        Seq(crossPublish, crossPublishSigned).map(
+          setDepenencyForCurrentBinVersion(_, compilerPlugins)
+        )
       )
 
   // Compiler plugins

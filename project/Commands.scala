@@ -14,7 +14,7 @@ object Commands {
     testMima,
     testScripted,
     publishLocalDev,
-    publishSignedAll
+    publishRelease
   )
 
   lazy val testAll = Command.command("test-all") {
@@ -140,13 +140,19 @@ object Commands {
     }
   }
 
-  lazy val publishSignedAll = Command.command("publish-signed-all") {
+  lazy val publishRelease = Command.command("publishRelease") { state =>
+    val isSnapshot = state
+      .getSetting(Keys.isSnapshot)
+      .getOrElse(sys.error("Cannot resolve isSnapshot setting"))
+
     import ScalaVersions._
     val publishEachVersion = for {
       version <- List(scala211, scala212, scala213, scala3)
-    } yield s"++$version publishLocal; crossPublishLocal"
+    } yield
+      if (isSnapshot) s"++$version; publish; crossPublish"
+      else s"++$version; publishSigned; crossPublishSigned"
 
-    "clean" :: publishEachVersion ::: _
+    "clean" :: publishEachVersion ::: state
   }
 
 }

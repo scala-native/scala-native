@@ -15,6 +15,7 @@ import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
 import scala.scalanative.build.Platform
+import Build.{crossPublish, crossPublishSigned}
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -236,9 +237,14 @@ object Settings {
       for {
         user <- sys.env.get("MAVEN_USER")
         password <- sys.env.get("MAVEN_PASSWORD")
-      } yield Credentials(realm, domain, user, password)
+      } yield Credentials(
+        realm = "Sonatype Nexus Repository Manager",
+        host = "oss.sonatype.org",
+        userName = user,
+        passwd = password
+      )
     }.toSeq,
-    PgpKeys.pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toCharArray()),
+    PgpKeys.pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toCharArray())
   )
 
   lazy val noPublishSettings = Def.settings(
@@ -429,8 +435,8 @@ object Settings {
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     mavenPublishSettings,
     exportJars := true,
+    crossPublish := crossPublishCompilerPlugin(publish).value,
     crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value,
-    crossPublishLocal := crossPublishCompilerPlugin(publishLocal).value
   )
 
   /** Builds a given project across all crossScalaVersion values. It does not

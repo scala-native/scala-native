@@ -26,9 +26,16 @@ jobs:
         with:
           scala-version: "2.13.10" #Unused, any version can be placed here
           java-version: 8
-      
+
+      - name: Setup PGP Key
+        run: |
+          echo -n "$PGP_SECRET" | base64 --decode | gpg --import
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+
       - name: Publish release
         env: 
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: sbt "-v" "-no-colors" "-J-Xmx5G" "publish-signed-all"
+          MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
+          PGP_PASSWORD: "${{ secrets.PGP_PASSWORD }}"
+        run: sbt "-v" "-no-colors" "-J-Xmx5G" "publishRelease"
