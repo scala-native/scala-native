@@ -54,7 +54,7 @@ class IterableDefaultTest extends IterableTest {
     def fromElements[E: ClassTag](elems: E*): JIterable[E] = {
       new JIterable[E] {
         override def iterator(): ju.Iterator[E] = {
-          val l: Iterator[E] = elems.toIterator
+          val l: Iterator[E] = elems.iterator
           new ju.Iterator[E] {
             override def hasNext(): Boolean = l.hasNext
             override def next(): E = l.next()

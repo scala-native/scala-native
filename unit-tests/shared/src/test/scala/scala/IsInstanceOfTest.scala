@@ -2,6 +2,7 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
+import scala.annotation.nowarn
 
 class IsInstanceOfTest {
 
@@ -15,7 +16,7 @@ class IsInstanceOfTest {
   }
 
   @Test def expectsLiteralNullIsInstanceOfStringEqEqFalse(): Unit = {
-    assertFalse(null.isInstanceOf[String])
+    assertFalse(null.isInstanceOf[String]: @nowarn)
   }
 
   @Test def expectsEmptyStringIsInstanceOfStringEqEqTrue(): Unit = {

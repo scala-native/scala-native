@@ -14,7 +14,7 @@ import java.math._
 import org.junit.Test
 import org.junit.Assert._
 
-class BigDecimalScaleOperationsTest {
+@deprecated class BigDecimalScaleOperationsTest {
 
   @Test def testScaleByPowerOfTen(): Unit = {
     val bd = BigDecimal.ONE.scaleByPowerOfTen(1)
