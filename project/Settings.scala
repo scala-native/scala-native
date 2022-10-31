@@ -72,23 +72,26 @@ object Settings {
   )
 
   def javaReleaseSettings = {
+    def patchVersion(prefix: String, scalaVersion: String): Int =
+      scalaVersion.stripPrefix(prefix).takeWhile(_.isDigit).toInt
     def canUseRelease(scalaVersion: String) = CrossVersion
       .partialVersion(scalaVersion)
-      .collect {
-        case (3, _) => true
-        case (2, 13) =>
-          scalaVersion.stripPrefix("2.13.").takeWhile(_.isDigit).toInt > 8
+      .fold(false) {
+        case (2, 13) => patchVersion("2.13.", scalaVersion) > 8
+        case (2, _)  => false
+        case (3, 1)  => patchVersion("3.1.", scalaVersion) > 1
+        case (3, _)  => true
       }
-      .getOrElse(false)
     val javacSourceFlags = Seq("-source", "1.8")
     val scalacReleaseFlag = "-release:8"
 
     Def.settings(
-      Compile / scalacOptions += {
+      scalacOptions += {
         if (canUseRelease(scalaVersion.value)) scalacReleaseFlag
+        else if (scalaVersion.value.startsWith("3.")) "-Xtarget:8"
         else "-target:jvm-1.8"
       },
-      Compile / javacOptions ++= {
+      javacOptions ++= {
         if (canUseRelease(scalaVersion.value)) Nil
         else javacSourceFlags
       },
@@ -414,7 +417,7 @@ object Settings {
         .getParentFile() / "test-interface-common/src/main/scala",
     Test / unmanagedSourceDirectories += baseDirectory.value
       .getParentFile()
-      .getParentFile() / "test-interface-common/src/test/scala",
+      .getParentFile() / "test-interface-common/src/test/scala"
   )
 
   // Projects
@@ -427,20 +430,25 @@ object Settings {
     crossPublishLocal := crossPublishCompilerPlugin(publishLocal).value
   )
 
+  /** Builds a given project across all crossScalaVersion values. It does not
+   *  modify the value of scalaVersion outside of it's scope. This allows to
+   *  build multiple (compiler plugin) projects in parallel.
+   */
   private def crossPublishCompilerPlugin(publishKey: TaskKey[Unit]) = Def.task {
     val currentVersion = scalaVersion.value
     val s = state.value
+    val log = s.log
     val extracted = sbt.Project.extract(s)
     val id = thisProjectRef.value.project
     val selfRef = thisProjectRef.value
     val _ = crossScalaVersions.value.foldLeft(s) {
       case (state, `currentVersion`) =>
-        println(
+        log.info(
           s"Skip publish $id ${currentVersion} - it should be already published"
         )
         state
       case (state, crossVersion) =>
-        println(s"Try publish $id ${crossVersion}")
+        log.info(s"Try publish $id ${crossVersion}")
         val (newState, result) = sbt.Project
           .runTask(
             selfRef / publishKey,
@@ -453,8 +461,8 @@ object Settings {
           )
           .get
         result.toEither match {
-          case Left(value) => throw new RuntimeException(value.toString)
-          case Right(_)    => newState
+          case Left(failure) => throw new RuntimeException(failure)
+          case Right(_)      => newState
         }
     }
   }
