@@ -219,7 +219,8 @@ object Settings {
       </issueManagement>
     ),
     Compile / publishArtifact := true,
-    Test / publishArtifact := false
+    Test / publishArtifact := false,
+    versionScheme := Some("early-semver")
   ) ++ mimaSettings
 
   lazy val mavenPublishSettings = Def.settings(
@@ -436,7 +437,7 @@ object Settings {
     mavenPublishSettings,
     exportJars := true,
     crossPublish := crossPublishCompilerPlugin(publish).value,
-    crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value,
+    crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value
   )
 
   /** Builds a given project across all crossScalaVersion values. It does not
