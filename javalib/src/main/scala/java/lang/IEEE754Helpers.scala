@@ -29,74 +29,96 @@ private[java] object IEEE754Helpers {
 
   private def exceptionMsg(s: String) = "For input string: \"" + s + "\""
 
-  private def bytesToCString(bytes: Array[scala.Byte], n: Int)(implicit
-      z: Zone
-  ): CString = {
-    val cStr = z.alloc((n + 1).toUSize) // z.alloc() does not clear bytes.
+  /** Converts a `CharSequence` to a `CString` type. The `CString` pointer is
+   *  passed to allow stack allocation from caller. The `CharSequence`
+   *  characters are iterated and converted to ASCII bytes. In order to be
+   *  considered as a valid ASCII sequence, its characters be all ASCII. This
+   *  should be the case if the first byte of the `Char` is zero, which is
+   *  verified by applying the mask 0xFF80.
+   */
+  @inline
+  private def _numericCharSeqToCString(
+      csq: CharSequence,
+      nChars: Int,
+      cStrOut: CString
+  ): Boolean = {
 
-    // memcpy bytes from Array to CString
-    val bytesPtr = bytes.at(0)
-    memcpy(cStr, bytesPtr, n.toUSize)
+    var i = 0
+    while (i < nChars) {
+      // If the CharSequence contains valid characters (see strtod/strtof)
+      // they should correspond to ASCII chars (thus first byte is zero).
+      if ((csq.charAt(i) & 0xff80) != 0) {
+        return false
+      }
+      // Convert UTF16 Char to ASCII Byte
+      cStrOut(i) = csq.charAt(i).toByte
+      i += 1
+    }
 
-    // add NUL-terminator to CString
-    cStr(n) = 0.toByte
+    // Add NUL-terminator to CString
+    cStrOut(nChars) = 0.toByte
 
-    cStr
+    // Return true if conversion went fine
+    true
   }
 
   def parseIEEE754[T](s: String, f: (CString, Ptr[CString]) => T): T = {
-    Zone { implicit z =>
-      if (s.isEmpty)
-        throw new NumberFormatException(exceptionMsg(s))
+    if (s == null)
+      throw new NumberFormatException(exceptionMsg(s))
 
-      val bytes = s.getBytes(java.nio.charset.Charset.defaultCharset())
-      val bytesLen = bytes.length
+    val nChars = s.length
+    if (nChars == 0)
+      throw new NumberFormatException(exceptionMsg(s))
 
-      val cStr = bytesToCString(bytes, bytesLen)
+    val cStr: CString = stackalloc[scala.Byte]((nChars + 1).toUInt)
 
-      val end = stackalloc[CString]() // Address one past last parsed cStr byte.
+    if (_numericCharSeqToCString(s, nChars, cStr) == false) {
+      throw new NumberFormatException(exceptionMsg(s))
+    }
 
-      errno.errno = 0
+    val end = stackalloc[CString]() // Address one past last parsed cStr byte.
 
-      val res = f(cStr, end)
+    errno.errno = 0
 
-      if (errno.errno != 0) {
-        if (errno.errno == ERANGE) {
-          // Do nothing. res holds the proper value as returned by strtod()
-          // or strtof(): 0.0 for string translations too close to zero
-          // or +/- infinity for values too +/- large for an IEEE754.
-          // Slick C lib design!
-        } else {
-          throw new NumberFormatException(exceptionMsg(s))
-        }
-      } else if (!end == cStr) { // No leading digit found: only "D" not "0D"
-        throw new NumberFormatException(exceptionMsg(s))
+    val res = f(cStr, end)
+
+    if (errno.errno != 0) {
+      if (errno.errno == ERANGE) {
+        // Do nothing. res holds the proper value as returned by strtod()
+        // or strtof(): 0.0 for string translations too close to zero
+        // or +/- infinity for values too +/- large for an IEEE754.
+        // Slick C lib design!
       } else {
-        // Beware: cStr may have interior NUL/null bytes. Better to
-        //         consider it a counted byte array rather than a proper
-        //         C string.
+        throw new NumberFormatException(exceptionMsg(s))
+      }
+    } else if (!end == cStr) { // No leading digit found: only "D" not "0D"
+      throw new NumberFormatException(exceptionMsg(s))
+    } else {
+      // Beware: cStr may have interior NUL/null bytes. Better to
+      //         consider it a counted byte array rather than a proper
+      //         C string.
 
-        val nSeen = !end - cStr
+      val bytesLen = nChars
+      val nSeen = !end - cStr
 
-        // If we used less bytes than in our input, there is a risk that the input contains invalid characters.
-        // We should thus verify if the input contains only valid characters.
-        // See: https://github.com/scala-native/scala-native/issues/2903
-        if (nSeen != bytesLen) {
-          // magic: is first char one of D d F f
-          var idx =
-            if ((cStr(nSeen.toUSize) & 0xdd) == 0x44) (nSeen + 1) else nSeen
+      // If we used less bytes than in our input, there is a risk that the input contains invalid characters.
+      // We should thus verify if the input contains only valid characters.
+      // See: https://github.com/scala-native/scala-native/issues/2903
+      if (nSeen != bytesLen) {
+        // magic: is first char one of D d F f
+        var idx =
+          if ((cStr(nSeen.toUSize) & 0xdd) == 0x44) (nSeen + 1) else nSeen
 
-          while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
-            val b = cStr(idx.toUSize)
-            if ((b < 0) || b > 0x20) {
-              throw new NumberFormatException(exceptionMsg(s))
-            }
-            idx += 1
+        while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
+          val b = cStr(idx.toUSize)
+          if ((b < 0) || b > 0x20) {
+            throw new NumberFormatException(exceptionMsg(s))
           }
+          idx += 1
         }
       }
-
-      res
     }
+
+    res
   }
 }
