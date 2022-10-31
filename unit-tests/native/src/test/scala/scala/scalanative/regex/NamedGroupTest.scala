@@ -6,7 +6,8 @@ import scala.util.Random
 import org.junit.Test
 import org.junit.Assert._
 
-import org.scalanative.testsuite.utils.ThrowsHelper._
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import TestUtils._
 
 import scala.collection.mutable
@@ -81,12 +82,10 @@ class NamedGroupTest {
     )
     import m._
     find()
-    assertThrowsAnd(
+    assertThrows(
+      "No match available",
       classOf[IllegalStateException],
       appendReplacement(buf, "such open ${S such closed ${D}")
-    )(
-      _.getMessage == "No match available"
     )
-
   }
 }

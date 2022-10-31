@@ -213,7 +213,7 @@ private[java] final class FileChannelImpl(
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
-    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    val buf = buffer.at(offset)
     if (isWindows) {
       def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
 
@@ -338,7 +338,14 @@ private[java] final class FileChannelImpl(
     val srcPos: Int = buffer.position()
     val srcLim: Int = buffer.limit()
     val lim = math.abs(srcLim - srcPos)
-    write(buffer.array(), 0, lim)
+    val bytes = if (buffer.hasArray()) {
+      buffer.array()
+    } else {
+      val bytes = new Array[Byte](lim)
+      buffer.get(bytes)
+      bytes
+    }
+    write(bytes, 0, lim)
     buffer.position(srcPos + lim)
     lim
   }
@@ -366,7 +373,7 @@ private[java] final class FileChannelImpl(
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and read straight from the array memory
-    val buf = buffer.asInstanceOf[runtime.ByteArray].at(offset)
+    val buf = buffer.at(offset)
     if (isWindows) {
       val hasSucceded =
         WriteFile(fd.handle, buf, count.toUInt, null, null)

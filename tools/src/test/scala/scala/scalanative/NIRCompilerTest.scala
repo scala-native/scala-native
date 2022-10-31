@@ -33,20 +33,8 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         val nirFiles =
           compiler.compile(sourcesDir) filter (Files
             .isRegularFile(_)) map (_.getFileName.toString)
-        val expectedNames =
-          Seq(
-            "A.class",
-            "A.nir",
-            "B.class",
-            "B.nir",
-            "C.class",
-            "C.nir",
-            "D.class",
-            "D.nir",
-            "E$.class",
-            "E$.nir",
-            "E.class"
-          )
+        val expectedNames = Seq("A", "B", "C", "D", "E", "E$")
+          .flatMap(name => Seq(s"$name.class", s"$name.nir"))
         nirFiles should contain theSameElementsAs expectedNames
     }
   }
@@ -159,6 +147,31 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       |  def main() = foo.baz(???)
       |}
       |""".stripMargin))
+  }
+
+  it should "report error when closing over local statein CFuncPtr" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """
+          |import scala.scalanative.unsafe._
+          |object Main {
+          |  val z = 12
+          |  def f(ptr: CFuncPtr1[CInt, CInt]): Unit = println(ptr(3))
+          |
+          |  def test(): Unit = {
+          |    val x = 10
+          |    f(CFuncPtr1.fromScalaFunction(y => x + y + z))
+          |  }
+          |
+          |  def main(args: Array[String]): Unit = test()
+          |}
+          |""".stripMargin
+        )
+      )
+    }.getMessage should include(
+      "Closing over local state of value x in function transformed to CFuncPtr results in undefined behaviour"
+    )
   }
 
 }

@@ -17,7 +17,7 @@ import org.junit.Assert._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 
-class BigDecimalArithmeticTest {
+@deprecated class BigDecimalArithmeticTest {
 
   @Test def testAddDiffScaleNegPos(): Unit = {
     val a = "1231212478987482988429808779810457634781384756794987"

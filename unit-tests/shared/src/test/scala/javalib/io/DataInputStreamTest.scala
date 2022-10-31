@@ -287,7 +287,7 @@ trait DataInputStreamTest {
     assertEquals(-1, stream.read())
   }
 
-  @Test def readLine(): Unit = {
+  @deprecated @Test def readLine(): Unit = {
     val stream = newStream(
       "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*
     )
@@ -300,7 +300,7 @@ trait DataInputStreamTest {
     assertEquals(null, stream.readLine())
   }
 
-  @Test def markReadLinePushBack(): Unit = {
+  @deprecated @Test def markReadLinePushBack(): Unit = {
     assumeNotJVMCompliant()
 
     val stream = newStream(

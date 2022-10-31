@@ -1,17 +1,29 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait Config {
 
-  /** Directory to emit intermediate compilation results. */
+  private val testSuffix = "-test"
+
+  /** Base Directory for native work products. */
+  def basedir: Path
+
+  /** Indicates whether this is a test config or not. */
+  def testConfig: Boolean
+
+  /** Directory to emit intermediate compilation results. Calculated based on
+   *  [[basedir]] / native or native-test if a test project. The build creates
+   *  directories if they do not exist.
+   */
   def workdir: Path
 
-  /** Path to the nativelib jar. */
-  @deprecated("Not needed: discovery is internal", "0.4.0")
-  def nativelib: Path
+  /** Path to the output file, executable or library. Calculated based on
+   *  [[basedir]] / [[NativeConfig#basename]] and -test, if a test project.
+   */
+  def artifactPath: Path
 
   /** Entry point for linking. */
   def mainClass: String
@@ -24,12 +36,11 @@ sealed trait Config {
 
   def compilerConfig: NativeConfig
 
-  /** Create a new config with given directory. */
-  def withWorkdir(value: Path): Config
+  /** Create a new config with given base directory. */
+  def withBasedir(value: Path): Config
 
-  /** Create a new config with given path to nativelib. */
-  @deprecated("Not needed: discovery is internal", "0.4.0")
-  def withNativelib(value: Path): Config
+  /** Create a new config with test (true) or normal config (false). */
+  def withTestConfig(value: Boolean): Config
 
   /** Create new config with given mainClass point. */
   def withMainClass(value: String): Config
@@ -74,6 +85,8 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
 
+  protected def nameSuffix = if (testConfig) testSuffix else ""
+
   private[scalanative] def targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||
@@ -90,7 +103,8 @@ object Config {
       nativelib = Paths.get(""),
       mainClass = "",
       classPath = Seq.empty,
-      workdir = Paths.get(""),
+      basedir = Paths.get(""),
+      testConfig = false,
       logger = Logger.default,
       compilerConfig = NativeConfig.empty
     )
@@ -99,7 +113,8 @@ object Config {
       nativelib: Path,
       mainClass: String,
       classPath: Seq[Path],
-      workdir: Path,
+      basedir: Path,
+      testConfig: Boolean,
       logger: Logger,
       compilerConfig: NativeConfig
   ) extends Config {
@@ -112,8 +127,11 @@ object Config {
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
 
-    def withWorkdir(value: Path): Config =
-      copy(workdir = value)
+    def withBasedir(value: Path): Config =
+      copy(basedir = value)
+
+    def withTestConfig(value: Boolean): Config =
+      copy(testConfig = value)
 
     def withLogger(value: Logger): Config =
       copy(logger = value)
@@ -123,5 +141,27 @@ object Config {
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
+
+    override def workdir: Path =
+      basedir.resolve(s"native$nameSuffix")
+
+    override def artifactPath: Path = {
+      val ext = if (Platform.isWindows) ".exe" else ""
+      basedir.resolve(s"${compilerConfig.basename}$nameSuffix$ext")
+    }
+
+    override def toString: String = {
+      val classPathFormat =
+        classPath.mkString("List(", "\n".padTo(22, ' '), ")")
+      s"""Config(
+        | - basedir:        $basedir
+        | - testConfig:     $testConfig
+        | - workdir:        $workdir
+        | - artifactPath:   $artifactPath
+        | - logger:         $logger
+        | - classPath:      $classPathFormat
+        | - compilerConfig: $compilerConfig
+        |)""".stripMargin
+    }
   }
 }

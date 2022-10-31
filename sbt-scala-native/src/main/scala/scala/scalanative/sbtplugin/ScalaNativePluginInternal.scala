@@ -8,7 +8,7 @@ import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.build.{Build, BuildException, Config, Discover}
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _,
@@ -19,15 +19,12 @@ import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
 import scala.scalanative.build.Platform
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
-
-  val nativeWorkdir =
-    taskKey[File]("Working directory for intermediate build files.")
 
   private val nativeStandardLibraries =
     Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
@@ -109,18 +106,7 @@ object ScalaNativePluginInternal {
     }
   )
 
-  def scalaNativeConfigSettings(nameSuffix: String): Seq[Setting[_]] = Seq(
-    nativeLink / artifactPath := {
-      val ext = if (Platform.isWindows) ".exe" else ""
-      crossTarget.value / s"${moduleName.value}$nameSuffix-out$ext"
-    },
-    nativeWorkdir := {
-      val workdir = crossTarget.value / s"native$nameSuffix"
-      if (!workdir.exists) {
-        IO.createDirectory(workdir)
-      }
-      workdir
-    },
+  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
       nativeConfig.value
         .withClang(nativeClang.value.toPath)
@@ -133,89 +119,27 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
+        .withBasename(moduleName.value)
     },
     nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
-      val outpath = (nativeLink / artifactPath).value
-
-      val config = {
-        val mainClass = selectMainClass.value.getOrElse {
-          throw new MessageOnlyException("No main class detected.")
-        }
-
-        val cwd = nativeWorkdir.value.toPath
-
-        val logger = streams.value.log.toLogger
-        build.Config.empty
-          .withLogger(logger)
-          .withMainClass(mainClass)
-          .withClassPath(classpath)
-          .withWorkdir(cwd)
-          .withCompilerConfig(nativeConfig.value)
+      val mainClass = selectMainClass.value.getOrElse {
+        throw new MessageOnlyException("No main class detected.")
       }
+      val logger = streams.value.log.toLogger
 
-      def buildNew(): Unit = {
-        interceptBuildException {
-          Build.build(config, outpath.toPath)(sharedScope)
-        }
+      val config = build.Config.empty
+        .withLogger(logger)
+        .withMainClass(mainClass)
+        .withClassPath(classpath)
+        .withBasedir(crossTarget.value.toPath())
+        .withTestConfig(testConfig)
+        .withCompilerConfig(nativeConfig.value)
+
+      interceptBuildException {
+        // returns config.artifactPath
+        Build.build(config)(sharedScope).toFile()
       }
-
-      def buildIfChanged(): Unit = {
-        import sbt.util.CacheImplicits._
-        import NativeLinkCacheImplicits._
-        import collection.JavaConverters._
-
-        // Products of compilation for Scala 2 are always defined in `target/scala-<scalaBinaryVersion` directory,
-        // but in case of Scala 3 there is always a dedicated directory for each (minor) Scala version.
-        // This allows us to cache binaries for each Scala version instead of each binary Scala version.
-        val scalaVersionDir =
-          if (scalaVersion.value.startsWith("2.")) scalaBinaryVersion.value
-          else scalaVersion.value
-        val cacheFactory =
-          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaVersionDir}"
-        val classpathTracker =
-          Tracked.inputChanged[
-            (Seq[HashFileInfo], build.Config),
-            HashFileInfo
-          ](
-            cacheFactory.make("inputFileInfo")
-          ) {
-            case (
-                  changed: Boolean,
-                  (filesInfo: Seq[HashFileInfo], config: build.Config)
-                ) =>
-              val outputTracker =
-                Tracked
-                  .lastOutput[Seq[HashFileInfo], HashFileInfo](
-                    cacheFactory.make("outputFileInfo")
-                  ) { (_, prev) =>
-                    val outputHashInfo = FileInfo.hash(outpath)
-                    if (changed || !prev.contains(outputHashInfo)) {
-                      buildNew()
-                      FileInfo.hash(outpath)
-                    } else outputHashInfo
-                  }
-              outputTracker(filesInfo)
-          }
-
-        val classpathFilesInfo = classpath
-          .flatMap { classpath =>
-            if (Files.exists(classpath))
-              Files
-                .walk(classpath)
-                .iterator()
-                .asScala
-                .filter(path => Files.exists(path) && !Files.isDirectory(path))
-                .toList
-            else Nil
-          }
-          .map(path => FileInfo.hash(path.toFile()))
-
-        classpathTracker(classpathFilesInfo, config)
-      }
-
-      buildIfChanged()
-      outpath
     },
     run := {
       val env = (run / envVars).value.toSeq
@@ -244,11 +168,12 @@ object ScalaNativePluginInternal {
     }
   )
 
-  lazy val scalaNativeCompileSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings(nameSuffix = "")
+  lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
+    scalaNativeConfigSettings(false)
+  }
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] =
-    scalaNativeConfigSettings(nameSuffix = "-test") ++
+    scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         loadedTestFrameworks := {

@@ -3,6 +3,7 @@ package build
 import sbt._
 import sbt.Keys._
 import sbt.nio.Keys.fileTreeView
+import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
@@ -259,7 +260,15 @@ object Settings {
   lazy val testsCommonSettings = Def.settings(
     scalacOptions -= "-deprecation",
     scalacOptions ++= Seq("-deprecation:false"),
-    scalacOptions -= "-Xfatal-warnings",
+    scalacOptions --= {
+      if (
+          // Disable fatal warnings when
+          // Scala 3, becouse null.isInstanceOf[String] warning cannot be supressed
+          scalaVersion.value.startsWith("3.") ||
+          // Scala Native - due to specific warnings for unsafe ops in IssuesTest
+          !moduleName.value.contains("jvm")) Seq("-Xfatal-warnings")
+      else Nil
+    },
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
     ),
@@ -394,21 +403,22 @@ object Settings {
     }
   )
 
-  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Def.settings(
-    Compile / unmanagedSourceDirectories +=
-      baseDirectory.value
-        .getParentFile()
-        .getParentFile() / "test-interface-common/src/main/scala",
-    Test / unmanagedSourceDirectories += baseDirectory.value
+  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = {
+    def unmanagedSources(baseDirectory: File, dir: String) = baseDirectory
       .getParentFile()
-      .getParentFile() / "test-interface-common/src/test/scala",
-    scalacOptions --= scalaVersionsDependendent(scalaVersion.value)(
-      Seq.empty[String]
-    ) {
-      // In Scala 2 enum `Status.value` is defined as `values()`, however in Scala 3 it's `values`
-      case (2, 13) => Seq("-Xfatal-warnings")
-    }
-  )
+      .getParentFile() / s"test-interface-common/src/$dir/scala"
+
+    Def.settings(
+      Compile / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        "main"
+      ),
+      Test / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        "test"
+      )
+    )
+  }
 
   // Projects
   lazy val compilerPluginSettings = Def.settings(
@@ -690,11 +700,11 @@ object Settings {
               copy(scalaSourcePath, outputFile)
               Some(outputFile)
             } catch {
-              case _: Exception =>
+              case ex: Exception =>
                 // Postpone failing to check which other patches do not apply
                 failedToApplyPatches = true
                 val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
-                s.log.error(s"Cannot apply patch for $path")
+                s.log.error(s"Cannot apply patch for $path - $ex")
                 None
             } finally {
               if (scalaSourceCopyPath.exists()) {

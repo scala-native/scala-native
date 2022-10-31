@@ -1,3 +1,5 @@
+// Ported from Scala.js commit: 4ba08f9 dated: 2022-05-31
+
 /*
  * Ported by Alistair Johnson from
  * https://github.com/gwtproject/gwt/blob/master/user/super/com/google/gwt/emul/java/math/Primality.java
@@ -42,6 +44,7 @@ package java.math
 
 import java.util.Arrays
 import java.util.Random
+import java.util.ScalaOps._
 
 /** Provides primality probabilistic methods. */
 private[math] object Primality {
@@ -51,18 +54,18 @@ private[math] object Primality {
     73, 69, 64, 59, 54, 49, 44, 38, 32, 26, 1)
 
   /** All prime numbers with bit length lesser than 10 bits. */
-  private val Primes = Array[Int](2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
-    41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113,
-    127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
-    199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281,
-    283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379,
-    383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463,
-    467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571,
-    577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659,
-    661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761,
-    769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863,
-    877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977,
-    983, 991, 997, 1009, 1013, 1019, 1021)
+  private val Primes = Array(2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43,
+    47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127,
+    131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
+    211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283,
+    293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383,
+    389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467,
+    479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577,
+    587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661,
+    673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769,
+    773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877,
+    881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983,
+    991, 997, 1009, 1013, 1019, 1021)
 
   /** Encodes how many i-bit primes there are in the table for {@code
    *  i=2,...,10}.
@@ -86,9 +89,10 @@ private[math] object Primality {
 
   /** All {@code BigInteger} prime numbers with bit length lesser than 8 bits.
    */
-  private val BiPrimes = Array.tabulate[BigInteger](Primes.length)(i =>
-    BigInteger.valueOf(Primes(i))
-  )
+  private val BiPrimes =
+    Array.tabulate[BigInteger](Primes.length)(i =>
+      BigInteger.valueOf(Primes(i))
+    )
 
   /** A random number is generated until a probable prime number is found.
    *
@@ -115,7 +119,9 @@ private[math] object Primality {
       val n = new BigInteger(1, count, new Array[Int](count))
 
       val last = count - 1
-      while ({
+
+      var done = false
+      while (!done) {
         // To fill the array with random integers
         for (i <- 0 until n.numberLength) {
           n.digits(i) = rnd.nextInt()
@@ -124,8 +130,8 @@ private[math] object Primality {
         n.digits(last) = (n.digits(last) | 0x80000000) >>> shiftCount
         // To create an odd number
         n.digits(0) |= 1
-        !isProbablePrime(n, certainty)
-      }) ()
+        done = (!isProbablePrime(n, certainty))
+      }
       n
     }
   }
@@ -153,17 +159,19 @@ private[math] object Primality {
       Arrays.binarySearch(Primes, n.digits(0)) >= 0
     } else {
       // To check if 'n' is divisible by some prime of the table
-      for (i <- 1 until Primes.length) {
+      var i: Int = 1
+      val primesLength = Primes.length
+      while (i != primesLength) {
         if (Division.remainderArrayByInt(
               n.digits,
               n.numberLength,
               Primes(i)
             ) == 0)
           return false
+        i += 1
       }
 
       // To set the number of iterations necessary for Miller-Rabin test
-      var i: Int = 0
       val bitLength = n.bitLength()
       i = 2
       while (bitLength < Bits(i)) {
@@ -243,13 +251,15 @@ private[math] object Primality {
         }
       }
       // To execute Miller-Rabin for non-divisible numbers by all first primes
-      for (j <- 0 until gapSize) {
+      var j = 0
+      while (j != gapSize) {
         if (!isDivisible(j)) {
           Elementary.inplaceAdd(probPrime, j)
           if (millerRabin(probPrime, certainty)) {
             return probPrime
           }
         }
+        j += 1
       }
       Elementary.inplaceAdd(startPoint, gapSize)
     }
@@ -280,36 +290,41 @@ private[math] object Primality {
     val k = nMinus1.getLowestSetBit()
     val q = nMinus1.shiftRight(k)
     val rnd = new Random()
-    for (i <- 0 until t) {
+
+    var i = 0
+    while (i != t) {
       // To generate a witness 'x', first it use the primes of table
       if (i < Primes.length) {
         x = BiPrimes(i)
       } else {
         /*
-         * It generates random witness only if it's necesssary. Note that all
+         * It generates random witness only if it's necessary. Note that all
          * methods would call Miller-Rabin with t <= 50 so this part is only to
          * do more robust the algorithm
          */
-        while ({
+        x = new BigInteger(bitLength, rnd)
+        while ((x.compareTo(n) >= BigInteger.EQUALS) || (x.sign == 0)
+            || x.isOne()) {
           x = new BigInteger(bitLength, rnd)
-          (x.compareTo(n) >= BigInteger.EQUALS ||
-            x.sign == 0 ||
-            x.isOne())
-        }) ()
+        }
       }
 
       y = x.modPow(q, n)
       if (!(y.isOne() || y == nMinus1)) {
-        for (j <- 1 until k) {
+        var j = 1
+        while (j != k) {
           if (y != nMinus1) {
             y = y.multiply(y).mod(n)
             if (y.isOne())
               return false
           }
+          j += 1
         }
         if (y != nMinus1)
           return false
       }
+
+      i += 1
     }
     true
     // scalastyle:on return

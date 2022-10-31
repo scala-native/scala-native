@@ -1,7 +1,7 @@
 package scala.scalanative
 package build
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
 import scala.scalanative.build.core.Filter
 import scala.scalanative.build.core.NativeLib
@@ -18,15 +18,14 @@ object Build {
    *
    *  {{{
    *  val classpath: Seq[Path] = ...
-   *  val workdir: Path        = ...
+   *  val basedir: Path        = ...
    *  val main: String         = ...
+   *  val logger: Logger       = ...
    *
    *  val clang    = Discover.clang()
    *  val clangpp  = Discover.clangpp()
    *  val linkopts = Discover.linkingOptions()
    *  val compopts = Discover.compileOptions()
-   *
-   *  val outpath  = workdir.resolve("out")
    *
    *  val config =
    *    Config.empty
@@ -39,26 +38,29 @@ object Build {
    *        .withLinkingOptions(linkopts)
    *        .withCompileOptions(compopts)
    *        .withLinkStubs(true)
+   *        .withBasename("myapp")
    *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withWorkdir(workdir)
+   *      .withBasedir(basedir)
+   *      .withTestConfig(false)
+   *      .withLogger(logger)
    *
-   *  Build.build(config, outpath)
+   *  Build.build(config)
    *  }}}
    *
    *  @param config
    *    The configuration of the toolchain.
-   *  @param outpath
-   *    The path to the resulting native binary.
    *  @return
    *    `outpath`, the path to the resulting native binary.
    */
-  def build(config: Config, outpath: Path)(implicit
-      scope: Scope
-  ): Path =
+  def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
-      // validate classpath
+      // create workdir if needed
+      if (Files.notExists(config.workdir)) {
+        Files.createDirectories(config.workdir)
+      }
+      // validate classpath - use fconfig below
       val fconfig = {
         val fclasspath = NativeLib.filterClasspath(config.classPath)
         config.withClassPath(fclasspath)
@@ -74,7 +76,7 @@ object Build {
 
       implicit val incCompilationContext: IncCompilationContext =
         new IncCompilationContext(fconfig.workdir)
-      if (config.compilerConfig.useIncrementalCompilation) {
+      if (fconfig.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.collectFromPreviousState()
       }
 
@@ -84,11 +86,11 @@ object Build {
         ScalaNative.codegen(fconfig, optimized)
       }
 
-      if (config.compilerConfig.useIncrementalCompilation) {
+      if (fconfig.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.dump()
       }
 
-      val objectPaths = config.logger.time("Compiling to native code") {
+      val objectPaths = fconfig.logger.time("Compiling to native code") {
         // compile generated LLVM IR
         val llObjectPaths = LLVM.compile(fconfig, generated)
 
@@ -98,7 +100,10 @@ object Build {
         val libObjectPaths = scala.util.Properties
           .propOrNone("scalanative.build.paths.libobj") match {
           case None =>
-            findAndCompileNativeSources(fconfig, linked)
+            /* Finds all the libraries on the classpath that contain native
+             * code and then compiles them.
+             */
+            findAndCompileNativeLibs(fconfig, linked)
           case Some(libObjectPaths) =>
             libObjectPaths
               .split(java.io.File.pathSeparatorChar)
@@ -108,26 +113,35 @@ object Build {
 
         libObjectPaths ++ llObjectPaths
       }
-      if (config.compilerConfig.useIncrementalCompilation) {
+      if (fconfig.compilerConfig.useIncrementalCompilation) {
         incCompilationContext.clear()
       }
-      LLVM.link(fconfig, linked, objectPaths, outpath)
+
+      // finally link
+      fconfig.logger.time(
+        s"Linking native code (${fconfig.gc.name} gc, ${fconfig.LTO.name} lto)"
+      ) {
+        LLVM.link(fconfig, linked, objectPaths)
+      }
     }
 
-  def findAndCompileNativeSources(
+  /** Convenience method to combine finding and compiling native libaries.
+   *
+   *  @param config
+   *    the compiler configuration
+   *  @param linkerResult
+   *    the result from the linker
+   *  @return
+   *    a sequence of the object file paths
+   */
+  def findAndCompileNativeLibs(
       config: Config,
       linkerResult: linker.Result
   ): Seq[Path] = {
-    import NativeLib._
-    findNativeLibs(config.classPath, config.workdir)
-      .map(unpackNativeCode)
-      .flatMap { destPath =>
-        val paths = findNativePaths(config.workdir, destPath)
-        val (projPaths, projConfig) =
-          Filter.filterNativelib(config, linkerResult, destPath, paths)
-        implicit val incCompilationContext: IncCompilationContext =
-          new IncCompilationContext(config.workdir)
-        LLVM.compile(projConfig, projPaths)
-      }
+    NativeLib
+      .findNativeLibs(config)
+      .flatMap(nativeLib =>
+        NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
+      )
   }
 }

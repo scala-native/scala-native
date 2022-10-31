@@ -7,6 +7,12 @@ import scala.scalanative.runtime.RawSize
  *  discard some parts of NIR instructions when linking
  */
 object LinktimeInfo {
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.debugMode")
+  def debugMode: Boolean = resolved
+
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.releaseMode")
+  def releaseMode: Boolean = resolved
+
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
   def isWindows: Boolean = resolved
 

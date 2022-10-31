@@ -64,7 +64,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
         |@extern def useVisitor(x: Visitor): Unit = extern
         |
         |@main def test(n: Int): Unit = 
-        |  def callback(x: Int) = x*x + 2*n*n
+        |  def callback(x: Int) = x*x + 2
         |  val visitor: Visitor = (n: Int) => n * 10
         |  useVisitor(Visitor(callback))
         |  useVisitor(Visitor(_ * 10))

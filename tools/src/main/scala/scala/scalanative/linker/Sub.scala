@@ -92,8 +92,8 @@ object Sub {
       case (Type.Null, refty: Type.RefKind) =>
         Type.Ref(refty.className, refty.isExact, nullable = true)
       case (lty: Type.RefKind, rty: Type.RefKind) =>
-        val ScopeRef(linfo) = lty
-        val ScopeRef(rinfo) = rty
+        val ScopeRef(linfo) = lty: @unchecked
+        val ScopeRef(rinfo) = rty: @unchecked
         val binfo = bound.flatMap(ScopeRef.unapply)
         val lubinfo = lub(linfo, rinfo, binfo)
         val exact =

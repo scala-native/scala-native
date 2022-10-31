@@ -1,14 +1,16 @@
---- 3.2.0-RC1/scala/runtime/LazyVals.scala
+--- 3.2.1/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
-@@ -1,39 +1,12 @@
+@@ -1,42 +1,12 @@
  package scala.runtime
  
+-import scala.annotation.*
 +import scala.scalanative.runtime.*
-+
+ 
  /**
   * Helper methods used in thread-safe lazy vals.
   */
  object LazyVals {
+-  @nowarn
 -  private[this] val unsafe: sun.misc.Unsafe =
 -      classOf[sun.misc.Unsafe].getDeclaredFields.nn.find { field =>
 -        field.nn.getType == classOf[sun.misc.Unsafe] && {
@@ -42,7 +44,7 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -41,78 +14,39 @@
+@@ -44,79 +14,38 @@
  
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK
@@ -109,6 +111,7 @@
    }
  
    def getOffset(clz: Class[_], name: String): Long = {
+-    @nowarn
 -    val r = unsafe.objectFieldOffset(clz.getDeclaredField(name))
 -    if (debug)
 -      println(s"getOffset($clz, $name) = $r")
@@ -116,14 +119,14 @@
 +    unexpectedUsage()
    }
  
--  def getOffsetStatic(field: java.lang.reflect.Field) =
+   def getOffsetStatic(field: java.lang.reflect.Field) =
+-    @nowarn
 -    val r = unsafe.objectFieldOffset(field)
 -    if (debug)
 -      println(s"getOffset(${field.getDeclaringClass}, ${field.getName}) = $r")
 -    r
-+  def getOffsetStatic(field: java.lang.reflect.Field) =
 +    unexpectedUsage()
-+
+ 
 +  private def unexpectedUsage() = {
 +    throw new IllegalStateException(
 +      "Unexpected usage of scala.runtime.LazyVals method, " +
@@ -131,7 +134,5 @@
 +    )
 +  }
  
--
    object Names {
      final val state = "STATE"
-     final val cas = "CAS"

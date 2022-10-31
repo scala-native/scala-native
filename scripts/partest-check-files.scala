@@ -1,17 +1,15 @@
-import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
+//> using scala "3"
+//> using lib "com.lihaoyi::os-lib:0.8.1"
+
 import java.io.File
+import os._
 
-@main(doc = """" +
-  "Tool used to check integrity of files defined in partest tests and thoose 
-  actually defined in Scala (partest) repository. 
-  It allows to check which blacklisted files are not existing and can suggest correct blacklisted item name.
-  Also checks for duplicates in blacklisted items.""")
-def main(
-    @arg(doc = "Scala version used for fetching sources")
-    scalaVersion: String
-) = {
-  implicit val wd: os.Path = pwd
-
+/** Tool used to check integrity of files defined in partest tests and thoose
+ *  actually defined in Scala (partest) repository. It allows to check which
+ *  blacklisted files are not existing and can suggest correct blacklisted item
+ *  name. Also checks for duplicates in blacklisted items
+ */
+@main def checkFiles(scalaVersion: String) = {
   val partestTestsDir = pwd / "scala-partest-tests" /
     RelPath("src/test/resources") /
     RelPath("scala/tools/partest/scalanative") / scalaVersion
@@ -21,7 +19,7 @@ def main(
   val testFiles = partestSourcesDir / "test" / "files"
 
   def showRelPath(p: os.Path): String =
-    s"${p.relativeTo(wd)} ${if (exists(p)) "" else "missing!!!"}"
+    s"${p.relativeTo(pwd)} ${if exists(p) then "" else "missing!!!"}"
 
   println(s"""
              |Scala version:       $scalaVersion
@@ -38,8 +36,9 @@ def main(
   val testNames = collection.mutable.Set.empty[String]
 
   for {
-    (blacklisted, line) <-
-      (read.lines ! partestTestsDir / "BlacklistedTests.txt").zipWithIndex
+    (blacklisted, line) <- read
+      .lines(partestTestsDir / "BlacklistedTests.txt")
+      .zipWithIndex
     if blacklisted.nonEmpty && !blacklisted.startsWith("#")
     testName = {
       val lastDot = blacklisted.lastIndexOf(".")
@@ -68,8 +67,8 @@ def main(
   }
 
   for {
-    kindDir <- ls ! partestTestsDir if kindDir.isDir
-    file <- ls ! kindDir
+    kindDir <- list(partestTestsDir) if isDir(kindDir)
+    file <- list(kindDir)
     relativePath = file.relativeTo(partestTestsDir)
     if !exists(testFiles / relativePath)
   } {

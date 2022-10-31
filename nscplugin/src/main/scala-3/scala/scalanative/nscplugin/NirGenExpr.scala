@@ -1460,7 +1460,21 @@ trait NirGenExpr(using Context) {
           case (argp, paramTpe) =>
             given nir.Position = argp.span
             val externType = genExternType(paramTpe.finalResultType)
-            res += toExtern(externType, genExpr(argp))
+            val arg = (genExpr(argp), Type.box.get(externType)) match {
+              case (value @ Val.Null, Some(unboxedType)) =>
+                externType match {
+                  case Type.Ptr | _: Type.RefKind => value
+                  case _ =>
+                    report.warning(
+                      s"Passing null as argument of type ${paramTpe.show} to the extern method is unsafe. " +
+                        s"The argument would be unboxed to primitive value of type $externType.",
+                      argp.srcPos
+                    )
+                    Val.Zero(unboxedType)
+                }
+              case (value, _) => value
+            }
+            res += toExtern(externType, arg)
         }
         res.result()
       }
@@ -2246,7 +2260,13 @@ trait NirGenExpr(using Context) {
       def resolveFunction(tree: Tree): Val = tree match {
         case Typed(expr, _) => resolveFunction(expr)
         case Block(_, expr) => resolveFunction(expr)
-        case fn @ Closure(_, target, _) =>
+        case fn @ Closure(env, target, _) =>
+          if env.nonEmpty then
+            report.error(
+              s"Closing over local state of ${env.map(_.symbol.show).mkString(", ")} in function transformed to CFuncPtr results in undefined behaviour.",
+              fn.srcPos
+            )
+
           val fnRef = genClosure(fn)
           val Type.Ref(className, _, _) = fnRef.ty: @unchecked
 

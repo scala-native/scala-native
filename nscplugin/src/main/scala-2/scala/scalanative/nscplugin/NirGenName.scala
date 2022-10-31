@@ -31,6 +31,8 @@ trait NirGenName[G <: Global with Singleton] {
       if (fullName == "java.lang._String") "java.lang.String"
       else if (fullName == "java.lang._Object") "java.lang.Object"
       else if (fullName == "java.lang._Class") "java.lang.Class"
+      else if (fullName == "scala.Nothing") "scala.runtime.Nothing$"
+      else if (fullName == "scala.Null") "scala.runtime.Null$"
       else fullName
     }
     val name = sym match {

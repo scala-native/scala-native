@@ -178,7 +178,7 @@ class PropertiesTest {
     assertThrows(classOf[NullPointerException], properties.put("any", null))
   }
 
-  @Test def nonStringValues(): Unit = {
+  @deprecated @Test def nonStringValues(): Unit = {
     val properties = new Properties
 
     properties.put("age", new Integer(18))

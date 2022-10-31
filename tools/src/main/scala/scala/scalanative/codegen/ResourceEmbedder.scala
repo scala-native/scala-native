@@ -11,7 +11,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-import java.util.Base64
 import java.util.EnumSet
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -88,18 +87,14 @@ private[scalanative] object ResourceEmbedder {
 
     val pathValues = embeddedFiles.map {
       case ClasspathFile(accessPath, pathName, virtDir) =>
-        val encodedPath = Base64.getEncoder
-          .encode(pathName.toString.getBytes())
-          .map(Val.Byte(_))
+        val encodedPath = pathName.toString.getBytes().map(Val.Byte(_))
         Val.ArrayValue(Type.Byte, encodedPath.toSeq)
     }
 
     val contentValues = embeddedFiles.map {
       case ClasspathFile(accessPath, pathName, virtDir) =>
         val fileBuffer = virtDir.read(accessPath)
-        val encodedContent = Base64.getEncoder
-          .encode(fileBuffer.array())
-          .map(Val.Byte(_))
+        val encodedContent = fileBuffer.array().map(Val.Byte(_))
         Val.ArrayValue(Type.Byte, encodedContent.toSeq)
     }
 

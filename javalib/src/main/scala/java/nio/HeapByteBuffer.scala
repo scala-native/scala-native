@@ -1,6 +1,6 @@
 package java.nio
 
-import scala.scalanative.runtime.ByteArray
+import scala.scalanative.unsafe._
 
 // Ported from Scala.js
 
@@ -70,7 +70,7 @@ private[nio] class HeapByteBuffer(
 
   @inline private def arrayBits: ByteArrayBits =
     ByteArrayBits(
-      _array.asInstanceOf[ByteArray].at(0),
+      _array.at(0),
       _arrayOffset,
       isBigEndian
     )

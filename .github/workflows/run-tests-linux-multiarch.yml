@@ -32,12 +32,10 @@ jobs:
       # Cache automatically saves content specified paths after executing all steps defined after this one.
       # It will not update cache on hit.
       - name: Cache docker
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{ matrix.arch }}
-      - name: Run local image registry
-        run: docker run -d -p 5000:5000 --restart=always --name registry -v /tmp/docker-registry:/var/lib/registry registry:2 && npx wait-on tcp:5000
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{matrix.arch}}
 
       # Builds images and saves image base name in output - it allows to re-use it in other steps.
       - name: Build image
@@ -45,87 +43,132 @@ jobs:
         run: |
           imageBase="scala-native-testing"
           imageName="${imageBase}:${{ matrix.arch }}"
-          echo "::set-output name=image-base-name::${imageBase}"
-          echo "::set-output name=image-full-name::${imageName}"
+          echo "image-base-name=${imageBase}" >> $GITHUB_OUTPUT
+          echo "image-full-name=${imageName}" >> $GITHUB_OUTPUT
+          . ./ci-docker/env/${{matrix.arch}}
 
-          docker pull localhost:5000/${imageName} || true
-          docker build \
-          -t ${imageName} \
-          --cache-from=localhost:5000/${imageName} \
-          --build-arg TARGET_PLATFORM=${{ matrix.arch}} \
-          ci-docker
+          docker run -d -p 5000:5000 \
+            --restart=always \
+            --name registry \
+            -v /tmp/docker-registry:/var/lib/registry \
+            registry:2 && npx wait-on tcp:5000
 
-      - name: Store image in cache
-        run: |
-          imageName=${{ steps.build-image.outputs.image-full-name }}
-          docker tag $imageName localhost:5000/${imageName} && \
-          docker push localhost:5000/${imageName}
+          docker pull localhost:5000/${imageName} || { \
+            docker buildx ls
+            docker run --privileged --rm tonistiigi/binfmt --install all && \
+            docker buildx build \
+              -t ${imageName} \
+              --cache-from=localhost:5000/${imageName} \
+              --build-arg BASE_IMAGE=$BASE_IMAGE \
+              --build-arg LLVM_VERSION=$LLVM_VERSION \
+              --build-arg BUILD_DEPS="${BUILD_DEPS}" \
+              --platform ${BUILD_PLATFORM} \
+              ci-docker && \
+            docker tag $imageName localhost:5000/${imageName} && \
+            docker push localhost:5000/${imageName}
+          }
 
   #Main tests grid. Builds and runs tests agains multiple combination of GC, Build mode and Scala Version
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build-image
     strategy:
       fail-fast: false
       matrix:
-        arch: [
-          { name: linux-arm64, emulator: qemu-aarch64-static },
-          { name: linux-x86, emulator: "" }
-        ]
-        scala: [2.13.10, 3.2.0]
-        build-mode: [releaseFast]
-        lto: [thin, none]
+        arch: [linux-arm64, linux-x86]
+        scala: [2.13.10, 3.2.1]
+        build-mode: [debug, release-fast]
+        lto: [none, thin]
         gc: [boehm, immix, commix]
-        # Create holes in grid to lower number of tests.
-        # Excluded entries should have low impact on overall project coverage
         exclude:
+          # Immix does not suppoort Immix/Commix GCs
+          - gc: immix
+            arch: linux-x86
+          - gc: commix
+            arch: linux-x86
+          # Release without LTO produces 1 big file taking long to compile, especially when emulated
+          - build-mode: release-fast
+            lto: none
+          - build-mode: debug
+            lto: thin
+          # Reduce ammount of builds combinations
           - gc: immix
             lto: none
-          - gc: commix
-            lto: thin
-          - gc: boehm
-            arch: { name: linux-arm64, emulator: qemu-aarch64-static }
           - gc: immix
-            arch: { name: linux-x86, emulator: "" }
+            build-mode: debug
+          - gc: immix
+            scala: 2.13.10
           - gc: commix
-            arch: { name: linux-x86, emulator: "" }
-          - lto: thin
-            arch: { name: linux-x86, emulator: "" }
+            lto: none
+          - gc: commix
+            build-mode: debug
+          - gc: commix
+            scala: 3.2.0
+          - gc: boehm
+            build-mode: release-fast
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-
-      - name: Prepare common options
+      - name: Cache docker
+        uses: actions/cache@v3
+        with:
+          path: /tmp/docker-registry
+          key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{matrix.arch}}
+     
+      - name: Prepare native config
         shell: bash
-        # We cannot use either `set every nativeConfig ~= _` or `set tests3/nativeConfig ~= _`
-        # Becouse of that we need to build it whole config from scratch
-        # There is no other way for passing compile and linking opts (we ignore deprecated sbt keys)
         # Following envs CROSS_ are always present in docker container
         run: |
-          targetEnv='sys.env("CROSS_TRIPLE")'
-          target='${sys.env("CROSS_TRIPLE")}'
-          crossRoot='${sys.env("CROSS_ROOT")}'
+          buildMode=${{matrix.build-mode}}
+          if [[ "$buildMode" == "release-fast" ]]; then 
+            buildMode=releaseFast
+          fi
 
-          sysRootFlag="Some(sys.process.stringSeqToProcess(Seq(sys.env(\"CROSS_ROOT\") + \"/bin/\" + sys.env(\"CROSS_TRIPLE\") + \"-gcc\", \"-print-sysroot\")).!!.trim).filter(_.nonEmpty).map(s => List(s\"--sysroot=\${s}\", s\"--gcc-toolchain=${crossRoot}\")).getOrElse(List.empty)"
-          useLdFlg=\"-fuse-ld=lld\"
-          crossOptions="$sysRootFlag ++ List($useLdFlg)"
+          SetConfigTemplate=$(cat << EOM
+            nativeConfig ~= { prev =>
+              val sysRoot: List[String] = Option{
+                sys.process.stringSeqToProcess(
+                  Seq(
+                    s"\${sys.env("CROSS_ROOT")}/bin/\${sys.env("CROSS_TRIPLE")}-gcc",
+                    "-print-sysroot"
+                  )
+                ).!!.trim
+              }.filter(_.nonEmpty)
+                .fold(List.empty[String]){ root =>
+                  List(
+                    s"--sysroot=\${root}",
+                    s"--gcc-toolchain=\${sys.env("CROSS_ROOT")}"
+                  )
+                };
 
-          emptyConfig="scalanative.build.NativeConfig.empty"
-          withMode="withMode(scalanative.build.Mode.${{matrix.build-mode}})"
-          withGC="withGC(scalanative.build.GC.${{matrix.gc}})"
-          withLTO="withLTO(scalanative.build.LTO.${{matrix.lto}})"
-          withToolchain="withClang(scalanative.build.Discover.clang()).withClangPP(scalanative.build.Discover.clangpp())"
-          withOpts="withEmbedResources(true).withOptimize(true).withCheck(true).withCheckFatalWarnings(true)"
-          withTarget="withTargetTriple(${targetEnv})"
-          withCompileOpts="withCompileOptions(scalanative.build.Discover.compileOptions() ++ $crossOptions)"
-          withLinkingOpts="withLinkingOptions(scalanative.build.Discover.linkingOptions() ++ $crossOptions)"
-          config="$emptyConfig.$withMode.$withGC.$withLTO.$withToolchain.$withOpts.$withTarget.$withCompileOpts.$withLinkingOpts"
+              prev
+                .withMode(scalanative.build.Mode.${buildMode})
+                .withGC(scalanative.build.GC.${{matrix.gc}})
+                .withLTO(scalanative.build.LTO.${{matrix.lto}})
+                .withEmbedResources(true)
+                .withOptimize(true)
+                .withCheck(true)
+                .withCheckFatalWarnings(true)
+                .withTargetTriple(sys.env("CROSS_TRIPLE"))
+                .withCompileOptions(
+                  prev.compileOptions ++ sysRoot ++ List("-fuse-ld=lld")
+                )
+                .withLinkingOptions(
+                  prev.linkingOptions ++ sysRoot ++ List("-fuse-ld=lld")
+                )
+            }
+          EOM
+          )
 
-          echo "native-config=${config}" >> $GITHUB_ENV
+          if [[ "${{matrix.arch}}" == "linux-x86" ]]; then
+            echo set-native-config=nativeConfig ~= identity >> $GITHUB_ENV
+          else
+            echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
+          fi
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
@@ -138,12 +181,23 @@ jobs:
 
       - name: Run tests
         env:
-          # Limit commands only to native tests, tests would use amd64 JDK anyway
+          SCALANATIVE_MODE: "${{matrix.build-mode}}"
+          SCALANATIVE_GC: "${{matrix.gc}}"
+          SCALANATIVE_LTO: "${{matrix.lto}}"
+          # Temporaly excluded due to failures in linux-x86,
+          # missing __mulodi4 symbol used in j.l.Math.addExact(Long,Long)
+          # testsExt${{env.project-version}}/test;
           TEST_COMMAND: >
-            set every nativeConfig := ${{env.native-config}};
+            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+
             show sandbox${{env.project-version}}/nativeConfig;
+
+            sandbox${{env.project-version}}/run;
+            testsJVM${{env.project-version}}/test;
             tests${{env.project-version}}/test;
-            testsExt${{env.project-version}}/test;
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
         uses: nick-fields/retry@v2
@@ -151,4 +205,4 @@ jobs:
           timeout_minutes: 180
           max_attempts: 2
           retry_on: error
-          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch.name }}" ${{ matrix.scala }} "${{matrix.arch.emulator}}"
+          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }} ${{env.project-version}}

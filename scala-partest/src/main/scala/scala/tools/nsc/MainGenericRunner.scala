@@ -54,6 +54,7 @@ class MainGenericRunner {
                     Defaults.links.map(_.name).map("-l" + _)
                   }
             }
+            .withBasename("output")
         }
         .withClassPath {
           val nativeClasspath = loadSetting("nativeCp", Seq.empty[Path]) {
@@ -70,9 +71,9 @@ class MainGenericRunner {
           commandClasspath ++ nativeClasspath
         }
         .withMainClass(command.thingToRun)
-        .withWorkdir(dir)
+        .withBasedir(dir)
 
-      Scope { implicit s => Build.build(config, dir.resolve("output")) }
+      Scope { implicit s => Build.build(config) }
     }
 
     val res = {

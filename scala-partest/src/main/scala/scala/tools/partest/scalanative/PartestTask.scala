@@ -137,7 +137,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       forkedClasspath: Seq[java.nio.file.Path]
   ): Seq[java.nio.file.Path] = {
     val config = Defaults.config
-      .withWorkdir(Defaults.workdir())
+      .withBasedir(Defaults.workdir())
       .withClassPath(options.nativeClasspath ++ forkedClasspath)
       .withCompilerConfig {
         _.withLTO(options.lto)
@@ -159,6 +159,6 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       resolvedVals = mutable.Map.empty
     )
 
-    Build.findAndCompileNativeSources(config, linkerResult)
+    Build.findAndCompileNativeLibs(config, linkerResult)
   }
 }

@@ -7,7 +7,7 @@ private[scalanative] trait UnsafePackageCompat { self =>
    *  allocator.
    */
   @deprecated(
-    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime erros, use alloc[T]() instead",
+    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime errors, use alloc[T]() instead",
     since = "0.4.3"
   )
   def alloc[T](implicit tag: Tag[T], z: Zone): Ptr[T] =
@@ -41,7 +41,7 @@ private[scalanative] trait UnsafePackageCompat { self =>
    *  Note: unlike alloc, the memory is not zero-initialized.
    */
   @deprecated(
-    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime erros, use alloc[T]() instead",
+    "In Scala 3 alloc[T](n) can be confused with alloc[T].apply(n) leading to runtime errors, use alloc[T]() instead",
     since = "0.4.3"
   )
   def stackalloc[T](implicit tag: Tag[T]): Ptr[T] =
@@ -83,7 +83,7 @@ private object MacroImpl {
       c.enclosingPosition,
       s"Scala Native method `alloc[T]` is deprecated, " +
         "in Scala 3 `alloc[T](n)` can be interpreted as " +
-        "`alloc[T].apply(n)` leading to runtime erros, " +
+        "`alloc[T].apply(n)` leading to runtime errors, " +
         "use `alloc[T]()` instead "
     )
     alloc1Impl(c)(tag, z)
@@ -141,7 +141,7 @@ private object MacroImpl {
       c.enclosingPosition,
       s"Scala Native method `stackalloc[T]` is deprecated, " +
         "in Scala 3 `stackalloc[T](n)` can be interpreted as " +
-        "`stackalloc[T].apply(n)` leading to runtime erros, " +
+        "`stackalloc[T].apply(n)` leading to runtime errors, " +
         "use `stackalloc[T]()` instead "
     )
     stackalloc1Impl(c)(tag)

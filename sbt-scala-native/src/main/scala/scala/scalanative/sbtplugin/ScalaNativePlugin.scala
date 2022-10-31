@@ -15,7 +15,9 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeVersion = nir.Versions.current
 
     val nativeConfig =
-      taskKey[build.NativeConfig]("Configuration of the Scala Native plugin")
+      taskKey[build.NativeConfig](
+        "User configuration for the native build, NativeConfig"
+      )
 
     val nativeClang =
       taskKey[File]("Location of the clang compiler.")

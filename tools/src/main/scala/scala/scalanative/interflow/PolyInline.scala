@@ -119,7 +119,7 @@ trait PolyInline { self: Interflow =>
       case (callLabel, m) =>
         emit.label(callLabel, Seq.empty)
         val ty = originalFunctionType(m)
-        val Type.Function(argtys, retty) = ty
+        val Type.Function(argtys, retty) = ty: @unchecked
         rettys += retty
 
         val cargs = margs.zip(argtys).map {
