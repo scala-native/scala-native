@@ -48,7 +48,8 @@ trait Inline { self: Interflow =>
         def calleeTooBig =
           defn.insts.size > config.compilerConfig.optimizerConfig.maxCallerSize
         def callerTooBig =
-          mergeProcessor.currentSize() > config.compilerConfig.optimizerConfig.maxCallerSize
+          mergeProcessor
+            .currentSize() > config.compilerConfig.optimizerConfig.maxCallerSize
         def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
