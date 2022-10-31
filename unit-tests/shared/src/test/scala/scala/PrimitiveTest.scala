@@ -48,7 +48,7 @@ class PrimitiveTest {
     assertTrue(+double == double)
   }
 
-  @Test def xShiftLeftY(): Unit = {
+  @deprecated @Test def xShiftLeftY(): Unit = {
     val x: Int = 3
     val y: Long = 33
     assertTrue((x << y) == 6)

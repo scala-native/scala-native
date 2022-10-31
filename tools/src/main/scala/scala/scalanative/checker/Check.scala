@@ -53,7 +53,7 @@ final class Check(implicit linked: linker.Result) {
   }
 
   def checkMethod(meth: Method): Unit = {
-    val Type.Function(_, methRetty) = meth.ty
+    val Type.Function(_, methRetty) = meth.ty: @unchecked
     retty = methRetty
 
     val insts = meth.insts

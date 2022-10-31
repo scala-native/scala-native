@@ -247,7 +247,7 @@ final class State(block: Local) {
 
     def reachAlloc(addr: Addr): Val = heap(addr) match {
       case VirtualInstance(ArrayKind, cls, values) =>
-        val ArrayRef(elemty, _) = cls.ty
+        val ArrayRef(elemty, _) = cls.ty: @unchecked
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
             && values.forall(_.isCanonical)
@@ -264,7 +264,9 @@ final class State(block: Local) {
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
       case VirtualInstance(StringKind, _, values)
           if !hasEscaped(values(linked.StringValueField.index)) =>
-        val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
+        val Val.Virtual(charsAddr) = values(
+          linked.StringValueField.index
+        ): @unchecked
         val chars = derefVirtual(charsAddr).values
           .map {
             case Val.Char(v) =>
@@ -286,7 +288,7 @@ final class State(block: Local) {
 
     def reachInit(local: Val, addr: Addr): Unit = heap(addr) match {
       case VirtualInstance(ArrayKind, cls, values) =>
-        val ArrayRef(elemty, _) = cls.ty
+        val ArrayRef(elemty, _) = cls.ty: @unchecked
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
             && values.forall(_.isCanonical)

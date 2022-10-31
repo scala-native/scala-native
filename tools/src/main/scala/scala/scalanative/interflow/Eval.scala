@@ -72,17 +72,16 @@ trait Eval { self: Interflow =>
             Next.Label(defaultTarget, defaultArgs.map(eval))
           eval(scrut) match {
             case value if value.isCanonical =>
-              cases
+              val next = cases
                 .collectFirst {
                   case Next.Case(caseValue, Next.Label(caseTarget, caseArgs))
                       if caseValue == value =>
                     val evalArgs = caseArgs.map(eval)
                     val next = Next.Label(caseTarget, evalArgs)
-                    return Inst.Jump(next)
+                    next
                 }
-                .getOrElse {
-                  return Inst.Jump(defaultNext)
-                }
+                .getOrElse(defaultNext)
+              return Inst.Jump(next)
             case scrut =>
               return Inst.Switch(materialize(scrut), defaultNext, cases)
           }
@@ -438,10 +437,10 @@ trait Eval { self: Interflow =>
       case Op.Var(ty) =>
         Val.Local(state.newVar(ty), Type.Var(ty))
       case Op.Varload(slot) =>
-        val Val.Local(local, _) = eval(slot)
+        val Val.Local(local, _) = eval(slot): @unchecked
         state.loadVar(local)
       case Op.Varstore(slot, value) =>
-        val Val.Local(local, _) = eval(slot)
+        val Val.Local(local, _) = eval(slot): @unchecked
         state.storeVar(local, eval(value))
         Val.Unit
       case _ => util.unreachable
@@ -920,7 +919,7 @@ trait Eval { self: Interflow =>
     }
 
     def isPureModuleCtor(defn: Defn.Define): Boolean = {
-      val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head
+      val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head: @unchecked
 
       val canStoreTo = mutable.Set(self)
       val arrayLength = mutable.Map.empty[Local, Int]

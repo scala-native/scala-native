@@ -2,6 +2,7 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
+import scala.annotation.nowarn
 
 class IsInstanceOfTest {
 

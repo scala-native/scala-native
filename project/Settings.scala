@@ -286,7 +286,15 @@ object Settings {
   lazy val testsCommonSettings = Def.settings(
     scalacOptions -= "-deprecation",
     scalacOptions ++= Seq("-deprecation:false"),
-    scalacOptions -= "-Xfatal-warnings",
+    scalacOptions --= {
+      if (
+          // Disable fatal warnings when
+          // Scala 3, becouse null.isInstanceOf[String] warning cannot be supressed
+          scalaVersion.value.startsWith("3.") ||
+          // Scala Native - due to specific warnings for unsafe ops in IssuesTest
+          !moduleName.value.contains("jvm")) Seq("-Xfatal-warnings")
+      else Nil
+    },
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
     ),
