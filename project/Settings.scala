@@ -9,6 +9,8 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys
+
 
 import scala.collection.mutable
 import scala.scalanative.build.Platform
@@ -227,7 +229,8 @@ object Settings {
         user <- sys.env.get("MAVEN_USER")
         password <- sys.env.get("MAVEN_PASSWORD")
       } yield Credentials(realm, domain, user, password)
-    }.toSeq
+    }.toSeq,
+    PgpKeys.pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toCharArray()),
   )
 
   lazy val noPublishSettings = Def.settings(
