@@ -21,9 +21,11 @@ import scala.scalanative.unsafe._
  */
 @extern
 object signal {
-  // define the following macros, which shall expand to constant expressions with distinct values
-  // that have a type compatible with the second argument to, and the return value of, the signal() function,
-  // and whose values shall compare unequal to the address of any declarable function.
+  /* define the following macros, which shall expand to constant expressions with
+   * distinct values that have a type compatible with the second argument to, and
+   * the return value of, the signal() function, and whose values shall compare
+   * unequal to the address of any declarable function.
+   */
 
   // Note 1: Linux
   // @name("scalanative_sig_hold")
@@ -49,111 +51,185 @@ object signal {
   type pid_t = types.pid_t
   type pthread_attr_t = types.pthread_attr_t
 
+// format: off
+
   type sigevent = CStruct5[
     CInt, // sigev_notify Notification type
     CInt, // sigev_signo Signal number
     Ptr[sigval], // sigev_value Signal value (Ptr instead of value)
-    CFuncPtr1[Ptr[sigval], Unit], // sigev_notify_function Notification function (Ptr instead of value for sigval)
+    CFuncPtr1[Ptr[sigval], Unit], // sigev_notify_function Notification function
+                                  // (Ptr instead of value for sigval)
     Ptr[pthread_attr_t] // sigev_notify_attributes Notification attributes
   ]
+
+// format: on
+
   // define the following symbolic constants for the values of sigev_notify:
   @name("scalanative_sigev_none")
   def SIGEV_NONE: CInt = extern
+
   @name("scalanative_sigev_signal")
   def SIGEV_SIGNAL: CInt = extern
+
   @name("scalanative_sigev_thread")
   def SIGEV_THREAD: CInt = extern
 
   // union of int sival_int and void *sival_ptr
   type sigval = CArray[Byte, Nat._8]
 
-  // manditory signals
+  // mandatory signals
+
+  @name("scalanative_sigabrt")
+  def SIGABRT: CInt = extern
+
   @name("scalanative_sigalrm")
   def SIGALRM: CInt = extern
+
   @name("scalanative_sigbus")
   def SIGBUS: CInt = extern
+
+  /** POSIX - "Child process terminated, stopped". XSI adds ""or continued."
+   */
   @name("scalanative_sigchld")
   def SIGCHLD: CInt = extern
+
   @name("scalanative_sigcont")
   def SIGCONT: CInt = extern
+
+  @name("scalanative_sigfpe")
+  def SIGFPE: CInt = extern
+
   @name("scalanative_sighup")
   def SIGHUP: CInt = extern
+
+  @name("scalanative_sigill")
+  def SIGILL: CInt = extern
+
+  @name("scalanative_sigint")
+  def SIGINT: CInt = extern
+
   @name("scalanative_sigkill")
   def SIGKILL: CInt = extern
+
   @name("scalanative_sigpipe")
   def SIGPIPE: CInt = extern
+
   @name("scalanative_sigquit")
   def SIGQUIT: CInt = extern
+
+  @name("scalanative_sigsegv")
+  def SIGSEGV: CInt = extern
+
   @name("scalanative_sigstop")
   def SIGSTOP: CInt = extern
+
+  @name("scalanative_sigterm")
+  def SIGTERM: CInt = extern
+
   @name("scalanative_sigtstp")
   def SIGTSTP: CInt = extern
+
   @name("scalanative_sigttin")
   def SIGTTIN: CInt = extern
+
   @name("scalanative_sigttou")
   def SIGTTOU: CInt = extern
+
   @name("scalanative_sigusr1")
   def SIGUSR1: CInt = extern
+
   @name("scalanative_sigusr2")
   def SIGUSR2: CInt = extern
+
   // Note 1: macOS
   // @name("scalanative_sigpoll")
   // def SIGPOLL: CInt = extern
+
+  /** Obsolete XSR
+   */
   @name("scalanative_sigprof")
   def SIGPROF: CInt = extern
+
+  /** XSI
+   */
   @name("scalanative_sigsys")
   def SIGSYS: CInt = extern
+
   @name("scalanative_sigtrap")
   def SIGTRAP: CInt = extern
+
   @name("scalanative_sigurg")
   def SIGURG: CInt = extern
+
+  /** XSI
+   */
   @name("scalanative_sigtalrm")
   def SIGVTALRM: CInt = extern
+
   @name("scalanative_sigxcpu")
   def SIGXCPU: CInt = extern
+
   @name("scalanative_sigxfsz")
   def SIGXFSZ: CInt = extern
+
+// format: off
 
   // The storage occupied by sa_handler and sa_sigaction may overlap,
   // and a conforming application shall not use both simultaneously.
   type sigaction = CStruct4[
-    CFuncPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one of the SIG_IGN or SIG_DFL
-    sigset_t, // sa_mask Set of signals to be blocked during execution of the signal handling func
-    CInt, // sa_flags Special flags
-    // sa_sigaction Pointer to a signal-catching function
+    CFuncPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one
+                           // of the SIG_IGN or SIG_DFL
+    sigset_t,              // sa_mask Set of signals to be blocked during execution
+                           // of the signal handling func
+    CInt,                  // sa_flags Special flags
+                           // sa_sigaction Pointer to a signal-catching function
     CFuncPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]
   ]
+
+// format: on
 
   // define the following macros which shall expand to integer constant expressions
   // that need not be usable in #if preprocessing directives
   @name("scalanative_sig_block")
   def SIG_BLOCK: CInt = extern
+
   @name("scalanative_sig_unblock")
   def SIG_UNBLOCK: CInt = extern
+
   @name("scalanative_sig_setmask")
   def SIG_SETMASK: CInt = extern
 
   // define the following symbolic constants
   @name("scalanative_sa_nocldstop")
   def SA_NOCLDSTOP: CInt = extern
+
   @name("scalanative_sa_onstack")
   def SA_ONSTACK: CInt = extern
+
   @name("scalanative_sa_resethand")
   def SA_RESETHAND: CInt = extern
+
   @name("scalanative_sa_restart")
   def SA_RESTART: CInt = extern
+
   @name("scalanative_sa_siginfo")
   def SA_SIGINFO: CInt = extern
+
   @name("scalanative_sa_nocldwait")
   def SA_NOCLDWAIT: CInt = extern
+
   @name("scalanative_sa_nodefer")
   def SA_NODEFER: CInt = extern
+
   @name("scalanative_ss_onstack")
   def SS_ONSTACK: CInt = extern
+
   @name("scalanative_ss_disable")
   def SS_DISABLE: CInt = extern
+
   @name("scalanative_minsigstksz")
   def MINSIGSTKSZ: CInt = extern
+
   @name("scalanative_sigstksz")
   def SIGSTKSZ: CInt = extern
 
