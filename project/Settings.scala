@@ -260,7 +260,6 @@ object Settings {
   lazy val testsCommonSettings = Def.settings(
     scalacOptions -= "-deprecation",
     scalacOptions ++= Seq("-deprecation:false"),
-    scalacOptions -= "-Xfatal-warnings",
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
     ),
