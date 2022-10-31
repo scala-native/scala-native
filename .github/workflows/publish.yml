@@ -29,13 +29,13 @@ jobs:
 
       - name: Setup PGP Key
         run: |
-          echo -n "$PGP_SECRET" | base64 --decode | gpg --import
+          echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
 
       - name: Publish release
-        env: 
+        env:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
-          PGP_PASSWORD: "${{ secrets.PGP_PASSWORD }}"
+          PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: sbt "-v" "-no-colors" "-J-Xmx5G" "publishRelease"

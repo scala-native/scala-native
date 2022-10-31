@@ -52,11 +52,14 @@ object Build {
 
   private def setDepenencyForCurrentBinVersion[T](
       key: TaskKey[T],
-      projects: Seq[MultiScalaProject]
+      projects: Seq[MultiScalaProject],
+      includeSbtPlugin: Boolean = true
   ) = {
     key := Def.taskDyn {
       val binVersion = scalaBinaryVersion.value
-      val optSbtPlugin = Seq(sbtScalaNative).filter(_ => binVersion == "2.12")
+      val optSbtPlugin = Seq(sbtScalaNative).filter(_ =>
+        includeSbtPlugin && binVersion == "2.12"
+      )
       val dependenices =
         optSbtPlugin ++ projects.map(_.forBinaryVersion(binVersion))
       val prev = key.value
@@ -94,7 +97,11 @@ object Build {
           setDepenencyForCurrentBinVersion(_, publishedMultiScalaProjects)
         ),
         Seq(crossPublish, crossPublishSigned).map(
-          setDepenencyForCurrentBinVersion(_, compilerPlugins)
+          setDepenencyForCurrentBinVersion(
+            _,
+            compilerPlugins,
+            includeSbtPlugin = false
+          )
         )
       )
 

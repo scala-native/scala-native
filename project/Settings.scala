@@ -244,8 +244,7 @@ object Settings {
         userName = user,
         passwd = password
       )
-    }.toSeq,
-    PgpKeys.pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toCharArray())
+    }.toSeq
   )
 
   lazy val noPublishSettings = Def.settings(
