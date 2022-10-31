@@ -419,7 +419,7 @@ final class MergeProcessor(
     // we must merge them together using a synthetic block.
     if (doInline && retMergeBlocks.size > 1) {
       val tys = retMergeBlocks.map { block =>
-        val Inst.Ret(v) = block.cf
+        val Inst.Ret(v) = block.cf: @unchecked
         implicit val state: State = block.end
         v match {
           case InstanceRef(ty) => ty
@@ -443,7 +443,7 @@ final class MergeProcessor(
       // Update all returning blocks to jump to result block,
       // and update incoming/outgoing edges to include result block.
       retMergeBlocks.foreach { block =>
-        val Inst.Ret(v) = block.cf
+        val Inst.Ret(v) = block.cf: @unchecked
         block.cf = Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))
         block.outgoing(syntheticLabel.name) = resultMergeBlock
         resultMergeBlock.incoming(block.label.name) = (Seq(v), block.end)

@@ -10,7 +10,7 @@ object GenerateReflectiveProxies {
   implicit val fresh: Fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
-    val Global.Member(owner, sig) = defn.name
+    val Global.Member(owner, sig) = defn.name: @unchecked
     val defnType = defn.ty.asInstanceOf[Type.Function]
     implicit val pos: Position = defn.pos
 

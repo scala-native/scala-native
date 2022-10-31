@@ -41,7 +41,7 @@ trait Opt { self: Interflow =>
     // Interflow usually infers better types on our erased type system
     // than scalac, yet we live it as a benefit of the doubt and make sure
     // that if original return type is more specific, we keep it as is.
-    val Type.Function(_, origRetTy) = origdefn.ty
+    val Type.Function(_, origRetTy) = origdefn.ty: @unchecked
 
     // Compute opaque fresh locals for the arguments. Argument types
     // are always a subtype of the original declared type, but in
@@ -64,48 +64,48 @@ trait Opt { self: Interflow =>
     // is never going to be called, so we don't have to visit it.
     if (args.exists(_.ty == Type.Nothing)) {
       val insts = Seq(Inst.Label(Local(0), args), Inst.Unreachable(Next.None))
-      return result(Type.Nothing, insts)
-    }
+      result(Type.Nothing, insts)
+    } else {
+      // Run a merge processor starting from the entry basic block.
+      val blocks =
+        try {
+          pushBlockFresh(fresh)
+          process(
+            origdefn.insts.toArray,
+            args,
+            state,
+            doInline = false,
+            origRetTy
+          )
+        } finally {
+          popBlockFresh()
+        }
 
-    // Run a merge processor starting from the entry basic block.
-    val blocks =
-      try {
-        pushBlockFresh(fresh)
-        process(
-          origdefn.insts.toArray,
-          args,
-          state,
-          doInline = false,
-          origRetTy
-        )
-      } finally {
-        popBlockFresh()
+      // Collect instructions, materialize all returned values
+      // and compute the result type.
+      val insts = blocks.flatMap { block =>
+        block.cf = block.cf match {
+          case inst @ Inst.Ret(retv) =>
+            Inst.Ret(block.end.materialize(retv))(inst.pos)
+          case inst @ Inst.Throw(excv, unwind) =>
+            Inst.Throw(block.end.materialize(excv), unwind)(inst.pos)
+          case cf =>
+            cf
+        }
+        block.toInsts()
+      }
+      val rets = insts.collect {
+        case Inst.Ret(v) => v.ty
       }
 
-    // Collect instructions, materialize all returned values
-    // and compute the result type.
-    val insts = blocks.flatMap { block =>
-      block.cf = block.cf match {
-        case inst @ Inst.Ret(retv) =>
-          Inst.Ret(block.end.materialize(retv))(inst.pos)
-        case inst @ Inst.Throw(excv, unwind) =>
-          Inst.Throw(block.end.materialize(excv), unwind)(inst.pos)
-        case cf =>
-          cf
+      val retty = rets match {
+        case Seq()   => Type.Nothing
+        case Seq(ty) => ty
+        case tys     => Sub.lub(tys, Some(origRetTy))
       }
-      block.toInsts()
-    }
-    val rets = insts.collect {
-      case Inst.Ret(v) => v.ty
-    }
 
-    val retty = rets match {
-      case Seq()   => Type.Nothing
-      case Seq(ty) => ty
-      case tys     => Sub.lub(tys, Some(origRetTy))
+      result(retty, insts)
     }
-
-    result(retty, insts)
   }
 
   def process(
