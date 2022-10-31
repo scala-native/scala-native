@@ -87,25 +87,21 @@ object Build {
     .settings(
       libraryDependencies ++= Deps.Tools(scalaVersion.value),
       Test / fork := true,
-      scalacOptions := {
-        val prev = scalacOptions.value
+      scalacOptions ++= {
+        val scala213StdLibDeprecations = Seq(
+          // In 2.13 lineStream_! was replaced with lazyList_!.
+          "method lineStream_!",
+          // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+          // Should not be replaced with HashMap due to performance reasons.
+          "class|object OpenHashMap",
+          "class Stream"
+        ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
         CrossVersion
           .partialVersion(scalaVersion.value)
-          .fold(prev) {
-            case (2, 11 | 12) => prev
-            case (2, 13)      =>
-              // 2.13 and 2.11 tools are only used in partest.
-              // It looks like it's impossible to provide alternative sources - it fails to compile plugin sources,
-              // before attaching them to other build projects. We disable unsolvable fatal-warnings with filters below
-              prev ++ Seq(
-                // In 2.13 lineStream_! was replaced with lazyList_!.
-                "-Wconf:cat=deprecation&msg=lineStream_!:s",
-                // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
-                // Should not be replaced with HashMap due to performance reasons.
-                "-Wconf:cat=deprecation&msg=OpenHashMap:s"
-              )
-            case _ =>
-              prev.diff(Seq("-Xfatal-warnings"))
+          .fold(Seq.empty[String]) {
+            case (2, 11 | 12) => Nil
+            case (2, 13)      => scala213StdLibDeprecations
+            case (3, _)       => scala213StdLibDeprecations
           }
       },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
