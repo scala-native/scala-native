@@ -110,7 +110,7 @@ trait Inline { self: Interflow =>
   }
 
   def adapt(args: Seq[Val], sig: Type)(implicit state: State): Seq[Val] = {
-    val Type.Function(argtys, _) = sig
+    val Type.Function(argtys, _) = sig: @unchecked
 
     // Varargs signature might appear to have less
     // argument types than arguments at the call site.
@@ -143,7 +143,7 @@ trait Inline { self: Interflow =>
         case _: build.Mode.Release =>
           getDone(name)
       }
-      val Type.Function(_, origRetTy) = defn.ty
+      val Type.Function(_, origRetTy) = defn.ty: @unchecked
 
       val inlineArgs = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
@@ -198,7 +198,7 @@ trait Inline { self: Interflow =>
           rest
             .collectFirst {
               case block if block.cf.isInstanceOf[Inst.Ret] =>
-                val Inst.Ret(value) = block.cf
+                val Inst.Ret(value) = block.cf: @unchecked
                 emit ++= block.toInsts().init
                 (value, block.end)
             }
@@ -210,7 +210,7 @@ trait Inline { self: Interflow =>
       state.emit ++= emit
       state.inherit(endState, res +: args)
 
-      val Type.Function(_, retty) = defn.ty
+      val Type.Function(_, retty) = defn.ty: @unchecked
       adapt(res, retty)
     }
 }

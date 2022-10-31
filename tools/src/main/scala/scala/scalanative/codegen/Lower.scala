@@ -78,7 +78,7 @@ object Lower {
 
     override def onDefn(defn: Defn): Defn = defn match {
       case defn: Defn.Define =>
-        val Type.Function(_, ty) = defn.ty
+        val Type.Function(_, ty) = defn.ty: @unchecked
         ScopedVar.scoped(
           fresh := Fresh(defn.insts)
         ) {
@@ -431,7 +431,7 @@ object Lower {
     ) = {
       import buf._
       val v = genVal(buf, obj)
-      val FieldRef(cls: Class, fld) = name
+      val FieldRef(cls: Class, fld) = name: @unchecked
 
       val layout = meta.layout(cls)
       val ty = layout.struct
@@ -462,7 +462,7 @@ object Lower {
     def genFieldOp(buf: Buffer, n: Local, op: Op)(implicit
         pos: Position
     ) = {
-      val Op.Field(obj, name) = op
+      val Op.Field(obj, name) = op: @unchecked
       val elem = genFieldElemOp(buf, obj, name)
       buf.let(n, Op.Copy(elem), unwind)
     }
@@ -766,7 +766,7 @@ object Lower {
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Classalloc(ClassRef(cls)) = op
+      val Op.Classalloc(ClassRef(cls)) = op: @unchecked
 
       val size = MemoryLayout.sizeOf(layout(cls).struct, is32BitPlatform)
       val allocMethod =
@@ -888,7 +888,7 @@ object Lower {
       // the case when the divisor is zero and fail gracefully
       // by throwing an arithmetic exception.
       def checkDivisionByZero(op: Op.Bin): Unit = {
-        val Op.Bin(bin, ty: Type.I, dividend, divisor) = op
+        val Op.Bin(bin, ty: Type.I, dividend, divisor) = op: @unchecked
 
         val thenL, elseL = fresh()
 
@@ -921,7 +921,7 @@ object Lower {
       // which computes both quotient and remainder at once
       // and quotient can overflow.
       def checkDivisionOverflow(op: Op.Bin): Unit = {
-        val Op.Bin(bin, ty: Type.I, dividend, divisor) = op
+        val Op.Bin(bin, ty: Type.I, dividend, divisor) = op: @unchecked
 
         val mayOverflowL, noOverflowL, didOverflowL, resultL = fresh()
 
@@ -967,7 +967,7 @@ object Lower {
       // Shifts are undefined if the bits shifted by are >= bits in the type.
       // We mask the right hand side with bits in type - 1 to make it defined.
       def maskShift(op: Op.Bin) = {
-        val Op.Bin(_, ty: Type.I, _, r) = op
+        val Op.Bin(_, ty: Type.I, _, r) = op: @unchecked
         val mask = ty match {
           case Type.Int  => Val.Int(31)
           case Type.Long => Val.Int(63)
@@ -1254,7 +1254,7 @@ object Lower {
 
   val arrayAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname
+      val Global.Top(id) = arrname: @unchecked
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
@@ -1263,7 +1263,7 @@ object Lower {
   }.toMap
   val arrayAllocSig = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname
+      val Global.Top(id) = arrname: @unchecked
       ty -> Type.Function(
         Seq(Type.Ref(Global.Top(id + "$")), Type.Int),
         Type.Ref(arrname)
@@ -1271,7 +1271,7 @@ object Lower {
   }.toMap
   val arraySnapshot = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname
+      val Global.Top(id) = arrname: @unchecked
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
@@ -1280,7 +1280,7 @@ object Lower {
   }.toMap
   val arraySnapshotSig = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname
+      val Global.Top(id) = arrname: @unchecked
       ty -> Type.Function(
         Seq(Type.Ref(Global.Top(id + "$")), Type.Int, Type.Ptr),
         Type.Ref(arrname)
