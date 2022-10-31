@@ -39,6 +39,9 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       val files = compiler.compile(sourcesDir)
       makeChanged(outDir, changedTop)
       val classpath = makeClasspath(outDir)
+      val optimizerConfig = build.OptimizerConfig.empty
+        .withMaxCallerSize(10000)
+        .withMaxInlineSize(1)
       val nativeConfig = build.NativeConfig.empty
         .withClang(Discover.clang())
         .withClangPP(Discover.clangpp())
@@ -48,6 +51,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
         .withGC(Discover.GC())
         .withMode(build.Mode.ReleaseFull)
         .withOptimize(Discover.optimize())
+        .withOptimizerConfig(optimizerConfig)
       val config = makeConfig(outDir, entry, nativeConfig)
       val ext = if (Platform.isWindows) ".exe" else ""
       val artifact = outDir.resolve("result" + ext)

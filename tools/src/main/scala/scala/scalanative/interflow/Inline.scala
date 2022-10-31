@@ -28,7 +28,7 @@ trait Inline { self: Interflow =>
             false
         }
         def isSmall =
-          defn.insts.size <= config.optimizerConfig.maxInlineSize
+          defn.insts.size <= config.compilerConfig.optimizerConfig.maxInlineSize
         val isExtern =
           defn.attrs.isExtern
         def hasVirtualArgs =
@@ -46,9 +46,9 @@ trait Inline { self: Interflow =>
         def isBlacklisted =
           this.isBlacklisted(name)
         def calleeTooBig =
-          defn.insts.size > config.optimizerConfig.maxCallerSize
+          defn.insts.size > config.compilerConfig.optimizerConfig.maxCallerSize
         def callerTooBig =
-          mergeProcessor.currentSize() > config.optimizerConfig.maxCallerSize
+          mergeProcessor.currentSize() > config.compilerConfig.optimizerConfig.maxCallerSize
         def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None

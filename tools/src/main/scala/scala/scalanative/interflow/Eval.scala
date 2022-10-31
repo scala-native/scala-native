@@ -148,8 +148,8 @@ trait Eval { self: Interflow =>
           dtarget match {
             case Val.Global(name, _)
                 if (shallInline(name, eargs)
-                  && (config.optimizerConfig.maxInlineDepth.isEmpty ||
-                    state.inlineDepth < config.optimizerConfig.maxInlineDepth.get)) =>
+                  && (config.compilerConfig.optimizerConfig.maxInlineDepth.isEmpty ||
+                    state.inlineDepth < config.compilerConfig.optimizerConfig.maxInlineDepth.get)) =>
               `inline`(name, eargs)
 
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>

@@ -58,8 +58,6 @@ sealed trait Config {
 
   def withCompilerConfig(fn: NativeConfig => NativeConfig): Config
 
-  def withOptimizerConfig(value: OptimizerConfig): Config
-
   /** The garbage collector to use. */
   def gc: GC = compilerConfig.gc
 
@@ -111,8 +109,7 @@ object Config {
       basedir = Paths.get(""),
       testConfig = false,
       logger = Logger.default,
-      compilerConfig = NativeConfig.empty,
-      optimizerConfig = OptimizerConfig.empty
+      compilerConfig = NativeConfig.empty
     )
 
   private final case class Impl(
@@ -122,8 +119,7 @@ object Config {
       basedir: Path,
       testConfig: Boolean,
       logger: Logger,
-      compilerConfig: NativeConfig,
-      optimizerConfig: OptimizerConfig
+      compilerConfig: NativeConfig
   ) extends Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
