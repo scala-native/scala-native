@@ -5,12 +5,13 @@ import sbt.Keys._
 import sbt.nio.Keys.fileTreeView
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys
-
 
 import scala.collection.mutable
 import scala.scalanative.build.Platform
@@ -71,23 +72,26 @@ object Settings {
   )
 
   def javaReleaseSettings = {
+    def patchVersion(prefix: String, scalaVersion: String): Int =
+      scalaVersion.stripPrefix(prefix).takeWhile(_.isDigit).toInt
     def canUseRelease(scalaVersion: String) = CrossVersion
       .partialVersion(scalaVersion)
-      .collect {
-        case (3, _) => true
-        case (2, 13) =>
-          scalaVersion.stripPrefix("2.13.").takeWhile(_.isDigit).toInt > 8
+      .fold(false) {
+        case (2, 13) => patchVersion("2.13.", scalaVersion) > 8
+        case (2, _)  => false
+        case (3, 1)  => patchVersion("3.1.", scalaVersion) > 1
+        case (3, _)  => true
       }
-      .getOrElse(false)
     val javacSourceFlags = Seq("-source", "1.8")
     val scalacReleaseFlag = "-release:8"
 
     Def.settings(
-      Compile / scalacOptions += {
+      scalacOptions += {
         if (canUseRelease(scalaVersion.value)) scalacReleaseFlag
+        else if (scalaVersion.value.startsWith("3.")) "-Xtarget:8"
         else "-target:jvm-1.8"
       },
-      Compile / javacOptions ++= {
+      javacOptions ++= {
         if (canUseRelease(scalaVersion.value)) Nil
         else javacSourceFlags
       },
@@ -195,6 +199,12 @@ object Settings {
       name = "Denys Shabalin",
       url = url("http://den.sh")
     ),
+    developers += Developer(
+      id = "wojciechmazur",
+      name = "Wojciech Mazur",
+      email = "wmazur@virtuslab.com",
+      url = url("https://github.com/WojciechMazur")
+    ),
     scmInfo := Some(
       ScmInfo(
         browseUrl = url("https://github.com/scala-native/scala-native"),
@@ -224,8 +234,6 @@ object Settings {
     },
     credentials ++= {
       for {
-        realm <- sys.env.get("MAVEN_REALM")
-        domain <- sys.env.get("MAVEN_DOMAIN")
         user <- sys.env.get("MAVEN_USER")
         password <- sys.env.get("MAVEN_PASSWORD")
       } yield Credentials(realm, domain, user, password)
@@ -420,8 +428,47 @@ object Settings {
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     mavenPublishSettings,
-    exportJars := true
+    exportJars := true,
+    crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value,
+    crossPublishLocal := crossPublishCompilerPlugin(publishLocal).value
   )
+
+  /** Builds a given project across all crossScalaVersion values. It does not
+   *  modify the value of scalaVersion outside of it's scope. This allows to
+   *  build multiple (compiler plugin) projects in parallel.
+   */
+  private def crossPublishCompilerPlugin(publishKey: TaskKey[Unit]) = Def.task {
+    val currentVersion = scalaVersion.value
+    val s = state.value
+    val log = s.log
+    val extracted = sbt.Project.extract(s)
+    val id = thisProjectRef.value.project
+    val selfRef = thisProjectRef.value
+    val _ = crossScalaVersions.value.foldLeft(s) {
+      case (state, `currentVersion`) =>
+        log.info(
+          s"Skip publish $id ${currentVersion} - it should be already published"
+        )
+        state
+      case (state, crossVersion) =>
+        log.info(s"Try publish $id ${crossVersion}")
+        val (newState, result) = sbt.Project
+          .runTask(
+            selfRef / publishKey,
+            state = extracted.appendWithSession(
+              Seq(
+                selfRef / scalaVersion := crossVersion
+              ),
+              state
+            )
+          )
+          .get
+        result.toEither match {
+          case Left(failure) => throw new RuntimeException(failure)
+          case Right(_)      => newState
+        }
+    }
+  }
 
   lazy val sbtPluginSettings = Def.settings(
     commonSettings,

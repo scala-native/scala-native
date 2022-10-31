@@ -10,6 +10,7 @@ import sbtbuildinfo.BuildInfoPlugin
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.build._
 import ScriptedPlugin.autoImport._
 
@@ -17,6 +18,60 @@ object Build {
   import ScalaVersions._
   import Settings._
   import Deps._
+
+// format: off
+  lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
+  lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
+    nir, util, tools,
+    nativelib, clib, posixlib, windowslib,
+    auxlib, javalib, scalalib,
+    testInterface, testInterfaceSbtDefs, testRunner,
+    junitRuntime
+  )
+  lazy val publishedProjects = 
+    sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
+
+  lazy val allProjects: Seq[Project] =  
+    publishedProjects ::: List(
+      javalibExtDummies,
+      testingCompiler, testingCompilerInterface,
+      junitAsyncNative, junitAsyncJVM,
+      junitTestOutputsJVM, junitTestOutputsNative,
+      tests, testsJVM, testsExt, testsExtJVM, sandbox,
+      scalaPartest, scalaPartestRuntime,
+      scalaPartestTests, scalaPartestJunitTests
+    ).flatMap(_.componentProjects)
+// format: on
+
+  private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
+    key := key.dependsOn(projects.map(_ / key): _*).value
+  }
+
+  private def setDepenencyForCurrentBinVersion[T](
+      key: TaskKey[Unit],
+      projects: Seq[MultiScalaProject],
+      extraBinVersionDeps: String => Seq[Project] = _ => Nil
+  ) = {
+    key := Def.taskDyn {
+      val binVersion = scalaBinaryVersion.value
+      Def
+        .task {}
+        .dependsOn(
+          extraBinVersionDeps(binVersion)
+            .++(projects.map(_.forBinaryVersion(binVersion)))
+            .map(_ / key): _*
+        )
+    }.value
+  }
+
+  val crossPublishSigned =
+    taskKey[Unit](
+      "Cross publish signed compiler plugin project excluding currently used version"
+    )
+  val crossPublishLocal =
+    taskKey[Unit](
+      "Cross publish compiler plugin project locally excluding currently used version"
+    )
 
   lazy val root: Project =
     Project(id = "scala-native", base = file("."))
@@ -26,35 +81,26 @@ object Build {
         crossScalaVersions := ScalaVersions.libCrossScalaVersions,
         commonSettings,
         noPublishSettings,
-        disabledTestsSettings, {
-// format: off
-          val allProjects: Seq[Project] = Seq(
-              sbtScalaNative
-            ) ++ Seq(
-                nir, util, tools,
-                nscPlugin, junitPlugin,
-                nativelib, clib, posixlib, windowslib,
-                auxlib, javalib, javalibExtDummies, scalalib,
-                testInterface, testInterfaceSbtDefs,
-                testingCompiler, testingCompilerInterface,
-                junitRuntime, junitAsyncNative, junitAsyncJVM,
-                junitTestOutputsJVM, junitTestOutputsNative,
-                tests, testsJVM, testsExt, testsExtJVM, sandbox,
-                scalaPartest, scalaPartestRuntime,
-                scalaPartestTests, scalaPartestJunitTests
-            ).flatMap(_.componentProjects)
-// format: on
-          val keys = Seq[TaskKey[_]](clean)
-          for (key <- keys) yield {
-            /* The match is only used to capture the type parameter `a` of
-             * each individual TaskKey.
-             */
-            key match {
-              case key: TaskKey[a] =>
-                key := key.dependsOn(allProjects.map(_ / key): _*).value
-            }
+        disabledTestsSettings,
+        setDepenency(clean, allProjects),
+        setDepenency(Compile / compile, allProjects),
+        setDepenency(Test / compile, allProjects),
+        crossPublishLocal := {},
+        crossPublishSigned := {},
+        setDepenencyForCurrentBinVersion(
+          publishLocal,
+          publishedMultiScalaProjects,
+          extraBinVersionDeps = _ match {
+            case "2.12" => Seq(sbtScalaNative)
+            case _      => Nil
           }
-        }
+        ),
+        setDepenencyForCurrentBinVersion(
+          publishSigned,
+          publishedMultiScalaProjects
+        ),
+        setDepenencyForCurrentBinVersion(crossPublishLocal, compilerPlugins),
+        setDepenencyForCurrentBinVersion(crossPublishSigned, compilerPlugins)
       )
 
   // Compiler plugins
