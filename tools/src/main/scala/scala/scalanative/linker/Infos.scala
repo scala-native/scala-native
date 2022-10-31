@@ -171,8 +171,6 @@ final class Class(
           info.implementors.contains(this)
         case info: Class =>
           info.subclasses.contains(this)
-        case _ =>
-          false
       }
     }
   }

@@ -144,7 +144,7 @@ trait Visit { self: Interflow =>
 
   def originalName(name: Global): Global = name match {
     case Global.Member(owner, sig) if sig.isDuplicate =>
-      val Sig.Duplicate(origSig, argtys) = sig.unmangled
+      val Sig.Duplicate(origSig, argtys) = sig.unmangled: @unchecked
       originalName(Global.Member(owner, origSig))
     case _ =>
       name
@@ -162,23 +162,24 @@ trait Visit { self: Interflow =>
           // less specific than the original declare type.
           if (!Sub.is(argty, origty)) origty else argty
       }
-      val Global.Member(top, sig) = orig
+      val Global.Member(top, sig) = orig: @unchecked
       Global.Member(top, Sig.Duplicate(sig, dupargtys))
     }
   }
 
   def argumentTypes(name: Global): Seq[Type] = name match {
     case Global.Member(_, sig) if sig.isDuplicate =>
-      val Sig.Duplicate(_, argtys) = sig.unmangled
+      val Sig.Duplicate(_, argtys) = sig.unmangled: @unchecked
       argtys
     case _ =>
-      val Type.Function(argtys, _) = linked.infos(name).asInstanceOf[Method].ty
+      val Type.Function(argtys, _) =
+        linked.infos(name).asInstanceOf[Method].ty: @unchecked
       argtys
   }
 
   def originalFunctionType(name: Global): Type = name match {
     case Global.Member(owner, sig) if sig.isDuplicate =>
-      val Sig.Duplicate(base, _) = sig.unmangled
+      val Sig.Duplicate(base, _) = sig.unmangled: @unchecked
       originalFunctionType(Global.Member(owner, base))
     case _ =>
       linked.infos(name).asInstanceOf[Method].ty

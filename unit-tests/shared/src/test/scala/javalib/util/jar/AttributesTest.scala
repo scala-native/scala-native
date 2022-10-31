@@ -39,7 +39,7 @@ class AttributesTest {
     assertFalse(a.containsKey("1"))
   }
 
-  @Test def containsKeyObject(): Unit = {
+  @deprecated @Test def containsKeyObject(): Unit = {
     assertFalse(a.containsKey(new Integer(1)))
     assertFalse(a.containsKey("0"))
     assertTrue(a.containsKey(new Attributes.Name("1")))

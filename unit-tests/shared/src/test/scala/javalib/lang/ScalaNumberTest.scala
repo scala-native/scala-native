@@ -7,7 +7,7 @@ import java.lang._
 import org.junit.Test
 import org.junit.Assert._
 
-class ScalaNumberTest {
+@deprecated class ScalaNumberTest {
 
   @Test def bigIntEqualEqualBigInt(): Unit = {
     val token = 2047L

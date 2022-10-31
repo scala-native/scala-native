@@ -169,7 +169,7 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
-    val Type.Function(argtys, retty) = sig
+    val Type.Function(argtys, retty) = sig: @unchecked
 
     val isDecl = insts.isEmpty
 
@@ -323,7 +323,8 @@ private[codegen] abstract class AbstractCodeGen(
               str(edge.from.splitCount)
             }
             def genUnwindEdge(unwind: Next.Unwind): Unit = {
-              val Next.Unwind(Val.Local(exc, _), Next.Label(_, vals)) = unwind
+              val Next.Unwind(Val.Local(exc, _), Next.Label(_, vals)) =
+                unwind: @unchecked
               genJustVal(vals(n))
               str(", %")
               genLocal(exc)
@@ -505,7 +506,7 @@ private[codegen] abstract class AbstractCodeGen(
     case Global.None =>
       unsupported(g)
     case Global.Member(_, sig) if sig.isExtern =>
-      val Sig.Extern(id) = sig.unmangled
+      val Sig.Extern(id) = sig.unmangled: @unchecked
       id
     case _ =>
       "_S" + g.mangle
@@ -774,7 +775,7 @@ private[codegen] abstract class AbstractCodeGen(
     import sb._
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
-        val Type.Function(argtys, _) = ty
+        val Type.Function(argtys, _) = ty: @unchecked
 
         touch(pointee)
 
@@ -801,7 +802,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
 
       case Op.Call(ty, ptr, args) =>
-        val Type.Function(_, resty) = ty
+        val Type.Function(_, resty) = ty: @unchecked
 
         val pointee = fresh()
 

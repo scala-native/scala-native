@@ -35,7 +35,7 @@ trait Intrinsics { self: Interflow =>
       state: State,
       origPos: Position
   ): Option[Val] = {
-    val Global.Member(_, sig) = name
+    val Global.Member(_, sig) = name: @unchecked
 
     val args = rawArgs.map(eval)
 
@@ -145,11 +145,11 @@ trait Intrinsics { self: Interflow =>
         }
       case _ if arrayApplyIntrinsics.contains(name) =>
         val Seq(arr, idx) = rawArgs
-        val Type.Function(_, elemty) = ty
+        val Type.Function(_, elemty) = ty: @unchecked
         Some(eval(Op.Arrayload(elemty, arr, idx)))
       case _ if arrayUpdateIntrinsics.contains(name) =>
         val Seq(arr, idx, value) = rawArgs
-        val Type.Function(Seq(_, _, elemty), _) = ty
+        val Type.Function(Seq(_, _, elemty), _) = ty: @unchecked
         Some(eval(Op.Arraystore(elemty, arr, idx, value)))
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs

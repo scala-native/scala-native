@@ -198,7 +198,7 @@ class ShortTest {
     assertEquals(signedMinValueText, toStr(signedMinValue))
   }
 
-  @Test def testEquals(): Unit = {
+  @deprecated @Test def testEquals(): Unit = {
     assertEquals(new Short(0.toShort), new Short(0.toShort))
     assertEquals(new Short(1.toShort), new Short(1.toShort))
     assertEquals(new Short(-1.toShort), new Short(-1.toShort))

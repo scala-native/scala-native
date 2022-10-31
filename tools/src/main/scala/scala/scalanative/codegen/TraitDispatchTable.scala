@@ -146,7 +146,7 @@ class TraitDispatchTable(meta: Metadata) {
       var bucket = size
       while (bucket <= maxSize) {
         if (free(bucket).nonEmpty) {
-          val head :: tail = free(bucket)
+          val head :: tail = free(bucket): @unchecked
           free(bucket) = tail
           val leftoverSize = bucket - size
           if (leftoverSize != 0) {
