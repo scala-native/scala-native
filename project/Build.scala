@@ -10,12 +10,73 @@ import sbtbuildinfo.BuildInfoPlugin
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
+import scala.scalanative.build._
 import ScriptedPlugin.autoImport._
 
 object Build {
   import ScalaVersions._
   import Settings._
   import Deps._
+
+// format: off
+  lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
+  lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
+    nir, util, tools,
+    nativelib, clib, posixlib, windowslib,
+    auxlib, javalib, scalalib,
+    testInterface, testInterfaceSbtDefs, testRunner,
+    junitRuntime
+  )
+  lazy val testMultiScalaProjects = List(
+      javalibExtDummies,
+      testingCompiler, testingCompilerInterface,
+      junitAsyncNative, junitAsyncJVM,
+      junitTestOutputsJVM, junitTestOutputsNative,
+      tests, testsJVM, testsExt, testsExtJVM, sandbox,
+      scalaPartest, scalaPartestRuntime,
+      scalaPartestTests, scalaPartestJunitTests
+    )
+// format: on
+  lazy val allMultiScalaProjects =
+    publishedMultiScalaProjects ::: testMultiScalaProjects
+
+  lazy val publishedProjects =
+    sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
+  lazy val testProjects = testMultiScalaProjects.flatMap(_.componentProjects)
+  lazy val allProjects = publishedProjects ::: testProjects
+
+  private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
+    key := key.dependsOn(projects.map(_ / key): _*).value
+  }
+
+  private def setDepenencyForCurrentBinVersion[T](
+      key: TaskKey[T],
+      projects: Seq[MultiScalaProject],
+      includeSbtPlugin: Boolean = true
+  ) = {
+    key := Def.taskDyn {
+      val binVersion = scalaBinaryVersion.value
+      val optSbtPlugin = Seq(sbtScalaNative).filter(_ =>
+        includeSbtPlugin && binVersion == "2.12"
+      )
+      val dependenices =
+        optSbtPlugin ++ projects.map(_.forBinaryVersion(binVersion))
+      val prev = key.value
+      Def
+        .task { prev }
+        .dependsOn(dependenices.map(_ / key): _*)
+    }.value
+  }
+
+  val crossPublish =
+    taskKey[Unit](
+      "Cross publish compiler plugin project without signing and excluding currently used version"
+    )
+  val crossPublishSigned =
+    taskKey[Unit](
+      "Cross publish signed compiler plugin project excluding currently used version"
+    )
 
   lazy val root: Project =
     Project(id = "scala-native", base = file("."))
@@ -25,35 +86,23 @@ object Build {
         crossScalaVersions := ScalaVersions.libCrossScalaVersions,
         commonSettings,
         noPublishSettings,
-        disabledTestsSettings, {
-// format: off
-          val allProjects: Seq[Project] = Seq(
-              sbtScalaNative
-            ) ++ Seq(
-                nir, util, tools,
-                nscPlugin, junitPlugin,
-                nativelib, clib, posixlib, windowslib,
-                auxlib, javalib, javalibExtDummies, scalalib,
-                testInterface, testInterfaceSbtDefs,
-                testingCompiler, testingCompilerInterface,
-                junitRuntime, junitAsyncNative, junitAsyncJVM,
-                junitTestOutputsJVM, junitTestOutputsNative,
-                tests, testsJVM, testsExt, testsExtJVM, sandbox,
-                scalaPartest, scalaPartestRuntime,
-                scalaPartestTests, scalaPartestJunitTests
-            ).flatMap(_.componentProjects)
-// format: on
-          val keys = Seq[TaskKey[_]](clean)
-          for (key <- keys) yield {
-            /* The match is only used to capture the type parameter `a` of
-             * each individual TaskKey.
-             */
-            key match {
-              case key: TaskKey[a] =>
-                key := key.dependsOn(allProjects.map(_ / key): _*).value
-            }
-          }
-        }
+        disabledTestsSettings,
+        setDepenency(clean, allProjects),
+        Seq(Compile / compile, Test / compile).map(
+          setDepenencyForCurrentBinVersion(_, allMultiScalaProjects)
+        ),
+        crossPublish := {},
+        crossPublishSigned := {},
+        Seq(publish, publishSigned, publishLocal).map(
+          setDepenencyForCurrentBinVersion(_, publishedMultiScalaProjects)
+        ),
+        Seq(crossPublish, crossPublishSigned).map(
+          setDepenencyForCurrentBinVersion(
+            _,
+            compilerPlugins,
+            includeSbtPlugin = false
+          )
+        )
       )
 
   // Compiler plugins
@@ -314,8 +363,8 @@ object Build {
       testsCommonSettings,
       sharedTestSource(withBlacklist = false),
       javaVersionSharedTestSources,
-      nativeConfig ~= {
-        _.withLinkStubs(true)
+      nativeConfig ~= { c =>
+        c.withLinkStubs(true)
           .withEmbedResources(true)
       },
       Test / unmanagedSourceDirectories ++= {
@@ -385,6 +434,11 @@ object Build {
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
+      .settings(nativeConfig ~= { c =>
+        c.withLTO(LTO.default)
+          .withMode(Mode.default)
+          .withGC(GC.default)
+      })
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .dependsOn(scalalib, testInterface % "test")
@@ -538,7 +592,7 @@ object Build {
             s.log.info(s"Fetching Scala source version $ver")
 
             // Make parent dirs and stuff
-            IO.createDirectory(trgDir)
+            sbt.IO.createDirectory(trgDir)
 
             // Clone scala source code
             new CloneCommand()

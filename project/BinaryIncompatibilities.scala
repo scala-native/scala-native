@@ -97,6 +97,7 @@ object BinaryIncompatibilities {
   val moduleFilters = Map(
     "util" -> Util,
     "nir" -> Nir,
+    "nscplugin" -> NscPlugin,
     "tools" -> Tools,
     "clib" -> CLib,
     "posixlib" -> PosixLib,
@@ -109,6 +110,7 @@ object BinaryIncompatibilities {
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,
+    "junit-plugin" -> JUnitPlugin,
     "junit-runtime" -> JUnitRuntime
   )
 }

@@ -1,0 +1,41 @@
+name: Publish
+on:
+  push:
+    tags:
+    - 'v0.4.*'
+
+jobs:
+  test-linux:
+    uses: ./.github/workflows/run-tests-linux.yml
+  test-windows:
+    uses: ./.github/workflows/run-tests-windows.yml
+  test-macos:
+    uses: ./.github/workflows/run-tests-macos.yml
+  test-jdk-compliance:
+    uses: ./.github/workflows/run-jdk-compliance-tests.yml
+  test-multiarch:
+    uses: ./.github/workflows/run-tests-linux-multiarch.yml
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-22.04
+    needs: [test-linux, test-windows, test-macos, test-jdk-compliance, test-multiarch]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "2.13.10" #Unused, any version can be placed here
+          java-version: 8
+
+      - name: Setup PGP Key
+        run: |
+          echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+
+      - name: Publish release
+        env:
+          MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
+          MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
+          PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
+        run: sbt "-v" "-no-colors" "-J-Xmx5G" "publishRelease"
