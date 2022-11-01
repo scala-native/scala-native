@@ -457,6 +457,19 @@ object RyuFloat {
     index
   }
 
+  @deprecated(
+    "Internal method use, floatToChars instead",
+    since = "0.4.8"
+  ) def floatToString(
+      value: Float,
+      roundingMode: RyuRoundingMode
+  ): String = {
+    val result = new scala.Array[Char](RyuFloat.RESULT_STRING_MAX_LENGTH)
+    val strLen =
+      RyuFloat.floatToChars(value, roundingMode, result, 0)
+    new String(result, 0, strLen)
+  }
+
   private def pow5bits(e: Int): Int =
     if (e == 0) 1
     else

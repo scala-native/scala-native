@@ -1001,6 +1001,18 @@ object RyuDouble {
     index
   }
 
+  @deprecated(
+    "Internal method use, doubleToChars instead",
+    since = "0.4.8"
+  ) def doubleToString(
+      value: Double,
+      roundingMode: RyuRoundingMode
+  ): String = {
+    val result = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
+    val strLen = RyuDouble.doubleToChars(value, roundingMode, result, 0)
+    new String(result, 0, strLen)
+  }
+
   private def pow5bits(e: Int): Int = ((e * 1217359) >>> 19) + 1
 
   private def decimalLength(v: Long): Int = {

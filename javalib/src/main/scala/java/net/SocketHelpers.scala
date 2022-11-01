@@ -2,20 +2,16 @@ package java.net
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
+
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
-import scala.scalanative.posix.arpa.inet._
-import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.netinet.in
 import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.sys.select._
-import scala.scalanative.posix.unistd.close
-import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.sys.time.timeval
-import scala.scalanative.posix.sys.timeOps._
+import scala.scalanative.posix.sys.socketOps._
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
+
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiOps
-
-import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 
 object SocketHelpers {
   if (isWindows) {
@@ -23,232 +19,195 @@ object SocketHelpers {
     WinSocketApiOps.init()
   }
 
-  /*
-   * The following should be long enough and constant exists on macOS.
-   * https://www.gnu.org/software/libc/manual/html_node/Host-Identification.html
-   * https://man7.org/linux/man-pages/man2/gethostname.2.html
-   */
-  val MAXHOSTNAMELEN = 256.toUInt
-
-  private def setSocketNonBlocking(socket: CInt)(implicit z: Zone): CInt = {
-    if (isWindows) {
-      val mode = alloc[CInt]()
-      !mode = 0
-      ioctlSocket(socket.toPtr[Byte], FIONBIO, mode)
-    } else {
-      fcntl(socket, F_SETFL, O_NONBLOCK)
-    }
-  }
-
-  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean =
-    Zone { implicit z =>
-      val cIP = toCString(ip)
-      val hints = stackalloc[addrinfo]()
-      val ret = stackalloc[Ptr[addrinfo]]()
-
-      hints.ai_family = AF_UNSPEC
-      hints.ai_protocol = 0
-      hints.ai_addr = null
-      hints.ai_flags = 4 // AI_NUMERICHOST
-      hints.ai_socktype = SOCK_STREAM
-      hints.ai_next = null
-
-      if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
-        return false
-      }
-
-      val ai = !ret
-
-      val sock = socket(ai.ai_family, SOCK_STREAM, ai.ai_protocol)
-
+  // scripted-tests/run/java-net-socket.scala uses this method.
+  def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
+    val s = new java.net.Socket()
+    val isReachable =
       try {
-        if (sock < 0) {
-          return false
-        }
-        setSocketNonBlocking(sock)
-        // stackalloc is documented as returning zeroed memory
-        val fdsetPtr = stackalloc[fd_set]() //  No need to FD_ZERO
-        FD_SET(sock, fdsetPtr)
-
-        // calculate once and use a second time below.
-        val tv_sec = timeout / 1000
-        val tv_usec = (timeout % 1000) * 1000
-
-        val time = stackalloc[timeval]()
-        time.tv_sec = tv_sec
-        time.tv_usec = tv_usec
-
-        if (connect(sock, ai.ai_addr, ai.ai_addrlen) != 0) {
-          return false
-        }
-
-        if (select(sock + 1, null, fdsetPtr, null, time) == 1) {
-          val so_error = stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
-          val len = stackalloc[socklen_t]()
-          !len = sizeof[CInt].toUInt
-          getsockopt(sock, SOL_SOCKET, SO_ERROR, so_error, len)
-          if (!(so_error.asInstanceOf[Ptr[CInt]]) != 0) {
-            return false
-          }
-        } else {
-          return false
-        }
-
-        val sentBytes = send(sock, toCString("echo"), 4.toUInt, 0)
-        if (sentBytes < 4) {
-          return false
-        }
-
-        // Reset timeout before using it again.
-        // Linux 'man select' recommends that the value of timeout argument
-        // be considered as undefined for OS interoperability.
-        time.tv_sec = tv_sec
-        time.tv_usec = tv_usec
-
-        if (select(sock + 1, fdsetPtr, null, null, time) != 1) {
-          return false
-        } else {
-          val buf: Ptr[CChar] = stackalloc[CChar](5.toUInt)
-          val recBytes = recv(sock, buf, 5.toUInt, 0)
-          if (recBytes < 4) {
-            return false
-          }
-        }
-      } catch {
-        case e: Throwable => e
+        s.connect(new InetSocketAddress(ip, port), timeout)
+        true
       } finally {
-        if (isWindows) closeSocket(sock.toPtr[Byte])
-        else close(sock)
-        freeaddrinfo(ai)
+        s.close()
       }
-      true
-    }
-
-  def hostToIp(host: String): Option[String] =
-    Zone { implicit z =>
-      val hints = stackalloc[addrinfo]()
-      val ret = stackalloc[Ptr[addrinfo]]()
-
-      val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-      hints.ai_family = AF_UNSPEC
-      hints.ai_socktype = 0
-      hints.ai_next = null
-
-      val status = getaddrinfo(toCString(host), null, hints, ret)
-      if (status != 0)
-        return None
-
-      val ai = !ret
-      val addr =
-        if (ai.ai_family == AF_INET) {
-          ai.ai_addr
-            .asInstanceOf[Ptr[sockaddr_in]]
-            .sin_addr
-            .toPtr
-            .asInstanceOf[Ptr[Byte]]
-        } else {
-          ai.ai_addr
-            .asInstanceOf[Ptr[sockaddr_in6]]
-            .sin6_addr
-            .toPtr
-            .asInstanceOf[Ptr[Byte]]
-        }
-      inet_ntop(ai.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
-      freeaddrinfo(ai)
-      Some(fromCString(ipstr))
-    }
-
-  def hostToIpArray(host: String): scala.Array[String] =
-    Zone { implicit z =>
-      val hints = stackalloc[addrinfo]()
-      val ret = stackalloc[Ptr[addrinfo]]()
-
-      hints.ai_family = AF_UNSPEC
-      hints.ai_socktype = SOCK_STREAM
-      hints.ai_protocol = 0
-      hints.ai_next = null
-
-      val retArray = scala.collection.mutable.ArrayBuffer[String]()
-      val status = getaddrinfo(toCString(host), null, hints, ret)
-      if (status != 0)
-        return scala.Array.empty[String]
-
-      var ai = !ret
-      while (ai != null) {
-        val ipstr: Ptr[CChar] = stackalloc[CChar]((INET6_ADDRSTRLEN + 1).toUInt)
-        val addr =
-          if (ai.ai_family == AF_INET) {
-            ai.ai_addr
-              .asInstanceOf[Ptr[sockaddr_in]]
-              .sin_addr
-              .toPtr
-              .asInstanceOf[Ptr[Byte]]
-          } else {
-            ai.ai_addr
-              .asInstanceOf[Ptr[sockaddr_in6]]
-              .sin6_addr
-              .toPtr
-              .asInstanceOf[Ptr[Byte]]
-          }
-        inet_ntop(ai.ai_family, addr, ipstr, INET6_ADDRSTRLEN.toUInt)
-        retArray += fromCString(ipstr)
-        ai = ai.ai_next.asInstanceOf[Ptr[addrinfo]]
-      }
-      freeaddrinfo(!ret) // start from first addrinfo
-      retArray.toArray
-    }
-
-  private def tailorSockaddr(ip: String, isV6: Boolean, addr: Ptr[sockaddr])(
-      implicit z: Zone
-  ): Boolean = {
-    addr.sa_family = { if (isV6) AF_INET6 else AF_INET }.toUShort
-
-    val src = toCString(ip)
-    val dst =
-      if (isV6) {
-        addr
-          .asInstanceOf[Ptr[sockaddr_in6]]
-          .sin6_addr
-          .toPtr
-          .asInstanceOf[Ptr[Byte]]
-      } else {
-        addr
-          .asInstanceOf[Ptr[sockaddr_in]]
-          .sin_addr
-          .toPtr
-          .asInstanceOf[Ptr[Byte]]
-      }
-
-    // Return true iff output argument addr is now fit for use by intended
-    // sole caller, ipToHost().
-    inet_pton(addr.sa_family.toInt, src, dst) == 1
+    isReachable
   }
 
-  def ipToHost(ip: String, isV6: Boolean): Option[String] =
-    Zone { implicit z =>
-      // Sole caller, Java 8 InetAddress#getHostName(),
-      // does not allow/specify Exceptions, so better error reporting
-      // of C function failures here and in tailorSockaddr() is not feasible.
-
-      val host: Ptr[CChar] = stackalloc[CChar](MAXHOSTNAMELEN)
-      val addr = stackalloc[sockaddr]()
-
-      if (!tailorSockaddr(ip, isV6, addr)) {
-        None
-      } else {
-        val status =
-          getnameinfo(
-            addr,
-            if (isV6) sizeof[sockaddr_in6].toUInt
-            else sizeof[sockaddr_in].toUInt,
-            host,
-            MAXHOSTNAMELEN,
-            null, // 'service' is not used; do not retrieve
-            0.toUInt,
-            0
-          )
-
-        if (status == 0) Some(fromCString(host)) else None
-      }
+  private[net] def getGaiHintsAddressFamily(): Int = {
+    getPreferIPv6Addresses() match {
+      // let getaddrinfo() decide what is returned and its order.
+      case None                  => AF_UNSPEC
+      case Some(preferIPv6Addrs) => if (preferIPv6Addrs) AF_INET6 else AF_INET
     }
+  }
+
+  // True if at least one non-loopback interface has an IPv6 address.
+  private def isIPv6Configured(): Boolean = {
+    if (isWindows) {
+      false // Support for IPv6 is neither implemented nor tested.
+    } else {
+      /* The lookup can not be a local address. This one of two IPv6
+       * addresses for the famous, in the IPv6 world, www.kame.net
+       * IPv6 dancing kame (turtle). The url from Ipv6 for fun some time
+       */
+      val kameIPv6Addr = c"2001:2F0:0:8800:0:0:1:1"
+
+      val hints = stackalloc[addrinfo]() // stackalloc clears its memory
+      val ret = stackalloc[Ptr[addrinfo]]()
+
+      hints.ai_family = AF_INET6
+      hints.ai_flags = AI_NUMERICHOST | AI_ADDRCONFIG | AI_PASSIVE
+      hints.ai_socktype = SOCK_STREAM
+      hints.ai_protocol = in.IPPROTO_TCP
+
+      val gaiStatus = getaddrinfo(kameIPv6Addr, null, hints, ret)
+      val result =
+        if (gaiStatus != 0) {
+          false
+        } else {
+          try {
+            val ai = !ret
+            if ((ai == null) || (ai.ai_addr == null)) {
+              false
+            } else {
+              ai.ai_addr.sa_family == AF_INET6.toUShort
+            }
+          } finally {
+            freeaddrinfo(!ret)
+          }
+        }
+
+      result
+    }
+  }
+
+  // A Single Point of Truth to toggle IPv4/IPv6 underlying transport protocol.
+  private lazy val useIPv4Stack: Boolean = {
+    // Java defaults to "false"
+    val systemPropertyForcesIPv4 =
+      java.lang.Boolean.parseBoolean(
+        System.getProperty("java.net.preferIPv4Stack", "false")
+      )
+
+    // Do the expensive test last.
+    systemPropertyForcesIPv4 || !isIPv6Configured()
+  }
+
+  private[net] def getUseIPv4Stack(): Boolean = useIPv4Stack
+
+  private lazy val preferIPv6Addresses: Option[Boolean] = {
+    if (getUseIPv4Stack()) {
+      Some(false)
+    } else {
+      val prop = System.getProperty("java.net.preferIPv6Addresses", "false")
+
+      // Java 9 and above allow "system" or Boolean: true/false.
+      if (prop.toLowerCase() == "system") None
+      else Some(java.lang.Boolean.parseBoolean(prop))
+    }
+  }
+
+  private[net] def getPreferIPv6Addresses(): Option[Boolean] =
+    preferIPv6Addresses
+
+  // Protocol used to set IP layer socket options must match active net stack.
+  private lazy val stackIpproto: Int =
+    if (getUseIPv4Stack()) in.IPPROTO_IP else in.IPPROTO_IPV6
+
+  private[net] def getIPPROTO(): Int = stackIpproto
+
+  private lazy val trafficClassSocketOption: Int =
+    if (getUseIPv4Stack()) in.IP_TOS else in6.IPV6_TCLASS
+
+  private[net] def getTrafficClassSocketOption(): Int =
+    trafficClassSocketOption
+
+  // Return text translation of getaddrinfo (gai) error code.
+  private[net] def getGaiErrorMessage(gaiErrorCode: CInt): String = {
+    if (isWindows) {
+      "getAddrInfo error code: ${gaiErrorCode}"
+    } else {
+      fromCString(gai_strerror(gaiErrorCode))
+    }
+  }
+
+  // Create copies of loopback & wildcard, so that originals never get changed
+
+  // ScalaJVM shows loopbacks with null host, wildcards with numeric host.
+  private def loopbackIPv4(): InetAddress =
+    InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
+
+  private def loopbackIPv6(): InetAddress = InetAddress.getByAddress(
+    Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
+  )
+
+  private def wildcardIPv4(): InetAddress =
+    InetAddress.getByAddress("0.0.0.0", Array[Byte](0, 0, 0, 0))
+
+  private def wildcardIPv6(): InetAddress = InetAddress.getByAddress(
+    "0:0:0:0:0:0:0:0",
+    Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  )
+
+  private lazy val useLoopbackIPv6: Boolean = {
+    getPreferIPv6Addresses() match {
+      case Some(useIPv6) => useIPv6
+      case None =>
+        try {
+          // "system" case relies on local nameserver having "localhost" defined.
+          InetAddress.getByName("localhost").isInstanceOf[Inet6Address]
+        } catch {
+          /* Make a best guess. On an IPv4 system, getPreferIPv6Addresses()
+           * would have been Some(false), so this is a known IPv6 system.
+           * Make loopback match IPv6 implementation socket.
+           * Time will tell if this heuristic works.
+           */
+          case e: UnknownHostException => true
+        }
+    }
+  }
+
+  private[net] def getLoopbackAddress(): InetAddress = {
+    if (useLoopbackIPv6) loopbackIPv6()
+    else loopbackIPv4()
+  }
+
+  private lazy val useWildcardIPv6: Boolean = {
+    getPreferIPv6Addresses() match {
+      case Some(useIPv6) => useIPv6
+      // For "system" case assume wildcard & loopback both use same protocol.
+      case None => useLoopbackIPv6
+    }
+  }
+
+  private[net] def getWildcardAddress(): InetAddress = {
+    if (useWildcardIPv6) wildcardIPv6()
+    else wildcardIPv4()
+  }
+
+}
+
+/* Normally 'object in6' would be in a separate file.
+ * The way that Scala Native javalib gets built means that can not be
+ * easily done here.
+ */
+
+/* As of this writing, there is no good home for this object in Scala Native.
+ * This is and its matching C code are the Scala Native rendition of
+ * ip6.h described in RFC 2553 and follow-ons.
+ *
+ * It is IETF (Internet Engineering Task Force) and neither POSIX nor
+ * ISO C. The value it describes varies by operating system. Linux, macOS,
+ * and FreeBSD each us a different one. The RFC suggests that it be
+ * accessed by including netinet/in.h.
+ *
+ * This object implements only the IPV6_TCLASS needed by java.net. The
+ * full implementation is complex and does not belong in javalib.
+ *
+ * When creativity strikes someone and a good home is found, this code
+ * can and should be moved there.
+ */
+@extern
+private[net] object in6 {
+  @name("scalanative_ipv6_tclass")
+  def IPV6_TCLASS: CInt = extern
 }

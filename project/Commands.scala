@@ -60,6 +60,7 @@ object Commands {
   lazy val testMima = projectVersionCommand("test-mima") {
     case (version, state) =>
       val tests = Build.publishedMultiScalaProjects
+        .diff(Build.compilerPlugins)
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/mimaReportBinaryIssues")
 

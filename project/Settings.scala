@@ -521,7 +521,6 @@ object Settings {
       scriptedLaunchOpts.value ++
         Seq(
           "-Xmx1024M",
-          "-XX:MaxMetaspaceSize=256M",
           "-Dplugin.version=" + version.value,
           // Default scala.version, can be overriden in test-scrippted command
           "-Dscala.version=" + ScalaVersions.scala212,
@@ -568,6 +567,9 @@ object Settings {
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
+    // Disable fatal warnings due to NonLocalReturns in Scala 3.2, fixed in 0.5.x
+    Compile / scalacOptions --= Seq("-Xfatal-warnings")
+      .filter(_ => scalaVersion.value.startsWith("3.")),
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value

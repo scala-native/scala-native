@@ -14,8 +14,22 @@ import java.io.{FileDescriptor, IOException}
 private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
 
   override def create(streaming: Boolean): Unit = {
-    val sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    if (sock < 0) throw new IOException("Couldn't create a socket")
+    val af =
+      if (SocketHelpers.getUseIPv4Stack()) socket.AF_INET
+      else socket.AF_INET6
+
+    val sockType =
+      if (streaming) socket.SOCK_STREAM
+      else socket.SOCK_DGRAM
+
+    val sock = socket.socket(af, sockType, 0)
+
+    if (sock < 0)
+      throw new IOException(
+        s"Could not create a socket in address family: ${af}" +
+          " streaming: ${streaming}"
+      )
+
     fd = new FileDescriptor(sock)
   }
 

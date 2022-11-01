@@ -6,7 +6,7 @@ import scala.util.Try
 @SerialVersionUID(1L)
 class InetSocketAddress private[net] (
     private var addr: InetAddress,
-    private val port: Int,
+    private val port: Int, // host presentation order
     private var hostName: String,
     needsResolving: Boolean
 ) extends SocketAddress {
@@ -20,7 +20,7 @@ class InetSocketAddress private[net] (
 
   if (needsResolving) {
     if (addr == null) {
-      addr = InetAddress.wildcard
+      addr = SocketHelpers.getWildcardAddress()
     }
     hostName = addr.getHostAddress()
   }
@@ -33,8 +33,11 @@ class InetSocketAddress private[net] (
 
   private val isResolved = (addr != null)
 
-  def this(port: Int) =
-    this(InetAddress.wildcard, port, InetAddress.wildcard.getHostName(), false)
+  def this(port: Int) = {
+    this(null, port, null, false)
+    addr = SocketHelpers.getWildcardAddress()
+    hostName = addr.getHostName()
+  }
 
   def this(hostname: String, port: Int) =
     this(
