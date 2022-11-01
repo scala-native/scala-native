@@ -39,14 +39,14 @@ object wait {
   /* The type idtype_t shall be defined as an enumeration type whose possible
    * values shall include at least the following: P_ALL P_PGID P_PID
    */
-  type idtype_t = Int // POSIX enumeration in simple Scala common to 2.n & 3.n
-  @name("scalanative_posix_p_all")
+  type idtype_t = CInt // POSIX enumeration in simple Scala common to 2.n & 3.n
+  @name("scalanative_c_p_all")
   def P_ALL: CInt = extern
 
-  @name("scalanative_posix_p_pgid")
+  @name("scalanative_c_p_pgid")
   def P_PGID: CInt = extern
 
-  @name("scalanative_posix_p_pid")
+  @name("scalanative_c_p_pid")
   def P_PID: CInt = extern
 
 // Symbolic constants, roughly in POSIX declaration order
@@ -55,47 +55,47 @@ object wait {
 
   /** XSI
    */
-  @name("scalanative_posix_wcontinued")
+  @name("scalanative_c_wcontinued")
   def WCONTINUED: CInt = extern
 
-  @name("scalanative_posix_wnohang")
+  @name("scalanative_c_wnohang")
   def WNOHANG: CInt = extern
 
-  @name("scalanative_posix_wuntraced")
+  @name("scalanative_c_wuntraced")
   def WUNTRACED: CInt = extern
 
   // "constants" for waitid()
-  @name("scalanative_posix_wexited")
+  @name("scalanative_c_wexited")
   def WEXITED: CInt = extern
 
-  @name("scalanative_posix_wnowait")
+  @name("scalanative_c_wnowait")
   def WNOWAIT: CInt = extern
 
-  @name("scalanative_posix_wstopped")
+  @name("scalanative_c_wstopped")
   def WSTOPPED: CInt = extern
 
 // POSIX "Macros"
-  @name("scalanative_posix_wexitstatus")
+  @name("scalanative_c_wexitstatus")
   def WEXITSTATUS(wstatus: CInt): CInt = extern
 
   /** XSI
    */
-  @name("scalanative_posix_wifcontinued")
+  @name("scalanative_c_wifcontinued")
   def WIFCONTINUED(wstatus: CInt): CInt = extern
 
-  @name("scalanative_posix_wifexited")
+  @name("scalanative_c_wifexited")
   def WIFEXITED(wstatus: CInt): Boolean = extern
 
-  @name("scalanative_posix_wifsignaled")
+  @name("scalanative_c_wifsignaled")
   def WIFSIGNALED(wstatus: CInt): Boolean = extern
 
-  @name("scalanative_posix_wifstopped")
+  @name("scalanative_c_wifstopped")
   def WIFSTOPPED(wstatus: CInt): Boolean = extern
 
-  @name("scalanative_posix_wstopsig")
+  @name("scalanative_c_wstopsig")
   def WSTOPSIG(wstatus: CInt): Boolean = extern
 
-  @name("scalanative_posix_wtermsig")
+  @name("scalanative_c_wtermsig")
   def WTERMSIG(wstatus: CInt): CInt = extern
 
 // Methods
