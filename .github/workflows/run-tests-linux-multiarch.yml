@@ -1,5 +1,6 @@
 name: Run tests Linux multiarch
 on:
+  workflow_call:
   pull_request:
   push:
     branches:
