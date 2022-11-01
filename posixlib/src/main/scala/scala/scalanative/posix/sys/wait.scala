@@ -13,6 +13,20 @@ import scalanative.posix.signal
  *
  *  A method with an XSI comment indicates it is defined in extended POSIX
  *  X/Open System Interfaces, not base POSIX.
+ *
+ *  Note well: It is neither expect nor obvious from the declaration that the
+ *  wait() method of this class can conflict with Object.wait(Long). This makes
+ *  declaration and usage more difficult.
+ *
+ *  The simplest approach is to avoid "wait(Ptr[CInt])" and use the directly
+ *  equivalent idiom: // import scala.scalanative.posix.sys.wait.waitpid // or
+ *  sys.wait._ // Replace Ptr[CInt] with your variable. val status = waitpid(-1,
+ *  Ptr[CInt], 0)
+ *
+ *  If that approach is not available, one can try the following idiom: //
+ *  import scalanative.posix.sys.{wait => Wait} // import
+ *  scalanative.posix.sys.wait._ // for WIFEXITED etc. // Replace Ptr[CInt] with
+ *  your variable. val status = Wait.wait(Ptr[CInt])
  */
 @extern
 object wait {
@@ -86,6 +100,8 @@ object wait {
 
 // Methods
 
+  /** See declaration & usage note in class description.
+   */
   def wait(status: Ptr[CInt]): pid_t = extern
 
   def waitid(
