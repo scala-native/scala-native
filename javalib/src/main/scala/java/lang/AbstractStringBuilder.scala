@@ -5,7 +5,10 @@ import java.io.InvalidObjectException
 import java.util.Arrays
 import scala.util.control.Breaks._
 
+import scala.scalanative.runtime.ieee754tostring.ryu._
+
 protected abstract class AbstractStringBuilder private (unit: Unit) {
+
   import AbstractStringBuilder._
 
   protected var value: Array[Char] = _
@@ -108,7 +111,38 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     count += 1
   }
 
+  // Optimization: use `RyuFloat.floatToChars()` instead of `floatToString()`
+  protected final def append0(f: scala.Float): Unit = {
+
+    // We first ensure that we have enough space in the backing Array (`value`)
+    this.ensureCapacity(this.count + RyuFloat.RESULT_STRING_MAX_LENGTH)
+
+    // Then we call `RyuFloat.floatToChars()`, which will append chars to `value`
+    this.count = RyuFloat.floatToChars(
+      f,
+      RyuRoundingMode.Conservative,
+      value,
+      this.count
+    )
+  }
+
+  // Optimization: use `RyuFloat.doubleToChars()` instead of `doubleToString()`
+  protected final def append0(d: scala.Double): Unit = {
+
+    // We first ensure that we have enough space in the backing Array (`value`)
+    this.ensureCapacity(this.count + RyuDouble.RESULT_STRING_MAX_LENGTH)
+
+    // Then we call `RyuFloat.doubleToChars()`, which will append chars to `value`
+    this.count = RyuDouble.doubleToChars(
+      d,
+      RyuRoundingMode.Conservative,
+      value,
+      this.count
+    )
+  }
+
   protected final def append0(string: String): Unit = {
+
     if (string == null) {
       appendNull()
       return
