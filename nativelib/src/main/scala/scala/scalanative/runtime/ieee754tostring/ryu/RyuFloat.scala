@@ -35,9 +35,11 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-import RyuRoundingMode._
-
 object RyuFloat {
+
+  // Scala/Java magic number 15 is derived from original RYU C code magic number 16 (which includes NUL terminator).
+  // See: https://github.com/ulfjack/ryu/blob/6f85836b6389dce334692829d818cdedb28bfa00/ryu/f2s.c#L342
+  final val RESULT_STRING_MAX_LENGTH = 15
 
   final val FLOAT_MANTISSA_BITS = 23
 
@@ -172,32 +174,74 @@ object RyuFloat {
 
 // format: on
 
-  @noinline def floatToString(
-      value: Float,
-      roundingMode: RyuRoundingMode
-  ): String = {
+  @inline
+  private def copyLiteralToCharArray(
+      literal: String,
+      literalLength: Int,
+      result: scala.Array[scala.Char],
+      offset: Int
+  ): Int = {
+    literal.getChars(0, literalLength, result, offset)
+    offset + literalLength
+  }
 
-    // Step 1: Decode the floating point number, and unify normalized and
-    // subnormal cases.
-    // First, handle all the trivial cases.
-    if (value.isNaN) return "NaN"
-    if (value == Float.PositiveInfinity) return "Infinity"
-    if (value == Float.NegativeInfinity) return "-Infinity"
+  // See: https://github.com/scala-native/scala-native/issues/2902
+  /** Low-level function executing the Ryu algorithm on `Float`` value. This
+   *  function allows destination passing style. This means that the result
+   *  destination (`Array[Char]`) has to be passed as an argument. The goal is
+   *  to avoid additional allocations when possible. Warnings: this function
+   *  makes no verification of destination bounds (offset and length are assumed
+   *  to be valid). The caller must thus ensure that `result.length - offset >=
+   *  RESULT_STRING_MAX_LENGTH`.
+   *
+   *  @param value
+   *    the value to be converted
+   *  @param roundingMode
+   *    customization of Ryu rounding mode
+   *  @param result
+   *    the `Array[Char]` destination of the conversion result
+   *  @param offset
+   *    index in `Array[Char]` destination where new chars will start to be
+   *    written
+   *  @return
+   *    new offset as: old offset + number of created chars (i.e. last modified
+   *    index + 1)
+   */
+  def floatToChars(
+      value: Float,
+      roundingMode: RyuRoundingMode,
+      result: scala.Array[scala.Char],
+      offset: Int
+  ): Int = {
+
+    // Handle all the trivial cases.
+    if (value.isNaN)
+      return copyLiteralToCharArray("NaN", 3, result, offset)
+    if (value == Float.PositiveInfinity)
+      return copyLiteralToCharArray("Infinity", 8, result, offset)
+    if (value == Float.NegativeInfinity)
+      return copyLiteralToCharArray("-Infinity", 9, result, offset)
+
     val bits = java.lang.Float.floatToIntBits(value)
-    if (bits == 0) return "0.0"
-    if (bits == 0x80000000) return "-0.0"
-    // Otherwise extract the mantissa and exponent bits and run the full
-    // algorithm.
+    if (bits == 0)
+      return copyLiteralToCharArray("0.0", 3, result, offset)
+    if (bits == 0x80000000)
+      return copyLiteralToCharArray("-0.0", 4, result, offset)
+
+    // Otherwise extract the mantissa and exponent bits and run the full algorithm.
+    // Step 1: Decode the floating point number, and unify normalized and subnormal cases.
     val ieeeExponent = (bits >> FLOAT_MANTISSA_BITS) & FLOAT_EXPONENT_MASK
     val ieeeMantissa = bits & FLOAT_MANTISSA_MASK
-    // By default, the correct mantissa starts with a 1, except for
-    // denormal numbers.
+
+    // By default, the correct mantissa starts with a 1, except for denormal numbers.
     var e2 = 0
     var m2 = 0
     if (ieeeExponent == 0) {
+      // Denormal number - no implicit leading 1, and the exponent is 1, not 0.
       e2 = 1 - FLOAT_EXPONENT_BIAS - FLOAT_MANTISSA_BITS
       m2 = ieeeMantissa
     } else {
+      // Add implicit leading 1.
       e2 = ieeeExponent - FLOAT_EXPONENT_BIAS - FLOAT_MANTISSA_BITS
       m2 = ieeeMantissa | (1 << FLOAT_MANTISSA_BITS)
     }
@@ -225,6 +269,7 @@ object RyuFloat {
     if (e2 >= 0) {
       // Compute m * 2^e_2 / 10^q = m * 2^(e_2 - q) / 5^q
       val q = (e2 * LOG10_2_NUMERATOR / LOG10_2_DENOMINATOR).toInt
+      // k = constant + floor(log_2(5^q))
       val k = POW5_INV_BITCOUNT + pow5bits(q) - 1
       val i = -e2 + q + k
       dv = mulPow5InvDivPow2(mv, q, i).toInt
@@ -265,21 +310,18 @@ object RyuFloat {
       dmIsTrailingZeros = (if (mm % 2 == 1) 0 else 1) >= q
     }
 
-    // Step 4: Find the shortest decimal representation in the interval of
-    // legal representations.
+    // Step 4: Find the shortest decimal representation in the interval of legal representations.
     //
     // We do some extra work here in order to follow Float/Double.toString
     // semantics. In particular, that requires printing in scientific format
     // if and only if the exponent is between -3 and 7, and it requires
     // printing at least two decimal digits.
     //
-    // Above, we moved the decimal dot all the way to the right, so now we
-    // need to count digits to
-    // figure out the correct exponent for scientific notation.
+    // Above, we moved the decimal dot all the way to the right, so now we need to count digits
+    // to figure out the correct exponent for scientific notation.
     val dplength = decimalLength(dp)
     var exp = e10 + dplength - 1
-    // Float.toString semantics requires using scientific notation if and
-    // only if outside this range.
+    // Float.toString semantics requires using scientific notation if and only if outside this range.
     val scientificNotation = !((exp >= -3) && (exp < 7))
     var removed = 0
     if (dpIsTrailingZeros && !roundingMode.acceptUpperBound(even)) {
@@ -329,12 +371,13 @@ object RyuFloat {
 
     // Step 5: Print the decimal representation.
     // We follow Float.toString semantics here.
-    val result = new scala.Array[Char](15)
-    var index = 0
+    var index = offset
     if (sign) {
       result(index) = '-'
       index += 1
     }
+
+    // Values in the interval [1E-3, 1E7) are special.
     if (scientificNotation) {
       for (i <- 0 until olength - 1) {
         val c = output % 10
@@ -348,8 +391,7 @@ object RyuFloat {
         result(index) = '0'
         index += 1
       }
-      // Print 'E', the exponent sign, and the exponent, which has at most
-      // two digits.
+      // Print 'E', the exponent sign, and the exponent, which has at most two digits.
       result(index) = 'E'
       index += 1
       if (exp < 0) {
@@ -411,7 +453,8 @@ object RyuFloat {
         index += olength + 1
       }
     }
-    new String(result, 0, index)
+
+    index
   }
 
   private def pow5bits(e: Int): Int =

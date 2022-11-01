@@ -318,7 +318,10 @@ object Double {
   }
 
   @inline def toString(d: scala.Double): String = {
-    RyuDouble.doubleToString(d, RyuRoundingMode.Conservative)
+    val result = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
+    val strLen =
+      RyuDouble.doubleToChars(d, RyuRoundingMode.Conservative, result, 0)
+    new _String(0, strLen, result).asInstanceOf[String]
   }
 
   @inline def valueOf(d: scala.Double): Double =

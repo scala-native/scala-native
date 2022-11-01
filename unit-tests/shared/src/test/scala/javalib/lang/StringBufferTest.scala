@@ -31,9 +31,20 @@ class StringBufferTest {
     assertEquals("100000", newBuf.append(100000).toString)
   }
 
-  @Test def appendFloat(): Unit = {
+  @Test def appendFloats(): Unit = {
     assertEquals("2.5", newBuf.append(2.5f).toString)
+    assertEquals(
+      "2.5 3.5",
+      newBuf.append(2.5f).append(' ').append(3.5f).toString
+    )
+  }
+
+  @Test def appendDoubles(): Unit = {
     assertEquals("3.5", newBuf.append(3.5).toString)
+    assertEquals(
+      "2.5 3.5",
+      newBuf.append(2.5).append(' ').append(3.5).toString
+    )
   }
 
   @Test def insert(): Unit = {
@@ -71,7 +82,7 @@ class StringBufferTest {
     )
   }
 
-  @Test def insertFloat(): Unit = {
+  @Test def insertFloatOrDouble(): Unit = {
     assertEquals("2.5", newBuf.insert(0, 2.5f).toString)
     assertEquals("3.5", newBuf.insert(0, 3.5).toString)
   }

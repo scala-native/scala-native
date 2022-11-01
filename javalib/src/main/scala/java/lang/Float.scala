@@ -320,7 +320,10 @@ object Float {
     }
 
   def toString(f: scala.Float): String = {
-    RyuFloat.floatToString(f, RyuRoundingMode.Conservative)
+    val result = new scala.Array[Char](RyuFloat.RESULT_STRING_MAX_LENGTH)
+    val strLen =
+      RyuFloat.floatToChars(f, RyuRoundingMode.Conservative, result, 0)
+    new _String(0, strLen, result).asInstanceOf[String]
   }
 
   @inline def valueOf(s: String): Float =

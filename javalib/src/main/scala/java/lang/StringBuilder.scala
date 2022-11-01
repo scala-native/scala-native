@@ -50,12 +50,12 @@ final class StringBuilder
   }
 
   def append(f: scala.Float): StringBuilder = {
-    append0(Float.toString(f))
+    append0(f)
     this
   }
 
   def append(d: scala.Double): StringBuilder = {
-    append0(Double.toString(d))
+    append0(d)
     this
   }
 

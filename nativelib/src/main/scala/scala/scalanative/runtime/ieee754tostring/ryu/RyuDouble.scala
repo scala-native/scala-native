@@ -35,9 +35,11 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-import RyuRoundingMode._
-
 object RyuDouble {
+
+  // Scala/Java magic number 24 is derived from original RYU C code magic number 25 (which includes NUL terminator).
+  // See https://github.com/ulfjack/ryu/blob/6f85836b6389dce334692829d818cdedb28bfa00/ryu/d2s.c#L506
+  final val RESULT_STRING_MAX_LENGTH = 24
 
   final val DOUBLE_MANTISSA_BITS = 52
 
@@ -694,26 +696,67 @@ object RyuDouble {
 
   // format: on
 
-  @noinline def doubleToString(
+  @inline
+  private def copyLiteralToCharArray(
+      literal: String,
+      literalLength: Int,
+      result: scala.Array[Char],
+      offset: Int
+  ): Int = {
+    literal.getChars(0, literalLength, result, offset)
+    offset + literalLength
+  }
+
+  // See: https://github.com/scala-native/scala-native/issues/2902
+  /** Low-level function executing the Ryu algorithm on `Double` value. This
+   *  function allows destination passing style. This means that the result
+   *  destination (`Array[Char]`) has to be passed as an argument. The goal is
+   *  to avoid additional allocations when possible. Warnings: this function
+   *  makes no verification of destination bounds (offset and length are assumed
+   *  to be valid). The caller must thus ensure that `result.length - offset >=
+   *  RESULT_STRING_MAX_LENGTH`.
+   *
+   *  @param value
+   *    the value to be converted
+   *  @param roundingMode
+   *    customization of Ryu rounding mode
+   *  @param result
+   *    the `Array[Char]` destination of the conversion result
+   *  @param offset
+   *    index in `Array[Char]` destination where new chars will start to be
+   *    written
+   *  @return
+   *    new offset as: old offset + number of created chars (i.e. last modified
+   *    index + 1)
+   */
+  def doubleToChars(
       value: Double,
-      roundingMode: RyuRoundingMode
-  ): String = {
+      roundingMode: RyuRoundingMode,
+      result: scala.Array[Char],
+      offset: Int
+  ): Int = {
 
-    // Step 1: Decode the floating point number, and unify normalized and
-    // subnormal cases.
-    // First, handle all the trivial cases.
-    if (value.isNaN) return "NaN"
-    if (value == Double.PositiveInfinity) return "Infinity"
-    if (value == Double.NegativeInfinity) return "-Infinity"
+    // Handle all the trivial cases.
+    if (value.isNaN)
+      return copyLiteralToCharArray("NaN", 3, result, offset)
+    if (value == Double.PositiveInfinity)
+      return copyLiteralToCharArray("Infinity", 8, result, offset)
+    if (value == Double.NegativeInfinity)
+      return copyLiteralToCharArray("-Infinity", 9, result, offset)
+
     val bits = java.lang.Double.doubleToLongBits(value)
-    if (bits == 0) return "0.0"
-    if (bits == 0x8000000000000000L) return "-0.0"
+    if (bits == 0)
+      return copyLiteralToCharArray("0.0", 3, result, offset)
+    if (bits == 0x8000000000000000L)
+      return copyLiteralToCharArray("-0.0", 4, result, offset)
 
-    // Otherwise extract the mantissa and exponent bits and run the full
-    // algorithm.
+    // Otherwise extract the mantissa and exponent bits and run the full algorithm.
+    // Step 1: Decode the floating point number, and unify normalized and subnormal cases.
     val ieeeExponent =
       ((bits >>> DOUBLE_MANTISSA_BITS) & DOUBLE_EXPONENT_MASK).toInt
     val ieeeMantissa = bits & DOUBLE_MANTISSA_MASK
+
+    // By default, the correct mantissa starts with a 1, except for denormal numbers.
     var e2 = 0
     var m2 = 0L
     if (ieeeExponent == 0) {
@@ -732,7 +775,7 @@ object RyuDouble {
     val mv = 4 * m2
     val mp = 4 * m2 + 2
     val mmShift =
-      if (((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1))) 1
+      if ((m2 != (1L << DOUBLE_MANTISSA_BITS)) || (ieeeExponent <= 1)) 1
       else 0
     val mm = 4 * m2 - 1 - mmShift
     e2 -= 2
@@ -786,21 +829,18 @@ object RyuDouble {
       }
     }
 
-    // Step 4: Find the shortest decimal representation in the interval of
-    // legal representations.
+    // Step 4: Find the shortest decimal representation in the interval of legal representations.
     //
     // We do some extra work here in order to follow Float/Double.toString
     // semantics. In particular, that requires printing in scientific format
     // if and only if the exponent is between -3 and 7, and it requires
     // printing at least two decimal digits.
     //
-    // Above, we moved the decimal dot all the way to the right, so now we
-    // need to count digits to
-    // figure out the correct exponent for scientific notation.
+    // Above, we moved the decimal dot all the way to the right, so now we need to count digits
+    // to figure out the correct exponent for scientific notation.
     val vplength = decimalLength(dp)
     var exp = e10 + vplength - 1
-    // Double.toString semantics requires using scientific notation if and
-    // only if outside this range.
+    // Double.toString semantics requires using scientific notation if and only if outside this range.
     val scientificNotation = !((exp >= -3) && (exp < 7))
     var removed = 0
     var lastRemovedDigit = 0
@@ -868,8 +908,7 @@ object RyuDouble {
 
     // Step 5: Print the decimal representation.
     // We follow Double.toString semantics here.
-    val result = new scala.Array[Char](24)
-    var index = 0
+    var index = offset
     if (sign) {
       result(index) = '-'
       index += 1
@@ -890,8 +929,7 @@ object RyuDouble {
         index += 1
       }
 
-      // Print 'E', the exponent sign, and the exponent, which has at most
-      // three digits.
+      // Print 'E', the exponent sign, and the exponent, which has at most three digits.
       result(index) = 'E'
       index += 1
       if (exp < 0) {
@@ -911,7 +949,6 @@ object RyuDouble {
       }
       result(index) = ('0' + exp % 10).toChar
       index += 1
-      new String(result, 0, index)
     } else {
       // Otherwise follow the Java spec for values in the interval [1E-3, 1E7).
       if (exp < 0) {
@@ -959,8 +996,9 @@ object RyuDouble {
         }
         index += olength + 1
       }
-      new String(result, 0, index)
     }
+
+    index
   }
 
   private def pow5bits(e: Int): Int = ((e * 1217359) >>> 19) + 1
