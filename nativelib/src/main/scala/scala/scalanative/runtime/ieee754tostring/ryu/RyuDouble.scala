@@ -708,13 +708,13 @@ object RyuDouble {
   }
 
   // See: https://github.com/scala-native/scala-native/issues/2902
-  /** Low-level function executing the Ryu algorithm on `Double` value. Compared
-   *  to [[doubleToString]] this function allows destination passing style. This
-   *  means that the result destination (`Array[Char]`) has to be passed as an
-   *  argument. The goal is to avoid additional allocations when possible.
-   *  Warnings: this function makes no verification of destination bounds
-   *  (offset and length are assumed to be valid). The caller must thus ensure
-   *  that `result.length - offset >= RESULT_STRING_MAX_LENGTH`.
+  /** Low-level function executing the Ryu algorithm on `Double` value. This
+   *  function allows destination passing style. This means that the result
+   *  destination (`Array[Char]`) has to be passed as an argument. The goal is
+   *  to avoid additional allocations when possible. Warnings: this function
+   *  makes no verification of destination bounds (offset and length are assumed
+   *  to be valid). The caller must thus ensure that `result.length - offset >=
+   *  RESULT_STRING_MAX_LENGTH`.
    *
    *  @param value
    *    the value to be converted
