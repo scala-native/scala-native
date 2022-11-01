@@ -25,9 +25,7 @@ int scalanative_c_wstopped() { return WSTOPPED; }
 // POSIX "Macros"
 int scalanative_c_wexitstatus(int wstatus) { return WEXITSTATUS(wstatus); }
 
-bool scalanative_c_wifcontinued(int wstatus) {
-    return WIFCONTINUED(wstatus);
-}
+bool scalanative_c_wifcontinued(int wstatus) { return WIFCONTINUED(wstatus); }
 
 bool scalanative_c_wifexited(int wstatus) { return WIFEXITED(wstatus); }
 
