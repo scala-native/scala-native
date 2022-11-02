@@ -165,6 +165,11 @@ object ScalaNativePluginInternal {
         else Some("Nonzero exit code: " + exitCode)
 
       message.foreach(sys.error)
+    },
+    runMain := {
+      throw new MessageOnlyException(
+        "`runMain` is not supported in Scala Native"
+      )
     }
   )
 
