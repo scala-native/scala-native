@@ -17,6 +17,7 @@ final class State(block: Local) {
   var emitted = mutable.AnyRefMap.empty[Op, Val]
   var emit = new nir.Buffer()(fresh)
   var inlineDepth = 0
+
   private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
     val addr = fresh().id
     heap(addr) = VirtualInstance(kind, cls, values)
@@ -151,6 +152,7 @@ final class State(block: Local) {
       }
       heap(addr) = clone
     }
+
     emitted ++= other.emitted
   }
   def heapClosure(roots: Seq[Val]): mutable.Set[Addr] = {

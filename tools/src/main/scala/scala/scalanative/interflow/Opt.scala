@@ -15,6 +15,7 @@ trait Opt { self: Interflow =>
       case Inst.Unreachable(unwind) => unwind == Next.None
       case _                        => true
     }
+
     defn.attrs.opt != Attr.NoOpt && noUnwind
   }
 
@@ -118,6 +119,7 @@ trait Opt { self: Interflow =>
   ): Seq[MergeBlock] = {
     val processor =
       MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)
+
     try {
       pushMergeProcessor(processor)
 

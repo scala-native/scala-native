@@ -6,11 +6,20 @@ import scalanative.linker._
 import scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
+  private val maxInlineSize =
+    config.compilerConfig.optimizerConfig.maxInlineSize
+      .getOrElse(8)
+  private val maxCallerSize =
+    config.compilerConfig.optimizerConfig.maxCallerSize
+      .getOrElse(8192)
+  private val maxInlineDepth =
+    config.compilerConfig.optimizerConfig.maxInlineDepth
+
   def shallInline(name: Global, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result
   ): Boolean = {
-    val maybeDefn = config.mode match {
+    val maybeDefn = mode match {
       case build.Mode.Debug =>
         maybeOriginal(name)
       case _: build.Mode.Release =>
@@ -28,7 +37,7 @@ trait Inline { self: Interflow =>
             false
         }
         def isSmall =
-          defn.insts.size <= config.compilerConfig.optimizerConfig.maxInlineSize
+          defn.insts.size <= maxInlineSize
         val isExtern =
           defn.attrs.isExtern
         def hasVirtualArgs =
@@ -46,10 +55,12 @@ trait Inline { self: Interflow =>
         def isBlacklisted =
           this.isBlacklisted(name)
         def calleeTooBig =
-          defn.insts.size > config.compilerConfig.optimizerConfig.maxCallerSize
+          defn.insts.size > maxCallerSize
         def callerTooBig =
-          mergeProcessor
-            .currentSize() > config.compilerConfig.optimizerConfig.maxCallerSize
+          mergeProcessor.currentSize() > maxCallerSize
+        def inlineDepthLimitExceeded =
+          maxInlineDepth.exists(_ > state.inlineDepth)
+
         def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
@@ -57,7 +68,7 @@ trait Inline { self: Interflow =>
           case _                        => false
         }
 
-        val shall = config.mode match {
+        val shall = mode match {
           case build.Mode.Debug =>
             alwaysInline || isCtor
           case build.Mode.ReleaseFast =>
@@ -66,7 +77,7 @@ trait Inline { self: Interflow =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
         lazy val shallNot =
-          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind
+          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded
         withLogger { logger =>
           if (shall) {
             if (shallNot) {
@@ -86,6 +97,8 @@ trait Inline { self: Interflow =>
               if (calleeTooBig) {
                 logger("* callee is too big")
               }
+              if (inlineDepthLimitExceeded)
+                logger("* inline depth limit exceeded")
             }
           } else {
             logger(
@@ -138,7 +151,7 @@ trait Inline { self: Interflow =>
       origPos: Position
   ): Val =
     in(s"inlining ${name.show}") {
-      val defn = config.mode match {
+      val defn = mode match {
         case build.Mode.Debug =>
           getOriginal(name)
         case _: build.Mode.Release =>
@@ -149,13 +162,7 @@ trait Inline { self: Interflow =>
       val inlineArgs = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks =
-        process(
-          inlineInsts,
-          inlineArgs,
-          state,
-          doInline = true,
-          origRetTy
-        )
+        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
 
       val emit = new nir.Buffer()(state.fresh)
 

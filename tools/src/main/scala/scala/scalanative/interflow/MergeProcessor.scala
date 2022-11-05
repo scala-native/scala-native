@@ -12,42 +12,13 @@ final class MergeProcessor(
     doInline: Boolean,
     eval: Eval
 )(implicit linked: linker.Result) {
-  class SortedSetWrapper[A](ordering: Ordering[A]) {
-    private val sortedSet: mutable.Set[A] = mutable.SortedSet.empty[A](ordering)
-    def +=(elem: A): Unit = {
-      sortedSet += elem
-    }
-    def isEmpty: Boolean = sortedSet.isEmpty
-    def head: A = sortedSet.head
-    def removeHead(): Unit = {
-      sortedSet -= sortedSet.head
-    }
-    def filterNot(p: A => Boolean): Unit = {
-      if (sortedSet.nonEmpty) {
-        for (elem <- sortedSet.iterator) {
-          if (p(elem)) {
-            sortedSet -= elem
-          }
-        }
-      }
-    }
-    def filter(p: A => Boolean): Unit = {
-      if (sortedSet.nonEmpty) {
-        for (elem <- sortedSet.iterator) {
-          if (!p(elem)) {
-            sortedSet -= elem
-          }
-        }
-      }
-    }
-  }
   val offsets: Map[Local, Int] =
     insts.zipWithIndex.collect {
       case (Inst.Label(local, _), offset) =>
         local -> offset
     }.toMap
   val blocks = mutable.Map.empty[Local, MergeBlock]
-  val todo = new SortedSetWrapper[Local](Ordering.by(offsets))
+  val todo = mutable.SortedSet.empty[Local](Ordering.by(offsets))
 
   def currentSize(): Int =
     blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
@@ -264,7 +235,13 @@ final class MergeProcessor(
         mergeState.heap = mergeHeap
         mergeState.delayed = mergeDelayed
         mergeState.emitted = mergeEmitted
-        mergeState.inlineDepth = incoming.head._2._2.inlineDepth
+        mergeState.inlineDepth = incoming match {
+          case Seq(head @ (_, (_, state)), tail @ _*) => state.inlineDepth
+          case _ =>
+            throw new IllegalStateException(
+              "Merging empty list of incoming blocks"
+            )
+        }
         (mergePhis.toSeq, mergeState)
     }
   }
@@ -342,7 +319,7 @@ final class MergeProcessor(
       block.cf = null
     }
 
-    todo.filterNot(n => invalid.contains(n))
+    todo.retain(!invalid.contains(_))
   }
 
   def updateDirectSuccessors(block: MergeBlock): Unit = {
@@ -406,14 +383,16 @@ final class MergeProcessor(
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
-    todo.filter(n => findMergeBlock(n).incoming.nonEmpty)
+    todo.retain(findMergeBlock(_).incoming.nonEmpty)
   }
 
   def advance(): Unit = {
-    val block = findMergeBlock(todo.head)
-    todo.removeHead()
+    val head = todo.head
+    val block = findMergeBlock(head)
+    todo -= head
     val (newPhis, newState) = merge(block)
     block.phis = newPhis
+
     if (newState != block.start) {
       visit(block, newPhis, newState)
     }
@@ -508,9 +487,7 @@ object MergeProcessor {
     val entryState = new State(entryMergeBlock.name)
     entryState.inherit(state, args)
     entryState.inlineDepth = state.inlineDepth
-    if (doInline) {
-      entryState.inlineDepth += 1
-    }
+    if (doInline) entryState.inlineDepth += 1
 
     entryMergeBlock.incoming(Local(-1)) = (args, entryState)
     builder.todo += entryName

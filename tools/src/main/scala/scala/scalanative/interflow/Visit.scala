@@ -21,7 +21,7 @@ trait Visit { self: Interflow =>
   }
 
   def shallDuplicate(name: Global, argtys: Seq[Type]): Boolean =
-    config.compilerConfig.mode match {
+    mode match {
       case build.Mode.Debug | build.Mode.ReleaseFast =>
         false
 
@@ -45,7 +45,7 @@ trait Visit { self: Interflow =>
     }
 
   def visitEntries(): Unit =
-    config.compilerConfig.mode match {
+    mode match {
       case build.Mode.Debug =>
         linked.defns.foreach(defn => visitEntry(defn.name))
       case _: build.Mode.Release =>
@@ -75,7 +75,7 @@ trait Visit { self: Interflow =>
     }
 
   def visitDuplicate(name: Global, argtys: Seq[Type]): Option[Defn.Define] = {
-    config.compilerConfig.mode match {
+    mode match {
       case build.Mode.Debug =>
         None
       case _: build.Mode.Release =>
@@ -106,7 +106,7 @@ trait Visit { self: Interflow =>
       }
     }
 
-    config.compilerConfig.mode match {
+    mode match {
       case build.Mode.Debug =>
         allTodo().par.foreach(visit)
       case _: build.Mode.Release =>

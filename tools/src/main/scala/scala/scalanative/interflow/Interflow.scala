@@ -28,7 +28,7 @@ class Interflow(val config: build.Config)(implicit
   private val done = mutable.Map.empty[Global, Defn.Define]
   private val started = mutable.Set.empty[Global]
   private val blacklist = mutable.Set.empty[Global]
-  private val unique = mutable.Set.empty[Global]
+  private val reached = mutable.HashSet.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
   private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
@@ -60,9 +60,9 @@ class Interflow(val config: build.Config)(implicit
   def pushTodo(name: Global): Unit =
     todo.synchronized {
       assert(name ne Global.None)
-      if (!unique.contains(name)) {
+      if (!reached.contains(name)) {
         todo.enqueue(name)
-        unique += name
+        reached += name
       }
     }
   def allTodo(): Seq[Global] =
@@ -146,12 +146,14 @@ class Interflow(val config: build.Config)(implicit
     optimized ++= done
     optimized.values.toSeq.sortBy(_.name)
   }
+
+  protected def mode: build.Mode = config.compilerConfig.mode
+  protected def is32BitPlatform: Boolean = config.compilerConfig.is32BitPlatform
 }
 
 object Interflow {
   def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
-    val interflow =
-      new Interflow(config)(linked)
+    val interflow = new Interflow(config)(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

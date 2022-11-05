@@ -36,9 +36,6 @@ sealed trait Config {
 
   def compilerConfig: NativeConfig
 
-  /** The configuration for Scala Native optimizer */
-  def optimizerConfig: OptimizerConfig
-
   /** Create a new config with given base directory. */
   def withBasedir(value: Path): Config
 
@@ -144,9 +141,6 @@ object Config {
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
-
-    override def withOptimizerConfig(value: OptimizerConfig): Config =
-      copy(optimizerConfig = value)
 
     override def workdir: Path =
       basedir.resolve(s"native$nameSuffix")

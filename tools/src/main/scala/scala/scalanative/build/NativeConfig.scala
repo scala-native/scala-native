@@ -307,6 +307,7 @@ object NativeConfig {
         | - linktimeProperties:     $listLinktimeProperties
         | - embedResources:         $embedResources
         | - incrementalCompilation: $useIncrementalCompilation
+        | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
         | - basename:               $basename
         |)""".stripMargin
     }

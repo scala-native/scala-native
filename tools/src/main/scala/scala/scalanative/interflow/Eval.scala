@@ -8,11 +8,7 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  def run(
-      insts: Array[Inst],
-      offsets: Map[Local, Int],
-      from: Local
-  )(implicit
+  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(implicit
       state: State
   ): Inst.Cf = {
     import state.{materialize, delay}
@@ -116,6 +112,7 @@ trait Eval { self: Interflow =>
     op match {
       case Op.Call(sig, meth, args) =>
         val emeth = eval(meth)
+
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
@@ -145,13 +142,10 @@ trait Eval { self: Interflow =>
 
             emit(Op.Call(dsig, mtarget, margs))
           }
-          dtarget match {
-            case Val.Global(name, _)
-                if (shallInline(name, eargs)
-                  && (config.compilerConfig.optimizerConfig.maxInlineDepth.isEmpty ||
-                    state.inlineDepth < config.compilerConfig.optimizerConfig.maxInlineDepth.get)) =>
-              `inline`(name, eargs)
 
+          dtarget match {
+            case Val.Global(name, _) if shallInline(name, eargs) =>
+              `inline`(name, eargs)
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
               polyInline(op, eargs)
             case _ =>
@@ -374,7 +368,7 @@ trait Eval { self: Interflow =>
       case Op.Copy(v) =>
         eval(v)
       case Op.Sizeof(ty) =>
-        Val.Size(MemoryLayout.sizeOf(ty, config.compilerConfig.is32BitPlatform))
+        Val.Size(MemoryLayout.sizeOf(ty, is32BitPlatform))
       case Op.Box(boxty @ Type.Ref(boxname, _, _), value) =>
         // Pointer boxes are special because null boxes to null,
         // which breaks the invariant that all virtual allocations
@@ -756,14 +750,14 @@ trait Eval { self: Interflow =>
       case Conv.SSizeCast | Conv.ZSizeCast =>
         val fromSize = value.ty match {
           case Type.Size =>
-            if (config.compilerConfig.is32BitPlatform) 32 else 64
+            if (is32BitPlatform) 32 else 64
           case Type.FixedSizeI(s, _) => s
           case o                     => bailOut
         }
 
         val toSize = ty match {
           case Type.Size =>
-            if (config.compilerConfig.is32BitPlatform) 32 else 64
+            if (is32BitPlatform) 32 else 64
           case Type.FixedSizeI(s, _) => s
           case o                     => bailOut
         }
@@ -786,11 +780,9 @@ trait Eval { self: Interflow =>
           case (Val.Long(v), Type.Char)  => Val.Char(v.toChar)
           case (Val.Size(v), Type.Byte)  => Val.Byte(v.toByte)
           case (Val.Size(v), Type.Short) => Val.Short(v.toShort)
-          case (Val.Size(v), Type.Int)
-              if !config.compilerConfig.is32BitPlatform =>
-            Val.Int(v.toInt)
-          case (Val.Size(v), Type.Char) => Val.Char(v.toChar)
-          case _                        => bailOut
+          case (Val.Size(v), Type.Int) if !is32BitPlatform => Val.Int(v.toInt)
+          case (Val.Size(v), Type.Char)                    => Val.Char(v.toChar)
+          case _                                           => bailOut
         }
       case Conv.Zext =>
         (value, ty) match {
@@ -804,8 +796,7 @@ trait Eval { self: Interflow =>
             Val.Long(v.toChar.toLong)
           case (Val.Int(v), Type.Long) =>
             Val.Long(java.lang.Integer.toUnsignedLong(v))
-          case (Val.Size(v), Type.Long)
-              if config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(v), Type.Long) if is32BitPlatform =>
             Val.Long(java.lang.Integer.toUnsignedLong(v.toInt))
           case _ =>
             bailOut
@@ -819,8 +810,7 @@ trait Eval { self: Interflow =>
           case (Val.Short(v), Type.Int)  => Val.Int(v.toInt)
           case (Val.Short(v), Type.Long) => Val.Long(v.toLong)
           case (Val.Int(v), Type.Long)   => Val.Long(v.toLong)
-          case (Val.Size(v), Type.Long)
-              if config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(v), Type.Long) if is32BitPlatform =>
             Val.Long(v.toInt.toLong)
           case _ => bailOut
         }
@@ -892,17 +882,13 @@ trait Eval { self: Interflow =>
             Val.Int(java.lang.Float.floatToRawIntBits(value))
           case (Val.Double(value), Type.Long) =>
             Val.Long(java.lang.Double.doubleToRawLongBits(value))
-          case (Val.Size(value), Type.Int)
-              if config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(value), Type.Int) if is32BitPlatform =>
             Val.Int(value.toInt)
-          case (Val.Int(value), Type.Size)
-              if config.compilerConfig.is32BitPlatform =>
+          case (Val.Int(value), Type.Size) if is32BitPlatform =>
             Val.Size(value.toLong)
-          case (Val.Size(value), Type.Long)
-              if !config.compilerConfig.is32BitPlatform =>
+          case (Val.Size(value), Type.Long) if !is32BitPlatform =>
             Val.Long(value)
-          case (Val.Long(value), Type.Size)
-              if !config.compilerConfig.is32BitPlatform =>
+          case (Val.Long(value), Type.Size) if !is32BitPlatform =>
             Val.Size(value)
           case (Val.Null, Type.Ptr) =>
             Val.Null
