@@ -43,8 +43,8 @@ class Reach(
   loader.classesWithEntryPoints.foreach { clsName =>
     if (reachStaticConstructors) reachClinit(clsName)
     config.compilerConfig.buildTarget match {
-      case scalanative.build.BuildTarget.Application => ()
-      case _                                         => reachExported(clsName)
+      case build.BuildTarget.Application => ()
+      case _                             => reachExported(clsName)
     }
   }
 
@@ -281,8 +281,7 @@ class Reach(
       cls <- infos.get(name)
       defns <- loaded.get(cls.name)
       (name, defn) <- defns
-      if isExported(defn)
-    } reachGlobal(name)
+    } if (isExported(defn)) reachGlobal(name)
   }
 
   def reachGlobal(name: Global): Unit =

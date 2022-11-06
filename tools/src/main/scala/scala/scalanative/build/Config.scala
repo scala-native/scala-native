@@ -26,11 +26,7 @@ sealed trait Config {
   def artifactPath: Path
 
   /** Entry point for linking. */
-  def mainClass: String
-
-  // Wrapper for mainClass introduced to not break bin-compat until 0.5.x series
-  private[scalanative] def selectedMainClass: Option[String] =
-    Option(mainClass).filter(_.nonEmpty)
+  def mainClass: Option[String]
 
   /** Sequence of all NIR locations. */
   def classPath: Seq[Path]
@@ -48,7 +44,6 @@ sealed trait Config {
 
   /** Create new config with given mainClass point. */
   def withMainClass(value: String): Config
-  def withMainClass(value: Option[String]): Config
 
   /** Create a new config with given nir paths. */
   def withClassPath(value: Seq[Path]): Config
@@ -99,8 +94,8 @@ sealed trait Config {
     }
   }
 
-  private[scalanative] lazy val targetsMac =
-    compilerConfig.targetTriple.fold(Platform.isMac) { customTriple =>
+  private[scalanative] lazy val targetsMac = Platform.isMac ||
+    compilerConfig.targetTriple.exists { customTriple =>
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
 }
@@ -111,7 +106,7 @@ object Config {
   def empty: Config =
     Impl(
       nativelib = Paths.get(""),
-      mainClass = "",
+      mainClass = None,
       classPath = Seq.empty,
       basedir = Paths.get(""),
       testConfig = false,
@@ -121,7 +116,7 @@ object Config {
 
   private final case class Impl(
       nativelib: Path,
-      mainClass: String,
+      mainClass: Option[String],
       classPath: Seq[Path],
       basedir: Path,
       testConfig: Boolean,
@@ -132,10 +127,7 @@ object Config {
       copy(nativelib = value)
 
     def withMainClass(value: String): Config =
-      copy(mainClass = value)
-
-    override def withMainClass(value: Option[String]): Config =
-      copy(mainClass = value.getOrElse(""))
+      copy(mainClass = Option(value).filter(_.nonEmpty))
 
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
@@ -159,7 +151,14 @@ object Config {
       basedir.resolve(s"native$nameSuffix")
 
     override def artifactPath: Path = {
-      val ext = if (Platform.isWindows) ".exe" else ""
+      val ext = compilerConfig.buildTarget match {
+        case BuildTarget.Application =>
+          if (targetsWindows) ".exe" else ""
+        case BuildTarget.LibraryDynamic =>
+          if (targetsWindows) ".dll"
+          else if (targetsMac) ".dylib"
+          else ".so"
+      }
       basedir.resolve(s"${compilerConfig.basename}$nameSuffix$ext")
     }
 

@@ -293,7 +293,7 @@ object NativeConfig {
         | - linkingOptions:         $linkingOptions
         | - compileOptions:         $compileOptions
         | - targetTriple:           $targetTriple
-        | - buildTarget         $buildTarget
+        | - buildTarget             $buildTarget
         | - GC:                     $gc
         | - mode:                   $mode
         | - LTO:                    $lto

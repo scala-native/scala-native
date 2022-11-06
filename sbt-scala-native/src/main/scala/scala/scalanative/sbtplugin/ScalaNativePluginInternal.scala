@@ -8,7 +8,7 @@ import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build.{Build, BuildException, BuildTarget, Config, Discover}
+import scala.scalanative.build._
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _,
@@ -126,19 +126,21 @@ object ScalaNativePluginInternal {
       val mainClass = nativeConfig.value.buildTarget match {
         case BuildTarget.Application =>
           selectMainClass.value.orElse {
-              throw new MessageOnlyException("No main class detected.")
-            }
+            throw new MessageOnlyException("No main class detected.")
+          }
         case _ => None
       }
       val logger = streams.value.log.toLogger
 
-      val config = build.Config.empty
-        .withLogger(logger)
-        .withMainClass(mainClassOpt)
-        .withClassPath(classpath)
-        .withBasedir(crossTarget.value.toPath())
-        .withTestConfig(testConfig)
-        .withCompilerConfig(nativeConfig.value)
+      val baseConfig =
+        build.Config.empty
+          .withLogger(logger)
+          .withClassPath(classpath)
+          .withBasedir(crossTarget.value.toPath())
+          .withTestConfig(testConfig)
+          .withCompilerConfig(nativeConfig.value)
+
+      val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
       interceptBuildException {
         // returns config.artifactPath

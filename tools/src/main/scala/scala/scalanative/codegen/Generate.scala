@@ -18,7 +18,7 @@ object Generate {
     meta.linked
   private implicit val pos: Position = Position.NoPosition
 
-  private class Impl(maybeEntry: Option[Global.Top], defns: Seq[Defn])(implicit
+  private class Impl(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
@@ -26,7 +26,7 @@ object Generate {
     def generate(): Seq[Defn] = {
       genDefnsExcludingGenerated()
       genInjects()
-      maybeEntry.fold(genLibraryInit())(genMain(_))
+      entry.fold(genLibraryInit())(genMain(_))
       genClassMetadata()
       genClassHasTrait()
       genTraitMetadata()
@@ -135,12 +135,12 @@ object Generate {
       val exc = Val.Local(fresh(), nir.Rt.Object)
       val handler = fresh()
 
-      def unwind: Next.Unwind = {
+      def unwind(): Next.Unwind = {
         val exc = Val.Local(fresh(), nir.Rt.Object)
         Next.Unwind(exc, Next.Label(handler, Seq(exc)))
       }
 
-      body(() => unwind) ++ Seq(
+      body(unwind) ++ Seq(
         Inst.Ret(Val.Int(0)),
         Inst.Label(handler, Seq(exc)),
         Inst.Let(
@@ -173,10 +173,6 @@ object Generate {
       val stackBottom = Val.Local(fresh(), Type.Ptr)
       val StackBottomVar = Val.Global(stackBottomName, Type.Ptr)
 
-      val init = fresh()
-      val afterInit = fresh()
-      val cond = Val.Local(fresh(), Type.Bool)
-
       Seq(
         // init __stack_bottom variable
         Inst.Let(
@@ -200,8 +196,6 @@ object Generate {
         LibraryInitName,
         LibraryInitSig,
         withExceptionHandler { unwindProvider =>
-          def unwind: Next = unwindProvider()
-
           Seq(Inst.Label(fresh(), Nil)) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider)

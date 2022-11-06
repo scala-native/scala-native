@@ -60,7 +60,7 @@ abstract class LinkerSpec extends AnyFlatSpec {
     Config.empty
       .withBasedir(outDir)
       .withClassPath(classpath.toSeq)
-      .withMainClass(Some(entry))
+      .withMainClass(entry)
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
   }
 

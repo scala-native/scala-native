@@ -182,6 +182,8 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
               |object ExportInModule {
               |  @exported
               |  def foo(l: Int): Int = l
+              |  @exportAccessors()
+              |  val bar: Double = 0.42d
               |}""".stripMargin
         )
       )
@@ -190,6 +192,8 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         fail(s"Unexpected compilation failure: ${ex.getMessage()}", ex)
     }
   }
+  val MustBeStatic =
+    "Exported members must be statically reachable, definition within class or trait is currently unsupported"
 
   it should "report error when exporting class method" in {
     intercept[CompilationFailedException] {
@@ -202,9 +206,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
             |}""".stripMargin
         )
       )
-    }.getMessage should include(
-      "Exported methods needs to be statically accessible"
-    )
+    }.getMessage should include(MustBeStatic)
   }
 
   it should "report error when exporting non static module method" in {
@@ -220,11 +222,11 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |}""".stripMargin
         )
       )
-    }.getMessage should include(
-      "Exported methods needs to be statically accessible"
-    )
+    }.getMessage should include(MustBeStatic)
   }
 
+  val CannotExportField =
+    "Cannot export field, use `@exportAccessors()` annotation to generate external accessors"
   it should "report error when exporting module field" in {
     intercept[CompilationFailedException] {
       NIRCompiler(
@@ -235,7 +237,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |}""".stripMargin
         )
       )
-    }.getMessage should include("Exporting class fields is not allowed")
+    }.getMessage should include(CannotExportField)
   }
 
   it should "report error when exporting module variable" in {
@@ -248,7 +250,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |}""".stripMargin
         )
       )
-    }.getMessage should include("Exporting class fields is not allowed")
+    }.getMessage should include(CannotExportField)
   }
 
 }
