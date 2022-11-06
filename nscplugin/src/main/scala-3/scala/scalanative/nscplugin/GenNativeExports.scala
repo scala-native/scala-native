@@ -151,7 +151,8 @@ trait GenNativeExports(using Context):
     val originalName = genMethodName(member)
     val externName = originalName.top.member(externSig)
 
-    val Type.Function(_ +: paramTypes, retType) = genMethodSig(member): @unchecked
+    val Type.Function(_ +: paramTypes, retType) =
+      genMethodSig(member): @unchecked
     val exportedFunctionType @ Type.Function(
       externParamTypes,
       externRetType
