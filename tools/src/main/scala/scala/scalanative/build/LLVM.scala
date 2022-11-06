@@ -239,8 +239,10 @@ private[scalanative] object LLVM {
 
   private def buildTargetCompileOpts(implicit config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application    => Nil
-      case BuildTarget.LibraryDynamic => optionalPICflag
+      case BuildTarget.Application => Nil
+      case BuildTarget.LibraryDynamic =>
+        optionalPICflag :+
+          "-DSCALANATIVE_DYLIB" // allow to compile dynamic library constructor in dylib_init.c
     }
 
   private def buildTargetLinkOpts(implicit config: Config): Seq[String] =

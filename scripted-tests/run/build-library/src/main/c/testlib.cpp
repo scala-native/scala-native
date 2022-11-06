@@ -5,8 +5,6 @@
 #include "libtest.hpp"
 
 int main() {
-    assert(ScalaNativeInit() == 0);
-
     sayHello();
 
     assert(strcmp(native_constant_string(), "ScalaNativeRocks!") == 0);

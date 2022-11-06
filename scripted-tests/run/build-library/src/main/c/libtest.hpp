@@ -15,8 +15,6 @@ struct Foo {
 };
 
 extern "C" {
-int ScalaNativeInit(); // needs to be called before first SN heap allocation
-                       // (GC)
 short native_number();
 void native_set_number(short);
 const char *native_constant_string();

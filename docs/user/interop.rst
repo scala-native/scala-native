@@ -163,8 +163,11 @@ extern function name match the name of the method.
 Currently, only static object methods can be exported. To export accessors of field or variable in static object use ``@exportAccessors(getterName: String, setterName: String)``. 
 If you omit the explicit names in the annotation constructor, Scala Native would create exported methods with ``set_`` and ``get_`` prefixes and name of field.
 
-`int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined
-in Scala Native. It returns `0` on successful initialization and non-zero value in the otherwise.
+`int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined in Scala Native.
+It returns `0` on successful initialization and non-zero value in the otherwise.
+By default a dynamic library constructor would be generated to invoke this function. 
+If for some reason you need to disable automatic initialization of Scala Native upon loading dynamic library and invoke it manually in user code set `SCALANATIVE_NO_DYLIB_CTOR` environment variable.
+You can also disable generation of library constructors by defining `-DSCALANATIVE_NO_DYLIB_CTOR` in NativeConfig::compileOptions of your build.
 
 .. code-block:: scala
 
@@ -199,6 +202,7 @@ in Scala Native. It returns `0` on successful initialization and non-zero value 
 
     int main(int argc, char** argv){
       # This function needs to be called before invoking any methods defined in Scala Native.
+      # Might be called automatically unless SCALANATIVE_NO_DYLIB_CTOR env variable is set.
       assert(ScalaNativeInit() == 0);
       addLongs(0L, 4L);
       mylib_addInts(4, 0);
