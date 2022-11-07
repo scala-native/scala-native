@@ -6,8 +6,6 @@
 #define NO_DYLIB_CTOR_ENV "SCALANATIVE_NO_DYLIB_CTOR"
 extern int ScalaNativeInit(void);
 
-static void tryInit() {}
-
 #ifdef _WIN32
 #include <windows.h>
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, // handle to DLL module

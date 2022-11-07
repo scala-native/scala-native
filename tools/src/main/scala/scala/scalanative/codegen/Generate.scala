@@ -373,8 +373,7 @@ object Generate {
 
       val (weakRefId, modifiedFieldOffset) = linked.infos
         .get(Global.Top("java.lang.ref.WeakReference"))
-        .map(_.asInstanceOf[Class])
-        .filter(_.allocated)
+        .collect { case cls: Class if cls.allocated => cls }
         .fold((-1, -1)) { weakRef =>
           // if WeakReferences are being compiled and therefore supported
           val gcModifiedFieldIndexes: Seq[Int] =
