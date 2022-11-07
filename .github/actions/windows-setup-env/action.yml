@@ -62,7 +62,7 @@ runs:
     # Install LLVM in case if cache is missing
     - name: Install LLVM
       shell: pwsh
-      run: choco install llvm --version=12.0.0 --allow-downgrade
+      run: choco install llvm --version=11.0.0 --allow-downgrade
 
     - name: Add LLVM on Path
       shell: pwsh

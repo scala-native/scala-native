@@ -309,7 +309,7 @@ As an example, to link it as dynamic library use the following command:
 
     Results in building static library using the same semantincs as in the libraryDynamic. 
     Exported methods should handle exceptions, as they might not be able to be catched in the program using static library.
-    Building static library requires LLVM 12 or newer.
+    Building static library requires LLVM 14 or newer.
 
 Publishing
 ----------

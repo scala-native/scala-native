@@ -52,7 +52,8 @@ jobs:
 
   run-scripted-tests:
     name: Scripted tests
-    runs-on: macos-11
+    # Use macos-12 for preinstalled clang-14 needd for build-library-static
+    runs-on: macos-12
     strategy:
       fail-fast: false
       matrix:

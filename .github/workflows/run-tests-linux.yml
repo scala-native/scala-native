@@ -178,6 +178,15 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+      
+      # Install clang-14 needed for build-library-static
+      - name: Set default clang version
+        shell: bash
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 14
+          bash -c "clang --version"
 
       - name: Run tests
         env:
