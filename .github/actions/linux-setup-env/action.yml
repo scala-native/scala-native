@@ -33,6 +33,17 @@ runs:
         sudo apt-get update
         sudo apt-get install libgc-dev
 
+    - name: Set default clang version
+      shell: bash
+      # Ubuntu 20.04 has preintalled clang 10,11 and 12
+      run: |
+        LLVM_VERSION=12
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
+        clang --version
+
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-LLVM_VERSION 100
+        clang++ --version
+
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
       uses: actions/cache@v3
