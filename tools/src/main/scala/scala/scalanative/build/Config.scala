@@ -147,10 +147,10 @@ object Config {
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
 
-    override def workdir: Path =
+    override lazy val workdir: Path =
       basedir.resolve(s"native$nameSuffix")
 
-    override def artifactPath: Path = {
+    override lazy val artifactPath: Path = {
       val ext = compilerConfig.buildTarget match {
         case BuildTarget.Application =>
           if (targetsWindows) ".exe" else ""
@@ -159,7 +159,11 @@ object Config {
           else if (targetsMac) ".dylib"
           else ".so"
       }
-      basedir.resolve(s"${compilerConfig.basename}$nameSuffix$ext")
+      val namePrefix = compilerConfig.buildTarget match {
+        case BuildTarget.Application    => ""
+        case BuildTarget.LibraryDynamic => if (targetsWindows) "" else "lib"
+      }
+      basedir.resolve(s"$namePrefix${compilerConfig.basename}$nameSuffix$ext")
     }
 
     override def toString: String = {

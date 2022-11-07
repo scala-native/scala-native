@@ -13,17 +13,9 @@ scalaVersion := {
   else scalaVersion
 }
 
-nativeConfig := {
-  val prev = nativeConfig.value
-  val filename =
-    if (Platform.isWindows) "test.dll"
-    else if (Platform.isMac) "libtest.dylib"
-    else "libtest.so"
-  val outPath = crossTarget.value / filename
-
-  prev
-    .withBuildTarget(scalanative.build.BuildTarget.libraryDynamic)
-    .withLinkingOptions(Seq("-o", outPath.absolutePath))
+nativeConfig ~= {
+  _.withBuildTarget(scalanative.build.BuildTarget.libraryDynamic)
+    .withBasename("test")
 }
 
 val outExt = if (Platform.isWindows) "exe" else "out"
