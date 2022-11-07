@@ -7,7 +7,7 @@ import scalanative.linker._
 import scalanative.util.ScopedVar
 import java.util.function.Supplier
 
-class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
+class Interflow(val config: build.Config)(implicit
     val linked: linker.Result
 ) extends Visit
     with Opt
@@ -28,6 +28,7 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
   private val done = mutable.Map.empty[Global, Defn.Define]
   private val started = mutable.Set.empty[Global]
   private val blacklist = mutable.Set.empty[Global]
+  private val reached = mutable.HashSet.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
   private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
@@ -59,7 +60,10 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
   def pushTodo(name: Global): Unit =
     todo.synchronized {
       assert(name ne Global.None)
-      todo.enqueue(name)
+      if (!reached.contains(name)) {
+        todo.enqueue(name)
+        reached += name
+      }
     }
   def allTodo(): Seq[Global] =
     todo.synchronized {
@@ -142,12 +146,14 @@ class Interflow(val mode: build.Mode, val is32BitPlatform: Boolean)(implicit
     optimized ++= done
     optimized.values.toSeq.sortBy(_.name)
   }
+
+  protected def mode: build.Mode = config.compilerConfig.mode
+  protected def is32BitPlatform: Boolean = config.compilerConfig.is32BitPlatform
 }
 
 object Interflow {
   def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
-    val interflow =
-      new Interflow(config.mode, config.compilerConfig.is32BitPlatform)(linked)
+    val interflow = new Interflow(config)(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

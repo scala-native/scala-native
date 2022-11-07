@@ -56,6 +56,9 @@ sealed trait NativeConfig {
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
 
+  /** Configuration when doing optimization */
+  def optimizerConfig: OptimizerConfig
+
   private lazy val detectedTriple = Discover.targetTriple(clang)
 
   /** Are we targeting a 32-bit platform?
@@ -150,6 +153,10 @@ sealed trait NativeConfig {
 
   /** Create a new config with given base artifact name. */
   def withBasename(value: String): NativeConfig
+
+  /** Create a optimization configuration */
+  def withOptimizerConfig(value: OptimizerConfig): NativeConfig
+
 }
 
 object NativeConfig {
@@ -175,7 +182,8 @@ object NativeConfig {
       useIncrementalCompilation = true,
       linktimeProperties = Map.empty,
       embedResources = false,
-      basename = ""
+      basename = "",
+      optimizerConfig = OptimizerConfig.empty
     )
 
   private final case class Impl(
@@ -196,7 +204,8 @@ object NativeConfig {
       useIncrementalCompilation: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
-      basename: String
+      basename: String,
+      optimizerConfig: OptimizerConfig
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -261,6 +270,10 @@ object NativeConfig {
       copy(basename = value)
     }
 
+    override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
+      copy(optimizerConfig = value)
+    }
+
     override def toString: String = {
       val listLinktimeProperties = {
         if (linktimeProperties.isEmpty) ""
@@ -294,6 +307,7 @@ object NativeConfig {
         | - linktimeProperties:     $listLinktimeProperties
         | - embedResources:         $embedResources
         | - incrementalCompilation: $useIncrementalCompilation
+        | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
         | - basename:               $basename
         |)""".stripMargin
     }

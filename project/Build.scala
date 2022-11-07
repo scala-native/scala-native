@@ -142,7 +142,8 @@ object Build {
           // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
           // Should not be replaced with HashMap due to performance reasons.
           "class|object OpenHashMap",
-          "class Stream"
+          "class Stream",
+          "method retain in trait SetOps"
         ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
         CrossVersion
           .partialVersion(scalaVersion.value)
