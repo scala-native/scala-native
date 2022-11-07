@@ -182,5 +182,6 @@ object Config {
         | - compilerConfig: $compilerConfig
         |)""".stripMargin
     }
+
   }
 }

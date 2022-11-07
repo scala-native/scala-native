@@ -12,54 +12,82 @@ import scala.scalanative.util.Scope
 class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
   "The test framework" should "generate the llvm IR of object A" in {
     Scope { implicit in =>
-      val sources = """object A {
-                      |  def print(x: String): Unit = {
-                      |    println(x)
-                      |  }
-                      |  def print(x: Int): Unit = {
-                      |    println(x)
-                      |  }
-                      |  def main(args: Array[String]): Unit = {
-                      |    print(1)
-                      |    print("hello world?")
-                      |  }
-                      |}""".stripMargin
+      val source = """
+        |object A {
+        |  def print(x: String): Unit = {
+        |    println(x)
+        |  }
+        |  def print(x: Int): Unit = {
+        |    println(x)
+        |  }
+        |  def returnInt(): Int = {
+        |    val a = 2
+        |    val b = "helloworld"
+        |    val c = a + b.length
+        |    c
+        |  }
+        |  def main(args: Array[String]): Unit = {
+        |    val b = returnInt()
+        |    print(b)
+        |  }
+        |}""".stripMargin
       val entry = "A"
       val changedTop = Set[String]("A", "A$")
       val outDir = Files.createTempDirectory("native-test-out")
-      nativeLink(outDir, sources, entry)
+      val files = NIRCompiler.getCompiler(outDir).compile(source)
+      makeChanged(outDir, changedTop)
+      val optimizerConfig = build.OptimizerConfig.empty
+        .withMaxCallerSize(10000)
+        .withMaxInlineSize(1)
+      val nativeConfig = defaultNativeConfig
+        .withOptimizerConfig(optimizerConfig)
+      val config = makeConfig(outDir, entry, nativeConfig)
+      Build.build(config)
     }
-
   }
 
   "The test framework" should "generate the llvm IR of object A and B" in {
     Scope { implicit in =>
       val sources = Map(
-        "A.scala" -> """object A {
-                       |  def print(x: String): Unit = {
-                       |    println(x)
-                       |  }
-                       |  def print(x: Int): Unit = {
-                       |    println(x)
-                       |  }
-                       |  def main(args: Array[String]): Unit = {
-                       |    val b = new B
-                       |    println(b.add())
-                       |    println(b.sub())
-                       |  }
-                       |}""".stripMargin,
-        "B.scala" -> """class B {
-                       |  def add(): Int = 3
-                       |  def sub(): Int = 4
-                       |}""".stripMargin
+        "A.scala" -> """
+            |object A {
+            |  def print(x: String): Unit = {
+            |    println(x)
+            |  }
+            |  def print(x: Int): Unit = {
+            |    println(x)
+            |  }
+            |  def getB(): B = {
+            |    val b = new B
+            |    b.bb = 1
+            |    b
+            |  }
+            |  def main(args: Array[String]): Unit = {
+            |    val b = getB()
+            |    println(b.add())
+            |    println(b.sub())
+            |  }
+            |}""".stripMargin,
+        "B.scala" -> """
+          |class B {
+          |  var bb = 2
+          |  def add(): Int = 3
+          |  def sub(): Int = 4
+          |}""".stripMargin
       )
       val entry = "A"
-
+      val changedTop = Set[String]("A", "A$")
       val outDir = Files.createTempDirectory("native-test-out")
-      nativeLink(outDir, sources, entry)
-    }
+      val compiler = NIRCompiler.getCompiler(outDir)
+      val sourcesDir = NIRCompiler.writeSources(sources)
+      val files = compiler.compile(sourcesDir)
+      makeChanged(outDir, changedTop)
+      val config = makeConfig(outDir, entry, defaultNativeConfig)
 
+      Build.build(config)
+    }
   }
+
   private def makeChanged(outDir: Path, changedTop: Set[String])(implicit
       in: Scope
   ): Unit = {
@@ -93,28 +121,15 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       .withCompilerConfig(setupNativeConfig)
   }
 
-  private def nativeLink(
-      outDir: Path,
-      sources: Map[String, String],
-      entry: String
-  )(implicit scope: Scope): Unit = {
-    val compiler = NIRCompiler.getCompiler(outDir)
-    val sourcesDir = NIRCompiler.writeSources(sources)
-    val files = compiler.compile(sourcesDir)
+  private lazy val defaultNativeConfig = build.NativeConfig.empty
+    .withClang(Discover.clang())
+    .withClangPP(Discover.clangpp())
+    .withCompileOptions(Discover.compileOptions())
+    .withLinkingOptions(Discover.linkingOptions())
+    .withLTO(Discover.LTO())
+    .withGC(Discover.GC())
+    .withMode(Discover.mode())
+    .withOptimize(Discover.optimize())
+    .withBasename("out")
 
-    val classpath = makeClasspath(outDir)
-    val nativeConfig = build.NativeConfig.empty
-      .withClang(Discover.clang())
-      .withClangPP(Discover.clangpp())
-      .withCompileOptions(Discover.compileOptions())
-      .withLinkingOptions(Discover.linkingOptions())
-      .withLTO(Discover.LTO())
-      .withGC(Discover.GC())
-      .withMode(Discover.mode())
-      .withOptimize(Discover.optimize())
-      .withBasename("result")
-    val config = makeConfig(outDir, entry, nativeConfig)
-
-    Build.build(config)
-  }
 }
