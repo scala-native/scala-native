@@ -108,7 +108,9 @@ object ScalaNativePluginInternal {
 
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
-      nativeConfig.value
+      val config = nativeConfig.value
+      config
+      // Use overrides defined in legacy setting keys
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
@@ -119,7 +121,13 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        .withBasename(moduleName.value)
+        // Set values for project-specific settings
+        .withBasename(
+          // Use basename defined by user, if not set use name of project
+          Option(config.basename)
+            .filterNot(_.isEmpty)
+            .getOrElse(moduleName.value)
+        )
     },
     nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
