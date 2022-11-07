@@ -2,14 +2,12 @@ package scala.scalanative
 package build
 
 import java.io.{File, PrintWriter}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.sys.process._
 import scalanative.build.core.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
 import scalanative.nir.Attr.Link
-import scala.scalanative.build.BuildTarget.Application
-import scala.scalanative.build.BuildTarget.LibraryDynamic
-import scala.scalanative.build.BuildTarget.LibraryStatic
+import scala.scalanative.build.BuildTarget._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -155,7 +153,27 @@ private[scalanative] object LLVM {
       val output = Seq("-o", outpath.abs)
       buildTargetLinkOpts ++ flto ++ platformFlags ++ output ++ asan ++ target
     }
-    val paths = objectsPaths.map(_.abs)
+    val paths = config.compilerConfig.buildTarget match {
+      case LibraryDynamic | Application =>
+        objectsPaths.map(_.abs)
+      case LibraryStatic =>
+        // Each filename added to static library needs to have a unique filename,
+        // otherwise on some platforms (eg. MacOS) some symbols could be overriden
+        objectsPaths.map { path =>
+          val uniqueName =
+            workdir
+              .relativize(path)
+              .toString()
+              .replace(File.separator, "_")
+          val nonEmptyName =
+            if (uniqueName == ".ll.o") "__empty_package.ll.o"
+            else uniqueName
+          val newPath = workdir.resolve(nonEmptyName)
+          Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
+          println(newPath.abs)
+          newPath.abs
+        }
+    }
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.

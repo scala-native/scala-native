@@ -183,10 +183,14 @@ jobs:
       - name: Set default clang version
         shell: bash
         run: |
+          LLVM_VERSION=14
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 14
+          sudo ./llvm.sh $LLVM_VERSION
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
           bash -c "clang --version"
+          bash -c "clang++ --version"
 
       - name: Run tests
         env:
