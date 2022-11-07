@@ -110,7 +110,7 @@ object ScalaNativePluginInternal {
     nativeConfig := {
       val config = nativeConfig.value
       config
-      // Use overrides defined in legacy setting keys
+        // Use overrides defined in legacy setting keys
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
@@ -136,7 +136,7 @@ object ScalaNativePluginInternal {
           selectMainClass.value.orElse {
             throw new MessageOnlyException("No main class detected.")
           }
-        case _ => None
+        case _: BuildTarget.Library => None
       }
       val logger = streams.value.log.toLogger
 

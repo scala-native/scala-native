@@ -22,7 +22,7 @@ val outExt = if (Platform.isWindows) "exe" else "out"
 lazy val testC = taskKey[Unit]("Build test application using SN library for C")
 testC := {
   sLog.value.info("Testing dynamic library from C")
-  discover("clang", "CLANG_PATH").fold {
+  discover("clang", "LLVM_BIN").fold {
     sLog.value.error("clang not found")
     sys.exit(1)
   } {
@@ -39,7 +39,7 @@ lazy val testCpp =
   taskKey[Unit]("Build test application using SN library for C++")
 testCpp := {
   sLog.value.info("Testing dynamic library from C++")
-  discover("clang++", "CLANGPP_PATH").fold {
+  discover("clang++", "LLVM_BIN").fold {
     sLog.value.error("clang not found")
     sys.exit(1)
   } {

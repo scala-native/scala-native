@@ -165,7 +165,7 @@ If you omit the explicit names in the annotation constructor, Scala Native would
 
 `int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined in Scala Native.
 It returns `0` on successful initialization and non-zero value in the otherwise.
-By default a dynamic library constructor would be generated to invoke this function. 
+For dynamic libraries a constructor would be generated to invoke `ScalaNativeInit`` function automatically upon loading library or startup of the program.
 If for some reason you need to disable automatic initialization of Scala Native upon loading dynamic library and invoke it manually in user code set `SCALANATIVE_NO_DYLIB_CTOR` environment variable.
 You can also disable generation of library constructors by defining `-DSCALANATIVE_NO_DYLIB_CTOR` in NativeConfig::compileOptions of your build.
 

@@ -7,6 +7,9 @@ import scala.sys.process._
 import scalanative.build.core.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
 import scalanative.nir.Attr.Link
+import scala.scalanative.build.BuildTarget.Application
+import scala.scalanative.build.BuildTarget.LibraryDynamic
+import scala.scalanative.build.BuildTarget.LibraryStatic
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -137,7 +140,8 @@ private[scalanative] object LLVM {
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags = {
       val platformFlags =
-        if (config.targetsWindows) {
+        if (!config.targetsWindows) Nil
+        else {
           // https://github.com/scala-native/scala-native/issues/2372
           // When using LTO make sure to use lld linker instead of default one
           // LLD might find some duplicated symbols defined in both C and C++,
@@ -147,7 +151,7 @@ private[scalanative] object LLVM {
             case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
           }
           Seq("-g") ++ ltoSupport
-        } else Seq("-rdynamic")
+        }
       val output = Seq("-o", outpath.abs)
       buildTargetLinkOpts ++ flto ++ platformFlags ++ output ++ asan ++ target
     }
@@ -156,8 +160,9 @@ private[scalanative] object LLVM {
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
+    val configFile = workdir.resolve("llvmLinkInfo").toFile
     locally {
-      val pw = new PrintWriter(workdir.resolve("llvmLinkInfo").toFile)
+      val pw = new PrintWriter(configFile)
       try
         llvmLinkInfo.foreach {
           // in windows system, the file separator doesn't work very well, so we
@@ -166,7 +171,7 @@ private[scalanative] object LLVM {
         }
       finally pw.close()
     }
-    val compile = config.clangPP.abs +: Seq(s"@llvmLinkInfo")
+    val compile = config.clangPP.abs +: Seq(s"@${configFile.getAbsolutePath()}")
 
     // link
     config.logger.running(compile)
@@ -239,19 +244,27 @@ private[scalanative] object LLVM {
 
   private def buildTargetCompileOpts(implicit config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application => Nil
+      case BuildTarget.Application =>
+        Nil
+      case BuildTarget.LibraryStatic =>
+        optionalPICflag ++ Seq("--emit-static-lib")
       case BuildTarget.LibraryDynamic =>
         optionalPICflag :+
           "-DSCALANATIVE_DYLIB" // allow to compile dynamic library constructor in dylib_init.c
     }
 
-  private def buildTargetLinkOpts(implicit config: Config): Seq[String] =
+  private def buildTargetLinkOpts(implicit config: Config): Seq[String] = {
+    val optRdynamic = if (config.targetsWindows) Nil else Seq("-rdynamic")
     config.compilerConfig.buildTarget match {
-      case BuildTarget.Application => Nil
+      case BuildTarget.Application =>
+        optRdynamic
+      case BuildTarget.LibraryStatic =>
+        optionalPICflag ++ Seq("--emit-static-lib")
       case BuildTarget.LibraryDynamic =>
         val libFlag = if (config.targetsMac) "-dynamiclib" else "-shared"
-        Seq(libFlag) ++ optionalPICflag
+        Seq(libFlag) ++ optionalPICflag ++ optRdynamic
     }
+  }
 
   private def optionalPICflag(implicit config: Config): Seq[String] =
     if (config.targetsWindows) Nil

@@ -158,10 +158,13 @@ object Config {
           if (targetsWindows) ".dll"
           else if (targetsMac) ".dylib"
           else ".so"
+        case BuildTarget.LibraryStatic =>
+          if (targetsWindows) ".lib"
+          else ".a"
       }
       val namePrefix = compilerConfig.buildTarget match {
-        case BuildTarget.Application    => ""
-        case BuildTarget.LibraryDynamic => if (targetsWindows) "" else "lib"
+        case BuildTarget.Application => ""
+        case _: BuildTarget.Library  => if (targetsWindows) "" else "lib"
       }
       basedir.resolve(s"$namePrefix${compilerConfig.basename}$nameSuffix$ext")
     }
