@@ -77,31 +77,26 @@ private[lang] class UnixProcessGen2 private (
   }
 
   override def toString = { // Match JVM output
-    val ev =
-      if (_exitValue.isEmpty) "not exited"
-      else _exitValue.head.toString()
-
+    val ev = _exitValue.fold("not exited")(_.toString())
     s"Process[pid=${pid}, exitValue=${ev}]"
   }
 
   override def waitFor(): scala.Int = {
-    if (_exitValue.isDefined) { // avoid wait-after-wait complexity
-      _exitValue.head
-    } else { // wait until process exits or forever, whichever comes first.
-      osWaitForImpl(None).getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
-    }
+    // wait until process exits or forever, whichever comes first.
+    _exitValue // avoid wait-after-wait complexity
+      .orElse(osWaitForImpl(None))
+      .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean = {
-    if (_exitValue.isDefined) { // avoid wait-after-wait complexity
-      true
-    } else {
-      val tv = stackalloc[timespec]()
-      fillTimeval(timeout, unit, tv)
-
-      // wait until process exits or times out.
-      osWaitForImpl(Some(tv)).isDefined
-    }
+    // avoid wait-after-wait complexity
+    _exitValue // avoid wait-after-wait complexity
+      .orElse {
+        // wait until process exits or times out.
+        val tv = stackalloc[timespec]()
+        fillTimeval(timeout, unit, tv)
+        osWaitForImpl(Some(tv))
+      }.isDefined
   }
 
   private[lang] def checkResult(): CInt = {
