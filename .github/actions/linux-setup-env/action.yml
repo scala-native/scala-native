@@ -40,8 +40,8 @@ runs:
         LLVM_VERSION=12
         sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
         sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
-        bash -c clang --version
-        bash -c clang++ --version
+        bash -c "clang --version"
+        bash -c "clang++ --version"
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
