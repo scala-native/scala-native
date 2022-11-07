@@ -23,7 +23,6 @@ val outExt = if (Platform.isWindows) "exe" else "out"
 // Cannot build program written in C using static library produced by Scala Native
 // Linking would fail with missing __cxa_* symbols
 
-
 lazy val testCpp =
   taskKey[Unit]("Build test application using SN library for C++")
 testCpp := {
