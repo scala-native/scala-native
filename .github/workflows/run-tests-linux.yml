@@ -187,14 +187,11 @@ jobs:
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh $LLVM_VERSION
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
-          bash -c "clang --version"
-          bash -c "clang++ --version"
 
       - name: Run tests
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
+          LLVM_BIN: /usr/lib/llvm-14/bin/
         run: sbt "test-scripted ${{matrix.scala}}"

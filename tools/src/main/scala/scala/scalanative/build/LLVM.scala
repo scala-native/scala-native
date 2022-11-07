@@ -170,7 +170,6 @@ private[scalanative] object LLVM {
             else uniqueName
           val newPath = workdir.resolve(nonEmptyName)
           Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
-          println(newPath.abs)
           newPath.abs
         }
     }

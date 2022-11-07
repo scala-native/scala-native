@@ -6,10 +6,9 @@ on:
     branches:
       - main
       - 0.4.x
-concurrency: 
+concurrency:
   group: windows-${{ github.head_ref }}
   cancel-in-progress: true
-
 
 jobs:
   run-tests:
@@ -21,19 +20,19 @@ jobs:
         os: [windows-2019]
         scala: [3.2.1, 2.13.10]
         gc: [boehm, immix, commix]
-        include: 
-        - scala: 2.11.12
-          gc: immix
-        - scala: 2.11.12
-          gc: commix
-        - scala: 2.12.17
-          gc: immix
-        - scala: 2.12.17
-          gc: commix
-        - scala: 2.13.10
-          gc: none
-        - scala: 3.1.3
-          gc: immix
+        include:
+          - scala: 2.11.12
+            gc: immix
+          - scala: 2.11.12
+            gc: commix
+          - scala: 2.12.17
+            gc: immix
+          - scala: 2.12.17
+            gc: commix
+          - scala: 2.13.10
+            gc: none
+          - scala: 3.1.3
+            gc: immix
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -80,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022]
+        os: [windows-2019]
         scala: [2.12.17, 3.1.3]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -91,6 +90,10 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
 
+      - name: Install LLVM
+        shell: pwsh
+        run: choco install llvm --version=14.0.0 --allow-downgrade
+        
       - name: Test scripted
         run: |
           clang --version
