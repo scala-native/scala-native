@@ -90,10 +90,6 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
 
-      - name: Install LLVM
-        shell: pwsh
-        run: choco install llvm --version=14.0.0 --allow-downgrade
-        
       - name: Test scripted
         run: |
           clang --version

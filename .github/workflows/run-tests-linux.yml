@@ -179,22 +179,11 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
       
-      # Install clang-14 needed for build-library-static
-      - name: Set default clang version
-        shell: bash
-        run: |
-          LLVM_VERSION=14
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh $LLVM_VERSION
-
       - name: Run tests
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
-          LLVM_BIN: /usr/lib/llvm-14/bin
         run: |
-          ls ${LLVM_BIN}
-          ${LLVM_BIN}/clang --version
+          clang --version
           sbt "test-scripted ${{matrix.scala}}"
