@@ -6,10 +6,9 @@ on:
     branches:
       - main
       - 0.4.x
-concurrency: 
+concurrency:
   group: macOS-${{ github.head_ref }}
   cancel-in-progress: true
-
 
 jobs:
   run-tests:
@@ -64,4 +63,6 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Test scripted
-        run: sbt "test-scripted ${{matrix.scala}}"
+        run: |
+          LLVM_BIN="$(brew --prefix llvm@14)/bin"
+          sbt "test-scripted ${{matrix.scala}}"
