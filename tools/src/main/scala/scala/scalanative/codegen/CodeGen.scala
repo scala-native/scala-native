@@ -67,15 +67,18 @@ object CodeGen {
           .seq
 
       // Incremental compilation code generation
-      def seperateIncrementally(): Seq[Path] =
+      def seperateIncrementally(): Seq[Path] = {
+        def packageName(defn: Defn): String = {
+          val name = defn.name.top.id
+            .split('.')
+            .init // last segment is class name
+            .takeWhile(!_.contains("$")) // ignore nested classes
+            .mkString(".")
+          if (name.isEmpty) "__empty_package" else name
+        }
+
         assembly
-          .groupBy(
-            _.name.top.id
-              .split('.')
-              .init // last segment is class name
-              .takeWhile(!_.contains("$")) // ignore nested classes
-              .mkString(".")
-          )
+          .groupBy(packageName)
           .par
           .map {
             case (packageName, defns) =>
@@ -96,6 +99,7 @@ object CodeGen {
           }
           .seq
           .toSeq
+      }
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if

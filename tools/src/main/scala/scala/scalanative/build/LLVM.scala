@@ -209,10 +209,7 @@ private[scalanative] object LLVM {
             .relativize(path)
             .toString()
             .replace(File.separator, "_")
-        val nonEmptyName =
-          if (uniqueName == ".ll.o") "__empty_package.ll.o"
-          else uniqueName
-        val newPath = workdir.resolve(nonEmptyName)
+        val newPath = workdir.resolve(uniqueName)
         Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
         pw.println(s"ADDMOD ${newPath.abs}")
       }
