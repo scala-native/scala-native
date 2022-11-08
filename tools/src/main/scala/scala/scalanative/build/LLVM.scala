@@ -115,11 +115,30 @@ private[scalanative] object LLVM {
   ): Path = {
     implicit val _config: Config = config
     val outpath = config.artifactPath
-    val workdir = config.workdir
 
     // don't link if no changes
     if (!needsLinking(objectsPaths, outpath)) return outpath
 
+    val command = config.compilerConfig.buildTarget match {
+      case BuildTarget.Application | BuildTarget.LibraryDynamic =>
+        prepareLinkCommand(objectsPaths, linkerResult)
+      case BuildTarget.LibraryStatic =>
+        prepareArchiveCommand(objectsPaths)
+    }
+    // link
+    val result = command ! Logger.toProcessLogger(config.logger)
+    if (result != 0) {
+      throw new BuildException(s"Failed to link ${outpath}")
+    }
+
+    outpath
+  }
+
+  private def prepareLinkCommand(
+      objectsPaths: Seq[Path],
+      linkerResult: linker.Result
+  )(implicit config: Config) = {
+    val workdir = config.workdir
     val links = {
       val srclinks = linkerResult.links.collect {
         case Link("z") if config.targetsWindows => "zlib"
@@ -150,29 +169,10 @@ private[scalanative] object LLVM {
           }
           Seq("-g") ++ ltoSupport
         }
-      val output = Seq("-o", outpath.abs)
+      val output = Seq("-o", config.artifactPath.abs)
       buildTargetLinkOpts ++ flto ++ platformFlags ++ output ++ asan ++ target
     }
-    val paths = config.compilerConfig.buildTarget match {
-      case LibraryDynamic | Application =>
-        objectsPaths.map(_.abs)
-      case LibraryStatic =>
-        // Each filename added to static library needs to have a unique filename,
-        // otherwise on some platforms (eg. MacOS) some symbols could be overriden
-        objectsPaths.map { path =>
-          val uniqueName =
-            workdir
-              .relativize(path)
-              .toString()
-              .replace(File.separator, "_")
-          val nonEmptyName =
-            if (uniqueName == ".ll.o") "__empty_package.ll.o"
-            else uniqueName
-          val newPath = workdir.resolve(nonEmptyName)
-          Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
-          newPath.abs
-        }
-    }
+    val paths = objectsPaths.map(_.abs)
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
@@ -188,17 +188,42 @@ private[scalanative] object LLVM {
         }
       finally pw.close()
     }
-    val compile = config.clangPP.abs +: Seq(s"@${configFile.getAbsolutePath()}")
 
-    // link
-    config.logger.running(compile)
-    val result = Process(compile, workdir.toFile) !
-      Logger.toProcessLogger(config.logger)
-    if (result != 0) {
-      throw new BuildException(s"Failed to link ${outpath}")
-    }
+    val command = Seq(config.clangPP.abs, s"@${configFile.getAbsolutePath()}")
+    config.logger.running(command)
+    Process(command, config.workdir.toFile())
+  }
 
-    outpath
+  private def prepareArchiveCommand(
+      objectPaths: Seq[Path]
+  )(implicit config: Config) = {
+    val workdir = config.workdir
+    val llvmAR = Discover.discover("llvm-ar", "LLVM_BIN")
+    val MIRScriptFile = workdir.resolve("MIRScript").toFile
+    val pw = new PrintWriter(MIRScriptFile)
+    try {
+      pw.println(s"CREATE ${config.artifactPath}")
+      objectPaths.foreach { path =>
+        val uniqueName =
+          workdir
+            .relativize(path)
+            .toString()
+            .replace(File.separator, "_")
+        val nonEmptyName =
+          if (uniqueName == ".ll.o") "__empty_package.ll.o"
+          else uniqueName
+        val newPath = workdir.resolve(nonEmptyName)
+        Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
+        pw.println(s"ADDMOD ${newPath.abs}")
+      }
+      pw.println("SAVE")
+      pw.println("END")
+    } finally pw.close()
+
+    val command = Seq(llvmAR.abs, "-M")
+    config.logger.running(command)
+
+    Process(command, config.workdir.toFile()) #< MIRScriptFile
   }
 
   /** Checks the input timestamp to see if the file needs compiling. The call to

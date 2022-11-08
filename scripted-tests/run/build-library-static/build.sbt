@@ -15,6 +15,7 @@ scalaVersion := {
 
 nativeConfig ~= {
   _.withBuildTarget(scalanative.build.BuildTarget.libraryStatic)
+    .withMode(scalanative.build.Mode.releaseFast)
     .withBasename("test")
 }
 
