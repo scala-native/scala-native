@@ -185,5 +185,5 @@ jobs:
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
         run: |
-          LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
+          export LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
           sbt "test-scripted ${{matrix.scala}}"
