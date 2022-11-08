@@ -178,10 +178,10 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   def this(byteArray: Array[Byte], off: Int, len: Int) = {
     this()
-    if (byteArray.length == 0)
+    if (len == 0)
       throw new NumberFormatException("Zero length BigInteger")
 
-    if (byteArray(0) < 0) {
+    if (byteArray(off) < 0) {
       sign = -1
       this.putBytesNegativeToIntegers(byteArray, off, len)
     } else {
