@@ -1,5 +1,6 @@
 import java.nio.file.{Path, Paths}
 import scala.sys.process.Process
+import scala.scalanative.build.Discover
 
 enablePlugins(ScalaNativePlugin)
 
@@ -27,18 +28,13 @@ val outExt = if (Platform.isWindows) "exe" else "out"
 lazy val testCpp =
   taskKey[Unit]("Build test application using SN library for C++")
 testCpp := {
-  sLog.value.info("Testing static library from C++")
-  discover("clang++", "LLVM_BIN").fold {
-    sLog.value.error("clang not found")
-    sys.exit(1)
-  } {
-    compileAndTest(
-      _,
-      libPath = crossTarget.value,
-      sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.cpp",
-      outFile = baseDirectory.value / s"testCpp.$outExt"
-    )
-  }
+  sLog.value.info("Testing dynamic library from C++")
+  compileAndTest(
+    Discover.clangpp(),
+    libPath = crossTarget.value,
+    sourcePath = baseDirectory.value / "src" / "main" / "c" / "testlib.cpp",
+    outFile = baseDirectory.value / s"testCpp.$outExt"
+  )
 }
 
 def discover(binaryName: String, envPath: String): Option[Path] = {
