@@ -182,7 +182,7 @@ object UnixProcessGen1 {
         throw new IOException("Unable to fork process")
 
       case 0 =>
-        if (dir != null)
+        if ((dir != null) && (dir.toString != "."))
           unistd.chdir(toCString(dir.toString))
 
         setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
@@ -197,12 +197,14 @@ object UnixProcessGen1 {
           else builder.redirectError(),
           unistd.STDERR_FILENO
         )
-        unistd.close(!infds)
-        unistd.close(!(infds + 1))
-        unistd.close(!outfds)
-        unistd.close(!(outfds + 1))
-        unistd.close(!errfds)
-        unistd.close(!(errfds + 1))
+
+        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
+        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
+        parentFds.add(!outfds) // parent's stdin - read, in child
+        if (!builder.redirectErrorStream())
+          parentFds.add(!errfds) // parent's stderr - read, in child
+
+        parentFds.forEach { fd => unistd.close(fd) }
 
         binaries.foreach { b =>
           val bin = toCString(b)
@@ -233,8 +235,17 @@ object UnixProcessGen1 {
          * make it no longer compliant, leading to shrapnel & wasted
          * developer time.
          */
+
         ProcessMonitor.notifyMonitor()
-        Seq(!(outfds + 1), !(errfds + 1), !infds) foreach unistd.close
+
+        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
+        childFds.add(!infds) // child's stdin read, in parent
+        childFds.add(!(outfds + 1)) // child's stdout write, in parent
+        if (!builder.redirectErrorStream())
+          childFds.add(!(errfds + 1)) // child's stderr write, in parent
+
+        childFds.forEach { fd => unistd.close(fd) }
+
         new UnixProcessGen1(pid, builder, infds, outfds, errfds)
     }
   }
