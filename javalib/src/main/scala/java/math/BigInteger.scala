@@ -180,6 +180,10 @@ class BigInteger extends Number with Comparable[BigInteger] {
     this()
     if (len == 0)
       throw new NumberFormatException("Zero length BigInteger")
+    if (off < 0 || (off + len) > byteArray.length)
+      throw new IndexOutOfBoundsException(
+        "Range [" + off + ", " + off + " + " + len + ") out of bounds for length " + byteArray.length
+      )
 
     if (byteArray(off) < 0) {
       sign = -1
@@ -203,6 +207,10 @@ class BigInteger extends Number with Comparable[BigInteger] {
       throw new NumberFormatException("Invalid signum value")
     if (signum == 0 && magnitude.exists(_ != 0))
       throw new NumberFormatException("signum-magnitude mismatch")
+    if (off < 0 || (off + len) > magnitude.length)
+      throw new IndexOutOfBoundsException(
+        "Range [" + off + ", " + off + " + " + len + ") out of bounds for length " + magnitude.length
+      )
 
     if (magnitude.length == 0) {
       sign = 0
