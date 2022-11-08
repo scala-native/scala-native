@@ -198,15 +198,7 @@ private[scalanative] object LLVM {
       objectPaths: Seq[Path]
   )(implicit config: Config) = {
     val workdir = config.workdir
-    val llvmAR =
-      try Discover.discover("llvm-ar", "LLVM_BIN")
-      catch {
-        case _: BuildException =>
-          config.logger.warn(
-            "Not found llvm-ar binary, would try to use ar as fallback"
-          )
-          Discover.discover("ar", "LLVM_BIN")
-      }
+    val llvmAR = Discover.discover("llvm-ar", "LLVM_BIN")
     val MIRScriptFile = workdir.resolve("MIRScript").toFile
     val pw = new PrintWriter(MIRScriptFile)
     try {

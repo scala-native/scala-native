@@ -64,5 +64,5 @@ jobs:
 
       - name: Test scripted
         run: |
-          LLVM_BIN="$(brew --prefix llvm@14)/bin"
+          LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
           sbt "test-scripted ${{matrix.scala}}"
