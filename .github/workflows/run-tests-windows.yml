@@ -91,9 +91,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Test scripted
-        run: |
-          clang --version
-          sbt "++${{matrix.scala}}" "test-scripted ${{matrix.scala}}"
+        run: sbt "++${{matrix.scala}}" "test-scripted ${{matrix.scala}}"
         shell: cmd
 
   test-runtime-lto:

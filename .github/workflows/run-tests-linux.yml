@@ -178,12 +178,10 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-      
+
       - name: Run tests
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
-        run: |
-          clang --version
-          sbt "test-scripted ${{matrix.scala}}"
+        run: sbt "test-scripted ${{matrix.scala}}"
