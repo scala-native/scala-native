@@ -66,4 +66,5 @@ jobs:
         run: |
           brew install coreutils # provide GNU compliatant alternative for readlink
           LLVM_BIN=$(dirname $(greadlink -f /usr/bin/clang))
+          ls -l $LLVM_BIN
           sbt "test-scripted ${{matrix.scala}}"
