@@ -56,6 +56,9 @@ def compileAndTest(
     sourcePath: File,
     outFile: File
 ): Unit = {
+  val platformLibs =
+    if (Platform.isWindows) Seq("Advapi32", "Userenv", "Dbghelp")
+    else Seq("pthread", "dl")
   val cmd: Seq[String] =
     Seq(
       clangPath.toAbsolutePath.toString,
@@ -63,10 +66,8 @@ def compileAndTest(
       "-o",
       outFile.absolutePath,
       s"-L${libPath.absolutePath}",
-      "-ltest",
-      "-lpthread",
-      "-ldl"
-    )
+      "-ltest"
+    ) ++ platformLibs.map("-l" + _)
 
   val res = Process(cmd, libPath).!
   assert(res == 0, "failed to compile")
