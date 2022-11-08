@@ -34,7 +34,7 @@ class WeakReferenceTest {
     weakRef
   }
 
-  @nooptimize @Test def addsToReferenceQueueAfterGC(): Unit = {
+  @deprecated @nooptimize @Test def addsToReferenceQueueAfterGC(): Unit = {
     assumeFalse(
       "In the CI Scala 3 sometimes SN fails to clean weak references in some of Windows build configurations",
       ScalaNativeBuildInfo.scalaVersion.startsWith("3.") &&
@@ -48,7 +48,7 @@ class WeakReferenceTest {
     ): Unit = {
       ref.get() match {
         case null =>
-          assertTrue("collected but not enqueded", ref.isEnqueued())
+          assertTrue("collected but not enqueued", ref.isEnqueued())
         case v =>
           if (System.currentTimeMillis() < deadline) {
             // Give GC something to collect
