@@ -40,11 +40,13 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.linker.*"),
     exclude[Problem]("scala.scalanative.build.NativeLib.*"),
     exclude[Problem]("scala.scalanative.build.LLVM.*"),
+    exclude[Problem]("scala.scalanative.build.Config*Impl*"),
     exclude[Problem]("scala.scalanative.build.NativeConfig*Impl*"),
     exclude[Problem]("scala.scalanative.build.GC.this"),
     exclude[ReversedMissingMethodProblem](
       "scala.scalanative.build.NativeConfig*"
     ),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.build.Config.*"),
     // package private, moved to build.core
     exclude[MissingClassProblem]("scala.scalanative.build.Filter*"),
     exclude[MissingClassProblem]("scala.scalanative.build.IO*"),

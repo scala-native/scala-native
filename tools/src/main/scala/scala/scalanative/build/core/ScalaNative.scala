@@ -17,8 +17,8 @@ private[scalanative] object ScalaNative {
   /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
-    val entry = encodedMainClass(config).member(Rt.ScalaMainSig)
-    entry +: CodeGen.depends
+    val entry = encodedMainClass(config).map(_.member(Rt.ScalaMainSig))
+    entry ++: CodeGen.depends
   }
 
   /** Given the classpath and main entry point, link under closed-world
@@ -176,10 +176,13 @@ private[scalanative] object ScalaNative {
     }
   }
 
-  private[scalanative] def encodedMainClass(config: Config): Global.Top = {
-    import scala.reflect.NameTransformer.encode
-    val encoded = config.mainClass.split('.').map(encode).mkString(".")
-    Global.Top(encoded)
-  }
+  private[scalanative] def encodedMainClass(
+      config: Config
+  ): Option[Global.Top] =
+    config.selectedMainClass.map { mainClass =>
+      import scala.reflect.NameTransformer.encode
+      val encoded = mainClass.split('.').map(encode).mkString(".")
+      Global.Top(encoded)
+    }
 
 }

@@ -20,7 +20,7 @@ runs:
     # it does not matter whether it would be used or not, the amount of all
     # reserved memory cannot exceed the amount of physically available storage.
     - name: Configure Pagefile
-      uses: al-cheb/configure-pagefile-action@v1.2
+      uses: al-cheb/configure-pagefile-action@v1.3
       with:
         minimum-size: 4GB
         maximum-size: 16GB

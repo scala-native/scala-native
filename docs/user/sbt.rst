@@ -283,6 +283,30 @@ which produces `sandbox-out` that can be used at any platform.
 
 You may use `FatELF https://icculus.org/fatelf/` to build fat binaries for Linux.
 
+Build target
+------------
+
+Setting build target allows you to specify to what type of object your project should be linked to.
+As an example, to link it as dynamic library use the following command:
+
+.. code-block:: scala
+
+    nativeConfig ~= { _.withBuildTarget(BuildTarget.libraryDynamic) }
+
+1. **application** (default)
+
+   Results in creating ready to use executable program.
+
+2. **libraryDynamic**
+
+   Results in dynamic library being built based on entry point methods annotated with `@exported`,
+   for details see :ref:`interop`.
+
+3. **libraryStatic**
+
+    Results in building static library using the same semantincs as in the libraryDynamic. 
+    Exported methods should handle exceptions, as they might not be able to be catched in the program that is using a produced static library.
+
 Publishing
 ----------
 

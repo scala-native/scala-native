@@ -155,6 +155,62 @@ And then call it just like a regular Scala function:
 
    myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 
+Exported methods
+----------------
+
+When linking Scala Native as library, you can mark functions that should visible in created library with ``@exported(name: String)`` annotation. In case if you omit or use null as the argument for name 
+extern function name match the name of the method.
+Currently, only static object methods can be exported. To export accessors of field or variable in static object use ``@exportAccessors(getterName: String, setterName: String)``. 
+If you omit the explicit names in the annotation constructor, Scala Native would create exported methods with ``set_`` and ``get_`` prefixes and name of field.
+
+`int ScalaNativeInit(void);` function is special exported function that needs to be called before invoking any code defined in Scala Native.
+It returns `0` on successful initialization and non-zero value in the otherwise.
+For dynamic libraries a constructor would be generated to invoke `ScalaNativeInit`` function automatically upon loading library or startup of the program.
+If for some reason you need to disable automatic initialization of Scala Native upon loading dynamic library and invoke it manually in user code set `SCALANATIVE_NO_DYLIB_CTOR` environment variable.
+You can also disable generation of library constructors by defining `-DSCALANATIVE_NO_DYLIB_CTOR` in NativeConfig::compileOptions of your build.
+
+.. code-block:: scala
+
+    import scala.scalanative.unsafe._
+
+    object myLib{
+      @exportAccessors("mylib_current_count", "mylib_set_counter")
+      var counter: Int = 0
+
+      @exportAccessors("error_message")
+      val ErrorMessage: CString = c"Something bad just happend!"
+
+      @exported
+      def addLongs(l: Long, r: Long): Long = l + r
+
+      @exported("mylib_addInts")
+      def addInts(l: Int, r: Int): Int = l + r
+    }
+
+.. code-block:: c
+
+    # libmylib.h
+    int ScalaNativeInit(void);
+    long addLongs(long, long);
+    int addInts(int, int);
+    int mylib_current_count();
+    void mylib_set_counter(int);
+
+    # test.c
+    #include "libmylib.h"
+    #include <assert.h>
+
+    int main(int argc, char** argv){
+      # This function needs to be called before invoking any methods defined in Scala Native.
+      # Might be called automatically unless SCALANATIVE_NO_DYLIB_CTOR env variable is set.
+      assert(ScalaNativeInit() == 0);
+      addLongs(0L, 4L);
+      mylib_addInts(4, 0);
+      printf("Current count %d\n", mylib_current_count());
+      mylib_set_counter(42);
+      ...
+    }
+
 Pointer types
 -------------
 
