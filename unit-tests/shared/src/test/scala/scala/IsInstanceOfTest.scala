@@ -2,7 +2,6 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.annotation.nowarn
 
 class IsInstanceOfTest {
 
@@ -13,10 +12,6 @@ class IsInstanceOfTest {
   @Test def expectsAnyRefIsInstanceOfStringEqEqFalse(): Unit = {
     val anyRef = new AnyRef
     assertFalse(anyRef.isInstanceOf[String])
-  }
-
-  @Test def expectsLiteralNullIsInstanceOfStringEqEqFalse(): Unit = {
-    assertFalse(null.isInstanceOf[String])
   }
 
   @Test def expectsEmptyStringIsInstanceOfStringEqEqTrue(): Unit = {
