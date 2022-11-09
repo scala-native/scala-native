@@ -71,6 +71,11 @@ trait NirCompat[G <: Global with Singleton] { self: NirPhase[G] =>
   def isImplClass(sym: Symbol): Boolean =
     scalaUsesImplClasses && sym.hasFlag(Flags.IMPLCLASS)
 
+  // A class for which implClass was generated
+  def implClassTarget(sym: Symbol) =
+    if (!isImplClass(sym)) NoSymbol
+    else sym.owner.info.decl(sym.name.stripSuffix(nme.IMPL_CLASS_SUFFIX))
+
   implicit final class StdTermNamesCompat(self: global.nme.type) {
     def IMPL_CLASS_SUFFIX: String = noImplClasses()
 

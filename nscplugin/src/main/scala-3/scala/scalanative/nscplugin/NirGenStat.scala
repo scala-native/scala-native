@@ -53,11 +53,7 @@ trait NirGenStat(using Context) {
     val name = genTypeName(sym)
 
     def parent = genClassParent(sym)
-    def traits = sym.info.parents
-      .map(_.classSymbol)
-      .filter(_.isTraitOrInterface)
-      .map(genTypeName)
-
+    def traits = genClassInterfaces(sym)
     generatedDefns += {
       if (sym.isStaticModule) Defn.Module(attrs, name, parent, traits)
       else if (sym.isTraitOrInterface) Defn.Trait(attrs, name, traits)
@@ -84,16 +80,40 @@ trait NirGenStat(using Context) {
   }
 
   private def genClassParent(sym: ClassSymbol): Option[nir.Global] = {
-    if (sym == defnNir.NObjectClass)
-      None
-    else
-      Some {
-        val superClass = sym.superClass
-        if (superClass == NoSymbol || superClass == defn.ObjectClass)
-          genTypeName(defnNir.NObjectClass)
-        else
-          genTypeName(superClass)
-      }
+    if sym.isExternModule && sym.superClass != defn.ObjectClass then
+      report.error("Extern object can only extend extern traits", sym.sourcePos)
+
+    Option.unless(sym == defnNir.NObjectClass) {
+      val superClass = sym.superClass
+      if superClass == NoSymbol || superClass == defn.ObjectClass
+      then genTypeName(defnNir.NObjectClass)
+      else genTypeName(superClass)
+    }
+  }
+
+  private def genClassInterfaces(sym: ClassSymbol): Seq[nir.Global] = {
+    val isExtern = sym.isExternModule
+    def validate(clsSym: ClassSymbol) = {
+      val parentIsExtern = clsSym.isExternModule
+      if isExtern && !parentIsExtern then
+        report.error(
+          "Extern object can only extend extern traits",
+          clsSym.sourcePos
+        )
+
+      if !isExtern && parentIsExtern then
+        report.error(
+          "Extern traits can be only mixed with extern traits or objects",
+          sym.sourcePos
+        )
+    }
+
+    for
+      sym <- sym.info.parents
+      clsSym = sym.classSymbol.asClass
+      if clsSym.isTraitOrInterface
+      _ = validate(clsSym)
+    yield genTypeName(clsSym)
   }
 
   private def genClassFields(td: TypeDef): Unit = {
@@ -180,7 +200,7 @@ trait NirGenStat(using Context) {
 
       dd.rhs match {
         case EmptyTree => Some(Defn.Declare(attrs, name, sig))
-        case _ if sym.isClassConstructor && sym.isExtern =>
+        case _ if sym.isConstructor && sym.isExtern =>
           validateExternCtor(dd.rhs)
           None
 
@@ -189,7 +209,7 @@ trait NirGenStat(using Context) {
 
         case rhs if sym.isExtern =>
           checkExplicitReturnTypeAnnotation(dd, "extern method")
-          genExternMethod(attrs, name, sig, rhs)
+          genExternMethod(attrs, name, sig, dd)
 
         case _ if sym.hasAnnotation(defnNir.ResolvedAtLinktimeClass) =>
           genLinktimeResolved(dd, name)
@@ -392,46 +412,101 @@ trait NirGenStat(using Context) {
       attrs: nir.Attrs,
       name: nir.Global,
       origSig: nir.Type,
-      rhs: Tree
+      dd: DefDef
   ): Option[Defn] = {
+    val rhs: Tree = dd.rhs
     given nir.Position = rhs.span
+    def externMethodDecl() = {
+      val externAttrs = Attrs(isExtern = true)
+      val externSig = genExternMethodSig(curMethodSym)
+      val externDefn = Defn.Declare(externAttrs, name, externSig)
+      Some(externDefn)
+    }
+
+    def isExternMethodAlias(target: Symbol) = (name, genName(target)) match {
+      case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
+      case _                                                => false
+    }
+
     rhs match {
       case Apply(ref: RefTree, Seq())
           if ref.symbol == defnNir.UnsafePackage_extern =>
-        val moduleName = genTypeName(curClassSym)
-        val externAttrs = Attrs(isExtern = true)
-        val externSig = genExternMethodSig(curMethodSym)
-        Some(Defn.Declare(externAttrs, name, externSig))
-      case _ if curMethodSym.get.isOneOf(Accessor | Synthetic) =>
-        None
-      case rhs =>
+        externMethodDecl()
+
+      case _ if curMethodSym.get.isOneOf(Accessor | Synthetic) => None
+
+      case Apply(target, args) if target.symbol.isExtern =>
+        val sym = target.symbol
+        val Global.Member(_, selfSig) = name: @unchecked
+        def isExternMethodForwarder =
+          genExternSig(sym) == selfSig &&
+            genExternMethodSig(sym) == origSig
+
+        if isExternMethodForwarder then externMethodDecl()
+        else {
+          report.error(
+            "Referencing other extern symbols in not supported",
+            dd.sourcePos
+          )
+          None
+        }
+
+      case _ =>
         report.error(
           s"methods in extern objects must have extern body  - ${rhs}",
-          rhs.sourcePos
+          dd.sourcePos
         )
         None
     }
   }
 
   def validateExternCtor(rhs: Tree): Unit = {
-    val Block(_ +: init, _) = rhs: @unchecked
-    val externs = init.map {
-      case Assign(ref: RefTree, Apply(extern, Seq()))
-          if extern.symbol == defnNir.UnsafePackage_extern =>
-        ref.symbol
-      case _ =>
+    val Block(exprs, _) = rhs: @unchecked
+    val classSym = curClassSym.get
+
+    val externs = collection.mutable.Set.empty[Symbol]
+    def isExternCall(tree: Tree): Boolean = tree match
+      case Apply(extern, _) =>
+        extern.symbol == defnNir.UnsafePackage_extern
+      case _ => false
+
+    def isCurClassSetter(sym: Symbol) =
+      sym.isSetter && sym.owner.typeRef <:< classSym.typeRef
+
+    exprs.foreach {
+      case Assign(ref: RefTree, rhs) if isExternCall(rhs) =>
+        externs += ref.symbol
+
+      case Apply(ref: RefTree, Seq(arg))
+          if isCurClassSetter(ref.symbol) && isExternCall(arg) =>
+        externs += ref.symbol
+
+      case tree @ Apply(ref, _) if ref.symbol.isConstructor =>
+        ()
+
+      case tree =>
         report.error(
-          "extern objects may only contain extern fields and methods",
+          s"extern objects may only contain extern fields and methods - $tree",
           rhs.sourcePos
         )
-    }.toSet
-    for {
-      f <- curClassSym.get.info.decls.toList if f.isField
-      if !externs.contains(f)
-    } report.error(
-      "extern objects may only contain extern fields",
-      f.sourcePos
-    )
+    }
+
+    def isInheritedField(f: Symbol) =
+      classSym.directlyInheritedTraits.exists {
+        _.info.decls.exists(_ matches f.getter)
+      }
+
+    for f <- classSym.info.decls
+    do {
+      // Exclude fields derived from extern trait
+      if (f.isField && !isInheritedField(f)) {
+        if !(externs.contains(f) || externs.contains(f.setter)) then
+          report.error(
+            s"extern objects may only contain extern fields $f",
+            f.sourcePos
+          )
+      }
+    }
   }
 
   // Static forwarders -------------------------------------------------------

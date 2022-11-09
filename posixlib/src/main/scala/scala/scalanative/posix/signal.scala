@@ -3,6 +3,8 @@ package posix
 
 import scala.scalanative.unsafe._
 
+@extern object signal extends signal
+
 /** Some of the functionality described on this reference page extends the ISO C
  *  standard. Applications shall define the appropriate feature test macro (see
  *  XSH The Compilation Environment) to enable the visibility of these symbols
@@ -20,7 +22,7 @@ import scala.scalanative.unsafe._
  *  along will not have to rediscover these limitations.
  */
 @extern
-object signal {
+trait signal extends libc.signal {
   /* define the following macros, which shall expand to constant expressions with
    * distinct values that have a type compatible with the second argument to, and
    * the return value of, the signal() function, and whose values shall compare
@@ -79,9 +81,6 @@ object signal {
 
   // mandatory signals
 
-  @name("scalanative_sigabrt")
-  def SIGABRT: CInt = extern
-
   @name("scalanative_sigalrm")
   def SIGALRM: CInt = extern
 
@@ -96,18 +95,8 @@ object signal {
   @name("scalanative_sigcont")
   def SIGCONT: CInt = extern
 
-  @name("scalanative_sigfpe")
-  def SIGFPE: CInt = extern
-
   @name("scalanative_sighup")
   def SIGHUP: CInt = extern
-
-  @name("scalanative_sigill")
-  def SIGILL: CInt = extern
-
-  @name("scalanative_sigint")
-  def SIGINT: CInt = extern
-
   @name("scalanative_sigkill")
   def SIGKILL: CInt = extern
 
@@ -116,15 +105,8 @@ object signal {
 
   @name("scalanative_sigquit")
   def SIGQUIT: CInt = extern
-
-  @name("scalanative_sigsegv")
-  def SIGSEGV: CInt = extern
-
   @name("scalanative_sigstop")
   def SIGSTOP: CInt = extern
-
-  @name("scalanative_sigterm")
-  def SIGTERM: CInt = extern
 
   @name("scalanative_sigtstp")
   def SIGTSTP: CInt = extern

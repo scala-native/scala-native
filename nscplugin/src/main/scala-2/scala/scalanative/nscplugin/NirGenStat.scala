@@ -90,11 +90,17 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def nonEmpty = buf.nonEmpty
 
     def genClass(cd: ClassDef): Unit = {
+      val sym = cd.symbol
+      // ImplClass does not copy annotations from the trait
+      if (isImplClass(sym) && implClassTarget(sym).isExternModule) {
+        sym.addAnnotation(ExternClass)
+      }
+
       scoped(
-        curClassSym := cd.symbol,
+        curClassSym := sym,
         curClassFresh := nir.Fresh()
       ) {
-        if (cd.symbol.isStruct) genStruct(cd)
+        if (sym.isStruct) genStruct(cd)
         else genNormalClass(cd)
       }
     }
@@ -116,8 +122,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = cd.symbol
       def attrs = genClassAttrs(cd)
       def name = genTypeName(sym)
-      def parent = genClassParent(sym)
-      def traits = genClassInterfaces(sym)
+      val parent = genClassParent(sym)
+      val traits = genClassInterfaces(sym)
 
       implicit val pos: nir.Position = cd.pos
       genReflectiveInstantiation(cd)
@@ -136,14 +142,22 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    def genClassParent(sym: Symbol): Option[nir.Global] =
-      if (sym == NObjectClass) {
-        None
-      } else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass) {
-        Some(genTypeName(NObjectClass))
-      } else {
-        Some(genTypeName(sym.superClass))
+    def genClassParent(sym: Symbol): Option[nir.Global] = {
+      if (sym.isExternModule &&
+          sym.superClass != ObjectClass &&
+          !isImplClass(sym)) {
+        reporter.error(
+          sym.pos,
+          s"Extern object can only extend extern traits - $sym"
+        )
       }
+
+      if (sym == NObjectClass) None
+      else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass)
+        Some(genTypeName(NObjectClass))
+      else
+        Some(genTypeName(sym.superClass))
+    }
 
     def genClassAttrs(cd: ClassDef): Attrs = {
       val sym = cd.symbol
@@ -162,13 +176,26 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       Attrs.fromSeq(annotationAttrs ++ abstractAttr)
     }
 
-    def genClassInterfaces(sym: Symbol) =
+    def genClassInterfaces(sym: Symbol) = {
+      val isExtern = sym.isExternModule
       for {
         parent <- sym.info.parents
         psym = parent.typeSymbol if psym.isTraitOrInterface
       } yield {
+        val parentIsExtern = psym.isExternModule
+        if (isExtern && !parentIsExtern)
+          reporter.error(
+            sym.pos,
+            "Extern object can only extend extern traits"
+          )
+        if (!isExtern && parentIsExtern)
+          reporter.error(
+            sym.pos,
+            "Extern traits can be only mixed with extern traits or objects"
+          )
         genTypeName(psym)
       }
+    }
 
     def genClassFields(cd: ClassDef): Unit = {
       val sym = cd.symbol
@@ -638,7 +665,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             // Fix issue #2305 Compile error on macro using Scala 2.11.12
             Some(Defn.Declare(attrs, name, sig))
 
-          case _ if dd.name == nme.CONSTRUCTOR && owner.isExternModule =>
+          case _
+              if (dd.name == nme.CONSTRUCTOR || dd.name == nme.MIXIN_CONSTRUCTOR) &&
+                owner.isExternModule =>
             validateExternCtor(dd.rhs)
             None
 
@@ -647,7 +676,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
-            genExternMethod(attrs, name, sig, rhs)
+            genExternMethod(attrs, name, sig, dd)
 
           case rhs
               if (isScala211 &&
@@ -730,20 +759,49 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         attrs: nir.Attrs,
         name: nir.Global,
         origSig: nir.Type,
-        rhs: Tree
+        dd: DefDef
     ): Option[nir.Defn] = {
+      val rhs = dd.rhs
+      def externMethodDecl() = {
+        val externAttrs = Attrs(isExtern = true)
+        val externSig = genExternMethodSig(curMethodSym)
+        val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
+        Some(externDefn)
+      }
+
+      def isCallingExternMethod(sym: Symbol) = {
+        val owner = sym.owner match {
+          case sym if isImplClass(sym) => implClassTarget(sym)
+          case sym                     => sym
+        }
+        owner.isExternModule
+      }
+
+      def isExternMethodAlias(target: Symbol) =
+        (name, genName(target)) match {
+          case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
+          case _                                                => false
+        }
+
       rhs match {
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          val moduleName = genTypeName(curClassSym)
-          val externAttrs = Attrs(isExtern = true)
-          val externSig = genExternMethodSig(curMethodSym)
-          val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
-          Some(externDefn)
+          externMethodDecl()
 
         case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
-        case rhs =>
-          global.reporter.error(
+        case Apply(target, _) if isCallingExternMethod(target.symbol) =>
+          val sym = target.symbol
+          if (isExternMethodAlias(sym)) externMethodDecl()
+          else {
+            reporter.error(
+              target.pos,
+              "Referencing other extern symbols in not supported"
+            )
+            None
+          }
+
+        case _ =>
+          reporter.error(
             rhs.pos,
             "methods in extern objects must have extern body"
           )
@@ -752,21 +810,61 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def validateExternCtor(rhs: Tree): Unit = {
-      val Block(_ +: init, _) = rhs
-      val externs = init.map {
-        case Assign(ref: RefTree, Apply(extern, Seq()))
-            if extern.symbol == ExternMethod =>
-          ref.symbol
-        case _ =>
-          unsupported(
-            "extern objects may only contain extern fields and methods"
-          )
-      }.toSet
-      for {
-        f <- curClassSym.info.decls if f.isField
-        if !externs.contains(f)
-      } {
-        unsupported("extern objects may only contain extern fields")
+      val classSym = curClassSym.get
+      def isExternCall(tree: Tree): Boolean = tree match {
+        case Typed(target, _) => isExternCall(target)
+        case Apply(extern, _) => extern.symbol == ExternMethod
+        case _                => false
+      }
+
+      def isCurClassSetter(sym: Symbol) =
+        sym.isSetter && {
+          val owner = sym.owner.tpe
+          owner <:< classSym.tpe || {
+            isImplClass(classSym) && owner <:< implClassTarget(classSym).tpe
+          }
+        }
+
+      rhs match {
+        case Block(Nil, _) => () // empty mixin constructor
+        case Block(inits, _) =>
+          val externs = collection.mutable.Set.empty[Symbol]
+          inits.foreach {
+            case Assign(ref: RefTree, rhs) if isExternCall(rhs) =>
+              externs += ref.symbol
+
+            case Apply(fun, Seq(arg))
+                if isCurClassSetter(fun.symbol) && isExternCall(arg) =>
+              externs += fun.symbol
+
+            case Apply(target, _) if target.symbol.isConstructor => ()
+
+            case tree =>
+              reporter.error(
+                rhs.pos,
+                "extern objects may only contain extern fields and methods"
+              )
+          }
+          def isInheritedField(f: Symbol) = {
+            def hasFieldGetter(cls: Symbol) = f.getterIn(cls) != NoSymbol
+            def inheritedTraits(cls: Symbol) =
+              cls.parentSymbols.filter(_.isTraitOrInterface)
+            def inheritsField(cls: Symbol): Boolean =
+              hasFieldGetter(cls) || inheritedTraits(cls).exists(inheritsField)
+            inheritsField(classSym)
+          }
+
+          // Exclude fields derived from extern trait
+          for (f <- curClassSym.info.decls) {
+            if (f.isField && !isInheritedField(f)) {
+              if (!(externs.contains(f) || externs.contains(f.setter))) {
+                reporter.error(
+                  f.pos,
+                  "extern objects may only contain extern fields"
+                )
+              }
+            }
+          }
       }
     }
 
@@ -784,8 +882,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case NoOptimizeClass   => Attr.NoOpt
           case NoSpecializeClass => Attr.NoSpecialize
         }
+      val externAttrs = if (sym.owner.isExternModule) Seq(Attr.Extern) else Nil
 
-      Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
+      Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
     }
 
     def genMethodBody(
@@ -795,7 +894,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
-      val isStatic = dd.symbol.isStaticInNIR || isImplClass(dd.symbol.owner)
+      val sym = dd.symbol
+      def isExternMethodProxy =
+        sym.owner.isExternModule && bodyp.symbol != ExternMethod
+      val isStatic =
+        (dd.symbol.isStaticInNIR && !isExternMethodProxy) ||
+          isImplClass(dd.symbol.owner)
       val isExtern = dd.symbol.owner.isExternModule
 
       implicit val pos: nir.Position = bodyp.pos
@@ -1103,7 +1207,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       methodKind: String
   ): Unit = {
     externMethodDd.tpt match {
-      case resultTypeTree: global.TypeTree if resultTypeTree.wasEmpty =>
+      case resultTypeTree: global.TypeTree
+          if resultTypeTree.wasEmpty && externMethodDd.rhs.symbol == ExternMethod =>
         global.reporter.error(
           externMethodDd.pos,
           s"$methodKind ${externMethodDd.name} needs result type"

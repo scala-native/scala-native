@@ -3,12 +3,12 @@ package libc
 
 import scalanative.unsafe._
 
+@extern object signal extends signal
+
 @extern
-object signal {
+trait signal {
 
   // Signals
-  @deprecated("Use kill from posix signal", "libc 0.4.1")
-  def kill(pid: CInt, sig: CInt): CInt = extern
   def signal(sig: CInt, handler: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
     extern
   def raise(sig: CInt): CInt = extern
@@ -33,7 +33,5 @@ object signal {
   def SIGSEGV: CInt = extern
   @name("scalanative_sigterm")
   def SIGTERM: CInt = extern
-  @deprecated("Use SIGUSR1 from posix signal", "libc 0.4.1")
-  @name("scalanative_sigusr1")
-  def SIGUSR1: CInt = extern
+
 }

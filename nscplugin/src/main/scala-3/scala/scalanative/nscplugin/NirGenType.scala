@@ -51,7 +51,7 @@ trait NirGenType(using Context) {
     }
 
     def isExternModule: Boolean =
-      isScalaModule && sym.hasAnnotation(defnNir.ExternClass)
+      (isScalaModule || sym.isTraitOrInterface) && sym.hasAnnotation(defnNir.ExternClass)
 
     def isStruct: Boolean =
       sym.hasAnnotation(defnNir.StructClass)
