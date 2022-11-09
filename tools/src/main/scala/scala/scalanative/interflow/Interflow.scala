@@ -7,8 +7,9 @@ import scalanative.linker._
 import scalanative.util.ScopedVar
 import java.util.function.Supplier
 
-class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
-    extends Visit
+class Interflow(val config: build.Config)(implicit
+    val linked: linker.Result
+) extends Visit
     with Opt
     with NoOpt
     with Eval
@@ -27,6 +28,7 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
   private val done = mutable.Map.empty[Global, Defn.Define]
   private val started = mutable.Set.empty[Global]
   private val blacklist = mutable.Set.empty[Global]
+  private val reached = mutable.HashSet.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
   private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
@@ -58,7 +60,10 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
   def pushTodo(name: Global): Unit =
     todo.synchronized {
       assert(name ne Global.None)
-      todo.enqueue(name)
+      if (!reached.contains(name)) {
+        todo.enqueue(name)
+        reached += name
+      }
     }
   def allTodo(): Seq[Global] =
     todo.synchronized {
@@ -141,11 +146,13 @@ class Interflow(val mode: build.Mode)(implicit val linked: linker.Result)
     optimized ++= done
     optimized.values.toSeq.sortBy(_.name)
   }
+
+  protected def mode: build.Mode = config.compilerConfig.mode
 }
 
 object Interflow {
   def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
-    val interflow = new Interflow(config.mode)(linked)
+    val interflow = new Interflow(config)(linked)
     interflow.visitEntries()
     interflow.visitLoop()
     interflow.result()

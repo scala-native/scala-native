@@ -193,11 +193,11 @@ private[sbtplugin] object NativeLinkCacheImplicits {
     )
 
   implicit val configIso =
-    LList.iso[build.Config, Path :*: String :*: Seq[
+    LList.iso[build.Config, Path :*: Option[String] :*: Seq[
       Path
     ] :*: build.NativeConfig :*: LNil](
       { c: build.Config =>
-        ("workdir", c.workdir) :*: ("mainClass", c.mainClass) :*: (
+        ("workdir", c.workdir) :*: ("mainClass", c.selectedMainClass) :*: (
           "classPath",
           c.classPath
         ) :*: ("compilerConfig", c.compilerConfig) :*: LNil
@@ -207,11 +207,11 @@ private[sbtplugin] object NativeLinkCacheImplicits {
               _,
               compilerConfig
             ) :*: LNil =>
-          build.Config.empty
-            .withMainClass(mainClass)
+          val baseConfig = build.Config.empty
             .withClassPath(classPath)
             .withWorkdir(workdir)
             .withCompilerConfig(compilerConfig)
+          mainClass.foldLeft(baseConfig)(_.withMainClass(_))
       }
     )
 }

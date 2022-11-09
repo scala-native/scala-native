@@ -7,7 +7,7 @@ import java.lang._
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class StringBufferTest {
 
@@ -31,9 +31,20 @@ class StringBufferTest {
     assertEquals("100000", newBuf.append(100000).toString)
   }
 
-  @Test def appendFloat(): Unit = {
+  @Test def appendFloats(): Unit = {
     assertEquals("2.5", newBuf.append(2.5f).toString)
+    assertEquals(
+      "2.5 3.5",
+      newBuf.append(2.5f).append(' ').append(3.5f).toString
+    )
+  }
+
+  @Test def appendDoubles(): Unit = {
     assertEquals("3.5", newBuf.append(3.5).toString)
+    assertEquals(
+      "2.5 3.5",
+      newBuf.append(2.5).append(' ').append(3.5).toString
+    )
   }
 
   @Test def insert(): Unit = {
@@ -71,7 +82,7 @@ class StringBufferTest {
     )
   }
 
-  @Test def insertFloat(): Unit = {
+  @Test def insertFloatOrDouble(): Unit = {
     assertEquals("2.5", newBuf.insert(0, 2.5f).toString)
     assertEquals("3.5", newBuf.insert(0, 3.5).toString)
   }
@@ -157,5 +168,22 @@ class StringBufferTest {
     buf.append("fixture")
     buf.appendCodePoint(0x00010ffff)
     assertEquals("a\uD800\uDC00fixture\uDBFF\uDFFF", buf.toString)
+  }
+
+  /** Checks that modifying a StringBuffer, converted to a String using a
+   *  `.toString` call, is not breaking String immutability. See:
+   *  https://github.com/scala-native/scala-native/issues/2925
+   */
+  @Test def toStringThenModifyStringBuffer(): Unit = {
+    val buf = new StringBuffer()
+    buf.append("foobar")
+
+    val s = buf.toString
+    buf.setCharAt(0, 'm')
+
+    assertTrue(
+      s"foobar should start with 'f' instead of '${s.charAt(0)}'",
+      'f' == s.charAt(0)
+    )
   }
 }

@@ -1,13 +1,25 @@
 // Ported from Scala.js commit: e7f1ff7 dated: 2022-06-01
 
-package scala.scalanative.junit.utils
+/*
+ * Ported from Scala.js (https://www.scala-js.org/)
+ *
+ * Copyright EPFL.
+ *
+ * Licensed under Apache License 2.0
+ * (https://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
+package org.scalanative.testsuite.utils
 
 import java.{lang => jl, util => ju}
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 import org.scalanative.testsuite.javalib.util.TrivialImmutableMap
-
-import scalanative.junit.utils.AssertThrows.assertThrows
 
 trait CollectionsTestBase {
 

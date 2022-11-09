@@ -91,20 +91,20 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     b
   }
 
-  def entrySet(): ju.Set[ju.Map.Entry[K, V]] = {
-    class UnboxedEntry(
-        private[UnboxedEntry] val boxedEntry: ju.Map.Entry[Box[Any], V]
-    ) extends ju.Map.Entry[K, V] {
-      def getKey(): K = boxedEntry.getKey().inner.asInstanceOf[K]
-      def getValue(): V = boxedEntry.getValue()
-      def setValue(value: V): V = boxedEntry.setValue(value)
-      override def equals(o: Any): Boolean = o match {
-        case o: UnboxedEntry => boxedEntry.equals(o.boxedEntry)
-        case _               => false
-      }
-      override def hashCode(): Int = boxedEntry.hashCode()
+  private class UnboxedEntry(
+      private[UnboxedEntry] val boxedEntry: ju.Map.Entry[Box[Any], V]
+  ) extends ju.Map.Entry[K, V] {
+    def getKey(): K = boxedEntry.getKey().inner.asInstanceOf[K]
+    def getValue(): V = boxedEntry.getValue()
+    def setValue(value: V): V = boxedEntry.setValue(value)
+    override def equals(o: Any): Boolean = o match {
+      case o: UnboxedEntry => boxedEntry.equals(o.boxedEntry)
+      case _               => false
     }
+    override def hashCode(): Int = boxedEntry.hashCode()
+  }
 
+  def entrySet(): ju.Set[ju.Map.Entry[K, V]] = {
     val entries = new LinkedHashSet[ju.Map.Entry[K, V]]
     inner.foreach {
       case (key, value) =>

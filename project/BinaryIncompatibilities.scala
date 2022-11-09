@@ -40,11 +40,13 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.linker.*"),
     exclude[Problem]("scala.scalanative.build.NativeLib.*"),
     exclude[Problem]("scala.scalanative.build.LLVM.*"),
+    exclude[Problem]("scala.scalanative.build.Config*Impl*"),
     exclude[Problem]("scala.scalanative.build.NativeConfig*Impl*"),
     exclude[Problem]("scala.scalanative.build.GC.this"),
     exclude[ReversedMissingMethodProblem](
       "scala.scalanative.build.NativeConfig*"
     ),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.build.Config.*"),
     // package private, moved to build.core
     exclude[MissingClassProblem]("scala.scalanative.build.Filter*"),
     exclude[MissingClassProblem]("scala.scalanative.build.IO*"),
@@ -70,7 +72,10 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.runtime.ClassInstancesRegistry*"),
     exclude[Problem]("scala.scalanative.runtime.package*TypeOps*"),
     // Stub with incorrect signature
-    exclude[Problem]("java.lang._Class.getConstructor")
+    exclude[Problem]("java.lang._Class.getConstructor"),
+    // This package is not actually part of Java's stdlib, it only contains private classes
+    // to handle embedded resources.
+    exclude[Problem]("java.lang.resource.*")
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq(
@@ -94,6 +99,7 @@ object BinaryIncompatibilities {
   val moduleFilters = Map(
     "util" -> Util,
     "nir" -> Nir,
+    "nscplugin" -> NscPlugin,
     "tools" -> Tools,
     "clib" -> CLib,
     "posixlib" -> PosixLib,
@@ -106,6 +112,7 @@ object BinaryIncompatibilities {
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,
+    "junit-plugin" -> JUnitPlugin,
     "junit-runtime" -> JUnitRuntime
   )
 }

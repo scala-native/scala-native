@@ -10,7 +10,7 @@ import java.io.File
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import java.io.{FileInputStream, FileOutputStream}
 import java.io.RandomAccessFile
 

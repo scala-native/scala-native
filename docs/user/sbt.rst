@@ -13,7 +13,8 @@ template.  In an empty working directory, execute::
 
     sbt new scala-native/scala-native.g8
 
-.. note:: New project should not be created in `mounted` directories, like external storage devices.
+.. Note:: On Windows, new project should not be created in `mounted`
+  directories, like external storage devices.
 
   In the case of WSL2 (Windows Subsystem Linux), Windows file system drives like `C` or `D` are perceived as `mounted`. So creating new projects in these locations will not work.
 
@@ -97,8 +98,23 @@ Scala Native Version       Scala Versions
 Sbt settings and tasks
 ----------------------
 
-The settings now should be set via ``nativeConfig`` in `sbt`. Setting
-the options directly is now deprecated.
+Use ``nativeConfig`` in `sbt` to provide settings. This is often
+done in a project's `build.sbt`.
+
+Scala Native starts execution with a NativeConfig object, called nativeConfig,
+filled with default values::
+
+  show ThisBuild / nativeConfig
+
+Each ``withX()`` method creates a new
+NativeConfig with the indicated ``X`` value set.  All other settings are taken
+from the Config object being accessed. 
+
+To show nativeConfig values active in current scope at any point in time:
+
+  sbt> show nativeConfig
+
+To set a new value and replace any previous setting:
 
 .. code-block:: scala
 
@@ -109,6 +125,26 @@ the options directly is now deprecated.
         .withMode(Mode.releaseFast)
         .withGC(GC.commix)
     }
+
+To append a value to the right of any previous setting:
+
+.. code-block:: scala
+
+    import scala.scalanative.build._
+
+    // Enable verbose reporting during compilation
+    nativeConfig ~= { c =>
+      c.withCompileOptions(c.compileOptions ++ Seq("-v"))
+    }
+
+    // Use an alternate linker
+    nativeConfig ~= { c =>
+      c.withLinkingOptions(c.linkingOptions ++ Seq("-fuse-ld=mold"))
+    }
+
+    /* The keen observer will note that "-fuse-ld=mold" could also have been
+     *  set using "withCompileOptions". 
+     */
 
 ===== ======================== ================ =========================================================
 Since Name                     Type             Description
@@ -246,6 +282,30 @@ them to one so called fat binary or universal binary via lipo:
 which produces `sandbox-out` that can be used at any platform.
 
 You may use `FatELF https://icculus.org/fatelf/` to build fat binaries for Linux.
+
+Build target
+------------
+
+Setting build target allows you to specify to what type of object your project should be linked to.
+As an example, to link it as dynamic library use the following command:
+
+.. code-block:: scala
+
+    nativeConfig ~= { _.withBuildTarget(BuildTarget.libraryDynamic) }
+
+1. **application** (default)
+
+   Results in creating ready to use executable program.
+
+2. **libraryDynamic**
+
+   Results in dynamic library being built based on entry point methods annotated with `@exported`,
+   for details see :ref:`interop`.
+
+3. **libraryStatic**
+
+    Results in building static library using the same semantincs as in the libraryDynamic. 
+    Exported methods should handle exceptions, as they might not be able to be catched in the program that is using a produced static library.
 
 Publishing
 ----------

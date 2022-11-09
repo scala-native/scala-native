@@ -122,14 +122,14 @@ final class _String()
     this()
     value = string.value
     offset = string.offset
-    count = string.length()
+    count = string.count
   }
 
   def this(sb: StringBuffer) = {
     this()
-    offset = 0
-    value = sb.getValue()
     count = sb.length()
+    value = new Array[Char](count)
+    sb.getChars(0, count, value, 0)
   }
 
   def this(codePoints: Array[Int], offset: Int, count: Int) = {
@@ -153,7 +153,6 @@ final class _String()
 
   def this(sb: java.lang.StringBuilder) = {
     this()
-    offset = 0
     count = sb.length()
     value = new Array[Char](count)
     sb.getChars(0, count, value, 0)
@@ -1515,10 +1514,9 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     result.toString()
   }
 
+  // Java 15 and above.
   def transform[R](f: java.util.function.Function[String, R]): R =
     f.apply(thisString)
-
-  def getValue(): Array[Char] = value
 }
 
 object _String {

@@ -64,25 +64,21 @@ trait NirGenName(using Context) {
   }
 
   def genMethodName(sym: Symbol): nir.Global = {
-    val owner = genTypeName(sym.owner)
-    val id = nativeIdOf(sym)
-    val scope =
+    def owner = genTypeName(sym.owner)
+    def id = nativeIdOf(sym)
+    def scope =
       if (sym.isPrivate)
         if (sym.isStaticMethod) nir.Sig.Scope.PrivateStatic(owner)
         else nir.Sig.Scope.Private(owner)
       else if (sym.isStaticMethod) nir.Sig.Scope.PublicStatic
       else nir.Sig.Scope.Public
 
-    val paramTypes = sym.info.paramInfoss.flatten
+    def paramTypes = sym.info.paramInfoss.flatten
       .map(fromType)
       .map(genType)
 
     if (sym == defn.`String_+`) genMethodName(defnNir.String_concat)
-    else if (sym.isExtern)
-      if (sym.isSetter)
-        val id = nativeIdOf(sym.getter)
-        owner.member(nir.Sig.Extern(id))
-      else owner.member(nir.Sig.Extern(id))
+    else if (sym.isExtern) owner.member(genExternSigImpl(sym, id))
     else if (sym.isClassConstructor) owner.member(nir.Sig.Ctor(paramTypes))
     else if (sym.isStaticConstructor) owner.member(nir.Sig.Clinit())
     else if (sym.name == nme.TRAIT_CONSTRUCTOR)
@@ -91,6 +87,15 @@ trait NirGenName(using Context) {
       val retType = genType(fromType(sym.info.resultType))
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
   }
+
+  def genExternSig(sym: Symbol): Sig.Extern =
+    genExternSigImpl(sym, nativeIdOf(sym))
+
+  private def genExternSigImpl(sym: Symbol, id: String) =
+    if sym.isSetter then
+      val id = nativeIdOf(sym.getter)
+      nir.Sig.Extern(id)
+    else nir.Sig.Extern(id)
 
   def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): Global = {
     val owner = {
@@ -163,7 +168,9 @@ object NirGenName {
     "java.lang._Object" -> "java.lang.Object",
     "java.lang._String" -> "java.lang.String",
     "java.lang.annotation._Retention" -> "java.lang.annotation.Retention",
-    "java.io._Serializable" -> "java.io.Serializable"
+    "java.io._Serializable" -> "java.io.Serializable",
+    "scala.Nothing" -> "scala.runtime.Nothing$",
+    "scala.Null" -> "scala.runtime.Null$"
   ).flatMap {
     case classEntry @ (nativeName, javaName) =>
       List(

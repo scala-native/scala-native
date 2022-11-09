@@ -4,9 +4,16 @@ inputs:
   scala-version:
     description: "Scala version used in the tests"
     required: true
+  java-version:
+    description: "Java version to use in tests"
+    default: "8"
 runs:
   using: "composite"
   steps:
+    - uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: ${{inputs.java-version}}
     - name: Calculate binary version
       shell: bash
       run: |
@@ -22,7 +29,7 @@ runs:
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cache/coursier

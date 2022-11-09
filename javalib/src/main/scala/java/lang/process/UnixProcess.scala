@@ -5,6 +5,7 @@ import java.io.{File, IOException, InputStream, OutputStream}
 import java.io.FileDescriptor
 import java.util.concurrent.TimeUnit
 import java.util.ScalaOps._
+import java.util.ArrayList
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
@@ -155,17 +156,19 @@ object UnixProcess {
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
     if (!builder.redirectErrorStream())
       throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-    val cmd = builder.command().scalaOps.toSeq
-    val binaries = binaryPaths(builder.environment(), cmd.head)
+    val cmd = builder.command()
+    val binaries = binaryPaths(builder.environment(), cmd.get(0))
     val dir = builder.directory()
     val argv = nullTerminate(cmd)
     val envp = nullTerminate {
-      builder
+      val list = new ArrayList[String]
+      val it = builder
         .environment()
         .entrySet()
+        .iterator()
         .scalaOps
-        .toSeq
-        .map(e => s"${e.getKey()}=${e.getValue()}")
+        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
+      list
     }
 
     unistd.fork() match {
@@ -198,7 +201,9 @@ object UnixProcess {
         binaries.foreach { b =>
           val bin = toCString(b)
           if (unistd.execve(bin, argv, envp) == -1 && errno == e.ENOEXEC) {
-            val newArgv = nullTerminate(Seq("/bin/sh", "-c", b))
+            val al = new ArrayList[String](3)
+            al.add("/bin/sh"); al.add("-c"); al.add(b)
+            val newArgv = nullTerminate(al)
             unistd.execve(c"/bin/sh", newArgv, envp)
           }
         }
@@ -238,10 +243,13 @@ object UnixProcess {
   }
 
   @inline private def nullTerminate(
-      seq: collection.Seq[String]
+      list: java.util.List[String]
   )(implicit z: Zone) = {
-    val res: Ptr[CString] = alloc[CString]((seq.size + 1).toUInt)
-    seq.zipWithIndex foreach { case (s, i) => !(res + i) = toCString(s) }
+    val res: Ptr[CString] = alloc[CString]((list.size() + 1).toUInt)
+    val li = list.listIterator()
+    while (li.hasNext()) {
+      !(res + li.nextIndex()) = toCString(li.next())
+    }
     res
   }
 

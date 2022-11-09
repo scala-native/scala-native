@@ -2,7 +2,7 @@ package scala.scalanative
 
 import scala.reflect.internal.util.{BatchSourceFile, NoFile, SourceFile}
 import scala.reflect.internal.util.Position
-import scala.tools.cmd.CommandLineParser
+import scala.scalanative.compat.ParserCompat.parser
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.io.AbstractFile
 import java.nio.file.{Files, Path}
@@ -31,6 +31,10 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
   private def compile(sources: Seq[SourceFile]): Seq[Path] = {
     val global = getCompiler(options = ScalaNative)
+    if (util.Properties.versionNumberString.startsWith("2.11.")) {
+      // Enable SAM support
+      global.settings.Xexperimental.value = true
+    }
     import global._
     val run = new Run
     run.compileSources(sources.toList)
@@ -96,8 +100,7 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
     // Also, using `command.settings.outputDirs.setSingleOutput` I get strange classpath problems.
     // What's even stranger, is that everything works fine using `-d`!
     val outPath = outputDir.toAbsolutePath
-    val arguments =
-      CommandLineParser.tokenize(s"-d $outPath " + (options mkString " "))
+    val arguments = parser.tokenize(s"-d $outPath " + (options mkString " "))
     val command = new CompilerCommand(arguments.toList, reportError _)
     val reporter = new TestReporter(command.settings)
 

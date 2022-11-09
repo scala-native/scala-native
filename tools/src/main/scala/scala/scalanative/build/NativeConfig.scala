@@ -12,6 +12,9 @@ sealed trait NativeConfig {
   /** Compilation mode. */
   def mode: Mode
 
+  /** Build target for current compilation */
+  def buildTarget: BuildTarget
+
   /** The path to the `clang` executable. */
   def clang: Path
 
@@ -49,6 +52,9 @@ sealed trait NativeConfig {
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
 
+  /** Configuration when doing optimization */
+  def optimizerConfig: OptimizerConfig
+
   /** Shall the resource files be embedded in the resulting binary file? Allows
    *  the use of getClass().getResourceAsStream() on the included files. Will
    *  not embed files with certain extensions, including ".c", ".h", ".scala"
@@ -73,6 +79,9 @@ sealed trait NativeConfig {
 
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): NativeConfig
+
+  /** Create a new config with given build target */
+  def withBuildTarget(target: BuildTarget): NativeConfig
 
   /** Create a new config given a target triple. */
   def withTargetTriple(value: Option[String]): NativeConfig
@@ -106,6 +115,9 @@ sealed trait NativeConfig {
   def withEmbedResources(
       value: Boolean
   ): NativeConfig
+
+  /** Create a optimization configuration */
+  def withOptimizerConfig(value: OptimizerConfig): NativeConfig
 }
 
 object NativeConfig {
@@ -122,13 +134,15 @@ object NativeConfig {
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
+      buildTarget = BuildTarget.default,
       check = false,
       checkFatalWarnings = false,
       dump = false,
       linkStubs = false,
       optimize = true,
       linktimeProperties = Map.empty,
-      embedResources = false
+      embedResources = false,
+      optimizerConfig = OptimizerConfig.empty
     )
 
   private final case class Impl(
@@ -139,6 +153,7 @@ object NativeConfig {
       targetTriple: Option[String],
       gc: GC,
       mode: Mode,
+      buildTarget: BuildTarget,
       lto: LTO,
       linkStubs: Boolean,
       check: Boolean,
@@ -146,7 +161,8 @@ object NativeConfig {
       dump: Boolean,
       optimize: Boolean,
       linktimeProperties: LinktimeProperites,
-      embedResources: Boolean
+      embedResources: Boolean,
+      optimizerConfig: OptimizerConfig
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -167,6 +183,9 @@ object NativeConfig {
     def withTargetTriple(value: String): NativeConfig = {
       withTargetTriple(Some(value))
     }
+
+    def withBuildTarget(target: BuildTarget): NativeConfig =
+      copy(buildTarget = target)
 
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
@@ -201,6 +220,10 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
+    override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
+      copy(optimizerConfig = value)
+    }
+
     override def toString: String = {
       val listLinktimeProperties = {
         if (linktimeProperties.isEmpty) ""
@@ -217,21 +240,23 @@ object NativeConfig {
         }
       }
       s"""NativeConfig(
-        | - clang:              $clang
-        | - clangPP:            $clangPP
-        | - linkingOptions:     $linkingOptions
-        | - compileOptions:     $compileOptions
-        | - targetTriple:       $targetTriple
-        | - GC:                 $gc
-        | - mode:               $mode
-        | - LTO:                $lto
-        | - linkStubs:          $linkStubs
-        | - check:              $check
-        | - checkFatalWarnings: $checkFatalWarnings
-        | - dump:               $dump
-        | - optimize:           $optimize
-        | - linktimeProperties: $listLinktimeProperties
-        | - embedResources:     $embedResources
+        | - clang:                  $clang
+        | - clangPP:                $clangPP
+        | - linkingOptions:         $linkingOptions
+        | - compileOptions:         $compileOptions
+        | - targetTriple:           $targetTriple
+        | - buildTarget             $buildTarget
+        | - GC:                     $gc
+        | - mode:                   $mode
+        | - LTO:                    $lto
+        | - linkStubs:              $linkStubs
+        | - check:                  $check
+        | - checkFatalWarnings:     $checkFatalWarnings
+        | - dump:                   $dump
+        | - optimize                $optimize
+        | - linktimeProperties:     $listLinktimeProperties
+        | - embedResources:         $embedResources
+        | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
         |)""".stripMargin
     }
   }

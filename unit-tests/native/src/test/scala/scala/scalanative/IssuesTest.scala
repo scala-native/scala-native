@@ -2,10 +2,11 @@ package scala.scalanative
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scalanative.unsigned._
 import scalanative.unsafe._
+import scala.annotation.nowarn
 
 class IssuesTest {
 
@@ -117,13 +118,13 @@ class IssuesTest {
     assertTrue(h equals world)
   }
 
-  val fptrBoxed: CFuncPtr0[Integer] = () => new Integer(1)
+  @deprecated val fptrBoxed: CFuncPtr0[Integer] = () => new Integer(1)
   val fptr: CFuncPtr0[CInt] = () => 1
   val fptrFloat: CFuncPtr0[CFloat] = () => 1.0f
   val fptrDouble: CFuncPtr0[CDouble] = () => 1.0
   def intIdent(x: Int): Int = x
 
-  @Test def test_Issue382(): Unit = {
+  @deprecated @Test def test_Issue382(): Unit = {
     /// that gave NPE
 
     import scala.scalanative.unsafe._
@@ -398,6 +399,7 @@ class IssuesTest {
       .foreach(assertEquals("hello", _))
   }
 
+  @nowarn
   @Test def test_Issue2187(): Unit = {
     val args = List.empty[String]
     // In issue 2187 match with guards would not compile
@@ -549,6 +551,35 @@ class IssuesTest {
     assertEquals("case 2", 0, Bar.bar())
   }
 
+  @Test def test_Issue2712() = {
+    import issue2712._
+    def f[A]: Refined[A] => Refined[A] =
+      x => new Refined(x.value)
+
+    def g: Refined[Byte] => Boolean =
+      x => (x.value == 126.toByte)
+
+    val x = new Refined[Byte](126.toByte)
+    assertTrue(g(f(x)))
+  }
+
+  @Test def test_Issue2858() = {
+    // In the reported issue symbols for scala.Nothing and scala.Null
+    assertEquals("class scala.runtime.Nothing$", classOf[Nothing].toString())
+    assertEquals("class scala.runtime.Null$", classOf[Null].toString())
+  }
+
+  @nowarn // nowarn does suppress warnings in Scala 2.13
+  @Test def test_Issue2866() = {
+    // In the issue the calls to malloc and srand would fail
+    // becouse null would be passed to extern method taking unboxed type Size/Int
+    import scala.scalanative.libc.stdlib.{malloc, free, srand}
+    val ptr = malloc(null) // CSize -> RawSize should equal to malloc(0)
+    free(ptr) // memory allocated by malloc(0) should always be safe to free
+    srand(null) // CUnsignedInt -> Int should equal to srand(0UL)
+    free(null)
+  }
+
 }
 
 package issue1090 {
@@ -646,4 +677,8 @@ package object issue2552 {
   object Bar {
     val bar = () => foo(0)
   }
+}
+
+package object issue2712 {
+  final class Refined[A](val value: A) extends AnyVal
 }

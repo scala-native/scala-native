@@ -8,7 +8,7 @@ import java.util.function.{BiConsumer, BiFunction, Function}
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 import scala.reflect.ClassTag

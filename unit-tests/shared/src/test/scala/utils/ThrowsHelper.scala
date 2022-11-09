@@ -1,4 +1,4 @@
-package scala.scalanative.junit.utils
+package org.scalanative.testsuite.utils
 
 import AssertThrows.assertThrows
 
@@ -6,6 +6,7 @@ import AssertThrows.assertThrows
 // This was added as it was all over the place in the pre
 // JUnit code.
 object ThrowsHelper {
+  @deprecated
   def assertThrowsAnd[T <: Throwable, U](
       expectedThrowable: Class[T],
       code: => U

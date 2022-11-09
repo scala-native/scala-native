@@ -8,7 +8,7 @@ import org.junit.Assert._
 import java.util.concurrent.ThreadLocalRandom
 import scala.math.{max, min}
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 class ThreadLocalRandomTest {

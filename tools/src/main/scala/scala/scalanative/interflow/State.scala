@@ -16,6 +16,7 @@ final class State(block: Local) {
   var delayed = mutable.AnyRefMap.empty[Op, Val]
   var emitted = mutable.AnyRefMap.empty[Op, Val]
   var emit = new nir.Buffer()(fresh)
+  var inlineDepth = 0
 
   private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
     val addr = fresh().id
@@ -223,6 +224,7 @@ final class State(block: Local) {
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
+    newstate.inlineDepth = inlineDepth
     newstate
   }
   override def equals(other: Any): Boolean = other match {
@@ -247,7 +249,7 @@ final class State(block: Local) {
 
     def reachAlloc(addr: Addr): Val = heap(addr) match {
       case VirtualInstance(ArrayKind, cls, values) =>
-        val ArrayRef(elemty, _) = cls.ty
+        val ArrayRef(elemty, _) = cls.ty: @unchecked
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
             && values.forall(_.isCanonical)
@@ -264,7 +266,9 @@ final class State(block: Local) {
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
       case VirtualInstance(StringKind, _, values)
           if !hasEscaped(values(linked.StringValueField.index)) =>
-        val Val.Virtual(charsAddr) = values(linked.StringValueField.index)
+        val Val.Virtual(charsAddr) = values(
+          linked.StringValueField.index
+        ): @unchecked
         val chars = derefVirtual(charsAddr).values
           .map {
             case Val.Char(v) =>
@@ -286,7 +290,7 @@ final class State(block: Local) {
 
     def reachInit(local: Val, addr: Addr): Unit = heap(addr) match {
       case VirtualInstance(ArrayKind, cls, values) =>
-        val ArrayRef(elemty, _) = cls.ty
+        val ArrayRef(elemty, _) = cls.ty: @unchecked
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
             && values.forall(_.isCanonical)

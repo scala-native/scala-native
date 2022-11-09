@@ -3,7 +3,7 @@ package unsafe
 
 import org.junit.Test
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.junit.Assert._
 
 import scalanative.libc._

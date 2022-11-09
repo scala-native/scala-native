@@ -5,13 +5,17 @@ import sbt.Keys._
 import sbt.nio.Keys.fileTreeView
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
+import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
 import scala.scalanative.build.Platform
+import Build.{crossPublish, crossPublishSigned}
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -59,15 +63,44 @@ object Settings {
       "-unchecked",
       "-feature",
       "-Xfatal-warnings",
-      "-target:jvm-1.8",
       "-encoding",
       "utf8"
     ),
-    javacOptions ++= Seq("-source", "8"),
+    javaReleaseSettings,
     publishSettings,
     mimaSettings,
     docsSettings
   )
+
+  def javaReleaseSettings = {
+    def patchVersion(prefix: String, scalaVersion: String): Int =
+      scalaVersion.stripPrefix(prefix).takeWhile(_.isDigit).toInt
+    def canUseRelease(scalaVersion: String) = CrossVersion
+      .partialVersion(scalaVersion)
+      .fold(false) {
+        case (2, 13) => patchVersion("2.13.", scalaVersion) > 8
+        case (2, _)  => false
+        case (3, 1)  => patchVersion("3.1.", scalaVersion) > 1
+        case (3, _)  => true
+      }
+    val javacSourceFlags = Seq("-source", "1.8")
+    val scalacReleaseFlag = "-release:8"
+
+    Def.settings(
+      scalacOptions += {
+        if (canUseRelease(scalaVersion.value)) scalacReleaseFlag
+        else if (scalaVersion.value.startsWith("3.")) "-Xtarget:8"
+        else "-target:jvm-1.8"
+      },
+      javacOptions ++= {
+        if (canUseRelease(scalaVersion.value)) Nil
+        else javacSourceFlags
+      },
+      // Remove -source flags from tests to allow for multi-jdk version compliance tests
+      Test / javacOptions --= javacSourceFlags,
+      Test / scalacOptions -= scalacReleaseFlag
+    )
+  }
 
   // Docs and API settings
   lazy val docsSettings: Seq[Setting[_]] = {
@@ -144,11 +177,6 @@ object Settings {
     mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(
       name.value
     ),
-    mimaBinaryIssueFilters ++= Seq(
-      // This package is not actually part of Java's stdlib, it only contains private classes
-      // to handle embedded resources.
-      ProblemFilters.exclude[Problem]("java.lang.resource.*")
-    ),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
       val binCompatVersions = (0 to 7).map(v => s"0.4.$v").toSet
@@ -198,6 +226,12 @@ object Settings {
       name = "Denys Shabalin",
       url = url("http://den.sh")
     ),
+    developers += Developer(
+      id = "wojciechmazur",
+      name = "Wojciech Mazur",
+      email = "wmazur@virtuslab.com",
+      url = url("https://github.com/WojciechMazur")
+    ),
     scmInfo := Some(
       ScmInfo(
         browseUrl = url("https://github.com/scala-native/scala-native"),
@@ -211,7 +245,8 @@ object Settings {
       </issueManagement>
     ),
     Compile / publishArtifact := true,
-    Test / publishArtifact := false
+    Test / publishArtifact := false,
+    versionScheme := Some("early-semver")
   ) ++ mimaSettings
 
   lazy val mavenPublishSettings = Def.settings(
@@ -227,11 +262,14 @@ object Settings {
     },
     credentials ++= {
       for {
-        realm <- sys.env.get("MAVEN_REALM")
-        domain <- sys.env.get("MAVEN_DOMAIN")
         user <- sys.env.get("MAVEN_USER")
         password <- sys.env.get("MAVEN_PASSWORD")
-      } yield Credentials(realm, domain, user, password)
+      } yield Credentials(
+        realm = "Sonatype Nexus Repository Manager",
+        host = "oss.sonatype.org",
+        userName = user,
+        passwd = password
+      )
     }.toSeq
   )
 
@@ -265,7 +303,15 @@ object Settings {
   lazy val testsCommonSettings = Def.settings(
     scalacOptions -= "-deprecation",
     scalacOptions ++= Seq("-deprecation:false"),
-    scalacOptions -= "-Xfatal-warnings",
+    scalacOptions --= {
+      if (
+          // Disable fatal warnings when
+          // Scala 3, becouse null.isInstanceOf[String] warning cannot be supressed
+          scalaVersion.value.startsWith("3.") ||
+          // Scala Native - due to specific warnings for unsafe ops in IssuesTest
+          !moduleName.value.contains("jvm")) Seq("-Xfatal-warnings")
+      else Nil
+    },
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
     ),
@@ -400,29 +446,69 @@ object Settings {
     }
   )
 
-  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = Def.settings(
-    Compile / unmanagedSourceDirectories +=
-      baseDirectory.value
-        .getParentFile()
-        .getParentFile() / "test-interface-common/src/main/scala",
-    Test / unmanagedSourceDirectories += baseDirectory.value
+  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = {
+    def unmanagedSources(baseDirectory: File, dir: String) = baseDirectory
       .getParentFile()
-      .getParentFile() / "test-interface-common/src/test/scala",
-    scalacOptions --= scalaVersionsDependendent(scalaVersion.value)(
-      Seq.empty[String]
-    ) {
-      // In Scala 2 enum `Status.value` is defined as `values()`, however in Scala 3 it's `values`
-      case (2, 13) => Seq("-Xfatal-warnings")
-    }
-  )
+      .getParentFile() / s"test-interface-common/src/$dir/scala"
+
+    Def.settings(
+      Compile / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        "main"
+      ),
+      Test / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        "test"
+      )
+    )
+  }
 
   // Projects
   lazy val compilerPluginSettings = Def.settings(
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     mavenPublishSettings,
-    exportJars := true
+    exportJars := true,
+    crossPublish := crossPublishCompilerPlugin(publish).value,
+    crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value
   )
+
+  /** Builds a given project across all crossScalaVersion values. It does not
+   *  modify the value of scalaVersion outside of it's scope. This allows to
+   *  build multiple (compiler plugin) projects in parallel.
+   */
+  private def crossPublishCompilerPlugin(publishKey: TaskKey[Unit]) = Def.task {
+    val currentVersion = scalaVersion.value
+    val s = state.value
+    val log = s.log
+    val extracted = sbt.Project.extract(s)
+    val id = thisProjectRef.value.project
+    val selfRef = thisProjectRef.value
+    val _ = crossScalaVersions.value.foldLeft(s) {
+      case (state, `currentVersion`) =>
+        log.info(
+          s"Skip publish $id ${currentVersion} - it should be already published"
+        )
+        state
+      case (state, crossVersion) =>
+        log.info(s"Try publish $id ${crossVersion}")
+        val (newState, result) = sbt.Project
+          .runTask(
+            selfRef / publishKey,
+            state = extracted.appendWithSession(
+              Seq(
+                selfRef / scalaVersion := crossVersion
+              ),
+              state
+            )
+          )
+          .get
+        result.toEither match {
+          case Left(failure) => throw new RuntimeException(failure)
+          case Right(_)      => newState
+        }
+    }
+  }
 
   lazy val sbtPluginSettings = Def.settings(
     commonSettings,
@@ -435,7 +521,6 @@ object Settings {
       scriptedLaunchOpts.value ++
         Seq(
           "-Xmx1024M",
-          "-XX:MaxMetaspaceSize=256M",
           "-Dplugin.version=" + version.value,
           // Default scala.version, can be overriden in test-scrippted command
           "-Dscala.version=" + ScalaVersions.scala212,
@@ -482,6 +567,9 @@ object Settings {
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
+    // Disable fatal warnings due to NonLocalReturns in Scala 3.2, fixed in 0.5.x
+    Compile / scalacOptions --= Seq("-Xfatal-warnings")
+      .filter(_ => scalaVersion.value.startsWith("3.")),
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value
@@ -520,8 +608,11 @@ object Settings {
 
   def commonScalalibSettings(
       libraryName: String,
-      sourcesScalaVersion: String
-  ): Seq[Setting[_]] =
+      optSourcesScalaVersion: Option[String]
+  ): Seq[Setting[_]] = {
+    def sourcesVersion(scalaVersion: String) =
+      optSourcesScalaVersion.getOrElse(scalaVersion)
+
     Def.settings(
       mavenPublishSettings,
       disabledDocsSettings,
@@ -537,7 +628,9 @@ object Settings {
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesScalaVersion,
+        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesVersion(
+          scalaVersion.value
+        ),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -547,7 +640,7 @@ object Settings {
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        val version = sourcesScalaVersion
+        val version = sourcesVersion(scalaVersion.value)
         val usedScalaVersion = scalaVersion.value
         if (version == usedScalaVersion) updateClassifiers
         else update
@@ -560,7 +653,7 @@ object Settings {
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := {
-        val version = sourcesScalaVersion
+        val version = sourcesVersion(scalaVersion.value)
         val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
@@ -572,7 +665,9 @@ object Settings {
         }
         lazy val scalaLibSourcesJar = lm
           .retrieve(
-            "org.scala-lang" % libraryName % sourcesScalaVersion classifier "sources",
+            "org.scala-lang" % libraryName % sourcesVersion(
+              scalaVersion.value
+            ) classifier "sources",
             scalaModuleInfo = None,
             retrieveDirectory = IO.temporaryDirectory,
             log = s.log
@@ -603,7 +698,7 @@ object Settings {
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
         baseDirectory.value.getParentFile(),
         "overrides",
-        sourcesScalaVersion
+        sourcesVersion(scalaVersion.value)
       ),
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs
@@ -689,11 +784,11 @@ object Settings {
               copy(scalaSourcePath, outputFile)
               Some(outputFile)
             } catch {
-              case _: Exception =>
+              case ex: Exception =>
                 // Postpone failing to check which other patches do not apply
                 failedToApplyPatches = true
                 val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
-                s.log.error(s"Cannot apply patch for $path")
+                s.log.error(s"Cannot apply patch for $path - $ex")
                 None
             } finally {
               if (scalaSourceCopyPath.exists()) {
@@ -737,6 +832,7 @@ object Settings {
       Compile / packageSrc / mappings := Seq.empty,
       exportJars := true
     )
+  }
 
   lazy val commonJUnitTestOutputsSettings = Def.settings(
     noPublishSettings,
@@ -761,17 +857,6 @@ object Settings {
       }.exists()
     )
   }
-
-// Compat
-  lazy val scala3CompatSettings = Def.settings(
-    scalacOptions := {
-      val prev = scalacOptions.value
-      prev.map {
-        case "-target:jvm-1.8" => "-Xtarget:8"
-        case v                 => v
-      }
-    }
-  )
 
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
     options.map(opt => s"-P:scalanative:$opt")

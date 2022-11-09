@@ -39,8 +39,13 @@ class Reach(
     .get("scala.scalanative.linker.reachStaticConstructors")
     .flatMap(v => scala.util.Try(v.toBoolean).toOption)
     .forall(_ == true)
-  if (reachStaticConstructors) {
-    loader.classesWithEntryPoints.foreach(reachClinit)
+
+  loader.classesWithEntryPoints.foreach { clsName =>
+    if (reachStaticConstructors) reachClinit(clsName)
+    config.compilerConfig.buildTarget match {
+      case build.BuildTarget.Application => ()
+      case _                             => reachExported(clsName)
+    }
   }
 
   def result(): Result = {
@@ -218,7 +223,7 @@ class Reach(
       case defn: Defn.Declare =>
         reachDeclare(defn)
       case defn: Defn.Define =>
-        val Global.Member(_, sig) = defn.name
+        val Global.Member(_, sig) = defn.name: @unchecked
         if (Rt.arrayAlloc.contains(sig)) {
           classInfo(Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
@@ -263,6 +268,20 @@ class Reach(
         reachGlobal(clinit)
       }
     }
+  }
+
+  def reachExported(name: Global): Unit = {
+    def isExported(defn: Defn) = defn match {
+      case Defn.Define(attrs, Global.Member(_, sig), _, _) =>
+        attrs.isExtern || sig.isExtern
+      case _ => false
+    }
+
+    for {
+      cls <- infos.get(name)
+      defns <- loaded.get(cls.name)
+      (name, defn) <- defns
+    } if (isExported(defn)) reachGlobal(name)
   }
 
   def reachGlobal(name: Global): Unit =
@@ -315,7 +334,7 @@ class Reach(
         }
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
-            val Global.Member(_, sig) = defn.name
+            val Global.Member(_, sig) = defn.name: @unchecked
             info.responds(sig) = defn.name
           case _ =>
             ()
@@ -347,7 +366,7 @@ class Reach(
         }
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
-            val Global.Member(_, sig) = defn.name
+            val Global.Member(_, sig) = defn.name: @unchecked
             def update(sig: Sig): Unit = {
               info.responds(sig) = lookup(info, sig)
                 .getOrElse(
@@ -580,7 +599,7 @@ class Reach(
             if (inModule) Global.Top(methodOwner + "$")
             else Global.Top(methodOwner)
           val newMethod = {
-            val Sig.Method(id, tps, scope) = sig.unmangled
+            val Sig.Method(id, tps, scope) = sig.unmangled: @unchecked
             val newScope = scope match {
               case Sig.Scope.PublicStatic      => Sig.Scope.Public
               case Sig.Scope.PrivateStatic(in) => Sig.Scope.Private(in)

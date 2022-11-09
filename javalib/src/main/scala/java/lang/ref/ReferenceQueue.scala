@@ -1,6 +1,5 @@
 package java.lang.ref
 
-import scalanative.annotation.stub
 import scala.collection.mutable
 
 class ReferenceQueue[T] {

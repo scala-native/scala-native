@@ -5,7 +5,7 @@ import java.lang._
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class IntegerTest {
   val signedMaxValue = Integer.MAX_VALUE
@@ -24,8 +24,7 @@ class IntegerTest {
       expectedThrowable: Class[T],
       code: => U
   )(expectedMsg: String): Unit = {
-    val exception = assertThrows(expectedThrowable, code)
-    assertEquals(expectedMsg, exception.toString)
+    assertThrows(expectedMsg, expectedThrowable, code)
   }
 
   @Test def decodeTest(): Unit = {
@@ -278,7 +277,7 @@ class IntegerTest {
     assertEquals(unsignedMaxValueText, toStr(unsignedMaxValue))
   }
 
-  @Test def testEquals(): Unit = {
+  @deprecated @Test def testEquals(): Unit = {
     assertEquals(new Integer(0), new Integer(0))
     assertEquals(new Integer(1), new Integer(1))
     assertEquals(new Integer(-1), new Integer(-1))

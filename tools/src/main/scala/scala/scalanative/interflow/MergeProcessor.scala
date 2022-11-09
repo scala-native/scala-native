@@ -18,7 +18,7 @@ final class MergeProcessor(
         local -> offset
     }.toMap
   val blocks = mutable.Map.empty[Local, MergeBlock]
-  var todo = mutable.Set.empty[Local]
+  val todo = mutable.SortedSet.empty[Local](Ordering.by(offsets))
 
   def currentSize(): Int =
     blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
@@ -235,7 +235,13 @@ final class MergeProcessor(
         mergeState.heap = mergeHeap
         mergeState.delayed = mergeDelayed
         mergeState.emitted = mergeEmitted
-
+        mergeState.inlineDepth = incoming match {
+          case Seq(head @ (_, (_, state)), tail @ _*) => state.inlineDepth
+          case _ =>
+            throw new IllegalStateException(
+              "Merging empty list of incoming blocks"
+            )
+        }
         (mergePhis.toSeq, mergeState)
     }
   }
@@ -313,7 +319,7 @@ final class MergeProcessor(
       block.cf = null
     }
 
-    todo = todo.filterNot(n => invalid.contains(n))
+    todo.retain(!invalid.contains(_))
   }
 
   def updateDirectSuccessors(block: MergeBlock): Unit = {
@@ -377,15 +383,13 @@ final class MergeProcessor(
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
-    todo = todo.filter(n => findMergeBlock(n).incoming.nonEmpty)
+    todo.retain(findMergeBlock(_).incoming.nonEmpty)
   }
 
   def advance(): Unit = {
-    val sortedTodo = todo.toArray.sortBy(n => offsets(n))
-    val block = findMergeBlock(sortedTodo.head)
-    todo.clear()
-    todo ++= sortedTodo.tail
-
+    val head = todo.head
+    val block = findMergeBlock(head)
+    todo -= head
     val (newPhis, newState) = merge(block)
     block.phis = newPhis
 
@@ -419,7 +423,7 @@ final class MergeProcessor(
     // we must merge them together using a synthetic block.
     if (doInline && retMergeBlocks.size > 1) {
       val tys = retMergeBlocks.map { block =>
-        val Inst.Ret(v) = block.cf
+        val Inst.Ret(v) = block.cf: @unchecked
         implicit val state: State = block.end
         v match {
           case InstanceRef(ty) => ty
@@ -443,7 +447,7 @@ final class MergeProcessor(
       // Update all returning blocks to jump to result block,
       // and update incoming/outgoing edges to include result block.
       retMergeBlocks.foreach { block =>
-        val Inst.Ret(v) = block.cf
+        val Inst.Ret(v) = block.cf: @unchecked
         block.cf = Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))
         block.outgoing(syntheticLabel.name) = resultMergeBlock
         resultMergeBlock.incoming(block.label.name) = (Seq(v), block.end)
@@ -482,6 +486,9 @@ object MergeProcessor {
     val entryMergeBlock = builder.findMergeBlock(entryName)
     val entryState = new State(entryMergeBlock.name)
     entryState.inherit(state, args)
+    entryState.inlineDepth = state.inlineDepth
+    if (doInline) entryState.inlineDepth += 1
+
     entryMergeBlock.incoming(Local(-1)) = (args, entryState)
     builder.todo += entryName
     builder

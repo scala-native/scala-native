@@ -1,602 +1,102 @@
 package java.net
 
+/* Originally ported from Apache Harmony.
+ * Extensively re-written for Scala Native.
+ * Some code ported under license from or influenced by Arman Bilge. See:
+ *   https://github.com/armanbilge/epollcat (and other repositories).
+ */
+
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
+import scala.annotation.tailrec
+
+import java.io.IOException
+import java.{util => ju}
+
+import scala.scalanative.annotation.alwaysinline
+
+import scala.scalanative.libc.string.memcpy
+import scala.scalanative.libc.errno.errno
+
+import scala.scalanative.posix.arpa.inet._
+import scala.scalanative.posix.netinet.in._
+import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.netdb._
+import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.time.{time_t, time, difftime}
-import scala.collection.mutable.ArrayBuffer
+import scala.scalanative.posix.unistd
 
-import java.util.StringTokenizer
+/* Design note:
+ *    Much of java.net, both in JVM and Scala Native defines or assumes
+ *    the ipAddress field to have either 4 or 16 bytes.
+ *
+ *    One might guess from the output of 'toString() that the
+ *    the IPv6 scope_id/zone_id/interface_id (e.g. "%en0") is handled
+ *    by extending this ipAddress field beyond 16. That is not the case.
+ *    That information is handled separately.
+ */
 
-// Ported from Apache Harmony
-private[net] trait InetAddressBase {
-
-  private[net] val wildcard =
-    new Inet4Address(Array[Byte](0, 0, 0, 0), "0.0.0.0")
-
-  def getByName(host: String): InetAddress = {
-
-    if (host == null || host.length == 0)
-      return getLoopbackAddress()
-
-    var address: InetAddress = null
-    if (isValidIPv4Address(host)) {
-      val byteAddress: Array[Byte] = Array.ofDim[Byte](4)
-      val parts: Array[String] = host.split("\\.")
-      val length: Int = parts.length
-      if (length == 1) {
-        val value: Long = java.lang.Long.parseLong(parts(0))
-        for (i <- 0.until(4)) {
-          byteAddress(i) = (value >> ((3 - i) * 8)).toByte
-        }
-      } else {
-        for (i <- 0 until length) {
-          byteAddress(i) = java.lang.Integer.parseInt(parts(i)).toByte
-        }
-      }
-      if (length == 2) {
-        byteAddress(3) = byteAddress(1)
-        byteAddress(1) = 0
-      }
-      if (length == 3) {
-        byteAddress(3) = byteAddress(2)
-        byteAddress(2) = 0
-      }
-      address = new Inet4Address(byteAddress)
-    } else if (isValidIPv6Address(host)) {
-      var ipAddressString = host
-      if (ipAddressString.charAt(0) == '[') {
-        ipAddressString =
-          ipAddressString.substring(1, ipAddressString.length - 1)
-      }
-      val tokenizer: StringTokenizer =
-        new StringTokenizer(ipAddressString, ":.%", true)
-      val hexStrings = new ArrayBuffer[String]()
-      val decStrings = new ArrayBuffer[String]()
-      var scopeString: String = null
-      var token: String = ""
-      var prevToken: String = ""
-      var prevPrevToken: String = ""
-      var doubleColonIndex: Int = -1
-      while (tokenizer.hasMoreTokens()) {
-        prevPrevToken = prevToken
-        prevToken = token
-        token = tokenizer.nextToken()
-        if (token == ":") {
-          if (prevToken == ":") {
-            doubleColonIndex = hexStrings.size
-          } else if (prevToken != "") {
-            hexStrings.append(prevToken)
-          }
-        } else if (token == ".") {
-          decStrings.append(prevToken)
-        } else if (token == "%") {
-          if (prevToken != ":" && prevToken != ".") {
-            if (prevPrevToken == ":") {
-              hexStrings.append(prevToken)
-            } else if (prevPrevToken == ".") {
-              decStrings.append(prevToken)
-            }
-          }
-          val buf: StringBuilder = new StringBuilder()
-          while (tokenizer.hasMoreTokens()) buf.append(tokenizer.nextToken())
-          scopeString = buf.toString
-        }
-      }
-      if (prevToken == ":") {
-        if (token == ":") {
-          doubleColonIndex = hexStrings.size
-        } else {
-          hexStrings.append(token)
-        }
-      } else if (prevToken == ".") {
-        decStrings.append(token)
-      }
-      var hexStringsLength: Int = 8
-      if (decStrings.size > 0) {
-        hexStringsLength -= 2
-      }
-      if (doubleColonIndex != -1) {
-        val numberToInsert: Int = hexStringsLength - hexStrings.size
-        for (i <- 0 until numberToInsert) {
-          hexStrings.insert(doubleColonIndex, "0")
-        }
-      }
-      val ipByteArray: Array[Byte] = Array.ofDim[Byte](16)
-      for (i <- 0 until hexStrings.size) {
-        convertToBytes(hexStrings(i), ipByteArray, i * 2)
-      }
-      for (i <- 0 until decStrings.size) {
-        ipByteArray(i + 12) =
-          (java.lang.Integer.parseInt(decStrings(i)) & 255).toByte
-      }
-      var ipV4 = true
-      if (ipByteArray.take(10).exists(_ != 0)) {
-        ipV4 = false
-      }
-      if (ipByteArray(10) != -1 || ipByteArray(11) != -1) {
-        ipV4 = false
-      }
-      if (ipV4) {
-        val ipv4ByteArray = new Array[Byte](4)
-        for (i <- 0.until(4)) {
-          ipv4ByteArray(i) = ipByteArray(i + 12)
-        }
-        address = InetAddress.getByAddress(ipv4ByteArray)
-      } else {
-        var scopeId: Int = 0
-        if (scopeString != null) {
-          try {
-            scopeId = java.lang.Integer.parseInt(scopeString)
-          } catch {
-            case e: Exception => {}
-          }
-        }
-        address = Inet6Address.getByAddress(null, ipByteArray, scopeId)
-      }
-    } else {
-      val ip = SocketHelpers.hostToIp(host).getOrElse {
-        throw new UnknownHostException(
-          host + ": Name or service not known"
-        )
-      }
-      if (isValidIPv4Address(ip))
-        address = new Inet4Address(byteArrayFromIPString(ip), host)
-      else if (isValidIPv6Address(ip))
-        address = new Inet6Address(byteArrayFromIPString(ip), host)
-      else
-        throw new UnknownHostException("Malformed IP: " + ip)
-    }
-    address
-  }
-
-  def getAllByName(host: String): Array[InetAddress] = {
-    if (host == null || host.length == 0)
-      return Array[InetAddress](getLoopbackAddress())
-
-    if (isValidIPv4Address(host))
-      return Array[InetAddress](new Inet4Address(byteArrayFromIPString(host)))
-
-    if (isValidIPv6Address(host))
-      return Array[InetAddress](new Inet6Address(byteArrayFromIPString(host)))
-
-    val ips: Array[String] = SocketHelpers.hostToIpArray(host)
-    if (ips.isEmpty) {
-      throw new UnknownHostException(
-        host + ": Name or service not known"
-      )
-    }
-
-    ips.map(ip => {
-      if (isValidIPv4Address(ip)) {
-        new Inet4Address(byteArrayFromIPString(ip), host)
-      } else {
-        new Inet6Address(byteArrayFromIPString(ip), host)
-      }
-    })
-  }
-
-  def getByAddress(addr: Array[Byte]): InetAddress =
-    getByAddress(null, addr)
-
-  def getByAddress(host: String, addr: Array[Byte]): InetAddress = {
-    if (addr.length == 4)
-      return new Inet4Address(addr.clone, host)
-    else if (addr.length == 16)
-      return new Inet6Address(addr.clone, host)
-    else
-      throw new UnknownHostException(
-        "IP address is of illegal length: " + addr.length
-      )
-  }
-
-  private def isValidIPv4Address(addr: String): Boolean = {
-    if (!addr.matches("[0-9\\.]*")) {
-      return false
-    }
-
-    val parts = addr.split("\\.")
-    if (parts.length > 4) return false
-
-    if (parts.length == 1) {
-      val longValue = parts(0).toLong
-      longValue >= 0 && longValue <= 0xffffffffL
-    } else {
-      parts.forall(part => {
-        part.length <= 3 || Integer.parseInt(part) <= 255
-      })
-    }
-  }
-
-  private[net] def isValidIPv6Address(ipAddress: String): Boolean = {
-    val length: Int = ipAddress.length
-    var doubleColon: Boolean = false
-    var numberOfColons: Int = 0
-    var numberOfPeriods: Int = 0
-    var numberOfPercent: Int = 0
-    var word: String = ""
-    var c: Char = 0
-    var prevChar: Char = 0
-    // offset for [] IP addresses
-    var offset: Int = 0
-    if (length < 2) {
-      return false
-    }
-    for (i <- 0 until length) {
-      prevChar = c
-      c = ipAddress.charAt(i)
-      c match {
-        // case for an open bracket [x:x:x:...x]
-        case '[' =>
-          if (i != 0) {
-            // must be first character
-            return false
-          }
-          if (ipAddress.charAt(length - 1) != ']') {
-            // must have a close ]
-            return false
-          }
-          offset = 1
-          if (length < 4) {
-            return false
-          }
-        // case for a closed bracket at end of IP [x:x:x:...x]
-        case ']' =>
-          if (i != (length - 1)) {
-            // must be last character
-            return false
-          }
-          if (ipAddress.charAt(0) != '[') {
-            // must have a open [
-            return false
-          }
-        // case for the last 32-bits represented as IPv4 x:x:x:x:x:x:d.d.d.d
-        case '.' =>
-          numberOfPeriods += 1
-          if (numberOfPeriods > 3) {
-            return false
-          }
-          if (!isValidIP4Word(word)) {
-            return false
-          }
-          if (numberOfColons != 6 && !doubleColon) {
-            return false
-          }
-          // IPv4 ending, otherwise 7 :'s is bad
-          if (numberOfColons == 7 && ipAddress.charAt(0 + offset) != ':' &&
-              ipAddress.charAt(1 + offset) != ':') {
-            return false
-          }
-          word = ""
-        // a special case ::1:2:3:4:5:d.d.d.d allows 7 colons with an
-        case ':' =>
-          numberOfColons += 1
-          if (numberOfColons > 7) {
-            return false
-          }
-          if (numberOfPeriods > 0) {
-            return false
-          }
-          if (prevChar == ':') {
-            if (doubleColon) {
-              return false
-            }
-            doubleColon = true
-          }
-          word = ""
-        case '%' =>
-          if (numberOfColons == 0) {
-            return false
-          }
-          numberOfPercent += 1
-          // validate that the stuff after the % is valid
-          if ((i + 1) >= length) {
-            // in this case the percent is there but no number is available
-            return false
-          }
-          try Integer.parseInt(ipAddress.substring(i + 1))
-          catch {
-            case e: NumberFormatException => return false
-          }
-        case _ =>
-          if (numberOfPercent == 0) {
-            if (word.length > 3) {
-              return false
-            }
-            if (!isValidHexChar(c)) {
-              return false
-            }
-          }
-          word += c
-
-      }
-    }
-    // Check if we have an IPv4 ending
-    if (numberOfPeriods > 0) {
-      if (numberOfPeriods != 3 || !isValidIP4Word(word)) {
-        return false
-      }
-    } else {
-      if (numberOfColons != 7 && !doubleColon) {
-        return false
-      }
-      if (numberOfPercent == 0) {
-        if (word == "" && ipAddress.charAt(length - 1 - offset) == ':' &&
-            ipAddress.charAt(length - 2 - offset) != ':') {
-          return false
-        }
-      }
-    }
-    true
-  }
-
-  private def isValidHexChar(c: Char): Boolean =
-    (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
-
-  private def isValidIP4Word(word: String): Boolean = {
-    if (word.length < 1 || word.length > 3) {
-      return false
-    }
-
-    for (c <- word) {
-      if (!(c >= '0' && c <= '9')) {
-        return false
-      }
-    }
-
-    if (Integer.parseInt(word) > 255) {
-      return false
-    }
-
-    true
-  }
-
-  private val loopback = new Inet4Address(Array[Byte](127, 0, 0, 1))
-
-  def getLoopbackAddress(): InetAddress = loopback
-
-  private def byteArrayFromIPString(ip: String): Array[Byte] = {
-    if (isValidIPv4Address(ip))
-      return ip.split("\\.").map(Integer.parseInt(_).toByte)
-
-    var ipAddr = ip
-    if (ipAddr.charAt(0) == '[')
-      ipAddr = ipAddr.substring(1, ipAddr.length - 1)
-
-    val tokenizer = new StringTokenizer(ipAddr, ":.", true)
-    val hexStrings = new ArrayBuffer[String]()
-    val decStrings = new ArrayBuffer[String]()
-    var token = ""
-    var prevToken = ""
-    var doubleColonIndex = -1
-
-    /*
-     * Go through the tokens, including the separators ':' and '.' When we
-     * hit a : or . the previous token will be added to either the hex list
-     * or decimal list. In the case where we hit a :: we will save the index
-     * of the hexStrings so we can add zeros in to fill out the string
-     */
-    while (tokenizer.hasMoreTokens()) {
-      prevToken = token
-      token = tokenizer.nextToken()
-
-      if (token == ":") {
-        if (prevToken == ":")
-          doubleColonIndex = hexStrings.size
-        else if (prevToken != "")
-          hexStrings += prevToken
-      } else if (token == ".")
-        decStrings += prevToken
-    }
-
-    if (prevToken == ":") {
-      if (token == ":")
-        doubleColonIndex = hexStrings.size
-      else
-        hexStrings += token
-    } else if (prevToken == ".")
-      decStrings += token
-
-    // figure out how many hexStrings we should have
-    // also check if it is a IPv4 address
-    var hexStringLength = 8
-    // If we have an IPv4 address tagged on at the end, subtract
-    // 4 bytes, or 2 hex words from the total
-    if (decStrings.size > 0)
-      hexStringLength -= 2
-
-    if (doubleColonIndex != -1) {
-      val numberToInsert = hexStringLength - hexStrings.size
-      for (i <- 0 until numberToInsert)
-        hexStrings.insert(doubleColonIndex, "0")
-    }
-
-    val ipByteArray = new Array[Byte](16)
-
-    for (i <- 0 until hexStrings.size)
-      convertToBytes(hexStrings(i), ipByteArray, i * 2)
-
-    for (i <- 0 until decStrings.size)
-      ipByteArray(i + 12) =
-        (java.lang.Byte.parseByte(decStrings(i)) & 255).toByte
-
-    // now check to see if this guy is actually and IPv4 address
-    // an ipV4 address is ::FFFF:d.d.d.d
-    var ipV4 = true
-    for (i <- 0 until 10) {
-      if (ipByteArray(i) != 0)
-        ipV4 = false
-    }
-
-    if (ipByteArray(10) != -1 || ipByteArray(11) != -1)
-      ipV4 = false
-
-    if (ipV4) {
-      val ipv4ByteArray = new Array[Byte](4)
-      for (i <- 0 until 4)
-        ipv4ByteArray(i) = ipByteArray(i + 12)
-      return ipv4ByteArray
-    }
-
-    return ipByteArray
-  }
-
-  private def convertToBytes(
-      hexWord: String,
-      ipByteArray: Array[Byte],
-      byteIndex: Int
-  ): Unit = {
-    val hexWordLength = hexWord.length
-    var hexWordIndex = 0
-    ipByteArray(byteIndex) = 0
-    ipByteArray(byteIndex + 1) = 0
-
-    var charValue = 0
-    if (hexWordLength > 3) {
-      charValue = getIntValue(hexWord.charAt(hexWordIndex))
-      hexWordIndex += 1
-      ipByteArray(byteIndex) =
-        (ipByteArray(byteIndex) | (charValue << 4)).toByte
-    }
-    if (hexWordLength > 2) {
-      charValue = getIntValue(hexWord.charAt(hexWordIndex))
-      hexWordIndex += 1
-      ipByteArray(byteIndex) = (ipByteArray(byteIndex) | charValue).toByte
-    }
-    if (hexWordLength > 1) {
-      charValue = getIntValue(hexWord.charAt(hexWordIndex))
-      hexWordIndex += 1
-      ipByteArray(byteIndex + 1) =
-        (ipByteArray(byteIndex + 1) | (charValue << 4)).toByte
-    }
-
-    charValue = getIntValue(hexWord.charAt(hexWordIndex))
-    ipByteArray(byteIndex + 1) =
-      (ipByteArray(byteIndex + 1) | charValue & 15).toByte
-  }
-
-  private def getIntValue(c: Char): Int = {
-    if (c <= '9' && c >= '0')
-      return c - '0'
-    val cLower = Character.toLowerCase(c)
-    if (cLower <= 'f' && cLower >= 'a') {
-      return cLower - 'a' + 10
-    }
-    return 0
-  }
-
-  private val hexCharacters = "0123456789ABCDEF"
-
-  private[net] def createIPStringFromByteArray(
-      ipByteArray: Array[Byte]
-  ): String = {
-    if (ipByteArray.length == 4)
-      return addressToString(bytesToInt(ipByteArray, 0))
-
-    if (ipByteArray.length == 16) {
-      if (isIPv4MappedAddress(ipByteArray)) {
-        val ipv4ByteArray = new Array[Byte](4)
-        for (i <- 0 until 4)
-          ipv4ByteArray(i) = ipByteArray(i + 12)
-
-        return addressToString(bytesToInt(ipv4ByteArray, 0))
-      }
-      val buffer = new StringBuilder()
-      var isFirst = true
-      for (i <- 0 until ipByteArray.length) {
-        if ((i & 1) == 0)
-          isFirst = true
-
-        var j = (ipByteArray(i) & 0xf0) >>> 4
-        if (j != 0 || !isFirst) {
-          buffer.append(hexCharacters.charAt(j))
-          isFirst = false
-        }
-        j = ipByteArray(i) & 0x0f
-        if (j != 0 || !isFirst) {
-          buffer.append(hexCharacters.charAt(j))
-          isFirst = false
-        }
-        if ((i & 1) != 0 && (i + 1) < ipByteArray.length) {
-          if (isFirst)
-            buffer.append('0')
-          buffer.append(':')
-        }
-        if ((i & 1) != 0 && (i + 1) == ipByteArray.length && isFirst) {
-          buffer.append('0')
-        }
-      }
-      return buffer.toString
-    }
-    null
-  }
-
-  private def isIPv4MappedAddress(ipAddress: Array[Byte]): Boolean = {
-    // Check if the address matches ::FFFF:d.d.d.d
-    // The first 10 bytes are 0. The next to are -1 (FF).
-    // The last 4 bytes are varied.
-    for (i <- 0 until 10)
-      if (ipAddress(i) != 0)
-        return false
-
-    if (ipAddress(10) != -1 || ipAddress(11) != -1)
-      return false
-
-    return true
-  }
-
-  private[net] def bytesToInt(bytes: Array[Byte], start: Int): Int = {
-    // First mask the byte with 255, as when a negative
-    // signed byte converts to an integer, it has bits
-    // on in the first 3 bytes, we are only concerned
-    // about the right-most 8 bits.
-    // Then shift the rightmost byte to align with its
-    // position in the integer.
-    return (((bytes(start + 3) & 255)) | ((bytes(start + 2) & 255) << 8)
-      | ((bytes(start + 1) & 255) << 16)
-      | ((bytes(start) & 255) << 24))
-  }
-
-  private def addressToString(value: Int): String = {
-    val p1 = (value >> 24) & 0xff
-    val p2 = (value >> 16) & 0xff
-    val p3 = (value >> 8) & 0xff
-    val p4 = value & 0xff
-    s"$p1.$p2.$p3.$p4"
-  }
-}
-
-object InetAddress extends InetAddressBase {
-  // cached host values are discarded after this amount of time (seconds)
-  private val HostTimeout: Int =
-    sys.props
-      .get("networkaddress.cache.ttl")
-      .map(_.toInt)
-      .getOrElse(30)
-
-  // failed lookups are retried after this amount of time (seconds)
-  private val NegativeHostTimeout: Int =
-    sys.props
-      .get("networkaddress.cache.negative.ttl")
-      .map(_.toInt)
-      .getOrElse(10)
-}
-
-class InetAddress private[net] (
-    ipAddress: Array[Byte],
-    private val originalHost: String
-) extends Serializable {
+class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
+    extends Serializable {
   import InetAddress._
+
+  private def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
   private var hostLastUpdated: time_t = 0
   private var cachedHost: String = null
   private var lastLookupFailed = true
 
-  private[net] def this(ipAddress: Array[Byte]) = this(ipAddress, null)
+  override def equals(obj: Any): Boolean = {
+    if (obj == null || obj.getClass != this.getClass) {
+      false
+    } else {
+      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress()
+      objIPAddress.indices.forall(i => objIPAddress(i) == ipAddress(i))
+    }
+  }
 
-  def getHostAddress(): String = createIPStringFromByteArray(ipAddress)
+  def getAddress() = ipAddress.clone
 
-  private def hostTimeoutExpired(timeNow: time_t): Boolean = {
-    val timeout = if (lastLookupFailed) NegativeHostTimeout else HostTimeout
-    difftime(timeNow, hostLastUpdated) > timeout
+  def getCanonicalHostName(): String = {
+    // reverse name lookup with cache
+
+    def hostTimeoutExpired(timeNow: time_t): Boolean = {
+      val timeout = if (lastLookupFailed) NegativeHostTimeout else HostTimeout
+      difftime(timeNow, hostLastUpdated) > timeout
+    }
+
+    val timeNow = time(null)
+    if (cachedHost == null || hostTimeoutExpired(timeNow)) {
+      hostLastUpdated = timeNow
+
+      getFullyQualifiedDomainName(ipAddress) match {
+        case None =>
+          lastLookupFailed = true
+          cachedHost = getHostAddress()
+        case Some(hostName) =>
+          lastLookupFailed = false
+          cachedHost = hostName
+      }
+    }
+    cachedHost
+  }
+
+  def getHostAddress(): String = {
+    if (ipAddress.length == 4) {
+      formatIn4Addr(arrayByteToPtrByte(ipAddress))
+    } else if (ipAddress.length == 16) {
+      if (isIPv4MappedAddress(arrayByteToPtrByte(ipAddress))) {
+        formatIn4Addr(
+          arrayByteToPtrByte(extractIP4Bytes(arrayByteToPtrByte(ipAddress)))
+        )
+      } else {
+        Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
+      }
+    } else {
+      "<unknown>"
+    }
   }
 
   def getHostName(): String = {
@@ -608,56 +108,24 @@ class InetAddress private[net] (
     }
   }
 
-  def getCanonicalHostName(): String = {
-    // reverse name lookup with cache
-    val timeNow = time(null)
-    if (cachedHost == null || hostTimeoutExpired(timeNow)) {
-      hostLastUpdated = timeNow
-      val ipString = createIPStringFromByteArray(ipAddress)
-      SocketHelpers.ipToHost(ipString, isValidIPv6Address(ipString)) match {
-        case None =>
-          lastLookupFailed = true
-          cachedHost = ipString
-        case Some(hostName) =>
-          lastLookupFailed = false
-          cachedHost = hostName
-      }
-    }
-    cachedHost
+  // Method used historically by Scala Native for IPv4 addresses.
+  protected def bytesToInt(bytes: Array[Byte], start: Int): Int = {
+    // First mask the byte with 255, as when a negative
+    // signed byte converts to an integer, it has bits
+    // on in the first 3 bytes, we are only concerned
+    // about the right-most 8 bits.
+    // Then shift the rightmost byte to align with its
+    // position in the integer.
+    return (((bytes(start + 3) & 255)) | ((bytes(start + 2) & 255) << 8)
+      | ((bytes(start + 1) & 255) << 16)
+      | ((bytes(start) & 255) << 24))
   }
 
-  def getAddress() = ipAddress.clone
+  protected def getZoneIdent(): String = "" // Ease Inet6Address declaration
 
-  override def equals(obj: Any): Boolean = {
-    if (obj == null || obj.getClass != this.getClass) {
-      false
-    } else {
-      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress()
-      objIPAddress.indices.forall(i => objIPAddress(i) == ipAddress(i))
-    }
-  }
-
-  override def hashCode(): Int = InetAddress.bytesToInt(ipAddress, 0)
-
-  override def toString(): String = {
-    val hostName =
-      if (originalHost != null) originalHost
-      else if (!lastLookupFailed) cachedHost
-      else ""
-
-    hostName + "/" + getHostAddress()
-  }
-
-  def isReachable(timeout: Int): Boolean = {
-    if (timeout < 0) {
-      throw new IllegalArgumentException(
-        "Argument 'timeout' in method 'isReachable' is negative"
-      )
-    } else {
-      val ipString = createIPStringFromByteArray(ipAddress)
-      SocketHelpers.isReachableByEcho(ipString, timeout, 7)
-    }
-  }
+  override def hashCode(): Int =
+    if (ipAddress.length == 4) bytesToInt(ipAddress, 0) // too scared to change
+    else ju.Arrays.hashCode(ipAddress)
 
   def isLinkLocalAddress(): Boolean = false
 
@@ -677,6 +145,621 @@ class InetAddress private[net] (
 
   def isMulticastAddress(): Boolean = false
 
+  /* Editorial Comment: isReachable() is in the Java 8 specification and
+   * must be implemented for completeness. It has severely limited utility
+   * in the 21st century.  Many, if not most, systems now block the
+   * echo port (7). ICMP is not used here because it requires elevated
+   * privileges and is also often blocked.
+   */
+
+  def isReachable(timeout: Int): Boolean = {
+    if (timeout < 0) {
+      throw new IllegalArgumentException(
+        "Argument 'timeout' in method 'isReachable' is negative"
+      )
+    } else {
+      val s = new Socket()
+      val echoPort = 7 // Port from Java spec, almost _always_ disbled.
+      val isReachable =
+        try {
+          s.connect(new InetSocketAddress(this, echoPort), timeout)
+          /* Most likely outcome: java.net.ConnectException: Connection refused
+           * Could also be a TimeoutException. Let them bubble up.
+           */
+          true
+        } finally {
+          s.close()
+        }
+      isReachable
+    }
+  }
+
+  // Not implemented: isReachable(NetworkInterface netif, int ttl, int timeout)
+
   def isSiteLocalAddress(): Boolean = false
+
+  override def toString(): String = {
+    val hostName =
+      if (originalHost != null) originalHost
+      else if (!lastLookupFailed) cachedHost
+      else ""
+
+    hostName + "/" + getHostAddress()
+  }
+
+}
+
+object InetAddress {
+
+  // cached host values are discarded after this amount of time (seconds)
+  private val HostTimeout: Int =
+    sys.props
+      .get("networkaddress.cache.ttl")
+      .map(_.toInt)
+      .getOrElse(30)
+
+  // failed lookups are retried after this amount of time (seconds)
+  private val NegativeHostTimeout: Int =
+    sys.props
+      .get("networkaddress.cache.negative.ttl")
+      .map(_.toInt)
+      .getOrElse(10)
+
+  private def apply(
+      addrinfoP: Ptr[addrinfo],
+      host: String,
+      isNumeric: Boolean
+  ): InetAddress = {
+    /* if an address parses as numeric, some JVM implementations are said
+     * to fill the host field in the resultant InetAddress with the
+     * numeric representation.
+     * The Scastie JVM and those used for Linux/macOS manual testing seem
+     * to leave the host field blank/empty.
+     */
+    val effectiveHost = if (isNumeric) null else host
+
+    if (addrinfoP.ai_family == AF_INET) {
+      new Inet4Address(addrinfoToByteArray(addrinfoP), effectiveHost)
+    } else if (addrinfoP.ai_family == AF_INET6) {
+      val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
+      val addrBytes = addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
+
+      // Scala JVM down-converts even when preferIPv6Addresses is "true"
+      if (isIPv4MappedAddress(addrBytes)) {
+        new Inet4Address(extractIP4Bytes(addrBytes), effectiveHost)
+      } else {
+        /* Yes, Java specifies Int for scope_id in a way which disallows
+         * some values POSIX/IEEE/IETF allows.
+         */
+
+        val scope_id = addr.sin6_scope_id.toInt
+
+        val zoneIdent = {
+          val ifIndex = host.indexOf('%')
+          val ifNameStart = ifIndex + 1
+          if ((ifIndex < 0) || (ifNameStart >= host.length)) ""
+          else host.substring(ifNameStart)
+        }
+
+        Inet6Address(
+          addrinfoToByteArray(addrinfoP),
+          effectiveHost,
+          scope_id,
+          zoneIdent
+        )
+      }
+    } else {
+      val af = addrinfoP.ai_family
+      throw new IOException(
+        s"The requested address family is not supported: ${af}."
+      )
+    }
+  }
+
+  /* This is for littleEndian machines. It may need to detect BigEndian
+   * machines and do something different, at worst a byte-by-byte copy.
+   */
+  private def addrinfoToByteArray(
+      addrinfoP: Ptr[addrinfo]
+  ): Array[Byte] = {
+
+    if (addrinfoP.ai_family == AF_INET6) {
+      val bufSize = 16
+      val buf = new Array[Byte](bufSize)
+
+      val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
+      val addrBytes = addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
+
+      memcpy(arrayByteToPtrByte(buf), addrBytes, bufSize.toUInt)
+
+      buf
+    } else if (addrinfoP.ai_family == AF_INET) {
+      val buf = new Array[Byte](4)
+
+      val v4addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in]]
+      val sinAddr = v4addr.sin_addr
+
+      val dst = arrayByteToPtrByte(buf).asInstanceOf[Ptr[in_addr]]
+      !dst = sinAddr // Structure copy
+
+      buf
+    } else {
+      // caller should have detected & thrown before getting this far.
+      Array.empty[Byte]
+    }
+  }
+
+  @alwaysinline private def arrayByteToPtrByte(ab: Array[Byte]): Ptr[Byte] =
+    ab.asInstanceOf[scala.scalanative.runtime.ByteArray].at(0)
+
+  private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
+    val buf = new Array[Byte](4)
+    buf(0) = pb(12)
+    buf(1) = pb(13)
+    buf(2) = pb(14)
+    buf(3) = pb(15)
+    buf
+  }
+
+  private def formatIn4Addr(pb: Ptr[Byte]): String = {
+    val addr = pb.asInstanceOf[Ptr[in_addr]]
+    val dstSize = INET_ADDRSTRLEN
+    val dst = stackalloc[Byte](dstSize.toUInt)
+
+    val result = inet_ntop(
+      AF_INET,
+      addr.at1.asInstanceOf[Ptr[Byte]],
+      dst,
+      dstSize.toUInt
+    )
+
+    if (result == null)
+      throw new IOException(s"inet_ntop IPv4 failed, errno: ${errno}")
+
+    fromCString(dst)
+  }
+
+  private def getByNumericName(host: String): Option[InetAddress] = Zone {
+    implicit z =>
+      val hints = stackalloc[addrinfo]() // stackalloc clears its memory
+      val addrinfo = stackalloc[Ptr[addrinfo]]()
+
+      hints.ai_family = AF_UNSPEC
+      hints.ai_socktype = SOCK_STREAM
+      hints.ai_protocol = IPPROTO_TCP
+      hints.ai_flags = AI_NUMERICHOST
+
+      val gaiStatus = getaddrinfo(toCString(host), null, hints, addrinfo)
+
+      if (gaiStatus != 0) {
+        if (gaiStatus == EAI_NONAME) {
+          val ifIndex = host.indexOf('%')
+          val hasInterface = (ifIndex >= 0)
+          if (!hasInterface) {
+            None
+          } else {
+            /* If execution gets here, we know that we are dealing with one
+             * of a large number of corner cases where interface/scope
+             * id suppplied us not valid for host supplied.
+             * ScalaJVM reports some cases early, such as an unknown
+             * non-numeric interface name, and some later, probably at the
+             * point of use, such as an invalid numeric interface id.
+             *
+             * It is simply not economic to try to match the timing and
+             * mesage of all those cases. They all boil down to the
+             * interface being invalid.
+             */
+            throw new UnknownHostException(
+              s"something rotten with host and/or interface: '${host}'"
+            )
+          }
+        } else {
+          val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
+          throw new IOException(gaiMsg)
+        }
+      } else
+        try {
+          // should never happen, but check anyways
+          java.util.Objects.requireNonNull(!addrinfo)
+
+          /* At this point, there is at least one addrinfo. Use the first
+           * one unconditionally because here is a vanishingly small chance
+           * it will have an af_family other than AF_INET or AF_INET6. Other
+           * protocols should caused getaddrinfo() to return EAI_NONAME.
+           *
+           * InetAddress() will catch the case of an af_family which is
+           * neither IPv4 nor IPv6.
+           */
+
+          Some(InetAddress(!addrinfo, host, isNumeric = true))
+        } finally {
+          freeaddrinfo(!addrinfo)
+        }
+  }
+
+  private def getByNonNumericName(host: String): InetAddress = Zone {
+    implicit z =>
+      /* To prevent circular dependencies, javalib is not supposed to use
+       * the quite powerful Scala Collections library.
+       *
+       * Use tail recursion to avoid an even nastier while loop. Let
+       * the Scala compiler do the work.
+       */
+
+      @tailrec
+      def findPreferrredAddrinfo(
+          preference: Option[Boolean],
+          ai: Ptr[addrinfo]
+      ): Option[Ptr[addrinfo]] = {
+
+        if (ai == null) {
+          None
+        } else {
+          val result =
+            if (ai.ai_family == AF_INET) {
+              if ((preference == None) || (preference.get == false)) {
+                Some(ai)
+              } else {
+                None
+              }
+            } else if (ai.ai_family == AF_INET6) {
+              if ((preference == None) || (preference.get == true)) {
+                Some(ai)
+              } else {
+                None
+              }
+            } else { // skip AF_UNSPEC & other unknown families
+              None
+            }
+
+          if (result != None) {
+            result
+          } else {
+            val aiNext = ai.ai_next.asInstanceOf[Ptr[addrinfo]]
+            findPreferrredAddrinfo(preference, aiNext)
+          }
+        }
+      }
+
+      val hints = stackalloc[addrinfo]() // stackalloc clears its memory
+      val addrinfo = stackalloc[Ptr[addrinfo]]()
+
+      hints.ai_family = SocketHelpers.getGaiHintsAddressFamily()
+      hints.ai_socktype = SOCK_STREAM
+      hints.ai_protocol = IPPROTO_TCP
+      if (hints.ai_family == AF_INET6) {
+        hints.ai_flags |= (AI_V4MAPPED | AI_ADDRCONFIG)
+      }
+
+      val gaiStatus = getaddrinfo(toCString(host), null, hints, addrinfo)
+
+      if (gaiStatus != 0) {
+        val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
+        val ex =
+          if (gaiStatus == EAI_NONAME)
+            new UnknownHostException(gaiMsg)
+          else
+            new IOException(gaiMsg)
+        throw ex
+      } else
+        try {
+          val preferIPv6 = SocketHelpers.getPreferIPv6Addresses()
+          findPreferrredAddrinfo(preferIPv6, !addrinfo) match {
+            case None =>
+              throw new UnknownHostException(s"${host}: Name does not resolve")
+            case Some(ai) => InetAddress(ai, host, isNumeric = false)
+          }
+        } finally {
+          freeaddrinfo(!addrinfo)
+        }
+  }
+
+  /* Fully Qualified Domain Name which may or may not be the same as the
+   * canonical name.
+   */
+  private def getFullyQualifiedDomainName(
+      ipByteArray: Array[Byte]
+  ): Option[String] = {
+    /* MAXDNAME is the largest size of a Fully Qualified Domain Name.
+     * It is defined in:
+     *   https://github.com/openbsd/src/blob/master/include/arpa/nameser.h
+     *
+     * That URL says: "Define constants based on rfc883".
+     * These are direct name (bind) server definitions.
+     *
+     * This is larger than the length of individual segments because there
+     * can be multiple segments of 256. Two56.Two56.Two56.com
+     *
+     * On many BSD derived systems, this value is defined as (non-POSIX)
+     * NI_MAXHOST.
+     *   https://man7.org/linux/man-pages/man3/getnameinfo.3.html
+     *
+     * RFC 2181, section "Name syntax" states:
+     *   The length of any one label is limited to between 1 and 63 octets.
+     *   A full domain name is limited to 255 octets (including the
+     *   separators).
+     *
+     * A CString needs one more space for its terminal NUL.
+     *
+     * Use the larger MAXDNAME here, the extra space is not _all_ that
+     * expensive, and it is not used for long.
+     */
+
+    val MAXDNAME = 1025.toUInt /* maximum presentation domain name */
+
+    def tailorSockaddr(ipBA: Array[Byte], addr: Ptr[sockaddr]): Unit = {
+      val from =
+        ipBA.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
+
+      // By contract the 'sockaddr' argument passed in is cleared/all_zeros.
+      if (ipBA.length == 16) {
+        val v6addr = addr.asInstanceOf[Ptr[sockaddr_in6]]
+        v6addr.sin6_family = AF_INET6.toUShort
+        // because the FQDN scope is Global, no need to set sin6_scope_id
+        val dst = v6addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
+        memcpy(dst, from, 16.toUInt)
+      } else if (ipBA.length == 4) {
+        val v4addr = addr.asInstanceOf[Ptr[sockaddr_in]]
+        v4addr.sin_family = AF_INET.toUShort
+        v4addr.sin_addr = !(from.asInstanceOf[Ptr[in_addr]]) // Structure copy
+      } else {
+        throw new IOException(s"Invalid ipAddress length: ${ipBA.length}")
+      }
+    }
+
+    def ipToHost(ipBA: Array[Byte]): Option[String] =
+      Zone { implicit z =>
+        // Reserve extra space for NUL terminator.
+        val hostSize = MAXDNAME + 1.toUInt
+        val host: Ptr[CChar] = alloc[CChar](hostSize)
+        // will clear/zero all memory
+        val addr = stackalloc[sockaddr_in6]().asInstanceOf[Ptr[sockaddr]]
+
+        // By contract 'sockaddr' passed into tailor method is all zeros.
+        tailorSockaddr(ipBA, addr)
+        val status =
+          getnameinfo(
+            addr,
+            if (ipBA.length == 16) sizeof[sockaddr_in6].toUInt
+            else sizeof[sockaddr_in].toUInt,
+            host,
+            hostSize,
+            null, // 'service' is not used; do not retrieve
+            0.toUInt,
+            0
+          )
+
+        if (status != 0) None
+        else Some(fromCString(host))
+      }
+
+    ipToHost(ipByteArray)
+  }
+
+  private def hostToInetAddressArray(host: String): Array[InetAddress] =
+    Zone { implicit z =>
+      /* The JVM implementations in both the manual testing &
+       * Continuous Integration environments have the "feature" of
+       * not filling in the host field of an InetAddress if the name
+       * is strictly numeric.
+       *
+       * See the getByName() method and those it calls for a discussion
+       * about difficulties determining if a given string is a numeric
+       * hostname or not.
+       *
+       * The "double getadderfo" here is unfortunate (expensive) but
+       * handles corner cases. Room for improvement here.
+       *
+       * Host name should already be in name server cache, since the
+       * caller of this code just looked it up and found it.
+       */
+
+      lazy val hostIsNumeric: Boolean = {
+        val leadingCh = Character.toUpperCase(host(0))
+
+        val lookupRequired =
+          Character.isDigit(leadingCh) || "ABCDEF".contains(leadingCh)
+
+        if (!lookupRequired) {
+          false
+        } else if (host.contains(":")) {
+          true
+        } else {
+          InetAddress.getByNumericName(host).isDefined
+        }
+      }
+
+      @tailrec
+      def addAddresses(
+          addIPv4: Boolean,
+          addIPv6: Boolean,
+          ai: Ptr[addrinfo],
+          host: String,
+          iaBuf: scala.collection.mutable.ArrayBuffer[InetAddress]
+      ): Unit = {
+        if (ai != null) {
+          if ((ai.ai_family == AF_INET) && addIPv4) {
+            iaBuf += InetAddress(ai, host, hostIsNumeric)
+          } else if ((ai.ai_family == AF_INET6) && addIPv6) {
+            iaBuf += InetAddress(ai, host, hostIsNumeric)
+          }
+          // else skip AF_UNSPEC & other unknown families
+
+          val aiNext = ai.ai_next.asInstanceOf[Ptr[addrinfo]]
+          addAddresses(addIPv4, addIPv6, aiNext, host, iaBuf)
+        }
+      }
+
+      def fillAddressBuffer(
+          preference: Option[Boolean],
+          ai: Ptr[addrinfo],
+          host: String,
+          iaBuf: scala.collection.mutable.ArrayBuffer[InetAddress]
+      ): Unit = {
+
+        preference match {
+          case None =>
+            addAddresses(addIPv4 = true, addIPv6 = true, ai, host, iaBuf)
+
+          case Some(preferIPv6) if (preferIPv6) => // AddIPv6 first, then IPv4
+            addAddresses(addIPv4 = false, addIPv6 = true, ai, host, iaBuf)
+            addAddresses(addIPv4 = true, addIPv6 = false, ai, host, iaBuf)
+
+          case Some(_) => // AddIPv4 first, then IPv6
+            addAddresses(addIPv4 = true, addIPv6 = false, ai, host, iaBuf)
+            addAddresses(addIPv4 = false, addIPv6 = true, ai, host, iaBuf)
+        }
+      } // def fillAddressBuffer
+
+      val retArray = scala.collection.mutable.ArrayBuffer[InetAddress]()
+
+      val hints = stackalloc[addrinfo]()
+      val ret = stackalloc[Ptr[addrinfo]]()
+
+      hints.ai_family = AF_UNSPEC
+      hints.ai_socktype = SOCK_STREAM // ignore SOCK_DGRAM only
+      hints.ai_protocol = IPPROTO_TCP
+
+      val gaiStatus = getaddrinfo(toCString(host), null, hints, ret)
+
+      if (gaiStatus != 0) {
+        if (gaiStatus != EAI_NONAME) {
+          val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
+          throw new IOException(gaiMsg)
+        }
+      } else
+        try {
+          val preferIPv6 = SocketHelpers.getPreferIPv6Addresses()
+          fillAddressBuffer(preferIPv6, !ret, host, retArray)
+        } finally {
+          freeaddrinfo(!ret)
+        }
+
+      retArray.toArray
+    }
+
+  private def isIPv4MappedAddress(pb: Ptr[Byte]): Boolean = {
+    val ptrInt = pb.asInstanceOf[Ptr[Int]]
+    val ptrLong = pb.asInstanceOf[Ptr[Long]]
+    (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
+  }
+
+  private def unknownHostExceptionMsg(name: String): String = {
+    /* This is the text used by 'Temurin Java 1.8.0_345'.
+     * Please consult frequent Scala Native contributor Arman Bilge
+     * before changing it. Changes may break versions of project ip4s.
+     * Having that project run unchanged on JVM, Scala.js, & Scala Native
+     * is influential.
+     *
+     * Yes, tests for exact messages is fraught with hazard, especially
+     * if they can be internationalized. On the other hand, having
+     * a user base is a Good Thing.
+     *
+     * Scastie (online Scala JVM) and macOS Monterrey 12.6 Zulu JVM
+     * have text which differ from this and each other.
+     */
+
+    name + ": Name or service not known"
+  }
+
+  def getAllByName(host: String): Array[InetAddress] = {
+    if ((host == null) || (host.length == 0)) {
+      /* The obvious recursive call to getAllByName("localhost") does not
+       * work here.
+       *
+       * ScalaJVM, on both Linux & macOS, returns a 1 element array
+       * with the host field filled in. The InetAddress type and address
+       * field are controlled by the System property
+       * "java.net.preferIPv6Addresses"
+       */
+
+      val lbBytes = SocketHelpers.getLoopbackAddress().getAddress()
+
+      // use a subclass so that isLoopback method is effective & truthful.
+      val ia = if (lbBytes.length == 4) {
+        new Inet4Address(lbBytes, "localhost")
+      } else {
+        new Inet6Address(lbBytes, "localhost")
+      }
+      Array[InetAddress](ia)
+    } else {
+      val ips = InetAddress.hostToInetAddressArray(host)
+      if (ips.isEmpty) {
+        throw new UnknownHostException(host + ": Name or service not known")
+      }
+      ips
+    }
+  }
+
+  def getByAddress(addr: Array[Byte]): InetAddress =
+    getByAddress(null, addr)
+
+  def getByAddress(host: String, addr: Array[Byte]): InetAddress = {
+    /* Java 8 spec say adddress must be 4 or 16 bytes long, so no IPv6
+     * scope_id complexity required here.
+     */
+    if (addr.length == 4) {
+      new Inet4Address(addr.clone, host)
+    } else if (addr.length == 16) {
+      new Inet6Address(addr.clone, host)
+    } else {
+      throw new UnknownHostException(
+        s"addr is of illegal length: ${addr.length}"
+      )
+    }
+  }
+
+  def getByName(host: String): InetAddress = {
+    /* Design Note:
+     *     A long comment because someone is going to have to maintain this
+     * and will appreciate the clues. 18 lines of comments for 3 lines of code.
+     *
+     * The double lookup below, first to check if the host is a numeric
+     * IPv4 or IPv6 address and then to look the host up as a non-numeric
+     * name, may look somewhere between passing strange and straight out
+     * dumb.
+     *
+     * It is because ScalaJVM creates the InetAddress with a null host name
+     * if the host resolves as numeric.  If the host resolves to non-numeric
+     * then the InetAddress is created using that String.
+     *
+     * There is not good way to test after a single omnibus lookup to tell
+     * if the host resolved as numeric or non-numeric.  inet_pton() for
+     * IPv4 addresses requires full dotted decimal: ddd.ddd.ddd.ddd.
+     * ScalaJVM parses and passes some more obscure but valid IPv4 addresses.
+     * There have long been test cases in InetAddressTest.scala for such.
+     *
+     * The less preferred inet_aton() handles these obscure cases but
+     * misses more modern usages. inet_aton() is not POSIX, so it's portability
+     * is an issue.
+     *
+     * Hence, the double lookup. Better solutions are welcome.
+     */
+
+    if (host == null || host.length == 0) {
+      getLoopbackAddress()
+    } else {
+      InetAddress
+        .getByNumericName(host)
+        .getOrElse(InetAddress.getByNonNumericName(host))
+    }
+  }
+
+  def getLocalHost(): InetAddress = {
+    val MAXHOSTNAMELEN = 256.toUInt // SUSv2 255 + 1 for terminal NUL
+    val hostName = stackalloc[Byte](MAXHOSTNAMELEN)
+
+    val ghnStatus = unistd.gethostname(hostName, MAXHOSTNAMELEN);
+    if (ghnStatus != 0) {
+      throw new UnknownHostException(unknownHostExceptionMsg(""))
+    } else {
+      /* OS library routine should have NUL terminated 'hostName'.
+       * If not, hostName(MAXHOSTNAMELEN) should be NUL from stackalloc.
+       */
+      InetAddress.getByName(fromCString(hostName))
+    }
+  }
+
+  def getLoopbackAddress(): InetAddress = SocketHelpers.getLoopbackAddress()
 
 }

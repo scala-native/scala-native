@@ -16,6 +16,9 @@ sealed trait Config {
   /** Entry point for linking. */
   def mainClass: String
 
+  /** Optional main class for linking, introduced for binary compatiblity. */
+  def selectedMainClass: Option[String]
+
   /** Sequence of all NIR locations. */
   def classPath: Seq[Path]
 
@@ -74,12 +77,17 @@ sealed trait Config {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
 
-  private[scalanative] def targetsWindows: Boolean = {
+  private[scalanative] lazy val targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||
       customTriple.contains("windows")
     }
   }
+
+  private[scalanative] lazy val targetsMac = Platform.isMac ||
+    compilerConfig.targetTriple.exists { customTriple =>
+      Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
+    }
 }
 
 object Config {
@@ -88,7 +96,7 @@ object Config {
   def empty: Config =
     Impl(
       nativelib = Paths.get(""),
-      mainClass = "",
+      selectedMainClass = None,
       classPath = Seq.empty,
       workdir = Paths.get(""),
       logger = Logger.default,
@@ -97,17 +105,21 @@ object Config {
 
   private final case class Impl(
       nativelib: Path,
-      mainClass: String,
+      selectedMainClass: Option[String],
       classPath: Seq[Path],
       workdir: Path,
       logger: Logger,
       compilerConfig: NativeConfig
   ) extends Config {
+    override def mainClass: String = selectedMainClass.getOrElse {
+      throw new RuntimeException("Main class was not selected")
+    }
+
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
 
     def withMainClass(value: String): Config =
-      copy(mainClass = value)
+      copy(selectedMainClass = Option(value).filter(_.nonEmpty))
 
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)

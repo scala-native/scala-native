@@ -422,7 +422,8 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   )(fn: (Method, Result) => T): T = {
     link(entry, sources) { (_, result) =>
       implicit val linkerResult: Result = result
-      val MethodRef(_, mainMethod) = Global.Top(entry).member(Rt.ScalaMainSig)
+      val MethodRef(_, mainMethod) =
+        Global.Top(entry).member(Rt.ScalaMainSig): @unchecked
       fn(mainMethod, result)
     }
   }

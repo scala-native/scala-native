@@ -807,16 +807,25 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
                 val result =
                   enteringPhase(currentRun.posterasurePhase)(sym.tpe) match {
-                    case ErasedValueType(valueClazz, _) =>
+                    case tpe if tpe.sym.isPrimitiveValueClass =>
+                      val targetTpe = genType(tpe)
+                      if (targetTpe == value.ty) value
+                      else buf.unbox(genBoxType(tpe), value, Next.None)
+
+                    case ErasedValueType(valueClazz, underlying) =>
                       val unboxMethod = valueClazz.derivedValueClassUnbox
                       val casted =
                         buf.genCastOp(value.ty, genType(valueClazz), value)
-                      buf.genApplyMethod(
+                      val unboxed = buf.genApplyMethod(
                         sym = unboxMethod,
                         statically = false,
                         self = casted,
                         argsp = Nil
                       )
+                      if (unboxMethod.tpe.resultType == underlying)
+                        unboxed
+                      else
+                        buf.genCastOp(unboxed.ty, genType(underlying), unboxed)
 
                     case _ =>
                       val unboxed =
@@ -841,23 +850,22 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val sig = genMethodSig(sym)
           val res = buf.call(sig, method, values, Next.None)
 
-          val retValue =
-            if (retType == res.ty) res
-            else {
-              // Get the result type of the lambda after erasure, when entering posterasure.
-              // This allows to recover the correct type in case value classes are involved.
-              // In that case, the type will be an ErasedValueType.
-              val resTyEnteringPosterasure =
-                enteringPhase(currentRun.posterasurePhase) {
-                  targetTree.symbol.tpe.resultType
-                }
-
+          // Get the result type of the lambda after erasure, when entering posterasure.
+          // This allows to recover the correct type in case value classes are involved.
+          // In that case, the type will be an ErasedValueType.
+          val resTyEnteringPosterasure =
+            enteringPhase(currentRun.posterasurePhase) {
+              targetTree.symbol.tpe.resultType
+            }
+          buf.ret(
+            if (retType == res.ty && resTyEnteringPosterasure == sym.tpe.resultType)
+              res
+            else
               ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(
                 buf,
                 callTree.pos
               )
-            }
-          buf.ret(retValue)
+          )
           buf.toSeq
         }
 
@@ -918,7 +926,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     // Compute a set of method symbols that SAM-generated class needs to implement.
     def functionMethodSymbols(tree: Function): Seq[Symbol] = {
       val funSym = tree.tpe.typeSymbolDirect
-
       if (isFunctionSymbol(funSym)) {
         unspecializedSymbol(funSym).info.members
           .filter(_.name.toString == "apply")
@@ -1300,16 +1307,43 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         fnRef
       }
 
+      def reportClosingOverLocalState(args: Seq[Tree]): Unit =
+        reporter.error(
+          fn.pos,
+          s"Closing over local state of ${args.map(v => show(v.symbol)).mkString(", ")} in function transformed to CFuncPtr results in undefined behaviour."
+        )
+
       @tailrec
       def resolveFunction(tree: Tree): Val = tree match {
         case Typed(expr, _) => resolveFunction(expr)
         case Block(_, expr) => resolveFunction(expr)
-        case fn @ Function(_, Apply(targetTree, _)) => // Scala 2.12+
+        case fn @ Function(
+              params,
+              Apply(targetTree, targetArgs)
+            ) => // Scala 2.12+
+          val paramTermNames = params.map(_.name)
+          val localStateParams = targetArgs
+            .filter(arg => !paramTermNames.contains(arg.symbol.name))
+          if (localStateParams.nonEmpty)
+            reportClosingOverLocalState(localStateParams)
+
           withGeneratedForwarder {
             genFunction(fn)
           }(targetTree.symbol)
 
-        case fn: Apply => // Scala 2.11 only
+        case fn @ Apply(target, args) => // Scala 2.11 only
+          if (args.nonEmpty) {
+            args match {
+              case This(_) :: Nil
+                  if args.map(_.tpe.sym) == target.tpe.paramTypes.map(_.sym) =>
+                // Ignore, Scala 2.11 needs reference to outer class to create an instance of ananymous function,
+                // does not lead to undefined behaviour. However we cannot detect access to member of outer class.
+                ()
+              case _ =>
+                reportClosingOverLocalState(args)
+            }
+          }
+
           val alternatives = fn.tpe
             .member(nme.apply)
             .alternatives
@@ -2370,16 +2404,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val owner = sym.owner
       val name = genMethodName(sym)
       val origSig = genMethodSig(sym)
+      val isExtern = owner.isExternModule
       val sig =
-        if (owner.isExternModule) {
+        if (isExtern) {
           genExternMethodSig(sym)
         } else {
           origSig
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct ||
-            owner.isExternModule) {
+        if (isImplClass(owner) || statically || owner.isStruct || isExtern) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
@@ -2391,7 +2425,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!owner.isExternModule) {
+      if (!isExtern) {
         res
       } else {
         val Type.Function(_, retty) = origSig
@@ -2408,7 +2442,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         argsp.zip(sym.tpe.params).foreach {
           case (argp, paramSym) =>
             val externType = genExternType(paramSym.tpe)
-            res += toExtern(externType, genExpr(argp))(argp.pos)
+            val arg = (genExpr(argp), Type.box.get(externType)) match {
+              case (value @ Val.Null, Some(unboxedType)) =>
+                externType match {
+                  case Type.Ptr | _: Type.RefKind => value
+                  case _ =>
+                    reporter.warning(
+                      argp.pos,
+                      s"Passing null as argument of ${paramSym}: ${paramSym.tpe} to the extern method is unsafe. " +
+                        s"The argument would be unboxed to primitive value of type $externType."
+                    )
+                    Val.Zero(unboxedType)
+                }
+              case (value, _) => value
+            }
+            res += toExtern(externType, arg)(argp.pos)
         }
 
         res.result()

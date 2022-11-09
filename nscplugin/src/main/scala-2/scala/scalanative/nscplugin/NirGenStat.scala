@@ -21,10 +21,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
 
-  protected val generatedStaticForwarderClasses =
-    mutable.Map.empty[Symbol, StaticForwarderClass]
+  protected val generatedMirrorClasses = mutable.Map.empty[Symbol, MirrorClass]
 
-  protected case class StaticForwarderClass(
+  protected case class MirrorClass(
       defn: nir.Defn.Class,
       forwarders: Seq[nir.Defn.Define]
   )
@@ -124,6 +123,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genReflectiveInstantiation(cd)
       genClassFields(cd)
       genMethods(cd)
+      genMirrorClass(cd)
 
       buf += {
         if (sym.isScalaModule) {
@@ -557,11 +557,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val methods = cd.impl.body.flatMap {
         case dd: DefDef => genMethod(dd)
         case _          => Nil
-
       }
-      val forwarders = genStaticMethodForwarders(cd, methods)
       buf ++= methods
-      buf ++= forwarders
+      buf ++= genStaticMethodForwarders(cd, methods)
+      buf ++= genTopLevelExports(cd)
     }
 
     private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
@@ -773,26 +772,20 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodAttrs(sym: Symbol): Attrs = {
       val inlineAttrs =
-        if (sym.isBridge || sym.hasFlag(ACCESSOR)) {
-          Seq(Attr.AlwaysInline)
-        } else {
-          sym.annotations.collect {
-            case ann if ann.symbol == NoInlineClass     => Attr.NoInline
-            case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-            case ann if ann.symbol == InlineClass       => Attr.InlineHint
-          }
-        }
-      val stubAttrs =
-        sym.annotations.collect {
-          case ann if ann.symbol == StubClass => Attr.Stub
-        }
-      val optAttrs =
-        sym.annotations.collect {
-          case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
-          case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
+        if (sym.isBridge || sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
+        else Nil
+
+      val annotatedAttrs =
+        sym.annotations.map(_.symbol).collect {
+          case NoInlineClass     => Attr.NoInline
+          case AlwaysInlineClass => Attr.AlwaysInline
+          case InlineClass       => Attr.InlineHint
+          case StubClass         => Attr.Stub
+          case NoOptimizeClass   => Attr.NoOpt
+          case NoSpecializeClass => Attr.NoSpecialize
         }
 
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
+      Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
     }
 
     def genMethodBody(
@@ -925,7 +918,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
    *  the same tests as the JVM back-end.
    */
   private def isCandidateForForwarders(sym: Symbol): Boolean = {
-    !settings.noForwarders && sym.isStatic && !isImplClass(sym) && {
+    !settings.noForwarders.value && sym.isStatic && !isImplClass(sym) && {
       // Reject non-top-level objects unless opted in via the appropriate option
       scalaNativeOpts.genStaticForwardersForNonTopLevelObjects ||
       !sym.name.containsChar('$') // this is the same test that scalac performs
@@ -1074,23 +1067,34 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   ): Seq[Defn] = {
     val sym = td.symbol
     if (!isCandidateForForwarders(sym)) Nil
-    else if (sym.isModuleClass) {
-      if (!sym.linkedClassOfClass.exists) {
-        val forwarders = genStaticForwardersFromModuleClass(Nil, sym)
-        if (forwarders.nonEmpty) {
-          val classDefn = Defn.Class(
-            attrs = Attrs.None,
-            name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
-            parent = Some(Rt.Object.name),
-            traits = Nil
-          )(td.pos)
-          val forwarderClass = StaticForwarderClass(classDefn, forwarders)
-          generatedStaticForwarderClasses += sym -> forwarderClass
-        }
-      }
-      Nil
-    } else {
-      genStaticForwardersForClassOrInterface(existingMethods, sym)
+    else if (sym.isModuleClass) Nil
+    else genStaticForwardersForClassOrInterface(existingMethods, sym)
+  }
+
+  /** Create a mirror class for top level module that has no defined companion
+   *  class. A mirror class is a class containing only static methods that
+   *  forward to the corresponding method on the MODULE instance of the given
+   *  Scala object. It will only be generated if there is no companion class: if
+   *  there is, an attempt will instead be made to add the forwarder methods to
+   *  the companion class.
+   */
+  private def genMirrorClass(cd: ClassDef) = {
+    val sym = cd.symbol
+    // phase travel to pickler required for isNestedClass (looks at owner)
+    val isTopLevelModuleClass = exitingPickler {
+      sym.isModuleClass && !sym.isNestedClass
+    }
+    if (isTopLevelModuleClass && sym.companionClass == NoSymbol) {
+      val classDefn = Defn.Class(
+        attrs = Attrs.None,
+        name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
+        parent = Some(Rt.Object.name),
+        traits = Nil
+      )(cd.pos)
+      generatedMirrorClasses += sym -> MirrorClass(
+        classDefn,
+        genStaticForwardersFromModuleClass(Nil, sym)
+      )
     }
   }
 

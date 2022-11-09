@@ -12,7 +12,7 @@ import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.junit.utils._, AssertThrows.assertThrows, ThrowsHelper._
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class MatcherTest {
 
@@ -527,8 +527,10 @@ class MatcherTest {
 
     assertEquals(m.groupCount, 2)
 
-    assertThrowsAnd(classOf[IllegalStateException], m.group)(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.group
     )
 
     assertTrue(m.find())
@@ -536,8 +538,10 @@ class MatcherTest {
     assertEquals(m.group(0), "a12z")
     assertEquals(m.group(1), "1")
     assertEquals(m.group(2), "2")
-    assertThrowsAnd(classOf[IndexOutOfBoundsException], m.group(42))(
-      _.getMessage == "No group 42"
+    assertThrows(
+      "No group 42",
+      classOf[IndexOutOfBoundsException],
+      m.group(42)
     )
 
     assertTrue(m.find())
@@ -719,8 +723,10 @@ class MatcherTest {
     assertTrue(m.find())
     assertEquals(m.group("S"), "Montreal, Canada")
     assertEquals(m.group("D"), "Lausanne, Switzerland")
-    assertThrowsAnd(classOf[IllegalStateException], m.group("foo"))(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.group("foo")
     )
   }
 
@@ -734,8 +740,10 @@ class MatcherTest {
     assertTrue("A1", m.find())
     assertTrue("A2", m.group("S") == "Montreal, Canada")
     assertTrue("A3", m.group("D") == "Lausanne, Switzerland")
-    assertThrowsAnd(classOf[IllegalStateException], m.group("foo"))(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.group("foo")
     )
   }
 
@@ -877,12 +885,16 @@ class MatcherTest {
   @Test def startEndIndices(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "012345_a12z_012345")
 
-    assertThrowsAnd(classOf[IllegalStateException], m.start())(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.start()
     )
 
-    assertThrowsAnd(classOf[IllegalStateException], m.end())(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.end()
     )
 
     assertTrue(m.find())
@@ -899,12 +911,16 @@ class MatcherTest {
     assertEquals(m.start(2), 9)
     assertEquals(m.end(2), 10)
 
-    assertThrowsAnd(classOf[IndexOutOfBoundsException], m.start(42))(
-      _.getMessage == "No group 42"
+    assertThrows(
+      "No group 42",
+      classOf[IndexOutOfBoundsException],
+      m.start(42)
     )
 
-    assertThrowsAnd(classOf[IndexOutOfBoundsException], m.end(42))(
-      _.getMessage == "No group 42"
+    assertThrows(
+      "No group 42",
+      classOf[IndexOutOfBoundsException],
+      m.end(42)
     )
   }
 
@@ -958,12 +974,16 @@ class MatcherTest {
     assertEquals(m.start("D"), 25)
     assertEquals(m.end("D"), 46)
 
-    assertThrowsAnd(classOf[IllegalStateException], m.start("foo"))(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.start("foo")
     )
 
-    assertThrowsAnd(classOf[IllegalStateException], m.end("foo"))(
-      _.getMessage == "No match found"
+    assertThrows(
+      "No match found",
+      classOf[IllegalStateException],
+      m.end("foo")
     )
   }
 

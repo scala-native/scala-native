@@ -2,6 +2,8 @@ package java.lang.process
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
 import java.lang.ProcessBuilder._
+
+import java.util.ArrayList
 import java.util.ScalaOps._
 import java.util.concurrent.TimeUnit
 import java.nio.file.WindowsException
@@ -151,16 +153,18 @@ object WindowsProcess {
         )
     }
 
-    val cmd = builder.command().scalaOps.toSeq
+    val cmd = builder.command()
     val dir = toCWideStringUTF16LE(builder.directory().getAbsolutePath())
-    val argv = toCWideStringUTF16LE(cmd.mkString(" "))
+    val argv = toCWideStringUTF16LE(cmd.scalaOps.mkString("", " ", ""))
     val envp = nullTerminatedBlock {
-      builder
+      val list = new ArrayList[String]
+      val it = builder
         .environment()
         .entrySet()
+        .iterator()
         .scalaOps
-        .toSeq
-        .map(e => s"${e.getKey()}=${e.getValue()}")
+        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
+      list
     }.asInstanceOf[Ptr[Byte]]
 
     // stackalloc is documented as returning zeroed memory
@@ -313,12 +317,13 @@ object WindowsProcess {
   }
 
   @inline private def nullTerminatedBlock(
-      seq: collection.Seq[String]
+      list: java.util.List[String]
   )(implicit z: Zone): CWString = {
     val NUL = 0.toChar.toString
-    val block = toCWideStringUTF16LE(seq.mkString("", NUL, NUL))
+    val block = toCWideStringUTF16LE(list.scalaOps.mkString("", NUL, NUL))
 
-    val totalSize = (seq :+ "").foldLeft(0)(_ + _.size + 1) - 1
+    list.add("")
+    val totalSize = list.scalaOps.foldLeft(0)(_ + _.size + 1) - 1
     val blockEnd = block + totalSize
     assert(!blockEnd == 0.toUShort, s"not null terminated got ${!blockEnd}")
     assert(

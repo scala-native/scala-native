@@ -8,9 +8,12 @@ import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build.{Build, BuildException, Discover}
+import scala.scalanative.build._
 import scala.scalanative.linker.LinkingException
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
+  ScalaNativeCrossVersion => _,
+  _
+}
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
@@ -119,7 +122,9 @@ object ScalaNativePluginInternal {
       workdir
     },
     nativeConfig := {
-      nativeConfig.value
+      val config = nativeConfig.value
+      config
+        // Use overrides defined in legacy setting keys
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
@@ -133,28 +138,61 @@ object ScalaNativePluginInternal {
     },
     nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
-      val outpath = (nativeLink / artifactPath).value
 
       val config = {
-        val mainClass = selectMainClass.value.getOrElse {
-          throw new MessageOnlyException("No main class detected.")
+        val mainClass = nativeConfig.value.buildTarget match {
+          case BuildTarget.Application =>
+            selectMainClass.value.orElse {
+              throw new MessageOnlyException("No main class detected.")
+            }
+          case _: BuildTarget.Library => None
         }
-
         val cwd = nativeWorkdir.value.toPath
 
         val logger = streams.value.log.toLogger
-        build.Config.empty
-          .withLogger(logger)
-          .withMainClass(mainClass)
-          .withClassPath(classpath)
-          .withWorkdir(cwd)
-          .withCompilerConfig(nativeConfig.value)
+
+        val baseConfig =
+          build.Config.empty
+            .withLogger(logger)
+            .withClassPath(classpath)
+            .withWorkdir(cwd)
+            .withCompilerConfig(nativeConfig.value)
+
+        mainClass.foldLeft(baseConfig)(_.withMainClass(_))
       }
 
-      def buildNew(): Unit = {
-        interceptBuildException {
-          Build.build(config, outpath.toPath)(sharedScope)
+      val outpath = {
+        val originalOutPath = (nativeLink / artifactPath).value.toPath()
+        val directory = Option(originalOutPath.getParent())
+          .getOrElse(originalOutPath.getRoot())
+        val filename = originalOutPath.getFileName().toString()
+        val baseFilename = filename.lastIndexOf(".") match {
+          case -1  => filename
+          case idx => filename.substring(0, idx)
         }
+
+        def compilerConfig = config.compilerConfig
+        val ext = compilerConfig.buildTarget match {
+          case BuildTarget.Application =>
+            if (config.targetsWindows) ".exe" else ""
+          case BuildTarget.LibraryDynamic =>
+            if (config.targetsWindows) ".dll"
+            else if (config.targetsMac) ".dylib"
+            else ".so"
+          case BuildTarget.LibraryStatic =>
+            if (config.targetsWindows) ".lib"
+            else ".a"
+        }
+        val namePrefix = compilerConfig.buildTarget match {
+          case BuildTarget.Application => ""
+          case _: BuildTarget.Library =>
+            if (config.targetsWindows) "" else "lib"
+        }
+        directory.resolve(s"$namePrefix${baseFilename}$ext").toFile()
+      }
+
+      def buildNew(): Unit = interceptBuildException {
+        Build.build(config, outpath.toPath)(sharedScope)
       }
 
       def buildIfChanged(): Unit = {
@@ -238,6 +276,11 @@ object ScalaNativePluginInternal {
         else Some("Nonzero exit code: " + exitCode)
 
       message.foreach(sys.error)
+    },
+    runMain := {
+      throw new MessageOnlyException(
+        "`runMain` is not supported in Scala Native"
+      )
     }
   )
 

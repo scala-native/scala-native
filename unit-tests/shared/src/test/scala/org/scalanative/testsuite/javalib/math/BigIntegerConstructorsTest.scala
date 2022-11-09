@@ -16,8 +16,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-// import org.scalajs.testsuite.utils.Platform
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class BigIntegerConstructorsTest {
 

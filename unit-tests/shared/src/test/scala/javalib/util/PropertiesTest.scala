@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import Utils._
 
 import org.scalanative.testsuite.utils.Platform._
@@ -178,7 +178,7 @@ class PropertiesTest {
     assertThrows(classOf[NullPointerException], properties.put("any", null))
   }
 
-  @Test def nonStringValues(): Unit = {
+  @deprecated @Test def nonStringValues(): Unit = {
     val properties = new Properties
 
     properties.put("age", new Integer(18))

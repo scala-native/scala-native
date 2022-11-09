@@ -8,7 +8,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 import java.util.{Arrays, Comparator}
@@ -988,7 +988,9 @@ class ArraysTest {
     assertFalse(Arrays.equals(a1, Array[Double](1.1, -7.4, 10.0, 20.0)))
   }
 
-  @Test def equals_AnyRefs(): Unit = {
+  // An object with model for `equals_AnyRefs` test.
+  // Extracted due to runtime type-test warnings in Scala 3.2.1+
+  private object EqualsAnyRefs {
     // scalastyle:off equals.hash.code
     class A(private val x: Int) {
       override def equals(that: Any): Boolean = that match {
@@ -997,7 +999,10 @@ class ArraysTest {
       }
     }
     // scalastyle:on equals.hash.code
+  }
 
+  @Test def equals_AnyRefs(): Unit = {
+    import EqualsAnyRefs._
     def A(x: Int): A = new A(x)
 
     val a1 = Array[AnyRef](A(1), A(-7), A(10))

@@ -14,20 +14,11 @@ class ServerSocket(
   private var bound = false
   private var closed = false
 
-  if (bindAddr == null) {
-    bindAddr = InetAddress.wildcard
-  }
+  if (bindAddr == null)
+    bindAddr = SocketHelpers.getWildcardAddress()
 
-  if (port >= 0) {
+  if (port >= 0)
     startup()
-  }
-
-  def startup(): Unit = {
-    impl.create(true)
-    bind(new InetSocketAddress(bindAddr, port), backlog)
-    created = true
-    bound = true
-  }
 
   def this() =
     this(-1, 50, null)
@@ -38,15 +29,24 @@ class ServerSocket(
   def this(port: Int, backlog: Int) =
     this(port, backlog, null)
 
-  private def checkClosedAndCreate: Unit = {
-    if (closed) {
-      throw new SocketException("Socket is closed")
-    }
+  private def create(): Unit = {
+    // Sockets & ServerSockets always stream.
+    impl.create(stream = true)
+    created = true
+  }
 
-    if (!created) {
-      impl.create(true)
-      created = true
-    }
+  private def startup(): Unit = {
+    this.create()
+    bind(new InetSocketAddress(bindAddr, port), backlog)
+    bound = true
+  }
+
+  private def checkClosedAndCreate: Unit = {
+    if (closed)
+      throw new SocketException("Socket is closed")
+
+    if (!created)
+      this.create()
   }
 
   def accept: Socket = {

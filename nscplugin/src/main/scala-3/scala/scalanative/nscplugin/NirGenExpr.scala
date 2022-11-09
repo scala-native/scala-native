@@ -1132,33 +1132,34 @@ trait NirGenExpr(using Context) {
       assert(!sym.isStaticMethod, sym)
       val owner = sym.owner.asClass
       val name = genMethodName(sym)
+      val isExtern = sym.isExtern
 
       val origSig = genMethodSig(sym)
       val sig =
-        if (sym.isExtern) genExternMethodSig(sym)
+        if isExtern then genExternMethodSig(sym)
         else origSig
       val args = genMethodArgs(sym, argsp)
 
-      val isStaticCall = statically || owner.isStruct || sym.isExtern
+      val isStaticCall = statically || owner.isStruct || isExtern
       val method =
         if (isStaticCall) Val.Global(name, nir.Type.Ptr)
         else
           val Global.Member(_, sig) = name: @unchecked
           buf.method(self, sig, unwind)
       val values =
-        if (sym.isExtern) args
+        if isExtern then args
         else self +: args
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!sym.isExtern) res
+      if !isExtern then res
       else {
         val Type.Function(_, retty) = origSig
         fromExtern(retty, res)
       }
     }
 
-    private def genApplyStaticMethod(
+    def genApplyStaticMethod(
         sym: Symbol,
         receiver: Symbol,
         argsp: Seq[Tree]
@@ -1451,14 +1452,28 @@ trait NirGenExpr(using Context) {
     }
 
     def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] = {
-      if (!sym.isExtern) genSimpleArgs(argsp)
+      if !sym.isExtern then genSimpleArgs(argsp)
       else {
         val res = Seq.newBuilder[Val]
         argsp.zip(sym.paramInfo.paramInfoss.flatten).foreach {
           case (argp, paramTpe) =>
             given nir.Position = argp.span
             val externType = genExternType(paramTpe.finalResultType)
-            res += toExtern(externType, genExpr(argp))
+            val arg = (genExpr(argp), Type.box.get(externType)) match {
+              case (value @ Val.Null, Some(unboxedType)) =>
+                externType match {
+                  case Type.Ptr | _: Type.RefKind => value
+                  case _ =>
+                    report.warning(
+                      s"Passing null as argument of type ${paramTpe.show} to the extern method is unsafe. " +
+                        s"The argument would be unboxed to primitive value of type $externType.",
+                      argp.srcPos
+                    )
+                    Val.Zero(unboxedType)
+                }
+              case (value, _) => value
+            }
+            res += toExtern(externType, arg)
         }
         res.result()
       }
@@ -2214,7 +2229,13 @@ trait NirGenExpr(using Context) {
       def resolveFunction(tree: Tree): Val = tree match {
         case Typed(expr, _) => resolveFunction(expr)
         case Block(_, expr) => resolveFunction(expr)
-        case fn @ Closure(_, target, _) =>
+        case fn @ Closure(env, target, _) =>
+          if env.nonEmpty then
+            report.error(
+              s"Closing over local state of ${env.map(_.symbol.show).mkString(", ")} in function transformed to CFuncPtr results in undefined behaviour.",
+              fn.srcPos
+            )
+
           val fnRef = genClosure(fn)
           val Type.Ref(className, _, _) = fnRef.ty: @unchecked
 

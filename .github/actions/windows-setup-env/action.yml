@@ -4,6 +4,9 @@ inputs:
   scala-version:
     description: "Scala version used in the tests"
     required: true
+  java-version:
+    description: "Java version to use in tests"
+    default: "8"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries"
@@ -11,6 +14,10 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: ${{inputs.java-version}}
     # We need to set proper Pagefile limits in advance.
     # Github actions default page file size is quite small,
     # it's not enough to run all tests, especially when using None GC.
@@ -20,7 +27,7 @@ runs:
     # it does not matter whether it would be used or not, the amount of all
     # reserved memory cannot exceed the amount of physically available storage.
     - name: Configure Pagefile
-      uses: al-cheb/configure-pagefile-action@v1.2
+      uses: al-cheb/configure-pagefile-action@v1.3
       with:
         minimum-size: 4GB
         maximum-size: 16GB
@@ -32,10 +39,10 @@ runs:
       id: resolve-env
       shell: pwsh
       run: |
-        echo "::set-output name=ProgramFiles::${env:ProgramFiles}"
-        echo "::set-output name=LocalAppData::${env:LocalAppData}"
-        echo "::set-output name=UserProfile::${env:UserProfile}"
-        echo "::set-output name=VcpkgLibs::${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static"
+        "ProgramFiles=${env:ProgramFiles}" >> $env:GITHUB_OUTPUT
+        "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
+        "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
+        "VcpkgLibs=${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static" >> $env:GITHUB_OUTPUT
         if ("${{inputs.scala-version}}".StartsWith("2.")) {
           echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
         } else {
@@ -44,7 +51,7 @@ runs:
 
     - name: Cache dependencies
       id: cache-deps
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\

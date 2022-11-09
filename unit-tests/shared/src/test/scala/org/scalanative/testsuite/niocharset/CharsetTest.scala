@@ -9,7 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
-import scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class CharsetTest {

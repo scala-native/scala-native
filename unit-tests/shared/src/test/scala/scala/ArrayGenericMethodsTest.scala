@@ -2,7 +2,7 @@ package scala
 
 import org.junit.Test
 import org.junit.Assert.{assertEquals, _}
-import scala.scalanative.junit.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 /** Tests for generic array methods overridden in ScalaRunTime */
 class ArrayGenericMethodsTest {

@@ -7,13 +7,22 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 
 object Commands {
-  lazy val values = Seq(testAll, testTools, testRuntime, testMima, testScripted)
+  lazy val values = Seq(
+    testAll,
+    testTools,
+    testRuntime,
+    testMima,
+    testScripted,
+    publishLocalDev,
+    publishRelease
+  )
 
   lazy val testAll = Command.command("test-all") {
     "test-tools" ::
       "test-mima" ::
       "test-runtime" ::
-      "test-scripted" :: _
+      "test-scripted" ::
+      "publish-local-dev" :: _
   }
 
   lazy val testRuntime = projectVersionCommand("test-runtime") {
@@ -50,22 +59,9 @@ object Commands {
 
   lazy val testMima = projectVersionCommand("test-mima") {
     case (version, state) =>
-      val tests = List(
-        Build.util,
-        nir,
-        tools,
-        testRunner,
-        testInterface,
-        testInterfaceSbtDefs,
-        junitRuntime,
-        nativelib,
-        clib,
-        posixlib,
-        windowslib,
-        auxlib,
-        javalib,
-        scalalib
-      ).map(_.forBinaryVersion(version).id)
+      val tests = Build.publishedMultiScalaProjects
+        .diff(Build.compilerPlugins)
+        .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/mimaReportBinaryIssues")
 
       tests ::: state
@@ -82,7 +78,8 @@ object Commands {
         s"""set sbtScalaNative/scriptedLaunchOpts := {
             |  (sbtScalaNative/scriptedLaunchOpts).value
             |   .filterNot(_.startsWith("-Dscala.version=")) :+
-            |   "-Dscala.version=$version"
+            |   "-Dscala.version=$version" :+
+            |   "-Dscala213.version=${ScalaVersions.scala213}"
             |}""".stripMargin
       // Scala 3 is supported since sbt 1.5.0
       // Older versions set incorrect binary version
@@ -115,6 +112,47 @@ object Commands {
 
         fn(version, state)
     }
+  }
+
+  private def projectFullVersionCommand(
+      name: String
+  )(fn: (String, State) => State): Command = {
+    Command.args(name, "<args>") {
+      case (state, args) =>
+        val version = args.headOption
+          .getOrElse(
+            "Used command needs explicit full Scala version as an argument"
+          )
+
+        fn(version, state)
+    }
+  }
+
+  lazy val publishLocalDev = {
+    projectFullVersionCommand("publish-local-dev") {
+      case (version, state) =>
+        List(
+          // Sbt plugin and it's dependencies
+          s"++${ScalaVersions.scala212} publishLocal",
+          // Artifact for current version
+          s"++${version} publishLocal"
+        ) ::: state
+    }
+  }
+
+  lazy val publishRelease = Command.command("publishRelease") { state =>
+    val isSnapshot = state
+      .getSetting(Keys.isSnapshot)
+      .getOrElse(sys.error("Cannot resolve isSnapshot setting"))
+
+    import ScalaVersions._
+    val publishEachVersion = for {
+      version <- List(scala211, scala212, scala213, scala3)
+    } yield
+      if (isSnapshot) s"++$version; publish; crossPublish"
+      else s"++$version; publishSigned; crossPublishSigned"
+
+    "clean" :: publishEachVersion ::: state
   }
 
 }

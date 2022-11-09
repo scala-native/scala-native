@@ -6,6 +6,15 @@ import scalanative.linker._
 import scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
+  private val maxInlineSize =
+    config.compilerConfig.optimizerConfig.maxInlineSize
+      .getOrElse(8)
+  private val maxCallerSize =
+    config.compilerConfig.optimizerConfig.maxCallerSize
+      .getOrElse(8192)
+  private val maxInlineDepth =
+    config.compilerConfig.optimizerConfig.maxInlineDepth
+
   def shallInline(name: Global, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result
@@ -28,7 +37,7 @@ trait Inline { self: Interflow =>
             false
         }
         def isSmall =
-          defn.insts.size <= 8
+          defn.insts.size <= maxInlineSize
         val isExtern =
           defn.attrs.isExtern
         def hasVirtualArgs =
@@ -46,9 +55,12 @@ trait Inline { self: Interflow =>
         def isBlacklisted =
           this.isBlacklisted(name)
         def calleeTooBig =
-          defn.insts.size > 8192
+          defn.insts.size > maxCallerSize
         def callerTooBig =
-          mergeProcessor.currentSize() > 8192
+          mergeProcessor.currentSize() > maxCallerSize
+        def inlineDepthLimitExceeded =
+          maxInlineDepth.exists(_ > state.inlineDepth)
+
         def hasUnwind = defn.insts.exists {
           case Inst.Let(_, _, unwind)   => unwind ne Next.None
           case Inst.Throw(_, unwind)    => unwind ne Next.None
@@ -65,7 +77,7 @@ trait Inline { self: Interflow =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
         lazy val shallNot =
-          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind
+          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded
         withLogger { logger =>
           if (shall) {
             if (shallNot) {
@@ -85,6 +97,8 @@ trait Inline { self: Interflow =>
               if (calleeTooBig) {
                 logger("* callee is too big")
               }
+              if (inlineDepthLimitExceeded)
+                logger("* inline depth limit exceeded")
             }
           } else {
             logger(
@@ -110,7 +124,7 @@ trait Inline { self: Interflow =>
   }
 
   def adapt(args: Seq[Val], sig: Type)(implicit state: State): Seq[Val] = {
-    val Type.Function(argtys, _) = sig
+    val Type.Function(argtys, _) = sig: @unchecked
 
     // Varargs signature might appear to have less
     // argument types than arguments at the call site.
@@ -143,7 +157,7 @@ trait Inline { self: Interflow =>
         case _: build.Mode.Release =>
           getDone(name)
       }
-      val Type.Function(_, origRetTy) = defn.ty
+      val Type.Function(_, origRetTy) = defn.ty: @unchecked
 
       val inlineArgs = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
@@ -198,7 +212,7 @@ trait Inline { self: Interflow =>
           rest
             .collectFirst {
               case block if block.cf.isInstanceOf[Inst.Ret] =>
-                val Inst.Ret(value) = block.cf
+                val Inst.Ret(value) = block.cf: @unchecked
                 emit ++= block.toInsts().init
                 (value, block.end)
             }
@@ -210,7 +224,7 @@ trait Inline { self: Interflow =>
       state.emit ++= emit
       state.inherit(endState, res +: args)
 
-      val Type.Function(_, retty) = defn.ty
+      val Type.Function(_, retty) = defn.ty: @unchecked
       adapt(res, retty)
     }
 }
