@@ -16,6 +16,8 @@ import ju.concurrent.TimeUnit
 import ju.ArrayList
 import ju.ScalaOps._
 
+import scala.annotation.tailrec
+
 import scalanative.meta.LinktimeInfo
 
 import scalanative.unsafe._
@@ -28,6 +30,7 @@ import scalanative.posix.pollOps._
 import scalanative.posix.pollEvents
 
 import scalanative.posix.signal.{kill, SIGKILL, SIGTERM}
+import scalanative.posix.spawn._
 import scalanative.posix.string.strerror
 import scalanative.posix.sys.wait._
 
@@ -327,13 +330,33 @@ private[lang] class UnixProcessGen2 private (
       closeProcessStreams()
       Some(askZombiesForTheirExitStatus())
     }
-  } // macOS -- kevent64
-
-} // class
+  }
+}
 
 object UnixProcessGen2 {
 
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
+    /* If builder.directory is not null, it specifies a new working
+     * directory for the process (chdir()).
+     *
+     * POSIX 2018 gives no way to change the working directory in
+     * file_actions, so the legacy fork() path must be taken.
+     * POXIX 2023 should allow changing the working directory.
+     *
+     * Checking for ".", which callers tend to specify, is an optimization
+     * to elide changing directory to the what is already the working
+     * directory.
+     */
+
+    val dir = builder.directory()
+    if ((dir != null) && (dir.toString != ".")) {
+      forkChild(builder)
+    } else {
+      spawnChild(builder)
+    }
+  }
+
+  private def forkChild(builder: ProcessBuilder)(implicit z: Zone): Process = {
     val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
     val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
     val errfds =
@@ -421,6 +444,197 @@ object UnixProcessGen2 {
     }
   }
 
+  private def spawnChild(builder: ProcessBuilder)(implicit z: Zone): Process = {
+    val cmd = builder.command()
+    if (cmd.get(0).indexOf('/') >= 0) {
+      spawnCommand(builder, cmd, attempt = 1)
+    } else {
+      spawnFollowPath(builder)
+    }
+  }
+
+  private def spawnCommand(
+      builder: ProcessBuilder,
+      localCmd: ju.List[String],
+      attempt: Int
+  )(implicit z: Zone): Process = {
+    val pidPtr = stackalloc[pid_t]()
+
+    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val errfds =
+      if (builder.redirectErrorStream()) outfds
+      else stackalloc[CInt](2.toUInt)
+
+    throwOnError(unistd.pipe(infds), s"Couldn't create infds pipe.")
+    throwOnError(unistd.pipe(outfds), s"Couldn't create outfds pipe.")
+    if (!builder.redirectErrorStream())
+      throwOnError(unistd.pipe(errfds), s"Couldn't create errfds pipe.")
+
+    val exec = localCmd.get(0)
+    val dir = builder.directory()
+    val argv = nullTerminate(localCmd)
+    val envp = nullTerminate {
+      val list = new ArrayList[String]
+      builder
+        .environment()
+        .entrySet()
+        .iterator()
+        .scalaOps
+        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
+      list
+    }
+
+    /* Maintainers:
+     *     There is a performance optimization in the walkPath() method
+     *     of spawnFollowPath() which relies upon this parent being able
+     *     to "see" the same set of PATH files and their attributes
+     *     as the child. This is a valid assumption through Java 19
+     *     as ProceesBuilder specifies no way to change process ids
+     *     or groups.
+     *
+     *     If Java develops this capability in the future,
+     *     please consider that optimization when changing fileActions,
+     *     particularly POSIX_SPAWN_RESETIDS and POSIX_SPAWN_SETPGROUP.
+     */
+
+    // posix_spawn_file_actions_t takes 80 bytes, so do not stackalloc.
+    val fileActions = alloc[posix_spawn_file_actions_t]()
+    throwOnError(
+      posix_spawn_file_actions_init(fileActions),
+      "posix_spawn_file_actions_init"
+    )
+
+    val unixProcess =
+      try {
+        setupSpawnFDS(
+          fileActions,
+          !infds,
+          builder.redirectInput(),
+          unistd.STDIN_FILENO
+        )
+
+        setupSpawnFDS(
+          fileActions,
+          !(outfds + 1),
+          builder.redirectOutput(),
+          unistd.STDOUT_FILENO
+        )
+
+        setupSpawnFDS(
+          fileActions,
+          !(errfds + 1),
+          if (builder.redirectErrorStream()) Redirect.PIPE
+          else builder.redirectError(),
+          unistd.STDERR_FILENO
+        )
+
+        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
+        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
+        parentFds.add(!outfds) // parent's stdin - read, in child
+        if (!builder.redirectErrorStream())
+          parentFds.add(!errfds) // parent's stderr - read, in child
+
+        parentFds.forEach { fd =>
+          throwOnError(
+            posix_spawn_file_actions_addclose(fileActions, fd),
+            s"posix_spawn_file_actions_addclose fd: ${fd}"
+          )
+        }
+
+        /* This will exec binary executables.
+         * Some shells (bash, ???) will also execute scripts with initial
+         * shebang (#!).
+         */
+        val status = posix_spawn(
+          pidPtr,
+          toCString(exec),
+          fileActions,
+          null, // attrp
+          argv,
+          envp
+        )
+
+        if (status == 0) {
+          new UnixProcessGen2(!pidPtr, builder, infds, outfds, errfds)
+        } else if (!(status == ENOEXEC) && (attempt == 1)) {
+          val msg = fromCString(strerror(status))
+          throw new IOException(s"Unable to posix_spawn process: ${msg}")
+        } else { // try falling back to shell script
+          val fallbackCmd = new ArrayList[String](3)
+          fallbackCmd.add("/bin/sh")
+          fallbackCmd.add("-c")
+          fallbackCmd.add(exec)
+
+          spawnCommand(builder, fallbackCmd, attempt = 2)
+        }
+      } finally {
+        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
+        childFds.add(!infds) // child's stdin read, in parent
+        childFds.add(!(outfds + 1)) // child's stdout write, in parent
+        if (!builder.redirectErrorStream())
+          childFds.add(!(errfds + 1)) // child's stderr write, in parent
+
+        childFds.forEach(unistd.close(_))
+
+        throwOnError(
+          posix_spawn_file_actions_destroy(fileActions),
+          "posix_spawn_file_actions_destroy"
+        )
+      }
+
+    unixProcess
+  }
+
+  private def spawnFollowPath(
+      builder: ProcessBuilder
+  )(implicit z: Zone): Process = {
+
+    @tailrec
+    def walkPath(iter: UnixPathIterator): Process = {
+      val cmd = builder.command()
+      val cmd0 = cmd.get(0)
+
+      if (!iter.hasNext()) {
+        val errnoText = fromCString(strerror(errno))
+        val msg = s"Cannot run program '${cmd0}': error=${errno}, ${errnoText}"
+        throw new IOException(msg)
+      } else {
+        /* Maintainers:
+         *     Please see corresponding note in method spawnCommand().
+         *
+         *     Checking that the fully qualified file exists and is
+         *     executable a performance optimization.
+         *
+         *     posix_spawn() is the ultimate arbiter of which files
+         *     the child can and can not execute. posix_spawn() is
+         *     relatively expensive to be called on files "known" to
+         *     either not exist or not be executable.
+         *
+         *    The "canExecute()" test required/assumes that the parent
+         *    can see and execute the same set of files.  This is a
+         *    reasonable precondition. Java 19 has no way to change child
+         *    id or group. spawnCommand() takes care to not specify
+         *    posix_spawn() options for changes which Java 19 does not
+         *    specify.
+         */
+
+        val fName = s"${iter.next()}/${cmd0}"
+        val f = new File(fName)
+        if (!f.canExecute()) {
+          walkPath(iter)
+        } else {
+          val newCmdList = new ArrayList[String](cmd)
+          newCmdList.set(0, fName)
+
+          spawnCommand(builder, newCmdList, attempt = 1)
+        }
+      }
+    }
+
+    walkPath(new UnixPathIterator(builder.environment()))
+  }
+
   private def throwOnError(rc: CInt, msg: => String): CInt = {
     if (rc != 0) {
       throw new IOException(s"$msg Error code: $rc, Error number: $errno")
@@ -478,6 +692,60 @@ object UnixProcessGen2 {
     }
   }
 
+  private def setupSpawnFDS(
+      fileActions: Ptr[posix_spawn_file_actions_t],
+      childFd: CInt,
+      redirect: ProcessBuilder.Redirect,
+      procFd: CInt
+  ): Unit = {
+    import fcntl.{open => _, _}
+    redirect.`type`() match {
+      case ProcessBuilder.Redirect.Type.INHERIT =>
+
+      case ProcessBuilder.Redirect.Type.PIPE =>
+        val status =
+          posix_spawn_file_actions_adddup2(fileActions, childFd, procFd)
+        if (status != 0) {
+          throw new IOException(
+            s"Could not adddup2 pipe file descriptor ${procFd}: ${status}"
+          )
+        }
+
+      case r @ ProcessBuilder.Redirect.Type.READ =>
+        val fd = open(redirect.file(), O_RDONLY)
+        // result is error checked in inline open() below.
+
+        val status = posix_spawn_file_actions_adddup2(fileActions, fd, procFd)
+        if (status != 0) {
+          throw new IOException(
+            s"Could not adddup2 read file ${redirect.file()}: ${status}"
+          )
+        }
+
+      case r @ ProcessBuilder.Redirect.Type.WRITE =>
+        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
+        // result is error checked in inline open() below.
+
+        val status = posix_spawn_file_actions_adddup2(fileActions, fd, procFd)
+        if (status != 0) {
+          throw new IOException(
+            s"Could not adddup2 write file ${redirect.file()}: ${status}"
+          )
+        }
+
+      case r @ ProcessBuilder.Redirect.Type.APPEND =>
+        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
+        // result is error checked in inline open() below.
+
+        val status = posix_spawn_file_actions_adddup2(fileActions, fd, procFd)
+        if (status != 0) {
+          throw new IOException(
+            s"Could not adddup2 append file ${redirect.file()}: ${status}"
+          )
+        }
+    }
+  }
+
   def open(f: File, flags: CInt) = Zone { implicit z =>
     fcntl.open(toCString(f.getAbsolutePath()), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
@@ -506,6 +774,36 @@ object UnixProcessGen2 {
         .collect {
           case f if f.canExecute() => f.toString
         }
+    }
+  }
+  private class UnixPathIterator(
+      environment: java.util.Map[String, String]
+  ) extends ju.Iterator[String] {
+    /* The default path here is passing strange Scala Native prior art.
+     * It is preserved to keep compatability  with UnixProcessGen1 and prior
+     * versions of Scala Native.
+     *
+     * For example, Ubuntu Linux bash compiles in:
+     *   PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+     *   // Note that "/usr/local/" comes before (left of) "/usr/".
+     */
+    val path = environment.getOrDefault("PATH", "/bin:/usr/bin:/usr/local/bin")
+
+    val pathElements = path.split(':')
+    val nElements = pathElements.length
+    var lookingAt = 0
+
+    override def hasNext(): Boolean = (lookingAt < nElements)
+
+    override def next(): String = {
+      if (lookingAt >= nElements) {
+        throw new NoSuchElementException()
+      } else {
+        val d = pathElements(lookingAt)
+        lookingAt += 1
+        // "" == "." is a poorly documented Unix PATH quirk/corner_case.
+        if (d.length == 0) "." else d
+      }
     }
   }
 }

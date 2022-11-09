@@ -62,6 +62,15 @@ class ProcessTest {
     checkPathOverride(pb)
   }
 
+  @Test def dirOverride(): Unit = {
+    assumeNotJVMCompliant()
+    assumeFalse("Not tested in Windows", isWindows)
+
+    val pb = new ProcessBuilder("./ls")
+    pb.directory(File(resourceDir))
+    checkPathOverride(pb) // off-label use of checkPathOverride() here.
+  }
+
   @Test def inputAndErrorStream(): Unit = {
     val proc = processForScript(Scripts.err).start()
 
