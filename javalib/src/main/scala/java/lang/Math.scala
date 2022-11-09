@@ -107,6 +107,18 @@ object Math {
     else rem + b
   }
 
+  @alwaysinline def fma(
+      a: scala.Float,
+      b: scala.Float,
+      c: scala.Float
+  ): scala.Float = `llvm.fma.f32`(a, b, c)
+
+  @alwaysinline def fma(
+      a: scala.Double,
+      b: scala.Double,
+      c: scala.Double
+  ): scala.Double = `llvm.fma.f64`(a, b, c)
+
   @alwaysinline def getExponent(a: scala.Float): scala.Int =
     cmath.ilogbf(a)
 
