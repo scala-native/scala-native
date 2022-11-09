@@ -2434,16 +2434,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val owner = sym.owner
       val name = genMethodName(sym)
       val origSig = genMethodSig(sym)
+      val isExtern = owner.isExternModule
       val sig =
-        if (owner.isExternModule) {
+        if (isExtern) {
           genExternMethodSig(sym)
         } else {
           origSig
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct ||
-            owner.isExternModule) {
+        if (isImplClass(owner) || statically || owner.isStruct || isExtern) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name
@@ -2455,7 +2455,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val res = buf.call(sig, method, values, unwind)
 
-      if (!owner.isExternModule) {
+      if (!isExtern) {
         res
       } else {
         val Type.Function(_, retty) = origSig

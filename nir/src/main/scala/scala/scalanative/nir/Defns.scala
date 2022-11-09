@@ -50,7 +50,7 @@ object Defn {
     defns.exists {
       case defn: Defn.Define =>
         val Global.Member(_, sig) = defn.name: @unchecked
-        sig.isClinit
+        sig.isClinit || defn.attrs.isExtern
       case _ => false
     }
   }

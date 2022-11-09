@@ -26,7 +26,7 @@ sealed trait Config {
   def artifactPath: Path
 
   /** Entry point for linking. */
-  def mainClass: String
+  def mainClass: Option[String]
 
   /** Sequence of all NIR locations. */
   def classPath: Seq[Path]
@@ -87,12 +87,17 @@ sealed trait Config {
 
   protected def nameSuffix = if (testConfig) testSuffix else ""
 
-  private[scalanative] def targetsWindows: Boolean = {
+  private[scalanative] lazy val targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||
       customTriple.contains("windows")
     }
   }
+
+  private[scalanative] lazy val targetsMac = Platform.isMac ||
+    compilerConfig.targetTriple.exists { customTriple =>
+      Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
+    }
 }
 
 object Config {
@@ -101,7 +106,7 @@ object Config {
   def empty: Config =
     Impl(
       nativelib = Paths.get(""),
-      mainClass = "",
+      mainClass = None,
       classPath = Seq.empty,
       basedir = Paths.get(""),
       testConfig = false,
@@ -111,7 +116,7 @@ object Config {
 
   private final case class Impl(
       nativelib: Path,
-      mainClass: String,
+      mainClass: Option[String],
       classPath: Seq[Path],
       basedir: Path,
       testConfig: Boolean,
@@ -122,7 +127,7 @@ object Config {
       copy(nativelib = value)
 
     def withMainClass(value: String): Config =
-      copy(mainClass = value)
+      copy(mainClass = Option(value).filter(_.nonEmpty))
 
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
@@ -142,12 +147,26 @@ object Config {
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
 
-    override def workdir: Path =
+    override lazy val workdir: Path =
       basedir.resolve(s"native$nameSuffix")
 
-    override def artifactPath: Path = {
-      val ext = if (Platform.isWindows) ".exe" else ""
-      basedir.resolve(s"${compilerConfig.basename}$nameSuffix$ext")
+    override lazy val artifactPath: Path = {
+      val ext = compilerConfig.buildTarget match {
+        case BuildTarget.Application =>
+          if (targetsWindows) ".exe" else ""
+        case BuildTarget.LibraryDynamic =>
+          if (targetsWindows) ".dll"
+          else if (targetsMac) ".dylib"
+          else ".so"
+        case BuildTarget.LibraryStatic =>
+          if (targetsWindows) ".lib"
+          else ".a"
+      }
+      val namePrefix = compilerConfig.buildTarget match {
+        case BuildTarget.Application => ""
+        case _: BuildTarget.Library  => if (targetsWindows) "" else "lib"
+      }
+      basedir.resolve(s"$namePrefix${compilerConfig.basename}$nameSuffix$ext")
     }
 
     override def toString: String = {

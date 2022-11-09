@@ -154,9 +154,9 @@ trait NirGenStat(using Context) {
         throw new FatalError("Illegal tree in body of genMethods():" + tree)
     }
 
-    val forwarders = genStaticMethodForwarders(td, methods)
     generatedDefns ++= methods
-    generatedDefns ++= forwarders
+    generatedDefns ++= genStaticMethodForwarders(td, methods)
+    generatedDefns ++= genTopLevelExports(td)
   }
 
   private def genMethod(dd: DefDef): Option[Defn] = {
@@ -212,31 +212,21 @@ trait NirGenStat(using Context) {
 
   private def genMethodAttrs(sym: Symbol): nir.Attrs = {
     val inlineAttrs =
-      if (sym.is(Bridge) || sym.is(Accessor)) {
-        Seq(Attr.AlwaysInline)
-      } else {
-        sym.annotations.map(_.symbol).collect {
-          case s if s == defnNir.NoInlineClass     => Attr.NoInline
-          case s if s == defnNir.AlwaysInlineClass => Attr.AlwaysInline
-          case s if s == defnNir.InlineClass       => Attr.InlineHint
-        }
+      if (sym.is(Bridge) || sym.is(Accessor)) Seq(Attr.AlwaysInline)
+      else Nil
+
+    val annotatedAttrs =
+      sym.annotations.map(_.symbol.typeRef).collect {
+        case defnNir.NoInlineType     => Attr.NoInline
+        case defnNir.AlwaysInlineType => Attr.AlwaysInline
+        case defnNir.InlineType       => Attr.InlineHint
+        case defnNir.NoOptimizeType   => Attr.NoOpt
+        case defnNir.NoSpecializeType => Attr.NoSpecialize
+        case defnNir.StubType         => Attr.Stub
+        case defnNir.ExternType       => Attr.Extern
       }
 
-    val optAttrs =
-      sym.annotations.collect {
-        case ann if ann.symbol == defnNir.NoOptimizeClass   => Attr.NoOpt
-        case ann if ann.symbol == defnNir.NoSpecializeClass => Attr.NoSpecialize
-      }
-
-    val isStub = sym.hasAnnotation(defnNir.StubClass)
-    val isExtern = sym.hasAnnotation(defnNir.ExternClass)
-
-    Attrs
-      .fromSeq(inlineAttrs ++ optAttrs)
-      .copy(
-        isExtern = isExtern,
-        isStub = isStub
-      )
+    Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
   }
 
   protected val curExprBuffer = ScopedVar[ExprBuffer]()

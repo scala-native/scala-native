@@ -175,6 +175,11 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
+    if (config.targetsWindows && !isDecl && attrs.isExtern) {
+      // Generate export modifier only for extern (C-ABI compliant) signatures
+      val Global.Member(_, sig) = name: @unchecked
+      if (sig.isExtern) str("dllexport ")
+    }
     genFunctionReturnType(retty)
     str(" @")
     genGlobal(name)
@@ -198,11 +203,9 @@ private[codegen] abstract class AbstractCodeGen(
         genAttr(attrs.inlineHint)
       }
     }
-    if (!attrs.isExtern && !isDecl) {
+    if (!isDecl) {
       str(" ")
       str(os.gxxPersonality)
-    }
-    if (!isDecl) {
       str(" {")
 
       insts.foreach {
@@ -776,7 +779,6 @@ private[codegen] abstract class AbstractCodeGen(
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty: @unchecked
-
         touch(pointee)
 
         newline()

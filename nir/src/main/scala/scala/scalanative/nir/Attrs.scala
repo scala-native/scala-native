@@ -82,14 +82,14 @@ object Attrs {
     }
 
     new Attrs(
-      inline,
-      specialize,
-      opt,
-      isExtern,
-      isDyn,
-      isStub,
-      isAbstract,
-      links.result()
+      inlineHint = inline,
+      specialize = specialize,
+      opt = opt,
+      isExtern = isExtern,
+      isDyn = isDyn,
+      isStub = isStub,
+      isAbstract = isAbstract,
+      links = links.result()
     )
   }
 }

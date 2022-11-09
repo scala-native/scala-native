@@ -19,7 +19,8 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     with NirGenFile[G]
     with NirGenType[G]
     with NirGenName[G]
-    with NirCompat[G] {
+    with NirCompat[G]
+    with NirGenExports[G] {
 
   import global._
   import definitions._

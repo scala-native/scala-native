@@ -8,7 +8,7 @@ import sbt._
 import sbt.complete.DefaultParsers._
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build.{Build, BuildException, Config, Discover}
+import scala.scalanative.build._
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _,
@@ -108,7 +108,9 @@ object ScalaNativePluginInternal {
 
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
-      nativeConfig.value
+      val config = nativeConfig.value
+      config
+        // Use overrides defined in legacy setting keys
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
@@ -119,22 +121,34 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        .withBasename(moduleName.value)
+        // Set values for project-specific settings
+        .withBasename(
+          // Use basename defined by user, if not set use name of project
+          Option(config.basename)
+            .filterNot(_.isEmpty)
+            .getOrElse(moduleName.value)
+        )
     },
     nativeLink := {
       val classpath = fullClasspath.value.map(_.data.toPath)
-      val mainClass = selectMainClass.value.getOrElse {
-        throw new MessageOnlyException("No main class detected.")
+      val mainClass = nativeConfig.value.buildTarget match {
+        case BuildTarget.Application =>
+          selectMainClass.value.orElse {
+            throw new MessageOnlyException("No main class detected.")
+          }
+        case _: BuildTarget.Library => None
       }
       val logger = streams.value.log.toLogger
 
-      val config = build.Config.empty
-        .withLogger(logger)
-        .withMainClass(mainClass)
-        .withClassPath(classpath)
-        .withBasedir(crossTarget.value.toPath())
-        .withTestConfig(testConfig)
-        .withCompilerConfig(nativeConfig.value)
+      val baseConfig =
+        build.Config.empty
+          .withLogger(logger)
+          .withClassPath(classpath)
+          .withBasedir(crossTarget.value.toPath())
+          .withTestConfig(testConfig)
+          .withCompilerConfig(nativeConfig.value)
+
+      val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
       interceptBuildException {
         // returns config.artifactPath

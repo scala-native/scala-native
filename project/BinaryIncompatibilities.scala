@@ -33,6 +33,7 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.linker.*"),
     exclude[Problem]("scala.scalanative.build.NativeLib.*"),
     exclude[Problem]("scala.scalanative.build.LLVM.*"),
+    exclude[Problem]("scala.scalanative.build.Config*Impl*"),
     exclude[Problem]("scala.scalanative.build.NativeConfig*Impl*"),
     exclude[Problem]("scala.scalanative.build.GC.this"),
     exclude[ReversedMissingMethodProblem](

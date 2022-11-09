@@ -558,9 +558,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case dd: DefDef => genMethod(dd)
         case _          => Nil
       }
-      val forwarders = genStaticMethodForwarders(cd, methods)
       buf ++= methods
-      buf ++= forwarders
+      buf ++= genStaticMethodForwarders(cd, methods)
+      buf ++= genTopLevelExports(cd)
     }
 
     private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
@@ -772,26 +772,20 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodAttrs(sym: Symbol): Attrs = {
       val inlineAttrs =
-        if (sym.isBridge || sym.hasFlag(ACCESSOR)) {
-          Seq(Attr.AlwaysInline)
-        } else {
-          sym.annotations.collect {
-            case ann if ann.symbol == NoInlineClass     => Attr.NoInline
-            case ann if ann.symbol == AlwaysInlineClass => Attr.AlwaysInline
-            case ann if ann.symbol == InlineClass       => Attr.InlineHint
-          }
-        }
-      val stubAttrs =
-        sym.annotations.collect {
-          case ann if ann.symbol == StubClass => Attr.Stub
-        }
-      val optAttrs =
-        sym.annotations.collect {
-          case ann if ann.symbol == NoOptimizeClass   => Attr.NoOpt
-          case ann if ann.symbol == NoSpecializeClass => Attr.NoSpecialize
+        if (sym.isBridge || sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
+        else Nil
+
+      val annotatedAttrs =
+        sym.annotations.map(_.symbol).collect {
+          case NoInlineClass     => Attr.NoInline
+          case AlwaysInlineClass => Attr.AlwaysInline
+          case InlineClass       => Attr.InlineHint
+          case StubClass         => Attr.Stub
+          case NoOptimizeClass   => Attr.NoOpt
+          case NoSpecializeClass => Attr.NoSpecialize
         }
 
-      Attrs.fromSeq(inlineAttrs ++ stubAttrs ++ optAttrs)
+      Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
     }
 
     def genMethodBody(

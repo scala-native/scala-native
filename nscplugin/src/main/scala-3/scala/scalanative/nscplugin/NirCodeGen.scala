@@ -21,7 +21,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     with NirGenType
     with NirGenName
     with NirGenUtil
-    with GenReflectiveInstantisation:
+    with GenReflectiveInstantisation
+    with GenNativeExports:
   import tpd._
   import nir._
 

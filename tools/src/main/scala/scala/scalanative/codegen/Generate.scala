@@ -4,13 +4,12 @@ package codegen
 import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.linker.{Class, ScopeInfo, Unavailable}
-import scala.ref.WeakReferenceWithWrapper
 import scala.scalanative.build.Logger
 
 object Generate {
   import Impl._
 
-  def apply(entry: Global.Top, defns: Seq[Defn])(implicit
+  def apply(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ): Seq[Defn] =
     (new Impl(entry, defns)).generate()
@@ -19,7 +18,7 @@ object Generate {
     meta.linked
   private implicit val pos: Position = Position.NoPosition
 
-  private class Impl(entry: Global.Top, defns: Seq[Defn])(implicit
+  private class Impl(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ) {
     val buf = mutable.UnrolledBuffer.empty[Defn]
@@ -27,7 +26,7 @@ object Generate {
     def generate(): Seq[Defn] = {
       genDefnsExcludingGenerated()
       genInjects()
-      genMain()
+      entry.fold(genLibraryInit())(genMain(_))
       genClassMetadata()
       genClassHasTrait()
       genTraitMetadata()
@@ -128,77 +127,119 @@ object Generate {
       )
     }
 
-    def genMain(): Unit = {
-      validateMainEntry()
-
-      implicit val fresh = Fresh()
-      val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
-      val entryMainMethod = Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
-
-      val stackBottom = Val.Local(fresh(), Type.Ptr)
-      val argc = Val.Local(fresh(), Type.Int)
-      val argv = Val.Local(fresh(), Type.Ptr)
-      val rt = Val.Local(fresh(), Runtime)
-      val arr = Val.Local(fresh(), ObjectArray)
+    /* Generate set of instructions using common exception handling, generate method
+     * would return 0 if would execute successfully exception and 1 in otherwise */
+    private def withExceptionHandler(
+        body: (() => Next.Unwind) => Seq[Inst]
+    )(implicit fresh: Fresh): Seq[Inst] = {
       val exc = Val.Local(fresh(), nir.Rt.Object)
       val handler = fresh()
-      def unwind = {
+
+      def unwind(): Next.Unwind = {
         val exc = Val.Local(fresh(), nir.Rt.Object)
         Next.Unwind(exc, Next.Label(handler, Seq(exc)))
       }
 
+      body(unwind) ++ Seq(
+        Inst.Ret(Val.Int(0)),
+        Inst.Label(handler, Seq(exc)),
+        Inst.Let(
+          Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+          Next.None
+        ),
+        Inst.Ret(Val.Int(1))
+      )
+    }
+
+    /* Generate class initializers to handle class instantiated using reflection */
+    private def genClassInitializersCalls(
+        unwind: () => Next
+    )(implicit fresh: Fresh): Seq[Inst] = {
+      defns.collect {
+        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+          Inst.Let(
+            Op.Call(
+              Type.Function(Seq(), Type.Unit),
+              Val.Global(name, Type.Ref(name)),
+              Seq()
+            ),
+            unwind()
+          )
+      }
+    }
+
+    private def genGcInit(unwindProvider: () => Next)(implicit fresh: Fresh) = {
+      def unwind: Next = unwindProvider()
+      val stackBottom = Val.Local(fresh(), Type.Ptr)
+      val StackBottomVar = Val.Global(stackBottomName, Type.Ptr)
+
+      Seq(
+        // init __stack_bottom variable
+        Inst.Let(
+          stackBottom.name,
+          Op.Stackalloc(Type.Ptr, Val.Long(0)),
+          unwind
+        ),
+        Inst.Let(Op.Store(Type.Ptr, StackBottomVar, stackBottom), unwind),
+        // Init GC
+        Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
+      )
+    }
+
+    /* Injects definition of library initializers that needs to be called, when using Scala Native as shared library.
+     * Injects basic handling of exceptions, prints stack trace and returns non-zero value on exception or 0 otherwise */
+    def genLibraryInit(): Unit = {
+      implicit val fresh: Fresh = Fresh()
+
+      buf += Defn.Define(
+        Attrs(isExtern = true),
+        LibraryInitName,
+        LibraryInitSig,
+        withExceptionHandler { unwindProvider =>
+          Seq(Inst.Label(fresh(), Nil)) ++
+            genGcInit(unwindProvider) ++
+            genClassInitializersCalls(unwindProvider)
+        }
+      )
+    }
+
+    def genMain(entry: Global.Top): Unit = {
+      validateMainEntry(entry)
+
+      implicit val fresh = Fresh()
       buf += Defn.Define(
         Attrs.None,
         MainName,
         MainSig,
-        Seq(
-          Inst.Label(fresh(), Seq(argc, argv)),
-          Inst.Let(
-            stackBottom.name,
-            Op.Stackalloc(Type.Ptr, Val.Size(0)),
-            unwind
-          ),
-          Inst.Let(
-            Op.Store(
-              Type.Ptr,
-              Val.Global(stackBottomName, Type.Ptr),
-              stackBottom
-            ),
-            unwind
-          ),
-          Inst.Let(Op.Call(InitSig, Init, Seq()), unwind)
-        ) ++ // generate the class initialisers
-          defns.collect {
-            case Defn.Define(_, name: Global.Member, _, _)
-                if name.sig.isClinit =>
+        withExceptionHandler { unwindProvider =>
+          val entryMainTy = Type.Function(Seq(ObjectArray), Type.Unit)
+          val entryMainMethod =
+            Val.Global(entry.member(Rt.ScalaMainSig), Type.Ptr)
+
+          val argc = Val.Local(fresh(), Type.Int)
+          val argv = Val.Local(fresh(), Type.Ptr)
+          val rt = Val.Local(fresh(), Runtime)
+          val arr = Val.Local(fresh(), ObjectArray)
+
+          def unwind = unwindProvider()
+
+          Seq(Inst.Label(fresh(), Seq(argc, argv))) ++
+            genGcInit(unwindProvider) ++
+            genClassInitializersCalls(unwindProvider) ++
+            Seq(
+              Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
               Inst.Let(
-                Op.Call(
-                  Type.Function(Seq(), Type.Unit),
-                  Val.Global(name, Type.Ref(name)),
-                  Seq()
-                ),
+                arr.name,
+                Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                 unwind
-              )
-          } ++ Seq(
-            Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
-            Inst.Let(
-              arr.name,
-              Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
-              unwind
-            ),
-            Inst.Let(
-              Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
-              unwind
-            ),
-            Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind),
-            Inst.Ret(Val.Int(0)),
-            Inst.Label(handler, Seq(exc)),
-            Inst.Let(
-              Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
-              Next.None
-            ),
-            Inst.Ret(Val.Int(1))
-          )
+              ),
+              Inst.Let(
+                Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
+                unwind
+              ),
+              Inst.Let(Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind)
+            )
+        }
       )
     }
 
@@ -329,40 +370,28 @@ object Generate {
             Type.Int,
             Val.Int(value)
           )
-      val weakRefGlobal = Global.Top("java.lang.ref.WeakReference")
 
-      val (
-        weakRefId,
-        weakRefFieldOffset
-      ) =
-        if (linked.infos.contains(weakRefGlobal)) {
+      val (weakRefId, modifiedFieldOffset) = linked.infos
+        .get(Global.Top("java.lang.ref.WeakReference"))
+        .collect { case cls: Class if cls.allocated => cls }
+        .fold((-1, -1)) { weakRef =>
           // if WeakReferences are being compiled and therefore supported
-          def gcModifiedFieldIndexes(clazz: Class): Seq[Int] =
-            meta.layout(clazz).entries.zipWithIndex.collect {
+          val gcModifiedFieldIndexes: Seq[Int] =
+            meta.layout(weakRef).entries.zipWithIndex.collect {
               case (field, index)
                   if field.name.mangle.contains("_gc_modified_") =>
                 index
             }
 
-          val weakRef = linked
-            .infos(weakRefGlobal)
-            .asInstanceOf[Class]
-
-          val weakRefFieldIndexes = gcModifiedFieldIndexes(weakRef)
-          if (weakRefFieldIndexes.size != 1)
+          if (gcModifiedFieldIndexes.size != 1)
             throw new Exception(
               "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
             )
 
-          (
-            meta.ids(weakRef),
-            weakRefFieldIndexes.head
-          )
-        } else {
-          (-1, -1)
+          (meta.ids(weakRef), gcModifiedFieldIndexes.head)
         }
       addToBuf(weakRefIdName, weakRefId)
-      addToBuf(weakRefFieldOffsetName, weakRefFieldOffset)
+      addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)
     }
 
     def genArrayIds(): Unit = {
@@ -400,7 +429,7 @@ object Generate {
       buf += meta.hasTraitTables.traitHasTraitDefn
     }
 
-    private def validateMainEntry(): Unit = {
+    private def validateMainEntry(entry: Global.Top): Unit = {
       def fail(reason: String): Nothing =
         util.unsupported(s"Entry ${entry.id} $reason")
 
@@ -446,6 +475,9 @@ object Generate {
       Runtime.name.member(Sig.Method("loop", Seq(Type.Unit)))
     val RuntimeLoop =
       Val.Global(RuntimeLoopName, Type.Ptr)
+
+    val LibraryInitName = extern("ScalaNativeInit")
+    val LibraryInitSig = Type.Function(Seq(), Type.Int)
 
     val MainName = extern("main")
     val MainSig = Type.Function(Seq(Type.Int, Type.Ptr), Type.Int)

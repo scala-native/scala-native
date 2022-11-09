@@ -184,4 +184,6 @@ jobs:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
-        run: sbt "test-scripted ${{matrix.scala}}"
+        run: |
+          export LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
+          sbt "test-scripted ${{matrix.scala}}"
