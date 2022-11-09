@@ -62,12 +62,13 @@ class ProcessTest {
     checkPathOverride(pb)
   }
 
+  // Exercise the fork() path in UnixProcessGen2
   @Test def dirOverride(): Unit = {
     assumeNotJVMCompliant()
     assumeFalse("Not tested in Windows", isWindows)
 
     val pb = new ProcessBuilder("./ls")
-    pb.directory(File(resourceDir))
+    pb.directory(new File(resourceDir))
     checkPathOverride(pb) // off-label use of checkPathOverride() here.
   }
 
