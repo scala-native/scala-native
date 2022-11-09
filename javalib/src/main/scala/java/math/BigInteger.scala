@@ -176,29 +176,41 @@ class BigInteger extends Number with Comparable[BigInteger] {
   /** Cache for the hash code. */
   private var _hashCode: Int = 0
 
-  def this(byteArray: Array[Byte]) = {
+  def this(byteArray: Array[Byte], off: Int, len: Int) = {
     this()
-    if (byteArray.length == 0)
+    if (len == 0)
       throw new NumberFormatException("Zero length BigInteger")
+    if (off < 0 || (off + len) > byteArray.length)
+      throw new IndexOutOfBoundsException(
+        "Range [" + off + ", " + off + " + " + len + ") out of bounds for length " + byteArray.length
+      )
 
-    if (byteArray(0) < 0) {
+    if (byteArray(off) < 0) {
       sign = -1
-      this.putBytesNegativeToIntegers(byteArray)
+      this.putBytesNegativeToIntegers(byteArray, off, len)
     } else {
       sign = 1
-      this.putBytesPositiveToIntegers(byteArray)
+      this.putBytesPositiveToIntegers(byteArray, off, len)
     }
 
     this.cutOffLeadingZeroes()
   }
 
-  def this(signum: Int, magnitude: Array[Byte]) = {
+  def this(byteArray: Array[Byte]) = {
+    this(byteArray, 0, byteArray.length)
+  }
+
+  def this(signum: Int, magnitude: Array[Byte], off: Int, len: Int) = {
     this()
     checkNotNull(magnitude)
     if ((signum < -1) || (signum > 1))
       throw new NumberFormatException("Invalid signum value")
     if (signum == 0 && magnitude.exists(_ != 0))
       throw new NumberFormatException("signum-magnitude mismatch")
+    if (off < 0 || (off + len) > magnitude.length)
+      throw new IndexOutOfBoundsException(
+        "Range [" + off + ", " + off + " + " + len + ") out of bounds for length " + magnitude.length
+      )
 
     if (magnitude.length == 0) {
       sign = 0
@@ -206,9 +218,13 @@ class BigInteger extends Number with Comparable[BigInteger] {
       digits = Array(0)
     } else {
       sign = signum
-      this.putBytesPositiveToIntegers(magnitude)
+      this.putBytesPositiveToIntegers(magnitude, off, len)
       this.cutOffLeadingZeroes()
     }
+  }
+
+  def this(signum: Int, magnitude: Array[Byte]) = {
+    this(signum, magnitude, 0, magnitude.length)
   }
 
   def this(bitLength: Int, certainty: Int, rnd: Random) = {
@@ -896,8 +912,12 @@ class BigInteger extends Number with Comparable[BigInteger] {
 
   /** Puts a big-endian byte array into a little-endian applying two complement.
    */
-  private def putBytesNegativeToIntegers(byteValues: Array[Byte]): Unit = {
-    var bytesLen = byteValues.length
+  private def putBytesNegativeToIntegers(
+      byteValues: Array[Byte],
+      off: Int,
+      len: Int
+  ): Unit = {
+    var bytesLen = len
     val highBytes = bytesLen & 3
     numberLength = (bytesLen >> 2) + (if (highBytes == 0) 0 else 1)
     digits = new Array[Int](numberLength)
@@ -909,20 +929,20 @@ class BigInteger extends Number with Comparable[BigInteger] {
     @inline
     @tailrec
     def loop(): Unit = if (bytesLen > highBytes) {
-      digits(i) = (byteValues(bytesLen - 1) & 0xff) |
-        (byteValues(bytesLen - 2) & 0xff) << 8 |
-        (byteValues(bytesLen - 3) & 0xff) << 16 |
-        (byteValues(bytesLen - 4) & 0xff) << 24
+      digits(i) = (byteValues(off + bytesLen - 1) & 0xff) |
+        (byteValues(off + bytesLen - 2) & 0xff) << 8 |
+        (byteValues(off + bytesLen - 3) & 0xff) << 16 |
+        (byteValues(off + bytesLen - 4) & 0xff) << 24
       bytesLen -= 4
       if (digits(i) != 0) {
         digits(i) = -digits(i)
         firstNonzeroDigit = i
         i += 1
         while (bytesLen > highBytes) {
-          digits(i) = (byteValues(bytesLen - 1) & 0xff) |
-            (byteValues(bytesLen - 2) & 0xff) << 8 |
-            (byteValues(bytesLen - 3) & 0xff) << 16 |
-            (byteValues(bytesLen - 4) & 0xff) << 24
+          digits(i) = (byteValues(off + bytesLen - 1) & 0xff) |
+            (byteValues(off + bytesLen - 2) & 0xff) << 8 |
+            (byteValues(off + bytesLen - 3) & 0xff) << 16 |
+            (byteValues(off + bytesLen - 4) & 0xff) << 24
           bytesLen -= 4
           digits(i) = ~digits(i)
           i += 1
@@ -938,12 +958,12 @@ class BigInteger extends Number with Comparable[BigInteger] {
       // Put the first bytes in the highest element of the int array
       if (firstNonzeroDigit != firstNonzeroDigitNotSet) {
         for (j <- 0 until bytesLen) {
-          digits(i) = (digits(i) << 8) | (byteValues(j) & 0xff)
+          digits(i) = (digits(i) << 8) | (byteValues(off + j) & 0xff)
         }
         digits(i) = ~digits(i)
       } else {
         for (j <- 0 until bytesLen) {
-          digits(i) = (digits(i) << 8) | (byteValues(j) & 0xff)
+          digits(i) = (digits(i) << 8) | (byteValues(off + j) & 0xff)
         }
         digits(i) = -digits(i)
       }
@@ -951,8 +971,12 @@ class BigInteger extends Number with Comparable[BigInteger] {
   }
 
   /** Puts a big-endian byte array into a little-endian int array. */
-  private def putBytesPositiveToIntegers(byteValues: Array[Byte]): Unit = {
-    var bytesLen = byteValues.length
+  private def putBytesPositiveToIntegers(
+      byteValues: Array[Byte],
+      off: Int,
+      len: Int
+  ): Unit = {
+    var bytesLen = len
     val highBytes = bytesLen & 3
     numberLength = (bytesLen >> 2) + (if (highBytes == 0) 0 else 1)
     digits = new Array[Int](numberLength)
@@ -960,16 +984,16 @@ class BigInteger extends Number with Comparable[BigInteger] {
     // Put bytes to the int array starting from the end of the byte array
     var i = 0
     while (bytesLen > highBytes) {
-      digits(i) = (byteValues(bytesLen - 1) & 0xff) |
-        (byteValues(bytesLen - 2) & 0xff) << 8 |
-        (byteValues(bytesLen - 3) & 0xff) << 16 |
-        (byteValues(bytesLen - 4) & 0xff) << 24
+      digits(i) = (byteValues(off + bytesLen - 1) & 0xff) |
+        (byteValues(off + bytesLen - 2) & 0xff) << 8 |
+        (byteValues(off + bytesLen - 3) & 0xff) << 16 |
+        (byteValues(off + bytesLen - 4) & 0xff) << 24
       bytesLen = bytesLen - 4
       i += 1
     }
     // Put the first bytes in the highest element of the int array
     for (j <- 0 until bytesLen) {
-      digits(i) = (digits(i) << 8) | (byteValues(j) & 0xff)
+      digits(i) = (digits(i) << 8) | (off + byteValues(j) & 0xff)
     }
   }
 
