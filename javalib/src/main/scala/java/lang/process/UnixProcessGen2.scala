@@ -340,10 +340,10 @@ object UnixProcessGen2 {
       if (builder.redirectErrorStream()) outfds
       else stackalloc[CInt](2.toUInt)
 
-    throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
-    throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
+    throwOnError(unistd.pipe(infds), s"Couldn't create infds pipe.")
+    throwOnError(unistd.pipe(outfds), s"Couldn't create outfds pipe.")
     if (!builder.redirectErrorStream())
-      throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
+      throwOnError(unistd.pipe(errfds), s"Couldn't create errfds pipe.")
 
     val cmd = builder.command()
     val binaries = binaryPaths(builder.environment(), cmd.get(0))
@@ -365,7 +365,7 @@ object UnixProcessGen2 {
         throw new IOException("Unable to fork process")
 
       case 0 =>
-        if (dir != null)
+        if ((dir != null) && (dir.toString != "."))
           unistd.chdir(toCString(dir.toString))
 
         setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
@@ -380,12 +380,16 @@ object UnixProcessGen2 {
           else builder.redirectError(),
           unistd.STDERR_FILENO
         )
-        unistd.close(!infds)
-        unistd.close(!(infds + 1))
-        unistd.close(!outfds)
-        unistd.close(!(outfds + 1))
-        unistd.close(!errfds)
-        unistd.close(!(errfds + 1))
+
+        // No sense closing stuff either active or already closed!
+        // dup2() will close() what is not INHERITed.
+        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
+        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
+        parentFds.add(!outfds) // parent's stdin - read, in child
+        if (!builder.redirectErrorStream())
+          parentFds.add(!errfds) // parent's stderr - read, in child
+
+        parentFds.forEach { fd => unistd.close(fd) }
 
         binaries.foreach { b =>
           val bin = toCString(b)
@@ -405,19 +409,13 @@ object UnixProcessGen2 {
         throw new IOException(s"Failed to create process for command: $cmd")
 
       case pid =>
-        /* Being here, we know that a child process exists, or existed.
-         * ProcessMonitor needs to know about it. It is _far_ better
-         * to do the notification in this parent.
-         *
-         * Implementations of 'fork' can be very restrictive about what
-         * can run in the child before it calls one of the 'exec*' methods.
-         * 'notifyMonitor' may or may not follow those rules. Even if it
-         * currently does, that could easily change with future maintenance
-         * make it no longer compliant, leading to shrapnel & wasted
-         * developer time.
-         */
+        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
+        childFds.add(!infds) // child's stdin read, in parent
+        childFds.add(!(outfds + 1)) // child's stdout write, in parent
+        if (!builder.redirectErrorStream())
+          childFds.add(!(errfds + 1)) // child's stderr write, in parent
 
-        Seq(!(outfds + 1), !(errfds + 1), !infds) foreach unistd.close
+        childFds.forEach { fd => unistd.close(fd) }
 
         new UnixProcessGen2(pid, builder, infds, outfds, errfds)
     }
