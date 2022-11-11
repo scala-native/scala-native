@@ -5,8 +5,6 @@ import java.nio.channels.{FileChannelImpl, FileChannel}
 
 import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
 
-import scalanative.libc.errno
-
 import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
 import scalanative.meta.LinktimeInfo.isWindows

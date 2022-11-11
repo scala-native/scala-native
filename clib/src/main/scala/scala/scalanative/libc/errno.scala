@@ -3,8 +3,9 @@ package libc
 
 import scalanative.unsafe._
 
-@extern
-object errno {
+@extern object errno extends errno
+
+@extern trait errno {
   @name("scalanative_errno")
   def errno: CInt = extern
   @name("scalanative_set_errno")

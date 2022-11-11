@@ -17,7 +17,6 @@ import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.{Map, Set}
-import scala.scalanative.libc.errno
 
 abstract class GenericFileSystemProvider extends FileSystemProvider {
   type AttributeViewClass = Class[_ <: FileAttributeView]

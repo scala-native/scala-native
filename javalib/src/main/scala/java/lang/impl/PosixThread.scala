@@ -1,11 +1,10 @@
 package java.lang.impl
 
 import scala.annotation.tailrec
-import scala.scalanative.posix.errno.EINTR
+import scala.scalanative.posix.errno._
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.errno
 
 private[lang] object PosixThread {
   def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
@@ -16,7 +15,7 @@ private[lang] object PosixThread {
         case _ if Thread.interrupted() =>
           throw new InterruptedException("Sleep was interrupted")
 
-        case -1 if errno.errno == EINTR =>
+        case -1 if errno == EINTR =>
           doSleep(remaining)
 
         case _ => ()

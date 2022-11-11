@@ -7,7 +7,7 @@ import scalanative.unsigned._
 import scalanative.libc.string.memcmp
 
 import scalanative.posix.arpa.inet._
-import scalanative.posix.errno
+import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
@@ -74,7 +74,7 @@ class Udp6SocketTest {
       dstSize.toUInt
     )
 
-    assertNotEquals(s"inet_ntop failed errno: ${errno.errno}", result, null)
+    assertNotEquals(s"inet_ntop failed errno: ${errno}", result, null)
 
     fromCString(dst)
   }
@@ -109,7 +109,7 @@ class Udp6SocketTest {
         sizeof[sockaddr_in6].toUInt
       )
 
-      assertTrue(s"sendto failed errno: ${errno.errno}\n", (nBytesSent >= 0))
+      assertTrue(s"sendto failed errno: ${errno}\n", (nBytesSent >= 0))
       assertEquals("sendto length", outData.size, nBytesSent.toInt)
 
       // If inSocket did not get data by timeout, it probably never will.

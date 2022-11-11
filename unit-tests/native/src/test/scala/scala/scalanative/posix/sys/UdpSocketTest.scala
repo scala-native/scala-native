@@ -4,7 +4,7 @@ package sys
 import scalanative.unsafe._
 import scalanative.unsigned._
 
-import scalanative.posix.errno
+import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
@@ -56,7 +56,7 @@ class UdpSocketTest {
         sizeof[sockaddr].toUInt
       )
 
-      assertTrue(s"sendto failed errno: ${errno.errno}\n", (nBytesSent >= 0))
+      assertTrue(s"sendto failed errno: ${errno}\n", (nBytesSent >= 0))
       assertEquals("sendto", outData.size, nBytesSent.toInt)
 
       // If inSocket did not get data by timeout, it probably never will.

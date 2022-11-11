@@ -7,7 +7,7 @@ import scalanative.unsigned._
 import scalanative.libc.string.memcmp
 
 import scalanative.posix.arpa.inet.inet_addr
-import scalanative.posix.errno
+import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
@@ -261,7 +261,7 @@ class MsgIoSocketTest {
           sizeof[Int].toUInt
         )
 
-        assertEquals(s"setsockopt errno: ${errno.errno}", 0, ssoStatus)
+        assertEquals(s"setsockopt errno: ${errno}", 0, ssoStatus)
 
         val outData0 = poemHeader + chunk1 + chunk2
         val outData1 = chunk3

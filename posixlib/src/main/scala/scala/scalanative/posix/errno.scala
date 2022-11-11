@@ -3,16 +3,8 @@ package posix
 
 import scalanative.unsafe.{CInt, extern, name}
 
-@extern
-object errno {
-
-  // errno and errno_= will use common scala.scalanative.libc implementation.
-
-  @name("scalanative_errno")
-  def errno: CInt = extern
-
-  @name("scalanative_set_errno")
-  def errno_=(value: CInt): Unit = extern
+@extern object errno extends errno
+@extern trait errno extends libc.errno {
 
   // Macros
 
@@ -67,9 +59,6 @@ object errno {
   @name("scalanative_edestaddrreq")
   def EDESTADDRREQ: CInt = extern
 
-  @name("scalanative_edom")
-  def EDOM: CInt = extern
-
   @name("scalanative_edquot")
   def EDQUOT: CInt = extern
 
@@ -87,9 +76,6 @@ object errno {
 
   @name("scalanative_eidrm")
   def EIDRM: CInt = extern
-
-  @name("scalanative_eilseq")
-  def EILSEQ: CInt = extern
 
   @name("scalanative_einprogress")
   def EINPROGRESS: CInt = extern
@@ -228,9 +214,6 @@ object errno {
 
   @name("scalanative_eprototype")
   def EPROTOTYPE: CInt = extern
-
-  @name("scalanative_erange")
-  def ERANGE: CInt = extern
 
   @name("scalanative_erofs")
   def EROFS: CInt = extern

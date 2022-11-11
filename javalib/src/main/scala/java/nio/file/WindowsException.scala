@@ -10,7 +10,7 @@ import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.ErrorHandlingApiOps.errorMessage
 import scala.scalanative.windows.WinBaseApi._
 import java.nio.file._
-import scalanative.libc.{string, errno => stdErrno}
+import scalanative.libc.string
 
 trait WindowsException extends Exception
 object WindowsException {
@@ -25,7 +25,7 @@ object WindowsException {
 
   def onPath(file: String): IOException = {
     import ErrorCodes._
-    lazy val e = stdErrno.errno
+    lazy val e = errno
     val winError = GetLastError()
     winError match {
       case _ if e == ENOTDIR   => new NotDirectoryException(file)

@@ -2,10 +2,8 @@ package java.lang
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.libc.errno
 import scalanative.libc.string.memcpy
-
-import scalanative.posix.errno.ERANGE
+import scalanative.libc.errno._
 
 private[java] object IEEE754Helpers {
   // Java parseDouble() and parseFloat() allow characters at and after
@@ -78,12 +76,12 @@ private[java] object IEEE754Helpers {
 
     val end = stackalloc[CString]() // Address one past last parsed cStr byte.
 
-    errno.errno = 0
+    errno = 0
 
     val res = f(cStr, end)
 
-    if (errno.errno != 0) {
-      if (errno.errno == ERANGE) {
+    if (errno != 0) {
+      if (errno == ERANGE) {
         // Do nothing. res holds the proper value as returned by strtod()
         // or strtof(): 0.0 for string translations too close to zero
         // or +/- infinity for values too +/- large for an IEEE754.

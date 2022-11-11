@@ -7,7 +7,7 @@ import scalanative.unsigned._
 import scalanative.libc.string.strerror
 
 import scalanative.posix.arpa.inet.{inet_addr, inet_pton}
-import scalanative.posix.errno
+import scalanative.posix.errno.errno
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.netdb._
@@ -34,7 +34,7 @@ object SocketTestHelpers {
     if (v.toInt < 0) {
       val reason =
         if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
-        else fromCString(strerror(errno.errno))
+        else fromCString(strerror(errno))
       fail(s"$label failed - $reason")
     }
   }
@@ -90,7 +90,7 @@ object SocketTestHelpers {
       // Get port for write() to use.
       val bindInStatus = bind(sin, inAddr, sizeof[sockaddr].toUInt)
       assertNotEquals(
-        s"bind input socket failed,  errno: ${errno.errno}",
+        s"bind input socket failed,  errno: ${errno}",
         -1,
         bindInStatus
       )
@@ -152,7 +152,7 @@ object SocketTestHelpers {
       in6SockAddr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
     )
 
-    assertEquals(s"inet_pton failed errno: ${errno.errno}", ptonStatus, 1)
+    assertEquals(s"inet_pton failed errno: ${errno}", ptonStatus, 1)
 
     val sin: CInt = createAndCheckUdpSocket(AF_INET6)
 
@@ -167,7 +167,7 @@ object SocketTestHelpers {
         sizeof[sockaddr_in6].toUInt
       )
 
-      assertNotEquals(s"bind failed,  errno: ${errno.errno}", -1, bindStatus)
+      assertNotEquals(s"bind failed,  errno: ${errno}", -1, bindStatus)
 
       val in6AddrInfo = alloc[sockaddr_in6]()
       val gsnAddrLen = alloc[socklen_t]()
@@ -179,7 +179,7 @@ object SocketTestHelpers {
         gsnAddrLen
       )
 
-      assertNotEquals("getsockname failed errno: ${errno.errno}", -1, gsnStatus)
+      assertNotEquals("getsockname failed errno: ${errno}", -1, gsnStatus)
 
       // Now use port in output socket
       val sout = createAndCheckUdpSocket(AF_INET6)
@@ -311,7 +311,7 @@ object SocketTestHelpers {
       (fds + 0).fd = fd
       (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
 
-      errno.errno = 0
+      errno = 0
 
       /* poll() sounds like a nasty busy wait loop, but is event driven
        * in the kernel.
@@ -322,7 +322,7 @@ object SocketTestHelpers {
       if (ret == 0) {
         fail(s"poll timed out after ${timeout} milliseconds")
       } else if (ret < 0) {
-        val reason = fromCString(strerror(errno.errno))
+        val reason = fromCString(strerror(errno))
         fail(s"poll for input failed - $reason")
       }
       // else good to go
