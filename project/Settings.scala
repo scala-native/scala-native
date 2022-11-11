@@ -245,8 +245,7 @@ object Settings {
       </issueManagement>
     ),
     Compile / publishArtifact := true,
-    Test / publishArtifact := false,
-    versionScheme := Some("early-semver")
+    Test / publishArtifact := false
   ) ++ mimaSettings
 
   lazy val mavenPublishSettings = Def.settings(
