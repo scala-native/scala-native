@@ -76,7 +76,7 @@ trait NirGenName[G <: Global with Singleton] {
     }
 
     owner.member {
-      if (sym.owner.isExternModule) {
+      if (sym.owner.isExternType) {
         nir.Sig.Extern(id)
       } else {
         nir.Sig.Field(id, scope)
@@ -99,7 +99,7 @@ trait NirGenName[G <: Global with Singleton] {
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
 
     def isExternModule =
-      sym.owner.isExternModule || implClassTarget(sym.owner).isExternModule
+      sym.owner.isExternType || implClassTarget(sym.owner).isExternType
 
     if (sym == String_+)
       genMethodName(StringConcatMethod)
@@ -162,7 +162,7 @@ trait NirGenName[G <: Global with Singleton] {
   private def nativeIdOf(sym: Symbol): String = {
     sym.getAnnotation(NameClass).flatMap(_.stringArg(0)).getOrElse {
       val name = sym.javaSimpleName.toString()
-      val id: String = if (sym.owner.isExternModule) {
+      val id: String = if (sym.owner.isExternType) {
         // Don't use encoded names for externs
         sym.decodedName.trim()
       } else if (sym.isField) {

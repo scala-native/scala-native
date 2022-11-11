@@ -92,7 +92,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genClass(cd: ClassDef): Unit = {
       val sym = cd.symbol
       // ImplClass does not copy annotations from the trait
-      if (isImplClass(sym) && implClassTarget(sym).isExternModule) {
+      if (isImplClass(sym) && implClassTarget(sym).isExternType) {
         sym.addAnnotation(ExternClass)
       }
 
@@ -143,7 +143,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genClassParent(sym: Symbol): Option[nir.Global] = {
-      if (sym.isExternModule &&
+      if (sym.isExternType &&
           sym.superClass != ObjectClass &&
           !isImplClass(sym)) {
         reporter.error(
@@ -177,12 +177,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genClassInterfaces(sym: Symbol) = {
-      val isExtern = sym.isExternModule
+      val isExtern = sym.isExternType
       for {
         parent <- sym.info.parents
         psym = parent.typeSymbol if psym.isTraitOrInterface
       } yield {
-        val parentIsExtern = psym.isExternModule
+        val parentIsExtern = psym.isExternType
         if (isExtern && !parentIsExtern)
           reporter.error(
             sym.pos,
@@ -199,7 +199,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassFields(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      val attrs = nir.Attrs(isExtern = sym.isExternModule)
+      val attrs = nir.Attrs(isExtern = sym.isExternType)
 
       for (f <- sym.info.decls
           if !f.isMethod && f.isTerm && !f.isModule) {
@@ -667,14 +667,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
           case _
               if (dd.name == nme.CONSTRUCTOR || dd.name == nme.MIXIN_CONSTRUCTOR) &&
-                owner.isExternModule =>
+                owner.isExternType =>
             validateExternCtor(dd.rhs)
             None
 
           case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
             None
 
-          case rhs if owner.isExternModule =>
+          case rhs if owner.isExternType =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
             genExternMethod(attrs, name, sig, dd)
 
@@ -774,7 +774,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case sym if isImplClass(sym) => implClassTarget(sym)
           case sym                     => sym
         }
-        owner.isExternModule
+        owner.isExternType
       }
 
       def isExternMethodAlias(target: Symbol) =
@@ -882,7 +882,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case NoOptimizeClass   => Attr.NoOpt
           case NoSpecializeClass => Attr.NoSpecialize
         }
-      val externAttrs = if (sym.owner.isExternModule) Seq(Attr.Extern) else Nil
+      val externAttrs = if (sym.owner.isExternType) Seq(Attr.Extern) else Nil
 
       Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
     }
@@ -896,11 +896,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
       def isExternMethodProxy =
-        sym.owner.isExternModule && bodyp.symbol != ExternMethod
+        sym.owner.isExternType && bodyp.symbol != ExternMethod
       val isStatic =
         (dd.symbol.isStaticInNIR && !isExternMethodProxy) ||
           isImplClass(dd.symbol.owner)
-      val isExtern = dd.symbol.owner.isExternModule
+      val isExtern = dd.symbol.owner.isExternType
 
       implicit val pos: nir.Position = bodyp.pos
 
@@ -1049,7 +1049,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     if (module == NoSymbol) Nil
     else {
       val moduleClass = module.moduleClass
-      if (moduleClass.isExternModule) Nil
+      if (moduleClass.isExternType) Nil
       else genStaticForwardersFromModuleClass(existingMembers, moduleClass)
     }
   }
@@ -1109,7 +1109,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
-        m.owner.isExternModule ||
+        m.owner.isExternType ||
         isOfJLObject
     }
 

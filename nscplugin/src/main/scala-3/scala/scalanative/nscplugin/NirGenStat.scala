@@ -80,7 +80,7 @@ trait NirGenStat(using Context) {
   }
 
   private def genClassParent(sym: ClassSymbol): Option[nir.Global] = {
-    if sym.isExternModule && sym.superClass != defn.ObjectClass then
+    if sym.isExternType && sym.superClass != defn.ObjectClass then
       report.error("Extern object can only extend extern traits", sym.sourcePos)
 
     Option.unless(sym == defnNir.NObjectClass) {
@@ -92,9 +92,9 @@ trait NirGenStat(using Context) {
   }
 
   private def genClassInterfaces(sym: ClassSymbol): Seq[nir.Global] = {
-    val isExtern = sym.isExternModule
+    val isExtern = sym.isExternType
     def validate(clsSym: ClassSymbol) = {
-      val parentIsExtern = clsSym.isExternModule
+      val parentIsExtern = clsSym.isExternType
       if isExtern && !parentIsExtern then
         report.error(
           "Extern object can only extend extern traits",
@@ -563,7 +563,7 @@ trait NirGenStat(using Context) {
     if (!module.exists) Nil
     else {
       val moduleClass = module.moduleClass
-      if (moduleClass.isExternModule) Nil
+      if (moduleClass.isExternType) Nil
       else genStaticForwardersFromModuleClass(existingMembers, moduleClass)
     }
   }
