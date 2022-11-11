@@ -495,7 +495,6 @@ object Settings {
       scriptedLaunchOpts.value ++
         Seq(
           "-Xmx1024M",
-          "-XX:MaxMetaspaceSize=256M",
           "-Dplugin.version=" + version.value,
           // Default scala.version, can be overriden in test-scrippted command
           "-Dscala.version=" + ScalaVersions.scala212,
