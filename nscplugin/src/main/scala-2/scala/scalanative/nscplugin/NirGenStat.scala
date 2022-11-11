@@ -665,9 +665,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             // Fix issue #2305 Compile error on macro using Scala 2.11.12
             Some(Defn.Declare(attrs, name, sig))
 
-          case _
-              if (dd.name == nme.CONSTRUCTOR || dd.name == nme.MIXIN_CONSTRUCTOR) &&
-                owner.isExternType =>
+          case _ if dd.symbol.isConstructor && owner.isExternType =>
             validateExternCtor(dd.rhs)
             None
 
@@ -895,12 +893,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
-      def isExternMethodProxy =
-        sym.owner.isExternType && bodyp.symbol != ExternMethod
-      val isStatic =
-        (dd.symbol.isStaticInNIR && !isExternMethodProxy) ||
-          isImplClass(dd.symbol.owner)
-      val isExtern = dd.symbol.owner.isExternType
+      val isStatic = (sym.isStaticInNIR) || isImplClass(sym.owner)
+      val isExtern = sym.owner.isExternType
 
       implicit val pos: nir.Position = bodyp.pos
 
@@ -1207,8 +1201,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       methodKind: String
   ): Unit = {
     externMethodDd.tpt match {
-      case resultTypeTree: global.TypeTree
-          if resultTypeTree.wasEmpty && externMethodDd.rhs.symbol == ExternMethod =>
+      case resultTypeTree: global.TypeTree if resultTypeTree.wasEmpty =>
         global.reporter.error(
           externMethodDd.pos,
           s"$methodKind ${externMethodDd.name} needs result type"

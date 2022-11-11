@@ -170,85 +170,6 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     )
   }
 
-  it should "allow to export module method" in {
-    try
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
-              |object ExportInModule {
-              |  @exported
-              |  def foo(l: Int): Int = l
-              |  @exportAccessors()
-              |  val bar: Double = 0.42d
-              |}""".stripMargin
-        )
-      )
-    catch {
-      case ex: CompilationFailedException =>
-        fail(s"Unexpected compilation failure: ${ex.getMessage()}", ex)
-    }
-  }
-  val MustBeStatic =
-    "Exported members must be statically reachable, definition within class or trait is currently unsupported"
-
-  it should "report error when exporting class method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
-            |class ExportInClass() {
-            |  @exported
-            |  def foo(l: Int): Int = l
-            |}""".stripMargin
-        )
-      )
-    }.getMessage should include(MustBeStatic)
-  }
-
-  it should "report error when exporting non static module method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
-          |class Wrapper() {
-          | object inner {
-          |   @exported
-          |   def foo(l: Int): Int = l
-          | }
-          |}""".stripMargin
-        )
-      )
-    }.getMessage should include(MustBeStatic)
-  }
-
-  val CannotExportField =
-    "Cannot export field, use `@exportAccessors()` annotation to generate external accessors"
-  it should "report error when exporting module field" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
-          |object valuesNotAllowed {
-          |  @exported val foo: Int = 0
-          |}""".stripMargin
-        )
-      )
-    }.getMessage should include(CannotExportField)
-  }
-
-  it should "report error when exporting module variable" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
-          |object variableNotAllowed {
-          |  @exported var foo: Int = 0
-          |}""".stripMargin
-        )
-      )
-    }.getMessage should include(CannotExportField)
-  }
-
   it should "report error for intrinsic resolving of not existing field" in {
     intercept[CompilationFailedException] {
       NIRCompiler(
@@ -349,6 +270,85 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include(
       "Closing over local state of value x in function transformed to CFuncPtr results in undefined behaviour"
     )
+  }
+
+  it should "allow to export module method" in {
+    try
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+              |object ExportInModule {
+              |  @exported
+              |  def foo(l: Int): Int = l
+              |  @exportAccessors()
+              |  val bar: Double = 0.42d
+              |}""".stripMargin
+        )
+      )
+    catch {
+      case ex: CompilationFailedException =>
+        fail(s"Unexpected compilation failure: ${ex.getMessage()}", ex)
+    }
+  }
+  val MustBeStatic =
+    "Exported members must be statically reachable, definition within class or trait is currently unsupported"
+
+  it should "report error when exporting class method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+            |class ExportInClass() {
+            |  @exported
+            |  def foo(l: Int): Int = l
+            |}""".stripMargin
+        )
+      )
+    }.getMessage should include(MustBeStatic)
+  }
+
+  it should "report error when exporting non static module method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+          |class Wrapper() {
+          | object inner {
+          |   @exported
+          |   def foo(l: Int): Int = l
+          | }
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include(MustBeStatic)
+  }
+
+  val CannotExportField =
+    "Cannot export field, use `@exportAccessors()` annotation to generate external accessors"
+  it should "report error when exporting module field" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+          |object valuesNotAllowed {
+          |  @exported val foo: Int = 0
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include(CannotExportField)
+  }
+
+  it should "report error when exporting module variable" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(
+        _.compile(
+          """import scala.scalanative.unsafe._
+          |object variableNotAllowed {
+          |  @exported var foo: Int = 0
+          |}""".stripMargin
+        )
+      )
+    }.getMessage should include(CannotExportField)
   }
 
 }

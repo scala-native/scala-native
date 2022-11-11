@@ -742,7 +742,8 @@ trait NirGenExpr(using Context) {
       def canUseCurrentThis = currentThis.nonEmpty &&
         (sym == currentClass || currentMethod.owner == currentClass)
       val canLoadAsModule =
-        sym.is(ModuleClass, butNot = Package) ||
+        sym != currentClass &&
+          sym.is(ModuleClass, butNot = Package) ||
           sym.isPackageObject
 
       if (canLoadAsModule) genModule(sym)
