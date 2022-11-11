@@ -24,6 +24,7 @@ import scala.scalanative.posix.netinet.in._
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.string.strerror
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.time.{time_t, time, difftime}
 import scala.scalanative.posix.unistd
@@ -437,7 +438,7 @@ object InetAddress {
         val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
         val ex =
           if (gaiStatus == EAI_NONAME)
-            new UnknownHostException(gaiMsg)
+            new UnknownHostException(host + ": " + gaiMsg)
           else
             new IOException(gaiMsg)
         throw ex
@@ -644,24 +645,6 @@ object InetAddress {
     (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
   }
 
-  private def unknownHostExceptionMsg(name: String): String = {
-    /* This is the text used by 'Temurin Java 1.8.0_345'.
-     * Please consult frequent Scala Native contributor Arman Bilge
-     * before changing it. Changes may break versions of project ip4s.
-     * Having that project run unchanged on JVM, Scala.js, & Scala Native
-     * is influential.
-     *
-     * Yes, tests for exact messages is fraught with hazard, especially
-     * if they can be internationalized. On the other hand, having
-     * a user base is a Good Thing.
-     *
-     * Scastie (online Scala JVM) and macOS Monterrey 12.6 Zulu JVM
-     * have text which differ from this and each other.
-     */
-
-    name + ": Name or service not known"
-  }
-
   def getAllByName(host: String): Array[InetAddress] = {
     if ((host == null) || (host.length == 0)) {
       /* The obvious recursive call to getAllByName("localhost") does not
@@ -751,7 +734,7 @@ object InetAddress {
 
     val ghnStatus = unistd.gethostname(hostName, MAXHOSTNAMELEN);
     if (ghnStatus != 0) {
-      throw new UnknownHostException(unknownHostExceptionMsg(""))
+      throw new UnknownHostException(fromCString(strerror(errno)))
     } else {
       /* OS library routine should have NUL terminated 'hostName'.
        * If not, hostName(MAXHOSTNAMELEN) should be NUL from stackalloc.
