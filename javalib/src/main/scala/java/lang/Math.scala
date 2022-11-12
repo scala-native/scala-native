@@ -95,6 +95,9 @@ object Math {
     else quot - 1
   }
 
+  @alwaysinline def floorDiv(a: scala.Long, b: scala.Int): scala.Long =
+    floorDiv(a, b.toLong)
+
   @inline def floorMod(a: scala.Int, b: scala.Int): scala.Int = {
     val rem = a % b
     if ((a < 0) == (b < 0) || rem == 0) rem
@@ -106,6 +109,9 @@ object Math {
     if ((a < 0) == (b < 0) || rem == 0) rem
     else rem + b
   }
+
+  @alwaysinline def floorMod(a: scala.Long, b: scala.Int): scala.Long =
+    floorMod(a, b.toLong)
 
   @alwaysinline def fma(
       a: scala.Float,
@@ -181,6 +187,12 @@ object Math {
     if (overflow.flag) throw new ArithmeticException("Long overflow")
     else overflow.value
   }
+
+  @alwaysinline def multiplyExact(a: scala.Long, b: scala.Int): scala.Long =
+    multiplyExact(a, b.toLong)
+
+  @alwaysinline def multiplyFull(a: scala.Int, b: scala.Int): scala.Long =
+    a.toLong * b.toLong
 
   @alwaysinline def negateExact(a: scala.Int): scala.Int =
     subtractExact(0, a)
