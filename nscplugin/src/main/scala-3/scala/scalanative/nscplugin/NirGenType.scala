@@ -46,13 +46,14 @@ trait NirGenType(using Context) {
       sym.is(JavaStatic) || sym.isScalaStatic || sym.isExtern
 
     def isExtern: Boolean = sym.exists && {
-      sym.owner.isExternModule ||
+      sym.owner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
       (sym.is(Accessor) && sym.field.isExtern)
     }
 
-    def isExternModule: Boolean =
-      isScalaModule && sym.hasAnnotation(defnNir.ExternClass)
+    def isExternType: Boolean =
+      (isScalaModule || sym.isTraitOrInterface) &&
+        sym.hasAnnotation(defnNir.ExternClass)
 
     def isStruct: Boolean =
       sym.hasAnnotation(defnNir.StructClass)
