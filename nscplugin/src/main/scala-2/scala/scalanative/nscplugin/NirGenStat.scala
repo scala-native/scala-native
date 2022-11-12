@@ -122,24 +122,21 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = cd.symbol
       def attrs = genClassAttrs(cd)
       def name = genTypeName(sym)
-      val parent = genClassParent(sym)
-      val traits = genClassInterfaces(sym)
+      def parent = genClassParent(sym)
+      def traits = genClassInterfaces(sym)
 
       implicit val pos: nir.Position = cd.pos
+
+      buf += {
+        if (sym.isScalaModule) Defn.Module(attrs, name, parent, traits)
+        else if (sym.isTraitOrInterface) Defn.Trait(attrs, name, traits)
+        else Defn.Class(attrs, name, parent, traits)
+      }
+
       genReflectiveInstantiation(cd)
       genClassFields(cd)
       genMethods(cd)
       genMirrorClass(cd)
-
-      buf += {
-        if (sym.isScalaModule) {
-          Defn.Module(attrs, name, parent, traits)
-        } else if (sym.isTraitOrInterface) {
-          Defn.Trait(attrs, name, traits)
-        } else {
-          Defn.Class(attrs, name, parent, traits)
-        }
-      }
     }
 
     def genClassParent(sym: Symbol): Option[nir.Global] = {
@@ -148,7 +145,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           !isImplClass(sym)) {
         reporter.error(
           sym.pos,
-          s"Extern object can only extend extern traits - $sym"
+          s"Extern object can only extend extern traits"
         )
       }
 
@@ -178,10 +175,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassInterfaces(sym: Symbol) = {
       val isExtern = sym.isExternType
-      for {
-        parent <- sym.info.parents
-        psym = parent.typeSymbol if psym.isTraitOrInterface
-      } yield {
+      def validate(psym: Symbol) = {
         val parentIsExtern = psym.isExternType
         if (isExtern && !parentIsExtern)
           reporter.error(
@@ -190,11 +184,17 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
         if (!isExtern && parentIsExtern)
           reporter.error(
-            sym.pos,
+            psym.pos,
             "Extern traits can be only mixed with extern traits or objects"
           )
-        genTypeName(psym)
       }
+
+      for {
+        parent <- sym.parentSymbols
+        // _ = println(parent)
+        psym = parent.info.typeSymbol if psym.isTraitOrInterface
+        _ = validate(psym)
+      } yield genTypeName(psym)
     }
 
     def genClassFields(cd: ClassDef): Unit = {
