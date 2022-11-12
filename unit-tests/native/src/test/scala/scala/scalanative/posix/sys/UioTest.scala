@@ -7,7 +7,7 @@ import scalanative.unsigned._
 import scalanative.libc.string.memcmp
 
 import scalanative.posix.arpa.inet.inet_addr
-import scalanative.posix.errno
+import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
@@ -50,7 +50,7 @@ class UioTest {
       val connectOutStatus =
         connect(sout, outAddr, sizeof[sockaddr].toUInt)
       assertNotEquals(
-        s"connect output socket failed,  errno: ${errno.errno}",
+        s"connect output socket failed,  errno: ${errno}",
         -1,
         connectOutStatus
       )

@@ -28,7 +28,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
       for {
         member <- owner.info.members
         if isExported(member)
-        if !owner.isExternModule
+        if !owner.isExternType
         // Externs combined with exports are not allowed, exception is handled in externs
         exported <-
           if (owner.isScalaModule) genModuleMember(owner, member)

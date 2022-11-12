@@ -21,7 +21,7 @@ import scala.scalanative.posix.unistd
 import scala.scalanative.unsigned._
 import scala.scalanative.{runtime, windows}
 import scalanative.libc.stdio
-import scala.scalanative.libc.errno
+import scala.scalanative.libc.errno.errno
 
 import scala.scalanative.windows.ErrorHandlingApi
 import scala.scalanative.windows.FileApi._
@@ -248,7 +248,7 @@ private[java] final class FileChannelImpl(
         -1
       } else if (readCount < 0) {
         // negative value (typically -1) indicates that read failed
-        throw UnixException(file.fold("")(_.toString), errno.errno)
+        throw UnixException(file.fold("")(_.toString), errno)
       } else {
         // successfully read readCount bytes
         readCount
@@ -387,7 +387,7 @@ private[java] final class FileChannelImpl(
 
       if (writeCount < 0) {
         // negative value (typically -1) indicates that write failed
-        throw UnixException(file.fold("")(_.toString), errno.errno)
+        throw UnixException(file.fold("")(_.toString), errno)
       }
     }
   }
