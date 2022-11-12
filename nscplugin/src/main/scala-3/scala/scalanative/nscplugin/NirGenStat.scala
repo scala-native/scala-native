@@ -453,8 +453,8 @@ trait NirGenStat(using Context) {
 
       case _ =>
         report.error(
-          s"methods in extern objects must have extern body  - ${rhs}",
-          dd.sourcePos
+          s"methods in extern objects must have extern body",
+          rhs.sourcePos
         )
         None
     }
@@ -486,7 +486,7 @@ trait NirGenStat(using Context) {
 
       case tree =>
         report.error(
-          s"extern objects may only contain extern fields and methods - $tree",
+          s"extern objects may only contain extern fields and methods",
           rhs.sourcePos
         )
     }
@@ -502,7 +502,7 @@ trait NirGenStat(using Context) {
       if (f.isField && !isInheritedField(f)) {
         if !(externs.contains(f) || externs.contains(f.setter)) then
           report.error(
-            s"extern objects may only contain extern fields $f",
+            s"extern objects may only contain extern fields",
             f.sourcePos
           )
       }

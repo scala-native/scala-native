@@ -191,7 +191,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       for {
         parent <- sym.parentSymbols
-        // _ = println(parent)
         psym = parent.info.typeSymbol if psym.isTraitOrInterface
         _ = validate(psym)
       } yield genTypeName(psym)

@@ -21,8 +21,7 @@ import scala.scalanative.unsafe._
  *  commented out. The code is commented out so the next developer that comes
  *  along will not have to rediscover these limitations.
  */
-@extern
-trait signal extends libc.signal {
+@extern trait signal extends libc.signal {
   /* define the following macros, which shall expand to constant expressions with
    * distinct values that have a type compatible with the second argument to, and
    * the return value of, the signal() function, and whose values shall compare

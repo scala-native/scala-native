@@ -98,12 +98,12 @@ trait NirGenName[G <: Global with Singleton] {
 
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
 
-    def isExternModule =
+    def isExtern =
       sym.owner.isExternType || implClassTarget(sym.owner).isExternType
 
     if (sym == String_+)
       genMethodName(StringConcatMethod)
-    else if (isExternModule)
+    else if (isExtern)
       owner.member(genExternSigImpl(sym, id))
     else if (sym.name == nme.CONSTRUCTOR)
       owner.member(nir.Sig.Ctor(paramTypes))
