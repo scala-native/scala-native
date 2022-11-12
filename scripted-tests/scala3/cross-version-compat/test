@@ -12,6 +12,7 @@
 ## Use CrossVersion.for2_13use3
 > +projectC/publishLocal
 > +projectC/test
+> +projectC/run
 
 # Use published projects
 ## No CrossVersion
