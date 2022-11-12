@@ -85,6 +85,60 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       "`extern` cannot be used in val definition"
     )
   }
+  }
+
+  it should "not allow members of extern object to reference other externs" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern object Dummy {
+          |  def foo(): Int = extern
+          |  def bar(): Int = foo()
+          |}
+          |""".stripMargin
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile(code))
+    }.getMessage() should include(
+      "Referencing other extern symbols in not supported"
+    )
+  }
+
+  it should "allow to extend extern traits" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern trait Dummy {
+          |   var x: Int = extern
+          |   def foo(): Int = extern
+          |}
+          |
+          |@extern trait Dummy2 extends Dummy {
+          |  def bar(): Int = extern
+          |}
+          |
+          |@extern object Dummy extends Dummy
+          |@extern object Dummy2 extends Dummy2
+          |""".stripMargin
+
+    NIRCompiler(_.compile(code))
+  }
+
+  it should "not allow to mix extern object with regular traits" in {
+    val code =
+      """
+      |import scala.scalanative.unsafe.extern
+      |
+      |trait Dummy {
+      |  def foo(): Int = ???
+      |}
+      |
+      |@extern object Dummy extends Dummy
+      |""".stripMargin
+    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
+      .getMessage() should include(
+      "Extern object can only extend extern traits"
+    )
+  }
 
   it should "compile extern var definition" in {
     // given
@@ -97,6 +151,52 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         |}""".stripMargin
     // when
     NIRCompiler(_.compile(code))
+  it should "not allow to mix extern object with class" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+        |
+        |class Dummy {
+        |  def foo(): Int = ???
+        |}
+        |
+        |@extern object Dummy extends Dummy
+        |""".stripMargin
+    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
+      .getMessage() should include(
+      "Extern object can only extend extern traits"
+    )
+  }
+
+  it should "not allow to mix extern traits with regular object" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern trait Dummy {
+          |  def foo(): Int = extern
+          |}
+          |
+          |object Dummy extends Dummy
+          |""".stripMargin
+    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
+      .getMessage() should include(
+      "Extern traits can be only mixed with extern traits or objects"
+    )
+  }
+
+  it should "not allow to mix extern traits with class" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern trait Dummy {
+          |  def foo(): Int = extern
+          |}
+          |
+          |class DummyImpl extends Dummy
+          |""".stripMargin
+    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
+      .getMessage() should include(
+      "Extern traits can be only mixed with extern traits or objects"
+    )
   }
 
   it should "report error for intrinsic resolving of not existing field" in {
