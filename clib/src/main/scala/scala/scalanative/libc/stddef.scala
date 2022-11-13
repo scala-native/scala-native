@@ -3,13 +3,14 @@ package libc
 
 import scala.scalanative.unsafe._
 
-@extern
-object stddef {
+@extern object stddef extends stddef
+
+@extern trait stddef {
   type ptrdiff_t = CLong
   type wchar_t = CInt
   type size_t = CSize
 
-// Macros
+  // Macros
 
   // Ptr[Byte] is Scala Native convention for C (void *).
   @name("scalanative_clib_null")
