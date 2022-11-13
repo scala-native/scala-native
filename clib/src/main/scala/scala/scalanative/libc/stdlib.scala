@@ -3,8 +3,9 @@ package libc
 
 import scalanative.unsafe._
 
-@extern
-object stdlib {
+@extern object stdlib extends stdlib
+
+@extern trait stdlib {
 
   // Memory management
 
@@ -42,7 +43,11 @@ object stdlib {
   def strtol(str: CString, str_end: Ptr[CString], base: CInt): CLong = extern
   def strtoll(str: CString, str_end: Ptr[CString], base: CInt): CLongLong =
     extern
-  def strtoul(str: CString, str_end: Ptr[CString], base: CInt): CUnsignedLong =
+  def strtoul(
+      str: CString,
+      str_end: Ptr[CString],
+      base: CInt
+  ): CUnsignedLong =
     extern
   def strtoull(
       str: CString,
