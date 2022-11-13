@@ -4,6 +4,7 @@ package posix
 import scalanative.unsafe.{CInt, extern, name}
 
 @extern object errno extends errno
+
 @extern trait errno extends libc.errno {
 
   // Macros
