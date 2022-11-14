@@ -8,9 +8,9 @@ import scala.scalanative.unsafe.{CInt, CString, extern}
  *  (see XSH The Compilation Environment ) to enable the visibility of these
  *  symbols in this header.
  *
- *  Extension to the ISO C standard: The functionality described is
- *  an extension to the ISO C standard. Application developers may make use of
- *  an extension as it is supported on all POSIX.1-2017-conforming systems.
+ *  Extension to the ISO C standard: The functionality described is an extension
+ *  to the ISO C standard. Application developers may make use of an extension
+ *  as it is supported on all POSIX.1-2017-conforming systems.
  */
 @extern object stdlib extends stdlib
 
