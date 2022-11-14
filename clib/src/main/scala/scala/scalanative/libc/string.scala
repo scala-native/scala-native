@@ -5,7 +5,6 @@ import scalanative.unsafe._
 
 @extern object string extends string
 
-/** Currently following C99 */
 @extern trait string {
   def strcpy(dest: CString, src: CString): CString = extern
   def strncpy(dest: CString, src: CString, count: CSize): CString = extern
