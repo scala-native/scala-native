@@ -3,10 +3,12 @@ package posix
 
 import scala.scalanative.unsafe.{CInt, CString, extern}
 
-/** [CX] Some of the functionality described on this reference page extends the
- *  ISO C standard. Applications shall define the appropriate feature test macro
- *  (see XSH The Compilation Environment ) to enable the visibility of these
- *  symbols in this header.
+/** POSIX stdlib.h for Scala
+ *
+ *  Some of the functionality described on this reference page extends the ISO C
+ *  standard. Applications shall define the appropriate feature test macro (see
+ *  XSH The Compilation Environment ) to enable the visibility of these symbols
+ *  in this header.
  *
  *  Extension to the ISO C standard: The functionality described is an extension
  *  to the ISO C standard. Application developers may make use of an extension
