@@ -1,4 +1,5 @@
 package scala.scalanative.libc
+
 import scala.scalanative.unsafe._
 
 @extern object stdint extends stdint
