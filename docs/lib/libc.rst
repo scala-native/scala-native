@@ -34,7 +34,7 @@ stdnoreturn.h_ N/A
 string.h_      scala.scalanative.libc.string_
 tgmath.h_      N/A
 threads.h_     N/A
-time.h_        N/A
+time.h_        scala.scalanative.libc.time_
 uchar.h_       N/A
 wchar.h_       N/A
 wctype.h_      N/A

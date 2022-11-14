@@ -8,8 +8,9 @@ import scala.scalanative.posix.signal.sigevent
 // XSI comment before method indicates it is defined in
 // extended POSIX X/Open System Interfaces, not base POSIX.
 
-@extern
-object time {
+@extern object time extends time
+
+@extern trait time extends libc.time {
 
   type clock_t = types.clock_t
   type clockid_t = types.clockid_t
@@ -129,9 +130,6 @@ object time {
   def tzname: Ptr[CStruct2[CString, CString]] = extern
 
 // Macros
-
-  @name("scalanative_clocks_per_sec")
-  def CLOCKS_PER_SEC: CInt = extern
 
 // Symbolic constants
 
