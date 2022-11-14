@@ -4,7 +4,7 @@ package posix
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned.{UByte, UInt, ULong, UShort}
 
-/** Represents the POSIX inttypes.
+/** POSIX inttypes.h for Scala
  *
  *  The <inttypes.h> header shall include the <stdint.h> header.
  */
