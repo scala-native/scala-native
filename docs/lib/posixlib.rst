@@ -33,8 +33,8 @@ C Header          Scala Native Module
 `langinfo.h`_     N/A
 `libgen.h`_       N/A
 `limits.h`_       scala.scalanative.posix.limits_
-`locale.h`_       N/A
-`math.h`_         scala.scalanative.libc.math_
+`locale.h`_       scala.scalanative.posix.locale_
+`math.h`_         scala.scalanative.posix.math_
 `monetary.h`_     N/A
 `mqueue.h`_       N/A
 `ndbm.h`_         N/A
@@ -190,7 +190,8 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
-.. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
+.. _scala.scalanative.posix.locale: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/locale.scala
+.. _scala.scalanative.posix.math: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/math.scala
 .. _scala.scalanative.posix.net.if: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/net/if.scala
 .. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netdb.scala
 .. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/in.scala

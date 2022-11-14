@@ -3,12 +3,15 @@ package libc
 
 import scalanative.unsafe._
 
-@extern
-object math {
+@extern object math extends math
+
+@extern trait math {
 
   // Basic operations
 
+  // Not found in POSIX spec
   def abs(x: CInt): CInt = extern
+
   def labs(x: CLong): CLong = extern
   def llabs(x: CLongLong): CLongLong = extern
   def fabsf(arg: CFloat): CFloat = extern
