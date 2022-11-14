@@ -4,7 +4,9 @@ C Standard Library
 ==================
 
 Scala Native provides bindings for a core subset of the
-`C standard library <https://en.cppreference.com/w/c/header>`_:
+`C standard library <https://en.cppreference.com/w/c/header>`_.
+
+Currently the bindings follow the C99 standard (ISO/IEC 9899:1999).
 
 ============== ==================================
 C Header       Scala Native Module
