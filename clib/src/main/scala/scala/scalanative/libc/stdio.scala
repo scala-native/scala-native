@@ -3,10 +3,12 @@ package libc
 
 import scalanative.unsafe._
 
-@extern
-object stdio {
+@extern object stdio extends stdio
+
+@extern trait stdio {
 
   // File access
+
   /** Opens a file indicated by filename and returns a file stream associated
    *  with that file. mode is used to determine the file access mode.
    *
@@ -116,6 +118,7 @@ object stdio {
   def fwide(stream: Ptr[FILE], mode: CInt): CInt = extern
 
   // Direct input/output
+
   /** Reads up to count objects into the array buffer from the given input
    *  stream stream as if by calling fgetc size times for each object, and
    *  storing the results, in the order obtained, into the successive positions
@@ -412,6 +415,7 @@ object stdio {
   def ungetc(ch: CInt, stream: Ptr[FILE]): CInt = extern
 
   // Formatted input/output
+
   /** Read formatted data into variable argument list Reads data from the
    *  standard input (stdin) and stores them according to parameter format into
    *  the locations pointed by the elements in the variable argument list
@@ -554,6 +558,7 @@ object stdio {
     extern
 
   // File positioning
+
   /** Returns the current value of the position indicator of the stream.
    *
    *  @param stream
@@ -627,6 +632,7 @@ object stdio {
   def rewind(stream: Ptr[FILE]): Unit = extern
 
   // Error handling
+
   /** Resets the error flags and the EOF indicator for the given file stream.
    *
    *  @param stream
@@ -668,6 +674,7 @@ object stdio {
   def perror(str: CString): Unit = extern
 
   // Operations on files
+
   /** Deletes the file identified by character string pointed to by fname.
    *
    *  @param fname

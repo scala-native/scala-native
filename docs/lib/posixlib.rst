@@ -57,7 +57,7 @@ C Header          Scala Native Module
 `stdbool.h`_      N/A
 `stddef.h`_       scala.scalanative.posix.stddef_
 `stdint.h`_       scala.scalanative.posix.stdint_
-`stdio.h`_        N/A
+`stdio.h`_        scala.scalanative.posix.stdio_
 `stdlib.h`_       scala.scalanative.posix.stdlib_
 `string.h`_       scala.scalanative.posix.string_
 `strings.h`_      scala.scalanative.posix.strings_
@@ -204,6 +204,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.spawn: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/spawn.scala
 .. _scala.scalanative.posix.stddef: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stddef.scala
 .. _scala.scalanative.posix.stdint: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdint.scala
+.. _scala.scalanative.posix.stdio: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdio.scala
 .. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdlib.scala
 .. _scala.scalanative.posix.string: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/string.scala
 .. _scala.scalanative.posix.strings: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/strings.scala
