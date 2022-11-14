@@ -6,7 +6,6 @@ import scala.scalanative.unsigned.{UByte, UInt, ULong, UShort}
 
 @extern object inttypes extends inttypes
 
-
 @extern trait inttypes extends libc.inttypes {
   // should be in stdint, optional in C stdint
   type uint8_t = UByte

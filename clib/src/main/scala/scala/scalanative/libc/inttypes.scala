@@ -7,7 +7,7 @@ import scala.scalanative.unsafe._
 @extern trait inttypes {
   import scala.scalanative.libc.stdint._
 
-  /**  See also https://en.cppreference.com/w/cpp/numeric/math/abs */
+  /** See also https://en.cppreference.com/w/cpp/numeric/math/abs */
   type imaxdiv_t = CStruct2[intmax_t, intmax_t]
 
   /** Calculates the absolute value of an integer of any size. The imaxabs
