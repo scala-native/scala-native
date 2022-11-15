@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
 import scala.scalanative.build.{Config, IncCompilationContext}
 import scala.scalanative.build.core.ScalaNative.{dumpDefns, encodedMainClass}
@@ -66,8 +66,6 @@ object CodeGen {
 
       // Incremental compilation code generation
       def seperateIncrementally(): Seq[Path] = {
-        val ctx = new IncCompilationContext(config.workdir)
-        ctx.collectFromPreviousState()
         def packageName(defn: Defn): String = {
           val name = defn.name.top.id
             .split('.')
@@ -77,6 +75,8 @@ object CodeGen {
           if (name.isEmpty) "__empty_package" else name
         }
 
+        val ctx = new IncCompilationContext(config.workdir)
+        ctx.collectFromPreviousState()
         try
           assembly
             .groupBy(packageName)
@@ -84,23 +84,20 @@ object CodeGen {
             .map {
               case (packageName, defns) =>
                 val packagePath = packageName.replace(".", File.separator)
-                val ownerDirectory = config.workdir
-                  .resolve(Paths.get(packagePath, ".."))
-                  .normalize
+                val outFile = config.workdir.resolve(s"$packagePath.ll")
+                val ownerDirectory = outFile.getParent()
+
                 ctx.addEntry(packageName, defns)
                 if (ctx.shouldCompile(packageName)) {
                   val sorted = defns.sortBy(_.name.show)
-                  if (!ownerDirectory.toFile.exists())
-                    ownerDirectory.toFile.mkdirs()
-
-                  val outFile = config.workdir.resolve(s"$packagePath.ll")
-                  java.nio.file.Files.move(outFile, outFile.resolveSibling(outFile.getFileName().toString() + ".bak"), StandardCopyOption.REPLACE_EXISTING)
-                  config.logger.info(s"Generating $packagePath.ll")
-                  
+                  if (!Files.exists(ownerDirectory))
+                    Files.createDirectories(ownerDirectory)
                   Impl(config, env, sorted).gen(packagePath, workdir)
                 } else {
-                  config.logger.info(s"Skipping generation of $packagePath.ll")
                   assert(ownerDirectory.toFile.exists())
+                  config.logger.debug(
+                    s"Content of package has not changed, skiping generation of $packagePath.ll"
+                  )
                   config.workdir.resolve(s"$packagePath.ll")
                 }
             }
@@ -121,13 +118,9 @@ object CodeGen {
         Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
-      // For some reason in the CI matching for `case _: build.Mode.Release` throws compile time errors
       import build.Mode._
-      (
-        config.mode,
-        config.LTO
-      ) match {
-        case (ReleaseFast | ReleaseFull, build.LTO.None) => single()
+      (config.mode, config.LTO) match {
+        case (_: build.Mode.Release, build.LTO.None) => single()
         case _ =>
           if (config.compilerConfig.useIncrementalCompilation)
             seperateIncrementally()
