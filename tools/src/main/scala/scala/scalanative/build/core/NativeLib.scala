@@ -39,8 +39,6 @@ private[scalanative] object NativeLib {
     val paths = NativeLib.findNativePaths(config.workdir, destPath)
     val (projPaths, projConfig) =
       Filter.filterNativelib(config, linkerResult, destPath, paths)
-    implicit val incCompilationContext: IncCompilationContext =
-      new IncCompilationContext(config.workdir)
     LLVM.compile(projConfig, projPaths)
   }
 

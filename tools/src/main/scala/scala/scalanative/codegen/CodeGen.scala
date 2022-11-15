@@ -10,13 +10,12 @@ import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import scala.scalanative.compat.CompatParColls.Converters._
+import java.nio.file.StandardCopyOption
 
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext
-  ): Seq[Path] = {
+  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
@@ -46,8 +45,7 @@ object CodeGen {
 
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
-      meta: Metadata,
-      incCompilationContext: IncCompilationContext
+      meta: Metadata
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -68,6 +66,8 @@ object CodeGen {
 
       // Incremental compilation code generation
       def seperateIncrementally(): Seq[Path] = {
+        val ctx = new IncCompilationContext(config.workdir)
+        ctx.collectFromPreviousState()
         def packageName(defn: Defn): String = {
           val name = defn.name.top.id
             .split('.')
@@ -77,28 +77,40 @@ object CodeGen {
           if (name.isEmpty) "__empty_package" else name
         }
 
-        assembly
-          .groupBy(packageName)
-          .par
-          .map {
-            case (packageName, defns) =>
-              val packagePath = packageName.replace(".", File.separator)
-              val ownerDirectory = config.workdir
-                .resolve(Paths.get(packagePath, ".."))
-                .normalize
-              incCompilationContext.addEntry(packageName, defns)
-              if (incCompilationContext.shouldCompile(packageName)) {
-                val sorted = defns.sortBy(_.name.show)
-                if (!ownerDirectory.toFile.exists())
-                  ownerDirectory.toFile.mkdirs()
-                Impl(config, env, sorted).gen(packagePath, workdir)
-              } else {
-                assert(ownerDirectory.toFile.exists())
-                config.workdir.resolve(s"$packagePath.ll")
-              }
-          }
-          .seq
-          .toSeq
+        try
+          assembly
+            .groupBy(packageName)
+            .par
+            .map {
+              case (packageName, defns) =>
+                val packagePath = packageName.replace(".", File.separator)
+                val ownerDirectory = config.workdir
+                  .resolve(Paths.get(packagePath, ".."))
+                  .normalize
+                ctx.addEntry(packageName, defns)
+                if (ctx.shouldCompile(packageName)) {
+                  val sorted = defns.sortBy(_.name.show)
+                  if (!ownerDirectory.toFile.exists())
+                    ownerDirectory.toFile.mkdirs()
+
+                  val outFile = config.workdir.resolve(s"$packagePath.ll")
+                  java.nio.file.Files.move(outFile, outFile.resolveSibling(outFile.getFileName().toString() + ".bak"), StandardCopyOption.REPLACE_EXISTING)
+                  config.logger.info(s"Generating $packagePath.ll")
+                  
+                  Impl(config, env, sorted).gen(packagePath, workdir)
+                } else {
+                  config.logger.info(s"Skipping generation of $packagePath.ll")
+                  assert(ownerDirectory.toFile.exists())
+                  config.workdir.resolve(s"$packagePath.ll")
+                }
+            }
+            .seq
+            .toSeq
+        finally {
+          // Save current state for next compilation run
+          ctx.dump()
+          ctx.clear()
+        }
       }
 
       // Generate a single LLVM IR file for the whole application.
