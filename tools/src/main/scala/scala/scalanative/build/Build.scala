@@ -6,6 +6,7 @@ import scala.scalanative.util.Scope
 import scala.scalanative.build.core.Filter
 import scala.scalanative.build.core.NativeLib
 import scala.scalanative.build.core.ScalaNative
+import scala.util.Try
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -60,6 +61,14 @@ object Build {
       if (Files.notExists(config.workdir)) {
         Files.createDirectories(config.workdir)
       }
+
+      if (canSkipBuild(config)) {
+        config.logger.debug(
+          "Skipping Scala Native build - inputs and configuration have not changed."
+        )
+        return config.artifactPath
+      }
+
       // validate classpath - use fconfig below
       val fconfig = {
         val fclasspath = NativeLib.filterClasspath(config.classPath)
@@ -130,5 +139,36 @@ object Build {
       .flatMap(nativeLib =>
         NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
       )
+  }
+
+  /** Check if build can be skipped. This function returns true only when inputs
+   *  of the build has not changed since last compilation. It means that all
+   *  files on the classpath were not modified after building last artifact and
+   *  the cached checksum of config is equal to the checksum of current config.
+   */
+  private def canSkipBuild(config: Config): Boolean = {
+    val artifactExists = Files.exists(config.artifactPath)
+
+    def classpathWasModified = {
+      val artifactMT = Files.getLastModifiedTime(config.artifactPath)
+      config.classPath.exists {
+        Files.getLastModifiedTime(_).compareTo(artifactMT) > 0
+      }
+    }
+
+    val workdir = io.VirtualDirectory.local(config.workdir)
+    val configCheckSumFile = Paths.get("config_hash")
+    val configChecksum = config.checksum
+    val configChanged = workdir.contains(configCheckSumFile) &&
+      Try {
+        val content = new String(workdir.read(configCheckSumFile).array())
+        content.toLong != configChecksum
+      }.getOrElse(true)
+
+    val hasChanged = !artifactExists || configChanged || classpathWasModified
+    if (hasChanged && configChanged) Try {
+      workdir.write(configCheckSumFile)(_.write(configChecksum.toString()))
+    }
+    !hasChanged
   }
 }

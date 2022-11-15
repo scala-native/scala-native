@@ -29,6 +29,11 @@ sealed trait OptimizerConfig {
 
   private[scalanative] def show(indent: String): String
 
+  /** Checksum used to detect changes to the build between compilation runs. */
+  private[scalanative] lazy val checksum =
+    Seq(maxInlineDepth, maxCallerSize, maxInlineSize)
+      .foldLeft(0L)(_ + _.toString().hashCode())
+
 }
 
 object OptimizerConfig {

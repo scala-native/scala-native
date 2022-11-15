@@ -62,6 +62,18 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
+  /** Checksum used to detect changes to the build between compilation runs. */
+  private[scalanative] lazy val checksum = Seq(
+    // format: off
+    gc, mode, buildTarget, targetTriple,
+    clang,clangPP, linkingOptions, compileOptions,
+    linkStubs, check, checkFatalWarnings, dump,
+    asan, optimize, useIncrementalCompilation,
+    linktimeProperties,
+    optimizerConfig.checksum
+    // format: on
+  ).foldLeft(0L)(_ + _.toString().hashCode())
+
   private lazy val detectedTriple = Discover.targetTriple(clang)
 
   /** Are we targeting a 32-bit platform?

@@ -87,6 +87,19 @@ sealed trait Config {
 
   protected def nameSuffix = if (testConfig) testSuffix else ""
 
+  /** Checksum used to detect changes to the build between compilation runs. */
+  private[scalanative] lazy val checksum: Long = {
+    val inputs = classPath ++ Seq(
+      basedir,
+      workdir,
+      artifactPath,
+      testConfig,
+      mainClass,
+      compilerConfig.checksum
+    )
+    inputs.foldLeft(0L)(_ + _.toString().hashCode())
+  }
+
   private[scalanative] lazy val targetsWindows: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isWindows) { customTriple =>
       customTriple.contains("win32") ||
@@ -174,11 +187,11 @@ object Config {
         classPath.mkString("List(", "\n".padTo(22, ' '), ")")
       s"""Config(
         | - basedir:        $basedir
-        | - testConfig:     $testConfig
         | - workdir:        $workdir
         | - artifactPath:   $artifactPath
-        | - logger:         $logger
         | - classPath:      $classPathFormat
+        | - mainClass:      $mainClass
+        | - testConfig:     $testConfig
         | - compilerConfig: $compilerConfig
         |)""".stripMargin
     }
