@@ -1,4 +1,5 @@
-package scala.scalanative.build
+package scala.scalanative.codegen
+
 import java.io.{ByteArrayOutputStream, File, ObjectOutputStream, PrintWriter}
 import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths, Files}
@@ -7,7 +8,7 @@ import scala.io.Source
 import scala.language.implicitConversions
 import scala.scalanative.nir.Defn
 
-class IncCompilationContext(workDir: Path) {
+class IncrementalCodeGenContext(workDir: Path) {
   private val package2hash: TrieMap[String, Long] = TrieMap[String, Long]()
   private val pack2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
   private val changed: TrieMap[String, Long] = TrieMap[String, Long]()

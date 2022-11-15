@@ -4,7 +4,7 @@ package codegen
 import java.io.File
 import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
-import scala.scalanative.build.{Config, IncCompilationContext}
+import scala.scalanative.build.Config
 import scala.scalanative.build.core.ScalaNative.{dumpDefns, encodedMainClass}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
@@ -75,7 +75,7 @@ object CodeGen {
           if (name.isEmpty) "__empty_package" else name
         }
 
-        val ctx = new IncCompilationContext(config.workdir)
+        val ctx = new IncrementalCodeGenContext(config.workdir)
         ctx.collectFromPreviousState()
         try
           assembly
