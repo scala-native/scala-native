@@ -7,9 +7,9 @@ import scala.collection.mutable
 /** Created by lukaskellenberger on 17.12.16.
  */
 object GenerateReflectiveProxies {
-  implicit val fresh: Fresh = Fresh()
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
+    implicit val fresh: Fresh = Fresh()
     val Global.Member(owner, sig) = defn.name: @unchecked
     val defnType = defn.ty.asInstanceOf[Type.Function]
     implicit val pos: Position = defn.pos
@@ -48,14 +48,18 @@ object GenerateReflectiveProxies {
       }
     )
 
-  private def genProxyLabel(args: Seq[Type])(implicit pos: nir.Position) = {
+  private def genProxyLabel(
+      args: Seq[Type]
+  )(implicit pos: nir.Position, fresh: Fresh) = {
     val argLabels = Val.Local(fresh(), args.head) ::
       args.tail.map(argty => Val.Local(fresh(), argty)).toList
 
     Inst.Label(fresh(), argLabels)
   }
 
-  private def genArgUnboxes(label: Inst.Label, origArgTypes: Seq[nir.Type]) = {
+  private def genArgUnboxes(label: Inst.Label, origArgTypes: Seq[nir.Type])(
+      implicit fresh: Fresh
+  ) = {
     import label.pos
     label.params
       .zip(origArgTypes)
@@ -74,7 +78,7 @@ object GenerateReflectiveProxies {
       method: Inst.Let,
       params: Seq[Val.Local],
       unboxes: Seq[Inst.Let]
-  ) = {
+  )(implicit fresh: Fresh) = {
     import method.pos
     val callParams =
       params.head ::
@@ -98,7 +102,9 @@ object GenerateReflectiveProxies {
   }
 
   private def genRetValBox(callName: Local, defnRetTy: Type, proxyRetTy: Type)(
-      implicit pos: nir.Position
+      implicit
+      pos: nir.Position,
+      fresh: Fresh
   ) =
     Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
