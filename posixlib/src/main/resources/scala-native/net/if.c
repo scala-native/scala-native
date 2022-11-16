@@ -1,4 +1,5 @@
 #ifdef _WIN32
+#include <Iphlpapi.h>
 #include <Netioapi.h>
 #else
 #include <net/if.h>
