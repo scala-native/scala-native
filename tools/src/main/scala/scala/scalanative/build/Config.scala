@@ -90,12 +90,11 @@ sealed trait Config {
   /** Checksum used to detect changes to the build between compilation runs. */
   private[scalanative] lazy val checksum: Long = {
     val inputs = classPath ++ Seq(
-      basedir,
-      workdir,
-      artifactPath,
-      testConfig,
-      mainClass,
+      //format: off
+      basedir, workdir, artifactPath,
+      testConfig, mainClass,
       compilerConfig.checksum
+      //format: on
     )
     inputs.foldLeft(0L)(_ + _.toString().hashCode())
   }
