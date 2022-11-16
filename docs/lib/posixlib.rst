@@ -38,7 +38,7 @@ C Header          Scala Native Module
 `monetary.h`_     N/A
 `mqueue.h`_       N/A
 `ndbm.h`_         N/A
-`net/if.h`_       N/A
+`net/if.h`_       scala.scalanative.posix.net.if_
 `netdb.h`_        scala.scalanative.posix.netdb_
 `netinet/in.h`_   scala.scalanative.posix.netinet.in_
 `netinet/tcp.h`_  scala.scalanative.posix.netinet.tcp_
@@ -191,6 +191,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
 .. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
+.. _scala.scalanative.posix.net.if: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/net/if.scala
 .. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netdb.scala
 .. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/in.scala
 .. _scala.scalanative.posix.netinet.tcp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/tcp.scala
