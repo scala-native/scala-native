@@ -657,7 +657,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
 
           case EmptyTree =>
-            Some(Defn.Declare(attrs, name, sig))
+            Some(
+              Defn.Declare(
+                attrs,
+                name,
+                if (attrs.isExtern) genExternMethodSig(sym) else sig
+              )
+            )
 
           case Apply(TypeApply(Select(retBlock, _), _), _)
               if retBlock.tpe == NoType && isScala211 =>
