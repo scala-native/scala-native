@@ -81,7 +81,8 @@ private[scalanative] object NativeLib {
       throw new BuildException(
         s"No Scala Native libraries were found: $classpath"
       )
-    else {
+
+    if (Files.exists(workdir)) {
       // Fix https://github.com/scala-native/scala-native/pull/2998#discussion_r1023715815
       // Remove all stale native-code-* directories. These can be created if classpath would change
       val expectedPaths = extractPaths.map(_.dest.toAbsolutePath()).toSet
@@ -91,9 +92,9 @@ private[scalanative] object NativeLib {
         .filter(_.getFileName().toString() matches nativeCodePattern)
         .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
         .forEach(IO.deleteRecursive(_))
-
-      extractPaths
     }
+    
+    extractPaths
   }
 
   /** Find the native file paths for this native library
