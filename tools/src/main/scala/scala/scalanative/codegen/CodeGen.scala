@@ -120,7 +120,7 @@ object CodeGen {
 
       import build.Mode._
       (config.mode, config.LTO) match {
-        case (_: build.Mode.Release, build.LTO.None) => single()
+        case (ReleaseFast | ReleaseFull, build.LTO.None) => single()
         case _ =>
           if (config.compilerConfig.useIncrementalCompilation)
             seperateIncrementally()
