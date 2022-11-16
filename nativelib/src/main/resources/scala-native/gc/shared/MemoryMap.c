@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "MemoryMap.h"
 
 #ifdef _WIN32
@@ -44,6 +46,25 @@ word_t *memoryMap(size_t memorySize) {
 #else // Unix
     return mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
                 HEAP_MEM_FD_OFFSET);
+#endif
+}
+
+void exitWithFailToUnmapMemory() {
+    fprintf(stderr, "Fail to unmap memory.\n");
+    exit(1);
+}
+
+void memoryUnmap(void *address, size_t memorySize) {
+#ifdef _WIN32
+    bool succeeded = VirtualFree(address, memorySize, MEM_RELEASE);
+    if (!succeed) {
+        exitWithFailToUnmapMemory();
+    }
+#else // Unix
+    int ret = munmap(address, memorySize);
+    if (ret != 0) {
+        exitWithFailToUnmapMemory();
+    }
 #endif
 }
 
