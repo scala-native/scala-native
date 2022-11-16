@@ -616,7 +616,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         dd.rhs match {
           case EmptyTree =>
-            Some(Defn.Declare(attrs, name, sig))
+            Some(
+              Defn.Declare(
+                attrs,
+                name,
+                if (attrs.isExtern) genExternMethodSig(sym) else sig
+              )
+            )
 
           case _ if dd.symbol.isConstructor && owner.isExternType =>
             validateExternCtor(dd.rhs)
