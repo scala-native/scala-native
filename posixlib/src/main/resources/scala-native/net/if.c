@@ -4,7 +4,6 @@
 #include <Iphlpapi.h>
 #else
 #include <net/if.h>
-#endif
 
 #include <stddef.h>
 
@@ -33,6 +32,7 @@ _Static_assert(offsetof(struct scalanative_if_nameindex, if_name) ==
                "Unexpected offset: scalanative_if_nameindex.if_name");
 
 #endif // __STDC_VERSION__
+#endif
 
 // Symbolic constants
 
