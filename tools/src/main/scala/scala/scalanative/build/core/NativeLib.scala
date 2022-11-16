@@ -93,7 +93,7 @@ private[scalanative] object NativeLib {
         .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
         .forEach(IO.deleteRecursive(_))
     }
-    
+
     extractPaths
   }
 
