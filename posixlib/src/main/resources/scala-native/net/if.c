@@ -1,6 +1,7 @@
 #ifdef _WIN32
-#include <Iphlpapi.h>
+#include <WinSock2.h>
 #include <Netioapi.h>
+#include <Iphlpapi.h>
 #else
 #include <net/if.h>
 #endif
