@@ -4,6 +4,7 @@ import scala.scalanative.checker.Check
 import scala.scalanative.LinkerSpec
 
 import org.scalatest.matchers.should._
+import scala.scalanative.nir._
 
 class IssuesSpec extends LinkerSpec with Matchers {
   private val mainClass = "Test"
@@ -55,6 +56,46 @@ class IssuesSpec extends LinkerSpec with Matchers {
     |  }
     |}
     |"""
+  }
+
+  "Extern traits" should "have only primitive type in type signature" in {
+    testLinked(s"""
+      |import scala.scalanative.unsafe._
+      |import scala.scalanative.unsigned._
+      |
+      |@extern trait string {
+      |  def memset(dest: Ptr[Byte], ch: Int, count: USize): Ptr[Byte] = extern
+      |}
+      |@extern object string extends string
+      |
+      |object Test {
+      |  def main(args: Array[String]): Unit = {
+      |     val privilegeSetLength = stackalloc[USize]()
+      |     val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
+      |     
+      |     // real case
+      |     string.memset(privilegeSet, 0, !privilegeSetLength)
+      |     
+      |     // possible case
+      |     def str: string = ??? 
+      |     str.memset(privilegeSet, 0, !privilegeSetLength)
+      |  }
+      |}""".stripMargin) { result =>
+      val Memset = Sig.Extern("memset")
+      val StringMemset = Global.Top("string").member(Memset)
+      val decls = result.defns
+        .collectFirst {
+          case Defn.Declare(attrs, StringMemset, tpe) =>
+            assert(attrs.isExtern)
+            tpe shouldEqual Type.Function(
+              Seq(Type.Ptr, Type.Int, Type.Size),
+              Type.Ptr
+            )
+        }
+        .orElse {
+          fail("Not found extern declaration")
+        }
+    }
   }
 
 }
