@@ -4,7 +4,10 @@ C Standard Library
 ==================
 
 Scala Native provides bindings for a core subset of the
-`C standard library <https://en.cppreference.com/w/c/header>`_:
+`C standard library <https://en.cppreference.com/w/c/header>`_.
+
+The project now tracks the *C11 standard (ISO/IEC 9899:2011)* but
+currently most bindings are from the *C99 standard (ISO/IEC 9899:1999)*.
 
 ============== ==================================
 C Header       Scala Native Module
@@ -34,7 +37,7 @@ stdnoreturn.h_ N/A
 string.h_      scala.scalanative.libc.string_
 tgmath.h_      N/A
 threads.h_     N/A
-time.h_        N/A
+time.h_        scala.scalanative.libc.time_
 uchar.h_       N/A
 wchar.h_       N/A
 wctype.h_      N/A

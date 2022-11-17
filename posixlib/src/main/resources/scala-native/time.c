@@ -305,9 +305,6 @@ int scalanative_daylight() {
 #endif
 }
 
-// Macros
-int scalanative_clocks_per_sec() { return CLOCKS_PER_SEC; }
-
 // Symbolic constants
 
 int scalanative_clock_monotonic() { return CLOCK_MONOTONIC; }

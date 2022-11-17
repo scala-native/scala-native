@@ -1,10 +1,11 @@
 package scala.scalanative
-package posix.sys
+package posix
+package sys
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
-import scala.scalanative.libc
+import scala.scalanative
 
 @extern
 object types {
@@ -65,7 +66,7 @@ object types {
 
   type pthread_t = ULong
 
-  type size_t = libc.stddef.size_t
+  type size_t = stddef.size_t
 
   type ssize_t = CSSize
 

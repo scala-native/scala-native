@@ -3,8 +3,9 @@ package libc
 
 import scalanative.unsafe._
 
-@extern
-object string {
+@extern object string extends string
+
+@extern trait string {
   def strcpy(dest: CString, src: CString): CString = extern
   def strncpy(dest: CString, src: CString, count: CSize): CString = extern
   def strcat(dest: CString, src: CString): CString = extern

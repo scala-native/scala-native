@@ -33,8 +33,8 @@ C Header          Scala Native Module
 `langinfo.h`_     N/A
 `libgen.h`_       N/A
 `limits.h`_       scala.scalanative.posix.limits_
-`locale.h`_       N/A
-`math.h`_         scala.scalanative.libc.math_
+`locale.h`_       scala.scalanative.posix.locale_
+`math.h`_         scala.scalanative.posix.math_
 `monetary.h`_     N/A
 `mqueue.h`_       N/A
 `ndbm.h`_         N/A
@@ -56,8 +56,8 @@ C Header          Scala Native Module
 `stdarg.h`_       N/A
 `stdbool.h`_      N/A
 `stddef.h`_       scala.scalanative.posix.stddef_
-`stdint.h`_       N/A
-`stdio.h`_        N/A
+`stdint.h`_       scala.scalanative.posix.stdint_
+`stdio.h`_        scala.scalanative.posix.stdio_
 `stdlib.h`_       scala.scalanative.posix.stdlib_
 `string.h`_       scala.scalanative.posix.string_
 `strings.h`_      scala.scalanative.posix.strings_
@@ -89,7 +89,7 @@ C Header          Scala Native Module
 `unistd.h`_       scala.scalanative.posix.unistd_
 `utime.h`_        scala.scalanative.posix.utime_
 `utmpx.h`_        N/A
-`wchar.h`_        N/A
+`wchar.h`_        scala.scalanative.posix.wchar_
 `wctype.h`_       N/A
 `wordexp.h`_      N/A
 ================= ==================================
@@ -190,7 +190,8 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
-.. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
+.. _scala.scalanative.posix.locale: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/locale.scala
+.. _scala.scalanative.posix.math: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/math.scala
 .. _scala.scalanative.posix.net.if: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/net/if.scala
 .. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netdb.scala
 .. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/in.scala
@@ -203,6 +204,8 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.signal: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/signal.scala
 .. _scala.scalanative.posix.spawn: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/spawn.scala
 .. _scala.scalanative.posix.stddef: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stddef.scala
+.. _scala.scalanative.posix.stdint: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdint.scala
+.. _scala.scalanative.posix.stdio: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdio.scala
 .. _scala.scalanative.posix.stdlib: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/stdlib.scala
 .. _scala.scalanative.posix.string: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/string.scala
 .. _scala.scalanative.posix.strings: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/strings.scala
@@ -221,6 +224,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.time: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/time.scala
 .. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/unistd.scala
 .. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/utime.scala
+.. _scala.scalanative.posix.wchar: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/wchar.scala
 
 .. rubric Footnotes
 .. [#inet_ntoa] The argument to inet_ntoa() differs from the POSIX
