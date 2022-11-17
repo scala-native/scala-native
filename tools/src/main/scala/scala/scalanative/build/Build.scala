@@ -61,68 +61,57 @@ object Build {
       if (Files.notExists(config.workdir)) {
         Files.createDirectories(config.workdir)
       }
+      // validate classpath - use fconfig below
+      val fconfig = {
+        val fclasspath = NativeLib.filterClasspath(config.classPath)
+        config.withClassPath(fclasspath)
+      }
 
-      if (canSkipBuild(config)) {
-        config.logger.debug(
-          "Skipping Scala Native build - inputs and configuration have not changed."
-        )
-        config.artifactPath
-      } else {
-        // validate classpath - use fconfig below
-        val fconfig = {
-          val fclasspath = NativeLib.filterClasspath(config.classPath)
-          config.withClassPath(fclasspath)
+      // find and link
+      val linked = {
+        val entries = ScalaNative.entries(fconfig)
+        val linked = ScalaNative.link(fconfig, entries)
+        ScalaNative.logLinked(fconfig, linked)
+        linked
+      }
+
+      // optimize and generate ll
+      val generated = {
+        val optimized = ScalaNative.optimize(config, linked)
+        ScalaNative.codegen(config, optimized)
+      }
+
+      val objectPaths = fconfig.logger.time("Compiling to native code") {
+        // compile generated LLVM IR
+        val llObjectPaths = LLVM.compile(fconfig, generated)
+
+        /* Used to pass alternative paths of compiled native (lib) sources,
+         * eg: reused native sources used in partests.
+         */
+        val libObjectPaths = scala.util.Properties
+          .propOrNone("scalanative.build.paths.libobj") match {
+          case None =>
+            /* Finds all the libraries on the classpath that contain native
+             * code and then compiles them.
+             */
+            findAndCompileNativeLibs(fconfig, linked)
+          case Some(libObjectPaths) =>
+            libObjectPaths
+              .split(java.io.File.pathSeparatorChar)
+              .toSeq
+              .map(Paths.get(_))
         }
-        buildProject(fconfig)
-      }
-    }
 
-  private def buildProject(config: Config)(implicit scope: Scope): Path = {
-    // find and link
-    val linked = {
-      val entries = ScalaNative.entries(config)
-      val linked = ScalaNative.link(config, entries)
-      ScalaNative.logLinked(config, linked)
-      linked
-    }
-
-    // optimize and generate ll
-    val generated = {
-      val optimized = ScalaNative.optimize(config, linked)
-      ScalaNative.codegen(config, optimized)
-    }
-
-    val objectPaths = config.logger.time("Compiling to native code") {
-      // compile generated LLVM IR
-      val llObjectPaths = LLVM.compile(config, generated)
-
-      /* Used to pass alternative paths of compiled native (lib) sources,
-       * eg: reused native sources used in partests.
-       */
-      val libObjectPaths = scala.util.Properties
-        .propOrNone("scalanative.build.paths.libobj") match {
-        case None =>
-          /* Finds all the libraries on the classpath that contain native
-           * code and then compiles them.
-           */
-          findAndCompileNativeLibs(config, linked)
-        case Some(libObjectPaths) =>
-          libObjectPaths
-            .split(java.io.File.pathSeparatorChar)
-            .toSeq
-            .map(Paths.get(_))
+        libObjectPaths ++ llObjectPaths
       }
 
-      libObjectPaths ++ llObjectPaths
+      // finally link
+      fconfig.logger.time(
+        s"Linking native code (${fconfig.gc.name} gc, ${fconfig.LTO.name} lto)"
+      ) {
+        LLVM.link(fconfig, linked, objectPaths)
+      }
     }
-
-    // finally link
-    config.logger.time(
-      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
-    ) {
-      LLVM.link(config, linked, objectPaths)
-    }
-  }
 
   /** Convenience method to combine finding and compiling native libaries.
    *
@@ -142,36 +131,5 @@ object Build {
       .flatMap(nativeLib =>
         NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
       )
-  }
-
-  /** Check if build can be skipped. This function returns true only when inputs
-   *  of the build has not changed since last compilation. It means that all
-   *  files on the classpath were not modified after building last artifact and
-   *  the cached checksum of config is equal to the checksum of current config.
-   */
-  private def canSkipBuild(config: Config): Boolean = {
-    val artifactExists = Files.exists(config.artifactPath)
-
-    def classpathWasModified = {
-      val artifactMT = Files.getLastModifiedTime(config.artifactPath)
-      config.classPath.exists {
-        Files.getLastModifiedTime(_).compareTo(artifactMT) > 0
-      }
-    }
-
-    val workdir = io.VirtualDirectory.local(config.workdir)
-    val configCheckSumFile = Paths.get("config_hash")
-    val configChecksum = config.checksum
-    val configChanged = workdir.contains(configCheckSumFile) &&
-      Try {
-        val content = new String(workdir.read(configCheckSumFile).array())
-        content.toLong != configChecksum
-      }.getOrElse(true)
-
-    val hasChanged = !artifactExists || configChanged || classpathWasModified
-    if (hasChanged && configChanged) Try {
-      workdir.write(configCheckSumFile)(_.write(configChecksum.toString()))
-    }
-    !hasChanged
   }
 }
