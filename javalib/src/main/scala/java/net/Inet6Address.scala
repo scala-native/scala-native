@@ -2,6 +2,13 @@ package java.net
 
 // Ported from Apache Harmony
 
+import scalanative.unsafe._
+import scalanative.unsigned._
+
+import scala.scalanative.posix.net.`if`._
+import scala.scalanative.posix.net.ifOps._
+import scala.scalanative.posix.stddef
+
 final class Inet6Address private (
     val ipAddress: Array[Byte],
     host: String,
@@ -114,8 +121,20 @@ object Inet6Address {
       }
     }
 
-    if (!in6Addr.zoneIdent.isEmpty)
-      buffer.append(s"%${in6Addr.zoneIdent}")
+    if (!in6Addr.zoneIdent.isEmpty) {
+      val zi = in6Addr.zoneIdent
+      val suffix =
+        try {
+          val ifIndex = Integer.parseInt(zi)
+          val ifName = stackalloc[Byte](IF_NAMESIZE.toUSize)
+          if (if_indextoname(ifIndex.toUInt, ifName) == stddef.NULL) zi
+          else fromCString(ifName)
+        } catch {
+          case e: NumberFormatException => zi
+        }
+
+      buffer.append('%').append(suffix)
+    }
 
     buffer.toString
   }
