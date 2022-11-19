@@ -62,7 +62,6 @@ private object MacroImpl {
     val runtime = q"_root_.scala.scalanative.runtime"
 
     q"""{
-          import _root_.scala.scalanative.unsigned.UnsignedRichLong
           val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
           val $ptr    = $z.alloc($size)
           val $rawptr = $runtime.toRawPtr($ptr)
@@ -106,7 +105,6 @@ private object MacroImpl {
     val runtime = q"_root_.scala.scalanative.runtime"
 
     q"""{
-          import _root_.scala.scalanative.unsigned.UnsignedRichLong
           val $size   = _root_.scala.scalanative.unsafe.sizeof[$T]($tag) * $n
           val $rawptr = $runtime.Intrinsics.stackalloc($size)
           $runtime.libc.memset($rawptr, 0, $size)
