@@ -376,12 +376,16 @@ object Build {
               }
             }
           )
-        case "3" =>
+        case version @ ("3" | "3-next") =>
+          val stdlibVersion = version match {
+            case "3"      => scala3libSourcesVersion
+            case "3-next" => ScalaVersions.scala3Experimental
+          }
           _.settings(
             name := "scala3lib",
             commonScalalibSettings(
               "scala3-library_3",
-              Some(scala3libSourcesVersion)
+              Some(stdlibVersion)
             ),
             scalacOptions ++= Seq(
               "-language:implicitConversions"

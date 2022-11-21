@@ -20,8 +20,10 @@ final case class MultiScalaProject private (
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3")
+  lazy val v3Next: Project = project(MultiScalaProject.scala3Next)
+    .settings(Settings.experimentalScalaSources)
 
-  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3)
+  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3, v3Next)
 
   def mapBinaryVersions(
       mapping: String => Project => Project
@@ -111,23 +113,29 @@ object ScopedMultiScalaProject {
 }
 
 object MultiScalaProject {
+  private val scala3Next = "3-next"
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
   final val scalaCrossVersions = Map[String, Seq[String]](
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
-    "3" -> ScalaVersions.crossScala3
+    "3" -> ScalaVersions.crossScala3,
+    scala3Next -> Seq(ScalaVersions.scala3Experimental)
   )
 
   final val scalaVersions = Map[String, String](
     "2.12" -> ScalaVersions.scala212,
     "2.13" -> ScalaVersions.scala213,
-    "3" -> ScalaVersions.scala3
+    "3" -> ScalaVersions.scala3,
+    scala3Next -> ScalaVersions.scala3Experimental
   )
 
   private def projectID(id: String, major: String) =
-    id + major.replace('.', '_')
+    major match {
+      case `scala3Next` => id
+      case _            => id + major.replace('.', '_')
+    }
 
   def apply(id: String): MultiScalaProject =
     apply(id, file(id))
