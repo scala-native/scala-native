@@ -1,9 +1,9 @@
---- 3.3.0-RC1-bin-20221119-786ad3f-NIGHTLY/scala/runtime/LazyVals.scala
+--- 3.2.1/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
-@@ -3,45 +3,13 @@
- import java.util.concurrent.CountDownLatch
+@@ -1,42 +1,12 @@
+ package scala.runtime
  
- import scala.annotation.*
+-import scala.annotation.*
 +import scala.scalanative.runtime.*
  
  /**
@@ -11,27 +11,24 @@
   */
  object LazyVals {
 -  @nowarn
--  private[this] val unsafe: sun.misc.Unsafe = {
--    def throwInitializationException() = 
--      throw new ExceptionInInitializerError(
--        new IllegalStateException("Can't find instance of sun.misc.Unsafe")
--      )
--    try
--      val unsafeField = classOf[sun.misc.Unsafe].getDeclaredField("theUnsafe").nn
--      if unsafeField.getType == classOf[sun.misc.Unsafe] then
--        unsafeField.setAccessible(true)
--        unsafeField.get(null).asInstanceOf[sun.misc.Unsafe]
--      else
--        throwInitializationException()
--    catch case _: NoSuchFieldException =>
--      throwInitializationException()
--  }
+-  private[this] val unsafe: sun.misc.Unsafe =
+-      classOf[sun.misc.Unsafe].getDeclaredFields.nn.find { field =>
+-        field.nn.getType == classOf[sun.misc.Unsafe] && {
+-          field.nn.setAccessible(true)
+-          true
+-        }
+-      }
+-      .map(_.nn.get(null).asInstanceOf[sun.misc.Unsafe])
+-      .getOrElse {
+-        throw new ExceptionInInitializerError {
+-          new IllegalStateException("Can't find instance of sun.misc.Unsafe")
+-        }
+-      }
 -
 -  private[this] val base: Int = {
 -    val processors = java.lang.Runtime.getRuntime.nn.availableProcessors()
 -    8 * processors * processors
 -  }
--
 -  private[this] val monitors: Array[Object] =
 -    Array.tabulate(base)(_ => new Object)
 -
@@ -47,7 +44,7 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -73,96 +41,49 @@
+@@ -44,79 +14,38 @@
  
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK
@@ -62,14 +59,6 @@
 -    val mask = ~(LAZY_VAL_MASK << ord * BITS_PER_LAZY_VAL)
 -    val n = (e & mask) | (v.toLong << (ord * BITS_PER_LAZY_VAL))
 -    unsafe.compareAndSwapLong(t, offset, e, n)
-+    unexpectedUsage()
-   }
- 
-   @experimental
-   def objCAS(t: Object, offset: Long, exp: Object, n: Object): Boolean = {
--    if (debug)
--      println(s"objCAS($t, $exp, $n)")
--    unsafe.compareAndSwapObject(t, offset, exp, n)
 +    unexpectedUsage()
    }
  
@@ -121,22 +110,11 @@
 +    unexpectedUsage()
    }
  
-   // kept for backward compatibility
    def getOffset(clz: Class[_], name: String): Long = {
 -    @nowarn
 -    val r = unsafe.objectFieldOffset(clz.getDeclaredField(name))
 -    if (debug)
 -      println(s"getOffset($clz, $name) = $r")
--    r
-+    unexpectedUsage()
-   }
- 
-   @experimental
-   def getStaticFieldOffset(field: java.lang.reflect.Field): Long = {
--    @nowarn
--    val r = unsafe.staticFieldOffset(field)
--    if (debug)
--      println(s"getStaticFieldOffset(${field.getDeclaringClass}, ${field.getName}) = $r")
 -    r
 +    unexpectedUsage()
    }
