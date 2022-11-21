@@ -4,8 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
-      - 0.4.x
+      - dotty-experimental
   schedule:
     # Every saturday at 2 AM UTC
     - cron: "0 2 * * 6"
@@ -21,11 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-2019]
-        scala: [3.2.2]
+        scala: [3, "3-next"]
         gc: [none, boehm, immix, commix]
-        include:
-          - scala: 3.1.3
-            gc: immix
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -45,13 +41,12 @@ jobs:
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}}
+          sbt 
           sandbox${{env.project-version}}/run
           testsJVM${{env.project-version}}/test
           tests${{env.project-version}}/test
           testsExt${{env.project-version}}/test
           testsExtJVM${{env.project-version}}/test
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
       - name: Test runtime
@@ -61,9 +56,7 @@ jobs:
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}}
-          "test-runtime ${{matrix.scala}}"
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sbt "test-runtime ${{matrix.scala}}"
         shell: cmd
 
   run-scripted-tests:
@@ -72,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.1.3]
+        scala: [3, "3-next"]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -83,7 +76,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Test scripted
-        run: sbt "++${{matrix.scala}}" "test-scripted ${{matrix.scala}}"
+        run: sbt "test-scripted ${{matrix.scala}}"
         shell: cmd
 
   test-runtime-ext:
@@ -94,31 +87,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2]
+        scala: [3, "3-next"]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
-        exclude:
-          # Covered in basic test-runtime
-          - scala: 3.2.2
-            build-mode: debug
-          - scala: 2.13.10
-            build-mode: debug
-            gc: immix
-          - build-mode: release-fast
-            lto: none
         include:
-          - scala: 3.2.2
+          - scala: "3-next"
             build-mode: release-size
             lto: thin
             gc: immix
-          - scala: 3.2.2
+          - scala: "3-next"
             build-mode: release-full
             lto: thin
-            gc: commix
-          - scala: 2.13.10
-            build-mode: release-full
-            lto: full
             gc: commix
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -139,7 +119,7 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}} "test-runtime ${{matrix.scala}}"
+          sbt "test-runtime ${{matrix.scala}}"
         shell: cmd
 
   test-llvm-versions:
@@ -147,7 +127,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2]
+        scala: ["3-next"]
         llvm: ["13.0.1", "14.0.6", "15.0.7"] # Last 3 stable versions
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
@@ -168,7 +148,7 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}} "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
+          sbt "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
 
 
   test-multihreading:
@@ -177,7 +157,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2]
+        scala: ["3-next"]
         build-mode: [debug, release-fast]
         gc: [boehm, immix]
         lto: [none, thin]
@@ -210,9 +190,7 @@ jobs:
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
           sbt -Dscala.scalanative.multithreading.enable=true
-          "++${{matrix.scala}} -v"
           sandbox${{env.project-version}}/run;
           testsJVM${{env.project-version}}/test;
           tests${{env.project-version}}/test;
-          scalaPartestJunitTests${{env.project-version}}/test
         shell: cmd

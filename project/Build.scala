@@ -247,7 +247,10 @@ object Build {
                       "scala.version not set in scripted launch opts"
                     )
                   )
-                CrossVersion.binaryScalaVersion(scalaVersion)
+                MultiScalaProject.scalaCrossVersions
+                  .find(_._2.contains(scalaVersion))
+                  .map(_._1)
+                  .getOrElse(CrossVersion.binaryScalaVersion(scalaVersion))
               }
 
               def publishLocalVersion(ver: String) = {
@@ -281,7 +284,7 @@ object Build {
               publishLocalVersion(ver)
                 .dependsOn(
                   // Scala 3 needs 2.13 deps for it's cross version compat tests
-                  if (ver == "3") publishLocalVersion("2.13")
+                  if (ver.startsWith("3")) publishLocalVersion("2.13")
                   else Def.task(())
                 )
             })

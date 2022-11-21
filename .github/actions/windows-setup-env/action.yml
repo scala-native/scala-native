@@ -46,8 +46,8 @@ runs:
         "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
         "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
         "VcpkgLibs=${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static" >> $env:GITHUB_OUTPUT
-        if ("${{inputs.scala-version}}".StartsWith("2.")) {
-          echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
+        if ("${{inputs.scala-version}}".StartsWith("3-next")) {
+          echo ("project-version=") >> $env:GITHUB_ENV
         } else {
           echo "project-version=3" >> $env:GITHUB_ENV
         }

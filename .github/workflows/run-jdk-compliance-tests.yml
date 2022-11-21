@@ -4,8 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
-      - 0.4.x
+      - dotty-experimental
 concurrency:
   group: jdk-compliance-${{ github.head_ref }}-${{ github.event_name	}}
   cancel-in-progress: true
@@ -20,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, macos-11]
-        scala: [3.2.2]
+        scala: [3, "3-next"]
         java: [11, 17, 20]
         include:
           - java: 20
@@ -43,7 +42,7 @@ jobs:
           _JAVA_OPTIONS='${{ matrix.java-options }}' 
           sbt 
           -Dscala.scalanative.multithreading.enable=true 
-          "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" 
+          "-no-colors" "-J-Xmx3G" 
           "test-runtime ${{matrix.scala}}"
 
   tests-windows-jdk-compliance:
@@ -52,8 +51,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2]
-        java: [11, 17, 20]
+        scala: [3, "3-next"]
+        java: [ 11, 17, 20 ]
         include:
           - java: 20
             java-options: "--enable-preview"
@@ -77,5 +76,4 @@ jobs:
           set _JAVA_OPTIONS=${{ matrix.java-options }} &
           sbt 
           -Dscala.scalanative.multithreading.enable=true 
-          ++${{matrix.scala}}
           "test-runtime ${{matrix.scala}}"

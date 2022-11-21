@@ -4,8 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
-      - 0.4.x
+      - dotty-experimental
   schedule:
     # Every saturday at 2 AM UTC
     - cron: "0 2 * * 6"
@@ -82,7 +81,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [linux-arm64, linux-x86]
-        scala: [3.2.2]
+        scala: [3, "3-next"]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -173,15 +172,6 @@ jobs:
 
           echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
 
-      # Conditionally disable some of the tests (Scala 2 only)
-      - name: Set filters for partests
-        shell: bash
-        if: ${{ !startsWith(matrix.scala, '3.') }}
-        run: |
-          ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
-          echo "" >> ${ignoredTestsFile}
-          echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
-
       - name: Run tests
         env:
           SCALANATIVE_MODE: "${{matrix.build-mode}}"
@@ -208,4 +198,4 @@ jobs:
           timeout_minutes: 180
           max_attempts: 2
           retry_on: error
-          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }} ${{env.project-version}}
+          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}"

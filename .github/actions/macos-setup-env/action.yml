@@ -20,10 +20,9 @@ runs:
       shell: bash
       run: |
         version=${{ inputs.scala-version }}
-        if [[ $version == 2.* ]]; then
-          binaryVersion=${version%.*}
-          echo "binary-version=${binaryVersion}" >> $GITHUB_ENV
-          echo "project-version=${binaryVersion/./_}" >> $GITHUB_ENV
+        if [[ $version == "3-next" ]]; then
+          echo "binary-version=3-next" >> $GITHUB_ENV
+          echo "project-version=" >> $GITHUB_ENV
         else 
           echo "binary-version=3" >> $GITHUB_ENV
           echo "project-version=3" >> $GITHUB_ENV
