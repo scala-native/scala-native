@@ -2,14 +2,12 @@
 set -e
 set -x
 
-if [ $# -ne 3 ]; then
-  echo "Expected exactly 3 arguments: <docker image> <scala version> <project-version>"
+if [ $# -ne 1 ]; then
+  echo "Expected exactly 1 argument: <docker image>"
   exit 1
 fi
 
 IMAGE_NAME=$1
-SCALA_VERSION=$2
-PROJECT_VERSION=$3
 FULL_IMAGE_NAME="localhost:5000/${IMAGE_NAME}"
 sudo chmod a+rwx -R "$HOME"
 
@@ -62,7 +60,6 @@ docker run \
   --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
   --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
   --platform=${BUILD_PLATFORM} \
-  -e SCALA_VERSION="$SCALA_VERSION" \
   -e TARGET_EMULATOR="$TARGET_EMULATOR" \
   -e TEST_COMMAND="$TEST_COMMAND" \
   -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \

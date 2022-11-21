@@ -4,8 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
-      - 0.4.x
+      - dotty-experimental
 concurrency:
   group: jdk-compliance-${{ github.head_ref }}
   cancel-in-progress: true
@@ -20,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, macos-11]
-        scala: [3.2.1]
+        scala: [3, "3-next"]
         java: [11, 17]
     steps:
       - uses: actions/checkout@v3
@@ -36,7 +35,7 @@ jobs:
           java-version: ${{matrix.java}}
 
       - name: Test runtime
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-runtime ${{matrix.scala}}"
+        run: sbt "-no-colors" "-J-Xmx3G" "test-runtime ${{matrix.scala}}"
 
   tests-windows-jdk-compliance:
     name: Test Windows JDK compliance
@@ -44,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.1]
+        scala: [3, "3-next"]
         java: [11, 17]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -63,5 +62,4 @@ jobs:
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}}
-          "test-runtime ${{matrix.scala}}"
+          sbt "test-runtime ${{matrix.scala}}"

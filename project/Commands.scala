@@ -70,9 +70,12 @@ object Commands {
   lazy val testScripted = Command.args("test-scripted", "<args>") {
     case (state, args) =>
       val version = args.headOption
+        .flatMap(MultiScalaProject.scalaVersions.get)
         .orElse(state.getSetting(scalaVersion))
         .getOrElse(
-          "Used command needs explicit Scala version as an argument"
+          sys.error(
+            "Used command needs explicit Scala version as an argument"
+          )
         )
       val setScriptedLaunchOpts =
         s"""set sbtScalaNative/scriptedLaunchOpts := {
