@@ -24,7 +24,7 @@ trait SafeZone {
    *  Currently it's a mock interface which doesn't accept constructor
    *  parameters.
    */
-  def alloc[T]()(using tag: Tag[T]): T
+  // def alloc[T]()(using tag: Tag[T]): T
 
   /** Frees allocations. This zone allocator is not reusable once closed. */
   def close(): Unit
@@ -45,5 +45,6 @@ object SafeZone {
     finally safeZone.close()
   }
 
-  final def open(): SafeZone = MockSafeZone.open()
+  final def open(): SafeZone =
+    MemoryPoolSafeZone.open(MemoryPool.defaultMemoryPoolHandle)
 }

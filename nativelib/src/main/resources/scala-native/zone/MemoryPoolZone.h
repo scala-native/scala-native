@@ -16,10 +16,6 @@ void *memorypoolzone_alloc(void *zone, void *info, size_t size);
 
 void memorypoolzone_close(void *zone);
 
-bool memorypoolzone_isopen(void *zone);
-
-bool memorypoolzone_isclosed(void *zone);
-
 void memorypoolzone_free(void *zone);
 
 #endif // MEMORYPOLL_ZONE_H
