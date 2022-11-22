@@ -13,6 +13,8 @@ val scala213Version = sys.props.getOrElse(
   )
 )
 
+val usesUnstableScala3 = scala3Version.contains("NIGHTLY")
+
 inThisBuild(
   Seq(
     scalaVersion := scala3Version,
@@ -22,6 +24,19 @@ inThisBuild(
     publishMavenStyle := true
   )
 )
+
+// Fix to allow skipping execution of this scripted test in Nightly versions of Scala
+// Tasty produced by nightly versions cannot be consumed by Scala 2.13
+def NoOpInUnstableScala = if (usesUnstableScala3)
+  Def.settings(
+    run := {},
+    Test / test := {},
+    publishLocal := {},
+    Compile / sources := Nil,
+    Test / sources := Nil,
+    libraryDependencies := Nil
+  )
+else Def.settings()
 
 def commonScala213Settigns = Def.settings(
   scalacOptions ++= {
@@ -37,6 +52,7 @@ def commonScala213Settigns = Def.settings(
 lazy val base = project
   .in(file("base"))
   .enablePlugins(ScalaNativePlugin)
+  .settings(NoOpInUnstableScala)
 
 lazy val projectA = project
   .in(file("project-A"))
@@ -44,6 +60,7 @@ lazy val projectA = project
   .settings(
     libraryDependencies += organization.value %%% (base / normalizedName).value % version.value
   )
+  .settings(NoOpInUnstableScala)
 
 lazy val projectB = project
   .in(file("project-B"))
@@ -53,6 +70,7 @@ lazy val projectB = project
     libraryDependencies += (organization.value %%% (base / normalizedName).value % version.value)
       .cross(CrossVersion.for3Use2_13)
   )
+  .settings(NoOpInUnstableScala)
 
 lazy val projectC = project
   .in(file("project-C"))
@@ -62,6 +80,7 @@ lazy val projectC = project
     libraryDependencies += (organization.value %%% (base / normalizedName).value % version.value)
       .cross(CrossVersion.for2_13Use3)
   )
+  .settings(NoOpInUnstableScala)
 
 lazy val projectD = project
   .in(file("project-D"))
@@ -78,6 +97,7 @@ lazy val projectD = project
       s"${(base / normalizedName).value}_native${ScalaNativeCrossVersion.currentBinaryVersion}_2.13"
     )
   )
+  .settings(NoOpInUnstableScala)
 
 lazy val projectE = project
   .in(file("project-E"))
@@ -94,6 +114,7 @@ lazy val projectE = project
       s"${(base / normalizedName).value}_native${ScalaNativeCrossVersion.currentBinaryVersion}_3"
     )
   )
+  .settings(NoOpInUnstableScala)
 
 lazy val projectF = project
   .in(file("project-F"))
@@ -110,3 +131,4 @@ lazy val projectF = project
       s"${(base / normalizedName).value}_native${ScalaNativeCrossVersion.currentBinaryVersion}_2.13"
     )
   )
+  .settings(NoOpInUnstableScala)
