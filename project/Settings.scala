@@ -455,7 +455,7 @@ object Settings {
         val sourcesDir = (scope / sourceDirectory).value
         val experimentalSources = allScalaFromDir(sourcesDir / baseDir).toMap
 
-        previous.map { f =>
+        val updatedSources = previous.map { f =>
           val replacement = for {
             relPath <- f.relativeTo(sourcesDir)
             sourceDir = relPath.toPath().getName(0).toString()
@@ -469,7 +469,8 @@ object Settings {
           } yield experimentalSource
           replacement.getOrElse(f)
         }
-
+        val newSources = experimentalSources.values.toList.diff(updatedSources)
+        updatedSources ++ newSources
       }
     )
 
