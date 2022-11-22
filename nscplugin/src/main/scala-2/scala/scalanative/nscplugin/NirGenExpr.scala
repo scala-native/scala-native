@@ -1190,6 +1190,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genUnsignedOp(app, code)
       } else if (code == CLASS_FIELD_RAWPTR) {
         genClassFieldRawPtr(app)
+      } else if (code == SIZE_OF) {
+        genSizeOf(app)
       } else {
         abort(
           "Unknown primitive operation: " + sym.fullName + "(" +
@@ -2108,6 +2110,28 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           Val.Int(-1)
         }
 
+    }
+
+    def genSizeOf(app: Apply)(implicit pos: nir.Position): Val = {
+      def unsupported(msg: String) = {
+        reporter.error(app.pos, msg)
+        Val.Zero(Type.Size)
+      }
+      println(show(app))
+      // println(showRaw(app))
+
+      app.args match {
+        case Seq(clsType: Literal) =>
+          val tpe = clsType.value.typeValue
+          if (!tpe.typeSymbol.isTraitOrInterface)
+            buf.sizeof(genType(tpe), unwind)
+          else
+            unsupported(
+              s"Type ${tpe} is a trait or interface, its size cannot be calculated"
+            )
+        case _ =>
+          unsupported("Argument of sizeOf needs to be a class literal")
+      }
     }
 
     def genSynchronized(receiverp: Tree, bodyp: Tree)(implicit
