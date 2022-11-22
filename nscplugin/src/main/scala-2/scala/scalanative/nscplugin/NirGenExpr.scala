@@ -2117,9 +2117,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         reporter.error(app.pos, msg)
         Val.Zero(Type.Size)
       }
-      println(show(app))
-      // println(showRaw(app))
-
       app.args match {
         case Seq(clsType: Literal) =>
           val tpe = clsType.value.typeValue

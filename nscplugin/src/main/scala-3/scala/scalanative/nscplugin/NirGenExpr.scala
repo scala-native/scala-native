@@ -895,7 +895,6 @@ trait NirGenExpr(using Context) {
     }
 
     def genTypeApply(tree: TypeApply): Val = {
-      println(tree.show)
       given nir.Position = tree.span
       val TypeApply(fun @ Select(receiverp, _), targs) = tree: @unchecked
 
