@@ -1,10 +1,21 @@
-val scala3Version = sys.props.getOrElse(
-  "scala.version",
-  throw new RuntimeException(
-    """The system property 'scala.version' is not defined.
+val scala3Version = sys.props
+  .get("scala.version")
+  .map { version =>
+    if (!version.contains("NIGHTLY")) version
+    else {
+      println(
+        "Publish test is incompatible with Nightly Scala versions! Using default version."
+      )
+      "3.1.3"
+    }
+  }
+  .getOrElse(
+    throw new RuntimeException(
+      """The system property 'scala.version' is not defined.
       |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
+    )
   )
-)
+
 val scala213Version = sys.props.getOrElse(
   "scala213.version",
   throw new RuntimeException(
