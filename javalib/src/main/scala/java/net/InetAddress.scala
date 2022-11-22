@@ -29,6 +29,8 @@ import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.time.{time_t, time, difftime}
 import scala.scalanative.posix.unistd
 
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
+
 /* Design note:
  *    Much of java.net, both in JVM and Scala Native defines or assumes
  *    the ipAddress field to have either 4 or 16 bytes.
@@ -333,7 +335,8 @@ object InetAddress {
       val gaiStatus = getaddrinfo(toCString(host), null, hints, addrinfo)
 
       if (gaiStatus != 0) {
-        if (gaiStatus == EAI_NONAME) {
+        val mappedStatus = mapGaiStatus(gaiStatus)
+        if (mappedStatus == EAI_NONAME) {
           val ifIndex = host.indexOf('%')
           val hasInterface = (ifIndex >= 0)
           if (!hasInterface) {
@@ -355,8 +358,8 @@ object InetAddress {
             )
           }
         } else {
-          val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
-          throw new IOException(gaiMsg)
+          val gaiMsg = SocketHelpers.getGaiErrorMessage(mappedStatus)
+          throw new UnknownHostException(host + ": " + gaiMsg)
         }
       } else
         try {
@@ -436,12 +439,7 @@ object InetAddress {
 
       if (gaiStatus != 0) {
         val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
-        val ex =
-          if (gaiStatus == EAI_NONAME)
-            new UnknownHostException(host + ": " + gaiMsg)
-          else
-            new IOException(gaiMsg)
-        throw ex
+        throw new UnknownHostException(host + ": " + gaiMsg)
       } else
         try {
           val preferIPv6 = SocketHelpers.getPreferIPv6Addresses()
@@ -624,9 +622,10 @@ object InetAddress {
       val gaiStatus = getaddrinfo(toCString(host), null, hints, ret)
 
       if (gaiStatus != 0) {
-        if (gaiStatus != EAI_NONAME) {
-          val gaiMsg = SocketHelpers.getGaiErrorMessage(gaiStatus)
-          throw new IOException(gaiMsg)
+        val mappedStatus = mapGaiStatus(gaiStatus)
+        if (mappedStatus != EAI_NONAME) {
+          val gaiMsg = SocketHelpers.getGaiErrorMessage(mappedStatus)
+          throw new UnknownHostException(host + ": " + gaiMsg)
         }
       } else
         try {
@@ -643,6 +642,35 @@ object InetAddress {
     val ptrInt = pb.asInstanceOf[Ptr[Int]]
     val ptrLong = pb.asInstanceOf[Ptr[Long]]
     (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
+  }
+
+  private def mapGaiStatus(gaiStatus: Int): Int = {
+    /* This is where some arcane Operating System specific behavior
+     * comes to puddle and pool. This method is not for small children
+     * or maintainers with good taste & practice.
+     *
+     * EAI_NODATA was removed from RFC3493 "Basic Socket Interface Extensions
+     * for IPv6" in February 2003. EAI_NONAME was introduced and is the
+     * contemporary idiom. Although it is remove (i.e. well past deprecated),
+     * EAI_NODATA can be returned by Linux & macOS in some poorly defined
+     * circumstances.
+     *
+     * The magic integer values for Linux & macOS are hardcoded
+     * because they are extremely unlikely to change after all this time.
+     *
+     * For consistency of the reported message, map EAI_NODATA to EAI_NONAME.
+     * Both will return "UnknownHostException".
+     */
+
+    // EAI_NODATA was removed from FreeBSD a decade or more ago.
+    val EAI_NODATA =
+      if (isLinux) -5
+      else if (isMac) 7
+      else Integer.MAX_VALUE // placeholder, will never match
+
+    if (gaiStatus == EAI_NONAME) gaiStatus
+    else if (gaiStatus == EAI_NODATA) EAI_NONAME
+    else gaiStatus
   }
 
   def getAllByName(host: String): Array[InetAddress] = {
