@@ -7,9 +7,8 @@ import scalanative.linker.{Trait, Class}
 
 class Metadata(
     val linked: linker.Result,
-    proxies: Seq[Defn],
-    val is32BitPlatform: Boolean
-) {
+    proxies: Seq[Defn]
+)(implicit val platform: PlatformInfo) {
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
