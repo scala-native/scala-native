@@ -64,9 +64,18 @@ private[scalanative] object NativeLib {
       val nativeCodePattern = raw"$nativeCodePrefix-.*-\d+"
       Files
         .list(workdir)
-        .filter(_.getFileName().toString() matches nativeCodePattern)
-        .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
-        .forEach(IO.deleteRecursive(_))
+        .forEach(new java.util.function.Consumer[Path] {
+          def accept(path: Path): Unit = {
+            def matchesPattern =
+              path.getFileName().toString() matches nativeCodePattern
+            def notIgnored =
+              expectedPaths.contains(path.toAbsolutePath())
+
+            if (matchesPattern && notIgnored) {
+              IO.deleteRecursive(path)
+            }
+          }
+        })
     }
 
     extractPaths
