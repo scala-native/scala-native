@@ -6,6 +6,7 @@ import scala.scalanative.util.Scope
 import scala.scalanative.build.core.Filter
 import scala.scalanative.build.core.NativeLib
 import scala.scalanative.build.core.ScalaNative
+import scala.util.Try
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -74,20 +75,10 @@ object Build {
         linked
       }
 
-      implicit val incCompilationContext: IncCompilationContext =
-        new IncCompilationContext(fconfig.workdir)
-      if (fconfig.compilerConfig.useIncrementalCompilation) {
-        incCompilationContext.collectFromPreviousState()
-      }
-
       // optimize and generate ll
       val generated = {
-        val optimized = ScalaNative.optimize(fconfig, linked)
-        ScalaNative.codegen(fconfig, optimized)
-      }
-
-      if (fconfig.compilerConfig.useIncrementalCompilation) {
-        incCompilationContext.dump()
+        val optimized = ScalaNative.optimize(config, linked)
+        ScalaNative.codegen(config, optimized)
       }
 
       val objectPaths = fconfig.logger.time("Compiling to native code") {
@@ -112,9 +103,6 @@ object Build {
         }
 
         libObjectPaths ++ llObjectPaths
-      }
-      if (fconfig.compilerConfig.useIncrementalCompilation) {
-        incCompilationContext.clear()
       }
 
       // finally link

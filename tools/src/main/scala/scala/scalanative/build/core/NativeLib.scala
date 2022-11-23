@@ -39,8 +39,6 @@ private[scalanative] object NativeLib {
     val paths = NativeLib.findNativePaths(config.workdir, destPath)
     val (projPaths, projConfig) =
       Filter.filterNativelib(config, linkerResult, destPath, paths)
-    implicit val incCompilationContext: IncCompilationContext =
-      new IncCompilationContext(config.workdir)
     LLVM.compile(projConfig, projPaths)
   }
 
@@ -59,6 +57,7 @@ private[scalanative] object NativeLib {
   def findNativeLibs(config: Config): Seq[NativeLib] = {
     val workdir = config.workdir
     val classpath = config.classPath
+    val nativeCodePrefix = "native-code"
 
     val nativeLibPaths = classpath.flatMap { path =>
       if (isJar(path)) readJar(path)
@@ -74,7 +73,7 @@ private[scalanative] object NativeLib {
             .stripSuffix(jarExt)
         NativeLib(
           src = path,
-          dest = workdir.resolve(s"native-code-$name-$index")
+          dest = workdir.resolve(s"$nativeCodePrefix-$name-$index")
         )
       }
 
@@ -82,8 +81,20 @@ private[scalanative] object NativeLib {
       throw new BuildException(
         s"No Scala Native libraries were found: $classpath"
       )
-    else
-      extractPaths
+
+    if (Files.exists(workdir)) {
+      // Fix https://github.com/scala-native/scala-native/pull/2998#discussion_r1023715815
+      // Remove all stale native-code-* directories. These can be created if classpath would change
+      val expectedPaths = extractPaths.map(_.dest.toAbsolutePath()).toSet
+      val nativeCodePattern = raw"$nativeCodePrefix-.*-\d+"
+      Files
+        .list(workdir)
+        .filter(_.getFileName().toString() matches nativeCodePattern)
+        .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
+        .forEach(IO.deleteRecursive(_))
+    }
+
+    extractPaths
   }
 
   /** Find the native file paths for this native library

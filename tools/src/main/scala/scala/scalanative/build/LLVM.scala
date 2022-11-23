@@ -33,9 +33,9 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path])(implicit
-      incCompilationContext: IncCompilationContext
-  ): Seq[Path] = {
+  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+    implicit val _config: Config = config
+
     // generate .o files for all included source files in parallel
     paths.par.map { srcPath =>
       val inpath = srcPath.abs
@@ -43,15 +43,14 @@ private[scalanative] object LLVM {
       val objPath = Paths.get(outpath)
       // compile if out of date or no object file
       if (needsCompiling(srcPath, objPath)) {
-        compileFile(config, srcPath, objPath)
+        compileFile(srcPath, objPath)
       } else objPath
     }.seq
   }
 
-  private def compileFile(config: Config, srcPath: Path, objPath: Path)(implicit
-      incCompilationContext: IncCompilationContext
+  private def compileFile(srcPath: Path, objPath: Path)(implicit
+      config: Config
   ): Path = {
-    implicit val _config: Config = config
     val inpath = srcPath.abs
     val outpath = objPath.abs
     val isCpp = inpath.endsWith(cppExt)
