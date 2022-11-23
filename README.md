@@ -34,11 +34,11 @@ Scala Native is distributed under the Apache License.
 
 [<img src="https://raw.githubusercontent.com/VirtusLab/scala-cli/main/website/static/img/vl_logo_small.png" width=200>][VirtusLab-Link]
 
-[VirtusLab][VirtusLab-Link] sponsors Scala Native by providing a full-time engineer designated to maintance and future developoment of Scala Native.
+[VirtusLab][VirtusLab-Link] sponsors Scala Native by providing a full-time engineer designated to the maintenance and future development of Scala Native.
 
 [<img src="https://raw.githubusercontent.com/scala-native/scala-native/main/docs/_static/logo.png" width=100>][ScalaNative-Link]
 
-[Scala Native][ScalaNative-Link] is also developed by the efforts of its open-source community. Checkout the list of [contributors][ScalaNative_contributors-Link] to this project.
+[Scala Native][ScalaNative-Link] is also powered by the efforts of its open-source community. Check out the list of [contributors][ScalaNative_contributors-Link] to this project.
 
 
 [Caprese-Link]: https://www.slideshare.net/Odersky/capabilities-for-resources-and-effects-252161040
