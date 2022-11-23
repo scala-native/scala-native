@@ -34,12 +34,16 @@ private[scalanative] object LLVM {
    *    The paths of the `.o` files.
    */
   def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+    implicit val _config: Config = config
     // generate .o files for all included source files in parallel
-    paths.par.map { path =>
-      val inpath = path.abs
+    paths.par.map { srcPath =>
+      val inpath = srcPath.abs
       val outpath = inpath + oExt
       val objPath = Paths.get(outpath)
-      compileFile(path, objPath)(config)
+      // compile if out of date or no object file
+      if (needsCompiling(srcPath, objPath)) {
+        compileFile(srcPath, objPath)
+      } else objPath
     }.seq
   }
 
@@ -214,6 +218,39 @@ private[scalanative] object LLVM {
     config.logger.running(command)
 
     Process(command, config.workdir.toFile()) #< MIRScriptFile
+  }
+
+  /** Checks the input timestamp to see if the file needs compiling. The call to
+   *  lastModified will return 0 for a non existent output file but that makes
+   *  the timestamp always less forcing a recompile.
+   *
+   *  @param in
+   *    the source file
+   *  @param out
+   *    the object file
+   *  @return
+   *    true if it needs compiling false otherwise.
+   */
+  @inline private def needsCompiling(in: Path, out: Path): Boolean = {
+    in.toFile().lastModified() > out.toFile().lastModified()
+  }
+
+  /** Looks at all the object files to see if one is newer than the output
+   *  (executable). All object files will be compiled at this time so
+   *  lastModified will always be a real time stamp. The output executable
+   *  lastModified can be 0 but that forces the link to occur.
+   *
+   *  @param in
+   *    the list of object file to link
+   *  @param out
+   *    the executable
+   *  @return
+   *    true if it need linking
+   */
+  @inline private def needsLinking(in: Seq[Path], out: Path): Boolean = {
+    val inmax = in.map(_.toFile().lastModified()).max
+    val outmax = out.toFile().lastModified()
+    inmax > outmax
   }
 
   private def flto(implicit config: Config): Seq[String] =

@@ -2,21 +2,20 @@ package scala.scalanative
 package codegen
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
-import scala.scalanative.build.{Config, IncCompilationContext}
+import scala.scalanative.build.Config
 import scala.scalanative.build.core.ScalaNative.{dumpDefns, encodedMainClass}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import scala.scalanative.compat.CompatParColls.Converters._
+import java.nio.file.StandardCopyOption
 
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result)(implicit
-      incCompilationContext: IncCompilationContext
-  ): Seq[Path] = {
+  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
@@ -45,8 +44,7 @@ object CodeGen {
 
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
-      meta: Metadata,
-      incCompilationContext: IncCompilationContext
+      meta: Metadata
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -66,35 +64,50 @@ object CodeGen {
           .seq
 
       // Incremental compilation code generation
-      def seperateIncrementally(): Seq[Path] =
-        assembly
-          .groupBy(
-            _.name.top.id
-              .split('.')
-              .init // last segment is class name
-              .takeWhile(!_.contains("$")) // ignore nested classes
-              .mkString(".")
-          )
-          .par
-          .map {
-            case (packageName, defns) =>
-              val packagePath = packageName.replace(".", File.separator)
-              val ownerDirectory = config.workdir
-                .resolve(Paths.get(packagePath, ".."))
-                .normalize
-              incCompilationContext.addEntry(packageName, defns)
-              if (incCompilationContext.shouldCompile(packageName)) {
-                val sorted = defns.sortBy(_.name.show)
-                if (!ownerDirectory.toFile.exists())
-                  ownerDirectory.toFile.mkdirs()
-                Impl(config, env, sorted).gen(packagePath, workdir)
-              } else {
-                assert(ownerDirectory.toFile.exists())
-                config.workdir.resolve(s"$packagePath.ll")
-              }
-          }
-          .seq
-          .toSeq
+      def seperateIncrementally(): Seq[Path] = {
+        def packageName(defn: Defn): String = {
+          val name = defn.name.top.id
+            .split('.')
+            .init // last segment is class name
+            .takeWhile(!_.contains("$")) // ignore nested classes
+            .mkString(".")
+          if (name.isEmpty) "__empty_package" else name
+        }
+
+        val ctx = new IncrementalCodeGenContext(config.workdir)
+        ctx.collectFromPreviousState()
+        try
+          assembly
+            .groupBy(packageName)
+            .par
+            .map {
+              case (packageName, defns) =>
+                val packagePath = packageName.replace(".", File.separator)
+                val outFile = config.workdir.resolve(s"$packagePath.ll")
+                val ownerDirectory = outFile.getParent()
+
+                ctx.addEntry(packageName, defns)
+                if (ctx.shouldCompile(packageName)) {
+                  val sorted = defns.sortBy(_.name.show)
+                  if (!Files.exists(ownerDirectory))
+                    Files.createDirectories(ownerDirectory)
+                  Impl(config, env, sorted).gen(packagePath, workdir)
+                } else {
+                  assert(ownerDirectory.toFile.exists())
+                  config.logger.debug(
+                    s"Content of package has not changed, skiping generation of $packagePath.ll"
+                  )
+                  config.workdir.resolve(s"$packagePath.ll")
+                }
+            }
+            .seq
+            .toSeq
+        finally {
+          // Save current state for next compilation run
+          ctx.dump()
+          ctx.clear()
+        }
+      }
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if
@@ -104,12 +117,8 @@ object CodeGen {
         Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
       }
 
-      // For some reason in the CI matching for `case _: build.Mode.Release` throws compile time errors
       import build.Mode._
-      (
-        config.mode,
-        config.LTO
-      ) match {
+      (config.mode, config.LTO) match {
         case (ReleaseFast | ReleaseFull, build.LTO.None) => single()
         case _ =>
           if (config.compilerConfig.useIncrementalCompilation)
