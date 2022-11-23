@@ -12,7 +12,7 @@ Scala Native is an optimizing ahead-of-time compiler and lightweight managed run
 [![Discord](https://img.shields.io/discord/632150470000902164.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/scala)
 [![Join chat https://gitter.im/scala-native/scala-native](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala-native/scala-native?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Getting Started and full documentation can be found at [http://www.scala-native.org/](http://www.scala-native.org/)
+Getting Started and full documentation can be found at [https://www.scala-native.org/](https://www.scala-native.org/)
 
 
 ## Online Scaladoc
@@ -33,7 +33,7 @@ Scala Native is distributed under the Apache License.
 
 [<img src="https://www.epfl.ch/wp/5.5/wp-content/themes/wp-theme-2018/assets/svg/epfl-logo.svg?refresh=now" width=200>][EPFL-Link]
 
-[The École polytechnique fédérale de Lausanne (EPFL)][EPFL-Link] and [LAMP][EPFL_LAMP-Link] are founding development of Scala Native as a part Martin Odersky's research program of [Capatibilies for Resources and Effects (Caprese)][Caprese-Link] in Scala.
+[The École polytechnique fédérale de Lausanne (EPFL)][EPFL-Link] and [LAMP][EPFL_LAMP-Link] are funding the development of Scala Native as part of Martin Odersky's research program for [Capatibilies for Resources and Effects (Caprese)][Caprese-Link] in Scala.
 
 
 [<img src="https://raw.githubusercontent.com/VirtusLab/scala-cli/main/website/static/img/vl_logo_small.png" width=200>][VirtusLab-Link]
