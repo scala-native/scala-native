@@ -283,7 +283,6 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_sizeOf(using Context) = Intrinsics_sizeOfR.symbol
   def Intrinsics_sizeOfType(using Context) = Intrinsics_sizeOfTypeR.symbol
 
-
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
     'B' -> requiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

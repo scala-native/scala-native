@@ -20,7 +20,7 @@ class Interflow(val config: build.Config)(implicit
     with Intrinsics
     with Log {
   implicit val platform: PlatformInfo = PlatformInfo(config)
-  
+
   private val originals = {
     val out = mutable.Map.empty[Global, Defn]
     linked.defns.foreach { defn => out(defn.name) = defn }
