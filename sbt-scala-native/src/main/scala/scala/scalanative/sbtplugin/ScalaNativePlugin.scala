@@ -65,9 +65,6 @@ object ScalaNativePlugin extends AutoPlugin {
       )
   }
 
-  @deprecated("use autoImport instead", "0.3.7")
-  val AutoImport = autoImport
-
   override def globalSettings: Seq[Setting[_]] =
     ScalaNativePluginInternal.scalaNativeGlobalSettings
 
