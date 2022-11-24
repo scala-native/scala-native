@@ -758,7 +758,6 @@ object Lower {
     ): Unit = {
       val Op.Sizeof(ty) = op
       val memorySize = MemoryLayout.sizeOf(ty, Some(meta))
-      println(s"genSizeOf: $ty=${memorySize}")
       buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
     }
 
