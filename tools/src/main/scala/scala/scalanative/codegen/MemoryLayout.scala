@@ -6,11 +6,12 @@ import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
+import scala.scalanative.build.Config
+import scala.scalanative.linker.ClassRef
 
 final case class MemoryLayout(
     size: Long,
-    tys: Seq[MemoryLayout.PositionedType],
-    is32BitPlatform: Boolean
+    tys: Seq[MemoryLayout.PositionedType]
 ) {
   lazy val offsetArray: Seq[Val] = {
     val ptrOffsets =
@@ -31,32 +32,48 @@ object MemoryLayout {
 
   final case class PositionedType(ty: Type, offset: Long)
 
-  def sizeOf(ty: Type, is32BitPlatform: Boolean): Long = ty match {
-    case primitive: Type.PrimitiveKind =>
-      math.max(primitive.width / BITS_IN_BYTE, 1)
-    case Type.ArrayValue(ty, n) =>
-      sizeOf(ty, is32BitPlatform) * n
-    case Type.StructValue(tys) =>
-      MemoryLayout(tys, is32BitPlatform).size
-    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      if (is32BitPlatform) 4 else 8
-    case _ =>
-      unsupported(s"sizeof $ty")
-  }
+  implicit private def metaToLinkerResult(implicit
+      meta: Metadata
+  ): linker.Result = meta.linked
 
-  def alignmentOf(ty: Type, is32BitPlatform: Boolean): Long = ty match {
-    case Type.Long | Type.Double =>
-      if (is32BitPlatform) 4 else 8
+  def sizeOf(ty: Type)(implicit platform: PlatformInfo): Long = sizeOf(ty, None)
+
+  def sizeOf(ty: Type, metadata: Option[Metadata])(implicit
+      platform: PlatformInfo
+  ): Long =
+    ty match {
+      case primitive: Type.PrimitiveKind =>
+        math.max(primitive.width / BITS_IN_BYTE, 1)
+      case Type.ArrayValue(ty, n) =>
+        sizeOf(ty) * n
+      case Type.StructValue(tys) =>
+        MemoryLayout(tys).size
+      case _: Type.RefKind =>
+        val layoutSize = for {
+          meta <- metadata
+          clsRef <- ClassRef.unapply(ty)(meta.linked)
+          layout <- meta.layout.get(clsRef)
+        } yield layout.size
+        layoutSize.getOrElse(platform.sizeOfPtr)
+
+      case Type.Size | Type.Nothing | Type.Ptr =>
+        platform.sizeOfPtr
+      case _ =>
+        unsupported(s"sizeof $ty")
+    }
+
+  def alignmentOf(ty: Type)(implicit platform: PlatformInfo): Long = ty match {
+    case Type.Long | Type.Double => platform.sizeOfPtr
     case primitive: Type.PrimitiveKind =>
       math.max(primitive.width / BITS_IN_BYTE, 1)
     case Type.ArrayValue(ty, n) =>
-      alignmentOf(ty, is32BitPlatform)
+      alignmentOf(ty)
     case Type.StructValue(Seq()) =>
       1
     case Type.StructValue(tys) =>
-      tys.map(alignmentOf(_, is32BitPlatform)).max
+      tys.map(alignmentOf(_)).max
     case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      if (is32BitPlatform) 4 else 8
+      platform.sizeOfPtr
     case _ =>
       unsupported(s"alignment $ty")
   }
@@ -69,21 +86,21 @@ object MemoryLayout {
     offset + padding
   }
 
-  def apply(tys: Seq[Type], is32BitPlatform: Boolean): MemoryLayout = {
+  def apply(tys: Seq[Type])(implicit platform: PlatformInfo): MemoryLayout = {
     val pos = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
     tys.foreach { ty =>
-      offset = align(offset, alignmentOf(ty, is32BitPlatform))
+      offset = align(offset, alignmentOf(ty))
       pos += PositionedType(ty, offset)
-      offset += sizeOf(ty, is32BitPlatform)
+      offset += sizeOf(ty)
     }
 
     val alignment = {
       if (tys.isEmpty) 1
-      else tys.map(alignmentOf(_, is32BitPlatform)).max
+      else tys.map(alignmentOf(_)).max
     }
 
-    MemoryLayout(align(offset, alignment), pos.toSeq, is32BitPlatform)
+    MemoryLayout(align(offset, alignment), pos.toSeq)
   }
 }
