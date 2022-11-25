@@ -217,6 +217,9 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_castLongToRawSizeR = IntrinsicsModule.requiredMethodRef("castLongToRawSize")
   @tu lazy val Intrinsics_stackallocR = IntrinsicsModule.requiredMethodRef("stackalloc")
   @tu lazy val Intrinsics_classFieldRawPtrR = IntrinsicsModule.requiredMethodRef("classFieldRawPtr")
+  @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info.member(termName("sizeOf")).alternatives
+  @tu lazy val Intrinsics_sizeOfR = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
+  @tu lazy val Intrinsics_sizeOfTypeR = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
 
   def Intrinsics_divUInt(using Context) = Intrinsics_divUIntR.symbol
   def Intrinsics_divULong(using Context) = Intrinsics_divULongR.symbol
@@ -272,6 +275,8 @@ final class NirDefinitions()(using ctx: Context) {
   def Intrinsics_castLongToRawSize(using Context) = Intrinsics_castLongToRawSizeR.symbol
   def Intrinsics_stackalloc(using Context) = Intrinsics_stackallocR.symbol
   def Intrinsics_classFieldRawPtr(using Context) = Intrinsics_classFieldRawPtrR.symbol
+  def Intrinsics_sizeOf(using Context) = Intrinsics_sizeOfR.symbol
+  def Intrinsics_sizeOfType(using Context) = Intrinsics_sizeOfTypeR.symbol
 
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(

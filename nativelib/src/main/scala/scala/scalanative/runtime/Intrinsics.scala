@@ -168,4 +168,10 @@ object Intrinsics {
   /** Intrinsified resolving of class field as a raw pointer */
   def classFieldRawPtr[T <: AnyRef](obj: T, fieldName: String): RawPtr =
     intrinsic
+
+  /** Intrinsified resolving of memory layout size of given type */
+  def sizeOf[T]: RawSize = intrinsic
+
+  /** Intrinsified resolving of memory layout size of given type */
+  def sizeOf(cls: Class[_]): RawSize = intrinsic
 }

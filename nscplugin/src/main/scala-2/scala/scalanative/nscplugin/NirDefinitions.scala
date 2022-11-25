@@ -237,6 +237,12 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("stackalloc"))
     lazy val ClassFieldRawPtrMethod =
       getMember(IntrinsicsModule, TermName("classFieldRawPtr"))
+    lazy val SizeOfMethods =
+      getMember(IntrinsicsModule, TermName("sizeOf")).alternatives
+    lazy val SizeOfMethod =
+      SizeOfMethods.find(_.paramss.flatten.nonEmpty).get
+    lazy val SizeOfTypeMethod =
+      SizeOfMethods.find(_.paramss.flatten.isEmpty).get
 
     lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
       getMember(_, TermName("apply"))

@@ -971,8 +971,7 @@ object Lower {
         pos: Position
     ): Unit = {
       val Op.Sizeof(ty) = op
-
-      val memorySize = MemoryLayout.sizeOf(ty)
+      val memorySize = MemoryLayout.sizeOf(ty, Some(meta))
       buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
     }
 
@@ -981,7 +980,7 @@ object Lower {
     ): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op: @unchecked
 
-      val size = layout(cls).size
+      val size = MemoryLayout.sizeOf(layout(cls).struct)
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 

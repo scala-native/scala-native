@@ -5,6 +5,9 @@ import scala.collection.mutable
 import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
+import scalanative.codegen.MemoryLayout.PositionedType
+import scala.scalanative.build.Config
+import scala.scalanative.linker.ClassRef
 
 final case class MemoryLayout(
     size: Long,
@@ -30,18 +33,35 @@ object MemoryLayout {
 
   final case class PositionedType(ty: Type, offset: Long)
 
-  def sizeOf(ty: Type)(implicit platform: PlatformInfo): Long = ty match {
-    case primitive: Type.PrimitiveKind =>
-      math.max(primitive.width / BITS_IN_BYTE, 1)
-    case Type.ArrayValue(ty, n) =>
-      sizeOf(ty) * n
-    case Type.StructValue(tys) =>
-      MemoryLayout(tys).size
-    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      platform.sizeOfPtr
-    case _ =>
-      unsupported(s"sizeof $ty")
-  }
+  implicit private def metaToLinkerResult(implicit
+      meta: Metadata
+  ): linker.Result = meta.linked
+
+  def sizeOf(ty: Type)(implicit platform: PlatformInfo): Long = sizeOf(ty, None)
+
+  def sizeOf(ty: Type, metadata: Option[Metadata])(implicit
+      platform: PlatformInfo
+  ): Long =
+    ty match {
+      case primitive: Type.PrimitiveKind =>
+        math.max(primitive.width / BITS_IN_BYTE, 1)
+      case Type.ArrayValue(ty, n) =>
+        sizeOf(ty) * n
+      case Type.StructValue(tys) =>
+        MemoryLayout(tys).size
+      case _: Type.RefKind =>
+        val layoutSize = for {
+          meta <- metadata
+          clsRef <- ClassRef.unapply(ty)(meta.linked)
+          layout <- meta.layout.get(clsRef)
+        } yield layout.size
+        layoutSize.getOrElse(platform.sizeOfPtr)
+
+      case Type.Size | Type.Nothing | Type.Ptr =>
+        platform.sizeOfPtr
+      case _ =>
+        unsupported(s"sizeof $ty")
+    }
 
   def alignmentOf(ty: Type)(implicit platform: PlatformInfo): Long = ty match {
     case Type.Long | Type.Double => platform.sizeOfPtr

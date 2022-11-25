@@ -105,6 +105,14 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             EmptyTree
           }
 
+        // sizeOf[T] -> sizeOf(classOf[T])
+        case TypeApply(sizeOfTree, List(tpeArg))
+            if sizeOfTree.symbol == SizeOfTypeMethod =>
+          val widenedTpe = tpeArg.tpe.dealias.widen
+          typer.typed {
+            Apply(SizeOfMethod, Literal(Constant(widenedTpe)))
+          }
+
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>
           enterOwner(OwnerKind.EnumImpl) { super.transform(cldef) }

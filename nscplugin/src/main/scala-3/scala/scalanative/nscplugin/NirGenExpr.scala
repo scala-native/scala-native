@@ -1029,6 +1029,7 @@ trait NirGenExpr(using Context) {
       else if (code == STACKALLOC) genStackalloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
+      else if (code == SIZE_OF) genSizeOf(app)
       else if (code == REFLECT_SELECTABLE_SELECTDYN)
         // scala.reflect.Selectable.selectDynamic
         genReflectiveCall(app, isSelectDynamic = true)
@@ -2187,6 +2188,24 @@ trait NirGenExpr(using Context) {
           )
           Val.Int(-1)
         }
+    }
+
+    def genSizeOf(app: Apply): Val = {
+      given nir.Position = app.span
+      def unsupported(msg: String) =
+        report.error(msg, app.srcPos)
+        Val.Zero(Type.Size)
+      app.args match
+        case Seq(clsType: Literal) =>
+          val tpe = clsType.const.typeValue
+          if !tpe.typeSymbol.isTraitOrInterface
+          then buf.sizeof(genType(tpe), unwind)
+          else
+            unsupported(
+              s"Type ${tpe.show} is a trait or interface, its size cannot be calculated"
+            )
+        case _ =>
+          unsupported("Argument of sizeOf needs to be a class literal")
     }
 
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol)(using

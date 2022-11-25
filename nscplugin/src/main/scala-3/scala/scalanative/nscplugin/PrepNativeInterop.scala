@@ -37,6 +37,17 @@ class PrepNativeInterop extends PluginPhase {
     dd.symbol.isWrappedToplevelDef
   }
 
+  override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
+    val TypeApply(fun, tArgs) = tree
+    if fun.symbol == defnNir.Intrinsics_sizeOfType then
+      // sizeOf[T] -> sizeOf(classOf[T])
+      cpy.Apply(tree)(
+        ref(defnNir.Intrinsics_sizeOf),
+        tArgs.map(tpe => Literal(Constant(tpe.tpe.finalResultType)))
+      )
+    else tree
+  }
+
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
     // Set `@extern` annotation for top-level extern functions
     if (isTopLevelExtern(dd) && !dd.symbol.hasAnnotation(defnNir.ExternClass)) {
