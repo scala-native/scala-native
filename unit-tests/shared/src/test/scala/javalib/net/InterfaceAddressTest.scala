@@ -9,8 +9,6 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import scalanative.meta.LinktimeInfo
-
 /* Design Notes:
  *    1) As the underlying implementation is Unix only, so are these Tests.
  *
@@ -29,18 +27,18 @@ class InterfaceAddressTest {
    */
 
   val localhostIf =
-    if (LinktimeInfo.isLinux) "lo"
+    if (Platform.isLinux) "lo"
     else "lo0"
 
   val osIPv6PrefixLength =
-    if (LinktimeInfo.isMac) 64
+    if (Platform.isMacOs) 64
     else 128
 
   val osIPv6LoopbackSuffix =
     s":0:0:0:0:0:0:1%${localhostIf}"
 
   val osIPv6LoopbackAddress =
-    if (LinktimeInfo.isMac) s"fe80${osIPv6LoopbackSuffix}"
+    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
     else s"0${osIPv6LoopbackSuffix}"
 
   /* Test equals() but there is no good, simple way to test corresponding

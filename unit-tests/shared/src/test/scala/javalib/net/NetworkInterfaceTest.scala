@@ -9,8 +9,6 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import scalanative.meta.LinktimeInfo
-
 /* Design Notes:
  *    1) As the underlying implementation is Unix only, so are these Tests.
  *
@@ -25,7 +23,7 @@ import scalanative.meta.LinktimeInfo
 class NetworkInterfaceTest {
 
   val localhostIf =
-    if (LinktimeInfo.isLinux) "lo"
+    if (Platform.isLinux) "lo"
     else "lo0"
 
 // Test static (object) methods
@@ -149,24 +147,6 @@ class NetworkInterfaceTest {
     assertTrue("count >= 2", count >= 2)
   }
 
-  @Test def networkInterfaces(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val netIfs = NetworkInterface.networkInterfaces()
-    assertNotNull(netIfs)
-
-    var count = 0
-
-    val itr = netIfs.iterator()
-    while (itr.hasNext()) {
-      itr.next
-      count += 1
-    }
-
-    // count != 0 1 for loopback, 1 for World and possibly many more (macOS).
-    assertTrue("count >= 2", count >= 2)
-  }
-
 // Test instance methods
 
   @Test def instanceGetIndex(): Unit = {
@@ -227,7 +207,7 @@ class NetworkInterfaceTest {
     assertNotNull(lbIf)
 
     val expected =
-      if (LinktimeInfo.isMac) true
+      if (Platform.isMacOs) true
       else false // Linux
     // else (FreeBSD?)
 
@@ -245,31 +225,6 @@ class NetworkInterfaceTest {
     var count = 0
     while (iaEnumeration.hasMoreElements()) {
       iaEnumeration.nextElement()
-      count += 1
-    }
-
-    if (Platform.isLinux) {
-      assertEquals("Linux", 2, count)
-    } else if (Platform.isMacOs) {
-      assertEquals("macOS", 3, count)
-    } // else add Platforms as they are verified
-  }
-
-  @Test def instanceInetAddresses(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
-    assertNotNull(lbIf)
-
-    // SN Stream implements neither Stream.count() nor Stream.reduce()
-    val iaStream = lbIf.inetAddresses()
-
-    var count = 0
-
-    val itr = iaStream.iterator()
-
-    while (itr.hasNext()) {
-      itr.next()
       count += 1
     }
 
