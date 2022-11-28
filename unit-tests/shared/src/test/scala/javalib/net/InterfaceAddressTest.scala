@@ -9,6 +9,8 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
+import java.util.function.Consumer
+
 /* Design Notes:
  *    1) As the underlying implementation is Unix only, so are these Tests.
  *
@@ -74,21 +76,25 @@ class InterfaceAddressTest {
     val ifAddresses = netIf.getInterfaceAddresses()
     assertTrue("No InterfaceAddress found", ifAddresses.size > 0)
 
-    ifAddresses.forEach { addr =>
-      val hostAddr = addr.getAddress().getHostAddress()
+    // Scala 2.11 demands this gronking forEach idiom.
+    val consumer = new Consumer[InterfaceAddress] {
+      def accept(addr: InterfaceAddress): Unit = {
+        val hostAddr = addr.getAddress().getHostAddress()
+        // macOS can have two forms of IPv6 loopback address.
+        val expected =
+          if (!hostAddr.contains(":")) {
+            "127.0.0.1"
+          } else if (hostAddr.startsWith("0")) {
+            s"0:0:0:0:0:0:0:1%${localhostIf}"
+          } else if (hostAddr.startsWith("f")) {
+            s"${osIPv6LoopbackAddress}"
+          } else "" // fail in a way that will print out ifAddrString
 
-      // macOS can have two forms of IPv6 loopback address.
-      val expected =
-        if (!hostAddr.contains(":")) {
-          "127.0.0.1"
-        } else if (hostAddr.startsWith("0")) {
-          s"0:0:0:0:0:0:0:1%${localhostIf}"
-        } else if (hostAddr.startsWith("f")) {
-          s"${osIPv6LoopbackAddress}"
-        } else "" // fail in a way that will print out ifAddrString
-
-      assertEquals("Unexpected result", expected, hostAddr)
+        assertEquals("Unexpected result", expected, hostAddr)
+      }
     }
+
+    ifAddresses.forEach(consumer)
   }
 
   /*  @Test def testGetBroadcast(): Unit = {}
@@ -106,19 +112,24 @@ class InterfaceAddressTest {
     val ifAddresses = netIf.getInterfaceAddresses()
     assertTrue("No InterfaceAddress found", ifAddresses.size > 0)
 
-    ifAddresses.forEach { addr =>
-      val ia = addr.getAddress().getAddress()
-      val len = ia.length
+    // Scala 2.11 demands this gronking forEach idiom.
+    val consumer = new Consumer[InterfaceAddress] {
+      def accept(addr: InterfaceAddress): Unit = {
+        val ia = addr.getAddress().getAddress()
+        val len = ia.length
 
-      val expected =
-        if (len == 4) 8.toShort // IPv4
-        else if (len != 16) -1.toShort // fail but print prefixLen
-        else if (ia(0) == 0) 128.toShort // Linux & macOS ::1 form
-        else osIPv6PrefixLength.toShort // macOs ff80::1 form
+        val expected =
+          if (len == 4) 8.toShort // IPv4
+          else if (len != 16) -1.toShort // fail but print prefixLen
+          else if (ia(0) == 0) 128.toShort // Linux & macOS ::1 form
+          else osIPv6PrefixLength.toShort // macOs ff80::1 form
 
-      val prefixLen = addr.getNetworkPrefixLength()
-      assertEquals("unexpected prefix length", expected, prefixLen)
+        val prefixLen = addr.getNetworkPrefixLength()
+        assertEquals("unexpected prefix length", expected, prefixLen)
+      }
     }
+
+    ifAddresses.forEach(consumer)
   }
 
   @Test def testLoopbackToString(): Unit = {
@@ -134,21 +145,26 @@ class InterfaceAddressTest {
     val ifAddresses = netIf.getInterfaceAddresses()
     assertTrue("No InterfaceAddress found", ifAddresses.size > 0)
 
-    ifAddresses.forEach { addr =>
-      val ifAddrString = addr.toString
+    // Scala 2.11 demands this gronking forEach idiom.
+    val consumer = new Consumer[InterfaceAddress] {
+      def accept(addr: InterfaceAddress): Unit = {
+        val ifAddrString = addr.toString
 
-      // macOS can have two forms of IPv6 loopback address.
-      val expected =
-        if (!ifAddrString.contains(":")) {
-          "/127.0.0.1/8 [null]"
-        } else if (ifAddrString.startsWith("/0")) {
-          s"/0:0:0:0:0:0:0:1%${localhostIf}/128 [null]"
-        } else if (ifAddrString.startsWith("/f")) {
-          s"/${osIPv6LoopbackAddress}/${osIPv6PrefixLength} [null]"
-        } else "" // fail in a way that will print out ifAddrString
+        // macOS can have two forms of IPv6 loopback address.
+        val expected =
+          if (!ifAddrString.contains(":")) {
+            "/127.0.0.1/8 [null]"
+          } else if (ifAddrString.startsWith("/0")) {
+            s"/0:0:0:0:0:0:0:1%${localhostIf}/128 [null]"
+          } else if (ifAddrString.startsWith("/f")) {
+            s"/${osIPv6LoopbackAddress}/${osIPv6PrefixLength} [null]"
+          } else "" // fail in a way that will print out ifAddrString
 
-      assertEquals("InterfaceAddress", expected, ifAddrString)
+        assertEquals("InterfaceAddress", expected, ifAddrString)
+      }
     }
+
+    ifAddresses.forEach(consumer)
   }
 
 }

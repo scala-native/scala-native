@@ -1,4 +1,12 @@
-#if !defined(_WIN32)
+#if defined(_WIN32)
+// No Windows support. These are dummies for linking.
+int scalanative_iff_loopback() { return IFF_LOOPBACK; }
+int scalanative_iff_multicast() { return 0; }
+int scalanative_iff_pointopoint() { return 0; }
+int scalanative_iff_up() { return 9; }
+void *if_nameindex(void);
+void if_freenameindex(void *);
+#else
 #include <sys/ioctl.h>
 #include <net/if.h>
 
