@@ -9,7 +9,7 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import scala.scalanative.meta.LinktimeInfo
+import scalanative.meta.LinktimeInfo
 
 /* Design Notes:
  *    1) As the underlying implementation is Unix only, so are these Tests.
