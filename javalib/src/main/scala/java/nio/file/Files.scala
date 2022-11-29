@@ -33,7 +33,7 @@ import scalanative.unsafe._
 import scalanative.libc._
 import scalanative.posix.{dirent, fcntl, limits, unistd}
 import dirent._
-import scalanative.posix.errno.{EEXIST, ENOTEMPTY}
+import scalanative.posix.errno.{EEXIST, ENOENT, ENOTEMPTY}
 
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 import scalanative.nio.fs.unix.UnixException
@@ -201,26 +201,41 @@ object Files {
       throw new IOException()
     }
 
-  def createLink(link: Path, existing: Path): Path = {
-    def tryCreateHardLink() = Zone { implicit z =>
-      if (isWindows)
-        CreateHardLinkW(
+  def createLink(link: Path, existing: Path): Path = Zone { implicit z =>
+    if (isWindows) {
+      if (exists(link, Array.empty)) {
+        throw new FileAlreadyExistsException(link.toString)
+      } else {
+        val created = CreateHardLinkW(
           toCWideStringUTF16LE(link.toString),
           toCWideStringUTF16LE(existing.toString),
           securityAttributes = null
         )
-      else
-        unistd.link(
-          toCString(existing.toString()),
-          toCString(link.toString())
-        ) == 0
-    }
-    if (exists(link, Array.empty)) {
-      throw new FileAlreadyExistsException(link.toString)
-    } else if (tryCreateHardLink()) {
-      link
+        if (created) {
+          link
+        } else {
+          throw new IOException("Cannot create link")
+        }
+      }
+
     } else {
-      throw new IOException("Cannot create link")
+      val rtn = unistd.link(
+        toCString(existing.toString()),
+        toCString(link.toString())
+      )
+
+      if (rtn == 0) {
+        link
+      } else {
+        val e = errno
+        if (e == EEXIST)
+          throw new FileAlreadyExistsException(link.toString)
+        else if (e == ENOENT)
+          throw new NoSuchFileException(link.toString, existing.toString, null)
+        else
+          throw new IOException(fromCString(string.strerror(e)))
+      }
+
     }
   }
 
