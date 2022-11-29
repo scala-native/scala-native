@@ -3,9 +3,9 @@
 int scalanative_iff_loopback() { return 0; }
 int scalanative_iff_multicast() { return 0; }
 int scalanative_iff_pointopoint() { return 0; }
-int scalanative_iff_up() { return 9; }
-void *if_nameindex(void) { return NULL; }
-void if_freenameindex(void *){};
+int scalanative_iff_up() { return 0; }
+void *if_nameindex(void) { return (void *) 0; }
+void if_freenameindex(void * dummy) {};
 #else
 #include <sys/ioctl.h>
 #include <net/if.h>
