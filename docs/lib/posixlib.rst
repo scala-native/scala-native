@@ -84,7 +84,6 @@ C Header          Scala Native Module
 `tgmath.h`_       scala.scalanative.posix.tgmath_
 `time.h`_         scala.scalanative.posix.time_
 `trace.h`_        N/A
-`ulimit.h`_       N/A
 `unistd.h`_       scala.scalanative.posix.unistd_
 `utime.h`_        scala.scalanative.posix.utime_
 `utmpx.h`_        N/A
