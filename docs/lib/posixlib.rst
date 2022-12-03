@@ -61,7 +61,6 @@ C Header          Scala Native Module
 `stdlib.h`_       scala.scalanative.posix.stdlib_
 `string.h`_       scala.scalanative.posix.string_
 `strings.h`_      scala.scalanative.posix.strings_
-`stropts.h`_      N/A
 `sys/ipc.h`_      N/A
 `sys/mman.h`_     scala.scalanative.posix.sys.mman_
 `sys/msg.h`_      N/A
@@ -146,7 +145,6 @@ C Header          Scala Native Module
 .. _stdlib.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/stdlib.h.html
 .. _string.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/string.h.html
 .. _strings.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/strings.h.html
-.. _stropts.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/stropts.h.html
 .. _sys/ipc.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_ipc.h.html
 .. _sys/mman.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_mman.h.html
 .. _sys/msg.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_msg.h.html
