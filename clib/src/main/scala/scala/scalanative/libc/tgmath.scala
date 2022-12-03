@@ -4,7 +4,9 @@ import scalanative.unsafe._
 
 /** tgmath.h binding ISO/IEC 9899:1999(C99)
  */
-object tgmath {
+object tgmath extends tgmath
+
+trait tgmath {
   // real
 
   import scala.scalanative.libc.math

@@ -21,8 +21,9 @@ import scalanative.unsafe._
  *  https://en.wikipedia.org/wiki/Long_double
  *  http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/complex.h.html
  */
-@extern
-object complex {
+@extern object complex extends complex
+
+@extern trait complex {
   import Nat._2
   type CFloatComplex = CStruct2[CFloat, CFloat]
   type CDoubleComplex = CStruct2[CDouble, CDouble]
