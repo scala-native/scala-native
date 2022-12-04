@@ -5,8 +5,6 @@ package sys
 import scalanative.unsafe._
 import scalanative.unsigned._
 
-import scalanative.posix.sys.socket
-
 import scalanative.runtime.Platform
 
 /** POSIX sys/un.h for Scala
