@@ -17,10 +17,7 @@ object Deps {
   }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
   def ScalaReflect(version: String) = "org.scala-lang" % "scala-reflect" % version
 
-  def ScalaCheck(scalaVersion: String) = scalaVersionsDependendent(scalaVersion) {
-    case (2, 11) => "org.scalacheck" %% "scalacheck" % "1.15.2" :: Nil // Last released version
-    case _       => "org.scalacheck" %% "scalacheck" % "1.15.4" :: Nil
-  }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
+  def ScalaCheck(scalaVersion: String) = "org.scalacheck" %% "scalacheck" % "1.15.4"
 
   lazy val ScalaTest           = "org.scalatest"          %% "scalatest"                  % "3.2.9"
   lazy val ScalaParCollections = "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.3"
@@ -32,8 +29,8 @@ object Deps {
   def Tools(scalaVersion: String) = {
     List(ScalaCheck(scalaVersion) % "test", ScalaTest % "test") ++
       scalaVersionsDependendent(scalaVersion) {
-        case (2, 11 | 12) => Nil
-        case _            => ScalaParCollections :: Nil
+        case (2, 12) => Nil
+        case _       => ScalaParCollections :: Nil
       }
   }
   def NativeLib(scalaVersion: String) = scalaVersionsDependendent(scalaVersion) {
@@ -41,9 +38,8 @@ object Deps {
     case _      => Nil
   }
   def ScalaPartest(scalaVersion: String) = List(SbtTestInterface) ++ scalaVersionsDependendent(scalaVersion) {
-    case (2, 11) => "org.scala-lang.modules" %% "scala-partest" % "1.0.16" :: Nil
-    case (2, _)  => "org.scala-lang"          % "scala-partest" % scalaVersion :: Nil
-    case (3, _)  => "org.scala-lang"          % "scala-partest" % ScalaVersions.scala213 :: Nil
+    case (2, _) => "org.scala-lang" % "scala-partest" % scalaVersion :: Nil
+    case (3, _) => "org.scala-lang" % "scala-partest" % ScalaVersions.scala213 :: Nil
 
   }
   lazy val TestRunner = List(SbtTestInterface, JUnitInterface, JUnit)
