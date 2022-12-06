@@ -4,8 +4,10 @@ package libc
 import scalanative.unsafe._
 
 /** Bindings for float.h */
-@extern
-object float {
+
+@extern object float extends float
+
+@extern trait float {
 
   // Macros
 

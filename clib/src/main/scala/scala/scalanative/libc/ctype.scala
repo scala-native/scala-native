@@ -3,8 +3,9 @@ package libc
 
 import scalanative.unsafe._
 
-@extern
-object ctype {
+@extern object ctype extends ctype
+
+@extern trait ctype {
   def isascii(c: CInt): CInt = extern
   def isalnum(c: CInt): CInt = extern
   def isalpha(c: CInt): CInt = extern
