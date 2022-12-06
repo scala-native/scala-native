@@ -124,10 +124,6 @@ def template(
       |    <td>Scala release</td>
       |  </tr>
       |  <tr>
-      |    <td align="center">2.11</td>
-      |    <td align="center">2.11.12</td>
-      |  </tr>
-      |  <tr>
       |    <td align="center">2.12</td>
       |    <td align="center"></td>
       |  </tr>
