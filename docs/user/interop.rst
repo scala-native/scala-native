@@ -338,7 +338,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
    This code will allocate 256 bytes that are going to be available until
    the enclosing method returns. Number of elements to be allocated is optional
-   and defaults to 1 otherwise. Memory is not zeroed out by default.
+   and defaults to 1 otherwise. Memory **is zeroed out** by default.
 
    When using stack allocated memory one has to be careful not to capture
    this memory beyond the lifetime of the method. Dereferencing stack allocated
