@@ -12,6 +12,7 @@ import scala.scalanative.unsigned._
 import scala.annotation.tailrec
 
 import java.io.IOException
+import java.net.SocketHelpers.sockaddrToByteArray
 import java.{util => ju}
 
 import scala.scalanative.annotation.alwaysinline
@@ -24,7 +25,7 @@ import scala.scalanative.posix.netinet.in._
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
-import scala.scalanative.posix.string.strerror
+import scala.scalanative.posix.string.{memcpy, strerror}
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.time.{time_t, time, difftime}
 import scala.scalanative.posix.unistd
@@ -87,13 +88,12 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
   }
 
   def getHostAddress(): String = {
+    val bytes = ipAddress.at(0)
     if (ipAddress.length == 4) {
-      formatIn4Addr(arrayByteToPtrByte(ipAddress))
+      formatIn4Addr(bytes)
     } else if (ipAddress.length == 16) {
-      if (isIPv4MappedAddress(arrayByteToPtrByte(ipAddress))) {
-        formatIn4Addr(
-          arrayByteToPtrByte(extractIP4Bytes(arrayByteToPtrByte(ipAddress)))
-        )
+      if (isIPv4MappedAddress(bytes)) {
+        formatIn4Addr(extractIP4Bytes(bytes).at(0))
       } else {
         Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
       }
@@ -259,41 +259,11 @@ object InetAddress {
     }
   }
 
-  /* This is for littleEndian machines. It may need to detect BigEndian
-   * machines and do something different, at worst a byte-by-byte copy.
-   */
   private def addrinfoToByteArray(
       addrinfoP: Ptr[addrinfo]
   ): Array[Byte] = {
-
-    if (addrinfoP.ai_family == AF_INET6) {
-      val bufSize = 16
-      val buf = new Array[Byte](bufSize)
-
-      val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
-      val addrBytes = addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
-
-      memcpy(arrayByteToPtrByte(buf), addrBytes, bufSize.toUInt)
-
-      buf
-    } else if (addrinfoP.ai_family == AF_INET) {
-      val buf = new Array[Byte](4)
-
-      val v4addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in]]
-      val sinAddr = v4addr.sin_addr
-
-      val dst = arrayByteToPtrByte(buf).asInstanceOf[Ptr[in_addr]]
-      !dst = sinAddr // Structure copy
-
-      buf
-    } else {
-      // caller should have detected & thrown before getting this far.
-      Array.empty[Byte]
-    }
+    sockaddrToByteArray(addrinfoP.ai_addr)
   }
-
-  @alwaysinline private def arrayByteToPtrByte(ab: Array[Byte]): Ptr[Byte] =
-    ab.asInstanceOf[scala.scalanative.runtime.ByteArray].at(0)
 
   private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
     val buf = new Array[Byte](4)
@@ -317,7 +287,9 @@ object InetAddress {
     )
 
     if (result == null)
-      throw new IOException(s"inet_ntop IPv4 failed, errno: ${errno}")
+      throw new IOException(
+        s"inet_ntop IPv4 failed,${fromCString(strerror(errno))}"
+      )
 
     fromCString(dst)
   }
@@ -487,8 +459,7 @@ object InetAddress {
     val MAXDNAME = 1025.toUInt /* maximum presentation domain name */
 
     def tailorSockaddr(ipBA: Array[Byte], addr: Ptr[sockaddr]): Unit = {
-      val from =
-        ipBA.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
+      val from = ipBA.at(0)
 
       // By contract the 'sockaddr' argument passed in is cleared/all_zeros.
       if (ipBA.length == 16) {
