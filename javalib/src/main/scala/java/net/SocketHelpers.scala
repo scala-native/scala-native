@@ -5,8 +5,10 @@ import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.netinet.in
+import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.string.memcpy
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
@@ -128,6 +130,31 @@ object SocketHelpers {
     } else {
       fromCString(gai_strerror(gaiErrorCode))
     }
+  }
+
+  private[net] def sockaddrToByteArray(sockAddr: Ptr[sockaddr]): Array[Byte] = {
+
+    val (src, byteArraySize) = {
+      val af = sockAddr.sa_family.toInt
+      if (af == AF_INET6) {
+        val v6addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]]
+        val sin6Addr = v6addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
+        val arraySize = 16
+        (sin6Addr, arraySize)
+      } else if (af == AF_INET) {
+        val v4addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in]]
+        val sin4Addr = v4addr.sin_addr.at1.asInstanceOf[Ptr[Byte]]
+        val arraySize = 4
+        (sin4Addr, arraySize)
+      } else {
+        throw new SocketException(s"Unsupported address family: ${af}")
+      }
+    }
+
+    val byteArray = new Array[Byte](byteArraySize)
+    memcpy(byteArray.at(0), src, byteArraySize.toUInt)
+
+    byteArray
   }
 
   // Create copies of loopback & wildcard, so that originals never get changed

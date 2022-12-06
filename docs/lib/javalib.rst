@@ -192,9 +192,10 @@ Here is the list of currently available classes:
 * ``java.net.Inet4Address``
 * ``java.net.Inet6Address``
 * ``java.net.InetAddress``
-* ``java.net.InetAddressBase``
 * ``java.net.InetSocketAddress``
+* ``java.net.InterfaceAddress``
 * ``java.net.MalformedURLException``
+* ``java.net.NetworkInterface``
 * ``java.net.NoRouteToHostException``
 * ``java.net.PortUnreachableException``
 * ``java.net.ServerSocket``
