@@ -513,6 +513,7 @@ java.util
 * ``zip.ZipInputStream``
 * ``zip.ZipOutputStream``
 
+  
 **Note:** This is an ongoing effort, some of the classes listed here might
 be partially implemented. Please consult `javalib sources
 <https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java>`_
