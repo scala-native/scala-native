@@ -191,14 +191,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     ) ++ {
-      if (NativePlatform.scalaUsesImplClasses) {
-        Seq(
-          Parent,
-          ParentClass,
-          ParentClassInit,
-          ParentClassFoo
-        )
-      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+      if (NativePlatform.erasesEmptyTraitConstructor) {
         Seq(Parent, ParentFoo)
       } else {
         Seq(
@@ -238,13 +231,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     ) ++ {
-      if (NativePlatform.scalaUsesImplClasses) {
-        Seq(
-          Parent,
-          ParentClass,
-          ParentClassInit
-        )
-      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+      if (NativePlatform.erasesEmptyTraitConstructor) {
         Seq(Parent)
       } else {
         Seq(
@@ -272,15 +259,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         Object,
         ObjectInit
       ) ++ {
-        if (NativePlatform.scalaUsesImplClasses) {
-          Seq(
-            Parent,
-            ParentClass,
-            ParentClassInit,
-            ParentClassMain,
-            TestModuleMain
-          )
-        } else if (NativePlatform.erasesEmptyTraitConstructor) {
+        if (NativePlatform.erasesEmptyTraitConstructor) {
           Seq(ParentMain, TestModuleMain)
         } else {
           Seq(
