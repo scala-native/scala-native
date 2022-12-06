@@ -57,14 +57,16 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
 
       case _ =>
         if ((revents & POLLNVAL) != 0) {
-          throw new ConnectException(
-            s"connect failed, invalid poll request: ${revents}"
-          )
-        } else if ((revents & (POLLERR | POLLHUP)) != 0) {
-          throw new ConnectException(
-            s"connect failed, POLLERR or POLLHUP set: ${revents}"
-          )
-        }
+          val msg = s"connect failed, invalid poll request: ${revents}"
+          throw new ConnectException(msg)
+        } else if ((revents & (POLLIN | POLLHUP)) != 0) {
+          // Not enough information at this point to report remote host:port.
+          val msg = "Connection refused"
+          throw new ConnectException(msg)
+        } else if ((revents & POLLERR) != 0) { // an error was recognized.
+          val msg = s"connect failed, poll POLLERR: ${revents}"
+          throw new ConnectException(msg)
+        } // else should be POLLOUT - Open for Business, ignore XSI bits if set
     }
   }
 
