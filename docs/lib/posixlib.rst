@@ -1,4 +1,4 @@
-;.. _posixlib:
+.. _posixlib:
 
 C POSIX Library
 ===============
