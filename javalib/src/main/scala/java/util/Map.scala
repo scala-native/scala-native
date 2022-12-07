@@ -4,8 +4,6 @@ package java.util
 
 import java.util.function.{BiConsumer, BiFunction, Function}
 
-import scala.scalanative.annotation.JavaDefaultMethod
-
 import ScalaOps._
 
 trait Map[K, V] {
@@ -24,24 +22,20 @@ trait Map[K, V] {
   def equals(o: Any): Boolean
   def hashCode(): Int
 
-  @JavaDefaultMethod
   def getOrDefault(key: Any, defaultValue: V): V =
     if (containsKey(key)) get(key)
     else defaultValue
 
-  @JavaDefaultMethod
   def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
     for (entry <- entrySet().scalaOps)
       action.accept(entry.getKey(), entry.getValue())
   }
 
-  @JavaDefaultMethod
   def replaceAll(function: BiFunction[_ >: K, _ >: V, _ <: V]): Unit = {
     for (entry <- entrySet().scalaOps)
       entry.setValue(function.apply(entry.getKey(), entry.getValue()))
   }
 
-  @JavaDefaultMethod
   def putIfAbsent(key: K, value: V): V = {
     val prevValue = get(key)
     if (prevValue == null)
@@ -50,7 +44,6 @@ trait Map[K, V] {
       prevValue
   }
 
-  @JavaDefaultMethod
   def remove(key: Any, value: Any): Boolean = {
     if (containsKey(key) && Objects.equals(get(key), value)) {
       remove(key)
@@ -60,7 +53,6 @@ trait Map[K, V] {
     }
   }
 
-  @JavaDefaultMethod
   def replace(key: K, oldValue: V, newValue: V): Boolean = {
     if (containsKey(key) && Objects.equals(get(key), oldValue)) {
       put(key, newValue)
@@ -70,12 +62,10 @@ trait Map[K, V] {
     }
   }
 
-  @JavaDefaultMethod
   def replace(key: K, value: V): V =
     if (containsKey(key)) put(key, value)
     else null.asInstanceOf[V]
 
-  @JavaDefaultMethod
   def computeIfAbsent(key: K, mappingFunction: Function[_ >: K, _ <: V]): V = {
     val oldValue = get(key)
     if (oldValue != null) {
@@ -88,7 +78,6 @@ trait Map[K, V] {
     }
   }
 
-  @JavaDefaultMethod
   def computeIfPresent(
       key: K,
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
@@ -103,7 +92,6 @@ trait Map[K, V] {
     }
   }
 
-  @JavaDefaultMethod
   def compute(
       key: K,
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
@@ -127,7 +115,6 @@ trait Map[K, V] {
     newValue
   }
 
-  @JavaDefaultMethod
   def merge(
       key: K,
       value: V,
