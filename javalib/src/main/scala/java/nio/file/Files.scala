@@ -661,6 +661,9 @@ object Files {
     !exists(path, options)
 
   def readAllBytes(path: Path): Array[Byte] = Zone { implicit z =>
+    /* if 'path' does not exist at all, should get
+     * java.nio.file.NoSuchFileException here.
+     */
     val pathSize: Long = size(path)
     if (!pathSize.isValidInt) {
       throw new OutOfMemoryError("Required array size too large")
@@ -687,8 +690,15 @@ object Files {
         }
       }
     } else {
+      errno = 0
       val pathCString = toCString(path.toString)
       val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+
+      if (fd == -1) {
+        val msg = fromCString(string.strerror(errno))
+        throw new IOException(s"error opening path '${path}': ${msg}")
+      }
+
       try {
         var offset = 0
         var read = 0
