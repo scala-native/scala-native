@@ -293,13 +293,13 @@ object Build {
   lazy val javalibExtDummies =
     MultiScalaProject("javalibExtDummies", file("javalib-ext-dummies"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(noPublishSettings, commonJavalibSettings)
+      .settings(noPublishSettings, commonJavalibSettings, disabledDocsSettings)
       .dependsOn(nativelib)
       .withNativeCompilerPlugin
 
   lazy val auxlib = MultiScalaProject("auxlib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings, commonJavalibSettings)
+    .settings(mavenPublishSettings, commonJavalibSettings, disabledDocsSettings)
     .dependsOn(nativelib)
     .withNativeCompilerPlugin
 
