@@ -3,9 +3,11 @@ package posix
 package sys
 
 import scalanative.unsafe._
-// import scalanative.unsigned._
 
 /** POSIX sys/times.h for Scala
+ *
+ *  The Open Group Base Specifications
+ *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
  */
 
 @extern
