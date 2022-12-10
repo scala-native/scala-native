@@ -11,7 +11,7 @@ import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 import scala.scalanative.nir.*
 
 class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
-  def nativeCompilation(source: String): Unit = {
+  inline def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
