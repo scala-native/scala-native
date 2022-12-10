@@ -68,6 +68,36 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       NIRCompiler(_.compile(code))
     }
   }
+  it should "report error for extern in val definition" in {
+    // given
+    val code =
+      """import scala.scalanative.unsafe.extern
+        |
+        |@extern
+        |object Dummy {
+        |  val foo: Int = extern
+        |}""".stripMargin
+    // when
+    val caught = intercept[CompilationFailedException] {
+      NIRCompiler(_.compile(code))
+    }
+    caught.getMessage() should include(
+      "`extern` cannot be used in val definition"
+    )
+  }
+
+  it should "compile extern var definition" in {
+    // given
+    val code =
+      """import scala.scalanative.unsafe.extern
+        |
+        |@extern
+        |object Dummy {
+        |  var foo: Int = extern
+        |}""".stripMargin
+    // when
+    NIRCompiler(_.compile(code))
+  }
 
   it should "not allow members of extern object to reference other externs" in {
     val code =
@@ -90,7 +120,6 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       """import scala.scalanative.unsafe.extern
           |
           |@extern trait Dummy {
-          |   var x: Int = extern
           |   def foo(): Int = extern
           |}
           |
