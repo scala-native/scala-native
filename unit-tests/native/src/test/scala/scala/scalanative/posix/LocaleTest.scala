@@ -1,0 +1,180 @@
+package scala.scalanative.posix
+
+import org.junit.Test
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.{Before, After}
+
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
+
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
+import scala.scalanative.posix.errno.errno
+import scala.scalanative.posix.locale._
+import scala.scalanative.posix.localeOps._
+import scala.scalanative.posix.stdlib
+import scala.scalanative.posix.string
+
+class LocaleTest {
+
+  // See also MonetaryTest.scala where number of locale methods are exercised.
+
+  var savedLocale: Option[CString] = None
+
+  @Before
+  def before(): Unit = {
+    assumeTrue(
+      "locale.scala is not implemented on Windows",
+      !isWindows
+    )
+
+    val currentLocale = {
+      val en_US = setlocale(locale.LC_ALL, c"en_US")
+      if (en_US != null) en_US
+      else {
+        val en_USutf8 = setlocale(locale.LC_ALL, c"en_US.utf8") // Linux
+        if (en_USutf8 != null) en_USutf8
+        else setlocale(locale.LC_ALL, c"en_US.UTF-8") // macOS
+      }
+    }
+
+    if (currentLocale == null) {
+      fail(
+        "setlocale() failed to use one of en_US, en_US.utf8, or en_US.UTF-8."
+      )
+    } else {
+      savedLocale = Some(string.strdup(currentLocale)) // note: no CString
+    }
+  }
+
+  @After
+  def after(): Unit = {
+    savedLocale.map { s =>
+      errno = 0
+      // restore Locale as recorded on entry
+      val restoredLocale = setlocale(locale.LC_ALL, s)
+
+      if (restoredLocale == null)
+        fail("setlocale() was unable to restore the locale.")
+      else
+        stdlib.free(s)
+    }
+  }
+
+  @Test def localeconv_Using_en_US(): Unit =
+    if (!isWindows) {
+      val currentLconv = localeconv() // documented as always succeeds.
+
+      assertEquals(
+        "US decimal_point",
+        ".",
+        fromCString(currentLconv.decimal_point)
+      )
+
+      assertEquals(
+        "US thousands_sep",
+        ",",
+        fromCString(currentLconv.thousands_sep)
+      )
+
+      // Expect three byte-integers 3, 3, 0, meaning infinite group-by-three
+      assertEquals(
+        "US grouping",
+        "\u0003\u0003",
+        fromCString(currentLconv.grouping)
+      )
+
+      assertEquals(
+        "US int_curr_symbol",
+        "USD ",
+        fromCString(currentLconv.int_curr_symbol)
+      )
+
+      assertEquals(
+        "US currency_symbol",
+        "$",
+        fromCString(currentLconv.currency_symbol)
+      )
+
+      assertEquals(
+        "US mon_decimal_point",
+        ".",
+        fromCString(currentLconv.mon_decimal_point)
+      )
+
+      assertEquals(
+        "US mon_thousands_sep",
+        ",",
+        fromCString(currentLconv.mon_thousands_sep)
+      )
+
+      // Expect three byte-integers 3, 3, 0, meaning infinite group-by-three
+      assertEquals(
+        "US mon_grouping",
+        "\u0003\u0003",
+        fromCString(currentLconv.mon_grouping)
+      )
+
+      assertEquals(
+        "US positive_sign",
+        "",
+        fromCString(currentLconv.positive_sign)
+      )
+
+      assertEquals(
+        "US negative_sign",
+        "-",
+        fromCString(currentLconv.negative_sign)
+      )
+
+      assertEquals("US int_frac_digits", 2, currentLconv.int_frac_digits)
+
+      assertEquals("US frac_digits", 2, currentLconv.frac_digits)
+
+      assertEquals("US p_cs_precedes", 1, currentLconv.p_cs_precedes)
+
+      assertEquals("US p_sep_by_space", 0, currentLconv.p_sep_by_space)
+
+      assertEquals("US n_cs_precedes", 1, currentLconv.n_cs_precedes)
+
+      assertEquals("US n_sep_by_space", 0, currentLconv.n_sep_by_space)
+
+      assertEquals("US p_sign_posn", 1, currentLconv.p_sign_posn)
+
+      assertEquals("US n_sign_posn", 1, currentLconv.n_sign_posn)
+
+      assertEquals("US int_p_cs_precedes", 1, currentLconv.int_p_cs_precedes)
+
+      assertEquals("US int_n_cs_precedes", 1, currentLconv.int_n_cs_precedes)
+
+      if (isLinux) {
+        assertEquals(
+          "US int_p_sep_by_space",
+          1,
+          currentLconv.int_p_sep_by_space
+        )
+
+        assertEquals(
+          "US int_n_sep_by_space",
+          1,
+          currentLconv.int_n_sep_by_space
+        )
+      } else {
+        assertEquals(
+          "US int_p_sep_by_space",
+          0,
+          currentLconv.int_p_sep_by_space
+        )
+        assertEquals(
+          "US int_n_sep_by_space",
+          0,
+          currentLconv.int_n_sep_by_space
+        )
+      }
+
+      assertEquals("US int_p_sign_posn", 1, currentLconv.int_p_sign_posn)
+
+      assertEquals("US int_n_sign_posn", 1, currentLconv.int_n_sign_posn)
+    }
+}
