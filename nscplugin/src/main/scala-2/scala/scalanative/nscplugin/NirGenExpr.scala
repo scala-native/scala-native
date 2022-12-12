@@ -654,11 +654,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genStaticMember(receiver: Tree, sym: Symbol)(implicit
         pos: nir.Position
     ): Val = {
-      if (sym == BoxedUnit_UNIT) {
-        Val.Unit
-      } else  {
-        genApplyStaticMethod(sym, receiver, Seq())
-      }
+      if (sym == BoxedUnit_UNIT) Val.Unit
+      else genApplyStaticMethod(sym, receiver, Seq())
     }
 
     def genAssign(tree: Assign): Val = {
