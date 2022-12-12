@@ -29,7 +29,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   )
 
   def isStaticModule(sym: Symbol): Boolean =
-    sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
+    sym.isModuleClass && !sym.isLifted
 
   class MethodEnv(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
@@ -89,10 +89,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClass(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      // ImplClass does not copy annotations from the trait
-      if (isImplClass(sym) && implClassTarget(sym).isExternType) {
-        sym.addAnnotation(ExternClass)
-      }
 
       scoped(
         curClassSym := sym,
@@ -139,8 +135,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassParent(sym: Symbol): Option[nir.Global] = {
       if (sym.isExternType &&
-          sym.superClass != ObjectClass &&
-          !isImplClass(sym)) {
+          sym.superClass != ObjectClass) {
         reporter.error(
           sym.pos,
           s"Extern object can only extend extern traits"
@@ -710,13 +705,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Some(externDefn)
       }
 
-      def isCallingExternMethod(sym: Symbol) = {
-        val owner = sym.owner match {
-          case sym if isImplClass(sym) => implClassTarget(sym)
-          case sym                     => sym
-        }
-        owner.isExternType
-      }
+      def isCallingExternMethod(sym: Symbol) =
+        sym.owner.isExternType
 
       def isExternMethodAlias(target: Symbol) =
         (name, genName(target)) match {
@@ -759,12 +749,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def isCurClassSetter(sym: Symbol) =
-        sym.isSetter && {
-          val owner = sym.owner.tpe
-          owner <:< classSym.tpe || {
-            isImplClass(classSym) && owner <:< implClassTarget(classSym).tpe
-          }
-        }
+        sym.isSetter && sym.owner.tpe <:< classSym.tpe
 
       rhs match {
         case Block(Nil, _) => () // empty mixin constructor
@@ -836,7 +821,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
-      val isStatic = (sym.isStaticInNIR) || isImplClass(sym.owner)
+      val isStatic = sym.isStaticInNIR
       val isExtern = sym.owner.isExternType
 
       implicit val pos: nir.Position = bodyp.pos
@@ -959,7 +944,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
    *  the same tests as the JVM back-end.
    */
   private def isCandidateForForwarders(sym: Symbol): Boolean = {
-    !settings.noForwarders.value && sym.isStatic && !isImplClass(sym) && {
+    !settings.noForwarders.value && sym.isStatic && {
       // Reject non-top-level objects unless opted in via the appropriate option
       scalaNativeOpts.genStaticForwardersForNonTopLevelObjects ||
       !sym.name.containsChar('$') // this is the same test that scalac performs

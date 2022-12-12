@@ -17,10 +17,10 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       sym.isInterface
 
     def isScalaModule: Boolean =
-      sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
+      sym.isModuleClass && !sym.isLifted
 
     def isStaticInNIR: Boolean =
-      sym.owner.isExternType || sym.isStaticMember || isImplClass(sym.owner)
+      sym.owner.isExternType || sym.isStaticMember
 
     def isExternType: Boolean =
       (isScalaModule || sym.isTraitOrInterface) &&
