@@ -73,7 +73,7 @@ C Header          Scala Native Module
 `sys/stat.h`_     scala.scalanative.posix.sys.stat_
 `sys/statvfs.h`_  scala.scalanative.posix.sys.statvfs_
 `sys/time.h`_     scala.scalanative.posix.sys.time_
-`sys/times.h`_    N/A
+`sys/times.h`_    scala.scalanative.posix.sys.times_
 `sys/types.h`_    scala.scalanative.posix.sys.types_
 `sys/uio.h`_      scala.scalanative.posix.sys.uio_
 `sys/un.h`_       scala.scalanative.posix.sys.un_
@@ -213,6 +213,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.sys.stat: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/stat.scala
 .. _scala.scalanative.posix.sys.statvfs: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/statvfs.scala
 .. _scala.scalanative.posix.sys.time: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/time.scala
+.. _scala.scalanative.posix.sys.times: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/times.scala
 .. _scala.scalanative.posix.sys.types: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/types.scala
 .. _scala.scalanative.posix.sys.uio: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/uio.scala
 .. _scala.scalanative.posix.sys.un: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/sys/un.scala
