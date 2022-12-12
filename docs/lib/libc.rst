@@ -1,9 +1,11 @@
 .. _libc:
 
-C Standard Library
-==================
+ISO/IEC C Standard Library
+==========================
 
 Scala Native provides bindings for a core subset of the
+International Organization for Standardization/International
+Electrotechnical Commission (ISO/IEC)
 `C standard library <https://en.cppreference.com/w/c/header>`_.
 
 The project now tracks the *C11 standard (ISO/IEC 9899:2011)* but

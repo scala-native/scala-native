@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package posixlib
 
 import org.junit.Test
 import org.junit.Assert._
@@ -31,22 +31,22 @@ class LocaleTest {
 
     if (!isWindows) {
       val currentLocale = {
-        val en_US = setlocale(locale.LC_ALL, c"en_US")
+        val en_US = setlocale(LC_ALL, c"en_US")
         if (en_US != null) en_US
         else {
-          val en_USutf8 = setlocale(locale.LC_ALL, c"en_US.utf8") // Linux
+          val en_USutf8 = setlocale(LC_ALL, c"en_US.utf8") // Linux
           if (en_USutf8 != null) en_USutf8
-          else setlocale(locale.LC_ALL, c"en_US.UTF-8") // macOS
+          else setlocale(LC_ALL, c"en_US.UTF-8") // macOS
         }
       }
 
-      if (currentLocale == null) {
-        fail(
-          "setlocale() failed to use one of en_US, en_US.utf8, or en_US.UTF-8."
-        )
-      } else {
-        savedLocale = Some(string.strdup(currentLocale)) // note: no CString
-      }
+      assumeTrue(
+        "setlocale() failed to use one of en_US, en_US.utf8, " +
+          "or en_US.UTF-8.",
+        currentLocale != null
+      )
+
+      savedLocale = Some(string.strdup(currentLocale)) // note: no CString
     }
   }
 
@@ -56,7 +56,7 @@ class LocaleTest {
       savedLocale.map { s =>
         errno = 0
         // restore Locale as recorded on entry
-        val restoredLocale = setlocale(locale.LC_ALL, s)
+        val restoredLocale = setlocale(LC_ALL, s)
 
         if (restoredLocale == null)
           fail("setlocale() was unable to restore the locale.")
