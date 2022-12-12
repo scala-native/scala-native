@@ -11,13 +11,12 @@ import scalanative.posix.sys.types._
  *  The Open Group Base Specifications
  *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
  *
- *  POSIX defines strfmon() and strfmon_l() using the "..." form of
- *  C variable arguments. Scala Native "supports native
- *  interoperability with C’s variadic argument list type (i.e. va_list),
- *  but not ... varargs".
- *  
- *  This implementation supports up to 10 items in the variable arguments
- *  to strfmon() and strfmon_1().
+ *  POSIX defines strfmon() and strfmon_l() using the "..." form of C variable
+ *  arguments. Scala Native "supports native interoperability with C’s variadic
+ *  argument list type (i.e. va_list), but not ... varargs".
+ *
+ *  This implementation supports up to 10 items in the variable arguments to
+ *  strfmon() and strfmon_1().
  */
 
 object monetary {
