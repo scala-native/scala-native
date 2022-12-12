@@ -1,9 +1,0 @@
-class scala.scalanative.runtime.PrimitiveUnit
-class scala.scalanative.runtime.PrimitiveInt
-class scala.runtime.BoxedUnit
-class scala.runtime.BoxedUnit
-class java.lang.Integer
-class java.lang.Integer
-5
-5
-5
