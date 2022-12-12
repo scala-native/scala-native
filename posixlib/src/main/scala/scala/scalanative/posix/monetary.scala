@@ -3,7 +3,6 @@ package posix
 
 import scalanative.unsafe._
 
-import scalanative.posix.locale
 import scalanative.posix.sys.types._
 
 /** POSIX monetary.h for Scala
