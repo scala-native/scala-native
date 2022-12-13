@@ -21,7 +21,7 @@ private[java] object IEEE754Helpers {
   // DO NOT USE STRING INTERPOLATION with an interior double quote ("),
   // a.k.a Unicode "QUOTATION MARK" (\u0022).
   // Double quote failing interpolated strings is a longstanding
-  // bug in many Scala versions, including 2.11.n, 2.12.n, & 2.13.2.
+  // bug in many Scala versions, including 2.12.n, & 2.13.2.
   // See URLS:
   //     https://github.com/scala/bug/issues/6476
   //     https://github.com/scala/scala/pull/8830

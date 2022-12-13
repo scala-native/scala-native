@@ -9,7 +9,6 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo.scalaVersion
 
 class AsInstanceOfTest {
-  val isScala211 = scalaVersion.startsWith("2.11.")
   val isScala3 = scalaVersion.startsWith("3.")
 
   class C
@@ -41,13 +40,7 @@ class AsInstanceOfTest {
     assertThrows(expected, anyNull.asInstanceOf[Nothing])
   }
 
-  @Test def nullAsInstanceOfUnitEqNull(): Unit = {
-    assumeTrue(isScala211)
-    assertTrue(anyNull.asInstanceOf[Unit] == anyNull)
-  }
-
   @Test def nullAsInstanceOfUnitNotEqNull(): Unit = {
-    assumeFalse(isScala211)
     assertTrue(anyNull.asInstanceOf[Unit] != anyNull)
   }
 
@@ -71,13 +64,7 @@ class AsInstanceOfTest {
     assertThrows(classOf[ClassCastException], any42.asInstanceOf[Nothing])
   }
 
-  @Test def any42AsInstanceOfUnitThrows(): Unit = {
-    assumeTrue(isScala211)
-    assertThrows(classOf[ClassCastException], any42.asInstanceOf[Unit])
-  }
-
   @Test def any42AsInstanceOfUnitNotNull(): Unit = {
-    assumeFalse(isScala211)
     assertNotNull(any42.asInstanceOf[Unit])
   }
 
@@ -101,13 +88,7 @@ class AsInstanceOfTest {
     assertThrows(classOf[ClassCastException], anyC.asInstanceOf[Nothing])
   }
 
-  @Test def cAsInstanceOfUnitThrows(): Unit = {
-    assumeTrue(isScala211)
-    assertThrows(classOf[ClassCastException], anyC.asInstanceOf[Unit])
-  }
-
   @Test def cAsInstanceOfUnitNotNull(): Unit = {
-    assumeFalse(isScala211)
     assertNotNull(c.asInstanceOf[Unit])
   }
 }

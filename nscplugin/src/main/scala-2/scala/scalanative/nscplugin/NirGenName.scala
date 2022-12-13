@@ -41,8 +41,7 @@ trait NirGenName[G <: Global with Singleton] {
       case _ if sym.isModule =>
         genTypeName(sym.moduleClass)
       case _ =>
-        val needsModuleClassSuffix =
-          sym.isModuleClass && !sym.isJavaDefined && !isImplClass(sym)
+        val needsModuleClassSuffix = sym.isModuleClass && !sym.isJavaDefined
         val idWithSuffix = if (needsModuleClassSuffix) id + "$" else id
         nir.Global.Top(idWithSuffix)
     }
@@ -89,7 +88,7 @@ trait NirGenName[G <: Global with Singleton] {
     val id = nativeIdOf(sym)
     val tpe = sym.tpe.widen
     val scope =
-      if (sym.isStaticMember && !isImplClass(sym.owner)) {
+      if (sym.isStaticMember) {
         if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
         else nir.Sig.Scope.PublicStatic
       } else if (sym.isPrivate)
@@ -98,7 +97,9 @@ trait NirGenName[G <: Global with Singleton] {
 
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
 
-    if (sym == String_+) {
+    def isExtern = sym.owner.isExternType
+
+    if (sym == String_+)
       genMethodName(StringConcatMethod)
     } else if (sym.owner.isExternModule) {
       owner.member(genExternSigImpl(sym, id))
@@ -128,7 +129,6 @@ trait NirGenName[G <: Global with Singleton] {
     // in the super class. This is important, becouse (on the JVM) static methods are resolved at
     // compile time and do never use dynamic method dispatch, however it is possible to shadow
     // static method in the parent class by defining static method with the same name in the child.
-    require(!isImplClass(sym.owner), sym.owner)
     val typeName = genTypeName(
       Option(explicitOwner)
         .fold[Symbol](NoSymbol) {

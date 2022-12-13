@@ -31,7 +31,7 @@ trait Inline { self: Interflow =>
         false
       } { defn =>
         def isCtor = originalName(name) match {
-          case Global.Member(_, sig) if sig.isCtor || sig.isImplCtor =>
+          case Global.Member(_, sig) if sig.isCtor =>
             true
           case _ =>
             false

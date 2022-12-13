@@ -30,14 +30,13 @@ final class Sig(val mangle: String) {
   final def isField: Boolean = mangle(0) == 'F'
   final def isCtor: Boolean = mangle(0) == 'R'
   final def isClinit: Boolean = mangle(0) == 'I'
-  final def isImplCtor: Boolean = mangle.startsWith("M6$init$")
   final def isMethod: Boolean = mangle(0) == 'D'
   final def isProxy: Boolean = mangle(0) == 'P'
   final def isExtern: Boolean = mangle(0) == 'C'
   final def isGenerated: Boolean = mangle(0) == 'G'
   final def isDuplicate: Boolean = mangle(0) == 'K'
 
-  final def isVirtual = !(isCtor || isClinit || isImplCtor || isExtern)
+  final def isVirtual = !(isCtor || isClinit || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
   final def isStatic: Boolean = {
     def isPublicStatic = mangle.last == 'o'
