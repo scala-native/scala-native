@@ -29,39 +29,43 @@ class LocaleTest {
       !isWindows
     )
 
-    val entryLocale = setlocale(LC_ALL, null)
-    assertNotNull(
-      "setlocale() could not determine locale at start of test.",
-      entryLocale
-    )
+    if (!isWindows) {
+      val entryLocale = setlocale(LC_ALL, null)
+      assertNotNull(
+        "setlocale() could not determine locale at start of test.",
+        entryLocale
+      )
 
-    savedLocale = Some(string.strdup(entryLocale)) // note: no CString
+      savedLocale = Some(string.strdup(entryLocale)) // note: no CString
 
-    val currentLocale = {
-      val en_US = setlocale(LC_ALL, c"en_US")
-      if (en_US != null) en_US
-      else {
-        val en_USutf8 = setlocale(LC_ALL, c"en_US.utf8") // Linux
-        if (en_USutf8 != null) en_USutf8
-        else setlocale(LC_ALL, c"en_US.UTF-8") // macOS
+      val currentLocale = {
+        val en_US = setlocale(LC_ALL, c"en_US")
+        if (en_US != null) en_US
+        else {
+          val en_USutf8 = setlocale(LC_ALL, c"en_US.utf8") // Linux
+          if (en_USutf8 != null) en_USutf8
+          else setlocale(LC_ALL, c"en_US.UTF-8") // macOS
+        }
       }
-    }
 
-    if (currentLocale == null)
-      fail("setlocale() failed using en_US | en_US.utf8 | en_US.UTF-8.")
+      if (currentLocale == null)
+        fail("setlocale() failed using en_US | en_US.utf8 | en_US.UTF-8.")
+    }
   }
 
   @After
   def after(): Unit = {
-    savedLocale.map { sl =>
-      errno = 0
-      // restore Locale as recorded on entry
-      val restoredLocale = setlocale(LC_ALL, sl)
+    if (!isWindows) {
+      savedLocale.map { sl =>
+        errno = 0
+        // restore Locale as recorded on entry
+        val restoredLocale = setlocale(LC_ALL, sl)
 
-      stdlib.free(sl)
+        stdlib.free(sl)
 
-      if (restoredLocale == null)
-        fail("setlocale() was unable to restore the locale.")
+        if (restoredLocale == null)
+          fail("setlocale() was unable to restore the locale.")
+      }
     }
   }
 
