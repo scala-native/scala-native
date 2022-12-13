@@ -836,9 +836,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case Block(inits, _) =>
           val externs = collection.mutable.Set.empty[Symbol]
           inits.foreach {
-            case Assign(ref: RefTree, rhs) if isExternCall(rhs) => {
+            case Assign(ref: RefTree, rhs) if isExternCall(rhs) =>
               externs += ref.symbol
-            }
+
             case Apply(fun, Seq(arg))
                 if isCurClassSetter(fun.symbol) && isExternCall(arg) =>
               externs += fun.symbol
