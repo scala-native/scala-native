@@ -48,10 +48,10 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
 
   it should "compile top-level extern var definition" in nativeCompilation(
     """
-        |import scala.scalanative.unsafe.extern
-        |
-        |var foo: Int = extern
-        |""".stripMargin
+      |import scala.scalanative.unsafe.extern
+      |
+      |var foo: Int = extern
+      |""".stripMargin
   )
   it should "report error for top-level extern variable without result type" in {
     intercept[CompilationFailedException] {
