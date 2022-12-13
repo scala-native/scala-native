@@ -286,7 +286,7 @@ object Build {
 // Language standard libraries ------------------------------------------------
   lazy val javalib = MultiScalaProject("javalib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings, commonJavalibSettings)
+    .settings(mavenPublishSettings, commonJavalibSettings, docsSettings)
     .dependsOn(posixlib, windowslib, clib)
     .withNativeCompilerPlugin
 
