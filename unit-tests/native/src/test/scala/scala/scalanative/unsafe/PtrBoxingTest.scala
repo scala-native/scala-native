@@ -195,8 +195,8 @@ class PtrBoxingTest {
       x._1 = CFuncPtr0.fromScalaFunction(getInt _)
       x._2 = CFuncPtr1.fromScalaFunction(stringLength _)
 
-      val loadedGetInt: GetInt = x._1
-      val loadedStringLength: StringLength = x._2
+      val loadedGetInt = x._1
+      val loadedStringLength = x._2
 
       val testStr = toCString("hello_native")
       val expectedInt = 42
@@ -212,12 +212,7 @@ class PtrBoxingTest {
 }
 
 object PtrBoxingTest {
-  type Functions = CStruct2[GetInt, StringLength]
-  // In 2.11 this method needs to be statically known
-
-  type GetInt = CFuncPtr0[Int]
+  type Functions = CStruct2[CFuncPtr0[Int], CFuncPtr1[CString, CSize]]
   def getInt(): Int = 42
-
-  type StringLength = CFuncPtr1[CString, CSize]
   def stringLength(str: CString): CSize = libc.string.strlen(str)
 }

@@ -16,24 +16,6 @@ class TraitReachabilitySuite extends ReachabilitySuite {
     Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
 
   val Parent: Global = g(ParentClsName)
-  // Scala 2.11.x
-  val ParentClass: Global = g(ParentClassClsName)
-  val ParentClassInit: Global =
-    g(
-      ParentClassClsName,
-      Sig.Method("$init$", Seq(Type.Ref(Parent), Type.Unit))
-    )
-  val ParentClassMain = g(
-    ParentClassClsName,
-    Sig.Method(
-      "main",
-      Type.Ref(Parent) +: Rt.ScalaMainSig.types,
-      Sig.Scope.Public
-    )
-  )
-  val ParentClassFoo: Global =
-    g(ParentClassClsName, Sig.Method("foo", Seq(Type.Ref(Parent), Type.Unit)))
-  // val ParentClassMain = g(ParentClassClsName, Sig.Method("main", Type.))
   // Scala 2.12.x
   val ParentInit: Global =
     g(ParentClsName, Sig.Method("$init$", Seq(Type.Unit)))
@@ -191,14 +173,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     ) ++ {
-      if (NativePlatform.scalaUsesImplClasses) {
-        Seq(
-          Parent,
-          ParentClass,
-          ParentClassInit,
-          ParentClassFoo
-        )
-      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+      if (NativePlatform.erasesEmptyTraitConstructor) {
         Seq(Parent, ParentFoo)
       } else {
         Seq(
@@ -238,13 +213,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       Object,
       ObjectInit
     ) ++ {
-      if (NativePlatform.scalaUsesImplClasses) {
-        Seq(
-          Parent,
-          ParentClass,
-          ParentClassInit
-        )
-      } else if (NativePlatform.erasesEmptyTraitConstructor) {
+      if (NativePlatform.erasesEmptyTraitConstructor) {
         Seq(Parent)
       } else {
         Seq(
@@ -272,15 +241,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         Object,
         ObjectInit
       ) ++ {
-        if (NativePlatform.scalaUsesImplClasses) {
-          Seq(
-            Parent,
-            ParentClass,
-            ParentClassInit,
-            ParentClassMain,
-            TestModuleMain
-          )
-        } else if (NativePlatform.erasesEmptyTraitConstructor) {
+        if (NativePlatform.erasesEmptyTraitConstructor) {
           Seq(ParentMain, TestModuleMain)
         } else {
           Seq(

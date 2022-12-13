@@ -28,10 +28,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       forwarders: Seq[nir.Defn.Define]
   )
 
-  protected val isScala211 = Properties.versionNumberString.startsWith("2.11")
-
   def isStaticModule(sym: Symbol): Boolean =
-    sym.isModuleClass && !isImplClass(sym) && !sym.isLifted
+    sym.isModuleClass && !sym.isLifted
 
   class MethodEnv(val fresh: Fresh) {
     private val env = mutable.Map.empty[Symbol, Val]
@@ -91,10 +89,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClass(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      // ImplClass does not copy annotations from the trait
-      if (isImplClass(sym) && implClassTarget(sym).isExternType) {
-        sym.addAnnotation(ExternClass)
-      }
 
       scoped(
         curClassSym := sym,
@@ -141,8 +135,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassParent(sym: Symbol): Option[nir.Global] = {
       if (sym.isExternType &&
-          sym.superClass != ObjectClass &&
-          !isImplClass(sym)) {
+          sym.superClass != ObjectClass) {
         reporter.error(
           sym.pos,
           s"Extern object can only extend extern traits"
@@ -589,43 +582,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf ++= genTopLevelExports(cd)
     }
 
-    private def genJavaDefaultMethodBody(dd: DefDef): Seq[nir.Inst] = {
-      val fresh = Fresh()
-      val buf = new ExprBuffer()(fresh)
-
-      implicit val pos: nir.Position = dd.pos
-
-      val sym = dd.symbol
-      val implClassFullName = sym.owner.fullName + "$class"
-
-      val implClassSym = findMemberFromRoot(TermName(implClassFullName))
-
-      val implMethodSym = implClassSym.info
-        .member(sym.name)
-        .suchThat { s =>
-          s.isMethod &&
-          s.tpe.params.size == sym.tpe.params.size + 1 &&
-          s.tpe.params.head.tpe =:= sym.owner.toTypeConstructor &&
-          s.tpe.params.tail.zip(sym.tpe.params).forall {
-            case (sParam, symParam) =>
-              sParam.tpe =:= symParam.tpe
-          }
-        }
-
-      val implName = Val.Global(genMethodName(implMethodSym), Type.Ptr)
-      val implSig = genMethodSig(implMethodSym)
-
-      val Type.Function(paramtys, retty) = implSig
-
-      val params = paramtys.map(ty => Val.Local(fresh(), ty))
-      buf.label(fresh(), params)
-
-      val res = buf.call(implSig, implName, params, Next.None)
-      buf.ret(res)
-
-      buf.toSeq
-    }
-
     def genMethod(dd: DefDef): Option[nir.Defn] = {
       val fresh = Fresh()
       val env = new MethodEnv(fresh)
@@ -646,16 +602,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val sig = genMethodSig(sym)
 
         dd.rhs match {
-          case EmptyTree
-              if (isScala211 &&
-                sym.hasAnnotation(JavaDefaultMethodAnnotation)) =>
-            scoped(
-              curMethodSig := sig
-            ) {
-              val body = genJavaDefaultMethodBody(dd)
-              Some(Defn.Define(attrs, name, sig, body))
-            }
-
           case EmptyTree =>
             Some(
               Defn.Declare(
@@ -664,11 +610,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 if (attrs.isExtern) genExternMethodSig(sym) else sig
               )
             )
-
-          case Apply(TypeApply(Select(retBlock, _), _), _)
-              if retBlock.tpe == NoType && isScala211 =>
-            // Fix issue #2305 Compile error on macro using Scala 2.11.12
-            Some(Defn.Declare(attrs, name, sig))
 
           case _ if dd.symbol.isConstructor && owner.isExternType =>
             validateExternCtor(dd.rhs)
@@ -680,14 +621,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case rhs if owner.isExternType =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
             genExternMethod(attrs, name, sig, dd)
-
-          case rhs
-              if (isScala211 &&
-                sym.hasAnnotation(JavaDefaultMethodAnnotation) &&
-                !isImplClass(sym.owner)) =>
-            // Have a concrete method with JavaDefaultMethodAnnotation; a blivet.
-            // Do not emit, not even as abstract.
-            None
 
           case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
@@ -772,13 +705,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Some(externDefn)
       }
 
-      def isCallingExternMethod(sym: Symbol) = {
-        val owner = sym.owner match {
-          case sym if isImplClass(sym) => implClassTarget(sym)
-          case sym                     => sym
-        }
-        owner.isExternType
-      }
+      def isCallingExternMethod(sym: Symbol) =
+        sym.owner.isExternType
 
       def isExternMethodAlias(target: Symbol) =
         (name, genName(target)) match {
@@ -821,12 +749,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def isCurClassSetter(sym: Symbol) =
-        sym.isSetter && {
-          val owner = sym.owner.tpe
-          owner <:< classSym.tpe || {
-            isImplClass(classSym) && owner <:< implClassTarget(classSym).tpe
-          }
-        }
+        sym.isSetter && sym.owner.tpe <:< classSym.tpe
 
       rhs match {
         case Block(Nil, _) => () // empty mixin constructor
@@ -898,7 +821,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
-      val isStatic = (sym.isStaticInNIR) || isImplClass(sym.owner)
+      val isStatic = sym.isStaticInNIR
       val isExtern = sym.owner.isExternType
 
       implicit val pos: nir.Position = bodyp.pos
@@ -1021,7 +944,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
    *  the same tests as the JVM back-end.
    */
   private def isCandidateForForwarders(sym: Symbol): Boolean = {
-    !settings.noForwarders.value && sym.isStatic && !isImplClass(sym) && {
+    !settings.noForwarders.value && sym.isStatic && {
       // Reject non-top-level objects unless opted in via the appropriate option
       scalaNativeOpts.genStaticForwardersForNonTopLevelObjects ||
       !sym.name.containsChar('$') // this is the same test that scalac performs
@@ -1053,9 +976,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
   }
 
-  private lazy val dontUseExitingUncurryForForwarders =
-    scala.util.Properties.versionNumberString.startsWith("2.11.")
-
   /** Gen the static forwarders for the methods of a module class.
    *
    *  Precondition: `isCandidateForForwarders(moduleClass)` is true
@@ -1074,7 +994,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def listMembersBasedOnFlags = {
       import scala.tools.nsc.symtab.Flags._
-      // Copy-pasted from BCodeHelpers (it's somewhere else in 2.11.x)
+      // Copy-pasted from BCodeHelpers
       val ExcludedForwarderFlags: Long = {
         SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | PRIVATE | MACRO
       }
@@ -1086,20 +1006,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     /* See BCodeHelprs.addForwarders in 2.12+ for why we normally use
-     * exitingUncurry. In 2.11.x we do not use it, because Scala/JVM did not
-     * use it back then, and using it on that version causes mixed in methods
-     * not to be found (this notably breaks `extends App` as the `main`
-     * method that it defines is not found).
-     *
-     * This means that in 2.11.x we suffer from
-     * https://github.com/scala/bug/issues/10812, like upstream Scala/JVM,
-     * but it does not really affect Scala Native because the NIR methods are not
-     * used for compilation, only for linking, and for linking it is fine to
-     * have additional, unexpected bridges.
+     * exitingUncurry.
      */
-    val members =
-      if (dontUseExitingUncurryForForwarders) listMembersBasedOnFlags
-      else exitingUncurry(listMembersBasedOnFlags)
+    val members = exitingUncurry(listMembersBasedOnFlags)
 
     def isExcluded(m: Symbol): Boolean = {
       def isOfJLObject: Boolean = {

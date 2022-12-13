@@ -148,9 +148,9 @@ object Build {
         CrossVersion
           .partialVersion(scalaVersion.value)
           .fold(Seq.empty[String]) {
-            case (2, 11 | 12) => Nil
-            case (2, 13)      => scala213StdLibDeprecations
-            case (3, _)       => scala213StdLibDeprecations
+            case (2, 12) => Nil
+            case (2, 13) => scala213StdLibDeprecations
+            case (3, _)  => scala213StdLibDeprecations
           }
       },
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
@@ -309,7 +309,7 @@ object Build {
       .settings(mavenPublishSettings, disabledDocsSettings)
       .withNativeCompilerPlugin
       .mapBinaryVersions {
-        case version @ ("2.11" | "2.12" | "2.13") =>
+        case version @ ("2.12" | "2.13") =>
           _.settings(
             commonScalalibSettings("scala-library", None),
             scalacOptions ++= Seq(
@@ -470,7 +470,6 @@ object Build {
           CrossVersion
             .partialVersion(scalaVersion.value)
             .collect {
-              case (2, 11) => oldCompat
               case (2, 12) =>
                 val revision =
                   scalaVersion.value
@@ -612,13 +611,7 @@ object Build {
         },
         Compile / unmanagedSourceDirectories ++= {
           if (!shouldPartest.value) Nil
-          else {
-            Seq(CrossVersion.partialVersion(scalaVersion.value) match {
-              case Some((2, 11)) =>
-                sourceDirectory.value / "main" / "legacy-partest"
-              case _ => sourceDirectory.value / "main" / "new-partest"
-            })
-          }
+          else Seq(sourceDirectory.value / "main" / "new-partest")
         },
         libraryDependencies ++= {
           if (!shouldPartest.value) Nil
@@ -736,11 +729,7 @@ object Build {
       ),
       scalacOptions ++= {
         // Suppress deprecation warnings for Scala partest sources
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 11)) => Nil
-          case _ =>
-            Seq("-Wconf:cat=deprecation:s")
-        }
+        Seq("-Wconf:cat=deprecation:s")
       },
       scalacOptions --= Seq(
         "-Xfatal-warnings"
@@ -757,7 +746,7 @@ object Build {
           else {
             val upstreamDir = (scalaPartest / fetchScalaSource).value
             CrossVersion.partialVersion(scalaVersion.value) match {
-              case Some((2, 11 | 12)) => Seq.empty[File]
+              case Some((2, 12)) => Seq.empty[File]
               case _ =>
                 Seq(
                   upstreamDir / "src/testkit/scala/tools/testkit/AssertUtil.scala"
