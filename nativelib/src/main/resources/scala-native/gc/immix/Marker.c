@@ -118,11 +118,33 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     }
 }
 
+void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
+    printf("Mark custom roots\n");
+    GC_Roots *it = roots;
+    while (it != NULL) {
+        GC_Root *root = it->node;
+        assert(root != NULL);
+        word_t **current = (word_t **)root->start;
+        word_t **limit = (word_t **)root->limit;
+        while (current < limit) {
+            word_t *object = *current;
+            if (Heap_IsWordInHeap(heap, object)) {
+                printf("Marking %p\n", object);
+                Marker_markConservative(heap, stack, object);
+            }
+            current += 1;
+        }
+        it = it->next;
+    }
+}
+
 void Marker_MarkRoots(Heap *heap, Stack *stack) {
 
     Marker_markProgramStack(heap, stack);
 
     Marker_markModules(heap, stack);
+
+    Marker_markCustomRoots(heap, stack, gcRoots);
 
     Marker_Mark(heap, stack);
 }

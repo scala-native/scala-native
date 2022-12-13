@@ -57,3 +57,20 @@ INLINE void scalanative_collect() { Heap_Collect(&heap, &stack); }
 INLINE void scalanative_register_weak_reference_handler(void *handler) {
     WeakRefStack_SetHandler(handler);
 }
+
+GC_Root *scalanative_gc_register_root(void *start, void* limit) {
+    GC_Root *handle = (GC_Root *)malloc(sizeof(GC_Root));
+    handle->start = start;
+    handle->limit = limit;
+    printf("Register zone in GC %p-%p, handle=%p\n", start, limit,
+           handle);
+    GC_Roots *node = (GC_Roots*)malloc(sizeof(GC_Roots));
+    node->node = handle;
+    node->next = gcRoots;
+    gcRoots = node;
+    return handle;
+}
+void scalanative_gc_unregister_root(void *handle) {
+    printf("Register zone in GC using handle\n", handle);
+    free(handle);
+}
