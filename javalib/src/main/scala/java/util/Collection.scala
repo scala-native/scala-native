@@ -4,8 +4,6 @@ package java.util
 
 import java.util.function.Predicate
 
-import scala.scalanative.annotation.JavaDefaultMethod
-
 trait Collection[E] extends java.lang.Iterable[E] {
   def size(): Int
   def isEmpty(): Boolean
@@ -19,7 +17,6 @@ trait Collection[E] extends java.lang.Iterable[E] {
   def addAll(c: Collection[_ <: E]): Boolean
   def removeAll(c: Collection[_]): Boolean
 
-  @JavaDefaultMethod
   def removeIf(filter: Predicate[_ >: E]): Boolean = {
     var result = false
     val iter = iterator()

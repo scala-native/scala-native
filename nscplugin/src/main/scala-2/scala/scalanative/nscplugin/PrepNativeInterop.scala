@@ -128,14 +128,6 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         case vddef: ValOrDefDef if vddef.symbol.isLocalToBlock =>
           super.transform(tree)
 
-        // `DefDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
-        // We rewrite the body to return a pre-propulated `Properties`.
-        // - Scala 2.11
-        case dd @ DefDef(mods, name, Nil, Nil, tpt, _)
-            if dd.symbol == PropertiesTrait.info.member(nativenme.scalaProps) =>
-          val nrhs = prepopulatedScalaProperties(dd, unit.freshTermName)
-          treeCopy.DefDef(tree, mods, name, Nil, Nil, transform(tpt), nrhs)
-
         // `ValDef` that initializes `lazy val scalaProps` in trait `PropertiesTrait`
         // We rewrite the body to return a pre-propulated `Properties`.
         // - Scala 2.12

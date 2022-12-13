@@ -10,12 +10,10 @@
 package scala.runtime.function
 
 import scala.runtime.BoxedUnit
-import scala.scalanative.annotation.JavaDefaultMethod
 
 trait JProcedure0 extends scala.Function0[Object] with java.io.Serializable {
   def applyVoid(): Unit
 
-  @JavaDefaultMethod
   def apply(): Object = {
     applyVoid()
     return BoxedUnit.UNIT
@@ -28,7 +26,6 @@ trait JProcedure1[T1]
     with java.io.Serializable {
   def applyVoid(t1: T1): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1): Object = {
     applyVoid(t1)
     return BoxedUnit.UNIT
@@ -40,7 +37,6 @@ trait JProcedure2[T1, T2]
     with java.io.Serializable {
   def applyVoid(t1: T1, t2: T2): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2): Object = {
     applyVoid(t1, t2)
     return BoxedUnit.UNIT
@@ -52,7 +48,6 @@ trait JProcedure3[T1, T2, T3]
     with java.io.Serializable {
   def applyVoid(t1: T1, t2: T2, t3: T3): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2, t3: T3): Object = {
     applyVoid(t1, t2, t3)
     return BoxedUnit.UNIT
@@ -64,7 +59,6 @@ trait JProcedure4[T1, T2, T3, T4]
     with java.io.Serializable {
   def applyVoid(t1: T1, t2: T2, t3: T3, t4: T4): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2, t3: T3, t4: T4): Object = {
     applyVoid(t1, t2, t3, t4)
     return BoxedUnit.UNIT
@@ -76,7 +70,6 @@ trait JProcedure5[T1, T2, T3, T4, T5]
     with java.io.Serializable {
   def applyVoid(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5): Object = {
     applyVoid(t1, t2, t3, t4, t5)
     return BoxedUnit.UNIT
@@ -88,7 +81,6 @@ trait JProcedure6[T1, T2, T3, T4, T5, T6]
     with java.io.Serializable {
   def applyVoid(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5, t6: T6): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5, t6: T6): Object = {
     applyVoid(t1, t2, t3, t4, t5, t6)
     return BoxedUnit.UNIT
@@ -100,7 +92,6 @@ trait JProcedure7[T1, T2, T3, T4, T5, T6, T7]
     with java.io.Serializable {
   def applyVoid(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5, t6: T6, t7: T7): Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5, t6: T6, t7: T7): Object = {
     applyVoid(t1, t2, t3, t4, t5, t6, t7)
     return BoxedUnit.UNIT
@@ -113,7 +104,6 @@ trait JProcedure8[T1, T2, T3, T4, T5, T6, T7, T8]
   def applyVoid(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5, t6: T6, t7: T7, t8: T8)
       : Unit
 
-  @JavaDefaultMethod
   def apply(t1: T1, t2: T2, t3: T3, t4: T4, t5: T5, t6: T6, t7: T7, t8: T8)
       : Object = {
     applyVoid(t1, t2, t3, t4, t5, t6, t7, t8)
@@ -136,7 +126,6 @@ trait JProcedure9[T1, T2, T3, T4, T5, T6, T7, T8, T9]
       t9: T9
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -169,7 +158,6 @@ trait JProcedure10[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]
       t10: T10
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -217,7 +205,6 @@ trait JProcedure11[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]
       t11: T11
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -268,7 +255,6 @@ trait JProcedure12[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]
       t12: T12
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -322,7 +308,6 @@ trait JProcedure13[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]
       t13: T13
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -379,7 +364,6 @@ trait JProcedure14[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
       t14: T14
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -454,7 +438,6 @@ trait JProcedure15[
       t15: T15
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -533,7 +516,6 @@ trait JProcedure16[
       t16: T16
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -633,7 +615,6 @@ trait JProcedure17[
       t17: T17
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -738,7 +719,6 @@ trait JProcedure18[
       t18: T18
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -848,7 +828,6 @@ trait JProcedure19[
       t19: T19
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -963,7 +942,6 @@ trait JProcedure20[
       t20: T20
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -1083,7 +1061,6 @@ trait JProcedure21[
       t21: T21
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,
@@ -1208,7 +1185,6 @@ trait JProcedure22[
       t22: T22
   ): Unit
 
-  @JavaDefaultMethod
   def apply(
       t1: T1,
       t2: T2,

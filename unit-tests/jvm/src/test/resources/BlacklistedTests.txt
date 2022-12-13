@@ -24,9 +24,6 @@ scala/AsInstanceOfTest.scala
 # Scala 2 specific
 scala/ReflectiveProxyTest.scala
 
-# Tests that fail for scala 2.11 on JVM
-scala/PrimitiveTest.scala
-
 # Tests that fail for scala 2.13 on JVM
 scala/bugcompat/LongFloatPrimitiveTest.scala
 

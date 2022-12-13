@@ -31,10 +31,6 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
   private def compile(sources: Seq[SourceFile]): Seq[Path] = {
     val global = getCompiler(options = ScalaNative)
-    if (util.Properties.versionNumberString.startsWith("2.11.")) {
-      // Enable SAM support
-      global.settings.Xexperimental.value = true
-    }
     import global._
     val run = new Run
     run.compileSources(sources.toList)

@@ -9,13 +9,11 @@
 package scala.runtime.function
 
 import scala.runtime.BoxedUnit
-import scala.scalanative.annotation.JavaDefaultMethod
 
 trait JProcedure0 extends scala.Function0[Object]
     with java.io.Serializable {
   def applyVoid(): Unit
 
-  @JavaDefaultMethod
   def apply(): Object = {
     applyVoid()
     return BoxedUnit.UNIT
@@ -32,7 +30,6 @@ trait JProcedure${N}[${TpsDecl}]
     with java.io.Serializable {
   def applyVoid(${args}): Unit
 
-  @JavaDefaultMethod
   def apply(${args}): Object = {
     applyVoid(${argNames})
     return BoxedUnit.UNIT

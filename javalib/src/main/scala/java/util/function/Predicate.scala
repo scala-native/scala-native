@@ -4,13 +4,10 @@ package java.util.function
 
 import java.{util => ju}
 
-import scala.scalanative.annotation.JavaDefaultMethod
-
 @FunctionalInterface
 trait Predicate[T] { self =>
   def test(t: T): Boolean
 
-  @JavaDefaultMethod
   def and(other: Predicate[_ >: T]): Predicate[T] = {
     new Predicate[T] {
       def test(t: T): Boolean =
@@ -18,7 +15,6 @@ trait Predicate[T] { self =>
     }
   }
 
-  @JavaDefaultMethod
   def negate(): Predicate[T] = {
     new Predicate[T] {
       def test(t: T): Boolean =
@@ -26,7 +22,6 @@ trait Predicate[T] { self =>
     }
   }
 
-  @JavaDefaultMethod
   def or(other: Predicate[_ >: T]): Predicate[T] = {
     new Predicate[T] {
       def test(t: T): Boolean =

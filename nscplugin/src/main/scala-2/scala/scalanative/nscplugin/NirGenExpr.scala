@@ -654,14 +654,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genStaticMember(receiver: Tree, sym: Symbol)(implicit
         pos: nir.Position
     ): Val = {
-      if (sym == BoxedUnit_UNIT) {
-        Val.Unit
-      } else if (!isImplClass(sym.owner)) {
-        genApplyStaticMethod(sym, receiver, Seq())
-      } else {
-        val module = genModule(sym.owner)
-        genApplyMethod(sym, statically = true, module, Seq())
-      }
+      if (sym == BoxedUnit_UNIT) Val.Unit
+      else genApplyStaticMethod(sym, receiver, Seq())
     }
 
     def genAssign(tree: Assign): Val = {
@@ -954,8 +948,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           .filter(_.name.toString == "apply")
           .toSeq
       } else {
-        val samInfo = tree.attachments.get[SAMFunctionCompat].getOrElse {
-          println(tree.attachments)
+        val samInfo = tree.attachments.get[SAMFunction].getOrElse {
           abort(
             s"Cannot find the SAMFunction attachment on $tree at ${tree.pos}"
           )
@@ -1353,36 +1346,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           withGeneratedForwarder {
             genFunction(fn)
           }(targetTree.symbol)
-
-        case fn @ Apply(target, args) => // Scala 2.11 only
-          if (args.nonEmpty) {
-            args match {
-              case This(_) :: Nil
-                  if args.map(_.tpe.sym) == target.tpe.paramTypes.map(_.sym) =>
-                // Ignore, Scala 2.11 needs reference to outer class to create an instance of ananymous function,
-                // does not lead to undefined behaviour. However we cannot detect access to member of outer class.
-                ()
-              case _ =>
-                reportClosingOverLocalState(args)
-            }
-          }
-
-          val alternatives = fn.tpe
-            .member(nme.apply)
-            .alternatives
-
-          val fnSym = alternatives
-            .find { sym =>
-              sym.tpe != ObjectTpe ||
-              sym.tpe.params.exists(_.tpe != ObjectTpe)
-            }
-            .orElse(alternatives.headOption)
-            .getOrElse(unsupported(s"not found any apply method in ${fn.tpe}"))
-            .asMethod
-
-          withGeneratedForwarder {
-            genExpr(tree)
-          }(fnSym)
 
         case _ =>
           unsupported(
@@ -2336,8 +2299,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     )(implicit pos: nir.Position): Val = {
       if (sym.owner.isExternModule && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
-      } else if (isImplClass(sym.owner)) {
-        genApplyMethod(sym, statically = true, Val.Null, argsp)
       } else if (sym.isStaticMember) {
         genApplyStaticMethod(sym, selfp, argsp)
       } else {
@@ -2351,7 +2312,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         receiver: Tree,
         argsp: Seq[Tree]
     )(implicit pos: nir.Position): Val = {
-      require(!isImplClass(sym.owner) && !sym.owner.isExternModule, sym.owner)
+      require(!sym.owner.isExternModule, sym.owner)
       val name = genStaticMemberName(sym, receiver.symbol)
       val method = Val.Global(name, nir.Type.Ptr)
       val sig = genMethodSig(sym)
@@ -2435,7 +2396,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
       val args = genMethodArgs(sym, argsp)
       val method =
-        if (isImplClass(owner) || statically || owner.isStruct || isExtern) {
+        if (statically || owner.isStruct || isExtern) {
           Val.Global(name, nir.Type.Ptr)
         } else {
           val Global.Member(_, sig) = name

@@ -1,7 +1,6 @@
 package java.util
 
 import java.util.function.Consumer
-import scala.scalanative.annotation.JavaDefaultMethod
 
 import Spliterator._
 
@@ -22,18 +21,14 @@ trait Spliterator[T] {
 
   def estimateSize(): Long
 
-  @JavaDefaultMethod
   def forEachRemaining(action: Consumer[_ >: T]): Unit =
     while (tryAdvance(action)) {}
 
-  @JavaDefaultMethod
   def getComparator(): Comparator[_ >: T] = throw new IllegalStateException()
 
-  @JavaDefaultMethod
   def getExactSizeIfKnown(): Long =
     if (hasCharacteristics(SIZED)) estimateSize() else -1L
 
-  @JavaDefaultMethod
   def hasCharacteristics(chars: Int): Boolean =
     (characteristics() & chars) == chars
 
