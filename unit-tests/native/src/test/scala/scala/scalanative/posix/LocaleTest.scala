@@ -29,7 +29,7 @@ class LocaleTest {
       !isWindows
     )
 
-    val entryLocale = setlocale(locale.LC_ALL, null)
+    val entryLocale = setlocale(LC_ALL, null)
     assertNotNull(
       "setlocale() could not determine locale at start of test.",
       entryLocale
@@ -38,12 +38,12 @@ class LocaleTest {
     savedLocale = Some(string.strdup(entryLocale)) // note: no CString
 
     val currentLocale = {
-      val en_US = setlocale(locale.LC_ALL, c"en_US")
+      val en_US = setlocale(LC_ALL, c"en_US")
       if (en_US != null) en_US
       else {
-        val en_USutf8 = setlocale(locale.LC_ALL, c"en_US.utf8") // Linux
+        val en_USutf8 = setlocale(LC_ALL, c"en_US.utf8") // Linux
         if (en_USutf8 != null) en_USutf8
-        else setlocale(locale.LC_ALL, c"en_US.UTF-8") // macOS
+        else setlocale(LC_ALL, c"en_US.UTF-8") // macOS
       }
     }
 
@@ -56,7 +56,7 @@ class LocaleTest {
     savedLocale.map { sl =>
       errno = 0
       // restore Locale as recorded on entry
-      val restoredLocale = setlocale(locale.LC_ALL, sl)
+      val restoredLocale = setlocale(LC_ALL, sl)
 
       stdlib.free(sl)
 
