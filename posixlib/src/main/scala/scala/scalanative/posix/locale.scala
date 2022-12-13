@@ -3,21 +3,16 @@ package posix
 
 import scala.scalanative.unsafe._
 
-@extern object locale extends locale {}
+/** POSIX locale.h for Scala
+ *
+ *  The Open Group Base Specifications
+ *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
+ *
+ *  All declarations which do not have a more specific extension specifier are
+ *  described by POSIX as being a CX extension.
+ */
 
-@extern trait locale extends libc.locale {
-
-  /** POSIX locale.h for Scala
-   *
-   *  The Open Group Base Specifications
-   *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]]
-   *  edition.
-   */
-
-  /* All declarations in this file which do not have a more specific
-   * extension specifier are described by POSIX as having being a CX
-   * extension.
-   */
+@extern object locale extends libc.locale {
 
   type locale_t = Ptr[Byte] // CX, so can get no simpler.
 
