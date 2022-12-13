@@ -5,7 +5,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{Before, After}
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -67,7 +67,6 @@ class LocaleTest {
 
   @Test def localeconv_Using_en_US(): Unit =
     if (!isWindows) {
-
       val currentLconv = localeconv() // documented as always succeeds.
 
       assertEquals(
@@ -152,13 +151,33 @@ class LocaleTest {
 
       assertEquals("US int_n_cs_precedes", 1, currentLconv.int_n_cs_precedes)
 
-      assertEquals("US int_p_sep_by_space", 0, currentLconv.int_p_sep_by_space)
+      if (isLinux) {
+        assertEquals(
+          "US int_p_sep_by_space",
+          1,
+          currentLconv.int_p_sep_by_space
+        )
 
-      assertEquals("US int_n_sep_by_space", 0, currentLconv.int_n_sep_by_space)
+        assertEquals(
+          "US int_n_sep_by_space",
+          1,
+          currentLconv.int_n_sep_by_space
+        )
+      } else {
+        assertEquals(
+          "US int_p_sep_by_space",
+          0,
+          currentLconv.int_p_sep_by_space
+        )
+        assertEquals(
+          "US int_n_sep_by_space",
+          0,
+          currentLconv.int_n_sep_by_space
+        )
+      }
 
       assertEquals("US int_p_sign_posn", 1, currentLconv.int_p_sign_posn)
 
       assertEquals("US int_n_sign_posn", 1, currentLconv.int_n_sign_posn)
     }
-
 }
