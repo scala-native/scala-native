@@ -120,6 +120,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       """import scala.scalanative.unsafe.extern
           |
           |@extern trait Dummy {
+          |   var x: Int = extern
           |   def foo(): Int = extern
           |}
           |
