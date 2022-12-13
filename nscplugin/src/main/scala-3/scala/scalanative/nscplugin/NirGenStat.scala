@@ -132,7 +132,7 @@ trait NirGenStat(using Context) {
       val isStatic = f.is(JavaStatic) || f.isScalaStatic
       val isExtern = f.isExtern
       val mutable = isStatic || f.is(Mutable)
-      if (isExtern & !mutable) {
+      if (isExtern && !mutable) {
         report.error("`extern` cannot be used in val definition")
       }
       val attrs = nir.Attrs(isExtern = f.isExtern)
