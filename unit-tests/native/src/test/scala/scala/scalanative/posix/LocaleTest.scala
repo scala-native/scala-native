@@ -24,11 +24,6 @@ class LocaleTest {
 
   @Before
   def before(): Unit = {
-    assumeTrue(
-      "locale.scala is not implemented on Windows",
-      !isWindows
-    )
-
     if (!isWindows) {
       val entryLocale = setlocale(LC_ALL, null)
       assertNotNull(
@@ -36,6 +31,7 @@ class LocaleTest {
         entryLocale
       )
 
+      // Save before setlocale() calls overwrite static buffer returned.
       savedLocale = Some(string.strdup(entryLocale)) // note: no CString
 
       val currentLocale = {
@@ -49,7 +45,7 @@ class LocaleTest {
       }
 
       if (currentLocale == null)
-        fail("setlocale() failed using en_US | en_US.utf8 | en_US.UTF-8.")
+        savedLocale = None // Oops, no change! Nothing to restore.
     }
   }
 
@@ -69,7 +65,18 @@ class LocaleTest {
     }
   }
 
-  @Test def localeconv_Using_en_US(): Unit =
+  @Test def localeconv_Using_en_US(): Unit = {
+    assumeTrue(
+      "locale.scala is not implemented on Windows",
+      !isWindows
+    )
+
+    // Multi-arch CI tests do not have an en_US locale; warn not fail
+    assumeTrue(
+      "setlocale() failed to set an en_US test locale",
+      savedLocale.isDefined
+    )
+
     if (!isWindows) {
       val currentLconv = localeconv() // documented as always succeeds.
 
@@ -116,7 +123,7 @@ class LocaleTest {
         fromCString(currentLconv.mon_thousands_sep)
       )
 
-      // Expect three byte-integers 3, 3, 0, meaning infinite group-by-three
+      // Expect three byte-integers 3, 3, 0, meaning infinite group-by-3
       assertEquals(
         "US mon_grouping",
         "\u0003\u0003",
@@ -184,4 +191,5 @@ class LocaleTest {
 
       assertEquals("US int_n_sign_posn", 1, currentLconv.int_n_sign_posn)
     }
+  }
 }
