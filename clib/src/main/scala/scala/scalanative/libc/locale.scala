@@ -11,7 +11,7 @@ import scalanative.meta.LinktimeInfo.isLinux
 @extern object locale extends locale
 
 /** Definitions shared with POSIX */
-@extern trait locale {
+@extern private[scalanative] trait locale {
 
   // CStruct is limited to 22 fields, lconv wants 24, so group int_* & use Ops
 
