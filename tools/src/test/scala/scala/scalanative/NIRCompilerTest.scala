@@ -67,6 +67,90 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     val caught = intercept[CompilationFailedException] {
       NIRCompiler(_.compile(code))
     }
+  }
+  it should "report error for extern in val definition" in {
+    // given
+    val code =
+      """import scala.scalanative.unsafe.extern
+        |
+        |@extern
+        |object Dummy {
+        |  val foo: Int = extern
+        |}""".stripMargin
+    // when
+    val caught = intercept[CompilationFailedException] {
+      NIRCompiler(_.compile(code))
+    }
+    caught.getMessage() should include(
+      "`extern` cannot be used in val definition"
+    )
+  }
+
+  it should "compile extern var definition" in {
+    // given
+    val code =
+      """import scala.scalanative.unsafe.extern
+        |
+        |@extern
+        |object Dummy {
+        |  var foo: Int = extern
+        |}""".stripMargin
+    // when
+    NIRCompiler(_.compile(code))
+  }
+
+  it should "not allow members of extern object to reference other externs" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern object Dummy {
+          |  def foo(): Int = extern
+          |  def bar(): Int = foo()
+          |}
+          |""".stripMargin
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile(code))
+    }.getMessage() should include(
+      "Referencing other extern symbols in not supported"
+    )
+  }
+
+  it should "allow to extend extern traits" in {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern trait Dummy {
+          |   var x: Int = extern
+          |   def foo(): Int = extern
+          |}
+          |
+          |@extern trait Dummy2 extends Dummy {
+          |  def bar(): Int = extern
+          |}
+          |
+          |@extern object Dummy extends Dummy
+          |@extern object Dummy2 extends Dummy2
+          |""".stripMargin
+
+    NIRCompiler(_.compile(code))
+  }
+
+  it should "not allow to mix extern object with regular traits" in {
+    val code =
+      """
+      |import scala.scalanative.unsafe.extern
+      |
+      |trait Dummy {
+      |  def foo(): Int = ???
+      |}
+      |
+      |@extern object Dummy extends Dummy
+      |""".stripMargin
+    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
+      .getMessage() should include(
+      "Extern object can only extend extern traits"
+    )
+  }
 
     // then
     caught.getMessage should include("extern method foo needs result type")

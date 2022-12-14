@@ -109,10 +109,12 @@ trait NirGenStat(using Context) {
       if !f.isOneOf(Method | Module) && f.isTerm
     do
       given nir.Position = f.span
-
       val isStatic = f.is(JavaStatic) || f.isScalaStatic
       val isExtern = f.isExtern
       val mutable = isStatic || f.is(Mutable)
+      if (isExtern && !mutable) {
+        report.error("`extern` cannot be used in val definition")
+      }
       val attrs = nir.Attrs(isExtern = f.isExtern)
       val ty = genType(f.info.resultType)
       val fieldName @ Global.Member(owner, sig) = genFieldName(f): @unchecked

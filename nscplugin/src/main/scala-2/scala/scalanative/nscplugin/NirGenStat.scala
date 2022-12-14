@@ -176,6 +176,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       for (f <- sym.info.decls
           if !f.isMethod && f.isTerm && !f.isModule) {
+        if (f.owner.isExternType && !f.isMutable) {
+          reporter.error(f.pos, "`extern` cannot be used in val definition")
+        }
         val ty = genType(f.tpe)
         val name = genFieldName(f)
         val pos: nir.Position = f.pos

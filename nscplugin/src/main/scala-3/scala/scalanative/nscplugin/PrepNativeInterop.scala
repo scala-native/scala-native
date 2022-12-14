@@ -13,6 +13,7 @@ import core.Types._
 import core.StdNames._
 import core.Constants.Constant
 import NirGenUtil.ContextCached
+import dotty.tools.dotc.core.Flags
 
 /** This phase does:
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
@@ -62,7 +63,11 @@ class PrepNativeInterop extends PluginPhase {
         if (isTopLevelExtern(vd) &&
             !sym.hasAnnotation(defnNir.ExternClass)) {
           sym.addAnnotation(defnNir.ExternClass)
-          sym.setter.addAnnotation(defnNir.ExternClass)
+          if (vd.symbol.is(
+                Flags.Mutable
+              )) {
+            sym.setter.addAnnotation(defnNir.ExternClass)
+          }
         }
 
         vd
