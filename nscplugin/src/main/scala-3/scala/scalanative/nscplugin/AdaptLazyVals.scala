@@ -126,7 +126,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
         fun = ref(defn.NativeLazyVals_setFlag),
         args = List(classFieldPtr(target, fieldRef), value, ord)
       )
-    else if sym == defn.LazyVals_objCAS then
+    else if defn.LazyVals_objCAS.contains(sym) then
       val List(targetTree, fieldRef, expected, value) = args
       val target = targetTree match {
         case Literal(c: Constant) if c.tag == ClazzTag =>
@@ -180,9 +180,13 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     @tu lazy val LazyVals_get = LazyValsModule.requiredMethod("get")
     @tu lazy val LazyVals_setFlag = LazyValsModule.requiredMethod("setFlag")
     @tu lazy val LazyVals_CAS = LazyValsModule.requiredMethod("CAS")
-    @tu lazy val LazyVals_objCAS = LazyValsModule.requiredMethod("objCAS")
     @tu lazy val LazyVals_wait4Notification =
       LazyValsModule.requiredMethod("wait4Notification")
+    // Since 3.2.2 as experimental
+    @tu lazy val LazyVals_objCAS: Option[TermSymbol] =
+      Option(LazyValsModule.info.member(termName("objCAS")).symbol)
+        .filter(_ != NoSymbol)
+        .map(_.asTerm)
   }
 
 }
