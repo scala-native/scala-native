@@ -26,6 +26,16 @@ private object LazyVals {
   }
 
   @`inline`
+  def objCAS(objPtr: RawPtr, exp: Object, n: Object): Boolean = {
+    // Todo: with multithreading use atomic cas
+    if (Intrinsics.loadObject(objPtr) ne exp) false
+    else {
+      Intrinsics.storeObject(objPtr, n)
+      true
+    }
+  }
+
+  @`inline`
   def setFlag(bitmap: RawPtr, v: Int, ord: Int): Unit = {
     val cur = get(bitmap)
     // TODO: with multithreading add waiting for notifications
