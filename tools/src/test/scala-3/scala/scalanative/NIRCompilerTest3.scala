@@ -11,7 +11,7 @@ import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 import scala.scalanative.nir.*
 
 class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
-  def nativeCompilation(source: String): Unit = {
+  inline def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
@@ -36,15 +36,23 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
         |""".stripMargin))
     }.getMessage should include("extern method foo needs result type")
   }
+  it should "report error for extern in top-level val definition" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+        |import scala.scalanative.unsafe.extern
+        |
+        |val foo: Int = extern
+        |""".stripMargin))
+    }.getMessage should include("extern` cannot be used in val definition")
+  }
 
-  it should "allow to define top level extern variable" in nativeCompilation(
+  it should "compile top-level extern var definition" in nativeCompilation(
     """
       |import scala.scalanative.unsafe.extern
       |
       |var foo: Int = extern
       |""".stripMargin
   )
-
   it should "report error for top-level extern variable without result type" in {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
