@@ -12,7 +12,7 @@ import scalanative.unsafe._
 }
 
 /** Definitions shared with POSIX */
-@extern trait math {
+@extern private[scalanative] trait math {
 
   // Basic operations
 

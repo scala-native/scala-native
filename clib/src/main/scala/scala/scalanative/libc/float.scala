@@ -7,7 +7,7 @@ import scalanative.unsafe._
 
 @extern object float extends float
 
-@extern trait float {
+@extern private[scalanative] trait float {
 
   // Macros
 

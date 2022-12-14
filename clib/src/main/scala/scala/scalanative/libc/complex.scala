@@ -23,7 +23,7 @@ import scalanative.unsafe._
  */
 @extern object complex extends complex
 
-@extern trait complex {
+@extern private[scalanative] trait complex {
   import Nat._2
   type CFloatComplex = CStruct2[CFloat, CFloat]
   type CDoubleComplex = CStruct2[CDouble, CDouble]

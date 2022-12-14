@@ -6,7 +6,7 @@ import scalanative.unsafe._
  */
 object tgmath extends tgmath
 
-trait tgmath {
+private[scalanative] trait tgmath {
   // real
 
   import scala.scalanative.libc.math

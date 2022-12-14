@@ -5,7 +5,7 @@ import scala.scalanative.unsafe._
 
 @extern object stddef extends stddef
 
-@extern trait stddef {
+@extern private[scalanative] trait stddef {
   type ptrdiff_t = CLong
   type wchar_t = CInt
   type size_t = CSize
