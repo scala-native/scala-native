@@ -61,56 +61,86 @@ object ScalaNativePluginInternal {
     )
   )
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := nativeConfig.value.clang.toFile,
-    nativeClangPP := nativeConfig.value.clangPP.toFile,
-    nativeCompileOptions := nativeConfig.value.compileOptions,
-    nativeLinkingOptions := nativeConfig.value.linkingOptions,
-    nativeMode := nativeConfig.value.mode.name,
-    nativeGC := nativeConfig.value.gc.name,
-    nativeLTO := nativeConfig.value.lto.name,
-    nativeLinkStubs := nativeConfig.value.linkStubs,
-    nativeCheck := nativeConfig.value.check,
-    nativeDump := nativeConfig.value.dump
-  )
+  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
+    println("scalaNativeBaseSettings")
+    Seq(
+      crossVersion := ScalaNativeCrossVersion.binary,
+      platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+      nativeClang := nativeConfig.value.clang.toFile,
+      nativeClangPP := nativeConfig.value.clangPP.toFile,
+      nativeCompileOptions := nativeConfig.value.compileOptions,
+      nativeLinkingOptions := nativeConfig.value.linkingOptions,
+      nativeMode := nativeConfig.value.mode.name,
+      nativeGC := nativeConfig.value.gc.name,
+      nativeLTO := nativeConfig.value.lto.name,
+      nativeLinkStubs := nativeConfig.value.linkStubs,
+      nativeCheck := nativeConfig.value.check,
+      nativeDump := nativeConfig.value.dump
+    )
+  }
 
-  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := build.NativeConfig.empty
-      .withClang(interceptBuildException(Discover.clang()))
-      .withClangPP(interceptBuildException(Discover.clangpp()))
-      .withCompileOptions(Discover.compileOptions())
-      .withLinkingOptions(Discover.linkingOptions())
-      .withLTO(Discover.LTO())
-      .withGC(Discover.GC())
-      .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
-    nativeWarnOldJVM := {
-      val logger = streams.value.log
-      Try(Class.forName("java.util.function.Function")).toOption match {
-        case None =>
-          logger.warn("Scala Native is only supported on Java 8 or newer.")
-        case Some(_) =>
-          ()
+  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
+    println("scalaNativeGlobalSettings")
+    Seq(
+      nativeConfig := build.NativeConfig.empty
+        .withClang(interceptBuildException(Discover.clang()))
+        .withClangPP(interceptBuildException(Discover.clangpp()))
+        .withCompileOptions(Discover.compileOptions())
+        .withLinkingOptions(Discover.linkingOptions())
+        .withLTO(Discover.LTO())
+        .withGC(Discover.GC())
+        .withMode(Discover.mode())
+        .withOptimize(Discover.optimize()),
+      // discovery will be delayed until after build is called
+      nativeWarnOldJVM := {
+        val logger = streams.value.log
+        Try(Class.forName("java.util.function.Function")).toOption match {
+          case None =>
+            logger.warn("Scala Native is only supported on Java 8 or newer.")
+          case Some(_) =>
+            ()
+        }
+      },
+      onComplete := {
+        val prev: () => Unit = onComplete.value
+        () => {
+          prev()
+          sharedScope.close()
+          sharedScope = Scope.unsafe()
+          testAdapters.getAndSet(Nil).foreach(_.close())
+        }
       }
-    },
-    onComplete := {
-      val prev: () => Unit = onComplete.value
-      () => {
-        prev()
-        sharedScope.close()
-        sharedScope = Scope.unsafe()
-        testAdapters.getAndSet(Nil).foreach(_.close())
-      }
-    }
-  )
+    )
+  }
 
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
+      println("Before raw settings")
+      println(s"Clang: ${nativeClang.value.toPath}")
+      println(s"Clang++: ${nativeClangPP.value.toPath}")
+      println(s"Compile Opts: ${nativeCompileOptions.value}")
+      println(s"Linking Opts: ${nativeLinkingOptions.value}")
+      println(s"GC: ${nativeGC.value}")
+      println(s"Mode: ${nativeMode.value}")
+      println(s"LTO: ${nativeLTO.value}")
+      println(s"LinkStubs: ${nativeLinkStubs.value}")
+      println(s"Check: ${nativeCheck.value}")
+      println(s"dump: ${nativeDump.value}")
       val config = nativeConfig.value
+      println("After raw settings")
+      println(s"Clang: ${nativeClang.value.toPath}")
+      println(s"Clang++: ${nativeClangPP.value.toPath}")
+      println(s"Compile Opts: ${nativeCompileOptions.value}")
+      println(s"Linking Opts: ${nativeLinkingOptions.value}")
+      println(s"GC: ${nativeGC.value}")
+      println(s"Mode: ${nativeMode.value}")
+      println(s"LTO: ${nativeLTO.value}")
+      println(s"LinkStubs: ${nativeLinkStubs.value}")
+      println(s"Check: ${nativeCheck.value}")
+      println(s"dump: ${nativeDump.value}")
       config
         // Use overrides defined in legacy setting keys
+        // these will be checked for non-default before setting
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
         .withCompileOptions(nativeCompileOptions.value)
@@ -121,20 +151,17 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        // Set values for project-specific settings
-        .withBasename(
-          // Use basename defined by user, if not set use name of project
-          Option(config.basename)
-            .filterNot(_.isEmpty)
-            .getOrElse(moduleName.value)
-        )
     },
     nativeLink := Def
       .task {
+        println("Running nativeLink")
         val classpath = fullClasspath.value.map(_.data.toPath)
+        // select main class only if we are building an application
         val mainClass = nativeConfig.value.buildTarget match {
           case BuildTarget.Application =>
-            selectMainClass.value.orElse {
+            val mainClassTemp = selectMainClass.value
+            println(s"mainClass: $mainClassTemp")
+            mainClassTemp.orElse {
               throw new MessageOnlyException("No main class detected.")
             }
           case _: BuildTarget.Library => None
@@ -146,9 +173,10 @@ object ScalaNativePluginInternal {
             .withLogger(logger)
             .withClassPath(classpath)
             .withBasedir(crossTarget.value.toPath())
+            .withDefaultBasename(moduleName.value)
             .withTestConfig(testConfig)
             .withCompilerConfig(nativeConfig.value)
-
+        // set main class in config if an application
         val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
         interceptBuildException {
@@ -167,6 +195,7 @@ object ScalaNativePluginInternal {
       })
       .value,
     run := {
+      println("Running run")
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
@@ -199,10 +228,12 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
+    println("scalaNativeCompileSettings")
     scalaNativeConfigSettings(false)
   }
 
-  lazy val scalaNativeTestSettings: Seq[Setting[_]] =
+  lazy val scalaNativeTestSettings: Seq[Setting[_]] = {
+    println("scalaNativeTestSettings")
     scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
@@ -239,12 +270,15 @@ object ScalaNativePluginInternal {
             .toMap
         }
       )
+  }
 
-  lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
+  lazy val scalaNativeProjectSettings: Seq[Setting[_]] = {
+    println("scalaNativeProjectSettings")
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
+  }
 
   private var sharedScope = Scope.unsafe()
   private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)

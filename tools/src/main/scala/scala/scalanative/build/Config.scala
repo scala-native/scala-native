@@ -20,8 +20,15 @@ sealed trait Config {
    */
   def workdir: Path
 
+  /** Base name for executable or library, typically the project name from the
+   *  build tool [[defaultBaseName]] or can be overridden by the user with
+   *  [[NativeConfig#basename]].
+   */
+  def basename: String
+
   /** Path to the output file, executable or library. Calculated based on
-   *  [[basedir]] / [[NativeConfig#basename]] and -test, if a test project.
+   *  [[basedir]] / [[basename]] or [[NativeConfig#basename]] and -test, if a
+   *  test project.
    */
   def artifactPath: Path
 
@@ -38,6 +45,9 @@ sealed trait Config {
 
   /** Create a new config with given base directory. */
   def withBasedir(value: Path): Config
+
+  /** Create a new config with given basename (module name) - required. */
+  def withDefaultBasename(value: String): Config
 
   /** Create a new config with test (true) or normal config (false). */
   def withTestConfig(value: Boolean): Config
@@ -94,7 +104,7 @@ sealed trait Config {
     }
   }
 
-  private[scalanative] lazy val targetsMac = Platform.isMac ||
+  private[scalanative] lazy val targetsMac: Boolean = Platform.isMac ||
     compilerConfig.targetTriple.exists { customTriple =>
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
@@ -109,6 +119,7 @@ object Config {
       mainClass = None,
       classPath = Seq.empty,
       basedir = Paths.get(""),
+      defaultBasename = "",
       testConfig = false,
       logger = Logger.default,
       compilerConfig = NativeConfig.empty
@@ -119,6 +130,7 @@ object Config {
       mainClass: Option[String],
       classPath: Seq[Path],
       basedir: Path,
+      defaultBasename: String,
       testConfig: Boolean,
       logger: Logger,
       compilerConfig: NativeConfig
@@ -135,6 +147,9 @@ object Config {
     def withBasedir(value: Path): Config =
       copy(basedir = value)
 
+    def withDefaultBasename(value: String): Config =
+      copy(defaultBasename = value)
+
     def withTestConfig(value: Boolean): Config =
       copy(testConfig = value)
 
@@ -149,6 +164,11 @@ object Config {
 
     override lazy val workdir: Path =
       basedir.resolve(s"native$nameSuffix")
+
+    override lazy val basename: String = compilerConfig.basename match {
+      case bn if bn.nonEmpty => bn
+      case _                 => defaultBasename
+    }
 
     override lazy val artifactPath: Path = {
       val ext = compilerConfig.buildTarget match {
@@ -166,20 +186,20 @@ object Config {
         case BuildTarget.Application => ""
         case _: BuildTarget.Library  => if (targetsWindows) "" else "lib"
       }
-      basedir.resolve(s"$namePrefix${compilerConfig.basename}$nameSuffix$ext")
+      basedir.resolve(s"$namePrefix${basename}$nameSuffix$ext")
     }
 
     override def toString: String = {
       val classPathFormat =
         classPath.mkString("List(", "\n".padTo(22, ' '), ")")
       s"""Config(
-        | - basedir:        $basedir
-        | - testConfig:     $testConfig
-        | - workdir:        $workdir
-        | - artifactPath:   $artifactPath
-        | - logger:         $logger
-        | - classPath:      $classPathFormat
-        | - compilerConfig: $compilerConfig
+        | - basedir:         $basedir
+        | - testConfig:      $testConfig
+        | - workdir:         $workdir
+        | - defaultBasename: $defaultBasename
+        | - artifactPath:    $artifactPath
+        | - classPath:       $classPathFormat
+        | - compilerConfig:  $compilerConfig
         |)""".stripMargin
     }
 
