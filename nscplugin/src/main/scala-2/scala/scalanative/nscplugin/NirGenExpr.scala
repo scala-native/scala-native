@@ -458,6 +458,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           labels.contains(n.name)
         case inst @ Inst.If(_, n1, n2) =>
           labels.contains(n1.name) && labels.contains(n2.name)
+        case inst @ Inst.LinktimeIf(_, n1, n2) =>
+          labels.contains(n1.name) && labels.contains(n2.name)
         case inst @ Inst.Switch(_, n, ns) =>
           labels.contains(n.name) && ns.forall(n => labels.contains(n.name))
         case inst @ Inst.Throw(_, n) =>
