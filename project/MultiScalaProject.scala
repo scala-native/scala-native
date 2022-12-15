@@ -21,7 +21,10 @@ final case class MultiScalaProject private (
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3")
   lazy val v3Next: Project = project(MultiScalaProject.scala3Next)
-    .settings(Settings.experimentalScalaSources)
+    .settings(
+      Settings.experimentalScalaSources,
+      scalacOptions += "-Ylightweight-lazy-vals"
+    )
 
   override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3, v3Next)
 

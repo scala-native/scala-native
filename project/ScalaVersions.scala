@@ -18,7 +18,7 @@ object ScalaVersions {
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last
   val scala3: String = "3.1.3"
-  lazy val scala3Experimental = "3.3.0-RC1-bin-20221119-786ad3f-NIGHTLY"
+  lazy val scala3Experimental = "3.3.0-RC1-bin-20221213-5929a50-NIGHTLY"
 
   // minimum version - 1.5 is required for Scala 3 and 1.5.8 has log4j vulnerability fixed
   val sbt10Version: String = "1.5.8"
