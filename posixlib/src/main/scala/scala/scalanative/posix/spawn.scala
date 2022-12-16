@@ -20,15 +20,23 @@ object spawn {
    * types. They have no user accessible fields, not even the component Bytes.
    * Users of these types should leave them opaque: i.e. no read, no write.
    *
-   * The sizes here are from Linux 6.0.  Code in spawn.c checks at compile-time
-   * that these sizes are greater than or equal to the equivalent OS types.
+   * The sizes here are from 64 bit Linux 6.0.  Code in spawn.c checks at
+   * compile-time that these sizes are greater than or equal to the equivalent
+   * OS types.
+   *
+   * Use CUnsignedLongLong as array elements so that Array is sure to be
+   * 64 bit aligned; may be overkill.
+   *
    * Maintainers:  If you change sizes, either here or in spawn.c, change
    *               the other file also.
    */
 
-  type posix_spawnattr_t = CArray[CUnsignedLong, Nat.Digit3[_3, _3, _6]]
+  // Overall required 336 bytes, 8 * 42
+  type posix_spawnattr_t = CArray[CUnsignedLongLong, Nat.Digit2[_4, _2]]
 
-  type posix_spawn_file_actions_t = CArray[CUnsignedLong, Nat.Digit2[_8, _0]]
+  // Overall required 80 bytes, 8 * 10
+  type posix_spawn_file_actions_t =
+    CArray[CUnsignedLongLong, Nat.Digit2[_1, _0]]
 
   type mode_t = types.mode_t
   type pid_t = types.pid_t
