@@ -123,3 +123,7 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 void scalanative_collect() {}
 
 void scalanative_register_weak_reference_handler(void *handler) {}
+
+void scalanative_add_roots(void *addr_low, void* addr_high) {}
+
+void scalanative_remove_roots(void *addr_low, void* addr_high) {}
