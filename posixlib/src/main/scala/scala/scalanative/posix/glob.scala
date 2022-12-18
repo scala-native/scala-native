@@ -38,6 +38,13 @@ object glob {
     CArray[CUnsignedChar, Nat.Digit2[_5, _6]] // macOS non-POSIX fields
   ]
 
+  type unixGlob_t = CStruct4[
+    size_t, //  gl_pathc, count of total paths so far
+    Ptr[CString], // gl_pathv, list of paths matching pattern
+    size_t, // gl_offs, reserved at beginning of gl_pathv
+    CArray[CUnsignedChar, Nat.Digit2[_6, _4]] // macOS non-POSIX fields
+  ]
+
   /// Symbolic constants
   // flags
 
@@ -85,14 +92,15 @@ object glob {
 }
 
 object globOps {
-  import glob.{glob_t, size_t}
+  import glob.{glob_t, unixGlob_t, size_t}
 
   implicit class glob_tOps(val ptr: Ptr[glob_t]) extends AnyVal {
     def gl_pathc: size_t = ptr._1 // Count of paths matched by pattern.
 
     // Pointer to a list of matched pathnames.
-    def gl_pathv: Ptr[CString] = if (isLinux) ptr._2.asInstanceOf[Ptr[CString]]
-    else ptr._5
+    def gl_pathv: Ptr[CString] =
+      if (isLinux) ptr.asInstanceOf[Ptr[unixGlob_t]]._2
+      else ptr._5
 
     // Slots to reserve at the beginning of gl_pathv.
     def gl_offs: size_t = ptr._3
@@ -100,10 +108,11 @@ object globOps {
     // gl_pathc & gl_pathv are usually read-only; gl_offs get used for write.
     def gl_pathc_=(v: size_t): Unit = ptr._1 = v
 
-    def gl_pathv_=(v: Ptr[CString]): Unit = if (isLinux)
-      ptr._2 = v.asInstanceOf[CInt]
-    else
-      ptr._5 = v
+    def gl_pathv_=(v: Ptr[CString]): Unit =
+      if (isLinux)
+        ptr.asInstanceOf[Ptr[unixGlob_t]]._2 = v
+      else
+        ptr._5 = v
 
     def gl_offs_=(v: size_t): Unit = ptr._3 = v
   }

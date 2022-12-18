@@ -70,6 +70,11 @@ class GlobTest {
   }
 
   @Test def globExpectNotFound(): Unit = {
+    assumeTrue(
+      "glob.scala is not implemented on Windows",
+      !isWindows
+    )
+
     if (!isWindows) Zone { implicit z =>
       val globP = stackalloc[glob_t]()
 
@@ -92,6 +97,11 @@ class GlobTest {
   }
 
   @Test def globExpectFound(): Unit = {
+    assumeTrue(
+      "glob.scala is not implemented on Windows",
+      !isWindows
+    )
+
     if (!isWindows) Zone { implicit z =>
       val globP = stackalloc[glob_t]()
 
