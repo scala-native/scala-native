@@ -83,6 +83,7 @@ C Header          Scala Native Module
 `termios.h`_      scala.scalanative.posix.termios_
 `tgmath.h`_       scala.scalanative.posix.tgmath_
 `time.h`_         scala.scalanative.posix.time_
+`trace.h`_        N/A
 `unistd.h`_       scala.scalanative.posix.unistd_
 `utime.h`_        scala.scalanative.posix.utime_
 `utmpx.h`_        N/A
@@ -166,6 +167,7 @@ C Header          Scala Native Module
 .. _termios.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/termios.h.html
 .. _tgmath.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/tgmath.h.html
 .. _time.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/time.h.html
+.. _trace.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/trace.h.html
 .. _ulimit.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/ulimit.h.html
 .. _unistd.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/unistd.h.html
 .. _utime.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/utime.h.html
