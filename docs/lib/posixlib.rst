@@ -22,16 +22,16 @@ C Header          Scala Native Module
 `fenv.h`_         scala.scalanative.posix.fenv_
 `float.h`_        scala.scalanative.posix.float_
 `fmtmsg.h`_       N/A
-`fnmatch.h`_      N/A
+`fnmatch.h`_      scala.scalanative.posix.fnmatch_
 `ftw.h`_          N/A
 `getopt.h`_       scala.scalanative.posix.getopt_
-`glob.h`_         N/A
+`glob.h`_         scala.scalanative.posix.glob_
 `grp.h`_          scala.scalanative.posix.grp_
 `iconv.h`_        N/A
 `inttypes.h`_     scala.scalanative.posix.inttypes_
 `iso646.h`_       N/A
 `langinfo.h`_     N/A
-`libgen.h`_       N/A
+`libgen.h`_       scala.scalanative.posix.libgen_
 `limits.h`_       scala.scalanative.posix.limits_
 `locale.h`_       scala.scalanative.posix.locale_
 `math.h`_         scala.scalanative.posix.math_
@@ -83,7 +83,6 @@ C Header          Scala Native Module
 `termios.h`_      scala.scalanative.posix.termios_
 `tgmath.h`_       scala.scalanative.posix.tgmath_
 `time.h`_         scala.scalanative.posix.time_
-`trace.h`_        N/A
 `unistd.h`_       scala.scalanative.posix.unistd_
 `utime.h`_        scala.scalanative.posix.utime_
 `utmpx.h`_        N/A
@@ -167,7 +166,6 @@ C Header          Scala Native Module
 .. _termios.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/termios.h.html
 .. _tgmath.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/tgmath.h.html
 .. _time.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/time.h.html
-.. _trace.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/trace.h.html
 .. _ulimit.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/ulimit.h.html
 .. _unistd.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/unistd.h.html
 .. _utime.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/utime.h.html
@@ -185,10 +183,13 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/fcntl.scala
 .. _scala.scalanative.posix.fenv: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/fenv.scala
 .. _scala.scalanative.posix.float: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/float.scala
+.. _scala.scalanative.posix.fnmatch: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/fnmatch.scala
 .. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/getopt.scala
+.. _scala.scalanative.posix.glob: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/glob.scala
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
+.. _scala.scalanative.posix.libgen: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/libgen.scala
 .. _scala.scalanative.posix.locale: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/locale.scala
 .. _scala.scalanative.posix.math: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/math.scala
 .. _scala.scalanative.posix.net.if: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/net/if.scala
