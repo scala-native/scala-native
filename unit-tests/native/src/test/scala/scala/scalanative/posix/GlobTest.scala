@@ -31,26 +31,25 @@ object GlobTest {
 
   @BeforeClass
   def beforeClass(): Unit = {
-    assumeTrue(
-      "glob.scala is not implemented on Windows",
-      !isWindows
-    )
+    if (!isWindows) {
+      orgDir = Files.createTempDirectory("org.scalanative.testsuite")
+      posixlibDir = orgDir.resolve("posixlib")
+      workDir = Files.createDirectories(posixlibDir.resolve("GlobTest"))
 
-    orgDir = Files.createTempDirectory("org.scalanative.testsuite")
-    posixlibDir = orgDir.resolve("posixlib")
-    workDir = Files.createDirectories(posixlibDir.resolve("GlobTest"))
-
-    createdFilePaths = createTestData(workDir)
+      createdFilePaths = createTestData(workDir)
+    }
   }
 
   @AfterClass
   def afterClass(): Unit = {
-    /* Delete items created by this test.
-     * Delete files within "GlobTest" directory and then the directory itself,
-     * its parent & grandparent.
-     */
-    val deleteList = createdFilePaths :+ workDir :+ posixlibDir :+ orgDir
-    deleteList.foreach(p => Files.delete(p))
+    if (!isWindows) {
+      /* Delete items created by this test.
+       * Delete files within "GlobTest" directory and then the directory itself,
+       * its parent & grandparent.
+       */
+      val deleteList = createdFilePaths :+ workDir :+ posixlibDir :+ orgDir
+      deleteList.foreach(p => Files.delete(p))
+    }
   }
 }
 
