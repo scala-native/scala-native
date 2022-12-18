@@ -89,7 +89,7 @@ C Header          Scala Native Module
 `utmpx.h`_        N/A
 `wchar.h`_        scala.scalanative.posix.wchar_
 `wctype.h`_       N/A
-`wordexp.h`_      N/A
+`wordexp.h`_      scala.scalanative.posix.wordexp_
 ================= ==================================
 
 .. _aio.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/aio.h.html
@@ -228,6 +228,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.unistd: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/unistd.scala
 .. _scala.scalanative.posix.utime: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/utime.scala
 .. _scala.scalanative.posix.wchar: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/wchar.scala
+.. _scala.scalanative.posix.wordexp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/wordexp.scala
 
 .. rubric Footnotes
 .. [#inet_ntoa] The argument to inet_ntoa() differs from the POSIX
