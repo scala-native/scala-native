@@ -716,8 +716,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
           case _                                                => false
         }
-
+      val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
+        case _ if defaultArgs.nonEmpty =>
+          reporter.error(
+            defaultArgs.head.pos,
+            "extern method cannot have default argument"
+          )
+          None
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
           externMethodDecl()
 
