@@ -1,9 +1,11 @@
 .. _libc:
 
-C Standard Library
-==================
+ISO/IEC C Standard Library
+==========================
 
 Scala Native provides bindings for a core subset of the
+International Organization for Standardization/International
+Electrotechnical Commission (ISO/IEC)
 `C standard library <https://en.cppreference.com/w/c/header>`_:
 
 ============== ==================================
@@ -18,7 +20,7 @@ float.h_       scala.scalanative.libc.float_
 inttypes.h_    N/A
 iso646.h_      N/A
 limits.h_      N/A
-locale.h_      N/A
+locale.h_      scala.scalanative.libc.locale_
 math.h_        scala.scalanative.libc.math_
 setjmp.h_      N/A
 signal.h_      scala.scalanative.libc.signal_
@@ -75,6 +77,7 @@ wctype.h_      N/A
 .. _scala.scalanative.libc.ctype: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/ctype.scala
 .. _scala.scalanative.libc.errno: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/errno.scala
 .. _scala.scalanative.libc.float: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/float.scala
+.. _scala.scalanative.libc.locale: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/locale.scala
 .. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
 .. _scala.scalanative.libc.stddef: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stddef.scala
 .. _scala.scalanative.libc.stdio: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/stdio.scala

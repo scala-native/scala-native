@@ -35,7 +35,7 @@ C Header          Scala Native Module
 `limits.h`_       scala.scalanative.posix.limits_
 `locale.h`_       N/A
 `math.h`_         scala.scalanative.libc.math_
-`monetary.h`_     N/A
+`monetary.h`_     scala.scalanative.posix.monetary_ [#monetary_varargs]_
 `mqueue.h`_       N/A
 `ndbm.h`_         N/A
 `net/if.h`_       scala.scalanative.posix.net.if_
@@ -194,6 +194,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
 .. _scala.scalanative.posix.libgen: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/libgen.scala
 .. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
+.. _scala.scalanative.posix.monetary: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/monetaryh.scala
 .. _scala.scalanative.posix.net.if: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/net/if.scala
 .. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netdb.scala
 .. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/in.scala
@@ -235,5 +236,7 @@ C Header          Scala Native Module
                 specification because Scala Native supports only
                 passing structures by reference.  See code for details
 		and usage.
+
+.. [#monetary_varargs] See file for limit on number of variable arguments.
 
 Continue to :ref:`communitylib`.
