@@ -5,7 +5,7 @@ import scalanative.unsafe._
 
 @extern object stdlib extends stdlib
 
-@extern trait stdlib {
+@extern private[scalanative] trait stdlib {
 
   // Memory management
 

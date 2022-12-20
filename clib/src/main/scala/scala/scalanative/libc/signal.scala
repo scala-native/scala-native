@@ -5,7 +5,7 @@ import scalanative.unsafe._
 
 @extern object signal extends signal
 
-@extern trait signal {
+@extern private[scalanative] trait signal {
 
   // Signals
   def signal(sig: CInt, handler: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =

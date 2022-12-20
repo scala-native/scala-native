@@ -4,7 +4,7 @@ import scala.scalanative.unsafe._
 
 @extern object inttypes extends inttypes
 
-@extern trait inttypes {
+@extern private[scalanative] trait inttypes {
   import scala.scalanative.libc.stdint._
 
   /** See also https://en.cppreference.com/w/cpp/numeric/math/abs */

@@ -5,7 +5,7 @@ import scalanative.unsafe._
 
 @extern object stdio extends stdio
 
-@extern trait stdio {
+@extern private[scalanative] trait stdio {
 
   // File access
 

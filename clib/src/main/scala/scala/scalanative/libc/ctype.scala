@@ -5,7 +5,7 @@ import scalanative.unsafe._
 
 @extern object ctype extends ctype
 
-@extern trait ctype {
+@extern private[scalanative] trait ctype {
   def isascii(c: CInt): CInt = extern
   def isalnum(c: CInt): CInt = extern
   def isalpha(c: CInt): CInt = extern
