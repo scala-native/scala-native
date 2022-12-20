@@ -233,6 +233,46 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       |""".stripMargin))
   }
 
+  it should "report error on default argument in extern method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+      |import scala.scalanative.unsafe._
+      |@extern
+      |object foo {
+      |  def baz(a:Int = 1): Unit = extern
+      |}
+      |""".stripMargin))
+    }.getMessage should include(
+      "extern method cannot have default argument"
+    )
+  }
+  it should "report error on default argument mixed with general argument in extern method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+      |import scala.scalanative.unsafe._
+      |@extern
+      |object foo {
+      |  def baz(a: Double, b:Int = 1): Unit = extern
+      |}
+      |""".stripMargin))
+    }.getMessage should include(
+      "extern method cannot have default argument"
+    )
+  }
+  it should "report error on default arguments in extern method" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+      |import scala.scalanative.unsafe._
+      |@extern
+      |object foo {
+      |  def baz(a: Double=1.0, b:Int = 1): Unit = extern
+      |}
+      |""".stripMargin))
+    }.getMessage should include(
+      "extern method cannot have default argument"
+    )
+  }
+
   it should "report error when closing over local statein CFuncPtr" in {
     intercept[CompilationFailedException] {
       NIRCompiler(

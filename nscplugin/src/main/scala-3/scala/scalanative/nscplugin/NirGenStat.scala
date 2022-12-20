@@ -20,6 +20,7 @@ import scala.scalanative.util.ScopedVar.{scoped, toValue}
 import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
+import dotty.tools.dotc.core.NameKinds
 
 trait NirGenStat(using Context) {
   self: NirCodeGen =>
@@ -397,7 +398,26 @@ trait NirGenStat(using Context) {
       rhs: Tree
   ): Option[Defn] = {
     given nir.Position = rhs.span
+    def externMethodDecl() = {
+      val externAttrs = Attrs(isExtern = true)
+      val externSig = genExternMethodSig(curMethodSym)
+      val externDefn = Defn.Declare(externAttrs, name, externSig)
+      Some(externDefn)
+    }
+
+    def isExternMethodAlias(target: Symbol) = (name, genName(target)) match {
+      case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
+      case _                                                => false
+    }
+    val defaultArgs = dd.paramss.flatten.filter(_.symbol.is(HasDefault))
+
     rhs match {
+      case _
+          if defaultArgs.nonEmpty || dd.name.is(
+            NameKinds.DefaultGetterName
+          ) =>
+        report.error("extern method cannot have default argument")
+        None
       case Apply(ref: RefTree, Seq())
           if ref.symbol == defnNir.UnsafePackage_extern =>
         val moduleName = genTypeName(curClassSym)

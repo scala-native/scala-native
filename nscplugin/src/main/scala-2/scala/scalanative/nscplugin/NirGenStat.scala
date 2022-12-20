@@ -675,13 +675,32 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         origSig: nir.Type,
         rhs: Tree
     ): Option[nir.Defn] = {
+      val rhs = dd.rhs
+      def externMethodDecl() = {
+        val externAttrs = Attrs(isExtern = true)
+        val externSig = genExternMethodSig(curMethodSym)
+        val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
+        Some(externDefn)
+      }
+
+      def isCallingExternMethod(sym: Symbol) =
+        sym.owner.isExternType
+
+      def isExternMethodAlias(target: Symbol) =
+        (name, genName(target)) match {
+          case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
+          case _                                                => false
+        }
+      val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
+        case _ if defaultArgs.nonEmpty =>
+          reporter.error(
+            defaultArgs.head.pos,
+            "extern method cannot have default argument"
+          )
+          None
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          val moduleName = genTypeName(curClassSym)
-          val externAttrs = Attrs(isExtern = true)
-          val externSig = genExternMethodSig(curMethodSym)
-          val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
-          Some(externDefn)
+          externMethodDecl()
 
         case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
