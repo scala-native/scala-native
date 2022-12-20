@@ -11,7 +11,6 @@ extern Stack weakRefStack;
 extern Allocator allocator;
 extern LargeAllocator largeAllocator;
 extern BlockAllocator blockAllocator;
-extern GC_Roots* roots;
-
+extern GC_Roots *roots;
 
 #endif // IMMIX_STATE_H

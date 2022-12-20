@@ -17,7 +17,8 @@ struct GC_Roots {
 };
 typedef struct GC_Roots GC_Roots;
 
-INLINE static bool AddressRange_Contains(AddressRange self, AddressRange other) {
+INLINE static bool AddressRange_Contains(AddressRange self,
+                                         AddressRange other) {
     return (other.address_low >= self.address_low &&
             other.address_high <= self.address_high);
 }

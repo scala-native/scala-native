@@ -54,10 +54,9 @@ object GC {
   /** Notify the Garbage Collector about the range of memory which should no
    *  longer should be scanned when marking the objects. Every previously
    *  registered range of addressed using [[addRoots]] which is fully contained
-   *  withen the range of addressLow and addressHigh would be
-   *  exluded from the subsequent scanning during the GC. It is safe to pass a
-   *  range of addressed which doen't match any of the previously registered
-   *  memory regions.
+   *  withen the range of addressLow and addressHigh would be exluded from the
+   *  subsequent scanning during the GC. It is safe to pass a range of addressed
+   *  which doen't match any of the previously registered memory regions.
    *
    *  @param addressLow
    *    Start of the range including the first address that should be scanned
