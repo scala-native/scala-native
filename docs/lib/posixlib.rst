@@ -30,7 +30,7 @@ C Header          Scala Native Module
 `iconv.h`_        N/A
 `inttypes.h`_     scala.scalanative.posix.inttypes_
 `iso646.h`_       N/A
-`langinfo.h`_     N/A
+`langinfo.h`_     scala.scalanative.posix.langinfo_
 `libgen.h`_       scala.scalanative.posix.libgen_
 `limits.h`_       scala.scalanative.posix.limits_
 `locale.h`_       N/A
@@ -42,7 +42,7 @@ C Header          Scala Native Module
 `netdb.h`_        scala.scalanative.posix.netdb_
 `netinet/in.h`_   scala.scalanative.posix.netinet.in_
 `netinet/tcp.h`_  scala.scalanative.posix.netinet.tcp_
-`nl_types.h`_     N/A
+`nl_types.h`_     scala.scalanative.posix.nl_types_
 `poll.h`_         scala.scalanative.posix.poll_
 `pthread.h`_      scala.scalanative.posix.pthread_
 `pwd.h`_          scala.scalanative.posix.pwd_
@@ -191,6 +191,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.glob: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/glob.scala
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
+.. _scala.scalanative.posix.langinfo: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/langinfo.scala
 .. _scala.scalanative.posix.limits: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/limits.scala
 .. _scala.scalanative.posix.libgen: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/libgen.scala
 .. _scala.scalanative.libc.math: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/math.scala
@@ -199,6 +200,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.netdb: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netdb.scala
 .. _scala.scalanative.posix.netinet.in: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/in.scala
 .. _scala.scalanative.posix.netinet.tcp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/netinet/tcp.scala
+.. _scala.scalanative.posix.nl_types: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/nl_types.scala
 .. _scala.scalanative.posix.poll: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/poll.scala
 .. _scala.scalanative.posix.pthread: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/pthread.scala
 .. _scala.scalanative.posix.pwd: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/pwd.scala
