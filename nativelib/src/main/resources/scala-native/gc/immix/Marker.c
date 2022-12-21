@@ -148,6 +148,22 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     }
 }
 
+void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
+    GC_Roots *it = roots;
+    while (it != NULL) {
+        word_t **current = (word_t **)it->range.address_low;
+        word_t **limit = (word_t **)it->range.address_high;
+        while (current < limit) {
+            word_t *object = *current;
+            if (Heap_IsWordInHeap(heap, object)) {
+                Marker_markConservative(heap, stack, object);
+            }
+            current += 1;
+        }
+        it = it->next;
+    }
+}
+
 void Marker_MarkRoots(Heap *heap, Stack *stack) {
     atomic_thread_fence(memory_order_seq_cst);
 
@@ -157,5 +173,6 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
         Marker_markProgramStack(thread, heap, stack);
     }
     Marker_markModules(heap, stack);
+    Marker_markCustomRoots(heap, stack, roots);
     Marker_Mark(heap, stack);
 }
