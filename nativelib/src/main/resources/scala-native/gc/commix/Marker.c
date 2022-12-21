@@ -417,11 +417,28 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 }
 
+void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
+                            GreyPacket **outWeakRefHolder, GC_Roots *roots) {
+    for (GC_Roots *it = roots; it != NULL; it = it->next) {
+        word_t **current = (word_t **)it->range.address_low;
+        word_t **limit = (word_t **)it->range.address_high;
+        while (current < limit) {
+            word_t *object = *current;
+            if (Heap_IsWordInHeap(heap, object)) {
+                Marker_markConservative(heap, stats, outHolder,
+                                        outWeakRefHolder, object);
+            }
+            current += 1;
+        }
+    }
+}
+
 void Marker_MarkRoots(Heap *heap, Stats *stats) {
     GreyPacket *out = Marker_takeEmptyPacket(heap, stats);
     GreyPacket *weakRefOut = Marker_takeEmptyPacket(heap, stats);
     Marker_markProgramStack(heap, stats, &out, &weakRefOut);
     Marker_markModules(heap, stats, &out, &weakRefOut);
+    Marker_markCustomRoots(heap, stats, &out, &weakRefOut, roots);
     Marker_giveFullPacket(heap, stats, out);
     Marker_giveWeakRefPacket(heap, stats, weakRefOut);
 }

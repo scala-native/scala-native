@@ -101,3 +101,13 @@ size_t scalanative_get_init_heapsize() { return Settings_MinHeapSize(); }
 size_t scalanative_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
 }
+
+INLINE void scalanative_add_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_Add(&roots, range);
+}
+
+INLINE void scalanative_remove_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_RemoveByRange(&roots, range);
+}
