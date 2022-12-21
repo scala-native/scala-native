@@ -6,3 +6,4 @@ Stack weakRefStack = {};
 Allocator allocator = {};
 LargeAllocator largeAllocator = {};
 BlockAllocator blockAllocator = {};
+GC_Roots *roots = NULL;

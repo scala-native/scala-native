@@ -57,3 +57,13 @@ INLINE void scalanative_collect() { Heap_Collect(&heap, &stack); }
 INLINE void scalanative_register_weak_reference_handler(void *handler) {
     WeakRefStack_SetHandler(handler);
 }
+
+void scalanative_add_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_Add(&roots, range);
+}
+
+void scalanative_remove_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_RemoveByRange(&roots, range);
+}
