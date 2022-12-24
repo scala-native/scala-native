@@ -33,22 +33,17 @@ object unistd {
   @name("scalanative__xopen_version")
   def _XOPEN_VERSION: CInt = extern
 
-  @name("scalanative_environ")
-  def environ: Ptr[CString] = extern
+  var environ: Ptr[CString] = extern
 
   // optarg, opterr, optopt, and optopt are used by getopt().
 
-  @name("scalanative_optarg")
-  def optarg: CString = extern
+  var optarg: CString = extern
 
-  @name("scalanative_opterr")
-  def opterr: CInt = extern
+  var opterr: CInt = extern
 
-  @name("scalanative_optind")
-  def optind: CInt = extern
+  var optind: CInt = extern
 
-  @name("scalanative_optopt")
-  def optopt: CInt = extern
+  var optopt: CInt = extern
 
 // Methods/functions
   def access(pathname: CString, mode: CInt): CInt = extern

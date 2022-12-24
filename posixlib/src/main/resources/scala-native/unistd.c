@@ -11,16 +11,6 @@ extern char **environ;
 extern char *optarg;
 extern int opterr, optind, optopt;
 
-char **scalanative_environ() { return environ; }
-
-char *scalanative_optarg() { return optarg; }
-
-int scalanative_opterr() { return opterr; }
-
-int scalanative_optind() { return optind; }
-
-int scalanative_optopt() { return optopt; }
-
 long scalanative__posix_version() { return _POSIX_VERSION; }
 
 int scalanative__xopen_version() { return _XOPEN_VERSION; }
