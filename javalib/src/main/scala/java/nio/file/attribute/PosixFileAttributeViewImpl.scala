@@ -35,10 +35,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     val buf = alloc[utime.utimbuf]()
     buf._1 =
       if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS).toSize
-      else sb._7
+      else sb._7._1
     buf._2 =
       if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS).toSize
-      else sb._8
+      else sb._8._1
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
       throwIOException()
@@ -104,8 +104,8 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         st_uid = buf._4
         st_gid = buf._5
         st_size = buf._6
-        st_atime = buf._7
-        st_mtime = buf._8
+        st_atime = buf._7._1
+        st_mtime = buf._8._1
         st_mode = buf._13
       }
 

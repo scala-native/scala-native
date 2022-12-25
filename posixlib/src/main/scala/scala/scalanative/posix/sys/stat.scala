@@ -51,9 +51,9 @@ object stat {
     uid_t, // st_uid
     gid_t, // st_gid
     off_t, // st_size
-    time_t, // st_atime
-    time_t, // st_mtime
-    time_t, // st_ctime
+    timespec, // st_atim or st_atimespec
+    timespec, // st_mtim or st_mtimespec
+    timespec, // st_ctim or st_ctimespec
     blkcnt_t, // st_blocks
     blksize_t, // st_blksize
     nlink_t, // st_nlink
