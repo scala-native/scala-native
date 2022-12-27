@@ -8,8 +8,6 @@
 #include "types.h" // scalanative_* types, not <sys/types.h>
 
 extern char **environ;
-extern char *optarg;
-extern int opterr, optind, optopt;
 
 long scalanative__posix_version() { return _POSIX_VERSION; }
 
