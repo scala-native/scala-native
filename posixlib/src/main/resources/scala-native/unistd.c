@@ -12,8 +12,8 @@
 // user program. However, as a (nonstandard) programmer
 // convenience, environ is declared in the header file <unistd.h> if
 // the _GNU_SOURCE feature test macro is defined
-#if #defined(_GNU_SOURCE)
-    extern char **environ;
+#if !defined(_GNU_SOURCE)
+extern char **environ;
 #endif
 
 long scalanative__posix_version() { return _POSIX_VERSION; }
