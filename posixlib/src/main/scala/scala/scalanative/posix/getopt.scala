@@ -3,6 +3,9 @@ package posix
 
 import scalanative.unsafe._
 
+@deprecated(
+  "getopt is no longer part of POSIX 2018 and will be moved to unistd"
+)
 @extern
 object getopt {
   var optarg: CString = extern
