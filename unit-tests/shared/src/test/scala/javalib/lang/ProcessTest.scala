@@ -219,7 +219,7 @@ class ProcessTest {
      * in 10 seconds. When either SIGTERM or SIGKILL arrives, only the
      * necessary minimum time will have actually been taken.
      */
-    val proc = processForCommand("ping", "-c", "2", "-i", "10.0", "127.0.0.1")
+    val proc = processForCommand("ping", "-c", "2", "-i", "10", "127.0.0.1")
       .start()
 
     // When process has produced a byte of output, it should be past 'exec'.
