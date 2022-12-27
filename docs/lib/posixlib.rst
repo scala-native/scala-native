@@ -242,7 +242,7 @@ C Header          Scala Native Module
                 passing structures by reference.  See code for details
 		and usage.
 .. [#getopt_no_longer_posix_2018] getopt.scala, introduced in PR `Fix #202: Support assignment to extern variables #1348 <https://github.com/scala-native/scala-native/pull/1348/>`_ 
-                                  is no longer part of POSIX 2018 and will be moved to unistd.scala in the future.
+                                  is no longer part of POSIX 2018 and will be unified to unistd.scala in the future.
 .. [#monetary_varargs] See file for limit on number of variable arguments.
 
 Continue to :ref:`communitylib`.
