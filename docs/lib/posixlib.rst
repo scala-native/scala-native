@@ -24,7 +24,6 @@ C Header          Scala Native Module
 `fmtmsg.h`_       N/A
 `fnmatch.h`_      scala.scalanative.posix.fnmatch_
 `ftw.h`_          N/A
-`getopt.h`_       scala.scalanative.posix.getopt_
 `glob.h`_         scala.scalanative.posix.glob_
 `grp.h`_          scala.scalanative.posix.grp_
 `iconv.h`_        N/A
@@ -107,7 +106,6 @@ C Header          Scala Native Module
 .. _fmtmsg.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/fmtmsg.h.html
 .. _fnmatch.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/fnmatch.h.html
 .. _ftw.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/ftw.h.html
-.. _getopt.h: https://pubs.opengroup.org/onlinepubs/9699919799/functions/getopt.html
 .. _glob.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/glob.h.html
 .. _grp.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/grp.h.html
 .. _iconv.h: https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/iconv.h.html
@@ -186,7 +184,6 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.fenv: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/fenv.scala
 .. _scala.scalanative.posix.float: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/float.scala
 .. _scala.scalanative.posix.fnmatch: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/fnmatch.scala
-.. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/getopt.scala
 .. _scala.scalanative.posix.glob: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/glob.scala
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
