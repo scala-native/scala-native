@@ -145,14 +145,16 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
           genCallOnModule(
             bootSym,
             Names.beforeClass,
-            testClass.companionModule,
-            JUnitAnnots.BeforeClass
+            testClass,
+            JUnitAnnots.BeforeClass,
+            callParentsFirst = true
           ),
           genCallOnModule(
             bootSym,
             Names.afterClass,
-            testClass.companionModule,
-            JUnitAnnots.AfterClass
+            testClass,
+            JUnitAnnots.AfterClass,
+            callParentsFirst = false
           ),
           genCallOnParam(bootSym, Names.before, testClass, JUnitAnnots.Before),
           genCallOnParam(bootSym, Names.after, testClass, JUnitAnnots.After),
@@ -186,16 +188,28 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
       private def genCallOnModule(
           owner: ClassSymbol,
           name: TermName,
-          module: Symbol,
-          annot: Symbol
+          testClass: Symbol,
+          annot: Symbol,
+          callParentsFirst: Boolean
       ): DefDef = {
         val sym = owner.newMethodSymbol(name)
         sym.setInfoAndEnter(MethodType(Nil, definitions.UnitTpe))
 
+        val symbols = {
+          val all = (testClass :: testClass.ancestors)
+          if (callParentsFirst) all.reverse
+          else all
+        }
+
+        // Filter out annotations found in the companion of trait for compliance with the JVM
         val (publicCalls, nonPublicCalls) =
-          annotatedMethods(module, annot).partition(_.isPublic)
+          symbols
+            .filterNot(_.isTraitOrInterface)
+            .flatMap(sym => annotatedMethods(sym.companionModule, annot))
+            .partition(_.isPublic)
 
         if (nonPublicCalls.nonEmpty) {
+          val module = testClass.companionModule.orElse(testClass)
           globalError(
             pos = module.pos,
             s"Methods marked with ${annot.nameString} annotation in $module must be public"
@@ -203,7 +217,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         }
 
         val calls = publicCalls
-          .map(gen.mkMethodCall(Ident(module), _, Nil, Nil))
+          .map(gen.mkMethodCall(_, Nil, Nil))
           .toList
 
         typer.typedDefDef(newDefDef(sym, Block(calls: _*))())
