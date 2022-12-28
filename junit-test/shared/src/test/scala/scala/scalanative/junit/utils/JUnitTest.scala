@@ -79,7 +79,7 @@ abstract class JUnitTest {
       Array(
         new TaskDef(
           suiteUnderTestName,
-          framework.fingerprints.head,
+          framework.fingerprints().head,
           true,
           Array.empty
         )
@@ -188,7 +188,8 @@ abstract class JUnitTest {
     case Done(_) => None
   }
 
-  private val colorRE = """\u001B\[\d\d?m""".r
+  // Scala 3 bug https://github.com/lampepfl/dotty/issues/16592
+  private val colorRE = "\u001B\\[\\d\\d?m".r
   private val timeRE = """\d+(\.\d+)?( sec|s)\b""".r
 
   def replaceTime(out: Output): Output = out match {
@@ -203,7 +204,7 @@ abstract class JUnitTest {
   class JUnitTestRecorder extends Logger with EventHandler {
     private val buf = List.newBuilder[Output]
 
-    val ansiCodesSupported: Boolean = true
+    def ansiCodesSupported(): Boolean = true
 
     def info(msg: String): Unit = buf += Log('i', msg)
 
@@ -244,7 +245,8 @@ object JUnitTest {
     def deserialize(line: String): Output = line.toList match {
       case 'l' :: level :: msg => Log(level, msg.mkString(""))
       case 'e' :: s :: testName =>
-        Event(Status.values()(s - '0'), testName.mkString(""))
+        val status = Status.values
+        Event(status(s - '0'), testName.mkString(""))
       case 'd' :: msg => Done(msg.mkString(""))
       case _ => throw new RuntimeException("unexpected token in deserialize")
     }

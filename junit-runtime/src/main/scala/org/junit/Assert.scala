@@ -110,6 +110,7 @@ object Assert {
   def assertNotEquals(unexpected: Float, actual: Float, delta: Float): Unit =
     assertNotEquals(null, unexpected, actual, delta)
 
+  // This deprecation should not be removed, it mapping the deprecation in the JUnit library to match bevaiour on the JVM
   @deprecated(
     "Use assertEquals(double expected, double actual, double " +
       "epsilon) instead",
@@ -123,6 +124,7 @@ object Assert {
     )
   }
 
+  // This deprecation should not be removed, it mapping the deprecation in the JUnit library to match bevaiour on the JVM
   @deprecated(
     "Use assertEquals(String message, double expected, double " +
       "actual, double epsilon) instead",
