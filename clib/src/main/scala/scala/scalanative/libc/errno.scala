@@ -6,10 +6,7 @@ import scalanative.unsafe._
 @extern object errno extends errno
 
 @extern private[scalanative] trait errno {
-  @name("scalanative_errno")
-  def errno: CInt = extern
-  @name("scalanative_set_errno")
-  def errno_=(value: CInt): Unit = extern
+  var errno: CInt = extern
   @name("scalanative_edom")
   def EDOM: CInt = extern
   @name("scalanative_eilseq")
