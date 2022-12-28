@@ -187,7 +187,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/fcntl.scala
 .. _scala.scalanative.libc.float: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/float.scala
 .. _scala.scalanative.posix.fnmatch: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/fnmatch.scala
-.. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/getopt.scala
+.. _scala.scalanative.posix.getopt: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/getopt.scala [#getopt_no_longer_posix_2018]_
 .. _scala.scalanative.posix.glob: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/glob.scala
 .. _scala.scalanative.posix.grp: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/grp.scala
 .. _scala.scalanative.posix.inttypes: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/inttypes.scala
@@ -238,7 +238,8 @@ C Header          Scala Native Module
                 specification because Scala Native supports only
                 passing structures by reference.  See code for details
 		and usage.
-
+.. [#getopt_no_longer_posix_2018] getopt.scala, introduced in PR `Fix #202: Support assignment to extern variables #1348 <https://github.com/scala-native/scala-native/pull/1348/>`_ 
+                                  is no longer part of POSIX 2018 and will be unified to unistd.scala in the future.
 .. [#monetary_varargs] See file for limit on number of variable arguments.
 
 Continue to :ref:`communitylib`.
