@@ -11,18 +11,18 @@ import scala.scalanative.junit.utils._
 
 class AsyncTest {
   @Test
-  def success(): AsyncResult = await {
+  def success(): Unit = await {
     Future(1 + 1).filter(_ == 2)
   }
 
   @Test(expected = classOf[IllegalArgumentException])
-  def expectedException(): AsyncResult = await {
+  def expectedException(): Unit = await {
     // Do not throw synchronously.
     Future.failed(new IllegalArgumentException)
   }
 
   @Test
-  def asyncFailure(): AsyncResult = await {
+  def asyncFailure(): Unit = await {
     // Do not throw synchronously.
     Future.failed(new IllegalArgumentException)
   }

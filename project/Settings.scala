@@ -829,7 +829,9 @@ object Settings {
     Compile / publishArtifact := false,
     Test / parallelExecution := false,
     Test / unmanagedSourceDirectories +=
-      baseDirectory.value.getParentFile / "shared/src/test/scala",
+      baseDirectory.value
+        .getParentFile()
+        .getParentFile() / "shared/src/test/scala",
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
       Tests.Filter(_.endsWith("Assertions"))
