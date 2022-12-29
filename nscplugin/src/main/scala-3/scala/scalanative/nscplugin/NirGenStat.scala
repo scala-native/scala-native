@@ -246,10 +246,10 @@ trait NirGenStat(using Context) {
         case defnNir.NoOptimizeType   => Attr.NoOpt
         case defnNir.NoSpecializeType => Attr.NoSpecialize
         case defnNir.StubType         => Attr.Stub
-        case defnNir.ExternType       => Attr.Extern
       }
+    val externAttrs = if (sym.owner.isExternType) Seq(Attr.Extern) else Nil
 
-    Attrs.fromSeq(inlineAttrs ++ annotatedAttrs)
+    Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
   }
 
   protected val curExprBuffer = ScopedVar[ExprBuffer]()
@@ -434,9 +434,7 @@ trait NirGenStat(using Context) {
 
     rhs match {
       case _
-          if defaultArgs.nonEmpty || dd.name.is(
-            NameKinds.DefaultGetterName
-          ) =>
+          if defaultArgs.nonEmpty || dd.name.is(NameKinds.DefaultGetterName) =>
         report.error("extern method cannot have default argument")
         None
       case Apply(ref: RefTree, Seq())
