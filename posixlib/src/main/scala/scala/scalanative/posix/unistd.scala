@@ -9,6 +9,22 @@ object unistd {
 
   type off_t = CLongLong
 
+  @name("scalanative__xopen_version")
+  def _XOPEN_VERSION: CInt = extern
+
+  var environ: Ptr[CString] = extern
+
+  // optarg, opterr, optopt, and optopt are used by getopt().
+
+  var optarg: CString = extern
+
+  var opterr: CInt = extern
+
+  var optind: CInt = extern
+
+  var optopt: CInt = extern
+
+// Methods/functions
   def _exit(status: CInt): Unit = extern
   def access(pathname: CString, mode: CInt): CInt = extern
   def chdir(path: CString): CInt = extern
