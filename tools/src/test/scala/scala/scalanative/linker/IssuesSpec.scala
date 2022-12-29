@@ -98,4 +98,31 @@ class IssuesSpec extends LinkerSpec with Matchers {
     }
   }
 
+  it should "define extern fields with correct attributes" in {
+    testLinked(s"""
+         |import scala.scalanative.unsafe._
+         |
+         |@extern trait lib {
+         |  var field: CInt = extern
+         |}
+         |@extern object lib extends lib
+         |
+         |object Test {
+         |  def main(args: Array[String]): Unit = {
+         |     val read = lib.field
+         |     lib.field = 42
+         |  }
+         |}""".stripMargin) { result =>
+      val Field = Sig.Extern("field")
+      val LibField = Global.Top("lib").member(Field)
+      val decls = result.defns
+        .collect {
+          case defn @ Defn.Declare(attrs, LibField, tpe) =>
+            println(s"got $defn")
+            assert(attrs.isExtern)
+        }
+      if (decls.isEmpty) fail("Not found extern declaration")
+    }
+  }
+
 }
