@@ -473,7 +473,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
           val statbuf = alloc[stat.stat]()
           if (stat.stat(toCString(path), statbuf) == 0) {
             val timebuf = alloc[utime.utimbuf]()
-            timebuf._1 = statbuf._8._1
+            import scala.scalanative.posix.sys.statOps.statOps
+            timebuf._1 = statbuf.st_mtime
             timebuf._2 = time.toSize / 1000
             utime.utime(toCString(path), timebuf) == 0
           } else {

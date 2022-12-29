@@ -98,15 +98,16 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
       Zone { implicit z =>
         val buf = getStat()
+        import scala.scalanative.posix.sys.statOps.statOps
 
         // Copy only what is referenced below. Save runtime cycles.
-        st_ino = buf._3
-        st_uid = buf._4
-        st_gid = buf._5
-        st_size = buf._6
-        st_atime = buf._7._1
-        st_mtime = buf._8._1
-        st_mode = buf._13
+        st_ino = buf.st_ino
+        st_uid = buf.st_uid
+        st_gid = buf.st_gid
+        st_size = buf.st_size
+        st_atime = buf.st_atime
+        st_mtime = buf.st_mtime
+        st_mode = buf.st_mode
       }
 
       override def fileKey() = st_ino.asInstanceOf[Object]
