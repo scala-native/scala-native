@@ -33,9 +33,9 @@ class StructuralTest() {
     def consume(v: T) = v.a
     inline def consumeInl(v: T) = v.a
     def verify(v: T) = {
-      assert(consume(v) == 10)
-      assert(consumeInl(v) == 10)
-      assert(v.a == 10)
+      assertEquals(consume(v), 10)
+      assertEquals(consumeInl(v), 10)
+      assertEquals(v.a, 10)
     }
 
     // These calls are also clearly well-typed, hence can't be rejected.
@@ -65,9 +65,9 @@ class StructuralTest() {
     def consume(v: T) = v.a
     inline def consumeInl(v: T) = v.a
     def verify(v: T) = {
-      assert(consume(v) == 10)
-      assert(consumeInl(v) == 10)
-      assert(v.a == 10)
+      assertEquals(consume(v), 10)
+      assertEquals(consumeInl(v), 10)
+      assertEquals(v.a, 10)
     }
 
     verify(upcast1(new Foo1 { val a = 10 }))
@@ -93,9 +93,9 @@ class StructuralTest() {
     def consume(v: T) = v.a
     inline def consumeInl(v: T) = v.a
     def verify(v: T) = {
-      assert(consume(v) == 10)
-      assert(consumeInl(v) == 10)
-      assert(v.a == 10)
+      assertEquals(consume(v), 10)
+      assertEquals(consumeInl(v), 10)
+      assertEquals(v.a, 10)
       // Pending, per https://github.com/lampepfl/dotty/issues/4528.
       // v.a = 11
       // assert(consume(v) == 11)
