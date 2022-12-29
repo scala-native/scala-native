@@ -238,7 +238,6 @@ C Header          Scala Native Module
                 specification because Scala Native supports only
                 passing structures by reference.  See code for details
 		and usage.
-
 .. [#monetary_varargs] See file for limit on number of variable arguments.
 
 Continue to :ref:`communitylib`.

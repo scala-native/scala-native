@@ -103,14 +103,16 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
       genCallOnModule(
         classSym,
         junitNme.beforeClass,
-        testClass.companionModule,
-        junitdefn.BeforeClassAnnotClass
+        testClass,
+        junitdefn.BeforeClassAnnotClass,
+        callParentsFirst = true
       ),
       genCallOnModule(
         classSym,
         junitNme.afterClass,
-        testClass.companionModule,
-        junitdefn.AfterClassAnnotClass
+        testClass,
+        junitdefn.AfterClassAnnotClass,
+        callParentsFirst = false
       ),
       genCallOnParam(
         classSym,
@@ -152,8 +154,9 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
   private def genCallOnModule(
       owner: ClassSymbol,
       name: TermName,
-      module: Symbol,
-      annot: Symbol
+      testClass: Symbol,
+      annot: Symbol,
+      callParentsFirst: Boolean
   )(using Context): DefDef = {
     val sym = newSymbol(
       owner,
@@ -162,15 +165,48 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
       MethodType(Nil, Nil, defn.UnitType)
     ).entered
 
+    extension (sym: Symbol)
+      def isTraitOrInterface: Boolean =
+        sym.is(Trait) || sym.isAllOf(JavaInterface)
+
     DefDef(
       sym, {
-        if (module.exists) {
-          val calls = annotatedMethods(module.moduleClass.asClass, annot)
-            .map(m => Apply(ref(module).select(m), Nil))
-          Block(calls, unitLiteral)
-        } else {
-          unitLiteral
+        val allParents = List
+          .unfold(testClass.info.parents) { parents =>
+            parents.flatMap(_.parents) match {
+              case Nil  => None
+              case next => Some((parents ::: next), next)
+            }
+          }
+          .flatten
+          .distinct
+
+        val symbols = {
+          val all = testClass.info :: allParents
+          if callParentsFirst then all.reverse else all
         }
+
+        // Filter out annotations found in the companion of trait for compliance with the JVM
+        val (publicCalls, nonPublicCalls) =
+          symbols
+            .filterNot(_.classSymbol.isTraitOrInterface)
+            .map(_.classSymbol.companionModule)
+            .filter(_.exists)
+            .flatMap(s => annotatedMethods(s.moduleClass.asClass, annot))
+            .partition(_.isPublic)
+
+        if (nonPublicCalls.nonEmpty) {
+          val module = testClass.companionModule.orElse(testClass)
+          report.error(
+            s"Methods marked with ${annot.showName} annotation in $module must be public",
+            module.orElse(owner).srcPos
+          )
+        }
+
+        Block(
+          publicCalls.map(m => Apply(ref(m), Nil)),
+          unitLiteral
+        )
       }
     )
   }
