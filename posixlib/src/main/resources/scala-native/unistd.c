@@ -7,19 +7,14 @@
 #include <unistd.h>
 #include "types.h" // scalanative_* types, not <sys/types.h>
 
+// https://man7.org/linux/man-pages/man7/environ.7.html
+// Historically and by standard, environ must be declared in the
+// user program. However, as a (nonstandard) programmer
+// convenience, environ is declared in the header file <unistd.h> if
+// the _GNU_SOURCE feature test macro is defined
+#if !defined(_GNU_SOURCE)
 extern char **environ;
-extern char *optarg;
-extern int opterr, optind, optopt;
-
-char **scalanative_environ() { return environ; }
-
-char *scalanative_optarg() { return optarg; }
-
-int scalanative_opterr() { return opterr; }
-
-int scalanative_optind() { return optind; }
-
-int scalanative_optopt() { return optopt; }
+#endif
 
 long scalanative__posix_version() { return _POSIX_VERSION; }
 
