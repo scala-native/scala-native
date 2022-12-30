@@ -136,7 +136,8 @@ object ScalaNativePluginInternal {
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
     },
-    nativeLink := {
+    nativeLink := Def
+      .task{
       val classpath = fullClasspath.value.map(_.data.toPath)
 
       val config = {
@@ -247,11 +248,14 @@ object ScalaNativePluginInternal {
           .map(path => FileInfo.hash(path.toFile()))
 
         classpathTracker(classpathFilesInfo, config)
+        }
       }
 
       buildIfChanged()
       outpath
     },
+      .tag(NativeTags.Link)
+      .value,
     run := {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
