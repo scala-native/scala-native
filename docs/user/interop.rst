@@ -344,6 +344,13 @@ runtime system, one has to be extra careful when working with unmanaged memory.
    this memory beyond the lifetime of the method. Dereferencing stack allocated
    memory after the method's execution has completed is undefined behavior.
 
+   Note that ``stackalloc[type](N)`` takes ``Usize`` as an argument. In the example above,
+   ``256`` is converted into ``USize`` by `Implicit conversions <https://docs.scala-lang.org/tour/implicit-conversions.html>`_.
+   In general, most of Scala Native users need not to care about this conversion.
+   However, if you are contributor to Scala Native, you may find ``stackalloc`` need explicit 
+   conversion(e.g. ``10.toUSize``) in Scala Native internal. This is because implicit conversion
+   is not automatically imported in Scala Native build environment.
+
 3. **Manual heap allocation.**
 
    Scala Native's library contains a bindings for a subset of the standard
