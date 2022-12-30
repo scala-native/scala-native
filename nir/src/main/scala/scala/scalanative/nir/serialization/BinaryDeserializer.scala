@@ -92,7 +92,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     val end = getInt
     var seq: List[Attr] = Nil
     while (i <= end) {
-      getAttr match {
+      getAttr() match {
         case attr: Inline          => inline = attr
         case attr: Attr.Specialize => sp = attr
         case attr: Attr.Opt        => opt = attr

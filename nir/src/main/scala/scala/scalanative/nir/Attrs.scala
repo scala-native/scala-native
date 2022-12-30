@@ -40,7 +40,7 @@ final case class Attrs(
     isDyn: Boolean = false,
     isStub: Boolean = false,
     isAbstract: Boolean = false,
-    links: Seq[Attr.Link] = Seq()
+    links: Seq[Attr.Link] = Seq.empty
 ) {
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]

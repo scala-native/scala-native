@@ -161,7 +161,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           Attr.Stub
       }
       val abstractAttr =
-        if (sym.isAbstract) Seq(Attr.Abstract) else Seq()
+        if (sym.isAbstract) Seq(Attr.Abstract) else Seq.empty
 
       Attrs.fromSeq(annotationAttrs ++ abstractAttr)
     }
@@ -275,7 +275,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // call to super constructor
           exprBuf.call(
             Type.Function(Seq(Type.Ref(superClass)), Type.Unit),
-            Val.Global(superClass.member(Sig.Ctor(Seq())), Type.Ptr),
+            Val.Global(superClass.member(Sig.Ctor(Seq.empty)), Type.Ptr),
             Seq(thisArg),
             unwind(curFresh)
           )
@@ -286,7 +286,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         reflInstBuffer += Defn.Define(
           Attrs(),
-          reflInstBuffer.name.member(Sig.Ctor(Seq())),
+          reflInstBuffer.name.member(Sig.Ctor(Seq.empty)),
           nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
           body
         )
@@ -364,11 +364,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         )
 
         // Allocate and return an instance of the generated class.
-        allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
+        allocAndConstruct(exprBuf, reflInstBuffer.name, Seq.empty, Seq.empty)
       }
 
       withFreshExprBuffer { exprBuf =>
-        exprBuf.label(curFresh(), Seq())
+        exprBuf.label(curFresh(), Seq.empty)
 
         val fqcnArg = Val.String(fqSymId)
         val runtimeClassArg = Val.ClassOf(fqSymName)
@@ -504,7 +504,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
           // Allocate an instance of the generated class.
           val instantiator =
-            allocAndConstruct(exprBuf, reflInstBuffer.name, Seq(), Seq())
+            allocAndConstruct(exprBuf, reflInstBuffer.name, Seq.empty, Seq.empty)
 
           // Create the current constructor's info. We need:
           // - an array with the runtime classes of the ctor parameters.
@@ -554,7 +554,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Seq.empty
       else
         withFreshExprBuffer { exprBuf =>
-          exprBuf.label(curFresh(), Seq())
+          exprBuf.label(curFresh(), Seq.empty)
 
           val fqcnArg = Val.String(fqSymId)
           val runtimeClassArg = Val.ClassOf(fqSymName)
@@ -689,7 +689,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
         methodName,
-        Type.Function(Seq(), retty),
+        Type.Function(Seq.empty, retty),
         buf.toSeq
       )
     }

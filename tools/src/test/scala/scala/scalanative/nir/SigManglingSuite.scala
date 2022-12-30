@@ -13,7 +13,7 @@ class SigManglingSuite extends AnyFunSuite {
   )
 
   val methodArgs = Seq(
-    Seq(),
+    Seq.empty,
     Seq(Type.Unit),
     Seq(Type.Int, Type.Unit)
   )
@@ -42,7 +42,7 @@ class SigManglingSuite extends AnyFunSuite {
         Sig.Extern("malloc"),
         Sig.Generated("layout"),
         Sig.Generated("type"),
-        Sig.Duplicate(Sig.Method("bar", Seq()), Seq()),
+        Sig.Duplicate(Sig.Method("bar", Seq.empty), Seq.empty),
         Sig.Duplicate(Sig.Method("bar", Seq(Type.Unit)), Seq(Type.Unit))
       )
   }.foreach { sig =>

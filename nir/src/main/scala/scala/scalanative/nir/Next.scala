@@ -20,7 +20,7 @@ object Next {
   final case class Label(name: Local, args: Seq[Val]) extends Next
 
   def apply(name: Local): Label =
-    Label(name, Seq())
+    Label(name, Seq.empty)
   def Case(value: Val, name: Local): Case =
     Case(value, Next(name))
 }

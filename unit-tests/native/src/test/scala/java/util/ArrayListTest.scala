@@ -381,7 +381,7 @@ class ArrayListTest {
 
   @Test def removeRangeFromToEntireListAllElements(): Unit = {
     val aList = new ArrayList[Int](Seq(50, 72, 650, 12, 7, 28, 3).toJavaList)
-    val expected = new ArrayList[Int](Seq().toJavaList)
+    val expected = new ArrayList[Int](Seq.empty.toJavaList)
 
     aList.removeRange(0, aList.size)
 
