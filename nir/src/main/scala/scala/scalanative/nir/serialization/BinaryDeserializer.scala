@@ -39,13 +39,30 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     allDefns.toSeq
   }
 
-  private def getSeq[T](getT: => T): Seq[T] =
-    (1 to getInt).map(_ => getT).toSeq
+  private def getSeq[T](getT: => T): Seq[T] = {
+    var i: Int = 1
+    val end = getInt
+    var seq: List[T] = Nil
+    while (i <= end) {
+      seq = getT :: seq
+      i += 1
+    }
+    seq.reverse
+  }
 
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None else Some(getT)
 
-  private def getInts(): Seq[Int] = getSeq(getInt)
+  private def getInts(): Seq[Int] = {
+    var i: Int = 1
+    val end = getInt
+    var seq: List[Int] = Nil
+    while (i <= end) {
+      seq = getInt :: seq
+      i += 1
+    }
+    seq.reverse
+  }
 
   private def getUTF8String(): String = {
     new String(getBytes(), StandardCharsets.UTF_8)
@@ -59,7 +76,37 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   private def getBool(): Boolean = get != 0
 
-  private def getAttrs(): Attrs = Attrs.fromSeq(getSeq(getAttr()))
+  private def getAttrs(): Attrs = {
+    // Inlined because overhead of creating sequence + using `Attrs.fromSeq` is high
+    import scala.scalanative.nir.Attr._
+    var inline: Inline = MayInline
+    var isExtern = false
+    var isDyn = false
+    var sp: Attr.Specialize = MaySpecialize
+    var opt: Attr.Opt = UnOpt
+    var isStub = false
+    var isAbstract = false
+    var links = List.empty[Attr.Link]
+
+    var i: Int = 1
+    val end = getInt
+    var seq: List[Attr] = Nil
+    while (i <= end) {
+      getAttr match {
+        case attr: Inline          => inline = attr
+        case attr: Attr.Specialize => sp = attr
+        case attr: Attr.Opt        => opt = attr
+        case Extern                => isExtern = true
+        case Dyn                   => isDyn = true
+        case Stub                  => isStub = true
+        case link: Attr.Link       => links ::= link
+        case Abstract              => isAbstract = true
+      }
+      i += 1
+    }
+
+    new Attrs(inline, sp, opt, isExtern, isDyn, isStub, isAbstract, links)
+  }
   private def getAttr(): Attr = getInt match {
     case T.MayInlineAttr    => Attr.MayInline
     case T.InlineHintAttr   => Attr.InlineHint
