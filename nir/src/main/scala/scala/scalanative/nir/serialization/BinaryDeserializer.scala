@@ -305,6 +305,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   private def getTypes(): Seq[Type] = getSeq(getType())
   private def getType(): Type = getInt match {
+    case T.RefType         => Type.Ref(getGlobal(), getBool(), getBool())
     case T.VarargType      => Type.Vararg
     case T.PtrType         => Type.Ptr
     case T.BoolType        => Type.Bool
@@ -325,12 +326,12 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.VarType     => Type.Var(getType())
     case T.UnitType    => Type.Unit
     case T.ArrayType   => Type.Array(getType(), getBool())
-    case T.RefType     => Type.Ref(getGlobal(), getBool(), getBool())
     case T.SizeType    => Type.Size
   }
 
   private def getVals(): Seq[Val] = getSeq(getVal())
   private def getVal(): Val = getInt match {
+    case T.LocalVal       => Val.Local(getLocal(), getType())
     case T.TrueVal        => Val.True
     case T.FalseVal       => Val.False
     case T.NullVal        => Val.Null
@@ -345,7 +346,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.StructValueVal => Val.StructValue(getVals())
     case T.ArrayValueVal  => Val.ArrayValue(getType(), getVals())
     case T.CharsVal       => Val.Chars(getBytes().toIndexedSeq)
-    case T.LocalVal       => Val.Local(getLocal(), getType())
     case T.GlobalVal      => Val.Global(getGlobal(), getType())
 
     case T.UnitVal  => Val.Unit
