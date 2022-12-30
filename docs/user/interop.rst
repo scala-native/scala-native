@@ -348,7 +348,7 @@ runtime system, one has to be extra careful when working with unmanaged memory.
    ``256`` is converted into ``USize`` by `Implicit conversions <https://docs.scala-lang.org/tour/implicit-conversions.html>`_.
    In general, most of Scala Native users need not to care about this conversion.
    However, if you are contributor to Scala Native, you may find ``stackalloc`` need explicit 
-   conversion(e.g. ``10.toUSize``) in Scala Native internal. This is because implicit conversion
+   conversion(e.g. ``256.toUSize``) in Scala Native internal. This is because implicit conversion
    is not automatically imported in Scala Native build environment.
 
 3. **Manual heap allocation.**
