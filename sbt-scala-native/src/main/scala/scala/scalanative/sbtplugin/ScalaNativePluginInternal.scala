@@ -129,32 +129,35 @@ object ScalaNativePluginInternal {
             .getOrElse(moduleName.value)
         )
     },
-    nativeLink := {
-      val classpath = fullClasspath.value.map(_.data.toPath)
-      val mainClass = nativeConfig.value.buildTarget match {
-        case BuildTarget.Application =>
-          selectMainClass.value.orElse {
-            throw new MessageOnlyException("No main class detected.")
-          }
-        case _: BuildTarget.Library => None
+    nativeLink := Def
+      .task {
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val mainClass = nativeConfig.value.buildTarget match {
+          case BuildTarget.Application =>
+            selectMainClass.value.orElse {
+              throw new MessageOnlyException("No main class detected.")
+            }
+          case _: BuildTarget.Library => None
+        }
+        val logger = streams.value.log.toLogger
+
+        val baseConfig =
+          build.Config.empty
+            .withLogger(logger)
+            .withClassPath(classpath)
+            .withBasedir(crossTarget.value.toPath())
+            .withTestConfig(testConfig)
+            .withCompilerConfig(nativeConfig.value)
+
+        val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
+
+        interceptBuildException {
+          // returns config.artifactPath
+          Build.build(config)(sharedScope).toFile()
+        }
       }
-      val logger = streams.value.log.toLogger
-
-      val baseConfig =
-        build.Config.empty
-          .withLogger(logger)
-          .withClassPath(classpath)
-          .withBasedir(crossTarget.value.toPath())
-          .withTestConfig(testConfig)
-          .withCompilerConfig(nativeConfig.value)
-
-      val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
-
-      interceptBuildException {
-        // returns config.artifactPath
-        Build.build(config)(sharedScope).toFile()
-      }
-    },
+      .tag(NativeTags.Link)
+      .value,
     run := {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
