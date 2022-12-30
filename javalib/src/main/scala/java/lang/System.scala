@@ -91,16 +91,19 @@ object System {
   var err: PrintStream =
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
-  private val systemProperties = loadProperties()
-  Platform.setOSProps { (key: CString, value: CString) =>
-    val _ = systemProperties.setProperty(fromCString(key), fromCString(value))
-  }
-
   def lineSeparator(): String = {
     if (Platform.isWindows()) "\r\n"
     else "\n"
   }
 
+  private lazy val systemProperties0 = loadProperties()
+  private lazy val systemProperties = {
+    Platform.setOSProps { (key: CString, value: CString) =>
+      systemProperties0.setProperty(fromCString(key), fromCString(value))
+      ()
+    }
+    systemProperties0
+  }
   def getProperties(): Properties = systemProperties
 
   def clearProperty(key: String): String =
