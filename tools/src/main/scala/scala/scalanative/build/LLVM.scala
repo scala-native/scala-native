@@ -181,9 +181,11 @@ private[scalanative] object LLVM {
       val pw = new PrintWriter(configFile)
       try
         llvmLinkInfo.foreach {
+          // Paths containg whitespaces needs to be escaped, otherwise
+          // config file might be not interpretted correctly by the LLVM
           // in windows system, the file separator doesn't work very well, so we
           // replace it to linux file separator
-          str => pw.println(str.replace("\\", "/"))
+          str => pw.println(escapeWhitespaces(str.replace("\\", "/")))
         }
       finally pw.close()
     }
@@ -201,7 +203,7 @@ private[scalanative] object LLVM {
     val MIRScriptFile = workdir.resolve("MIRScript").toFile
     val pw = new PrintWriter(MIRScriptFile)
     try {
-      pw.println(s"CREATE ${config.artifactPath}")
+      pw.println(s"CREATE ${escapeWhitespaces(config.artifactPath.abs)}")
       objectPaths.foreach { path =>
         val uniqueName =
           workdir
@@ -210,7 +212,7 @@ private[scalanative] object LLVM {
             .replace(File.separator, "_")
         val newPath = workdir.resolve(uniqueName)
         Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
-        pw.println(s"ADDMOD ${newPath.abs}")
+        pw.println(s"ADDMOD ${escapeWhitespaces(newPath.abs)}")
       }
       pw.println("SAVE")
       pw.println("END")
@@ -307,5 +309,10 @@ private[scalanative] object LLVM {
   private def optionalPICflag(implicit config: Config): Seq[String] =
     if (config.targetsWindows) Nil
     else Seq("-fPIC")
+
+  private def escapeWhitespaces(str: String): String = {
+    if (str.exists(_.isWhitespace)) s""""$str""""
+    else str
+  }
 
 }
