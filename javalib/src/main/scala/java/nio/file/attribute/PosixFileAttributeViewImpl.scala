@@ -30,15 +30,16 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       lastAccessTime: FileTime,
       createTime: FileTime
   ): Unit = Zone { implicit z =>
+    import scala.scalanative.posix.sys.statOps.statOps
     val sb = getStat()
 
     val buf = alloc[utime.utimbuf]()
     buf._1 =
       if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS).toSize
-      else sb._7._1
+      else sb.st_atime
     buf._2 =
       if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS).toSize
-      else sb._8._1
+      else sb.st_mtime
     // createTime is ignored: No posix-y way to set it.
     if (utime.utime(toCString(path.toString), buf) != 0)
       throwIOException()

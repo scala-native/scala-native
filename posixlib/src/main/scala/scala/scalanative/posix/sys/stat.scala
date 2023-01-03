@@ -167,5 +167,13 @@ object statOps {
     def st_nlink_=(nlink: nlink_t): Unit = c._12 = nlink
     def st_mode: mode_t = c._13
     def st_mode_=(mode: mode_t): Unit = c._13 = mode
+
+    // helpers for Non POSIX(most likely Apple) st_* equivalents
+    def st_atimespec: timespec = c._7
+    def st_atimespec_=(t: timespec): Unit = c._7 = t
+    def st_mtimespec: timespec = c._8
+    def st_mtimespec_=(t: timespec): Unit = c._8 = t
+    def st_ctimespec: timespec = c._9
+    def st_ctimespec_=(t: timespec): Unit = c._9 = t
   }
 }

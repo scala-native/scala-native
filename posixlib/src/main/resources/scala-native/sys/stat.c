@@ -49,7 +49,7 @@ void scalanative_stat_init(struct stat *stat,
     my_stat->st_atim = stat->st_atim;
     my_stat->st_mtim = stat->st_mtim;
     my_stat->st_ctim = stat->st_ctim;
-#else
+#else // APPLE
     my_stat->st_atim = stat->st_atimespec;
     my_stat->st_mtim = stat->st_mtimespec;
     my_stat->st_ctim = stat->st_ctimespec;
