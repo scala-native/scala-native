@@ -5,7 +5,7 @@ import java.io.File
 import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
 import scala.scalanative.build.Config
-import scala.scalanative.build.core.ScalaNative.{dumpDefns, encodedMainClass}
+import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.util.{Scope, partitionBy, procs}

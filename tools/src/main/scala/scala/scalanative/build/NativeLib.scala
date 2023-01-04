@@ -1,13 +1,10 @@
 package scala.scalanative
 package build
-package core
 
 import java.io.File
 import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
-
-import scalanative.build.LLVM
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
