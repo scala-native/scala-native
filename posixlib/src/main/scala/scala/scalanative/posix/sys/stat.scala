@@ -60,12 +60,48 @@ object stat {
     mode_t // st_mode
   ]
 
+  /** stat gets file metadata from path
+   *  @param path
+   *    path to file/directory
+   *  @param buf
+   *    pointer to buffer into which stat struct is written.
+   *  @return
+   *    Return `0` on success. Otherwise return `-1` with `errno` being set.
+   *    `errno` can be the followings:
+   *    - EACCES(permission denied)
+   *    - EBADF(invalid filedes)
+   *    - EFAULT(wrong address)
+   *    - ELOOP(too many symbolic links)
+   *    - ENAMETOOLONG(too long name)
+   *    - ENOENT(path component not found or path is empty string)
+   *    - ENOMEM(kernel out of memory)
+   *    - ENOTDIR(path component is not a directory)
+   *  @example
+   *    {{{
+   *    import scala.scalanative.unsafe._
+   *    import scala.scalanative.posix.sys.stat
+   *    Zone { implicit z =>
+   *      val s = alloc[stat.stat]()
+   *      val code = stat.stat(filename,s)
+   *      if (code == 0) {
+   *        ???
+   *      }
+   *    }
+   *    }}}
+   */
   @name("scalanative_stat")
   def stat(path: CString, buf: Ptr[stat]): CInt = extern
 
+  /** similar to [[stat]], but different in that `fstat` uses fd instead of path
+   *  string.
+   */
   @name("scalanative_fstat")
   def fstat(fildes: CInt, buf: Ptr[stat]): CInt = extern
 
+  /** similar to [[stat]], but different in that `lstat` gets stat of the link
+   *  itself instead of that of file the link refers to when path points to
+   *  link.
+   */
   @name("scalanative_lstat")
   def lstat(path: CString, buf: Ptr[stat]): CInt = extern
 
@@ -171,9 +207,15 @@ object statOps {
     // helpers for Non POSIX(most likely Apple) st_* equivalents
     def st_atimespec: timespec = c._7
     def st_atimespec_=(t: timespec): Unit = c._7 = t
+    def st_atimensec: time_t = c._7._1
+    def st_atimensec_=(t: time_t): Unit = c._7._1 = t
     def st_mtimespec: timespec = c._8
     def st_mtimespec_=(t: timespec): Unit = c._8 = t
+    def st_mtimensec: time_t = c._8._1
+    def st_mtimensec_=(t: time_t): Unit = c._8._1 = t
     def st_ctimespec: timespec = c._9
     def st_ctimespec_=(t: timespec): Unit = c._9 = t
+    def st_ctimensec: time_t = c._9._1
+    def st_ctimensec_=(t: time_t): Unit = c._9._1 = t
   }
 }
