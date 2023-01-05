@@ -3,10 +3,26 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
+import scala.collection.mutable
 import scala.util.Try
 
 /** Utility methods for building code using Scala Native. */
 object Build {
+
+  val cache = mutable.HashMap.empty[String, Config]
+
+  def checkCache(config: Config): Config = {
+    val name = config.basename
+    println(s"Check cache: $name")
+    cache.getOrElse(
+      name, {
+        println("No config in cache")
+        val vconfig = Validator.validate(Discover.discover(config))
+        cache.put(name, vconfig)
+        vconfig
+      }
+    )
+  }
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
    *  producing a native binary in the end.
@@ -54,6 +70,7 @@ object Build {
    */
   def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
+      val cconfig = checkCache(config);
       // create workdir if needed
       if (Files.notExists(config.workdir)) {
         Files.createDirectories(config.workdir)

@@ -91,6 +91,11 @@ object Discover {
     libs
   }
 
+  def discover(config: Config): Config = {
+    println("In discover")
+    config
+  }
+
   private def clangVersionMajorFullTarget(
       clang: String
   ): (Int, String, String) = {
