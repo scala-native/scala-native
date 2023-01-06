@@ -61,24 +61,31 @@ object ScalaNativePluginInternal {
     )
   )
 
+  /** Sets the 10 default raw setting values otherwise if they are not set we
+   *  cannot access them. Use an empty config to get defaults so if they change
+   *  everything is fine here.
+   */
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
     println("scalaNativeBaseSettings")
+    println("Before set from nativeConfig")
+    val nativeConfig = build.NativeConfig.empty
     Seq(
       crossVersion := ScalaNativeCrossVersion.binary,
       platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-      nativeClang := nativeConfig.value.clang.toFile,
-      nativeClangPP := nativeConfig.value.clangPP.toFile,
-      nativeCompileOptions := nativeConfig.value.compileOptions,
-      nativeLinkingOptions := nativeConfig.value.linkingOptions,
-      nativeMode := nativeConfig.value.mode.name,
-      nativeGC := nativeConfig.value.gc.name,
-      nativeLTO := nativeConfig.value.lto.name,
-      nativeLinkStubs := nativeConfig.value.linkStubs,
-      nativeCheck := nativeConfig.value.check,
-      nativeDump := nativeConfig.value.dump
+      nativeClang := nativeConfig.clang.toFile,
+      nativeClangPP := nativeConfig.clangPP.toFile,
+      nativeCompileOptions := nativeConfig.compileOptions,
+      nativeLinkingOptions := nativeConfig.linkingOptions,
+      nativeMode := nativeConfig.mode.name,
+      nativeGC := nativeConfig.gc.name,
+      nativeLTO := nativeConfig.lto.name,
+      nativeLinkStubs := nativeConfig.linkStubs,
+      nativeCheck := nativeConfig.check,
+      nativeDump := nativeConfig.dump
     )
   }
 
+  // called in overridden method in plugin
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
     println("scalaNativeGlobalSettings")
     Seq(
@@ -113,11 +120,15 @@ object ScalaNativePluginInternal {
     )
   }
 
+  /** Uses overrides defined in the 10 raw setting keys. They are either set raw
+   *  or default from baseSettings.
+   */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
-      println("Before raw settings")
-      println(s"Clang: ${nativeClang.value.toPath}")
-      println(s"Clang++: ${nativeClangPP.value.toPath}")
+      println(s"scalaNativeConfigSettings($testConfig)")
+      println(s"Before raw settings: ${projectID.value}")
+      println(s"Clang: ${nativeClang.value}")
+      println(s"Clang++: ${nativeClangPP.value}")
       println(s"Compile Opts: ${nativeCompileOptions.value}")
       println(s"Linking Opts: ${nativeLinkingOptions.value}")
       println(s"GC: ${nativeGC.value}")
@@ -127,30 +138,18 @@ object ScalaNativePluginInternal {
       println(s"Check: ${nativeCheck.value}")
       println(s"dump: ${nativeDump.value}")
       val config = nativeConfig.value
-      println("After raw settings")
-      println(s"Clang: ${nativeClang.value.toPath}")
-      println(s"Clang++: ${nativeClangPP.value.toPath}")
-      println(s"Compile Opts: ${nativeCompileOptions.value}")
-      println(s"Linking Opts: ${nativeLinkingOptions.value}")
-      println(s"GC: ${nativeGC.value}")
-      println(s"Mode: ${nativeMode.value}")
-      println(s"LTO: ${nativeLTO.value}")
-      println(s"LinkStubs: ${nativeLinkStubs.value}")
-      println(s"Check: ${nativeCheck.value}")
-      println(s"dump: ${nativeDump.value}")
-      config
-        // Use overrides defined in legacy setting keys
-        // these will be checked for non-default before setting
-        .withClang(nativeClang.value.toPath)
-        .withClangPP(nativeClangPP.value.toPath)
-        .withCompileOptions(nativeCompileOptions.value)
-        .withLinkingOptions(nativeLinkingOptions.value)
+        // .withClang(nativeClang.value.toPath)
+        // .withClangPP(nativeClangPP.value.toPath)
+        // .withCompileOptions(nativeCompileOptions.value)
+        // .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(build.GC(nativeGC.value))
         .withMode(build.Mode(nativeMode.value))
         .withLTO(build.LTO(nativeLTO.value))
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
+      println(s"$config")
+      config
     },
     nativeLink := Def
       .task {
@@ -174,8 +173,10 @@ object ScalaNativePluginInternal {
             .withClassPath(classpath)
             .withBasedir(crossTarget.value.toPath())
             .withDefaultBasename(moduleName.value)
+            // .withMainClass(selectMainClass.value.get) // for now
             .withTestConfig(testConfig)
             .withCompilerConfig(nativeConfig.value)
+
         // set main class in config if an application
         val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
@@ -272,6 +273,7 @@ object ScalaNativePluginInternal {
       )
   }
 
+  // called in overridden method in plugin
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] = {
     println("scalaNativeProjectSettings")
     scalaNativeDependencySettings ++
