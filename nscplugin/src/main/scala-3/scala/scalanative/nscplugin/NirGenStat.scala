@@ -248,7 +248,7 @@ trait NirGenStat(using Context) {
         case defnNir.NoSpecializeType => Attr.NoSpecialize
         case defnNir.StubType         => Attr.Stub
       }
-    val externAttrs = Option.when(sym.owner.isExternType) {
+    val externAttrs = Option.when(sym.isExtern) {
       Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
     }
 

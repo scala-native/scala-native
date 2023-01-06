@@ -139,9 +139,9 @@ class IssuesSpec extends LinkerSpec with Matchers {
       |
       |object Test {
       |  def main(args: Array[String]): Unit = {
-      |     val _ = lib.sync()
-      |     val _ = lib.async()
-      |     val _ = syncLib.foo()
+      |     val a = lib.sync()
+      |     val b = lib.async()
+      |     val c = syncLib.foo()
       |  }
       |}""".stripMargin) { result =>
       val Lib = Global.Top("lib$")
