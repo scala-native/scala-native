@@ -27,7 +27,7 @@ object Attr {
 
   case object Dyn extends Attr
   case object Stub extends Attr
-  case object Extern extends Attr
+  case class Extern(blocking: Boolean) extends Attr
   final case class Link(name: String) extends Attr
   case object Abstract extends Attr
 }
@@ -37,6 +37,7 @@ final case class Attrs(
     specialize: Specialize = MaySpecialize,
     opt: Opt = UnOpt,
     isExtern: Boolean = false,
+    isBlocking: Boolean = false,
     isDyn: Boolean = false,
     isStub: Boolean = false,
     isAbstract: Boolean = false,
@@ -48,7 +49,7 @@ final case class Attrs(
     if (inlineHint != MayInline) out += inlineHint
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
-    if (isExtern) out += Extern
+    if (isExtern) out += Extern(isBlocking)
     if (isDyn) out += Dyn
     if (isStub) out += Stub
     if (isAbstract) out += Abstract
@@ -68,13 +69,16 @@ object Attrs {
     var isDyn = false
     var isStub = false
     var isAbstract = false
+    var isBlocking = false
     val links = Seq.newBuilder[Attr.Link]
 
     attrs.foreach {
       case attr: Inline     => inline = attr
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
-      case Extern           => isExtern = true
+      case Extern(blocking) =>
+        isExtern = true
+        isBlocking = blocking
       case Dyn              => isDyn = true
       case Stub             => isStub = true
       case link: Attr.Link  => links += link
@@ -86,6 +90,7 @@ object Attrs {
       specialize = specialize,
       opt = opt,
       isExtern = isExtern,
+      isBlocking = isBlocking,
       isDyn = isDyn,
       isStub = isStub,
       isAbstract = isAbstract,

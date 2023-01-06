@@ -33,6 +33,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val NameType = requiredClassRef("scala.scalanative.unsafe.name")
   @tu lazy val LinkType = requiredClassRef("scala.scalanative.unsafe.link")
   @tu lazy val ExternType = requiredClassRef("scala.scalanative.unsafe.extern")
+  @tu lazy val BlockingType = requiredClassRef("scala.scalanative.unsafe.blocking")
   @tu lazy val StructType = requiredClassRef("scala.scalanative.runtime.struct")
   @tu lazy val ResolvedAtLinktimeType = requiredClassRef("scala.scalanative.unsafe.resolvedAtLinktime")
   @tu lazy val ExportedType = requiredClassRef("scala.scalanative.unsafe.exported")
@@ -41,6 +42,7 @@ final class NirDefinitions()(using ctx: Context) {
   def NameClass(using Context) = NameType.symbol.asClass
   def LinkClass(using Context) = LinkType.symbol.asClass
   def ExternClass(using Context) = ExternType.symbol.asClass
+  def BlockingClass(using Context) = BlockingType.symbol.asClass
   def StructClass(using Context) = StructType.symbol.asClass
   def ResolvedAtLinktimeClass(using Context) = ResolvedAtLinktimeType.symbol.asClass
   def ExportedClass(using Context) = ExportedType.symbol.asClass

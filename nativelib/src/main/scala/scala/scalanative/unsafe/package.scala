@@ -112,6 +112,11 @@ package object unsafe extends unsafe.UnsafePackageCompat {
    */
   final class extern extends scala.annotation.StaticAnnotation
 
+  /** An annotation that is used to mark methods that contain externally-defined
+   *  and potentially blocking methods
+   */
+  final class blocking extends scala.annotation.StaticAnnotation
+
   /** Used as right hand side of external method and field declarations. */
   def extern: Nothing = intrinsic
 
