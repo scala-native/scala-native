@@ -3,7 +3,14 @@
 #elif defined(__linux__)
 // Does not exist on Linux, so no check
 #else // macOS, FreeBSD, etc.
-#include <net/if_dl.h>
+
+#if defined(__FreeBSD__)
+// Make u_* types required/used by FreeBSD net/if_dl.h available
+#undef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#include <sys/types.h> // size_t
+#endif
+
 #include <net/if_dl.h>
 #include <stddef.h>
 

@@ -8,6 +8,13 @@ struct scalanative_wordexp_t {
     size_t we_wordc; //  Count of words matched by 'words'.
     char **we_wordv; // Pointer to list of expanded words.
     size_t we_offs;  // Slots to reserve at the beginning of we_wordv.
+
+    /* Permitted but not requited by POSIX 2018.
+     * Used here to allow direct overlay calling on FreeBSD in addition
+     * to Linux & macOS.
+     */
+    char *we_strings;  // storage for wordv strings
+    size_t *we_nbytes; // size of we_strings
 };
 
 #if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
