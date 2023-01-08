@@ -6,9 +6,10 @@ import scala.scalanative.posix.time.timespec
 object BsdOsSpecific {
   // Beware: FreeBSD and other BSD layouts have not been tested.
 
-  /* This file is indented for use by UnixProcessGen2 on 64 bit macOS only.
-   * IT IS INCOMPLETE AND ENTIRELY UNTESTED ON FREEBSD AND OTHER BSD
-   * DERIVATIVES.
+  /* This file is intended for use by UnixProcessGen2 on 64 bit macOS
+   * and FreeBSD only.
+   * IT IS BOTH INCOMPLETE on any OS AND ENTIRELY UNTESTED ON OTHER
+   * BSD DERIVATIVES.
    *
    * It contains the minimal declarations, plus a few extras, needed by
    * UnixProcessGen2. It is fit for service for that purpose only.
@@ -27,7 +28,7 @@ object BsdOsSpecific {
    *   https://wiki.netbsd.org/tutorials/kqueue_tutorial/
    */
 
-  // Beware: FreeBSD and other BSD layouts have not been tested.
+  // Beware: BSD layouts other than macOS & FreeBSD have not been tested.
 
 // format: off
 

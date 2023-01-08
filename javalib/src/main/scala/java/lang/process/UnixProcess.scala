@@ -17,8 +17,8 @@ object UnixProcess {
       false
     } else if (LinktimeInfo.isLinux) {
       LinuxOsSpecific.hasPidfdOpen()
-    } else if (LinktimeInfo.isMac) {
-      // Other FreeBSD & other BSDs should work but have not been exercised.
+    } else if ((LinktimeInfo.isMac) || (LinktimeInfo.isFreeBSD)) {
+      // Other BSDs should work but have not been exercised.
       true
     } else {
       false
