@@ -121,7 +121,9 @@ object ScalaNativePluginInternal {
   }
 
   /** Uses overrides defined in the 10 raw setting keys. They are either set raw
-   *  or default from baseSettings.
+   *  or default from baseSettings. Discovered commands need to be handled when
+   *  build is called so that the code calling the tools has complete control of
+   *  the settings.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
