@@ -169,7 +169,8 @@ object NativeConfig {
   type LinktimeProperites = Map[String, Any]
 
   /** Default empty config object where all of the fields are left blank. */
-  def empty: NativeConfig =
+  def empty: NativeConfig = {
+    println("NativeConfig.empty")
     Impl(
       clang = Paths.get(""),
       clangPP = Paths.get(""),
@@ -192,6 +193,7 @@ object NativeConfig {
       basename = "",
       optimizerConfig = OptimizerConfig.empty
     )
+  }
 
   private final case class Impl(
       clang: Path,

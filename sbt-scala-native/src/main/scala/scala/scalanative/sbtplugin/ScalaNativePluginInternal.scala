@@ -67,7 +67,7 @@ object ScalaNativePluginInternal {
    */
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
     println("scalaNativeBaseSettings")
-    println("Before set from nativeConfig")
+    println("set raw setting from empty nativeConfig")
     val nativeConfig = build.NativeConfig.empty
     Seq(
       crossVersion := ScalaNativeCrossVersion.binary,
@@ -88,12 +88,13 @@ object ScalaNativePluginInternal {
   // called in overridden method in plugin
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
     println("scalaNativeGlobalSettings")
+    println("empty nativeConfig set")
     Seq(
       nativeConfig := build.NativeConfig.empty
-        .withClang(interceptBuildException(Discover.clang()))
-        .withClangPP(interceptBuildException(Discover.clangpp()))
-        .withCompileOptions(Discover.compileOptions())
-        .withLinkingOptions(Discover.linkingOptions())
+        // .withClang(interceptBuildException(Discover.clang()))
+        // .withClangPP(interceptBuildException(Discover.clangpp()))
+        // .withCompileOptions(Discover.compileOptions())
+        // .withLinkingOptions(Discover.linkingOptions())
         .withLTO(Discover.LTO())
         .withGC(Discover.GC())
         .withMode(Discover.mode())
@@ -128,29 +129,21 @@ object ScalaNativePluginInternal {
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
       println(s"scalaNativeConfigSettings($testConfig)")
-      println(s"Before raw settings: ${projectID.value}")
-      println(s"Clang: ${nativeClang.value}")
-      println(s"Clang++: ${nativeClangPP.value}")
-      println(s"Compile Opts: ${nativeCompileOptions.value}")
-      println(s"Linking Opts: ${nativeLinkingOptions.value}")
-      println(s"GC: ${nativeGC.value}")
-      println(s"Mode: ${nativeMode.value}")
-      println(s"LTO: ${nativeLTO.value}")
-      println(s"LinkStubs: ${nativeLinkStubs.value}")
-      println(s"Check: ${nativeCheck.value}")
-      println(s"dump: ${nativeDump.value}")
+      println(
+        s"set existing nativeConfig with raw settings: ${projectID.value}"
+      )
       val config = nativeConfig.value
-        // .withClang(nativeClang.value.toPath)
-        // .withClangPP(nativeClangPP.value.toPath)
-        // .withCompileOptions(nativeCompileOptions.value)
-        // .withLinkingOptions(nativeLinkingOptions.value)
+        .withClang(nativeClang.value.toPath)
+        .withClangPP(nativeClangPP.value.toPath)
+        .withCompileOptions(nativeCompileOptions.value)
+        .withLinkingOptions(nativeLinkingOptions.value)
         .withGC(build.GC(nativeGC.value))
         .withMode(build.Mode(nativeMode.value))
         .withLTO(build.LTO(nativeLTO.value))
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-      println(s"$config")
+      // println(s"$config")
       config
     },
     nativeLink := Def

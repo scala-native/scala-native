@@ -93,7 +93,17 @@ object Discover {
 
   def discover(config: Config): Config = {
     println("In discover")
-    config
+    val empty = build.NativeConfig.empty
+    var nconfig = config.compilerConfig
+    if (nconfig.clang == empty.clang)
+      nconfig = nconfig.withClang(Discover.clang())
+    if (nconfig.clangPP == empty.clangPP)
+      nconfig = nconfig.withClangPP(Discover.clangpp())
+    if (nconfig.compileOptions == empty.compileOptions)
+      nconfig = nconfig.withCompileOptions(Discover.compileOptions())
+    if (nconfig.linkingOptions == empty.linkingOptions)
+      nconfig = nconfig.withLinkingOptions(Discover.linkingOptions())
+    config.withCompilerConfig(nconfig)
   }
 
   private def clangVersionMajorFullTarget(

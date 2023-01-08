@@ -72,13 +72,13 @@ object Build {
     config.logger.time("Total") {
       val cconfig = checkCache(config);
       // create workdir if needed
-      if (Files.notExists(config.workdir)) {
-        Files.createDirectories(config.workdir)
+      if (Files.notExists(cconfig.workdir)) {
+        Files.createDirectories(cconfig.workdir)
       }
       // validate classpath - use fconfig below
       val fconfig = {
-        val fclasspath = NativeLib.filterClasspath(config.classPath)
-        config.withClassPath(fclasspath)
+        val fclasspath = NativeLib.filterClasspath(cconfig.classPath)
+        cconfig.withClassPath(fclasspath)
       }
 
       // find and link
@@ -91,8 +91,8 @@ object Build {
 
       // optimize and generate ll
       val generated = {
-        val optimized = ScalaNative.optimize(config, linked)
-        ScalaNative.codegen(config, optimized)
+        val optimized = ScalaNative.optimize(fconfig, linked)
+        ScalaNative.codegen(fconfig, optimized)
       }
 
       val objectPaths = fconfig.logger.time("Compiling to native code") {
