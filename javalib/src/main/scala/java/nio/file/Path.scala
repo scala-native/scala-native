@@ -35,3 +35,20 @@ trait Path extends Comparable[Path] with Iterable[Path] with Watchable {
   def toString(): String
   def toUri(): URI
 }
+
+// https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/nio/file/Paths.html
+// It is recommended to obtain a Path via the Path.of methods instead of via the get methods
+// defined in this class(=java.nio.file.Paths) as this class may be deprecated in a future release.
+object Path {
+  private lazy val fs = FileSystems.getDefault()
+  def of(path: String, paths: Array[String]): Path = fs.getPath(path, paths)
+  def of(uri: URI): Path = if (uri.getScheme() == null) {
+    throw new IllegalArgumentException("Missing scheme")
+  } else if (uri.getScheme().toLowerCase == "file") {
+    fs.getPath(uri.getPath(), Array.empty)
+  } else {
+    throw new FileSystemNotFoundException(
+      s"Provider ${uri.getScheme()} is not installed."
+    )
+  }
+}
