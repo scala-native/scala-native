@@ -29,7 +29,7 @@ abstract class JUnitTest {
   }
 
   private val frameworkArgss: List[List[Char]] = List(
-    List(),
+    List.empty,
     List('a'),
     List('v'),
     List('n'),

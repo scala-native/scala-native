@@ -40,7 +40,7 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
   /** List of the files contained in `base` that sastisfy `filter`
    */
   private def getFiles(base: File, filter: File => Boolean): Seq[File] =
-    (if (filter(base)) Seq(base) else Seq()) ++
+    (if (filter(base)) Seq(base) else Seq.empty) ++
       (Option(base.listFiles()) getOrElse Array.empty flatMap (getFiles(
         _,
         filter

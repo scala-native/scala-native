@@ -11,7 +11,7 @@ import scala.scalanative.runtime.GC
  */
 private[java] object WeakReferenceRegistry {
   private var weakRefList: immutable.List[WeakReference[_]] =
-    immutable.List()
+    Nil
 
   private val postGCHandlerMap
       : mutable.HashMap[WeakReference[_], Function0[Unit]] =
