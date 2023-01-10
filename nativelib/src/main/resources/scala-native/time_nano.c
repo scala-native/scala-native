@@ -40,11 +40,17 @@ long long scalanative_nano_time() {
         }
     }
 #else
+#if defined(__FreeBSD__)
+    int clock = CLOCK_MONOTONIC_PRECISE; // OS has no CLOCK_MONOTONIC_RAW
+#else  // Linux, macOS
+    int clock = CLOCK_MONOTONIC_RAW;
+#endif // !FreeBSD
+
     // return value of 0 is success
     struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) == 0) {
+    if (clock_gettime(clock, &ts) == 0) {
         nano_time = (ts.tv_sec * NANOS_PER_SEC) + ts.tv_nsec;
     }
-#endif
+#endif // !_WIN32
     return nano_time;
 }
