@@ -6,7 +6,7 @@ import java.io.FileDescriptor
 import java.lang.ProcessBuilder.Redirect
 
 import java.lang.process.BsdOsSpecific._
-import java.lang.process.BsdOsSpecific.Extern.{kevent64, kqueue}
+import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
 
 import java.lang.process.LinuxOsSpecific._
 import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
@@ -162,16 +162,16 @@ private[lang] class UnixProcessGen2 private (
     /* This method is simple, but the __long__ explanation it requires
      * belongs in one place, not in each of its callers.
      *
-     * USE THIS METHOD __ONLY_IMMEDIATELY_AFTER_ kevent64/ppoll says
+     * USE THIS METHOD __ONLY_IMMEDIATELY_AFTER_ kevent/ppoll says
      * the child process has exited.  Otherwise it can hang/block indefinitely,
      * causing much sadness and rending of garments.
      *
      *  Explicitly allow HANG in "options".
      *  macOS appears to allow a tiny (millisecond?) delay between when
-     *  kevent64 reports a child exit transition and when waitpid() on that
+     *  kevent reports a child exit transition and when waitpid() on that
      *  process reports the child as exited.  This delay is not seen on Linux.
      *
-     *  The alternative to allowing HANG on a process which kevent64/ppoll has
+     *  The alternative to allowing HANG on a process which kevent/ppoll has
      *  just reported as having exited to a fussy busy-wait timing loop.
      */
 
@@ -274,7 +274,7 @@ private[lang] class UnixProcessGen2 private (
     }
   }
 
-  /* macOS -- kevent64
+  /* macOS & FreeBSD -- kevent
    *     Returns: Some(exitCode) if process has exited, None if timeout.
    */
   private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Option[Int] = {
@@ -295,11 +295,20 @@ private[lang] class UnixProcessGen2 private (
       throw new IOException(msg)
     }
 
+    /* Some Scala non-idiomatic slight of hand is going on here to
+     * ease implementation. Scala 3 has union types, but other versions
+     * do not.  "struct kevent" and "struct kevent64_s" overlay exactly in
+     * the fields of interest here. In C and Scala 3 they could be a union.
+     * Here the former is declared as the latter and later cast because
+     * it is easier to access the field names of the latter; fewer casts
+     * and contortions.
+     */
     val childExitEvent = stackalloc[kevent64_s]()
     val eventResult = stackalloc[kevent64_s]()
 
     /* event will eventually be deleted when child pid closes.
-     * EV_DISPATCH hints that the event can be deleted immediately after delivery.
+     * EV_DISPATCH hints that the event can be deleted immediately after
+     * delivery.
      */
 
     childExitEvent._1 = pid.toUSize
@@ -310,12 +319,19 @@ private[lang] class UnixProcessGen2 private (
     val tmo = timeout.getOrElse(null)
 
     val status =
-      kevent64(kq, childExitEvent, 1, eventResult, 1, 0.toUInt, tmo)
+      kevent(
+        kq,
+        childExitEvent.asInstanceOf[Ptr[kevent]],
+        1,
+        eventResult.asInstanceOf[Ptr[kevent]],
+        1,
+        tmo
+      )
 
     unistd.close(kq) // Do not leak kq.
 
     if (status < 0) {
-      val msg = s"kevent64 failed: ${fromCString(strerror(errno))}"
+      val msg = s"kevent failed: ${fromCString(strerror(errno))}"
       throw new IOException(msg)
     } else if (status == 0) {
       None
@@ -324,7 +340,7 @@ private[lang] class UnixProcessGen2 private (
        * before asking for an exit status rather than after.
        * This gives the pid process time to exit fully.
        *
-       * macOS may have a millisecond or more delay between kevent64
+       * macOS may have a millisecond or more delay between kevent
        * reporting a process as having exited and waitpid() seeing it.
        */
       closeProcessStreams()
