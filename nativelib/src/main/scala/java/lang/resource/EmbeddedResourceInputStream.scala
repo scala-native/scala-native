@@ -43,7 +43,7 @@ private[lang] class EmbeddedResourceInputStream(resourceId: Int)
 
   private def invalidateMark(): Unit = {
     markPosition = 0
-    markSeq = Seq()
+    markSeq = Seq.empty
     markReadLimit = 0
   }
 }

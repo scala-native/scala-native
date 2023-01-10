@@ -67,7 +67,7 @@ private[scalanative] object ResourceEmbedder {
             }
         }
       } else {
-        Seq()
+        Seq.empty
       }
 
     def filterEqualPathNames(

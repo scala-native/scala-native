@@ -386,7 +386,7 @@ trait NirGenStat(using Context) {
     Defn.Define(
       Attrs(inlineHint = Attr.AlwaysInline),
       methodName,
-      Type.Function(Seq(), retty),
+      Type.Function(Seq.empty, retty),
       buf.toSeq
     )
   }

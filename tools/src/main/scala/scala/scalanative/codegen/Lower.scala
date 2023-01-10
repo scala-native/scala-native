@@ -1037,10 +1037,10 @@ object Lower {
           buf.let(n, Op.Copy(Val.Global(instance, Type.Ptr)), unwind)
 
         case _ =>
-          val loadSig = Type.Function(Seq(), Type.Ref(name))
+          val loadSig = Type.Function(Seq.empty, Type.Ref(name))
           val load = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
 
-          buf.let(n, Op.Call(loadSig, load, Seq()), unwind)
+          buf.let(n, Op.Call(loadSig, load, Seq.empty), unwind)
       }
     }
 
