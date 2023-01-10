@@ -59,7 +59,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
           abort("ClassInfoType to ArrayClass!")
         case ClassInfoType(_, _, sym) => SimpleType(sym, Seq.empty)
         case t: AnnotatedType         => fromType(t.underlying)
-        case tpe: ErasedValueType     => SimpleType(tpe.valueClazz, Seq())
+        case tpe: ErasedValueType     => SimpleType(tpe.valueClazz, Seq.empty)
       }
 
     implicit def fromSymbol(sym: Symbol): SimpleType =

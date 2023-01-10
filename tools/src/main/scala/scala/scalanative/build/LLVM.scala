@@ -58,7 +58,7 @@ private[scalanative] object LLVM {
 
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
     val stdflag = {
-      if (isLl) Seq()
+      if (isLl) Seq.empty
       else if (isCpp) {
         // C++14 or newer standard is needed to compile code using Windows API
         // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)

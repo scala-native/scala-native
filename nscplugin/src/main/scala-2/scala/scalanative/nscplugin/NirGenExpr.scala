@@ -223,7 +223,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // Extract switch cases and assign unique names to them.
       val caseps: Seq[Case] = allcaseps.flatMap {
         case CaseDef(Ident(nme.WILDCARD), _, _) =>
-          Seq()
+          Seq.empty
         case cd @ CaseDef(pat, guard, body) =>
           assert(guard.isEmpty, "CaseDef guard was not empty")
           val vals: Seq[Val] = pat match {
@@ -633,7 +633,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       } else if (sym.isStaticMember) {
         genStaticMember(qualp, sym)
       } else if (sym.isMethod) {
-        genApplyMethod(sym, statically = false, qualp, Seq())
+        genApplyMethod(sym, statically = false, qualp, Seq.empty)
       } else if (owner.isStruct) {
         val index = owner.info.decls.filter(_.isField).toList.indexOf(sym)
         val qual = genExpr(qualp)
@@ -655,7 +655,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         pos: nir.Position
     ): Val = {
       if (sym == BoxedUnit_UNIT) Val.Unit
-      else genApplyStaticMethod(sym, receiver, Seq())
+      else genApplyStaticMethod(sym, receiver, Seq.empty)
     }
 
     def genAssign(tree: Assign): Val = {
@@ -772,7 +772,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val captureFormals = captureTypes.map { ty => Val.Local(fresh(), ty) }
         buf.label(fresh(), self +: captureFormals)
         val superTy = nir.Type.Function(Seq(Rt.Object), Type.Unit)
-        val superName = Rt.Object.name.member(Sig.Ctor(Seq()))
+        val superName = Rt.Object.name.member(Sig.Ctor(Seq.empty))
         val superCtor = Val.Global(superName, Type.Ptr)
         buf.call(superTy, superCtor, Seq(self), Next.None)
         captureNames.zip(captureFormals).foreach {
@@ -1215,7 +1215,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       condp match {
         // if(bool) (...)
-        case Apply(LinktimeProperty(name, position), List()) =>
+        case Apply(LinktimeProperty(name, position), Nil) =>
           Some {
             SimpleCondition(
               propertyName = name,
@@ -1227,10 +1227,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // if(!bool) (...)
         case Apply(
               Select(
-                Apply(LinktimeProperty(name, position), List()),
+                Apply(LinktimeProperty(name, position), Nil),
                 nme.UNARY_!
               ),
-              List()
+              Nil
             ) =>
           Some {
             SimpleCondition(
@@ -1662,7 +1662,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             value
           } else {
             val meth = Object_toString
-            genApplyMethod(meth, statically = false, value, Seq())
+            genApplyMethod(meth, statically = false, value, Seq.empty)
           }
         }
         genIf(Rt.String, cond, thenp, elsep)
@@ -1696,7 +1696,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val thenp = ValTree(Val.Int(0))
       val elsep = ContTree { () =>
         val meth = NObjectHashCodeMethod
-        genApplyMethod(meth, statically = false, arg, Seq())
+        genApplyMethod(meth, statically = false, arg, Seq.empty)
       }
       genIf(Type.Int, cond, thenp, elsep)
     }
@@ -2061,14 +2061,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         RuntimeMonitorEnterMethod,
         statically = true,
         monitor,
-        Seq()
+        Seq.empty
       )
       val ret = bodyGen(this)
       val exit = genApplyMethod(
         RuntimeMonitorExitMethod,
         statically = true,
         monitor,
-        Seq()
+        Seq.empty
       )
 
       ret

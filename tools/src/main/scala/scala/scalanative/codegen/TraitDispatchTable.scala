@@ -110,7 +110,7 @@ class TraitDispatchTable(meta: Metadata) {
     val maxSize = sizes.max
     val totalSize = sizes.sum
 
-    val free = Array.fill[List[Int]](maxSize + 1)(List())
+    val free = Array.fill[List[Int]](maxSize + 1)(Nil)
     val offsets = mutable.Map.empty[Int, Int]
     val compressed = new Array[Val](totalSize)
     var current = 0

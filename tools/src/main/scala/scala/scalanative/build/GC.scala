@@ -27,14 +27,16 @@ sealed abstract class GC private (
   override def toString: String = name
 }
 object GC {
-  private[scalanative] case object None extends GC("none", Seq(), Seq("shared"))
-  private[scalanative] case object Boehm extends GC("boehm", Seq("gc"), Seq())
+  private[scalanative] case object None
+      extends GC("none", Seq.empty, Seq("shared"))
+  private[scalanative] case object Boehm
+      extends GC("boehm", Seq("gc"), Seq.empty)
   private[scalanative] case object Immix
-      extends GC("immix", Seq(), Seq("shared", "immix_commix"))
+      extends GC("immix", Seq.empty, Seq("shared", "immix_commix"))
   private[scalanative] case object Commix
-      extends GC("commix", Seq(), Seq("shared", "immix_commix"))
+      extends GC("commix", Seq.empty, Seq("shared", "immix_commix"))
   private[scalanative] case object Experimental
-      extends GC("experimental", Seq(), Seq())
+      extends GC("experimental", Seq.empty, Seq.empty)
 
   /** Non-freeing garbage collector. */
   def none: GC = None

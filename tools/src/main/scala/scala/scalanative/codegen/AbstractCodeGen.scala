@@ -131,7 +131,7 @@ private[codegen] abstract class AbstractCodeGen(
     case Defn.Const(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
-      genFunctionDefn(attrs, name, sig, Seq(), Fresh())
+      genFunctionDefn(attrs, name, sig, Seq.empty, Fresh())
     case Defn.Define(attrs, name, sig, insts) =>
       genFunctionDefn(attrs, name, sig, insts, Fresh(insts))
     case defn =>

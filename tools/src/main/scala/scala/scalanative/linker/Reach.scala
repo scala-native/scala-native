@@ -249,7 +249,7 @@ class Reach(
         if (!cls.attrs.isAbstract) {
           reachAllocation(cls)
           if (cls.isModule) {
-            val init = cls.name.member(Sig.Ctor(Seq()))
+            val init = cls.name.member(Sig.Ctor(Seq.empty))
             if (loaded(cls.name).contains(init)) {
               reachGlobal(init)
             }
@@ -832,7 +832,7 @@ class Reach(
       reachDynamicMethodTargets(dynsig)
     case Op.Module(n) =>
       classInfo(n).foreach(reachAllocation)
-      val init = n.member(Sig.Ctor(Seq()))
+      val init = n.member(Sig.Ctor(Seq.empty))
       loaded.get(n).fold(addMissing(n, pos)) { defn =>
         if (defn.contains(init)) {
           reachGlobal(init)
