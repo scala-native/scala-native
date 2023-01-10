@@ -59,7 +59,7 @@ class ExternTest {
   }
 
   def externVariableReadAndAssignUnix(): Unit = {
-    import scala.scalanative.posix.getopt
+    import scala.scalanative.posix.unistd
 
     val args = Seq("skipped", "skipped", "skipped", "-b", "-f", "farg")
 
@@ -72,14 +72,14 @@ class ExternTest {
       }
 
       // Skip first 3 arguments
-      getopt.optind = 3
+      unistd.optind = 3
 
-      val bOpt = getopt.getopt(args.length, argv, c"bf:")
+      val bOpt = unistd.getopt(args.length, argv, c"bf:")
       assertTrue(bOpt == 'b')
 
-      val fOpt = getopt.getopt(args.length, argv, c"bf:")
+      val fOpt = unistd.getopt(args.length, argv, c"bf:")
       assertTrue(fOpt == 'f')
-      val fArg = fromCString(getopt.optarg)
+      val fArg = fromCString(unistd.optarg)
       assertTrue(fArg == "farg")
     }
   }
