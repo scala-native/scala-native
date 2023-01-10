@@ -39,8 +39,18 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     pid_t pid = process_getid();
     char startWorkersName[SEM_MAX_LENGTH];
     char startMasterName[SEM_MAX_LENGTH];
-    snprintf(startWorkersName, SEM_MAX_LENGTH, "mt_%d_commix", pid);
-    snprintf(startMasterName, SEM_MAX_LENGTH, "wk_%d_commix", pid);
+
+#if defined(__FreeBSD__)
+#define SEM_NAME_PREFIX "/" // FreeBSD semaphore names must start with '/'
+#else
+#define SEM_NAME_PREFIX ""
+#endif // __FreeBSD__
+
+    snprintf(startWorkersName, SEM_MAX_LENGTH, SEM_NAME_PREFIX "mt_%d_commix",
+             pid);
+    snprintf(startMasterName, SEM_MAX_LENGTH, SEM_NAME_PREFIX "wk_%d_commix",
+             pid);
+
     // only reason for using named semaphores here is for compatibility with
     // MacOs we do not share them across processes
     // We open the semaphores and try to check the call succeeded,
