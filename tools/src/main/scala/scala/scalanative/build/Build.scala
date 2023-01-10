@@ -70,15 +70,10 @@ object Build {
    */
   def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
-      val cconfig = checkCache(config);
+      val fconfig = checkCache(config);
       // create workdir if needed
-      if (Files.notExists(cconfig.workdir)) {
-        Files.createDirectories(cconfig.workdir)
-      }
-      // validate classpath - use fconfig below
-      val fconfig = {
-        val fclasspath = NativeLib.filterClasspath(cconfig.classPath)
-        cconfig.withClassPath(fclasspath)
+      if (Files.notExists(fconfig.workdir)) {
+        Files.createDirectories(fconfig.workdir)
       }
 
       // find and link

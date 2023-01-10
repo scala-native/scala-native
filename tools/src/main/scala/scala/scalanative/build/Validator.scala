@@ -3,11 +3,11 @@ package scala.scalanative.build
 object Validator {
   def validate(config: Config): Config = {
     println("In validate")
-    validateMain(config)
-    config
+    validateMainClass(config) // can throw
+    validateClasspath(config)
   }
 
-  private def validateMain(config: Config): Unit = {
+  private def validateMainClass(config: Config): Unit = {
     val nativeConfig = config.compilerConfig
     nativeConfig.buildTarget match {
       case BuildTarget.Application =>
@@ -16,5 +16,10 @@ object Validator {
         }
       case _: BuildTarget.Library => ()
     }
+  }
+
+  private def validateClasspath(config: Config): Config = {
+    val fclasspath = NativeLib.filterClasspath(config.classPath)
+    config.withClassPath(fclasspath)
   }
 }
