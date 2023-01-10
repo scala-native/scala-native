@@ -134,15 +134,18 @@ void scalanative_process_monitor_init() {
     // MacOs might not allow for usage of anonymous semaphores (not implemented
     // on M1 chips) leading to deadlocks
     char semaphoreName[SEM_MAX_LENGTH];
-    snprintf(semaphoreName, SEM_MAX_LENGTH, "__sn_%d-process-monitor",
-             getpid());
+
+#if defined(__FreeBSD__)
+#define SEM_NAME_PREFIX "/" // FreeBSD semaphore names must start with '/'
+#else
+#define SEM_NAME_PREFIX ""
+#endif // __FreeBSD__
+
+    snprintf(semaphoreName, SEM_MAX_LENGTH,
+             SEM_NAME_PREFIX "__sn_%d-process-monitor", getpid());
     active_procs = sem_open(semaphoreName, O_CREAT | O_EXCL, 0644, 0);
     if (active_procs == SEM_FAILED) {
         perror("Failed to create or open process monitor semaphore");
-    }
-    // Delete semaphore on exit
-    if (sem_unlink(semaphoreName) != 0) {
-        fprintf(stderr, "Unlinking process monitor semaphore failed\n");
         exit(errno);
     }
 
