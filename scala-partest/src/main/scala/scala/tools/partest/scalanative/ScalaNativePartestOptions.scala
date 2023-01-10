@@ -141,7 +141,7 @@ object ScalaNativePartestOptions {
           optimize = optimize,
           buildMode = mode,
           shouldPrecompileLibraries = precompileLibs,
-          precompiledLibrariesPaths = Seq(),
+          precompiledLibrariesPaths = Seq.empty,
           gc = gc,
           lto = lto
         )

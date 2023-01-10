@@ -27,7 +27,7 @@ object PerfectHashMap {
           .map(i =>
             bucketMap.get(i) match {
               case Some(set) => set.toSeq
-              case None      => Seq()
+              case None      => Seq.empty
             }
           )
           .toList
@@ -61,7 +61,7 @@ object PerfectHashMap {
 
                 if (values.getOrElse(slot, None).isDefined ||
                     slots.contains(slot)) {
-                  findSlots(d + 1, 0, List())
+                  findSlots(d + 1, 0, Nil)
                 } else {
                   findSlots(d, item + 1, slot :: slots)
                 }
@@ -71,7 +71,7 @@ object PerfectHashMap {
             }
           }
 
-          findSlots(1, 0, List()) match {
+          findSlots(1, 0, Nil) match {
             case Some((d, slots)) =>
               val newValues = bucket.foldLeft(Map[Int, Option[V]]()) {
                 case (acc, key) =>
@@ -90,7 +90,7 @@ object PerfectHashMap {
         case _ => Some((keys, values))
       }
 
-      placeBuckets(buckets, Map(), Map()) match {
+      placeBuckets(buckets, Map.empty, Map.empty) match {
         case Some((keys, values)) =>
           val valueKeySet = values.keySet
           val freeList = (0 until hashMapSize).filterNot(valueKeySet)

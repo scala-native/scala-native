@@ -106,7 +106,7 @@ trait GenReflectiveInstantisation(using Context) {
 
     withFreshExprBuffer { buf ?=>
 
-      buf.label(curFresh(), Seq())
+      buf.label(curFresh(), Seq.empty)
       val loadModuleFunArg = genModuleLoader(fqSymName)
       buf.genApplyModuleMethod(
         defnNir.ReflectModule,
@@ -143,7 +143,7 @@ trait GenReflectiveInstantisation(using Context) {
     if (ctors.isEmpty) Nil
     else
       withFreshExprBuffer { buf ?=>
-        buf.label(curFresh(), Seq())
+        buf.label(curFresh(), Seq.empty)
         val instantiateClassFunArg = genClassConstructorsInfo(fqSymName, ctors)
         buf.genApplyModuleMethod(
           defnNir.ReflectModule,
@@ -171,7 +171,7 @@ trait GenReflectiveInstantisation(using Context) {
         // call to super constructor
         buf.call(
           Type.Function(Seq(Type.Ref(superClass)), Type.Unit),
-          Val.Global(superClass.member(Sig.Ctor(Seq())), Type.Ptr),
+          Val.Global(superClass.member(Sig.Ctor(Seq.empty)), Type.Ptr),
           Seq(thisArg),
           unwind(curFresh)
         )
@@ -181,7 +181,7 @@ trait GenReflectiveInstantisation(using Context) {
 
       reflInstBuffer += Defn.Define(
         Attrs(),
-        reflInstBuffer.name.member(Sig.Ctor(Seq())),
+        reflInstBuffer.name.member(Sig.Ctor(Seq.empty)),
         nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
         body
       )
@@ -249,7 +249,7 @@ trait GenReflectiveInstantisation(using Context) {
     )
 
     // Allocate and return an instance of the generated class.
-    allocAndConstruct(reflInstBuffer.name, Seq(), Seq())(using pos, buf)
+    allocAndConstruct(reflInstBuffer.name, Seq.empty, Seq.empty)(using pos, buf)
   }
 
   // Create a new Tuple2 and initialise it with the provided values.
@@ -353,7 +353,8 @@ trait GenReflectiveInstantisation(using Context) {
       )
 
       // Allocate an instance of the generated class.
-      val instantiator = allocAndConstruct(reflInstBuffer.name, Seq(), Seq())
+      val instantiator =
+        allocAndConstruct(reflInstBuffer.name, Seq.empty, Seq.empty)
 
       // Create the current constructor's info. We need:
       // - an array with the runtime classes of the ctor parameters.

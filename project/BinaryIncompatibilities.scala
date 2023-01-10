@@ -43,16 +43,16 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.build.Config*Impl*")
   )
 
-  final val NativeLib = Seq()
+  final val NativeLib = Seq.empty
   final val CLib: Filters = Nil
-  final val PosixLib: Filters = Seq()
+  final val PosixLib: Filters = Seq.empty
   final val WindowsLib: Filters = Nil
 
   final val AuxLib, JavaLib, ScalaLib, Scala3Lib: Filters = Nil
   final val TestRunner: Filters = Nil
   final val TestInterface: Filters = Nil
   final val TestInterfaceSbtDefs: Filters = Nil
-  final val JUnitRuntime: Filters = Seq()
+  final val JUnitRuntime: Filters = Seq.empty
 
   val moduleFilters = Map(
     "util" -> Util,

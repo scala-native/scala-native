@@ -636,7 +636,7 @@ object Build {
         testFrameworks ++= {
           if (shouldPartest.value)
             Seq(new TestFramework("scala.tools.partest.scalanative.Framework"))
-          else Seq()
+          else Seq.empty
         }
       )
       .zippedSettings(
@@ -646,7 +646,7 @@ object Build {
           Def.settings(
             Test / definedTests ++= Def
               .taskDyn[Seq[sbt.TestDefinition]] {
-                if (!shouldPartest.value) Def.task(Seq())
+                if (!shouldPartest.value) Def.task(Seq.empty)
                 else
                   Def.task {
                     val _ = (scalaPartest / fetchScalaSource).value
