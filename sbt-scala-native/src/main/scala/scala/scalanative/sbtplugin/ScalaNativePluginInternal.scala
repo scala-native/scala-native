@@ -27,9 +27,13 @@ import java.nio.file.{Files, Path}
  *  Logic should not be in this plugin to avoid logic duplication in downstream
  *  build tools.
  *
- *  Call order on load: scalaNativeProjectSettings scalaNativeBaseSettings
- *  scalaNativeCompileSettings scalaNativeTestSettings scalaNativeGlobalSettings
- *  scalaNativeConfigSettings more than once for each project
+ *  Call order on load:
+ *    - scalaNativeProjectSettings
+ *    - scalaNativeBaseSettings
+ *    - scalaNativeCompileSettings
+ *    - scalaNativeTestSettings
+ *    - scalaNativeGlobalSettings
+ *    - scalaNativeConfigSettings more than once for each project
  */
 object ScalaNativePluginInternal {
 
@@ -159,16 +163,6 @@ object ScalaNativePluginInternal {
       .task {
         println("Running nativeLink")
         val classpath = fullClasspath.value.map(_.data.toPath)
-        // select main class only if we are building an application
-        val mainClass = nativeConfig.value.buildTarget match {
-          case BuildTarget.Application =>
-            val mainClassTemp = selectMainClass.value
-            println(s"mainClass: $mainClassTemp")
-            mainClassTemp.orElse {
-              throw new MessageOnlyException("No main class detected.")
-            }
-          case _: BuildTarget.Library => None
-        }
         val logger = streams.value.log.toLogger
 
         val config =
@@ -180,9 +174,6 @@ object ScalaNativePluginInternal {
             .withMainClass(selectMainClass.value)
             .withTestConfig(testConfig)
             .withCompilerConfig(nativeConfig.value)
-
-        // set main class in config if an application
-        // val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
         interceptBuildException {
           // returns config.artifactPath
