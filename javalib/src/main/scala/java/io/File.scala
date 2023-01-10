@@ -413,9 +413,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
             MinWinBaseApiOps.FileTimeOps.toUnixEpochMillis(!lastModified)
         }
       } else {
+        import scala.scalanative.posix.sys.statOps.statOps
         val buf = alloc[stat.stat]()
         if (stat.stat(toCString(path), buf) == 0) {
-          buf._8 * 1000L
+          buf.st_mtime * 1000L
         } else {
           0L
         }
@@ -473,7 +474,8 @@ class File(_path: String) extends Serializable with Comparable[File] {
           val statbuf = alloc[stat.stat]()
           if (stat.stat(toCString(path), statbuf) == 0) {
             val timebuf = alloc[utime.utimbuf]()
-            timebuf._1 = statbuf._8
+            import scala.scalanative.posix.sys.statOps.statOps
+            timebuf._1 = statbuf.st_mtime
             timebuf._2 = time.toSize / 1000
             utime.utime(toCString(path), timebuf) == 0
           } else {

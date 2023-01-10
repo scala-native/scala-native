@@ -10,6 +10,7 @@ typedef unsigned int scalanative_uid_t;
 typedef unsigned int scalanative_gid_t;
 typedef long long scalanative_off_t;
 typedef long int scalanative_time_t;
+typedef struct timespec scalanative_timespec;
 typedef long long scalanative_blkcnt_t;
 typedef long scalanative_blksize_t;
 typedef unsigned long scalanative_nlink_t;
