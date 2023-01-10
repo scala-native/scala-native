@@ -15,10 +15,17 @@ import scalanative.posix.sys.types.size_t
 @extern
 object wordexp {
 
-  type wordexp_t = CStruct3[
+  type wordexp_t = CStruct5[
     size_t, //  we_wordc  Count of words matched by 'words'.
     Ptr[CString], // we_wordv  Pointer to list of expanded words.
     size_t, // we_offs   Slots to reserve at the beginning of we_wordv.
+
+    /* Permitted but not required by POSIX 2018.
+     * Used here to allow direct overlay calling on FreeBSD in addition
+     * to Linux & macOS.
+     */
+    Ptr[CString], // we_strings, storage for wordv strings
+    size_t // we_nbytes, size of we_strings
   ]
 
   /// Symbolic constants
@@ -76,9 +83,15 @@ object wordexpOps {
     def we_wordc: size_t = ptr._1
     def we_wordv: Ptr[CString] = ptr._2
     def we_offs: size_t = ptr._3
+    // FreeBSD POSIX extensions
+    def we_strings: Ptr[CString] = ptr._4
+    def we_nbytes: size_t = ptr._5
 
     def we_wordc_=(v: size_t): Unit = ptr._1 = v
     def we_wordv_=(v: Ptr[CString]): Unit = ptr._2 = v
     def we_offs_=(v: size_t): Unit = ptr._3 = v
+    // FreeBSD POSIX extensions
+    def we_strings_=(v: Ptr[CString]): Unit = ptr._4
+    def we_nbytes_=(v: size_t): Unit = ptr._5 = v
   }
 }

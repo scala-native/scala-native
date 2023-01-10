@@ -9,7 +9,24 @@
 #include <stddef.h>
 #include <sys/times.h>
 
+// 2023-01-03 FIXME -- need to fuss with timesOps in times.scala
+// 2023-01-03 FIXME -- need to explain here the useful lie.
+
+#if !defined(__FreeBSD__)
+// C long will mirror machine architecture: 64 bits or 32 bit.
 typedef long scalanative_clock_t;
+#else // __FreeBSD
+// See comments in corresponding times.scala.
+/* There is a bit of "person behind the curtain" "sufficiently advance
+ * technology" magic happening here.
+ *
+ * Using the names in timesOps below is recommended on both 32 & 64 bit
+ * architectures. On FreeBSD 64 bit machines using timeOps names rather than
+ * the _N idiom is required in order to extract correct & proper 32 bit values.
+ */
+#import <sys/types.h>
+typedef __int32_t scalanative_clock_t;
+#endif // __FreeBSD__
 
 struct scalanative_tms {
     scalanative_clock_t tms_utime;  //  User CPU time

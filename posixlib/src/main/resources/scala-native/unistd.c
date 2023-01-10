@@ -3,14 +3,32 @@
 #include <unistd.h>
 #include "types.h"
 
-// https://man7.org/linux/man-pages/man7/environ.7.html
-// Historically and by standard, environ must be declared in the
-// user program. However, as a (nonstandard) programmer
-// convenience, environ is declared in the header file <unistd.h> if
-// the _GNU_SOURCE feature test macro is defined
-#if !defined(_GNU_SOURCE)
-extern char **environ;
-#endif
+#if defined(__FreeBSD__)
+
+/* Apply a Pareto cost/benefit analysis here.
+ *
+ * Some relevant constants are not defined on FreeBSD.
+ * This implementation is one of at least 3 design possibilities. One can:
+ *   1) cause a runtime or semantic error by returning "known wrong" values
+ *      as done here. This causes only the parts of applications which
+ *      actually use the constants to, hopefully, fail.
+ *
+ *   2) cause a link time error.
+ *
+ *   3) cause a compile time error.
+ *
+ * The last ensure that no wrong constants slip out to a user but they also
+ * prevent an application developer from getting the parts of an application
+ * which do not actually use the constants from running.
+ */
+#define _XOPEN_VERSION 0
+#define _PC_2_SYMLINKS 0
+#define _SC_SS_REPL_MAX 0
+#define _SC_TRACE_EVENT_NAME_MAX 0
+#define _SC_TRACE_NAME_MAX 0
+#define _SC_TRACE_SYS_MAX 0
+#define _SC_TRACE_USER_EVENT_MAX 0
+#endif // __FreeBSD__
 
 long scalanative__posix_version() { return _POSIX_VERSION; }
 
