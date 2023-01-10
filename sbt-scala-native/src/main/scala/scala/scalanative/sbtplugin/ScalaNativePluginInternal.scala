@@ -23,6 +23,10 @@ import java.nio.file.{Files, Path}
 
 /** ScalaNativePlugin delegates to this object
  *
+ *  Note: All logic should be in the Config, NativeConfig, or the build itself.
+ *  Logic should not be in this plugin to avoid logic duplication in downstream
+ *  build tools.
+ *
  *  Call order on load: scalaNativeProjectSettings scalaNativeBaseSettings
  *  scalaNativeCompileSettings scalaNativeTestSettings scalaNativeGlobalSettings
  *  scalaNativeConfigSettings more than once for each project
@@ -167,18 +171,18 @@ object ScalaNativePluginInternal {
         }
         val logger = streams.value.log.toLogger
 
-        val baseConfig =
+        val config =
           build.Config.empty
             .withLogger(logger)
             .withClassPath(classpath)
             .withBasedir(crossTarget.value.toPath())
             .withDefaultBasename(moduleName.value)
-            // .withMainClass(selectMainClass.value.get) // for now
+            .withMainClass(selectMainClass.value)
             .withTestConfig(testConfig)
             .withCompilerConfig(nativeConfig.value)
 
         // set main class in config if an application
-        val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
+        // val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
         interceptBuildException {
           // returns config.artifactPath

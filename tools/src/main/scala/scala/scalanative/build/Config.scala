@@ -52,8 +52,16 @@ sealed trait Config {
   /** Create a new config with test (true) or normal config (false). */
   def withTestConfig(value: Boolean): Config
 
-  /** Create new config with given mainClass point. */
-  def withMainClass(value: String): Config
+  /** Create new config with a fully qualified (with package) main class name as
+   *  an [[Option]]. Only applicable if [[NativeConfig#buildTarget]] is a
+   *  [[BuildTarget#Application]].
+   *
+   *  @param value
+   *    fully qualified main class name as a [[Option]], default [[Option#none]]
+   *  @return
+   *    this config object
+   */
+  def withMainClass(value: Option[String]): Config
 
   /** Create a new config with given nir paths. */
   def withClassPath(value: Seq[Path]): Config
@@ -138,8 +146,8 @@ object Config {
     def withNativelib(value: Path): Config =
       copy(nativelib = value)
 
-    def withMainClass(value: String): Config =
-      copy(mainClass = Option(value).filter(_.nonEmpty))
+    def withMainClass(value: Option[String]): Config =
+      copy(mainClass = value)
 
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
