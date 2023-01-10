@@ -21,6 +21,12 @@ import scala.util.Try
 import scala.scalanative.build.Platform
 import java.nio.file.{Files, Path}
 
+/** ScalaNativePlugin delegates to this object
+ *
+ *  Call order on load: scalaNativeProjectSettings scalaNativeBaseSettings
+ *  scalaNativeCompileSettings scalaNativeTestSettings scalaNativeGlobalSettings
+ *  scalaNativeConfigSettings more than once for each project
+ */
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
@@ -66,8 +72,9 @@ object ScalaNativePluginInternal {
    *  everything is fine here.
    */
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
-    println("scalaNativeBaseSettings")
-    println("set raw setting from empty nativeConfig")
+    println(
+      "scalaNativeBaseSettings set raw setting from new empty nativeConfig"
+    )
     val nativeConfig = build.NativeConfig.empty
     Seq(
       crossVersion := ScalaNativeCrossVersion.binary,
@@ -87,8 +94,7 @@ object ScalaNativePluginInternal {
 
   // called in overridden method in plugin
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
-    println("scalaNativeGlobalSettings")
-    println("empty nativeConfig set")
+    println("scalaNativeGlobalSettings new empty nativeConfig set")
     Seq(
       nativeConfig := build.NativeConfig.empty
         // .withClang(interceptBuildException(Discover.clang()))
@@ -128,9 +134,8 @@ object ScalaNativePluginInternal {
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
-      println(s"scalaNativeConfigSettings($testConfig)")
       println(
-        s"set existing nativeConfig with raw settings: ${projectID.value}"
+        s"scalaNativeConfigSettings($testConfig) set existing nativeConfig with raw settings: ${projectID.value}"
       )
       val config = nativeConfig.value
         .withClang(nativeClang.value.toPath)
