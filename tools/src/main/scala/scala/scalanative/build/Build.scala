@@ -70,11 +70,7 @@ object Build {
    */
   def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
-      val fconfig = checkCache(config);
-      // create workdir if needed
-      if (Files.notExists(fconfig.workdir)) {
-        Files.createDirectories(fconfig.workdir)
-      }
+      val fconfig = checkCache(config)
 
       // find and link
       val linked = {
