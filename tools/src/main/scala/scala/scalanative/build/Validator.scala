@@ -6,7 +6,6 @@ object Validator {
   def validate(config: Config): Config = {
     println("In validate")
     validateMainClass(config)
-    validateWorkdirExists(config)
     validateClasspath(config)
   }
 
@@ -19,14 +18,6 @@ object Validator {
           throw new BuildException("No main class detected.")
         }
       case _: BuildTarget.Library => ()
-    }
-  }
-
-  // validate that workdir exists - can throw exception
-  private def validateWorkdirExists(config: Config): Unit = {
-    // create workdir if needed
-    if (Files.notExists(config.workdir)) {
-      Files.createDirectories(config.workdir)
     }
   }
 

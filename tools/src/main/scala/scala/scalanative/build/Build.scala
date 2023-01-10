@@ -75,7 +75,10 @@ object Build {
     }
   }
 
-  def buildImpl(config: Config)(implicit scope: Scope): Path = {
+  private def buildImpl(config: Config)(implicit scope: Scope): Path = {
+    // called each time for clean or directory removal
+    checkWorkdirExists(config)
+
     // find and link
     val linked = {
       val entries = ScalaNative.entries(config)
@@ -131,7 +134,7 @@ object Build {
    *  @return
    *    a sequence of the object file paths
    */
-  def findAndCompileNativeLibs(
+  private def findAndCompileNativeLibs(
       config: Config,
       linkerResult: linker.Result
   ): Seq[Path] = {
@@ -140,5 +143,13 @@ object Build {
       .flatMap(nativeLib =>
         NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
       )
+  }
+
+  private def checkWorkdirExists(config: Config): Unit = {
+    // create workdir if needed
+    val workdir = config.workdir
+    if (Files.notExists(workdir)) {
+      Files.createDirectories(workdir)
+    }
   }
 }
