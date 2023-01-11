@@ -11,17 +11,33 @@ object Build {
 
   private val cache = mutable.HashMap.empty[String, Config]
 
+  /** Reuse config from cache or cache the config after running any needed
+   *  discovery and then validation. This avoids the costs on subsequent builds.
+   *  Reloading or restarting the build will clear the cache as this class will
+   *  be reloaded. This is required to change either settings or environment
+   *  variables that change the build.
+   *
+   *  Note: Runtime environment variables that control the GC can be changed
+   *  between runs and will be applied.
+   *
+   *  @param config
+   *    starting config from build
+   *  @return
+   *    config with discovery if needed and validation
+   */
   private def checkCache(config: Config): Config = {
     val name = config.basename
     println(s"Check cache: $name")
-    cache.getOrElse(
-      name, {
+    // always use a fresh logger
+    cache.get(name) match {
+      case Some(value) =>
+        value.withLogger(config.logger)
+      case None =>
         println("No config in cache")
         val vconfig = Validator.validate(Discover.discover(config))
         cache.put(name, vconfig)
         vconfig
-      }
-    )
+    }
   }
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
@@ -69,12 +85,13 @@ object Build {
    *    `outpath`, the path to the resulting native binary.
    */
   def build(config: Config)(implicit scope: Scope): Path = {
-    // use config only for logger and to check cache
     config.logger.time("Total") {
-      val cconfig = checkCache(config)
-      // called each time for clean or directory removal
-      checkWorkdirExists(cconfig)
-
+      val cconfig = config.logger.time("Cache config, discover and validate") {
+        val cconfig = checkCache(config)
+        // called each time for clean or directory removal
+        checkWorkdirExists(cconfig)
+        cconfig
+      }
 
       // find and link
       val linked = {
