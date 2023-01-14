@@ -143,7 +143,7 @@ object ScalaNativePluginInternal {
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
       println(
-        s"scalaNativeConfigSettings($testConfig) set existing nativeConfig with raw settings: ${projectID.value}"
+        s"${projectID.value} scalaNativeConfigSettings($testConfig) "
       )
       val config = nativeConfig.value
         .withClang(nativeClang.value.toPath)
