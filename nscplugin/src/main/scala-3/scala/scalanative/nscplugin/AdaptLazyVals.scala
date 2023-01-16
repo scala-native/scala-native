@@ -10,6 +10,7 @@ import core.Contexts._
 import core.Names._
 import core.Symbols._
 import core.StdNames._
+import core.Constants.{Constant, ClazzTag}
 import scala.annotation.{threadUnsafe => tu}
 
 // This helper class is responsible for rewriting calls to scala.runtime.LazyVals with
@@ -55,6 +56,14 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
             // Scala 3.2.x
             case Apply(
                   Select(_, GetOffsetStatic),
+                  List(
+                    Apply(Select(_, GetDeclaredField), List(fieldname: Literal))
+                  )
+                ) =>
+              fieldname
+            // Scala 3.2.x + -Ylightweight-lazy-vals
+            case Apply(
+                  Select(_, GetStaticFieldOffset),
                   List(
                     Apply(Select(_, GetDeclaredField), List(fieldname: Literal))
                   )
@@ -117,6 +126,17 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
         fun = ref(defn.NativeLazyVals_setFlag),
         args = List(classFieldPtr(target, fieldRef), value, ord)
       )
+    else if defn.LazyVals_objCAS.contains(sym) then
+      val List(targetTree, fieldRef, expected, value) = args
+      val target = targetTree match {
+        case Literal(c: Constant) if c.tag == ClazzTag =>
+          ref(c.typeValue.classSymbol.companionModule)
+        case _ => targetTree
+      }
+      cpy.Apply(tree)(
+        fun = ref(defn.NativeLazyVals_objCAS),
+        args = List(classFieldPtr(target, fieldRef), expected, value)
+      )
     else if sym == defn.LazyVals_CAS then
       val List(target, fieldRef, expected, value, ord) = args
       cpy.Apply(tree)(
@@ -135,6 +155,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     val LazyVals = typeName("LazyVals")
     val GetOffset = termName("getOffset")
     val GetOffsetStatic = termName("getOffsetStatic")
+    val GetStaticFieldOffset = termName("getStaticFieldOffset")
     val GetDeclaredField = termName("getDeclaredField")
   }
 
@@ -150,6 +171,8 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     @tu lazy val NativeLazyVals_setFlag =
       NativeLazyValsModule.requiredMethod("setFlag")
     @tu lazy val NativeLazyVals_CAS = NativeLazyValsModule.requiredMethod("CAS")
+    @tu lazy val NativeLazyVals_objCAS =
+      NativeLazyValsModule.requiredMethod("objCAS")
     @tu lazy val NativeLazyVals_wait4Notification =
       NativeLazyValsModule.requiredMethod("wait4Notification")
 
@@ -159,6 +182,11 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     @tu lazy val LazyVals_CAS = LazyValsModule.requiredMethod("CAS")
     @tu lazy val LazyVals_wait4Notification =
       LazyValsModule.requiredMethod("wait4Notification")
+    // Since 3.2.2 as experimental
+    @tu lazy val LazyVals_objCAS: Option[TermSymbol] =
+      Option(LazyValsModule.info.member(termName("objCAS")).symbol)
+        .filter(_ != NoSymbol)
+        .map(_.asTerm)
   }
 
 }
