@@ -1,6 +1,6 @@
 // Ported from Scala.js, revision c473689, dated 3 May 2021
 
-package javalib.net
+package org.scalanative.testsuite.javalib.net
 
 import org.scalanative.testsuite.utils.Platform._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
