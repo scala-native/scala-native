@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.1, 2.13.10]
+        scala: [3.2.2, 2.13.10]
         gc: [boehm, immix, commix]
         include:
           - scala: 2.12.17
@@ -94,12 +94,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.1, 2.13.10]
+        scala: [3.2.2, 2.13.10]
         build-mode: [release-fast]
         lto: [thin]
         optimize: [true]
         include:
-          - scala: 3.2.1
+          - scala: 3.2.2
             lto: full
             optimize: true
           - scala: 2.13.10

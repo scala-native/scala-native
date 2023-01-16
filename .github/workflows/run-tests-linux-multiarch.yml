@@ -79,7 +79,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [linux-arm64]
-        scala: [2.13.10, 3.2.1]
+        scala: [2.13.10, 3.2.2]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
