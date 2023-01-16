@@ -1,4 +1,4 @@
-package java.lang
+package org.scalanative.testsuite.javalib.lang
 
 import java.io._
 import java.nio.file.Files
@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ProcessInheritTest {
-  import javalib.lang.ProcessUtils._
+  import ProcessUtils._
 
   @Test def inherit(): Unit = {
     def unixImpl() = {

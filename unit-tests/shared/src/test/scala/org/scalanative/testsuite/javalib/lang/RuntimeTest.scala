@@ -1,4 +1,4 @@
-package javalib.lang
+package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 

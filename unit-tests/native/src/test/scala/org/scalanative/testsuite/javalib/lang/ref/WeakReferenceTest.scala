@@ -1,4 +1,6 @@
-package java.lang.ref
+package org.scalanative.testsuite.javalib.lang.ref
+
+import java.lang.ref._
 
 import org.junit.Test
 import org.junit.Assert._

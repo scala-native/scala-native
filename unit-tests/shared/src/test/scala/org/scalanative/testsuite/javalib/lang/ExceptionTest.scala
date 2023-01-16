@@ -1,4 +1,4 @@
-package javalib.lang
+package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
 import org.junit.Assert._
@@ -28,7 +28,7 @@ class ExceptionTest {
     (new DummyNoStackTraceException).printStackTrace(pw)
     val trace = sw.toString
     val expected = Seq(
-      "javalib.lang.DummyNoStackTraceException",
+      "org.scalanative.testsuite.javalib.lang.DummyNoStackTraceException",
       ""
     ).mkString(System.lineSeparator()).trim()
     assertTrue(

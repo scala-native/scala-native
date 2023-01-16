@@ -1,4 +1,4 @@
-package javalib.lang
+package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
@@ -57,13 +57,14 @@ class StackTraceElementTest {
   def dummy4 = (new StackTraceDummy4).dummy4
 
   @Test def getClassName(): Unit = {
-    assertEquals("javalib.lang.StackTraceDummy1", dummy1.getClassName)
-    assertEquals("javalib.lang.StackTraceDummy1", dummy2.getClassName)
+    val prefix = "org.scalanative.testsuite.javalib.lang"
+    assertEquals(s"$prefix.StackTraceDummy1", dummy1.getClassName)
+    assertEquals(s"$prefix.StackTraceDummy1", dummy2.getClassName)
     assertEquals(
-      "javalib.lang.StackTraceDummy3_$colon$colon",
+      s"$prefix" + ".StackTraceDummy3_$colon$colon",
       dummy3.getClassName
     )
-    assertEquals("javalib.lang.StackTraceDummy4", dummy4.getClassName)
+    assertEquals(s"$prefix.StackTraceDummy4", dummy4.getClassName)
   }
 
   @Test def getMethodName(): Unit = {

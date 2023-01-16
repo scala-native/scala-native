@@ -1,4 +1,4 @@
-package javalib.lang
+package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent.TimeUnit
 import java.io._
@@ -13,7 +13,7 @@ import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class ProcessTest {
-  import javalib.lang.ProcessUtils._
+  import ProcessUtils._
 
   @Test def ls(): Unit = {
     val proc =
