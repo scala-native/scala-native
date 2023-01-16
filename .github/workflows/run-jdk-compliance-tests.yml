@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, macos-11]
-        scala: [3.2.1]
+        scala: [3.2.2]
         java: [11, 17]
     steps:
       - uses: actions/checkout@v3
@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.1]
+        scala: [3.2.2]
         java: [11, 17]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
