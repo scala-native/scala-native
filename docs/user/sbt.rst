@@ -200,7 +200,7 @@ Scala Native supports three distinct linking modes:
 
 2. **release-size.** (introduced in 0.5.0)
 
-   Optimize for output size while still trying to keep
+   Optimize for reduced output size while still trying to keep
    quick compilation time and relatively fast runtime performance.
    Similar to clang's ``-Os`` with addition of link-time optimization over
    the whole application code.

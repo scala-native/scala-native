@@ -39,7 +39,7 @@ object Mode {
   /** Release compilation mode that's still fast to compile. */
   def releaseFast: Mode = ReleaseFast
 
-  /** Release compilation mode optimize for size that's still fast to compile. */
+  /** Release compilation mode optimize for reduced size that's still fast to compile. */
   def releaseSize: Mode = ReleaseSize
 
   /** Release compilation mode that's uses full set of optimizations. */
