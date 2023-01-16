@@ -202,7 +202,7 @@ Scala Native supports three distinct linking modes:
 
    Optimize for reduced output size while still trying to keep
    quick compilation time and relatively fast runtime performance.
-   Similar to clang's ``-Os`` with addition of link-time optimization over
+   Similar to clang's ``-Oz`` with addition of link-time optimization over
    the whole application code.
 
 3. **release-full.** (introduced in 0.4.0)
