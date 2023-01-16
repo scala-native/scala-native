@@ -1,4 +1,4 @@
-package javalib.nio.file.attribute
+package org.scalanative.testsuite.javalib.nio.file.attribute
 
 import java.nio.file.attribute._
 

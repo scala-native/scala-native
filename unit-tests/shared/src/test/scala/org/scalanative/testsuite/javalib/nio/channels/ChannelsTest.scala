@@ -1,4 +1,4 @@
-package javalib.nio.channels
+package org.scalanative.testsuite.javalib.nio.channels
 
 import org.junit.Test
 import org.junit.Assert._

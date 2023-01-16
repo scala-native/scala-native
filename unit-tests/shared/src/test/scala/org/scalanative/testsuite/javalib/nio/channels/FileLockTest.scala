@@ -1,4 +1,4 @@
-package javalib.nio.channels
+package org.scalanative.testsuite.javalib.nio.channels
 
 // Ported from Apache Harmony
 

@@ -1,4 +1,4 @@
-package javalib.nio.file
+package org.scalanative.testsuite.javalib.nio.file
 
 import java.nio.file._
 

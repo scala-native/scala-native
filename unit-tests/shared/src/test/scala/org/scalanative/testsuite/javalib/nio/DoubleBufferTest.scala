@@ -1,10 +1,10 @@
-package javalib.nio
+package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
 // Ported from Scala.js
 
-import javalib.nio.ByteBufferFactories._
+import ByteBufferFactories._
 
 abstract class DoubleBufferTest extends BaseBufferTest {
   type Factory = BufferFactory.DoubleBufferFactory

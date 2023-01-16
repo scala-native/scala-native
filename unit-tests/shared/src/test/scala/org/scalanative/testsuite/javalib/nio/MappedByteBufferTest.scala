@@ -1,4 +1,4 @@
-package javalib.nio
+package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 import java.nio.channels.FileChannel.MapMode

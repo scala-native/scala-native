@@ -1,10 +1,10 @@
-package javalib.nio
+package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
 // Ported from Scala.js
 
-import javalib.nio.BufferFactory.ByteBufferFactory
+import BufferFactory.ByteBufferFactory
 
 import org.junit.Test
 import org.junit.Assert._
