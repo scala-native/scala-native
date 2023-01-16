@@ -1,4 +1,4 @@
-package javalib.io
+package org.scalanative.testsuite.javalib.io
 
 import java.io._
 
