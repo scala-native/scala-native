@@ -1,4 +1,4 @@
-package javalib.security
+package org.scalanative.testsuite.javalib.security
 
 import java.security._
 
