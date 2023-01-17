@@ -105,6 +105,8 @@ trait NirGenType(using Context) {
       case ClassInfo(_, sym, _, _, _) => fromSymbol(sym)
       case t @ TypeRef(tpe, _) =>
         SimpleType(t.symbol, tpe.argTypes.map(fromType))
+      case AppliedType(tycon, args) =>
+        SimpleType(tycon.typeSymbol, args.map(fromType))
       case t @ TermRef(_, _) => fromType(t.info.resultType)
       case t => throw new RuntimeException(s"unknown fromType($t)")
     }
