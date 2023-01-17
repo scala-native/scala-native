@@ -1,5 +1,3 @@
-
-
 // Ported from Apache Harmony
 
 import java.io._

@@ -57,7 +57,8 @@ class ThrowablesTest {
   ): Unit = {
     assumeNotASAN()
     val startText =
-      if (usesAnonymousThrowable) "org.scalanative.testsuite.javalib.lang.ThrowablesTest$$anon$1"
+      if (usesAnonymousThrowable)
+        "org.scalanative.testsuite.javalib.lang.ThrowablesTest$$anon$1"
       else "java.lang.Throwable"
     assertTrue(
       s"Expected trace to start with '${startText}' and it did not. - `$trace`",

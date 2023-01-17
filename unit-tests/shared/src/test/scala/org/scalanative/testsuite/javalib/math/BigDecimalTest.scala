@@ -171,8 +171,7 @@ class BigDecimalTest {
 
   // tests from Scala Native
 
-
-   @Test def bigDecimalEqualEqualBigDecimal(): Unit = {
+  @Test def bigDecimalEqualEqualBigDecimal(): Unit = {
     val token = 2046.5
     val jbd1: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)
     val jbd2: java.math.BigDecimal = java.math.BigDecimal.valueOf(token)

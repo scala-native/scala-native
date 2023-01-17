@@ -29,4 +29,4 @@ scala/bugcompat/LongFloatPrimitiveTest.scala
 
 # Tests that work on java 8, but fail on java 16
 org/scalanative/testsuite/javalib/net/URLEncoderTest.scala
-javalib/util/jar/JarFileTest.scala
+org/scalanative/testsuite/javalib/util/jar/JarFileTest.scala

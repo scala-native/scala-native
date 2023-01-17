@@ -1,7 +1,5 @@
 // Ported from Scala.js commit: 9dc4d5b dated: 2018-10-11
 
-
-
 import java.io._
 
 import org.junit._

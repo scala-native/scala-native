@@ -33,7 +33,10 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsUnsupportedFlags(): Unit = {
-    assumeFalse("Fails in JVM, expected java.lang.UnsupportedOperationException to be thrown, but nothing was thrown", executingInJVM)
+    assumeFalse(
+      "Fails in JVM, expected java.lang.UnsupportedOperationException to be thrown, but nothing was thrown",
+      executingInJVM
+    )
 
     assertThrows(
       classOf[UnsupportedOperationException],
@@ -608,7 +611,10 @@ class PatternTest {
   }
 
   @Test def syntaxExceptions(): Unit = {
-    assumeFalse("Fails in JVM, expected:<[Trailing Backslash]> but was:<[Unexpected internal error]>", executingInJVM)
+    assumeFalse(
+      "Fails in JVM, expected:<[Trailing Backslash]> but was:<[Unexpected internal error]>",
+      executingInJVM
+    )
 
     try {
       Pattern.compile("foo\\L")

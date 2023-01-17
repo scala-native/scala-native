@@ -4,8 +4,6 @@
 //   New test staticReadUTF() added for ScalaNative.
 //   DataInputStream.readUTF() does not have that static method.
 
-
-
 import java.io._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
