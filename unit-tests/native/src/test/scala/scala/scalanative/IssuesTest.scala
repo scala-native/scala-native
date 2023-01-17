@@ -580,6 +580,16 @@ class IssuesTest {
     free(null)
   }
 
+  @Test def `can initialize lazy vals using linktime if`() = {
+    object Foo {
+      val fooLiteral = "foo"
+      lazy val fooLazy =
+        if (scala.scalanative.meta.LinktimeInfo.isWindows) fooLiteral
+        else fooLiteral
+    }
+    assertEquals(Foo.fooLiteral, Foo.fooLazy)
+  }
+
 }
 
 package issue1090 {
