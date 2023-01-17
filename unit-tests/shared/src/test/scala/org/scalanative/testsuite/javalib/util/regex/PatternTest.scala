@@ -1,5 +1,5 @@
-package javalib.util
-package regex
+// this should be shared - some failures on JVM
+package org.scalanative.testsuite.javalib.util.regex
 
 import java.util._
 import java.util.regex._
@@ -10,10 +10,15 @@ import scala.collection.immutable.List
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scala.scalanative.junit.utils.CollectionConverters._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform._
 
+/* assumeFalse executingInJVM should either be fixed or moved to a Scala Native
+ * re2 specific test
+ */
 class PatternTest {
 
   @Test def compileRegex(): Unit = {
@@ -28,6 +33,7 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsUnsupportedFlags(): Unit = {
+    assumeFalse("Fails in JVM, expected java.lang.UnsupportedOperationException to be thrown, but nothing was thrown", executingInJVM)
 
     assertThrows(
       classOf[UnsupportedOperationException],
@@ -213,6 +219,7 @@ class PatternTest {
   }
 
   @Test def unicodeBlock(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     pass("\\p{InGreek}", "α")
     pass("\\p{Greek}", "Ω")
     fail("\\p{InGreek}", "a")
@@ -438,6 +445,7 @@ class PatternTest {
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
   @Test def re2NamedGroupsNotInJava8(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     pass("(?P<foo>a)", "a")
   }
 
@@ -600,6 +608,8 @@ class PatternTest {
   }
 
   @Test def syntaxExceptions(): Unit = {
+    assumeFalse("Fails in JVM, expected:<[Trailing Backslash]> but was:<[Unexpected internal error]>", executingInJVM)
+
     try {
       Pattern.compile("foo\\L")
     } catch {

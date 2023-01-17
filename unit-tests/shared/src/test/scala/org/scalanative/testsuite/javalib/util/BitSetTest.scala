@@ -1,6 +1,6 @@
 // Ported from Scala.js commit: c0be6b6 dated: 2021-12-22
 
-package javalib.util
+package org.scalanative.testsuite.javalib.util
 
 import java.nio.{ByteBuffer, LongBuffer}
 import java.util.BitSet

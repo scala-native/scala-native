@@ -1,5 +1,4 @@
-package javalib.util
-package regex
+package org.scalanative.testsuite.javalib.util.regex
 
 import java.util._
 import java.util.regex._
@@ -11,9 +10,14 @@ import java.util.regex._
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform._
 
+/* assumeFalse executingInJVM should either be fixed or moved to a Scala Native
+ * re2 specific test
+ */
 class MatcherTest {
 
   private def matcher(regex: String, text: String): Matcher =
@@ -586,6 +590,7 @@ class MatcherTest {
   }
 
   @Test def testHitEnd(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     val needle = "needle"
     val haystack = "haystack"
 
@@ -715,6 +720,10 @@ class MatcherTest {
   }
 
   @Test def namedGroupJavaSyntax(): Unit = {
+    assumeFalse(
+      "Fails in JVM, expected:<java.lang.IllegalStateException> but was:<java.lang.IllegalArgumentException>",
+      executingInJVM
+    )
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -732,6 +741,7 @@ class MatcherTest {
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
   @Test def namedGroupRe2Syntax(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -874,6 +884,7 @@ class MatcherTest {
   }
 
   @Test def requireEnd(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     val needle = "needle"
     val haystack = "haystack"
 
@@ -962,6 +973,7 @@ class MatcherTest {
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
   @Test def startNameEndNameRe2Syntax(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     val m = matcher(
       "from (?P<S>.*) to (?P<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -1025,6 +1037,7 @@ class MatcherTest {
   }
 
   @Test def useAnchoringBounds(): Unit = {
+    assumeFalse("Fails in JVM", executingInJVM)
     val needle = "needle"
     val haystack = "haystack"
 

@@ -1,4 +1,4 @@
-package javalib.util.stream
+package org.scalanative.testsuite.javalib.util.stream
 
 import java.util.stream._
 import java.util.function.{Consumer, Function}

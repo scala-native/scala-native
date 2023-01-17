@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package javalib.util.concurrent.atomic
+package org.scalanative.testsuite.javalib.util.concurrent.atomic
 
 import org.junit.Test
 import org.junit.Assert._

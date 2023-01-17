@@ -1,4 +1,4 @@
-package javalib.util.zip
+package org.scalanative.testsuite.javalib.util.zip
 
 // Ported from Apache Harmony
 

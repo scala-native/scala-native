@@ -1,4 +1,4 @@
-package javalib.util.function
+package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function._
 

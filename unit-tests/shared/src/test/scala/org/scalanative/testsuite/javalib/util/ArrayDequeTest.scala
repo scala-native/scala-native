@@ -1,4 +1,4 @@
-package javalib.util
+package org.scalanative.testsuite.javalib.util
 
 import java.util._
 

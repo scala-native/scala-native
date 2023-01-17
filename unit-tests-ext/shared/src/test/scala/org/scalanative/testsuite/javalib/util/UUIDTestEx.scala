@@ -1,6 +1,6 @@
 // Ported from Scala.js, commit: dff0db4, dated: 2022-04-01
 
-package javalib.util
+package org.scalanative.testsuite.javalib.util
 
 import java.util.UUID
 

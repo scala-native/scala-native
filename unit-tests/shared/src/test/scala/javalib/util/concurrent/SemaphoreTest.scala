@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package javalib.utils.concurrent
+package org.scalanative.testsuite.javalib.utils.concurrent
 
 import java.util.{Collection, Collections}
 import java.util.concurrent.Semaphore

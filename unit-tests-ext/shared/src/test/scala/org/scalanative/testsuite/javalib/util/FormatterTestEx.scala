@@ -1,6 +1,6 @@
 // Ported from Scala.js, commit: 00915e8, dated: 2020-09-29
 
-package javalib.util
+package org.scalanative.testsuite.javalib.util
 
 import java.util._
 

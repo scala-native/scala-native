@@ -1,4 +1,4 @@
-package javalib.util
+package org.scalanative.testsuite.javalib.util
 package concurrent
 
 import java.util._

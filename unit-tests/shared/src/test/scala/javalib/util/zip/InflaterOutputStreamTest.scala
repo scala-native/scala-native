@@ -1,4 +1,4 @@
-package javalib.util.zip
+package org.scalanative.testsuite.javalib.util.zip
 
 import java.util.zip._
 import java.io._

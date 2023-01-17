@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package javalib.util.concurrent.locks
+package org.scalanative.testsuite.javalib.util.concurrent.locks
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.TimeUnit

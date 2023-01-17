@@ -1,5 +1,5 @@
 // ported from Scala.js
-package javalib.util
+package org.scalanative.testsuite.javalib.util
 
 import java.util._
 
