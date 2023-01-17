@@ -122,7 +122,9 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
         def resolveGiven = Option.when(s.is(Given)) {
           atPhase(Phases.postTyperPhase) {
             val givenTpe = s.denot.info.argInfos.head
-            fromType(givenTpe)
+            // make sure to dealias the type here,
+            // information about underlying opaque type would not be available after erasue
+            fromType(givenTpe.widenDealias)
           }
         }
 
