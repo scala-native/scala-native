@@ -3,6 +3,7 @@
 // Porting Note:
 //   New test staticReadUTF() added for ScalaNative.
 //   DataInputStream.readUTF() does not have that static method.
+package org.scalanative.testsuite.javalib.io
 
 import java.io._
 

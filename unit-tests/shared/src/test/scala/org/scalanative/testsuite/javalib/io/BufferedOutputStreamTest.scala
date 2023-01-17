@@ -1,4 +1,5 @@
 // Ported from Apache Harmony
+package org.scalanative.testsuite.javalib.io
 
 import java.io._
 

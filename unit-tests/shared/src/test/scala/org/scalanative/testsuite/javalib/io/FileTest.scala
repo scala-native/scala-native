@@ -1,3 +1,5 @@
+package org.scalanative.testsuite.javalib.io
+
 import java.io._
 
 import java.net.URI
