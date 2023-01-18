@@ -1,10 +1,9 @@
-package org.scalanative.testsuite.javalib.util
-package concurrent
+// Ported from Scala.js
+
+package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util._
 import java.util.concurrent._
-
-// Ported from Scala.js
 
 import org.junit.Test
 import org.junit.Assert._
