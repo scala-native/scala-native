@@ -1,5 +1,5 @@
 // Ported from Scala.js, commit: 54648372, dated: 2020-09-24
-package javalib.time
+package org.scalanative.testsuite.javalib.time
 
 import java.time._
 
