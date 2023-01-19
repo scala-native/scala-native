@@ -1,4 +1,4 @@
-// Ported from Scala.js, revision c8ddba0 dated 4 Dec 2021
+// Ported from Scala.js, commit: c8ddba0 dated: 2021-12-04
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test

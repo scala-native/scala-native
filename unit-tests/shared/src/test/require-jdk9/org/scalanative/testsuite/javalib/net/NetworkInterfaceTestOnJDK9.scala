@@ -1,4 +1,4 @@
-package javalib.net
+package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
