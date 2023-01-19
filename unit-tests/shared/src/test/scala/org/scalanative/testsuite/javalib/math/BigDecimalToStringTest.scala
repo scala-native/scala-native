@@ -1,4 +1,4 @@
-// Ported from Scala.js, revision c473689, dated 06.05.2021
+// Ported from Scala.js, revision c473689, dated 2012-06-05
 
 package org.scalanative.testsuite.javalib.math
 
@@ -60,4 +60,24 @@ class BigDecimalToStringTest {
     ) // #4088
   }
 
+  // Ported from Scala.js, commit 3851c2d, dated: 2020-06-19
+  // Adapted for Scala Native
+
+  @Test def testToStringWithRoundingMode(): Unit = {
+    import java.math.RoundingMode
+    import RoundingMode._
+    import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+    val group1: Seq[RoundingMode] = Seq(UP, CEILING, HALF_UP)
+    val group2: Seq[RoundingMode] = Seq(DOWN, FLOOR, HALF_DOWN, HALF_EVEN)
+
+    val decimal = BigDecimal.valueOf(1.2345)
+    group1.foreach { mode =>
+      assertEquals("1.235", decimal.setScale(3, mode).toString)
+    }
+    group2.foreach { mode =>
+      assertEquals("1.234", decimal.setScale(3, mode).toString)
+    }
+    assertThrows(classOf[ArithmeticException], decimal.setScale(3, UNNECESSARY))
+  }
 }

@@ -2,20 +2,20 @@
 # In most cases, both javalib implementation 
 # and tests need to be changed
 
-javalib/lang/CharacterTest.scala
-javalib/lang/IntegerTest.scala
-javalib/lang/ShortTest.scala
-javalib/lang/LongTest.scala
-javalib/lang/StringTest.scala
+org/scalanative/testsuite/javalib/lang/CharacterTest.scala
+org/scalanative/testsuite/javalib/lang/IntegerTest.scala
+org/scalanative/testsuite/javalib/lang/ShortTest.scala
+org/scalanative/testsuite/javalib/lang/LongTest.scala
+org/scalanative/testsuite/javalib/lang/StringTest.scala
 
-javalib/net/ServerSocketTest.scala
+org/scalanative/testsuite/javalib/net/ServerSocketTest.scala
 
-javalib/util/DefaultFormatterTest.scala
-javalib/util/FormatterTest.scala
-javalib/util/Base64Test.scala
+org/scalanative/testsuite/javalib/util/DefaultFormatterTest.scala
+org/scalanative/testsuite/javalib/util/FormatterTest.scala
+org/scalanative/testsuite/javalib/util/Base64Test.scala
 
-javalib/nio/file/FileSystemExceptionTest.scala
-javalib/nio/file/DirectoryStreamTest.scala
+org/scalanative/testsuite/javalib/nio/file/FileSystemExceptionTest.scala
+org/scalanative/testsuite/javalib/nio/file/DirectoryStreamTest.scala
 
 scala/ObjectCloneTest.scala
 scala/ExecutionContextTest.scala
@@ -28,5 +28,5 @@ scala/ReflectiveProxyTest.scala
 scala/bugcompat/LongFloatPrimitiveTest.scala
 
 # Tests that work on java 8, but fail on java 16
-javalib/net/URLEncoderTest.scala
-javalib/util/jar/JarFileTest.scala
+org/scalanative/testsuite/javalib/net/URLEncoderTest.scala
+org/scalanative/testsuite/javalib/util/jar/JarFileTest.scala

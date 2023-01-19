@@ -1,4 +1,4 @@
-package javalib.math
+package org.scalanative.testsuite.javalib.math
 
 import java.math._
 import java.util.Arrays

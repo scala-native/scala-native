@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util
 
-// Ported from Scala.js commit SHA1: 9c79cb9 dated: 2022-03-18
+// Ported from Scala.js commit: 9c79cb9 dated: 2022-03-18
 
 import org.junit.Assert._
 import org.junit.Test
