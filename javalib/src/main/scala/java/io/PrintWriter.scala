@@ -1,6 +1,7 @@
 package java.io
 
 import java.util.Formatter
+import java.nio.CharBuffer
 import java.nio.charset.Charset
 
 class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
@@ -103,6 +104,9 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   override def write(s: String): Unit =
     ensureOpenAndTrapIOExceptions(out.write(s))
 
+  override protected[io] def writeCharBuffer(cbuf: CharBuffer): Unit =
+    ensureOpenAndTrapIOExceptions(out.writeCharBuffer(cbuf))
+
   def print(b: Boolean): Unit = write(String.valueOf(b))
   def print(c: Char): Unit = write(c)
   def print(i: Int): Unit = write(String.valueOf(i))
@@ -111,7 +115,12 @@ class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
   def print(d: Double): Unit = write(String.valueOf(d))
   def print(s: Array[Char]): Unit = write(s)
   def print(s: String): Unit = write(if (s == null) "null" else s)
-  def print(obj: AnyRef): Unit = write(String.valueOf(obj))
+  def print(obj: AnyRef): Unit = {
+    obj match {
+      case csq: CharSequence => append(csq)
+      case _                 => write(String.valueOf(obj))
+    }
+  }
 
   def println(): Unit = {
     write(System.lineSeparator())
