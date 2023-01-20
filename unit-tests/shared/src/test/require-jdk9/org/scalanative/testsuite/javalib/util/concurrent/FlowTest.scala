@@ -1,3 +1,5 @@
+// Ported from Scala.js commit: fb20d6f dated: 20 Jan 2023
+
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.Flow
