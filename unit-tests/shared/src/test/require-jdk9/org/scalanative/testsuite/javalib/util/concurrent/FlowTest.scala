@@ -8,6 +8,9 @@ import org.junit.Assert._
 class FlowTest {
   import FlowTest._
 
+  @Test def testDefaultBufferSize(): Unit =
+    assertEquals(256, Flow.defaultBufferSize())
+
   @Test def testProcessor(): Unit = {
     val processor = makeProcessor[Int, String]()
     processor.subscribe(makeSubscriber[String]())

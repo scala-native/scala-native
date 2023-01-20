@@ -1,6 +1,10 @@
 package java.util.concurrent
 
+import scalanative.annotation.alwaysinline
+
 object Flow {
+
+  @alwaysinline def defaultBufferSize(): Int = 256
 
   trait Processor[T, R] extends Subscriber[T] with Publisher[R]
 
