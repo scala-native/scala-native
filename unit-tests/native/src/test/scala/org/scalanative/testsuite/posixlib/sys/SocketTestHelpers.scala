@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 package sys
 
 import scalanative.unsafe._
@@ -8,14 +8,17 @@ import scalanative.libc.string.strerror
 
 import scalanative.posix.arpa.inet.{inet_addr, inet_pton}
 import scalanative.posix.errno.errno
+import scalanative.posix.fcntl
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.netdb._
 import scalanative.posix.netdbOps._
 import scalanative.posix.netinet.in._
 import scalanative.posix.poll._
+import scalanative.posix.pollEvents
 import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
+import scalanative.posix.unistd
 
 import scalanative.meta.LinktimeInfo.isWindows
 
@@ -57,7 +60,7 @@ object SocketTestHelpers {
       assertNotEquals("socket create", InvalidSocket, socket)
       socket.toInt
     } else {
-      val sock = sys.socket.socket(domain, SOCK_DGRAM, IPPROTO_UDP)
+      val sock = socket(domain, SOCK_DGRAM, IPPROTO_UDP)
       assertNotEquals("socket create", -1, sock)
       sock
     }

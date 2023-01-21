@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
 import org.junit.Assert._
@@ -8,7 +8,9 @@ import scalanative.meta.LinktimeInfo.isWindows
 
 import scalanative.libc.{errno => Cerrno}
 
+import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
+import scalanative.posix.unistd
 
 class FcntlTest {
 
