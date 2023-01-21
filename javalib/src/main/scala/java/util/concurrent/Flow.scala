@@ -1,4 +1,4 @@
-// Ported from Scala.js commit: fb20d6f dated: 20 Jan 2023
+// Ported from Scala.js commit: fb20d6f dated: 2023-01-20
 
 package java.util.concurrent
 
