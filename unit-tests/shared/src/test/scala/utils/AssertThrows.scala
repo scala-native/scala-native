@@ -43,4 +43,8 @@ object AssertThrows {
       }
     )
   }
+
+  def assertThrowsNPEIfCompliant(code: => Unit): Unit = {
+    assertThrows(classOf[NullPointerException], code)
+  }
 }
