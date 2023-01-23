@@ -1,4 +1,5 @@
-// Ported from Scala.js, revision: 730ee11, dated 9 Aug 2019
+// Ported from Scala.js commit def516f dated: 2023-01-22
+
 /*
  * Scala.js (https://www.scala-js.org/)
  *
@@ -59,7 +60,8 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
       null.asInstanceOf[E],
       RB.NoBound,
       null.asInstanceOf[E],
-      RB.NoBound
+      RB.NoBound,
+      ()
     )
   }
 
@@ -92,7 +94,8 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
       fromElement,
       RB.boundKindFromIsInclusive(fromInclusive),
       toElement,
-      RB.boundKindFromIsInclusive(toInclusive)
+      RB.boundKindFromIsInclusive(toInclusive),
+      ()
     )
   }
 
@@ -102,7 +105,8 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
       null.asInstanceOf[E],
       RB.NoBound,
       toElement,
-      RB.boundKindFromIsInclusive(inclusive)
+      RB.boundKindFromIsInclusive(inclusive),
+      ()
     )
   }
 
@@ -112,7 +116,8 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
       fromElement,
       RB.boundKindFromIsInclusive(inclusive),
       null.asInstanceOf[E],
-      RB.NoBound
+      RB.NoBound,
+      ()
     )
   }
 
@@ -176,13 +181,14 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
     new TreeSet(tree.treeCopy())(comp)
 }
 
-private object TreeSet {
-  private abstract class AbstractProjection[E](
-      protected val tree: RB.Tree[E, Any],
+private[util] object TreeSet {
+  private[util] abstract class AbstractProjection[E, V](
+      protected val tree: RB.Tree[E, V],
       protected val lowerBound: E,
       protected val lowerKind: RB.BoundKind,
       protected val upperBound: E,
-      protected val upperKind: RB.BoundKind
+      protected val upperKind: RB.BoundKind,
+      private val valueForAdd: V
   )(implicit protected val comp: Comparator[_ >: E])
       extends AbstractSet[E]
       with NavigableSet[E] {
@@ -211,9 +217,11 @@ private object TreeSet {
       isWithinBounds(o) && RB.contains(tree, o)
 
     override def add(e: E): Boolean = {
+      if (valueForAdd == null)
+        throw new UnsupportedOperationException
       if (!isWithinBounds(e))
         throw new IllegalArgumentException
-      RB.insert(tree, e, ()) == null
+      RB.insert(tree, e, valueForAdd) == null
     }
 
     override def remove(o: Any): Boolean =
@@ -322,19 +330,21 @@ private object TreeSet {
       else null.asInstanceOf[E]
   }
 
-  private final class Projection[E](
-      tree0: RB.Tree[E, Any],
+  private[util] final class Projection[E, V](
+      tree0: RB.Tree[E, V],
       fromElement0: E,
       fromBoundKind0: RB.BoundKind,
       toElement0: E,
-      toBoundKind0: RB.BoundKind
+      toBoundKind0: RB.BoundKind,
+      valueForAdd: V
   )(implicit comp: Comparator[_ >: E])
-      extends AbstractProjection[E](
+      extends AbstractProjection[E, V](
         tree0,
         fromElement0,
         fromBoundKind0,
         toElement0,
-        toBoundKind0
+        toBoundKind0,
+        valueForAdd
       ) {
 
     // Access fields under a different name, more appropriate for some uses
@@ -377,7 +387,8 @@ private object TreeSet {
         intersectedFromBound.bound,
         intersectedFromBound.kind,
         intersectedToBound.bound,
-        intersectedToBound.kind
+        intersectedToBound.kind,
+        valueForAdd
       )
     }
 
@@ -423,7 +434,8 @@ private object TreeSet {
         toElement,
         toBoundKind,
         fromElement,
-        fromBoundKind
+        fromBoundKind,
+        valueForAdd
       )
 
     def descendingIterator(): Iterator[E] =
@@ -436,19 +448,21 @@ private object TreeSet {
       )
   }
 
-  private final class DescendingProjection[E](
-      tree0: RB.Tree[E, Any],
+  private[util] final class DescendingProjection[E, V](
+      tree0: RB.Tree[E, V],
       fromElement0: E,
       fromBoundKind0: RB.BoundKind,
       toElement0: E,
-      toBoundKind0: RB.BoundKind
+      toBoundKind0: RB.BoundKind,
+      valueForAdd: V
   )(implicit comp: Comparator[_ >: E])
-      extends AbstractProjection[E](
+      extends AbstractProjection[E, V](
         tree0,
         toElement0,
         toBoundKind0,
         fromElement0,
-        fromBoundKind0
+        fromBoundKind0,
+        valueForAdd
       ) {
 
     // Access fields under a different name, more appropriate for some uses
@@ -485,7 +499,8 @@ private object TreeSet {
         intersectedFromBound.bound,
         intersectedFromBound.kind,
         intersectedToBound.bound,
-        intersectedToBound.kind
+        intersectedToBound.kind,
+        valueForAdd
       )
     }
 
@@ -526,7 +541,14 @@ private object TreeSet {
       pollLower()
 
     def descendingSet(): NavigableSet[E] =
-      new Projection(tree, toElement, toBoundKind, fromElement, fromBoundKind)
+      new Projection(
+        tree,
+        toElement,
+        toBoundKind,
+        fromElement,
+        fromBoundKind,
+        valueForAdd
+      )
 
     def descendingIterator(): Iterator[E] =
       RB.projectionKeysIterator(

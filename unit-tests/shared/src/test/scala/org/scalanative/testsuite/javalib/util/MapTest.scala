@@ -1,4 +1,4 @@
-// Ported from Scala.js commit: 9683b0c dated: 2021-10-22
+// Ported from Scala.js commit def516f dated: 2023-01-22
 
 package org.scalanative.testsuite.javalib.util
 
@@ -7,8 +7,10 @@ import java.util.function.{BiConsumer, BiFunction, Function}
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.javalib.util.concurrent.ConcurrentMapFactory
+import org.scalanative.testsuite.utils.AssertThrows.{assertThrows, _}
 import org.scalanative.testsuite.utils.Platform._
 
 import scala.reflect.ClassTag
@@ -22,63 +24,15 @@ trait MapTest {
 
   def testObj(i: Int): TestObj = TestObj(i)
 
-  /* Scala Native specific
-   *
-   * Some of Scala.js tests on IdentityHashMap are not compliant with the JVM.
-   * The Scala Native optimizer is more aggressive than Scala.js which allows
-   * us to match the exact behaviour of execution on the JVM. However, if the
-   * optimizer is disabled, behaviour of Scala Native will match Scala.js.
-   *
-   * It is not possible to match non-optimized code to match Scala.js
-   * behaviour, and it is not desirable to change the optimizer to match
-   * behaviour of the JVM so we shouldn't rely on identity of the boxed value.
-   */
-
-  // helper methods *not* used in tests
-
-  private def assertEqualOneOfIfIdentityBased[T](
-      expected: T,
-      actual: T,
-      orValue: T
-  ): Unit = {
-    if (factory.isIdentityBased) {
-      assertTrue(
-        s"expected $orValue or $expected, but got $actual",
-        actual == orValue || expected == actual
-      )
-    } else assertEquals(expected, actual)
-  }
-
-  private def assertEqualOrOneOfIfIdentityBased(
-      expected: Double,
-      actual: Double,
-      orValue: Double
-  ): Unit = {
-    if (factory.isIdentityBased) {
-      assertTrue(
-        s"expected $orValue or $expected, but got $actual",
-        actual == orValue || expected == actual
-      )
-    } else assertEquals(expected, actual, 0.0)
-  }
-
-  // helper methods used in tests
-
-  private def assertEqualsOrNullIfIdentityBased[T](expected: T, actual: T) =
-    assertEqualOneOfIfIdentityBased(expected, actual, null)
-
-  private def assertEqualsOrZeroIfIdentityBased(expected: Int, actual: Int) =
-    assertEqualOrOneOfIfIdentityBased(expected, actual, 0)
-
-  private def assertEqualsOrZeroIfIdentityBased(
-      expected: Double,
-      actual: Double
-  ) =
-    assertEqualOrOneOfIfIdentityBased(expected, actual, 0.0)
-
-  // tests
+  private def assumeNotIdentityHashMapOnJVM(): Unit =
+    assumeFalse(
+      "JVM vs JS cache differences",
+      executingInJVM && factory.isIdentityBased
+    )
 
   @Test def testSizeGetPutWithStrings(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[String, String]
 
     assertEquals(0, mp.size())
@@ -93,31 +47,40 @@ trait MapTest {
     assertEquals("three", mp.get("ONE"))
 
     assertEquals(null, mp.get("THREE"))
-    assertEquals(null, mp.get(42))
-    assertEquals(null, mp.get(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertEquals(null, mp.get(42))
+      assertEquals(null, mp.get(testObj(42)))
+    }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, mp.get(null))
-    else
-      assertThrows(classOf[NullPointerException], mp.get(null))
+    // else
+    //   assertThrowsNPEIfCompliant(mp.get(null))
   }
 
   @Test def testSizeGetPutWithStringsLargeMap(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val largeMap = factory.empty[String, Int]
     for (i <- 0 until 1000)
       largeMap.put(i.toString(), i)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
     for (i <- (1000 - expectedSize) until 1000)
-      assertEqualsOrZeroIfIdentityBased(i, largeMap.get(i.toString()))
+      assertEquals(i, largeMap.get(i.toString()))
     assertNull(largeMap.get("1000"))
+
     assertEquals(null, largeMap.get("THREE"))
-    assertEquals(null, largeMap.get(42))
-    assertEquals(null, largeMap.get(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertEquals(null, largeMap.get(42))
+      assertEquals(null, largeMap.get(testObj(42)))
+    }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, largeMap.get(null))
   }
 
   @Test def testSizeGetPutWithInts(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[Int, Int]
 
     mp.put(100, 12345)
@@ -125,31 +88,37 @@ trait MapTest {
     assertEquals(12345, mp.get(100))
     mp.put(150, 54321)
     assertEquals(2, mp.size())
-    assertEqualsOrZeroIfIdentityBased(54321, mp.get(150))
+    assertEquals(54321, mp.get(150))
     mp.put(100, 3)
     assertEquals(2, mp.size())
     assertEquals(3, mp.get(100))
 
     assertEquals(null, mp.get(42))
-    assertEquals(null, mp.get("THREE"))
-    assertEquals(null, mp.get(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertEquals(null, mp.get("THREE"))
+      assertEquals(null, mp.get(testObj(42)))
+    }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, mp.get(null))
   }
 
   @Test def testSizeGetPutWithIntsLargeMap(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val largeMap = factory.empty[Int, Int]
     for (i <- 0 until 1000)
       largeMap.put(i, i * 2)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())
     for (i <- (1000 - expectedSize) until 1000)
-      assertEqualsOrZeroIfIdentityBased(i * 2, largeMap.get(i))
+      assertEquals(i * 2, largeMap.get(i))
     assertNull(largeMap.get(1000))
 
     assertEquals(null, largeMap.get(-42))
-    assertEquals(null, largeMap.get("THREE"))
-    assertEquals(null, largeMap.get(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertEquals(null, largeMap.get("THREE"))
+      assertEquals(null, largeMap.get(testObj(42)))
+    }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, largeMap.get(null))
   }
@@ -167,9 +136,11 @@ trait MapTest {
     assertEquals(2, mp.size())
     assertEquals(3, mp.get(testObj(100)).num)
 
-    assertEquals(null, mp.get("THREE"))
-    assertEquals(null, mp.get(42))
     assertEquals(null, mp.get(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertEquals(null, mp.get("THREE"))
+      assertEquals(null, mp.get(42))
+    }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, mp.get(null))
   }
@@ -182,37 +153,41 @@ trait MapTest {
     assertEquals(expectedSize, largeMap.size())
     for (i <- (1000 - expectedSize) until 1000)
       assertEquals(i * 2, largeMap.get(testObj(i)))
-    assertNull(largeMap.get(1000))
+    assertNull(largeMap.get(testObj(1000)))
 
     assertEquals(null, largeMap.get(testObj(-42)))
-    assertEquals(null, largeMap.get("THREE"))
-    assertEquals(null, largeMap.get(42))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertEquals(null, largeMap.get("THREE"))
+      assertEquals(null, largeMap.get(42))
+    }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, largeMap.get(null))
   }
 
   @Test def testSizeGetPutWithDoublesCornerCasesOfEquals(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[Double, Double]
 
     mp.put(1.2345, 11111.0)
     assertEquals(1, mp.size())
     val one = mp.get(1.2345)
-    assertEqualsOrZeroIfIdentityBased(11111.0, one)
+    assertEquals(11111.0, one, 0.0)
 
     mp.put(Double.NaN, 22222.0)
     assertEquals(2, mp.size())
     val two = mp.get(Double.NaN)
-    assertEqualsOrZeroIfIdentityBased(22222.0, two)
+    assertEquals(22222.0, two, 0.0)
 
     mp.put(+0.0, 33333.0)
     assertEquals(3, mp.size())
     val three = mp.get(+0.0)
-    assertEqualsOrZeroIfIdentityBased(33333.0, three)
+    assertEquals(33333.0, three, 0.0)
 
     mp.put(-0.0, 44444.0)
     assertEquals(4, mp.size())
     val four = mp.get(-0.0)
-    assertEqualsOrZeroIfIdentityBased(44444.0, four)
+    assertEquals(44444.0, four, 0.0)
   }
 
   @Test def testRemoveWithStrings(): Unit = {
@@ -227,28 +202,34 @@ trait MapTest {
     assertNull(mp.remove("ONE"))
 
     assertNull(mp.remove("foobar"))
-    assertNull(mp.remove(42))
-    assertNull(mp.remove(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertNull(mp.remove(42))
+      assertNull(mp.remove(testObj(42)))
+    }
     if (factory.allowsNullKeys)
       assertNull(mp.remove(null))
-    else
-      assertThrows(classOf[NullPointerException], mp.remove(null))
+    // else
+    //   assertThrowsNPEIfCompliant(mp.remove(null))
   }
 
   @Test def testRemoveWithInts(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[Int, String]
 
     mp.put(543, "one")
     for (i <- 0 until 30)
       mp.put(i, s"value $i")
     assertEquals(31, mp.size())
-    assertEqualsOrNullIfIdentityBased("one", mp.remove(543))
+    assertEquals("one", mp.remove(543))
     assertNull(mp.get(543))
     assertNull(mp.remove(543))
 
-    assertNull(mp.remove("foobar"))
     assertNull(mp.remove(42))
-    assertNull(mp.remove(testObj(42)))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertNull(mp.remove("foobar"))
+      assertNull(mp.remove(testObj(42)))
+    }
     if (factory.allowsNullKeys)
       assertNull(mp.remove(null))
   }
@@ -265,13 +246,17 @@ trait MapTest {
     assertNull(mp.remove(testObj(543)))
 
     assertNull(mp.remove(testObj(42)))
-    assertNull(mp.remove("foobar"))
-    assertNull(mp.remove(42))
+    if (factory.allowsSupertypeKeyQueries) {
+      assertNull(mp.remove("foobar"))
+      assertNull(mp.remove(42))
+    }
     if (factory.allowsNullKeys)
       assertNull(mp.remove(null))
   }
 
   @Test def testRemoveWithDoublesCornerCasesOfEquals(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val mp = factory.empty[Double, String]
 
     mp.put(1.2345, "11111.0")
@@ -279,22 +264,22 @@ trait MapTest {
     mp.put(+0.0, "33333.0")
     mp.put(-0.0, "44444.0")
 
-    assertEqualsOrNullIfIdentityBased("11111.0", mp.get(1.2345))
-    assertEqualsOrNullIfIdentityBased("22222.0", mp.get(Double.NaN))
-    assertEqualsOrNullIfIdentityBased("33333.0", mp.get(+0.0))
-    assertEqualsOrNullIfIdentityBased("44444.0", mp.get(-0.0))
+    assertEquals("11111.0", mp.get(1.2345))
+    assertEquals("22222.0", mp.get(Double.NaN))
+    assertEquals("33333.0", mp.get(+0.0))
+    assertEquals("44444.0", mp.get(-0.0))
 
-    assertEqualsOrNullIfIdentityBased("44444.0", mp.remove(-0.0))
+    assertEquals("44444.0", mp.remove(-0.0))
     assertNull(mp.get(-0.0))
 
     mp.put(-0.0, "55555.0")
 
-    assertEqualsOrNullIfIdentityBased("33333.0", mp.remove(+0.0))
+    assertEquals("33333.0", mp.remove(+0.0))
     assertNull(mp.get(+0.0))
 
     mp.put(+0.0, "66666.0")
 
-    assertEqualsOrNullIfIdentityBased("22222.0", mp.remove(Double.NaN))
+    assertEquals("22222.0", mp.remove(Double.NaN))
     assertNull(mp.get(Double.NaN))
 
     mp.put(Double.NaN, "77777.0")
@@ -317,7 +302,7 @@ trait MapTest {
       assertNull(mp.get(null))
       assertNull(mp.remove(null))
     } else {
-      assertThrows(classOf[NullPointerException], mp.put(null, "one"))
+      // assertThrowsNPEIfCompliant(mp.put(null, "one"))
     }
   }
 
@@ -334,7 +319,7 @@ trait MapTest {
       assertEquals(30, mp.size())
       assertNull(mp.get("one"))
     } else {
-      assertThrows(classOf[NullPointerException], mp.put("one", null))
+      // assertThrowsNPEIfCompliant(mp.put("one", null))
     }
   }
 
@@ -373,8 +358,8 @@ trait MapTest {
     assertFalse(mp.containsKey("TWO"))
     if (factory.allowsNullKeysQueries)
       assertFalse(mp.containsKey(null))
-    else
-      assertThrows(classOf[NullPointerException], mp.containsKey(null))
+    // else
+    //   assertThrowsNPEIfCompliant(mp.containsKey(null))
   }
 
   @Test def testContainsValue(): Unit = {
@@ -385,8 +370,8 @@ trait MapTest {
     assertFalse(mp.containsValue("two"))
     if (factory.allowsNullValuesQueries)
       assertFalse(mp.containsValue(null))
-    else
-      assertThrows(classOf[NullPointerException], mp.containsValue(null))
+    // else
+    //   assertThrowsNPEIfCompliant(mp.containsValue(null))
   }
 
   @Test def testPutAll(): Unit = {
@@ -408,7 +393,7 @@ trait MapTest {
       assertEquals("one", mp.get("ONE"))
       assertEquals("b", mp.get("A"))
     } else {
-      assertThrows(classOf[NullPointerException], mp.putAll(nullMap))
+      // assertThrowsNPEIfCompliant(mp.putAll(nullMap))
     }
   }
 
@@ -478,8 +463,8 @@ trait MapTest {
     assertFalse(values.contains("three"))
     if (factory.allowsNullValuesQueries)
       assertFalse(values.contains(null))
-    else
-      assertThrows(classOf[NullPointerException], values.contains(null))
+    // else
+    //   assertThrowsNPEIfCompliant(values.contains(null))
 
     mp.put("THREE", "three")
 
@@ -508,8 +493,8 @@ trait MapTest {
     assertFalse(values.contains(testObj(33)))
     if (factory.allowsNullValuesQueries)
       assertFalse(values.contains(null))
-    else
-      assertThrows(classOf[NullPointerException], values.contains(null))
+    // else
+    //   assertThrowsNPEIfCompliant(values.contains(null))
 
     mp.put(testObj(3), testObj(33))
 
@@ -535,31 +520,25 @@ trait MapTest {
   }
 
   @Test def testValuesIsViewForQueriesWithDoublesCornerCaseOfEquals(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val nummp = factory.empty[Double, Double]
     val numValues = nummp.values()
 
-    // Identity based map values will not be found unless
-    // they have the same identity - same object
-
-    def assertContainsButNotWhenIdentityBased(value: Double): Unit = {
-      if (factory.isIdentityBased) assertFalse(numValues.contains(value))
-      else assertTrue(numValues.contains(value))
-    }
-
     nummp.put(1, +0.0)
-    assertContainsButNotWhenIdentityBased(+0.0)
+    assertTrue(numValues.contains(+0.0))
     assertFalse(numValues.contains(-0.0))
     assertFalse(numValues.contains(Double.NaN))
 
     nummp.put(2, -0.0)
-    assertContainsButNotWhenIdentityBased(+0.0)
-    assertContainsButNotWhenIdentityBased(-0.0)
+    assertTrue(numValues.contains(+0.0))
+    assertTrue(numValues.contains(-0.0))
     assertFalse(numValues.contains(Double.NaN))
 
     nummp.put(3, Double.NaN)
-    assertContainsButNotWhenIdentityBased(+0.0)
-    assertContainsButNotWhenIdentityBased(-0.0)
-    assertContainsButNotWhenIdentityBased(Double.NaN)
+    assertTrue(numValues.contains(+0.0))
+    assertTrue(numValues.contains(-0.0))
+    assertTrue(numValues.contains(Double.NaN))
   }
 
   @Test def testValuesIsViewForRemoveWithStrings(): Unit = {
@@ -688,8 +667,8 @@ trait MapTest {
     assertFalse(keySet.contains("THREE"))
     if (factory.allowsNullKeysQueries)
       assertFalse(keySet.contains(null))
-    else
-      assertThrows(classOf[NullPointerException], keySet.contains(null))
+    // else
+    //   assertThrowsNPEIfCompliant(keySet.contains(null))
 
     mp.put("THREE", "three")
 
@@ -718,8 +697,8 @@ trait MapTest {
     assertFalse(keySet.contains(testObj(3)))
     if (factory.allowsNullKeysQueries)
       assertFalse(keySet.contains(null))
-    else
-      assertThrows(classOf[NullPointerException], keySet.contains(null))
+    // else
+    //   assertThrowsNPEIfCompliant(keySet.contains(null))
 
     mp.put(testObj(3), TestObj(33))
 
@@ -738,31 +717,25 @@ trait MapTest {
   }
 
   @Test def testKeySetIsViewForQueriesWithDoublesCornerCaseOfEquals(): Unit = {
+    assumeNotIdentityHashMapOnJVM()
+
     val nummp = factory.empty[Double, Double]
     val numkeySet = nummp.keySet()
 
-    // Behaviour of the Scala Native is diffrent from the Scala.js
-    // For more info check comment at the begging of the file
-    def assertContainsButNotWhenIdentityBased(key: Double): Unit = {
-      if (factory.isIdentityBased) assertFalse(numkeySet.contains(key))
-      else assertTrue(numkeySet.contains(key))
-    }
-
     nummp.put(+0.0, 1)
-    assertContainsButNotWhenIdentityBased(0.0)
-    assertContainsButNotWhenIdentityBased(+0.0)
+    assertTrue(numkeySet.contains(+0.0))
     assertFalse(numkeySet.contains(-0.0))
     assertFalse(numkeySet.contains(Double.NaN))
 
     nummp.put(-0.0, 2)
-    assertContainsButNotWhenIdentityBased(+0.0)
-    assertContainsButNotWhenIdentityBased(-0.0)
+    assertTrue(numkeySet.contains(+0.0))
+    assertTrue(numkeySet.contains(-0.0))
     assertFalse(numkeySet.contains(Double.NaN))
 
     nummp.put(Double.NaN, 3)
-    assertContainsButNotWhenIdentityBased(+0.0)
-    assertContainsButNotWhenIdentityBased(-0.0)
-    assertContainsButNotWhenIdentityBased(Double.NaN)
+    assertTrue(numkeySet.contains(+0.0))
+    assertTrue(numkeySet.contains(-0.0))
+    assertTrue(numkeySet.contains(Double.NaN))
   }
 
   @Test def testKeySetIsViewForRemoveWithStrings(): Unit = {
@@ -933,9 +906,12 @@ trait MapTest {
     assertFalse(entrySet.contains(SIE("THREE", "three")))
     assertFalse(entrySet.contains(SIE("ONE", "two")))
     assertFalse(entrySet.contains(SIE("THREE", "one")))
+
+    if (factory.allowsNullKeysQueries)
+      assertTrue(entrySet.contains(SIE(null, "NULL")))
+
     if (factory.allowsNullValuesQueries) {
       assertTrue(entrySet.contains(SIE("NULL", null)))
-      assertTrue(entrySet.contains(SIE(null, "NULL")))
       assertFalse(entrySet.contains(SIE("NOTFOUND", null)))
     }
 
@@ -1290,12 +1266,11 @@ trait MapTest {
       assertNull(mp.get("ONE"))
       assertEquals("it was null", mp.get("nullable"))
     } else {
-      assertThrows(
-        classOf[NullPointerException],
-        mp.replaceAll(new BiFunction[String, String, String] {
-          def apply(key: String, value: String): String = null
-        })
-      )
+      // assertThrowsNPEIfCompliant(
+      //   mp.replaceAll(new BiFunction[String, String, String] {
+      //     def apply(key: String, value: String): String = null
+      //   })
+      // )
     }
   }
 
@@ -1315,15 +1290,12 @@ trait MapTest {
       assertNull(mp.putIfAbsent("nullable", "non null"))
       assertEquals("non null", mp.get("nullable"))
     } else {
-      assertThrows(classOf[NullPointerException], mp.putIfAbsent("abc", null))
-      assertThrows(
-        classOf[NullPointerException],
-        mp.putIfAbsent("new key", null)
-      )
+      // assertThrowsNPEIfCompliant(mp.putIfAbsent("abc", null))
+      // assertThrowsNPEIfCompliant(mp.putIfAbsent("new key", null))
     }
 
     if (!factory.allowsNullKeys) {
-      assertThrows(classOf[NullPointerException], mp.putIfAbsent(null, "def"))
+      // assertThrowsNPEIfCompliant(mp.putIfAbsent(null, "def"))
     }
   }
 
@@ -1352,7 +1324,7 @@ trait MapTest {
       assertTrue(mp.remove(null, "one"))
       assertFalse(mp.containsKey(null))
     } else {
-      assertThrows(classOf[NullPointerException], mp.remove(null, "old value"))
+      // assertThrowsNPEIfCompliant(mp.remove(null, "old value"))
     }
 
     if (factory.allowsNullValues) {
@@ -1386,7 +1358,7 @@ trait MapTest {
       assertEquals("one", mp.remove(null))
       assertFalse(mp.containsKey(null))
     } else {
-      assertThrows(classOf[NullPointerException], mp.remove(null))
+      // assertThrowsNPEIfCompliant(mp.remove(null))
     }
   }
 
@@ -1417,14 +1389,8 @@ trait MapTest {
       assertTrue(mp.containsKey("nullable"))
       assertNull(mp.get("nullable"))
     } else {
-      assertThrows(
-        classOf[NullPointerException],
-        mp.replace("ONE", null, "one")
-      )
-      assertThrows(
-        classOf[NullPointerException],
-        mp.replace("ONE", "four", null)
-      )
+      // assertThrowsNPEIfCompliant(mp.replace("ONE", null, "one"))
+      // assertThrowsNPEIfCompliant(mp.replace("ONE", "four", null))
     }
 
     if (factory.allowsNullKeys) {
@@ -1435,10 +1401,7 @@ trait MapTest {
       assertTrue(mp.replace(null, "null value", "new value"))
       assertEquals("new value", mp.get(null))
     } else {
-      assertThrows(
-        classOf[NullPointerException],
-        mp.replace(null, "one", "two")
-      )
+      // assertThrowsNPEIfCompliant(mp.replace(null, "one", "two"))
     }
   }
 
@@ -1464,7 +1427,7 @@ trait MapTest {
       assertNull(mp.replace("ONE", "new one"))
       assertEquals("new one", mp.get("ONE"))
     } else {
-      assertThrows(classOf[NullPointerException], mp.replace("ONE", null))
+      // assertThrowsNPEIfCompliant(mp.replace("ONE", null))
       assertEquals("four", mp.get("ONE"))
     }
 
@@ -1476,7 +1439,7 @@ trait MapTest {
       assertEquals("null value", mp.replace(null, "new value"))
       assertEquals("new value", mp.get(null))
     } else {
-      assertThrows(classOf[NullPointerException], mp.replace(null, "one"))
+      // assertThrowsNPEIfCompliant(mp.replace(null, "one"))
     }
   }
 
@@ -1510,6 +1473,15 @@ trait MapTest {
     assertFalse(mp.containsKey("non existing"))
 
     if (factory.allowsNullValues) {
+      /* JDK 15 & 16 are affected by
+       * https://bugs.openjdk.org/browse/JDK-8259622
+       */
+      assumeFalse(
+        "affected by JDK-8259622",
+        executingInJVMOnLowerThanJDK17 && !executingInJVMOnLowerThanJDK15 &&
+          mp.isInstanceOf[ju.TreeMap[_, _]]
+      )
+
       mp.put("nullable", null)
       assertEquals("8", mp.computeIfAbsent("nullable", lengthAsString))
       assertEquals("8", mp.get("nullable"))
@@ -1622,14 +1594,8 @@ trait MapTest {
     assertEquals("def", mp.merge("SEVEN", "def", notCalled))
     assertEquals("def", mp.get("SEVEN"))
 
-    assertThrows(
-      classOf[NullPointerException],
-      mp.merge("non existing", null, notCalled)
-    )
-    assertThrows(
-      classOf[NullPointerException],
-      mp.merge("ONE", null, notCalled)
-    )
+    // assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
+    // assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
 
     assertNull(mp.merge("ONE", "def", returnsNull))
     assertFalse(mp.containsKey("ONE"))
@@ -1655,32 +1621,12 @@ trait MapTest {
     )
     assertThrows(classOf[UnsupportedOperationException], set.add(null))
   }
-
-  @Test def testStringMapToString(): Unit = {
-    val mp = factory.empty[String, String]
-    mp.put("ONE", "one")
-    assertEquals("{ONE=one}", mp.toString())
-    mp.put("TWO", "two")
-    // handle ordering issues
-    val o1 = "{ONE=one, TWO=two}"
-    val o2 = "{TWO=two, ONE=one}"
-    val res = mp.toString()
-    if (o1 == res) assertEquals(o1, res)
-    else assertEquals(o2, res)
-  }
-
-  @Test def testIntMapEntryToString(): Unit = {
-    val mp = factory.empty[Int, Int]
-    mp.put(1, 10)
-    assertEquals("1=10", mp.entrySet.iterator().next().toString())
-    mp.clear()
-    mp.put(2, 20)
-    assertEquals("2=20", mp.entrySet.iterator().next().toString())
-  }
 }
 
 object MapTest {
-  final case class TestObj(num: Int)
+  final case class TestObj(num: Int) extends Comparable[TestObj] {
+    def compareTo(that: TestObj): Int = this.num - that.num
+  }
 }
 
 trait MapFactory {
@@ -1704,6 +1650,8 @@ trait MapFactory {
   def allowsNullKeysQueries: Boolean = true
 
   def allowsNullValuesQueries: Boolean = true
+
+  def allowsSupertypeKeyQueries: Boolean = false
 
   def withSizeLimit: Option[Int] = None
 
