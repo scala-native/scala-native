@@ -61,7 +61,7 @@ class ComparatorTest {
   }
 
   @Test def nullsFirstNull(): Unit = {
-    val cmp = ju.Comparator.nullsFirst(null)
+    val cmp = ju.Comparator.nullsFirst[String](null)
 
     assertEquals(0, cmp.compare("a", "b"))
     assertEquals(0, cmp.compare(null, null))
@@ -78,7 +78,7 @@ class ComparatorTest {
   }
 
   @Test def nullsLastNull(): Unit = {
-    val cmp = ju.Comparator.nullsLast(null)
+    val cmp = ju.Comparator.nullsLast[String](null)
     assertEquals(0, cmp.compare("a", "b"))
     assertEquals(0, cmp.compare(null, null))
     assertTrue(cmp.compare(null, "a") > 0)
