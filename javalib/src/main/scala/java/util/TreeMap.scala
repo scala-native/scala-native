@@ -119,7 +119,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
       value: V,
       remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
   ): V = {
-    value.getClass() // null check
+    Objects.requireNonNull(value)
 
     val node = RB.getNode(tree, key)
     if (node eq null) {

@@ -94,14 +94,14 @@ class ComparatorTest {
     assertTrue(cmp.compare("ba", "ab") > 0)
     assertTrue(cmp.compare("ab", "ba") < 0)
 
-    // assertThrowsNPEIfCompliant(
-    //   ju.Comparator
-    //     .comparing[String, String](null, ju.Comparator.reverseOrder[String])
-    // )
-    // assertThrowsNPEIfCompliant(
-    //   ju.Comparator
-    //     .comparing((_.substring(1)): juf.Function[String, String], null)
-    // )
+    assertThrowsNPEIfCompliant(
+      ju.Comparator
+        .comparing[String, String](null, ju.Comparator.reverseOrder[String])
+    )
+    assertThrowsNPEIfCompliant(
+      ju.Comparator
+        .comparing((_.substring(1)): juf.Function[String, String], null)
+    )
   }
 
   @Test def comparingComparable(): Unit = {
@@ -112,7 +112,7 @@ class ComparatorTest {
     assertTrue(cmp.compare("ba", "ab") < 0)
     assertTrue(cmp.compare("ab", "ba") > 0)
 
-    // assertThrowsNPEIfCompliant(ju.Comparator.comparing[String, String](null))
+    assertThrowsNPEIfCompliant(ju.Comparator.comparing[String, String](null))
   }
 
   @Test def comparingInt(): Unit = {
@@ -121,7 +121,7 @@ class ComparatorTest {
     assertTrue(cmp.compare("", "a") < 0)
     assertTrue(cmp.compare("ab", "") > 0)
 
-    // assertThrowsNPEIfCompliant(ju.Comparator.comparingInt(null))
+    assertThrowsNPEIfCompliant(ju.Comparator.comparingInt(null))
   }
 
   @Test def comparingLong(): Unit = {
@@ -130,7 +130,7 @@ class ComparatorTest {
     assertTrue(cmp.compare("", "a") < 0)
     assertTrue(cmp.compare("ab", "") > 0)
 
-    // assertThrowsNPEIfCompliant(ju.Comparator.comparingLong(null))
+    assertThrowsNPEIfCompliant(ju.Comparator.comparingLong(null))
   }
 
   @Test def comparingDouble(): Unit = {
@@ -139,7 +139,7 @@ class ComparatorTest {
     assertTrue(cmp.compare("", "a") < 0)
     assertTrue(cmp.compare("ab", "") > 0)
 
-    // assertThrowsNPEIfCompliant(ju.Comparator.comparingDouble(null))
+    assertThrowsNPEIfCompliant(ju.Comparator.comparingDouble(null))
   }
 
   @Test def thenComparingComparator(): Unit = {
@@ -153,9 +153,9 @@ class ComparatorTest {
     assertTrue(cmp.compare((1, 2), (2, 1)) < 0)
     assertTrue(cmp.compare((2, 1), (1, 2)) > 0)
 
-    // assertThrowsNPEIfCompliant(
-    //   base.thenComparing(null: ju.Comparator[(Int, Int)])
-    // )
+    assertThrowsNPEIfCompliant(
+      base.thenComparing(null: ju.Comparator[(Int, Int)])
+    )
   }
 
   @Test def thenComparingExtractorComparator(): Unit = {
@@ -171,15 +171,15 @@ class ComparatorTest {
     assertTrue(cmp.compare((1, "b"), (2, "a")) < 0)
     assertTrue(cmp.compare((2, "a"), (1, "b")) > 0)
 
-    // assertThrowsNPEIfCompliant(
-    //   base.thenComparing[String](null, ju.Comparator.reverseOrder[String])
-    // )
-    // assertThrowsNPEIfCompliant(
-    //   base.thenComparing[String](
-    //     ((_: (Int, String))._2): juf.Function[(Int, String), String],
-    //     null
-    //   )
-    // )
+    assertThrowsNPEIfCompliant(
+      base.thenComparing[String](null, ju.Comparator.reverseOrder[String])
+    )
+    assertThrowsNPEIfCompliant(
+      base.thenComparing[String](
+        ((_: (Int, String))._2): juf.Function[(Int, String), String],
+        null
+      )
+    )
   }
 
   @Test def thenComparingExtractor(): Unit = {
@@ -194,9 +194,9 @@ class ComparatorTest {
     assertTrue(cmp.compare((1, "b"), (2, "a")) < 0)
     assertTrue(cmp.compare((2, "a"), (1, "b")) > 0)
 
-    // assertThrowsNPEIfCompliant(
-    //   base.thenComparing[String](null: juf.Function[(Int, String), String])
-    // )
+    assertThrowsNPEIfCompliant(
+      base.thenComparing[String](null: juf.Function[(Int, String), String])
+    )
   }
 
   @Test def thenComparingInt(): Unit = {
@@ -209,7 +209,7 @@ class ComparatorTest {
     assertTrue(cmp.compare((1, 2), (2, 1)) < 0)
     assertTrue(cmp.compare((2, 1), (1, 2)) > 0)
 
-    // assertThrowsNPEIfCompliant(base.thenComparingInt(null))
+    assertThrowsNPEIfCompliant(base.thenComparingInt(null))
   }
 
   @Test def thenComparingLong(): Unit = {
@@ -222,7 +222,7 @@ class ComparatorTest {
     assertTrue(cmp.compare((1, 2), (2, 1)) < 0)
     assertTrue(cmp.compare((2, 1), (1, 2)) > 0)
 
-    // assertThrowsNPEIfCompliant(base.thenComparingLong(null))
+    assertThrowsNPEIfCompliant(base.thenComparingLong(null))
   }
 
   @Test def thenComparingDouble(): Unit = {
@@ -235,6 +235,6 @@ class ComparatorTest {
     assertTrue(cmp.compare((1, 2), (2, 1)) < 0)
     assertTrue(cmp.compare((2, 1), (1, 2)) > 0)
 
-    // assertThrowsNPEIfCompliant(base.thenComparingDouble(null))
+    assertThrowsNPEIfCompliant(base.thenComparingDouble(null))
   }
 }

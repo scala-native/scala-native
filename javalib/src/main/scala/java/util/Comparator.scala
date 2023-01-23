@@ -29,7 +29,7 @@ trait Comparator[A] { self =>
 
   @inline
   def thenComparing(other: Comparator[_ >: A]): Comparator[A] = {
-    other.getClass() // null check
+    Objects.requireNonNull(other)
     new Comparator[A] with Serializable {
       def compare(o1: A, o2: A) = {
         val cmp = self.compare(o1, o2)
@@ -121,8 +121,8 @@ object Comparator {
       keyExtractor: Function[_ >: T, _ <: U],
       keyComparator: Comparator[_ >: U]
   ): Comparator[T] = {
-    keyExtractor.getClass() // null check
-    keyComparator.getClass() // null check
+    Objects.requireNonNull(keyExtractor)
+    Objects.requireNonNull(keyComparator)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
         keyComparator.compare(keyExtractor(o1), keyExtractor(o2))
@@ -136,7 +136,7 @@ object Comparator {
   def comparing[T, U <: Comparable[U]](
       keyExtractor: Function[_ >: T, _ <: U]
   ): Comparator[T] = {
-    keyExtractor.getClass() // null check
+    Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
         keyExtractor(o1).compareTo(keyExtractor(o2))
@@ -145,7 +145,7 @@ object Comparator {
 
   @inline
   def comparingInt[T](keyExtractor: ToIntFunction[_ >: T]): Comparator[T] = {
-    keyExtractor.getClass() // null check
+    Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
         Integer.compare(
@@ -157,7 +157,7 @@ object Comparator {
 
   @inline
   def comparingLong[T](keyExtractor: ToLongFunction[_ >: T]): Comparator[T] = {
-    keyExtractor.getClass() // null check
+    Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
         java.lang.Long
@@ -169,7 +169,7 @@ object Comparator {
   def comparingDouble[T](
       keyExtractor: ToDoubleFunction[_ >: T]
   ): Comparator[T] = {
-    keyExtractor.getClass() // null check
+    Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
         java.lang.Double.compare(

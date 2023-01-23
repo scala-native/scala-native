@@ -101,8 +101,8 @@ trait MapTest {
     }
     if (factory.allowsNullKeysQueries)
       assertEquals(null, mp.get(null))
-    // else
-    //   assertThrowsNPEIfCompliant(mp.get(null))
+    else
+      assertThrowsNPEIfCompliant(mp.get(null))
   }
 
   @Test def testSizeGetPutWithStringsLargeMap(): Unit = {
@@ -248,8 +248,8 @@ trait MapTest {
     }
     if (factory.allowsNullKeys)
       assertNull(mp.remove(null))
-    // else
-    //   assertThrowsNPEIfCompliant(mp.remove(null))
+    else
+      assertThrowsNPEIfCompliant(mp.remove(null))
   }
 
   @Test def testRemoveWithInts(): Unit = {
@@ -338,7 +338,7 @@ trait MapTest {
       assertNull(mp.get(null))
       assertNull(mp.remove(null))
     } else {
-      // assertThrowsNPEIfCompliant(mp.put(null, "one"))
+      assertThrowsNPEIfCompliant(mp.put(null, "one"))
     }
   }
 
@@ -355,7 +355,7 @@ trait MapTest {
       assertEquals(30, mp.size())
       assertNull(mp.get("one"))
     } else {
-      // assertThrowsNPEIfCompliant(mp.put("one", null))
+      assertThrowsNPEIfCompliant(mp.put("one", null))
     }
   }
 
@@ -394,8 +394,8 @@ trait MapTest {
     assertFalse(mp.containsKey("TWO"))
     if (factory.allowsNullKeysQueries)
       assertFalse(mp.containsKey(null))
-    // else
-    //   assertThrowsNPEIfCompliant(mp.containsKey(null))
+    else
+      assertThrowsNPEIfCompliant(mp.containsKey(null))
   }
 
   @Test def testContainsValue(): Unit = {
@@ -406,8 +406,8 @@ trait MapTest {
     assertFalse(mp.containsValue("two"))
     if (factory.allowsNullValuesQueries)
       assertFalse(mp.containsValue(null))
-    // else
-    //   assertThrowsNPEIfCompliant(mp.containsValue(null))
+    else
+      assertThrowsNPEIfCompliant(mp.containsValue(null))
   }
 
   @Test def testPutAll(): Unit = {
@@ -429,7 +429,7 @@ trait MapTest {
       assertEquals("one", mp.get("ONE"))
       assertEquals("b", mp.get("A"))
     } else {
-      // assertThrowsNPEIfCompliant(mp.putAll(nullMap))
+      assertThrowsNPEIfCompliant(mp.putAll(nullMap))
     }
   }
 
@@ -499,8 +499,8 @@ trait MapTest {
     assertFalse(values.contains("three"))
     if (factory.allowsNullValuesQueries)
       assertFalse(values.contains(null))
-    // else
-    //   assertThrowsNPEIfCompliant(values.contains(null))
+    else
+      assertThrowsNPEIfCompliant(values.contains(null))
 
     mp.put("THREE", "three")
 
@@ -529,8 +529,8 @@ trait MapTest {
     assertFalse(values.contains(testObj(33)))
     if (factory.allowsNullValuesQueries)
       assertFalse(values.contains(null))
-    // else
-    //   assertThrowsNPEIfCompliant(values.contains(null))
+    else
+      assertThrowsNPEIfCompliant(values.contains(null))
 
     mp.put(testObj(3), testObj(33))
 
@@ -709,8 +709,8 @@ trait MapTest {
     assertFalse(keySet.contains("THREE"))
     if (factory.allowsNullKeysQueries)
       assertFalse(keySet.contains(null))
-    // else
-    //   assertThrowsNPEIfCompliant(keySet.contains(null))
+    else
+      assertThrowsNPEIfCompliant(keySet.contains(null))
 
     mp.put("THREE", "three")
 
@@ -739,8 +739,8 @@ trait MapTest {
     assertFalse(keySet.contains(testObj(3)))
     if (factory.allowsNullKeysQueries)
       assertFalse(keySet.contains(null))
-    // else
-    //   assertThrowsNPEIfCompliant(keySet.contains(null))
+    else
+      assertThrowsNPEIfCompliant(keySet.contains(null))
 
     mp.put(testObj(3), TestObj(33))
 
@@ -1313,11 +1313,11 @@ trait MapTest {
       assertNull(mp.get("ONE"))
       assertEquals("it was null", mp.get("nullable"))
     } else {
-      // assertThrowsNPEIfCompliant(
-      //   mp.replaceAll(new BiFunction[String, String, String] {
-      //     def apply(key: String, value: String): String = null
-      //   })
-      // )
+      assertThrowsNPEIfCompliant(
+        mp.replaceAll(new BiFunction[String, String, String] {
+          def apply(key: String, value: String): String = null
+        })
+      )
     }
   }
 
@@ -1337,12 +1337,12 @@ trait MapTest {
       assertNull(mp.putIfAbsent("nullable", "non null"))
       assertEquals("non null", mp.get("nullable"))
     } else {
-      // assertThrowsNPEIfCompliant(mp.putIfAbsent("abc", null))
-      // assertThrowsNPEIfCompliant(mp.putIfAbsent("new key", null))
+      assertThrowsNPEIfCompliant(mp.putIfAbsent("abc", null))
+      assertThrowsNPEIfCompliant(mp.putIfAbsent("new key", null))
     }
 
     if (!factory.allowsNullKeys) {
-      // assertThrowsNPEIfCompliant(mp.putIfAbsent(null, "def"))
+      assertThrowsNPEIfCompliant(mp.putIfAbsent(null, "def"))
     }
   }
 
@@ -1371,7 +1371,7 @@ trait MapTest {
       assertTrue(mp.remove(null, "one"))
       assertFalse(mp.containsKey(null))
     } else {
-      // assertThrowsNPEIfCompliant(mp.remove(null, "old value"))
+      assertThrowsNPEIfCompliant(mp.remove(null, "old value"))
     }
 
     if (factory.allowsNullValues) {
@@ -1405,7 +1405,7 @@ trait MapTest {
       assertEquals("one", mp.remove(null))
       assertFalse(mp.containsKey(null))
     } else {
-      // assertThrowsNPEIfCompliant(mp.remove(null))
+      assertThrowsNPEIfCompliant(mp.remove(null))
     }
   }
 
@@ -1436,8 +1436,8 @@ trait MapTest {
       assertTrue(mp.containsKey("nullable"))
       assertNull(mp.get("nullable"))
     } else {
-      // assertThrowsNPEIfCompliant(mp.replace("ONE", null, "one"))
-      // assertThrowsNPEIfCompliant(mp.replace("ONE", "four", null))
+      assertThrowsNPEIfCompliant(mp.replace("ONE", null, "one"))
+      assertThrowsNPEIfCompliant(mp.replace("ONE", "four", null))
     }
 
     if (factory.allowsNullKeys) {
@@ -1448,7 +1448,7 @@ trait MapTest {
       assertTrue(mp.replace(null, "null value", "new value"))
       assertEquals("new value", mp.get(null))
     } else {
-      // assertThrowsNPEIfCompliant(mp.replace(null, "one", "two"))
+      assertThrowsNPEIfCompliant(mp.replace(null, "one", "two"))
     }
   }
 
@@ -1474,7 +1474,7 @@ trait MapTest {
       assertNull(mp.replace("ONE", "new one"))
       assertEquals("new one", mp.get("ONE"))
     } else {
-      // assertThrowsNPEIfCompliant(mp.replace("ONE", null))
+      assertThrowsNPEIfCompliant(mp.replace("ONE", null))
       assertEquals("four", mp.get("ONE"))
     }
 
@@ -1486,7 +1486,7 @@ trait MapTest {
       assertEquals("null value", mp.replace(null, "new value"))
       assertEquals("new value", mp.get(null))
     } else {
-      // assertThrowsNPEIfCompliant(mp.replace(null, "one"))
+      assertThrowsNPEIfCompliant(mp.replace(null, "one"))
     }
   }
 
@@ -1641,8 +1641,8 @@ trait MapTest {
     assertEquals("def", mp.merge("SEVEN", "def", notCalled))
     assertEquals("def", mp.get("SEVEN"))
 
-    // assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
-    // assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
+    assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
+    assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
 
     assertNull(mp.merge("ONE", "def", returnsNull))
     assertFalse(mp.containsKey("ONE"))
