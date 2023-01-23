@@ -181,7 +181,6 @@ class CharsetTest {
           UTF_16LE,
           UTF_8
         )) {
-      @tailrec
       def assertNext(): Unit = {
         assertTrue(iter.hasNext())
         val e = iter.next()
