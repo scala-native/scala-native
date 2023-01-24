@@ -2,4 +2,4 @@
 # In most cases, both javalib implementation 
 # and tests have to be changed
 
-javalib/util/FormatterTestEx.scala
+org/scalanative/testsuite/javalib/util/FormatterTestEx.scala

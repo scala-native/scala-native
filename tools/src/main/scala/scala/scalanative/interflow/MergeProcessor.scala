@@ -12,6 +12,12 @@ final class MergeProcessor(
     doInline: Boolean,
     eval: Eval
 )(implicit linked: linker.Result) {
+  import MergeProcessor.MergeBlockOffset
+  assert(
+    insts.length < MergeBlockOffset,
+    s"Too big function, ${insts.length} instructions, max allowed ${MergeBlockOffset}"
+  )
+
   val offsets: Map[Local, Int] =
     insts.zipWithIndex.collect {
       case (Inst.Label(local, _), offset) =>
@@ -26,10 +32,13 @@ final class MergeProcessor(
   def findMergeBlock(name: Local): MergeBlock = {
     def newMergeBlock = {
       val label = insts(offsets(name)).asInstanceOf[Inst.Label]
-      new MergeBlock(label, Local(blockFresh().id * 10000))
+      this.newMergeBlock(label)
     }
     blocks.getOrElseUpdate(name, newMergeBlock)
   }
+
+  private def newMergeBlock(label: Inst.Label): MergeBlock =
+    new MergeBlock(label, Local(blockFresh().id * MergeBlockOffset))
 
   def merge(
       block: MergeBlock
@@ -439,8 +448,7 @@ final class MergeProcessor(
         Val.Local(syntheticFresh(), Sub.lub(tys, Some(retTy)))
       val syntheticLabel =
         Inst.Label(syntheticFresh(), Seq(syntheticParam))
-      val resultMergeBlock =
-        new MergeBlock(syntheticLabel, Local(blockFresh().id * 10000))
+      val resultMergeBlock = newMergeBlock(syntheticLabel)
       blocks(syntheticLabel.name) = resultMergeBlock
       orderedBlocks += resultMergeBlock
 
@@ -472,6 +480,13 @@ final class MergeProcessor(
 
 object MergeProcessor {
   case object Restart extends Exception with scala.util.control.NoStackTrace
+
+  /* To mitigate risk of duplicated ids each merge block uses a dedicated
+   *  namespace. Translation to the new namespace is performed by multiplicating
+   *  id by value of MergeBlockOffset. This adds a restiction for maximal number
+   *  of instructions within a function to no larger then value of MergeBlockOffset.
+   */
+  private val MergeBlockOffset = 1000000L
 
   def fromEntry(
       insts: Array[Inst],
