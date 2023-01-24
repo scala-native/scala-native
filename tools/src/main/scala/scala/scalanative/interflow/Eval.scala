@@ -116,7 +116,7 @@ trait Eval { self: Interflow =>
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
-            case VirtualRef(_, cls, _) =>
+            case VirtualRef(_, cls, _, _) =>
               cls.ty
             case DelayedRef(op) =>
               op.resty
@@ -203,10 +203,10 @@ trait Eval { self: Interflow =>
             combine(conv, ty, value)
         }
       case Op.Classalloc(ClassRef(cls), zoneHandle) =>
-        Val.Virtual(state.allocClass(cls))
+        Val.Virtual(state.allocClass(cls, materialize(eval(zoneHandle))))
       case Op.Fieldload(ty, rawObj, name @ FieldRef(cls, fld)) =>
         eval(rawObj) match {
-          case VirtualRef(_, _, values) =>
+          case VirtualRef(_, _, values, _) =>
             values(fld.index)
           case DelayedRef(op: Op.Box) =>
             val name = op.ty.asInstanceOf[Type.RefKind].className
@@ -227,7 +227,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
         eval(obj) match {
-          case VirtualRef(_, _, values) =>
+          case VirtualRef(_, _, values, _) =>
             values(fld.index) = eval(value)
             Val.Unit
           case obj =>
@@ -388,7 +388,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Unbox(boxty @ Type.Ref(boxname, _, _), value) =>
         eval(value) match {
-          case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
+          case VirtualRef(_, cls, Array(value), _) if boxname == cls.name =>
             value
           case DelayedRef(Op.Box(Type.Ref(innername, _, _), innervalue))
               if innername == boxname =>
@@ -399,9 +399,12 @@ trait Eval { self: Interflow =>
       case Op.Arrayalloc(ty, init, zoneHandle) =>
         eval(init) match {
           case Val.Int(count) if count <= 128 =>
-            Val.Virtual(state.allocArray(ty, count))
+            Val.Virtual(
+              state.allocArray(ty, count, materialize(eval(zoneHandle)))
+            )
           case Val.ArrayValue(_, values) if values.size <= 128 =>
-            val addr = state.allocArray(ty, values.size)
+            val addr =
+              state.allocArray(ty, values.size, materialize(eval(zoneHandle)))
             val instance = state.derefVirtual(addr)
             values.zipWithIndex.foreach {
               case (v, idx) =>
@@ -409,11 +412,17 @@ trait Eval { self: Interflow =>
             }
             Val.Virtual(addr)
           case init =>
-            emit(Op.Arrayalloc(ty, materialize(init), materialize(zoneHandle)))
+            emit(
+              Op.Arrayalloc(
+                ty,
+                materialize(init),
+                materialize(eval(zoneHandle))
+              )
+            )
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (VirtualRef(_, _, values), Val.Int(offset))
+          case (VirtualRef(_, _, values, _), Val.Int(offset))
               if inBounds(values, offset) =>
             values(offset)
           case (arr, idx) =>
@@ -421,7 +430,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (VirtualRef(_, _, values), Val.Int(offset))
+          case (VirtualRef(_, _, values, _), Val.Int(offset))
               if inBounds(values, offset) =>
             values(offset) = eval(value)
             Val.Unit
@@ -437,7 +446,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
-          case VirtualRef(_, _, values) =>
+          case VirtualRef(_, _, values, _) =>
             Val.Int(values.length)
           case arr =>
             emit(Op.Arraylength(materialize(arr)))

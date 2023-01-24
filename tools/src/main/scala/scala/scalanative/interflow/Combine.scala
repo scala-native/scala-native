@@ -409,13 +409,13 @@ trait Combine { self: Interflow =>
       // This is not true however for boxes and strings as
       // they may be interned and the virtual allocation may
       // alias pre-existing materialized allocation.
-      case (Ieq, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
+      case (Ieq, VirtualRef(ClassKind | ArrayKind, _, _, _), r) =>
         Val.False
-      case (Ieq, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
+      case (Ieq, l, VirtualRef(ClassKind | ArrayKind, _, _, _)) =>
         Val.False
-      case (Ine, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
+      case (Ine, VirtualRef(ClassKind | ArrayKind, _, _, _), r) =>
         Val.True
-      case (Ine, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
+      case (Ine, l, VirtualRef(ClassKind | ArrayKind, _, _, _)) =>
         Val.True
 
       // Comparing non-nullable value with null will always

@@ -11,7 +11,7 @@ sealed abstract class Instance extends Cloneable {
       value.ty
     case DelayedInstance(op) =>
       op.resty
-    case VirtualInstance(_, cls, _) =>
+    case VirtualInstance(_, cls, _, _) =>
       Type.Ref(cls.name, exact = true, nullable = false)
   }
 
@@ -20,8 +20,8 @@ sealed abstract class Instance extends Cloneable {
       EscapedInstance(value)
     case DelayedInstance(op) =>
       DelayedInstance(op)
-    case VirtualInstance(kind, cls, values) =>
-      VirtualInstance(kind, cls, values.clone())
+    case VirtualInstance(kind, cls, values, zoneHandle) =>
+      VirtualInstance(kind, cls, values.clone(), zoneHandle)
   }
 
   override def toString: String = this match {
@@ -29,8 +29,9 @@ sealed abstract class Instance extends Cloneable {
       s"EscapedInstance(${value.show})"
     case DelayedInstance(op) =>
       s"DelayedInstance(${op.show})"
-    case VirtualInstance(kind, cls, values) =>
-      s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show)}))"
+    case VirtualInstance(kind, cls, values, zoneHandle) =>
+      s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show)}), ${if (zoneHandle == Val.Null) "Heap"
+        else s"SafeZone{$zoneHandle}"})"
   }
 }
 
@@ -41,7 +42,8 @@ final case class DelayedInstance(val delayedOp: Op) extends Instance
 final case class VirtualInstance(
     val kind: Kind,
     val cls: Class,
-    var values: Array[Val]
+    var values: Array[Val],
+    val zoneHandle: Val
 ) extends Instance {
 
   // We can't use case class generated equals, due to the fact
@@ -53,7 +55,8 @@ final case class VirtualInstance(
         Arrays.equals(
           values.asInstanceOf[Array[Object]],
           other.values.asInstanceOf[Array[Object]]
-        )
+        ) &&
+        zoneHandle == other.zoneHandle
     case _ =>
       false
   }

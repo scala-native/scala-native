@@ -5,13 +5,13 @@
 #include "../gc/shared/GCTypes.h"
 
 typedef struct _MemoryPage {
-    word_t *start;
+    void *start;
     size_t offset;
     struct _MemoryPage *next;
 } MemoryPage;
 
 typedef struct _MemoryChunk {
-    word_t *start;
+    void *start;
     size_t offset;
     size_t size;
     struct _MemoryChunk *next;

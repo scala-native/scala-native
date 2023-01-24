@@ -47,18 +47,6 @@ class SafeZoneTest {
       }
       assertEquals(a.v, 0)
     }
-
-    // TODO: Make it a compilation test.
-    // assertThrows(
-    //   classOf[CompilationFailedException],
-    //   SafeZone { sz0 =>
-    //     val a = SafeZone { sz1 =>
-    //       val a0 = withSafeZone(sz0, new A(0))
-    //       val a1 = withSafeZone(sz1, new A(1))
-    //       a1
-    //     }
-    //   }
-    // )
   }
 
   @Test def `allocate instances with members in different memory areas`(): Unit = {
@@ -88,5 +76,23 @@ class SafeZoneTest {
         arr1(0) = aInHeap
       }
     }
+  }
+
+  @Test def `objects allocated in safe zone is accessible`(): Unit = {
+    
+    def assertAccessible(n: Int): Unit = {
+      case class A(v: Int) {}
+      SafeZone { sz => 
+        val ary = new Array[{sz} A](n)
+        for i <- 0 until n do
+          ary(i) = withSafeZone(sz, new A(i))
+        var sum = 0
+        for i <- n - 1 to 0 by -1 do
+          sum += ary(i).v
+        assertTrue(sum == (0 until n).sum)
+      }
+    }
+
+    assertAccessible(10)
   }
 }
