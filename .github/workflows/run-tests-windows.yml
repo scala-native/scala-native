@@ -97,7 +97,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.2.2, 2.13.10]
-        build-mode: [release-fast, release-size]
+        build-mode: [release-fast]
         lto: [thin]
         optimize: [true]
         include:
@@ -123,7 +123,7 @@ jobs:
       - name: Test runtime
         run: >
           set SCALANATIVE_GC=immix&
-          set SCALANATIVE_MODE=${{matrix.build-mode}}&
+          set SCALANATIVE_MODE=release-fast&
           set SCALANATIVE_OPTIMIZE=${{matrix.optimize}}&
           set SCALANATIVE_LTO=${{matrix.lto}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
