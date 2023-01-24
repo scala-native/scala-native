@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "GCScalaNative.h"
 #include "GCTypes.h"
 #include "Heap.h"
 #include "datastructures/Stack.h"

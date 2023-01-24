@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "MemoryPool.h"
+#include "../gc/shared/GCScalaNative.h"
 #include "../gc/shared/MemoryMap.h"
 
 void memorypool_alloc_chunk(MemoryPool *pool);
@@ -49,6 +50,8 @@ MemoryPage *memorypool_claim(void *_pool) {
     pool->page = result->next;
     result->next = NULL;
     result->offset = 0;
+    // Notify the GC that the page is in use.
+    scalanative_add_roots(result->start, result->start + MEMORYPOOL_PAGE_SIZE);
     return result;
 }
 
@@ -57,6 +60,16 @@ void memorypool_reclaim(void *_pool, void *_head_page, void *_tail_page) {
     MemoryPool *pool = (MemoryPool *)_pool;
     MemoryPage *head = (MemoryPage *)_head_page;
     MemoryPage *tail = (MemoryPage *)_tail_page;
+    // Notify the GC that the pages are no longer in use.
+    MemoryPage *page = head;
+    while (page != NULL) {
+        scalanative_remove_roots(page->start,
+                                 page->start + MEMORYPOOL_PAGE_SIZE);
+        if (page == tail)
+            break;
+        page = page->next;
+    }
+    // Append the reclaimed pages to the pool.
     tail->next = pool->page;
     pool->page = head;
 }

@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "GCScalaNative.h"
 #include "MemoryMap.h"
 #include "MemoryInfo.h"
 #include "Parsing.h"

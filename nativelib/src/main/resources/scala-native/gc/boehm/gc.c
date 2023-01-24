@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "GCScalaNative.h"
 
 #if defined(_WIN32) || defined(WIN32)
 // Boehm on Windows needs User32.lib linked
