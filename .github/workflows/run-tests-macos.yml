@@ -64,5 +64,5 @@ jobs:
 
       - name: Test scripted
         run: |
-          export LLVM_BIN=$(brew --prefix llvm@14)/bin
+          export LLVM_BIN=$(brew --prefix llvm@15)/bin
           sbt "test-scripted ${{matrix.scala}}"
