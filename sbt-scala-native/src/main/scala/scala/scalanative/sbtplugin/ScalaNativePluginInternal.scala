@@ -256,6 +256,14 @@ object ScalaNativePluginInternal {
     },
       .tag(NativeTags.Link)
       .value,
+    console := console
+      .dependsOn(Def.task {
+        streams.value.log.warn(
+          "Scala REPL doesn't work with Scala Native. You " +
+            "are running a JVM REPL. Native things won't work."
+        )
+      })
+      .value,
     run := {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
