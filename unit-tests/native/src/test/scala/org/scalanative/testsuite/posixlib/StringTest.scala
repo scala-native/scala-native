@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
 import org.junit.Assert._

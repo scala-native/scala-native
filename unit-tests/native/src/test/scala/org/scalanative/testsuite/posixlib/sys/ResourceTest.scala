@@ -1,19 +1,18 @@
-package scala.scalanative
-package posix
+package org.scalanative.testsuite.posixlib
 package sys
 
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.libc.errno
-import scalanative.posix.errno._
 import scalanative.runtime.Platform
 import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsafe.{CInt, Ptr, Zone, alloc}
 import scalanative.unsigned._
 
-import resource._, resourceOps._
-import timeOps._
+import scalanative.posix.errno._
+import scalanative.posix.sys.resource._
+import scalanative.posix.sys.resourceOps._
+import scalanative.posix.sys.timeOps._
 
 // Design notes:
 //
@@ -37,28 +36,28 @@ class ResourceTest {
   case class TestInfo(name: String, value: CInt)
 
   @Test def getpriorityInvalidArgWhich() = if (!isWindows) {
-    errno.errno = 0
+    errno = 0
     val invalidWhich = -1
 
     getpriority(invalidWhich, 0.toUInt)
 
-    assertEquals("unexpected errno", EINVAL, errno.errno)
+    assertEquals("unexpected errno", EINVAL, errno)
   }
 
   @Test def getpriorityInvalidArgWho() = if (!isWindows) {
-    errno.errno = 0
+    errno = 0
 
     getpriority(PRIO_PROCESS, UInt.MaxValue)
 
     // Most operating systems will return EINVAL. Handle corner cases here.
-    if (errno.errno != EINVAL) {
+    if (errno != EINVAL) {
       if (!Platform.isLinux()) {
-        assertEquals("unexpected errno", EINVAL, errno.errno)
-      } else if (errno.errno != 0) { // Linux
+        assertEquals("unexpected errno", EINVAL, errno)
+      } else if (errno != 0) { // Linux
         // A pid of UInt.MaxValue is highly unlikely but, by one reading,
         // possible. If it exists and is found, it should not cause this test
         // to fail, just to be specious (have false look of genuineness).
-        assertEquals("unexpected errno", ESRCH, errno.errno)
+        assertEquals("unexpected errno", ESRCH, errno)
       }
     }
   }
@@ -71,11 +70,11 @@ class ResourceTest {
     )
 
     for (c <- cases) {
-      errno.errno = 0
+      errno = 0
 
       val result = getpriority(c.value, 0.toUInt)
 
-      assertEquals("unexpected errno", 0, errno.errno)
+      assertEquals("unexpected errno", 0, errno)
 
       // Beware: these are linux un-nice "nice" priorities,
       // where -20 is least "nice", so highest priority.
@@ -88,12 +87,12 @@ class ResourceTest {
 
   @Test def getrlimitInvalidArgResource() = if (!isWindows) {
     Zone { implicit z =>
-      errno.errno = 0
+      errno = 0
       val rlimPtr = alloc[rlimit]()
 
       getrlimit(Integer.MAX_VALUE, rlimPtr)
 
-      assertEquals("unexpected errno", EINVAL, errno.errno)
+      assertEquals("unexpected errno", EINVAL, errno)
     }
   }
 
@@ -110,13 +109,13 @@ class ResourceTest {
       )
 
       for (c <- cases) {
-        errno.errno = 0
+        errno = 0
         val rlimPtr = alloc[rlimit]() // start each pass with all bytes 0.
 
         val result = getrlimit(c.value, rlimPtr)
 
         assertEquals(
-          s"${c.name} unexpected failure, errno: ${errno.errno}",
+          s"${c.name} unexpected failure, errno: ${errno}",
           0,
           result
         )
@@ -142,23 +141,23 @@ class ResourceTest {
 
   @Test def getrusageInvalidArgWho() = if (!isWindows) {
     Zone { implicit z =>
-      errno.errno = 0
+      errno = 0
       val rusagePtr = alloc[rusage]()
 
       getrusage(Integer.MIN_VALUE, rusagePtr)
 
-      assertEquals("unexpected errno", EINVAL, errno.errno)
+      assertEquals("unexpected errno", EINVAL, errno)
     }
   }
 
   @Test def getrusageSelf() = if (!isWindows) {
     Zone { implicit z =>
-      errno.errno = 0
+      errno = 0
       val rusagePtr = alloc[rusage]()
 
       val result = getrusage(RUSAGE_SELF, rusagePtr)
 
-      assertEquals(s"unexpected failure, errno: ${errno.errno}", 0, result)
+      assertEquals(s"unexpected failure, errno: ${errno}", 0, result)
 
       assertTrue(
         s"unexpected ru_utime.tv_sec: ${rusagePtr.ru_utime.tv_sec} < 0",
@@ -185,12 +184,12 @@ class ResourceTest {
 
   @Test def getrusageChildren() = if (!isWindows) {
     Zone { implicit z =>
-      errno.errno = 0
+      errno = 0
       val rusagePtr = alloc[rusage]()
 
       val result = getrusage(RUSAGE_CHILDREN, rusagePtr)
 
-      assertEquals(s"unexpected failure, errno: ${errno.errno}", 0, result)
+      assertEquals(s"unexpected failure, errno: ${errno}", 0, result)
 
       // tv_sec could validly be 0 if either no descendents
       // have been created or descendents were created but
