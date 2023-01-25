@@ -52,7 +52,7 @@ trait PolyInline { self: Interflow =>
       val classCount = targets.map(_._1).size
       val implCount = targets.map(_._2).distinct.size
 
-      if (mode == build.Mode.ReleaseFast) {
+      if (mode == build.Mode.ReleaseFast || mode == build.Mode.ReleaseSize) {
         classCount <= 8 && implCount == 2
       } else {
         classCount <= 16 && implCount >= 2 && implCount <= 4

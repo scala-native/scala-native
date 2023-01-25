@@ -158,7 +158,7 @@ Since Name                     Type             Description
 0.1   ``nativeClangPP``        ``File``         Path to ``clang++`` command
 0.1   ``nativeCompileOptions`` ``Seq[String]``  Extra options passed to clang verbatim during compilation
 0.1   ``nativeLinkingOptions`` ``Seq[String]``  Extra options passed to clang verbatim during linking
-0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"`` or ``"release-full"`` (2)
+0.1   ``nativeMode``           ``String``       One of ``"debug"``, ``"release-fast"``, ``"release-size"`` or ``"release-full"`` (2)
 0.2   ``nativeGC``             ``String``       One of ``"none"``, ``"boehm"``, ``"immix"`` or ``"commix"`` (3)
 0.3.3 ``nativeLinkStubs``      ``Boolean``      Whether to link ``@stub`` definitions, or to ignore them
 0.4.0 ``nativeConfig``         ``NativeConfig`` Configuration of the Scala Native plugin
@@ -193,6 +193,13 @@ Scala Native supports three distinct linking modes:
    Optimize for runtime performance while still trying to keep
    quick compilation time and small emitted code size.
    Similar to clang's ``-O2`` with addition of link-time optimization over
+   the whole application code.
+
+2. **release-size.** (introduced in 0.5.0)
+
+   Optimize for reduced output size while still trying to keep
+   quick compilation time and relatively fast runtime performance.
+   Similar to clang's ``-Oz`` with addition of link-time optimization over
    the whole application code.
 
 3. **release-full.** (introduced in 0.4.0)

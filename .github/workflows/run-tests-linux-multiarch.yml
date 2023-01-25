@@ -87,6 +87,8 @@ jobs:
           # Release without LTO produces 1 big file taking long to compile, especially when emulated
           - build-mode: release-fast
             lto: none
+          - build-mode: release-size
+            lto: none
           - build-mode: debug
             lto: thin
           # Reduce ammount of builds combinations
@@ -104,6 +106,8 @@ jobs:
             scala: 3.2.0
           - gc: boehm
             build-mode: release-fast
+          - gc: boehm
+            build-mode: release-size
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -120,8 +124,10 @@ jobs:
         # Following envs CROSS_ are always present in docker container
         run: |
           buildMode=${{matrix.build-mode}}
-          if [[ "$buildMode" == "release-fast" ]]; then 
+          if [[ "$buildMode" == "release-fast" ]]; then
             buildMode=releaseFast
+          elif [[ "$buildMode" == "release-size" ]]; then
+            buildMode=releaseSize
           fi
 
           SetConfigTemplate=$(cat << EOM
