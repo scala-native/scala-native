@@ -9,6 +9,7 @@ import scala.util.Try
 /** Utility methods for building code using Scala Native. */
 object Build {
 
+  // holds project basename and the related Config
   private val cache = mutable.HashMap.empty[String, Config]
 
   /** Reuse config from cache or cache the config after running any needed
@@ -149,7 +150,7 @@ object Build {
    *  @return
    *    a sequence of the object file paths
    */
-  private def findAndCompileNativeLibs(
+  def findAndCompileNativeLibs(
       config: Config,
       linkerResult: linker.Result
   ): Seq[Path] = {

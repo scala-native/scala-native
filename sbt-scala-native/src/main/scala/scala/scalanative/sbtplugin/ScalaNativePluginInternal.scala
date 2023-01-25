@@ -100,7 +100,10 @@ object ScalaNativePluginInternal {
     )
   }
 
-  // called in overridden method in plugin
+  /** Called in overridden method in plugin
+   *
+   *  nativeConfig created to satisfy sbt scope: Global / nativeConfig
+   */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
     println("scalaNativeGlobalSettings new empty nativeConfig set")
     Seq(
@@ -156,7 +159,7 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-      // println(s"$config")
+      println(s"$config ${NativeConfig.cnt}")
       config
     },
     nativeLink := Def
@@ -165,6 +168,7 @@ object ScalaNativePluginInternal {
         val classpath = fullClasspath.value.map(_.data.toPath)
         val logger = streams.value.log.toLogger
 
+        println(s"$nativeLink ${NativeConfig.cnt}")
         val config =
           build.Config.empty
             .withLogger(logger)

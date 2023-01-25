@@ -91,6 +91,17 @@ object Discover {
     libs
   }
 
+  /** Discover features where the default is not sufficient to execute a build
+   *  that will succeed.
+   *
+   *  Discovery is only run the first time on the [[#compilerConfig]] which is
+   *  the the [[NativeConfig]] object.
+   *
+   *  @param config
+   *    the config used for discovery
+   *  @return
+   *    the final config modified by the discovery process
+   */
   def discover(config: Config): Config = {
     println("In discover")
     val empty = build.NativeConfig.empty
