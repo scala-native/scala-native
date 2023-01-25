@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 package sys
 
 import scala.scalanative.unsafe._

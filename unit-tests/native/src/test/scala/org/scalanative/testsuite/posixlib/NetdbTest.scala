@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 
 import org.scalanative.testsuite.utils.Platform
 import scalanative.meta.LinktimeInfo.isWindows
