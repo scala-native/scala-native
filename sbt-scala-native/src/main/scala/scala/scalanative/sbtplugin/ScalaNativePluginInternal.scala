@@ -159,7 +159,7 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-      println(s"$config ${NativeConfig.cnt}")
+      println(s"config ${NativeConfig.cnt}")
       config
     },
     nativeLink := Def

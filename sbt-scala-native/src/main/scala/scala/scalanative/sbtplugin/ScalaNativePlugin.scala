@@ -38,7 +38,7 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
-    // raw settings minimal sbt projects
+    // 10 raw settings for minimal sbt projects
 
     val nativeClang =
       settingKey[File]("Location of the clang compiler.")
@@ -60,7 +60,7 @@ object ScalaNativePlugin extends AutoPlugin {
       settingKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
 
     val nativeMode =
-      taskKey[String](
+      settingKey[String](
         "Compilation mode, either \"debug\", \"release-size\", \"release-fast\", or \"release-full\"."
       )
 

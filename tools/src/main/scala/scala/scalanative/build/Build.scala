@@ -93,51 +93,53 @@ object Build {
         checkWorkdirExists(cconfig)
         cconfig
       }
+      buildImpl(cconfig)
+    }
+  }
+  private def buildImpl(config: Config)(implicit scope: Scope): Path = {
+    // find and link
+    val linked = {
+      val entries = ScalaNative.entries(config)
+      val linked = ScalaNative.link(config, entries)
+      ScalaNative.logLinked(config, linked)
+      linked
+    }
 
-      // find and link
-      val linked = {
-        val entries = ScalaNative.entries(cconfig)
-        val linked = ScalaNative.link(cconfig, entries)
-        ScalaNative.logLinked(cconfig, linked)
-        linked
+    // optimize and generate ll
+    val generated = {
+      val optimized = ScalaNative.optimize(config, linked)
+      ScalaNative.codegen(config, optimized)
+    }
+
+    val objectPaths = config.logger.time("Compiling to native code") {
+      // compile generated LLVM IR
+      val llObjectPaths = LLVM.compile(config, generated)
+
+      /* Used to pass alternative paths of compiled native (lib) sources,
+       * eg: reused native sources used in partests.
+       */
+      val libObjectPaths = scala.util.Properties
+        .propOrNone("scalanative.build.paths.libobj") match {
+        case None =>
+          /* Finds all the libraries on the classpath that contain native
+           * code and then compiles them.
+           */
+          findAndCompileNativeLibs(config, linked)
+        case Some(libObjectPaths) =>
+          libObjectPaths
+            .split(java.io.File.pathSeparatorChar)
+            .toSeq
+            .map(Paths.get(_))
       }
 
-      // optimize and generate ll
-      val generated = {
-        val optimized = ScalaNative.optimize(cconfig, linked)
-        ScalaNative.codegen(cconfig, optimized)
-      }
+      libObjectPaths ++ llObjectPaths
+    }
 
-      val objectPaths = config.logger.time("Compiling to native code") {
-        // compile generated LLVM IR
-        val llObjectPaths = LLVM.compile(cconfig, generated)
-
-        /* Used to pass alternative paths of compiled native (lib) sources,
-         * eg: reused native sources used in partests.
-         */
-        val libObjectPaths = scala.util.Properties
-          .propOrNone("scalanative.build.paths.libobj") match {
-          case None =>
-            /* Finds all the libraries on the classpath that contain native
-             * code and then compiles them.
-             */
-            findAndCompileNativeLibs(cconfig, linked)
-          case Some(libObjectPaths) =>
-            libObjectPaths
-              .split(java.io.File.pathSeparatorChar)
-              .toSeq
-              .map(Paths.get(_))
-        }
-
-        libObjectPaths ++ llObjectPaths
-      }
-
-      // finally link
-      config.logger.time(
-        s"Linking native code (${cconfig.gc.name} gc, ${cconfig.LTO.name} lto)"
-      ) {
-        LLVM.link(cconfig, linked, objectPaths)
-      }
+    // finally link
+    config.logger.time(
+      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
+    ) {
+      LLVM.link(config, linked, objectPaths)
     }
   }
 
