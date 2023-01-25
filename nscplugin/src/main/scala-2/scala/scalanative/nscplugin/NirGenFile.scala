@@ -10,12 +10,11 @@ import scala.tools.nsc.io.AbstractFile
 trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
 
-  def genPathFor(cunit: CompilationUnit, ownerName: nir.Global): Path = {
+  def genPathFor(
+      cunit: CompilationUnit,
+      ownerName: nir.Global
+  ): AbstractFile = {
     val nir.Global.Top(id) = ownerName
-    genPathFor(cunit, id)
-  }
-
-  def genPathFor(cunit: CompilationUnit, id: String): Path = {
     val baseDir: AbstractFile =
       settings.outputDirs.outputDirFor(cunit.source.file)
 
@@ -23,15 +22,12 @@ trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
     val dir = pathParts.init.foldLeft(baseDir)(_.subdirectoryNamed(_))
 
     val filename = pathParts.last
-    val file = dir fileNamed (filename + ".nir")
-
-    Paths.get(file.file.getAbsolutePath)
+    dir.fileNamed(filename + ".nir")
   }
 
-  def genIRFile(path: Path, defns: Seq[nir.Defn]): Unit = {
-    val outStream = new FileOutputStream(path.toFile)
-    try {
-      serializeBinary(defns, outStream)
-    } finally outStream.close()
+  def genIRFile(path: AbstractFile, defns: Seq[nir.Defn]): Unit = {
+    val outStream = path.bufferedOutput
+    try serializeBinary(defns, outStream)
+    finally outStream.close()
   }
 }
