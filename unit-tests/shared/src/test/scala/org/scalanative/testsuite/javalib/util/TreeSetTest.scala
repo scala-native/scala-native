@@ -28,6 +28,16 @@ import ju.Comparator
 
 import scala.reflect.ClassTag
 
+class TreeSetComparatorTest {
+
+  @Test def naturalComparator_issue4796(): Unit = {
+    val cmp = ju.Comparator.naturalOrder[String]()
+
+    assertSame(cmp, new TreeSet[String](cmp).comparator())
+  }
+
+}
+
 class TreeSetWithoutNullTest extends TreeSetTest(new TreeSetFactory) {
 
   @Test def comparatorNull(): Unit = {
@@ -363,19 +373,15 @@ class TreeSetWithNullFactory extends TreeSetFactory {
   override def implementationName: String =
     super.implementationName + " {allows null}"
 
-  case class EvenNullComp[E]() extends Comparator[E] {
-    def compare(a: E, b: E): Int =
-      (Option(a), Option(b)) match {
-        case (Some(e1), Some(e2)) =>
-          e1.asInstanceOf[Comparable[E]].compareTo(e2)
-        case (Some(e1), None) => -1
-        case (None, Some(e2)) => 1
-        case (None, None)     => 0
-      }
+  override def empty[E: ClassTag]: ju.TreeSet[E] = {
+    val natural = Comparator.comparing[E, Comparable[Any]](
+      ((_: E)
+        .asInstanceOf[Comparable[Any]]): ju.function.Function[E, Comparable[
+        Any
+      ]]
+    )
+    new TreeSet[E](Comparator.nullsFirst(natural))
   }
-
-  override def empty[E: ClassTag]: ju.TreeSet[E] =
-    new TreeSet[E](EvenNullComp[E]())
 
   override def allowsNullElement: Boolean = true
 
