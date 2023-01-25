@@ -1,4 +1,4 @@
-package scala.scalanative.posix.sys
+package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
 import org.junit.Assert._
@@ -10,9 +10,11 @@ import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 import scala.scalanative.libc.stdio
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.posix.unistd
-import scala.scalanative.posix.fcntl
+
 import scala.scalanative.posix.errno
+import scala.scalanative.posix.fcntl
+import scala.scalanative.posix.sys.stat
+import scala.scalanative.posix.unistd
 
 class StatTest {
 

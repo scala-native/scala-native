@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 package sys
 
 import scalanative.unsafe._
@@ -11,7 +11,8 @@ import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
-import scalanative.posix.sys.SocketTestHelpers._
+
+import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers._
 
 import scalanative.meta.LinktimeInfo.isWindows
 

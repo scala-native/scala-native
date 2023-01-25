@@ -1,4 +1,4 @@
-package scala.scalanative.posix
+package org.scalanative.testsuite.posixlib
 package netinet
 
 import scalanative.posix.netinet.in._
