@@ -73,6 +73,8 @@ trait Inline { self: Interflow =>
             alwaysInline || isCtor
           case build.Mode.ReleaseFast =>
             alwaysInline || hintInline || isSmall || isCtor
+          case build.Mode.ReleaseSize =>
+            alwaysInline || isSmall || isCtor
           case build.Mode.ReleaseFull =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }

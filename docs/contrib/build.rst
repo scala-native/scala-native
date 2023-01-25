@@ -101,7 +101,7 @@ The `nativeMode` setting is controlled via the `SCALANATIVE_MODE` environment
 variable. The default mode, `debug` is designed to optimize but compile fast
 whereas the `release` mode performs additional optimizations and takes longer
 to compile. The `release-fast` mode builds faster, performs less optimizations,
-but may perform better than `release`.
+but may perform better than `release`. The `release-size` mode optimizes for reduced size.
 
 The `optimize` setting is controlled via the `SCALANATIVE_OPTIMIZE` environment
 variable. Valid values are `true` and `false`. The default value is `true`.
