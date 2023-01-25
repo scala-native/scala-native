@@ -22,7 +22,7 @@ trait Visit { self: Interflow =>
 
   def shallDuplicate(name: Global, argtys: Seq[Type]): Boolean =
     mode match {
-      case build.Mode.Debug | build.Mode.ReleaseFast =>
+      case build.Mode.Debug | build.Mode.ReleaseFast | build.Mode.ReleaseSize =>
         false
 
       case build.Mode.ReleaseFull =>

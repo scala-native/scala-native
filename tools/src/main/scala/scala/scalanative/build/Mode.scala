@@ -23,6 +23,9 @@ object Mode {
   private[scalanative] case object ReleaseFast
       extends Mode("release-fast")
       with Release
+  private[scalanative] case object ReleaseSize
+      extends Mode("release-size")
+      with Release
   private[scalanative] case object ReleaseFull
       extends Mode("release-full")
       with Release
@@ -35,6 +38,11 @@ object Mode {
 
   /** Release compilation mode that's still fast to compile. */
   def releaseFast: Mode = ReleaseFast
+
+  /** Release compilation mode optimize for reduced size that's still fast to
+   *  compile.
+   */
+  def releaseSize: Mode = ReleaseSize
 
   /** Release compilation mode that's uses full set of optimizations. */
   def releaseFull: Mode = ReleaseFull
@@ -50,6 +58,8 @@ object Mode {
       ReleaseFull
     case "release-fast" =>
       ReleaseFast
+    case "release-size" =>
+      ReleaseSize
     case "release-full" =>
       ReleaseFull
     case value =>

@@ -271,6 +271,7 @@ private[scalanative] object LLVM {
     config.mode match {
       case Mode.Debug       => "-O0"
       case Mode.ReleaseFast => "-O2"
+      case Mode.ReleaseSize => "-Oz"
       case Mode.ReleaseFull => "-O3"
     }
 

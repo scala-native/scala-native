@@ -57,7 +57,7 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeMode =
       taskKey[String](
-        "Compilation mode, either \"debug\", \"release-fast\", or \"release-full\"."
+        "Compilation mode, either \"debug\", \"release-size\", \"release-fast\", or \"release-full\"."
       )
 
     val nativeGC =
