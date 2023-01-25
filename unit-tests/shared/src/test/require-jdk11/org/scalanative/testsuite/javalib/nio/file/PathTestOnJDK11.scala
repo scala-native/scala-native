@@ -1,3 +1,4 @@
+package org.scalanative.testsuite
 package javalib.nio.file
 
 import java.nio.file._
@@ -10,7 +11,7 @@ import org.junit.Assert._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows
 
-class PathTest {
+class PathTestOnJDK11 {
 
   @Test def pathOfRelativePathReturnsPathRelativeToCwd(): Unit = {
     val pathString = if (isWindows) raw"foo\bar" else "foo/bar"
@@ -82,6 +83,7 @@ class PathTest {
     val path = Path.of("space dir/space file")
     assertEquals(expected, path.toString)
   }
+
   @Test def joiningEmptyIsEmpty() = {
     assertEquals(Path.of(""), Path.of("", ""))
   }
