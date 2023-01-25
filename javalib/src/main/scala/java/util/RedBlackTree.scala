@@ -1,4 +1,5 @@
-// Ported form Scala.js, revision 6819668, dated 7 Oct 2020
+// Ported from Scala.js commit def516f dated: 2023-01-22
+
 /*
  * Scala.js (https://www.scala-js.org/)
  *
@@ -15,9 +16,7 @@ package java.util
 
 import scala.annotation.tailrec
 
-/** The red-black tree implementation used by `TreeSet`s.
- *
- *  It could also be used by `TreeMap`s in the future.
+/** The red-black tree implementation used by `TreeSet`s and `TreeMap`s.
  *
  *  This implementation was copied and adapted from
  *  `scala.collection.mutable.RedBlackTree` as found in Scala 2.13.0.
@@ -247,7 +246,13 @@ private[util] object RedBlackTree {
   def get[A, B](tree: Tree[A, B], key: Any)(implicit
       comp: Comparator[_ >: A]
   ): B = {
-    nullableNodeFlatMap(getNode(tree.root, key))(_.value)
+    nullableNodeFlatMap(getNode(tree, key))(_.value)
+  }
+
+  def getNode[A, B](tree: Tree[A, B], key: Any)(implicit
+      comp: Comparator[_ >: A]
+  ): Node[A, B] = {
+    getNode(tree.root, key)
   }
 
   @tailrec
@@ -511,10 +516,10 @@ private[util] object RedBlackTree {
 
   def delete[A, B](tree: Tree[A, B], key: Any)(implicit
       comp: Comparator[_ >: A]
-  ): B = {
+  ): Node[A, B] = {
     nullableNodeFlatMap(getNode(tree.root, key)) { node =>
       deleteNode(tree, node)
-      node.value
+      node
     }
   }
 
@@ -658,9 +663,16 @@ private[util] object RedBlackTree {
 
   /** Returns `null.asInstanceOf[A]` if `node eq null`, otherwise `node.key`. */
   @inline
-  private def nullableNodeKey[A, B](node: Node[A, B]): A =
+  def nullableNodeKey[A, B](node: Node[A, B]): A =
     if (node eq null) null.asInstanceOf[A]
     else node.key
+
+  /** Returns `null.asInstanceOf[B]` if `node eq null`, otherwise `node.value`.
+   */
+  @inline
+  def nullableNodeValue[A, B](node: Node[A, B]): B =
+    if (node eq null) null.asInstanceOf[B]
+    else node.value
 
   /** Returns the node that follows `node` in an in-order tree traversal.
    *
