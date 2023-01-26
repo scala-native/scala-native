@@ -35,3 +35,18 @@ trait Path extends Comparable[Path] with Iterable[Path] with Watchable {
   def toString(): String
   def toUri(): URI
 }
+
+object Path {
+  private lazy val fs = FileSystems.getDefault()
+  // Introduced in Java 11
+  def of(path: String, paths: Array[String]): Path = fs.getPath(path, paths)
+  def of(uri: URI): Path = if (uri.getScheme() == null) {
+    throw new IllegalArgumentException("Missing scheme")
+  } else if (uri.getScheme().toLowerCase == "file") {
+    fs.getPath(uri.getPath(), Array.empty)
+  } else {
+    throw new FileSystemNotFoundException(
+      s"Provider ${uri.getScheme()} is not installed."
+    )
+  }
+}
