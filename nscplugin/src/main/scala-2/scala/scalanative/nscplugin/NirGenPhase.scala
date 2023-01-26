@@ -85,7 +85,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
 
       val reflectiveInstFiles = reflectiveInstantiationInfo.map {
         reflectiveInstBuf =>
-          val path = genPathFor(cunit, reflectiveInstBuf.name.id)
+          val path = genPathFor(cunit, reflectiveInstBuf.name)
           (path, reflectiveInstBuf.toSeq)
       }.toMap
 
@@ -152,18 +152,10 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
         }
       val allFiles = regularFiles ++ reflectiveInstFiles
 
-      val generateIRFile: JConsumer[(JPath, Seq[Defn])] =
-        new JConsumer[(JPath, Seq[Defn])] {
-          override def accept(t: (JPath, Seq[Defn])): Unit = {
-            val (path, stats) = t
-            genIRFile(path, stats)
-          }
-        }
-
       JStream
         .of(allFiles.toSeq: _*)
         .parallel()
-        .forEach(generateIRFile)
+        .forEach { case (path, stats) => genIRFile(path, stats) }
     } finally {
       generatedMirrorClasses.clear()
     }
