@@ -4,8 +4,10 @@ import java.nio.file.Files
 
 object Validator {
   def validate(config: Config): Config = {
-    validateMainClass(config) // side effecting
-    // returns Config
+    // side effecting
+    validateMainClass(config)
+    validateBasename(config)
+    // returns new Config
     validateClasspath(config)
   }
 
@@ -22,6 +24,14 @@ object Validator {
       case _: BuildTarget.Library => ()
     }
   }
+
+  // throws if no defaultBasename or basename is set
+  private def validateBasename(config: Config): Unit =
+    if (config.basename.trim.isEmpty) { // trim for non default error
+      throw new BuildException(
+        "Config defaultBasename or NativeConfig basename must be set."
+      )
+    }
 
   // filter so classpath only has jars or directories
   private def validateClasspath(config: Config): Config = {
