@@ -129,14 +129,114 @@ private[lang] class UnixProcess private (
 }
 
 object UnixProcess {
-  def apply(builder: ProcessBuilder): Process = {
-    val useGen2 = if (LinktimeInfo.is32BitPlatform) {
-      false
-    } else if (LinktimeInfo.isLinux) {
-      LinuxOsSpecific.hasPidfdOpen()
-    } else if ((LinktimeInfo.isMac) || (LinktimeInfo.isFreeBSD)) {
-      // Other BSDs should work but have not been exercised.
-      true
+  @link("pthread")
+  @extern
+  private[this] object ProcessMonitor {
+    @name("scalanative_process_monitor_notify")
+    def notifyMonitor(): Unit = extern
+    @name("scalanative_process_monitor_check_result")
+    def checkResult(pid: Int): CInt = extern
+    @name("scalanative_process_monitor_init")
+    def init(): Unit = extern
+    @name("scalanative_process_monitor_wait_for_pid")
+    def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt = extern
+  }
+  ProcessMonitor.init()
+
+  private def checkResult(pid: Int): CInt = ProcessMonitor.checkResult(pid)
+  private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
+    ProcessMonitor.waitForPid(pid, ts, res)
+  def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
+    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val errfds =
+      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
+
+    throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
+    throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
+    if (!builder.redirectErrorStream())
+      throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
+    val cmd = builder.command()
+    val binaries = binaryPaths(builder.environment(), cmd.get(0))
+    val dir = builder.directory()
+    val argv = nullTerminate(cmd)
+    val envp = nullTerminate {
+      val list = new ArrayList[String]
+      val it = builder
+        .environment()
+        .entrySet()
+        .iterator()
+        .scalaOps
+        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
+      list
+    }
+
+    unistd.fork() match {
+      case -1 =>
+        throw new IOException("Unable to fork process")
+
+      case 0 =>
+        if (dir != null)
+          unistd.chdir(toCString(dir.toString))
+
+        setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+        setupChildFDS(
+          !(outfds + 1),
+          builder.redirectOutput(),
+          unistd.STDOUT_FILENO
+        )
+        setupChildFDS(
+          !(errfds + 1),
+          if (builder.redirectErrorStream()) Redirect.PIPE
+          else builder.redirectError(),
+          unistd.STDERR_FILENO
+        )
+        unistd.close(!infds)
+        unistd.close(!(infds + 1))
+        unistd.close(!outfds)
+        unistd.close(!(outfds + 1))
+        unistd.close(!errfds)
+        unistd.close(!(errfds + 1))
+
+        binaries.foreach { b =>
+          val bin = toCString(b)
+          if (unistd.execve(bin, argv, envp) == -1 && errno == e.ENOEXEC) {
+            val al = new ArrayList[String](3)
+            al.add("/bin/sh"); al.add("-c"); al.add(b)
+            val newArgv = nullTerminate(al)
+            unistd.execve(c"/bin/sh", newArgv, envp)
+          }
+        }
+
+        /* execve failed. FreeBSD "man" recommends fast exit.
+         * Linux says nada.
+         * Code 127 is "Command not found", the convention for exec failure.
+         */
+        unistd._exit(127)
+        throw new IOException(s"Failed to create process for command: $cmd")
+
+      case pid =>
+        /* Being here, we know that a child process exists, or existed.
+         * ProcessMonitor needs to know about it. It is _far_ better
+         * to do the notification in this parent.
+         *
+         * Implementations of 'fork' can be very restrictive about what
+         * can run in the child before it calls one of the 'exec*' methods.
+         * 'notifyMonitor' may or may not follow those rules. Even if it
+         * currently does, that could easily change with future maintenance
+         * make it no longer compliant, leading to shrapnel & wasted
+         * developer time.
+         */
+        ProcessMonitor.notifyMonitor()
+        Seq(!(outfds + 1), !(errfds + 1), !infds) foreach unistd.close
+        new UnixProcess(pid, builder, infds, outfds, errfds)
+    }
+  }
+
+  @inline
+  private def throwOnError(rc: CInt, msg: => String): CInt = {
+    if (rc != 0) {
+      throw new IOException(s"$msg Error code: $rc, Error number: $errno")
     } else {
       rc
     }
