@@ -250,7 +250,7 @@ private[lang] class UnixProcessGen2 private (
 
     val fds = stackalloc[struct_pollfd](1.toUInt)
     (fds + 0).fd = pidFd
-    (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
+    (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
 
     val tmo = timeout.getOrElse(null)
 

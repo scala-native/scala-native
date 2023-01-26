@@ -8,7 +8,7 @@
  * https://gee.cs.oswego.edu/dl/concurrency-interest/index.html
  */
 
-package java.util;
+package java.util
 
 import java.io.Serializable
 import java.util.function.Consumer
@@ -17,35 +17,43 @@ import java.util.function.UnaryOperator
 
 import ArrayDeque._
 
+object ArrayDeque {
+
+  /** The maximum size of array to allocate. Some VMs reserve some header words
+   *  in an array. Attempts to allocate larger arrays may result in
+   *  OutOfMemoryError: Requested array size exceeds VM limit
+   */
+  private val MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8
+
+}
+
 /** Resizable-array implementation of the {@link Deque} interface. Array deques
  *  have no capacity restrictions; they grow as necessary to support usage. They
  *  are not thread-safe; in the absence of external synchronization, they do not
  *  support concurrent access by multiple threads. Null elements are prohibited.
- *  This class is likely to be faster than {@link Stack} when used as a stack,
+ *  This class is likely to be faster than java.util.Stack when used as a stack,
  *  and faster than {@link LinkedList} when used as a queue.
  *
- *  <p>Most {@code ArrayDeque} operations run in amortized constant time.
- *  Exceptions include {@link #remove(Object) remove}, {@link
- *  #removeFirstOccurrence removeFirstOccurrence}, {@link #removeLastOccurrence
- *  removeLastOccurrence}, {@link #contains contains}, {@link #iterator
- *  iterator.remove()}, and the bulk operations, all of which run in linear
- *  time.
+ *  Exceptions include remove, {@link #removeFirstOccurrence
+ *  removeFirstOccurrence}, {@link #removeLastOccurrence removeLastOccurrence},
+ *  {@link #contains contains}, {@link #iterator iterator.remove()}, and the
+ *  bulk operations, all of which run in linear time.
  *
- *  <p>The iterators returned by this class's {@link #iterator() iterator}
- *  method are <em>fail-fast</em>: If the deque is modified at any time after
- *  the iterator is created, in any way except through the iterator's own {@code
- *  remove} method, the iterator will generally throw a {@link
- *  ConcurrentModificationException}. Thus, in the face of concurrent
+ *  <p>The iterators returned by this class's {@link #iterator iterator} method
+ *  are <em>fail-fast</em>: If the deque is modified at any time after the
+ *  iterator is created, in any way except through the iterator's own {@code
+ *  remove} method, the iterator will generally throw a
+ *  ConcurrentModificationException. Thus, in the face of concurrent
  *  modification, the iterator fails quickly and cleanly, rather than risking
  *  arbitrary, non-deterministic behavior at an undetermined time in the future.
  *
  *  <p>Note that the fail-fast behavior of an iterator cannot be guaranteed as
  *  it is, generally speaking, impossible to make any hard guarantees in the
  *  presence of unsynchronized concurrent modification. Fail-fast iterators
- *  throw {@code ConcurrentModificationException} on a best-effort basis.
- *  Therefore, it would be wrong to write a program that depended on this
- *  exception for its correctness: <i>the fail-fast behavior of iterators should
- *  be used only to detect bugs.</i>
+ *  throw ConcurrentModificationException on a best-effort basis. Therefore, it
+ *  would be wrong to write a program that depended on this exception for its
+ *  correctness: <i>the fail-fast behavior of iterators should be used only to
+ *  detect bugs.</i>
  *
  *  <p>This class and its iterator implement all of the <em>optional</em>
  *  methods of the {@link Collection} and {@link Iterator} interfaces.
@@ -60,16 +68,6 @@ import ArrayDeque._
  *    the type of elements held in this deque
  *  @since 1.6
  */
-object ArrayDeque {
-
-  /** The maximum size of array to allocate. Some VMs reserve some header words
-   *  in an array. Attempts to allocate larger arrays may result in
-   *  OutOfMemoryError: Requested array size exceeds VM limit
-   */
-  private val MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8
-
-}
-
 class ArrayDeque[E](
     /** The array in which the elements of the deque are stored. All array cells
      *  not holding deque elements are always null. The array always has at
@@ -215,7 +213,7 @@ class ArrayDeque[E](
    *
    *  @param c
    *    the collection whose elements are to be placed into the deque
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified collection is null
    */
   def this(c: Collection[_ <: E]) = {
@@ -290,7 +288,7 @@ class ArrayDeque[E](
    *
    *  @param e
    *    the element to add
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   def addFirst(e: E): Unit = {
@@ -310,7 +308,7 @@ class ArrayDeque[E](
    *
    *  @param e
    *    the element to add
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   def addLast(e: E): Unit = {
@@ -332,7 +330,7 @@ class ArrayDeque[E](
    *    the elements to be inserted into this deque
    *  @return
    *    {@code true} if this deque changed as a result of the call
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified collection or any of its elements are null
    */
   override def addAll(c: Collection[_ <: E]): Boolean = {
@@ -355,7 +353,7 @@ class ArrayDeque[E](
    *    the element to add
    *  @return
    *    {@code true} (as specified by {@link Deque#offerFirst})
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   def offerFirst(e: E): Boolean = {
@@ -369,7 +367,7 @@ class ArrayDeque[E](
    *    the element to add
    *  @return
    *    {@code true} (as specified by {@link Deque#offerLast})
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   def offerLast(e: E): Boolean = {
@@ -377,9 +375,7 @@ class ArrayDeque[E](
     return true
   }
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc}
-   */
+  /** @throws NoSuchElementException */
   def removeFirst(): E = {
     val e = pollFirst()
     if (e == null)
@@ -388,9 +384,7 @@ class ArrayDeque[E](
     return e
   }
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc}
-   */
+  /** @throws NoSuchElementException */
   def removeLast(): E = {
     val e = pollLast()
     if (e == null)
@@ -423,9 +417,7 @@ class ArrayDeque[E](
     return e
   }
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc}
-   */
+  /** @throws NoSuchElementException */
   def getFirst(): E = {
     val e = elementAt(elements, head)
     if (e == null)
@@ -434,9 +426,7 @@ class ArrayDeque[E](
     return e
   }
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc}
-   */
+  /** @throws NoSuchElementException */
   def getLast(): E = {
     val es = elements
     val e = elementAt(es, dec(tail, es.length))
@@ -493,10 +483,12 @@ class ArrayDeque[E](
 
   /** Removes the last occurrence of the specified element in this deque (when
    *  traversing the deque from head to tail). If the deque does not contain the
-   *  element, it is unchanged. More formally, removes the last element {@code
-   *  e} such that {@code o.equals(e)} (if such an element exists). Returns
-   *  {@code true} if this deque contained the specified element (or
-   *  equivalently, if this deque changed as a result of the call).
+   *  element, it is unchanged.
+   *
+   *  More formally, removes the last element such that {@code o.equals(e)} (if
+   *  such an element exists). Returns {@code true} if this deque contained the
+   *  specified element (or equivalently, if this deque changed as a result of
+   *  the call).
    *
    *  @param o
    *    element to be removed from this deque, if present
@@ -536,7 +528,7 @@ class ArrayDeque[E](
    *    the element to add
    *  @return
    *    {@code true} (as specified by {@link Collection#add})
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   override def add(e: E): Boolean = {
@@ -552,7 +544,7 @@ class ArrayDeque[E](
    *    the element to add
    *  @return
    *    {@code true} (as specified by {@link Queue#offer})
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   def offer(e: E): Boolean = {
@@ -561,7 +553,7 @@ class ArrayDeque[E](
 
   /** Retrieves and removes the head of the queue represented by this deque.
    *
-   *  This method differs from {@link #poll() poll()} only in that it throws an
+   *  This method differs from {@link #poll poll()} only in that it throws an
    *  exception if this deque is empty.
    *
    *  <p>This method is equivalent to {@link #removeFirst}.
@@ -569,7 +561,6 @@ class ArrayDeque[E](
    *  @return
    *    the head of the queue represented by this deque
    *  @throws NoSuchElementException
-   *    {@inheritDoc}
    */
   def remove(): E = {
     return removeFirst()
@@ -598,7 +589,6 @@ class ArrayDeque[E](
    *  @return
    *    the head of the queue represented by this deque
    *  @throws NoSuchElementException
-   *    {@inheritDoc}
    */
   def element(): E = {
     return getFirst()
@@ -626,7 +616,7 @@ class ArrayDeque[E](
    *
    *  @param e
    *    the element to push
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
   def push(e: E): Unit = {
@@ -636,13 +626,12 @@ class ArrayDeque[E](
   /** Pops an element from the stack represented by this deque. In other words,
    *  removes and returns the first element of this deque.
    *
-   *  <p>This method is equivalent to {@link #removeFirst()}.
+   *  <p>This method is equivalent to {@link #removeFirst}.
    *
    *  @return
    *    the element at the front of this deque (which is the top of the stack
    *    represented by this deque)
    *  @throws NoSuchElementException
-   *    {@inheritDoc}
    */
   def pop(): E = {
     return removeFirst()
@@ -719,8 +708,8 @@ class ArrayDeque[E](
 
   /** Returns an iterator over the elements in this deque. The elements will be
    *  ordered from first (head) to last (tail). This is the same order that
-   *  elements would be dequeued (via successive calls to {@link #remove} or
-   *  popped (via successive calls to {@link #pop}).
+   *  elements would be dequeued (via successive calls to remove or popped (via
+   *  successive calls to {@link #pop}).
    *
    *  @return
    *    an iterator over the elements in this deque
@@ -853,9 +842,9 @@ class ArrayDeque[E](
   /** Creates a <em><a href="Spliterator.html#binding">late-binding</a></em> and
    *  <em>fail-fast</em> {@link Spliterator} over the elements in this deque.
    *
-   *  <p>The {@code Spliterator} reports {@link Spliterator#SIZED}, {@link
-   *  Spliterator#SUBSIZED}, {@link Spliterator#ORDERED}, and {@link
-   *  Spliterator#NONNULL}. Overriding implementations should document the
+   *  <p>The {@code Spliterator} reports [[Spliterator.SIZED]],
+   *  [[Spliterator.SUBSIZED]], [[Spliterator.ORDERED]], and
+   *  [[Spliterator.NONNULL]]. Overriding implementations should document the
    *  reporting of additional characteristic values.
    *
    *  @return
@@ -951,9 +940,7 @@ class ArrayDeque[E](
     }
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
+  /** @throws java.lang.NullPointerException */
   override def forEach(action: Consumer[_ >: E]): Unit = {
     Objects.requireNonNull(action)
     val es = elements
@@ -1003,25 +990,19 @@ class ArrayDeque[E](
     // checkInvariants();
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
+  /** @throws java.lang.NullPointerException */
   override def removeIf(filter: Predicate[_ >: E]): Boolean = {
     Objects.requireNonNull(filter)
     return bulkRemove(filter)
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
+  /** @throws java.lang.NullPointerException */
   override def removeAll(c: Collection[_]): Boolean = {
     Objects.requireNonNull(c)
     return bulkRemove(c.contains(_))
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
+  /** @throws java.lang.NullPointerException */
   override def retainAll(c: Collection[_]): Boolean = {
     Objects.requireNonNull(c)
     return bulkRemove(!c.contains(_))
@@ -1177,7 +1158,7 @@ class ArrayDeque[E](
    *  specified element (or equivalently, if this deque changed as a result of
    *  the call).
    *
-   *  <p>This method is equivalent to {@link #removeFirstOccurrence(Object)}.
+   *  <p>This method is equivalent to [[removeFirstOccurrence]].
    *
    *  @param o
    *    element to be removed from this deque, if present
@@ -1263,7 +1244,7 @@ class ArrayDeque[E](
    *  array has more elements than this deque), the element in the array
    *  immediately following the end of the deque is set to {@code null}.
    *
-   *  <p>Like the {@link #toArray()} method, this method acts as bridge between
+   *  <p>Like the [[toArray()*]] method, this method acts as bridge between
    *  array-based and collection-based APIs. Further, this method allows precise
    *  control over the runtime type of the output array, and may, under certain
    *  circumstances, be used to save allocation costs.
@@ -1283,10 +1264,10 @@ class ArrayDeque[E](
    *    allocated for this purpose
    *  @return
    *    an array containing all of the elements in this deque
-   *  @throws ArrayStoreException
+   *  @throws java.lang.ArrayStoreException
    *    if the runtime type of the specified array is not a supertype of the
    *    runtime type of every element in this deque
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if the specified array is null
    */
   override def toArray[T <: AnyRef](a: Array[T]): Array[T] = {
