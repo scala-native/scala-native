@@ -91,9 +91,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
   private def makeChanged(outDir: Path, changedTop: Set[String])(implicit
       in: Scope
   ): Unit = {
-    val pw = new PrintWriter(
-      new File(outDir.toFile, "changed")
-    )
+    val pw = new PrintWriter(new File(outDir.toFile, "changed"))
     changedTop.foreach(changedTop => pw.write(changedTop + "\n"))
     pw.close()
   }
