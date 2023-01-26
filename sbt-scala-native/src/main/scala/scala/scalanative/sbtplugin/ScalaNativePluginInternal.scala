@@ -81,28 +81,18 @@ object ScalaNativePluginInternal {
    *  later the settings will be preserved.
    */
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
-    val nativeConfig = build.NativeConfig.empty
     Seq(
       crossVersion := ScalaNativeCrossVersion.binary,
-      platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-      nativeClang := nativeConfig.clang.toFile,
-      nativeClangPP := nativeConfig.clangPP.toFile,
-      nativeCompileOptions := nativeConfig.compileOptions,
-      nativeLinkingOptions := nativeConfig.linkingOptions,
-      nativeMode := nativeConfig.mode.name,
-      nativeGC := nativeConfig.gc.name,
-      nativeLTO := nativeConfig.lto.name,
-      nativeLinkStubs := nativeConfig.linkStubs,
-      nativeCheck := nativeConfig.check,
-      nativeDump := nativeConfig.dump
+      platformDepsCrossVersion := ScalaNativeCrossVersion.binary
     )
   }
 
   /** Called in overridden method in plugin
    *
-   *  A nativeConfig object is created to satisfy sbt scope: Global /
-   *  nativeConfig and allow the settings to be set. Discovery is delayed until
-   *  after build is called.
+   *  A nativeConfig object is created to satisfy sbt scope: `Global /
+   *  nativeConfig` otherwise we get errors in configSettings because
+   *  nativeConfig does not exist. Discovery is delayed until after build is
+   *  called.
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
     Seq(
@@ -128,24 +118,13 @@ object ScalaNativePluginInternal {
     )
   }
 
-  /** Uses overrides defined in the 10 raw setting keys. They are either set raw
-   *  or default from baseSettings. Discovered commands need to be handled when
-   *  build is called so that the code calling the tools has complete control of
-   *  the settings.
+  /** Config settings are called for each project, for each version, and for
+   *  test and app configurations. The total 3 version or 6 times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
+      // do we need a new one for each config?
       val config = nativeConfig.value
-        .withClang(nativeClang.value.toPath)
-        .withClangPP(nativeClangPP.value.toPath)
-        .withCompileOptions(nativeCompileOptions.value)
-        .withLinkingOptions(nativeLinkingOptions.value)
-        .withGC(build.GC(nativeGC.value))
-        .withMode(build.Mode(nativeMode.value))
-        .withLTO(build.LTO(nativeLTO.value))
-        .withLinkStubs(nativeLinkStubs.value)
-        .withCheck(nativeCheck.value)
-        .withDump(nativeDump.value)
       config
     },
     nativeLink := Def
