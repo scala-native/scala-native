@@ -9,6 +9,7 @@ import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsafe.{CInt, Ptr, Zone, alloc}
 import scalanative.unsigned._
 
+import scalanative.libc.errno._
 import scalanative.posix.errno._
 import scalanative.posix.sys.resource._
 import scalanative.posix.sys.resourceOps._

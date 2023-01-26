@@ -12,7 +12,7 @@ import scala.scalanative.unsafe._
  *  described by POSIX as being a CX extension.
  */
 
-@extern object locale extends libc.locale {
+@extern object locale {
 
   type locale_t = Ptr[Byte] // CX, so can get no simpler.
 
@@ -60,7 +60,7 @@ import scala.scalanative.unsafe._
 }
 
 object localeOps {
-  import locale.lconv
+  import scalanative.libc.locale.lconv
   import scalanative.libc.localeOpsImpl
 
   implicit class lconvOps(val ptr: Ptr[lconv]) extends AnyVal {

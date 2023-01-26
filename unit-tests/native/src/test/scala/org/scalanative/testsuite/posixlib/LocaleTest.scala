@@ -10,10 +10,10 @@ import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.posix.errno.errno
-import scala.scalanative.posix.locale._
-import scala.scalanative.posix.localeOps._
-import scala.scalanative.posix.stdlib
+import scala.scalanative.libc.errno.errno
+import scala.scalanative.libc.locale._
+import scala.scalanative.libc.localeOps._
+import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.string
 
 class LocaleTest {

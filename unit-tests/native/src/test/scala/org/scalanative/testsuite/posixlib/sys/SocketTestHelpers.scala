@@ -5,9 +5,9 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 
 import scalanative.libc.string.strerror
+import scalanative.libc.errno.errno
 
 import scalanative.posix.arpa.inet.{inet_addr, inet_pton}
-import scalanative.posix.errno.errno
 import scalanative.posix.fcntl
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
 import scalanative.posix.netinet.inOps._

@@ -31,6 +31,7 @@ import java.util.stream.{Stream, WrappedScalaStream}
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
+import scalanative.libc.errno.errno
 import scalanative.posix.{dirent, fcntl, limits, unistd}
 import dirent._
 import scalanative.posix.errno.{EEXIST, ENOENT, ENOTEMPTY}
@@ -364,7 +365,7 @@ object Files {
     val ps = path.toString
     if (stdio.remove(toCString(ps)) == -1) {
       // For historical reasons, some systems report ENOTEMPTY as EEXIST
-      val fixedErrno = if (errno.errno == EEXIST) ENOTEMPTY else errno.errno
+      val fixedErrno = if (errno == EEXIST) ENOTEMPTY else errno
       throw PosixException(ps, fixedErrno)
     }
   }
@@ -584,7 +585,7 @@ object Files {
         val sourceCString = toCString(sourceAbs)
         val targetCString = toCString(targetAbs)
         if (stdio.rename(sourceCString, targetCString) != 0) {
-          throw UnixException(target.toString, errno.errno)
+          throw UnixException(target.toString, errno)
         }
       }
     }
@@ -708,7 +709,7 @@ object Files {
         }) {
           offset += read
         }
-        if (read == -1) throw UnixException(path.toString, errno.errno)
+        if (read == -1) throw UnixException(path.toString, errno)
       } finally {
         unistd.close(fd)
       }
@@ -805,7 +806,7 @@ object Files {
                 buf,
                 limits.PATH_MAX - `1U`
               ) == -1) {
-            throw UnixException(link.toString, errno.errno)
+            throw UnixException(link.toString, errno)
           }
           fromCString(buf)
         }
