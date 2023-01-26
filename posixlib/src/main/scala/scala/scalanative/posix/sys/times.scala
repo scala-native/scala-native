@@ -4,7 +4,7 @@ package sys
 
 import scalanative.unsafe._
 
-import scalanative.meta.LinktimeInfo.{is32BitPlatform, isFreeBSD}
+import scalanative.meta.LinktimeInfo.isFreeBSD
 
 /** POSIX sys/times.h for Scala
  *
@@ -47,32 +47,28 @@ object timesOps {
   import times._
 
   private def freeBsd64GetLowBits(bits: clock_t): clock_t =
-    (bits.toLong & 0x00000000ffffffffL).toSize
+    bits.toLong & 0x00000000ffffffffL
 
   private def freeBsd64GetHighBits(bits: clock_t): clock_t =
-    (bits.toLong & 0xffffffff00000000L).toSize
+    bits.toLong & 0xffffffff00000000L
 
   private def freeBsd64SetLowBits(ptr: Ptr[clock_t], value: clock_t): Unit =
-    !ptr = ((!ptr & 0xffffffff00000000L) | value.toInt).toSize
+    !ptr = (!ptr & 0xffffffff00000000L) | value.toInt
 
   private def freeBsd64SetHighBits(ptr: Ptr[clock_t], value: clock_t): Unit =
-    !ptr = ((value << 32) | (!ptr & 0x00000000ffffffffL)).toSize
+    !ptr = (value << 32) | (!ptr & 0x00000000ffffffffL)
 
   implicit class tmsOps(val ptr: Ptr[tms]) extends AnyVal {
     def tms_utime: clock_t = if (!isFreeBSD) ptr._1
-    else if (is32BitPlatform) ptr._1
     else freeBsd64GetLowBits(ptr._1)
 
     def tms_stime: clock_t = if (!isFreeBSD) ptr._2
-    else if (is32BitPlatform) ptr._2
     else freeBsd64GetHighBits(ptr._1)
 
     def tms_cutime: clock_t = if (!isFreeBSD) ptr._3
-    else if (is32BitPlatform) ptr._3
     else freeBsd64GetLowBits(ptr._2)
 
     def tms_cstime: clock_t = if (!isFreeBSD) ptr._4
-    else if (is32BitPlatform) ptr._4
     else freeBsd64GetHighBits(ptr._2)
 
     /* The fields are query-only in use.
@@ -80,22 +76,18 @@ object timesOps {
      */
     def tms_utime_=(c: clock_t): Unit =
       if (!isFreeBSD) ptr._1 = c
-      else if (is32BitPlatform) ptr._1 = c
       else freeBsd64SetLowBits(ptr.at1, c)
 
     def tms_stime_=(c: clock_t): Unit =
       if (!isFreeBSD) ptr._2 = c
-      else if (is32BitPlatform) ptr._2 = c
       else freeBsd64SetHighBits(ptr.at1, c)
 
     def tms_cutime_=(c: clock_t): Unit =
       if (!isFreeBSD) ptr._3 = c
-      else if (is32BitPlatform) ptr._3 = c
       else freeBsd64SetLowBits(ptr.at2, c)
 
     def tms_cstime_=(c: clock_t): Unit =
       if (!isFreeBSD) ptr._4 = c
-      else if (is32BitPlatform) ptr._4 = c
       else freeBsd64SetHighBits(ptr.at2, c)
   }
 }

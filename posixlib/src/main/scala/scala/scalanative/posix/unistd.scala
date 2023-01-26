@@ -38,6 +38,8 @@ object unistd {
   def ftruncate(fildes: CInt, length: off_t): CInt = extern
   def getcwd(buf: CString, size: CSize): CString = extern
   def gethostname(name: CString, len: CSize): CInt = extern
+  def getopt(argc: CInt, argv: Ptr[CString], optstring: CString): CInt = extern
+
   def getpid(): CInt = extern
   def getppid(): CInt = extern
   def getuid(): uid_t = extern
@@ -117,10 +119,5 @@ object unistd {
 
   @name("scalanative_symlinkat")
   def symlinkat(path1: CString, fd: CInt, path2: CString): CInt = extern
-
-  // Macros
-
-  @name("scalanative_environ")
-  def environ: Ptr[CString] = extern
 
 }

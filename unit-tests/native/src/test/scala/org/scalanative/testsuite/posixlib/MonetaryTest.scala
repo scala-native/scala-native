@@ -16,7 +16,8 @@ import scalanative.runtime.Platform
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.posix.errno.errno
+import scala.scalanative.libc.errno.errno
+import scala.scalanative.libc.locale._
 import scala.scalanative.posix.locale._
 import scala.scalanative.posix.monetary._
 

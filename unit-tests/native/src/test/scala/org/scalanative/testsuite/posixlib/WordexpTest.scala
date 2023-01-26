@@ -9,7 +9,7 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.posix.stdlib
+import scala.scalanative.libc.stdlib
 
 import scala.scalanative.posix.wordexp._
 import scala.scalanative.posix.wordexpOps._

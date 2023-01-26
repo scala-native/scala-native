@@ -11,8 +11,8 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
 import scala.scalanative.posix.langinfo._
-import scala.scalanative.posix.locale.{setlocale, LC_ALL}
-import scala.scalanative.posix.stdlib
+import scala.scalanative.libc.locale.{setlocale, LC_ALL}
+import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.string
 
 object LanginfoTest {

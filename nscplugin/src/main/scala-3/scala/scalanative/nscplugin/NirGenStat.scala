@@ -192,7 +192,7 @@ trait NirGenStat(using Context) {
 
         case rhs if sym.isExtern =>
           checkExplicitReturnTypeAnnotation(dd, "extern method")
-          genExternMethod(attrs, name, sig, rhs)
+          genExternMethod(attrs, name, sig, dd)
 
         case _ if sym.hasAnnotation(defnNir.ResolvedAtLinktimeClass) =>
           genLinktimeResolved(dd, name)
@@ -395,22 +395,11 @@ trait NirGenStat(using Context) {
       attrs: nir.Attrs,
       name: nir.Global,
       origSig: nir.Type,
-      rhs: Tree
+      dd: DefDef
   ): Option[Defn] = {
+    val rhs = dd.rhs
     given nir.Position = rhs.span
-    def externMethodDecl() = {
-      val externAttrs = Attrs(isExtern = true)
-      val externSig = genExternMethodSig(curMethodSym)
-      val externDefn = Defn.Declare(externAttrs, name, externSig)
-      Some(externDefn)
-    }
-
-    def isExternMethodAlias(target: Symbol) = (name, genName(target)) match {
-      case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
-      case _                                                => false
-    }
     val defaultArgs = dd.paramss.flatten.filter(_.symbol.is(HasDefault))
-
     rhs match {
       case _
           if defaultArgs.nonEmpty || dd.name.is(

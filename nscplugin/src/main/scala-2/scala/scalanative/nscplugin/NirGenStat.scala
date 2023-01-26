@@ -88,8 +88,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def nonEmpty = buf.nonEmpty
 
     def genClass(cd: ClassDef): Unit = {
-      val sym = cd.symbol
-
       scoped(
         curClassSym := cd.symbol,
         curClassFresh := nir.Fresh()
@@ -176,7 +174,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       for (f <- sym.info.decls
           if !f.isMethod && f.isTerm && !f.isModule) {
-        if (f.owner.isExternType && !f.isMutable) {
+        if (f.owner.isExternModule && !f.isMutable) {
           reporter.error(f.pos, "`extern` cannot be used in val definition")
         }
         val ty = genType(f.tpe)
@@ -603,7 +601,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
           case rhs if owner.isExternModule =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
-            genExternMethod(attrs, name, sig, rhs)
+            genExternMethod(attrs, name, sig, dd)
 
           case _ if sym.hasAnnotation(ResolvedAtLinktimeClass) =>
             genLinktimeResolved(dd, name)
@@ -678,24 +676,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         attrs: nir.Attrs,
         name: nir.Global,
         origSig: nir.Type,
-        rhs: Tree
+        dd: DefDef
     ): Option[nir.Defn] = {
       val rhs = dd.rhs
-      def externMethodDecl() = {
-        val externAttrs = Attrs(isExtern = true)
-        val externSig = genExternMethodSig(curMethodSym)
-        val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
-        Some(externDefn)
-      }
-
-      def isCallingExternMethod(sym: Symbol) =
-        sym.owner.isExternType
-
-      def isExternMethodAlias(target: Symbol) =
-        (name, genName(target)) match {
-          case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
-          case _                                                => false
-        }
       val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
         case _ if defaultArgs.nonEmpty =>
@@ -705,7 +688,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
           None
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          externMethodDecl()
+          val moduleName = genTypeName(curClassSym)
+          val externAttrs = Attrs(isExtern = true)
+          val externSig = genExternMethodSig(curMethodSym)
+          val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
+          Some(externDefn)
 
         case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
@@ -719,56 +706,21 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def validateExternCtor(rhs: Tree): Unit = {
-      val classSym = curClassSym.get
-      def isExternCall(tree: Tree): Boolean = tree match {
-        case Typed(target, _) => isExternCall(target)
-        case Apply(extern, _) => extern.symbol == ExternMethod
-        case _                => false
-      }
-
-      def isCurClassSetter(sym: Symbol) =
-        sym.isSetter && sym.owner.tpe <:< classSym.tpe
-
-      rhs match {
-        case Block(Nil, _) => () // empty mixin constructor
-        case Block(inits, _) =>
-          val externs = collection.mutable.Set.empty[Symbol]
-          inits.foreach {
-            case Assign(ref: RefTree, rhs) if isExternCall(rhs) =>
-              externs += ref.symbol
-
-            case Apply(fun, Seq(arg))
-                if isCurClassSetter(fun.symbol) && isExternCall(arg) =>
-              externs += fun.symbol
-
-            case Apply(target, _) if target.symbol.isConstructor => ()
-
-            case tree =>
-              reporter.error(
-                rhs.pos,
-                "extern objects may only contain extern fields and methods"
-              )
-          }
-          def isInheritedField(f: Symbol) = {
-            def hasFieldGetter(cls: Symbol) = f.getterIn(cls) != NoSymbol
-            def inheritedTraits(cls: Symbol) =
-              cls.parentSymbols.filter(_.isTraitOrInterface)
-            def inheritsField(cls: Symbol): Boolean =
-              hasFieldGetter(cls) || inheritedTraits(cls).exists(inheritsField)
-            inheritsField(classSym)
-          }
-
-          // Exclude fields derived from extern trait
-          for (f <- curClassSym.info.decls) {
-            if (f.isField && !isInheritedField(f)) {
-              if (!(externs.contains(f) || externs.contains(f.setter))) {
-                reporter.error(
-                  f.pos,
-                  "extern objects may only contain extern fields"
-                )
-              }
-            }
-          }
+      val Block(_ +: init, _) = rhs
+      val externs = init.map {
+        case Assign(ref: RefTree, Apply(extern, Seq()))
+            if extern.symbol == ExternMethod =>
+          ref.symbol
+        case _ =>
+          unsupported(
+            "extern objects may only contain extern fields and methods"
+          )
+      }.toSet
+      for {
+        f <- curClassSym.info.decls if f.isField
+        if !externs.contains(f)
+      } {
+        unsupported("extern objects may only contain extern fields")
       }
     }
 
@@ -799,7 +751,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
       val isStatic = sym.isStaticInNIR
-      val isExtern = sym.owner.isExternType
+      val isExtern = sym.owner.isExternModule
 
       implicit val pos: nir.Position = bodyp.pos
 

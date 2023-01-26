@@ -137,123 +137,124 @@ object ScalaNativePluginInternal {
         .withDump(nativeDump.value)
     },
     nativeLink := Def
-      .task{
-      val classpath = fullClasspath.value.map(_.data.toPath)
+      .task {
+        val classpath = fullClasspath.value.map(_.data.toPath)
 
-      val config = {
-        val mainClass = nativeConfig.value.buildTarget match {
-          case BuildTarget.Application =>
-            selectMainClass.value.orElse {
-              throw new MessageOnlyException("No main class detected.")
+        val config = {
+          val mainClass = nativeConfig.value.buildTarget match {
+            case BuildTarget.Application =>
+              selectMainClass.value.orElse {
+                throw new MessageOnlyException("No main class detected.")
+              }
+            case _: BuildTarget.Library => None
+          }
+          val cwd = nativeWorkdir.value.toPath
+
+          val logger = streams.value.log.toLogger
+
+          val baseConfig =
+            build.Config.empty
+              .withLogger(logger)
+              .withClassPath(classpath)
+              .withWorkdir(cwd)
+              .withCompilerConfig(nativeConfig.value)
+
+          mainClass.foldLeft(baseConfig)(_.withMainClass(_))
+        }
+
+        val outpath = {
+          val originalOutPath = (nativeLink / artifactPath).value.toPath()
+          val directory = Option(originalOutPath.getParent())
+            .getOrElse(originalOutPath.getRoot())
+          val filename = originalOutPath.getFileName().toString()
+          val baseFilename = filename.lastIndexOf(".") match {
+            case -1  => filename
+            case idx => filename.substring(0, idx)
+          }
+
+          def compilerConfig = config.compilerConfig
+          val ext = compilerConfig.buildTarget match {
+            case BuildTarget.Application =>
+              if (config.targetsWindows) ".exe" else ""
+            case BuildTarget.LibraryDynamic =>
+              if (config.targetsWindows) ".dll"
+              else if (config.targetsMac) ".dylib"
+              else ".so"
+            case BuildTarget.LibraryStatic =>
+              if (config.targetsWindows) ".lib"
+              else ".a"
+          }
+          val namePrefix = compilerConfig.buildTarget match {
+            case BuildTarget.Application => ""
+            case _: BuildTarget.Library =>
+              if (config.targetsWindows) "" else "lib"
+          }
+          directory.resolve(s"$namePrefix${baseFilename}$ext").toFile()
+        }
+
+        def buildNew(): Unit = interceptBuildException {
+          Build.build(config, outpath.toPath)(sharedScope)
+        }
+
+        def buildIfChanged(): Unit = {
+          import sbt.util.CacheImplicits._
+          import NativeLinkCacheImplicits._
+          import collection.JavaConverters._
+
+          // Products of compilation for Scala 2 are always defined in `target/scala-<scalaBinaryVersion` directory,
+          // but in case of Scala 3 there is always a dedicated directory for each (minor) Scala version.
+          // This allows us to cache binaries for each Scala version instead of each binary Scala version.
+          val scalaVersionDir =
+            if (scalaVersion.value.startsWith("2.")) scalaBinaryVersion.value
+            else scalaVersion.value
+          val cacheFactory =
+            streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaVersionDir}"
+          val classpathTracker =
+            Tracked.inputChanged[
+              (Seq[HashFileInfo], build.Config),
+              HashFileInfo
+            ](
+              cacheFactory.make("inputFileInfo")
+            ) {
+              case (
+                    changed: Boolean,
+                    (filesInfo: Seq[HashFileInfo], config: build.Config)
+                  ) =>
+                val outputTracker =
+                  Tracked
+                    .lastOutput[Seq[HashFileInfo], HashFileInfo](
+                      cacheFactory.make("outputFileInfo")
+                    ) { (_, prev) =>
+                      val outputHashInfo = FileInfo.hash(outpath)
+                      if (changed || !prev.contains(outputHashInfo)) {
+                        buildNew()
+                        FileInfo.hash(outpath)
+                      } else outputHashInfo
+                    }
+                outputTracker(filesInfo)
             }
-          case _: BuildTarget.Library => None
+
+          val classpathFilesInfo = classpath
+            .flatMap { classpath =>
+              if (Files.exists(classpath))
+                Files
+                  .walk(classpath)
+                  .iterator()
+                  .asScala
+                  .filter(path =>
+                    Files.exists(path) && !Files.isDirectory(path)
+                  )
+                  .toList
+              else Nil
+            }
+            .map(path => FileInfo.hash(path.toFile()))
+
+          classpathTracker(classpathFilesInfo, config)
         }
-        val cwd = nativeWorkdir.value.toPath
 
-        val logger = streams.value.log.toLogger
-
-        val baseConfig =
-          build.Config.empty
-            .withLogger(logger)
-            .withClassPath(classpath)
-            .withWorkdir(cwd)
-            .withCompilerConfig(nativeConfig.value)
-
-        mainClass.foldLeft(baseConfig)(_.withMainClass(_))
+        buildIfChanged()
+        outpath
       }
-
-      val outpath = {
-        val originalOutPath = (nativeLink / artifactPath).value.toPath()
-        val directory = Option(originalOutPath.getParent())
-          .getOrElse(originalOutPath.getRoot())
-        val filename = originalOutPath.getFileName().toString()
-        val baseFilename = filename.lastIndexOf(".") match {
-          case -1  => filename
-          case idx => filename.substring(0, idx)
-        }
-
-        def compilerConfig = config.compilerConfig
-        val ext = compilerConfig.buildTarget match {
-          case BuildTarget.Application =>
-            if (config.targetsWindows) ".exe" else ""
-          case BuildTarget.LibraryDynamic =>
-            if (config.targetsWindows) ".dll"
-            else if (config.targetsMac) ".dylib"
-            else ".so"
-          case BuildTarget.LibraryStatic =>
-            if (config.targetsWindows) ".lib"
-            else ".a"
-        }
-        val namePrefix = compilerConfig.buildTarget match {
-          case BuildTarget.Application => ""
-          case _: BuildTarget.Library =>
-            if (config.targetsWindows) "" else "lib"
-        }
-        directory.resolve(s"$namePrefix${baseFilename}$ext").toFile()
-      }
-
-      def buildNew(): Unit = interceptBuildException {
-        Build.build(config, outpath.toPath)(sharedScope)
-      }
-
-      def buildIfChanged(): Unit = {
-        import sbt.util.CacheImplicits._
-        import NativeLinkCacheImplicits._
-        import collection.JavaConverters._
-
-        // Products of compilation for Scala 2 are always defined in `target/scala-<scalaBinaryVersion` directory,
-        // but in case of Scala 3 there is always a dedicated directory for each (minor) Scala version.
-        // This allows us to cache binaries for each Scala version instead of each binary Scala version.
-        val scalaVersionDir =
-          if (scalaVersion.value.startsWith("2.")) scalaBinaryVersion.value
-          else scalaVersion.value
-        val cacheFactory =
-          streams.value.cacheStoreFactory / "fileInfo" / s"scala-${scalaVersionDir}"
-        val classpathTracker =
-          Tracked.inputChanged[
-            (Seq[HashFileInfo], build.Config),
-            HashFileInfo
-          ](
-            cacheFactory.make("inputFileInfo")
-          ) {
-            case (
-                  changed: Boolean,
-                  (filesInfo: Seq[HashFileInfo], config: build.Config)
-                ) =>
-              val outputTracker =
-                Tracked
-                  .lastOutput[Seq[HashFileInfo], HashFileInfo](
-                    cacheFactory.make("outputFileInfo")
-                  ) { (_, prev) =>
-                    val outputHashInfo = FileInfo.hash(outpath)
-                    if (changed || !prev.contains(outputHashInfo)) {
-                      buildNew()
-                      FileInfo.hash(outpath)
-                    } else outputHashInfo
-                  }
-              outputTracker(filesInfo)
-          }
-
-        val classpathFilesInfo = classpath
-          .flatMap { classpath =>
-            if (Files.exists(classpath))
-              Files
-                .walk(classpath)
-                .iterator()
-                .asScala
-                .filter(path => Files.exists(path) && !Files.isDirectory(path))
-                .toList
-            else Nil
-          }
-          .map(path => FileInfo.hash(path.toFile()))
-
-        classpathTracker(classpathFilesInfo, config)
-        }
-      }
-
-      buildIfChanged()
-      outpath
-    },
       .tag(NativeTags.Link)
       .value,
     console := console
