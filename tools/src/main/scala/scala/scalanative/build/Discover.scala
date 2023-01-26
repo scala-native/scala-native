@@ -96,8 +96,8 @@ object Discover {
    *  environment variables that can be used to control the build. This only
    *  calls discovery if the value is default.
    *
-   *  Discovery is only run the first time on the [[#compilerConfig]] which is
-   *  the the [[NativeConfig]] object.
+   *  Discovery is only run the first time on the [[Config#compilerConfig]]
+   *  which is the the [[NativeConfig]] object.
    *
    *  @param config
    *    the config used for discovery

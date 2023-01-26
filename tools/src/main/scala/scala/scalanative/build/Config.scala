@@ -15,26 +15,26 @@ sealed trait Config {
   def testConfig: Boolean
 
   /** Directory to emit intermediate compilation results. Calculated based on
-   *  [[basedir]] / native or native-test if a test project. The build creates
+   *  [[#basedir]] / native or native-test if a test project. The build creates
    *  directories if they do not exist.
    */
   def workdir: Path
 
   /** Base name for executable or library, typically the project name from the
-   *  build tool [[defaultBasename]] or can be overridden by the user with
+   *  build tool [[#withDefaultBasename]] or can be overridden by the user with
    *  [[NativeConfig#basename]].
    */
   def basename: String
 
   /** This is the name of the executable or library. Calculated based on a
-   *  prefix for libraries `lib` for UNIX like OSes, [[basename]], `-test` if
-   *  [[withTestConfig]] is `true`, and the executable or library suffix
-   *  depending on platform and library type.
+   *  prefix for libraries `lib` for UNIX like OSes, [[NativeConfig#basename]],
+   *  `-test` if [[#withTestConfig]] is `true`, and the executable or library
+   *  suffix depending on platform and library type.
    */
   def artifactName: String
 
   /** Path to the output file, executable or library. Calculated based on
-   *  [[basedir]] `/` [[artifactName]].
+   *  [[#basedir]] `/` [[#artifactName]].
    */
   def artifactPath: Path
 
@@ -60,11 +60,10 @@ sealed trait Config {
 
   /** Create new config with a fully qualified (with package) main class name as
    *  an [[Option]]. Only applicable if [[NativeConfig#buildTarget]] is a
-   *  [[BuildTarget#Application]].
+   *  [[BuildTarget#application]].
    *
    *  @param value
-   *    fully qualified main class name as an [[Option]], default
-   *    [[Option#none]]
+   *    fully qualified main class name as an [[Option]], default [[None]]
    *  @return
    *    this config object
    */
