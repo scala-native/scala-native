@@ -27,9 +27,9 @@ object Build {
    *    config with discovery if needed and validation
    */
   private def checkCache(config: Config): Config = {
-    // should be unique but defaultBasename might be better
-    // need to validate not empty or null
-    val name = config.basename
+    // Requires that defaultBasename or basename is set
+    // and unique across sub-projects in the same project
+    val name = config.artifactName
     // always use a fresh logger
     cache.get(name) match {
       case Some(value) =>

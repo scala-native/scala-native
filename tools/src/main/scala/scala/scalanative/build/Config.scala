@@ -26,9 +26,15 @@ sealed trait Config {
    */
   def basename: String
 
+  /** This is the name of the executable or library. Calculated based on a
+   *  prefix for libraries `lib` for UNIX like OSes, [[basename]], `-test` if
+   *  [[withTestConfig]] is `true`, and the executable or library suffix
+   *  depending on platform and library type.
+   */
+  def artifactName: String
+
   /** Path to the output file, executable or library. Calculated based on
-   *  [[basedir]] / [[basename]] or [[NativeConfig#basename]] and -test, if a
-   *  test project.
+   *  [[basedir]] `/` [[artifactName]].
    */
   def artifactPath: Path
 
@@ -179,7 +185,7 @@ object Config {
       case _                 => defaultBasename
     }
 
-    override lazy val artifactPath: Path = {
+    override lazy val artifactName: String = {
       val ext = compilerConfig.buildTarget match {
         case BuildTarget.Application =>
           if (targetsWindows) ".exe" else ""
@@ -195,7 +201,11 @@ object Config {
         case BuildTarget.Application => ""
         case _: BuildTarget.Library  => if (targetsWindows) "" else "lib"
       }
-      basedir.resolve(s"$namePrefix${basename}$nameSuffix$ext")
+      s"$namePrefix${basename}$nameSuffix$ext"
+    }
+
+    override lazy val artifactPath: Path = {
+      basedir.resolve(artifactName)
     }
 
     override def toString: String = {
