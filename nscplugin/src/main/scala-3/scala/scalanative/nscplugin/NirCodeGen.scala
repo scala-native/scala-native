@@ -28,7 +28,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
-  protected val positionsConversions = new NirPositions()
+  protected val positionsConversions = new NirPositions(settings.sourceURIMaps)
 
   protected val curClassSym = new util.ScopedVar[ClassSymbol]
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]

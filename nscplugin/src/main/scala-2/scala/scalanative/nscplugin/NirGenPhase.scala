@@ -194,7 +194,17 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
             nscSource.file.path, // Scheme specific part
             null // Fragment
           )
-        case file => file.toURI
+        case file =>
+          val srcURI = file.toURI
+          def matches(pat: java.net.URI) = pat.relativize(srcURI) != srcURI
+
+          scalaNativeOpts.sourceURIMaps
+            .collectFirst {
+              case ScalaNativeOptions.URIMap(from, to) if matches(from) =>
+                val relURI = from.relativize(srcURI)
+                to.fold(relURI)(_.resolve(relURI))
+            }
+            .getOrElse(srcURI)
       }
     }
   }
