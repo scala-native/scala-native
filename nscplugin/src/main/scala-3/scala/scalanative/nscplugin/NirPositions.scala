@@ -5,9 +5,10 @@ import Contexts._
 
 import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
+import GenNIR.URIMap
 import scalanative.nir
 
-class NirPositions()(using Context) {
+class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
   given fromSourcePosition: Conversion[SourcePosition, nir.Position] = {
     sourcePos =>
       sourceAndSpanToNirPos(sourcePos.source, sourcePos.span)
@@ -53,7 +54,17 @@ class NirPositions()(using Context) {
             dotcSource.file.path, // Scheme specific part
             null // Fragment
           )
-        case file => file.toURI
+        case file =>
+          val srcURI = file.toURI
+          def matches(pat: java.net.URI) = pat.relativize(srcURI) != srcURI
+
+          sourceURIMaps
+            .collectFirst {
+              case URIMap(from, to) if matches(from) =>
+                val relURI = from.relativize(srcURI)
+                to.fold(relURI)(_.resolve(relURI))
+            }
+            .getOrElse(srcURI)
       }
     }
   }

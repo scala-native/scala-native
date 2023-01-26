@@ -20,6 +20,16 @@ object MyScalaNativePlugin extends AutoPlugin {
       _.withCheck(true)
         .withCheckFatalWarnings(true)
         .withDump(true)
+    },
+    scalacOptions ++= {
+      // Link source maps to GitHub sources
+      val revision =
+        if (nativeVersion.endsWith("-SNAPSHOT")) "main"
+        else s"v$nativeVersion"
+      Settings.scalaNativeMapSourceURIOption(
+        (LocalProject("scala-native") / baseDirectory).value,
+        s"https://raw.githubusercontent.com/scala-native/scala-native/$revision/"
+      )
     }
   )
 }
