@@ -33,7 +33,8 @@ import java.nio.file.{Files, Path}
  *    - scalaNativeCompileSettings
  *    - scalaNativeTestSettings
  *    - scalaNativeGlobalSettings
- *    - scalaNativeConfigSettings more than once for each project
+ *    - scalaNativeConfigSettings -> 6 times for each project, Scala versions,
+ *      test true and false,
  */
 object ScalaNativePluginInternal {
 
@@ -77,12 +78,9 @@ object ScalaNativePluginInternal {
 
   /** Sets the 10 default raw setting values otherwise if they are not set we
    *  cannot access them. Use an empty config to get defaults so if they change
-   *  everything is fine here.
+   *  later the settings will be preserved.
    */
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = {
-    println(
-      "scalaNativeBaseSettings set raw setting from new empty nativeConfig"
-    )
     val nativeConfig = build.NativeConfig.empty
     Seq(
       crossVersion := ScalaNativeCrossVersion.binary,
@@ -102,21 +100,13 @@ object ScalaNativePluginInternal {
 
   /** Called in overridden method in plugin
    *
-   *  nativeConfig created to satisfy sbt scope: Global / nativeConfig
+   *  A nativeConfig object is created to satisfy sbt scope: Global /
+   *  nativeConfig and allow the settings to be set. Discovery is delayed until
+   *  after build is called.
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
-    println("scalaNativeGlobalSettings new empty nativeConfig set")
     Seq(
       nativeConfig := build.NativeConfig.empty,
-        // .withClang(interceptBuildException(Discover.clang()))
-        // .withClangPP(interceptBuildException(Discover.clangpp()))
-        // .withCompileOptions(Discover.compileOptions())
-        // .withLinkingOptions(Discover.linkingOptions())
-        // .withLTO(Discover.LTO())
-        // .withGC(Discover.GC())
-        // .withMode(Discover.mode())
-        // .withOptimize(Discover.optimize()),
-      // discovery will be delayed until after build is called
       nativeWarnOldJVM := {
         val logger = streams.value.log
         Try(Class.forName("java.util.function.Function")).toOption match {
@@ -145,9 +135,6 @@ object ScalaNativePluginInternal {
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
-      println(
-        s"${projectID.value} scalaNativeConfigSettings($testConfig) "
-      )
       val config = nativeConfig.value
         .withClang(nativeClang.value.toPath)
         .withClangPP(nativeClangPP.value.toPath)
@@ -159,7 +146,6 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-      println(s"config ${NativeConfig.cnt}")
       config
     },
     nativeLink := Def
@@ -168,7 +154,6 @@ object ScalaNativePluginInternal {
         val classpath = fullClasspath.value.map(_.data.toPath)
         val logger = streams.value.log.toLogger
 
-        println(s"$nativeLink ${NativeConfig.cnt}")
         val config =
           build.Config.empty
             .withLogger(logger)
@@ -228,12 +213,10 @@ object ScalaNativePluginInternal {
   )
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
-    println("scalaNativeCompileSettings")
     scalaNativeConfigSettings(false)
   }
 
   lazy val scalaNativeTestSettings: Seq[Setting[_]] = {
-    println("scalaNativeTestSettings")
     scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
@@ -274,7 +257,6 @@ object ScalaNativePluginInternal {
 
   // called in overridden method in plugin
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] = {
-    println("scalaNativeProjectSettings")
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++
       inConfig(Compile)(scalaNativeCompileSettings) ++

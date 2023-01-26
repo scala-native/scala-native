@@ -105,7 +105,6 @@ object Discover {
    *    the final config modified by the discovery process
    */
   def discover(config: Config): Config = {
-    println("In discover")
     val empty = build.NativeConfig.empty
     var nconfig = config.compilerConfig
     if (nconfig.clang == empty.clang)

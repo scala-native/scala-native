@@ -117,7 +117,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
     Config.empty
       .withBasedir(outDir)
       .withClassPath(classpath.toSeq)
-      .withMainClass(entry)
+      .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig)
   }
 

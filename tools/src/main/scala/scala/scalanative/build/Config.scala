@@ -21,7 +21,7 @@ sealed trait Config {
   def workdir: Path
 
   /** Base name for executable or library, typically the project name from the
-   *  build tool [[defaultBaseName]] or can be overridden by the user with
+   *  build tool [[defaultBasename]] or can be overridden by the user with
    *  [[NativeConfig#basename]].
    */
   def basename: String
@@ -57,7 +57,8 @@ sealed trait Config {
    *  [[BuildTarget#Application]].
    *
    *  @param value
-   *    fully qualified main class name as a [[Option]], default [[Option#none]]
+   *    fully qualified main class name as an [[Option]], default
+   *    [[Option#none]]
    *  @return
    *    this config object
    */

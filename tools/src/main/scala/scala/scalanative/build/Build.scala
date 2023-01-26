@@ -27,14 +27,14 @@ object Build {
    *    config with discovery if needed and validation
    */
   private def checkCache(config: Config): Config = {
+    // should be unique but defaultBasename might be better
+    // need to validate not empty or null
     val name = config.basename
-    println(s"Check cache: $name")
     // always use a fresh logger
     cache.get(name) match {
       case Some(value) =>
         value.withLogger(config.logger)
       case None =>
-        println("No config in cache")
         val vconfig = Validator.validate(Discover.discover(config))
         cache.put(name, vconfig)
         vconfig

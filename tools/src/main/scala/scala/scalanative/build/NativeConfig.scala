@@ -167,12 +167,9 @@ sealed trait NativeConfig {
 
 object NativeConfig {
   type LinktimeProperites = Map[String, Any]
-  var cnt = 1
 
   /** Default empty config object where all of the fields are left blank. */
   def empty: NativeConfig = {
-    println(s"NativeConfig.empty $cnt")
-    cnt += 1
     Impl(
       clang = Paths.get(""),
       clangPP = Paths.get(""),
