@@ -19,7 +19,9 @@ object BinaryIncompatibilities {
     // sealed trait replaced with sealed abstract class, used internally
     exclude[Problem]("scala.scalanative.nir.Sig$Scope*"),
     // artifact due to non-cleaned environment while publishing
-    exclude[MissingClassProblem]("scala.scalanative.nir.Attr$Volatile$")
+    exclude[MissingClassProblem]("scala.scalanative.nir.Attr$Volatile$"),
+    // Scala 2.11 is no longer supported
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Sig.isImplCtor")
   )
 
   final val NscPlugin = Seq(
