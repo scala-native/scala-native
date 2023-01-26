@@ -287,19 +287,25 @@ object Build {
   lazy val javalib = MultiScalaProject("javalib")
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings, commonJavalibSettings)
+    .mapBinaryVersions {
+      // Scaladoc in Scala 3 fails to generate documentation in javalib
+      // https://github.com/lampepfl/dotty/issues/16709
+      case "3" => _.settings(disabledDocsSettings)
+      case _   => _.settings(docsSettings)
+    }
     .dependsOn(posixlib, windowslib, clib)
     .withNativeCompilerPlugin
 
   lazy val javalibExtDummies =
     MultiScalaProject("javalibExtDummies", file("javalib-ext-dummies"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(noPublishSettings, commonJavalibSettings)
+      .settings(noPublishSettings, commonJavalibSettings, disabledDocsSettings)
       .dependsOn(nativelib)
       .withNativeCompilerPlugin
 
   lazy val auxlib = MultiScalaProject("auxlib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings, commonJavalibSettings)
+    .settings(mavenPublishSettings, commonJavalibSettings, disabledDocsSettings)
     .dependsOn(nativelib)
     .withNativeCompilerPlugin
 
