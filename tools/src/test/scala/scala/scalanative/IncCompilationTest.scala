@@ -7,7 +7,8 @@ import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.build.{Config, NativeConfig, _}
 import scala.scalanative.util.Scope
 
-// The test is used for incremental compilation
+// The test is used for incremental compilation.
+// Each test should have a different defaultBasename
 
 class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
   "The test framework" should "generate the llvm IR of object A" in {
@@ -41,7 +42,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
         .withMaxInlineSize(1)
       val nativeConfig = defaultNativeConfig
         .withOptimizerConfig(optimizerConfig)
-      val config = makeConfig(outDir, entry, nativeConfig)
+      val config = makeConfig(outDir, "out", entry, nativeConfig)
       Build.build(config)
     }
   }
@@ -82,7 +83,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files = compiler.compile(sourcesDir)
       makeChanged(outDir, changedTop)
-      val config = makeConfig(outDir, entry, defaultNativeConfig)
+      val config = makeConfig(outDir, "out1", entry, defaultNativeConfig)
 
       Build.build(config)
     }
@@ -108,6 +109,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
 
   private def makeConfig(
       outDir: Path,
+      defaultBasename: String,
       entry: String,
       setupNativeConfig: NativeConfig
   )(implicit in: Scope): Config = {
@@ -116,6 +118,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       .withBasedir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
+      .withDefaultBasename(defaultBasename)
       .withCompilerConfig(setupNativeConfig)
   }
 
@@ -128,6 +131,5 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
     .withGC(Discover.GC())
     .withMode(Discover.mode())
     .withOptimize(Discover.optimize())
-    .withBasename("out")
 
 }
