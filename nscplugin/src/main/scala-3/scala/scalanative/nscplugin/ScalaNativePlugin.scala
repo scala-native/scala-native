@@ -34,8 +34,8 @@ class ScalaNativePlugin extends StandardPlugin:
           val uris = mapping.split("->")
           if uris.length != 1 && uris.length != 2
           then
-            report.incompleteInputError(
-              "mapSourceUri needs one or two URIs as argument."
+            report.error(
+              s"mapSourceUri needs one or two URIs as argument, got '$mapping'"
             )
             config
           else {
@@ -46,7 +46,7 @@ class ScalaNativePlugin extends StandardPlugin:
               config.copy(sourceURIMaps = sourceMaps)
             catch
               case e: URISyntaxException =>
-                report.incompleteInputError(s"${e.getInput} is not a valid URI")
+                report.error(s"${e.getInput} is not a valid URI")
                 config
           }
         case (config, _) => config
