@@ -92,7 +92,9 @@ object Discover {
   }
 
   /** Discover features where the default is not sufficient to execute a build
-   *  that will succeed.
+   *  that will succeed. This also calls discovery for setting that have
+   *  environment variables that can be used to control the build. This only
+   *  calls discovery if the value is default.
    *
    *  Discovery is only run the first time on the [[#compilerConfig]] which is
    *  the the [[NativeConfig]] object.
@@ -114,6 +116,14 @@ object Discover {
       nconfig = nconfig.withCompileOptions(Discover.compileOptions())
     if (nconfig.linkingOptions == empty.linkingOptions)
       nconfig = nconfig.withLinkingOptions(Discover.linkingOptions())
+    if (nconfig.lto == empty.lto)
+      nconfig = nconfig.withLTO(Discover.LTO())
+    if (nconfig.gc == empty.gc)
+      nconfig = nconfig.withGC(Discover.GC())
+    if (nconfig.mode == empty.mode)
+      nconfig = nconfig.withMode(Discover.mode())
+    if (nconfig.optimize == empty.optimize)
+      nconfig = nconfig.withOptimize(Discover.optimize())
     config.withCompilerConfig(nconfig)
   }
 

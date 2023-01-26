@@ -107,15 +107,15 @@ object ScalaNativePluginInternal {
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = {
     println("scalaNativeGlobalSettings new empty nativeConfig set")
     Seq(
-      nativeConfig := build.NativeConfig.empty
+      nativeConfig := build.NativeConfig.empty,
         // .withClang(interceptBuildException(Discover.clang()))
         // .withClangPP(interceptBuildException(Discover.clangpp()))
         // .withCompileOptions(Discover.compileOptions())
         // .withLinkingOptions(Discover.linkingOptions())
-        .withLTO(Discover.LTO())
-        .withGC(Discover.GC())
-        .withMode(Discover.mode())
-        .withOptimize(Discover.optimize()),
+        // .withLTO(Discover.LTO())
+        // .withGC(Discover.GC())
+        // .withMode(Discover.mode())
+        // .withOptimize(Discover.optimize()),
       // discovery will be delayed until after build is called
       nativeWarnOldJVM := {
         val logger = streams.value.log
