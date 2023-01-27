@@ -26,6 +26,7 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          java-version: 8
 
       - name: Test tools
         run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-tools ${{ matrix.scala }}"
@@ -42,6 +43,12 @@ jobs:
           "-no-colors" \
           "scalaPartest${{env.project-version}}/fetchScalaSource"
           scala-cli scripts/partest-check-files.scala -- ${{ matrix.scala }}
+
+        # scala-cli-setup can override default java version
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: 8
 
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.
@@ -187,3 +194,65 @@ jobs:
         run: |
           export LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
           sbt "test-scripted ${{matrix.scala}}"
+
+  test-multihreading:
+    name: Test experimental multithreading support
+    runs-on: ubuntu-20.04
+    needs: tests-tools
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.2, 2.13.10]
+        build-mode: [debug, release-fast]
+        gc: [boehm, immix]
+        lto: [thin]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Prepare native config command
+        shell: bash
+        run: |
+          buildMode=${{matrix.build-mode}}
+          if [[ "$buildMode" == "release-fast" ]]; then 
+            buildMode=releaseFast
+          fi
+
+          SetConfigTemplate=$(cat << EOM
+            nativeConfig ~= { prev =>
+              prev
+                .withMode(scalanative.build.Mode.${buildMode})
+                .withGC(scalanative.build.GC.${{matrix.gc}})
+                .withLTO(scalanative.build.LTO.${{matrix.lto}})
+                .withEmbedResources(true)
+                .withCheck(true)
+                .withCheckFatalWarnings(true)
+                .withMultithreadingSupport(true)
+            }
+          EOM
+          )
+
+          echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
+
+      - name: Run tests
+        # 2x more then it should take to build and run tests
+        timeout-minutes: 60
+        env: 
+          TEST_COMMAND: >
+            ++${{matrix.scala}} -v;
+            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+
+            show sandbox${{env.project-version}}/nativeConfig;
+
+            sandbox${{env.project-version}}/run;
+            testsJVM${{env.project-version}}/test;
+            tests${{env.project-version}}/test;
+            junitTestOutputsJVM${{env.project-version}}/test;
+            junitTestOutputsNative${{env.project-version}}/test;
+            scalaPartestJunitTests${{env.project-version}}/test
+        run: sbt -J-Xmx5G "${TEST_COMMAND}"
