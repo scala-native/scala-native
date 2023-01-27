@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.signalhandling
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.signal._
 import scala.scalanative.libc.string._
@@ -160,8 +160,12 @@ private[testinterface] object SignalConfig {
       setHandler(SIGSYS)
       setHandler(SIGTRAP)
       setHandler(SIGVTALRM)
-      setHandler(SIGXCPU)
-      setHandler(SIGXFSZ)
+      // Boehm GC and None GC are the only GCs without weak reference support
+      if (!isMultithreadingEnabled || isWeakReferenceSupported) {
+        // Used by Boehm GC StopTheWorld signal handlers
+        setHandler(SIGXCPU)
+        setHandler(SIGXFSZ)
+      }
     }
   }
 }
