@@ -777,6 +777,18 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit fresh: Fresh, sb: ShowBuilder): Unit = {
     import sb._
     call match {
+      case Op.Call(_, Lower.GCSafepoint, _) =>
+        // Temporal hack until volatile store is implemented
+        // Safepoint load needs to be volatile, otherwise it would be optimized out
+        touch(Lower.GCSafepoint.name)
+        val safepoint, pollResult = fresh().id
+        val Sig.Extern(name) = Lower.GCSafepointName.sig.unmangled: @unchecked
+
+        newline()
+        str(s"%_$safepoint = load i8*, i8** @$name, align 8")
+        newline()
+        str(s"%_$pollResult = load volatile i8, i8* %_$safepoint, align 1")
+
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
         val Type.Function(argtys, _) = ty: @unchecked
         touch(pointee)
