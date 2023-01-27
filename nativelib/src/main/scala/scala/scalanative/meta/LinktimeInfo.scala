@@ -38,4 +38,9 @@ object LinktimeInfo {
     "scala.scalanative.meta.linktimeinfo.isWeakReferenceSupported"
   )
   def isWeakReferenceSupported: Boolean = resolved
+
+  @resolvedAtLinktime(
+    "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
+  )
+  def isMultithreadingEnabled: Boolean = resolved
 }

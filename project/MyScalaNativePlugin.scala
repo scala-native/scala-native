@@ -20,6 +20,9 @@ object MyScalaNativePlugin extends AutoPlugin {
       _.withCheck(true)
         .withCheckFatalWarnings(true)
         .withDump(true)
+        .withMultithreadingSupport(
+          sys.props.contains("scala.scalanative.multithreading.enable")
+        )
     },
     scalacOptions ++= {
       // Link source maps to GitHub sources
