@@ -351,8 +351,7 @@ class ThreadLocal[T <: AnyRef]() {
 
   /** Returns the value of this variable for the current thread. If an entry
    *  doesn't yet exist for this variable on this thread, this method will
-   *  create an entry, populating the value with the result of {@link
-   *  #initialValue()}.
+   *  create an entry, populating the value with the result of {@link #initialValue}.
    */
   def get(): T = {
     // Optimized for the fast path.
@@ -381,8 +380,8 @@ class ThreadLocal[T <: AnyRef]() {
   }
 
   /** Removes the entry for this variable in the current thread. If this call is
-   *  followed by a {@link #get()} before a {@link #set(Object)}, {@code #get()}
-   *  will call {@link #initialValue()} and create a new entry with the
+   *  followed by a {@link #get} before a {@link #set}, {@code #get}
+   *  will call {@link #initialValue} and create a new entry with the
    *  resulting value.
    */
   def remove(): Unit = {
