@@ -8,7 +8,7 @@
 #include "Sweeper.h"
 #include "Log.h"
 #include "headers/ObjectHeader.h"
-#include "util/ThreadUtil.h"
+#include "ThreadUtil.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);

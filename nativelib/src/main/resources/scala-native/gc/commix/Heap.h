@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdbool.h>
-#include "util/ThreadUtil.h"
+#include "ThreadUtil.h"
 #include <fcntl.h>
 
 typedef struct {
@@ -28,8 +28,8 @@ typedef struct {
     double maxMarkTimeRatio;
     double minFreeRatio;
     struct {
-        semaphore_t *startWorkers;
-        semaphore_t *startMaster;
+        semaphore_t startWorkers;
+        semaphore_t startMaster;
         atomic_uint_fast8_t phase;
         int count;
         void *all;

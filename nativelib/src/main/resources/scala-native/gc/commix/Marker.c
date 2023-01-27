@@ -7,7 +7,7 @@
 #include "headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
-#include "util/ThreadUtil.h"
+#include "ThreadUtil.h"
 #include "SyncGreyLists.h"
 
 extern word_t *__modules;
