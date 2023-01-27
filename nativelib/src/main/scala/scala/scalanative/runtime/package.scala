@@ -2,6 +2,7 @@ package scala.scalanative
 
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
+import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
 
 package object runtime {
@@ -35,6 +36,18 @@ package object runtime {
 
   @alwaysinline def toRawPtr[T](ptr: Ptr[T]): RawPtr =
     Boxes.unboxToPtr(ptr)
+
+  @alwaysinline def fromRawSize[T](rawSize: RawSize): Size =
+    Boxes.boxToSize(rawSize)
+
+  @alwaysinline def fromRawUSize[T](rawSize: RawSize): USize =
+    Boxes.boxToUSize(rawSize)
+
+  @alwaysinline def toRawSize(size: Size): RawSize =
+    Boxes.unboxToSize(size)
+
+  @alwaysinline def toRawSize(size: USize): RawSize =
+    Boxes.unboxToUSize(size)
 
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.
