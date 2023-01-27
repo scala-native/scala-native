@@ -71,6 +71,11 @@ private[scalanative] object LLVM {
       if (config.targetsWindows) Seq("-g")
       else Nil
     }
+    val configFlags = {
+      if (config.compilerConfig.multithreadingSupport)
+        Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
+      else Nil
+    }
     val exceptionsHandling = {
       val opt = if (isCpp) List("-fcxx-exceptions") else Nil
       List("-fexceptions", "-funwind-tables") ::: opt
@@ -78,7 +83,7 @@ private[scalanative] object LLVM {
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ asan ++ target ++
         stdflag ++ platformFlags ++ exceptionsHandling ++
-        Seq("-fvisibility=hidden", opt) ++
+        configFlags ++ Seq("-fvisibility=hidden", opt) ++
         config.compileOptions
     val compilec: Seq[String] =
       Seq(compiler, "-c", inpath, "-o", outpath) ++ flags
