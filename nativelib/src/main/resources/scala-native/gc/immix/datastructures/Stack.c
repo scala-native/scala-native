@@ -32,7 +32,6 @@ bool Stack_IsEmpty(Stack *stack) { return stack->current == 0; }
 
 NOINLINE
 void Stack_doubleSize(Stack *stack) {
-    assert(stack->current == 0);
     size_t nb_words = stack->nb_words * 2;
     stack->nb_words = nb_words;
     stack->bottom = realloc(stack->bottom, nb_words * sizeof(Stack_Type));

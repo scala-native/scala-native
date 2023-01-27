@@ -11,7 +11,7 @@ typedef Object *Stack_Type;
 typedef struct {
     Stack_Type *bottom;
     size_t nb_words;
-    int current;
+    uint32_t current;
 } Stack;
 
 void Stack_Init(Stack *stack, size_t size);

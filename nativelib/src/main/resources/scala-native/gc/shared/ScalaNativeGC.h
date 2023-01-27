@@ -64,7 +64,8 @@ typedef enum scalanative_MutatorThreadState {
 void scalanative_gc_set_mutator_thread_state(MutatorThreadState);
 
 // Conditionally protected memory address used for STW events polling
-extern void *scalanative_gc_safepoint;
+typedef void **safepoint_t;
+extern safepoint_t scalanative_gc_safepoint;
 
 // Check for StopTheWorld event and wait for its end if needed
 // Used internally only in GC. Scala Native safepoints polling would be inlined

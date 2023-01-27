@@ -9,6 +9,7 @@
 #include "metadata/LineMeta.h"
 #include "Stats.h"
 #include <stdio.h>
+#include "ThreadUtil.h"
 
 typedef struct {
     word_t *blockMetaStart;
@@ -23,6 +24,7 @@ typedef struct {
     uint32_t maxBlockCount;
     Bytemap *bytemap;
     Stats *stats;
+    mutex_t lock;
 } Heap;
 
 static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {

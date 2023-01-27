@@ -2,6 +2,8 @@
 #include "Log.h"
 #include "utils/MathUtils.h"
 #include <stdio.h>
+#include "ThreadUtil.h"
+#include <stdatomic.h>
 
 void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
                                           BlockMeta *block, uint32_t count);
@@ -16,6 +18,16 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     blockAllocator->smallestSuperblock.cursor = (BlockMeta *)blockMetaStart;
     blockAllocator->smallestSuperblock.limit =
         (BlockMeta *)blockMetaStart + blockCount;
+    mutex_init(&blockAllocator->allocationLock);
+}
+
+INLINE void BlockAllocator_Acquire(BlockAllocator *blockAllocator) {
+    mutex_lock(&blockAllocator->allocationLock);
+    atomic_thread_fence(memory_order_acquire);
+}
+INLINE void BlockAllocator_Release(BlockAllocator *blockAllocator) {
+    atomic_thread_fence(memory_order_release);
+    mutex_unlock(&blockAllocator->allocationLock);
 }
 
 inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
@@ -59,13 +71,17 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
 }
 
 INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
+    BlockMeta *block;
+    BlockAllocator_Acquire(blockAllocator);
     if (blockAllocator->smallestSuperblock.cursor >=
         blockAllocator->smallestSuperblock.limit) {
-        return BlockAllocator_getFreeBlockSlow(blockAllocator);
+        block = BlockAllocator_getFreeBlockSlow(blockAllocator);
+    } else {
+        block = blockAllocator->smallestSuperblock.cursor;
+        BlockMeta_SetFlag(block, block_simple);
+        blockAllocator->smallestSuperblock.cursor++;
     }
-    BlockMeta *block = blockAllocator->smallestSuperblock.cursor;
-    BlockMeta_SetFlag(block, block_simple);
-    blockAllocator->smallestSuperblock.cursor++;
+    BlockAllocator_Release(blockAllocator);
 
     // not decrementing freeBlockCount, because it is only used after sweep
     return block;
@@ -73,6 +89,7 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
 
 BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                                             uint32_t size) {
+    BlockAllocator_Acquire(blockAllocator);
     BlockMeta *superblock;
     if (blockAllocator->smallestSuperblock.limit -
             blockAllocator->smallestSuperblock.cursor >=
@@ -87,6 +104,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         int first = (minNonEmptyIndex > target) ? minNonEmptyIndex : target;
         superblock = BlockAllocator_pollSuperblock(blockAllocator, first);
         if (superblock == NULL) {
+            BlockAllocator_Release(blockAllocator);
             return NULL;
         }
         if (BlockMeta_SuperblockSize(superblock) > size) {
@@ -96,6 +114,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                 BlockMeta_SuperblockSize(superblock) - size);
         }
     }
+    BlockAllocator_Release(blockAllocator);
 
     BlockMeta_SetFlag(superblock, block_superblock_start);
     BlockMeta_SetSuperblockSize(superblock, size);
@@ -145,6 +164,7 @@ void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
 
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
                                   BlockMeta *block, uint32_t count) {
+    // Executed during StopTheWorld, no need for synchronization
     assert(count > 0);
     if (blockAllocator->coalescingSuperblock.first == NULL) {
         blockAllocator->coalescingSuperblock.first = block;
@@ -163,6 +183,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
 }
 
 void BlockAllocator_SweepDone(BlockAllocator *blockAllocator) {
+    // Executed during StopTheWorld, no need for synchronization
     if (blockAllocator->coalescingSuperblock.first != NULL) {
         uint32_t size = (uint32_t)(blockAllocator->coalescingSuperblock.limit -
                                    blockAllocator->coalescingSuperblock.first);
@@ -174,6 +195,7 @@ void BlockAllocator_SweepDone(BlockAllocator *blockAllocator) {
 }
 
 void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
+    // Executed during StopTheWorld, no need for synchronization
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockList_Clear(&blockAllocator->freeSuperblocks[i]);
     }

@@ -8,16 +8,17 @@
 #include "headers/ObjectHeader.h"
 #include "Block.h"
 #include "WeakRefStack.h"
+#include <stdatomic.h>
 
 extern word_t *__modules;
 extern int __modules_size;
-extern word_t **__stack_bottom;
 
 #define LAST_FIELD_OFFSET -1
 
 void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta));
+    assert(object->rtti != NULL);
 
     if (Object_IsWeakReference(object)) {
         // Added to the WeakReference stack for additional later visit
@@ -27,6 +28,16 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
     Stack_Push(stack, object);
+}
+
+static inline void Marker_markField(Heap *heap, Stack *stack, Field_t field) {
+    if (Heap_IsWordInHeap(heap, field)) {
+        ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
+        if (ObjectMeta_IsAllocated(fieldMeta)) {
+            Marker_markObject(heap, stack, heap->bytemap, (Object *)field,
+                              fieldMeta);
+        }
+    }
 }
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
@@ -46,21 +57,13 @@ void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     while (!Stack_IsEmpty(stack)) {
         Object *object = Stack_Pop(stack);
-
         if (Object_IsArray(object)) {
             if (object->rtti->rt.id == __object_array_id) {
                 ArrayHeader *arrayHeader = (ArrayHeader *)object;
                 size_t length = arrayHeader->length;
                 word_t **fields = (word_t **)(arrayHeader + 1);
                 for (int i = 0; i < length; i++) {
-                    word_t *field = fields[i];
-                    if (Heap_IsWordInHeap(heap, field)) {
-                        ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
-                        if (ObjectMeta_IsAllocated(fieldMeta)) {
-                            Marker_markObject(heap, stack, bytemap,
-                                              (Object *)field, fieldMeta);
-                        }
-                    }
+                    Marker_markField(heap, stack, fields[i]);
                 }
             }
             // non-object arrays do not contain pointers
@@ -69,37 +72,45 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
                 if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
                     continue;
-
-                word_t *field = object->fields[ptr_map[i]];
-                if (Heap_IsWordInHeap(heap, field)) {
-                    ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
-                    if (ObjectMeta_IsAllocated(fieldMeta)) {
-                        Marker_markObject(heap, stack, bytemap, (Object *)field,
-                                          fieldMeta);
-                    }
-                }
+                Marker_markField(heap, stack, object->fields[ptr_map[i]]);
             }
         }
     }
 }
 
-void Marker_markProgramStack(Heap *heap, Stack *stack) {
-    // Dumps registers into 'regs' which is on stack
-    jmp_buf regs;
-    setjmp(regs);
-    word_t *dummy;
-
-    word_t **current = &dummy;
-    word_t **stackBottom = __stack_bottom;
-
-    while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
-            Marker_markConservative(heap, stack, stackObject);
+NO_SANITIZE void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
+                                  word_t **to) {
+    assert(from != NULL);
+    assert(to != NULL);
+    for (word_t **current = from; current <= to; current += 1) {
+        word_t *addr = *current;
+        if (Heap_IsWordInHeap(heap, addr)) {
+            Marker_markConservative(heap, stack, addr);
         }
-        current += 1;
     }
+}
+
+void Marker_markProgramStack(MutatorThread *thread, Heap *heap, Stack *stack) {
+    word_t **stackBottom = thread->stackBottom;
+    /* At this point ALL threads are stopped and their stackTop is not NULL -
+     * that's the condition to exit Sychronizer_acquire However, for some
+     * reasons I'm not aware of there are some rare situations upon which on the
+     * first read of volatile stackTop it still would return NULL.
+     * Due to the lack of alternatives or knowledge why this happends, just
+     * retry to reach non-null state
+     */
+    word_t **stackTop;
+    do {
+        stackTop = thread->stackTop;
+    } while (stackTop == NULL);
+
+    Marker_markRange(heap, stack, stackTop, stackBottom);
+
+    // Mark last context of execution
+    assert(thread->executionContext != NULL);
+    word_t **regs = (word_t **)thread->executionContext;
+    size_t regsSize = sizeof(jmp_buf) / sizeof(word_t *);
+    Marker_markRange(heap, stack, regs, regs + regsSize);
 }
 
 void Marker_markModules(Heap *heap, Stack *stack) {
@@ -108,21 +119,18 @@ void Marker_markModules(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     for (int i = 0; i < nb_modules; i++) {
         Object *object = (Object *)modules[i];
-        if (Heap_IsWordInHeap(heap, (word_t *)object)) {
-            // is within heap
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-            if (ObjectMeta_IsAllocated(objectMeta)) {
-                Marker_markObject(heap, stack, bytemap, object, objectMeta);
-            }
-        }
+        Marker_markField(heap, stack, (Field_t)object);
     }
 }
 
 void Marker_MarkRoots(Heap *heap, Stack *stack) {
+    atomic_thread_fence(memory_order_seq_cst);
 
-    Marker_markProgramStack(heap, stack);
-
+    MutatorThreadNode *head = mutatorThreads;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        Marker_markProgramStack(thread, heap, stack);
+    }
     Marker_markModules(heap, stack);
-
     Marker_Mark(heap, stack);
 }

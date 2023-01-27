@@ -11,6 +11,7 @@ class ScopedVar[A] {
 
   def get: A = if (!init) throw ScopedVar.Unitialized() else value
   def :=(newValue: A): Assignment[A] = new Assignment(this, newValue)
+  def isInitialized: Boolean = init
 }
 
 object ScopedVar {
