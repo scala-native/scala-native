@@ -10,6 +10,9 @@
 #pragma comment(lib, "Ws2_32.lib")
 typedef SSIZE_T ssize_t;
 #else
+#if defined(__FreeBSD__)
+#import <sys/types.h> // u_long & friends. Required by Amazon FreeBSD64 arm64
+#endif                // __FreeBSD__
 #include <netinet/in.h>
 #include <sys/socket.h>
 #if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
