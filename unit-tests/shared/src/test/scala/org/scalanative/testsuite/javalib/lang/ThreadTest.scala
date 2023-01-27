@@ -19,17 +19,15 @@ import scala.scalanative.junit.utils.AssumesHelper._
 class ThreadTest {
 
   @Test def getNameAndSetName(): Unit = {
-    if (!executingInJVM) {
-      val t = Thread.currentThread()
-      assertEquals("main", t.getName) // default name of the main thread
-      t.setName("foo")
-      try {
-        assertEquals("foo", t.getName)
-      } finally {
-        t.setName("main") // don't pollute the rest of the world with this test
-      }
-      assertEquals("main", t.getName)
-    }
+    val t = Thread.currentThread()
+    val originalName = t.getName()
+    val newName = "foo"
+    assertNotEquals(newName, originalName) // default name of the main thread
+    t.setName(newName)
+    try assertEquals(newName, t.getName())
+    // don't pollute the rest of the world with this test
+    finally t.setName(originalName)
+    assertEquals(originalName, t.getName())
   }
 
   @Test def currentThreadGetStackTrace(): Unit = {
@@ -40,7 +38,9 @@ class ThreadTest {
   }
 
   @Test def getId(): Unit = {
-    assertTrue(Thread.currentThread().getId > 0)
+    val id = Thread.currentThread().getId
+    if (isMultithreadingEnabled) assertTrue(id >= 0)
+    else assertEquals(0, id)
   }
 
   @Test def interruptExistAndTheStatusIsProperlyReflected(): Unit = {
@@ -77,4 +77,48 @@ class ThreadTest {
     val elapsedNanos = System.nanoTime() - start
     assertTrue("Slept for less then expected", elapsedNanos >= sleepForNanos)
   }
+
+  // Ported from JSR-166
+  class MyHandler extends Thread.UncaughtExceptionHandler {
+    override def uncaughtException(t: Thread, e: Throwable) = {
+      e.printStackTrace()
+    }
+  }
+
+  /** getUncaughtExceptionHandler returns ThreadGroup unless set, otherwise
+   *  returning value of last setUncaughtExceptionHandler.
+   */
+  def testGetAndSetUncaughtExceptionHandler(): Unit = {
+    // these must be done all at once to avoid state
+    // dependencies across tests
+    val current = Thread.currentThread()
+    val tg = current.getThreadGroup()
+    val eh = new MyHandler()
+    assertSame(tg, current.getUncaughtExceptionHandler())
+    current.setUncaughtExceptionHandler(eh)
+    try assertSame(eh, current.getUncaughtExceptionHandler())
+    finally current.setUncaughtExceptionHandler(null)
+    assertSame(tg, current.getUncaughtExceptionHandler())
+  }
+
+  /** getDefaultUncaughtExceptionHandler returns value of last
+   *  setDefaultUncaughtExceptionHandler.
+   */
+  def testGetAndSetDefaultUncaughtExceptionHandler(): Unit = {
+    assertNull(Thread.getDefaultUncaughtExceptionHandler())
+    // failure due to SecurityException is OK.
+    // Would be nice to explicitly test both ways, but cannot yet.
+    val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+    val eh = new MyHandler()
+    try {
+      Thread.setDefaultUncaughtExceptionHandler(eh)
+      try assertSame(eh, Thread.getDefaultUncaughtExceptionHandler())
+      finally Thread.setDefaultUncaughtExceptionHandler(defaultHandler)
+    } catch {
+      case ok: SecurityException =>
+        assertNotNull(System.getSecurityManager())
+    }
+    assertSame(defaultHandler, Thread.getDefaultUncaughtExceptionHandler())
+  }
+
 }

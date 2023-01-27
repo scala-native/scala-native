@@ -17,9 +17,13 @@ class ExceptionTest {
     (new Exception).printStackTrace(pw)
     val trace = sw.toString
     assertTrue(trace.startsWith("java.lang.Exception"))
-    if (!Platform.executingInJVM) {
-      assertTrue(trace.contains("\tat <none>.main(Unknown Source)"))
-    }
+
+    assumeSupportsStackTraces()
+    assertTrue(
+      trace.contains(
+        "\tat org.scalanative.testsuite.javalib.lang.ExceptionTest"
+      )
+    )
   }
 
   @Test def printStackTraceNoStackTraceAvailable(): Unit = {
