@@ -4,6 +4,10 @@ import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.{
+  isMultithreadingEnabled,
+  is32BitPlatform
+}
 
 package object runtime {
 
@@ -17,6 +21,13 @@ package object runtime {
    *  array.
    */
   def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
+    if (isMultithreadingEnabled) {
+      assert(
+        Thread.currentThread() != null,
+        "failed to initialize main thread"
+      )
+    }
+
     val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
 

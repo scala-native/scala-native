@@ -70,6 +70,12 @@ object ProcessThreadsApi {
       tokenHandle: Ptr[Handle]
   ): Boolean = extern
 
+  def ResumeThread(thread: Handle): DWord = extern
+  def SwitchToThread(): Boolean = extern
+  def SuspendThread(thread: Handle): DWord = extern
+
+  def SetThreadPriority(thread: Handle, priority: Int): Boolean = extern
+
   def TerminateProcess(handle: Handle, exitCode: UInt): Boolean = extern
   def TerminateThread(handle: Handle, exitCode: DWord): Boolean = extern
 
@@ -114,6 +120,17 @@ object ProcessThreadsApiExt {
   final val DETACHED_PROCESS = 0x00000008.toUInt
   final val EXTENDED_STARTUPINFO_PRESENT = 0x00080000.toUInt
   final val INHERIT_PARENT_AFFINITY = 0x00010000.toUInt
+
+  // Thread Priority
+  final val THREAD_MODE_BACKGROUND_BEGIN = 0x00010000
+  final val THREAD_MODE_BACKGROUND_END = 0x00020000
+  final val THREAD_PRIORITY_IDLE = -15
+  final val THREAD_PRIORITY_LOWEST = -2
+  final val THREAD_PRIORITY_BELOW_NORMAL = -1
+  final val THREAD_PRIORITY_NORMAL = 0
+  final val THREAD_PRIORITY_ABOVE_NORMAL = 1
+  final val THREAD_PRIORITY_HIGHEST = 2
+  final val THREAD_PRIORITY_TIME_CRITICAL = 15
 }
 object ProcessThreadsApiOps {
   import ProcessThreadsApi._

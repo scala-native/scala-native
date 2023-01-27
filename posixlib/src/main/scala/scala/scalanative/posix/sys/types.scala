@@ -50,21 +50,21 @@ object types {
 
   type pthread_condattr_t = ULong
 
-  type pthread_key_t = ULong
+  type pthread_key_t = CUnsignedInt
 
   type pthread_mutex_t = ULong
 
   type pthread_mutexattr_t = ULong
 
-  type pthread_once_t = ULong
+  type pthread_once_t = CInt
 
   type pthread_rwlock_t = ULong
 
   type pthread_rwlockattr_t = ULong
 
-  type pthread_spinlock_t = ULong
+  type pthread_spinlock_t = CInt
 
-  type pthread_t = ULong
+  type pthread_t = CUnsignedLongInt
 
   type size_t = stddef.size_t
 

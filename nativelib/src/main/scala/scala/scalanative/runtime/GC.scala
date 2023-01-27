@@ -39,13 +39,12 @@ object GC {
   private type DWord = CUnsignedInt
   private type SecurityAttributes = CStruct3[DWord, Ptr[Byte], Boolean]
   private type PtrAny = Ptr[Byte]
-  private[scalanative] type ThreadRoutineArg = PtrAny
-  private[scalanative] type ThreadStartRoutine =
-    CFuncPtr1[ThreadRoutineArg, PtrAny]
+  type ThreadRoutineArg = PtrAny
+  type ThreadStartRoutine = CFuncPtr1[ThreadRoutineArg, PtrAny]
 
   /** Proxy to pthread_create which registers created thread in the GC */
   @name("scalanative_pthread_create")
-  private[scalanative] def pthread_create(
+  def pthread_create(
       thread: Ptr[pthread_t],
       attr: Ptr[pthread_attr_t],
       startroutine: ThreadStartRoutine,
@@ -54,7 +53,7 @@ object GC {
 
   /** Proxy to CreateThread which registers created thread in the GC */
   @name("scalanative_CreateThread")
-  private[scalanative] def CreateThread(
+  def CreateThread(
       threadAttributes: Ptr[SecurityAttributes],
       stackSize: CSize,
       startRoutine: ThreadStartRoutine,
