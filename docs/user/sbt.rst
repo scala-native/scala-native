@@ -188,21 +188,21 @@ Scala Native supports three distinct linking modes:
 
    Aliases to **release-full**.
 
-2. **release-fast.** (introduced in 0.4.0)
+3. **release-fast.** (introduced in 0.4.0)
 
    Optimize for runtime performance while still trying to keep
    quick compilation time and small emitted code size.
    Similar to clang's ``-O2`` with addition of link-time optimization over
    the whole application code.
 
-2. **release-size.** (introduced in 0.5.0)
+4. **release-size.** (introduced in 0.4.10)
 
    Optimize for reduced output size while still trying to keep
    quick compilation time and relatively fast runtime performance.
    Similar to clang's ``-Oz`` with addition of link-time optimization over
    the whole application code.
 
-3. **release-full.** (introduced in 0.4.0)
+5. **release-full.** (introduced in 0.4.0)
 
    Optimized for best runtime performance, even if hurts compilation
    time and code size. This modes includes a number of more aggresive optimizations
