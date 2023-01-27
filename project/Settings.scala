@@ -310,6 +310,19 @@ object Settings {
           !moduleName.value.contains("jvm")) Seq("-Xfatal-warnings")
       else Nil
     },
+    scalacOptions ++= {
+      // Enforce usage of new lazy implmentation until they become standard, to test correctness of our overrides
+      val useLightweightLazyVals = "-Ylightweight-lazy-vals"
+      CrossVersion.partialVersion(scalaVersion.value).collect {
+        case (3, 2)
+            if scalaVersion.value
+              .stripPrefix("3.2.")
+              .takeWhile(_.isDigit)
+              .toInt >= 2 =>
+          useLightweightLazyVals
+        case (3, minor) if minor >= 3 => useLightweightLazyVals
+      }
+    },
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
     ),
