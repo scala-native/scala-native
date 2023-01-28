@@ -298,12 +298,19 @@ private[nio] object MappedByteBufferImpl {
       fd: FileDescriptor,
       mode: MapMode
   ): MappedByteBufferData = {
+
+    /* FreeBSD requires that PROT_READ be explicit with MAP_SHARED.
+     * Linux, macOS, & FreeBSD MAP_PRIVATE allow PROT_WRITE to imply
+     * PROT_READ. Make PROT_READ explicit in all these cases to document
+     * the intention.
+     */
     val (prot: Int, isPrivate: Int) = mode match {
-      case MapMode.PRIVATE    => (PROT_WRITE, MAP_PRIVATE)
+      case MapMode.PRIVATE    => (PROT_READ | PROT_WRITE, MAP_PRIVATE)
       case MapMode.READ_ONLY  => (PROT_READ, MAP_SHARED)
-      case MapMode.READ_WRITE => (PROT_WRITE, MAP_SHARED)
+      case MapMode.READ_WRITE => (PROT_READ | PROT_WRITE, MAP_SHARED)
       case _ => throw new IllegalStateException("Unknown MapMode")
     }
+
     val ptr = mmap(
       null,
       size.toUInt,
