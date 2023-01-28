@@ -144,7 +144,8 @@ jobs:
         scala: [3.2.2, 2.13.10]
         build-mode: [debug, release-fast]
         gc: [boehm, immix]
-        lto: [thin]
+        # TODO: atomics, volatiles: disable LTO until volatiles/fences are supported, otherwise clang can produce infinite loops
+        lto: [none]
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false
