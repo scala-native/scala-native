@@ -965,7 +965,7 @@ class Reach(
     val prev = missing.getOrElseUpdate(global, Set.empty)
     if (pos != nir.Position.NoPosition) {
       val position = NonReachablePosition(
-        path = Paths.get(pos.source),
+        uri = pos.source,
         line = pos.sourceLine
       )
       missing(global) = prev + position
@@ -982,9 +982,9 @@ class Reach(
         case (global, positions) =>
           log.error(s"Not found $global")
           positions.toList
-            .sortBy(p => (p.path, p.line))
+            .sortBy(p => (p.uri, p.line))
             .foreach { pos =>
-              log.error(s"\tat ${pos.path.toString}:${pos.line}")
+              log.error(s"\tat ${pos.uri}:${pos.line}")
             }
       }
       fail("Undefined definitions found in reachability phase")
@@ -1008,5 +1008,8 @@ object Reach {
     reachability.result()
   }
 
-  private[scalanative] case class NonReachablePosition(path: Path, line: Int)
+  private[scalanative] case class NonReachablePosition(
+      uri: java.net.URI,
+      line: Int
+  )
 }
