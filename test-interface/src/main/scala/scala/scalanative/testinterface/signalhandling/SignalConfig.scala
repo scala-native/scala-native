@@ -143,7 +143,7 @@ private[testinterface] object SignalConfig {
     setHandler(SIGFPE)
     setHandler(SIGILL)
     setHandler(SIGTERM)
-    if (!isMultithreadingEnabled || isMac || isWindows) {
+    if (!isMultithreadingEnabled || isMac) {
       // Used in GC traps, MacOS uses SIGBUS instead
       setHandler(SIGSEGV)
     }
@@ -153,11 +153,6 @@ private[testinterface] object SignalConfig {
       if (!isMultithreadingEnabled || !isMac) {
         // Used in Immix GC traps on MacOS
         setHandler(SIGBUS)
-      }
-      if (!isMultithreadingEnabled || isWeakReferenceSupported) {
-        // Used by Boehm GC
-        setHandler(SIGXCPU)
-        setHandler(SIGXFSZ)
       }
       setHandler(SIGALRM)
       setHandler(SIGHUP)
