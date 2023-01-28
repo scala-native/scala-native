@@ -85,6 +85,11 @@ jobs:
         gc: [boehm, immix, commix]
         multithreading: [true, false]
         exclude:
+          # TODO: atomics, volatiles: disable LTO/releaseFast until volatiles/fences are supported, otherwise clang can produce infinite loops
+          - multithreading: true
+            build-mode: release-fast
+          - multithreading: true
+            lto: thin
           # LTO is broken on linux-x86/llvm-10
           - arch: linux-x86
             lto: thin
