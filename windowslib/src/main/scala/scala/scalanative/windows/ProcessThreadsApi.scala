@@ -47,6 +47,7 @@ object ProcessThreadsApi {
 
   def ExitProcess(exitCode: UInt): Unit = extern
   def ExitThread(exitCode: DWord): Unit = extern
+  @blocking
   def FlushProcessWriteBuffers(): Unit = extern
   def GetCurrentProcess(): Handle = extern
   def GetCurrentProcessToken(): Handle = extern
@@ -71,8 +72,8 @@ object ProcessThreadsApi {
   ): Boolean = extern
 
   def ResumeThread(thread: Handle): DWord = extern
-  def SwitchToThread(): Boolean = extern
-  def SuspendThread(thread: Handle): DWord = extern
+  @blocking def SwitchToThread(): Boolean = extern
+  @blocking def SuspendThread(thread: Handle): DWord = extern
 
   def SetThreadPriority(thread: Handle, priority: Int): Boolean = extern
 

@@ -10,6 +10,7 @@ import scala.scalanative.windows.HandleApi.Handle
 object HandleApi {
   type Handle = Ptr[Byte]
 
+  @blocking
   def CloseHandle(handle: Handle): Boolean = extern
 
   def DuplicateHandle(

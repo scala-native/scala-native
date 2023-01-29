@@ -29,6 +29,7 @@ object WinSocketApi {
       flags: DWord
   ): Socket = extern
 
+  @blocking
   def WSAPoll(
       fds: Ptr[WSAPollFd],
       nfds: CUnsignedLongInt,
@@ -42,6 +43,7 @@ object WinSocketApi {
   def ioctlSocket(socket: Socket, cmd: CInt, argp: Ptr[CInt]): CInt = extern
 
   @name("closesocket")
+  @blocking
   def closeSocket(socket: Socket): CInt = extern
 
   @name("scalanative_winsock_fionbio")

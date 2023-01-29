@@ -16,6 +16,7 @@ object MemoryApi {
 
   def UnmapViewOfFile(lpBaseAddress: Ptr[Byte]): Boolean = extern
 
+  @blocking
   def FlushViewOfFile(
       lpBaseAddress: Ptr[Byte],
       dwNumberOfBytesToFlush: DWord
