@@ -12,6 +12,8 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.{fromRawPtr, NativeThread}
 import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.NativeThread.State._
+import scala.scalanative.libc.atomic.{CAtomicLongLong, atomic_thread_fence}
+import scala.scalanative.libc.atomic.memory_order._
 
 import scala.scalanative.runtime.JoinNonDeamonThreads
 
@@ -178,13 +180,11 @@ class Thread private[lang] (
       throw new IllegalStateException(
         "ScalaNative application linked with disabled multithreading support"
       )
-
-    // TODO: atomics
-    // atomic_thread_fence(memory_order_acquire)
+    atomic_thread_fence(memory_order_seq_cst)
     nativeThread = Thread.nativeCompanion.create(this, stackSize)
-    // atomic_thread_fence(memory_order_release)
+    atomic_thread_fence(memory_order_release)
     while (nativeThread.state == New) Thread.onSpinWait()
-    // atomic_thread_fence(memory_order_acquire)
+    atomic_thread_fence(memory_order_acquire)
     nativeThread.setPriority(priority)
   }
 
@@ -365,14 +365,10 @@ object Thread {
   // Counter used to generate thread's ID, 0 resevered for main
   final protected var threadId = 1L
   private def getNextThreadId(): scala.Long = {
-    val id = threadId
-    threadId += 1
-    id
-    // TODO: atomics
-    //  val threadIdRef = new CAtomicLongLong(
-    //    fromRawPtr(classFieldRawPtr(this, "threadId"))
-    //  )
-    //  threadIdRef.fetchAdd(1L)
+    val threadIdRef = new CAtomicLongLong(
+      fromRawPtr(classFieldRawPtr(this, "threadId"))
+    )
+    threadIdRef.fetchAdd(1L)
   }
 
 }
