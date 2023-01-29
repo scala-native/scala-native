@@ -101,6 +101,10 @@ object Show {
         str("\")")
       case Attr.Abstract =>
         str("abstract")
+      case Attr.Volatile =>
+        str("volatile")
+      case Attr.Final =>
+        str("final")
     }
 
     def next_(next: Next): Unit = next match {
