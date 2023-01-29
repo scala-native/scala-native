@@ -9,3 +9,7 @@ scalaVersion := {
     )
   else scalaVersion
 }
+
+Compile / nativeConfig ~= {
+  _.withLinkStubs(true)
+}

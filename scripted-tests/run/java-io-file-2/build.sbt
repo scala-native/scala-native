@@ -14,7 +14,9 @@ scalaVersion := {
   else scalaVersion
 }
 
-nativeLinkStubs := true // DateFormatSymbols
+Compile / nativeConfig ~= {
+  _.withLinkStubs(true) // DateFormatSymbols
+}
 
 lazy val setupTests = taskKey[Unit]("")
 
