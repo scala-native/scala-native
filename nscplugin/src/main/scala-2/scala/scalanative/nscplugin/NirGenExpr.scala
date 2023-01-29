@@ -565,9 +565,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val values = genSimpleArgs(elems)
 
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero)) {
-        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
+        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), Val.Null, unwind)
       } else {
-        val alloc = buf.arrayalloc(elemty, Val.Int(elems.length), unwind)
+        val alloc = buf.arrayalloc(elemty, Val.Int(elems.length), Val.Null, unwind)
         values.zip(elems).zipWithIndex.foreach {
           case ((v, elem), i) =>
             if (!v.isZero) {
@@ -2364,7 +2364,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val Seq(lengthp) = argsp
       val length = genExpr(lengthp)
 
-      buf.arrayalloc(genType(targ), length, unwind)
+      buf.arrayalloc(genType(targ), length, Val.Null, unwind)
     }
 
     def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(implicit

@@ -343,11 +343,13 @@ object Show {
         val_(slot)
         str(", ")
         val_(value)
-      case Op.Arrayalloc(ty, init) =>
+      case Op.Arrayalloc(ty, init, zoneHandle) =>
         str("arrayalloc[")
         type_(ty)
         str("] ")
         val_(init)
+        str(", ")
+        val_(zoneHandle)
       case Op.Arrayload(ty, arr, idx) =>
         str("arrayload[")
         type_(ty)

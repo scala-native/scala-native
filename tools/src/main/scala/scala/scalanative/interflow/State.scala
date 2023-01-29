@@ -207,7 +207,7 @@ final class State(block: Local) {
       case _: Op.Var                   => ()
       case Op.Varload(v)               => reachVal(v)
       case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayalloc(_, v1, v2)    => reachVal(v1); reachVal(v2)
       case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
       case Op.Arraystore(_, v1, v2, v3) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
@@ -260,7 +260,7 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, Next.None)
+        emit.arrayalloc(elemty, init, Val.Null, Next.None) // TODO: replace null
       case VirtualInstance(BoxKind, cls, Array(value)) =>
         reachVal(value)
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
@@ -279,7 +279,7 @@ final class State(block: Local) {
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values) =>
-        emit.classalloc(cls.name, Val.Null, Next.None)
+        emit.classalloc(cls.name, Val.Null, Next.None) // TODO: replace null
       case DelayedInstance(op) =>
         reachOp(op)
         emit(escapedOp(op), idempotent = true)
@@ -370,7 +370,7 @@ final class State(block: Local) {
       case _: Op.Var                   => ()
       case Op.Varload(v)               => reachVal(v)
       case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayalloc(_, v1, v2)    => reachVal(v1); reachVal(v2)
       case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
       case Op.Arraystore(_, v1, v2, v3) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
@@ -438,7 +438,7 @@ final class State(block: Local) {
         Op.Varload(escapedVal(v))
       case Op.Varstore(v1, v2) =>
         Op.Varstore(escapedVal(v1), escapedVal(v2))
-      case Op.Arrayalloc(ty, v) => Op.Arrayalloc(ty, escapedVal(v))
+      case Op.Arrayalloc(ty, v1, v2) => Op.Arrayalloc(ty, escapedVal(v1), escapedVal(v2))
       case Op.Arrayload(ty, v1, v2) =>
         Op.Arrayload(ty, escapedVal(v1), escapedVal(v2))
       case Op.Arraystore(ty, v1, v2, v3) =>

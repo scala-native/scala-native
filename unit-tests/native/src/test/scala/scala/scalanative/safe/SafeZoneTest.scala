@@ -62,16 +62,30 @@ class SafeZoneTest {
   }
 
   @Test def `allocate instances with members in different memory areas`(): Unit = {
-    case class A(area: String) {}
+    case class A() {}
     case class B(a: {*} A) {}
     SafeZone { sz0 =>
       SafeZone { sz1 => 
-        val aInSz0 = withSafeZone(sz0, new A("sz0"))
-        val aInHeap = new A("heap")
+        val aInSz0 = withSafeZone(sz0, new A())
+        val aInHeap = new A()
         val b0: {sz1, sz0} B = withSafeZone(sz1, new B(aInSz0))
         val b1: {sz1} B = withSafeZone(sz1, new B(aInHeap))
         val b2: {sz0} B = new B(aInSz0)
         val b3: B = new B(aInHeap)
+      }
+    }
+  }
+
+  @Test def `arrays with elements in different memory areas`(): Unit = {
+    case class A() {}
+    SafeZone { sz0 =>
+      SafeZone { sz1 => 
+        val aInSz0 = withSafeZone(sz0, new A())
+        val aInHeap = new A()
+        val arr0: {sz1} Array[{sz0} A]= withSafeZone(sz1, new Array[{sz0} A](1))
+        arr0(0)  = aInSz0
+        val arr1: {sz1} Array[A] = withSafeZone(sz1, new Array[A](1))
+        arr1(0) = aInHeap
       }
     }
   }

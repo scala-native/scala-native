@@ -860,10 +860,11 @@ class Reach(
     case Op.Varstore(slot, value) =>
       reachVal(slot)
       reachVal(value)
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zoneHandle) =>
       classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
       reachType(ty)
       reachVal(init)
+      reachVal(zoneHandle)
     case Op.Arrayload(ty, arr, idx) =>
       reachType(ty)
       reachVal(arr)

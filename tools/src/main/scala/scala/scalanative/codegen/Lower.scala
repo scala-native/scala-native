@@ -1070,16 +1070,22 @@ object Lower {
     def genArrayallocOp(buf: Buffer, n: Local, op: Op.Arrayalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Arrayalloc(ty, v) = op
+      val Op.Arrayalloc(ty, v, ptr) = op
       val init = genVal(buf, v)
+      val zoneHandle = genVal(buf, ptr)
       init match {
         case len if len.ty == Type.Int =>
+          val (arrayAllocSig, arrayAlloc, args) =
+            if (zoneHandle == Val.Null)
+              (arrayAllocInHeapSig, arrayAllocInHeap, Seq(len))
+            else
+              (arrayAllocInZoneSig, arrayAllocInZone, Seq(len, zoneHandle))
           val sig = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
           val func = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
           val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
           buf.let(
             n,
-            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len)),
+            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module) ++ args),
             unwind
           )
         case arrval: Val.ArrayValue =>
@@ -1268,7 +1274,7 @@ object Lower {
   val throwSig = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_ = Val.Global(throwName, Type.Ptr)
 
-  val arrayAlloc = Type.typeToArray.map {
+  val arrayAllocInHeap = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       val arrcls = Type.Ref(arrname)
@@ -1277,11 +1283,28 @@ object Lower {
         Sig.Method("alloc", Seq(Type.Int, arrcls))
       )
   }.toMap
-  val arrayAllocSig = Type.typeToArray.map {
+  val arrayAllocInHeapSig = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       ty -> Type.Function(
         Seq(Type.Ref(Global.Top(id + "$")), Type.Int),
+        Type.Ref(arrname)
+      )
+  }.toMap
+  val arrayAllocInZone = Type.typeToArray.map {
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname: @unchecked
+      val arrcls = Type.Ref(arrname)
+      ty -> Global.Member(
+        Global.Top(id + "$"),
+        Sig.Method("alloc", Seq(Type.Int, Type.Ptr, arrcls))
+      )
+  }.toMap
+  val arrayAllocInZoneSig = Type.typeToArray.map {
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname: @unchecked
+      ty -> Type.Function(
+        Seq(Type.Ref(Global.Top(id + "$")), Type.Int, Type.Ptr),
         Type.Ref(arrname)
       )
   }.toMap
@@ -1440,7 +1463,8 @@ object Lower {
     buf ++= BoxTo.values
     buf ++= UnboxTo.values
     buf += arrayLength
-    buf ++= arrayAlloc.values
+    buf ++= arrayAllocInHeap.values
+    buf ++= arrayAllocInZone.values
     buf ++= arraySnapshot.values
     buf ++= arrayApplyGeneric.values
     buf ++= arrayApply.values

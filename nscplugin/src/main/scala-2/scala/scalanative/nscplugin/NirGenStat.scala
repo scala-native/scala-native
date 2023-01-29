@@ -423,6 +423,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val ctorsInfo = exprBuf.arrayalloc(
           Type.Array(tuple2Ref),
           Val.Int(ctors.length),
+          Val.Null,
           unwind(curFresh)
         )
 
@@ -516,6 +517,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val rtClasses = exprBuf.arrayalloc(
             jlClassRef,
             Val.Int(ctorSig.args.tail.length),
+            Val.Null,
             unwind(curFresh)
           )
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {

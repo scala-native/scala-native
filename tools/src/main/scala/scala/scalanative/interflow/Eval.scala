@@ -396,7 +396,7 @@ trait Eval { self: Interflow =>
           case value =>
             emit(Op.Unbox(boxty, materialize(value)))
         }
-      case Op.Arrayalloc(ty, init) =>
+      case Op.Arrayalloc(ty, init, zoneHandle) =>
         eval(init) match {
           case Val.Int(count) if count <= 128 =>
             Val.Virtual(state.allocArray(ty, count))
@@ -409,7 +409,7 @@ trait Eval { self: Interflow =>
             }
             Val.Virtual(addr)
           case init =>
-            emit(Op.Arrayalloc(ty, materialize(init)))
+            emit(Op.Arrayalloc(ty, materialize(init), materialize(zoneHandle)))
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
@@ -970,7 +970,7 @@ trait Eval { self: Interflow =>
       val arrayLength = mutable.Map.empty[Local, Int]
 
       defn.insts.foreach {
-        case Inst.Let(n, Op.Arrayalloc(_, init), _) =>
+        case Inst.Let(n, Op.Arrayalloc(_, init, _), _) =>
           canStoreTo += n
           init match {
             case Val.Int(size) =>

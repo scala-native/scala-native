@@ -77,8 +77,8 @@ trait Transform {
     case Op.Conv(conv, ty, v) =>
       Op.Conv(conv, onType(ty), onVal(v))
 
-    case Op.Classalloc(n, ptrv) =>
-      Op.Classalloc(n, onVal(ptrv))
+    case Op.Classalloc(n, zoneHandle) =>
+      Op.Classalloc(n, onVal(zoneHandle))
     case Op.Fieldload(ty, v, n) =>
       Op.Fieldload(onType(ty), onVal(v), n)
     case Op.Fieldstore(ty, v1, n, v2) =>
@@ -109,8 +109,8 @@ trait Transform {
       Op.Varload(onVal(elem))
     case Op.Varstore(elem, value) =>
       Op.Varstore(onVal(elem), onVal(value))
-    case Op.Arrayalloc(ty, init) =>
-      Op.Arrayalloc(onType(ty), onVal(init))
+    case Op.Arrayalloc(ty, init, zoneHandle) =>
+      Op.Arrayalloc(onType(ty), onVal(init), onVal(zoneHandle))
     case Op.Arrayload(ty, arr, idx) =>
       Op.Arrayload(onType(ty), onVal(arr), onVal(idx))
     case Op.Arraystore(ty, arr, idx, value) =>

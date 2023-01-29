@@ -246,7 +246,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.VarOp        => Op.Var(getType())
     case T.VarloadOp    => Op.Varload(getVal())
     case T.VarstoreOp   => Op.Varstore(getVal(), getVal())
-    case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal())
+    case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal(), getVal())
     case T.ArrayloadOp  => Op.Arrayload(getType(), getVal(), getVal())
     case T.ArraystoreOp =>
       Op.Arraystore(getType(), getVal(), getVal(), getVal())

@@ -39,7 +39,7 @@ sealed abstract class Op {
     case Op.Var(ty)           => Type.Var(ty)
     case Op.Varload(slot)     => val Type.Var(ty) = slot.ty: @unchecked; ty
     case Op.Varstore(slot, _) => Type.Unit
-    case Op.Arrayalloc(ty, _) =>
+    case Op.Arrayalloc(ty, _, _) =>
       Type.Ref(Type.toArrayClass(ty), exact = true, nullable = false)
     case Op.Arrayload(ty, _, _)    => ty
     case Op.Arraystore(_, _, _, _) => Type.Unit
@@ -126,7 +126,7 @@ object Op {
   final case class Conv(conv: nir.Conv, ty: Type, value: Val) extends Op
 
   // high-level
-  final case class Classalloc(name: Global, ptr: Val) extends Op
+  final case class Classalloc(name: Global, zoneHandle: Val) extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op
@@ -143,7 +143,7 @@ object Op {
   final case class Var(ty: Type) extends Op
   final case class Varload(slot: Val) extends Op
   final case class Varstore(slot: Val, value: Val) extends Op
-  final case class Arrayalloc(ty: Type, init: Val) extends Op
+  final case class Arrayalloc(ty: Type, init: Val, zoneHandle: Val) extends Op
   final case class Arrayload(ty: Type, arr: Val, idx: Val) extends Op
   final case class Arraystore(ty: Type, arr: Val, idx: Val, value: Val)
       extends Op

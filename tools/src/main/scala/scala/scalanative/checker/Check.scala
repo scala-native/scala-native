@@ -304,7 +304,7 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"can't varstore into non-var ${slot.show}")
       }
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zoneHandle) =>
       init match {
         case v if v.ty == Type.Int =>
           ok

@@ -169,7 +169,10 @@ object Array {
 % #         used to run this script.
 % for T, sizeT in types.items():
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
+   allocGC = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
+}%
+%{
+   allocSZ = 'CMemoryPoolZone.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -199,7 +202,7 @@ final class ${T}Array private () extends Array[${T}] {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
     )
-    val arr     = ${alloc}(arrcls, arrsize)
+    val arr     = ${allocGC}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
@@ -208,7 +211,7 @@ final class ${T}Array private () extends Array[${T}] {
 
 object ${T}Array {
 
-  @inline def alloc(length: Int): ${T}Array = {
+  @inline def alloc(length: Int, zoneHandle: RawPtr): ${T}Array = {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
@@ -218,7 +221,9 @@ object ${T}Array {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
     )
-    val arr     = ${alloc}(arrcls, arrsize)
+    val arr     = 
+      if (zoneHandle == null) ${allocGC}(arrcls, arrsize) 
+      else ${allocSZ}(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, ${sizePtr}), length)
     storeInt(elemRawPtr(
       arr,
@@ -227,6 +232,8 @@ object ${T}Array {
     ), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
+
+  @inline def alloc(length: Int): ${T}Array = alloc(length, null)
 
   @inline def snapshot(length: Int, data: RawPtr): ${T}Array = {
     val arr  = alloc(length)

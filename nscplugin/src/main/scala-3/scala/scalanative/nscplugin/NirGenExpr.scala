@@ -80,8 +80,14 @@ trait NirGenExpr(using Context) {
     }
 
     def defnNir(using Context): NirDefinitions = NirDefinitions.get
-    
+
     lazy val SafeZoneHandle = new Property.Key[Val]
+
+    private def safeZoneHandle(tree: Tree): Val = {
+      if tree.hasAttachment(SafeZoneHandle) then
+        tree.getAttachment(SafeZoneHandle).get
+      else Val.Null
+    }
 
     def genApply(app: Apply): Val = {
       given nir.Position = app.span
@@ -119,9 +125,15 @@ trait NirGenExpr(using Context) {
             arrayType,
             SeqLiteral(dimensions, _)
           ) = args: @unchecked
+          val zoneHandle = safeZoneHandle(app)
           if (dimensions.size == 1)
             val length = genExpr(dimensions.head)
-            buf.arrayalloc(genType(componentType.typeValue), length, unwind)
+            buf.arrayalloc(
+              genType(componentType.typeValue),
+              length,
+              zoneHandle,
+              unwind
+            )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
@@ -490,9 +502,10 @@ trait NirGenExpr(using Context) {
       given nir.Position = tree.span
 
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero))
-        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
+        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), Val.Null, unwind)
       else
-        val alloc = buf.arrayalloc(elemty, Val.Int(values.length), unwind)
+        val alloc =
+          buf.arrayalloc(elemty, Val.Int(values.length), Val.Null, unwind)
         for (v, i) <- values.zipWithIndex if !v.isZero do
           given nir.Position = elems(i).span
           buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
@@ -1078,12 +1091,8 @@ trait NirGenExpr(using Context) {
 
     private def genApplyNew(app: Apply): Val = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app: @unchecked
+      val zoneHandle = safeZoneHandle(app)
       given nir.Position = app.span
-
-      val zoneHandle =
-        if app.hasAttachment(SafeZoneHandle) then
-          app.getAttachment(SafeZoneHandle).get
-        else Val.Null
 
       fromType(tpt.tpe) match {
         case st if st.sym.isStruct =>
@@ -2581,7 +2590,6 @@ trait NirGenExpr(using Context) {
         }
       }
     }
-
   }
 
   sealed class FixupBuffer(using fresh: Fresh) extends nir.Buffer {

@@ -24,6 +24,12 @@ object CMemoryPoolZone {
   @name("memorypoolzone_open")
   def open(rawpool: RawPtr): RawPtr = extern
 
+  @name("memorypoolzone_alloc")
+  def alloc(rawzone: RawPtr, rawty: RawPtr, size: CSize): RawPtr = extern
+
+  @name("memorypoolzone_alloc")
+  def alloc(rawzone: RawPtr, cls: Class[_], size: CSize): RawPtr = extern
+
   @name("memorypoolzone_close")
   def close(rawzone: RawPtr): Unit = extern
 

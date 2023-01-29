@@ -73,9 +73,9 @@ trait NoOpt { self: Interflow =>
     case Op.Conv(conv, _, v) =>
       noOptVal(v)
 
-    case Op.Classalloc(n, ptrv) =>
+    case Op.Classalloc(n, zoneHandle) =>
       noOptGlobal(n)
-      noOptVal(ptrv)
+      noOptVal(zoneHandle)
     case Op.Fieldload(_, v, n) =>
       noOptVal(v)
       noOptGlobal(n)
@@ -124,8 +124,9 @@ trait NoOpt { self: Interflow =>
     case Op.Varstore(slot, value) =>
       noOptVal(slot)
       noOptVal(value)
-    case Op.Arrayalloc(_, init) =>
+    case Op.Arrayalloc(_, init, zoneHandle) =>
       noOptVal(init)
+      noOptVal(zoneHandle)
     case Op.Arrayload(_, arr, idx) =>
       noOptVal(arr)
       noOptVal(idx)

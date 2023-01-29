@@ -127,10 +127,10 @@ class Buffer(implicit fresh: Fresh) {
       pos: Position
   ): Val =
     let(Op.Varstore(slot, value), unwind)
-  def arrayalloc(ty: Type, init: Val, unwind: Next)(implicit
+  def arrayalloc(ty: Type, init: Val, zoneHandle: Val, unwind: Next)(implicit
       pos: Position
   ): Val =
-    let(Op.Arrayalloc(ty, init), unwind)
+    let(Op.Arrayalloc(ty, init, zoneHandle), unwind)
   def arrayload(ty: Type, arr: Val, idx: Val, unwind: Next)(implicit
       pos: Position
   ): Val =

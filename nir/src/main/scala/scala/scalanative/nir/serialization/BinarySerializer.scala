@@ -448,10 +448,11 @@ final class BinarySerializer {
       putVal(slot)
       putVal(value)
 
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zoneHandle) =>
       putInt(T.ArrayallocOp)
       putType(ty)
       putVal(init)
+      putVal(zoneHandle)
 
     case Op.Arrayload(ty, arr, idx) =>
       putInt(T.ArrayloadOp)

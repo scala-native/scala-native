@@ -277,6 +277,7 @@ trait GenReflectiveInstantisation(using Context) {
     val ctorsInfo = buf.arrayalloc(
       Type.Array(nirSymbols.Tuple2Ref),
       Val.Int(ctors.length),
+      Val.Null,
       unwind(curFresh)
     )
 
@@ -361,6 +362,7 @@ trait GenReflectiveInstantisation(using Context) {
       val rtClasses = buf.arrayalloc(
         Rt.Class,
         Val.Int(ctorSig.args.tail.length),
+        Val.Null,
         unwind(curFresh)
       )
       for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
