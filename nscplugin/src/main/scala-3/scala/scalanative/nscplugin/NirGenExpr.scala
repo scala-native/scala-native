@@ -33,6 +33,7 @@ import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
 import dotty.tools.dotc.ast.desugar
+import dotty.tools.dotc.util.Property
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -78,6 +79,10 @@ trait NirGenExpr(using Context) {
       }
     }
 
+    def defnNir(using Context): NirDefinitions = NirDefinitions.get
+    
+    lazy val SafeZoneHandle = new Property.Key[Val]
+
     def genApply(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(fun, args) = app
@@ -85,6 +90,17 @@ trait NirGenExpr(using Context) {
       val sym = fun.symbol
       def isStatic = sym.owner.isStaticOwner
       def qualifier = qualifierOf(fun)
+
+      app match {
+        case Apply(_, List(sz, tree))
+            if sym == defnNir.SafeZoneCompat_withSafeZone =>
+          // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
+          // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+          // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
+          val handle = genExpr(Select(sz, termName("handle")))
+          tree.putAttachment(SafeZoneHandle, handle)
+        case _ =>
+      }
 
       fun match {
         case _: TypeApply => genApplyTypeApply(app)
@@ -1064,6 +1080,11 @@ trait NirGenExpr(using Context) {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app: @unchecked
       given nir.Position = app.span
 
+      val zoneHandle =
+        if app.hasAttachment(SafeZoneHandle) then
+          app.getAttachment(SafeZoneHandle).get
+        else Val.Null
+
       fromType(tpt.tpe) match {
         case st if st.sym.isStruct =>
           genApplyNewStruct(st, args)
@@ -1075,7 +1096,7 @@ trait NirGenExpr(using Context) {
             "'new' call to non-constructor: " + ctor.name
           )
 
-          genApplyNew(cls, ctor, args)
+          genApplyNew(cls, ctor, args, zoneHandle)
 
         case SimpleType(sym, targs) =>
           unsupported(s"unexpected new: $sym with targs $targs")
@@ -1094,10 +1115,15 @@ trait NirGenExpr(using Context) {
       res
     }
 
-    private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
-        using nir.Position
+    private def genApplyNew(
+        clssym: Symbol,
+        ctorsym: Symbol,
+        args: List[Tree],
+        zoneHandle: Val
+    )(using
+        nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), Val.Null, unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), zoneHandle, unwind)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
