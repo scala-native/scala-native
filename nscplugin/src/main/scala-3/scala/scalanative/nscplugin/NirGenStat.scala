@@ -253,7 +253,7 @@ trait NirGenStat(using Context) {
         case defnNir.NoSpecializeType => Attr.NoSpecialize
         case defnNir.StubType         => Attr.Stub
       }
-    val externAttrs = if (sym.owner.isExternType) Seq(Attr.Extern) else Nil
+    val externAttrs = if (sym.isExtern) Seq(Attr.Extern) else Nil
 
     Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
   }
