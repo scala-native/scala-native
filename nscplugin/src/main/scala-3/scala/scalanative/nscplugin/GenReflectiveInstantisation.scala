@@ -194,7 +194,7 @@ trait GenReflectiveInstantisation(using Context) {
       argTypes: Seq[nir.Type],
       args: Seq[Val]
   )(using pos: nir.Position, buf: ExprBuffer): Val = {
-    val alloc = buf.classalloc(name, unwind(curFresh))
+    val alloc = buf.classalloc(name, Val.Null, unwind(curFresh))
     buf.call(
       Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
       Val.Global(name.member(Sig.Ctor(argTypes)), Type.Ptr),

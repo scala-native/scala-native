@@ -906,7 +906,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // instantiante the anonymous class and call its constructor
       // passing all of the captures as arguments.
 
-      val alloc = buf.classalloc(anonName, unwind)
+      val alloc = buf.classalloc(anonName, Val.Null, unwind)
       val captureVals = curMethodThis.get.get +: captureSyms.map { sym =>
         genExpr(Ident(sym))
       }
@@ -933,7 +933,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val ctorName = genMethodName(boxedClass.primaryConstructor)
           val ctorSig = genMethodSig(boxedClass.primaryConstructor)
 
-          val alloc = buf.classalloc(Global.Top(boxedClass.fullName), unwind)
+          val alloc =
+            buf.classalloc(Global.Top(boxedClass.fullName), Val.Null, unwind)
           val ctor = buf.method(
             alloc,
             ctorName.asInstanceOf[nir.Global.Member].sig,
@@ -1407,7 +1408,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
       val rawptr = buf.method(fnRef, ExternForwarderSig, unwind)
 
-      val alloc = buf.classalloc(className, unwind)
+      val alloc = buf.classalloc(className, Val.Null, unwind)
       buf.call(
         ctorTy,
         Val.Global(ctorName, Type.Ptr),
@@ -2369,7 +2370,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(implicit
         pos: nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), Val.Null, unwind)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }

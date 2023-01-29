@@ -173,7 +173,7 @@ final class Check(implicit linked: linker.Result) {
       checkCompOp(comp, ty, l, r)
     case Op.Conv(conv, ty, value) =>
       checkConvOp(conv, ty, value)
-    case Op.Classalloc(name) =>
+    case Op.Classalloc(name, zoneHandle) =>
       linked.infos
         .get(name)
         .fold {

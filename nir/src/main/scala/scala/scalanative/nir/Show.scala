@@ -263,9 +263,11 @@ object Show {
         str("] ")
         val_(v)
 
-      case Op.Classalloc(name) =>
+      case Op.Classalloc(name, zoneHandle) =>
         str("classalloc ")
         global_(name)
+        str(", ")
+        val_(zoneHandle)
       case Op.Fieldload(ty, obj, name) =>
         str("fieldload[")
         type_(ty)

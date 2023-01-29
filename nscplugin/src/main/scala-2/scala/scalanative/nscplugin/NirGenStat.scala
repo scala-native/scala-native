@@ -305,7 +305,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         args: Seq[Val]
     )(implicit pos: nir.Position): Val = {
 
-      val alloc = exprBuf.classalloc(name, unwind(curFresh))
+      val alloc = exprBuf.classalloc(name, Val.Null, unwind(curFresh))
       exprBuf.call(
         Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
         Val.Global(name.member(Sig.Ctor(argTypes)), Type.Ptr),

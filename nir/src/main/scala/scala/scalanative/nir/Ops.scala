@@ -21,7 +21,7 @@ sealed abstract class Op {
     case Op.Comp(_, _, _, _)       => Type.Bool
     case Op.Conv(_, ty, _)         => ty
 
-    case Op.Classalloc(n)       => Type.Ref(n, exact = true, nullable = false)
+    case Op.Classalloc(n, _)    => Type.Ref(n, exact = true, nullable = false)
     case Op.Fieldload(ty, _, _) => ty
     case Op.Fieldstore(ty, _, _, _) => Type.Unit
     case Op.Field(_, _)             => Type.Ptr
@@ -126,7 +126,7 @@ object Op {
   final case class Conv(conv: nir.Conv, ty: Type, value: Val) extends Op
 
   // high-level
-  final case class Classalloc(name: Global) extends Op
+  final case class Classalloc(name: Global, ptr: Val) extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op

@@ -73,8 +73,9 @@ trait NoOpt { self: Interflow =>
     case Op.Conv(conv, _, v) =>
       noOptVal(v)
 
-    case Op.Classalloc(n) =>
+    case Op.Classalloc(n, ptrv) =>
       noOptGlobal(n)
+      noOptVal(ptrv)
     case Op.Fieldload(_, v, n) =>
       noOptVal(v)
       noOptGlobal(n)

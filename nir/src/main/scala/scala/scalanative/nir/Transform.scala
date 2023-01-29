@@ -77,8 +77,8 @@ trait Transform {
     case Op.Conv(conv, ty, v) =>
       Op.Conv(conv, onType(ty), onVal(v))
 
-    case Op.Classalloc(n) =>
-      Op.Classalloc(n)
+    case Op.Classalloc(n, ptrv) =>
+      Op.Classalloc(n, onVal(ptrv))
     case Op.Fieldload(ty, v, n) =>
       Op.Fieldload(onType(ty), onVal(v), n)
     case Op.Fieldstore(ty, v1, n, v2) =>

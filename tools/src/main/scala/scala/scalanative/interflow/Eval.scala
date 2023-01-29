@@ -202,7 +202,7 @@ trait Eval { self: Interflow =>
           case value =>
             combine(conv, ty, value)
         }
-      case Op.Classalloc(ClassRef(cls)) =>
+      case Op.Classalloc(ClassRef(cls), zoneHandle) =>
         Val.Virtual(state.allocClass(cls))
       case Op.Fieldload(ty, rawObj, name @ FieldRef(cls, fld)) =>
         eval(rawObj) match {

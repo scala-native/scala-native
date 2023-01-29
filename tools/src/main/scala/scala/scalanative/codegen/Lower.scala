@@ -764,22 +764,35 @@ object Lower {
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Classalloc(ClassRef(cls)) = op: @unchecked
+      val Op.Classalloc(ClassRef(cls), ptr) = op: @unchecked
 
       val size = MemoryLayout.sizeOf(layout(cls).struct)
-      val allocMethod =
-        if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
-
       assert(size == size.toInt)
-      buf.let(
-        n,
-        Op.Call(
-          allocSig,
-          allocMethod,
-          Seq(rtti(cls).const, Val.Size(size.toInt))
-        ),
-        unwind
-      )
+
+      val zoneHandle = genVal(buf, ptr)
+      if (zoneHandle != Val.Null) {
+        buf.let(
+          n,
+          Op.Call(
+            zoneAllocSig,
+            zoneAlloc,
+            Seq(zoneHandle, rtti(cls).const, Val.Size(size.toInt))
+          ),
+          unwind
+        )
+      } else {
+        val allocMethod =
+          if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
+        buf.let(
+          n,
+          Op.Call(
+            allocSig,
+            allocMethod,
+            Seq(rtti(cls).const, Val.Size(size.toInt))
+          ),
+          unwind
+        )
+      }
     }
 
     def genConvOp(buf: Buffer, n: Local, op: Op.Conv)(implicit
@@ -1190,6 +1203,10 @@ object Lower {
   val largeAllocName = extern("scalanative_alloc_large")
   val largeAlloc = Val.Global(largeAllocName, allocSig)
 
+  val zoneAllocSig = Type.Function(Seq(Type.Ptr, Type.Ptr, Type.Size), Type.Ptr)
+  val zoneAllocName = extern("memorypoolzone_alloc")
+  val zoneAlloc = Val.Global(zoneAllocName, zoneAllocSig)
+
   val dyndispatchName = extern("scalanative_dyndispatch")
   val dyndispatchSig =
     Type.Function(Seq(Type.Ptr, Type.Int), Type.Ptr)
@@ -1397,6 +1414,7 @@ object Lower {
     val buf = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
+    buf += Defn.Declare(Attrs.None, zoneAllocName, zoneAllocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
     buf.toSeq

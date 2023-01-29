@@ -279,7 +279,7 @@ final class State(block: Local) {
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values) =>
-        emit.classalloc(cls.name, Next.None)
+        emit.classalloc(cls.name, Val.Null, Next.None)
       case DelayedInstance(op) =>
         reachOp(op)
         emit(escapedOp(op), idempotent = true)
