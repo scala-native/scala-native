@@ -3,7 +3,7 @@ package scala.scalanative.runtime
 import scalanative.unsafe._
 
 @extern
-object CMemoryPool {
+object _CMemoryPool {
   @name("memorypool_open")
   def open(): RawPtr = extern
 
@@ -11,13 +11,18 @@ object CMemoryPool {
   def free(rawpool: RawPtr): Unit = extern
 }
 
+object CMemoryPool {
+  val defaultMemoryPoolHandle = _CMemoryPool.open() // TODO: use lazy val
+
+  def freeDefaultMemoryPool(): Unit = {
+    _CMemoryPool.free(defaultMemoryPoolHandle)
+  }
+}
+
 @extern
 object CMemoryPoolZone {
   @name("memorypoolzone_open")
   def open(rawpool: RawPtr): RawPtr = extern
-
-  @name("memorypoolzone_alloc")
-  def alloc(rawzone: RawPtr, rawty: RawPtr, size: CSize): RawPtr = extern
 
   @name("memorypoolzone_close")
   def close(rawzone: RawPtr): Unit = extern

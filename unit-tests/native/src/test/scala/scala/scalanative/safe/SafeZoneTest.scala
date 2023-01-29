@@ -20,4 +20,10 @@ class SafeZoneTest {
       assertFalse(sz.isClosed)
     }
   }
+
+  @Test def `can get the handle of a safe zone`(): Unit = {
+    SafeZone { sz =>
+      assert(sz.handle != null)
+    }
+  }
 }
