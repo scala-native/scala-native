@@ -20,6 +20,8 @@ private[codegen] abstract class AbstractCodeGen(
 
   private val targetTriple: Option[String] = config.compilerConfig.targetTriple
   private val is32BitPlatform: Boolean = config.compilerConfig.is32BitPlatform
+  private val isMultithreadingEnabled =
+    config.compilerConfig.multithreadingSupport
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _
@@ -656,6 +658,9 @@ private[codegen] abstract class AbstractCodeGen(
 
       case Op.Load(ty, ptr, syncAttrs) =>
         val pointee = fresh()
+        val isAtomic = isMultithreadingEnabled && syncAttrs.isDefined
+        val isVolatile =
+          isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
 
         newline()
         str("%")
@@ -669,28 +674,40 @@ private[codegen] abstract class AbstractCodeGen(
         newline()
         genBind()
         str("load ")
+        if (isAtomic) str("atomic ")
+        if (isVolatile) str("volatile ")
         genType(ty)
         str(", ")
         genType(ty)
         str("* %")
         genLocal(pointee)
-        ty match {
-          case refty: Type.RefKind =>
-            val (nonnull, deref, size) = toDereferenceable(refty)
-            if (nonnull) {
-              str(", !nonnull !{}")
-            }
-            str(", !")
-            str(deref)
-            str(" !{i64 ")
-            str(size)
-            str("}")
-          case _ =>
-            ()
+        if (isAtomic) {
+          str(" ")
+          syncAttrs.foreach(genSyncAttrs)
+          str(", align ")
+          str(MemoryLayout.alignmentOf(ty, is32BitPlatform))
+        } else {
+          ty match {
+            case refty: Type.RefKind =>
+              val (nonnull, deref, size) = toDereferenceable(refty)
+              if (nonnull) {
+                str(", !nonnull !{}")
+              }
+              str(", !")
+              str(deref)
+              if (is32BitPlatform) str(" !{i32 ") else str(" !{i64 ")
+              str(size)
+              str("}")
+            case _ =>
+              ()
+          }
         }
 
       case Op.Store(ty, ptr, value, syncAttrs) =>
         val pointee = fresh()
+        val isAtomic = isMultithreadingEnabled && syncAttrs.isDefined
+        val isVolatile =
+          isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
 
         newline()
         str("%")
@@ -704,11 +721,19 @@ private[codegen] abstract class AbstractCodeGen(
         newline()
         genBind()
         str("store ")
+        if (isAtomic) str("atomic ")
+        if (isVolatile) str("volatile ")
         genVal(value)
         str(", ")
         genType(ty)
         str("* %")
         genLocal(pointee)
+        if (isAtomic) syncAttrs.foreach {
+          str(" ")
+          genSyncAttrs(_)
+        }
+        str(", align ")
+        str(MemoryLayout.alignmentOf(ty, is32BitPlatform))
 
       case Op.Elem(ty, ptr, indexes) =>
         val pointee = fresh()
@@ -949,9 +974,33 @@ private[codegen] abstract class AbstractCodeGen(
         genVal(v)
         str(" to ")
         genType(ty)
+      case Op.Fence(syncAttrs) =>
+        str("fence ")
+        genSyncAttrs(syncAttrs)
+
       case op =>
         unsupported(op)
     }
+  }
+
+  private def genSyncAttrs(
+      attrs: SyncAttrs
+  )(implicit sb: ShowBuilder): Unit = {
+    import sb._
+    val SyncAttrs(memoryOrder, _, scope) = attrs
+    scope.foreach { scope =>
+      str("syncscope(")
+      genGlobal(scope)
+      str(") ")
+    }
+    str(memoryOrder match {
+      case MemoryOrder.Unordered => "unordered"
+      case MemoryOrder.Monotonic => "monotonic"
+      case MemoryOrder.Acquire   => "acquire"
+      case MemoryOrder.Release   => "release"
+      case MemoryOrder.AcqRel    => "acq_rel"
+      case MemoryOrder.SeqCst    => "seq_cst"
+    })
   }
 
   private[codegen] def genNext(next: Next)(implicit sb: ShowBuilder): Unit = {
