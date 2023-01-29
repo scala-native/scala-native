@@ -2,18 +2,20 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
+import scala.scalanative.build.BuildException
 import scalanative.util.{ScopedVar, unsupported}
 import scalanative.nir._
 import scalanative.linker.{
   Class,
-  Trait,
+  ClassRef,
+  FieldRef,
+  LinkingException,
+  MethodRef,
+  Result,
   ScopeInfo,
   ScopeRef,
-  ClassRef,
-  TraitRef,
-  FieldRef,
-  MethodRef,
-  Result
+  Trait,
+  TraitRef
 }
 import scalanative.interflow.UseDef.eliminateDeadCode
 
@@ -469,18 +471,49 @@ object Lower {
         pos: Position
     ) = {
       val Op.Fieldload(ty, obj, name) = op
+      val field = name match {
+        case FieldRef(_, field) => field
+        case _ =>
+          throw new LinkingException(s"Metadata for field '$name' not found")
+      }
+
+      val isSynchronized = field.attrs.isFinal || field.attrs.isVolatile
+      val syncAttrs = SyncAttrs(
+        memoryOrder =
+          if (isSynchronized) MemoryOrder.Acquire
+          else MemoryOrder.Unordered,
+        isVolatile = isSynchronized,
+        scope = Some(field.name)
+      )
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genLoadOp(buf, n, Op.Load(ty, elem))
+      genLoadOp(buf, n, Op.Load(ty, elem, Some(syncAttrs)))
     }
 
     def genFieldstoreOp(buf: Buffer, n: Local, op: Op.Fieldstore)(implicit
         pos: Position
     ) = {
       val Op.Fieldstore(ty, obj, name, value) = op
+      val field = name match {
+        case FieldRef(_, field) => field
+        case _ =>
+          throw new LinkingException(s"Metadata for field '$name' not found")
+      }
 
+      val isFinal = field.attrs.isFinal
+      val isSynchronized = isFinal || field.attrs.isVolatile
+      val syncAttrs = SyncAttrs(
+        memoryOrder =
+          if (isSynchronized) MemoryOrder.Release
+          else MemoryOrder.Unordered,
+        isVolatile = isSynchronized,
+        scope = Some(field.name)
+      )
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genStoreOp(buf, n, Op.Store(ty, elem, value))
+      genStoreOp(buf, n, Op.Store(ty, elem, value, Some(syncAttrs)))
+      if (isFinal) {
+        buf.let(Op.Fence(syncAttrs), unwind)
+      }
     }
 
     def genFieldOp(buf: Buffer, n: Local, op: Op)(implicit
