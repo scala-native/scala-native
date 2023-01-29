@@ -5,8 +5,10 @@ import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.netinet.in
+import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.string.memcpy
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
@@ -128,6 +130,50 @@ object SocketHelpers {
     } else {
       fromCString(gai_strerror(gaiErrorCode))
     }
+  }
+
+  private[net] def sn04xBackportFetchSin6Addr(
+      sockAddr: Ptr[in.sockaddr_in6]
+  ): Ptr[Byte] = {
+    /* NOTE WELL: Scala Native 0.4.x backport complexity
+     *
+     * In order to allow fast, overlay, direct calls to external (C) code
+     * Scala Native 0.5.0 introduced a breaking change to the
+     * declaration of the Scala Native sin6 structure.
+     *
+     * This method allows back-ported SN 0.5.x NetworkInterface
+     * code to access the proper bytes for the sin6_addr field as
+     * defined by SN 0.4.x.
+     */
+    val ptr = sockAddr.asInstanceOf[Ptr[Byte]]
+    val sn04xSin6Addr = (ptr + 8)
+    sn04xSin6Addr
+  }
+
+  private[net] def sockaddrToByteArray(sockAddr: Ptr[sockaddr]): Array[Byte] = {
+
+    val (src, byteArraySize) = {
+      val af = sockAddr.sa_family.toInt
+      if (af == AF_INET6) {
+        val sn04xSin6Addr = sn04xBackportFetchSin6Addr(
+          sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]]
+        )
+        val arraySize = 16
+        (sn04xSin6Addr, arraySize)
+      } else if (af == AF_INET) {
+        val v4addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in]]
+        val sin4Addr = v4addr.sin_addr.at1.asInstanceOf[Ptr[Byte]]
+        val arraySize = 4
+        (sin4Addr, arraySize)
+      } else {
+        throw new SocketException(s"Unsupported address family: ${af}")
+      }
+    }
+
+    val byteArray = new Array[Byte](byteArraySize)
+    memcpy(byteArray.at(0), src, byteArraySize.toUInt)
+
+    byteArray
   }
 
   // Create copies of loopback & wildcard, so that originals never get changed

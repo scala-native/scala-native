@@ -202,7 +202,9 @@ java.net
 * ``InetAddress``
 * ``InetAddressBase``
 * ``InetSocketAddress``
+* ``InterfaceAddress``
 * ``MalformedURLException``
+* ``NetworkInterface``
 * ``NoRouteToHostException``
 * ``PortUnreachableException``
 * ``ServerSocket``

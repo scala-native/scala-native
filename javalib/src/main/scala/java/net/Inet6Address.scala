@@ -84,7 +84,7 @@ object Inet6Address {
     new Inet6Address(ipAddress, host, scopeId, zone)
   }
 
-  private val hexCharacters = "0123456789ABCDEF"
+  private val hexCharacters = "0123456789abcdef"
 
   private[net] def formatInet6Address(in6Addr: Inet6Address): String = {
 
