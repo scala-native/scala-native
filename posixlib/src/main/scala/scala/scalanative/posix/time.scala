@@ -73,6 +73,7 @@ import scala.scalanative.posix.signal.sigevent
 
   // No clock_nanosleep on macOS. time.c provides a stub always returning -1.
   @name("scalanative_clock_nanosleep")
+  @blocking
   def clock_nanosleep(
       clockid: clockid_t,
       flags: CInt,
@@ -94,8 +95,11 @@ import scala.scalanative.posix.signal.sigevent
 
   def mktime(time: Ptr[tm]): time_t = extern
 
-  def nanosleep(requested: Ptr[timespec], remaining: Ptr[timespec]): CInt =
-    extern
+  @blocking
+  def nanosleep(
+      requested: Ptr[timespec],
+      remaining: Ptr[timespec]
+  ): CInt = extern
 
   @name("scalanative_strftime")
   def strftime(

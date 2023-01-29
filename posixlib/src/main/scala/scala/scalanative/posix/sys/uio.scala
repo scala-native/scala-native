@@ -11,9 +11,10 @@ object uio {
     CSize // iov_len
   ]
 
-  def readv(d: CInt, buf: Ptr[iovec], iovcnt: CInt): CSSize = extern
+  @blocking def readv(d: CInt, buf: Ptr[iovec], iovcnt: CInt): CSSize = extern
 
-  def writev(fildes: CInt, iov: Ptr[iovec], iovcnt: CInt): CSSize = extern
+  @blocking def writev(fildes: CInt, iov: Ptr[iovec], iovcnt: CInt): CSSize =
+    extern
 }
 
 object uioOps {

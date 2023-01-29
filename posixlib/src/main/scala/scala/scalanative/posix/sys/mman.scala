@@ -19,6 +19,7 @@ object mman {
 
   def munmap(addr: Ptr[_], length: size_t): CInt = extern
 
+  @blocking
   def msync(addr: Ptr[_], length: size_t, flags: CInt): CInt = extern
 
   @name("scalanative_prot_exec")

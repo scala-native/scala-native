@@ -20,6 +20,7 @@ object sched {
 
   def sched_getscheduler(pid: pid_t): CInt = extern
 
+  @blocking
   def sched_yield(): CInt = extern
 
   def sched_get_priority_max(algorithm: CInt): CInt = extern
