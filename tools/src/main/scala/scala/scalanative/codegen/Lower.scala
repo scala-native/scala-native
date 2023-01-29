@@ -626,10 +626,13 @@ object Lower {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else Next.None
         }
-        // TODO: volatile, replace dummy method call transformed to loads in AbstractCodeGen
-        buf.call(Type.Function(Nil, Type.Unit), GCSafepoint, Nil, handler)
-        // val safepointAddr = buf.load(Type.Ptr, GCSafepoint, handler)
-        // volatile buf.load(Type.Ptr, safepointAddr, handler)
+        val syncAttrs = SyncAttrs(
+          memoryOrder = MemoryOrder.Unordered,
+          isVolatile = true,
+          scope = None
+        )
+        val safepointAddr = buf.load(Type.Ptr, GCSafepoint, handler)
+        buf.load(Type.Ptr, safepointAddr, handler, Some(syncAttrs))
       }
     }
 
