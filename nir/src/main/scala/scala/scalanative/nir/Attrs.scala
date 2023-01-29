@@ -79,10 +79,10 @@ object Attrs {
       case Extern(blocking) =>
         isExtern = true
         isBlocking = blocking
-      case Dyn              => isDyn = true
-      case Stub             => isStub = true
-      case link: Attr.Link  => links += link
-      case Abstract         => isAbstract = true
+      case Dyn             => isDyn = true
+      case Stub            => isStub = true
+      case link: Attr.Link => links += link
+      case Abstract        => isAbstract = true
     }
 
     new Attrs(
