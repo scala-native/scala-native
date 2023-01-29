@@ -367,6 +367,8 @@ object Lower {
           genFieldloadOp(buf, n, op)
         case op: Op.Fieldstore =>
           genFieldstoreOp(buf, n, op)
+        case op: Op.Load =>
+          genLoadOp(buf, n, op)
         case op: Op.Store =>
           genStoreOp(buf, n, op)
         case op: Op.Method =>
@@ -469,7 +471,7 @@ object Lower {
       val Op.Fieldload(ty, obj, name) = op
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      buf.let(n, Op.Load(ty, elem), unwind)
+      genLoadOp(buf, n, Op.Load(ty, elem))
     }
 
     def genFieldstoreOp(buf: Buffer, n: Local, op: Op.Fieldstore)(implicit
@@ -489,11 +491,67 @@ object Lower {
       buf.let(n, Op.Copy(elem), unwind)
     }
 
+    def genLoadOp(buf: Buffer, n: Local, op: Op.Load)(implicit
+        pos: Position
+    ): Unit = {
+      op match {
+        // Convert synchronized load(bool) into load(byte)
+        // LLVM is not providing synchronization on booleans
+        case Op.Load(Type.Bool, ptr, syncAttrs @ Some(_)) =>
+          val asPtr, valueAsByte = fresh()
+          genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+          genLoadOp(
+            buf,
+            valueAsByte,
+            Op.Load(
+              Type.Byte,
+              Val.Local(asPtr, Type.Ptr),
+              syncAttrs
+            )
+          )
+          genConvOp(
+            buf,
+            n,
+            Op.Conv(Conv.Trunc, Type.Bool, Val.Local(valueAsByte, Type.Byte))
+          )
+
+        case Op.Load(ty, ptr, syncAttrs) =>
+          buf.let(
+            n,
+            Op.Load(ty, genVal(buf, ptr), syncAttrs),
+            unwind
+          )
+      }
+    }
+
     def genStoreOp(buf: Buffer, n: Local, op: Op.Store)(implicit
         pos: Position
-    ) = {
-      val Op.Store(ty, ptr, value, syncAttrs) = op
-      buf.let(n, Op.Store(ty, genVal(buf, ptr), genVal(buf, value)), unwind)
+    ): Unit = {
+      op match {
+        // Convert synchronized store(bool) into store(byte)
+        // LLVM is not providing synchronization on booleans
+        case Op.Store(Type.Bool, ptr, value, syncAttrs @ Some(_)) =>
+          val asPtr, valueAsByte = fresh()
+          genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+          genConvOp(buf, valueAsByte, Op.Conv(Conv.Zext, Type.Byte, value))
+          genStoreOp(
+            buf,
+            n,
+            Op.Store(
+              Type.Byte,
+              Val.Local(asPtr, Type.Ptr),
+              Val.Local(valueAsByte, Type.Byte),
+              syncAttrs
+            )
+          )
+
+        case Op.Store(ty, ptr, value, syncAttrs) =>
+          buf.let(
+            n,
+            Op.Store(ty, genVal(buf, ptr), genVal(buf, value), syncAttrs),
+            unwind
+          )
+      }
     }
 
     def genCompOp(buf: Buffer, n: Local, op: Op.Comp)(implicit
