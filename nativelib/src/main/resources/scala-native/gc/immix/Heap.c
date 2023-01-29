@@ -13,9 +13,10 @@
 #include "MemoryMap.h"
 #include <time.h>
 #include "WeakRefStack.h"
+#include "Synchronizer.h"
 
-void Heap_exitWithOutOfMemory() {
-    fprintf(stderr, "Out of heap space\n");
+void Heap_exitWithOutOfMemory(const char *details) {
+    fprintf(stderr, "Out of heap space %s\n", details);
     StackTrace_PrintStackTrace();
     exit(1);
 }
@@ -135,22 +136,18 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         // demand when growing the heap.
         memoryCommit(heapStart, minHeapSize);
     if (!commitStatus) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("commit memmory");
     }
 #endif // _WIN32
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
-    Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
-                   heapStart);
-
-    LargeAllocator_Init(&largeAllocator, &blockAllocator, bytemap,
-                        blockMetaStart, heapStart);
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
         Stats_Init(heap->stats, statsFile);
     }
+    mutex_init(&heap->lock);
 }
 /**
  * Allocates large objects using the `LargeAllocator`.
@@ -158,60 +155,75 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
  * trigger a collection of both the small and the large heap.
  */
 word_t *Heap_AllocLarge(Heap *heap, uint32_t size) {
-
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
-
     // Request an object from the `LargeAllocator`
-    Object *object = LargeAllocator_GetBlock(&largeAllocator, size);
+    LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
+    Object *object = LargeAllocator_GetBlock(largeAllocator, size);
     // If the object is not NULL, update it's metadata and return it
     if (object != NULL) {
         return (word_t *)object;
     } else {
-        // Otherwise collect
-        Heap_Collect(heap, &stack);
+        uint32_t pow2increment = 0;
+        do {
+            // Otherwise collect
+            Heap_Collect(heap, &stack);
 
-        // After collection, try to alloc again, if it fails, grow the heap by
-        // at least the size of the object we want to alloc
-        object = LargeAllocator_GetBlock(&largeAllocator, size);
-        if (object != NULL) {
-            assert(Heap_IsWordInHeap(heap, (word_t *)object));
-            return (word_t *)object;
-        } else {
-            size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-            uint32_t pow2increment = 1ULL << MathUtils_Log2Ceil(increment);
-            Heap_Grow(heap, pow2increment);
+            // After collection, try to alloc again, if it fails, grow the heap
+            // by at least the size of the object we want to alloc
+            object = LargeAllocator_GetBlock(largeAllocator, size);
+            if (object != NULL) {
+                assert(Heap_IsWordInHeap(heap, (word_t *)object));
+                return (word_t *)object;
+            } else {
+                if (pow2increment == 0) {
+                    size_t increment =
+                        MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+                    pow2increment = 1ULL << MathUtils_Log2Ceil(increment);
+                    assert(pow2increment > 0);
+                }
+                Heap_Grow(heap, pow2increment);
 
-            object = LargeAllocator_GetBlock(&largeAllocator, size);
-            assert(object != NULL);
-            assert(Heap_IsWordInHeap(heap, (word_t *)object));
-            return (word_t *)object;
-        }
+                object = LargeAllocator_GetBlock(largeAllocator, size);
+                if (object != NULL) {
+                    assert(Heap_IsWordInHeap(heap, (word_t *)object));
+                    return (word_t *)object;
+                }
+            }
+        } while (Heap_isGrowingPossible(heap, pow2increment));
+        Heap_exitWithOutOfMemory("Cannot grow heap to allocate large object");
+        return NULL;
     }
 }
 
 NOINLINE word_t *Heap_allocSmallSlow(Heap *heap, uint32_t size) {
     Object *object;
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    Allocator *allocator = &currentMutatorThread->allocator;
+    object = (Object *)Allocator_Alloc(allocator, size);
 
     if (object != NULL)
         goto done;
 
-    Heap_Collect(heap, &stack);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+    do {
+        Heap_Collect(heap, &stack);
+        object = (Object *)Allocator_Alloc(allocator, size);
 
-    if (object != NULL)
-        goto done;
+        if (object != NULL)
+            goto done;
 
-    // A small object can always fit in a single free block
-    // because it is no larger than 8K while the block is 32K.
-    Heap_Grow(heap, 1);
-    object = (Object *)Allocator_Alloc(&allocator, size);
+        // A small object can always fit in a single free block
+        // because it is no larger than 8K while the block is 32K.
+        Heap_Grow(heap, 1);
+        object = (Object *)Allocator_Alloc(allocator, size);
+        if (object != NULL)
+            goto done;
+    } while (Heap_isGrowingPossible(heap, 1));
+    Heap_exitWithOutOfMemory("alloc-small cannot grow");
 
 done:
-    assert(Heap_IsWordInHeap(heap, (word_t *)object));
     assert(object != NULL);
-    ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
+    assert(Heap_IsWordInHeap(heap, (word_t *)object));
+    ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)object);
     ObjectMeta_SetAllocated(objectMeta);
     return (word_t *)object;
 }
@@ -220,20 +232,21 @@ INLINE word_t *Heap_AllocSmall(Heap *heap, uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
-    word_t *start = allocator.cursor;
+    Allocator *allocator = &currentMutatorThread->allocator;
+    word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // Checks if the end of the block overlaps with the limit
-    if (end >= allocator.limit) {
+    if (end >= allocator->limit) {
         return Heap_allocSmallSlow(heap, size);
     }
 
-    allocator.cursor = end;
+    allocator->cursor = end;
 
     memset(start, 0, size);
 
     Object *object = (Object *)start;
-    ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, (word_t *)object);
+    ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)object);
     ObjectMeta_SetAllocated(objectMeta);
 
     __builtin_prefetch(object + 36, 0, 3);
@@ -253,6 +266,13 @@ word_t *Heap_Alloc(Heap *heap, uint32_t objectSize) {
 }
 
 void Heap_Collect(Heap *heap, Stack *stack) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    if (!Synchronizer_acquire())
+        return;
+#else
+    MutatorThread_switchState(currentMutatorThread,
+                              MutatorThreadState_Unmanaged);
+#endif
     uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
 #ifdef DEBUG_PRINT
@@ -276,7 +296,16 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         Stats_RecordCollection(stats, start_ns, nullify_start_ns,
                                sweep_start_ns, end_ns);
     }
-    WeakRefStack_CallHandlers();
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    Synchronizer_release();
+#else
+    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+#endif
+    // Skip calling WeakRef handlers on thread which is being initialized
+    // If the current block is set to null it means it failed to allocate
+    // memory for allocator and forced GC
+    if (currentMutatorThread->allocator.block)
+        WeakRefStack_CallHandlers();
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);
@@ -286,7 +315,10 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 bool Heap_shouldGrow(Heap *heap) {
     uint32_t freeBlockCount = blockAllocator.freeBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = allocator.recycledBlockCount;
+    uint32_t recycledBlockCount = 0;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        recycledBlockCount += node->value->allocator.recycledBlockCount;
+    }
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
@@ -303,22 +335,36 @@ bool Heap_shouldGrow(Heap *heap) {
 }
 
 void Heap_Recycle(Heap *heap) {
-    Allocator_Clear(&allocator);
-    LargeAllocator_Clear(&largeAllocator);
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        Allocator_Clear(&thread->allocator);
+        LargeAllocator_Clear(&thread->largeAllocator);
+    }
     BlockAllocator_Clear(&blockAllocator);
 
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
     word_t *currentBlockStart = heap->heapStart;
     LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
     word_t *end = heap->blockMetaEnd;
+    MutatorThreads threadsCursor = mutatorThreads;
     while ((word_t *)current < end) {
         int size = 1;
+        MutatorThread *recycleBlocksTo = threadsCursor->value;
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        threadsCursor = threadsCursor->next;
+        if (threadsCursor == NULL) {
+            threadsCursor = mutatorThreads;
+        }
+#endif
+
         assert(!BlockMeta_IsSuperblockMiddle(current));
         if (BlockMeta_IsSimpleBlock(current)) {
-            Block_Recycle(&allocator, current, currentBlockStart, lineMetas);
+            Block_Recycle(&recycleBlocksTo->allocator, current,
+                          currentBlockStart, lineMetas);
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
-            LargeAllocator_Sweep(&largeAllocator, current, currentBlockStart);
+            LargeAllocator_Sweep(&recycleBlocksTo->largeAllocator, current,
+                                 currentBlockStart);
         } else {
             assert(BlockMeta_IsFree(current));
             BlockAllocator_AddFreeBlocks(&blockAllocator, current, 1);
@@ -347,15 +393,19 @@ void Heap_Recycle(Heap *heap) {
         }
     }
     BlockAllocator_SweepDone(&blockAllocator);
-    if (!Allocator_CanInitCursors(&allocator)) {
-        Heap_exitWithOutOfMemory();
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        if (!Allocator_CanInitCursors(&thread->allocator)) {
+            Heap_exitWithOutOfMemory("re-init cursors");
+        }
+        Allocator_InitCursors(&thread->allocator);
     }
-    Allocator_InitCursors(&allocator);
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    BlockAllocator_Acquire(&blockAllocator);
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("grow heap");
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
@@ -381,7 +431,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     // other processes. Also when using UNLIMITED heap size it might try to
     // commit more memory than is available.
     if (!memoryCommit(heapEnd, incrementInBytes)) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("commit memory");
     };
 #endif // WIN32
 
@@ -392,4 +442,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
 
     // immediately add the block to freelists
     BlockAllocator_SweepDone(&blockAllocator);
+    BlockAllocator_Release(&blockAllocator);
 }

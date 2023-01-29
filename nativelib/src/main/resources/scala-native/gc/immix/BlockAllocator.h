@@ -3,6 +3,7 @@
 
 #include "datastructures/BlockList.h"
 #include "Constants.h"
+#include "ThreadUtil.h"
 #include <stddef.h>
 
 #define SUPERBLOCK_LIST_SIZE (BLOCK_COUNT_BITS + 1)
@@ -20,6 +21,7 @@ typedef struct {
         BlockMeta *limit;
     } coalescingSuperblock;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
+    mutex_t allocationLock;
 } BlockAllocator;
 
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
@@ -31,5 +33,6 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
                                   BlockMeta *block, uint32_t count);
 void BlockAllocator_SweepDone(BlockAllocator *blockAllocator);
 void BlockAllocator_Clear(BlockAllocator *blockAllocator);
-
+void BlockAllocator_Acquire(BlockAllocator *blockAllocator);
+void BlockAllocator_Release(BlockAllocator *blockAllocator);
 #endif // IMMIX_BLOCKALLOCATOR_H

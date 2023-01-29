@@ -40,4 +40,6 @@ object Platform {
   final val is32BitPlatform = false
   final val asanEnabled = false
   final val hasArm64SignalQuirk = false
+
+  final val isMultithreadingEnabled = true
 }

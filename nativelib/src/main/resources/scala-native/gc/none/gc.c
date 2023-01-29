@@ -10,6 +10,8 @@
 #include "MemoryMap.h"
 #include "MemoryInfo.h"
 #include "Parsing.h"
+#include <ThreadUtil.h>
+#include "ScalaNativeGC.h"
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
 #ifdef _WIN32
@@ -26,8 +28,8 @@
 #endif
 #endif
 
-void *current = 0;
-void *end = 0;
+thread_local void *current = 0;
+thread_local void *end = 0;
 
 static size_t DEFAULT_CHUNK;
 static size_t PREALLOC_CHUNK;
@@ -123,3 +125,24 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 void scalanative_collect() {}
 
 void scalanative_register_weak_reference_handler(void *handler) {}
+
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+#ifdef _WIN32
+HANDLE scalanative_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
+                                SIZE_T stackSize, ThreadStartRoutine routine,
+                                RoutineArgs args, DWORD creationFlags,
+                                DWORD *threadId) {
+    return CreateThread(threadAttributes, stackSize, routine, args,
+                        creationFlags, threadId);
+}
+#else
+int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
+                               ThreadStartRoutine routine, RoutineArgs args) {
+    return pthread_create(thread, attr, routine, args);
+}
+#endif
+#endif // SCALANATIVE_MULTITHREADING_ENABLED
+
+// ScalaNativeGC interface stubs. None GC does not need STW
+void scalanative_gc_set_mutator_thread_state(MutatorThreadState unused){};
+void scalanative_gc_safepoint_poll(){};

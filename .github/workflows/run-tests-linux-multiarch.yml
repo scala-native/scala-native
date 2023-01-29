@@ -83,12 +83,16 @@ jobs:
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
+        multithreading: [true, false]
         exclude:
-          # Immix does not suppoort Immix/Commix GCs
-          - gc: immix
-            arch: linux-x86
-          - gc: commix
-            arch: linux-x86
+          # TODO: atomics, volatiles: disable LTO/releaseFast until volatiles/fences are supported, otherwise clang can produce infinite loops
+          - multithreading: true
+            build-mode: release-fast
+          - multithreading: true
+            lto: thin
+          # LTO is broken on linux-x86/llvm-10
+          - arch: linux-x86
+            lto: thin
           # Release without LTO produces 1 big file taking long to compile, especially when emulated
           - build-mode: release-fast
             lto: none
@@ -96,6 +100,9 @@ jobs:
             lto: none
           - build-mode: debug
             lto: thin
+          # Commix does not support multithreading
+          - gc: commix
+            multithreading: true
           # Reduce ammount of builds combinations
           - gc: immix
             lto: none
@@ -137,20 +144,18 @@ jobs:
 
           SetConfigTemplate=$(cat << EOM
             nativeConfig ~= { prev =>
-              val sysRoot: List[String] = Option{
-                sys.process.stringSeqToProcess(
-                  Seq(
+              val sysRoot: List[String] =
+                if(Seq("linux-x86").contains("${{ matrix.arch }}")) Nil
+                else Option {
+                  sys.process.stringSeqToProcess(Seq(
                     s"\${sys.env("CROSS_ROOT")}/bin/\${sys.env("CROSS_TRIPLE")}-gcc",
                     "-print-sysroot"
-                  )
-                ).!!.trim
-              }.filter(_.nonEmpty)
-                .fold(List.empty[String]){ root =>
-                  List(
+                  )).!!.trim
+                  }.filter(_.nonEmpty)
+                  .fold(List.empty[String]){ root => List(
                     s"--sysroot=\${root}",
                     s"--gcc-toolchain=\${sys.env("CROSS_ROOT")}"
-                  )
-                };
+                  )};
 
               prev
                 .withMode(scalanative.build.Mode.${buildMode})
@@ -160,22 +165,19 @@ jobs:
                 .withOptimize(true)
                 .withCheck(true)
                 .withCheckFatalWarnings(true)
-                .withTargetTriple(sys.env("CROSS_TRIPLE"))
+                .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
+                .withMultithreadingSupport(${{matrix.multithreading}})
                 .withCompileOptions(
                   prev.compileOptions ++ sysRoot ++ List("-fuse-ld=lld")
                 )
                 .withLinkingOptions(
-                  prev.linkingOptions ++ sysRoot ++ List("-fuse-ld=lld")
+                  prev.linkingOptions ++ sysRoot ++ List("-fuse-ld=lld", "-latomic")
                 )
             }
           EOM
           )
 
-          if [[ "${{matrix.arch}}" == "linux-x86" ]]; then
-            echo set-native-config=nativeConfig ~= identity >> $GITHUB_ENV
-          else
-            echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
-          fi
+          echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
 
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests

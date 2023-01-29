@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface.signalhandling
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.signal._
 import scala.scalanative.libc.string._
@@ -142,13 +142,19 @@ private[testinterface] object SignalConfig {
     setHandler(SIGABRT)
     setHandler(SIGFPE)
     setHandler(SIGILL)
-    setHandler(SIGSEGV)
     setHandler(SIGTERM)
+    if (!isMultithreadingEnabled || isMac) {
+      // Used in GC traps, MacOS uses SIGBUS instead
+      setHandler(SIGSEGV)
+    }
 
     if (!isWindows) {
       import scala.scalanative.posix.signal._
+      if (!isMultithreadingEnabled || !isMac) {
+        // Used in Immix GC traps on MacOS
+        setHandler(SIGBUS)
+      }
       setHandler(SIGALRM)
-      setHandler(SIGBUS)
       setHandler(SIGHUP)
       setHandler(SIGPIPE)
       setHandler(SIGQUIT)
@@ -160,8 +166,12 @@ private[testinterface] object SignalConfig {
       setHandler(SIGSYS)
       setHandler(SIGTRAP)
       setHandler(SIGVTALRM)
-      setHandler(SIGXCPU)
-      setHandler(SIGXFSZ)
+      // Boehm GC and None GC are the only GCs without weak reference support
+      if (!isMultithreadingEnabled || isWeakReferenceSupported) {
+        // Used by Boehm GC StopTheWorld signal handlers
+        setHandler(SIGXCPU)
+        setHandler(SIGXFSZ)
+      }
     }
   }
 }

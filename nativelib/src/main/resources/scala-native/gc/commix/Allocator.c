@@ -4,7 +4,7 @@
 #include "Sweeper.h"
 #include <stdio.h>
 #include <memory.h>
-#include "util/ThreadUtil.h"
+#include "ThreadUtil.h"
 
 bool Allocator_getNextLine(Allocator *allocator);
 bool Allocator_newBlock(Allocator *allocator);

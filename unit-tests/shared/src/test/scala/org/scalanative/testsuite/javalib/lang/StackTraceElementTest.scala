@@ -6,38 +6,29 @@ import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper
 
 object StackTraceElementTest {
   @BeforeClass
-  def assumeSupportsStackTraces() = {
-    // On Windows linking with LTO Full does not provide debug symbols, even
-    // if flag -g is used. Becouse of that limitation StackTraces do not work.
-    // If env variable exists and is set to true don't run tests in this file
-    assumeFalse(
-      "StackTrace tests not available in the current build",
-      sys.env.get("SCALANATIVE_CI_NO_DEBUG_SYMBOLS").exists(_.toBoolean)
-    )
-
-    // libunwind does not work with AddressSanitizer
-    assumeNotASAN()
+  def checkRuntime() = {
+    AssumesHelper.assumeSupportsStackTraces()
   }
 }
 
 class StackTraceDummy1 @noinline() {
-  def dummy1: StackTraceElement =
+  @noinline def dummy1: StackTraceElement =
     (new Exception).getStackTrace
       .filter(_.toString.contains("StackTraceDummy"))
       .head
 
-  def _dummy2: StackTraceElement =
+  @noinline def _dummy2: StackTraceElement =
     (new Exception).getStackTrace
       .filter(_.toString.contains("StackTraceDummy"))
       .head
 }
 
 class StackTraceDummy3_:: @noinline() {
-  def dummy3: StackTraceElement =
+  @noinline def dummy3: StackTraceElement =
     (new Exception).getStackTrace
       .filter(_.toString.contains("StackTraceDummy"))
       .head

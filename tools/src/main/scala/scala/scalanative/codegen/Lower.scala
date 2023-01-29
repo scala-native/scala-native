@@ -24,9 +24,10 @@ object Lower {
 
   private final class Impl(implicit meta: Metadata) extends Transform {
     import meta._
+    import meta.config
 
     implicit val linked: Result = meta.linked
-    val is32BitPlatform = meta.is32BitPlatform
+    val is32BitPlatform = meta.config.is32BitPlatform
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
@@ -44,6 +45,7 @@ object Lower {
 
     private val fresh = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
+    private val currentDefn = new util.ScopedVar[Defn.Define]
 
     private val unreachableSlowPath = mutable.Map.empty[Option[Local], Local]
     private val nullPointerSlowPath = mutable.Map.empty[Option[Local], Local]
@@ -80,7 +82,8 @@ object Lower {
       case defn: Defn.Define =>
         val Type.Function(_, ty) = defn.ty: @unchecked
         ScopedVar.scoped(
-          fresh := Fresh(defn.insts)
+          fresh := Fresh(defn.insts),
+          currentDefn := defn
         ) {
           super.onDefn(defn)
         }
@@ -127,6 +130,13 @@ object Lower {
           ()
       }
 
+      val Inst.Label(firstLabel, _) = insts.head: @unchecked
+      val labelPositions = insts
+        .collect { case Inst.Label(id, _) => id }
+        .zipWithIndex
+        .toMap
+      var currentBlockPosition = labelPositions(firstLabel)
+
       insts.tail.foreach {
         case inst @ Inst.Let(n, op, unwind) =>
           ScopedVar.scoped(
@@ -151,11 +161,23 @@ object Lower {
 
         case inst @ Inst.Ret(v) =>
           implicit val pos: Position = inst.pos
+          genGCSafepoint(buf)
           buf += Inst.Ret(genVal(buf, v))
 
         case inst @ Inst.Jump(next) =>
           implicit val pos: Position = inst.pos
+          // Generate safepoint before backward jumps, eg. in loops
+          next match {
+            case Next.Label(target, _)
+                if labelPositions(target) < currentBlockPosition =>
+              genGCSafepoint(buf)
+            case _ => ()
+          }
           buf += Inst.Jump(genNext(buf, next))
+
+        case inst @ Inst.Label(name, _) =>
+          currentBlockPosition = labelPositions(name)
+          buf += inst
 
         case inst =>
           buf += inst
@@ -483,19 +505,89 @@ object Lower {
       buf.let(n, Op.Comp(comp, ty, left, right), unwind)
     }
 
+    // Cached function
+    private object shouldGenerateSafepoints {
+      import scalanative.build.GC._
+      private var lastDefn: Defn.Define = _
+      private var lastResult: Boolean = false
+
+      private val supportedGC = meta.config.gc match {
+        case Immix => true
+        case _     => false
+      }
+      private val multithreadingEnabled = meta.config.multithreadingSupport
+      private val usesSafepoints = multithreadingEnabled && supportedGC
+
+      def apply(defn: Defn.Define): Boolean = {
+        if (!usesSafepoints) false
+        else if (defn eq lastDefn) lastResult
+        else {
+          lastDefn = defn
+          val defnNeedsSafepoints = defn.name match {
+            case Global.Member(_, sig) =>
+              // Exclude accessors and generated methods
+              def mayContainLoops = defn.insts.exists(_.isInstanceOf[Inst.Jump])
+              !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
+            case _ => false // unreachable or generated
+          }
+          lastResult = defnNeedsSafepoints
+          lastResult
+        }
+      }
+    }
+    private def genGCSafepoint(buf: Buffer, genUnwind: Boolean = true)(implicit
+        pos: Position
+    ): Unit = {
+      if (shouldGenerateSafepoints(currentDefn.get)) {
+        val handler = {
+          if (genUnwind && unwindHandler.isInitialized) unwind
+          else Next.None
+        }
+        // TODO: volatile, replace dummy method call transformed to loads in AbstractCodeGen
+        buf.call(Type.Function(Nil, Type.Unit), GCSafepoint, Nil, handler)
+        // val safepointAddr = buf.load(Type.Ptr, GCSafepoint, handler)
+        // volatile buf.load(Type.Ptr, safepointAddr, handler)
+      }
+    }
+
     def genCallOp(buf: Buffer, n: Local, op: Op.Call)(implicit
         pos: Position
     ): Unit = {
       val Op.Call(ty, ptr, args) = op
-      buf.let(
-        n,
-        Op.Call(
-          ty = ty,
-          ptr = genVal(buf, ptr),
-          args = args.map(genVal(buf, _))
-        ),
-        unwind
+      def genCall() = {
+        buf.let(
+          n,
+          Op.Call(
+            ty = ty,
+            ptr = genVal(buf, ptr),
+            args = args.map(genVal(buf, _))
+          ),
+          unwind
+        )
+      }
+
+      def switchThreadState(managed: Boolean) = buf.call(
+        GCSetMutatorThreadStateSig,
+        GCSetMutatorThreadState,
+        Seq(Val.Int(if (managed) 0 else 1)),
+        if (unwindHandler.isInitialized) unwind else Next.None
       )
+
+      def shouldSwitchThreadState(name: Global) =
+        config.multithreadingSupport && linked.infos.get(name).exists { info =>
+          val attrs = info.attrs
+          attrs.isExtern
+        }
+
+      ptr match {
+        case Val.Global(global, _) if shouldSwitchThreadState(global) =>
+          switchThreadState(managed = false)
+          genCall()
+          genGCSafepoint(buf, genUnwind = false)
+          switchThreadState(managed = true)
+
+        case _ => genCall()
+      }
     }
 
     def genMethodOp(buf: Buffer, n: Local, op: Op.Method)(implicit
@@ -1390,6 +1482,16 @@ object Lower {
   val throwNoSuchMethodVal =
     Val.Global(throwNoSuchMethod, Type.Ptr)
 
+  val GC = Global.Top("scala.scalanative.runtime.GC$")
+  val GCSafepointName = GC.member(Sig.Extern("scalanative_gc_safepoint"))
+  val GCSafepoint = Val.Global(GCSafepointName, Type.Ptr)
+
+  val GCSetMutatorThreadStateSig = Type.Function(Seq(Type.Int), Type.Unit)
+  val GCSetMutatorThreadState = Val.Global(
+    GC.member(Sig.Extern("scalanative_gc_set_mutator_thread_state")),
+    Type.Ptr
+  )
+
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1437,6 +1539,8 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
+    buf += GCSafepoint.name
+    buf += GCSetMutatorThreadState.name
     buf.toSeq
   }
 }

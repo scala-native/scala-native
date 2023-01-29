@@ -55,7 +55,7 @@ class ThrowablesTest {
       trace: String,
       usesAnonymousThrowable: Boolean = false
   ): Unit = {
-    assumeNotASAN()
+    assumeSupportsStackTraces()
     val startText =
       if (usesAnonymousThrowable)
         "org.scalanative.testsuite.javalib.lang.ThrowablesTest$$anon$1"
@@ -65,20 +65,19 @@ class ThrowablesTest {
       trace.startsWith(startText)
     )
 
-    if (!Platform.executingInJVM) {
-      val containsText = "\tat <none>.main(Unknown Source)"
-      assertTrue(
-        s"Expected trace to contain '${containsText}' and it did not.",
-        trace.contains(containsText)
-      )
-    }
+    val containsText =
+      "\tat org.scalanative.testsuite.javalib.lang.ThrowablesTest"
+    assertTrue(
+      s"Expected trace to contain '${containsText}' and it did not.",
+      trace.contains(containsText)
+    )
   }
 
   private def checkStackTrace(
       throwable: Throwable,
       usesAnonymousThrowable: Boolean = false
   ): Unit = {
-    assumeNotASAN()
+    assumeSupportsStackTraces()
     val sw = new java.io.StringWriter
     val pw = new java.io.PrintWriter(sw)
 

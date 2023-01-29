@@ -35,25 +35,25 @@ abstract class Charset protected (
 
   def canEncode(): Boolean = true
 
-  private lazy val cachedDecoder = {
+  private lazy val cachedDecoder = ThreadLocal.withInitial[CharsetDecoder](() =>
     this
       .newDecoder()
       .onMalformedInput(CodingErrorAction.REPLACE)
       .onUnmappableCharacter(CodingErrorAction.REPLACE)
-  }
+  )
 
-  private lazy val cachedEncoder = {
+  private lazy val cachedEncoder = ThreadLocal.withInitial[CharsetEncoder](() =>
     this
       .newEncoder()
       .onMalformedInput(CodingErrorAction.REPLACE)
       .onUnmappableCharacter(CodingErrorAction.REPLACE)
-  }
+  )
 
   final def decode(bb: ByteBuffer): CharBuffer =
-    cachedDecoder.decode(bb)
+    cachedDecoder.get().decode(bb)
 
   final def encode(cb: CharBuffer): ByteBuffer =
-    cachedEncoder.encode(cb)
+    cachedEncoder.get().encode(cb)
 
   final def encode(str: String): ByteBuffer =
     encode(CharBuffer.wrap(str))

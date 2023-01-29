@@ -2,7 +2,12 @@ package scala.scalanative
 
 import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
+import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.{
+  isMultithreadingEnabled,
+  is32BitPlatform
+}
 
 package object runtime {
 
@@ -16,6 +21,13 @@ package object runtime {
    *  array.
    */
   def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
+    if (isMultithreadingEnabled) {
+      assert(
+        Thread.currentThread() != null,
+        "failed to initialize main thread"
+      )
+    }
+
     val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
 
@@ -35,6 +47,18 @@ package object runtime {
 
   @alwaysinline def toRawPtr[T](ptr: Ptr[T]): RawPtr =
     Boxes.unboxToPtr(ptr)
+
+  @alwaysinline def fromRawSize[T](rawSize: RawSize): Size =
+    Boxes.boxToSize(rawSize)
+
+  @alwaysinline def fromRawUSize[T](rawSize: RawSize): USize =
+    Boxes.boxToUSize(rawSize)
+
+  @alwaysinline def toRawSize(size: Size): RawSize =
+    Boxes.unboxToSize(size)
+
+  @alwaysinline def toRawSize(size: USize): RawSize =
+    Boxes.unboxToUSize(size)
 
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.

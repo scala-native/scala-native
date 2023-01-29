@@ -17,6 +17,7 @@ trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.isLinux" -> Platform.isLinux,
       s"$linktimeInfo.isMac" -> Platform.isMac,
       s"$linktimeInfo.isFreeBSD" -> Platform.isFreeBSD,
+      s"$linktimeInfo.isMultithreadingEnabled" -> conf.multithreadingSupport,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix

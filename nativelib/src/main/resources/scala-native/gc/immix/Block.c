@@ -62,6 +62,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
                 } else {
                     // Update the last recyclable line to point to the current
                     // one
+                    assert(lineIndex >= 0);
                     lastRecyclable->next = lineIndex;
                 }
                 ObjectMeta_ClearLineAt(bytemapCursor);

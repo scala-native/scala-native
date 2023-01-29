@@ -19,7 +19,7 @@ object WinBaseApi {
   def CreateHardLinkW(
       linkFileName: CWString,
       existingFileName: CWString,
-      securityAttributes: SecurityAttributes
+      securityAttributes: Ptr[SecurityAttributes]
   ): Boolean = extern
 
   def CreateSymbolicLinkW(
@@ -120,7 +120,7 @@ object WinBaseApi {
 
   def CreateFileMappingA(
       hFile: Handle,
-      lpFileMappingAttributes: SecurityAttributes,
+      lpFileMappingAttributes: Ptr[SecurityAttributes],
       flProtect: DWord,
       dwMaximumSizeHigh: DWord,
       dwMaximumSizeLow: DWord,
@@ -129,7 +129,7 @@ object WinBaseApi {
 
   def CreateFileMappingW(
       hFile: Handle,
-      lpFileMappingAttributes: SecurityAttributes,
+      lpFileMappingAttributes: Ptr[SecurityAttributes],
       flProtect: DWord,
       dwMaximumSizeHigh: DWord,
       dwMaximumSizeLow: DWord,
@@ -138,6 +138,9 @@ object WinBaseApi {
 
   @name("scalanative_lang_user_default")
   final def DefaultLanguageId: DWord = extern
+
+  @name("scalanative_infinite")
+  final def Infinite: DWord = extern
 }
 
 object WinBaseApiExt {

@@ -20,7 +20,7 @@ object CodeGen {
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
     implicit val meta: Metadata =
-      new Metadata(linked, proxies, config.compilerConfig.is32BitPlatform)
+      new Metadata(linked, config.compilerConfig, proxies)
 
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)

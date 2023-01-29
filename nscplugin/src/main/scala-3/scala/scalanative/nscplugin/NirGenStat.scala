@@ -507,7 +507,7 @@ trait NirGenStat(using Context) {
     for f <- classSym.info.decls
     do {
       // Exclude fields derived from extern trait
-      if (f.isField && !isInheritedField(f)) {
+      if (f.isField && !isInheritedField(f) && !f.is(Module)) {
         if !(externs.contains(f) || externs.contains(f.setter)) then
           report.error(
             s"extern objects may only contain extern fields",
