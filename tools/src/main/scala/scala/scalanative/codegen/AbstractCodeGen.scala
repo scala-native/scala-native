@@ -654,7 +654,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
         genCall(genBind, callDef, unwind)
 
-      case Op.Load(ty, ptr) =>
+      case Op.Load(ty, ptr, syncAttrs) =>
         val pointee = fresh()
 
         newline()
@@ -689,7 +689,7 @@ private[codegen] abstract class AbstractCodeGen(
             ()
         }
 
-      case Op.Store(ty, ptr, value) =>
+      case Op.Store(ty, ptr, value, syncAttrs) =>
         val pointee = fresh()
 
         newline()

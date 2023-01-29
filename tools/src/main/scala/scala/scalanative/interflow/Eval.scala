@@ -161,10 +161,17 @@ trait Eval { self: Interflow =>
           case _ =>
             nonIntrinsic
         }
-      case Op.Load(ty, ptr) =>
-        emit(Op.Load(ty, materialize(eval(ptr))))
-      case Op.Store(ty, ptr, value) =>
-        emit(Op.Store(ty, materialize(eval(ptr)), materialize(eval(value))))
+      case op @ Op.Load(ty, ptr, syncAttrs) =>
+        emit(
+          op.copy(ptr = materialize(eval(ptr)))
+        )
+      case op @ Op.Store(ty, ptr, value, syncAttrs) =>
+        emit(
+          op.copy(
+            ptr = materialize(eval(ptr)),
+            value = materialize(eval(value))
+          )
+        )
       case Op.Elem(ty, ptr, indexes) =>
         delay(Op.Elem(ty, eval(ptr), indexes.map(eval)))
       case Op.Extract(aggr, indexes) =>

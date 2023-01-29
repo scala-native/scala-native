@@ -219,40 +219,54 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.LabelNext  => Next.Label(getLocal(), getVals())
   }
 
-  private def getOp(): Op = getInt match {
-    case T.CallOp       => Op.Call(getType(), getVal(), getVals())
-    case T.LoadOp       => Op.Load(getType(), getVal())
-    case T.StoreOp      => Op.Store(getType(), getVal(), getVal())
-    case T.ElemOp       => Op.Elem(getType(), getVal(), getVals())
-    case T.ExtractOp    => Op.Extract(getVal(), getInts())
-    case T.InsertOp     => Op.Insert(getVal(), getVal(), getInts())
-    case T.StackallocOp => Op.Stackalloc(getType(), getVal())
-    case T.BinOp        => Op.Bin(getBin(), getType(), getVal(), getVal())
-    case T.CompOp       => Op.Comp(getComp(), getType(), getVal(), getVal())
-    case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
+  private def getOp(): Op = {
+    getInt match {
+      case T.CallOp => Op.Call(getType(), getVal(), getVals())
+      case T.LoadOp =>
+        Op.Load(
+          ty = getType(),
+          ptr = getVal(),
+          syncAttrs = getOpt(getSyncAttrs())
+        )
+      case T.StoreOp =>
+        Op.Store(
+          ty = getType(),
+          ptr = getVal(),
+          value = getVal(),
+          syncAttrs = getOpt(getSyncAttrs())
+        )
+      case T.ElemOp       => Op.Elem(getType(), getVal(), getVals())
+      case T.ExtractOp    => Op.Extract(getVal(), getInts())
+      case T.InsertOp     => Op.Insert(getVal(), getVal(), getInts())
+      case T.StackallocOp => Op.Stackalloc(getType(), getVal())
+      case T.BinOp        => Op.Bin(getBin(), getType(), getVal(), getVal())
+      case T.CompOp       => Op.Comp(getComp(), getType(), getVal(), getVal())
+      case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
+      case T.FenceOp      => Op.Fence(getSyncAttrs())
 
-    case T.ClassallocOp => Op.Classalloc(getGlobal())
-    case T.FieldloadOp  => Op.Fieldload(getType(), getVal(), getGlobal())
-    case T.FieldstoreOp =>
-      Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
-    case T.FieldOp      => Op.Field(getVal(), getGlobal())
-    case T.MethodOp     => Op.Method(getVal(), getSig())
-    case T.DynmethodOp  => Op.Dynmethod(getVal(), getSig())
-    case T.ModuleOp     => Op.Module(getGlobal())
-    case T.AsOp         => Op.As(getType(), getVal())
-    case T.IsOp         => Op.Is(getType(), getVal())
-    case T.CopyOp       => Op.Copy(getVal())
-    case T.SizeofOp     => Op.Sizeof(getType())
-    case T.BoxOp        => Op.Box(getType(), getVal())
-    case T.UnboxOp      => Op.Unbox(getType(), getVal())
-    case T.VarOp        => Op.Var(getType())
-    case T.VarloadOp    => Op.Varload(getVal())
-    case T.VarstoreOp   => Op.Varstore(getVal(), getVal())
-    case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal())
-    case T.ArrayloadOp  => Op.Arrayload(getType(), getVal(), getVal())
-    case T.ArraystoreOp =>
-      Op.Arraystore(getType(), getVal(), getVal(), getVal())
-    case T.ArraylengthOp => Op.Arraylength(getVal())
+      case T.ClassallocOp => Op.Classalloc(getGlobal())
+      case T.FieldloadOp  => Op.Fieldload(getType(), getVal(), getGlobal())
+      case T.FieldstoreOp =>
+        Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
+      case T.FieldOp      => Op.Field(getVal(), getGlobal())
+      case T.MethodOp     => Op.Method(getVal(), getSig())
+      case T.DynmethodOp  => Op.Dynmethod(getVal(), getSig())
+      case T.ModuleOp     => Op.Module(getGlobal())
+      case T.AsOp         => Op.As(getType(), getVal())
+      case T.IsOp         => Op.Is(getType(), getVal())
+      case T.CopyOp       => Op.Copy(getVal())
+      case T.SizeofOp     => Op.Sizeof(getType())
+      case T.BoxOp        => Op.Box(getType(), getVal())
+      case T.UnboxOp      => Op.Unbox(getType(), getVal())
+      case T.VarOp        => Op.Var(getType())
+      case T.VarloadOp    => Op.Varload(getVal())
+      case T.VarstoreOp   => Op.Varstore(getVal(), getVal())
+      case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal())
+      case T.ArrayloadOp  => Op.Arrayload(getType(), getVal(), getVal())
+      case T.ArraystoreOp =>
+        Op.Arraystore(getType(), getVal(), getVal(), getVal())
+      case T.ArraylengthOp => Op.Arraylength(getVal())
+    }
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam())
@@ -313,6 +327,22 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.VirtualVal => Val.Virtual(getLong)
     case T.ClassOfVal => Val.ClassOf(getGlobal())
     case T.SizeVal    => Val.Size(getLong)
+  }
+
+  private def getSyncAttrs(): SyncAttrs =
+    SyncAttrs(
+      memoryOrder = getMemoryOrder(),
+      isVolatile = getBool(),
+      scope = getGlobalOpt()
+    )
+
+  private def getMemoryOrder(): MemoryOrder = getInt() match {
+    case T.Unordered      => MemoryOrder.Unordered
+    case T.MonotonicOrder => MemoryOrder.Monotonic
+    case T.AcquireOrder   => MemoryOrder.Acquire
+    case T.ReleaseOrder   => MemoryOrder.Release
+    case T.AcqRelOrder    => MemoryOrder.AcqRel
+    case T.SeqCstOrder    => MemoryOrder.SeqCst
   }
 
   private def getLinktimeCondition(): LinktimeCondition = getInt() match {

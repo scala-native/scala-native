@@ -492,7 +492,7 @@ object Lower {
     def genStoreOp(buf: Buffer, n: Local, op: Op.Store)(implicit
         pos: Position
     ) = {
-      val Op.Store(ty, ptr, value) = op
+      val Op.Store(ty, ptr, value, syncAttrs) = op
       buf.let(n, Op.Store(ty, genVal(buf, ptr), genVal(buf, value)), unwind)
     }
 
