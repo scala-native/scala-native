@@ -55,8 +55,13 @@ class Buffer(implicit fresh: Fresh) {
       pos: Position
   ): Val =
     let(Op.Call(ty, ptr, args), unwind)
-  def load(ty: Type, ptr: Val, unwind: Next, syncAttrs: Option[SyncAttrs] = None)(
-      implicit pos: Position
+  def load(
+      ty: Type,
+      ptr: Val,
+      unwind: Next,
+      syncAttrs: Option[SyncAttrs] = None
+  )(implicit
+      pos: Position
   ): Val =
     let(Op.Load(ty, ptr, syncAttrs), unwind)
   def store(

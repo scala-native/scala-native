@@ -2,21 +2,9 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scala.scalanative.build.BuildException
 import scalanative.util.{ScopedVar, unsupported}
 import scalanative.nir._
-import scalanative.linker.{
-  Class,
-  ClassRef,
-  FieldRef,
-  LinkingException,
-  MethodRef,
-  Result,
-  ScopeInfo,
-  ScopeRef,
-  Trait,
-  TraitRef
-}
+import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
@@ -404,7 +392,11 @@ object Lower {
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
-          buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
+          buf.let(
+            n,
+            Op.Store(ty, Val.Local(slot, Type.Ptr), genVal(buf, value)),
+            unwind
+          )
         case op: Op.Arrayalloc =>
           genArrayallocOp(buf, n, op)
         case op: Op.Arrayload =>
