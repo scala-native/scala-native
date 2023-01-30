@@ -118,7 +118,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
       isAbsolute: Boolean
   ): Unit = if (isMultithreadingEnabled) {
     // fast-path check, return if can skip parking
-    if (counterAtromic.exchange(0) > 0) return
+    if (counterAtomic.exchange(0) > 0) return
     // Avoid parking if there's an interrupt pending
     if (thread.isInterrupted()) return
     // Don't wait at all
@@ -261,7 +261,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         fromRawPtr(elemRawPtr(base, offset))
     }
 
-  @alwaysinline private def counterAtromic = new CAtomicInt(
+  @alwaysinline private def counterAtomic = new CAtomicInt(
     fromRawPtr(classFieldRawPtr(this, "counter"))
   )
 
