@@ -60,9 +60,10 @@ runs:
         key: ${{ runner.os }}-${{ inputs.scala-version }}-deps
 
     # Install LLVM in case if cache is missing
+    # Choco-Install is GH Actions wrappers around choco, which does retries
     - name: Install LLVM
       shell: pwsh
-      run: choco install llvm --version=11.0.0 --allow-downgrade
+      run: Choco-Install -PackageName llvm -ArgumentList "--version=11.0.0", "--allow-downgrade"
 
     - name: Add LLVM on Path
       shell: pwsh
