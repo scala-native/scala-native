@@ -13,14 +13,16 @@ scalaVersion := {
   else scalaVersion
 }
 
-Compile / nativeLinkingOptions += s"-L${target.value.getAbsoluteFile}"
-
 Compile / compile := {
   val log = streams.value.log
   val cwd = target.value
-  val compileOptions = nativeCompileOptions.value
+  val nc = nativeConfig.value
+  nc.withLinkingOptions(
+    nc.linkingOptions ++ Seq(s"-L${cwd.getAbsoluteFile}")
+  )
+  val compileOptions = nc.compileOptions
   val cpaths = (baseDirectory.value.getAbsoluteFile * "*.c").get
-  val clangPath = nativeClang.value.toPath.toAbsolutePath.toString
+  val clangPath = nc.clang.toAbsolutePath.toString
 
   cwd.mkdirs()
 
