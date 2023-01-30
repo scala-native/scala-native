@@ -10,6 +10,9 @@ memory_order scalanative_atomic_memory_order_acquire() { return memory_order_acq
 memory_order scalanative_atomic_memory_order_release() { return memory_order_release;}
 memory_order scalanative_atomic_memory_order_acq_rel() { return memory_order_acq_rel;}
 memory_order scalanative_atomic_memory_order_seq_cst() { return memory_order_seq_cst;}
+
+void scalanative_atomic_thread_fence(memory_order order) { atomic_thread_fence(order);}
+void scalanative_atomic_signal_fence(memory_order order) { atomic_signal_fence(order);}
 %{
   atomics = [
     ('char','byte'),

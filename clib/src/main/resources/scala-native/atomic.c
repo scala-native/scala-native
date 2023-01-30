@@ -11,6 +11,9 @@ memory_order scalanative_atomic_memory_order_release() { return memory_order_rel
 memory_order scalanative_atomic_memory_order_acq_rel() { return memory_order_acq_rel;}
 memory_order scalanative_atomic_memory_order_seq_cst() { return memory_order_seq_cst;}
 
+void scalanative_atomic_thread_fence(memory_order order) { atomic_thread_fence(order);}
+void scalanative_atomic_signal_fence(memory_order order) { atomic_signal_fence(order);}
+
 void scalanative_atomic_init_byte(_Atomic(char)* atm, char init_value) { atomic_init(atm, init_value);}
 char scalanative_atomic_load_byte(_Atomic(char)* atm) { return atomic_load(atm);}
 char scalanative_atomic_load_explicit_byte(_Atomic(char)* atm, memory_order memoryOrder) { return atomic_load_explicit(atm, memoryOrder);}
