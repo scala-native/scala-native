@@ -180,16 +180,17 @@ final class State(block: Local) {
     }
 
     def reachOp(op: Op): Unit = op match {
-      case Op.Call(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
-      case Op.Load(_, v)         => reachVal(v)
-      case Op.Store(_, v1, v2)   => reachVal(v1); reachVal(v2)
-      case Op.Elem(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
-      case Op.Extract(v, _)      => reachVal(v)
-      case Op.Insert(v1, v2, _)  => reachVal(v1); reachVal(v2)
-      case Op.Stackalloc(_, v)   => reachVal(v)
-      case Op.Bin(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
-      case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
-      case Op.Conv(_, _, v)      => reachVal(v)
+      case Op.Call(_, v, vs)      => reachVal(v); vs.foreach(reachVal)
+      case Op.Load(_, v, _)       => reachVal(v)
+      case Op.Store(_, v1, v2, _) => reachVal(v1); reachVal(v2)
+      case Op.Elem(_, v, vs)      => reachVal(v); vs.foreach(reachVal)
+      case Op.Extract(v, _)       => reachVal(v)
+      case Op.Insert(v1, v2, _)   => reachVal(v1); reachVal(v2)
+      case Op.Stackalloc(_, v)    => reachVal(v)
+      case Op.Bin(_, _, v1, v2)   => reachVal(v1); reachVal(v2)
+      case Op.Comp(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
+      case Op.Conv(_, _, v)       => reachVal(v)
+      case Op.Fence(_)            => ()
 
       case _: Op.Classalloc            => ()
       case Op.Fieldload(_, v, _)       => reachVal(v)
@@ -343,16 +344,17 @@ final class State(block: Local) {
     }
 
     def reachOp(op: Op): Unit = op match {
-      case Op.Call(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
-      case Op.Load(_, v)         => reachVal(v)
-      case Op.Store(_, v1, v2)   => reachVal(v1); reachVal(v2)
-      case Op.Elem(_, v, vs)     => reachVal(v); vs.foreach(reachVal)
-      case Op.Extract(v, _)      => reachVal(v)
-      case Op.Insert(v1, v2, _)  => reachVal(v1); reachVal(v2)
-      case Op.Stackalloc(_, v)   => reachVal(v)
-      case Op.Bin(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
-      case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
-      case Op.Conv(_, _, v)      => reachVal(v)
+      case Op.Call(_, v, vs)      => reachVal(v); vs.foreach(reachVal)
+      case Op.Load(_, v, _)       => reachVal(v)
+      case Op.Store(_, v1, v2, _) => reachVal(v1); reachVal(v2)
+      case Op.Elem(_, v, vs)      => reachVal(v); vs.foreach(reachVal)
+      case Op.Extract(v, _)       => reachVal(v)
+      case Op.Insert(v1, v2, _)   => reachVal(v1); reachVal(v2)
+      case Op.Stackalloc(_, v)    => reachVal(v)
+      case Op.Bin(_, _, v1, v2)   => reachVal(v1); reachVal(v2)
+      case Op.Comp(_, _, v1, v2)  => reachVal(v1); reachVal(v2)
+      case Op.Conv(_, _, v)       => reachVal(v)
+      case Op.Fence(_)            => ()
 
       case _: Op.Classalloc            => ()
       case Op.Fieldload(_, v, _)       => reachVal(v)
@@ -387,10 +389,10 @@ final class State(block: Local) {
     def escapedOp(op: Op): Op = op match {
       case Op.Call(ty, v, vs) =>
         Op.Call(ty, escapedVal(v), vs.map(escapedVal))
-      case Op.Load(ty, v) =>
-        Op.Load(ty, escapedVal(v))
-      case Op.Store(ty, v1, v2) =>
-        Op.Store(ty, escapedVal(v1), escapedVal(v2))
+      case op @ Op.Load(_, v, _) =>
+        op.copy(ptr = escapedVal(v))
+      case op @ Op.Store(_, v1, v2, _) =>
+        op.copy(ptr = escapedVal(v1), value = escapedVal(v2))
       case Op.Elem(ty, v, vs) =>
         Op.Elem(ty, escapedVal(v), vs.map(escapedVal))
       case Op.Extract(v, idxs) =>
@@ -405,6 +407,7 @@ final class State(block: Local) {
         Op.Comp(comp, ty, escapedVal(v1), escapedVal(v2))
       case Op.Conv(conv, ty, v) =>
         Op.Conv(conv, ty, escapedVal(v))
+      case Op.Fence(_) => op
 
       case op: Op.Classalloc =>
         op

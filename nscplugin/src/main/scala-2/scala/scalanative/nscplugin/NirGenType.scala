@@ -47,6 +47,8 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
           CFuncPtrNClass.contains(parent.typeSymbol)
         }
       }
+
+    def isVolatile: Boolean = isField && sym.hasAnnotation(VolatileAttr)
   }
 
   object SimpleType {

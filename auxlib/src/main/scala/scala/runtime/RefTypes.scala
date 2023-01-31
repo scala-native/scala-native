@@ -12,7 +12,7 @@ object BooleanRef {
 }
 
 @inline
-class VolatileBooleanRef(var elem: Boolean) extends Serializable {
+class VolatileBooleanRef(@volatile var elem: Boolean) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileBooleanRef {
@@ -31,7 +31,7 @@ object CharRef {
 }
 
 @inline
-class VolatileCharRef(var elem: Char) extends Serializable {
+class VolatileCharRef(@volatile var elem: Char) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileCharRef {
@@ -49,7 +49,7 @@ object ByteRef {
 }
 
 @inline
-class VolatileByteRef(var elem: Byte) extends Serializable {
+class VolatileByteRef(@volatile var elem: Byte) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileByteRef {
@@ -67,7 +67,7 @@ object ShortRef {
 }
 
 @inline
-class VolatileShortRef(var elem: Short) extends Serializable {
+class VolatileShortRef(@volatile var elem: Short) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileShortRef {
@@ -85,7 +85,7 @@ object IntRef {
 }
 
 @inline
-class VolatileIntRef(var elem: Int) extends Serializable {
+class VolatileIntRef(@volatile var elem: Int) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileIntRef {
@@ -103,7 +103,7 @@ object LongRef {
 }
 
 @inline
-class VolatileLongRef(var elem: Long) extends Serializable {
+class VolatileLongRef(@volatile var elem: Long) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileLongRef {
@@ -121,7 +121,7 @@ object FloatRef {
 }
 
 @inline
-class VolatileFloatRef(var elem: Float) extends Serializable {
+class VolatileFloatRef(@volatile var elem: Float) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileFloatRef {
@@ -139,7 +139,7 @@ object DoubleRef {
 }
 
 @inline
-class VolatileDoubleRef(var elem: Double) extends Serializable {
+class VolatileDoubleRef(@volatile var elem: Double) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileDoubleRef {
@@ -158,7 +158,7 @@ object ObjectRef {
 }
 
 @inline
-class VolatileObjectRef[A](var elem: A) extends Serializable {
+class VolatileObjectRef[A](@volatile var elem: A) extends Serializable {
   override def toString() = String.valueOf(elem)
 }
 object VolatileObjectRef {

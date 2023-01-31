@@ -137,7 +137,13 @@ trait NirGenStat(using Context) {
       if (isExtern && !mutable) {
         report.error("`extern` cannot be used in val definition")
       }
-      val attrs = nir.Attrs(isExtern = f.isExtern)
+      // That what JVM backend does
+      // https://github.com/lampepfl/dotty/blob/786ad3ff248cca39e2da80c3a15b27b38eec2ff6/compiler/src/dotty/tools/backend/jvm/BTypesFromSymbols.scala#L340-L347
+      val attrs = nir.Attrs(
+        isExtern = isExtern,
+        isVolatile = f.isVolatile,
+        isFinal = !f.is(Mutable)
+      )
       val ty = genType(f.info.resultType)
       val fieldName @ Global.Member(owner, sig) = genFieldName(f): @unchecked
       generatedDefns += Defn.Var(attrs, fieldName, ty, Val.Zero(ty))

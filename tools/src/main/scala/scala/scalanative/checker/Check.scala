@@ -143,9 +143,9 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error("call type must be a function type")
       }
-    case Op.Load(ty, ptr) =>
+    case Op.Load(ty, ptr, _) =>
       expect(Type.Ptr, ptr)
-    case Op.Store(ty, ptr, value) =>
+    case Op.Store(ty, ptr, value, _) =>
       expect(Type.Ptr, ptr)
       expect(ty, value)
     case Op.Elem(ty, ptr, indexes) =>
@@ -173,6 +173,7 @@ final class Check(implicit linked: linker.Result) {
       checkCompOp(comp, ty, l, r)
     case Op.Conv(conv, ty, value) =>
       checkConvOp(conv, ty, value)
+    case Op.Fence(_) => ok
     case Op.Classalloc(name) =>
       linked.infos
         .get(name)

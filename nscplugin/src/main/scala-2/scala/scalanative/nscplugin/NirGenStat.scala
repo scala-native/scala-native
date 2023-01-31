@@ -201,8 +201,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val ty = genType(f.tpe)
         val name = genFieldName(f)
         val pos: nir.Position = f.pos
+        // Thats what JVM backend does
+        // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
+        val fieldAttrs = attrs.copy(
+          isVolatile = f.isVolatile,
+          isFinal = !f.isMutable
+        )
 
-        buf += Defn.Var(attrs, name, ty, Val.Zero(ty))(pos)
+        buf += Defn.Var(fieldAttrs, name, ty, Val.Zero(ty))(pos)
       }
     }
 
