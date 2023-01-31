@@ -779,13 +779,15 @@ class Reach(
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case Op.Load(ty, ptrv) =>
+    case Op.Load(ty, ptrv, syncAttrs) =>
       reachType(ty)
       reachVal(ptrv)
-    case Op.Store(ty, ptrv, v) =>
+      syncAttrs.foreach(reachSyncAttrs(_))
+    case Op.Store(ty, ptrv, v, syncAttrs) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
+      syncAttrs.foreach(reachSyncAttrs(_))
     case Op.Elem(ty, ptrv, indexvs) =>
       reachType(ty)
       reachVal(ptrv)
@@ -809,6 +811,8 @@ class Reach(
     case Op.Conv(conv, ty, v) =>
       reachType(ty)
       reachVal(v)
+    case Op.Fence(attrs) =>
+      reachSyncAttrs(attrs)
 
     case Op.Classalloc(n) =>
       classInfo(n).foreach(reachAllocation)
@@ -874,6 +878,10 @@ class Reach(
       reachVal(value)
     case Op.Arraylength(arr) =>
       reachVal(arr)
+  }
+
+  def reachSyncAttrs(attrs: SyncAttrs): Unit = {
+    attrs.scope.foreach(reachGlobal(_))
   }
 
   def reachNext(next: Next): Unit = next match {

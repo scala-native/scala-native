@@ -1868,7 +1868,9 @@ trait NirGenExpr(using Context) {
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => Rt.Object
       }
-      buf.load(ty, ptr, unwind)
+      val syncAttrs =
+        Option.when(ptrp.symbol.isVolatile)(SyncAttrs(MemoryOrder.Acquire))
+      buf.load(ty, ptr, unwind, syncAttrs)
     }
 
     private def genRawPtrStoreOp(app: Apply, code: Int): Val = {
@@ -1891,7 +1893,10 @@ trait NirGenExpr(using Context) {
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => Rt.Object
       }
-      buf.store(ty, ptr, value, unwind)
+      val syncAttrs = Option.when(ptrp.symbol.isVolatile)(
+        SyncAttrs(MemoryOrder.Release)
+      )
+      buf.store(ty, ptr, value, unwind, syncAttrs)
     }
 
     private def genRawPtrElemOp(app: Apply, code: Int): Val = {
@@ -2167,8 +2172,13 @@ trait NirGenExpr(using Context) {
       assert(sym.isExtern, "loadExtern was not extern")
 
       val name = Val.Global(genName(sym), Type.Ptr)
-
-      fromExtern(ty, buf.load(externTy, name, unwind))
+      val syncAttrs = Option.when(sym.isVolatile)(
+        SyncAttrs(MemoryOrder.Acquire)
+      )
+      fromExtern(
+        ty,
+        buf.load(externTy, name, unwind, syncAttrs)
+      )
     }
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: Val)(using
@@ -2177,8 +2187,11 @@ trait NirGenExpr(using Context) {
       assert(sym.isExtern, "storeExtern was not extern")
       val name = Val.Global(genName(sym), Type.Ptr)
       val externValue = toExtern(externTy, value)
+      val syncAttrs = Option.when(sym.isVolatile)(
+        SyncAttrs(MemoryOrder.Release)
+      )
 
-      buf.store(externTy, name, externValue, unwind)
+      buf.store(externTy, name, externValue, unwind, syncAttrs)
     }
 
     def toExtern(expectedTy: nir.Type, value: Val)(using nir.Position): Val =

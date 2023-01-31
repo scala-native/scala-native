@@ -1804,8 +1804,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => Rt.Object
       }
-
-      buf.load(ty, ptr, unwind)(app.pos)
+      val syncAttrs =
+        if (!ptrp.symbol.isVolatile) None
+        else Some(SyncAttrs(MemoryOrder.Acquire))
+      buf.load(ty, ptr, unwind, syncAttrs)(app.pos)
     }
 
     def genRawPtrStoreOp(app: Apply, code: Int): Val = {
@@ -1827,8 +1829,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => Rt.Object
       }
-
-      buf.store(ty, ptr, value, unwind)(app.pos)
+      val syncAttrs =
+        if (!ptrp.symbol.isVolatile) None
+        else Some(SyncAttrs(MemoryOrder.Release))
+      buf.store(ty, ptr, value, unwind, syncAttrs)(app.pos)
     }
 
     def genRawPtrElemOp(app: Apply, code: Int): Val = {
@@ -2372,8 +2376,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       assert(sym.owner.isExternType, "loadExtern was not extern")
 
       val name = Val.Global(genName(sym), Type.Ptr)
+      val syncAttrs =
+        if (!sym.isVolatile) None
+        else Some(SyncAttrs(MemoryOrder.Acquire))
 
-      fromExtern(ty, buf.load(externTy, name, unwind))
+      fromExtern(
+        ty,
+        buf.load(externTy, name, unwind, syncAttrs)
+      )
     }
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: Val)(implicit
@@ -2382,8 +2392,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       assert(sym.owner.isExternType, "storeExtern was not extern")
       val name = Val.Global(genName(sym), Type.Ptr)
       val externValue = toExtern(externTy, value)
+      val syncAttrs =
+        if (!sym.isVolatile) None
+        else Some(SyncAttrs(MemoryOrder.Release))
 
-      buf.store(externTy, name, externValue, unwind)
+      buf.store(externTy, name, externValue, unwind, syncAttrs)
     }
 
     def toExtern(expectedTy: nir.Type, value: Val)(implicit

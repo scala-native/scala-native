@@ -109,6 +109,8 @@ final class BinarySerializer {
     case Attr.Extern   => putInt(T.ExternAttr)
     case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
+    case Attr.Volatile => putInt(T.VolatileAttr)
+    case Attr.Final    => putInt(T.FinalAttr)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -317,16 +319,18 @@ final class BinarySerializer {
       putVal(v)
       putVals(args)
 
-    case Op.Load(ty, ptr) =>
+    case Op.Load(ty, ptr, syncAttrs) =>
       putInt(T.LoadOp)
       putType(ty)
       putVal(ptr)
+      putOpt(syncAttrs)(putSyncAttrs(_))
 
-    case Op.Store(ty, value, ptr) =>
+    case Op.Store(ty, value, ptr, syncAttrs) =>
       putInt(T.StoreOp)
       putType(ty)
       putVal(value)
       putVal(ptr)
+      putOpt(syncAttrs)(putSyncAttrs(_))
 
     case Op.Elem(ty, v, indexes) =>
       putInt(T.ElemOp)
@@ -369,6 +373,10 @@ final class BinarySerializer {
       putConv(conv)
       putType(ty)
       putVal(v)
+
+    case Op.Fence(syncAttrs) =>
+      putInt(T.FenceOp)
+      putSyncAttrs(syncAttrs)
 
     case Op.Classalloc(n) =>
       putInt(T.ClassallocOp)
@@ -541,6 +549,24 @@ final class BinarySerializer {
     case Val.Virtual(v)   => putInt(T.VirtualVal); putLong(v)
     case Val.ClassOf(cls) => putInt(T.ClassOfVal); putGlobal(cls)
     case Val.Size(v)      => putInt(T.SizeVal); putLong(v)
+  }
+
+  def putSyncAttrs(value: SyncAttrs) = {
+    putMemoryOrder(value.memoryOrder)
+    putBool(value.isVolatile)
+    putGlobalOpt(value.scope)
+  }
+
+  def putMemoryOrder(value: MemoryOrder): Unit = {
+    val tag = value match {
+      case MemoryOrder.Unordered => T.Unordered
+      case MemoryOrder.Monotonic => T.MonotonicOrder
+      case MemoryOrder.Acquire   => T.AcquireOrder
+      case MemoryOrder.Release   => T.ReleaseOrder
+      case MemoryOrder.AcqRel    => T.AcqRelOrder
+      case MemoryOrder.SeqCst    => T.SeqCstOrder
+    }
+    putInt(tag)
   }
 
   private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {

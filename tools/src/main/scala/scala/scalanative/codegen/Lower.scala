@@ -4,17 +4,7 @@ package codegen
 import scala.collection.mutable
 import scalanative.util.{ScopedVar, unsupported}
 import scalanative.nir._
-import scalanative.linker.{
-  Class,
-  Trait,
-  ScopeInfo,
-  ScopeRef,
-  ClassRef,
-  TraitRef,
-  FieldRef,
-  MethodRef,
-  Result
-}
+import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
@@ -367,6 +357,8 @@ object Lower {
           genFieldloadOp(buf, n, op)
         case op: Op.Fieldstore =>
           genFieldstoreOp(buf, n, op)
+        case op: Op.Load =>
+          genLoadOp(buf, n, op)
         case op: Op.Store =>
           genStoreOp(buf, n, op)
         case op: Op.Method =>
@@ -400,7 +392,11 @@ object Lower {
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
-          buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
+          buf.let(
+            n,
+            Op.Store(ty, Val.Local(slot, Type.Ptr), genVal(buf, value)),
+            unwind
+          )
         case op: Op.Arrayalloc =>
           genArrayallocOp(buf, n, op)
         case op: Op.Arrayload =>
@@ -467,18 +463,49 @@ object Lower {
         pos: Position
     ) = {
       val Op.Fieldload(ty, obj, name) = op
+      val field = name match {
+        case FieldRef(_, field) => field
+        case _ =>
+          throw new LinkingException(s"Metadata for field '$name' not found")
+      }
+
+      val isSynchronized = field.attrs.isFinal || field.attrs.isVolatile
+      val syncAttrs = SyncAttrs(
+        memoryOrder =
+          if (isSynchronized) MemoryOrder.Acquire
+          else MemoryOrder.Unordered,
+        isVolatile = isSynchronized,
+        scope = Some(field.name)
+      )
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      buf.let(n, Op.Load(ty, elem), unwind)
+      genLoadOp(buf, n, Op.Load(ty, elem, Some(syncAttrs)))
     }
 
     def genFieldstoreOp(buf: Buffer, n: Local, op: Op.Fieldstore)(implicit
         pos: Position
     ) = {
       val Op.Fieldstore(ty, obj, name, value) = op
+      val field = name match {
+        case FieldRef(_, field) => field
+        case _ =>
+          throw new LinkingException(s"Metadata for field '$name' not found")
+      }
 
+      val isFinal = field.attrs.isFinal
+      val isSynchronized = isFinal || field.attrs.isVolatile
+      val syncAttrs = SyncAttrs(
+        memoryOrder =
+          if (isSynchronized) MemoryOrder.Release
+          else MemoryOrder.Unordered,
+        isVolatile = isSynchronized,
+        scope = Some(field.name)
+      )
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genStoreOp(buf, n, Op.Store(ty, elem, value))
+      genStoreOp(buf, n, Op.Store(ty, elem, value, Some(syncAttrs)))
+      if (isFinal) {
+        buf.let(Op.Fence(syncAttrs), unwind)
+      }
     }
 
     def genFieldOp(buf: Buffer, n: Local, op: Op)(implicit
@@ -489,11 +516,67 @@ object Lower {
       buf.let(n, Op.Copy(elem), unwind)
     }
 
+    def genLoadOp(buf: Buffer, n: Local, op: Op.Load)(implicit
+        pos: Position
+    ): Unit = {
+      op match {
+        // Convert synchronized load(bool) into load(byte)
+        // LLVM is not providing synchronization on booleans
+        case Op.Load(Type.Bool, ptr, syncAttrs @ Some(_)) =>
+          val asPtr, valueAsByte = fresh()
+          genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+          genLoadOp(
+            buf,
+            valueAsByte,
+            Op.Load(
+              Type.Byte,
+              Val.Local(asPtr, Type.Ptr),
+              syncAttrs
+            )
+          )
+          genConvOp(
+            buf,
+            n,
+            Op.Conv(Conv.Trunc, Type.Bool, Val.Local(valueAsByte, Type.Byte))
+          )
+
+        case Op.Load(ty, ptr, syncAttrs) =>
+          buf.let(
+            n,
+            Op.Load(ty, genVal(buf, ptr), syncAttrs),
+            unwind
+          )
+      }
+    }
+
     def genStoreOp(buf: Buffer, n: Local, op: Op.Store)(implicit
         pos: Position
-    ) = {
-      val Op.Store(ty, ptr, value) = op
-      buf.let(n, Op.Store(ty, genVal(buf, ptr), genVal(buf, value)), unwind)
+    ): Unit = {
+      op match {
+        // Convert synchronized store(bool) into store(byte)
+        // LLVM is not providing synchronization on booleans
+        case Op.Store(Type.Bool, ptr, value, syncAttrs @ Some(_)) =>
+          val asPtr, valueAsByte = fresh()
+          genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+          genConvOp(buf, valueAsByte, Op.Conv(Conv.Zext, Type.Byte, value))
+          genStoreOp(
+            buf,
+            n,
+            Op.Store(
+              Type.Byte,
+              Val.Local(asPtr, Type.Ptr),
+              Val.Local(valueAsByte, Type.Byte),
+              syncAttrs
+            )
+          )
+
+        case Op.Store(ty, ptr, value, syncAttrs) =>
+          buf.let(
+            n,
+            Op.Store(ty, genVal(buf, ptr), genVal(buf, value), syncAttrs),
+            unwind
+          )
+      }
     }
 
     def genCompOp(buf: Buffer, n: Local, op: Op.Comp)(implicit
@@ -543,10 +626,13 @@ object Lower {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else Next.None
         }
-        // TODO: volatile, replace dummy method call transformed to loads in AbstractCodeGen
-        buf.call(Type.Function(Nil, Type.Unit), GCSafepoint, Nil, handler)
-        // val safepointAddr = buf.load(Type.Ptr, GCSafepoint, handler)
-        // volatile buf.load(Type.Ptr, safepointAddr, handler)
+        val syncAttrs = SyncAttrs(
+          memoryOrder = MemoryOrder.Unordered,
+          isVolatile = true,
+          scope = None
+        )
+        val safepointAddr = buf.load(Type.Ptr, GCSafepoint, handler)
+        buf.load(Type.Ptr, safepointAddr, handler, Some(syncAttrs))
       }
     }
 

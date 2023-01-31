@@ -49,9 +49,9 @@ trait NoOpt { self: Interflow =>
     case Op.Call(_, ptrv, argvs) =>
       noOptVal(ptrv)
       argvs.foreach(noOptVal)
-    case Op.Load(_, ptrv) =>
+    case Op.Load(_, ptrv, _) =>
       noOptVal(ptrv)
-    case Op.Store(_, ptrv, v) =>
+    case Op.Store(_, ptrv, v, _) =>
       noOptVal(ptrv)
       noOptVal(v)
     case Op.Elem(_, ptrv, indexvs) =>
@@ -72,6 +72,7 @@ trait NoOpt { self: Interflow =>
       noOptVal(rv)
     case Op.Conv(conv, _, v) =>
       noOptVal(v)
+    case Op.Fence(_) => ()
 
     case Op.Classalloc(n) =>
       noOptGlobal(n)

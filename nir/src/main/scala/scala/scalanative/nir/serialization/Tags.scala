@@ -27,6 +27,8 @@ object Tags {
   final val DynAttr = 1 + LinkAttr
   final val StubAttr = 1 + DynAttr
   final val AbstractAttr = 1 + StubAttr
+  final val VolatileAttr = 1 + AbstractAttr
+  final val FinalAttr = 1 + VolatileAttr
 
   // Binary ops
 
@@ -181,6 +183,7 @@ object Tags {
   final val ArraystoreOp = 1 + ArrayloadOp
   final val ArraylengthOp = 1 + ArraystoreOp
   final val FieldOp = 1 + ArraylengthOp
+  final val FenceOp = 1 + FieldOp
 
   // Types
 
@@ -236,4 +239,16 @@ object Tags {
 
   final val LinktimeConditionVal = 1 + ClassOfVal
   final val SizeVal = 1 + LinktimeConditionVal
+
+  // Synchronization info
+
+  final val SyncAttrs = Val + 32
+
+  final val MemoryOrder = 1 + SyncAttrs
+  final val Unordered = 1 + MemoryOrder
+  final val MonotonicOrder = 1 + Unordered
+  final val AcquireOrder = 1 + MonotonicOrder
+  final val ReleaseOrder = 1 + AcquireOrder
+  final val AcqRelOrder = 1 + ReleaseOrder
+  final val SeqCstOrder = 1 + AcqRelOrder
 }
