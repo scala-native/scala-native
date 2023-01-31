@@ -30,6 +30,9 @@ trait NirDefinitions {
     lazy val ExternClass = getRequiredClass(
       "scala.scalanative.unsafe.package$extern"
     )
+    lazy val BlockingClass = getRequiredClass(
+      "scala.scalanative.unsafe.package$blocking"
+    )
     lazy val ExportedClass = getRequiredClass(
       "scala.scalanative.unsafe.exported"
     )

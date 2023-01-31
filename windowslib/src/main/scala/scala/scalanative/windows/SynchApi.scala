@@ -65,11 +65,12 @@ object SynchApi {
 
   def TryEnterCriticalSection(criticalSection: CriticalSection): Boolean =
     extern
+  @blocking
   def EnterCriticalSection(criticalSection: CriticalSection): Unit = extern
   def LeaveCriticalSection(criticalSection: CriticalSection): Unit = extern
 
-  def Sleep(milliseconds: DWord): Unit = extern
-  def SleepConditionVariableCS(
+  @blocking def Sleep(milliseconds: DWord): Unit = extern
+  @blocking def SleepConditionVariableCS(
       conditionVariable: ConditionVariable,
       criticalSection: CriticalSection,
       milliseconds: DWord
@@ -77,7 +78,7 @@ object SynchApi {
   def WakeAllConditionVariable(conditionVariable: ConditionVariable): Unit =
     extern
   def WakeConditionVariable(conditionVariable: ConditionVariable): Unit = extern
-  def WaitForSingleObject(
+  @blocking def WaitForSingleObject(
       ref: Handle,
       miliseconds: DWord
   ): DWord = extern

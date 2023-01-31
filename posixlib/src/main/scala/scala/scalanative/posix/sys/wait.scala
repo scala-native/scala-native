@@ -102,8 +102,10 @@ object wait {
 
   /** See declaration & usage note in class description.
    */
+  @blocking
   def wait(status: Ptr[CInt]): pid_t = extern
 
+  @blocking
   def waitid(
       idtype: idtype_t,
       id: id_t,
@@ -111,6 +113,7 @@ object wait {
       options: CInt
   ): CInt = extern
 
+  @blocking
   def waitpid(pid: pid_t, status: Ptr[CInt], options: CInt): pid_t = extern
 
 }

@@ -109,12 +109,14 @@ object pthread {
 
   def pthread_cond_signal(cond: Ptr[pthread_cond_t]): CInt = extern
 
+  @blocking
   def pthread_cond_timedwait(
       cond: Ptr[pthread_cond_t],
       mutex: Ptr[pthread_mutex_t],
       timespec: Ptr[timespec]
   ): CInt = extern
 
+  @blocking
   def pthread_cond_wait(
       cond: Ptr[pthread_cond_t],
       mutex: Ptr[pthread_mutex_t]
@@ -168,6 +170,7 @@ object pthread {
 
   def pthread_getspecific(key: pthread_key_t): Ptr[Byte] = extern
 
+  @blocking
   def pthread_join(thread: pthread_t, value_ptr: Ptr[Ptr[Byte]]): CInt = extern
 
   def pthread_key_create(
@@ -191,6 +194,7 @@ object pthread {
       attr: Ptr[pthread_mutexattr_t]
   ): CInt = extern
 
+  @blocking
   def pthread_mutex_lock(mutex: Ptr[pthread_mutex_t]): CInt = extern
 
   def pthread_mutex_setprioceiling(
@@ -259,6 +263,7 @@ object pthread {
       attr: Ptr[pthread_rwlockattr_t]
   ): CInt = extern
 
+  @blocking
   def pthread_rwlock_rdlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
   def pthread_rwlock_tryrdlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
@@ -267,6 +272,7 @@ object pthread {
 
   def pthread_rwlock_unlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
+  @blocking
   def pthread_rwlock_wrlock(rwlock: Ptr[pthread_rwlock_t]): CInt = extern
 
   def pthread_rwlockattr_destroy(attr: Ptr[pthread_rwlockattr_t]): CInt = extern

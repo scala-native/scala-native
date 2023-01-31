@@ -76,7 +76,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
     case T.DynAttr      => Attr.Dyn
     case T.StubAttr     => Attr.Stub
-    case T.ExternAttr   => Attr.Extern
+    case T.ExternAttr   => Attr.Extern(getBool())
     case T.LinkAttr     => Attr.Link(getUTF8String())
     case T.AbstractAttr => Attr.Abstract
     case T.VolatileAttr => Attr.Volatile

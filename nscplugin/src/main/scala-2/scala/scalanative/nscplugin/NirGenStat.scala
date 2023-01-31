@@ -153,7 +153,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = cd.symbol
       val annotationAttrs = sym.annotations.collect {
         case ann if ann.symbol == ExternClass =>
-          Attr.Extern
+          Attr.Extern(sym.isBlocking)
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           Attr.Link(name)
@@ -828,7 +828,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case NoOptimizeClass   => Attr.NoOpt
           case NoSpecializeClass => Attr.NoSpecialize
         }
-      val externAttrs = if (sym.owner.isExternType) Seq(Attr.Extern) else Nil
+      val externAttrs =
+        if (sym.owner.isExternType)
+          Seq(Attr.Extern(sym.isBlocking || sym.owner.isBlocking))
+        else Nil
 
       Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
     }

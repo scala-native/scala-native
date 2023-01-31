@@ -274,6 +274,7 @@ object socket {
    *   to ENOTSUP.
    */
 
+  @blocking
   def accept(
       socket: CInt,
       address: Ptr[sockaddr],
@@ -283,6 +284,7 @@ object socket {
   def bind(socket: CInt, address: Ptr[sockaddr], address_len: socklen_t): CInt =
     extern
 
+  @blocking
   def connect(
       socket: CInt,
       address: Ptr[sockaddr],
@@ -311,6 +313,7 @@ object socket {
 
   def listen(socket: CInt, backlog: CInt): CInt = extern
 
+  @blocking
   def recv(
       socket: CInt,
       buffer: Ptr[Byte],
@@ -318,6 +321,7 @@ object socket {
       flags: CInt
   ): CSSize = extern
 
+  @blocking
   def recvfrom(
       socket: CInt,
       buffer: Ptr[Byte],
@@ -329,12 +333,14 @@ object socket {
 
   // See comments above msghdr declaration at top of file, re: fixup & sizeof
   @name("scalanative_recvmsg")
+  @blocking
   def recvmsg(
       socket: CInt,
       buffer: Ptr[msghdr],
       flags: CInt
   ): CSSize = extern
 
+  @blocking
   def send(
       socket: CInt,
       buffer: Ptr[Byte],
@@ -344,12 +350,14 @@ object socket {
 
   // See comments above msghdr declaration at top of file, re: fixup & sizeof
   @name("scalanative_sendmsg")
+  @blocking
   def sendmsg(
       socket: CInt,
       buffer: Ptr[msghdr],
       flags: CInt
   ): CSSize = extern
 
+  @blocking
   def sendto(
       socket: CInt,
       buffer: Ptr[Byte],

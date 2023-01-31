@@ -96,8 +96,9 @@ object Show {
         str("dyn")
       case Attr.Stub =>
         str("stub")
-      case Attr.Extern =>
+      case Attr.Extern(isBlocking) =>
         str("extern")
+        if (isBlocking) str(" blocking")
       case Attr.Link(name) =>
         str("link(\"")
         str(escapeQuotes(name))

@@ -18,6 +18,7 @@ object poll {
     pollEvent_t // returned events
   ]
 
+  @blocking
   def poll(fds: Ptr[struct_pollfd], nfds: nfds_t, timeout: CInt): CInt = extern
 
   // TL;DR

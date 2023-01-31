@@ -26,6 +26,9 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       (isScalaModule || sym.isTraitOrInterface) &&
         sym.annotations.exists(_.symbol == ExternClass)
 
+    def isBlocking: Boolean =
+      sym.annotations.exists(_.symbol == BlockingClass)
+
     def isStruct: Boolean =
       sym.annotations.exists(_.symbol == StructClass)
 

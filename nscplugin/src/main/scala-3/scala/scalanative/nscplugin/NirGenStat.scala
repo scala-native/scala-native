@@ -69,8 +69,9 @@ trait NirGenStat(using Context) {
   private def genClassAttrs(td: TypeDef): nir.Attrs = {
     val sym = td.symbol.asClass
     val annotationAttrs = sym.annotations.collect {
-      case ann if ann.symbol == defnNir.ExternClass => Attr.Extern
-      case ann if ann.symbol == defnNir.StubClass   => Attr.Stub
+      case ann if ann.symbol == defnNir.ExternClass =>
+        Attr.Extern(sym.isBlocking)
+      case ann if ann.symbol == defnNir.StubClass => Attr.Stub
       case ann if ann.symbol == defnNir.LinkClass =>
         val Apply(_, Seq(Literal(Constant(name: String)))) =
           ann.tree: @unchecked
@@ -253,7 +254,9 @@ trait NirGenStat(using Context) {
         case defnNir.NoSpecializeType => Attr.NoSpecialize
         case defnNir.StubType         => Attr.Stub
       }
-    val externAttrs = if (sym.isExtern) Seq(Attr.Extern) else Nil
+    val externAttrs = Option.when(sym.isExtern) {
+      Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
+    }
 
     Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
   }
