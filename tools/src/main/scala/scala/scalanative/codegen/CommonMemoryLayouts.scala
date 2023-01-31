@@ -35,7 +35,7 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
         dynMapType.toList
 
     val layout = genLayout(vtable = Type.ArrayValue(Type.Ptr, 0))
-   
+
     def genLayout(vtable: Type): Type.StructValue = Type.StructValue(
       baseLayout ::: vtable :: Nil
     )

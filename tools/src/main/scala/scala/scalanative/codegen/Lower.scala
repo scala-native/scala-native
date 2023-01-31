@@ -18,7 +18,6 @@ object Lower {
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
 
     implicit val linked: Result = meta.linked
-    val is32BitPlatform = meta.config.is32BitPlatform
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
@@ -607,7 +606,7 @@ object Lower {
         case Immix => true
         case _     => false
       }
-      private val multithreadingEnabled = meta.config.multithreadingSupport
+      private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
       private val usesSafepoints = multithreadingEnabled && supportedGC
 
       def apply(defn: Defn.Define): Boolean = {
@@ -669,7 +668,7 @@ object Lower {
       )
 
       def shouldSwitchThreadState(name: Global) =
-        config.multithreadingSupport && linked.infos.get(name).exists { info =>
+        platform.isMultithreadingEnabled && linked.infos.get(name).exists { info =>
           val attrs = info.attrs
           attrs.isExtern && attrs.isBlocking
         }
@@ -952,7 +951,7 @@ object Lower {
     ): Unit = {
       val Op.Sizeof(ty) = op
 
-      val memorySize = MemoryLayout.sizeOf(ty, meta.config.is32BitPlatform)
+      val memorySize = MemoryLayout.sizeOf(ty)
       buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
     }
 
@@ -1128,7 +1127,7 @@ object Lower {
           case Type.Int  => Val.Int(java.lang.Integer.MIN_VALUE)
           case Type.Long => Val.Long(java.lang.Long.MIN_VALUE)
           case Type.Size =>
-            if (is32BitPlatform) Val.Size(java.lang.Integer.MIN_VALUE)
+            if (platform.is32Bit) Val.Size(java.lang.Integer.MIN_VALUE)
             else Val.Size(java.lang.Long.MIN_VALUE)
           case _ => util.unreachable
         }

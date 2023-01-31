@@ -9,7 +9,7 @@ class Metadata(
     val linked: linker.Result,
     val config: build.NativeConfig,
     proxies: Seq[Defn]
-) {
+)(implicit val platform: PlatformInfo) {
   implicit private def self: Metadata = this
 
   val layouts = new CommonMemoryLayouts()

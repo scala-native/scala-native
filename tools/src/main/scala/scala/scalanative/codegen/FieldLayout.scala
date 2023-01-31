@@ -10,6 +10,7 @@ object FieldLayout {
 
 class FieldLayout(cls: Class)(implicit meta: Metadata) {
   import meta.layouts.ObjectHeader
+  import meta.platform
 
   def index(fld: Field) = entries.indexOf(fld) + ObjectHeader.fields
   val entries: Seq[Field] = {
@@ -22,10 +23,9 @@ class FieldLayout(cls: Class)(implicit meta: Metadata) {
     val data = entries.map(_.ty)
     Type.StructValue(ObjectHeader.layout +: data)
   }
-  val layout = MemoryLayout(struct.tys, meta.config.is32BitPlatform)
+  val layout = MemoryLayout(struct.tys)
   val size = layout.size
-  val referenceOffsetsValue =
-    Val.StructValue(
-      Seq(Val.Const(Val.ArrayValue(Type.Long, layout.offsetArray)))
-    )
+  val referenceOffsetsValue = Val.StructValue(
+    Seq(Val.Const(Val.ArrayValue(Type.Long, layout.offsetArray)))
+  )
 }

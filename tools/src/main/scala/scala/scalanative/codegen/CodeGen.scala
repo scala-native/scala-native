@@ -19,6 +19,7 @@ object CodeGen {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
+    implicit val platform: PlatformInfo = PlatformInfo(config)
     implicit val meta: Metadata =
       new Metadata(linked, config.compilerConfig, proxies)
 
@@ -59,7 +60,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              Impl(config, env, sorted).gen(id.toString, workdir)
+              Impl(env, sorted).gen(id.toString, workdir)
           }
           .toSeq
           .seq
@@ -92,7 +93,7 @@ object CodeGen {
                   val sorted = defns.sortBy(_.name.show)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(config, env, sorted).gen(packagePath, workdir)
+                  Impl(env, sorted).gen(packagePath, workdir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
@@ -115,7 +116,7 @@ object CodeGen {
       // Clang's LTO is not available.
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
-        Impl(config, env, sorted).gen(id = "out", workdir) :: Nil
+        Impl(env, sorted).gen(id = "out", workdir) :: Nil
       }
 
       import build.Mode._
@@ -133,12 +134,12 @@ object CodeGen {
     import scala.scalanative.codegen.AbstractCodeGen
     import scala.scalanative.codegen.compat.os._
 
-    def apply(config: Config, env: Map[Global, Defn], defns: Seq[Defn])(implicit
+    def apply(env: Map[Global, Defn], defns: Seq[Defn])(implicit
         meta: Metadata
     ): AbstractCodeGen = {
-      new AbstractCodeGen(config, env, defns) {
+      new AbstractCodeGen(env, defns) {
         override val os: OsCompat = {
-          if (this.config.targetsWindows) new WindowsCompat(this)
+          if (meta.platform.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)
         }
       }
