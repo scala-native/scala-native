@@ -10,6 +10,8 @@ class Metadata(
     val config: build.NativeConfig,
     proxies: Seq[Defn]
 ) {
+  implicit private def self: Metadata = this
+
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
@@ -70,18 +72,18 @@ class Metadata(
 
   def initClassMetadata(): Unit = {
     classes.foreach { node =>
-      vtable(node) = new VirtualTable(this, node)
-      layout(node) = new FieldLayout(this, node)
+      vtable(node) = new VirtualTable(node)
+      layout(node) = new FieldLayout(node)
       if (linked.dynsigs.nonEmpty) {
-        dynmap(node) = new DynamicHashMap(this, node, proxies)
+        dynmap(node) = new DynamicHashMap(node, proxies)
       }
-      rtti(node) = new RuntimeTypeInformation(this, node)
+      rtti(node) = new RuntimeTypeInformation(node)
     }
   }
 
   def initTraitMetadata(): Unit = {
     traits.foreach { node =>
-      rtti(node) = new RuntimeTypeInformation(this, node)
+      rtti(node) = new RuntimeTypeInformation(node)
     }
   }
 }

@@ -4,7 +4,7 @@ package codegen
 import scalanative.nir._
 import scalanative.linker.{Class, Method}
 
-class DynamicHashMap(meta: Metadata, cls: Class, proxies: Seq[Defn]) {
+class DynamicHashMap(cls: Class, proxies: Seq[Defn])(implicit meta: Metadata) {
   val methods: Seq[Global.Member] = {
     val own = proxies.collect {
       case p if p.name.top == cls.name =>

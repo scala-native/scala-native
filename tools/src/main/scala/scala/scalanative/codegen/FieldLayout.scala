@@ -4,7 +4,7 @@ package codegen
 import scalanative.nir._
 import scalanative.linker.{Class, Field}
 
-class FieldLayout(meta: Metadata, cls: Class) {
+class FieldLayout(cls: Class)(implicit meta: Metadata) {
   def index(fld: Field) =
     entries.indexOf(fld) + 1
   val entries: Seq[Field] = {

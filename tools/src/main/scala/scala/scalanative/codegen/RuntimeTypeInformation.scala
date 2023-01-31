@@ -5,7 +5,7 @@ import scalanative.util.unreachable
 import scalanative.nir._
 import scalanative.linker.{ScopeInfo, Class, Trait}
 
-class RuntimeTypeInformation(meta: Metadata, info: ScopeInfo) {
+class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
   val name: Global = info.name.member(Sig.Generated("type"))
   val const: Val.Global = Val.Global(name, Type.Ptr)
   val struct: Type.StructValue = info match {
