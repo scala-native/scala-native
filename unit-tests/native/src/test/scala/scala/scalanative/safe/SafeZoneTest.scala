@@ -36,6 +36,13 @@ class SafeZoneTest {
    *  function equaliventlly.
    */
 
+  @Test def `report error when trying to allocate an instances in a closed safe zone`(): Unit = {
+    class A {}
+    val sz: {*} SafeZone = SafeZone.open()
+    sz.close()
+    assertThrows(classOf[IllegalStateException], ((aInSz: {sz} A) => 0)(withSafeZone(sz, new A)))
+  }
+
   @Test def `allocate instances in nested safe zones`(): Unit = {
     case class A(v: Int) {}
 

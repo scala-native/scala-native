@@ -90,23 +90,30 @@ trait NirGenExpr(using Context) {
     }
 
     def genApply(app: Apply): Val = {
+      app match {
+        case Apply(_, List(sz, tree))
+            if app.fun.symbol == defnNir.SafeZoneCompat_withSafeZone && !tree
+              .hasAttachment(SafeZoneHandle) =>
+          // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
+          // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+          // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
+          val handle = genExpr(Select(sz, termName("handle")))
+          tree.putAttachment(SafeZoneHandle, handle)
+          // `withSafeZone(sz, new T(...))` is translated to `{ sz.checkOpen; new T(...) }`.
+          val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
+          val block = Block(List(checkOpen), app)
+          genExpr(block)
+        case _ => genApplyNormal(app)
+      }
+    }
+
+    def genApplyNormal(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(fun, args) = app
 
       val sym = fun.symbol
       def isStatic = sym.owner.isStaticOwner
       def qualifier = qualifierOf(fun)
-
-      app match {
-        case Apply(_, List(sz, tree))
-            if sym == defnNir.SafeZoneCompat_withSafeZone =>
-          // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
-          // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
-          // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
-          val handle = genExpr(Select(sz, termName("handle")))
-          tree.putAttachment(SafeZoneHandle, handle)
-        case _ =>
-      }
 
       fun match {
         case _: TypeApply => genApplyTypeApply(app)

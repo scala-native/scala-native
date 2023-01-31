@@ -19,19 +19,20 @@ trait SafeZone {
 
   /** Return the handle of this zone allocator. */
   def handle: RawPtr
+
+  /** Require this zone allocator is open. */
+  def checkOpen: Unit = {
+    if (!isOpen)
+      throw new IllegalStateException(s"Zone ${this} is already closed.")
+  }
 }
 
 final class MemorySafeZone (private[this] val zoneHandle: RawPtr) extends SafeZone {
 
   private[this] var flagIsOpen = true
 
-  protected def checkOpen(): Unit = {
-    if (!isOpen)
-      throw new IllegalStateException(s"Zone ${this} is already closed.")
-  }
-
   override def close(): Unit = {
-    checkOpen()
+    checkOpen
     flagIsOpen = false
     CMemoryPoolZone.close(zoneHandle)
     CMemoryPoolZone.free(zoneHandle)
