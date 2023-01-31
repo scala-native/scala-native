@@ -57,10 +57,9 @@ object Build {
    */
   def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
-      // create workdir if needed
-      if (Files.notExists(config.workdir)) {
-        Files.createDirectories(config.workdir)
-      }
+      // called each time for clean or directory removal
+      checkWorkdirExists(config)
+
       // validate classpath - use fconfig below
       val fconfig = {
         val fclasspath = NativeLib.filterClasspath(config.classPath)
@@ -131,5 +130,13 @@ object Build {
       .flatMap(nativeLib =>
         NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
       )
+  }
+
+  // create workdir if needed
+  private def checkWorkdirExists(config: Config): Unit = {
+    val workdir = config.workdir
+    if (Files.notExists(workdir)) {
+      Files.createDirectories(workdir)
+    }
   }
 }
