@@ -25,13 +25,9 @@ sealed abstract class Tag[T] {
   @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
 }
 
-// Separate object to avoid dependency cycles
-private[unsafe] object TagUtil {
-  val ptrSize = new USize(scala.scalanative.meta.LinktimeInfo.sizeOfPtr)
-}
-
 object Tag {
-  import TagUtil._
+  @alwaysinline def ptrSize = new USize(scala.scalanative.runtime.sizeOfPtr)
+
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
     @alwaysinline def size: CSize = ptrSize

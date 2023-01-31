@@ -751,23 +751,16 @@ trait Eval { self: Interflow =>
     def bailOut =
       throw BailOut(s"can't eval conv op: $conv[${ty.show}] ${value.show}")
     conv match {
-      case _ if ty == value.ty =>
-        value
-
+      case _ if ty == value.ty => value
       case Conv.SSizeCast | Conv.ZSizeCast =>
-        val fromSize = value.ty match {
+        def size(ty: Type) = ty match {
           case Type.Size =>
             if (is32BitPlatform) 32 else 64
           case Type.FixedSizeI(s, _) => s
           case o                     => bailOut
         }
-
-        val toSize = ty match {
-          case Type.Size =>
-            if (is32BitPlatform) 32 else 64
-          case Type.FixedSizeI(s, _) => s
-          case o                     => bailOut
-        }
+        val fromSize = size(value.ty)
+        val toSize = size(ty)
 
         if (fromSize == toSize) eval(Conv.Bitcast, ty, value)
         else if (fromSize > toSize) eval(Conv.Trunc, ty, value)
@@ -803,6 +796,8 @@ trait Eval { self: Interflow =>
             Val.Long(v.toChar.toLong)
           case (Val.Int(v), Type.Long) =>
             Val.Long(java.lang.Integer.toUnsignedLong(v))
+          case (Val.Int(v), Type.Size) if !is32BitPlatform =>
+            Val.Size(java.lang.Integer.toUnsignedLong(v))
           case (Val.Size(v), Type.Long) if is32BitPlatform =>
             Val.Long(java.lang.Integer.toUnsignedLong(v.toInt))
           case _ =>
@@ -817,6 +812,7 @@ trait Eval { self: Interflow =>
           case (Val.Short(v), Type.Int)  => Val.Int(v.toInt)
           case (Val.Short(v), Type.Long) => Val.Long(v.toLong)
           case (Val.Int(v), Type.Long)   => Val.Long(v.toLong)
+          case (Val.Int(v), Type.Size) if !is32BitPlatform => Val.Size(v.toLong)
           case (Val.Size(v), Type.Long) if is32BitPlatform =>
             Val.Long(v.toInt.toLong)
           case _ => bailOut
@@ -866,11 +862,13 @@ trait Eval { self: Interflow =>
       case Conv.Ptrtoint =>
         (value, ty) match {
           case (Val.Null, Type.Long) => Val.Long(0L)
+          case (Val.Null, Type.Int)  => Val.Int(0)
           case _                     => bailOut
         }
       case Conv.Inttoptr =>
         (value, ty) match {
           case (Val.Long(0L), Type.Ptr) => Val.Null
+          case (Val.Int(0L), Type.Ptr)  => Val.Null
           case _                        => bailOut
         }
       case Conv.Bitcast =>

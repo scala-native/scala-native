@@ -62,8 +62,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       s"$linktimeInfo.isMac",
       s"$linktimeInfo.isWindows",
       s"$linktimeInfo.isMultithreadingEnabled",
-      s"$linktimeInfo.isWeakReferenceSupported",
-      s"$linktimeInfo.sizeOfPtr"
+      s"$linktimeInfo.isWeakReferenceSupported"
     )
   }
 
