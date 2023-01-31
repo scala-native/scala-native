@@ -38,29 +38,9 @@ final class Sig(val mangle: String) {
 
   final def isVirtual = !(isCtor || isClinit || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
-  final def isStatic: Boolean = {
-    def isPublicStatic = mangle.last == 'o'
-    def isPrivateStatic = {
-      val sigEnd = mangle.lastIndexOf('E')
-      val scopeIdx = sigEnd + 1
-      def hasScope = mangle.length() > scopeIdx
-      sigEnd > 0 && hasScope && mangle(sigEnd + 1) == 'p'
-    }
-    isPublicStatic || isPrivateStatic
-  }
-  final lazy val privateIn: Option[Global.Top] = {
-    val sigEnd = mangle.lastIndexOf('E')
-    val scopeIdx = sigEnd + 1
-    def hasScope = mangle.length() > scopeIdx
-    def isPrivate = {
-      val scopeIdent = mangle(scopeIdx)
-      scopeIdent == 'p' || scopeIdent == 'P'
-    }
-    if (sigEnd > 0 && hasScope && isPrivate) {
-      val global = Unmangle.unmangleGlobal(mangle.substring(sigEnd + 2))
-      Some(global.top)
-    } else None
-  }
+  final def isStatic: Boolean = unmangled.sigScope.isStatic
+  final lazy val privateIn: Option[Global.Top] =
+    unmangled.sigScope.privateIn.map(_.top)
 }
 object Sig {
   sealed abstract class Scope(
