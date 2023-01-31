@@ -61,12 +61,12 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
     val layout = Type.StructValue(
       Type.Ptr :: // RTTI
         Type.Int :: // length
-        Type.Int :: // padding
+        Type.Int :: // stride (used only by GC)
         Nil
     )
 
     final val RttiIdx = 0
     final val LengthIdx = RttiIdx + 1
-    final val PaddingIdx = LengthIdx + 1
+    final val StrideIdx = LengthIdx + 1
   }
 }

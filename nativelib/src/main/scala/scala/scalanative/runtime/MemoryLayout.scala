@@ -21,9 +21,15 @@ object MemoryLayout {
     @alwaysinline def IdOffset = ClassOffset + PtrSize
     @alwaysinline def TraitIdOffset = IdOffset + IntSize
     @alwaysinline def NameOffset = TraitIdOffset + IntSize
-    @alwaysinline def SizeOffset = NameOffset + PtrSize
-    @alwaysinline def IdRangeEndOffset = SizeOffset + IntSize
-    @alwaysinline def ReferenceMapOffset = IdRangeEndOffset + IntSize
+
+    @alwaysinline def size = NameOffset + PtrSize
+  }
+
+  private[scalanative] object ClassRtti {
+    @alwaysinline def RttiOffset = 0
+    @alwaysinline def SizeOffset = RttiOffset + Rtti.size
+    // Remaining fields has optional or contain intrinsic data,
+    // they should never be accessed in the runtime
   }
 
   private[scalanative] object Object {
@@ -34,8 +40,8 @@ object MemoryLayout {
   private[scalanative] object Array {
     @alwaysinline def RttiOffset = 0
     @alwaysinline def LengthOffset = RttiOffset + PtrSize
-    @alwaysinline def PaddingOffset = LengthOffset + IntSize
-    @alwaysinline def ValuesOffset = PaddingOffset + IntSize
+    @alwaysinline def StrideOffset = LengthOffset + IntSize
+    @alwaysinline def ValuesOffset = StrideOffset + IntSize
   }
 
 }

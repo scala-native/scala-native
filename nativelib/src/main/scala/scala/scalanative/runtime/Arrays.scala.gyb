@@ -207,6 +207,7 @@ object ${T}Array {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
     val arr     = ${alloc}(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 

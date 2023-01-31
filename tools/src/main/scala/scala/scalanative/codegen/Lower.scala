@@ -1342,7 +1342,7 @@ object Lower {
         Val.StructValue(
           rtti(CharArrayCls).const ::
             charsLength ::
-            zero :: // padding to get next field aligned properly
+            zero :: // stride is used only by GC, global instances use it as padding
             Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char(_))) :: Nil
         )
       )

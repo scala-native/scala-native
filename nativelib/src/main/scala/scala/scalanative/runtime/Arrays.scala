@@ -191,6 +191,7 @@ object BooleanArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 1)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
 
@@ -242,6 +243,7 @@ object CharArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 2)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
 
@@ -293,6 +295,7 @@ object ByteArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 1)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
 
@@ -344,6 +347,7 @@ object ShortArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 2)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
 
@@ -395,6 +399,7 @@ object IntArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 4)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
 
@@ -446,6 +451,7 @@ object LongArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 8)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
 
@@ -497,6 +503,7 @@ object FloatArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 4)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
 
@@ -548,6 +555,7 @@ object DoubleArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length))
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 8)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
 
@@ -599,6 +607,7 @@ object ObjectArray {
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length))
     val arr     = GC.alloc(arrcls, arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(sizeOfPtr))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 
