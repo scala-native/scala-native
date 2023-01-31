@@ -12,13 +12,14 @@ final case class MemoryLayout(
     tys: Seq[MemoryLayout.PositionedType],
     is32BitPlatform: Boolean
 ) {
-  lazy val offsetArray: Seq[Val] = {
+  def offsetArray(implicit meta: Metadata): Seq[Val] = {
     val ptrOffsets =
       tys.collect {
-        // offset in words without rtti
+        // offset in words without object header
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          // refMapStruct is int64_t*
-          Val.Long(offset / MemoryLayout.BYTES_IN_LONG - 1)
+          Val.Long(
+            offset / MemoryLayout.BYTES_IN_LONG - meta.layouts.ObjectHeader.fields
+          )
       }
 
     ptrOffsets :+ Val.Long(-1)
