@@ -29,9 +29,7 @@ package runtime
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.runtime.Intrinsics._
-
-% sizePtr = 'sizeOfPtr'
+import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned => intToUSize, _}
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -40,7 +38,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, ${sizePtr})
+    val lenptr = elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.LengthOffset))
     loadInt(lenptr)
   }
 
@@ -181,11 +179,7 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(
-        rawptr,
-        if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * i)
-        else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * i.toLong)
-      )
+      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * i))
     }
 
   @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
@@ -194,10 +188,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = new USize(
-      if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
-      else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
-    )
+    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -213,17 +204,9 @@ object ${T}Array {
     }
 
     val arrcls  = classOf[${T}Array]
-    val arrsize = new USize(
-      if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
-      else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
-    )
+    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
     val arr     = ${alloc}(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, ${sizePtr}), length)
-    storeInt(elemRawPtr(
-      arr,
-      if (is32BitPlatform) castIntToRawSize(castRawSizeToInt(${sizePtr}) + 4)
-      else castLongToRawSize(castRawSizeToLong(${sizePtr}) + 4L)
-    ), ${sizeT})
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -231,10 +214,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = new USize(
-      if (is32BitPlatform) castIntToRawSize(${sizeT} * length)
-      else castLongToRawSize(${sizeT}.toLong * length.toLong)
-    )
+    val size = new USize(intToUSize(${sizeT} * length))
     libc.memcpy(dst, src, size)
     arr
   }

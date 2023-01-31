@@ -75,12 +75,11 @@ package object runtime {
 
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
-    // 64-bit systems align pointer to 8 bytes
     val fromName = loadObject(
-      elemRawPtr(from, castIntToRawSize(if (is32BitPlatform) 12 else 16))
+      elemRawPtr(from, castIntToRawSizeUnsigned(MemoryLayout.Rtti.NameOffset))
     )
     val toName = loadObject(
-      elemRawPtr(to, castIntToRawSize(if (is32BitPlatform) 12 else 16))
+      elemRawPtr(to, castIntToRawSizeUnsigned(MemoryLayout.Rtti.NameOffset))
     )
     throw new java.lang.ClassCastException(
       s"$fromName cannot be cast to $toName"
