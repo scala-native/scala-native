@@ -1,6 +1,5 @@
 // /**
-//  * Before running: 
-//  *  Comment out this whole file and Line 83 of MemoryPoolZone.c.
+//  * Comment out this whole file and Line 86 of MemoryPoolZone.c.
 //  * Run:
 //  * ```
 //  * cc MemoryPool.c MemoryPoolZone.c ../gc/shared/MemoryMap.c
