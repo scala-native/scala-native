@@ -668,9 +668,10 @@ object Lower {
       )
 
       def shouldSwitchThreadState(name: Global) =
-        platform.isMultithreadingEnabled && linked.infos.get(name).exists { info =>
-          val attrs = info.attrs
-          attrs.isExtern && attrs.isBlocking
+        platform.isMultithreadingEnabled && linked.infos.get(name).exists {
+          info =>
+            val attrs = info.attrs
+            attrs.isExtern && attrs.isBlocking
         }
 
       ptr match {
