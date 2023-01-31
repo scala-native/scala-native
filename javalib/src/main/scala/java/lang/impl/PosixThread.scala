@@ -20,6 +20,8 @@ import scala.scalanative.posix.signal._
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.unistd._
+import scala.scalanative.libc.atomic._
+import scala.scalanative.libc.atomic.memory_order.memory_order_seq_cst
 
 private[java] class PosixThread(val thread: Thread, stackSize: Long)
     extends NativeThread {
@@ -116,11 +118,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
       isAbsolute: Boolean
   ): Unit = if (isMultithreadingEnabled) {
     // fast-path check, return if can skip parking
-    // TODO: atomics
-    val prev = counter
-    counter = 0
-    if (prev > 0) return
-    //  if (counterAtomic.exchange(0) > 0) return
+    if (counterAtomic.exchange(0) > 0) return
     // Avoid parking if there's an interrupt pending
     if (thread.isInterrupted()) return
     // Don't wait at all
@@ -161,7 +159,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
       state = NativeThread.State.Running
       val status = pthread_mutex_unlock(lock)
       assert(status == 0, "park, unlock")
-      // TODO: atomics: atomic_thread_fence(memory_order.memory_order_seq_cst)
+      atomic_thread_fence(memory_order_seq_cst)
     }
   }
 
@@ -263,10 +261,9 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         fromRawPtr(elemRawPtr(base, offset))
     }
 
-// TODO: atomics
-//  @alwaysinline private def counterAtomic = new CAtomicInt(
-//    fromRawPtr(classFieldRawPtr(this, "counter"))
-//  )
+  @alwaysinline private def counterAtomic = new CAtomicInt(
+    fromRawPtr(classFieldRawPtr(this, "counter"))
+  )
 
   @inline private def priorityMapping(
       threadPriority: Int,

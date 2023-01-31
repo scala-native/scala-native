@@ -21,4 +21,16 @@ object libc {
   def memset(dest: RawPtr, ch: CInt, count: CSize): RawPtr = extern
   def memmove(dest: RawPtr, src: RawPtr, count: CSize): RawPtr = extern
   def remove(fname: CString): CInt = extern
+
+  // Glue layer defined in libc
+  @name("scalanative_atomic_thread_fence")
+  private[runtime] final def atomic_thread_fence(order: memory_order): Unit =
+    extern
+
+  private[runtime] type memory_order = Int
+  @extern
+  private[runtime] object memory_order {
+    @name("scalanative_atomic_memory_order_seq_cst")
+    final def memory_order_seq_cst: memory_order = extern
+  }
 }

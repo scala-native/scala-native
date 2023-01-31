@@ -5,10 +5,8 @@ import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-// TODO: atomics
-//import scala.scalanative.runtime.libc.atomic_thread_fence
-//import scala.scalanative.runtime.libc.memory_order._
-// TODO: implement actual ConcurrentHashMap
+import scala.scalanative.runtime.libc.atomic_thread_fence
+import scala.scalanative.runtime.libc.memory_order._
 import java.util.concurrent.ConcurrentHashMap
 
 trait NativeThread {
@@ -128,7 +126,7 @@ object NativeThread {
     import nativeThread.thread
     TLS.assignCurrentThread(thread, nativeThread)
     nativeThread.state = State.Running
-    // TODO: atomics: atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_seq_cst)
     // Ensure Java Thread already assigned the Native Thread instance
     // Otherwise park/unpark events might be lost
     while (thread.getState() == Thread.State.NEW) onSpinWait()
