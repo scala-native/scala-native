@@ -692,7 +692,7 @@ private[codegen] abstract class AbstractCodeGen(
               }
               str(", !")
               str(deref)
-              str(" !i")
+              str(" !{i")
               str(platform.sizeOfPtrBits)
               str(" ")
               str(size)
