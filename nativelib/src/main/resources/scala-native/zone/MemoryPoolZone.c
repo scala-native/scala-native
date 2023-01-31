@@ -64,17 +64,16 @@ size_t pad(size_t addr, size_t alignment) {
     return addr + padding;
 }
 
-// TODO: handle case when size > MEMORYPOOL_PAGE_SIZE
 void *memorypoolzone_alloc(void *_zone, void *info, size_t size) {
     memorypoolzone_checkopen(_zone);
     MemoryPoolZone *zone = (MemoryPoolZone *)_zone;
     size_t current_offset = zone->head_page->offset;
     size_t padded_offset = pad(current_offset, 8);
     size_t res_offset = 0;
-    if (padded_offset + size <= MEMORYPOOL_PAGE_SIZE) {
+    if (padded_offset + size <= zone->head_page->size) {
         res_offset = padded_offset;
     } else {
-        MemoryPage *newpage = memorypool_claim(zone->pool);
+        MemoryPage *newpage = memorypool_claim_with_min_size(zone->pool, size);
         newpage->next = zone->head_page;
         zone->head_page = newpage;
         res_offset = 0;

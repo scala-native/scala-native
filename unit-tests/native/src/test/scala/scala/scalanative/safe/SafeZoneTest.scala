@@ -102,4 +102,18 @@ class SafeZoneTest {
 
     assertAccessible(10)
   }
+
+  @Test def `allocate a large object in safe zone`(): Unit = {
+    case class DoubleWrapper(value: Double)
+    SafeZone { sz =>
+      val kArraySize = 500000
+      val array = withSafeZone(sz, new Array[{sz} DoubleWrapper](kArraySize))
+      var i = 0
+      while (i < kArraySize / 2) {
+        array(i) = withSafeZone(sz, new DoubleWrapper(1.0 / i))
+        i += 1
+      }
+      assertTrue(array(1000).value == 1.0 / 1000)
+    }
+  }
 }

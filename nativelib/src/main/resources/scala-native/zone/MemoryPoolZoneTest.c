@@ -1,5 +1,5 @@
 // /**
-//  * Comment out this whole file and Line 86 of MemoryPoolZone.c.
+//  * Comment out this whole file and Line 85 of MemoryPoolZone.c.
 //  * Run:
 //  * ```
 //  * cc MemoryPool.c MemoryPoolZone.c ../gc/shared/MemoryMap.c
@@ -55,7 +55,7 @@
 //     assert(!memorypoolzone_isclosed(z0));
 //     for (int i = 0; i < nums_size; i++) {
 //         size_t size = sizeof(char) * nums[i];
-//         memorypoolzone_alloc(z0, info, size);
+//         memorypoolzone_alloc(z0, NULL, size);
 //     }
 //     debug_print_pages(z0->head_page, z0->tail_page);
 //     assert(get_pages_length(z0->head_page, z0->tail_page) == 4);
@@ -85,10 +85,12 @@
 //     assert(z1->head_page->next->next->offset == 0x720);
 //     assert(z1->head_page->next->next->next->offset == 0x1000);
 //     assert(z1->head_page->next->next->next->next->offset == 0x10);
-//     assert((long)z1->head_page->next->next->next->next->start == start_pos[0]);
-//     assert((long)z1->head_page->next->next->next->start == start_pos[1]);
-//     assert((long)z1->head_page->next->next->start == start_pos[2]);
-//     assert((long)z1->head_page->next->start == start_pos[3]);
+//     assert((long)z1->head_page->next->next->next->next->start ==
+//     start_pos[0]); assert((long)z1->head_page->next->next->next->start ==
+//     start_pos[1]); assert((long)z1->head_page->next->next->start ==
+//     start_pos[2]); assert((long)z1->head_page->next->start == start_pos[3]);
+//     // Try to allocate a large page.
+//     memorypoolzone_alloc(z1, NULL, 500000 * sizeof(void *));
 //     memorypoolzone_close(z1);
 
 //     memorypool_free(pool);
@@ -107,7 +109,8 @@
 // }
 
 // void debug_print_page(MemoryPage *page, size_t idx) {
-//     printf("%02zu page (start: %p, size: %x, offset: %zx)\n", idx, page->start,
+//     printf("%02zu page (start: %p, size: %x, offset: %zx)\n", idx,
+//     page->start,
 //            MEMORYPOOL_PAGE_SIZE, page->offset);
 // }
 

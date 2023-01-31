@@ -18,4 +18,8 @@ void memorypoolzone_close(void *zone);
 
 void memorypoolzone_free(void *zone);
 
+bool memorypoolzone_isopen(void *_zone);
+
+bool memorypoolzone_isclosed(void *_zone);
+
 #endif // MEMORYPOLL_ZONE_H
