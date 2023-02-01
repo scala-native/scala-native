@@ -9,6 +9,10 @@ object Whitelist {
   val constantModules = {
     val out = collection.mutable.Set.empty[Global]
     out += Global.Top("scala.scalanative.runtime.BoxedUnit$")
+    out += Global.Top("scala.scalanative.runtime.MemoryLayout$")
+    out += Global.Top("scala.scalanative.runtime.MemoryLayout$Array$")
+    out += Global.Top("scala.scalanative.runtime.MemoryLayout$Object$")
+    out += Global.Top("scala.scalanative.runtime.MemoryLayout$Rtti$")
     out += Global.Top("scala.scalanative.unsafe.Tag$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Unit$")
     out += Global.Top("scala.scalanative.unsafe.Tag$Boolean$")

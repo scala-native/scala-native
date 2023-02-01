@@ -4,7 +4,11 @@ package codegen
 import scalanative.nir._
 import scalanative.linker.{Class, Method}
 
-class DynamicHashMap(meta: Metadata, cls: Class, proxies: Seq[Defn]) {
+object DynamicHashMap {
+  final val ty: Type = Type.Ptr
+}
+
+class DynamicHashMap(cls: Class, proxies: Seq[Defn])(implicit meta: Metadata) {
   val methods: Seq[Global.Member] = {
     val own = proxies.collect {
       case p if p.name.top == cls.name =>
@@ -15,8 +19,5 @@ class DynamicHashMap(meta: Metadata, cls: Class, proxies: Seq[Defn]) {
       .fold(Seq.empty[Global.Member])(meta.dynmap(_).methods)
       .filterNot(m => sigs.contains(m.sig)) ++ own
   }
-  val ty: Type =
-    Type.Ptr
-  val value: Val =
-    DynmethodPerfectHashMap(methods, meta.linked.dynsigs)
+  val value: Val = DynmethodPerfectHashMap(methods, meta.linked.dynsigs)
 }
