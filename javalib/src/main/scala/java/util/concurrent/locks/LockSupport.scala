@@ -60,8 +60,8 @@ object LockSupport {
    *  <ul> <li>Some other thread invokes {@link #unpark unpark} with the current
    *  thread as the target; or
    *
-   *  <li>Some other thread [[java.lang.Thread.interrupt interrupts]] the current
-   *  thread; or
+   *  <li>Some other thread [[java.lang.Thread.interrupt interrupts]] the
+   *  current thread; or
    *
    *  <li>The specified deadline passes; or
    *
