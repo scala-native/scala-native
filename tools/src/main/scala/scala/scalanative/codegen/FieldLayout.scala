@@ -9,10 +9,10 @@ object FieldLayout {
 }
 
 class FieldLayout(cls: Class)(implicit meta: Metadata) {
-  import meta.layouts.ObjectHeader
+  import meta.layouts.{Object, ObjectHeader}
   import meta.platform
 
-  def index(fld: Field) = entries.indexOf(fld) + ObjectHeader.fields
+  def index(fld: Field) = entries.indexOf(fld) + Object.ValuesOffset
   val entries: Seq[Field] = {
     val base = cls.parent.fold {
       Seq.empty[Field]

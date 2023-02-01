@@ -16,11 +16,23 @@ object MemoryLayout {
   @alwaysinline private def PtrSize = castRawSizeToInt(sizeOfPtr)
   @alwaysinline private def IntSize = 4
 
+  private def requiresEnabledMulithreading = throw new IllegalStateException(
+    "Field available only in multithreading mode"
+  )
+
   private[scalanative] object Rtti {
     @alwaysinline def ClassOffset = 0
-    @alwaysinline def IdOffset = ClassOffset + PtrSize
+    @alwaysinline def LockWordOffset =
+      if (isMultithreadingEnabled) PtrSize
+      else requiresEnabledMulithreading
+    @alwaysinline def IdOffset =
+      if (isMultithreadingEnabled) LockWordOffset + PtrSize
+      else PtrSize
     @alwaysinline def TraitIdOffset = IdOffset + IntSize
     @alwaysinline def NameOffset = TraitIdOffset + IntSize
+    @alwaysinline def SizeOffset = NameOffset + PtrSize
+    @alwaysinline def IdRangeEndOffset = SizeOffset + IntSize
+    @alwaysinline def ReferenceMapOffset = IdRangeEndOffset + IntSize
 
     @alwaysinline def size = NameOffset + PtrSize
   }
@@ -34,12 +46,22 @@ object MemoryLayout {
 
   private[scalanative] object Object {
     @alwaysinline def RttiOffset = 0
-    @alwaysinline def FieldsOffset = RttiOffset + PtrSize
+    @alwaysinline def LockWordOffset =
+      if (isMultithreadingEnabled) PtrSize
+      else requiresEnabledMulithreading
+    @alwaysinline def FieldsOffset =
+      if (isMultithreadingEnabled) LockWordOffset + PtrSize
+      else PtrSize
   }
 
   private[scalanative] object Array {
     @alwaysinline def RttiOffset = 0
-    @alwaysinline def LengthOffset = RttiOffset + PtrSize
+    @alwaysinline def LockWordOffset =
+      if (isMultithreadingEnabled) PtrSize
+      else requiresEnabledMulithreading
+    @alwaysinline def LengthOffset =
+      if (isMultithreadingEnabled) LockWordOffset + PtrSize
+      else PtrSize
     @alwaysinline def StrideOffset = LengthOffset + IntSize
     @alwaysinline def ValuesOffset = StrideOffset + IntSize
   }

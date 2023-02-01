@@ -27,7 +27,7 @@ class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
       case _           => -1
     })
     val base = Val.StructValue(
-      Seq(classConst, typeId, traitId, typeStr)
+      classConst :: meta.lockWordVals ::: typeId :: traitId :: typeStr :: Nil
     )
     info match {
       case cls: Class =>

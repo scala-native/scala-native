@@ -16,9 +16,21 @@ extern int __weak_ref_field_offset;
 extern int __array_ids_min;
 extern int __array_ids_max;
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+#define USES_LOCKWORD = 1
+
+// Inflation mark and object monitor are complementary
+#define MONITOR_INFLATION_MARK_MASK ((word_t)1)
+#define MONITOR_OBJECT_MASK (~MONITOR_INFLATION_MARK_MASK)
+
+#endif
+
 typedef struct {
     struct {
         word_t *cls;
+#ifdef USES_LOCKWORD
+        word_t *lockWord;
+#endif
         int32_t id;
         int32_t tid;
         word_t *name;
@@ -32,11 +44,17 @@ typedef word_t *Field_t;
 
 typedef struct {
     Rtti *rtti;
+#ifdef USES_LOCKWORD
+    word_t *lockWord;
+#endif
     Field_t fields[0];
 } Object;
 
 typedef struct {
     Rtti *rtti;
+#ifdef USES_LOCKWORD
+    word_t *lockWord;
+#endif
     int32_t length;
     int32_t stride;
 } ArrayHeader;
@@ -76,5 +94,15 @@ static inline bool Object_IsReferantOfWeakReference(Object *object,
     return Object_IsWeakReference(object) &&
            fieldOffset == __weak_ref_field_offset;
 }
+
+#ifdef USES_LOCKWORD
+static inline bool Field_isInflatedLock(Field_t field) {
+    return (word_t)field & MONITOR_INFLATION_MARK_MASK;
+}
+
+static inline Field_t Field_allignedLockRef(Field_t field) {
+    return (Field_t)((word_t)field & MONITOR_OBJECT_MASK);
+}
+#endif
 
 #endif // IMMIX_OBJECTHEADER_H

@@ -284,8 +284,9 @@ object Generate {
             val moduleTyName = name.member(Sig.Generated("type"))
             val moduleTyVal = Val.Global(moduleTyName, Type.Ptr)
             val instanceName = name.member(Sig.Generated("instance"))
-            val instanceVal = Val.StructValue(Seq(moduleTyVal))
-            val instanceDefn = Defn.Const(
+            val instanceVal = Val.StructValue(moduleTyVal :: meta.lockWordVals)
+            // Needs to be defined as var, const does not allow to modify lock-word field
+            val instanceDefn = Defn.Var(
               Attrs.None,
               instanceName,
               meta.layouts.ObjectHeader.layout,
