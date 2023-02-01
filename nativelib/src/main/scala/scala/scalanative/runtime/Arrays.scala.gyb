@@ -32,7 +32,6 @@ import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 
 % sizePtr = 8
-% sizeHeader = 16
 sealed abstract class Array[T]
     extends java.io.Serializable
     with java.lang.Cloneable {
@@ -40,7 +39,7 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, ${sizePtr})
+    val lenptr = elemRawPtr(rawptr, MemoryLayout.Array.LengthOffset)
     loadInt(lenptr)
   }
 
@@ -181,30 +180,16 @@ final class ${T}Array private () extends Array[${T}] {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
+      elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + ${sizeT} * i)
     }
 
-  @inline def apply(i: Int): ${T} =
-    if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
-    } else {
-      val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      load${T}(ith)
-    }
+  @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
 
-  @inline def update(i: Int, value: ${T}): Unit =
-    if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
-    } else {
-      val rawptr = castObjectToRawPtr(this)
-      val ith    = elemRawPtr(rawptr, ${sizeHeader} + ${sizeT} * i)
-      store${T}(ith, value)
-    }
+  @inline def update(i: Int, value: ${T}): Unit = store${T}(atRaw(i), value)
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = (${sizeHeader} + ${sizeT} * length).toULong
+    val arrsize = new ULong(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
     val arr     = ${alloc}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -215,11 +200,15 @@ final class ${T}Array private () extends Array[${T}] {
 object ${T}Array {
 
   @inline def alloc(length: Int): ${T}Array = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+
     val arrcls  = classOf[${T}Array]
-    val arrsize = (${sizeHeader} + ${sizeT} * length).toULong
+    val arrsize = new ULong(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
     val arr     = ${alloc}(arrcls, arrsize)
-    storeInt(elemRawPtr(arr, 8), length)
-    storeInt(elemRawPtr(arr, 12), ${sizeT}.toInt)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -227,7 +216,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = (${sizeT} * length).toULong
+    val size = new ULong(${sizeT} * length)
     libc.memcpy(dst, src, size)
     arr
   }

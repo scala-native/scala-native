@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.nir.Rt._
 
-class VirtualTable(meta: Metadata, cls: linker.Class) {
+class VirtualTable(cls: linker.Class)(implicit meta: Metadata) {
   private val slots: mutable.UnrolledBuffer[Sig] =
     cls.parent.fold {
       mutable.UnrolledBuffer.empty[Sig]

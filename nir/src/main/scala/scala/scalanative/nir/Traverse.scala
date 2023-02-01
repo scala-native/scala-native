@@ -58,10 +58,10 @@ trait Traverse {
       onType(ty)
       onVal(ptrv)
       argvs.foreach(onVal)
-    case Op.Load(ty, ptrv, sync) =>
+    case Op.Load(ty, ptrv) =>
       onType(ty)
       onVal(ptrv)
-    case Op.Store(ty, ptrv, v, sync) =>
+    case Op.Store(ty, ptrv, v) =>
       onType(ty)
       onVal(ptrv)
       onVal(v)
@@ -139,8 +139,6 @@ trait Traverse {
       onVal(value)
     case Op.Arraylength(arr) =>
       onVal(arr)
-    case Op.Fence(_) =>
-      ()
   }
 
   def onVal(value: Val): Unit = value match {

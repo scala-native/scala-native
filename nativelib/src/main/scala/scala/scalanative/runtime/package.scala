@@ -64,8 +64,8 @@ package object runtime {
 
   /** Called by the generated code in case of incorrect class cast. */
   @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
-    val fromName = loadObject(elemRawPtr(from, 16))
-    val toName = loadObject(elemRawPtr(to, 16))
+    val fromName = loadObject(elemRawPtr(from, MemoryLayout.Rtti.NameOffset))
+    val toName = loadObject(elemRawPtr(to, MemoryLayout.Rtti.NameOffset))
     throw new java.lang.ClassCastException(
       s"$fromName cannot be cast to $toName"
     )

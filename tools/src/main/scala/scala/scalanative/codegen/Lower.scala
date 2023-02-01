@@ -14,10 +14,19 @@ object Lower {
 
   private final class Impl(implicit meta: Metadata) extends Transform {
     import meta._
+    import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
 
     implicit val linked: Result = meta.linked
 
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
+
+    private val zero = Val.Int(0)
+    private val one = Val.Int(1)
+    val RttiClassIdPath = Seq(zero, Val.Int(Rtti.ClassIdIdx))
+    val RttiTraitIdPath = Seq(zero, Val.Int(Rtti.TraitIdIdx))
+    val ClassRttiDynmapPath = Seq(zero, Val.Int(ClassRtti.DynmapIdx))
+    val ClassRttiVtablePath = Seq(zero, Val.Int(ClassRtti.VtableIdx))
+    val ArrayHeaderLengthPath = Seq(zero, Val.Int(ArrayHeader.LengthIdx))
 
     // Type of the bare runtime type information struct.
     private val classRttiType =
@@ -113,7 +122,7 @@ object Lower {
 
       insts.foreach {
         case inst @ Inst.Let(n, Op.Var(ty), unwind) =>
-          buf.let(n, Op.Stackalloc(ty, Val.Int(1)), unwind)(inst.pos)
+          buf.let(n, Op.Stackalloc(ty, one), unwind)(inst.pos)
         case _ =>
           ()
       }
@@ -423,7 +432,7 @@ object Lower {
       val outOfBoundsL =
         outOfBoundsSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-      val gt0 = comp(Comp.Sge, Type.Int, idx, Val.Int(0), unwind)
+      val gt0 = comp(Comp.Sge, Type.Int, idx, zero, unwind)
       val ltLen = comp(Comp.Slt, Type.Int, idx, len, unwind)
       val inBounds = bin(Bin.And, Type.Bool, gt0, ltLen, unwind)
       branch(inBounds, Next(inBoundsL), Next.Label(outOfBoundsL, Seq(idx)))
@@ -442,7 +451,7 @@ object Lower {
       val index = layout.index(fld)
 
       genGuardNotNull(buf, v)
-      elem(ty, v, Seq(Val.Int(0), Val.Int(index)), unwind)
+      elem(ty, v, Seq(zero, Val.Int(index)), unwind)
     }
 
     def genFieldloadOp(buf: Buffer, n: Local, op: Op.Fieldload)(implicit
@@ -522,7 +531,7 @@ object Lower {
           Op.Elem(
             rtti(cls).struct,
             typeptr,
-            meta.RttiVtableIndex :+ Val.Int(vindex)
+            ClassRttiVtablePath :+ Val.Int(vindex)
           ),
           unwind
         )
@@ -534,7 +543,7 @@ object Lower {
         val sigid = dispatchTable.traitSigIds(sig)
         val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
         val idptr =
-          let(Op.Elem(meta.Rtti, typeptr, meta.RttiTraitIdIndex), unwind)
+          let(Op.Elem(Rtti.layout, typeptr, RttiTraitIdPath), unwind)
         val id = let(Op.Load(Type.Int, idptr), unwind)
         val rowptr = let(
           Op.Elem(
@@ -635,7 +644,7 @@ object Lower {
         // Load the type information pointer
         val typeptr = load(Type.Ptr, obj, unwind)
         // Load the dynamic hash map for given type, make sure it's not null
-        val mapelem = elem(classRttiType, typeptr, meta.RttiDynmapIndex, unwind)
+        val mapelem = elem(classRttiType, typeptr, ClassRttiDynmapPath, unwind)
         val mapptr = load(Type.Ptr, mapelem, unwind)
         // If hash map is not null, it has to contain at least one entry
         throwIfNull(mapptr)
@@ -699,7 +708,10 @@ object Lower {
           val range = meta.ranges(cls)
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val idptr =
-            let(Op.Elem(meta.Rtti, typeptr, meta.RttiClassIdIndex), unwind)
+            let(
+              Op.Elem(Rtti.layout, typeptr, RttiClassIdPath),
+              unwind
+            )
           val id = let(Op.Load(Type.Int, idptr), unwind)
           val ge =
             let(Op.Comp(Comp.Sle, Type.Int, Val.Int(range.start), id), unwind)
@@ -710,13 +722,16 @@ object Lower {
         case TraitRef(trt) =>
           val typeptr = let(Op.Load(Type.Ptr, obj), unwind)
           val idptr =
-            let(Op.Elem(meta.Rtti, typeptr, meta.RttiClassIdIndex), unwind)
+            let(
+              Op.Elem(Rtti.layout, typeptr, RttiClassIdPath),
+              unwind
+            )
           val id = let(Op.Load(Type.Int, idptr), unwind)
           val boolptr = let(
             Op.Elem(
               hasTraitTables.classHasTraitTy,
               hasTraitTables.classHasTraitVal,
-              Seq(Val.Int(0), id, Val.Int(meta.ids(trt)))
+              Seq(zero, id, Val.Int(meta.ids(trt)))
             ),
             unwind
           )
@@ -763,7 +778,8 @@ object Lower {
     ): Unit = {
       val Op.Sizeof(ty) = op
 
-      buf.let(n, Op.Copy(Val.Long(MemoryLayout.sizeOf(ty))), unwind)
+      val memorySize = MemoryLayout.sizeOf(ty)
+      buf.let(n, Op.Copy(Val.Long(memorySize)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
@@ -771,7 +787,7 @@ object Lower {
     ): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op: @unchecked
 
-      val size = MemoryLayout.sizeOf(layout(cls).struct)
+      val size = layout(cls).size
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
@@ -1079,6 +1095,14 @@ object Lower {
       }
     }
 
+    private def arrayMemoryLayout(
+        ty: nir.Type,
+        length: Int = 0
+    ): Type.StructValue = Type.StructValue(
+      Seq(ArrayHeader.layout, Type.ArrayValue(ty, length))
+    )
+    private def arrayValuePath(idx: Val) = Seq(zero, one, idx)
+
     def genArrayloadOp(buf: Buffer, n: Local, op: Op.Arrayload)(implicit
         pos: Position
     ): Unit = {
@@ -1090,11 +1114,8 @@ object Lower {
       genArraylengthOp(buf, len, Op.Arraylength(arr))
       genGuardInBounds(buf, idx, Val.Local(len, Type.Int))
 
-      val arrTy = Type.StructValue(
-        Seq(Type.Ptr, Type.Int, Type.Int, Type.ArrayValue(ty, 0))
-      )
-      val elemPath = Seq(Val.Int(0), Val.Int(3), idx)
-      val elemPtr = buf.elem(arrTy, arr, elemPath, unwind)
+      val arrTy = arrayMemoryLayout(ty)
+      val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
       buf.let(n, Op.Load(ty, elemPtr), unwind)
     }
 
@@ -1108,11 +1129,8 @@ object Lower {
       genArraylengthOp(buf, len, Op.Arraylength(arr))
       genGuardInBounds(buf, idx, Val.Local(len, Type.Int))
 
-      val arrTy = Type.StructValue(
-        Seq(Type.Ptr, Type.Int, Type.Int, Type.ArrayValue(ty, 0))
-      )
-      val elemPtr =
-        buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(3), idx), unwind)
+      val arrTy = arrayMemoryLayout(ty)
+      val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
       genStoreOp(buf, n, Op.Store(ty, elemPtr, value))
     }
 
@@ -1126,8 +1144,8 @@ object Lower {
       val func = arrayLength
 
       genGuardNotNull(buf, arr)
-      val arrTy = Type.StructValue(Seq(Type.Ptr, Type.Int))
-      val lenPtr = buf.elem(arrTy, arr, Seq(Val.Int(0), Val.Int(1)), unwind)
+      val lenPtr =
+        buf.elem(ArrayHeader.layout, arr, ArrayHeaderLengthPath, unwind)
       buf.let(n, Op.Load(Type.Int, lenPtr), unwind)
     }
 
@@ -1139,18 +1157,16 @@ object Lower {
       val charsLength = Val.Int(chars.length)
       val charsConst = Val.Const(
         Val.StructValue(
-          Seq(
-            rtti(CharArrayCls).const,
-            charsLength,
-            Val.Int(0), // padding to get next field aligned properly
-            Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char(_)))
-          )
+          rtti(CharArrayCls).const ::
+            charsLength ::
+            zero :: // stride is used only by GC, global instances use it as padding
+            Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char(_))) :: Nil
         )
       )
 
       val fieldValues = stringFieldNames.map {
         case Rt.StringValueName          => charsConst
-        case Rt.StringOffsetName         => Val.Int(0)
+        case Rt.StringOffsetName         => zero
         case Rt.StringCountName          => charsLength
         case Rt.StringCachedHashCodeName => Val.Int(stringHashCode(value))
         case _                           => util.unreachable

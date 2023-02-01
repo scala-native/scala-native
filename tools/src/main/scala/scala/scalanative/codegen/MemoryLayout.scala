@@ -5,18 +5,19 @@ import scala.collection.mutable
 import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
-import scalanative.codegen.MemoryLayout.PositionedType
 
 final case class MemoryLayout(
     size: Long,
     tys: Seq[MemoryLayout.PositionedType]
 ) {
-  lazy val offsetArray: Seq[Val] = {
+  def offsetArray(implicit meta: Metadata): Seq[Val] = {
     val ptrOffsets =
       tys.collect {
-        // offset in words without rtti
+        // offset in words without object header
         case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(offset / MemoryLayout.WORD_SIZE - 1)
+          Val.Long(
+            offset / MemoryLayout.WORD_SIZE - meta.layouts.ObjectHeader.fields
+          )
       }
 
     ptrOffsets :+ Val.Long(-1)
@@ -74,7 +75,10 @@ object MemoryLayout {
       offset += sizeOf(ty)
     }
 
-    val alignment = if (tys.isEmpty) 1 else tys.map(alignmentOf).max
+    val alignment = {
+      if (tys.isEmpty) 1
+      else tys.map(alignmentOf(_)).max
+    }
 
     MemoryLayout(align(offset, alignment), pos.toSeq)
   }

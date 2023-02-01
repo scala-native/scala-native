@@ -276,7 +276,7 @@ object Generate {
             val instanceDefn = Defn.Const(
               Attrs.None,
               instanceName,
-              Type.StructValue(Seq(Type.Ptr)),
+              meta.layouts.ObjectHeader.layout,
               instanceVal
             )
 
