@@ -130,11 +130,21 @@ object Type {
       unreachable
   }.toSeq
 
-  def isPtrBox(ty: Type): Boolean = ty match {
-    case refty: Type.RefKind =>
-      unbox.get(Type.Ref(refty.className)).contains(Type.Ptr)
-    case _ =>
-      false
+  private def isBoxOf(primitiveType: Type)(boxType: Type) =
+    unbox
+      .get(normalize(boxType))
+      .contains(primitiveType)
+  def isPtrBox(ty: Type): Boolean = isBoxOf(Type.Ptr)(ty)
+  def isSizeBox(ty: Type): Boolean = isBoxOf(Type.Size)(ty)
+
+  def normalize(ty: Type): Type = ty match {
+    case ArrayValue(ty, n)          => ArrayValue(normalize(ty), n)
+    case StructValue(tys)           => StructValue(tys.map(normalize))
+    case Array(ty, nullable)        => Array(normalize(ty))
+    case Ref(name, exact, nullable) => Ref(name)
+    case Var(ty)                    => Var(normalize(ty))
+    case Function(args, ret) => Function(args.map(normalize), normalize(ret))
+    case other               => other
   }
 
   val typeToArray = Map[Type, Global](

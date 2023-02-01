@@ -2084,7 +2084,13 @@ trait NirGenExpr(using Context) {
       val Apply(_, Seq(sizep)) = app
 
       val size = genExpr(sizep)
-      val unboxed = buf.unbox(size.ty, size, unwind)(using sizep.span)
+      val sizeTy = Type.normalize(size.ty)
+      val unboxed =
+        if Type.isSizeBox(sizeTy) then
+          buf.unbox(sizeTy, size, unwind)(using sizep.span)
+        else
+          assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
+          size
 
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
     }

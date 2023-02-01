@@ -1954,7 +1954,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val Apply(_, Seq(sizep)) = app
 
       val size = genExpr(sizep)
-      val unboxed = buf.unbox(size.ty, size, unwind)(sizep.pos)
+      val sizeTy = Type.normalize(size.ty)
+      val unboxed =
+        if (Type.isSizeBox(sizeTy))
+          buf.unbox(sizeTy, size, unwind)(sizep.pos)
+        else {
+          assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
+          size
+        }
 
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(app.pos)
     }
