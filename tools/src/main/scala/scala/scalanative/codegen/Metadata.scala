@@ -5,7 +5,12 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker.{Trait, Class}
 
-class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
+class Metadata(val linked: linker.Result, proxies: Seq[Defn])(implicit
+    val platform: PlatformInfo
+) {
+  implicit private def self: Metadata = this
+
+  val layouts = new CommonMemoryLayouts()
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
@@ -18,14 +23,6 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
   val moduleArray = new ModuleArray(this)
   val dispatchTable = new TraitDispatchTable(this)
   val hasTraitTables = new HasTraitTables(this)
-
-  val Rtti = Type.StructValue(Seq(Type.Ptr, Type.Int, Type.Int, Type.Ptr))
-  val RttiClassIdIndex = Seq(Val.Int(0), Val.Int(1))
-  val RttiTraitIdIndex = Seq(Val.Int(0), Val.Int(2))
-  val RttiVtableIndex =
-    Seq(Val.Int(0), Val.Int(if (linked.dynsigs.isEmpty) 4 else 5))
-  val RttiDynmapIndex =
-    Seq(Val.Int(0), Val.Int(if (linked.dynsigs.isEmpty) -1 else 4))
 
   initClassMetadata()
   initTraitMetadata()
@@ -66,18 +63,18 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn]) {
 
   def initClassMetadata(): Unit = {
     classes.foreach { node =>
-      vtable(node) = new VirtualTable(this, node)
-      layout(node) = new FieldLayout(this, node)
-      if (linked.dynsigs.nonEmpty) {
-        dynmap(node) = new DynamicHashMap(this, node, proxies)
+      vtable(node) = new VirtualTable(node)
+      layout(node) = new FieldLayout(node)
+      if (layouts.ClassRtti.usesDynMap) {
+        dynmap(node) = new DynamicHashMap(node, proxies)
       }
-      rtti(node) = new RuntimeTypeInformation(this, node)
+      rtti(node) = new RuntimeTypeInformation(node)
     }
   }
 
   def initTraitMetadata(): Unit = {
     traits.foreach { node =>
-      rtti(node) = new RuntimeTypeInformation(this, node)
+      rtti(node) = new RuntimeTypeInformation(node)
     }
   }
 }

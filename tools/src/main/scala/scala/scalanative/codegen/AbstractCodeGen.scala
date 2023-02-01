@@ -12,13 +12,13 @@ import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
 
 private[codegen] abstract class AbstractCodeGen(
-    val config: build.Config,
     env: Map[Global, Defn],
     defns: Seq[Defn]
 )(implicit meta: Metadata) {
-  val os: OsCompat
+  import meta.platform
+  import platform._
 
-  private val targetTriple: Option[String] = config.compilerConfig.targetTriple
+  val os: OsCompat
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _
@@ -174,7 +174,7 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
-    if (config.targetsWindows && !isDecl && attrs.isExtern) {
+    if (targetsWindows && !isDecl && attrs.isExtern) {
       // Generate export modifier only for extern (C-ABI compliant) signatures
       val Global.Member(_, sig) = name: @unchecked
       if (sig.isExtern) str("dllexport ")
