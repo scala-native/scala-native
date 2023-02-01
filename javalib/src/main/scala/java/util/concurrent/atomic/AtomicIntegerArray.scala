@@ -10,24 +10,22 @@ import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.CAtomicLongLong
+import scala.scalanative.libc.atomic.CAtomicInt
 import scala.scalanative.libc.atomic.memory_order._
-import scala.scalanative.runtime.MemoryLayout
+import java.util.function.IntBinaryOperator
+import java.util.function.IntUnaryOperator
+import scala.scalanative.runtime.IntArray
 
-import java.util.function.{LongBinaryOperator, LongUnaryOperator}
-import java.util.Arrays
-import scala.scalanative.runtime.LongArray
-
-@SerialVersionUID(-2308431214976778248L)
-class AtomicLongArray extends Serializable {
-  final private var array: Array[Long] = null
+@SerialVersionUID(2862133569453604235L)
+class AtomicIntegerArray extends Serializable {
+  final private var array: Array[Int] = null
 
   @alwaysinline
-  private[concurrent] def nativeArray: LongArray = array.asInstanceOf[LongArray]
+  private[concurrent] def nativeArray: IntArray = array.asInstanceOf[IntArray]
 
   @alwaysinline
-  private implicit def ptrLongToAtomicLong(ptr: Ptr[Long]): CAtomicLongLong =
-    new CAtomicLongLong(ptr)
+  private implicit def ptrIntToAtomicInt(ptr: Ptr[Int]): CAtomicInt =
+    new CAtomicInt(ptr)
 
   /** Creates a new AtomicIntegerArray of the given length, with all elements
    *  initially zero.
@@ -37,7 +35,7 @@ class AtomicLongArray extends Serializable {
    */
   def this(length: Int) = {
     this()
-    this.array = new Array[Long](length)
+    this.array = new Array[Int](length)
   }
 
   /** Creates a new AtomicIntegerArray with the same length as, and all elements
@@ -48,9 +46,9 @@ class AtomicLongArray extends Serializable {
    *  @throws NullPointerException
    *    if array is null
    */
-  def this(array: Array[Long]) = {
+  def this(array: Array[Int]) = {
     this()
-    this.array = Arrays.copyOf(array, array.length)
+    this.array = array.clone()
   }
 
   /** Returns the length of the array.
@@ -68,7 +66,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the current value
    */
-  final def get(i: Int): Long = {
+  final def get(i: Int): Int = {
     nativeArray.at(i).load()
   }
 
@@ -80,7 +78,7 @@ class AtomicLongArray extends Serializable {
    *  @param newValue
    *    the new value
    */
-  final def set(i: Int, newValue: Long): Unit = {
+  final def set(i: Int, newValue: Int): Unit = {
     nativeArray.at(i).store(newValue)
   }
 
@@ -93,7 +91,7 @@ class AtomicLongArray extends Serializable {
    *    the new value
    *  @since 1.6
    */
-  final def lazySet(i: Int, newValue: Long): Unit = {
+  final def lazySet(i: Int, newValue: Int): Unit = {
     nativeArray.at(i).store(newValue, memory_order_release)
   }
 
@@ -108,7 +106,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the previous value
    */
-  final def getAndSet(i: Int, newValue: Long): Long = {
+  final def getAndSet(i: Int, newValue: Int): Int = {
     nativeArray.at(i).exchange(newValue)
   }
 
@@ -126,11 +124,7 @@ class AtomicLongArray extends Serializable {
    *    {@code true} if successful. False return indicates that the actual value
    *    was not equal to the expected value.
    */
-  final def compareAndSet(
-      i: Int,
-      expectedValue: Long,
-      newValue: Long
-  ): Boolean =
+  final def compareAndSet(i: Int, expectedValue: Int, newValue: Int): Boolean =
     nativeArray.at(i).compareExchangeStrong(expectedValue, newValue)
 
   /** Possibly atomically sets the element at index {@code i} to {@code
@@ -158,8 +152,8 @@ class AtomicLongArray extends Serializable {
   @deprecated("", "9")
   final def weakCompareAndSet(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
+      expectedValue: Int,
+      newValue: Int
   ): Boolean =
     weakCompareAndSetPlain(i, expectedValue, newValue)
 
@@ -179,8 +173,8 @@ class AtomicLongArray extends Serializable {
    */
   final def weakCompareAndSetPlain(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
+      expectedValue: Int,
+      newValue: Int
   ): Boolean = {
     val ref = nativeArray.at(i)
     if (!ref == expectedValue) {
@@ -199,7 +193,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the previous value
    */
-  final def getAndIncrement()(i: Int): Long = {
+  final def getAndIncrement()(i: Int): Int = {
     nativeArray.at(i).fetchAdd(1)
   }
 
@@ -213,7 +207,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the previous value
    */
-  final def getAndDecrement(i: Int): Long =
+  final def getAndDecrement(i: Int): Int =
     nativeArray.at(i).fetchAdd(-1)
 
   /** Atomically adds the given value to the element at index {@code i}, with
@@ -226,7 +220,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the previous value
    */
-  final def getAndAdd(i: Int, delta: Long): Long =
+  final def getAndAdd(i: Int, delta: Int): Int =
     nativeArray.at(i).fetchAdd(delta)
 
   /** Atomically increments the value of the element at index {@code i}, with
@@ -239,7 +233,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the updated value
    */
-  final def incrementAndGet(i: Int): Long =
+  final def incrementAndGet(i: Int): Int =
     nativeArray.at(i).fetchAdd(1) + 1
 
   /** Atomically decrements the value of the element at index {@code i}, with
@@ -252,7 +246,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the updated value
    */
-  final def decrementAndGet(i: Int): Long =
+  final def decrementAndGet(i: Int): Int =
     nativeArray.at(i).fetchAdd(-1) - 1
 
   /** Atomically adds the given value to the element at index {@code i}, with
@@ -265,7 +259,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the updated value
    */
-  final def addAndGet(i: Int, delta: Long): Long =
+  final def addAndGet(i: Int, delta: Int): Int =
     nativeArray.at(i).fetchAdd(delta) + delta
 
   /** Atomically updates (with memory effects as specified by {@link
@@ -282,11 +276,11 @@ class AtomicLongArray extends Serializable {
    *    the previous value
    *  @since 1.8
    */
-  final def getAndUpdate(i: Int, updateFunction: LongUnaryOperator): Long = {
+  final def getAndUpdate(i: Int, updateFunction: IntUnaryOperator): Int = {
     @tailrec
-    def loop(prev: Long, next: Long, haveNext: Boolean): Long = {
+    def loop(prev: Int, next: Int, haveNext: Boolean): Int = {
       val newNext =
-        if (!haveNext) updateFunction.applyAsLong(prev)
+        if (!haveNext) updateFunction.applyAsInt(prev)
         else next
 
       if (weakCompareAndSetVolatile(i, prev, newNext)) prev
@@ -312,11 +306,11 @@ class AtomicLongArray extends Serializable {
    *    the updated value
    *  @since 1.8
    */
-  final def updateAndGet(i: Int, updateFunction: LongUnaryOperator): Long = {
+  final def updateAndGet(i: Int, updateFunction: IntUnaryOperator): Int = {
     @tailrec
-    def loop(prev: Long, next: Long, haveNext: Boolean): Long = {
+    def loop(prev: Int, next: Int, haveNext: Boolean): Int = {
       val newNext =
-        if (!haveNext) updateFunction.applyAsLong(prev)
+        if (!haveNext) updateFunction.applyAsInt(prev)
         else next
 
       if (weakCompareAndSetVolatile(i, prev, newNext)) newNext
@@ -349,13 +343,13 @@ class AtomicLongArray extends Serializable {
    */
   final def getAndAccumulate(
       i: Int,
-      x: Long,
-      accumulatorFunction: LongBinaryOperator
-  ): Long = {
+      x: Int,
+      accumulatorFunction: IntBinaryOperator
+  ): Int = {
     @tailrec
-    def loop(prev: Long, next: Long, haveNext: Boolean): Long = {
+    def loop(prev: Int, next: Int, haveNext: Boolean): Int = {
       val newNext =
-        if (!haveNext) accumulatorFunction.applyAsLong(prev, x)
+        if (!haveNext) accumulatorFunction.applyAsInt(prev, x)
         else next
 
       if (weakCompareAndSetVolatile(i, prev, newNext)) prev
@@ -388,13 +382,13 @@ class AtomicLongArray extends Serializable {
    */
   final def accumulateAndGet(
       i: Int,
-      x: Long,
-      accumulatorFunction: LongBinaryOperator
-  ): Long = {
+      x: Int,
+      accumulatorFunction: IntBinaryOperator
+  ): Int = {
     @tailrec
-    def loop(prev: Long, next: Long, haveNext: Boolean): Long = {
+    def loop(prev: Int, next: Int, haveNext: Boolean): Int = {
       val newNext =
-        if (!haveNext) accumulatorFunction.applyAsLong(prev, x)
+        if (!haveNext) accumulatorFunction.applyAsInt(prev, x)
         else next
 
       if (weakCompareAndSetVolatile(i, prev, newNext)) newNext
@@ -423,7 +417,7 @@ class AtomicLongArray extends Serializable {
    *    the value
    *  @since 9
    */
-  final def getPlain(i: Int): Long =
+  final def getPlain(i: Int): Int =
     array(i)
 
   /** Sets the element at index {@code i} to {@code newValue}, with memory
@@ -436,7 +430,7 @@ class AtomicLongArray extends Serializable {
    *    the new value
    *  @since 9
    */
-  final def setPlain(i: Int, newValue: Long): Unit = {
+  final def setPlain(i: Int, newValue: Int): Unit = {
     array(i) = newValue
   }
 
@@ -449,7 +443,7 @@ class AtomicLongArray extends Serializable {
    *    the value
    *  @since 9
    */
-  final def getOpaque(i: Int): Long =
+  final def getOpaque(i: Int): Int =
     nativeArray.at(i).load(memory_order_relaxed)
 
   /** Sets the element at index {@code i} to {@code newValue}, with memory
@@ -461,7 +455,7 @@ class AtomicLongArray extends Serializable {
    *    the new value
    *  @since 9
    */
-  final def setOpaque(i: Int, newValue: Long): Unit = {
+  final def setOpaque(i: Int, newValue: Int): Unit = {
     nativeArray.at(i).store(newValue, memory_order_relaxed)
   }
 
@@ -474,7 +468,7 @@ class AtomicLongArray extends Serializable {
    *    the value
    *  @since 9
    */
-  final def getAcquire(i: Int): Long = {
+  final def getAcquire(i: Int): Int = {
     nativeArray.at(i).load(memory_order_acquire)
   }
 
@@ -487,7 +481,7 @@ class AtomicLongArray extends Serializable {
    *    the new value
    *  @since 9
    */
-  final def setRelease(i: Int, newValue: Long): Unit = {
+  final def setRelease(i: Int, newValue: Int): Unit = {
     nativeArray.at(i).store(newValue, memory_order_release)
   }
 
@@ -509,10 +503,10 @@ class AtomicLongArray extends Serializable {
    */
   final def compareAndExchange(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
-  ): Long = {
-    val expected = stackalloc[Long]()
+      expectedValue: Int,
+      newValue: Int
+  ): Int = {
+    val expected = stackalloc[Int]()
     !expected = expectedValue
     nativeArray
       .at(i)
@@ -538,10 +532,10 @@ class AtomicLongArray extends Serializable {
    */
   final def compareAndExchangeAcquire(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
-  ): Long = {
-    val expected = stackalloc[Long]()
+      expectedValue: Int,
+      newValue: Int
+  ): Int = {
+    val expected = stackalloc[Int]()
     !expected = expectedValue
     nativeArray
       .at(i)
@@ -567,10 +561,10 @@ class AtomicLongArray extends Serializable {
    */
   final def compareAndExchangeRelease(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
-  ): Long = {
-    val expected = stackalloc[Long]()
+      expectedValue: Int,
+      newValue: Int
+  ): Int = {
+    val expected = stackalloc[Int]()
     !expected = expectedValue
     nativeArray
       .at(i)
@@ -594,8 +588,8 @@ class AtomicLongArray extends Serializable {
    */
   final def weakCompareAndSetVolatile(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
+      expectedValue: Int,
+      newValue: Int
   ): Boolean =
     nativeArray
       .at(i)
@@ -617,8 +611,8 @@ class AtomicLongArray extends Serializable {
    */
   final def weakCompareAndSetAcquire(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
+      expectedValue: Int,
+      newValue: Int
   ): Boolean =
     nativeArray
       .at(i)
@@ -640,11 +634,10 @@ class AtomicLongArray extends Serializable {
    */
   final def weakCompareAndSetRelease(
       i: Int,
-      expectedValue: Long,
-      newValue: Long
-  ): Boolean = {
-    (nativeArray
-      .at(i))
+      expectedValue: Int,
+      newValue: Int
+  ): Boolean =
+    nativeArray
+      .at(i)
       .compareExchangeWeak(expectedValue, newValue, memory_order_release)
-  }
 }
