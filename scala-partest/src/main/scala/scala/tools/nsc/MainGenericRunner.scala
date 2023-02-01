@@ -70,7 +70,7 @@ class MainGenericRunner {
 
           commandClasspath ++ nativeClasspath
         }
-        .withMainClass(command.thingToRun)
+        .withMainClass(Some(command.thingToRun))
         .withBasedir(dir)
 
       Scope { implicit s => Build.build(config) }
