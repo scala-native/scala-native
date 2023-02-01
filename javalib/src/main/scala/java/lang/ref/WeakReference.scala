@@ -6,7 +6,7 @@ package java.lang.ref
 // _gc_unmarked_ works like this only in the context of
 // the WeakReference class.
 class WeakReference[T](
-    private var _gc_modified_referent: T,
+    @volatile private var _gc_modified_referent: T,
     queue: ReferenceQueue[T]
 ) extends Reference[T](null.asInstanceOf[T]) {
   // Since compiler generates _gc_modified_referent and referent
@@ -21,7 +21,7 @@ class WeakReference[T](
 
   def this(referent: T) = this(referent, null)
 
-  private var enqueued = false
+  @volatile private var enqueued = false
   if (_gc_modified_referent != null) WeakReferenceRegistry.add(this)
 
   override def get(): T = _gc_modified_referent
