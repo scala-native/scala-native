@@ -15,13 +15,33 @@ sealed trait Config {
   def testConfig: Boolean
 
   /** Directory to emit intermediate compilation results. Calculated based on
-   *  [[basedir]] / native or native-test if a test project. The build creates
+   *  [[#basedir]] / native or native-test if a test project. The build creates
    *  directories if they do not exist.
    */
   def workdir: Path
 
+  /** Name of the project module from the build system
+   *
+   *  @return
+   *    moduleName
+   */
+  def moduleName: String
+
+  /** Base name for executable or library, typically the project/module name
+   *  from the build tool [[#moduleName]] or can be overridden by the user with
+   *  [[NativeConfig#basename]].
+   */
+  def basename: String
+
+  /** This is the name of the executable or library. Calculated based on a
+   *  prefix for libraries `lib` for UNIX like OSes, [[#basename]], `-test` if
+   *  [[#testConfig]] is `true`, and the executable or library suffix depending
+   *  on platform and library type.
+   */
+  def artifactName: String
+
   /** Path to the output file, executable or library. Calculated based on
-   *  [[basedir]] / [[NativeConfig#basename]] and -test, if a test project.
+   *  [[#basedir]] `/` [[#artifactName]].
    */
   def artifactPath: Path
 
@@ -42,8 +62,19 @@ sealed trait Config {
   /** Create a new config with test (true) or normal config (false). */
   def withTestConfig(value: Boolean): Config
 
-  /** Create new config with given mainClass point. */
-  def withMainClass(value: String): Config
+  /** Create a new config with the module name - required. */
+  def withModuleName(value: String): Config
+
+  /** Create new config with a fully qualified (with package) main class name as
+   *  an [[Option]]. Only applicable if [[NativeConfig#buildTarget]] is a
+   *  [[BuildTarget#application]].
+   *
+   *  @param value
+   *    fully qualified main class name as an [[Option]], default [[None]]
+   *  @return
+   *    this config object
+   */
+  def withMainClass(value: Option[String]): Config
 
   /** Create a new config with given nir paths. */
   def withClassPath(value: Seq[Path]): Config
@@ -94,7 +125,7 @@ sealed trait Config {
     }
   }
 
-  private[scalanative] lazy val targetsMac = Platform.isMac ||
+  private[scalanative] lazy val targetsMac: Boolean = Platform.isMac ||
     compilerConfig.targetTriple.exists { customTriple =>
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
@@ -105,38 +136,39 @@ object Config {
   /** Default empty config object where all of the fields are left blank. */
   def empty: Config =
     Impl(
-      nativelib = Paths.get(""),
-      mainClass = None,
-      classPath = Seq.empty,
       basedir = Paths.get(""),
       testConfig = false,
+      moduleName = "",
+      mainClass = None,
+      classPath = Seq.empty,
       logger = Logger.default,
       compilerConfig = NativeConfig.empty
     )
 
   private final case class Impl(
-      nativelib: Path,
-      mainClass: Option[String],
-      classPath: Seq[Path],
       basedir: Path,
       testConfig: Boolean,
+      moduleName: String,
+      mainClass: Option[String],
+      classPath: Seq[Path],
       logger: Logger,
       compilerConfig: NativeConfig
   ) extends Config {
-    def withNativelib(value: Path): Config =
-      copy(nativelib = value)
-
-    def withMainClass(value: String): Config =
-      copy(mainClass = Option(value).filter(_.nonEmpty))
-
-    def withClassPath(value: Seq[Path]): Config =
-      copy(classPath = value)
 
     def withBasedir(value: Path): Config =
       copy(basedir = value)
 
     def withTestConfig(value: Boolean): Config =
       copy(testConfig = value)
+
+    def withModuleName(value: String): Config =
+      copy(moduleName = value)
+
+    def withMainClass(value: Option[String]): Config =
+      copy(mainClass = value)
+
+    def withClassPath(value: Seq[Path]): Config =
+      copy(classPath = value)
 
     def withLogger(value: Logger): Config =
       copy(logger = value)
@@ -150,7 +182,12 @@ object Config {
     override lazy val workdir: Path =
       basedir.resolve(s"native$nameSuffix")
 
-    override lazy val artifactPath: Path = {
+    override lazy val basename: String = compilerConfig.basename match {
+      case bn if bn.nonEmpty => bn
+      case _                 => moduleName
+    }
+
+    override lazy val artifactName: String = {
       val ext = compilerConfig.buildTarget match {
         case BuildTarget.Application =>
           if (targetsWindows) ".exe" else ""
@@ -166,7 +203,11 @@ object Config {
         case BuildTarget.Application => ""
         case _: BuildTarget.Library  => if (targetsWindows) "" else "lib"
       }
-      basedir.resolve(s"$namePrefix${compilerConfig.basename}$nameSuffix$ext")
+      s"$namePrefix${basename}$nameSuffix$ext"
+    }
+
+    override lazy val artifactPath: Path = {
+      basedir.resolve(artifactName)
     }
 
     override def toString: String = {
@@ -176,8 +217,11 @@ object Config {
         | - basedir:        $basedir
         | - testConfig:     $testConfig
         | - workdir:        $workdir
+        | - moduleName:     $moduleName
+        | - basename:       $basename
+        | - artifactName:   $artifactName
         | - artifactPath:   $artifactPath
-        | - logger:         $logger
+        | - mainClass:      $mainClass
         | - classPath:      $classPathFormat
         | - compilerConfig: $compilerConfig
         |)""".stripMargin

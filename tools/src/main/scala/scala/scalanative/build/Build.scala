@@ -60,11 +60,8 @@ object Build {
       // called each time for clean or directory removal
       checkWorkdirExists(config)
 
-      // validate classpath - use fconfig below
-      val fconfig = {
-        val fclasspath = NativeLib.filterClasspath(config.classPath)
-        config.withClassPath(fclasspath)
-      }
+      // validate Config
+      val fconfig = Validator.validate(config)
 
       // find and link
       val linked = {

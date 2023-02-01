@@ -41,7 +41,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
         .withMaxInlineSize(1)
       val nativeConfig = defaultNativeConfig
         .withOptimizerConfig(optimizerConfig)
-      val config = makeConfig(outDir, entry, nativeConfig)
+      val config = makeConfig(outDir, "out", entry, nativeConfig)
       Build.build(config)
     }
   }
@@ -82,7 +82,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files = compiler.compile(sourcesDir)
       makeChanged(outDir, changedTop)
-      val config = makeConfig(outDir, entry, defaultNativeConfig)
+      val config = makeConfig(outDir, "out1", entry, defaultNativeConfig)
 
       Build.build(config)
     }
@@ -110,14 +110,16 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
 
   private def makeConfig(
       outDir: Path,
+      moduleName: String,
       entry: String,
       setupNativeConfig: NativeConfig
   )(implicit in: Scope): Config = {
     val classpath = makeClasspath(outDir)
     Config.empty
       .withBasedir(outDir)
+      .withModuleName(moduleName)
       .withClassPath(classpath.toSeq)
-      .withMainClass(entry)
+      .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig)
   }
 

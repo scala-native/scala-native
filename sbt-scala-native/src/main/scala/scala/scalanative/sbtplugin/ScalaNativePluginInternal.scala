@@ -121,35 +121,21 @@ object ScalaNativePluginInternal {
         .withLinkStubs(nativeLinkStubs.value)
         .withCheck(nativeCheck.value)
         .withDump(nativeDump.value)
-        // Set values for project-specific settings
-        .withBasename(
-          // Use basename defined by user, if not set use name of project
-          Option(config.basename)
-            .filterNot(_.isEmpty)
-            .getOrElse(moduleName.value)
-        )
     },
     nativeLink := Def
       .task {
         val classpath = fullClasspath.value.map(_.data.toPath)
-        val mainClass = nativeConfig.value.buildTarget match {
-          case BuildTarget.Application =>
-            selectMainClass.value.orElse {
-              throw new MessageOnlyException("No main class detected.")
-            }
-          case _: BuildTarget.Library => None
-        }
         val logger = streams.value.log.toLogger
 
-        val baseConfig =
+        val config =
           build.Config.empty
             .withLogger(logger)
             .withClassPath(classpath)
             .withBasedir(crossTarget.value.toPath())
+            .withModuleName(moduleName.value)
+            .withMainClass(selectMainClass.value)
             .withTestConfig(testConfig)
             .withCompilerConfig(nativeConfig.value)
-
-        val config = mainClass.foldLeft(baseConfig)(_.withMainClass(_))
 
         interceptBuildException {
           // returns config.artifactPath

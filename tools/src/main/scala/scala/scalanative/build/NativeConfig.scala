@@ -163,7 +163,10 @@ sealed trait NativeConfig {
   /** Create a new config with support for multithreading */
   def withMultithreadingSupport(enabled: Boolean): NativeConfig
 
-  /** Create a new config with given base artifact name. */
+  /** Create a new config with given base artifact name.
+   *
+   *  Warning: must be unique across project modules.
+   */
   def withBasename(value: String): NativeConfig
 
   /** Create a optimization configuration */
