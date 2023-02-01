@@ -138,7 +138,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
             backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
           )
         } else {
-          onSpinWait()
+          NativeThread.onSpinWait()
           waitForOwnership(yields + 1, backoffNanos)
         }
       }

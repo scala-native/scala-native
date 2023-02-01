@@ -71,8 +71,4 @@ object libc {
     @name("scalanative_atomic_memory_order_seq_cst")
     final def memory_order_seq_cst: memory_order = extern
   }
-
-  @name("scalanative_on_spin_wait")
-  @blocking
-  private[runtime] def onSpinWait(): Unit = extern
 }

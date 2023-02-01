@@ -387,7 +387,7 @@ private[monitor] class ObjectMonitor() {
             backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
           )
         } else {
-          onSpinWait()
+          NativeThread.onSpinWait()
           waitForLockRelease(yields + 1, backoffNanos)
         }
       }
@@ -419,7 +419,7 @@ private[monitor] class ObjectMonitor() {
   ): Boolean = {
     if (tryLock(thread)) true
     else if (remainingSpins > 0) {
-      onSpinWait()
+      NativeThread.onSpinWait()
       trySpinAndLock(thread, remainingSpins - 1)
     } else false
   }
