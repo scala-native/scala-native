@@ -4,6 +4,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.runtime._
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 class _Object {
   @inline def __equals(that: _Object): scala.Boolean =
@@ -23,20 +24,26 @@ class _Object {
     castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
   }
 
-  @inline def __notify(): Unit =
+  @inline def __notify(): Unit = if (isMultithreadingEnabled) {
     getMonitor(this)._notify()
+  }
 
-  @inline def __notifyAll(): Unit =
+  @inline def __notifyAll(): Unit = if (isMultithreadingEnabled) {
     getMonitor(this)._notifyAll()
+  }
 
-  @inline def __wait(): Unit =
+  @inline def __wait(): Unit = if (isMultithreadingEnabled) {
     getMonitor(this)._wait()
+  }
 
-  @inline def __wait(timeout: scala.Long): Unit =
+  @inline def __wait(timeout: scala.Long): Unit = if (isMultithreadingEnabled) {
     getMonitor(this)._wait(timeout)
+  }
 
   @inline def __wait(timeout: scala.Long, nanos: Int): Unit =
-    getMonitor(this)._wait(timeout, nanos)
+    if (isMultithreadingEnabled) {
+      getMonitor(this)._wait(timeout, nanos)
+    }
 
   @inline def __scala_==(that: _Object): scala.Boolean = {
     // This implementation is only called for classes that don't override
