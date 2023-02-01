@@ -203,10 +203,9 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.2.2, 2.13.10]
-        build-mode: [debug]
+        build-mode: [release-fast]
         gc: [boehm, immix]
-        # TODO: atomics, volatiles: disable LTO/releaseFast until volatiles/fences are supported, otherwise clang can produce infinite loops
-        lto: [none]
+        lto: [thin]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
