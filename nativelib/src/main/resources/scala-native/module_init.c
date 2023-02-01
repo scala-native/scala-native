@@ -20,7 +20,7 @@
 #endif
 
 // cross-platform sleep function
-static void sleep_ms(int milliseconds) { 
+static void sleep_ms(int milliseconds) {
 #ifdef WIN32
     Sleep(milliseconds);
 #elif _POSIX_C_SOURCE >= 199309L
