@@ -76,6 +76,17 @@ class Scala3IssuesTest:
     assertEquals("42", q.baz(21))
   }
 
+  @Test def issue3014(): Unit = {
+    import scala.issues.issue3014._
+    def useUnit(unit: TimeUnit): Long = {
+      // Was throwing `MatchError` when calling `toNanos`
+      unit.toNanos(1L)
+    }
+
+    assertEquals(1L, useUnit(TimeUnit.Nanos))
+    assertThrows(classOf[NullPointerException], () => useUnit(null))
+  }
+
 end Scala3IssuesTest
 
 private object issue2484 {
@@ -96,5 +107,17 @@ private object issue2484 {
 
   trait Functor[F[_]] {
     def map[A, B](fa: F[A])(f: A => B): F[B]
+  }
+}
+
+private object issue3014 {
+  enum TimeUnit {
+    case Millis
+    case Nanos
+
+    def toNanos(value: Long): Long = this match {
+      case Millis => value * 1000000
+      case Nanos  => value
+    }
   }
 }
