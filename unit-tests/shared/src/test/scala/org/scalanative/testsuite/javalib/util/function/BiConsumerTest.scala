@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: c2f5a43 dated: 2020-09-06
-
+// Ported from Scala.js, commit SHA: c473689c9 dated: 2021-05-03
 package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.BiConsumer
@@ -77,11 +76,13 @@ object BiConsumerTest {
       extends Exception(s"throwing consumer called with ($x, $y)")
 
   private val throwingConsumer: BiConsumer[Int, Int] = makeBiConsumer {
-    (t, u) => throw new ThrowingConsumerException(t, u)
+    (t, u) =>
+      throw new ThrowingConsumerException(t, u)
   }
 
   private val dontCallConsumer: BiConsumer[Int, Int] = makeBiConsumer {
-    (t, u) => throw new AssertionError(s"dontCallConsumer.accept($t, $u)")
+    (t, u) =>
+      throw new AssertionError(s"dontCallConsumer.accept($t, $u)")
   }
 
   def makeBiConsumer[T, U](f: (T, U) => Unit): BiConsumer[T, U] = {

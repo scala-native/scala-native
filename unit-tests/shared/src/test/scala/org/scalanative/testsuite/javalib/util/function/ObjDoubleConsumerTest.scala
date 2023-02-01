@@ -1,4 +1,4 @@
-// Ported from Scala.js, commit sha:cfb4888a6 dated:2021-01-07
+// Ported from Scala.js, commit SHA: cfb4888a6 dated: 2021-01-07
 package org.scalanative.testsuite.javalib.util.function
 
 import org.junit.Assert._
@@ -12,7 +12,8 @@ class ObjDoubleConsumerTest {
     var current: String = ""
 
     val op = new ObjDoubleConsumer[String] {
-      override def accept(left: String, right: Double): Unit = current += s"$left $right "
+      override def accept(left: String, right: Double): Unit =
+        current += s"$left $right "
     }
 
     op.accept("First", 1.1)

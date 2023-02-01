@@ -21,7 +21,7 @@ import scala.util.chaining.scalaUtilChainingOps
   val snPath = scalaNativeAbsPath / relPath
 
   def getShortSha(sjsFile: os.Path): String =
-    val format = "// Ported from Scala.js, commit sha:%h dated:%as"
+    val format = "// Ported from Scala.js, commit SHA: %h dated: %as"
     val out = os
       .proc("git", "log", "-n1", s"--pretty=format:${format}", sjsFile)
       .call(cwd = scalaJSAbsPath, check = true, stdout = os.Pipe)
@@ -52,6 +52,7 @@ import scala.util.chaining.scalaUtilChainingOps
       .read(sjsPath)
       .pipe(stripHeader)
     os.write.append(snPath, sjsSource)
+    os.write.append(snPath, System.lineSeparator())
 
 private def stripHeader(input: String) = {
   val nl = System.lineSeparator()
