@@ -127,6 +127,12 @@ object Lower {
         .toMap
       var currentBlockPosition = labelPositions(firstLabel)
 
+      genThisValueNullGuardIfUsed(
+        currentDefn.get,
+        buf,
+        () => newUnwindHandler(Next.None)(insts.head.pos)
+      )
+
       insts.tail.foreach {
         case inst @ Inst.Let(n, op, unwind) =>
           ScopedVar.scoped(
@@ -1341,6 +1347,51 @@ object Lower {
       }
 
       Val.Const(Val.StructValue(rtti(StringCls).const +: fieldValues))
+    }
+
+    private def genThisValueNullGuardIfUsed(
+        defn: Defn.Define,
+        buf: nir.Buffer,
+        createUnwindHandler: () => Option[Local]
+    ) = {
+      def usesValue(expected: Val): Boolean = {
+        var wasUsed = false
+        import scala.util.control.Breaks._
+        breakable {
+          new Traverse {
+            override def onVal(value: Val): Unit = {
+              wasUsed = expected eq value
+              if (wasUsed) break()
+              else super.onVal(value)
+            }
+            // We're not intrested in cheecking these structures, skip them
+            override def onType(ty: Type): Unit = ()
+            override def onNext(next: Next): Unit = ()
+          }.onDefn(defn)
+        }
+        wasUsed
+      }
+
+      val Global.Member(_, sig) = defn.name: @unchecked
+      val Inst.Label(_, args) = defn.insts.head: @unchecked
+
+      val canHaveThisValue =
+        !(sig.isStatic || sig.isClinit || sig.isExtern)
+
+      if (canHaveThisValue) {
+        args.headOption.foreach { thisValue =>
+          thisValue.ty match {
+            case ref: Type.Ref if ref.isNullable && usesValue(thisValue) =>
+              implicit def pos: Position = defn.pos
+              ScopedVar.scoped(
+                unwindHandler := createUnwindHandler()
+              ) {
+                genGuardNotNull(buf, thisValue)
+              }
+            case _ => ()
+          }
+        }
+      }
     }
   }
 
