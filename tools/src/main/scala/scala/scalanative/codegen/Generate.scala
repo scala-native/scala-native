@@ -247,6 +247,22 @@ object Generate {
       buf += Defn.Var(Attrs.None, stackBottomName, Type.Ptr, Val.Null)
 
     def genModuleAccessors(): Unit = {
+      val LoadModuleSig = Type.Function(
+        Seq(Type.Ptr, Type.Ptr, Type.Size, Type.Ptr),
+        Type.Ptr
+      )
+      val LoadModule =
+        Val.Global(extern("__scalanative_loadModule"), Type.Ptr)
+
+      val useSynchronizedAccessors = meta.config.multithreadingSupport
+      if (useSynchronizedAccessors) {
+        buf += Defn.Declare(
+          Attrs(isExtern = true),
+          LoadModule.name,
+          LoadModuleSig
+        )
+      }
+
       meta.classes.foreach { cls =>
         if (cls.isModule && cls.allocated) {
           val name = cls.name
@@ -265,14 +281,10 @@ object Generate {
           val alloc = Val.Local(fresh(), clsTy)
 
           if (cls.isConstantModule) {
-            val moduleTyName =
-              name.member(Sig.Generated("type"))
-            val moduleTyVal =
-              Val.Global(moduleTyName, Type.Ptr)
-            val instanceName =
-              name.member(Sig.Generated("instance"))
-            val instanceVal =
-              Val.StructValue(Seq(moduleTyVal))
+            val moduleTyName = name.member(Sig.Generated("type"))
+            val moduleTyVal = Val.Global(moduleTyName, Type.Ptr)
+            val instanceName = name.member(Sig.Generated("instance"))
+            val instanceVal = Val.StructValue(Seq(moduleTyVal))
             val instanceDefn = Defn.Const(
               Attrs.None,
               instanceName,
@@ -287,21 +299,28 @@ object Generate {
 
             val loadName = name.member(Sig.Generated("load"))
             val loadSig = Type.Function(Seq.empty, clsTy)
-            val loadDefn = Defn.Define(
-              Attrs(inlineHint = Attr.NoInline),
-              loadName,
-              loadSig,
+
+            val selectSlot = Op.Elem(
+              Type.Ptr,
+              Val.Global(moduleArrayName, Type.Ptr),
+              Seq(Val.Int(meta.moduleArray.index(cls)))
+            )
+
+            /*  singlethreaded module load
+             *  Uses simplified algorithm with lower overhead
+             *  val instance = module[moduleId]
+             *  if (instance != null) instance
+             *  else {
+             *    val instance = alloc
+             *    module[moduleId] = instance
+             *    moduleCtor(instance)
+             *    instance
+             *  }
+             */
+            def loadSinglethreadImpl: Seq[Inst] = {
               Seq(
                 Inst.Label(entry, Seq.empty),
-                Inst.Let(
-                  slot.name,
-                  Op.Elem(
-                    Type.Ptr,
-                    Val.Global(moduleArrayName, Type.Ptr),
-                    Seq(Val.Int(meta.moduleArray.index(cls)))
-                  ),
-                  Next.None
-                ),
+                Inst.Let(slot.name, selectSlot, Next.None),
                 Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
                 Inst.Let(
                   cond.name,
@@ -317,6 +336,45 @@ object Generate {
                 Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None),
                 Inst.Ret(alloc)
               )
+            }
+
+            /*  // Multithreading-safe module load
+             *  val slot = modules.at(moduleId)
+             *  return __scalanative_loadModule(slot, rtti, size, ctor)
+             *
+             *  Underlying C function implements the main logic of module initialization and synchronization.
+             *  Safety of safe multithreaded initialization comes with the increased complexity and overhead.
+             *  For single-threaded usage we use the old implementation
+             */
+            def loadMultithreadingSafeImpl: Seq[Inst] = {
+              val size = meta.layout(cls).size
+              val rtti = meta.rtti(cls).const
+
+              Seq(
+                Inst.Label(entry, Seq.empty),
+                Inst.Let(slot.name, selectSlot, Next.None),
+                Inst.Let(
+                  self.name,
+                  Op.Call(
+                    LoadModuleSig,
+                    LoadModule,
+                    Seq(slot, rtti, Val.Size(size), init)
+                  ),
+                  Next.None
+                ),
+                Inst.Ret(self)
+              )
+            }
+
+            val loadDefn = Defn.Define(
+              Attrs(inlineHint =
+                if (useSynchronizedAccessors) Attr.MayInline
+                else Attr.NoInline
+              ),
+              loadName,
+              loadSig,
+              if (useSynchronizedAccessors) loadMultithreadingSafeImpl
+              else loadSinglethreadImpl
             )
 
             buf += loadDefn
