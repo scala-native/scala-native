@@ -135,16 +135,10 @@ trait NirDefinitions {
 
     lazy val RuntimePackage = getPackageObject("scala.scalanative.runtime")
 
-    lazy val RuntimeMonitorClass = getRequiredClass(
-      "scala.scalanative.runtime.Monitor"
-    )
-    lazy val RuntimeMonitorModule = getRequiredModule(
-      "scala.scalanative.runtime.Monitor"
-    )
-    lazy val RuntimeMonitorEnterMethod =
-      getDecl(RuntimeMonitorClass, TermName("enter"))
-    lazy val RuntimeMonitorExitMethod =
-      getDecl(RuntimeMonitorClass, TermName("exit"))
+    lazy val RuntimeEnterMonitorMethod =
+      getDecl(RuntimePackage, TermName("enterMonitor"))
+    lazy val RuntimeExitMonitorMethod =
+      getDecl(RuntimePackage, TermName("exitMonitor"))
 
     lazy val RuntimeTypeClass = getRequiredClass(
       "scala.scalanative.runtime.Type"
@@ -153,9 +147,6 @@ trait NirDefinitions {
     lazy val RuntimeModule = getRequiredModule(
       "scala.scalanative.runtime.package"
     )
-    lazy val GetMonitorMethod =
-      getMember(RuntimeModule, TermName("getMonitor"))
-
     lazy val IntrinsicsModule = getRequiredModule(
       "scala.scalanative.runtime.Intrinsics"
     )

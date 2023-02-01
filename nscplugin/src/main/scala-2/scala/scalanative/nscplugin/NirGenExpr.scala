@@ -2095,23 +2095,48 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genSynchronized(
         receiverp: Tree
     )(bodyGen: ExprBuffer => Val)(implicit pos: nir.Position): Val = {
-      val monitor =
-        genApplyModuleMethod(RuntimeModule, GetMonitorMethod, Seq(receiverp))
-      val enter = genApplyMethod(
-        RuntimeMonitorEnterMethod,
-        statically = true,
-        monitor,
-        Seq.empty
-      )
-      val ret = bodyGen(this)
-      val exit = genApplyMethod(
-        RuntimeMonitorExitMethod,
-        statically = true,
-        monitor,
-        Seq.empty
-      )
+      // Here we wrap the synchronized call into the try-finally block
+      // to ensure that monitor would be released even in case of the exception
+      // or in case of non-local returns
+      val nested = new ExprBuffer()
+      val normaln = fresh()
+      val handler = fresh()
+      val mergen = fresh()
 
-      ret
+      // scalanative.runtime.`package`.enterMonitor(receiver)
+      genExpr(
+        treeBuild.mkMethodCall(RuntimeEnterMonitorMethod, List(receiverp))
+      )
+      // synchronized block
+      val retty = {
+        scoped(curUnwindHandler := Some(handler)) {
+          nested.label(normaln)
+          val res = bodyGen(nested)
+          nested.jump(mergen, Seq(res))
+          res.ty
+        }
+      }
+
+      // dummy exception handler,
+      // monitor$.exit() call would be added to it in genTryFinally transformer
+      locally {
+        val excv = Val.Local(fresh(), Rt.Object)
+        nested.label(handler, Seq(excv))
+        nested.raise(excv, unwind)
+        nested.jump(mergen, Seq(Val.Zero(retty)))
+      }
+
+      // Append try/catch instructions to the outher instruction buffer.
+      buf.jump(Next(normaln))
+      buf ++= genTryFinally(
+        // scalanative.runtime.`package`.exitMonitor(receiver)
+        finallyp =
+          treeBuild.mkMethodCall(RuntimeExitMonitorMethod, List(receiverp)),
+        insts = nested.toSeq
+      )
+      val mergev = Val.Local(fresh(), retty)
+      buf.label(mergen, Seq(mergev))
+      mergev
     }
 
     def genCoercion(app: Apply, receiver: Tree, code: Int): Val = {
