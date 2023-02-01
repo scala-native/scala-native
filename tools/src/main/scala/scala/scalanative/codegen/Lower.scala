@@ -4,17 +4,7 @@ package codegen
 import scala.collection.mutable
 import scalanative.util.{ScopedVar, unsupported}
 import scalanative.nir._
-import scalanative.linker.{
-  Class,
-  Trait,
-  ScopeInfo,
-  ScopeRef,
-  ClassRef,
-  TraitRef,
-  FieldRef,
-  MethodRef,
-  Result
-}
+import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
@@ -43,6 +33,7 @@ object Lower {
 
     private val fresh = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
+    private val currentDefn = new util.ScopedVar[Defn.Define]
 
     private val unreachableSlowPath = mutable.Map.empty[Option[Local], Local]
     private val nullPointerSlowPath = mutable.Map.empty[Option[Local], Local]
@@ -79,7 +70,8 @@ object Lower {
       case defn: Defn.Define =>
         val Type.Function(_, ty) = defn.ty: @unchecked
         ScopedVar.scoped(
-          fresh := Fresh(defn.insts)
+          fresh := Fresh(defn.insts),
+          currentDefn := defn
         ) {
           super.onDefn(defn)
         }
@@ -125,6 +117,19 @@ object Lower {
         case _ =>
           ()
       }
+
+      val Inst.Label(firstLabel, _) = insts.head: @unchecked
+      val labelPositions = insts
+        .collect { case Inst.Label(id, _) => id }
+        .zipWithIndex
+        .toMap
+      var currentBlockPosition = labelPositions(firstLabel)
+
+      genThisValueNullGuardIfUsed(
+        currentDefn.get,
+        buf,
+        () => newUnwindHandler(Next.None)(insts.head.pos)
+      )
 
       insts.tail.foreach {
         case inst @ Inst.Let(n, op, unwind) =>
@@ -1152,6 +1157,51 @@ object Lower {
       }
 
       Val.Const(Val.StructValue(rtti(StringCls).const +: fieldValues))
+    }
+
+    private def genThisValueNullGuardIfUsed(
+        defn: Defn.Define,
+        buf: nir.Buffer,
+        createUnwindHandler: () => Option[Local]
+    ) = {
+      def usesValue(expected: Val): Boolean = {
+        var wasUsed = false
+        import scala.util.control.Breaks._
+        breakable {
+          new Traverse {
+            override def onVal(value: Val): Unit = {
+              wasUsed = expected eq value
+              if (wasUsed) break()
+              else super.onVal(value)
+            }
+            // We're not intrested in cheecking these structures, skip them
+            override def onType(ty: Type): Unit = ()
+            override def onNext(next: Next): Unit = ()
+          }.onDefn(defn)
+        }
+        wasUsed
+      }
+
+      val Global.Member(_, sig) = defn.name: @unchecked
+      val Inst.Label(_, args) = defn.insts.head: @unchecked
+
+      val canHaveThisValue =
+        !(sig.isStatic || sig.isClinit || sig.isExtern)
+
+      if (canHaveThisValue) {
+        args.headOption.foreach { thisValue =>
+          thisValue.ty match {
+            case ref: Type.Ref if ref.isNullable && usesValue(thisValue) =>
+              implicit def pos: Position = defn.pos
+              ScopedVar.scoped(
+                unwindHandler := createUnwindHandler()
+              ) {
+                genGuardNotNull(buf, thisValue)
+              }
+            case _ => ()
+          }
+        }
+      }
     }
   }
 
