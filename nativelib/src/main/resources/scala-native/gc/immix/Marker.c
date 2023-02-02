@@ -30,12 +30,16 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     Stack_Push(stack, object);
 }
 
+static inline void Marker_markLockWords(Heap *heap, Stack *stack,
+                                        Object *object);
+
 static inline void Marker_markField(Heap *heap, Stack *stack, Field_t field) {
     if (Heap_IsWordInHeap(heap, field)) {
         ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
         if (ObjectMeta_IsAllocated(fieldMeta)) {
-            Marker_markObject(heap, stack, heap->bytemap, (Object *)field,
-                              fieldMeta);
+            Object *object = (Object *)field;
+            Marker_markObject(heap, stack, heap->bytemap, object, fieldMeta);
+            Marker_markLockWords(heap, stack, object);
         }
     }
 }

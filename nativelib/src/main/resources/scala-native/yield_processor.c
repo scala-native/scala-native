@@ -3,6 +3,7 @@
 #include <Windows.h>
 // YieldProcessor already defined
 #else // Unix
+#include <unistd.h>
 // Only clang defines __has_builtin, so we first test for a GCC define
 // before using __has_builtin.
 
@@ -17,17 +18,21 @@
 #ifndef YieldProcessor
 #define YieldProcessor() asm volatile("pause")
 #endif // YieldProcessor
-
 #endif // defined(__i386__) || defined(__x86_64__)
 
 #ifdef __aarch64__
+#ifndef YieldProcessor
 #define YieldProcessor() asm volatile("yield")
+#endif
 #endif // __aarch64__
-
-#ifdef __arm__
-#define YieldProcessor()
-#endif // __arm__
 
 #endif // Unix
 
-void scalanative_yield_processor() { YieldProcessor(); }
+void scalanative_yield_processor() {
+#ifdef YieldProcessor
+    YieldProcessor();
+#else
+    sleep(0);
+#endif
+    return;
+}
