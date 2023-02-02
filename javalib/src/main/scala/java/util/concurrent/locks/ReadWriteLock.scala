@@ -7,18 +7,10 @@
 package java.util.concurrent
 package locks
 
-trait Lock {
+trait ReadWriteLock {
 
-  def lock(): Unit
+  def readLock(): Lock
 
-  def lockInterruptibly(): Unit
-
-  def newCondition(): Condition
-
-  def tryLock(): Boolean
-
-  def tryLock(time: Long, unit: TimeUnit): Boolean
-
-  def unlock(): Unit
+  def writeLock(): Lock
 
 }
