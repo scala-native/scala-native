@@ -30,8 +30,8 @@ class AtomicLong(private[this] var value: Long)
     this(0)
   }
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle# getVolatile}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getVolatile`.
    *
    *  @return
    *    the current value
@@ -39,7 +39,7 @@ class AtomicLong(private[this] var value: Long)
   final def get(): Long = valueRef.load()
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle# setVolatile}.
+   *  `VarHandle#setVolatile`.
    *
    *  @param newValue
    *    the new value
@@ -47,7 +47,7 @@ class AtomicLong(private[this] var value: Long)
   final def set(newValue: Long): Unit = valueRef.store(newValue)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle# setRelease}.
+   *  `VarHandle#setRelease`.
    *
    *  @param newValue
    *    the new value
@@ -58,7 +58,7 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,
-   *  with memory effects as specified by {@link VarHandle# getAndSet}.
+   *  with memory effects as specified by `VarHandle#getAndSet`.
    *
    *  @param newValue
    *    the new value
@@ -70,8 +70,8 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
-   *  \== expectedValue}, with memory effects as specified by {@link VarHandle#
-   *  compareAndSet}.
+   *  \== expectedValue}, with memory effects as specified by
+   *  `VarHandle#compareAndSet`.
    *
    *  @param expectedValue
    *    the expected value
@@ -86,15 +86,15 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle# weakCompareAndSetPlain}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetPlain`.
    *
    *  @deprecated
    *    This method has plain memory effects but the method name implies
    *    volatile memory effects (see methods such as {@link #compareAndExchange}
    *    and {@link #compareAndSet}). To avoid confusion over plain or volatile
-   *    memory effects it is recommended that the method {@link
-   *    #weakCompareAndSetPlain} be used instead.
+   *    memory effects it is recommended that the method
+   *    [[#weakCompareAndSetPlain]] be used instead.
    *  @param expectedValue
    *    the expected value
    *  @param newValue
@@ -110,8 +110,8 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle# weakCompareAndSetPlain}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetPlain`.
    *
    *  @param expectedValue
    *    the expected value
@@ -132,7 +132,7 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Atomically increments the current value, with memory effects as specified
-   *  by {@link VarHandle# getAndAdd}.
+   *  by `VarHandle#getAndAdd`.
    *
    *  <p>Equivalent to {@code getAndAdd(1)}.
    *
@@ -142,7 +142,7 @@ class AtomicLong(private[this] var value: Long)
   final def getAndIncrement(): Long = getAndAdd(1)
 
   /** Atomically decrements the current value, with memory effects as specified
-   *  by {@link VarHandle# getAndAdd}.
+   *  by `VarHandle#getAndAdd`.
    *
    *  <p>Equivalent to {@code getAndAdd(-1)}.
    *
@@ -152,7 +152,7 @@ class AtomicLong(private[this] var value: Long)
   final def getAndDecrement(): Long = getAndAdd(-1)
 
   /** Atomically adds the given value to the current value, with memory effects
-   *  as specified by {@link VarHandle# getAndAdd}.
+   *  as specified by `VarHandle#getAndAdd`.
    *
    *  @param delta
    *    the value to add
@@ -164,7 +164,7 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Atomically increments the current value, with memory effects as specified
-   *  by {@link VarHandle# getAndAdd}.
+   *  by `VarHandle#getAndAdd`.
    *
    *  <p>Equivalent to {@code addAndGet(1)}.
    *
@@ -174,7 +174,7 @@ class AtomicLong(private[this] var value: Long)
   final def incrementAndGet(): Long = addAndGet(1)
 
   /** Atomically decrements the current value, with memory effects as specified
-   *  by {@link VarHandle# getAndAdd}.
+   *  by `VarHandle#getAndAdd`.
    *
    *  <p>Equivalent to {@code addAndGet(-1)}.
    *
@@ -184,7 +184,7 @@ class AtomicLong(private[this] var value: Long)
   final def decrementAndGet(): Long = addAndGet(-1)
 
   /** Atomically adds the given value to the current value, with memory effects
-   *  as specified by {@link VarHandle# getAndAdd}.
+   *  as specified by `VarHandle#getAndAdd`.
    *
    *  @param delta
    *    the value to add
@@ -193,8 +193,8 @@ class AtomicLong(private[this] var value: Long)
    */
   final def addAndGet(delta: Long): Long = valueRef.fetchAdd(delta) + delta
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function, returning the previous value. The function should be
    *  side-effect-free, since it may be re-applied when attempted updates fail
    *  due to contention among threads.
@@ -221,8 +221,8 @@ class AtomicLong(private[this] var value: Long)
     loop(get(), 0L, false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function, returning the updated value. The function should be
    *  side-effect-free, since it may be re-applied when attempted updates fail
    *  due to contention among threads.
@@ -249,8 +249,8 @@ class AtomicLong(private[this] var value: Long)
     loop(get(), 0L, false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function to the current and given values, returning the previous
    *  value. The function should be side-effect-free, since it may be re-applied
    *  when attempted updates fail due to contention among threads. The function
@@ -284,8 +284,8 @@ class AtomicLong(private[this] var value: Long)
     loop(get(), 0, false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function to the current and given values, returning the updated
    *  value. The function should be side-effect-free, since it may be re-applied
    *  when attempted updates fail due to contention among threads. The function
@@ -327,7 +327,7 @@ class AtomicLong(private[this] var value: Long)
   override def toString(): String = get().toString()
 
   /** Returns the current value of this {@code AtomicInteger} as an {@code int},
-   *  with memory effects as specified by {@link VarHandle# getVolatile}.
+   *  with memory effects as specified by `VarHandle#getVolatile`.
    *
    *  Equivalent to {@link #get ( )}.
    */
@@ -335,28 +335,19 @@ class AtomicLong(private[this] var value: Long)
 
   /** Returns the current value of this {@code AtomicInteger} as a {@code long}
    *  after a widening primitive conversion, with memory effects as specified by
-   *  {@link VarHandle# getVolatile}.
-   *
-   *  @jls
-   *    5.1.2 Widening Primitive Conversion
+   *  `VarHandle#getVolatile`.
    */
   override def longValue(): Long = get().toLong
 
   /** Returns the current value of this {@code AtomicInteger} as a {@code float}
    *  after a widening primitive conversion, with memory effects as specified by
-   *  {@link VarHandle# getVolatile}.
-   *
-   *  @jls
-   *    5.1.2 Widening Primitive Conversion
+   *  `VarHandle#getVolatile`.
    */
   override def floatValue(): Float = get().toFloat
 
   /** Returns the current value of this {@code AtomicInteger} as a {@code
    *  double} after a widening primitive conversion, with memory effects as
-   *  specified by {@link VarHandle# getVolatile}.
-   *
-   *  @jls
-   *    5.1.2 Widening Primitive Conversion
+   *  specified by `VarHandle#getVolatile`.
    */
   override def doubleValue(): Double = get().toDouble
 
@@ -380,8 +371,8 @@ class AtomicLong(private[this] var value: Long)
     value = newValue
   }
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle# getOpaque}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getOpaque`.
    *
    *  @return
    *    the value
@@ -390,7 +381,7 @@ class AtomicLong(private[this] var value: Long)
   final def getOpaque(): Long = valueRef.load(memory_order_relaxed)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle# setOpaque}.
+   *  `VarHandle#setOpaque`.
    *
    *  @param newValue
    *    the new value
@@ -399,8 +390,8 @@ class AtomicLong(private[this] var value: Long)
   final def setOpaque(newValue: Long): Unit =
     valueRef.store(newValue, memory_order_relaxed)
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle# getAcquire}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getAcquire`.
    *
    *  @return
    *    the value
@@ -409,7 +400,7 @@ class AtomicLong(private[this] var value: Long)
   final def getAcquire: Long = valueRef.load(memory_order_acquire)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle# setRelease}.
+   *  `VarHandle#setRelease`.
    *
    *  @param newValue
    *    the new value
@@ -420,7 +411,7 @@ class AtomicLong(private[this] var value: Long)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle# compareAndExchange}.
+   *  memory effects as specified by `VarHandle#compareAndExchange`.
    *
    *  @param expectedValue
    *    the expected value
@@ -440,8 +431,7 @@ class AtomicLong(private[this] var value: Long)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#
-   *  compareAndExchangeAcquire}.
+   *  memory effects as specified by `VarHandle#compareAndExchangeAcquire`.
    *
    *  @param expectedValue
    *    the expected value
@@ -464,8 +454,7 @@ class AtomicLong(private[this] var value: Long)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#
-   *  compareAndExchangeRelease}.
+   *  memory effects as specified by `VarHandle#compareAndExchangeRelease`.
    *
    *  @param expectedValue
    *    the expected value
@@ -487,8 +476,8 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle# weakCompareAndSet}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSet`.
    *
    *  @param expectedValue
    *    the expected value
@@ -506,8 +495,8 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle# weakCompareAndSetAcquire}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetAcquire`.
    *
    *  @param expectedValue
    *    the expected value
@@ -526,8 +515,8 @@ class AtomicLong(private[this] var value: Long)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle# weakCompareAndSetRelease}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetRelease`.
    *
    *  @param expectedValue
    *    the expected value

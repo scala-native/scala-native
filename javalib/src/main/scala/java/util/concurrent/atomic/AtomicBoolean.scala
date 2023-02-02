@@ -43,8 +43,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   final def get(): Boolean = value
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
-   *  \== expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}.
+   *  \== expectedValue}, with memory effects as specified by
+   *  `VarHandle#compareAndSet`.
    *
    *  @param expectedValue
    *    the expected value
@@ -62,15 +62,15 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetPlain}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetPlain`.
    *
    *  @deprecated
    *    This method has plain memory effects but the method name implies
    *    volatile memory effects (see methods such as {@link #compareAndExchange}
    *    and {@link #compareAndSet}). To avoid confusion over plain or volatile
-   *    memory effects it is recommended that the method {@link
-   *    #weakCompareAndSetPlain} be used instead.
+   *    memory effects it is recommended that the method
+   *    [[#weakCompareAndSetPlain]] be used instead.
    *
    *  @param expectedValue
    *    the expected value
@@ -86,8 +86,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
     valueRef.compareExchangeWeak(expectedValue, newValue)
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetPlain}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetPlain`.
    *
    *  @param expectedValue
    *    the expected value
@@ -108,7 +108,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setVolatile}.
+   *  `VarHandle#setVolatile`.
    *
    *  @param newValue
    *    the new value
@@ -118,7 +118,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setRelease}.
+   *  `VarHandle#setRelease`.
    *
    *  @param newValue
    *    the new value
@@ -129,7 +129,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,
-   *  with memory effects as specified by {@link VarHandle#getAndSet}.
+   *  with memory effects as specified by `VarHandle#getAndSet`.
    *
    *  @param newValue
    *    the new value
@@ -166,8 +166,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
     value = newValue
   }
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle#getOpaque}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getOpaque`.
    *
    *  @return
    *    the value
@@ -178,7 +178,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setOpaque}.
+   *  `VarHandle#setOpaque`.
    *
    *  @param newValue
    *    the new value
@@ -188,8 +188,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
     valueRef.store(newValue, memory_order_relaxed)
   }
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle#getAcquire}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getAcquire`.
    *
    *  @return
    *    the value
@@ -200,7 +200,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setRelease}.
+   *  `VarHandle#setRelease`.
    *
    *  @param newValue
    *    the new value
@@ -212,7 +212,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#compareAndExchange}.
+   *  memory effects as specified by `VarHandle#compareAndExchange`.
    *
    *  @param expectedValue
    *    the expected value
@@ -235,8 +235,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link
-   *  VarHandle#compareAndExchangeAcquire}.
+   *  memory effects as specified by `VarHandle#compareAndExchangeAcquire`.
    *
    *  @param expectedValue
    *    the expected value
@@ -259,8 +258,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link
-   *  VarHandle#compareAndExchangeRelease}.
+   *  memory effects as specified by `VarHandle#compareAndExchangeRelease`.
    *
    *  @param expectedValue
    *    the expected value
@@ -282,8 +280,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSet}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSet`.
    *
    *  @param expectedValue
    *    the expected value
@@ -300,8 +298,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
     valueRef.compareExchangeWeak(expectedValue, newValue)
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetAcquire}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetAcquire`.
    *
    *  @param expectedValue
    *    the expected value
@@ -318,8 +316,8 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
     valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_acquire)
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetRelease}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetRelease`.
    *
    *  @param expectedValue
    *    the expected value

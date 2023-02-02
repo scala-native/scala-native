@@ -30,8 +30,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
     )
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle#getVolatile}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getVolatile`.
    *
    *  @return
    *    the current value
@@ -39,7 +39,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   final def get(): V = value
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setVolatile}.
+   *  `VarHandle#setVolatile`.
    *
    *  @param newValue
    *    the new value
@@ -47,7 +47,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   final def set(newValue: V): Unit = value = newValue
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setRelease}.
+   *  `VarHandle#setRelease`.
    *
    *  @param newValue
    *    the new value
@@ -58,8 +58,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
-   *  \== expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}.
+   *  \== expectedValue}, with memory effects as specified by
+   *  `VarHandle#compareAndSet`.
    *
    *  @param expectedValue
    *    the expected value
@@ -73,15 +73,15 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     valueRef.compareExchangeStrong(expectedValue, newValue)
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetPlain}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetPlain`.
    *
    *  @deprecated
    *    This method has plain memory effects but the method name implies
    *    volatile memory effects (see methods such as {@link #compareAndExchange}
    *    and {@link #compareAndSet}). To avoid confusion over plain or volatile
-   *    memory effects it is recommended that the method {@link
-   *    #weakCompareAndSetPlain} be used instead.
+   *    memory effects it is recommended that the method
+   *    [[#weakCompareAndSetPlain]] be used instead.
    *
    *  @param expectedValue
    *    the expected value
@@ -98,8 +98,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetPlain}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetPlain`.
    *
    *  @param expectedValue
    *    the expected value
@@ -117,7 +117,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,
-   *  with memory effects as specified by {@link VarHandle#getAndSet}.
+   *  with memory effects as specified by `VarHandle#getAndSet`.
    *
    *  @param newValue
    *    the new value
@@ -128,8 +128,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     valueRef.exchange(newValue)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function, returning the previous value. The function should be
    *  side-effect-free, since it may be re-applied when attempted updates fail
    *  due to contention among threads.
@@ -155,8 +155,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     loop(get(), null.asInstanceOf[V], false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function, returning the updated value. The function should be
    *  side-effect-free, since it may be re-applied when attempted updates fail
    *  due to contention among threads.
@@ -182,8 +182,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     loop(get(), null.asInstanceOf[V], false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function to the current and given values, returning the previous
    *  value. The function should be side-effect-free, since it may be re-applied
    *  when attempted updates fail due to contention among threads. The function
@@ -214,8 +214,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     loop(get(), null.asInstanceOf[V], false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the current value with the results of applying
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the current value with the results of applying
    *  the given function to the current and given values, returning the updated
    *  value. The function should be side-effect-free, since it may be re-applied
    *  when attempted updates fail due to contention among threads. The function
@@ -272,8 +272,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     value = newValue
   }
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle#getOpaque}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getOpaque`.
    *
    *  @return
    *    the value
@@ -282,7 +282,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   final def getOpaque(): V = valueRef.load(memory_order_relaxed)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setOpaque}.
+   *  `VarHandle#setOpaque`.
    *
    *  @param newValue
    *    the new value
@@ -291,8 +291,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   final def setOpaque(newValue: V): Unit =
     valueRef.store(newValue, memory_order_relaxed)
 
-  /** Returns the current value, with memory effects as specified by {@link
-   *  VarHandle#getAcquire}.
+  /** Returns the current value, with memory effects as specified by
+   *  `VarHandle#getAcquire`.
    *
    *  @return
    *    the value
@@ -303,7 +303,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
-   *  {@link VarHandle#setRelease}.
+   *  `VarHandle#setRelease`.
    *
    *  @param newValue
    *    the new value
@@ -315,7 +315,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#compareAndExchange}.
+   *  memory effects as specified by `VarHandle#compareAndExchange`.
    *
    *  @param expectedValue
    *    the expected value
@@ -339,8 +339,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link
-   *  VarHandle#compareAndExchangeAcquire}.
+   *  memory effects as specified by `VarHandle#compareAndExchangeAcquire`.
    *
    *  @param expectedValue
    *    the expected value
@@ -365,8 +364,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
-   *  memory effects as specified by {@link
-   *  VarHandle#compareAndExchangeRelease}.
+   *  memory effects as specified by `VarHandle#compareAndExchangeRelease`.
    *
    *  @param expectedValue
    *    the expected value
@@ -390,8 +388,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSet}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSet`.
    *
    *  @param expectedValue
    *    the expected value
@@ -409,8 +407,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetAcquire}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetAcquire`.
    *
    *  @param expectedValue
    *    the expected value
@@ -432,8 +430,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
-   *  value {@code == expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#weakCompareAndSetRelease}.
+   *  value {@code == expectedValue}, with memory effects as specified by
+   *  `VarHandle#weakCompareAndSetRelease`.
    *
    *  @param expectedValue
    *    the expected value

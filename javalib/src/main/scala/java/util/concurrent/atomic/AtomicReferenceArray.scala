@@ -44,7 +44,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
    *
    *  @param array
    *    the array to copy elements from
-   *  @throws NullPointerException
+   *  @throws java.lang.NullPointerException
    *    if array is null
    */
   def this(array: Array[E]) = {
@@ -60,7 +60,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   final def length(): Int = array.length
 
   /** Returns the current value of the element at index {@code i}, with memory
-   *  effects as specified by {@link VarHandle#getVolatile}.
+   *  effects as specified by `VarHandle#getVolatile`.
    *
    *  @param i
    *    the index
@@ -70,7 +70,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   final def get(i: Int): E = nativeArray.at(i).load()
 
   /** Sets the element at index {@code i} to {@code newValue}, with memory
-   *  effects as specified by {@link VarHandle#setVolatile}.
+   *  effects as specified by `VarHandle#setVolatile`.
    *
    *  @param i
    *    the index
@@ -82,7 +82,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   }
 
   /** Sets the element at index {@code i} to {@code newValue}, with memory
-   *  effects as specified by {@link VarHandle#setRelease}.
+   *  effects as specified by `VarHandle#setRelease`.
    *
    *  @param i
    *    the index
@@ -95,8 +95,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   }
 
   /** Atomically sets the element at index {@code i} to {@code newValue} and
-   *  returns the old value, with memory effects as specified by {@link
-   *  VarHandle#getAndSet}.
+   *  returns the old value, with memory effects as specified by
+   *  `VarHandle#getAndSet`.
    *
    *  @param i
    *    the index
@@ -110,7 +110,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Atomically sets the element at index {@code i} to {@code newValue} if the
    *  element's current value {@code == expectedValue}, with memory effects as
-   *  specified by {@link VarHandle#compareAndSet}.
+   *  specified by `VarHandle#compareAndSet`.
    *
    *  @param i
    *    the index
@@ -127,14 +127,14 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Possibly atomically sets the element at index {@code i} to {@code
    *  newValue} if the element's current value {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#weakCompareAndSetPlain}.
+   *  memory effects as specified by `VarHandle#weakCompareAndSetPlain`.
    *
    *  @deprecated
    *    This method has plain memory effects but the method name implies
    *    volatile memory effects (see methods such as {@link #compareAndExchange}
    *    and {@link #compareAndSet}). To avoid confusion over plain or volatile
-   *    memory effects it is recommended that the method {@link
-   *    #weakCompareAndSetPlain} be used instead.
+   *    memory effects it is recommended that the method
+   *    [[#weakCompareAndSetPlain]] be used instead.
    *
    *  @param i
    *    the index
@@ -153,7 +153,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Possibly atomically sets the element at index {@code i} to {@code
    *  newValue} if the element's current value {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#weakCompareAndSetPlain}.
+   *  memory effects as specified by `VarHandle#weakCompareAndSetPlain`.
    *
    *  @param i
    *    the index
@@ -175,8 +175,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
       true
     } else false
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the element at index {@code i} with the results
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the element at index {@code i} with the results
    *  of applying the given function, returning the previous value. The function
    *  should be side-effect-free, since it may be re-applied when attempted
    *  updates fail due to contention among threads.
@@ -205,8 +205,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
     loop(get(i), null.asInstanceOf[E], false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the element at index {@code i} with the results
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the element at index {@code i} with the results
    *  of applying the given function, returning the updated value. The function
    *  should be side-effect-free, since it may be re-applied when attempted
    *  updates fail due to contention among threads.
@@ -235,8 +235,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
     loop(get(i), null.asInstanceOf[E], false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the element at index {@code i} with the results
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the element at index {@code i} with the results
    *  of applying the given function to the current and given values, returning
    *  the previous value. The function should be side-effect-free, since it may
    *  be re-applied when attempted updates fail due to contention among threads.
@@ -274,8 +274,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
     loop(get(i), null.asInstanceOf[E], false)
   }
 
-  /** Atomically updates (with memory effects as specified by {@link
-   *  VarHandle#compareAndSet}) the element at index {@code i} with the results
+  /** Atomically updates (with memory effects as specified by
+   *  `VarHandle#compareAndSet`) the element at index {@code i} with the results
    *  of applying the given function to the current and given values, returning
    *  tnewNexthe updated value. The function should be side-effect-free, since
    *  it may be re-applied when attempted updates fail due to contention among
@@ -349,7 +349,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   }
 
   /** Returns the current value of the element at index {@code i}, with memory
-   *  effects as specified by {@link VarHandle#getOpaque}.
+   *  effects as specified by `VarHandle#getOpaque`.
    *
    *  @param i
    *    the index
@@ -360,7 +360,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   final def getOpaque(i: Int): E = nativeArray.at(i).load(memory_order_relaxed)
 
   /** Sets the element at index {@code i} to {@code newValue}, with memory
-   *  effects as specified by {@link VarHandle#setOpaque}.
+   *  effects as specified by `VarHandle#setOpaque`.
    *
    *  @param i
    *    the index
@@ -372,7 +372,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
     nativeArray.at(i).store(newValue, memory_order_relaxed)
 
   /** Returns the current value of the element at index {@code i}, with memory
-   *  effects as specified by {@link VarHandle#getAcquire}.
+   *  effects as specified by `VarHandle#getAcquire`.
    *
    *  @param i
    *    the index
@@ -383,7 +383,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
   final def getAcquire(i: Int): E = nativeArray.at(i).load(memory_order_acquire)
 
   /** Sets the element at index {@code i} to {@code newValue}, with memory
-   *  effects as specified by {@link VarHandle#setRelease}.
+   *  effects as specified by `VarHandle#setRelease`.
    *
    *  @param i
    *    the index
@@ -397,8 +397,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Atomically sets the element at index {@code i} to {@code newValue} if the
    *  element's current value, referred to as the <em>witness value</em>, {@code
-   *  \== expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#compareAndExchange}.
+   *  \== expectedValue}, with memory effects as specified by
+   *  `VarHandle#compareAndExchange`.
    *
    *  @param i
    *    the index
@@ -422,8 +422,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Atomically sets the element at index {@code i} to {@code newValue} if the
    *  element's current value, referred to as the <em>witness value</em>, {@code
-   *  \== expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#compareAndExchangeAcquire}.
+   *  \== expectedValue}, with memory effects as specified by
+   *  `VarHandle#compareAndExchangeAcquire`.
    *
    *  @param i
    *    the index
@@ -455,8 +455,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Atomically sets the element at index {@code i} to {@code newValue} if the
    *  element's current value, referred to as the <em>witness value</em>, {@code
-   *  \== expectedValue}, with memory effects as specified by {@link
-   *  VarHandle#compareAndExchangeRelease}.
+   *  \== expectedValue}, with memory effects as specified by
+   *  `VarHandle#compareAndExchangeRelease`.
    *
    *  @param i
    *    the index
@@ -488,7 +488,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Possibly atomically sets the element at index {@code i} to {@code
    *  newValue} if the element's current value {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#weakCompareAndSet}.
+   *  memory effects as specified by `VarHandle#weakCompareAndSet`.
    *
    *  @param i
    *    the index
@@ -512,7 +512,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Possibly atomically sets the element at index {@code i} to {@code
    *  newValue} if the element's current value {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#weakCompareAndSetAcquire}.
+   *  memory effects as specified by `VarHandle#weakCompareAndSetAcquire`.
    *
    *  @param i
    *    the index
@@ -542,7 +542,7 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
   /** Possibly atomically sets the element at index {@code i} to {@code
    *  newValue} if the element's current value {@code == expectedValue}, with
-   *  memory effects as specified by {@link VarHandle#weakCompareAndSetRelease}.
+   *  memory effects as specified by `VarHandle#weakCompareAndSetRelease`.
    *
    *  @param i
    *    the index
