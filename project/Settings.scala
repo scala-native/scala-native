@@ -285,7 +285,7 @@ object Settings {
       else Nil
     },
     Test / testOptions ++= Seq(
-      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+      Tests.Argument(TestFrameworks.JUnit, "-a", "-s")
     ),
     Test / envVars ++= Map(
       "USER" -> "scala-native",
@@ -304,7 +304,7 @@ object Settings {
 
   lazy val testsExtCommonSettings = Def.settings(
     Test / testOptions ++= Seq(
-      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
+      Tests.Argument(TestFrameworks.JUnit, "-a", "-s")
     )
   )
 
@@ -822,7 +822,7 @@ object Settings {
         .getParentFile()
         .getParentFile() / "shared/src/test/scala",
     Test / testOptions ++= Seq(
-      Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
+      Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
       Tests.Filter(_.endsWith("Assertions"))
     ),
     Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
