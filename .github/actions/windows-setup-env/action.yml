@@ -60,11 +60,10 @@ runs:
         key: ${{ runner.os }}-${{ inputs.scala-version }}-deps
 
     # Install LLVM in case if cache is missing
-    # LLVM 12 fixes bugs when compiling files with a long names
     # Choco-Install is GH Actions wrappers around choco, which does retries
     - name: Install LLVM
       shell: pwsh
-      run: Choco-Install -PackageName llvm -ArgumentList "--version=12.0.1", "--allow-downgrade"
+      run: Choco-Install -PackageName llvm -ArgumentList "--version=15.0.5", "--allow-downgrade"
 
     - name: Add LLVM on Path
       shell: pwsh
