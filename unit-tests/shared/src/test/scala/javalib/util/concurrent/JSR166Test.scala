@@ -500,7 +500,7 @@ abstract class JSR166Test {
 
     final def run(): Unit = {
       try
-        assertThrows(classOf[InterruptedException], () => realRun)
+        assertThrows(classOf[InterruptedException], () => realRun())
       catch {
         case success: InterruptedException =>
           threadAssertFalse(Thread.interrupted())
