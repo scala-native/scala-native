@@ -1,23 +1,19 @@
+// Ported from Scala.js, commit SHA: 1ef4c4e0f dated: 2020-09-06
 package org.scalanative.testsuite.javalib.util.function
 
-import java.util.function._
-import java.util.Collections
+import java.util.function.BinaryOperator
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class BinaryOperatorTest {
-  @Test def testMinBy(): Unit = {
-    val binaryOperator = BinaryOperator.minBy[Int](Collections.reverseOrder())
-    val min = binaryOperator.apply(2004, 2018)
-
-    assertTrue(min == 2018)
+  @Test def minBy(): Unit = {
+    val binOp: BinaryOperator[Int] = BinaryOperator.minBy(Ordering[Int])
+    assertEquals(10, binOp.apply(10, 20))
   }
 
-  @Test def testMaxBy(): Unit = {
-    val binaryOperator = BinaryOperator.maxBy[Int](Collections.reverseOrder())
-    val max = binaryOperator.apply(2004, 2018)
-
-    assertTrue(max == 2004)
+  @Test def maxBy(): Unit = {
+    val binOp: BinaryOperator[Int] = BinaryOperator.maxBy(Ordering[Int])
+    assertEquals(20, binOp.apply(10, 20))
   }
 }

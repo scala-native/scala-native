@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: 7fd9ebb dated: 2020=01-06
-
+// Ported from Scala.js, commit SHA: c473689c9 dated: 2021-05-03
 package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Consumer

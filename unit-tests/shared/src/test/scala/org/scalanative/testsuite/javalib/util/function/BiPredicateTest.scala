@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: 0c27b64 dated: 2020-09-06
-
+// Ported from Scala.js, commit SHA: c473689c9 dated: 2021-05-03
 package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.BiPredicate
@@ -90,11 +89,13 @@ object BiPredicateTest {
   }
 
   private val throwingPredicate: BiPredicate[Int, Int] = makeBiPredicate {
-    (t, _) => throw new ThrowingPredicateException(t)
+    (t, _) =>
+      throw new ThrowingPredicateException(t)
   }
 
   private val dontCallPredicate: BiPredicate[Int, Int] = makeBiPredicate {
-    (t, u) => throw new AssertionError(s"dontCallPredicate.test($t, $u)")
+    (t, u) =>
+      throw new AssertionError(s"dontCallPredicate.test($t, $u)")
   }
 
   private[this] def makeBiPredicate[T, U](

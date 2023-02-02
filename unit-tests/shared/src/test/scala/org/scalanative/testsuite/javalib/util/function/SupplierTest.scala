@@ -1,17 +1,25 @@
-package org.scalanative.testsuite.javalib.util
-package function
+// Ported from Scala.js, commit SHA: 5df5a4142 dated: 2020-09-06
+package org.scalanative.testsuite.javalib.util.function
 
-import java.util.function._
-import java.util._
+import java.util.function.Supplier
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class SupplierTest {
-  @Test def testGet(): Unit = {
-    val string = new Supplier[String] {
-      override def get(): String = "scala"
+  import SupplierTest._
+
+  @Test def get(): Unit = {
+    val supplier: Supplier[String] = makeSupplier("scala")
+
+    assertEquals("scala", supplier.get())
+  }
+}
+
+object SupplierTest {
+  def makeSupplier[T](f: => T): Supplier[T] = {
+    new Supplier[T] {
+      def get(): T = f
     }
-    assertTrue(string.get() == "scala")
   }
 }

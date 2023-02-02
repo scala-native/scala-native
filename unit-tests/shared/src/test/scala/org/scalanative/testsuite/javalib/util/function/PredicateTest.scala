@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: 137c11d dated: 2019-07-03
-
+// Ported from Scala.js, commit SHA: c473689c9 dated: 2021-05-03
 package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Predicate

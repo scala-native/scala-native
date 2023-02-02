@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: 137c11d dated: 2019-07-03
-
+// Ported from Scala.js, commit SHA: 7b4e8a80b dated: 2022-12-06
 package java.util.function
 
 import java.{util => ju}
