@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: d3a9711 dated: 2020-09-06
-
+// Ported from Scala.js, commit SHA: cbf86bbb8 dated: 2020-10-23
 package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.{Function, BiFunction}

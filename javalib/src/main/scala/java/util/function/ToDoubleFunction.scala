@@ -1,5 +1,4 @@
-// Ported from Scala.js commit 00e462d dated: 2023-01-22
-
+// Ported from Scala.js, commit SHA: cfb4888a6 dated: 2021-01-07
 package java.util.function
 
 @FunctionalInterface
