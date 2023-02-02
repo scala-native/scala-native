@@ -1,5 +1,4 @@
-// Ported from Scala.js commit: d028054 dated: 2022-05-16
-
+// Ported from Scala.js, commit SHA: cfb4888a6 dated: 2021-01-07
 package org.scalanative.testsuite.javalib.util.function
 
 import org.junit.Assert._
