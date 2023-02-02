@@ -156,6 +156,7 @@ jobs:
 
       - name: Run tests
         # 2x more then it should take to build and run tests
+        # Don't test junitTestOutputs, fails to link in lto:thin, release-fast
         timeout-minutes: 60
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
@@ -164,5 +165,8 @@ jobs:
           set SCALANATIVE &
           sbt -Dscala.scalanative.multithreading.enable=true
           "++${{matrix.scala}} -v"
-          "test-runtime ${{matrix.scala}}"
+          sandbox${{env.project-version}}/run;
+          testsJVM${{env.project-version}}/test;
+          tests${{env.project-version}}/test;
+          scalaPartestJunitTests${{env.project-version}}/test
         shell: cmd

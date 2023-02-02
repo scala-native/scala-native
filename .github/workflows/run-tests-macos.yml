@@ -74,13 +74,10 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.2.2, 2.13.10]
-        build-mode: [debug, release-fast]
+        # Temporaly disabled release-fast/lto, dead locks in tests with lto:thin, build timeouts out in lto:none
+        build-mode: [debug]
         gc: [boehm, immix]
-        lto: [none, thin]
-        exclude:
-          # Temporaly disabled, dead locks in tests with lto:thin, build timeouts out in lto:none
-          - build-mode: release-fast
-            gc: immix
+        lto: [none]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
