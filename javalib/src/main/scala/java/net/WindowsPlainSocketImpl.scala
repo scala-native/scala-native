@@ -1,11 +1,11 @@
 package java.net
 
 import java.io.{FileDescriptor, IOException}
-import scala.scalanative.libc._
 import scala.scalanative.posix.sys.{socket => unixSocket}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
+import scala.annotation.tailrec
 
 private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
   import WinSocketApi._
@@ -31,7 +31,9 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     )
   }
 
-  protected def tryPollOnConnect(timeout: Int): Unit = {
+  final protected def tryPollOnConnect(timeout: Int): Unit = {
+    val hasTimeout = timeout > 0
+    val deadline = if (hasTimeout) System.currentTimeMillis() + timeout else 0L
     val nAlloc = 1.toUInt
     val pollFd: Ptr[WSAPollFd] = stackalloc[WSAPollFd](nAlloc)
 
@@ -39,31 +41,41 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     pollFd.revents = 0.toShort
     pollFd.events = (POLLIN | POLLOUT).toShort
 
-    val pollRes = WSAPoll(pollFd, nAlloc, timeout)
-    val revents = pollFd.revents
+    def failWithTimeout() = throw new SocketTimeoutException(
+      s"connect timed out, SO_TIMEOUT: ${timeout}"
+    )
 
-    setSocketFdBlocking(fd, blocking = true)
+    @tailrec def loop(remainingTimeout: Int): Unit = {
+      val pollRes = WSAPoll(pollFd, nAlloc, remainingTimeout)
+      val revents = pollFd.revents
 
-    pollRes match {
-      case err if err < 0 =>
-        throw new SocketException(s"connect failed, poll errno: ${errno.errno}")
+      pollRes match {
+        case err if err < 0 =>
+          val errCode = WSAGetLastError()
+          if (errCode == WSAEINTR && hasTimeout) {
+            val remaining = deadline - System.currentTimeMillis()
+            if (remaining > 0) loop(remaining.toInt)
+            else failWithTimeout()
+          } else
+            throw new SocketException(s"connect failed, poll errno: ${errCode}")
 
-      case 0 =>
-        throw new SocketTimeoutException(
-          s"connect timed out, SO_TIMEOUT: ${timeout}"
-        )
+        case 0 => failWithTimeout()
 
-      case _ =>
-        if ((revents & POLLNVAL) != 0) {
-          throw new ConnectException(
-            s"connect failed, invalid poll request: ${revents}"
-          )
-        } else if ((revents & (POLLERR | POLLHUP)) != 0) {
-          throw new ConnectException(
-            s"connect failed, POLLERR or POLLHUP set: ${revents}"
-          )
-        }
+        case _ =>
+          if ((revents & POLLNVAL) != 0) {
+            throw new ConnectException(
+              s"connect failed, invalid poll request: ${revents}"
+            )
+          } else if ((revents & (POLLERR | POLLHUP)) != 0) {
+            throw new ConnectException(
+              s"connect failed, POLLERR or POLLHUP set: ${revents}"
+            )
+          }
+      }
     }
+
+    try loop(timeout)
+    finally setSocketFdBlocking(fd, blocking = true)
   }
 
   protected def tryPollOnAccept(): Unit = {
@@ -79,7 +91,9 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
 
     pollRes match {
       case err if err < 0 =>
-        throw new SocketException(s"accept failed, poll errno: ${errno.errno}")
+        throw new SocketException(
+          s"accept failed, poll errno: ${WSAGetLastError()}"
+        )
 
       case 0 =>
         throw new SocketTimeoutException(
@@ -97,8 +111,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
       )
     } else if (((revents & POLLIN) | (revents & POLLOUT)) == 0) {
       throw new SocketException(
-        "accept failed, neither POLLIN nor POLLOUT set, " +
-          s"revents, ${revents}"
+        s"accept failed, neither POLLIN nor POLLOUT set, revents, ${revents}"
       )
     }
   }
