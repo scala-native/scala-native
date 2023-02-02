@@ -9,7 +9,6 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-
 import java.util.concurrent.atomic.AtomicIntegerArray
 import java.util.Arrays
 

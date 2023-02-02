@@ -16,7 +16,7 @@ import org.junit.Assert._
 
 class AtomicLongTest extends JSR166Test {
   import JSR166Test._
-  
+
   final val VALUES = Array(
     java.lang.Long.MIN_VALUE,
     Integer.MIN_VALUE,
