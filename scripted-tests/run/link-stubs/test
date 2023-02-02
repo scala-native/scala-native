@@ -1,3 +1,3 @@
 -> nativeLink
-> set nativeLinkStubs := true
+> set Compile / nativeConfig ~= { _.withLinkStubs(true) }
 > nativeLink

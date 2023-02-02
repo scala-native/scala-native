@@ -63,17 +63,7 @@ object ScalaNativePluginInternal {
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
-    nativeClang := nativeConfig.value.clang.toFile,
-    nativeClangPP := nativeConfig.value.clangPP.toFile,
-    nativeCompileOptions := nativeConfig.value.compileOptions,
-    nativeLinkingOptions := nativeConfig.value.linkingOptions,
-    nativeMode := nativeConfig.value.mode.name,
-    nativeGC := nativeConfig.value.gc.name,
-    nativeLTO := nativeConfig.value.lto.name,
-    nativeLinkStubs := nativeConfig.value.linkStubs,
-    nativeCheck := nativeConfig.value.check,
-    nativeDump := nativeConfig.value.dump
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary
   )
 
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
@@ -110,17 +100,6 @@ object ScalaNativePluginInternal {
     nativeConfig := {
       val config = nativeConfig.value
       config
-        // Use overrides defined in legacy setting keys
-        .withClang(nativeClang.value.toPath)
-        .withClangPP(nativeClangPP.value.toPath)
-        .withCompileOptions(nativeCompileOptions.value)
-        .withLinkingOptions(nativeLinkingOptions.value)
-        .withGC(build.GC(nativeGC.value))
-        .withMode(build.Mode(nativeMode.value))
-        .withLTO(build.LTO(nativeLTO.value))
-        .withLinkStubs(nativeLinkStubs.value)
-        .withCheck(nativeCheck.value)
-        .withDump(nativeDump.value)
     },
     nativeLink := Def
       .task {
