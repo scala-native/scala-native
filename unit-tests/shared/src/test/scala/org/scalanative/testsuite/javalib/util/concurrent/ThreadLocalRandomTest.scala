@@ -2,6 +2,8 @@
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
+ *
+ * It also contains tests ported from Scala.js
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
@@ -10,7 +12,6 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 import JSR166Test._
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 import org.junit.{Test, Ignore}
@@ -408,20 +409,17 @@ class ThreadLocalRandomTest extends JSR166Test {
     ThreadLocalRandom.current.nextBytes(new Array[Byte](0))
   }
   @Test def testNextBytes_nullArray(): Unit = {
-    try {
-      ThreadLocalRandom.current.nextBytes(null)
-      shouldThrow()
-    } catch {
-      case success: NullPointerException =>
-
-    }
+    assertThrows(
+      classOf[NullPointerException],
+      () => ThreadLocalRandom.current.nextBytes(null)
+    )
   }
 
   // Tests ported from Scala.js commit: bbf0314 dated: Mon, 13 Jun 2022
   @Test def setSeedThrows(): Unit = {
     val tlr = ThreadLocalRandom.current()
 
-    assertThrows(classOf[UnsupportedOperationException], tlr.setSeed(1))
+    assertThrows(classOf[UnsupportedOperationException], () => tlr.setSeed(1))
   }
 
   def checkIntBounds(b1: Int, b2: Int)(implicit
@@ -540,8 +538,8 @@ class ThreadLocalRandomTest extends JSR166Test {
     checkIntBounds(658643437, 315920491)
     checkIntBounds(-1507203912, -507923122)
 
-    assertThrows(classOf[IllegalArgumentException], tlr.nextInt(2, 1))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextInt(1, 1))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextInt(2, 1))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextInt(1, 1))
   }
 
   def checkLongUpperBound(
@@ -656,9 +654,12 @@ class ThreadLocalRandomTest extends JSR166Test {
     checkLongUpperBound(7594229781671800374L)
     checkLongUpperBound(358723396249334066L)
 
-    assertThrows(classOf[IllegalArgumentException], tlr.nextLong(0L))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextLong(-1L))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextLong(Long.MinValue))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextLong(0L))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextLong(-1L))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      () => tlr.nextLong(Long.MinValue)
+    )
   }
 
   def checkLongBounds(b1: Long, b2: Long)(implicit
@@ -778,8 +779,8 @@ class ThreadLocalRandomTest extends JSR166Test {
     checkLongBounds(5611183948112311940L, 5576981966367959141L)
     checkLongBounds(7501725046819604868L, 2498819089300049836L)
 
-    assertThrows(classOf[IllegalArgumentException], tlr.nextLong(2L, 1L))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextLong(1L, 1L))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextLong(2L, 1L))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextLong(1L, 1L))
   }
 
   def checkDoubleUpperBound(
@@ -895,11 +896,11 @@ class ThreadLocalRandomTest extends JSR166Test {
     checkDoubleUpperBound(0.6316252201145239)
     checkDoubleUpperBound(0.10185176522791717)
 
-    assertThrows(classOf[IllegalArgumentException], tlr.nextDouble(0.0))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextDouble(-1.0))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextDouble(0.0))
+    assertThrows(classOf[IllegalArgumentException], () => tlr.nextDouble(-1.0))
     assertThrows(
       classOf[IllegalArgumentException],
-      tlr.nextDouble(Double.MinValue)
+      () => tlr.nextDouble(Double.MinValue)
     )
   }
 
@@ -1023,8 +1024,17 @@ class ThreadLocalRandomTest extends JSR166Test {
     checkDoubleBounds(0.5887579571381444, 0.27451268823686337)
     checkDoubleBounds(0.5533138714786693, 0.5329471271772576)
 
-    assertThrows(classOf[IllegalArgumentException], tlr.nextDouble(2.0, 1.0))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextDouble(1.0, 1.0))
-    assertThrows(classOf[IllegalArgumentException], tlr.nextDouble(0.0, 0.0))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      () => tlr.nextDouble(2.0, 1.0)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      () => tlr.nextDouble(1.0, 1.0)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      () => tlr.nextDouble(0.0, 0.0)
+    )
   }
 }
