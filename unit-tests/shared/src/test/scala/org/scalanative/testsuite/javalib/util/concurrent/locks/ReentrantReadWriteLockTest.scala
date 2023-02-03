@@ -5,7 +5,8 @@
  * Other contributors include Andrew Wright, Jeffrey Hayes,
  * Pat Fisher, Mike Judd.
  */
-package org.scalanative.testsuite.javalib.util.concurrent.locks
+package org.scalanative.testsuite.javalib.util.concurrent
+package locks
 
 import org.junit.Assert._
 import org.junit.{Test, Ignore}
@@ -1042,9 +1043,11 @@ class ReentrantReadWriteLockTest extends JSR166Test {
 
   /** awaitUninterruptibly is uninterruptible
    */
+  @Ignore("Needs ForkJoinPool")
   @Test def testAwaitUninterruptibly(): Unit = {
     testAwaitUninterruptibly(false)
   }
+  @Ignore("Needs ForkJoinPool")
   @Test def testAwaitUninterruptibly_fair(): Unit = {
     testAwaitUninterruptibly(true)
   }
@@ -1770,62 +1773,6 @@ class ReentrantReadWriteLockTest extends JSR166Test {
     assertTrue(lock.writeLock.toString.contains("Unlocked"))
   }
 
-  /** ThreadMXBean reports the blockers that we expect.
-   */
-  @Test def testBlockers(): Unit = {
-    if (!testImplementationDetails) return
-    val fair = randomBoolean()
-    val timedAcquire = randomBoolean()
-    val timedAwait = randomBoolean()
-    val syncClassName =
-      if (fair) "ReentrantReadWriteLock$FairSync"
-      else "ReentrantReadWriteLock$NonfairSync"
-    val conditionClassName = "AbstractQueuedSynchronizer$ConditionObject"
-    val expectedAcquireState =
-      if (timedAcquire) Thread.State.TIMED_WAITING
-      else Thread.State.WAITING
-    val expectedAwaitState =
-      if (timedAwait) Thread.State.TIMED_WAITING
-      else Thread.State.WAITING
-    val lock = new ReentrantReadWriteLock(fair).writeLock
-    val condition = lock.newCondition
-    val conditionSatisfied = new AtomicBoolean(false)
-    lock.lock()
-    val thread = newStartedThread({ () =>
-      if (timedAcquire) lock.tryLock(LONGER_DELAY_MS, MILLISECONDS)
-      else lock.lock()
-      while ({ !conditionSatisfied.get })
-        if (timedAwait) condition.await(LONGER_DELAY_MS, MILLISECONDS)
-        else condition.await()
-    }: Action)
-
-    // Needs Java MxBeans to execute this part of the test
-    // val waitingForLock = () => {
-    //   def foo() = {
-    //     var className = null
-    //     (thread.getState eq expectedAcquireState) && (className =
-    //       blockerClassName(thread)) != null && className.endsWith(syncClassName)
-    //   }
-    //   foo()
-    // }
-    // waitForThreadToEnterWaitState(thread, waitingForLock)
-    // lock.unlock()
-    // val waitingForCondition = () => {
-    //   def foo() = {
-    //     var className = null
-    //     (thread.getState eq expectedAwaitState) && (className =
-    //       blockerClassName(thread)) != null && className.endsWith(
-    //       conditionClassName
-    //     )
-    //   }
-    //   foo()
-    // }
-    // waitForThreadToEnterWaitState(thread, waitingForCondition)
-    // politely release the waiter
-    conditionSatisfied.set(true)
-    lock.lock()
-    try condition.signal()
-    finally lock.unlock()
-    awaitTermination(thread)
-  }
+  /* ThreadMXBean reports the blockers that we expect.*/
+  // @Test def testBlockers(): Unit = ()
 }
