@@ -6,21 +6,20 @@
  * Pat Fisher, Mike Judd.
  */
 
-package org.scalanative.testsuite.javalib.util.concurrent.locks
+package org.scalanative.testsuite.javalib.util.concurrent
+package locks
 
-import java.util.concurrent.TimeUnit._
 
 import java.util._
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
+import java.util.concurrent.TimeUnit._
 
 import org.junit._
 import org.junit.Assert._
 import org.junit.Assume._
 
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 import scala.util.control.Breaks
 
 class AbstractQueuedSynchronizerTest extends JSR166Test {
@@ -943,6 +942,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
 
   /** awaitUninterruptibly is uninterruptible
    */
+  @Ignore("Needs ForkJoinPool")
   @Test def testAwaitUninterruptibly(): Unit = {
     val sync = new Mutex()
     val condition = sync.newCondition()

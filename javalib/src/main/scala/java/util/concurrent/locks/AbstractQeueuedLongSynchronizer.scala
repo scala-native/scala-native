@@ -441,7 +441,7 @@ abstract class AbstractQueuedLongSynchronizer protected ()
       interruptible: Boolean,
       timed: Boolean,
       time: Long
-  ): Int = {
+  ): Long = {
     val current = Thread.currentThread()
 
     var node: Node = _node
@@ -754,7 +754,7 @@ abstract class AbstractQueuedLongSynchronizer protected ()
    *    the acquire argument. This value is conveyed to [[tryAcquire]] but is
    *    otherwise uninterpreted and can represent anything you like.
    */
-  final def acquire(arg: Int): Unit = {
+  final def acquire(arg: Long): Unit = {
     if (!tryAcquire(arg)) acquire(null, arg, false, false, false, 0L)
   }
 
