@@ -64,7 +64,7 @@ class AtomicReferenceArrayTest extends JSR166Test {
 
   /** get and set for out of bound indices throw IndexOutOfBoundsException
    */
-  @Test def testIndexing(): Unit = {
+  @deprecated @Test def testIndexing(): Unit = {
     val aa =
       new AtomicReferenceArray[Integer](SIZE)
     for (index <- Array[Int](-1, SIZE)) {
@@ -171,7 +171,7 @@ class AtomicReferenceArrayTest extends JSR166Test {
   /** repeated weakCompareAndSet succeeds in changing value when equal to
    *  expected
    */
-  @Test def testWeakCompareAndSet(): Unit = {
+  @deprecated @Test def testWeakCompareAndSet(): Unit = {
     val aa = new AtomicReferenceArray[Any](SIZE)
     for (i <- 0 until SIZE) {
       aa.set(i, one)
