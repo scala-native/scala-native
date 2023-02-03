@@ -9,7 +9,6 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-
 import java.util._
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.AbstractQueuedLongSynchronizer
