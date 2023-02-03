@@ -263,7 +263,6 @@ class PriorityBlockingQueueTest extends JSR166Test {
   }
 
   @throws[InterruptedException]
-  @Ignore("Needs ForkJoinPool")
   @Test def testBlockingTake(): Unit = {
     val q =
       PriorityBlockingQueueTest.populatedQueue(SIZE)

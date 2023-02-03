@@ -12,5 +12,15 @@ object ForkJoinPool {
     def block(): Boolean
     def isReleasable(): Boolean
   }
-  def managedBlock(blocker: ManagedBlocker): Unit = () // TODO: ForkJoinPool
+  def managedBlock(blocker: ManagedBlocker): Unit = {
+    // TODO: ForkJoinPool impl
+    unmanagedBlock(blocker)
+  }
+
+  private def unmanagedBlock(blocker: ManagedBlocker): Unit = {
+    if (blocker == null) throw new NullPointerException()
+    while (!blocker.isReleasable() && !blocker.block()) {
+      Thread.onSpinWait()
+    }
+  }
 }

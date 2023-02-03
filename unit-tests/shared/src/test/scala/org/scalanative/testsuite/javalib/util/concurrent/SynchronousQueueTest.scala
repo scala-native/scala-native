@@ -85,9 +85,7 @@ class SynchronousQueueTest extends JSR166Test {
     }
   }
 
-  @Ignore("Needs ForkJoinPool")
   @Test def testBlockingPut(): Unit = testBlockingPut(false)
-  @Ignore("Needs ForkJoinPool")
   @Test def testBlockingPut_fair(): Unit = testBlockingPut(true)
   def testBlockingPut(fair: Boolean): Unit = {
     val q = new SynchronousQueue[Any](fair)
@@ -122,9 +120,7 @@ class SynchronousQueueTest extends JSR166Test {
     assertEquals(0, q.remainingCapacity)
   }
 
-  @Ignore("Needs ForkJoinPool")
   @Test def testPutWithTake(): Unit = testPutWithTake(false)
-  @Ignore("Needs ForkJoinPool")
   @Test def testPutWithTake_fair(): Unit = testPutWithTake(true)
   def testPutWithTake(fair: Boolean): Unit = {
     val q = new SynchronousQueue[Any](fair)

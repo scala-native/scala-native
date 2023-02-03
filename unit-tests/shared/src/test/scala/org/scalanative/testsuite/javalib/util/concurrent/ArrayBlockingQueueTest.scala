@@ -306,7 +306,6 @@ class ArrayBlockingQueueTest extends JSR166Test {
   /** put blocks interruptibly if full
    */
   @throws[InterruptedException]
-  @Ignore("Needs ForkJoinPool")
   @Test def testBlockingPut(): Unit = {
     val q = new ArrayBlockingQueue[Any](SIZE)
     val pleaseInterrupt: CountDownLatch = new CountDownLatch(1)
@@ -347,7 +346,6 @@ class ArrayBlockingQueueTest extends JSR166Test {
   /** put blocks interruptibly waiting for take when full
    */
   @throws[InterruptedException]
-  @Ignore("Needs ForkJoinPool")
   @Test def testPutWithTake(): Unit = {
     val capacity: Int = 2
     val q = new ArrayBlockingQueue[Any](capacity)
@@ -443,7 +441,6 @@ class ArrayBlockingQueueTest extends JSR166Test {
   /** Take removes existing elements until empty, then blocks interruptibly
    */
   @throws[InterruptedException]
-  @Ignore("Needs ForkJoinPool")
   @Test def testBlockingTake(): Unit = {
     val q: ArrayBlockingQueue[Integer] =
       ArrayBlockingQueueTest.populatedQueue(SIZE)

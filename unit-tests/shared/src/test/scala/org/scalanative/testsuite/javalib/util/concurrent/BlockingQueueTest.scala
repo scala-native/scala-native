@@ -247,7 +247,6 @@ abstract class BlockingQueueTest extends JSR166Test {
 
   /** take() blocks interruptibly when empty
    */
-  @Ignore("needs ForkJoinPool")
   @Test def testTakeFromEmptyBlocksInterruptibly(): Unit = {
     val q = emptyCollection()
     val threadStarted = new CountDownLatch(1)
