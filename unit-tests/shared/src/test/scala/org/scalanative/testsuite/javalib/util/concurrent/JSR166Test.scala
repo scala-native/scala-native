@@ -732,7 +732,7 @@ abstract class JSR166Test {
     }
   }
 
-  def assertThrows(
+  def assertEachThrows(
       expectedExceptionClass: Class[_ <: Throwable],
       throwingActions: Action*
   ): Unit = {

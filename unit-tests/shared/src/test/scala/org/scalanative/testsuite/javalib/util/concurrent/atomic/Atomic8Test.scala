@@ -338,7 +338,7 @@ class Atomic8Test extends JSR166Test {
    *  function argument
    */
   @Test def testGetAndUpdateNPE(): Unit =
-    assertThrows(
+    assertEachThrows(
       classOf[NullPointerException],
       () => new AtomicLong().getAndUpdate(null),
       () => new AtomicInteger().getAndUpdate(null),
@@ -355,7 +355,7 @@ class Atomic8Test extends JSR166Test {
    *  function argument
    */
   @Test def testUpdateAndGetNPE(): Unit =
-    assertThrows(
+    assertEachThrows(
       classOf[NullPointerException],
       () => new AtomicLong().updateAndGet(null),
       () => new AtomicInteger().updateAndGet(null),
@@ -372,7 +372,7 @@ class Atomic8Test extends JSR166Test {
    *  function argument
    */
   @Test def testGetAndAccumulateNPE(): Unit =
-    assertThrows(
+    assertEachThrows(
       classOf[NullPointerException],
       () => new AtomicLong().getAndAccumulate(1L, null),
       () => new AtomicInteger().getAndAccumulate(1, null),
@@ -389,7 +389,7 @@ class Atomic8Test extends JSR166Test {
    *  function argument
    */
   @Test def testAccumulateAndGetNPE(): Unit =
-    assertThrows(
+    assertEachThrows(
       classOf[NullPointerException],
       () => new AtomicLong().accumulateAndGet(1L, null),
       () => new AtomicInteger().accumulateAndGet(1, null),

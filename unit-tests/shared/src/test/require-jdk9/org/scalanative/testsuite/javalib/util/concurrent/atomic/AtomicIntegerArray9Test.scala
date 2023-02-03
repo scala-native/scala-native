@@ -22,7 +22,7 @@ class AtomicIntegerArray9Test extends JSR166Test {
     val aa = new AtomicIntegerArray(SIZE)
     for (index <- Array[Int](-1, SIZE)) {
       val j = index
-      assertThrows(
+      assertEachThrows(
         classOf[IndexOutOfBoundsException],
         () => aa.getPlain(j),
         () => aa.getOpaque(j),
