@@ -12,6 +12,10 @@ class Metadata(
 )(implicit val platform: PlatformInfo) {
   implicit private def self: Metadata = this
 
+  final val usesLockWords = platform.isMultithreadingEnabled
+  val lockWordType = if (usesLockWords) Some(Type.Ptr) else None
+  private[codegen] val lockWordVals = lockWordType.map(_ => Val.Null).toList
+
   val layouts = new CommonMemoryLayouts()
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]

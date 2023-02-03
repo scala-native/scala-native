@@ -142,10 +142,9 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.2.2, 2.13.10]
-        build-mode: [debug]
+        build-mode: [release-fast]
         gc: [boehm, immix]
-        # TODO: atomics, volatiles: disable LTO/releaseFast until volatiles/fences are supported, otherwise clang can produce infinite loops
-        lto: [none]
+        lto: [thin]
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false
@@ -157,6 +156,7 @@ jobs:
 
       - name: Run tests
         # 2x more then it should take to build and run tests
+        # Don't test junitTestOutputs, fails to link in lto:thin, release-fast
         timeout-minutes: 60
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
@@ -165,5 +165,8 @@ jobs:
           set SCALANATIVE &
           sbt -Dscala.scalanative.multithreading.enable=true
           "++${{matrix.scala}} -v"
-          "test-runtime ${{matrix.scala}}"
+          sandbox${{env.project-version}}/run;
+          testsJVM${{env.project-version}}/test;
+          tests${{env.project-version}}/test;
+          scalaPartestJunitTests${{env.project-version}}/test
         shell: cmd

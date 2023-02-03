@@ -740,7 +740,7 @@ object Build {
       scalacOptions --= Seq(
         "-Xfatal-warnings"
       ),
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v"),
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
       shouldPartest := {
         (Test / resourceDirectory).value / scalaVersion.value
       }.exists()

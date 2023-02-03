@@ -1347,6 +1347,7 @@ object Lower {
       val charsConst = Val.Const(
         Val.StructValue(
           rtti(CharArrayCls).const ::
+            meta.lockWordVals :::
             charsLength ::
             zero :: // stride is used only by GC, global instances use it as padding
             Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char(_))) :: Nil
@@ -1361,7 +1362,13 @@ object Lower {
         case _                           => util.unreachable
       }
 
-      Val.Const(Val.StructValue(rtti(StringCls).const +: fieldValues))
+      Val.Const(
+        Val.StructValue(
+          rtti(StringCls).const ::
+            meta.lockWordVals ++
+            fieldValues
+        )
+      )
     }
 
     private def genThisValueNullGuardIfUsed(

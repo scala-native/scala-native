@@ -155,17 +155,10 @@ final class NirDefinitions()(using ctx: Context) {
   // Native runtime package
   @tu lazy val RuntimePackageVal = requiredModuleRef("scala.scalanative.runtime.package")
   @tu lazy val RuntimePackageClass = RuntimePackageVal.classSymbol.asClass
-  @tu lazy val RuntimePackage_getMonitorR = RuntimePackageClass.requiredMethodRef("getMonitor")
-  def RuntimePackage_getMonitor(using Context) = RuntimePackage_getMonitorR.symbol
-
-  @tu lazy val RuntimeMonitorType = requiredClassRef("scala.scalanative.runtime.Monitor")
-  @tu lazy val RuntimeMonitorModuleType = requiredModuleRef("scala.scalanative.runtime.Monitor")
-  def RuntimeMonitorClass(using Context) = RuntimeMonitorType.symbol.asClass
-  def RuntimeMonitorModule(using Context) = RuntimeMonitorModuleType.symbol.asClass
-  @tu lazy val RuntimeMonitor_enterR = RuntimeMonitorClass.requiredMethodRef("enter")
-  @tu lazy val RuntimeMonitor_exitR = RuntimeMonitorClass.requiredMethodRef("exit")
-  def RuntimeMonitor_enter(using Context) = RuntimeMonitor_enterR.symbol
-  def RuntimeMonitor_exit(using Context) = RuntimeMonitor_exitR.symbol
+  @tu lazy val RuntimePackage_enterMonitorR = RuntimePackageClass.requiredMethodRef("enterMonitor")
+  @tu lazy val RuntimePackage_exitMonitorR = RuntimePackageClass.requiredMethodRef("exitMonitor")
+  def RuntimePackage_enterMonitor(using Context) = RuntimePackage_enterMonitorR.symbol
+  def RuntimePackage_exitMonitor(using Context) = RuntimePackage_exitMonitorR.symbol
 
   // Runtime intriniscs
   @tu lazy val IntrinsicsModuleType = requiredModuleRef("scala.scalanative.runtime.Intrinsics")

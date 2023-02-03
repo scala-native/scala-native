@@ -30,14 +30,39 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     Stack_Push(stack, object);
 }
 
+static inline void Marker_markLockWords(Heap *heap, Stack *stack,
+                                        Object *object);
+
 static inline void Marker_markField(Heap *heap, Stack *stack, Field_t field) {
     if (Heap_IsWordInHeap(heap, field)) {
         ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
         if (ObjectMeta_IsAllocated(fieldMeta)) {
-            Marker_markObject(heap, stack, heap->bytemap, (Object *)field,
-                              fieldMeta);
+            Object *object = (Object *)field;
+            Marker_markObject(heap, stack, heap->bytemap, object, fieldMeta);
+            Marker_markLockWords(heap, stack, object);
         }
     }
+}
+
+/* If compiling with enabled lock words check if object monitor is inflated and
+ * can be marked. Otherwise, in singlethreaded mode this funciton is no-op
+ */
+static inline void Marker_markLockWords(Heap *heap, Stack *stack,
+                                        Object *object) {
+#ifdef USES_LOCKWORD
+    if (object != NULL) {
+        Field_t rttiLock = object->rtti->rt.lockWord;
+        if (Field_isInflatedLock(rttiLock)) {
+            Marker_markField(heap, stack, Field_allignedLockRef(rttiLock));
+        }
+
+        Field_t objectLock = object->lockWord;
+        if (Field_isInflatedLock(objectLock)) {
+            Field_t field = Field_allignedLockRef(objectLock);
+            Marker_markField(heap, stack, field);
+        }
+    }
+#endif
 }
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {

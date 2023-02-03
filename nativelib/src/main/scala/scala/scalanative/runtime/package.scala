@@ -4,6 +4,7 @@ import scalanative.annotation.alwaysinline
 import scalanative.unsafe._
 import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
+import scalanative.runtime.monitor._
 import scala.scalanative.meta.LinktimeInfo.{
   isMultithreadingEnabled,
   is32BitPlatform
@@ -14,8 +15,33 @@ package object runtime {
   /** Used as a stub right hand of intrinsified methods. */
   def intrinsic: Nothing = throwUndefined()
 
+  /** Enter monitor of given object. */
+  @alwaysinline def enterMonitor(obj: Object): Unit =
+    if (isMultithreadingEnabled) {
+      getMonitor(obj).enter(obj)
+    }
+
+  /** Enter monitor of given object. */
+
+  @alwaysinline def exitMonitor(obj: Object): Unit =
+    if (isMultithreadingEnabled) {
+      getMonitor(obj).exit(obj)
+    }
+
   /** Get monitor for given object. */
-  @alwaysinline def getMonitor(obj: Object): Monitor = Monitor.dummy
+  @alwaysinline def getMonitor(obj: Object) = {
+    if (isMultithreadingEnabled)
+      new BasicMonitor(
+        elemRawPtr(
+          castObjectToRawPtr(obj),
+          castIntToRawSize(MemoryLayout.Object.LockWordOffset)
+        )
+      )
+    else
+      throw new IllegalStateException(
+        "Monitors unavilable in single threaded mode"
+      )
+  }
 
   /** Initialize runtime with given arguments and return the rest as Java-style
    *  array.

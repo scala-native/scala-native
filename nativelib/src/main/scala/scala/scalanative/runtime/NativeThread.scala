@@ -84,11 +84,10 @@ object NativeThread {
   @alwaysinline def currentThread: Thread = TLS.currentThread
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
 
-  @alwaysinline def onSpinWait(): Unit = () // TODO: spin: libc.onSpinWait()
+  @alwaysinline def onSpinWait(): Unit = Platform.yieldProcessor()
 
   @inline def holdsLock(obj: Object): Boolean = if (isMultithreadingEnabled) {
-    // TODO: monitors: getMonitor(obj).isLockedBy(currentThread)
-    false
+    getMonitor(obj).isLockedBy(currentThread)
   } else false
 
   def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg =
@@ -160,6 +159,12 @@ object NativeThread {
 
     @name("scalanative_currentThread")
     def currentThread: Thread = extern
+  }
+
+  @extern object Platform {
+    @blocking
+    @name("scalanative_yield_processor")
+    def yieldProcessor(): Unit = extern
   }
 
 }

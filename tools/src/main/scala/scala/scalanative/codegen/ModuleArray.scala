@@ -16,5 +16,13 @@ class ModuleArray(meta: Metadata) {
   }
   val size: Int = modules.size
   val value: Val =
-    Val.ArrayValue(Type.Ptr, Seq.fill[Val](modules.length)(Val.Null))
+    Val.ArrayValue(
+      Type.Ptr,
+      modules.toSeq.map { cls =>
+        if (cls.isConstantModule(meta.linked))
+          Val.Global(cls.name.member(Sig.Generated("instance")), Type.Ptr)
+        else
+          Val.Null
+      }
+    )
 }

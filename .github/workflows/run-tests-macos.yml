@@ -74,9 +74,9 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.2.2, 2.13.10]
+        # Temporaly disabled release-fast/lto, dead locks in tests with lto:thin, build timeouts out in lto:none
         build-mode: [debug]
         gc: [boehm, immix]
-        # TODO: atomics, volatiles: disable LTO/releaseFast until volatiles/fences are supported, otherwise clang can produce infinite loops
         lto: [none]
     steps:
       - uses: actions/checkout@v3
