@@ -19,6 +19,8 @@
 #include <unistd.h> // for usleep
 #endif
 
+#include <assert.h>
+
 // cross-platform sleep function
 static void sleep_ms(int milliseconds) {
 #ifdef WIN32
@@ -43,6 +45,28 @@ typedef struct InitializationContext {
     ModuleRef instance;
 } InitializationContext;
 
+inline static ModuleRef waitForInitialization(ModuleSlot slot,
+                                              void *classInfo) {
+    int spin = 0;
+    ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
+    assert(module != NULL);
+    while (*module != classInfo) {
+        InitializationContext *ctx = (InitializationContext *)module;
+        // Usage of module in it's constructor, return unitializied instance
+        // thread=null can happen only in the main thread initialization
+        if (ctx->thread == currentNativeThread || ctx->thread == NULL) {
+            return ctx->instance;
+        }
+        if (spin++ < 32)
+            YieldThread();
+        else
+            sleep_ms(1);
+        scalanative_gc_safepoint_poll();
+        module = atomic_load_explicit(slot, memory_order_acquire);
+    }
+    return module;
+}
+
 ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
                                    size_t size, ModuleCtor ctor) {
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
@@ -57,27 +81,14 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
             ctor(instance);
             atomic_store_explicit(slot, instance, memory_order_release);
             return instance;
+        } else {
+            return waitForInitialization(slot, classInfo);
         }
     }
-
-    // Wait in loop until initialization is finished
-    if (*module != classInfo) {
-        int spin = 0;
-        while (*module != classInfo) {
-            InitializationContext *ctx = (InitializationContext *)module;
-            // Usage of module in it's constructor, return unitializied instance
-            // thread=null can happen only in the main thread initialization
-            if (ctx->thread == currentNativeThread || ctx->thread == NULL) {
-                return ctx->instance;
-            }
-            if (spin++ < 32)
-                YieldThread();
-            else
-                sleep_ms(1);
-            scalanative_gc_safepoint_poll();
-            module = atomic_load_explicit(slot, memory_order_acquire);
-        }
-    }
-    return module;
+    if (*module == classInfo)
+        return module;
+    else
+        return waitForInitialization(slot, classInfo);
 }
+
 #endif

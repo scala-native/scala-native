@@ -3,22 +3,14 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
-
 package java.util.concurrent
-package locks
 
-trait Lock {
+object ForkJoinPool {
 
-  def lock(): Unit
-
-  def lockInterruptibly(): Unit
-
-  def newCondition(): Condition
-
-  def tryLock(): Boolean
-
-  def tryLock(time: Long, unit: TimeUnit): Boolean
-
-  def unlock(): Unit
-
+  trait ManagedBlocker {
+    @throws[InterruptedException]
+    def block(): Boolean
+    def isReleasable(): Boolean
+  }
+  def managedBlock(blocker: ManagedBlocker): Unit = () // TODO: ForkJoinPool
 }

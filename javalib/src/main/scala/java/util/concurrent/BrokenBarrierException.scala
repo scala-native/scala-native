@@ -5,20 +5,8 @@
  */
 
 package java.util.concurrent
-package locks
 
-trait Lock {
-
-  def lock(): Unit
-
-  def lockInterruptibly(): Unit
-
-  def newCondition(): Condition
-
-  def tryLock(): Boolean
-
-  def tryLock(time: Long, unit: TimeUnit): Boolean
-
-  def unlock(): Unit
-
+@SerialVersionUID(7117394618823254244L)
+class BrokenBarrierException(message: String) extends Exception(message) {
+  def this() = this(null)
 }
