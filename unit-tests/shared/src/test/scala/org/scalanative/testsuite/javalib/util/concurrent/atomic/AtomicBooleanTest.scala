@@ -84,7 +84,7 @@ class AtomicBooleanTest extends JSR166Test {
   /** repeated weakCompareAndSet succeeds in changing value when equal to
    *  expected
    */
-  @Test def testWeakCompareAndSet(): Unit = {
+  @deprecated @Test def testWeakCompareAndSet(): Unit = {
     val ai = new AtomicBoolean(true)
     while (!ai.weakCompareAndSet(true, false)) ()
     assertFalse(ai.get)

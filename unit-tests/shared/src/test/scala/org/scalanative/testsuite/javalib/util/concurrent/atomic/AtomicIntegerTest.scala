@@ -87,7 +87,7 @@ class AtomicIntegerTest extends JSR166Test {
   /** repeated weakCompareAndSet succeeds in changing value when equal to
    *  expected
    */
-  @Test def testWeakCompareAndSet(): Unit = {
+  @deprecated @Test def testWeakCompareAndSet(): Unit = {
     val ai = new AtomicInteger(1)
     while (!ai.weakCompareAndSet(1, 2)) ()
     while (!ai.weakCompareAndSet(2, -(4))) ()

@@ -940,7 +940,6 @@ class AbstractQueuedLongSynchronizerTest extends JSR166Test {
 
   /** awaitUninterruptibly is uninterruptible
    */
-  @Ignore("Needs ForkJoinPool")
   @Test def testAwaitUninterruptibly(): Unit = {
     val sync = new Mutex()
     val condition = sync.newCondition()

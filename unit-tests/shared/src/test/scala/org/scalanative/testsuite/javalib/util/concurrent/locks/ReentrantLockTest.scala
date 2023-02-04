@@ -934,11 +934,9 @@ class ReentrantLockTest extends JSR166Test {
 
   /** awaitUninterruptibly is uninterruptible
    */
-  @Ignore("Needs ForkJoinPool")
   @Test def testAwaitUninterruptibly(): Unit = {
     testAwaitUninterruptibly(false)
   }
-  @Ignore("Needs ForkJoinPool")
   @Test def testAwaitUninterruptibly_fair(): Unit = {
     testAwaitUninterruptibly(true)
   }
@@ -995,7 +993,6 @@ class ReentrantLockTest extends JSR166Test {
   @Test def testInterruptible_awaitNanos(): Unit = {
     testInterruptible(false, ReentrantLockTest.AwaitMethod.awaitNanos)
   }
-  @Ignore("Needs ForkJoinPool")
   @Test def testInterruptible_awaitNanos_fair(): Unit = {
     testInterruptible(true, ReentrantLockTest.AwaitMethod.awaitNanos)
   }
@@ -1039,7 +1036,6 @@ class ReentrantLockTest extends JSR166Test {
    */
   @Test def testSignalAll_await(): Unit =
     testSignalAll(false, ReentrantLockTest.AwaitMethod.await)
-  @Ignore("Needs ForkJoinPool")
   @Test def testSignalAll_await_fair(): Unit =
     testSignalAll(true, ReentrantLockTest.AwaitMethod.await)
   @Test def testSignalAll_awaitTimed(): Unit =
