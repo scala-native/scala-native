@@ -6,7 +6,8 @@
 
 package java.util.concurrent
 
-trait ThreadFactory {
+trait RunnableFuture[V] extends Runnable with Future[V] {
 
-  def newThread(runnable: Runnable): Thread
+  def run(): Unit
+
 }

@@ -215,10 +215,8 @@ abstract class JSR166Test {
     try fn(pool)
     catch {
       case t: Throwable =>
-        println(t)
-        t.printStackTrace()
         throw new RuntimeException("Pool cleanup failed", t)
-        fail(s"Pool cleanup failed: $t")
+        // fail(s"Pool cleanup failed: $t")
         null.asInstanceOf[T]
     } finally cleaner.close()
   }
@@ -802,51 +800,57 @@ abstract class JSR166Test {
       shouldThrow()
     } catch { case success: NullPointerException => () }
 
-    if (!e.isInstanceOf[ExecutorService]) return ()
+    e match {
+      case es: ExecutorService =>
+        try {
+          es.submit(nullRunnable)
+          shouldThrow()
+        } catch { case _: NullPointerException => () }
 
-    val es = e.asInstanceOf[ExecutorService]
-    try {
-      es.submit(nullRunnable)
-      shouldThrow()
-    } catch { case _: NullPointerException => () }
+        try {
+          es.submit(nullRunnable, java.lang.Boolean.TRUE)
+          shouldThrow()
+        } catch { case sucess: NullPointerException => () }
+        try {
+          es.submit(nullCallable)
+          shouldThrow()
+        } catch { case sucess: NullPointerException => () }
+        
+      case _ => ()
+    }
 
-    try {
-      es.submit(nullRunnable, java.lang.Boolean.TRUE)
-      shouldThrow()
-    } catch { case sucess: NullPointerException => () }
-    try {
-      es.submit(nullCallable)
-      shouldThrow()
-    } catch { case sucess: NullPointerException => () }
+    e match {
+      // TODO: ScheduledExecutor
+      // case ses: ScheduledExecutorService =>
+      //   try {
+      //     ses.schedule(nullRunnable, randomTimeout(), randomTimeUnit())
+      //     shouldThrow()
+      //   } catch { case sucess: NullPointerException => () }
+      //   try {
+      //     ses.schedule(nullCallable, randomTimeout(), randomTimeUnit())
+      //     shouldThrow()
+      //   } catch { case sucess: NullPointerException => () }
+      //   try {
+      //     ses.scheduleAtFixedRate(
+      //       nullRunnable,
+      //       randomTimeout(),
+      //       LONG_DELAY_MS,
+      //       MILLISECONDS
+      //     )
+      //     shouldThrow()
+      //   } catch { case sucess: NullPointerException => () }
+      //   try {
+      //     ses.scheduleWithFixedDelay(
+      //       nullRunnable,
+      //       randomTimeout(),
+      //       LONG_DELAY_MS,
+      //       MILLISECONDS
+      //     )
+      //     shouldThrow()
+      //   } catch { case sucess: NullPointerException => () }
+      case _ => ()
+    }
 
-    if (!e.isInstanceOf[ScheduledExecutorService]) return ()
-    val ses = e.asInstanceOf[ScheduledExecutorService]
-    try {
-      ses.schedule(nullRunnable, randomTimeout(), randomTimeUnit())
-      shouldThrow()
-    } catch { case sucess: NullPointerException => () }
-    try {
-      ses.schedule(nullCallable, randomTimeout(), randomTimeUnit())
-      shouldThrow()
-    } catch { case sucess: NullPointerException => () }
-    try {
-      ses.scheduleAtFixedRate(
-        nullRunnable,
-        randomTimeout(),
-        LONG_DELAY_MS,
-        MILLISECONDS
-      )
-      shouldThrow()
-    } catch { case sucess: NullPointerException => () }
-    try {
-      ses.scheduleWithFixedDelay(
-        nullRunnable,
-        randomTimeout(),
-        LONG_DELAY_MS,
-        MILLISECONDS
-      )
-      shouldThrow()
-    } catch { case sucess: NullPointerException => () }
   }
 
   def setRejectedExecutionHandler(
@@ -891,17 +895,17 @@ abstract class JSR166Test {
 
       recorder.reset()
       assertFalse(p.submit(r).isDone())
-      if (stock) assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
       assertSame(p, recorder.p)
 
       recorder.reset()
       assertFalse(p.submit(r, java.lang.Boolean.TRUE).isDone())
-      if (stock) assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
       assertSame(p, recorder.p)
 
       recorder.reset()
       assertFalse(p.submit(c).isDone())
-      if (stock) assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
       assertSame(p, recorder.p)
 
       p match {
@@ -912,14 +916,14 @@ abstract class JSR166Test {
           future = s.schedule(r, randomTimeout(), randomTimeUnit())
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
           assertSame(p, recorder.p)
 
           recorder.reset()
           future = s.schedule(c, randomTimeout(), randomTimeUnit())
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
           assertSame(p, recorder.p)
 
           recorder.reset()
@@ -931,7 +935,7 @@ abstract class JSR166Test {
           )
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
           assertSame(p, recorder.p)
 
           recorder.reset()
@@ -943,7 +947,7 @@ abstract class JSR166Test {
           )
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[FutureTask[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
           assertSame(p, recorder.p)
 
         case _ => ()

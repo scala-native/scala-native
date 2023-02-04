@@ -4,9 +4,9 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
-package java.util.concurrent
+package java.util.concurrent;
 
-trait ThreadFactory {
+trait RejectedExecutionHandler {
 
-  def newThread(runnable: Runnable): Thread
+  def rejectedExecution(r: Runnable, executor: ThreadPoolExecutor): Unit
 }
