@@ -6,6 +6,7 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.{Test, Ignore}
 import JSR166Test._
 
@@ -14,6 +15,7 @@ import java.util
 import java.util._
 import java.util.concurrent._
 import java.util.concurrent.atomic._
+import org.scalanative.testsuite.utils.Platform
 
 object ForkJoinTaskTest {
   // Runs with "mainPool" use > 1 thread. singletonPool tests use 1
@@ -1618,6 +1620,10 @@ class ForkJoinTaskTest extends JSR166Test {
   /** adapt(runnable).toString() contains toString of wrapped task
    */
   @Test def testAdapt_Runnable_toString(): Unit = {
+    assumeFalse(
+      "Output difference since JDK11",
+      Platform.executingInJVMOnLowerThenJDK11
+    )
     if (testImplementationDetails) {
       val r: Runnable = () => {
         def foo() = {}
@@ -1634,6 +1640,10 @@ class ForkJoinTaskTest extends JSR166Test {
   /** adapt(runnable, x).toString() contains toString of wrapped task
    */
   @Test def testAdapt_Runnable_withResult_toString(): Unit = {
+    assumeFalse(
+      "Output difference since JDK11",
+      Platform.executingInJVMOnLowerThenJDK11
+    )
     if (testImplementationDetails) {
       val r: Runnable = () => {
         def foo() = {}
@@ -1650,6 +1660,10 @@ class ForkJoinTaskTest extends JSR166Test {
   /** adapt(callable).toString() contains toString of wrapped task
    */
   @Test def testAdapt_Callable_toString(): Unit = {
+    assumeFalse(
+      "Output difference since JDK11",
+      Platform.executingInJVMOnLowerThenJDK11
+    )
     if (testImplementationDetails) {
       val c: Callable[String] = () => ""
       val task = ForkJoinTask.adapt(c)
