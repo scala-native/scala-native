@@ -20,7 +20,7 @@ object Executors {
       true
     )
 
-  def newWorkStealingPool(): ExecutorService = 
+  def newWorkStealingPool(): ExecutorService =
     newWorkStealingPool(Runtime.getRuntime().availableProcessors())
 
   def unconfigurableExecutorService(

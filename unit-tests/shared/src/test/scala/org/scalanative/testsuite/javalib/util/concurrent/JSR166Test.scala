@@ -815,7 +815,7 @@ abstract class JSR166Test {
           es.submit(nullCallable)
           shouldThrow()
         } catch { case sucess: NullPointerException => () }
-        
+
       case _ => ()
     }
 
