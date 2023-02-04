@@ -104,7 +104,7 @@ class ThreadTest {
   /** getDefaultUncaughtExceptionHandler returns value of last
    *  setDefaultUncaughtExceptionHandler.
    */
-  def testGetAndSetDefaultUncaughtExceptionHandler(): Unit = {
+  @deprecated def testGetAndSetDefaultUncaughtExceptionHandler(): Unit = {
     assertNull(Thread.getDefaultUncaughtExceptionHandler())
     // failure due to SecurityException is OK.
     // Would be nice to explicitly test both ways, but cannot yet.
