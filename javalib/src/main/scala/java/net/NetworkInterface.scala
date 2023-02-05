@@ -262,7 +262,7 @@ object NetworkInterface {
         } else if (sa.sa_family.toInt == AF_INET6) {
           val sin6 = sa.asInstanceOf[Ptr[sockaddr_in6]]
           val longs =
-            sin6.sin6_addr.at1.asInstanceOf[Ptr[scala.Long]]
+            sin6.sin6_addr.at1.at(0).asInstanceOf[Ptr[scala.Long]]
           java.lang.Long.bitCount(longs(0)) + java.lang.Long.bitCount(longs(1))
         } else {
           0 // Blivet! Unknown address family, assume zero length prefix.
@@ -321,7 +321,7 @@ object NetworkInterface {
         if (addrLen != 16) false
         else {
           val sa6 = sa.asInstanceOf[Ptr[sockaddr_in6]]
-          val sin6Addr = sa6.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
+          val sin6Addr = sa6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
           memcmp(addr.at(0), sin6Addr, addrLen.toUInt) == 0
         }
       } else if (sa_family == AF_INET) {
