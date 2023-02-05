@@ -119,7 +119,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
      */
 
     sa6.sin6_family = socket.AF_INET6.toUShort
-    sa6.sin6_port = inet.< htons (port.toUShort)
+    sa6.sin6_port = inet.htons(port.toUShort)
 
     val src = inetAddress.getAddress()
 
