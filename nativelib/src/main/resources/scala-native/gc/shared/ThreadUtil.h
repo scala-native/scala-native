@@ -32,16 +32,20 @@
 typedef void *(*routine_fn)(void *);
 #ifdef _WIN32
 typedef HANDLE thread_t;
+typedef DWORD thread_id;
 typedef HANDLE mutex_t;
 typedef HANDLE semaphore_t;
 typedef int pid_t;
 #else
 typedef pthread_t thread_t;
+typedef pthread_t thread_id;
 typedef pthread_mutex_t mutex_t;
 typedef sem_t *semaphore_t;
 #endif
 
 bool thread_create(thread_t *ref, routine_fn routine, void *data);
+thread_id thread_getid();
+bool thread_equals(thread_id l, thread_id r);
 void thread_yield();
 
 pid_t process_getid();

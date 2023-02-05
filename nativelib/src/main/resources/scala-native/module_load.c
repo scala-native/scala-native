@@ -1,6 +1,6 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "stdatomic.h"
-#include "nativeThreadTLS.h"
+#include "ThreadUtil.h"
 #include "gc/shared/ScalaNativeGC.h"
 
 #ifdef _WIN32
@@ -41,7 +41,7 @@ typedef _Atomic(void **) ModuleRef;
 typedef ModuleRef *ModuleSlot;
 typedef void (*ModuleCtor)(ModuleRef);
 typedef struct InitializationContext {
-    NativeThread thread;
+    thread_id initThreadId;
     ModuleRef instance;
 } InitializationContext;
 
@@ -53,8 +53,7 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
     while (*module != classInfo) {
         InitializationContext *ctx = (InitializationContext *)module;
         // Usage of module in it's constructor, return unitializied instance
-        // thread=null can happen only in the main thread initialization
-        if (ctx->thread == currentNativeThread || ctx->thread == NULL) {
+        if (thread_equals(ctx->initThreadId, thread_getid())) {
             return ctx->instance;
         }
         if (spin++ < 32)
@@ -76,7 +75,7 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
         void **expected = NULL;
         if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
             ModuleRef instance = scalanative_alloc(classInfo, size);
-            ctx.thread = currentNativeThread;
+            ctx.initThreadId = thread_getid();
             ctx.instance = instance;
             ctor(instance);
             atomic_store_explicit(slot, instance, memory_order_release);
