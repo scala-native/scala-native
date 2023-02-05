@@ -6,21 +6,21 @@ import scala.scalanative.runtime.ByteArray
 
 import scalanative.libc.string.memcpy
 
+import scala.scalanative.posix.arpa.inet
 // Import posix name errno as variable, not class or type.
 import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
-import scala.scalanative.posix.unistd
-import scala.scalanative.posix.sys.socket
-import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.posix.netinet.in
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netinet.tcp
-import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.string.strerror
+import scala.scalanative.posix.sys.ioctl._
+import scala.scalanative.posix.sys.socket
+import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.time._
 import scala.scalanative.posix.sys.timeOps._
-import scala.scalanative.posix.arpa.inet._
+import scala.scalanative.posix.unistd
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
@@ -119,7 +119,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
      */
 
     sa6.sin6_family = socket.AF_INET6.toUShort
-    sa6.sin6_port = htons(port.toUShort)
+    sa6.sin6_port = inet.< htons (port.toUShort)
 
     val src = inetAddress.getAddress()
 
@@ -216,7 +216,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (timeout > 0)
       tryPollOnAccept()
 
-    val storage: Ptr[Byte] = stackalloc[Byte](sizeof[in.sockaddr_in6])
+    val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
     val len = stackalloc[socket.socklen_t]()
     !len = sizeof[in.sockaddr_in6].toUInt
 
@@ -229,30 +229,33 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
     val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN.toUSize)
 
-    if (family == socket.AF_INET) {
+    val (srcPtr, port) = if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
-      inet.inet_ntop(
-        socket.AF_INET,
-        sa.sin_addr.asInstanceOf[Ptr[Byte]],
-        ipstr,
-        in.INET6_ADDRSTRLEN.toUInt
-      )
-      s.port = inet.ntohs(sa.sin_port).toInt
+      val port = inet.ntohs(sa.sin_port).toInt
+      (sa.sin_addr.at1.asInstanceOf[Ptr[Byte]], port)
     } else {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in6]]
-      inet.inet_ntop(
-        socket.AF_INET6,
-        sa.sin6_addr.asInstanceOf[Ptr[Byte]],
-        ipstr,
-        in.INET6_ADDRSTRLEN.toUInt
+      val port = inet.ntohs(sa.sin6_port).toInt
+      (sa.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]], port)
+    }
+
+    val ret = inet.inet_ntop(
+      family,
+      srcPtr,
+      ipstr,
+      in.INET6_ADDRSTRLEN.toUInt
+    )
+
+    if (ret == null) {
+      throw new IOException(
+        s"inet_ntop failed: ${fromCString(strerror(errno))}"
       )
-      s.port = inet.ntohs(sa.sin6_port).toInt
     }
 
     s.address = InetAddress.getByName(fromCString(ipstr))
-
-    s.fd = new FileDescriptor(newFd)
+    s.port = port
     s.localport = this.localport
+    s.fd = new FileDescriptor(newFd)
   }
 
   override def connect(host: String, port: Int): Unit = {

@@ -221,7 +221,7 @@ object InetAddress {
       new Inet4Address(addrinfoToByteArray(addrinfoP), effectiveHost)
     } else if (addrinfoP.ai_family == AF_INET6) {
       val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
-      val addrBytes = addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
+      val addrBytes = addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
 
       // Scala JVM down-converts even when preferIPv6Addresses is "true"
       if (isIPv4MappedAddress(addrBytes)) {
@@ -271,16 +271,11 @@ object InetAddress {
   }
 
   private def formatIn4Addr(pb: Ptr[Byte]): String = {
-    val addr = pb.asInstanceOf[Ptr[in_addr]]
+    // By contract, pb isInstanceOf[Ptr[in_addr]]
     val dstSize = INET_ADDRSTRLEN
     val dst = stackalloc[Byte](dstSize.toUSize)
 
-    val result = inet_ntop(
-      AF_INET,
-      addr.at1.asInstanceOf[Ptr[Byte]],
-      dst,
-      dstSize.toUInt
-    )
+    val result = inet_ntop(AF_INET, pb, dst, dstSize.toUInt)
 
     if (result == null)
       throw new IOException(
