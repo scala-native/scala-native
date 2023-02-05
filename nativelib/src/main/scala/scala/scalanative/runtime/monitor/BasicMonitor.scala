@@ -54,7 +54,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     import NativeThread._
     currentNativeThread.state = State.WaitingOnMonitorEnter
     val current = lockWord
-    if (current.isInflated) lockWord.getObjectMonitor.enter(thread)
+    if (current.isInflated) current.getObjectMonitor.enter(thread)
     else {
       if (threadId == current.threadId) {
         if (current.recursionCount < ThinMonitorMaxRecursion) {
@@ -88,7 +88,8 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     else current.threadId == getThreadId(thread)
   }
 
-  @alwaysinline private def lockWord: LockWord = loadRawPtr(lockWordRef)
+  @alwaysinline private def lockWord: LockWord =
+    atomic_load_intptr(lockWordRef, memory_order_acquire)
 
   @inline private def getObjectMonitor() = {
     val current = lockWord
@@ -163,13 +164,13 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       if (is32bit) {
         val lockMark = (LockType.Inflated: Int) << LockTypeOffset
         val addr = castRawPtrToInt(monitorAddress)
-        castIntToRawSize(lockMark | addr)
+        castIntToRawPtr(lockMark | addr)
       } else {
         val lockMark = (LockType.Inflated: Long) << LockTypeOffset
         val addr = castRawPtrToLong(monitorAddress)
-        castLongToRawSize(lockMark | addr)
+        castLongToRawPtr(lockMark | addr)
       }
-    storeRawSize(lockWordRef, inflated)
+    atomic_store_intptr(lockWordRef, inflated, memory_order_release)
     atomic_thread_fence(memory_order_seq_cst)
 
     objectMonitor

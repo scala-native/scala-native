@@ -34,7 +34,6 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     Stack_Push(stack, object);
 }
 
-
 static inline void Marker_markField(Heap *heap, Stack *stack, Field_t field) {
     if (Heap_IsWordInHeap(heap, field)) {
         ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
