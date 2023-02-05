@@ -1,6 +1,6 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "stdatomic.h"
-#include "ThreadUtil.h"
+#include "gc/shared/ThreadUtil.h"
 #include "gc/shared/ScalaNativeGC.h"
 
 #ifdef _WIN32
