@@ -158,6 +158,9 @@ sealed trait NativeConfig {
       value: NativeConfig.LinktimeProperites
   ): NativeConfig
 
+  /** Create a new [[NativeConfig]] enabling embedded resources in the
+   *  executable with a value of `true` where `false` is default.
+   */
   def withEmbedResources(value: Boolean): NativeConfig
 
   /** Create a new config with support for multithreading */

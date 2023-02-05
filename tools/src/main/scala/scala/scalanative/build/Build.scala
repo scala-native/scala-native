@@ -39,11 +39,11 @@ object Build {
    *        .withLinkingOptions(linkopts)
    *        .withCompileOptions(compopts)
    *        .withLinkStubs(true)
-   *        .withBasename("myapp")
    *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
    *      .withBasedir(basedir)
+   *      .withModuleName(moduleName)
    *      .withTestConfig(false)
    *      .withLogger(logger)
    *
@@ -53,7 +53,7 @@ object Build {
    *  @param config
    *    The configuration of the toolchain.
    *  @return
-   *    `outpath`, the path to the resulting native binary.
+   *    [[Config#artifactPath]], the path to the resulting native binary.
    */
   def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
@@ -129,7 +129,7 @@ object Build {
       )
   }
 
-  // create workdir if needed
+  // create workdir if it doesn't exist
   private def checkWorkdirExists(config: Config): Unit = {
     val workdir = config.workdir
     if (Files.notExists(workdir)) {

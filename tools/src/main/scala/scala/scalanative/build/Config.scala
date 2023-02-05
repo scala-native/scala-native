@@ -15,12 +15,13 @@ sealed trait Config {
   def testConfig: Boolean
 
   /** Directory to emit intermediate compilation results. Calculated based on
-   *  [[#basedir]] / native or native-test if a test project. The build creates
-   *  directories if they do not exist.
+   *  [[#basedir]] / `native` or `native-test` if a test project. The build
+   *  creates directories if they do not exist.
    */
   def workdir: Path
 
-  /** Name of the project module from the build system
+  /** Name of the project module from the build system. Must be unique amongst
+   *  modules in the larger project.
    *
    *  @return
    *    moduleName
@@ -29,7 +30,9 @@ sealed trait Config {
 
   /** Base name for executable or library, typically the project/module name
    *  from the build tool [[#moduleName]] or can be overridden by the user with
-   *  [[NativeConfig#basename]].
+   *  [[NativeConfig#basename]]. This must be unique over all module names and
+   *  other `basename`s in the project. Delegated method to
+   *  [[NativeConfig#basename]]
    */
   def basename: String
 
@@ -54,6 +57,7 @@ sealed trait Config {
   /** The logger used by the toolchain. */
   def logger: Logger
 
+  /** The [[NativeConfig]] that is used by the developer to control settings. */
   def compilerConfig: NativeConfig
 
   /** Create a new config with given base directory. */
@@ -82,8 +86,12 @@ sealed trait Config {
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
 
+  /** Create a [[Config]] with a new [[NativeConfig]]. */
   def withCompilerConfig(value: NativeConfig): Config
 
+  /** Create a [[Config]] with a function which takes and returns a
+   *  [[NativeConfig]].
+   */
   def withCompilerConfig(fn: NativeConfig => NativeConfig): Config
 
   /** The garbage collector to use. */
@@ -131,9 +139,12 @@ sealed trait Config {
     }
 }
 
+/** Factory to create [[#empty]] [[Config]] objects */
 object Config {
 
-  /** Default empty config object where all of the fields are left blank. */
+  /** Default empty config object where all of the fields are left blank or the
+   *  default value.
+   */
   def empty: Config =
     Impl(
       basedir = Paths.get(""),

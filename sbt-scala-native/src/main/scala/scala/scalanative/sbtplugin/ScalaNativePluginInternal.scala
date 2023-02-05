@@ -21,6 +21,21 @@ import scala.util.Try
 import scala.scalanative.build.Platform
 import java.nio.file.{Files, Path}
 
+/** ScalaNativePlugin delegates to this object
+ *
+ *  Note: All logic should be in the Config, NativeConfig, or the build itself.
+ *  Logic should not be in this plugin (sbt) to avoid logic duplication in other
+ *  downstream build tools like Mill and scala-cli.
+ *
+ *  Call order on load:
+ *    - scalaNativeProjectSettings
+ *    - scalaNativeBaseSettings
+ *    - scalaNativeCompileSettings
+ *    - scalaNativeTestSettings
+ *    - scalaNativeGlobalSettings
+ *    - scalaNativeConfigSettings -> 6 times for each project, Scala versions
+ *      (currently 3), and test true and false for each
+ */
 object ScalaNativePluginInternal {
 
   val nativeWarnOldJVM =
@@ -66,6 +81,15 @@ object ScalaNativePluginInternal {
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary
   )
 
+  /** Called by overridden method in plugin
+   *
+   *  A nativeConfig object is created to satisfy sbt scope: `Global /
+   *  nativeConfig` otherwise we get errors in configSettings because
+   *  nativeConfig does not exist.
+   *
+   *  @see
+   *    [[ScalaNativePlugin#globalSettings]]
+   */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
     nativeConfig := build.NativeConfig.empty
       .withClang(interceptBuildException(Discover.clang()))
@@ -96,6 +120,10 @@ object ScalaNativePluginInternal {
     }
   )
 
+  /** Config settings are called for each project, for each Scala version, and
+   *  for test and app configurations. The total with 3 Scala versions equals 6
+   *  times per project.
+   */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
     nativeConfig := {
       val config = nativeConfig.value
@@ -205,6 +233,11 @@ object ScalaNativePluginInternal {
         }
       )
 
+  /** Called by overridden method in plugin
+   *
+   *  @see
+   *    [[ScalaNativePlugin#projectSettings]]
+   */
   lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++

@@ -4,7 +4,16 @@ import java.nio.file.Files
 
 import scalanative.build.core.NativeLib
 
+/** Used to validate config objects */
 object Validator {
+
+  /** Runs all the individual private validators
+   *
+   *  @param config
+   *    the pre-validation original [[Config]]
+   *  @return
+   *    potentially a modified [[Config]] that is valid
+   */
   def validate(config: Config): Config = {
     // side effecting
     validateMainClass(config)
