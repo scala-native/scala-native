@@ -1,6 +1,5 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "stdatomic.h"
-#include "gc/shared/ThreadUtil.h"
 #include "gc/shared/ScalaNativeGC.h"
 
 #ifdef _WIN32
@@ -20,6 +19,28 @@
 #endif
 
 #include <assert.h>
+
+// Thread identity helpers
+#ifdef _WIN32
+typedef DWORD thread_id;
+#else
+typedef pthread_t thread_id;
+#endif
+
+static thread_id getThreadId() {
+#ifdef _WIN32
+    return GetCurrentThreadId();
+#else
+    return pthread_self();
+#endif
+}
+static bool isThreadEqual(thread_id l, thread_id r) {
+#ifdef _WIN32
+    return l == r;
+#else
+    return pthread_equal(l, r);
+#endif
+}
 
 // cross-platform sleep function
 static void sleep_ms(int milliseconds) {
@@ -53,7 +74,7 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
     while (*module != classInfo) {
         InitializationContext *ctx = (InitializationContext *)module;
         // Usage of module in it's constructor, return unitializied instance
-        if (thread_equals(ctx->initThreadId, thread_getid())) {
+        if (isThreadEqual(ctx->initThreadId, getThreadId())) {
             return ctx->instance;
         }
         if (spin++ < 32)
@@ -75,7 +96,7 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
         void **expected = NULL;
         if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
             ModuleRef instance = scalanative_alloc(classInfo, size);
-            ctx.initThreadId = thread_getid();
+            ctx.initThreadId = getThreadId();
             ctx.instance = instance;
             ctor(instance);
             atomic_store_explicit(slot, instance, memory_order_release);
