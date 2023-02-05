@@ -50,6 +50,12 @@ object libc {
       memoryOrder: memory_order
   ): Long = extern
 
+  @name("scalanative_atomic_load_explicit_intptr")
+  private[runtime] def atomic_load_intptr(
+      ptr: RawPtr,
+      memoryOrder: memory_order
+  ): RawPtr = extern
+
   @name("scalanative_atomic_store_explicit_intptr")
   private[runtime] def atomic_store_intptr(
       ptr: RawPtr,

@@ -15,11 +15,15 @@ extern int __modules_size;
 
 #define LAST_FIELD_OFFSET -1
 
+static inline void Marker_markLockWords(Heap *heap, Stack *stack,
+                                        Object *object);
+
 void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta));
     assert(object->rtti != NULL);
 
+    Marker_markLockWords(heap, stack, object);
     if (Object_IsWeakReference(object)) {
         // Added to the WeakReference stack for additional later visit
         Stack_Push(&weakRefStack, object);
@@ -30,16 +34,12 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     Stack_Push(stack, object);
 }
 
-static inline void Marker_markLockWords(Heap *heap, Stack *stack,
-                                        Object *object);
-
 static inline void Marker_markField(Heap *heap, Stack *stack, Field_t field) {
     if (Heap_IsWordInHeap(heap, field)) {
         ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
         if (ObjectMeta_IsAllocated(fieldMeta)) {
             Object *object = (Object *)field;
             Marker_markObject(heap, stack, heap->bytemap, object, fieldMeta);
-            Marker_markLockWords(heap, stack, object);
         }
     }
 }

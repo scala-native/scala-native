@@ -12,6 +12,21 @@ bool thread_create(thread_t *ref, routine_fn routine, void *data) {
 #endif
 }
 
+INLINE thread_id thread_getid() {
+#ifdef _WIN32
+    return GetCurrentThreadId();
+#else
+    return pthread_self();
+#endif
+}
+INLINE bool thread_equals(thread_id l, thread_id r) {
+#ifdef _WIN32
+    return l == r;
+#else
+    return pthread_equal(l, r);
+#endif
+}
+
 INLINE
 void thread_yield() {
 #ifdef _WIN32
