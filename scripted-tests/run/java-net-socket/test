@@ -1,15 +1,19 @@
 > launchServer
 $ copy-file tests/EchoClientTest.scala Main.scala
+> clean
 > run
 
 > launchServer
 $ copy-file tests/EchoManualClientTest.scala Main.scala
+> clean
 > run
 
 > launchTcpEchoServer
 $ copy-file tests/IsReachableTest.scala Main.scala
+> clean
 > run
 
 > launchSilentServer
 $ copy-file tests/TimeoutTest.scala Main.scala
+> clean
 > run
