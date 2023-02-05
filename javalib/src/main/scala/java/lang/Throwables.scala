@@ -7,8 +7,10 @@ import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
 
 private[lang] object StackTrace {
-  private val cache =
+  // TODO: Replace s.c.c.TrieMap/j.u.c.ConcurrentHashMap
+  private val cache = ThreadLocal.withInitial { () =>
     collection.mutable.HashMap.empty[CUnsignedLong, StackTraceElement]
+  }
 
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]
@@ -35,7 +37,7 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
   ): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
+    cache.get().getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
