@@ -16,6 +16,13 @@ abstract class TimeUnit private (name: String, ordinal: Int)
   def toMinutes(a: Long): Long
   def toHours(a: Long): Long
   def toDays(a: Long): Long
+
+  def sleep(timeout: Long): Unit =
+    if (timeout > 0) Thread.sleep(toMillis(timeout))
+  def timedJoin(thread: Thread, timeout: Long) =
+    if (timeout > 0) thread.join(toMillis(timeout))
+  def timedWait(obj: Object, timeout: Long) =
+    if (timeout > 0) obj.wait(toMillis(timeout))
 }
 
 object TimeUnit {

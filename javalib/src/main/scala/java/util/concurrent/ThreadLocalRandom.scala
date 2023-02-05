@@ -246,6 +246,12 @@ object ThreadLocalRandom {
     r
   }
 
+  private[concurrent] def eraseThreadLocals(thread: Thread): Unit = {
+    // TOOD: Adapt ThreadLocal implementation
+    // thread.localValues = null
+    // thread.inheritableValues = null
+  }
+
   private val GAMMA = 0x9e3779b97f4a7c15L
 
   private val PROBE_INCREMENT = 0x9e3779b9
