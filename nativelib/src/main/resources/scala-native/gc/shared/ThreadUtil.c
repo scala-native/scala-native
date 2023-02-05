@@ -12,14 +12,14 @@ bool thread_create(thread_t *ref, routine_fn routine, void *data) {
 #endif
 }
 
-INLINE thread_t thread_getid() {
+INLINE thread_id thread_getid() {
 #ifdef _WIN32
-    return GetCurrentThreadId()
+    return GetCurrentThreadId();
 #else
     return pthread_self();
 #endif
 }
-INLINE bool thread_equals(thread_t l, thread_t r) {
+INLINE bool thread_equals(thread_id l, thread_id r) {
 #ifdef _WIN32
     return l == r;
 #else
