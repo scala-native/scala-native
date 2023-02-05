@@ -1349,7 +1349,7 @@ object Lower {
           rtti(CharArrayCls).const ::
             meta.lockWordVals :::
             charsLength ::
-            Val.Int(2) :: // stride is used only by GC, global instances use it as padding
+            Val.Int(2) :: // stride is used only by GC
             Val.ArrayValue(Type.Char, chars.toSeq.map(Val.Char(_))) :: Nil
         )
       )
