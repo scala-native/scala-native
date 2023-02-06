@@ -21,6 +21,8 @@ import scala.util.control.Breaks._
 import org.junit._
 import org.junit.Assert._
 
+import org.scalanative.testsuite.utils.Platform
+
 object ThreadPoolExecutorTest {
   import JSR166Test._
 
@@ -1510,6 +1512,11 @@ class ThreadPoolExecutorTest extends JSR166Test {
    *  result in IllegalArgumentException.
    */
   @Test def testPoolSizeInvariants(): Unit = {
+    Assume.assumeFalse(
+      "Bugged in JDK8",
+      Platform.executingInJVMOnLowerThenJDK11
+    )
+
     val p = new ThreadPoolExecutor(
       1,
       1,

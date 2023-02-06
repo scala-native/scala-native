@@ -926,8 +926,8 @@ class FutureTaskTest extends JSR166Test {
    */
   @Test def testToString_incomplete(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     val f = new FutureTask[String](() => "")
     assertTrue(f.toString.matches(".*\\[.*Not completed.*\\]"))
@@ -938,8 +938,8 @@ class FutureTaskTest extends JSR166Test {
   }
   @Test def testToString_normal(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     val f = new FutureTask[String](() => "")
     f.run()
@@ -949,8 +949,8 @@ class FutureTaskTest extends JSR166Test {
   }
   @Test def testToString_exception(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     val f = new FutureTask[String](() => {
       def foo() =
@@ -966,8 +966,8 @@ class FutureTaskTest extends JSR166Test {
   }
   @Test def testToString_cancelled(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     for (mayInterruptIfRunning <- Array[java.lang.Boolean](true, false)) {
       val f = new FutureTask[String](() => "")

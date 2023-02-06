@@ -14,6 +14,9 @@ import java.util.concurrent.TimeUnit._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
+
+import org.scalanative.testsuite.utils.Platform
 import JSR166Test._
 
 class ExecutorsTest extends JSR166Test {
@@ -373,6 +376,10 @@ class ExecutorsTest extends JSR166Test {
    */
   @Test def testCallable_withResult_toString(): Unit = {
     if (testImplementationDetails) {
+      assumeFalse(
+        "Implementation change since JDK 11",
+        Platform.executingInJVMOnLowerThenJDK11
+      )
       val r: Runnable = () => {
         def foo() = {}
         foo()
@@ -389,6 +396,10 @@ class ExecutorsTest extends JSR166Test {
    */
   @Test def testCallable_toString(): Unit = {
     if (testImplementationDetails) {
+      assumeFalse(
+        "Implementation change since JDK 11",
+        Platform.executingInJVMOnLowerThenJDK11
+      )
       val r: Runnable = () => {
         def foo() = {}
         foo()
@@ -405,6 +416,10 @@ class ExecutorsTest extends JSR166Test {
    */
   @deprecated @Test def testPrivilegedCallable_toString(): Unit = {
     if (testImplementationDetails) {
+      assumeFalse(
+        "Implementation change since JDK 11",
+        Platform.executingInJVMOnLowerThenJDK11
+      )
       val c: Callable[String] = () => ""
       val priv = Executors.privilegedCallable(c)
       assertEquals(
@@ -420,6 +435,10 @@ class ExecutorsTest extends JSR166Test {
   @deprecated @Test def testPrivilegedCallableUsingCurrentClassLoader_toString()
       : Unit = {
     if (testImplementationDetails) {
+      assumeFalse(
+        "Implementation change since JDK 11",
+        Platform.executingInJVMOnLowerThenJDK11
+      )
       val c: Callable[String] = () => ""
       val priv =
         Executors.privilegedCallableUsingCurrentClassLoader(c)
