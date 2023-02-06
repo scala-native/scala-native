@@ -12,6 +12,7 @@ import java.util.concurrent._
 
 import org.junit._
 import org.junit.Assert._
+import scala.scalanative.junit.utils.AssumesHelper
 import JSR166Test._
 
 import scala.util.control.Breaks._
@@ -671,6 +672,7 @@ class ForkJoinTask8Test extends JSR166Test {
   /** getPool of non-FJ task returns null
    */
   @Test def testGetPool2(): Unit = {
+    AssumesHelper.assumeNotExecutedInForkJoinPool()
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertNull(getPool) }
     }
@@ -695,6 +697,7 @@ class ForkJoinTask8Test extends JSR166Test {
   /** inForkJoinPool of non-FJ task returns false
    */
   @Test def testInForkJoinPool2(): Unit = {
+    AssumesHelper.assumeNotExecutedInForkJoinPool()
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertFalse(inForkJoinPool) }
     }
