@@ -820,34 +820,33 @@ abstract class JSR166Test {
     }
 
     e match {
-      // TODO: ScheduledExecutor
-      // case ses: ScheduledExecutorService =>
-      //   try {
-      //     ses.schedule(nullRunnable, randomTimeout(), randomTimeUnit())
-      //     shouldThrow()
-      //   } catch { case sucess: NullPointerException => () }
-      //   try {
-      //     ses.schedule(nullCallable, randomTimeout(), randomTimeUnit())
-      //     shouldThrow()
-      //   } catch { case sucess: NullPointerException => () }
-      //   try {
-      //     ses.scheduleAtFixedRate(
-      //       nullRunnable,
-      //       randomTimeout(),
-      //       LONG_DELAY_MS,
-      //       MILLISECONDS
-      //     )
-      //     shouldThrow()
-      //   } catch { case sucess: NullPointerException => () }
-      //   try {
-      //     ses.scheduleWithFixedDelay(
-      //       nullRunnable,
-      //       randomTimeout(),
-      //       LONG_DELAY_MS,
-      //       MILLISECONDS
-      //     )
-      //     shouldThrow()
-      //   } catch { case sucess: NullPointerException => () }
+      case ses: ScheduledExecutorService =>
+        try {
+          ses.schedule(nullRunnable, randomTimeout(), randomTimeUnit())
+          shouldThrow()
+        } catch { case sucess: NullPointerException => () }
+        try {
+          ses.schedule(nullCallable, randomTimeout(), randomTimeUnit())
+          shouldThrow()
+        } catch { case sucess: NullPointerException => () }
+        try {
+          ses.scheduleAtFixedRate(
+            nullRunnable,
+            randomTimeout(),
+            LONG_DELAY_MS,
+            MILLISECONDS
+          )
+          shouldThrow()
+        } catch { case sucess: NullPointerException => () }
+        try {
+          ses.scheduleWithFixedDelay(
+            nullRunnable,
+            randomTimeout(),
+            LONG_DELAY_MS,
+            MILLISECONDS
+          )
+          shouldThrow()
+        } catch { case sucess: NullPointerException => () }
       case _ => ()
     }
 
@@ -909,47 +908,46 @@ abstract class JSR166Test {
       assertSame(p, recorder.p)
 
       p match {
-        // TODO: ScheduledExecutor
-        // case s: ScheduledExecutorService =>
-        //   var future: ScheduledFuture[_] = null
+        case s: ScheduledExecutorService =>
+          var future: ScheduledFuture[_] = null
 
-        //   recorder.reset()
-        //   future = s.schedule(r, randomTimeout(), randomTimeUnit())
-        //   assertFalse(future.isDone())
-        //   if (stock)
-        //     assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
-        //   assertSame(p, recorder.p)
+          recorder.reset()
+          future = s.schedule(r, randomTimeout(), randomTimeUnit())
+          assertFalse(future.isDone())
+          if (stock)
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+          assertSame(p, recorder.p)
 
-        //   recorder.reset()
-        //   future = s.schedule(c, randomTimeout(), randomTimeUnit())
-        //   assertFalse(future.isDone())
-        //   if (stock)
-        //     assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
-        //   assertSame(p, recorder.p)
+          recorder.reset()
+          future = s.schedule(c, randomTimeout(), randomTimeUnit())
+          assertFalse(future.isDone())
+          if (stock)
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+          assertSame(p, recorder.p)
 
-        //   recorder.reset()
-        //   future = s.scheduleAtFixedRate(
-        //     r,
-        //     randomTimeout(),
-        //     LONG_DELAY_MS,
-        //     MILLISECONDS
-        //   )
-        //   assertFalse(future.isDone())
-        //   if (stock)
-        //     assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
-        //   assertSame(p, recorder.p)
+          recorder.reset()
+          future = s.scheduleAtFixedRate(
+            r,
+            randomTimeout(),
+            LONG_DELAY_MS,
+            MILLISECONDS
+          )
+          assertFalse(future.isDone())
+          if (stock)
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+          assertSame(p, recorder.p)
 
-        //   recorder.reset()
-        //   future = s.scheduleWithFixedDelay(
-        //     r,
-        //     randomTimeout(),
-        //     LONG_DELAY_MS,
-        //     MILLISECONDS
-        //   )
-        //   assertFalse(future.isDone())
-        //   if (stock)
-        //     assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
-        //   assertSame(p, recorder.p)
+          recorder.reset()
+          future = s.scheduleWithFixedDelay(
+            r,
+            randomTimeout(),
+            LONG_DELAY_MS,
+            MILLISECONDS
+          )
+          assertFalse(future.isDone())
+          if (stock)
+            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+          assertSame(p, recorder.p)
 
         case _ => ()
       }
