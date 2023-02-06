@@ -3,6 +3,7 @@ package scala
 import org.junit.Test
 import org.junit.Assert._
 import scala.concurrent.{ExecutionContext, Future}
+import org.scalanative.testsuite.utils.Platform
 
 /* Dummy test used determinate if scala.concurrent.ExecutionContext was correctly overridden
  * In case if it is not it would fail at linking or with UndefinedBehaviourException in runtime
@@ -22,12 +23,12 @@ class ExecutionContextTest {
     Future {
       x = 90
     }
-    assertEquals(
-      0,
-      x
-    ) // always true, logic in Future would be executed after this Runnable ends
-    x = 40
-    assertEquals(40, x)
+    if (!Platform.isMultithreadingEnabled) {
+      // always true, logic in Future would be executed after this Runnable ends
+      assertEquals(0, x)
+      x = 40
+      assertEquals(40, x)
+    }
   }
 
 }
