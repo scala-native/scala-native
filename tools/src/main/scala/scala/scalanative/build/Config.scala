@@ -193,10 +193,16 @@ object Config {
     override lazy val workdir: Path =
       basedir.resolve(s"native$nameSuffix")
 
-    override lazy val basename: String = compilerConfig.basename match {
-      case bn if bn.nonEmpty => bn
-      case _                 => moduleName
-    }
+    override lazy val basename: String =
+      if (compilerConfig.multipleMains &&
+          compilerConfig.buildTarget == BuildTarget.application) {
+        mainClass.get
+      } else {
+        compilerConfig.basename match {
+          case bn if bn.nonEmpty => bn
+          case _                 => moduleName
+        }
+      }
 
     override lazy val artifactName: String = {
       val ext = compilerConfig.buildTarget match {

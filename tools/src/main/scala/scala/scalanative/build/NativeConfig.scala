@@ -73,7 +73,7 @@ sealed trait NativeConfig {
   def basename: String
 
   /** Allow multiple main classes in the same project */
-  def allowMultipleMains: Boolean
+  def multipleMains: Boolean
 
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
@@ -185,14 +185,14 @@ sealed trait NativeConfig {
   def withBasename(value: String): NativeConfig
 
   /** Create a new [[NativeConfig]] that allows multiple main classes in the
-   *  same project.
+   *  same project. Currently, only applicable to `sbt` builds.
    *
    *  @param value
    *    `true` to allows multiple mains, default `false`
    *  @return
    *    the new [[NativeConfig]]
    */
-  def withAllowMultipleMains(value: Boolean): NativeConfig
+  def withMultipleMains(value: Boolean): NativeConfig
 
   /** Create a optimization configuration */
   def withOptimizerConfig(value: OptimizerConfig): NativeConfig
@@ -225,7 +225,7 @@ object NativeConfig {
       linktimeProperties = Map.empty,
       embedResources = false,
       basename = "",
-      allowMultipleMains = false,
+      multipleMains = false,
       optimizerConfig = OptimizerConfig.empty
     )
 
@@ -250,7 +250,7 @@ object NativeConfig {
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
       basename: String,
-      allowMultipleMains: Boolean,
+      multipleMains: Boolean,
       optimizerConfig: OptimizerConfig
   ) extends NativeConfig {
 
@@ -321,8 +321,8 @@ object NativeConfig {
     def withBasename(value: String): NativeConfig = {
       copy(basename = value)
     }
-    override def withAllowMultipleMains(value: Boolean): NativeConfig = {
-      copy(allowMultipleMains = value)
+    override def withMultipleMains(value: Boolean): NativeConfig = {
+      copy(multipleMains = value)
     }
 
     override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
@@ -350,22 +350,23 @@ object NativeConfig {
         | - linkingOptions:         $linkingOptions
         | - compileOptions:         $compileOptions
         | - targetTriple:           $targetTriple
-        | - buildTarget             $buildTarget
         | - GC:                     $gc
-        | - mode:                   $mode
         | - LTO:                    $lto
-        | - linkStubs:              $linkStubs
+        | - mode:                   $mode
+        | - buildTarget             $buildTarget
         | - check:                  $check
         | - checkFatalWarnings:     $checkFatalWarnings
         | - dump:                   $dump
         | - asan:                   $asan
+        | - linkStubs:              $linkStubs
         | - optimize                $optimize
-        | - linktimeProperties:     $listLinktimeProperties
-        | - embedResources:         $embedResources
         | - incrementalCompilation: $useIncrementalCompilation
         | - multithreading          $multithreadingSupport
-        | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
+        | - linktimeProperties:     $listLinktimeProperties
+        | - embedResources:         $embedResources
         | - basename:               $basename
+        | - multipleMains:          $multipleMains
+        | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
         |)""".stripMargin
     }
   }
