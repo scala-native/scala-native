@@ -3,9 +3,6 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
-import scala.scalanative.build.core.Filter
-import scala.scalanative.build.core.NativeLib
-import scala.scalanative.build.core.ScalaNative
 import scala.util.Try
 
 /** Utility methods for building code using Scala Native. */

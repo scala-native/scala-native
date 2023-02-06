@@ -2,8 +2,6 @@ package scala.scalanative.build
 
 import java.nio.file.Files
 
-import scalanative.build.core.NativeLib
-
 /** Used to validate config objects */
 object Validator {
 

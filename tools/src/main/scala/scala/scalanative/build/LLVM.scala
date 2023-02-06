@@ -4,9 +4,9 @@ package build
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.sys.process._
-import scalanative.build.core.IO.RichPath
-import scalanative.compat.CompatParColls.Converters._
-import scalanative.nir.Attr.Link
+import scala.scalanative.build.IO.RichPath
+import scala.scalanative.compat.CompatParColls.Converters._
+import scala.scalanative.nir.Attr.Link
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {

@@ -5,7 +5,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Try
 import scala.sys.process._
-import scalanative.build.core.IO.RichPath
+import scala.scalanative.build.IO.RichPath
 
 /** Utilities for discovery of command-line tools and settings required to build
  *  Scala Native applications.

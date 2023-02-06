@@ -7,7 +7,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.{Sig, Global}
-import scalanative.build.core.ScalaNative
+import scalanative.build.ScalaNative
 
 trait ReachabilitySuite extends AnyFunSuite {
 
