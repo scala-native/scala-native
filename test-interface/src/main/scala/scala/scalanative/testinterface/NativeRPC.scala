@@ -1,4 +1,5 @@
-package scala.scalanative.testinterface
+package scala.scalanative
+package testinterface
 
 import java.io.{DataInputStream, DataOutputStream, EOFException}
 import java.net.Socket
@@ -37,7 +38,7 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
-      if (!LinktimeInfo.isMultithreadingEnabled) scalanative.runtime.loop()
+      if (!LinktimeInfo.isMultithreadingEnabled) runtime.testinterface.drainNativeExecutionContext()
       loop()
     }
   }

@@ -1,4 +1,5 @@
-package scala.scalanative.junit
+package scala.scalanative
+package junit
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
@@ -10,7 +11,7 @@ package object async {
     if (isMultithreadingEnabled)
       Await.result(future, Duration.Inf)
     else {
-      scala.scalanative.runtime.loop()
+      if (!LinktimeInfo.isMultithreadingEnabled) runtime.junit.drainNativeExecutionContext()
       future.value.get.get
     }
   }
