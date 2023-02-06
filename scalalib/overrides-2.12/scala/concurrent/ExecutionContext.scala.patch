@@ -1,20 +1,28 @@
---- 2.12.15/scala/concurrent/ExecutionContext.scala
+--- 2.12.17/scala/concurrent/ExecutionContext.scala
 +++ overrides-2.12/scala/concurrent/ExecutionContext.scala
-@@ -138,7 +138,7 @@
-    *
-    * @return the global `ExecutionContext`
-    */
--  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
-+  def global: ExecutionContextExecutor = scala.scalanative.runtime.ExecutionContext.global
+@@ -15,6 +15,7 @@
  
-   object Implicits {
-     /**
-@@ -149,7 +149,7 @@
+ import java.util.concurrent.{ ExecutorService, Executor }
+ import scala.annotation.implicitNotFound
++import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+ 
+ /**
+  * An `ExecutionContext` can execute program logic asynchronously,
+@@ -149,7 +150,10 @@
       * the thread pool uses a target number of worker threads equal to the number of
       * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
       */
 -    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
-+    implicit lazy val global: ExecutionContext = ExecutionContext.global
++    implicit lazy val global: ExecutionContext = {
++      if(isMultithreadingEnabled) impl.ExecutionContextImpl.fromExecutor(null: Executor)
++      else scala.scalanative.runtime.ExecutionContext.singleThreaded
++    }
    }
  
    /** Creates an `ExecutionContext` from the given `ExecutorService`.
+@@ -198,5 +202,3 @@
+    */
+   def defaultReporter: Throwable => Unit = _.printStackTrace()
+ }
+-
+-
