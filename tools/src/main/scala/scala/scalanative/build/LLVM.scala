@@ -7,7 +7,6 @@ import scala.sys.process._
 import scalanative.build.core.IO.RichPath
 import scalanative.compat.CompatParColls.Converters._
 import scalanative.nir.Attr.Link
-import scala.scalanative.build.BuildTarget._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -118,10 +117,12 @@ private[scalanative] object LLVM {
       objectsPaths: Seq[Path]
   ): Path = {
     implicit val _config: Config = config
-    val outpath = config.artifactPath
+    val buildPath = config.buildPath
 
     // don't link if no changes
-    if (!needsLinking(objectsPaths, outpath)) return outpath
+    if (!needsLinking(objectsPaths, buildPath)) {
+      return copyOutput(config, buildPath)
+    }
 
     val command = config.compilerConfig.buildTarget match {
       case BuildTarget.Application | BuildTarget.LibraryDynamic =>
@@ -132,10 +133,19 @@ private[scalanative] object LLVM {
     // link
     val result = command ! Logger.toProcessLogger(config.logger)
     if (result != 0) {
-      throw new BuildException(s"Failed to link ${outpath}")
+      throw new BuildException(s"Failed to link ${buildPath}")
     }
 
-    outpath
+    copyOutput(config, buildPath)
+  }
+
+  private def copyOutput(config: Config, buildPath: Path) = {
+    val outPath = config.artifactPath
+    config.compilerConfig.buildTarget match {
+      case BuildTarget.Application =>
+        Files.copy(buildPath, outPath, StandardCopyOption.REPLACE_EXISTING)
+      case _: BuildTarget.Library => outPath
+    }
   }
 
   private def prepareLinkCommand(
@@ -173,7 +183,7 @@ private[scalanative] object LLVM {
           }
           Seq("-g") ++ ltoSupport
         }
-      val output = Seq("-o", config.artifactPath.abs)
+      val output = Seq("-o", config.buildPath.abs)
       buildTargetLinkOpts ++ flto ++ platformFlags ++ output ++ asan ++ target
     }
     val paths = objectsPaths.map(_.abs)
@@ -208,7 +218,7 @@ private[scalanative] object LLVM {
     val MIRScriptFile = workdir.resolve("MIRScript").toFile
     val pw = new PrintWriter(MIRScriptFile)
     try {
-      pw.println(s"CREATE ${escapeWhitespaces(config.artifactPath.abs)}")
+      pw.println(s"CREATE ${escapeWhitespaces(config.buildPath.abs)}")
       objectPaths.foreach { path =>
         val uniqueName =
           workdir

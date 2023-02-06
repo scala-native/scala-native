@@ -43,10 +43,18 @@ sealed trait Config {
    */
   def artifactName: String
 
-  /** Path to the output file, executable or library. Calculated based on
+  /** Final Path to the output file, executable or library. Calculated based on
    *  [[#basedir]] `/` [[#artifactName]].
    */
   def artifactPath: Path
+
+  /** Build path to support multiple main applications.
+   *
+   *  For libraries it is the same as the [[#artifactPath]] and for applications
+   *  it resolves to [[#workdir]] `/` [[#artifactName]] and after the build it
+   *  is copied to [[#artifactPath]].
+   */
+  def buildPath: Path
 
   /** Entry point for linking. */
   def mainClass: Option[String]
@@ -94,6 +102,8 @@ sealed trait Config {
    */
   def withCompilerConfig(fn: NativeConfig => NativeConfig): Config
 
+  // delegated methods
+
   /** The garbage collector to use. */
   def gc: GC = compilerConfig.gc
 
@@ -123,6 +133,8 @@ sealed trait Config {
 
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean = compilerConfig.dump
+
+  // helpers
 
   protected def nameSuffix = if (testConfig) testSuffix else ""
 
@@ -194,17 +206,26 @@ object Config {
       basedir.resolve(s"native$nameSuffix")
 
     override lazy val basename: String =
-      if (compilerConfig.multipleMains &&
-          compilerConfig.buildTarget == BuildTarget.application) {
-        mainClass.get
-      } else {
-        compilerConfig.basename match {
-          case bn if bn.nonEmpty => bn
-          case _                 => moduleName
-        }
+      compilerConfig.basename match {
+        case bn if bn.nonEmpty => bn
+        case _                 => moduleName
       }
 
-    override lazy val artifactName: String = {
+    override lazy val artifactName: String =
+      artifactName(basename)
+
+    override lazy val artifactPath: Path =
+      basedir.resolve(artifactName)
+
+    override lazy val buildPath: Path =
+      compilerConfig.buildTarget match {
+        case BuildTarget.Application =>
+          workdir.resolve(artifactName(mainClass.get))
+        case _: BuildTarget.Library =>
+          basedir.resolve(artifactName)
+      }
+
+    private def artifactName(name: String) = {
       val ext = compilerConfig.buildTarget match {
         case BuildTarget.Application =>
           if (targetsWindows) ".exe" else ""
@@ -220,11 +241,7 @@ object Config {
         case BuildTarget.Application => ""
         case _: BuildTarget.Library  => if (targetsWindows) "" else "lib"
       }
-      s"$namePrefix${basename}$nameSuffix$ext"
-    }
-
-    override lazy val artifactPath: Path = {
-      basedir.resolve(artifactName)
+      s"$namePrefix${name}$nameSuffix$ext"
     }
 
     override def toString: String = {
@@ -238,6 +255,7 @@ object Config {
         | - basename:       $basename
         | - artifactName:   $artifactName
         | - artifactPath:   $artifactPath
+        | - buildPath:      $buildPath
         | - mainClass:      $mainClass
         | - classPath:      $classPathFormat
         | - compilerConfig: $compilerConfig

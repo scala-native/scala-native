@@ -72,9 +72,6 @@ sealed trait NativeConfig {
   /** Base name for executable or library, typically the project name. */
   def basename: String
 
-  /** Allow multiple main classes in the same project */
-  def multipleMains: Boolean
-
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
@@ -184,16 +181,6 @@ sealed trait NativeConfig {
    */
   def withBasename(value: String): NativeConfig
 
-  /** Create a new [[NativeConfig]] that allows multiple main classes in the
-   *  same project. Currently, only applicable to `sbt` builds.
-   *
-   *  @param value
-   *    `true` to allows multiple mains, default `false`
-   *  @return
-   *    the new [[NativeConfig]]
-   */
-  def withMultipleMains(value: Boolean): NativeConfig
-
   /** Create a optimization configuration */
   def withOptimizerConfig(value: OptimizerConfig): NativeConfig
 
@@ -225,7 +212,6 @@ object NativeConfig {
       linktimeProperties = Map.empty,
       embedResources = false,
       basename = "",
-      multipleMains = false,
       optimizerConfig = OptimizerConfig.empty
     )
 
@@ -250,7 +236,6 @@ object NativeConfig {
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
       basename: String,
-      multipleMains: Boolean,
       optimizerConfig: OptimizerConfig
   ) extends NativeConfig {
 
@@ -321,9 +306,6 @@ object NativeConfig {
     def withBasename(value: String): NativeConfig = {
       copy(basename = value)
     }
-    override def withMultipleMains(value: Boolean): NativeConfig = {
-      copy(multipleMains = value)
-    }
 
     override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
       copy(optimizerConfig = value)
@@ -365,7 +347,6 @@ object NativeConfig {
         | - linktimeProperties:     $listLinktimeProperties
         | - embedResources:         $embedResources
         | - basename:               $basename
-        | - multipleMains:          $multipleMains
         | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
         |)""".stripMargin
     }

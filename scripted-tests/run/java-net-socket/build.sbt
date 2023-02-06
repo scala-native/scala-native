@@ -7,10 +7,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 enablePlugins(ScalaNativePlugin)
 
-Compile / nativeConfig ~= {
-  _.withMultipleMains(true)
-}
-
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
   if (scalaVersion == null)
