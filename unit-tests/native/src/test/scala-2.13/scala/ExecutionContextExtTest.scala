@@ -21,7 +21,7 @@ class ExecutionContextExtTest {
     else {
       assertEquals(ExecutionContext.global, opportunistic)
       assertEquals(
-        scala.scalanative.runtime.NativeExecutionContext.queue,
+        scala.scalanative.runtime.ExecutionContext.global,
         opportunistic
       )
     }
