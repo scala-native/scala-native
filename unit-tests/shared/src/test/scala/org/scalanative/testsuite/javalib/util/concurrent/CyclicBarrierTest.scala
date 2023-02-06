@@ -482,36 +482,35 @@ class CyclicBarrierTest extends JSR166Test {
     }
   }
 
-  // TODO: ThreadPoolExecutor
-  // /** There can be more threads calling await() than parties, as long as each
-  //  *  task only calls await once and the task count is a multiple of parties.
-  //  */
-  // @throws[Exception]
-  // @Test def testMoreTasksThanParties(): Unit = {
-  //   val rnd = ThreadLocalRandom.current
-  //   val parties = rnd.nextInt(1, 5)
-  //   val nTasks = rnd.nextInt(1, 5) * parties
-  //   val tripCount = new AtomicInteger(0)
-  //   val awaitCount = new AtomicInteger(0)
-  //   val barrier = new CyclicBarrier(parties, () => tripCount.getAndIncrement)
-  //   val awaiter: Runnable = () => {
-  //     def foo() =
-  //       try {
-  //         if (randomBoolean()) barrier.await
-  //         else barrier.await(LONG_DELAY_MS, MILLISECONDS)
-  //         awaitCount.getAndIncrement
-  //       } catch {
-  //         case fail: Throwable =>
-  //           threadUnexpectedException(fail)
-  //       }
-  //     foo()
-  //   }
-  //   usingPoolCleaner(Executors.newFixedThreadPool(nTasks)) { e =>
-  //     var i = nTasks
-  //     while ({ i -= 1; i + 1 > 0 }) e.execute(awaiter)
-  //   }
-  //   assertEquals(nTasks / parties, tripCount.get)
-  //   assertEquals(nTasks, awaitCount.get)
-  //   assertEquals(0, barrier.getNumberWaiting)
-  // }
+  /** There can be more threads calling await() than parties, as long as each
+   *  task only calls await once and the task count is a multiple of parties.
+   */
+  @throws[Exception]
+  @Test def testMoreTasksThanParties(): Unit = {
+    val rnd = ThreadLocalRandom.current
+    val parties = rnd.nextInt(1, 5)
+    val nTasks = rnd.nextInt(1, 5) * parties
+    val tripCount = new AtomicInteger(0)
+    val awaitCount = new AtomicInteger(0)
+    val barrier = new CyclicBarrier(parties, () => tripCount.getAndIncrement)
+    val awaiter: Runnable = () => {
+      def foo() =
+        try {
+          if (randomBoolean()) barrier.await
+          else barrier.await(LONG_DELAY_MS, MILLISECONDS)
+          awaitCount.getAndIncrement
+        } catch {
+          case fail: Throwable =>
+            threadUnexpectedException(fail)
+        }
+      foo()
+    }
+    usingPoolCleaner(Executors.newFixedThreadPool(nTasks)) { e =>
+      var i = nTasks
+      while ({ i -= 1; i + 1 > 0 }) e.execute(awaiter)
+    }
+    assertEquals(nTasks / parties, tripCount.get)
+    assertEquals(nTasks, awaitCount.get)
+    assertEquals(0, barrier.getNumberWaiting)
+  }
 }

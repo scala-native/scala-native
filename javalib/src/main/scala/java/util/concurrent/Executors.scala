@@ -23,6 +23,62 @@ object Executors {
   def newWorkStealingPool(): ExecutorService =
     newWorkStealingPool(Runtime.getRuntime().availableProcessors())
 
+  def newFixedThreadPool(
+      nThreads: Int,
+      threadFactory: ThreadFactory
+  ): ExecutorService = {
+    new ThreadPoolExecutor(
+      nThreads,
+      nThreads,
+      0L,
+      TimeUnit.MILLISECONDS,
+      new LinkedBlockingQueue[Runnable],
+      threadFactory
+    )
+  }
+
+  def newFixedThreadPool(nThreads: Int): ExecutorService =
+    new ThreadPoolExecutor(
+      nThreads,
+      nThreads,
+      0L,
+      TimeUnit.MILLISECONDS,
+      new LinkedBlockingQueue[Runnable]
+    )
+
+  def newSingleThreadExecutor(): ExecutorService = {
+    new Executors.FinalizableDelegatedExecutorService(
+      newFixedThreadPool(1)
+    )
+  }
+
+  def newSingleThreadExecutor(threadFactory: ThreadFactory): ExecutorService = {
+    new Executors.FinalizableDelegatedExecutorService(
+      newFixedThreadPool(1, threadFactory)
+    )
+  }
+
+  def newCachedThreadPool(): ExecutorService = {
+    new ThreadPoolExecutor(
+      0,
+      Integer.MAX_VALUE,
+      60L,
+      TimeUnit.SECONDS,
+      new SynchronousQueue[Runnable]
+    )
+  }
+
+  def newCachedThreadPool(threadFactory: ThreadFactory): ExecutorService = {
+    new ThreadPoolExecutor(
+      0,
+      Integer.MAX_VALUE,
+      60L,
+      TimeUnit.SECONDS,
+      new SynchronousQueue[Runnable],
+      threadFactory
+    )
+  }
+
   def unconfigurableExecutorService(
       executor: ExecutorService
   ): ExecutorService = {

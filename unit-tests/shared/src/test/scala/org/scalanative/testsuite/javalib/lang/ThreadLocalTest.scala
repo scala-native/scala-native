@@ -10,17 +10,11 @@ package org.scalanative.testsuite.javalib.lang
 import org.junit.{Test, Ignore, BeforeClass}
 import org.junit.Assert._
 import scala.scalanative.junit.utils.AssumesHelper
+import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 
-// TODO: JSR166, make part of JSR166Test
+import JSR166Test._
+
 object ThreadLocalTest {
-  @BeforeClass def checkRuntime(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
-  }
-
-  final val zero = 0: Integer
-  final val one = 1: Integer
-  final val two = 2: Integer
-
   val tl = new ThreadLocal[Integer]() {
     override def initialValue: Integer = one
   }
@@ -29,7 +23,7 @@ object ThreadLocalTest {
     override def childValue(parentValue: Integer): Integer = parentValue + 1
   }
 }
-class ThreadLocalTest {
+class ThreadLocalTest extends JSR166Test {
   import ThreadLocalTest._
 
   /** remove causes next access to return initial value

@@ -332,9 +332,7 @@ abstract class BlockingQueueTest extends JSR166Test {
     awaitTermination(t)
   }
 
-  /** remove(x) removes x and returns true if present TODO: move to superclass
-   *  CollectionTest.java
-   */
+  /** remove(x) removes x and returns true if present */
   @Test def testRemoveElement(): Unit = {
     val q = emptyCollection()
     val size = Math.min(q.remainingCapacity, SIZE)

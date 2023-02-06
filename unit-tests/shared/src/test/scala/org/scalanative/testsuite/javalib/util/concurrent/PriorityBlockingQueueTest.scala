@@ -527,30 +527,28 @@ class PriorityBlockingQueueTest extends JSR166Test {
     for (i <- 0 until SIZE) { assertTrue(s.contains(String.valueOf(i))) }
   }
 
-  // TODO: ThreadPoolExecutor
-  //
-  // @Test def testPollInExecutor(): Unit = {
-  //   val q = new PriorityBlockingQueue[Integer](2)
-  //   val threadsStarted: CheckedBarrier = new CheckedBarrier(2)
-  //   usingPoolCleaner(Executors.newFixedThreadPool(2)) { executor =>
-  //     executor.execute(new CheckedRunnable() {
-  //       @throws[InterruptedException]
-  //       override def realRun(): Unit = {
-  //         assertNull(q.poll)
-  //         threadsStarted.await
-  //         assertSame(one, q.poll(LONG_DELAY_MS, MILLISECONDS))
-  //         checkEmpty(q)
-  //       }
-  //     })
-  //     executor.execute(new CheckedRunnable() {
-  //       @throws[InterruptedException]
-  //       override def realRun(): Unit = {
-  //         threadsStarted.await
-  //         q.put(one)
-  //       }
-  //     })
-  //   }
-  // }
+  @Test def testPollInExecutor(): Unit = {
+    val q = new PriorityBlockingQueue[Integer](2)
+    val threadsStarted: CheckedBarrier = new CheckedBarrier(2)
+    usingPoolCleaner(Executors.newFixedThreadPool(2)) { executor =>
+      executor.execute(new CheckedRunnable() {
+        @throws[InterruptedException]
+        override def realRun(): Unit = {
+          assertNull(q.poll)
+          threadsStarted.await
+          assertSame(one, q.poll(LONG_DELAY_MS, MILLISECONDS))
+          checkEmpty(q)
+        }
+      })
+      executor.execute(new CheckedRunnable() {
+        @throws[InterruptedException]
+        override def realRun(): Unit = {
+          threadsStarted.await
+          q.put(one)
+        }
+      })
+    }
+  }
 
   @throws[Exception]
   @Ignore("No ObjectInputStream in Scala Native")

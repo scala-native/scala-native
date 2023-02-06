@@ -821,57 +821,56 @@ class ArrayBlockingQueueTest extends JSR166Test {
     for (i <- 0 until SIZE) { assertTrue(s.contains(String.valueOf(i))) }
   }
 
-  // TODO: ThreadPoolExecutor
-  // /** offer transfers elements across Executor tasks
-  //  */
-  // @Test def testOfferInExecutor(): Unit =
-  //   usingPoolCleaner(Executors.newFixedThreadPool(2)) { executor =>
-  //     val q = new ArrayBlockingQueue[Any](2)
-  //     q.add(one)
-  //     q.add(two)
-  //     val threadsStarted: CheckedBarrier = new CheckedBarrier(2)
-  //     executor.execute(new CheckedRunnable() {
-  //       @throws[InterruptedException]
-  //       override def realRun(): Unit = {
-  //         assertFalse(q.offer(three))
-  //         threadsStarted.await
-  //         assertTrue(q.offer(three, LONG_DELAY_MS, MILLISECONDS))
-  //         assertEquals(0, q.remainingCapacity)
-  //       }
-  //     })
-  //     executor.execute(new CheckedRunnable() {
-  //       @throws[InterruptedException]
-  //       override def realRun(): Unit = {
-  //         threadsStarted.await
-  //         assertEquals(0, q.remainingCapacity)
-  //         assertSame(one, q.take)
-  //       }
-  //     })
-  //   }
+  /** offer transfers elements across Executor tasks
+   */
+  @Test def testOfferInExecutor(): Unit =
+    usingPoolCleaner(Executors.newFixedThreadPool(2)) { executor =>
+      val q = new ArrayBlockingQueue[Any](2)
+      q.add(one)
+      q.add(two)
+      val threadsStarted: CheckedBarrier = new CheckedBarrier(2)
+      executor.execute(new CheckedRunnable() {
+        @throws[InterruptedException]
+        override def realRun(): Unit = {
+          assertFalse(q.offer(three))
+          threadsStarted.await
+          assertTrue(q.offer(three, LONG_DELAY_MS, MILLISECONDS))
+          assertEquals(0, q.remainingCapacity)
+        }
+      })
+      executor.execute(new CheckedRunnable() {
+        @throws[InterruptedException]
+        override def realRun(): Unit = {
+          threadsStarted.await
+          assertEquals(0, q.remainingCapacity)
+          assertSame(one, q.take)
+        }
+      })
+    }
 
-  // /** timed poll retrieves elements across Executor threads
-  //  */
-  // @Test def testPollInExecutor(): Unit =
-  //   usingPoolCleaner(Executors.newFixedThreadPool(2)) { executor =>
-  //     val q = new ArrayBlockingQueue[Any](2)
-  //     val threadsStarted = new CheckedBarrier(2)
-  //     executor.execute(new CheckedRunnable() {
-  //       @throws[InterruptedException]
-  //       override def realRun(): Unit = {
-  //         assertNull(q.poll)
-  //         threadsStarted.await
-  //         assertSame(one, q.poll(LONG_DELAY_MS, MILLISECONDS))
-  //         checkEmpty(q)
-  //       }
-  //     })
-  //     executor.execute(new CheckedRunnable() {
-  //       @throws[InterruptedException]
-  //       override def realRun(): Unit = {
-  //         threadsStarted.await
-  //         q.put(one)
-  //       }
-  //     })
-  //   }
+  /** timed poll retrieves elements across Executor threads
+   */
+  @Test def testPollInExecutor(): Unit =
+    usingPoolCleaner(Executors.newFixedThreadPool(2)) { executor =>
+      val q = new ArrayBlockingQueue[Any](2)
+      val threadsStarted = new CheckedBarrier(2)
+      executor.execute(new CheckedRunnable() {
+        @throws[InterruptedException]
+        override def realRun(): Unit = {
+          assertNull(q.poll)
+          threadsStarted.await
+          assertSame(one, q.poll(LONG_DELAY_MS, MILLISECONDS))
+          checkEmpty(q)
+        }
+      })
+      executor.execute(new CheckedRunnable() {
+        @throws[InterruptedException]
+        override def realRun(): Unit = {
+          threadsStarted.await
+          q.put(one)
+        }
+      })
+    }
 
   /** A deserialized/reserialized queue has same elements in same order
    */

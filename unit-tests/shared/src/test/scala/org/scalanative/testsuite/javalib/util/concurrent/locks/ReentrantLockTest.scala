@@ -429,44 +429,43 @@ class ReentrantLockTest extends JSR166Test {
     }
   }
 
-  // TODO: CyclicBarrier
-  // /** isLocked is true when locked and false when not
-  //  */
-  // @Test def testIsLocked(): Unit = { testIsLocked(false) }
-  // @Test def testIsLocked_fair(): Unit = { testIsLocked(true) }
-  // def testIsLocked(fair: Boolean): Unit = {
-  //   val lock = new ReentrantLock(fair)
-  //   try {
-  //     assertFalse(lock.isLocked)
-  //     lock.lock()
-  //     assertTrue(lock.isLocked)
-  //     lock.lock()
-  //     assertTrue(lock.isLocked)
-  //     lock.unlock()
-  //     assertTrue(lock.isLocked)
-  //     lock.unlock()
-  //     assertFalse(lock.isLocked)
-  //     val barrier = new CyclicBarrier(2)
-  //     val t = newStartedThread(new CheckedRunnable() {
-  //       @throws[Exception]
-  //       override def realRun(): Unit = {
-  //         lock.lock()
-  //         assertTrue(lock.isLocked)
-  //         barrier.await
-  //         barrier.await
-  //         lock.unlock()
-  //       }
-  //     })
-  //     barrier.await
-  //     assertTrue(lock.isLocked)
-  //     barrier.await
-  //     awaitTermination(t)
-  //     assertFalse(lock.isLocked)
-  //   } catch {
-  //     case fail: Exception =>
-  //       threadUnexpectedException(fail)
-  //   }
-  // }
+  /** isLocked is true when locked and false when not
+   */
+  @Test def testIsLocked(): Unit = { testIsLocked(false) }
+  @Test def testIsLocked_fair(): Unit = { testIsLocked(true) }
+  def testIsLocked(fair: Boolean): Unit = {
+    val lock = new ReentrantLock(fair)
+    try {
+      assertFalse(lock.isLocked)
+      lock.lock()
+      assertTrue(lock.isLocked)
+      lock.lock()
+      assertTrue(lock.isLocked)
+      lock.unlock()
+      assertTrue(lock.isLocked)
+      lock.unlock()
+      assertFalse(lock.isLocked)
+      val barrier = new CyclicBarrier(2)
+      val t = newStartedThread(new CheckedRunnable() {
+        @throws[Exception]
+        override def realRun(): Unit = {
+          lock.lock()
+          assertTrue(lock.isLocked)
+          barrier.await
+          barrier.await
+          lock.unlock()
+        }
+      })
+      barrier.await
+      assertTrue(lock.isLocked)
+      barrier.await
+      awaitTermination(t)
+      assertFalse(lock.isLocked)
+    } catch {
+      case fail: Exception =>
+        threadUnexpectedException(fail)
+    }
+  }
 
   /** lockInterruptibly succeeds when unlocked, else is interruptible
    */

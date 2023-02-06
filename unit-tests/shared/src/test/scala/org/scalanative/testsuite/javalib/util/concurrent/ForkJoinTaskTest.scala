@@ -350,7 +350,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val f = new AsyncFib(8)
         assertNull("invoke", f.invoke())
         assertEquals(21, f.number)
-        checkCompletedNormally(f) // TODO: fails in one of the checks
+        checkCompletedNormally(f)
       }
     }
     testInvokeOnPool(mainPool, a)

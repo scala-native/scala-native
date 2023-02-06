@@ -886,49 +886,48 @@ class FutureTaskTest extends JSR166Test {
     }
   }
 
-  // TODO: ThreadPoolExecutor
-  // /** timed get with most negative timeout works correctly (i.e. no underflow
-  //  *  bug)
-  //  */
-  // @throws[Exception]
-  // @Test def testGet_NegativeInfinityTimeout(): Unit = {
-  //   assumeFalse(
-  //     "Fails due to bug in the JVM",
-  //     Platform.executingInJVMOnJDK8OrLower
-  //   )
-  //   val pool = Executors.newFixedThreadPool(10)
-  //   val nop = new Runnable() { override def run(): Unit = {} }
-  //   val task = new FutureTask[Void](nop, null)
-  //   val futures = new util.ArrayList[Future[AnyRef]]
-  //   val r: Runnable = new Runnable() {
-  //     override def run(): Unit = {
-  //       for (timeout <- Array[Long](0L, -1L, java.lang.Long.MIN_VALUE)) {
-  //         try {
-  //           task.get(timeout, NANOSECONDS)
-  //           shouldThrow()
-  //         } catch {
-  //           case success: TimeoutException => ()
-  //           case fail: Throwable           => threadUnexpectedException(fail)
-  //         }
-  //       }
-  //     }
-  //   }
-  //   for (i <- 0 until 10) {
-  //     val f = pool.submit(r)
-  //     futures.add(f.asInstanceOf[Future[AnyRef]])
-  //   }
-  //   try {
-  //     joinPool(pool)
-  //     futures.forEach(checkCompletedNormally(_, null))
-  //   } finally task.run() // last resort to help terminate
-  // }
+  /** timed get with most negative timeout works correctly (i.e. no underflow
+   *  bug)
+   */
+  @throws[Exception]
+  @Test def testGet_NegativeInfinityTimeout(): Unit = {
+    assumeFalse(
+      "Fails due to bug in the JVM",
+      Platform.executingInJVMOnJDK8OrLower
+    )
+    val pool = Executors.newFixedThreadPool(10)
+    val nop = new Runnable() { override def run(): Unit = {} }
+    val task = new FutureTask[Void](nop, null)
+    val futures = new util.ArrayList[Future[AnyRef]]
+    val r: Runnable = new Runnable() {
+      override def run(): Unit = {
+        for (timeout <- Array[Long](0L, -1L, java.lang.Long.MIN_VALUE)) {
+          try {
+            task.get(timeout, NANOSECONDS)
+            shouldThrow()
+          } catch {
+            case success: TimeoutException => ()
+            case fail: Throwable           => threadUnexpectedException(fail)
+          }
+        }
+      }
+    }
+    for (i <- 0 until 10) {
+      val f = pool.submit(r)
+      futures.add(f.asInstanceOf[Future[AnyRef]])
+    }
+    try {
+      joinPool(pool)
+      futures.forEach(checkCompletedNormally(_, null))
+    } finally task.run() // last resort to help terminate
+  }
 
   /** toString indicates current completion state
    */
   @Test def testToString_incomplete(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     val f = new FutureTask[String](() => "")
     assertTrue(f.toString.matches(".*\\[.*Not completed.*\\]"))
@@ -939,8 +938,8 @@ class FutureTaskTest extends JSR166Test {
   }
   @Test def testToString_normal(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     val f = new FutureTask[String](() => "")
     f.run()
@@ -950,8 +949,8 @@ class FutureTaskTest extends JSR166Test {
   }
   @Test def testToString_exception(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     val f = new FutureTask[String](() => {
       def foo() =
@@ -967,8 +966,8 @@ class FutureTaskTest extends JSR166Test {
   }
   @Test def testToString_cancelled(): Unit = {
     assumeFalse(
-      "Fails due to bug in the JVM",
-      Platform.executingInJVMOnJDK8OrLower
+      "Implementation change since JDK 11",
+      Platform.executingInJVMOnLowerThenJDK11
     )
     for (mayInterruptIfRunning <- Array[java.lang.Boolean](true, false)) {
       val f = new FutureTask[String](() => "")
