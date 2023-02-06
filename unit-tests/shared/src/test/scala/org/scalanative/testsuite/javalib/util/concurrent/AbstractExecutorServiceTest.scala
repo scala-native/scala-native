@@ -96,69 +96,69 @@ class AbstractExecutorServiceTest extends JSR166Test {
     new AbstractExecutorServiceTest.DirectExecutorService
   ) { assertNullTaskSubmissionThrowsNullPointerException }
 
-  // TODO: ThreadPoolExecutor
-  // /** submit(callable).get() throws InterruptedException if interrupted
-  //  */
-  // @throws[InterruptedException]
-  // @Test def testInterruptedSubmit(): Unit = {
-  //   val submitted = new CountDownLatch(1)
-  //   val quittingTime = new CountDownLatch(1)
-  //   val awaiter = new CheckedCallable[Void]() {
-  //     @throws[InterruptedException]
-  //     override def realCall(): Void = {
-  //       assertTrue(quittingTime.await(2 * LONG_DELAY_MS, MILLISECONDS))
-  //       null
-  //     }
-  //   }
-  //   usingPoolCleaner[ThreadPoolExecutor, Unit](
-  //     new ThreadPoolExecutor(
-  //       1,
-  //       1,
-  //       60,
-  //       TimeUnit.SECONDS,
-  //       new ArrayBlockingQueue[Runnable](10)
-  //     ),
-  //     cleaner(_, quittingTime)
-  //   ) { p =>
-  //     val t = newStartedThread(
-  //       new CheckedInterruptedRunnable() {
-  //         @throws[Exception]
-  //         override def realRun(): Unit = {
-  //           val future = p.submit(awaiter)
-  //           submitted.countDown()
-  //           future.get
-  //         }
-  //       }
-  //     )
-  //     await(submitted)
-  //     t.interrupt()
-  //     awaitTermination(t)
-  //   }
-  // }
-  // /** get of submit(callable) throws ExecutionException if callable throws
-  //  *  exception
-  //  */
-  // @throws[InterruptedException]
-  // @Test def testSubmitEE(): Unit = usingPoolCleaner(
-  //   new ThreadPoolExecutor(
-  //     1,
-  //     1,
-  //     60,
-  //     TimeUnit.SECONDS,
-  //     new ArrayBlockingQueue[Runnable](10)
-  //   )
-  // ) { p =>
-  //   val c = new Callable[Any]() {
-  //     override def call = throw new ArithmeticException
-  //   }
-  //   try {
-  //     p.submit(c).get
-  //     shouldThrow()
-  //   } catch {
-  //     case success: ExecutionException =>
-  //       assertTrue(success.getCause.isInstanceOf[ArithmeticException])
-  //   }
-  // }
+  /** submit(callable).get() throws InterruptedException if interrupted
+   */
+  @throws[InterruptedException]
+  @Test def testInterruptedSubmit(): Unit = {
+    val submitted = new CountDownLatch(1)
+    val quittingTime = new CountDownLatch(1)
+    val awaiter = new CheckedCallable[Void]() {
+      @throws[InterruptedException]
+      override def realCall(): Void = {
+        assertTrue(quittingTime.await(2 * LONG_DELAY_MS, MILLISECONDS))
+        null
+      }
+    }
+    usingPoolCleaner[ThreadPoolExecutor, Unit](
+      new ThreadPoolExecutor(
+        1,
+        1,
+        60,
+        TimeUnit.SECONDS,
+        new ArrayBlockingQueue[Runnable](10)
+      ),
+      cleaner(_, quittingTime)
+    ) { p =>
+      val t = newStartedThread(
+        new CheckedInterruptedRunnable() {
+          @throws[Exception]
+          override def realRun(): Unit = {
+            val future = p.submit(awaiter)
+            submitted.countDown()
+            future.get
+          }
+        }
+      )
+      await(submitted)
+      t.interrupt()
+      awaitTermination(t)
+    }
+  }
+
+  /** get of submit(callable) throws ExecutionException if callable throws
+   *  exception
+   */
+  @throws[InterruptedException]
+  @Test def testSubmitEE(): Unit = usingPoolCleaner(
+    new ThreadPoolExecutor(
+      1,
+      1,
+      60,
+      TimeUnit.SECONDS,
+      new ArrayBlockingQueue[Runnable](10)
+    )
+  ) { p =>
+    val c = new Callable[Any]() {
+      override def call = throw new ArithmeticException
+    }
+    try {
+      p.submit(c).get
+      shouldThrow()
+    } catch {
+      case success: ExecutionException =>
+        assertTrue(success.getCause.isInstanceOf[ArithmeticException])
+    }
+  }
 
   /** invokeAny(null) throws NPE
    */

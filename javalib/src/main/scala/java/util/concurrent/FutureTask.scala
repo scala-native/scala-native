@@ -275,9 +275,9 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
             if (pred.thread == null) { // check for race
               continue = true
             }
-          } else if (!atomicWaiters.compareExchangeStrong(q, s))
-            continue = true // todo: continue is not supported
-
+          } else if (!atomicWaiters.compareExchangeStrong(q, s)) {
+            continue = true
+          }
           if (!continue) {
             q = s
           }
