@@ -300,19 +300,20 @@ private[codegen] object Generate {
           val arr = nir.Val.Local(fresh(), ObjectArray)
 
           def unwind = unwindProvider()
-          def genJoinNonDeamonThreads(): Seq[nir.Inst] =
-            if (!meta.platform.isMultithreadingEnabled) Nil
-            else
-              Seq(
-                nir.Inst.Let(
-                  nir.Op.Call(
-                    JoinNonDaemonThreadsRunSig,
-                    nir.Val.Global(JoinNonDaemonThreadsRun, nir.Type.Ptr),
-                    Seq()
-                  ),
-                  unwind
-                )
+          def drainExecutionContext: nir.Op.Call = {
+            if (meta.platform.isMultithreadingEnabled)
+              nir.Op.Call(
+                JoinNonDaemonThreadsRunSig,
+                nir.Val.Global(JoinNonDaemonThreadsRun, nir.Type.Ptr),
+                Seq()
               )
+            else
+              nir.Op.Call(
+                NativeExecutionContextLoopSig,
+                NativeExecutionContextLoop,
+                Seq(rt)
+              )
+          }
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
@@ -327,8 +328,8 @@ private[codegen] object Generate {
                 nir.Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
                 unwind
               ),
-              nir.Inst.Let(nir.Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind)
-            ) ++ genJoinNonDeamonThreads()
+              nir.Inst.Let(drainExecutionContext, unwind)
+            )
         }
       )
     }
@@ -504,7 +505,7 @@ private[codegen] object Generate {
     }
 
     def genScanableTypesIds(): Unit = {
-      // Ids of array types that can contain pointers
+      // Ids of array nir.Types that can contain pointers
       for ((symbol, tpeName) <- Seq(
             (objectArrayIdName, "Object"),
             (blobArrayIdName, "Blob")
@@ -638,9 +639,13 @@ private[codegen] object Generate {
       nir.Sig.Method("init", Seq(nir.Type.Int, nir.Type.Ptr, nir.Type.Array(nir.Rt.String)))
     )
     val RuntimeInit = nir.Val.Global(RuntimeInitName, nir.Type.Ptr)
-    val RuntimeLoopSig = nir.Type.Function(Seq(Runtime), nir.Type.Unit)
-    val RuntimeLoopName = Runtime.name.member(nir.Sig.Method("loop", Seq(nir.Type.Unit)))
-    val RuntimeLoop = nir.Val.Global(RuntimeLoopName, nir.Type.Ptr)
+
+    val NativeExecutionContext =
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.NativeExecutionContext$"))
+    val NativeExecutionContextLoopSig = nir.Type.Function(Seq(NativeExecutionContext), nir.Type.Unit)
+    val NativeExecutionContextLoopName = NativeExecutionContext.name
+      .member(nir.Sig.Method("loop", Seq(nir.Type.Unit)))
+    val NativeExecutionContextLoop = nir.Val.Global(NativeExecutionContextLoopName, nir.Type.Ptr)
 
     val LibraryInitName = extern("ScalaNativeInit")
     val LibraryInitSig = nir.Type.Function(Seq.empty, nir.Type.Int)
@@ -705,12 +710,14 @@ private[codegen] object Generate {
       ObjectArray.name,
       Runtime.name,
       RuntimeInit.name,
-      RuntimeLoop.name,
       RuntimeExecuteUEH,
       JavaThread,
       JavaThreadCurrentThread,
       JavaThreadGetUEH,
-      JavaThreadUEH
-    ) ++ { if (platform.isMultithreadingEnabled) Seq(JoinNonDaemonThreadsRun) else Nil }
+      JavaThreadUEH, {
+        if (platform.isMultithreadingEnabled) JoinNonDaemonThreadsRun
+        else NativeExecutionContextLoop.name
+      }
+    )
   }
 }
