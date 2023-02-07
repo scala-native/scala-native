@@ -234,7 +234,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
       inet.inet_ntop(
         socket.AF_INET,
-        sa.sin_addr.asInstanceOf[Ptr[Byte]],
+        sa.sin_addr.at1.asInstanceOf[Ptr[Byte]],
         ipstr,
         in.INET6_ADDRSTRLEN.toUInt
       )
@@ -243,7 +243,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in6]]
       inet.inet_ntop(
         socket.AF_INET6,
-        sa.sin6_addr.asInstanceOf[Ptr[Byte]],
+        sa.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]],
         ipstr,
         in.INET6_ADDRSTRLEN.toUInt
       )
