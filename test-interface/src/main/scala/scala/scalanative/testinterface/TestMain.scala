@@ -86,6 +86,8 @@ object TestMain {
       throw new IllegalArgumentException("One argument expected")
     }
 
+    SignalConfig.setDefaultHandlers()
+
     val serverAddr =
       if (!LinktimeInfo.isFreeBSD) iPv4Loopback
       else getFreeBSDLoopbackAddr()
@@ -95,8 +97,6 @@ object TestMain {
     val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()
-
-    SignalConfig.setDefaultHandlers()
 
     val exitCode = nativeRPC.loop()
     sys.exit(exitCode)
