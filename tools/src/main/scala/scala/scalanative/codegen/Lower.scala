@@ -19,13 +19,6 @@ object Lower {
 
     implicit val linked: Result = meta.linked
 
-    private val usesSafepoints = {
-      import scala.scalanative.build.GC._
-      def multithreadingEnabled = meta.platform.isMultithreadingEnabled
-      def supportedGC = Seq(Immix).contains(meta.config.gc)
-      multithreadingEnabled && supportedGC
-    }
-
     val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
 
     private val zero = Val.Int(0)
@@ -78,11 +71,6 @@ object Lower {
           ()
         case defn =>
           buf += onDefn(defn)
-      }
-
-      if (usesSafepoints) {
-        buf += GCSafepointDecl
-        buf += GCSetMutatorThreadStateDecl
       }
 
       buf.toSeq
@@ -616,8 +604,16 @@ object Lower {
 
     // Cached function
     private object shouldGenerateSafepoints {
+      import scalanative.build.GC._
       private var lastDefn: Defn.Define = _
       private var lastResult: Boolean = false
+
+      private val supportedGC = meta.config.gc match {
+        case Immix => true
+        case _     => false
+      }
+      private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
+      private val usesSafepoints = multithreadingEnabled && supportedGC
 
       def apply(defn: Defn.Define): Boolean = {
         if (!usesSafepoints) false
@@ -1645,24 +1641,15 @@ object Lower {
   val throwNoSuchMethodVal =
     Val.Global(throwNoSuchMethod, Type.Ptr)
 
-  private val externAttrs = Attrs(isExtern = true)
-  private def noPosition = nir.Position.NoPosition
   val GC = Global.Top("scala.scalanative.runtime.GC$")
   val GCSafepointName = GC.member(Sig.Extern("scalanative_gc_safepoint"))
   val GCSafepoint = Val.Global(GCSafepointName, Type.Ptr)
-  val GCSafepointDecl =
-    Defn.Var(externAttrs, GCSafepointName, Type.Ptr, Val.Null)(noPosition)
 
   val GCSetMutatorThreadStateSig = Type.Function(Seq(Type.Int), Type.Unit)
   val GCSetMutatorThreadState = Val.Global(
     GC.member(Sig.Extern("scalanative_gc_set_mutator_thread_state")),
     Type.Ptr
   )
-  val GCSetMutatorThreadStateDecl = Defn.Declare(
-    externAttrs,
-    GCSetMutatorThreadState.name,
-    GCSetMutatorThreadStateSig
-  )(noPosition)
 
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
@@ -1711,6 +1698,8 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
+    buf += GCSafepoint.name
+    buf += GCSetMutatorThreadState.name
     buf.toSeq
   }
 }
