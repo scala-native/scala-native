@@ -7,7 +7,7 @@ on:
       - main
       - 0.4.x
 concurrency:
-  group: jdk-compliance-${{ github.head_ref }}
+  group: jdk-compliance-${{ github.head_ref }}-${{ github.event_name	}}
   cancel-in-progress: true
 
 jobs:

@@ -6,8 +6,11 @@ on:
     branches:
       - main
       - 0.4.x
+  schedule:
+    # Every day at 2 AM UTC
+    - cron: "0 2 * * *"
 concurrency:
-  group: linux-${{ github.head_ref }}
+  group: linux-${{ github.head_ref }}-${{ github.event_name	}}
   cancel-in-progress: true
 
 jobs:
@@ -61,42 +64,78 @@ jobs:
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
-  #Main tests grid. Builds and runs tests agains multiple combination of GC, Build mode and Scala Version
-  #It can be extended to test against different OS and Arch settings
+  test-compiler-plugins:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.2, 2.13.10, 2.12.17]
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: 8
+
+      - name: Test cross compilation of compiler plugins
+        run: sbt "+nscplugin${{env.project-version}}/compile; +junitPlugin${{env.project-version}}/compile" "-J-Xmx3G"
+
   test-runtime:
     name: Test runtime
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: tests-tools
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.2]
+        gc: [none, boehm, immix, commix]
+        include:
+          - scala: 2.13.10
+            gc: immix
+          - scala: 2.12.17
+            gc: immix
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+      - name: Run tests
+        env:
+          SCALANATIVE_GC: ${{ matrix.gc }}
+        run: sbt "test-runtime ${{ matrix.scala }}"
+
+  test-runtime-ext:
+    name: Test runtime extension
+    runs-on: ubuntu-20.04
+    needs: [tests-tools, test-runtime]
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
         scala: [3.2.2, 2.13.10]
         build-mode: [debug, release-fast]
+        lto: [none, thin]
         gc: [boehm, immix, commix]
-        # Create holes in grid to lower number of tests.
-        # Excluded entries should have low impact on overall project coverage
         exclude:
+          # Covered in basic test-runtime
+          - scala: 3.2.2
+            build-mode: debug
           - scala: 2.13.10
             build-mode: debug
             gc: immix
         include:
-          - scala: 2.12.17
-            build-mode: debug
-            gc: immix
-          - scala: 2.12.17
-            build-mode: release-fast
-            gc: commix
-          - scala: 2.12.17
+          - scala: 3.2.2
             build-mode: release-size
-            gc: commix
-          - scala: 3.1.3
-            build-mode: debug
+            lto: thin
             gc: immix
-          - scala: 3.1.3
-            build-mode: release-fast
+          - scala: 3.2.2
+            build-mode: release-full
+            lto: thin
             gc: commix
-          - scala: 3.1.3
-            build-mode: release-size
+          - scala: 2.13.10
+            build-mode: release-full
+            lto: full
             gc: commix
     steps:
       - uses: actions/checkout@v3
@@ -108,6 +147,7 @@ jobs:
         env:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
+          SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
         run: sbt "test-runtime ${{ matrix.scala }}"
 
@@ -117,6 +157,7 @@ jobs:
     name: Test runtime no-opt
     runs-on: ubuntu-20.04
     needs: tests-tools
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -138,44 +179,12 @@ jobs:
           SCALANATIVE_OPTIMIZE: false
         run: sbt "test-runtime ${{ matrix.scala }}"
 
-  test-runtime-lto:
-    name: Test runtime LTO
-    runs-on: ubuntu-20.04
-    needs: tests-tools
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3.2.2, 2.13.10]
-        lto: [thin]
-        optimize: [true]
-        include:
-          # LTO full fails with 3.1 in the CI - we were not able to reproduce it locally
-          - scala: 2.13.10
-            lto: full
-            optimize: true
-          - scala: 3.2.2
-            lto: full
-            optimize: false
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-
-      - name: Run tests
-        env:
-          SCALANATIVE_MODE: release-fast
-          SCALANATIVE_GC: immix
-          SCALANATIVE_OPTIMIZE: ${{matrix.optimize}}
-          SCALANATIVE_LTO: ${{matrix.lto}}
-        run: sbt "test-runtime ${{ matrix.scala }}"
-
   # This job is basically copy-paste of test-runtime.
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
     runs-on: ubuntu-20.04
+    needs: tests-tools
     strategy:
       fail-fast: false
       matrix:
@@ -202,10 +211,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2, 2.13.10]
-        build-mode: [release-fast]
+        scala: [3.2.2]
+        build-mode: [debug, release-fast]
         gc: [boehm, immix]
-        lto: [thin]
+        lto: [none, thin]
+        exclude:
+          - build-mode: release-fast
+            lto: none
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
