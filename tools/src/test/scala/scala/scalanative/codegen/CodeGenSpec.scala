@@ -28,10 +28,10 @@ abstract class CodeGenSpec extends OptimizerSpec {
       case (config, optimized) =>
         Scope { implicit in =>
           ScalaNative.codegen(config, optimized)
-          val workdir = VirtualDirectory.real(config.workdir)
+          val workDir = VirtualDirectory.real(config.workDir)
           val outfile = Paths.get("out.ll")
 
-          assert(workdir.contains(outfile), "out.ll not found.")
+          assert(workDir.contains(outfile), "out.ll not found.")
 
           f(config, optimized, outfile)
         }

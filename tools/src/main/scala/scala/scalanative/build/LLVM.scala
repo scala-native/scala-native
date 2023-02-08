@@ -54,7 +54,7 @@ private[scalanative] object LLVM {
     val outpath = objPath.abs
     val isCpp = inpath.endsWith(cppExt)
     val isLl = inpath.endsWith(llExt)
-    val workdir = config.workdir
+    val workDir = config.workDir
 
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
     val stdflag = {
@@ -89,7 +89,7 @@ private[scalanative] object LLVM {
 
     // compile
     config.logger.running(compilec)
-    val result = Process(compilec, workdir.toFile) !
+    val result = Process(compilec, workDir.toFile) !
       Logger.toProcessLogger(config.logger)
     if (result != 0) {
       throw new BuildException(s"Failed to compile ${inpath}")
@@ -152,7 +152,7 @@ private[scalanative] object LLVM {
       objectsPaths: Seq[Path],
       linkerResult: linker.Result
   )(implicit config: Config) = {
-    val workdir = config.workdir
+    val workDir = config.workDir
     val links = {
       val srclinks = linkerResult.links.collect {
         case Link("z") if config.targetsWindows => "zlib"
@@ -191,7 +191,7 @@ private[scalanative] object LLVM {
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
     val llvmLinkInfo = flags ++ paths ++ linkopts
-    val configFile = workdir.resolve("llvmLinkInfo").toFile
+    val configFile = workDir.resolve("llvmLinkInfo").toFile
     locally {
       val pw = new PrintWriter(configFile)
       try
@@ -207,25 +207,25 @@ private[scalanative] object LLVM {
 
     val command = Seq(config.clangPP.abs, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
-    Process(command, config.workdir.toFile())
+    Process(command, config.workDir.toFile())
   }
 
   private def prepareArchiveCommand(
       objectPaths: Seq[Path]
   )(implicit config: Config) = {
-    val workdir = config.workdir
+    val workDir = config.workDir
     val llvmAR = Discover.discover("llvm-ar", "LLVM_BIN")
-    val MIRScriptFile = workdir.resolve("MIRScript").toFile
+    val MIRScriptFile = workDir.resolve("MIRScript").toFile
     val pw = new PrintWriter(MIRScriptFile)
     try {
       pw.println(s"CREATE ${escapeWhitespaces(config.buildPath.abs)}")
       objectPaths.foreach { path =>
         val uniqueName =
-          workdir
+          workDir
             .relativize(path)
             .toString()
             .replace(File.separator, "_")
-        val newPath = workdir.resolve(uniqueName)
+        val newPath = workDir.resolve(uniqueName)
         Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
         pw.println(s"ADDMOD ${escapeWhitespaces(newPath.abs)}")
       }
@@ -236,7 +236,7 @@ private[scalanative] object LLVM {
     val command = Seq(llvmAR.abs, "-M")
     config.logger.running(command)
 
-    Process(command, config.workdir.toFile()) #< MIRScriptFile
+    Process(command, config.workDir.toFile()) #< MIRScriptFile
   }
 
   /** Checks the input timestamp to see if the file needs compiling. The call to

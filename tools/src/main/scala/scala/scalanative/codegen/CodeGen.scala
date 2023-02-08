@@ -51,7 +51,7 @@ object CodeGen {
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
-      val workdir = VirtualDirectory.real(config.workdir)
+      val workDir = VirtualDirectory.real(config.workDir)
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
@@ -61,7 +61,7 @@ object CodeGen {
           .map {
             case (id, defns) =>
               val sorted = defns.sortBy(_.name.show)
-              Impl(env, sorted).gen(id.toString, workdir)
+              Impl(env, sorted).gen(id.toString, workDir)
           }
           .toSeq
           .seq
@@ -77,7 +77,7 @@ object CodeGen {
           if (name.isEmpty) "__empty_package" else name
         }
 
-        val ctx = new IncrementalCodeGenContext(config.workdir)
+        val ctx = new IncrementalCodeGenContext(config.workDir)
         ctx.collectFromPreviousState()
         try
           assembly
@@ -86,7 +86,7 @@ object CodeGen {
             .map {
               case (packageName, defns) =>
                 val packagePath = packageName.replace(".", File.separator)
-                val outFile = config.workdir.resolve(s"$packagePath.ll")
+                val outFile = config.workDir.resolve(s"$packagePath.ll")
                 val ownerDirectory = outFile.getParent()
 
                 ctx.addEntry(packageName, defns)
@@ -94,13 +94,13 @@ object CodeGen {
                   val sorted = defns.sortBy(_.name.show)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted).gen(packagePath, workdir)
+                  Impl(env, sorted).gen(packagePath, workDir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
                     s"Content of package has not changed, skiping generation of $packagePath.ll"
                   )
-                  config.workdir.resolve(s"$packagePath.ll")
+                  config.workDir.resolve(s"$packagePath.ll")
                 }
             }
             .seq
@@ -117,7 +117,7 @@ object CodeGen {
       // Clang's LTO is not available.
       def single(): Seq[Path] = {
         val sorted = assembly.sortBy(_.name.show)
-        Impl(env, sorted).gen(id = "out", workdir) :: Nil
+        Impl(env, sorted).gen(id = "out", workDir) :: Nil
       }
 
       import build.Mode._

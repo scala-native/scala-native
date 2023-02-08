@@ -167,7 +167,7 @@ private[scalanative] object ScalaNative {
   def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
       config.logger.time(s"Dumping intermediate code ($phase)") {
-        val path = config.workdir.resolve(phase + ".hnir")
+        val path = config.workDir.resolve(phase + ".hnir")
         nir.Show.dump(defns, path.toFile.getAbsolutePath)
       }
     }

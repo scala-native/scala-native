@@ -33,7 +33,7 @@ private[scalanative] object NativeLib {
       nativeLib: NativeLib
   ): Seq[Path] = {
     val destPath = NativeLib.unpackNativeCode(nativeLib)
-    val paths = NativeLib.findNativePaths(config.workdir, destPath)
+    val paths = NativeLib.findNativePaths(config.workDir, destPath)
     val (projPaths, projConfig) =
       Filter.filterNativelib(config, linkerResult, destPath, paths)
     LLVM.compile(projConfig, projPaths)
@@ -46,13 +46,13 @@ private[scalanative] object NativeLib {
    *
    *  @param classpath
    *    The classpath
-   *  @param workdir
+   *  @param workDir
    *    The base working directory
    *  @return
    *    The Seq of NativeLib objects
    */
   def findNativeLibs(config: Config): Seq[NativeLib] = {
-    val workdir = config.workdir
+    val workDir = config.workDir
     val classpath = config.classPath
     val nativeCodePrefix = "native-code"
 
@@ -70,7 +70,7 @@ private[scalanative] object NativeLib {
             .stripSuffix(jarExt)
         NativeLib(
           src = path,
-          dest = workdir.resolve(s"$nativeCodePrefix-$name-$index")
+          dest = workDir.resolve(s"$nativeCodePrefix-$name-$index")
         )
       }
 
@@ -79,13 +79,13 @@ private[scalanative] object NativeLib {
         s"No Scala Native libraries were found: $classpath"
       )
 
-    if (Files.exists(workdir)) {
+    if (Files.exists(workDir)) {
       // Fix https://github.com/scala-native/scala-native/pull/2998#discussion_r1023715815
       // Remove all stale native-code-* directories. These can be created if classpath would change
       val expectedPaths = extractPaths.map(_.dest.toAbsolutePath()).toSet
       val nativeCodePattern = raw"$nativeCodePrefix-.*-\d+"
       Files
-        .list(workdir)
+        .list(workDir)
         .filter(_.getFileName().toString() matches nativeCodePattern)
         .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
         .forEach(IO.deleteRecursive(_))
@@ -101,9 +101,9 @@ private[scalanative] object NativeLib {
    *  @return
    *    All file paths to compile
    */
-  def findNativePaths(workdir: Path, destPath: Path): Seq[Path] = {
-    val srcPatterns = destSrcPattern(workdir, destPath)
-    IO.getAll(workdir, srcPatterns)
+  def findNativePaths(workDir: Path, destPath: Path): Seq[Path] = {
+    val srcPatterns = destSrcPattern(workDir, destPath)
+    IO.getAll(workDir, srcPatterns)
   }
 
   /** The linker uses the VirtualDirectory which is sensitive to empty
@@ -138,7 +138,7 @@ private[scalanative] object NativeLib {
     if (isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
 
-  /** Unpack the `src` Jar Path to `workdir/dest` where `dest` is the generated
+  /** Unpack the `src` Jar Path to `workDir/dest` where `dest` is the generated
    *  directory where the Scala Native lib or a third party library that
    *  includes native code is copied.
    *
@@ -148,7 +148,7 @@ private[scalanative] object NativeLib {
    *  @param nativelib
    *    The NativeLib to unpack.
    *  @return
-   *    The Path where the nativelib has been unpacked, `workdir/dest`.
+   *    The Path where the nativelib has been unpacked, `workDir/dest`.
    */
   private def unpackNativeJar(nativelib: NativeLib): Path = {
     val target = nativelib.dest
@@ -168,7 +168,7 @@ private[scalanative] object NativeLib {
     target
   }
 
-  /** Copy project code from project `src` Path to `workdir/dest` Path where it
+  /** Copy project code from project `src` Path to `workDir/dest` Path where it
    *  can be compiled and linked.
    *
    *  This does not copy if no native code has changed.
@@ -176,7 +176,7 @@ private[scalanative] object NativeLib {
    *  @param nativelib
    *    The NativeLib to copy.
    *  @return
-   *    The Path where the code was copied, `workdir/dest`.
+   *    The Path where the code was copied, `workDir/dest`.
    */
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target = nativelib.dest
@@ -251,16 +251,16 @@ private[scalanative] object NativeLib {
    *  `native` directory and also in the `scala-native` sub directory gets
    *  picked up for compilation.
    *
-   *  @param workdir
+   *  @param workDir
    *    The base working directory
    *  @param destPath
    *    The dest Path to the native lib
    *  @return
    *    The source pattern
    */
-  private def destSrcPattern(workdir: Path, destPath: Path): String = {
+  private def destSrcPattern(workDir: Path, destPath: Path): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
-    val pathPat = makeDirPath(workdir, dirPattern, nativeCodeDir)
+    val pathPat = makeDirPath(workDir, dirPattern, nativeCodeDir)
     LLVM.srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
 

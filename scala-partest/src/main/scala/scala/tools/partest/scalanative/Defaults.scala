@@ -12,7 +12,7 @@ object Defaults {
     else Seq("z", "pthread")
   }.map(Link)
 
-  def workdir(): Path = Files.createTempDirectory("partest-")
+  def workDir(): Path = Files.createTempDirectory("partest-")
 
   def errorFn(str: String): Boolean = {
     scala.Console.err println str

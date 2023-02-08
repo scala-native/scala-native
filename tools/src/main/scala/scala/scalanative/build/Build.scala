@@ -126,11 +126,11 @@ object Build {
       )
   }
 
-  // create workdir if it doesn't exist
+  // create workDir if it doesn't exist
   private def checkWorkdirExists(config: Config): Unit = {
-    val workdir = config.workdir
-    if (Files.notExists(workdir)) {
-      Files.createDirectories(workdir)
+    val workDir = config.workDir
+    if (Files.notExists(workDir)) {
+      Files.createDirectories(workDir)
     }
   }
 

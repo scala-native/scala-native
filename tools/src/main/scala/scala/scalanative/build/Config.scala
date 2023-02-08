@@ -18,7 +18,7 @@ sealed trait Config {
    *  [[#baseDir]] / `native` or `native-test` if a test project. The build
    *  creates directories if they do not exist.
    */
-  def workdir: Path
+  def workDir: Path
 
   /** Name of the project module from the build system. Must be unique amongst
    *  modules in the larger project.
@@ -51,7 +51,7 @@ sealed trait Config {
   /** Build path to support multiple main applications.
    *
    *  For libraries it is the same as the [[#artifactPath]] and for applications
-   *  it resolves to [[#workdir]] `/` [[#artifactName]] and after the build it
+   *  it resolves to [[#workDir]] `/` [[#artifactName]] and after the build it
    *  is copied to [[#artifactPath]].
    */
   def buildPath: Path
@@ -202,7 +202,7 @@ object Config {
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
 
-    override lazy val workdir: Path =
+    override lazy val workDir: Path =
       baseDir.resolve(s"native$nameSuffix")
 
     override lazy val baseName: String =
@@ -220,7 +220,7 @@ object Config {
     override lazy val buildPath: Path =
       compilerConfig.buildTarget match {
         case BuildTarget.Application =>
-          workdir.resolve(artifactName(mainClass.get))
+          workDir.resolve(artifactName(mainClass.get))
         case _: BuildTarget.Library =>
           baseDir.resolve(artifactName)
       }
@@ -250,7 +250,7 @@ object Config {
       s"""Config(
         | - baseDir:        $baseDir
         | - testConfig:     $testConfig
-        | - workdir:        $workdir
+        | - workDir:        $workDir
         | - moduleName:     $moduleName
         | - baseName:       $baseName
         | - artifactName:   $artifactName

@@ -33,7 +33,7 @@ class MainGenericRunner {
     def loadSetting[T](name: String, default: => T)(fn: String => T) =
       Option(System.getProperty(s"scalanative.partest.$name")).fold(default)(fn)
 
-    val dir = Defaults.workdir()
+    val dir = Defaults.workDir()
     val execPath: Path = {
       val config = Defaults.config
         .withCompilerConfig {
