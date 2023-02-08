@@ -34,11 +34,11 @@ object Validator {
     }
   }
 
-  // throws if moduleName or basename is not set
+  // throws if moduleName or baseName is not set
   private def validateBasename(config: Config): Unit =
-    if (config.basename.trim.isEmpty) { // trim for non default error
+    if (config.baseName.trim.isEmpty) { // trim for non default error
       throw new BuildException(
-        "Config defaultBasename or NativeConfig basename must be set."
+        "Config defaultBasename or NativeConfig baseName must be set."
       )
     }
 

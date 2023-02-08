@@ -70,7 +70,7 @@ sealed trait NativeConfig {
   def embedResources: Boolean
 
   /** Base name for executable or library, typically the project name. */
-  def basename: String
+  def baseName: String
 
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
@@ -179,7 +179,7 @@ sealed trait NativeConfig {
    *
    *  Warning: must be unique across project modules.
    */
-  def withBasename(value: String): NativeConfig
+  def withBaseName(value: String): NativeConfig
 
   /** Create a optimization configuration */
   def withOptimizerConfig(value: OptimizerConfig): NativeConfig
@@ -211,7 +211,7 @@ object NativeConfig {
       multithreadingSupport = false,
       linktimeProperties = Map.empty,
       embedResources = false,
-      basename = "",
+      baseName = "",
       optimizerConfig = OptimizerConfig.empty
     )
 
@@ -235,7 +235,7 @@ object NativeConfig {
       multithreadingSupport: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
-      basename: String,
+      baseName: String,
       optimizerConfig: OptimizerConfig
   ) extends NativeConfig {
 
@@ -303,8 +303,8 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
-    def withBasename(value: String): NativeConfig = {
-      copy(basename = value)
+    def withBaseName(value: String): NativeConfig = {
+      copy(baseName = value)
     }
 
     override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
@@ -346,7 +346,7 @@ object NativeConfig {
         | - multithreading          $multithreadingSupport
         | - linktimeProperties:     $listLinktimeProperties
         | - embedResources:         $embedResources
-        | - basename:               $basename
+        | - baseName:               $baseName
         | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
         |)""".stripMargin
     }

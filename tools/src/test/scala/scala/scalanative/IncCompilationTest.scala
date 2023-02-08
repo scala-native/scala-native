@@ -116,7 +116,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
   )(implicit in: Scope): Config = {
     val classpath = makeClasspath(outDir)
     Config.empty
-      .withBasedir(outDir)
+      .withBaseDir(outDir)
       .withModuleName(moduleName)
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
@@ -132,6 +132,6 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
     .withGC(Discover.GC())
     .withMode(Discover.mode())
     .withOptimize(Discover.optimize())
-    .withBasename("out")
+    .withBaseName("out")
 
 }

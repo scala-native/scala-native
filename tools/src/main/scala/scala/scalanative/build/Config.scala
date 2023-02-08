@@ -9,13 +9,13 @@ sealed trait Config {
   private val testSuffix = "-test"
 
   /** Base Directory for native work products. */
-  def basedir: Path
+  def baseDir: Path
 
   /** Indicates whether this is a test config or not. */
   def testConfig: Boolean
 
   /** Directory to emit intermediate compilation results. Calculated based on
-   *  [[#basedir]] / `native` or `native-test` if a test project. The build
+   *  [[#baseDir]] / `native` or `native-test` if a test project. The build
    *  creates directories if they do not exist.
    */
   def workdir: Path
@@ -30,21 +30,21 @@ sealed trait Config {
 
   /** Base name for executable or library, typically the project/module name
    *  from the build tool [[#moduleName]] or can be overridden by the user with
-   *  [[NativeConfig#basename]]. This must be unique over all module names and
-   *  other `basename`s in the project. Delegated method to
-   *  [[NativeConfig#basename]]
+   *  [[NativeConfig#baseName]]. This must be unique over all module names and
+   *  other `baseName`s in the project. Delegated method to
+   *  [[NativeConfig#baseName]]
    */
-  def basename: String
+  def baseName: String
 
   /** This is the name of the executable or library. Calculated based on a
-   *  prefix for libraries `lib` for UNIX like OSes, [[#basename]], `-test` if
+   *  prefix for libraries `lib` for UNIX like OSes, [[#baseName]], `-test` if
    *  [[#testConfig]] is `true`, and the executable or library suffix depending
    *  on platform and library type.
    */
   def artifactName: String
 
   /** Final Path to the output file, executable or library. Calculated based on
-   *  [[#basedir]] `/` [[#artifactName]].
+   *  [[#baseDir]] `/` [[#artifactName]].
    */
   def artifactPath: Path
 
@@ -69,7 +69,7 @@ sealed trait Config {
   def compilerConfig: NativeConfig
 
   /** Create a new config with given base directory. */
-  def withBasedir(value: Path): Config
+  def withBaseDir(value: Path): Config
 
   /** Create a new config with test (true) or normal config (false). */
   def withTestConfig(value: Boolean): Config
@@ -159,7 +159,7 @@ object Config {
    */
   def empty: Config =
     Impl(
-      basedir = Paths.get(""),
+      baseDir = Paths.get(""),
       testConfig = false,
       moduleName = "",
       mainClass = None,
@@ -169,7 +169,7 @@ object Config {
     )
 
   private final case class Impl(
-      basedir: Path,
+      baseDir: Path,
       testConfig: Boolean,
       moduleName: String,
       mainClass: Option[String],
@@ -178,8 +178,8 @@ object Config {
       compilerConfig: NativeConfig
   ) extends Config {
 
-    def withBasedir(value: Path): Config =
-      copy(basedir = value)
+    def withBaseDir(value: Path): Config =
+      copy(baseDir = value)
 
     def withTestConfig(value: Boolean): Config =
       copy(testConfig = value)
@@ -203,26 +203,26 @@ object Config {
       copy(compilerConfig = fn(compilerConfig))
 
     override lazy val workdir: Path =
-      basedir.resolve(s"native$nameSuffix")
+      baseDir.resolve(s"native$nameSuffix")
 
-    override lazy val basename: String =
-      compilerConfig.basename match {
+    override lazy val baseName: String =
+      compilerConfig.baseName match {
         case bn if bn.nonEmpty => bn
         case _                 => moduleName
       }
 
     override lazy val artifactName: String =
-      artifactName(basename)
+      artifactName(baseName)
 
     override lazy val artifactPath: Path =
-      basedir.resolve(artifactName)
+      baseDir.resolve(artifactName)
 
     override lazy val buildPath: Path =
       compilerConfig.buildTarget match {
         case BuildTarget.Application =>
           workdir.resolve(artifactName(mainClass.get))
         case _: BuildTarget.Library =>
-          basedir.resolve(artifactName)
+          baseDir.resolve(artifactName)
       }
 
     private def artifactName(name: String) = {
@@ -248,11 +248,11 @@ object Config {
       val classPathFormat =
         classPath.mkString("List(", "\n".padTo(22, ' '), ")")
       s"""Config(
-        | - basedir:        $basedir
+        | - baseDir:        $baseDir
         | - testConfig:     $testConfig
         | - workdir:        $workdir
         | - moduleName:     $moduleName
-        | - basename:       $basename
+        | - baseName:       $baseName
         | - artifactName:   $artifactName
         | - artifactPath:   $artifactPath
         | - buildPath:      $buildPath

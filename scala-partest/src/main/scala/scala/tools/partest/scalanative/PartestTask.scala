@@ -137,7 +137,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       forkedClasspath: Seq[java.nio.file.Path]
   ): Seq[java.nio.file.Path] = {
     val config = Defaults.config
-      .withBasedir(Defaults.workdir())
+      .withBaseDir(Defaults.workdir())
       .withClassPath(options.nativeClasspath ++ forkedClasspath)
       .withCompilerConfig {
         _.withLTO(options.lto)

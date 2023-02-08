@@ -39,7 +39,7 @@ object Build {
    *      }
    *      .withMainClass(main)
    *      .withClassPath(classpath)
-   *      .withBasedir(basedir)
+   *      .withBaseDir(basedir)
    *      .withModuleName(moduleName)
    *      .withTestConfig(false)
    *      .withLogger(logger)
