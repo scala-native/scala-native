@@ -8,6 +8,7 @@ scala/lang/primitives/BoxUnboxTest.scala
 scala/lang/stringinterpol/StringContextTest.scala
 scala/collection/SeqTest.scala
 scala/collection/Sizes.scala
+scala/collection/SetMapConsistencyTest.scala
 scala/collection/mutable/OpenHashMapTest.scala
 scala/collection/immutable/ListTest.scala
 scala/collection/immutable/ListMapTest.scala
@@ -142,13 +143,6 @@ scala/runtime/FloatBoxingTest.scala
 scala/collection/mutable/AnyRefMapTest.scala
 
 
-#scala.collection.parallel._
-scala/collection/NewBuilderTest.scala
-scala/collection/parallel/immutable/ParRangeTest.scala
-scala/collection/parallel/TaskTest.scala
-scala/collection/ParallelConsistencyTest.scala
-scala/runtime/ScalaRunTimeTest.scala
-
 #j.l.reflect.Modifier
 scala/reflect/macros/AttachmentsTest.scala
 scala/collection/IteratorTest.scala
@@ -161,11 +155,6 @@ scala/util/SpecVersionTest.scala
 scala/tools/testing/AssertUtil.scala
 scala/tools/testing/AssertUtilTest.scala
 scala/tools/testing/AssertThrowsTest.scala
-
-#s.c.c.TrieMap
-scala/collection/concurrent/TrieMapTest.scala
-scala/collection/SetMapConsistencyTest.scala
-scala/collection/SetMapRulesTest.scala
 
 #j.i.ObjectStream
 scala/PartialFunctionSerializationTest.scala
@@ -186,12 +175,16 @@ scala/collection/convert/NullSafetyToJavaTest.scala
 # Concurrency primitives
 scala/io/SourceTest.scala
 scala/sys/process/ProcessTest.scala
-scala/concurrent/impl/DefaultPromiseTest.scala
 
 #============
 ## Tests fail
 
 scala/collection/immutable/StreamTest.scala
+
+### Deadlocks maybe needs j.u.c.ConcurrentLinkedQueue
+scala/concurrent/impl/DefaultPromiseTest.scala
+scala/collection/parallel/TaskTest.scala
+scala/collection/NewBuilderTest.scala
 
 #=====
 ## Assumes JUnit 4.12

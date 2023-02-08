@@ -763,10 +763,20 @@ object Build {
         Test / unmanagedSources ++= {
           if (!shouldPartest.value) Nil
           else {
-            val blacklist: Set[String] =
-              blacklistedFromFile(
-                (Test / resourceDirectory).value / scalaVersion.value / "BlacklistedTests.txt"
-              )
+            val blacklist: Set[String] = {
+              val versionTestsDir =
+                (Test / resourceDirectory).value / scalaVersion.value
+              val base =
+                blacklistedFromFile(versionTestsDir / "BlacklistedTests.txt")
+              val requiringMultithreading =
+                if (nativeConfig.value.multithreadingSupport) Set.empty[String]
+                else
+                  blacklistedFromFile(
+                    versionTestsDir / "BlacklistedTests-require-threads.txt",
+                    ignoreMissing = true
+                  )
+              base ++ requiringMultithreading
+            }
 
             val jUnitTestsPath =
               (scalaPartest / fetchScalaSource).value / "test" / "junit"

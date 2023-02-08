@@ -335,10 +335,19 @@ object Settings {
   }
 
   // Get all blacklisted tests from a file
-  def blacklistedFromFile(file: File) =
-    IO.readLines(file)
-      .filter(l => l.nonEmpty && !l.startsWith("#"))
-      .toSet
+  def blacklistedFromFile(
+      file: File,
+      ignoreMissing: Boolean = false
+  ): Set[String] =
+    if (file.exists())
+      IO.readLines(file)
+        .filter(l => l.nonEmpty && !l.startsWith("#"))
+        .toSet
+    else {
+      if (ignoreMissing) System.err.println(s"Ignore not existing file $file")
+      else throw new RuntimeException(s"Missing file: $file")
+      Set.empty
+    }
 
   // Get all scala sources from a directory
   def allScalaFromDir(dir: File): Seq[(String, java.io.File)] =
