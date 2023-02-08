@@ -1075,17 +1075,12 @@ object Lower {
       val zoneHandle = genVal(buf, ptr)
       init match {
         case len if len.ty == Type.Int =>
-          val (arrayAllocSig, arrayAlloc, args) =
-            if (zoneHandle == Val.Null)
-              (arrayAllocInHeapSig, arrayAllocInHeap, Seq(len))
-            else
-              (arrayAllocInZoneSig, arrayAllocInZone, Seq(len, zoneHandle))
           val sig = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
           val func = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
           val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
           buf.let(
             n,
-            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module) ++ args),
+            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len, zoneHandle)),
             unwind
           )
         case arrval: Val.ArrayValue =>
@@ -1274,24 +1269,7 @@ object Lower {
   val throwSig = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_ = Val.Global(throwName, Type.Ptr)
 
-  val arrayAllocInHeap = Type.typeToArray.map {
-    case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
-      val arrcls = Type.Ref(arrname)
-      ty -> Global.Member(
-        Global.Top(id + "$"),
-        Sig.Method("alloc", Seq(Type.Int, arrcls))
-      )
-  }.toMap
-  val arrayAllocInHeapSig = Type.typeToArray.map {
-    case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
-      ty -> Type.Function(
-        Seq(Type.Ref(Global.Top(id + "$")), Type.Int),
-        Type.Ref(arrname)
-      )
-  }.toMap
-  val arrayAllocInZone = Type.typeToArray.map {
+  val arrayAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       val arrcls = Type.Ref(arrname)
@@ -1300,7 +1278,7 @@ object Lower {
         Sig.Method("alloc", Seq(Type.Int, Type.Ptr, arrcls))
       )
   }.toMap
-  val arrayAllocInZoneSig = Type.typeToArray.map {
+  val arrayAllocSig = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       ty -> Type.Function(
@@ -1463,8 +1441,7 @@ object Lower {
     buf ++= BoxTo.values
     buf ++= UnboxTo.values
     buf += arrayLength
-    buf ++= arrayAllocInHeap.values
-    buf ++= arrayAllocInZone.values
+    buf ++= arrayAlloc.values
     buf ++= arraySnapshot.values
     buf ++= arrayApplyGeneric.values
     buf ++= arrayApply.values

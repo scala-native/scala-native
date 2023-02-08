@@ -83,25 +83,26 @@ trait NirGenExpr(using Context) {
 
     lazy val SafeZoneHandle = new Property.Key[Val]
 
-    private def safeZoneHandle(tree: Tree): Val = {
-      if tree.hasAttachment(SafeZoneHandle) then
-        tree.getAttachment(SafeZoneHandle).get
-      else Val.Null
-    }
+    private def safeZoneHandle(tree: Tree): Val =
+      tree.getAttachment(SafeZoneHandle).getOrElse(Val.Null)
 
     def genApply(app: Apply): Val = {
       app match {
         case Apply(_, List(sz, tree))
-            if app.fun.symbol == defnNir.SafeZoneCompat_withSafeZone && !tree
-              .hasAttachment(SafeZoneHandle) =>
+            if app.fun.symbol == defnNir.SafeZoneCompat_withSafeZone =>
           // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
           // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
           // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
           val handle = genExpr(Select(sz, termName("handle")))
+          if tree.hasAttachment(SafeZoneHandle) then
+            report.warning(
+              s"Safe zone handle is already attached to ${tree}, which is unexpected.",
+              tree.srcPos
+            );
           tree.putAttachment(SafeZoneHandle, handle)
-          // `withSafeZone(sz, new T(...))` is translated to `{ sz.checkOpen; new T(...) }`.
+          // `withSafeZone(sz, new T(...))` is translated to `{ sz.checkOpen(); new T(...) }`.
           val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
-          val block = Block(List(checkOpen), app)
+          val block = Block(List(checkOpen), tree)
           genExpr(block)
         case _ => genApplyNormal(app)
       }

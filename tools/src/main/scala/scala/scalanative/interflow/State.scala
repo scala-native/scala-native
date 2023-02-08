@@ -267,12 +267,7 @@ final class State(block: Local) {
             Val.Int(values.length)
           }
         emit.arrayalloc(elemty, init, escapedVal(zoneHandle), Next.None)
-      case VirtualInstance(
-            BoxKind,
-            cls,
-            Array(value),
-            zoneHandle
-          ) => // TODO-yawen: is boxed value always allocated in heap?
+      case VirtualInstance(BoxKind, cls, Array(value), zoneHandle) =>
         reachVal(value)
         reachVal(zoneHandle)
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
