@@ -22,11 +22,9 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.atomic.{CAtomicRef, memory_order}
 
 object AtomicReferenceFieldUpdaterTest {
-  class IntrinsicBasedImpl[T <: AnyRef, V <: AnyRef](selector: T => RawPtr)
-      extends AtomicReferenceFieldUpdater[T, V]() {
-    private def atomicRef(insideObj: T) =
-      new CAtomicRef[V](fromRawPtr(selector(insideObj)))
-
+  class IntrinsicBasedImpl[T <: AnyRef, V <: AnyRef](
+      atomicRef: T => CAtomicRef[V]
+  ) extends AtomicReferenceFieldUpdater[T, V]() {
     def compareAndSet(obj: T, expect: V, update: V): Boolean =
       atomicRef(obj).compareExchangeStrong(expect, update)
 
@@ -49,37 +47,42 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
   @volatile protected var protectedField: Integer = null
 
   def updaterForX =
-    new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](
-      classFieldRawPtr(_, "x")
+    new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](obj =>
+      new CAtomicRef(
+        fromRawPtr(
+          classFieldRawPtr(obj, "x")
+        )
+      )
     )
   def updaterForProtectedField =
-    new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](
-      classFieldRawPtr(_, "protectedField")
+    new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](obj =>
+      new CAtomicRef(
+        fromRawPtr(
+          classFieldRawPtr(obj, "protectedField")
+        )
+      )
     )
 
   // Platform limitatios: following cases would not compile / would not be checked
   // Construction with non-existent field throws RuntimeException
-  // def testConstructor(): Unit = ???
+  // @Test def testConstructor(): Unit = ???
 
   // construction with field not of given type throws IllegalArgumentException
-  // def testConstructor2(): Unit = ???
+  // @Test def testConstructor2(): Unit = ???
 
   // construction with non-volatile field throws IllegalArgumentException
-  // def testConstructor3(): Unit = ???
+  // @Test def testConstructor3(): Unit = ???
 
   // construction using private field from subclass throws RuntimeException
-  // def testPrivateFieldInSubclass(): Unit = ???
+  // @Test def testPrivateFieldInSubclass(): Unit = ???
 
   // Constructor with non-reference field throws ClassCastException
-  // def testConstructor4(): Unit = ???
-
-  // construction using private field from subclass throws RuntimeException
-  def testPrivateFieldInSubclass(): Unit = ???
+  // @Test def testConstructor4(): Unit = ???
 
   /** construction from unrelated class; package access is allowed, private
    *  access is not
    */
-  def testUnrelatedClassAccess(): Unit = {
+  @Test def testUnrelatedClassAccess(): Unit = {
     new NonNestmates().checkPackageAccess(this)
     // Imposible to create
     // new NonNestmates().checkPrivateAccess(this)
@@ -87,7 +90,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
 
   /** get returns the last value set or assigned
    */
-  def testGetSet(): Unit = {
+  @Test def testGetSet(): Unit = {
     val a = updaterForX
     x = one
     assertSame(one, a.get(this))
@@ -99,7 +102,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
 
   /** get returns the last value lazySet by same thread
    */
-  def testGetLazySet(): Unit = {
+  @Test def testGetLazySet(): Unit = {
     val a = updaterForX
     x = one
     assertSame(one, a.get(this))
@@ -111,7 +114,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
 
   /** compareAndSet succeeds in changing value if same as expected else fails
    */
-  def testCompareAndSet(): Unit = {
+  @Test def testCompareAndSet(): Unit = {
     val a = updaterForX
     x = one
     assertTrue(a.compareAndSet(this, one, two))
@@ -126,7 +129,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
   /** compareAndSet succeeds in changing protected field value if same as
    *  expected else fails
    */
-  def testCompareAndSetProtectedInSubclass(): Unit = {
+  @Test def testCompareAndSetProtectedInSubclass(): Unit = {
     new NonNestmates.AtomicReferenceFieldUpdaterTestSubclass()
       .checkCompareAndSetProtectedSub()
   }
@@ -134,7 +137,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
   /** compareAndSet in one thread enables another waiting for value to succeed
    */
   @throws[Exception]
-  def testCompareAndSetInMultipleThreads(): Unit = {
+  @Test def testCompareAndSetInMultipleThreads(): Unit = {
     val self = this
     x = one
     val a = updaterForX
@@ -153,7 +156,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
   /** repeated weakCompareAndSet succeeds in changing value when same as
    *  expected
    */
-  def testWeakCompareAndSet(): Unit = {
+  @Test def testWeakCompareAndSet(): Unit = {
     val a = updaterForX
     x = one
     while (!a.weakCompareAndSet(this, one, two)) ()
@@ -165,7 +168,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
 
   /** getAndSet returns previous value and sets to given value
    */
-  def testGetAndSet(): Unit = {
+  @Test def testGetAndSet(): Unit = {
     val a = updaterForX
     x = one
     assertSame(one, a.getAndSet(this, zero))

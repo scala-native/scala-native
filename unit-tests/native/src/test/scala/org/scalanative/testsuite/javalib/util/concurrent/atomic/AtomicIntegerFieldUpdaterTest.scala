@@ -22,11 +22,8 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.atomic.{CAtomicInt, memory_order}
 
 object AtomicIntegerFieldUpdaterTest {
-  class IntrinsicBasedImpl[T <: AnyRef](selector: T => RawPtr)
+  class IntrinsicBasedImpl[T <: AnyRef](atomicRef: T => CAtomicInt)
       extends AtomicIntegerFieldUpdater[T]() {
-    private def atomicRef(insideObj: T) =
-      new CAtomicInt(fromRawPtr(selector(insideObj)))
-
     def compareAndSet(obj: T, expect: Int, update: Int): Boolean =
       atomicRef(obj).compareExchangeStrong(expect, update)
 
@@ -48,32 +45,41 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
   @volatile var x = 0
   @volatile protected var protectedField = 0
 
-  def updaterForX = new IntrinsicBasedImpl(
-    classFieldRawPtr[AtomicIntegerFieldUpdaterTest](_, "x")
+  def updaterForX = new IntrinsicBasedImpl[AtomicIntegerFieldUpdaterTest](obj =>
+    new CAtomicInt(
+      fromRawPtr(
+        classFieldRawPtr(obj, "x")
+      )
+    )
   )
-  def updaterForProtectedField = new IntrinsicBasedImpl(
-    classFieldRawPtr[AtomicIntegerFieldUpdaterTest](_, "protectedField")
-  )
+  def updaterForProtectedField =
+    new IntrinsicBasedImpl[AtomicIntegerFieldUpdaterTest](obj =>
+      new CAtomicInt(
+        fromRawPtr(
+          classFieldRawPtr(obj, "protectedField")
+        )
+      )
+    )
 
   // Platform limitatios: following cases would not compile / would not be checked
   /** Construction with non-existent field throws RuntimeException */
-  // def testConstructor(): Unit = ???
+  // @Test def testConstructor(): Unit = ???
 
   /** construction with field not of given type throws IllegalArgumentException
    */
-  // def testConstructor2(): Unit = ???
+  // @Test def testConstructor2(): Unit = ???
 
   /** construction with non-volatile field throws IllegalArgumentException
    */
-  // def testConstructor3(): Unit = ???
+  // @Test def testConstructor3(): Unit = ???
 
   /** construction using private field from subclass throws RuntimeException */
-  // def testPrivateFieldInSubclass(): Unit = ???
+  // @Test def testPrivateFieldInSubclass(): Unit = ???
 
   /** construction from unrelated class; package access is allowed, private
    *  access is not
    */
-  def testUnrelatedClassAccess(): Unit = {
+  @Test def testUnrelatedClassAccess(): Unit = {
     new NonNestmates().checkPackageAccess(this)
     // would not compile - cannot have intrinsic field ptr to private field
     // new NonNestmates().checkPrivateAccess(this)
@@ -81,7 +87,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** get returns the last value set or assigned
    */
-  def testGetSet(): Unit = {
+  @Test def testGetSet(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(1, a.get(this))
@@ -93,7 +99,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** get returns the last value lazySet by same thread
    */
-  def testGetLazySet(): Unit = {
+  @Test def testGetLazySet(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(1, a.get(this))
@@ -105,7 +111,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** compareAndSet succeeds in changing value if equal to expected else fails
    */
-  def testCompareAndSet(): Unit = {
+  @Test def testCompareAndSet(): Unit = {
     val a = updaterForX
     x = 1
     assertTrue(a.compareAndSet(this, 1, 2))
@@ -120,7 +126,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
   /** compareAndSet succeeds in changing protected field value if equal to
    *  expected else fails
    */
-  def testCompareAndSetProtected(): Unit = {
+  @Test def testCompareAndSetProtected(): Unit = {
     val a = updaterForProtectedField
     protectedField = 1
     assertTrue(a.compareAndSet(this, 1, 2))
@@ -135,7 +141,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
   /** compareAndSet succeeds in changing protected field value if equal to
    *  expected else fails
    */
-  def testCompareAndSetProtectedInSubclass(): Unit = {
+  @Test def testCompareAndSetProtectedInSubclass(): Unit = {
     new NonNestmates.AtomicIntegerFieldUpdaterTestSubclass()
       .checkCompareAndSetProtectedSub()
   }
@@ -143,13 +149,13 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
   /** compareAndSet in one thread enables another waiting for value to succeed
    */
   @throws[Exception]
-  def testCompareAndSetInMultipleThreads(): Unit = {
-    def testSuite = this
+  @Test def testCompareAndSetInMultipleThreads(): Unit = {
+    def self = this
     x = 1
     val a = updaterForX
     val t = new Thread(new CheckedRunnable() {
       override def realRun(): Unit = {
-        while (!a.compareAndSet(testSuite, 2, 3))
+        while (!a.compareAndSet(self, 2, 3))
           Thread.`yield`()
       }
     })
@@ -163,7 +169,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
   /** repeated weakCompareAndSet succeeds in changing value when equal to
    *  expected
    */
-  def testWeakCompareAndSet(): Unit = {
+  @Test def testWeakCompareAndSet(): Unit = {
     val a = updaterForX
     x = 1
     while (!a.weakCompareAndSet(this, 1, 2)) ()
@@ -175,7 +181,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** getAndSet returns previous value and sets to given value
    */
-  def testGetAndSet(): Unit = {
+  @Test def testGetAndSet(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(1, a.getAndSet(this, 0))
@@ -185,7 +191,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** getAndAdd returns previous value and adds given value
    */
-  def testGetAndAdd(): Unit = {
+  @Test def testGetAndAdd(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(1, a.getAndAdd(this, 2))
@@ -196,7 +202,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** getAndDecrement returns previous value and decrements
    */
-  def testGetAndDecrement(): Unit = {
+  @Test def testGetAndDecrement(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(1, a.getAndDecrement(this))
@@ -206,7 +212,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** getAndIncrement returns previous value and increments
    */
-  def testGetAndIncrement(): Unit = {
+  @Test def testGetAndIncrement(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(1, a.getAndIncrement(this))
@@ -220,7 +226,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** addAndGet adds given value to current, and returns current value
    */
-  def testAddAndGet(): Unit = {
+  @Test def testAddAndGet(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(3, a.addAndGet(this, 2))
@@ -231,7 +237,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** decrementAndGet decrements and returns current value
    */
-  def testDecrementAndGet(): Unit = {
+  @Test def testDecrementAndGet(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(0, a.decrementAndGet(this))
@@ -242,7 +248,7 @@ class AtomicIntegerFieldUpdaterTest extends JSR166Test {
 
   /** incrementAndGet increments and returns current value
    */
-  def testIncrementAndGet(): Unit = {
+  @Test def testIncrementAndGet(): Unit = {
     val a = updaterForX
     x = 1
     assertEquals(2, a.incrementAndGet(this))

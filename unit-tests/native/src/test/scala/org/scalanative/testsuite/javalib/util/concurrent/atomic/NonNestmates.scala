@@ -16,6 +16,8 @@ import JSR166Test._
 
 import java.util.concurrent.atomic._
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
 
 /** This source file contains test code deliberately not contained in the same
  *  source file as the tests that use them, to avoid making them nestmates,
@@ -36,8 +38,12 @@ object NonNestmates {
       // )
       val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
         AtomicIntegerFieldUpdaterTest
-      ](
-        classFieldRawPtr(_, "protectedField")
+      ](obj =>
+        new CAtomicInt(
+          fromRawPtr(
+            classFieldRawPtr(obj, "protectedField")
+          )
+        )
       )
       this.protectedField = 1
       assertTrue(a.compareAndSet(this, 1, 2))
@@ -56,8 +62,12 @@ object NonNestmates {
     def checkCompareAndSetProtectedSub(): Unit = {
       val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
         AtomicLongFieldUpdaterTest
-      ](
-        classFieldRawPtr(_, "protectedField")
+      ](obj =>
+        new CAtomicInt(
+          fromRawPtr(
+            classFieldRawPtr(obj, "protectedField")
+          )
+        )
       )
       this.protectedField = 1
       assertTrue(a.compareAndSet(this, 1, 2))
@@ -82,7 +92,9 @@ object NonNestmates {
       val a = new AtomicReferenceFieldUpdaterTest.IntrinsicBasedImpl[
         AtomicReferenceFieldUpdaterTest,
         Integer
-      ](classFieldRawPtr(_, "protectedField"))
+      ](obj =>
+        new CAtomicRef(fromRawPtr(classFieldRawPtr(obj, "protectedField")))
+      )
       this.protectedField = one
       assertTrue(a.compareAndSet(this, one, two))
       assertTrue(a.compareAndSet(this, two, m4))
@@ -98,8 +110,14 @@ object NonNestmates {
 class NonNestmates {
   def checkPackageAccess(obj: AtomicIntegerFieldUpdaterTest): Unit = {
     obj.x = 72
-    val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl(
-      classFieldRawPtr[AtomicIntegerFieldUpdaterTest](_, "x")
+    val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
+      AtomicIntegerFieldUpdaterTest
+    ](obj =>
+      new CAtomicInt(
+        fromRawPtr(
+          classFieldRawPtr(obj, "x")
+        )
+      )
     )
     assertEquals(72, a.get(obj))
     assertTrue(a.compareAndSet(obj, 72, 73))
@@ -107,8 +125,12 @@ class NonNestmates {
   }
   def checkPackageAccess(obj: AtomicLongFieldUpdaterTest): Unit = {
     obj.x = 72L
-    val a = new AtomicLongFieldUpdaterTest.IntrinsicBasedImpl(
-      classFieldRawPtr[AtomicLongFieldUpdaterTest](_, "x")
+    val a = new AtomicLongFieldUpdaterTest.IntrinsicBasedImpl[
+      AtomicLongFieldUpdaterTest
+    ](obj =>
+      new CAtomicLongLong(
+        fromRawPtr(classFieldRawPtr(obj, "x"))
+      )
     )
     assertEquals(72L, a.get(obj))
     assertTrue(a.compareAndSet(obj, 72L, 73L))
@@ -121,8 +143,12 @@ class NonNestmates {
     val a = new AtomicReferenceFieldUpdaterTest.IntrinsicBasedImpl[
       AtomicReferenceFieldUpdaterTest,
       Integer
-    ](
-      classFieldRawPtr(_, "x")
+    ](obj =>
+      new CAtomicRef(
+        fromRawPtr(
+          classFieldRawPtr(obj, "x")
+        )
+      )
     )
     assertSame(one, a.get(obj))
     assertTrue(a.compareAndSet(obj, one, two))
