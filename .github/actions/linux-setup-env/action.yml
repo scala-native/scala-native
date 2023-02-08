@@ -28,10 +28,15 @@ runs:
         fi
 
     - name: Install dependencies
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install libgc-dev
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 10
+        max_attempts: 10
+        retry_on: error
+        shell: bash
+        command: |
+          sudo apt-get update
+          sudo apt-get install libgc-dev
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
