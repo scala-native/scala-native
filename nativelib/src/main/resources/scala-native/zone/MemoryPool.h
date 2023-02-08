@@ -2,14 +2,8 @@
 #define MEMORY_POOL_H
 
 #include <stddef.h>
+#include "MemoryPage.h"
 #include "../gc/shared/GCTypes.h"
-
-typedef struct _MemoryPage {
-    void *start;
-    size_t offset;
-    size_t size;
-    struct _MemoryPage *next;
-} MemoryPage;
 
 typedef struct _MemoryChunk {
     void *start;
@@ -19,22 +13,44 @@ typedef struct _MemoryChunk {
 } MemoryChunk;
 
 typedef struct _MemoryPool {
-    size_t chunkSize;
+    size_t chunkPageCount;
     MemoryChunk *chunk;
     MemoryPage *page;
 } MemoryPool;
 
 #define MEMORYPOOL_PAGE_SIZE 8192
-#define MEMORYPOOL_MIN_CHUNK_SIZE 4 * MEMORYPOOL_PAGE_SIZE
-#define MEMORYPOOL_MAX_CHUNK_SIZE 512 * MEMORYPOOL_PAGE_SIZE
+#define MEMORYPOOL_MIN_CHUNK_COUNT 4
+#define MEMORYPOOL_MAX_CHUNK_COUNT 512
 
-MemoryPool *memorypool_open();
+/**
+ * @brief Open an empry memory pool. A memory pool consists of a linked list
+ * of chunks. Each chunk is divided into fixed-size pages.
+ *
+ * @return MemoryPool* The handle of the new memory pool.
+ */
+MemoryPool *MemoryPool_open();
 
-MemoryPage *memorypool_claim(void *pool);
+/** Borrow a single unused page, to be reclaimed later.
+ *
+ * @param pool The handle of the pool to borrow from.
+ * @return MemoryPage* A memory page.
+ */
+MemoryPage *MemoryPool_claim(MemoryPool *pool);
 
-MemoryPage *memorypool_claim_with_min_size(void *pool, size_t min_size);
-void memorypool_free(void *pool);
+/**
+ * @brief Reclaimed a list of previously borrowed pages.
+ *
+ * @param pool The handle of the pool to reclaim to.
+ * @param head The head of the list of pages to be reclaimed.
+ */
+void MemoryPool_reclaim(MemoryPool *pool, MemoryPage *head);
 
-void memorypool_reclaim(void *pool, void *head_page, void *tail_page);
+/**
+ * @brief Free all memory managed by the pool. After closing the pool, the pool
+ * handle is no longer valid to visit.
+ *
+ * @param pool The handle of the pool to be closed.
+ */
+void MemoryPool_close(MemoryPool *pool);
 
 #endif // MEMORY_POOL_H

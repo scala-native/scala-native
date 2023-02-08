@@ -36,6 +36,11 @@
 #define HEAP_MEM_FD_OFFSET 0
 #endif // Unix
 
+void exitWithFailToMapMemory() {
+    fprintf(stderr, "Fail to map memory.\n");
+    exit(1);
+}
+
 word_t *memoryMap(size_t memorySize) {
 #ifdef _WIN32
     // On Windows only reserve given chunk of memory. It should be explicitly
@@ -44,8 +49,12 @@ word_t *memoryMap(size_t memorySize) {
     // supports only 32-bit address space and is in most cases not recommended.
     return VirtualAlloc(NULL, memorySize, MEM_RESERVE, PAGE_NOACCESS);
 #else // Unix
-    return mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
-                HEAP_MEM_FD_OFFSET);
+    word_t *ret = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
+                       HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
+    if (ret == MAP_FAILED) {
+        exitWithFailToMapMemory();
+    }
+    return ret;
 #endif
 }
 

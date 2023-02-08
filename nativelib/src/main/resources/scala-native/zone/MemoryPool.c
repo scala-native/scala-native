@@ -5,79 +5,42 @@
 #include "../gc/shared/GCScalaNative.h"
 #include "../gc/shared/MemoryMap.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#else // Unix
-#include <sys/mman.h>
-#endif
-
-void memorypool_alloc_chunk(MemoryPool *pool, size_t size);
-void memorypool_alloc_page(MemoryPool *pool, size_t size);
-
-size_t max(size_t a, size_t b) { return a > b ? a : b; }
-
-MemoryPool *memorypool_open() {
+MemoryPool *MemoryPool_open() {
     MemoryPool *pool = malloc(sizeof(MemoryPool));
-    pool->chunkSize = MEMORYPOOL_MIN_CHUNK_SIZE;
+    pool->chunkPageCount = MEMORYPOOL_MIN_CHUNK_COUNT;
     pool->chunk = NULL;
     pool->page = NULL;
-    memorypool_alloc_chunk(pool, MEMORYPOOL_MIN_CHUNK_SIZE);
     return pool;
 }
 
-void memorypool_alloc_chunk(MemoryPool *pool, size_t size) {
-    if (pool->chunkSize < MEMORYPOOL_MAX_CHUNK_SIZE) {
-        pool->chunkSize *= 2;
-    }
+void MemoryPool_alloc_chunk(MemoryPool *pool) {
     MemoryChunk *chunk = malloc(sizeof(MemoryChunk));
-    chunk->size = max(pool->chunkSize, size);
+    chunk->size = pool->chunkPageCount * MEMORYPOOL_PAGE_SIZE;
     chunk->offset = 0;
     chunk->start = memoryMap(chunk->size);
-#ifdef _WIN32
-#else // Unix
-    if (chunk->start == MAP_FAILED) {
-        fprintf(stderr, "Failed to allocate memory chunk of size %zu\n",
-                chunk->size);
-    }
-#endif
     chunk->next = pool->chunk;
     pool->chunk = chunk;
+    if (pool->chunkPageCount < MEMORYPOOL_MAX_CHUNK_COUNT) {
+        pool->chunkPageCount *= 2;
+    }
 }
 
-void memorypool_alloc_page(MemoryPool *pool, size_t size) {
-    if (pool->chunk->offset >= pool->chunk->size ||
-        pool->chunk->offset + size > pool->chunk->size) {
-        memorypool_alloc_chunk(pool, max(pool->chunkSize, size));
+void MemoryPool_alloc_page(MemoryPool *pool) {
+    if (pool->chunk == NULL || pool->chunk->offset >= pool->chunk->size) {
+        MemoryPool_alloc_chunk(pool);
     }
     MemoryPage *page = malloc(sizeof(MemoryPage));
     page->start = pool->chunk->start + pool->chunk->offset;
     page->offset = 0;
-    page->size = size;
+    page->size = MEMORYPOOL_PAGE_SIZE;
     page->next = pool->page;
     pool->chunk->offset += page->size;
     pool->page = page;
 }
 
-MemoryPage *memorypool_claim(void *pool) {
-    return memorypool_claim_with_min_size(pool, 0);
-}
-
-/** Borrow a single unused page, to be reclaimed later. */
-MemoryPage *memorypool_claim_with_min_size(void *_pool, size_t min_size) {
-    MemoryPool *pool = (MemoryPool *)_pool;
-    size_t page_size = MEMORYPOOL_PAGE_SIZE;
-    if (min_size > MEMORYPOOL_MAX_CHUNK_SIZE) {
-        fprintf(stderr, "Requested size is too large: %zu\n", min_size);
-        return NULL;
-    }
-    while (min_size > page_size) {
-        page_size *= 2;
-        if (page_size > MEMORYPOOL_MAX_CHUNK_SIZE) {
-            page_size = MEMORYPOOL_MAX_CHUNK_SIZE;
-        }
-    }
+MemoryPage *MemoryPool_claim(MemoryPool *pool) {
     if (pool->page == NULL) {
-        memorypool_alloc_page(pool, page_size);
+        MemoryPool_alloc_page(pool);
     }
     MemoryPage *result = pool->page;
     pool->page = result->next;
@@ -88,40 +51,36 @@ MemoryPage *memorypool_claim_with_min_size(void *_pool, size_t min_size) {
     return result;
 }
 
-/** Reclaimed a list of previously borrowed pages. */
-void memorypool_reclaim(void *_pool, void *_head_page, void *_tail_page) {
-    MemoryPool *pool = (MemoryPool *)_pool;
-    MemoryPage *head = (MemoryPage *)_head_page;
-    MemoryPage *tail = (MemoryPage *)_tail_page;
+void MemoryPool_reclaim(MemoryPool *pool, MemoryPage *head) {
     // Notify the GC that the pages are no longer in use.
-    MemoryPage *page = head;
+    MemoryPage *page = head, *tail = NULL;
     while (page != NULL) {
         scalanative_remove_roots(page->start, page->start + page->size);
-        if (page == tail)
-            break;
+        tail = page;
         page = page->next;
     }
     // Append the reclaimed pages to the pool.
-    tail->next = pool->page;
-    pool->page = head;
+    if (tail != NULL) {
+        tail->next = pool->page;
+        pool->page = head;
+    }
 }
 
-void memorypool_free(void *_pool) {
-    MemoryPool *pool = (MemoryPool *)_pool;
+void MemoryPool_close(MemoryPool *pool) {
     // Free chunks.
-    MemoryChunk *chunk = pool->chunk, *pre_chunk = NULL;
+    MemoryChunk *chunk = pool->chunk, *preChunk = NULL;
     while (chunk != NULL) {
-        pre_chunk = chunk;
+        preChunk = chunk;
         chunk = chunk->next;
-        memoryUnmap(pre_chunk->start, pre_chunk->size);
-        free(pre_chunk);
+        memoryUnmap(preChunk->start, preChunk->size);
+        free(preChunk);
     }
     // Free pages.
-    MemoryPage *page = pool->page, *pre_page = NULL;
+    MemoryPage *page = pool->page, *prePage = NULL;
     while (page != NULL) {
-        pre_page = page;
+        prePage = page;
         page = page->next;
-        free(pre_page);
+        free(prePage);
     }
     // Free the pool.
     free(pool);

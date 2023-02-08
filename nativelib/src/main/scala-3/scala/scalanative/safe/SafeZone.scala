@@ -3,7 +3,7 @@ package scala.scalanative.safe
 import language.experimental.captureChecking
 import scalanative.unsigned._
 import scala.annotation.implicitNotFound
-import scala.scalanative.runtime.{RawPtr, CMemoryPool, CMemoryPoolZone}
+import scala.scalanative.runtime.{RawPtr, CZone}
 
 @implicitNotFound("Given method requires an implicit zone.")
 trait SafeZone {
@@ -18,29 +18,26 @@ trait SafeZone {
   def isClosed: Boolean = !isOpen
 
   /** Return the handle of this zone allocator. */
-  def handle: RawPtr
+  private[scalanative] def handle: RawPtr
 
   /** Require this zone allocator is open. */
-  def checkOpen: Unit = {
+  def checkOpen(): Unit = {
     if (!isOpen)
       throw new IllegalStateException(s"Zone ${this} is already closed.")
   }
 }
 
-final class MemorySafeZone (private[this] val zoneHandle: RawPtr) extends SafeZone {
+final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {
 
   private[this] var flagIsOpen = true
 
   override def close(): Unit = {
-    checkOpen
+    checkOpen()
     flagIsOpen = false
-    CMemoryPoolZone.close(zoneHandle)
-    CMemoryPoolZone.free(zoneHandle)
+    CZone.close(handle)
   }
 
   override def isOpen: Boolean = flagIsOpen
-
-  override def handle: RawPtr = zoneHandle
 }
 
 
@@ -53,7 +50,5 @@ object SafeZone {
     finally sz.close()
   }
 
-  final def open(): {*} SafeZone = new MemorySafeZone(
-    CMemoryPoolZone.open(CMemoryPool.defaultMemoryPoolHandle)
-  )
+  final def open(): {*} SafeZone = new MemorySafeZone(CZone.open())
 }

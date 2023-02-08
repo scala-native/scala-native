@@ -1210,7 +1210,7 @@ object Lower {
   val largeAlloc = Val.Global(largeAllocName, allocSig)
 
   val zoneAllocSig = Type.Function(Seq(Type.Ptr, Type.Ptr, Type.Size), Type.Ptr)
-  val zoneAllocName = extern("memorypoolzone_alloc")
+  val zoneAllocName = extern("scalanative_zone_alloc")
   val zoneAlloc = Val.Global(zoneAllocName, zoneAllocSig)
 
   val dyndispatchName = extern("scalanative_dyndispatch")

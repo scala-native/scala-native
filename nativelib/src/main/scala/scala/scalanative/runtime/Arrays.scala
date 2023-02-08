@@ -201,9 +201,9 @@ object BooleanArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -274,9 +274,9 @@ object CharArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -347,9 +347,9 @@ object ByteArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 1 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 1.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -420,9 +420,9 @@ object ShortArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 2 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 2.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -493,9 +493,9 @@ object IntArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -566,9 +566,9 @@ object LongArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -639,9 +639,9 @@ object FloatArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 4 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 4.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -712,9 +712,9 @@ object DoubleArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + 8 * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + 8.toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -785,9 +785,9 @@ object ObjectArray {
       if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + castRawSizeToInt(sizeOfPtr) * length)
       else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + castRawSizeToInt(sizeOfPtr).toLong * length.toLong)
     )
-    val arr     = 
+    val arr = 
       if (zoneHandle == null) GC.alloc(arrcls, arrsize) 
-      else CMemoryPoolZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, arrcls, arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,

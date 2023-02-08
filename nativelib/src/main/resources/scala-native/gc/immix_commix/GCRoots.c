@@ -52,14 +52,3 @@ void GC_Roots_RemoveByRange(GC_Roots **head, AddressRange range) {
         }
     }
 }
-
-// void GC_Roots_Print(GC_Roots *head) {
-//     printf("== GC Roots start ==\n");
-//     GC_Roots *current = head;
-//     while (current != NULL) {
-//         printf("GC_Roots[%p, %p)\n", current->range.address_low,
-//                current->range.address_high);
-//         current = current->next;
-//     }
-//     printf("== GC Roots end ==\n");
-// }
