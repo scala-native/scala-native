@@ -1,0 +1,67 @@
+--- 2.13.10/scala/collection/concurrent/TrieMap.scala
++++ overrides-2.13/scala/collection/concurrent/TrieMap.scala
+@@ -23,6 +23,8 @@
+ import scala.collection.mutable.GrowableBuilder
+ import scala.util.Try
+ import scala.util.hashing.Hashing
++import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
++import scala.scalanative.runtime.fromRawPtr
+ 
+ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
+   import INodeBase._
+@@ -705,7 +707,7 @@
+ 
+   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
+     INode.newRootNode(ef),
+-    AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root"),
++    new TrieMap.IntrinsicAtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef](obj => fromRawPtr(classFieldRawPtr(obj, "root"))),
+     hashf,
+     ef
+   )
+@@ -731,8 +733,7 @@
+ 
+   private def readObject(in: java.io.ObjectInputStream): Unit = {
+     root = INode.newRootNode(equality)
+-    rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root")
+-
++    rootupdater = new TrieMap.IntrinsicAtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef](obj => fromRawPtr(classFieldRawPtr(obj, "root")))
+     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
+     equalityobj = in.readObject().asInstanceOf[Equiv[K]]
+ 
+@@ -1040,7 +1041,27 @@
+ 
+ @SerialVersionUID(3L)
+ object TrieMap extends MapFactory[TrieMap] {
++  // ScalaNative specific implementaiton of atomic reference field updater
++  import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
++  import scala.scalanative.runtime.RawPtr
++  import scala.scalanative.unsafe.Ptr
++  import scala.scalanative.annotation.alwaysinline
++  import scala.scalanative.libc.atomic.memory_order.memory_order_release
++  import scala.scalanative.libc.atomic.CAtomicRef
+ 
++  private class IntrinsicAtomicReferenceFieldUpdater[
++      T <: AnyRef,
++      V <: AnyRef
++  ](@alwaysinline selector: T => Ptr[V]) extends AtomicReferenceFieldUpdater[T, V]() {
++    @alwaysinline def atomicRef(obj: T) = new CAtomicRef(selector(obj))
++    @alwaysinline def compareAndSet(obj: T, expect: V, update: V): Boolean = atomicRef(obj).compareExchangeStrong(expect, update)
++    @alwaysinline def weakCompareAndSet(obj: T, expect: V, update: V): Boolean =  atomicRef(obj).compareExchangeWeak(expect, update)
++    @alwaysinline def set(obj: T, newIntalue: V): Unit = atomicRef(obj).store(newIntalue)
++    @alwaysinline def lazySet(obj: T, newIntalue: V): Unit = atomicRef(obj).store(newIntalue, memory_order_release)
++    @alwaysinline def get(obj: T): V = atomicRef(obj).load()
++  }
++
++
+   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
+ 
+   def from[K, V](it: IterableOnce[(K, V)]): TrieMap[K, V] = new TrieMap[K, V]() ++= it
+@@ -1048,7 +1069,7 @@
+   def newBuilder[K, V]: mutable.GrowableBuilder[(K, V), TrieMap[K, V]] = new GrowableBuilder(empty[K, V])
+ 
+   @transient
+-  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
++  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] = new IntrinsicAtomicReferenceFieldUpdater[INodeBase[_,_], MainNode[_,_]](obj => fromRawPtr(classFieldRawPtr(obj, "mainnode")))
+ 
+   class MangledHashing[K] extends Hashing[K] {
+     def hash(k: K): Int = scala.util.hashing.byteswap32(k.##)

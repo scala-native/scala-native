@@ -1,0 +1,57 @@
+--- 2.12.17/scala/collection/concurrent/TrieMap.scala
++++ overrides-2.12/scala/collection/concurrent/TrieMap.scala
+@@ -20,6 +20,8 @@
+ import scala.util.control.ControlThrowable
+ import generic._
+ import scala.annotation.tailrec
++import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
++import scala.scalanative.runtime.fromRawPtr
+ 
+ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends INodeBase[K, V](g) {
+   import INodeBase._
+@@ -636,7 +638,7 @@
+ 
+   def this(hashf: Hashing[K], ef: Equiv[K]) = this(
+     INode.newRootNode,
+-    AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root"),
++    new TrieMap.IntrinsicAtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef](obj => fromRawPtr(classFieldRawPtr(obj, "root"))),
+     hashf,
+     ef
+   )
+@@ -660,7 +662,7 @@
+ 
+   private def readObject(in: java.io.ObjectInputStream) {
+     root = INode.newRootNode
+-    rootupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[TrieMap[K, V]], classOf[AnyRef], "root")
++    rootupdater = new TrieMap.IntrinsicAtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef]( obj => fromRawPtr(classFieldRawPtr(obj, "root")))
+ 
+     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
+     equalityobj = in.readObject().asInstanceOf[Equiv[K]]
+@@ -966,8 +968,26 @@
+ 
+ 
+ object TrieMap extends MutableMapFactory[TrieMap] {
+-  val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
++  // ScalaNative specific implementaiton of atomic reference field updater
++  import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
++  import scala.scalanative.runtime.RawPtr
++  import scala.scalanative.annotation.alwaysinline
++  import scala.scalanative.libc.atomic.{CAtomicRef, memory_order}
++  import scala.scalanative.unsafe.Ptr
+ 
++  private class IntrinsicAtomicReferenceFieldUpdater[
++      T <: AnyRef,
++      V <: AnyRef
++  ](@alwaysinline selector: T => Ptr[V]) extends AtomicReferenceFieldUpdater[T, V]() {
++    @alwaysinline private def atomicRef(obj: T) = new CAtomicRef(selector(obj))
++    @alwaysinline def compareAndSet(obj: T, expect: V, update: V): Boolean = atomicRef(obj).compareExchangeStrong(expect, update)
++    @alwaysinline def weakCompareAndSet(obj: T, expect: V, update: V): Boolean =  atomicRef(obj).compareExchangeWeak(expect, update)
++    @alwaysinline def set(obj: T, newIntalue: V): Unit = atomicRef(obj).store(newIntalue)
++    @alwaysinline def lazySet(obj: T, newIntalue: V): Unit = atomicRef(obj).store(newIntalue, memory_order.memory_order_release)
++    @alwaysinline def get(obj: T): V = atomicRef(obj).load()
++  }
++  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] = new IntrinsicAtomicReferenceFieldUpdater[INodeBase[_,_], MainNode[_,_]](obj => fromRawPtr(classFieldRawPtr(obj,  "mainnode")))
++
+   implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), TrieMap[K, V]] =
+     ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (K, V), TrieMap[K, V]]]
+   private[this] val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
