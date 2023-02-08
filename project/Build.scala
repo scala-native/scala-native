@@ -306,7 +306,7 @@ object Build {
   lazy val auxlib = MultiScalaProject("auxlib")
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings, commonJavalibSettings, disabledDocsSettings)
-    .dependsOn(nativelib)
+    .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val scalalib: MultiScalaProject =
