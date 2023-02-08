@@ -777,18 +777,13 @@ object Settings {
             }
           }
 
-          val useless =
-            path.contains("/scala/collection/parallel/") ||
-              path.contains("/scala/util/parsing/")
-          if (!useless) {
-            if (!patchGlob.matches(sourcePath))
-              addSource(path)(Some(sourcePath.toFile))
-            else {
-              val sourceName = path.stripSuffix(".patch")
-              addSource(sourceName)(
-                tryApplyPatch(sourceName)
-              )
-            }
+          if (!patchGlob.matches(sourcePath))
+            addSource(path)(Some(sourcePath.toFile))
+          else {
+            val sourceName = path.stripSuffix(".patch")
+            addSource(sourceName)(
+              tryApplyPatch(sourceName)
+            )
           }
         }
 
