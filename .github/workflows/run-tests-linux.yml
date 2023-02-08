@@ -216,6 +216,7 @@ jobs:
         gc: [boehm, immix]
         lto: [none, thin]
         exclude:
+          # Takes too much time to build
           - build-mode: release-fast
             lto: none
     steps:

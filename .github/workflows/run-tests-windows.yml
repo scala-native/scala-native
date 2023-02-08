@@ -150,8 +150,12 @@ jobs:
         gc: [boehm, immix]
         lto: [none, thin]
         exclude:
+          # Takes too much time to build
           - build-mode: release-fast
             lto: none
+          # Temporaly disabled, probably due the stack overflow in spawned threads
+          - build-mode: release-fast
+            lto: thin
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false

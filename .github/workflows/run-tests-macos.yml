@@ -27,7 +27,6 @@ jobs:
             gc: immix
           - scala: 2.12.17
             gc: immix
-      
 
     steps:
       - uses: actions/checkout@v3
@@ -124,8 +123,12 @@ jobs:
         gc: [boehm, immix]
         lto: [none, thin]
         exclude:
+          # Takes too much time to build
           - build-mode: release-fast
             lto: none
+          # Temporaly disabled, probably due the stack overflow in spawned threads
+          - build-mode: release-fast
+            lto: thin
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
