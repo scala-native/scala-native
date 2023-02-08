@@ -12,7 +12,6 @@ import java.util.function.UnaryOperator
 object AtomicIntegerFieldUpdater {
   // Imposible to define currently in Scala Native, requires reflection
   // Don't define it, allow to fail at linktime instead of runtime
-  
   // def newUpdater[U <: AnyRef](
   //     tclass: Class[U],
   //     fieldName: String

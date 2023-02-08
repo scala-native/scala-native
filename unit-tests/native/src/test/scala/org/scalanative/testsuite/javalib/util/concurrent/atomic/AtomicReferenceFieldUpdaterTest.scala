@@ -6,7 +6,7 @@
  * Pat Fisher, Mike Judd.
  */
 
- // Uses custom Scala Native intrinsic based field updaters instead of reflection based used in JVM
+// Uses custom Scala Native intrinsic based field updaters instead of reflection based used in JVM
 
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic

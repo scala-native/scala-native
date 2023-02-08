@@ -10,8 +10,8 @@ import java.util.function.BinaryOperator
 import java.util.function.UnaryOperator
 
 object AtomicReferenceFieldUpdater {
-  // Imposible to define currently in scala native, requires reflection
-  // Don't define it, instead of providing stub for feedback at linktime instead of runtime
+  // Imposible to define currently in Scala Native, requires reflection
+  // Don't define it, allow to fail at linktime instead of runtime
   // def newUpdater[U <: AnyRef, W <: AnyRef](
   //     tclass: Class[U],
   //     vclass: Class[W],
