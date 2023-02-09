@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.build.{Config, NativeConfig}
-import scalanative.build.core.ScalaNative
+import scalanative.build.ScalaNative
 import scalanative.util.Scope
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -58,9 +58,9 @@ abstract class LinkerSpec extends AnyFlatSpec {
   )(implicit in: Scope): Config = {
     val classpath = makeClasspath(outDir)
     Config.empty
-      .withBasedir(outDir)
+      .withBaseDir(outDir)
       .withClassPath(classpath.toSeq)
-      .withMainClass(entry)
+      .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
   }
 

@@ -7,7 +7,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.{Sig, Global}
-import scalanative.build.core.ScalaNative
+import scalanative.build.ScalaNative
 
 trait ReachabilitySuite extends AnyFunSuite {
 
@@ -106,11 +106,11 @@ trait ReachabilitySuite extends AnyFunSuite {
     val paths = makeClasspath(outDir)
     val default = build.Config.empty
     default
-      .withBasedir(outDir)
+      .withBaseDir(outDir)
       .withClassPath(paths.toSeq)
       .withCompilerConfig {
         _.withTargetTriple("x86_64-unknown-unknown")
       }
-      .withMainClass(mainClass)
+      .withMainClass(Some(mainClass))
   }
 }

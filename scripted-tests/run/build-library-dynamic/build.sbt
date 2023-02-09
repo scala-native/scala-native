@@ -17,7 +17,7 @@ scalaVersion := {
 nativeConfig ~= {
   _.withBuildTarget(scalanative.build.BuildTarget.libraryDynamic)
     .withMode(scalanative.build.Mode.releaseFast)
-    .withBasename("test")
+    .withBaseName("test")
 }
 
 val outExt = if (Platform.isWindows) "exe" else "out"

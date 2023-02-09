@@ -7,15 +7,6 @@ import scala.scalanative.nir.Val
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
 
-  /** The garbage collector to use. */
-  def gc: GC
-
-  /** Compilation mode. */
-  def mode: Mode
-
-  /** Build target for current compilation */
-  def buildTarget: BuildTarget
-
   /** The path to the `clang` executable. */
   def clang: Path
 
@@ -32,11 +23,17 @@ sealed trait NativeConfig {
    */
   def targetTriple: Option[String]
 
-  /** Should stubs be linked? */
-  def linkStubs: Boolean
+  /** The garbage collector to use. */
+  def gc: GC
 
   /** The LTO mode to use used during a release build. */
   def lto: LTO
+
+  /** Compilation mode. */
+  def mode: Mode
+
+  /** Build target for current compilation */
+  def buildTarget: BuildTarget
 
   /** Shall linker check that NIR is well-formed after every phase? */
   def check: Boolean
@@ -50,6 +47,9 @@ sealed trait NativeConfig {
   /** Should address sanitizer be used? */
   def asan: Boolean
 
+  /** Should stubs be linked? */
+  def linkStubs: Boolean
+
   /** Shall we optimize the resulting NIR code? */
   def optimize: Boolean
 
@@ -61,6 +61,16 @@ sealed trait NativeConfig {
 
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
+
+  /** Shall the resource files be embedded in the resulting binary file? Allows
+   *  the use of getClass().getResourceAsStream() on the included files. Will
+   *  not embed files with certain extensions, including ".c", ".h", ".scala"
+   *  and ".class".
+   */
+  def embedResources: Boolean
+
+  /** Base name for executable or library, typically the project name. */
+  def baseName: String
 
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
@@ -92,21 +102,7 @@ sealed trait NativeConfig {
     }
   }
 
-  /** Shall the resource files be embedded in the resulting binary file? Allows
-   *  the use of getClass().getResourceAsStream() on the included files. Will
-   *  not embed files with certain extensions, including ".c", ".h", ".scala"
-   *  and ".class".
-   */
-  def embedResources: Boolean
-
-  /** Base name for executable or library, typically the project name. */
-  def basename: String
-
-  /** Create a new config with given garbage collector. */
-  def withGC(value: GC): NativeConfig
-
-  /** Create a new config with given compilation mode. */
-  def withMode(value: Mode): NativeConfig
+  // update methods - order as properties above
 
   /** Create a new config with given path to clang. */
   def withClang(value: Path): NativeConfig
@@ -120,20 +116,30 @@ sealed trait NativeConfig {
   /** Create a new config with given compilation options. */
   def withCompileOptions(value: Seq[String]): NativeConfig
 
-  /** Create a new config with given build target */
-  def withBuildTarget(target: BuildTarget): NativeConfig
-
   /** Create a new config given a target triple. */
   def withTargetTriple(value: Option[String]): NativeConfig
 
-  /** Create a new config given a target triple. */
+  /** Create a new config given a target triple. Delegates to
+   *  [[#withTargetTriple(value:Option[String])* withTargetTriple(Option[String])]].
+   *
+   *  @param value
+   *    target triple as a String
+   *  @return
+   *    a new NativeConfig with a new target triple
+   */
   def withTargetTriple(value: String): NativeConfig
 
-  /** Create a new config with given behavior for stubs. */
-  def withLinkStubs(value: Boolean): NativeConfig
+  /** Create a new config with given garbage collector. */
+  def withGC(value: GC): NativeConfig
 
   /** Create a new config with the given lto mode. */
   def withLTO(value: LTO): NativeConfig
+
+  /** Create a new config with given compilation mode. */
+  def withMode(value: Mode): NativeConfig
+
+  /** Create a new config with given build target */
+  def withBuildTarget(target: BuildTarget): NativeConfig
 
   /** Create a new config with given check value. */
   def withCheck(value: Boolean): NativeConfig
@@ -147,24 +153,33 @@ sealed trait NativeConfig {
   /** Create a new config with given asan value. */
   def withASAN(value: Boolean): NativeConfig
 
+  /** Create a new config with given behavior for stubs. */
+  def withLinkStubs(value: Boolean): NativeConfig
+
   /** Create a new config with given optimize value */
   def withOptimize(value: Boolean): NativeConfig
 
   /** Create a new config with given incrementalCompilation value */
   def withIncrementalCompilation(value: Boolean): NativeConfig
 
+  /** Create a new config with support for multithreading */
+  def withMultithreadingSupport(enabled: Boolean): NativeConfig
+
   /** Create a new config with given linktime properites */
   def withLinktimeProperties(
       value: NativeConfig.LinktimeProperites
   ): NativeConfig
 
+  /** Create a new [[NativeConfig]] enabling embedded resources in the
+   *  executable with a value of `true` where `false` is default.
+   */
   def withEmbedResources(value: Boolean): NativeConfig
 
-  /** Create a new config with support for multithreading */
-  def withMultithreadingSupport(enabled: Boolean): NativeConfig
-
-  /** Create a new config with given base artifact name. */
-  def withBasename(value: String): NativeConfig
+  /** Create a new config with given base artifact name.
+   *
+   *  Warning: must be unique across project modules.
+   */
+  def withBaseName(value: String): NativeConfig
 
   /** Create a optimization configuration */
   def withOptimizerConfig(value: OptimizerConfig): NativeConfig
@@ -196,7 +211,7 @@ object NativeConfig {
       multithreadingSupport = false,
       linktimeProperties = Map.empty,
       embedResources = false,
-      basename = "",
+      baseName = "",
       optimizerConfig = OptimizerConfig.empty
     )
 
@@ -207,20 +222,20 @@ object NativeConfig {
       compileOptions: Seq[String],
       targetTriple: Option[String],
       gc: GC,
+      lto: LTO,
       mode: Mode,
       buildTarget: BuildTarget,
-      lto: LTO,
-      linkStubs: Boolean,
       check: Boolean,
       checkFatalWarnings: Boolean,
       dump: Boolean,
       asan: Boolean,
+      linkStubs: Boolean,
       optimize: Boolean,
       useIncrementalCompilation: Boolean,
       multithreadingSupport: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
-      basename: String,
+      baseName: String,
       optimizerConfig: OptimizerConfig
   ) extends NativeConfig {
 
@@ -288,8 +303,8 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
-    def withBasename(value: String): NativeConfig = {
-      copy(basename = value)
+    def withBaseName(value: String): NativeConfig = {
+      copy(baseName = value)
     }
 
     override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
@@ -317,22 +332,22 @@ object NativeConfig {
         | - linkingOptions:         $linkingOptions
         | - compileOptions:         $compileOptions
         | - targetTriple:           $targetTriple
-        | - buildTarget             $buildTarget
         | - GC:                     $gc
-        | - mode:                   $mode
         | - LTO:                    $lto
-        | - linkStubs:              $linkStubs
+        | - mode:                   $mode
+        | - buildTarget             $buildTarget
         | - check:                  $check
         | - checkFatalWarnings:     $checkFatalWarnings
         | - dump:                   $dump
         | - asan:                   $asan
+        | - linkStubs:              $linkStubs
         | - optimize                $optimize
-        | - linktimeProperties:     $listLinktimeProperties
-        | - embedResources:         $embedResources
         | - incrementalCompilation: $useIncrementalCompilation
         | - multithreading          $multithreadingSupport
+        | - linktimeProperties:     $listLinktimeProperties
+        | - embedResources:         $embedResources
+        | - baseName:               $baseName
         | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
-        | - basename:               $basename
         |)""".stripMargin
     }
   }

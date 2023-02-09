@@ -4,7 +4,7 @@ package codegen
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
 import scalanative.build.Config
-import scalanative.build.core.ScalaNative
+import scalanative.build.ScalaNative
 import scalanative.util.Scope
 
 /** Base class to test code generation */
@@ -28,10 +28,10 @@ abstract class CodeGenSpec extends OptimizerSpec {
       case (config, optimized) =>
         Scope { implicit in =>
           ScalaNative.codegen(config, optimized)
-          val workdir = VirtualDirectory.real(config.workdir)
+          val workDir = VirtualDirectory.real(config.workDir)
           val outfile = Paths.get("out.ll")
 
-          assert(workdir.contains(outfile), "out.ll not found.")
+          assert(workDir.contains(outfile), "out.ll not found.")
 
           f(config, optimized, outfile)
         }

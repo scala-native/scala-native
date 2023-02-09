@@ -33,7 +33,7 @@ class MainGenericRunner {
     def loadSetting[T](name: String, default: => T)(fn: String => T) =
       Option(System.getProperty(s"scalanative.partest.$name")).fold(default)(fn)
 
-    val dir = Defaults.workdir()
+    val dir = Defaults.workDir()
     val execPath: Path = {
       val config = Defaults.config
         .withCompilerConfig {
@@ -54,7 +54,7 @@ class MainGenericRunner {
                     Defaults.links.map(_.name).map("-l" + _)
                   }
             }
-            .withBasename("output")
+            .withBaseName("output")
         }
         .withClassPath {
           val nativeClasspath = loadSetting("nativeCp", Seq.empty[Path]) {
@@ -70,8 +70,8 @@ class MainGenericRunner {
 
           commandClasspath ++ nativeClasspath
         }
-        .withMainClass(command.thingToRun)
-        .withBasedir(dir)
+        .withMainClass(Some(command.thingToRun))
+        .withBaseDir(dir)
 
       Scope { implicit s => Build.build(config) }
     }

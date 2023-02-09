@@ -1,7 +1,10 @@
 package scala.scalanative.build
 
+/** Base `trait` representing an Application, or a Static or a Dynamic Library
+ */
 sealed trait BuildTarget
 
+/** Utility to create a [[BuildTarget]] object */
 object BuildTarget {
   private[scalanative] case object Application extends BuildTarget
   private[scalanative] sealed trait Library extends BuildTarget

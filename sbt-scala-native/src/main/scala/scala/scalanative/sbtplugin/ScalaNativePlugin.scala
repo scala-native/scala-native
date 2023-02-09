@@ -35,50 +35,9 @@ object ScalaNativePlugin extends AutoPlugin {
         "User configuration for the native build, NativeConfig"
       )
 
-    val nativeClang =
-      taskKey[File]("Location of the clang compiler.")
-
-    val nativeClangPP =
-      taskKey[File]("Location of the clang++ compiler.")
-
-    val nativeCompileOptions =
-      taskKey[Seq[String]](
-        "Additional options are passed to clang during compilation."
-      )
-
-    val nativeLinkingOptions =
-      taskKey[Seq[String]](
-        "Additional options that are passed to clang during linking."
-      )
-
-    val nativeLinkStubs =
-      taskKey[Boolean]("Whether to link `@stub` methods, or ignore them.")
-
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
-    val nativeMode =
-      taskKey[String](
-        "Compilation mode, either \"debug\", \"release-size\", \"release-fast\", or \"release-full\"."
-      )
-
-    val nativeGC =
-      taskKey[String](
-        "GC choice, either \"none\", \"boehm\", \"immix\" or \"commix\"."
-      )
-
-    val nativeLTO =
-      taskKey[String](
-        "LTO variant used for release mode, either \"none\", \"thin\", or \"full\" (legacy)."
-      )
-
-    val nativeCheck =
-      taskKey[Boolean]("Shall native toolchain check NIR during linking?")
-
-    val nativeDump =
-      taskKey[Boolean](
-        "Shall native toolchain dump intermediate NIR to disk during linking?"
-      )
   }
 
   override def globalSettings: Seq[Setting[_]] =
