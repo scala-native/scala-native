@@ -3,10 +3,23 @@ package java.lang
 import java.io.File
 import scala.scalanative.annotation.stub
 import scala.scalanative.libc.stdlib
+import scala.scalanative.posix.unistd._
+import scala.scalanative.windows.SysInfoApi._
+import scala.scalanative.windows.SysInfoApiOps._
+import scala.scalanative.unsafe._
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 class Runtime private () {
   import Runtime.ProcessBuilderOps
-  def availableProcessors(): Int = 1
+  def availableProcessors(): Int = {
+    val available = if (isWindows) {
+      val sysInfo = stackalloc[SystemInfo]()
+      GetSystemInfo(sysInfo)
+      sysInfo.numberOfProcessors.toInt
+    } else sysconf(_SC_NPROCESSORS_ONLN).toInt
+    // By contract returned value cannot be lower then 1
+    available max 1
+  }
   def exit(status: Int): Unit = stdlib.exit(status)
   def gc(): Unit = ()
 

@@ -529,6 +529,12 @@ object unistd {
   @name("scalanative__sc_ngroups_max")
   def _SC_NGROUPS_MAX: CInt = extern
 
+  @name("scalanative__sc_nprocessors_conf")
+  def _SC_NPROCESSORS_CONF: CInt = extern
+
+  @name("scalanative__sc_nprocessors_onln")
+  def _SC_NPROCESSORS_ONLN: CInt = extern
+
   @name("scalanative__sc_open_max")
   def _SC_OPEN_MAX: CInt = extern
 

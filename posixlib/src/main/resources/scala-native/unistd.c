@@ -249,6 +249,10 @@ int scalanative__sc_mq_prio_max() { return _SC_MQ_PRIO_MAX; };
 
 int scalanative__sc_ngroups_max() { return _SC_NGROUPS_MAX; };
 
+int scalanative__sc_nprocessors_conf() { return _SC_NPROCESSORS_CONF; }
+
+int scalanative__sc_nprocessors_onln() { return _SC_NPROCESSORS_ONLN; }
+
 int scalanative__sc_open_max() { return _SC_OPEN_MAX; };
 
 int scalanative__sc_page_size() { return _SC_PAGE_SIZE; };
