@@ -65,6 +65,9 @@ class RuntimeTest {
     val out = readInputStream(proc.getInputStream)
     assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
+  }
 
+  @Test def availableProcessors(): Unit = {
+    assertTrue(Runtime.getRuntime().availableProcessors() >= 1)
   }
 }
