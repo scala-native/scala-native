@@ -1,6 +1,7 @@
 package java.io
 
 // Ported from Scala.js, commit: 7d7a621, dated 2022-03-07
+// 2023-02-01 implemented Java 10 transferTo() method
 
 import java.nio.CharBuffer
 
@@ -82,4 +83,21 @@ abstract class Reader() extends Readable with Closeable {
 
   def close(): Unit
 
+  // Since: Java 10
+  def transferTo(out: Writer): Long = {
+    val buffer = new Array[Char](4096)
+
+    @tailrec
+    def loop(nRead: Long): Long = {
+      val n = this.read(buffer)
+      if (n == -1) {
+        nRead
+      } else {
+        out.write(buffer, 0, n)
+        loop(nRead + n)
+      }
+    }
+
+    loop(0)
+  }
 }
