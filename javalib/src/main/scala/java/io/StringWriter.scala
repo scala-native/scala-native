@@ -1,10 +1,13 @@
 package java.io
 
-class StringWriter extends Writer {
+class StringWriter(initialSize: Int) extends Writer {
 
-  private[this] val buf = new StringBuffer
+  def this() = this(128)
 
-  def this(initialSize: Int) = this()
+  if (initialSize < 0)
+    throw new IllegalArgumentException("Initial size < 0")
+
+  private val buf = new StringBuffer(initialSize)
 
   override def write(c: Int): Unit =
     buf.append(c.toChar)
