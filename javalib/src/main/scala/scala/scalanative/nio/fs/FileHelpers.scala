@@ -9,8 +9,11 @@ import scalanative.unsafe._, stdlib._, stdio._, string._
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
+
 import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets
+import java.{util => ju}
+
 import scala.scalanative.windows._
 import scala.scalanative.windows.HandleApiExt.INVALID_HANDLE_VALUE
 import scala.scalanative.windows.FileApi._
@@ -203,21 +206,14 @@ object FileHelpers {
     }
 
   lazy val tempDir: String = {
-    if (isWindows) {
-      val buffer: Ptr[WChar] = stackalloc[WChar](MAX_PATH)
-      GetTempPathW(MAX_PATH, buffer)
-      fromCWideString(buffer, StandardCharsets.UTF_16LE)
-    } else {
-      val dir = getenv(c"TMPDIR")
-      if (dir == null) {
-        System.getProperty("java.io.tmpdir") match {
-          case null => "/tmp"
-          case d    => d
-        }
-      } else {
-        fromCString(dir)
-      }
-    }
+    val propertyName = "java.io.tmpdir"
+    // set at first lookup after program start.
+    val dir = System.getProperty(propertyName)
+    ju.Objects.requireNonNull(
+      dir,
+      s"Required Java System property ${propertyName} is not defined."
+    )
+    dir
   }
 
   private def genTempFile(
