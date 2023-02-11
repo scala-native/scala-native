@@ -11,8 +11,10 @@ import java.io.{
   InputStreamReader,
   OutputStream,
   OutputStreamWriter,
+  StringWriter,
   UncheckedIOException
 }
+
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.channels.{FileChannel, SeekableByteChannel}
@@ -28,6 +30,9 @@ import java.util.{
   Set
 }
 import java.util.stream.{Stream, WrappedScalaStream}
+
+import scala.annotation.tailrec
+
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
@@ -192,15 +197,14 @@ object Files {
       throw new IOException()
     }
 
-  def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path =
+  def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path = {
     if (exists(path, Array.empty))
       throw new FileAlreadyExistsException(path.toString)
-    else if (FileHelpers.createNewFile(path.toString)) {
+    else if (FileHelpers.createNewFile(path.toString, throwOnError = true)) {
       setAttributes(path, attrs)
-      path
-    } else {
-      throw new IOException()
     }
+    path
+  }
 
   def createLink(link: Path, existing: Path): Path = Zone { implicit z =>
     if (isWindows) {
@@ -773,6 +777,24 @@ object Files {
     }
   }
 
+  // Since: Java 11
+  def readString(path: Path): String = {
+    readString(path, StandardCharsets.UTF_8)
+  }
+
+  // Since: Java 11
+  def readString(path: Path, cs: Charset): String = {
+    val reader = newBufferedReader(path, cs)
+    try {
+      // Guess an cost-effective amortized size.
+      val writer = new StringWriter(2 * 1024)
+      reader.transferTo(writer)
+      writer.toString()
+      // No need to close() StringWriter, so no inner try/finally.
+    } finally
+      reader.close()
+  }
+
   def readSymbolicLink(link: Path): Path =
     if (!isSymbolicLink(link)) {
       throw new NotLinkException(link.toString)
@@ -1095,5 +1117,62 @@ object Files {
       "user" -> classOf[UserDefinedFileAttributeView],
       "posix" -> classOf[PosixFileAttributeView]
     )
+
+  // Since: Java 11
+  def writeString(
+      path: Path,
+      csq: java.lang.CharSequence,
+      cs: Charset,
+      options: Array[OpenOption]
+  ): Path = {
+    import java.io.Reader
+
+    // Java API has no CharSequenceReader, but the concept is useful here.
+    class CharSequenceReader(csq: CharSequence) extends Reader {
+      private var closed = false
+      private var pos = 0
+
+      override def close(): Unit = closed = true
+
+      override def read(cbuf: Array[Char], off: Int, len: Int): Int = {
+        if (closed)
+          throw new IOException("Operation on closed stream")
+
+        if (off < 0 || len < 0 || len > cbuf.length - off)
+          throw new IndexOutOfBoundsException
+
+        if (len == 0) 0
+        else {
+          val count = Math.min(len, csq.length() - pos)
+          var i = 0
+          while (i < count) {
+            cbuf(off + i) = csq.charAt(pos + i)
+            i += 1
+          }
+          pos += count
+          if (count == 0) -1 else count
+        }
+      }
+    }
+
+    val reader = new CharSequenceReader(csq)
+    val writer = newBufferedWriter(path, cs, options)
+    try {
+      reader.transferTo(writer)
+      // No need to close() CharSequenceReader, so no inner try/finally.
+    } finally
+      writer.close()
+
+    path
+  }
+
+  // Since: Java 11
+  def writeString(
+      path: Path,
+      csq: java.lang.CharSequence,
+      options: Array[OpenOption]
+  ): Path = {
+    writeString(path, csq, StandardCharsets.UTF_8, options)
+  }
 
 }
