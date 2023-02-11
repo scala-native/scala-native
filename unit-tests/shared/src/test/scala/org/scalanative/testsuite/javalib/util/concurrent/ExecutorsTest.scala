@@ -162,95 +162,94 @@ class ExecutorsTest extends JSR166Test {
     }
   }
 
-  // TODO: ScheduledExecutor
-  // /** unconfigurableScheduledExecutorService(null) throws NPE
-  //  */
-  // @Test def testUnconfigurableScheduledExecutorServiceNPE(): Unit = {
-  //   try {
-  //     val unused =
-  //       Executors.unconfigurableScheduledExecutorService(null)
-  //     shouldThrow()
-  //   } catch {
-  //     case success: NullPointerException =>
+  /** unconfigurableScheduledExecutorService(null) throws NPE
+   */
+  @Test def testUnconfigurableScheduledExecutorServiceNPE(): Unit = {
+    try {
+      val unused =
+        Executors.unconfigurableScheduledExecutorService(null)
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
 
-  //   }
-  // }
+    }
+  }
 
-  // /** a newSingleThreadScheduledExecutor successfully runs delayed task
-  //  */
-  // @throws[Exception]
-  // @Test def testNewSingleThreadScheduledExecutor(): Unit =
-  //   usingPoolCleaner(Executors.newSingleThreadScheduledExecutor) { p =>
-  //     val proceed = new CountDownLatch(1)
-  //     val task = new CheckedRunnable() {
-  //       override def realRun(): Unit = { await(proceed) }
-  //     }
-  //     val startTime = System.nanoTime
-  //     val f = p.schedule(
-  //       Executors.callable(task, java.lang.Boolean.TRUE),
-  //       timeoutMillis(),
-  //       MILLISECONDS
-  //     )
-  //     assertFalse(f.isDone)
-  //     proceed.countDown()
-  //     assertSame(java.lang.Boolean.TRUE, f.get(LONG_DELAY_MS, MILLISECONDS))
-  //     assertSame(java.lang.Boolean.TRUE, f.get)
-  //     assertTrue(f.isDone)
-  //     assertFalse(f.isCancelled)
-  //     assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
-  //   }
+  /** a newSingleThreadScheduledExecutor successfully runs delayed task
+   */
+  @throws[Exception]
+  @Test def testNewSingleThreadScheduledExecutor(): Unit =
+    usingPoolCleaner(Executors.newSingleThreadScheduledExecutor) { p =>
+      val proceed = new CountDownLatch(1)
+      val task = new CheckedRunnable() {
+        override def realRun(): Unit = { await(proceed) }
+      }
+      val startTime = System.nanoTime
+      val f = p.schedule(
+        Executors.callable(task, java.lang.Boolean.TRUE),
+        timeoutMillis(),
+        MILLISECONDS
+      )
+      assertFalse(f.isDone)
+      proceed.countDown()
+      assertSame(java.lang.Boolean.TRUE, f.get(LONG_DELAY_MS, MILLISECONDS))
+      assertSame(java.lang.Boolean.TRUE, f.get)
+      assertTrue(f.isDone)
+      assertFalse(f.isCancelled)
+      assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
+    }
 
-  // /** a newScheduledThreadPool successfully runs delayed task
-  //  */
-  // @throws[Exception]
-  // @Test def testNewScheduledThreadPool(): Unit =
-  //   usingPoolCleaner(Executors.newScheduledThreadPool(2)) { p =>
-  //     val proceed = new CountDownLatch(1)
-  //     val task = new CheckedRunnable() {
-  //       override def realRun(): Unit = { await(proceed) }
-  //     }
-  //     val startTime = System.nanoTime
-  //     val f = p.schedule(
-  //       Executors.callable(task, java.lang.Boolean.TRUE),
-  //       timeoutMillis(),
-  //       MILLISECONDS
-  //     )
-  //     assertFalse(f.isDone)
-  //     proceed.countDown()
-  //     assertSame(java.lang.Boolean.TRUE, f.get(LONG_DELAY_MS, MILLISECONDS))
-  //     assertSame(java.lang.Boolean.TRUE, f.get)
-  //     assertTrue(f.isDone)
-  //     assertFalse(f.isCancelled)
-  //     assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
-  //   }
+  /** a newScheduledThreadPool successfully runs delayed task
+   */
+  @throws[Exception]
+  @Test def testNewScheduledThreadPool(): Unit =
+    usingPoolCleaner(Executors.newScheduledThreadPool(2)) { p =>
+      val proceed = new CountDownLatch(1)
+      val task = new CheckedRunnable() {
+        override def realRun(): Unit = { await(proceed) }
+      }
+      val startTime = System.nanoTime
+      val f = p.schedule(
+        Executors.callable(task, java.lang.Boolean.TRUE),
+        timeoutMillis(),
+        MILLISECONDS
+      )
+      assertFalse(f.isDone)
+      proceed.countDown()
+      assertSame(java.lang.Boolean.TRUE, f.get(LONG_DELAY_MS, MILLISECONDS))
+      assertSame(java.lang.Boolean.TRUE, f.get)
+      assertTrue(f.isDone)
+      assertFalse(f.isCancelled)
+      assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
+    }
 
-  // /** an unconfigurable newScheduledThreadPool successfully runs delayed task
-  //  */
-  // @throws[Exception]
-  // @Test def testUnconfigurableScheduledExecutorService(): Unit =
-  //   usingPoolCleaner(
-  //     Executors.unconfigurableScheduledExecutorService(
-  //       Executors.newScheduledThreadPool(2)
-  //     )
-  //   ) { p =>
-  //     val proceed = new CountDownLatch(1)
-  //     val task = new CheckedRunnable() {
-  //       override def realRun(): Unit = { await(proceed) }
-  //     }
-  //     val startTime = System.nanoTime
-  //     val f = p.schedule(
-  //       Executors.callable(task, java.lang.Boolean.TRUE),
-  //       timeoutMillis(),
-  //       MILLISECONDS
-  //     )
-  //     assertFalse(f.isDone)
-  //     proceed.countDown()
-  //     assertSame(java.lang.Boolean.TRUE, f.get(LONG_DELAY_MS, MILLISECONDS))
-  //     assertSame(java.lang.Boolean.TRUE, f.get)
-  //     assertTrue(f.isDone)
-  //     assertFalse(f.isCancelled)
-  //     assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
-  //   }
+  /** an unconfigurable newScheduledThreadPool successfully runs delayed task
+   */
+  @throws[Exception]
+  @Test def testUnconfigurableScheduledExecutorService(): Unit =
+    usingPoolCleaner(
+      Executors.unconfigurableScheduledExecutorService(
+        Executors.newScheduledThreadPool(2)
+      )
+    ) { p =>
+      val proceed = new CountDownLatch(1)
+      val task = new CheckedRunnable() {
+        override def realRun(): Unit = { await(proceed) }
+      }
+      val startTime = System.nanoTime
+      val f = p.schedule(
+        Executors.callable(task, java.lang.Boolean.TRUE),
+        timeoutMillis(),
+        MILLISECONDS
+      )
+      assertFalse(f.isDone)
+      proceed.countDown()
+      assertSame(java.lang.Boolean.TRUE, f.get(LONG_DELAY_MS, MILLISECONDS))
+      assertSame(java.lang.Boolean.TRUE, f.get)
+      assertTrue(f.isDone)
+      assertFalse(f.isCancelled)
+      assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
+    }
 
   /** Future.get on submitted tasks will time out if they compute too long.
    */

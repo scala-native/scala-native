@@ -79,11 +79,43 @@ object Executors {
     )
   }
 
+  def newSingleThreadScheduledExecutor(): ScheduledExecutorService = {
+    new Executors.DelegatedScheduledExecutorService(
+      new ScheduledThreadPoolExecutor(1)
+    )
+  }
+
+  def newSingleThreadScheduledExecutor(
+      threadFactory: ThreadFactory
+  ): ScheduledExecutorService = {
+    new Executors.DelegatedScheduledExecutorService(
+      new ScheduledThreadPoolExecutor(1, threadFactory)
+    )
+  }
+
+  def newScheduledThreadPool(corePoolSize: Int): ScheduledExecutorService = {
+    new ScheduledThreadPoolExecutor(corePoolSize)
+  }
+
+  def newScheduledThreadPool(
+      corePoolSize: Int,
+      threadFactory: ThreadFactory
+  ): ScheduledExecutorService = {
+    new ScheduledThreadPoolExecutor(corePoolSize, threadFactory)
+  }
+
   def unconfigurableExecutorService(
       executor: ExecutorService
   ): ExecutorService = {
     if (executor == null) throw new NullPointerException
     new Executors.DelegatedExecutorService(executor)
+  }
+
+  def unconfigurableScheduledExecutorService(
+      executor: ScheduledExecutorService
+  ): ScheduledExecutorService = {
+    if (executor == null) throw new NullPointerException
+    new Executors.DelegatedScheduledExecutorService(executor)
   }
 
   def defaultThreadFactory(): ThreadFactory = {
@@ -306,6 +338,41 @@ object Executors {
     override protected def finalize(): Unit = { super.shutdown() }
   }
 
+  private class DelegatedScheduledExecutorService(
+      e: ScheduledExecutorService
+  ) extends Executors.DelegatedExecutorService(e)
+      with ScheduledExecutorService {
+    override def schedule(
+        command: Runnable,
+        delay: Long,
+        unit: TimeUnit
+    ): ScheduledFuture[AnyRef] = {
+      return e.schedule(command, delay, unit)
+    }
+    override def schedule[V <: AnyRef](
+        callable: Callable[V],
+        delay: Long,
+        unit: TimeUnit
+    ): ScheduledFuture[V] = {
+      e.schedule(callable, delay, unit)
+    }
+    override def scheduleAtFixedRate(
+        command: Runnable,
+        initialDelay: Long,
+        period: Long,
+        unit: TimeUnit
+    ): ScheduledFuture[AnyRef] = {
+      e.scheduleAtFixedRate(command, initialDelay, period, unit)
+    }
+    override def scheduleWithFixedDelay(
+        command: Runnable,
+        initialDelay: Long,
+        delay: Long,
+        unit: TimeUnit
+    ): ScheduledFuture[AnyRef] = {
+      e.scheduleWithFixedDelay(command, initialDelay, delay, unit)
+    }
+  }
 }
 
 // Cannot instantiate.
