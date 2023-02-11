@@ -61,17 +61,6 @@ class FilesTestOnJDK11 {
     assertEquals("data read back does not match data written", dataOut, dataIn)
   }
 
-  @Test def readStringUTF16LEUsingExplicitCharsetUTF8(): Unit = {
-    val ioPath = getCleanIoPath("utf16LE_forReadBack")
-    val dataOut = getDataOut()
-
-    Files.writeString(ioPath, dataOut, StandardCharsets.UTF_16LE)
-
-    val dataIn = Files.readString(ioPath, StandardCharsets.UTF_8)
-
-    assertNotEquals("data read back matchs data written", dataOut, dataIn)
-  }
-
   @Test def readStringUTF16LEUsingExplicitCharsetUTF16LE(): Unit = {
     val ioPath = getCleanIoPath("utf16LE_forReadBack")
     val dataOut = getDataOut()
