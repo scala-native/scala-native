@@ -12,13 +12,21 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
 
   // Accomodate glob practice without surgery on finite state machine.
   private def conditionInput(src: String): String = {
+    printf(s"\n\n")
+    printf(s"LeeT: Begin conditionInput with input: |$src|\n")
+
     val in =
       if (isWindows) src.replace("\\", "/")
       else src
 
     val prefix = "./"
-    if (in.startsWith(prefix)) in.substring(prefix.length())
-    else in
+    val result = if (in.startsWith(prefix)) in.substring(prefix.length())
+                 else in
+
+    printf(s"\n")
+    printf(s"LeeT: End conditionInput with result: |$result|\n")
+    printf(s"\n\n")
+    result
   }
 
   def matches(): Boolean = {
@@ -110,6 +118,11 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
     val charsLeft = input.length()
     val sepsLeft = input.count(_ == '/')
 
-    matchesInternal(0, List(glob), charsLeft, sepsLeft)
+    val result = matchesInternal(0, List(glob), charsLeft, sepsLeft)
+
+    printf(s"\n\n")
+    printf(s"LeeT: End matches() with result: |$result|\n")
+    printf(s"\n\n")
+    result
   }
 }
