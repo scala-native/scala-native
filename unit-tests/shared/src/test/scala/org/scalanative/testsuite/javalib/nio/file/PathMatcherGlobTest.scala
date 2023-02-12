@@ -200,4 +200,15 @@ class PathMatcherGlobTest {
     pass("*", "")
   }
 
+  /* Issue #2937
+   * On both ScalaJVM & Scala Native the DirectoryStream method
+   * produces a Stream of file of the form "./name" for files in the
+   * current working directory.
+   * It is poorly documented but well experienced that Unix glob()
+   * allows a glob pattern of "name" to match ".name".
+   */
+  @Test def correctMatchingOfInitialDotSlash(): Unit = {
+    pass("*.sbt", "local.sbt") // establish baseline
+    pass("*.sbt", "./local.sbt")
+  }
 }
