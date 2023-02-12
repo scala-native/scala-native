@@ -17,7 +17,7 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
       else src
 
     val prefix = "./"
-    if (in.startsWith(prefix)) in.substring(prefix.length)
+    if (in.startsWith(prefix)) in.substring(prefix.length())
     else in
   }
 
