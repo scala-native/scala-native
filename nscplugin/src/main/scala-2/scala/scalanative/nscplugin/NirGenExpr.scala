@@ -567,7 +567,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero)) {
         buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), Val.Null, unwind)
       } else {
-        val alloc = buf.arrayalloc(elemty, Val.Int(elems.length), Val.Null, unwind)
+        val alloc =
+          buf.arrayalloc(elemty, Val.Int(elems.length), Val.Null, unwind)
         values.zip(elems).zipWithIndex.foreach {
           case ((v, elem), i) =>
             if (!v.isZero) {
