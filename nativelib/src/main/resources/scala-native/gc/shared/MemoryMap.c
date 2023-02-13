@@ -66,7 +66,7 @@ void exitWithFailToUnmapMemory() {
 void memoryUnmap(void *address, size_t memorySize) {
 #ifdef _WIN32
     bool succeeded = VirtualFree(address, memorySize, MEM_RELEASE);
-    if (!succeed) {
+    if (!succeeded) {
         exitWithFailToUnmapMemory();
     }
 #else // Unix
