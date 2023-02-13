@@ -1080,7 +1080,11 @@ object Lower {
           val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
           buf.let(
             n,
-            Op.Call(sig, Val.Global(func, Type.Ptr), Seq(module, len, zoneHandle)),
+            Op.Call(
+              sig,
+              Val.Global(func, Type.Ptr),
+              Seq(module, len, zoneHandle)
+            ),
             unwind
           )
         case arrval: Val.ArrayValue =>
