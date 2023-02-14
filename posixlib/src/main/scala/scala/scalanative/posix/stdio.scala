@@ -50,7 +50,10 @@ import scalanative.posix.sys.types, types.{off_t, size_t}
     extern
 
   @blocking def ftello(stream: Ptr[FILE]): off_t = extern
-  @blocking def ftrylockfile(filehandle: Ptr[FILE]): Int = extern
+
+  // Can not block; see "try" part of "ftry*"
+  def ftrylockfile(filehandle: Ptr[FILE]): Int = extern
+
   @blocking def funlockfile(filehandle: Ptr[FILE]): Unit = extern
 
   @blocking def getc_unlocked(stream: Ptr[CString]): Int = extern
