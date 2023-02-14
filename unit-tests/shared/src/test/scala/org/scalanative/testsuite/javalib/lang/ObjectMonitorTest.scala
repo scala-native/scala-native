@@ -61,6 +61,8 @@ class ObjectMonitorTest {
           else counter += 1
           lock.notify()
         }
+        // To mitigate effects of rentering the same thread every time by the same thread on the JVM
+        Thread.`yield`
       }
 
     for (threadsCount <- testedThreads) {
