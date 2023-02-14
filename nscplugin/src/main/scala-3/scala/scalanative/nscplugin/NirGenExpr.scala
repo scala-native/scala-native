@@ -105,7 +105,12 @@ trait NirGenExpr(using Context) {
           ) = args: @unchecked
           if (dimensions.size == 1)
             val length = genExpr(dimensions.head)
-            buf.arrayalloc(genType(componentType.typeValue), length, Val.Null, unwind)
+            buf.arrayalloc(
+              genType(componentType.typeValue),
+              length,
+              Val.Null,
+              unwind
+            )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
@@ -476,7 +481,8 @@ trait NirGenExpr(using Context) {
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero))
         buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), Val.Null, unwind)
       else
-        val alloc = buf.arrayalloc(elemty, Val.Int(values.length), Val.Null, unwind)
+        val alloc =
+          buf.arrayalloc(elemty, Val.Int(values.length), Val.Null, unwind)
         for (v, i) <- values.zipWithIndex if !v.isZero do
           given nir.Position = elems(i).span
           buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
