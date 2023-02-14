@@ -55,8 +55,8 @@ class ObjectMonitorTest {
     @volatile var counter = 0
     val lock = new {}
     def lockedOrderedExec(threadId: Int, threadsCount: Int) =
-      lock.synchronized {
-        while (counter <= maxIterations) {
+      while (counter <= maxIterations) {
+        lock.synchronized {
           if (counter % threadsCount != threadId) lock.wait()
           else counter += 1
           lock.notify()
