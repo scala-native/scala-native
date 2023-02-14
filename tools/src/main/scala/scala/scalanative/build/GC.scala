@@ -28,7 +28,8 @@ sealed abstract class GC private (
 }
 object GC {
   private[scalanative] case object None extends GC("none", Seq(), Seq("shared"))
-  private[scalanative] case object Boehm extends GC("boehm", Seq("gc"), Seq("shared"))
+  private[scalanative] case object Boehm
+      extends GC("boehm", Seq("gc"), Seq("shared"))
   private[scalanative] case object Immix
       extends GC("immix", Seq(), Seq("shared", "immix_commix"))
   private[scalanative] case object Commix
