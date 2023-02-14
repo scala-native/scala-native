@@ -651,7 +651,7 @@ object Files {
     val filter = new DirectoryStream.Filter[Path] {
       private val matcher =
         FileSystems.getDefault().getPathMatcher("glob:" + glob)
-      override def accept(p: Path): Boolean = matcher.matches(p)
+      override def accept(p: Path): Boolean = matcher.matches(p.normalize())
     }
     newDirectoryStream(dir, filter)
   }

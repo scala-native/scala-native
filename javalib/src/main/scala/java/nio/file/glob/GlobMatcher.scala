@@ -1,36 +1,16 @@
 package java.nio.file.glob
 
-import java.util.Objects
 import java.nio.file.{PathMatcher, Path}
 import scala.util.matching.Regex
 import scala.annotation.tailrec
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 class GlobMatcher(glob: GlobNode, inputPath: String) {
-  Objects.requireNonNull(glob, "glob pattern")
-  Objects.requireNonNull(inputPath, "inputPath")
-
-  // Accomodate glob practice without surgery on finite state machine.
-  private def conditionInput(src: String): String = {
-    printf(s"\n\n")
-    printf(s"LeeT: Begin conditionInput with input: |$src|\n")
-
-    val in =
-      if (isWindows) src.replace("\\", "/")
-      else src
-
-    val prefix = "./"
-    val result = if (in.startsWith(prefix)) in.substring(prefix.length())
-                 else in
-
-    printf(s"\n")
-    printf(s"LeeT: End conditionInput with result: |$result|\n")
-    printf(s"\n\n")
-    result
-  }
 
   def matches(): Boolean = {
-    val input = conditionInput(inputPath)
+    val input =
+      if (isWindows) inputPath.replace("\\", "/")
+      else inputPath
 
     // Finds states reachable after using one input character
     def reachableStates(
@@ -118,11 +98,6 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
     val charsLeft = input.length()
     val sepsLeft = input.count(_ == '/')
 
-    val result = matchesInternal(0, List(glob), charsLeft, sepsLeft)
-
-    printf(s"\n\n")
-    printf(s"LeeT: End matches() with result: |$result|\n")
-    printf(s"\n\n")
-    result
+    matchesInternal(0, List(glob), charsLeft, sepsLeft)
   }
 }

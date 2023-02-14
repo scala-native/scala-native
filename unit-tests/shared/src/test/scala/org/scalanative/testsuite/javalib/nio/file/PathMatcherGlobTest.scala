@@ -1,4 +1,5 @@
-package org.scalanative.testsuite.javalib.nio.file
+package org.scalanative.testsuite
+package javalib.nio.file
 
 import java.nio.file._
 
@@ -201,14 +202,13 @@ class PathMatcherGlobTest {
   }
 
   /* Issue #2937
-   * On both ScalaJVM & Scala Native the DirectoryStream method
-   * produces a Stream of file of the form "./name" for files in the
-   * current working directory.
-   * It is poorly documented but well experienced that Unix glob()
-   * allows a glob pattern of "name" to match ".name".
+   * Glob itself should not match glob "*.sbt" with "./local.sbt".
+   * Files.getNewDirectoryStream() must normalize candidate path before
+   * handing it off to glob.
    */
   @Test def correctMatchingOfInitialDotSlash(): Unit = {
     pass("*.sbt", "local.sbt") // establish baseline
-    pass("*.sbt", "./local.sbt")
+    pass("./*.sbt", "./local.sbt")
+    fail("*.sbt", "./local.sbt")
   }
 }
