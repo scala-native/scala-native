@@ -39,4 +39,11 @@ object AssumesHelper {
     // libunwind does not work with AddressSanitizer
     assumeNotASAN()
   }
+
+  def assumeNotExecutedInForkJoinPool() = {
+    Assume.assumeFalse(
+      "SN executes all tests using ForkJoinPool based executor in multithreading mode",
+      Platform.executingInScalaNative && Platform.isMultithreadingEnabled
+    )
+  }
 }

@@ -26,9 +26,9 @@ class ObjectMonitorTest {
     @volatile var counter = 0
     val lock = new {}
     def lockedOrderedExec(threadId: Int, threadsCount: Int) =
-      while (counter < maxIterations) {
+      while (counter <= maxIterations) {
         lock.synchronized {
-          if (counter % threadsCount == threadId && counter < maxIterations)
+          if (counter % threadsCount == threadId)
             counter += 1
         }
       }
@@ -40,12 +40,14 @@ class ObjectMonitorTest {
           lockedOrderedExec(threadId, threadsCount)
         )
       }
-      waitWhenMakesProgress(
-        "await synchronization cycles",
-        maxIterations * 100 /*ms*/
-      )(counter)(
-        maxIterations == counter
-      )
+      try
+        waitWhenMakesProgress(
+          "await synchronization cycles",
+          maxIterations * 100 /*ms*/
+        )(counter)(
+          maxIterations >= counter
+        )
+      finally ensureTerminatesThreads(threads, lock)
     }
   }
 
@@ -53,13 +55,14 @@ class ObjectMonitorTest {
     @volatile var counter = 0
     val lock = new {}
     def lockedOrderedExec(threadId: Int, threadsCount: Int) =
-      lock.synchronized {
-        while (counter <= maxIterations) {
+      while (counter <= maxIterations) {
+        lock.synchronized {
           if (counter % threadsCount != threadId) lock.wait()
-          if (counter < maxIterations) counter += 1
-          // println(s"notify $counter")
+          else counter += 1
           lock.notify()
         }
+        // To mitigate effects of rentering the same thread every time by the same thread on the JVM
+        Thread.`yield`
       }
 
     for (threadsCount <- testedThreads) {
@@ -69,12 +72,14 @@ class ObjectMonitorTest {
           lockedOrderedExec(threadId, threadsCount)
         )
       }
-      waitWhenMakesProgress(
-        "await synchronization cycles",
-        maxIterations * 100 /*ms*/
-      )(counter)(
-        maxIterations == counter
-      )
+      try
+        waitWhenMakesProgress(
+          "await synchronization cycles",
+          maxIterations * 100 /*ms*/
+        )(counter)(
+          maxIterations >= counter
+        )
+      finally ensureTerminatesThreads(threads, lock)
     }
   }
 
@@ -83,10 +88,9 @@ class ObjectMonitorTest {
     val lock = new {}
     def lockedOrderedExec(threadId: Int, threadsCount: Int): Unit =
       lock.synchronized {
-        while (true) {
-          if (counter >= maxIterations) return ()
+        while (counter <= maxIterations) {
           while (counter % threadsCount != threadId) lock.wait()
-          if (counter < maxIterations) counter += 1
+          counter += 1
           lock.notifyAll()
         }
       }
@@ -98,13 +102,15 @@ class ObjectMonitorTest {
           lockedOrderedExec(threadId, threadsCount)
         )
       }
-      waitWhenMakesProgress(
-        "await synchronization cycles",
-        maxIterations * 100 /*ms*/
-      )(counter)(
-        maxIterations == counter
-      )
 
+      try
+        waitWhenMakesProgress(
+          "await synchronization cycles",
+          maxIterations * 100 /*ms*/
+        )(counter)(
+          maxIterations >= counter
+        )
+      finally ensureTerminatesThreads(threads, lock)
     }
   }
 
@@ -203,6 +209,27 @@ class ObjectMonitorTest {
     t.setName(label)
     t.start()
     t
+  }
+
+  private def ensureTerminatesThreads(
+      threads: Seq[Thread],
+      lock: AnyRef
+  ): Unit = {
+    var iteration = 0
+    while (threads.exists(_.isAlive()) && iteration < 5) {
+      iteration += 1
+      lock.synchronized {
+        lock.notifyAll()
+      }
+      Thread.sleep(iteration * 500)
+    }
+    if (threads.exists(_.isAlive())) {
+      threads.foreach(t => if (t.isAlive()) t.interrupt())
+      fail(
+        "Failed to gracefully terminate synchronized threads" +
+          s"${threads.count(_.isAlive)}/${threads.size}"
+      )
+    }
   }
 
 }
