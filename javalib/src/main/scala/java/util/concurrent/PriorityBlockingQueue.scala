@@ -162,7 +162,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
   final private val notEmpty: Condition = lock.newCondition()
 
-  private var allocationSpinLock = 0
+  @volatile private var allocationSpinLock = 0
 
   private val atomicAllocationSpinLock = new CAtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "allocationSpinLock"))

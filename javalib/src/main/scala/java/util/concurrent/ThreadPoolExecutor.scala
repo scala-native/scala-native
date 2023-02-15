@@ -69,18 +69,18 @@ class ThreadPoolExecutor(
      *  Since the worker count is actually stored in COUNT_BITS bits, the
      *  effective limit is {@code corePoolSize & COUNT_MASK}.
      */
-    var corePoolSize: Int,
+    @volatile private var corePoolSize: Int,
     /** Maximum pool size.
      *
      *  Since the worker count is actually stored in COUNT_BITS bits, the
      *  effective limit is {@code maximumPoolSize & COUNT_MASK}.
      */
-    var maximumPoolSize: Int,
-    var keepAliveTime: Long,
-    val unit: TimeUnit,
-    val workQueue: BlockingQueue[Runnable],
-    var threadFactory: ThreadFactory,
-    var handler: RejectedExecutionHandler
+    @volatile private var maximumPoolSize: Int,
+    @volatile private var keepAliveTime: Long,
+    unit: TimeUnit,
+    workQueue: BlockingQueue[Runnable],
+    @volatile private var threadFactory: ThreadFactory,
+    @volatile private var handler: RejectedExecutionHandler
 ) extends AbstractExecutorService {
   import ThreadPoolExecutor._
 
@@ -155,6 +155,7 @@ class ThreadPoolExecutor(
 
   private var completedTaskCount: Long = 0L
 
+  @volatile
   private var allowCoreThreadTimeOut: Boolean = false
 
   @SerialVersionUID(6138294804551838833L)
@@ -167,7 +168,7 @@ class ThreadPoolExecutor(
     final private[concurrent] var thread: Thread =
       getThreadFactory().newThread(this)
 
-    private[concurrent] var completedTasks: Long = 0L
+    @volatile private[concurrent] var completedTasks: Long = 0L
 
     override def run(): Unit = runWorker(this)
     override protected def isHeldExclusively(): Boolean = getState() != 0
