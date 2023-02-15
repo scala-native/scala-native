@@ -59,9 +59,9 @@ import java.io.FileNotFoundException
 
 object Files {
 
-  private val `1U` = 1.toUInt
+  private final val `1U` = 1.toUInt
 
-  private val emptyPath = Paths.get("", Array.empty)
+  private final val emptyPath = Paths.get("", Array.empty)
 
   // def getFileStore(path: Path): FileStore
   // def probeContentType(path: Path): String
