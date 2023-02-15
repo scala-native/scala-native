@@ -61,6 +61,8 @@ object Files {
 
   private val `1U` = 1.toUInt
 
+  private val emptyPath = Paths.get("", Array.empty)
+
   // def getFileStore(path: Path): FileStore
   // def probeContentType(path: Path): String
 
@@ -532,11 +534,25 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     newBufferedReader(path, cs).lines(true)
 
-  def list(dir: Path): Stream[Path] =
+  def list(dir: Path): Stream[Path] = {
+    /* Fix Issue 3165 - From Java "Path" documentation URL:
+     * https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
+     *
+     * "Accessing a file using an empty path is equivalent to accessing the
+     * default directory of the file system."
+     *
+     * Operating Systems can not opendir() an empty string, so expand "" to
+     * "./".
+     */
+    val dirString =
+      if (dir.equals(emptyPath)) "./"
+      else dir.toString()
+
     new WrappedScalaStream(
-      FileHelpers.list(dir.toString, (n, _) => dir.resolve(n)).toScalaStream,
+      FileHelpers.list(dirString, (n, _) => dir.resolve(n)).toScalaStream,
       None
     )
+  }
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     lazy val replaceExisting = options.contains(REPLACE_EXISTING)
@@ -651,7 +667,13 @@ object Files {
     val filter = new DirectoryStream.Filter[Path] {
       private val matcher =
         FileSystems.getDefault().getPathMatcher("glob:" + glob)
-      override def accept(p: Path): Boolean = matcher.matches(p)
+
+      /* Fix Issue 2937 - Java considers "" & "./" to be the same: current
+       * default directory. To ease comparison here and follow JDK practice,
+       * change "./" to "" on candidate path. See related "" to "./ "
+       * comment in "def list()" above.
+       */
+      override def accept(p: Path): Boolean = matcher.matches(p.normalize())
     }
     newDirectoryStream(dir, filter)
   }
