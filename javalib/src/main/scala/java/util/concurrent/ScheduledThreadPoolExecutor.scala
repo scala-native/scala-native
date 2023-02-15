@@ -399,15 +399,19 @@ class ScheduledThreadPoolExecutor(
     )
     with ScheduledExecutorService {
 
+  @volatile
   private var continueExistingPeriodicTasksAfterShutdown = false
 
+  @volatile
   private var executeExistingDelayedTasksAfterShutdown = true
 
+  @volatile
   private[concurrent] var removeOnCancel = false
 
   private sealed trait ScheduledFutureTask[V <: AnyRef]
       extends RunnableScheduledFuture[V] { self: FutureTask[V] =>
 
+    @volatile
     protected var time: Long
 
     protected var period: Long
