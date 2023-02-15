@@ -209,6 +209,6 @@ class PathMatcherGlobTest {
   @Test def correctMatchingOfInitialDotSlash(): Unit = {
     pass("*.sbt", "local.sbt") // establish baseline
     pass("./*.sbt", "./local.sbt")
-    fail("*.sbt", "./local.sbt")
+    fail("*.sbt", "./local.sbt") // glob "*" will not cross "/", so no match
   }
 }
