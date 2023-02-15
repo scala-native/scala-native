@@ -30,7 +30,7 @@ Boehm GC
 --------
 
 The Boehm GC uses the two variables shown above. The following document shows all the variables
-available for Boehm: `README <https://github.com/ivmai/bdwgc/blob/master/doc/README.environment>`_.
+available for Boehm: `README <https://github.com/ivmai/bdwgc/blob/master/docs/README.environment>`_.
 
 None GC
 -------
