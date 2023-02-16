@@ -91,4 +91,68 @@ class DirectoryStreamTest {
     assertFalse(it.hasNext())
     assertThrows(classOf[NoSuchElementException], it.next())
   }
+
+  /* Issue #2937
+   *
+   * Note Well - This Test is fragile/sensitiveToChange/lessThanRobust.
+   *
+   * This Test is fragile in the sense that it assumes/requires that
+   * the current working directory contains at least one .sbt file.
+   * Such is true at the time this test is created. The current working
+   * directory when TestMain is started is the project directory. That
+   * directory contains a .sbt file because that file was used to start
+   * the execution of TestMain; Worm Ouroboros.
+   *
+   * An alternative approach of saving and restoring the current working
+   * directory was considered but judged to be more fragile.
+   */
+  @Test def normalizesAcceptCandidatePathExpectMatch(): Unit = {
+
+    val passGlob = "*.sbt" // passes in JVM
+
+    // Path of current working directory, from empty string.
+    val emptyPathStream = Files.newDirectoryStream(Paths.get(""), passGlob)
+    val emptyPathPassed = emptyPathStream.iterator().hasNext() // count >= 1
+    emptyPathStream.close()
+
+    assertTrue(
+      s"current working directory stream has no match for '${passGlob}'",
+      emptyPathPassed
+    )
+
+    // Path of current working directory, from dot string.
+    val dotPathStream = Files.newDirectoryStream(Paths.get("."), passGlob)
+    val dotPathPassed = dotPathStream.iterator().hasNext() // count >= 1
+    dotPathStream.close()
+
+    assertTrue(
+      s"dot directory stream has no match for '${passGlob}'",
+      dotPathPassed
+    )
+  }
+
+  @Test def normalizesAcceptCandidatePathExpectNoMatch(): Unit = {
+
+    val failGlob = "./*.sbt" // fails in JVM and should fail here
+
+    // Path of current working directory, from empty string.
+    val emptyPathStream = Files.newDirectoryStream(Paths.get(""), failGlob)
+    val emptyPathPassed = emptyPathStream.iterator().hasNext() // count >= 1
+    emptyPathStream.close()
+
+    assertFalse(
+      s"current working directory stream has a match for '${failGlob}'",
+      emptyPathPassed
+    )
+
+    // Path of current working directory, from dot string.
+    val dotPathStream = Files.newDirectoryStream(Paths.get("."), failGlob)
+    val dotPathPassed = dotPathStream.iterator().hasNext() // count >= 1
+    dotPathStream.close()
+
+    assertFalse(
+      s"dot directory stream has a match for '${failGlob}'",
+      dotPathPassed
+    )
+  }
 }

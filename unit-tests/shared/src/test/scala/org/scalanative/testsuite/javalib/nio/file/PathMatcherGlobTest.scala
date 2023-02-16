@@ -1,4 +1,5 @@
-package org.scalanative.testsuite.javalib.nio.file
+package org.scalanative.testsuite
+package javalib.nio.file
 
 import java.nio.file._
 
@@ -200,4 +201,14 @@ class PathMatcherGlobTest {
     pass("*", "")
   }
 
+  /* Issue #2937
+   * Glob itself should not match glob "*.sbt" with "./local.sbt".
+   * Files.getNewDirectoryStream() must normalize candidate path before
+   * handing it off to glob.
+   */
+  @Test def correctMatchingOfInitialDotSlash(): Unit = {
+    pass("*.sbt", "local.sbt") // establish baseline
+    pass("./*.sbt", "./local.sbt")
+    fail("*.sbt", "./local.sbt") // glob "*" will not cross "/", so no match
+  }
 }
