@@ -4,8 +4,8 @@ package compat.os
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position}
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.dwarf.GenIdx
-import scala.scalanative.codegen.dwarf.DwarfSection
+import scala.scalanative.codegen.llvm.GenIdx
+import scala.scalanative.codegen.llvm.DebugInformationSection
 import scala.scalanative.nir.Defn
 import scala.scalanative.nir.Global
 
@@ -22,7 +22,7 @@ private[codegen] trait OsCompat {
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 

@@ -4,8 +4,8 @@ import scala.scalanative.codegen.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position, Val}
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.dwarf.GenIdx
-import scala.scalanative.codegen.dwarf.DwarfSection
+import scala.scalanative.codegen.llvm.GenIdx
+import scala.scalanative.codegen.llvm.DebugInformationSection
 import scala.scalanative.nir.Defn
 import scala.scalanative.nir.Global
 
@@ -56,7 +56,7 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import codegen._
     import sb._

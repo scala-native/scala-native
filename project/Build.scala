@@ -506,8 +506,6 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
-      .settings(nativeLinkingOptions += "-g")
-      .settings(nativeCompileOptions += "-g")
       .dependsOn(scalalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------

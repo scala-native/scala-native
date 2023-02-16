@@ -11,8 +11,8 @@ import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
-import dwarf.DwarfSection
-import scala.scalanative.codegen.dwarf.GenIdx
+import scala.scalanative.codegen.llvm.GenIdx
+import scala.scalanative.codegen.llvm.DebugInformationSection
 import scala.scalanative.nir.Type.Ref
 import scala.scalanative.nir.Type.Vararg
 import scala.scalanative.nir.Type.Var
@@ -22,8 +22,8 @@ import scala.scalanative.nir.Type.Size
 import scala.scalanative.nir.Type.Ptr
 import scala.scalanative.nir.Type.ArrayValue
 import scala.scalanative.nir.Type.StructValue
-import scala.scalanative.codegen.dwarf.DwarfDef
-import scala.scalanative.codegen.dwarf.I
+import scala.scalanative.codegen.llvm.LLVMDebugInformation
+import scala.scalanative.codegen.llvm.Incr
 import scala.util.control.NonFatal
 
 private[codegen] abstract class AbstractCodeGen(
@@ -31,6 +31,7 @@ private[codegen] abstract class AbstractCodeGen(
     defns: Seq[Defn]
 )(implicit val meta: Metadata) {
   import meta.platform
+  import meta.config
   import platform._
 
   val os: OsCompat
@@ -45,8 +46,8 @@ private[codegen] abstract class AbstractCodeGen(
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
   def gen(id: String, dir: VirtualDirectory): Path = {
-    implicit val db: DwarfSection.Builder =
-      DwarfSection.builder()
+    implicit val db: DebugInformationSection.Builder =
+      DebugInformationSection.builder()
 
     val body = dir.write(Paths.get(s"$id-body.ll")) { writer =>
       implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
@@ -64,17 +65,17 @@ private[codegen] abstract class AbstractCodeGen(
       implicit val sb: ShowBuilder = new FileShowBuilder(writer)
 
       db.anon(
-        DwarfDef.`llvm.module.flags`(
+        LLVMDebugInformation.`llvm.module.flags`(
           Seq(
             db.anon(
-              DwarfDef
-                .IntAttr(7, "Dwarf Version", DwarfDef.Constants.DWARF_VERSION)
+              LLVMDebugInformation
+                .IntAttr(7, "Dwarf Version", LLVMDebugInformation.Constants.DWARF_VERSION)
             ),
             db.anon(
-              DwarfDef.IntAttr(
+              LLVMDebugInformation.IntAttr(
                 2,
                 "Debug Info Version",
-                DwarfDef.Constants.DEBUG_INFO_VERSION
+                LLVMDebugInformation.Constants.DEBUG_INFO_VERSION
               )
             )
           )
@@ -90,7 +91,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def genDeps()(implicit
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = deps.foreach { n =>
     val mn = mangled(n)
     if (!generated.contains(mn)) {
@@ -119,7 +120,7 @@ private[codegen] abstract class AbstractCodeGen(
       defns: Seq[Defn]
   )(implicit
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
     def onDefn(defn: Defn): Unit = {
@@ -182,7 +183,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def genDefn(defn: Defn)(implicit
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = defn match {
     case Defn.Var(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = false, ty, rhs)
@@ -226,7 +227,7 @@ private[codegen] abstract class AbstractCodeGen(
       pos: Position
   )(implicit
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
 
@@ -308,27 +309,27 @@ private[codegen] abstract class AbstractCodeGen(
       rettype: Type,
       argtypes: Seq[Type]
   )(implicit
-      dwf: DwarfSection.Builder
-  ): Option[I[DwarfDef.DISubprogram]] = {
+      dwf: DebugInformationSection.Builder
+  ): Option[Incr[LLVMDebugInformation.DISubprogram]] = {
     try {
       val diTypes = dwf.anon(
-        DwarfDef.DITypes(dwarfType(rettype), argtypes.map(dwarfType(_).get))
+        LLVMDebugInformation.DITypes(dwarfType(rettype), argtypes.map(dwarfType(_).get))
       )
-      val subType = dwf.anon(DwarfDef.DISubroutineType(diTypes))
+      val subType = dwf.anon(LLVMDebugInformation.DISubroutineType(diTypes))
 
       val file = dwf.fileFromPosition(pos)
 
       val unit = dwf.cached(
-        DwarfDef.DICompileUnit(
+        LLVMDebugInformation.DICompileUnit(
           file = file,
-          producer = DwarfDef.Constants.PRODUCER,
+          producer = LLVMDebugInformation.Constants.PRODUCER,
           isOptimised = config.mode != build.Mode.Debug
         )
       )
       val func =
         dwf.register(
           name,
-          DwarfDef.DISubprogram(
+          LLVMDebugInformation.DISubprogram(
             name = name.top.id,
             linkageName = mangled(name),
             scope = unit,
@@ -392,12 +393,12 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genBlock(
       block: Block,
-      scope: Option[I[DwarfDef.Scope]] = None
+      scope: Option[Incr[LLVMDebugInformation.Scope]] = None
   )(implicit
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
     val Block(name, params, insts, isEntry) = block
@@ -482,7 +483,7 @@ private[codegen] abstract class AbstractCodeGen(
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
@@ -494,15 +495,15 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def dwarfType(
       ty: Type
-  )(implicit dwf: DwarfSection.Builder): Option[I[DwarfDef.Type]] = {
-    @inline def basic(name: String, size: Int): I[DwarfDef.DIBasicType] =
-      dwf.cached(DwarfDef.DIBasicType(name, size * 8))
+  )(implicit dwf: DebugInformationSection.Builder): Option[Incr[LLVMDebugInformation.Type]] = {
+    @inline def basic(name: String, size: Int): Incr[LLVMDebugInformation.DIBasicType] =
+      dwf.cached(LLVMDebugInformation.DIBasicType(name, size * 8))
 
     PartialFunction.condOpt(ty) {
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
         dwf.cached(
-          DwarfDef.DIDerivedType(
-            tag = DwarfDef.DWTag.Pointer,
+          LLVMDebugInformation.DIDerivedType(
+            tag = LLVMDebugInformation.DWTag.Pointer,
             baseType = basic("i8", 8),
             size = 64
           )
@@ -513,7 +514,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Bool          => basic("i1", 1)
       case i: Type.FixedSizeI => basic(s"i${i.width / 8}", i.width / 8)
       case Type.Size =>
-        if (is32BitPlatform) basic("i32", 4)
+        if (platform.is32Bit) basic("i32", 4)
         else basic("i64", 8)
       case other if other != Type.Unit =>
         throw new NotImplementedError(s"No idea how to dwarfise $other")
@@ -704,11 +705,11 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genInst(
       inst: Inst,
-      scope: Option[I[DwarfDef.Scope]] = None
+      scope: Option[Incr[LLVMDebugInformation.Scope]] = None
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
     inst match {
@@ -790,11 +791,11 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genLet(
       inst: Inst.Let,
-      scope: Option[I[DwarfDef.Scope]] = None
+      scope: Option[Incr[LLVMDebugInformation.Scope]] = None
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
     def isVoid(ty: Type): Boolean =
@@ -1019,11 +1020,11 @@ private[codegen] abstract class AbstractCodeGen(
       call: Op.Call,
       unwind: Next,
       pos: Option[Position],
-      scope: Option[I[DwarfDef.Scope]]
+      scope: Option[Incr[LLVMDebugInformation.Scope]]
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
 
@@ -1243,8 +1244,8 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genNext(
       next: Next,
-      dwarfToken: Option[DwarfSection.Token] = None
-  )(implicit sb: ShowBuilder, dwf: DwarfSection.Builder): Unit = {
+      dwarfToken: Option[DebugInformationSection.Token] = None
+  )(implicit sb: ShowBuilder, dwf: DebugInformationSection.Builder): Unit = {
     import sb._
     next match {
       case Next.Case(v, next) =>
