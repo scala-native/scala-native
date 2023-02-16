@@ -4,8 +4,8 @@ import scala.scalanative.codegen.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.dwarf.GenIdx
-import scala.scalanative.codegen.dwarf.DwarfSection
+import scala.scalanative.codegen.llvm.GenIdx
+import scala.scalanative.codegen.llvm.DebugInformationSection
 
 private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
@@ -28,7 +28,7 @@ private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      dwf: DwarfSection.Builder
+      dwf: DebugInformationSection.Builder
   ): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind

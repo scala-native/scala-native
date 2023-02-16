@@ -445,11 +445,11 @@ object Build {
         c.withLTO(LTO.default)
           .withMode(Mode.default)
           .withGC(GC.default)
+          .withCompileOptions(c.compileOptions :+ "-g")
+          .withLinkingOptions(c.linkingOptions :+ "-g")
       })
       .withNativeCompilerPlugin
       .withJUnitPlugin
-      .settings(nativeLinkingOptions += "-g")
-      .settings(nativeCompileOptions += "-g")
       .dependsOn(scalalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
