@@ -109,7 +109,6 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
   @Test def testSchedule1(): Unit = {
     val done = new CountDownLatch(1)
     usingWrappedPoolCleaner(new CustomExecutor(1))(cleaner(_, done)) { p =>
-      val p = new CustomExecutor(1)
       val startTime = System.nanoTime
       val task = new CheckedCallable[Boolean]() {
         override def realCall(): Boolean = {
