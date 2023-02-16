@@ -1051,12 +1051,6 @@ private[codegen] abstract class AbstractCodeGen(
         val Type.Function(argtys, _) = ty: @unchecked
         touch(pointee)
 
-        if (pos.isEmpty || scope.isEmpty) {
-          // println(
-          //   s"call to ${pointee.show} cannot be made: pos=`$pos`, scope=`$scope`"
-          // )
-        }
-
         newline()
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
