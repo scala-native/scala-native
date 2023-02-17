@@ -8,23 +8,23 @@ import scala.scalanative.runtime.{RawPtr, CZone}
 @implicitNotFound("Given method requires an implicit zone.")
 trait SafeZone {
 
-  /** Frees allocations. This zone allocator is not reusable once closed. */
-  def close(): Unit
-
   /** Return this zone allocator is open or not. */
   def isOpen: Boolean
 
   /** Return this zone allocator is closed or not. */
   def isClosed: Boolean = !isOpen
 
-  /** Return the handle of this zone allocator. */
-  private[scalanative] def handle: RawPtr
-
   /** Require this zone allocator is open. */
   def checkOpen(): Unit = {
     if (!isOpen)
       throw new IllegalStateException(s"Zone ${this} is already closed.")
   }
+
+  /** Frees allocations. This zone allocator is not reusable once closed. */
+  private[scalanative] def close(): Unit
+
+  /** Return the handle of this zone allocator. */
+  private[scalanative] def handle: RawPtr
 }
 
 final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {
@@ -42,13 +42,10 @@ final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends Saf
 
 
 object SafeZone {
-
   /** Run given function with a fresh zone and destroy it afterwards. */
   final def apply[T](f: ({*} SafeZone) => T): T = {
-    val sz: {*} SafeZone = open()
+    val sz: {*} SafeZone = new MemorySafeZone(CZone.open())
     try f(sz)
     finally sz.close()
   }
-
-  final def open(): {*} SafeZone = new MemorySafeZone(CZone.open())
 }

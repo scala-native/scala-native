@@ -10,15 +10,7 @@ import scala.util.{Try,Success,Failure}
 
 class SafeZoneTest {
   @Test def `correctly open and close a safe zone`(): Unit = {
-    val sz = SafeZone.open()
-    assertTrue(sz.isOpen)
-    assertFalse(sz.isClosed)
-    sz.close()
-    assertFalse(sz.isOpen)
-    assertTrue(sz.isClosed)
-    assertThrows(classOf[IllegalStateException], sz.close())
-
-    SafeZone { sz =>
+    SafeZone { sz => 
       assertTrue(sz.isOpen)
       assertFalse(sz.isClosed)
     }
@@ -39,13 +31,16 @@ class SafeZoneTest {
 
   @Test def `report error when trying to allocate an instances in a closed safe zone`(): Unit = {
     class A {}
-    val sz: {*} SafeZone = SafeZone.open()
-    sz.close()
-    Try[{sz} A].apply(withSafeZone(sz, new A())) match {
-      case Success(_) => fail("Should not allocate instances in a closed safe zone.")
-      case Failure(e: IllegalStateException) => ()
-      case Failure(_) => fail("Unexpected error.")
-    }
+    assertThrows(classOf[IllegalStateException], 
+      SafeZone { sz => 
+        sz.close()
+        Try[{sz} A].apply(withSafeZone(sz, new A())) match {
+          case Success(_) => fail("Should not allocate instances in a closed safe zone.")
+          case Failure(e: IllegalStateException) => ()
+          case Failure(_) => fail("Unexpected error.")
+        }
+      }
+    )
   }
 
   @Test def `allocate instances in nested safe zones`(): Unit = {
