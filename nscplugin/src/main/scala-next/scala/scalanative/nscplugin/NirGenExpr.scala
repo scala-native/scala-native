@@ -92,6 +92,12 @@ trait NirGenExpr(using Context) {
             if app.fun.symbol == defnNir.SafeZoneCompat_withSafeZone =>
           // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
           // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+          tree match {
+            case Apply(Select(New(_), nme.CONSTRUCTOR), _) =>
+            case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
+            case _ => 
+              report.error(s"Unexpected tree in withSafeZone: `${tree}`", tree.srcPos)
+          }
           // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
           val handle = genExpr(Select(sz, termName("handle")))
           if tree.hasAttachment(SafeZoneHandle) then
@@ -100,7 +106,7 @@ trait NirGenExpr(using Context) {
               tree.srcPos
             );
           tree.putAttachment(SafeZoneHandle, handle)
-          // `withSafeZone(sz, new T(...))` is translated to `{ sz.checkOpen(); new T(...) }`.
+          // Translate `withSafeZone(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
           val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
           val block = Block(List(checkOpen), tree)
           genExpr(block)
