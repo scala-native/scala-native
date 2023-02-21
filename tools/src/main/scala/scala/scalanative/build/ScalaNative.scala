@@ -28,7 +28,9 @@ private[scalanative] object ScalaNative {
   ): linker.Result =
     dump(config, "linked") {
       check(config) {
-        config.logger.time("Linking")(Link(config, entries))
+        val mtSupport = config.compilerConfig.multithreadingSupport.toString()
+        val linkingMsg = s"Linking (multithreading ${mtSupport})"
+        config.logger.time(linkingMsg)(Link(config, entries))
       }
     }
 
