@@ -223,7 +223,7 @@ object ${T}Array {
     )
     val arr = 
       if (zoneHandle == null) ${allocGC}(arrcls, arrsize) 
-      else ${allocSZ}(zoneHandle, arrcls, arrsize)
+      else ${allocSZ}(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, ${sizePtr}), length)
     storeInt(elemRawPtr(
       arr,

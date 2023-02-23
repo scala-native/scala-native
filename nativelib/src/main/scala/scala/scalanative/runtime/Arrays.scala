@@ -203,7 +203,7 @@ object BooleanArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -276,7 +276,7 @@ object CharArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -349,7 +349,7 @@ object ByteArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -422,7 +422,7 @@ object ShortArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -495,7 +495,7 @@ object IntArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -568,7 +568,7 @@ object LongArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -641,7 +641,7 @@ object FloatArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -714,7 +714,7 @@ object DoubleArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc_atomic(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
@@ -787,7 +787,7 @@ object ObjectArray {
     )
     val arr = 
       if (zoneHandle == null) GC.alloc(arrcls, arrsize) 
-      else CZone.alloc(zoneHandle, arrcls, arrsize)
+      else CZone.alloc(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, sizeOfPtr), length)
     storeInt(elemRawPtr(
       arr,
