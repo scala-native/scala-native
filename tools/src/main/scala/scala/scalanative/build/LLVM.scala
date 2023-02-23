@@ -35,16 +35,32 @@ private[scalanative] object LLVM {
   def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
     implicit val _config: Config = config
 
-    // generate .o files for all included source files in parallel
-    paths.par.map { srcPath =>
-      val inpath = srcPath.abs
-      val outpath = inpath + oExt
-      val objPath = Paths.get(outpath)
-      // compile if out of date or no object file
-      if (needsCompiling(srcPath, objPath)) {
-        compileFile(srcPath, objPath)
-      } else objPath
-    }.seq
+    // generate .o files for included source files
+    if (config.targetsMsys || config.targetsCygwin){
+      // TODO: should this be configurable in build.sbt?
+      // sequentially; produces correct clang command lines in sbt -debug mode
+      // clang command lines needed for quickly diagnosing failed compiles.
+      paths.map { srcPath =>
+        val inpath = srcPath.abs
+        val outpath = inpath + oExt
+        val objPath = Paths.get(outpath)
+        // compile if out of date or no object file
+        if (needsCompiling(srcPath, objPath)) {
+          compileFile(srcPath, objPath)
+        } else objPath
+      }
+    } else { 
+      // generate .o files for all included source files in parallel
+      paths.par.map { srcPath =>
+        val inpath = srcPath.abs
+        val outpath = inpath + oExt
+        val objPath = Paths.get(outpath)
+        // compile if out of date or no object file
+        if (needsCompiling(srcPath, objPath)) {
+          compileFile(srcPath, objPath)
+        } else objPath
+      }.seq
+    }
   }
 
   private def compileFile(srcPath: Path, objPath: Path)(implicit
@@ -67,6 +83,7 @@ private[scalanative] object LLVM {
       } else Seq("-std=gnu11")
     }
     val platformFlags = {
+      if (config.targetsMsys) msysExtras
       if (config.targetsWindows) Seq("-g")
       else Nil
     }
@@ -330,5 +347,15 @@ private[scalanative] object LLVM {
     if (str.exists(_.isWhitespace)) s""""$str""""
     else str
   }
+
+  lazy val msysExtras = Seq(
+    "-g",
+    "-D_WIN64",
+    "-D__MINGW64__",
+    "-D_X86_64_ -D__X86_64__ -D__x86_64",
+    "-D__USING_SJLJ_EXCEPTIONS__",
+    "-DNO_OLDNAMES",
+    "-D_LIBUNWIND_BUILD_ZERO_COST_APIS",
+  )
 
 }

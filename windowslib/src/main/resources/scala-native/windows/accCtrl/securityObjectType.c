@@ -1,4 +1,4 @@
-#if defined(_WIN32) || defined(WIN32)
+#if (defined(_WIN32) || defined(WIN32)) && !defined(__MINGW64__)
 #define WIN32_LEAN_AND_MEAN
 #include <AccCtrl.h>
 

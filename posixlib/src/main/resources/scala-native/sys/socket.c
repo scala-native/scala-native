@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#if defined(__MINGW64__)
+#include <mswsock.h>
+#include <ws2tcpip.h>
+#endif
 #ifdef _WIN32
 #include <WinSock2.h>
 #pragma comment(lib, "Ws2_32.lib")
