@@ -7,11 +7,11 @@ on:
       - main
       - 0.4.x
 concurrency:
-  group: macOS-${{ github.head_ref }}
+  group: macOS-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
-  run-tests:
+  test-runtime:
     name: Test runtime
     runs-on: macos-11
     strategy:
@@ -35,6 +35,7 @@ jobs:
         id: setup
         with:
           scala-version: ${{matrix.scala}}
+          gc: ${{ matrix.gc }}
 
       - name: Test runtime
         run: >
