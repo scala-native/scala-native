@@ -7,6 +7,8 @@ inputs:
   java-version:
     description: "Java version to use in tests"
     default: "8"
+  gc: 
+    description: "Garbage collector used, might require installing dependencies"
 runs:
   using: "composite"
   steps:
@@ -26,6 +28,11 @@ runs:
           echo "binary-version=3" >> $GITHUB_ENV
           echo "project-version=3" >> $GITHUB_ENV
         fi
+    
+    - name: Install dependencies
+      shell: bash
+      if: ${{ inputs.gc == "boehm" }}
+      run: brew install bdw-gc
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
