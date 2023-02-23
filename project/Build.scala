@@ -441,11 +441,6 @@ object Build {
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(nativeConfig ~= { c =>
-        c.withLTO(LTO.default)
-          .withMode(Mode.default)
-          .withGC(GC.default)
-      })
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .dependsOn(scalalib, testInterface % "test")
