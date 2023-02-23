@@ -25,7 +25,7 @@ trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.is32BitPlatform" -> conf.is32BitPlatform,
       s"$linktimeInfo.asanEnabled" -> conf.asan,
       s"$linktimeInfo.isMsys" -> Platform.isMsys,
-      s"$linktimeInfo.isCygwin" -> Platform.isCygwin,
+      s"$linktimeInfo.isCygwin" -> Platform.isCygwin
     )
     NativeConfig.checkLinktimeProperties(predefined)
     predefined ++ conf.linktimeProperties

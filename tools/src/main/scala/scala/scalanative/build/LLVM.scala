@@ -36,7 +36,7 @@ private[scalanative] object LLVM {
     implicit val _config: Config = config
 
     // generate .o files for included source files
-    if (config.targetsMsys || config.targetsCygwin){
+    if (config.targetsMsys || config.targetsCygwin) {
       // TODO: should this be configurable in build.sbt?
       // sequentially; produces correct clang command lines in sbt -debug mode
       // clang command lines needed for quickly diagnosing failed compiles.
@@ -49,7 +49,7 @@ private[scalanative] object LLVM {
           compileFile(srcPath, objPath)
         } else objPath
       }
-    } else { 
+    } else {
       // generate .o files for all included source files in parallel
       paths.par.map { srcPath =>
         val inpath = srcPath.abs
@@ -355,7 +355,7 @@ private[scalanative] object LLVM {
     "-D_X86_64_ -D__X86_64__ -D__x86_64",
     "-D__USING_SJLJ_EXCEPTIONS__",
     "-DNO_OLDNAMES",
-    "-D_LIBUNWIND_BUILD_ZERO_COST_APIS",
+    "-D_LIBUNWIND_BUILD_ZERO_COST_APIS"
   )
 
 }
