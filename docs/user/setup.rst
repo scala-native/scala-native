@@ -72,7 +72,7 @@ installation of macOS.
 
 .. code-block:: shell
 
-    $ sudo apt install clang
+    $ sudo apt install clang libstdc++-12-dev
     $ sudo apt install libgc-dev # optional
 
 **Arch Linux**
