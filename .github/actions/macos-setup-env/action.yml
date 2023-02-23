@@ -31,7 +31,7 @@ runs:
     
     - name: Install dependencies
       shell: bash
-      if: ${{ inputs.gc == "boehm" }}
+      if: ${{ startsWith(inputs.gc, 'boehm') }}
       run: brew install bdw-gc
 
     # Loads cache with dependencies created in test-tools job
