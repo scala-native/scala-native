@@ -196,7 +196,7 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
-      targetTriple = None,
+      targetTriple = Option(Discover.targetTriple()),
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
@@ -251,8 +251,10 @@ object NativeConfig {
     def withCompileOptions(value: Seq[String]): NativeConfig =
       copy(compileOptions = value)
 
-    def withTargetTriple(value: Option[String]): NativeConfig =
+    def withTargetTriple(value: Option[String]): NativeConfig = {
+      System.setProperty("target.triple", value.getOrElse(""))
       copy(targetTriple = value)
+    }
 
     def withTargetTriple(value: String): NativeConfig = {
       withTargetTriple(Some(value))

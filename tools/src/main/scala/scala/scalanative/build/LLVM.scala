@@ -83,10 +83,13 @@ private[scalanative] object LLVM {
       } else Seq("-std=gnu11")
     }
     val platformFlags = {
-      if (config.targetsMsys) msysExtras
-      if (config.targetsWindows) Seq("-g")
-      else Nil
+      if (config.targetsWindows) {
+        val common = Seq("-g") // needed for debug symbols in stack traces
+        val optional = if (config.targetsMsys) msysExtras else Nil
+        common ++ optional
+      } else Nil
     }
+
     val configFlags = {
       if (config.compilerConfig.multithreadingSupport)
         Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")

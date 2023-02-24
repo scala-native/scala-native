@@ -195,7 +195,7 @@ object Discover {
    *  @return
    *    The detected target triple describing the target architecture.
    */
-  def targetTriple(clang: Path): String = {
+  def targetTriple(clang: Path = Discover.clang()): String = {
     val (_, _, target) = clangVersionMajorFullTarget(clang.abs)
     target
   }
