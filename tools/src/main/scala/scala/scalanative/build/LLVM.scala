@@ -331,4 +331,41 @@ private[scalanative] object LLVM {
     else str
   }
 
+  private def constructIdent(config: Config): String = {
+    val mt = config.compilerConfig.multithreadingSupport
+    val snVersion = scala.scalanative.nir.Versions.current
+
+    val ident1 = s"Scala Native ${snVersion}"
+    val ident2 = s"Multithread: ${mt},"
+    val ident3 = s"Mode: ${config.mode}, LTO: ${config.LTO}, GC: ${config.gc}"
+
+    s"${ident1} (${ident2} ${ident3})"
+  }
+
+  private[scalanative] def generateLLVMIdent(
+      config: Config
+  ): Seq[java.nio.file.Path] = {
+
+    /* Enable feature only where known to work. Add to list as experience grows
+     * FreeBSD uses elf format so it _should_ work, but it has not been
+     * exercised.
+     */
+    if (!config.targetsLinux) Seq.empty[Path]
+    else {
+      // From lld.llvm.org doc: readelf --string-dump .comment <output-file>
+      val workDir = config.workDir
+      val identPath = workDir.resolve("ScalaNativeIdent.ll")
+      val ident = constructIdent(config)
+
+      val pw = new java.io.PrintWriter(identPath.toFile) // truncate if exists
+
+      try {
+        pw.println("!llvm.ident = !{!0}")
+        pw.println(s"""!0 = !{!"${ident}"}""")
+      } finally pw.close()
+
+      Seq(identPath)
+    }
+  }
+
 }

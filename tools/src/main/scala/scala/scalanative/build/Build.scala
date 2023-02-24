@@ -31,6 +31,7 @@ object Build {
    *        NativeConfig.empty
    *        .withGC(GC.default)
    *        .withMode(Mode.default)
+   *        .withMultithreadingSupport(enabled = false)
    *        .withClang(clang)
    *        .withClangPP(clangpp)
    *        .withLinkingOptions(linkopts)
@@ -71,7 +72,8 @@ object Build {
       // optimize and generate ll
       val generated = {
         val optimized = ScalaNative.optimize(config, linked)
-        ScalaNative.codegen(config, optimized)
+        ScalaNative.codegen(config, optimized) ++:
+          ScalaNative.identgen(fconfig) // ident list may be empty
       }
 
       val objectPaths = fconfig.logger.time("Compiling to native code") {

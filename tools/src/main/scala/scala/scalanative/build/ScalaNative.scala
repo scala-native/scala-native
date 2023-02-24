@@ -184,4 +184,7 @@ private[scalanative] object ScalaNative {
       Global.Top(encoded)
     }
 
+  def identgen(config: Config): Seq[java.nio.file.Path] =
+    LLVM.generateLLVMIdent(config)
+
 }
