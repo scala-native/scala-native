@@ -120,12 +120,16 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
         }
 
         def resolveGiven = Option.when(s.is(Given)) {
-          atPhase(Phases.postTyperPhase) {
+          val evidenceType = atPhase(Phases.postTyperPhase) {
             val givenTpe = s.denot.info.argInfos.head
-            // make sure to dealias the type here,
-            // information about underlying opaque type would not be available after erasue
-            fromType(givenTpe.widenDealias)
+            // In the backend (genBCode on JVM or this compiler plugin) opaque type should be dealiased
+            // to the underlying type otherwise non-existing types might be missing when classloading.
+            // Information about underlying opaque type would not be available after erasue
+            givenTpe.typeSymbol.opaqueAlias
+              .orElse(givenTpe)
+              .widenDealias
           }
+          fromType(evidenceType)
         }
 
         materializePrimitiveTypeMethodTypes
