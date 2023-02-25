@@ -1,7 +1,7 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-//===------------------------ libunwind_ext.h -----------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -46,6 +46,10 @@ extern int __unw_is_fpreg(unw_cursor_t *, unw_regnum_t);
 extern int __unw_is_signal_frame(unw_cursor_t *);
 extern int __unw_get_proc_name(unw_cursor_t *, char *, size_t, unw_word_t *);
 
+#if defined(_AIX)
+extern uintptr_t __unw_get_data_rel_base(unw_cursor_t *);
+#endif
+
 // SPI
 extern void __unw_iterate_dwarf_unwind_cache(void (*func)(
     unw_word_t ip_start, unw_word_t ip_end, unw_word_t fde, unw_word_t mh));
@@ -53,6 +57,9 @@ extern void __unw_iterate_dwarf_unwind_cache(void (*func)(
 // IPI
 extern void __unw_add_dynamic_fde(unw_word_t fde);
 extern void __unw_remove_dynamic_fde(unw_word_t fde);
+
+extern void __unw_add_dynamic_eh_frame_section(unw_word_t eh_frame_start);
+extern void __unw_remove_dynamic_eh_frame_section(unw_word_t eh_frame_start);
 
 #if defined(_LIBUNWIND_ARM_EHABI)
 extern const uint32_t* decode_eht_entry(const uint32_t*, size_t*, size_t*);
