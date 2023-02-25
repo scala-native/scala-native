@@ -1,7 +1,7 @@
 // clang-format off
 #if defined(__unix__) || defined(__unix) || defined(unix) || \
     (defined(__APPLE__) && defined(__MACH__))
-//===----------------------------- config.h -------------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -46,6 +46,9 @@
   // For ARM EHABI, Bionic didn't implement dl_iterate_phdr until API 21. After
   // API 21, dl_iterate_phdr exists, but dl_unwind_find_exidx is much faster.
   #define _LIBUNWIND_USE_DL_UNWIND_FIND_EXIDX 1
+#elif defined(_AIX)
+// The traceback table at the end of each function is used for unwinding.
+#define _LIBUNWIND_SUPPORT_TBTAB_UNWIND 1
 #else
   // Assume an ELF system with a dl_iterate_phdr function.
   #define _LIBUNWIND_USE_DL_ITERATE_PHDR 1
@@ -55,11 +58,12 @@
   #endif
 #endif
 
-#if defined(_LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS)
+#if defined(_LIBUNWIND_HIDE_SYMBOLS)
+  // The CMake file passes -fvisibility=hidden to control ELF/Mach-O visibility.
   #define _LIBUNWIND_EXPORT
   #define _LIBUNWIND_HIDDEN
 #else
-  #if !defined(__ELF__) && !defined(__MACH__)
+  #if !defined(__ELF__) && !defined(__MACH__) && !defined(_AIX)
     #define _LIBUNWIND_EXPORT __declspec(dllexport)
     #define _LIBUNWIND_HIDDEN
   #else
@@ -73,12 +77,16 @@
 #define SYMBOL_NAME(name) XSTR(__USER_LABEL_PREFIX__) #name
 
 #if defined(__APPLE__)
+#if defined(_LIBUNWIND_HIDE_SYMBOLS)
+#define _LIBUNWIND_ALIAS_VISIBILITY(name) __asm__(".private_extern " name);
+#else
+#define _LIBUNWIND_ALIAS_VISIBILITY(name)
+#endif
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   __asm__(".globl " SYMBOL_NAME(aliasname));                                   \
   __asm__(SYMBOL_NAME(aliasname) " = " SYMBOL_NAME(name));                     \
-  extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
-      __attribute__((weak_import));
-#elif defined(__ELF__)
+  _LIBUNWIND_ALIAS_VISIBILITY(SYMBOL_NAME(aliasname))
+#elif defined(__ELF__) || defined(_AIX)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
       __attribute__((weak, alias(#name)));
@@ -103,17 +111,14 @@
 #define _LIBUNWIND_BUILD_SJLJ_APIS
 #endif
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__ppc__) || defined(__ppc64__) || defined(__powerpc64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__powerpc__)
 #define _LIBUNWIND_SUPPORT_FRAME_APIS
 #endif
 
-#if defined(__i386__) || defined(__x86_64__) ||                                \
-    defined(__ppc__) || defined(__ppc64__) || defined(__powerpc64__) ||        \
-    (!defined(__APPLE__) && defined(__arm__)) ||                               \
-    defined(__aarch64__) ||                                                    \
-    defined(__mips__) ||                                                       \
-    defined(__riscv) ||                                                        \
-    defined(__hexagon__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__powerpc__) ||        \
+    (!defined(__APPLE__) && defined(__arm__)) || defined(__aarch64__) ||       \
+    defined(__mips__) || defined(__riscv) || defined(__hexagon__) ||           \
+    defined(__sparc__) || defined(__s390x__)
 #if !defined(_LIBUNWIND_BUILD_SJLJ_APIS)
 #define _LIBUNWIND_BUILD_ZERO_COST_APIS
 #endif
@@ -189,9 +194,9 @@
   #ifdef __cplusplus
     extern "C" {
   #endif
-    extern  bool logAPIs();
-    extern  bool logUnwinding();
-    extern  bool logDWARF();
+    extern  bool logAPIs(void);
+    extern  bool logUnwinding(void);
+    extern  bool logDWARF(void);
   #ifdef __cplusplus
     }
   #endif
