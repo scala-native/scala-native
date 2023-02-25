@@ -196,7 +196,7 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
-      targetTriple = Option(Discover.targetTriple(Discover.clang)),
+      targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
