@@ -389,11 +389,10 @@ void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder,
     word_t **stackBottom = __stack_bottom;
 
     while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
+        word_t *obj = *current;
+        if (Heap_IsWordInHeap(heap, obj) && Bytemap_isPtrAligned(obj)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
-                                    stackObject);
+                                    obj);
         }
         current += 1;
     }
