@@ -252,7 +252,11 @@ object NativeConfig {
       copy(compileOptions = value)
 
     def withTargetTriple(value: Option[String]): NativeConfig = {
-      System.setProperty("target.triple", value.getOrElse(""))
+      val propertyName = "target.triple"
+      value match {
+        case Some(triple) => System.setProperty(propertyName, triple)
+        case None         => System.clearProperty(propertyName)
+      }
       copy(targetTriple = value)
     }
 

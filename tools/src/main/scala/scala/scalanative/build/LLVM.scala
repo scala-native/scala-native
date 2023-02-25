@@ -349,7 +349,6 @@ private[scalanative] object LLVM {
   }
 
   lazy val msysExtras = Seq(
-    "-g",
     "-D_WIN64",
     "-D__MINGW64__",
     "-D_X86_64_ -D__X86_64__ -D__x86_64",
