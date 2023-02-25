@@ -35,30 +35,27 @@ private[scalanative] object LLVM {
   def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
     implicit val _config: Config = config
 
+    def compileIfNeeded(srcPath: Path): Path = {
+      val inpath = srcPath.abs
+      val outpath = inpath + oExt
+      val objPath = Paths.get(outpath)
+      // compile if out of date or no object file
+      if (needsCompiling(srcPath, objPath)) {
+        compileFile(srcPath, objPath)
+      } else objPath
+    }
     // generate .o files for included source files
     if (config.targetsMsys || config.targetsCygwin) {
       // TODO: should this be configurable in build.sbt?
       // sequentially; produces correct clang command lines in sbt -debug mode
       // clang command lines needed for quickly diagnosing failed compiles.
       paths.map { srcPath =>
-        val inpath = srcPath.abs
-        val outpath = inpath + oExt
-        val objPath = Paths.get(outpath)
-        // compile if out of date or no object file
-        if (needsCompiling(srcPath, objPath)) {
-          compileFile(srcPath, objPath)
-        } else objPath
+        compileIfNeeded(srcPath)
       }
     } else {
       // generate .o files for all included source files in parallel
       paths.par.map { srcPath =>
-        val inpath = srcPath.abs
-        val outpath = inpath + oExt
-        val objPath = Paths.get(outpath)
-        // compile if out of date or no object file
-        if (needsCompiling(srcPath, objPath)) {
-          compileFile(srcPath, objPath)
-        } else objPath
+        compileIfNeeded(srcPath)
       }.seq
     }
   }
