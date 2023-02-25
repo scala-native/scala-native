@@ -217,9 +217,6 @@
 #define CSECT_ALIGN 2
 #endif
 
-// clang-format off
-#define _CRT_SECURE_NO_WARNINGS 1
-#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #define DEFINE_LIBUNWIND_FUNCTION_AND_WEAK_ALIAS(name, aliasname)              \
   .csect .text[PR], 2 SEPARATOR                                                \
   .csect .name[PR], 2 SEPARATOR                                                \
@@ -239,7 +236,6 @@ aliasname:                                                                     \
 #define WEAK_ALIAS(name, aliasname)
 #define NO_EXEC_STACK_DIRECTIVE
 
-// clang-format on
 #else
 
 #error Unsupported target
@@ -248,12 +244,15 @@ aliasname:                                                                     \
 
 #if defined(_AIX)
 <<<<<<< HEAD
+<<<<<<< HEAD
 // clang-format off
 =======
   // clang-format off
 #define _CRT_SECURE_NO_WARNINGS 1
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 >>>>>>> 45f10a4b5 (Address compilation errors and disable warnings)
+=======
+>>>>>>> 9258d48b6 (Update script  and sources)
 #define DEFINE_LIBUNWIND_FUNCTION(name)                                        \
   .globl name[DS] SEPARATOR                                                    \
   .globl .name SEPARATOR                                                       \
@@ -264,7 +263,10 @@ aliasname:                                                                     \
   .vbyte VBYTE_LEN, 0 SEPARATOR                                                \
   .csect .text[PR], 2 SEPARATOR                                                \
 .name:
+<<<<<<< HEAD
 // // clang-format on
+=======
+>>>>>>> 9258d48b6 (Update script  and sources)
 #else
 #define DEFINE_LIBUNWIND_FUNCTION(name)                                        \
   .globl SYMBOL_NAME(name) SEPARATOR                                           \

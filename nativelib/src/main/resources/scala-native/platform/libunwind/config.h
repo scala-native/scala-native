@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#ifdef _WIN32
+  #include <malloc.h>
+#endif
 
 #include "__libunwind_config.h"
 
@@ -133,7 +136,6 @@
   do {                                                                         \
   } while (0)
 #elif defined(_WIN32)
-#include <malloc.h>
 #define _LIBUNWIND_REMEMBER_ALLOC(_size) _malloca(_size)
 #define _LIBUNWIND_REMEMBER_FREE(_ptr) _freea(_ptr)
 #define _LIBUNWIND_REMEMBER_CLEANUP_NEEDED
