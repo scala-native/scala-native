@@ -1,4 +1,6 @@
 // clang-format off
+#define _CRT_SECURE_NO_WARNINGS 1
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 //===-FrameHeaderCache.hpp ------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.

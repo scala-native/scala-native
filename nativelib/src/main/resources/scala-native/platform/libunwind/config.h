@@ -1,4 +1,6 @@
 // clang-format off
+#define _CRT_SECURE_NO_WARNINGS 1
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -131,6 +133,7 @@
   do {                                                                         \
   } while (0)
 #elif defined(_WIN32)
+#include <malloc.h>
 #define _LIBUNWIND_REMEMBER_ALLOC(_size) _malloca(_size)
 #define _LIBUNWIND_REMEMBER_FREE(_ptr) _freea(_ptr)
 #define _LIBUNWIND_REMEMBER_CLEANUP_NEEDED

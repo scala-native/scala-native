@@ -28,15 +28,16 @@ nl='
 '
 
 for source in $TARGET_FOLDER/**/*.{c,cpp,h,hpp,S}; do
-  sed -i '1i\// clang-format off'"\\${nl}"'#if defined(__unix__) || defined(__unix) || defined(unix) || \\'"\\${nl}"'    (defined(__APPLE__) && defined(__MACH__))' "$source"
-  echo "#endif" >> "$source"
-
+  sed -i '1i\// clang-format off'"\\${nl}#define _CRT_SECURE_NO_WARNINGS\\${nl}"'#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"'\\${nl} "$source"
   sed -i 's/<mach-o\/dyld.h>/"mach-o\/dyld.h"/g' "$source"
   sed -i 's/<mach-o\/compact_unwind_encoding.h>/"mach-o\/compact_unwind_encoding.h"/g' "$source"
   sed -i 's/<__libunwind_config.h>/"__libunwind_config.h"/g' "$source"
   sed -i 's/<libunwind.h>/"libunwind.h"/g' "$source"
   sed -i 's/<unwind.h>/"unwind.h"/g' "$source"
 done
+
+# Add missing include
+sed -i '/#elif defined(_WIN32)/{N;/#define _LIBUNWIND_REMEMBER_ALLOC(_size) _malloca(_size)/a #include <malloc.h>}' $TARGET_FOLDER/config.h
 
 echo $REV > $TARGET_FOLDER/rev.txt
 

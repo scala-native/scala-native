@@ -1,4 +1,6 @@
 // clang-format off
+#define _CRT_SECURE_NO_WARNINGS 1
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 /* ===-- assembly.h - libUnwind assembler support macros -------------------===
  *
  * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -216,6 +218,8 @@
 #endif
 
 // clang-format off
+#define _CRT_SECURE_NO_WARNINGS 1
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
 #define DEFINE_LIBUNWIND_FUNCTION_AND_WEAK_ALIAS(name, aliasname)              \
   .csect .text[PR], 2 SEPARATOR                                                \
   .csect .name[PR], 2 SEPARATOR                                                \
@@ -243,7 +247,13 @@ aliasname:                                                                     \
 #endif
 
 #if defined(_AIX)
+<<<<<<< HEAD
 // clang-format off
+=======
+  // clang-format off
+#define _CRT_SECURE_NO_WARNINGS 1
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
+>>>>>>> 45f10a4b5 (Address compilation errors and disable warnings)
 #define DEFINE_LIBUNWIND_FUNCTION(name)                                        \
   .globl name[DS] SEPARATOR                                                    \
   .globl .name SEPARATOR                                                       \
