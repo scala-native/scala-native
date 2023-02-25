@@ -245,7 +245,7 @@ aliasname:                                                                     \
 #endif
 
 #if defined(_AIX)
-  // clang-format off
+// clang-format off
 #define DEFINE_LIBUNWIND_FUNCTION(name)                                        \
   .globl name[DS] SEPARATOR                                                    \
   .globl .name SEPARATOR                                                       \
@@ -256,7 +256,7 @@ aliasname:                                                                     \
   .vbyte VBYTE_LEN, 0 SEPARATOR                                                \
   .csect .text[PR], 2 SEPARATOR                                                \
 .name:
-  // clang-format on
+// // clang-format on
 #else
 #define DEFINE_LIBUNWIND_FUNCTION(name)                                        \
   .globl SYMBOL_NAME(name) SEPARATOR                                           \
