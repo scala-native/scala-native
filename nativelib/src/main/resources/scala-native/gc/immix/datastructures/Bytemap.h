@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include "GCTypes.h"
-#include "Log.h"
 #include "../Constants.h"
+#include "Log.h"
 #include "../metadata/ObjectMeta.h"
 
 typedef struct {
@@ -18,23 +18,22 @@ typedef struct {
 
 void Bytemap_Init(Bytemap *bytemap, word_t *firstAddress, size_t size);
 
+static inline bool Bytemap_isPtrAligned(word_t *address) {
+    word_t aligned = ((word_t)address & ALLOCATION_ALIGNMENT_INVERSE_MASK);
+    return (word_t *)aligned == address;
+}
+
 static inline size_t Bytemap_index(Bytemap *bytemap, word_t *address) {
     size_t index =
         (address - bytemap->firstAddress) / ALLOCATION_ALIGNMENT_WORDS;
     assert(address >= bytemap->firstAddress);
     assert(index < bytemap->size);
-    assert(((word_t)address & ALLOCATION_ALIGNMENT_INVERSE_MASK) ==
-           (word_t)address);
+    assert(Bytemap_isPtrAligned(address));
     return index;
 }
 
 static inline ObjectMeta *Bytemap_Get(Bytemap *bytemap, word_t *address) {
-    size_t index =
-        (address - bytemap->firstAddress) / ALLOCATION_ALIGNMENT_WORDS;
-    assert(address >= bytemap->firstAddress);
-    assert(index < bytemap->size);
-    assert(((word_t)address & ALLOCATION_ALIGNMENT_INVERSE_MASK) ==
-           (word_t)address);
+    size_t index = Bytemap_index(bytemap, address);
     return &bytemap->data[index];
 }
 
