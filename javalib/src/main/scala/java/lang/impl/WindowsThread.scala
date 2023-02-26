@@ -61,7 +61,7 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
           stackSize = effectiveStackSize.toUSize,
           startRoutine = NativeThread.threadRoutine,
           routineArg = NativeThread.threadRoutineArgs(this),
-          creationFlags = 0.toUInt, // Default, run immediately,
+          creationFlags = STACK_SIZE_PARAM_IS_A_RESERVATION, // Run immediately,
           threadId = null
         )
       }
