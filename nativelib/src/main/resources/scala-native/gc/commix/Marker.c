@@ -143,7 +143,10 @@ int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
         word_t *field = *current;
-        if (Heap_IsWordInHeap(heap, field)) {
+        // Memory allocated by GC is alligned, ignore unaligned pointers e.g.
+        // interim pointers, otherwise we risk undefined behaviour when assuming
+        // memory layout of underlying object.
+        if (Heap_IsWordInHeap(heap, field) && Bytemap_isPtrAligned(field)) {
             ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
             if (ObjectMeta_IsAllocated(fieldMeta)) {
                 Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
@@ -386,11 +389,10 @@ void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder,
     word_t **stackBottom = __stack_bottom;
 
     while (current <= stackBottom) {
-
-        word_t *stackObject = *current;
-        if (Heap_IsWordInHeap(heap, stackObject)) {
+        word_t *obj = *current;
+        if (Heap_IsWordInHeap(heap, obj) && Bytemap_isPtrAligned(obj)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
-                                    stackObject);
+                                    obj);
         }
         current += 1;
     }
