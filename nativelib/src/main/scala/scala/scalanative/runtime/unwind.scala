@@ -16,7 +16,7 @@ object unwind {
       cursor: Ptr[Byte],
       buffer: CString,
       length: CSize,
-      offset: Ptr[Byte]
+      offset: Ptr[Long]
   ): CInt = extern
   @name("scalanative_unwind_get_reg")
   def get_reg(
@@ -27,4 +27,10 @@ object unwind {
 
   @name("scalanative_unw_reg_ip")
   def UNW_REG_IP: CInt = extern
+
+  @name("scalanative_unwind_sizeof_context")
+  def sizeOfContext: CSize = extern
+
+  @name("scalanative_unwind_sizeof_cursor")
+  def sizeOfCursor: CSize = extern
 }
