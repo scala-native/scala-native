@@ -88,6 +88,11 @@ sealed trait Config {
     compilerConfig.targetTriple.exists { customTriple =>
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
+
+  private[scalanative] lazy val targetsLinux: Boolean = Platform.isLinux ||
+    compilerConfig.targetTriple.exists { customTriple =>
+      Seq("linux").exists(customTriple.contains(_))
+    }
 }
 
 object Config {
