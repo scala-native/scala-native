@@ -48,9 +48,13 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
       )
     else
       checkedHandle("create thread") {
+        // Normally we would use system default stack size (by passing 0)
+        // which is documented to be equal to 1 MB
+        // However we've observed frequent stack overflow errors in the CI
+        // signaled by exit codes 0xc00000fd / -1073741571
         val effectiveStackSize =
           if (stackSize > 0) stackSize
-          else 0 // System default (1MB)
+          else 2 * 1024 * 1024 // 2 MB
 
         GC.CreateThread(
           threadAttributes = null,
