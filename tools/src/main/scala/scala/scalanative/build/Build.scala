@@ -73,7 +73,7 @@ object Build {
       val generated = {
         val optimized = ScalaNative.optimize(config, linked)
         ScalaNative.codegen(config, optimized) ++:
-          ScalaNative.identgen(fconfig) // ident list may be empty
+          ScalaNative.genBuildInfo(fconfig) // ident list may be empty
       }
 
       val objectPaths = fconfig.logger.time("Compiling to native code") {
