@@ -17,7 +17,7 @@ void MemoryPool_alloc_chunk(MemoryPool *pool) {
     MemoryChunk *chunk = malloc(sizeof(MemoryChunk));
     chunk->size = pool->chunkPageCount * MEMORYPOOL_PAGE_SIZE;
     chunk->offset = 0;
-    chunk->start = memoryMap(chunk->size);
+    chunk->start = memoryMapOrExitOnError(chunk->size);
     chunk->next = pool->chunk;
     pool->chunk = chunk;
     if (pool->chunkPageCount < MEMORYPOOL_MAX_CHUNK_COUNT) {
@@ -72,7 +72,7 @@ void MemoryPool_close(MemoryPool *pool) {
     while (chunk != NULL) {
         preChunk = chunk;
         chunk = chunk->next;
-        memoryUnmap(preChunk->start, preChunk->size);
+        memoryUnmapOrExitOnError(preChunk->start, preChunk->size);
         free(preChunk);
     }
     // Free pages.

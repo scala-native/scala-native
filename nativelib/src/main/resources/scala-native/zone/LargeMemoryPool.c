@@ -13,7 +13,7 @@ LargeMemoryPool *LargeMemoryPool_open() {
 
 void LargeMemoryPool_alloc_page(LargeMemoryPool *largePool, size_t size) {
     MemoryPage *page = malloc(sizeof(MemoryPage));
-    page->start = memoryMap(size);
+    page->start = memoryMapOrExitOnError(size);
     page->offset = 0;
     page->size = size;
     page->next = largePool->page;
@@ -78,7 +78,7 @@ void LargeMemoryPool_close(LargeMemoryPool *largePool) {
     while (page != NULL) {
         prePage = page;
         page = page->next;
-        memoryUnmap(prePage->start, prePage->size);
+        memoryUnmapOrExitOnError(prePage->start, prePage->size);
         free(prePage);
     }
     // Free the pool.
