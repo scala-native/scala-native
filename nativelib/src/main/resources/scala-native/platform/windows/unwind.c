@@ -8,22 +8,27 @@
 #include "../unwind.h"
 
 #define MAX_LENGTH_OF_CALLSTACK 255
+#define MAX_LENGHT_OF_NAME 255
 
 typedef struct _UnwindContext {
-    void **stack;
+    void *stack[MAX_LENGTH_OF_CALLSTACK];
     unsigned short frames;
     HANDLE process;
     DWORD64 cursor;
-    SYMBOL_INFOW symbol;
+    struct {
+        SYMBOL_INFOW info;
+        wchar_t nameBuffer[MAX_LENGHT_OF_NAME + 1];
+    } symbol;
 } UnwindContext;
 
 int scalanative_unwind_get_context(void *context) { return 0; }
 
 int scalanative_unwind_init_local(void *cursor, void *context) {
     static int symInitialized = 0;
-    UnwindContext *ucontext = (UnwindContext *)cursor;
+    UnwindContext *ucontext = (UnwindContext *)context;
+    UnwindContext **ucontextRef = (UnwindContext **)cursor;
+    *ucontextRef = ucontext;
     memset(ucontext, 0, sizeof(UnwindContext));
-    ucontext->stack = (void **)context;
     ucontext->process = GetCurrentProcess();
     if (!symInitialized) {
         if (SymInitialize(ucontext->process, NULL, TRUE) == FALSE) {
@@ -34,13 +39,13 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
     ucontext->frames = CaptureStackBackTrace(0, MAX_LENGTH_OF_CALLSTACK,
                                              ucontext->stack, NULL);
     ucontext->cursor = 0;
-    ucontext->symbol.MaxNameLen = 255;
-    ucontext->symbol.SizeOfStruct = sizeof(SYMBOL_INFOW);
+    ucontext->symbol.info.MaxNameLen = MAX_LENGHT_OF_NAME;
+    ucontext->symbol.info.SizeOfStruct = sizeof(ucontext->symbol.info);
     return 0;
 }
 
 int scalanative_unwind_step(void *cursor) {
-    UnwindContext *ucontext = (UnwindContext *)cursor;
+    UnwindContext *ucontext = *(UnwindContext **)cursor;
     return ucontext->frames - (++ucontext->cursor);
 }
 
@@ -49,10 +54,10 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
     DWORD displacement = 0;
     IMAGEHLP_LINE line;
     int fileNameLen = 0;
-    UnwindContext *ucontext = (UnwindContext *)cursor;
+    UnwindContext *ucontext = *(UnwindContext **)cursor;
     if (ucontext->cursor < ucontext->frames) {
         void *address = ucontext->stack[ucontext->cursor];
-        PSYMBOL_INFOW symbol = &ucontext->symbol;
+        PSYMBOL_INFOW symbol = &ucontext->symbol.info;
         SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);
         snprintf(buffer, length, "%ws", symbol->Name);
         memcpy(offset, &(symbol->Address), sizeof(void *));
@@ -70,7 +75,7 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
 
 int scalanative_unwind_get_reg(void *cursor, int regnum,
                                unsigned long long *valp) {
-    UnwindContext *ucontext = (UnwindContext *)cursor;
+    UnwindContext *ucontext = *(UnwindContext **)cursor;
     *valp = (unsigned long long)(ucontext->stack[ucontext->cursor]);
     return 0;
 }
@@ -78,5 +83,8 @@ int scalanative_unwind_get_reg(void *cursor, int regnum,
 // Only usage results in passing to get_reg as `regnum`, where it's not actually
 // used
 int scalanative_unw_reg_ip() { return -1; }
+
+size_t scalanative_unwind_sizeof_context() { return sizeof(UnwindContext); }
+size_t scalanative_unwind_sizeof_cursor() { return sizeof(UnwindContext *); }
 
 #endif // _WIN32
