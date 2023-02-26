@@ -160,7 +160,7 @@ sealed trait Config {
       customTriple.contains("windows-cygnus")
     }
   }
-  
+
   private[scalanative] lazy val targetsLinux: Boolean = Platform.isLinux ||
     compilerConfig.targetTriple.exists { customTriple =>
       Seq("linux").exists(customTriple.contains(_))
