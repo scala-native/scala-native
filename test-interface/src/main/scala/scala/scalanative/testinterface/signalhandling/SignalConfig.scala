@@ -69,22 +69,21 @@ private[testinterface] object SignalConfig {
         str
       }
 
-    val stackTraceHeader: Ptr[CChar] = stackalloc[CChar](2048.toUInt)
-    stackTraceHeader(0.toUInt) = 0.toByte
+    val stackTraceHeader: Ptr[CChar] = stackalloc[CChar](100.toUInt)
     strcat(stackTraceHeader, errorTag)
     strcat(stackTraceHeader, c" Fatal signal ")
     strcat(stackTraceHeader, signalNumberStr)
     strcat(stackTraceHeader, c" caught\n")
     printError(stackTraceHeader)
 
-    val cursor: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
-    val context: Ptr[scala.Byte] = stackalloc[scala.Byte](2048.toUInt)
+    val cursor = stackalloc[Byte](unwind.sizeOfCursor)
+    val context = stackalloc[Byte](unwind.sizeOfContext)
     unwind.get_context(context)
     unwind.init_local(cursor, context)
 
     while (unwind.step(cursor) > 0) {
-      val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUInt)
-      val pc = stackalloc[CUnsignedLong]()
+      val offset = stackalloc[Long]()
+      val pc = stackalloc[CSize]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
       if (!pc == 0.toUInt) return
       val symMax = 1024
@@ -96,11 +95,11 @@ private[testinterface] object SignalConfig {
             offset
           ) == 0) {
         sym(symMax - 1) = 0.toByte
-        val className: Ptr[CChar] = stackalloc[CChar](1024.toUInt)
-        val methodName: Ptr[CChar] = stackalloc[CChar](1024.toUInt)
+        val className: Ptr[CChar] = stackalloc[CChar](512.toUInt)
+        val methodName: Ptr[CChar] = stackalloc[CChar](512.toUInt)
         SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
 
-        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](2048.toUInt)
+        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](1100.toUInt)
         formattedSymbol(0) = 0.toByte
         strcat(formattedSymbol, errorTag)
         strcat(formattedSymbol, c"   at ")
