@@ -28,4 +28,7 @@ int scalanative_unwind_get_reg(void *cursor, int regnum, size_t *valp) {
 
 int scalanative_unw_reg_ip() { return UNW_REG_IP; }
 
+size_t scalanative_unwind_sizeof_context() { return sizeof(unw_context_t); }
+size_t scalanative_unwind_sizeof_cursor() { return sizeof(unw_cursor_t); }
+
 #endif // Unix or Mac OS

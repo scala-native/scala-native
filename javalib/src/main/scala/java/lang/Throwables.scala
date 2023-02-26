@@ -13,10 +13,10 @@ private[lang] object StackTrace {
 
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte]
-  ): StackTraceElement = {
+  )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
-    val name: Ptr[CChar] = stackalloc[CChar](nameMax.toUSize)
-    val offset: Ptr[scala.Byte] = stackalloc[scala.Byte](8.toUSize)
+    val name = alloc[CChar](nameMax.toUSize)
+    val offset = stackalloc[scala.Long]()
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
@@ -35,17 +35,16 @@ private[lang] object StackTrace {
   private def cachedStackTraceElement(
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
-  ): StackTraceElement =
+  )(implicit zone: Zone): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
     if (!LinktimeInfo.asanEnabled) {
       Zone { implicit z =>
-        val cursor: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
-        val context: Ptr[scala.Byte] = alloc[scala.Byte](2048.toUSize)
-        val offset: Ptr[scala.Byte] = alloc[scala.Byte](8.toUSize)
-        val ip = alloc[CUnsignedLong]()
+        val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
+        val context = alloc[scala.Byte](unwind.sizeOfContext)
+        val ip = stackalloc[CSize]()
 
         unwind.get_context(context)
         unwind.init_local(cursor, context)
