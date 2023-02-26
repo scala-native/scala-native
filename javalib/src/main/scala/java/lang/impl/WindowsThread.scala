@@ -52,8 +52,8 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
         // which is documented to be equal to 1 MB
         // However we've observed frequent stack overflow errors in the CI
         // signaled by exit codes 0xc00000fd / -1073741571
-        val effectiveStackSize = 
-          if(stackSize > 0) stackSize
+        val effectiveStackSize =
+          if (stackSize > 0) stackSize
           else 2 * 1024 * 1024 // 2 MB
 
         GC.CreateThread(
