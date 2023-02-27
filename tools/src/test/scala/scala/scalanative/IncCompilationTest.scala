@@ -121,6 +121,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig)
+      .withLogger(Logger.nullLogger)
   }
 
   private lazy val defaultNativeConfig = build.NativeConfig.empty

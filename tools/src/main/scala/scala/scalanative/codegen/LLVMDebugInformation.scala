@@ -79,6 +79,9 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
   private def inst(nm: String, mp: (String, Val)*) =
     "!" + nm + fields(mp: _*)
 
+  private def instSeq(nm: String, mp: Seq[(String, Val)]) =
+    "!" + nm + fields(mp: _*)
+
   private def tuple(values: String*) =
     "!" + values.mkString("{", ", ", "}")
 
@@ -88,13 +91,14 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
         tuple(cus.map(_.tok.v.render): _*)
 
       case dic: DICompileUnit =>
-        "distinct " + inst(
+        "distinct " + instSeq(
           "DICompileUnit",
-          "producer" -> dic.producer.v,
-          "file" -> dic.file.tok.v,
-          "isOptimized" -> false.v,
-          "emissionKind" -> "FullDebug".const,
-          "language" -> "DW_LANG_C_plus_plus".const // TODO: update once SN has its own DWARF language code
+          Seq(
+            "producer" -> dic.producer.v,
+            "isOptimized" -> false.v,
+            "emissionKind" -> "FullDebug".const,
+            "language" -> "DW_LANG_C_plus_plus".const // TODO: update once SN has its own DWARF language code
+          ) ++ dic.file.map(df => "file" -> df.tok.v)
         )
 
       case fb: FlagBag =>
@@ -108,11 +112,12 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
         )
 
       case DILocation(line, column, scope) =>
-        inst(
+        instSeq(
           "DILocation",
-          "line" -> line.v,
-          "column" -> column.v,
-          "scope" -> scope.tok.v
+          Seq(
+            "line" -> line.v,
+            "column" -> column.v
+          ) ++ scope.map(sc => "scope" -> sc.tok.v)
         )
 
       case DIFile(name, directory) =>
@@ -121,18 +126,19 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
       case dis: DISubprogram =>
         import dis._
         val dst = if (distinct) "distinct " else ""
-        dst + inst(
+        dst + instSeq(
           "DISubprogram",
           // "name" -> name.v,
-          "linkageName" -> linkageName.v,
-          "isDefinition" -> true.v,
-          "scope" -> scope.tok.v,
-          "unit" -> unit.tok.v,
-          "file" -> file.tok.v,
-          "line" -> line.v,
-          "scopeLine" -> line.v,
-          "type" -> tpe.tok.v,
-          "spFlags" -> "DISPFlagDefinition".const
+          Seq(
+            "linkageName" -> linkageName.v,
+            "isDefinition" -> true.v,
+            "scope" -> scope.tok.v,
+            "unit" -> unit.tok.v,
+            "line" -> line.v,
+            "scopeLine" -> line.v,
+            "type" -> tpe.tok.v,
+            "spFlags" -> "DISPFlagDefinition".const
+          ) ++ file.map(f => "file" -> f.tok.v)
         )
 
       case DILocalVariable(name, scope, file, line, tpe) =>
@@ -190,12 +196,12 @@ object LLVMDebugInformation {
       extends Named("llvm.dbg.cu")
 
   case class DICompileUnit(
-      file: Incr[DIFile],
+      file: Option[Incr[DIFile]],
       producer: String,
       isOptimised: Boolean
   ) extends Scope
 
-  case class DILocation(line: Int, column: Int, scope: Incr[Scope])
+  case class DILocation(line: Int, column: Int, scope: Option[Incr[Scope]])
       extends LLVMDebugInformation
 
   case class DIFile(name: String, directory: String) extends Scope
@@ -204,7 +210,7 @@ object LLVMDebugInformation {
       name: String,
       linkageName: String,
       scope: Incr[Scope],
-      file: Incr[DIFile],
+      file: Option[Incr[DIFile]],
       line: Int,
       tpe: Incr[DISubroutineType],
       unit: Incr[DICompileUnit],
@@ -273,8 +279,21 @@ object DebugInformationSection {
       }
     }
 
-    def fileFromPosition(pos: Position): Incr[LLVMDebugInformation.DIFile] = {
-      cachedBy(pos.source, LLVMDebugInformation.DIFile(pos.filename, pos.dir))
+    def fileFromPosition(
+        pos: Position
+    ): Option[Incr[LLVMDebugInformation.DIFile]] = {
+      pos.filename.zip(pos.dir).map {
+        case (filename, dir) =>
+          cachedBy(
+            pos.source,
+            LLVMDebugInformation.DIFile(filename, dir)
+          )
+      } orElse Option(
+        cachedBy(
+          pos.source,
+          LLVMDebugInformation.DIFile("unknown", "unknown")
+        )
+      )
     }
 
     def fileLocation(pos: Position): Incr[LLVMDebugInformation.DILocation] =
@@ -292,7 +311,7 @@ object DebugInformationSection {
     ): Incr[LLVMDebugInformation.DILocation] =
       cachedBy(
         pos -> scope.tok,
-        LLVMDebugInformation.DILocation(pos.line, pos.column, scope)
+        LLVMDebugInformation.DILocation(pos.line, pos.column, Some(scope))
       )
 
     def cached[T <: LLVMDebugInformation](in: LLVMDebugInformation): Incr[T] =
