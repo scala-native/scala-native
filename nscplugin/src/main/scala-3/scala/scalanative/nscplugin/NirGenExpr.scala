@@ -33,6 +33,7 @@ import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
 import dotty.tools.dotc.ast.desugar
+import dotty.tools.dotc.util.Property
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -78,7 +79,41 @@ trait NirGenExpr(using Context) {
       }
     }
 
+    object SafeZoneHandle extends Property.Key[Val]
+
     def genApply(app: Apply): Val = {
+      app match {
+        // available only when compiling with CC support
+        case Apply(_, List(sz, tree))
+            if defnNir.SafeZoneCompat_withSafeZone.contains(app.fun.symbol) =>
+          // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
+          // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+          tree match {
+            case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
+            case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
+            case _ =>
+              report.error(
+                s"Unexpected tree in withSafeZone: `${tree}`",
+                tree.srcPos
+              )
+          }
+          // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
+          val handle = genExpr(Select(sz, termName("handle")))
+          if tree.hasAttachment(SafeZoneHandle) then
+            report.warning(
+              s"Safe zone handle is already attached to ${tree}, which is unexpected.",
+              tree.srcPos
+            );
+          tree.putAttachment(SafeZoneHandle, handle)
+          // Translate `withSafeZone(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
+          val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
+          val block = Block(List(checkOpen), tree)
+          genExpr(block)
+        case _ => genApplyNormal(app)
+      }
+    }
+
+    def genApplyNormal(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(fun, args) = app
 
