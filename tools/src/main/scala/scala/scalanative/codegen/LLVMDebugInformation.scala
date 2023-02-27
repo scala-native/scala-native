@@ -288,13 +288,13 @@ object DebugInformationSection {
       for {
         filename <- pos.filename
         dir <- pos.dir
-      } yield cachedBy(
+      } yield cachedBy[java.net.URI, DIFile](
         pos.source,
         LLVMDebugInformation.DIFile(filename, dir)
       )
     }
       .getOrElse(
-        cachedBy(
+        cachedBy[java.net.URI, DIFile](
           pos.source,
           LLVMDebugInformation.DIFile("unknown", "unknown")
         )
