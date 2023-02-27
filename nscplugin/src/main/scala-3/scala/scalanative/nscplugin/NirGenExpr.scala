@@ -108,8 +108,8 @@ trait NirGenExpr(using Context) {
             buf.arrayalloc(
               genType(componentType.typeValue),
               length,
-              Val.Null,
-              unwind
+              unwind,
+              zoneHandle = app.getAttachment(SafeZoneHandle)
             )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
@@ -400,7 +400,7 @@ trait NirGenExpr(using Context) {
       }
 
       def allocateClosure() = {
-        val alloc = buf.classalloc(anonClassName, Val.Null, unwind)
+        val alloc = buf.classalloc(anonClassName, unwind)
         val captures = allCaptureValues.map(genExpr)
         buf.call(
           ctorTy,
@@ -479,10 +479,9 @@ trait NirGenExpr(using Context) {
       given nir.Position = tree.span
 
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero))
-        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), Val.Null, unwind)
+        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
       else
-        val alloc =
-          buf.arrayalloc(elemty, Val.Int(values.length), Val.Null, unwind)
+        val alloc = buf.arrayalloc(elemty, Val.Int(values.length), unwind)
         for (v, i) <- values.zipWithIndex if !v.isZero do
           given nir.Position = elems(i).span
           buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
@@ -1081,7 +1080,12 @@ trait NirGenExpr(using Context) {
             "'new' call to non-constructor: " + ctor.name
           )
 
-          genApplyNew(cls, ctor, args)
+          genApplyNew(
+            cls,
+            ctor,
+            args,
+            zoneHandle = app.getAttachment(SafeZoneHandle)
+          )
 
         case SimpleType(sym, targs) =>
           unsupported(s"unexpected new: $sym with targs $targs")
@@ -1100,10 +1104,15 @@ trait NirGenExpr(using Context) {
       res
     }
 
-    private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
-        using nir.Position
+    private def genApplyNew(
+        clssym: Symbol,
+        ctorsym: Symbol,
+        args: List[Tree],
+        zoneHandle: Option[Val]
+    )(using
+        nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), Val.Null, unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), unwind, zoneHandle)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
@@ -1785,7 +1794,7 @@ trait NirGenExpr(using Context) {
           val ctorName = genMethodName(boxedClass.primaryConstructor)
           val ctorSig = genMethodSig(boxedClass.primaryConstructor)
 
-          val alloc = buf.classalloc(genTypeName(boxedClass), Val.Null, unwind)
+          val alloc = buf.classalloc(genTypeName(boxedClass), unwind)
           val ctor = buf.method(
             alloc,
             ctorName.asInstanceOf[nir.Global.Member].sig,
@@ -2331,7 +2340,7 @@ trait NirGenExpr(using Context) {
       val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
       val rawptr = buf.method(fnRef, ExternForwarderSig, unwind)
 
-      val alloc = buf.classalloc(className, Val.Null, unwind)
+      val alloc = buf.classalloc(className, unwind)
       buf.call(
         ctorTy,
         Val.Global(ctorName, Type.Ptr),

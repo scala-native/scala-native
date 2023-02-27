@@ -194,7 +194,7 @@ trait GenReflectiveInstantisation(using Context) {
       argTypes: Seq[nir.Type],
       args: Seq[Val]
   )(using pos: nir.Position, buf: ExprBuffer): Val = {
-    val alloc = buf.classalloc(name, Val.Null, unwind(curFresh))
+    val alloc = buf.classalloc(name, unwind(curFresh))
     buf.call(
       Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
       Val.Global(name.member(Sig.Ctor(argTypes)), Type.Ptr),
@@ -277,7 +277,6 @@ trait GenReflectiveInstantisation(using Context) {
     val ctorsInfo = buf.arrayalloc(
       Type.Array(nirSymbols.Tuple2Ref),
       Val.Int(ctors.length),
-      Val.Null,
       unwind(curFresh)
     )
 
@@ -362,7 +361,6 @@ trait GenReflectiveInstantisation(using Context) {
       val rtClasses = buf.arrayalloc(
         Rt.Class,
         Val.Int(ctorSig.args.tail.length),
-        Val.Null,
         unwind(curFresh)
       )
       for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
