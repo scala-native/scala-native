@@ -12,21 +12,23 @@ final case class Position(
     column: Int
 ) {
 
-  lazy val path =
+  lazy val path = {
     source.getScheme() match {
-      case "file" => Paths.get(source)
-      case _      => Paths.get(source.getRawPath())
+      case "file"           => Some(Paths.get(source))
+      case "https" | "http" => Some(Paths.get(source.getRawPath()))
+      case _                => None
 
     }
-
-  lazy val filename = {
-    path.getFileName().toString
   }
+
+  lazy val filename = path.map(_.getFileName().toString)
+
   lazy val dir = source.getScheme() match {
-    case "file" => path.getParent().toString
-    case _ =>
+    case "file" => path.map(_.getParent().toString)
+    case "http" | "https" =>
       val fullStr = source.toString()
-      fullStr.stripSuffix(filename)
+      filename.map(fname => fullStr.stripSuffix(fname))
+    case _ => None
   }
 
   /** One-based line number */
