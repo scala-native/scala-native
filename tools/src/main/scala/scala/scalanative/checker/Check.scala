@@ -192,6 +192,8 @@ final class Check(implicit linked: linker.Result) {
           case _ =>
             error(s"can't instantiate ${name.show} with clasalloc")
         }
+      zoneHandle.foreach(checkZoneHandle)
+
     case Op.Fieldload(ty, obj, name) =>
       checkFieldOp(ty, obj, name, None)
     case Op.Fieldstore(ty, obj, name, value) =>
@@ -313,6 +315,7 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"can't initialize array with ${init.show}")
       }
+      zoneHandle.foreach(checkZoneHandle)
     case Op.Arrayload(ty, arr, idx) =>
       val arrty = Type.Ref(Type.toArrayClass(ty))
       expect(arrty, arr)
@@ -324,6 +327,16 @@ final class Check(implicit linked: linker.Result) {
       expect(ty, value)
     case Op.Arraylength(arr) =>
       expect(Rt.GenericArray, arr)
+  }
+
+  def checkZoneHandle(zoneHandle: Val): Unit = zoneHandle match {
+    case Val.Null | Val.Unit =>
+      error(s"zone handle defined with null handle")
+    case v =>
+      v.ty match {
+        case Type.Ptr | _: Type.RefKind => ()
+        case _ => error(s"zone handle defind with non reference type")
+      }
   }
 
   def checkAggregateOp(
