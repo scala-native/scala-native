@@ -714,7 +714,7 @@ trait NirGenExpr(using Context) {
       val Select(qualp, selp) = tree
 
       val sym = tree.symbol
-      val owner = sym.owner
+      val owner = if sym != NoSymbol then sym.owner else NoSymbol
 
       if (sym.is(Module)) genModule(sym)
       else if (sym.isStaticInNIR && !sym.isExtern)
@@ -2105,7 +2105,7 @@ trait NirGenExpr(using Context) {
     }
 
     def genSafeZoneAlloc(app: Apply): Val = {
-      val Apply(_, Seq(sz, tree)) = app
+      val Apply(_, List(tree, sz)) = app
       // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
       // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
       tree match {
