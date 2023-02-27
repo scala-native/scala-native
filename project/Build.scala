@@ -444,6 +444,7 @@ object Build {
       .settings(nativeConfig ~= { c =>
         c.withCompileOptions(c.compileOptions :+ "-g")
           .withLinkingOptions(c.linkingOptions :+ "-g")
+          .withDebugMetadata(true)
       })
       .withNativeCompilerPlugin
       .withJUnitPlugin

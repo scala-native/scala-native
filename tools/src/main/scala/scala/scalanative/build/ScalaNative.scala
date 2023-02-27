@@ -89,9 +89,13 @@ private[scalanative] object ScalaNative {
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, linked: linker.Result): Seq[Path] = {
-    val llPaths = config.logger.time("Generating intermediate code") {
-      CodeGen(config, linked)
-    }
+    val withMetadata =
+      if (config.compilerConfig.debugMetadata) " (with debug metadata)" else ""
+
+    val llPaths =
+      config.logger.time(s"Generating intermediate code$withMetadata") {
+        CodeGen(config, linked)
+      }
     config.logger.info(s"Produced ${llPaths.length} files")
     llPaths
   }

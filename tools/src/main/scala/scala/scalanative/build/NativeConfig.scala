@@ -75,6 +75,10 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
+  /** Should we add LLVM metadata to the binary artifacts?
+   */
+  def debugMetadata: Boolean
+
   private lazy val detectedTriple = Discover.targetTriple(clang)
 
   /** Are we targeting a 32-bit platform?
@@ -184,6 +188,10 @@ sealed trait NativeConfig {
   /** Create a optimization configuration */
   def withOptimizerConfig(value: OptimizerConfig): NativeConfig
 
+  /** Create a new [[NativeConfig]] with given debugMetadata value
+   */
+  def withDebugMetadata(value: Boolean): NativeConfig
+
 }
 
 object NativeConfig {
@@ -212,7 +220,8 @@ object NativeConfig {
       linktimeProperties = Map.empty,
       embedResources = false,
       baseName = "",
-      optimizerConfig = OptimizerConfig.empty
+      optimizerConfig = OptimizerConfig.empty,
+      debugMetadata = false
     )
 
   private final case class Impl(
@@ -236,7 +245,8 @@ object NativeConfig {
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
       baseName: String,
-      optimizerConfig: OptimizerConfig
+      optimizerConfig: OptimizerConfig,
+      debugMetadata: Boolean
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -310,6 +320,9 @@ object NativeConfig {
     override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
       copy(optimizerConfig = value)
     }
+
+    override def withDebugMetadata(value: Boolean): NativeConfig =
+      copy(debugMetadata = value)
 
     override def toString: String = {
       val listLinktimeProperties = {
