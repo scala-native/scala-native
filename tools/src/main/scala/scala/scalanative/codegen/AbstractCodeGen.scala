@@ -69,7 +69,11 @@ private[codegen] abstract class AbstractCodeGen(
           Seq(
             db.anon(
               LLVMDebugInformation
-                .IntAttr(7, "Dwarf Version", LLVMDebugInformation.Constants.DWARF_VERSION)
+                .IntAttr(
+                  7,
+                  "Dwarf Version",
+                  LLVMDebugInformation.Constants.DWARF_VERSION
+                )
             ),
             db.anon(
               LLVMDebugInformation.IntAttr(
@@ -313,7 +317,10 @@ private[codegen] abstract class AbstractCodeGen(
   ): Option[Incr[LLVMDebugInformation.DISubprogram]] = {
     try {
       val diTypes = dwf.anon(
-        LLVMDebugInformation.DITypes(dwarfType(rettype), argtypes.map(dwarfType(_).get))
+        LLVMDebugInformation.DITypes(
+          dwarfType(rettype),
+          argtypes.map(dwarfType(_).get)
+        )
       )
       val subType = dwf.anon(LLVMDebugInformation.DISubroutineType(diTypes))
 
@@ -495,8 +502,13 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def dwarfType(
       ty: Type
-  )(implicit dwf: DebugInformationSection.Builder): Option[Incr[LLVMDebugInformation.Type]] = {
-    @inline def basic(name: String, size: Int): Incr[LLVMDebugInformation.DIBasicType] =
+  )(implicit
+      dwf: DebugInformationSection.Builder
+  ): Option[Incr[LLVMDebugInformation.Type]] = {
+    @inline def basic(
+        name: String,
+        size: Int
+    ): Incr[LLVMDebugInformation.DIBasicType] =
       dwf.cached(LLVMDebugInformation.DIBasicType(name, size * 8))
 
     PartialFunction.condOpt(ty) {
