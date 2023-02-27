@@ -12,10 +12,22 @@ final case class Position(
     column: Int
 ) {
 
-  lazy val path = Paths.get(source)
+  lazy val path =
+    source.getScheme() match {
+      case "file" => Paths.get(source)
+      case _      => Paths.get(source.getRawPath())
 
-  def filename = path.getFileName().toString
-  def dir = path.getParent().toString
+    }
+
+  lazy val filename = {
+    path.getFileName().toString
+  }
+  lazy val dir = source.getScheme() match {
+    case "file" => path.getParent().toString
+    case _ =>
+      val fullStr = source.toString()
+      fullStr.stripSuffix(filename)
+  }
 
   /** One-based line number */
   def sourceLine: Int = line + 1

@@ -5,9 +5,8 @@ import DebugInformationSection._
 import LLVMDebugInformation._
 import Val.Str
 import Val.Num
-import scala.scalanative.nir.Position
+import scala.scalanative.nir.{Position, Global}
 import scala.reflect.ClassTag
-import scala.scalanative.nir.Global
 
 private[llvm] trait GenIdx {
   def id(tok: DebugInformationSection.Token): Int
@@ -64,7 +63,9 @@ object Val {
     def const = Const(s)
   }
   implicit class TOps(s: Token) {
-    def v(implicit dwf: DebugInformationSection.Builder): Val = Ref(dwf.gidx.id(s))
+    def v(implicit dwf: DebugInformationSection.Builder): Val = Ref(
+      dwf.gidx.id(s)
+    )
   }
 }
 
@@ -81,87 +82,88 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
   private def tuple(values: String*) =
     "!" + values.mkString("{", ", ", "}")
 
-  def render(implicit dwf: DebugInformationSection.Builder): String = this match {
-    case `llvm.dbg.cu`(cus) =>
-      tuple(cus.map(_.tok.v.render): _*)
+  def render(implicit dwf: DebugInformationSection.Builder): String =
+    this match {
+      case `llvm.dbg.cu`(cus) =>
+        tuple(cus.map(_.tok.v.render): _*)
 
-    case dic: DICompileUnit =>
-      "distinct " + inst(
-        "DICompileUnit",
-        "producer" -> dic.producer.v,
-        "file" -> dic.file.tok.v,
-        "isOptimized" -> false.v,
-        "emissionKind" -> "FullDebug".const,
-        "language" -> "DW_LANG_C_plus_plus".const // TODO: update once SN has its own DWARF language code
-      )
+      case dic: DICompileUnit =>
+        "distinct " + inst(
+          "DICompileUnit",
+          "producer" -> dic.producer.v,
+          "file" -> dic.file.tok.v,
+          "isOptimized" -> false.v,
+          "emissionKind" -> "FullDebug".const,
+          "language" -> "DW_LANG_C_plus_plus".const // TODO: update once SN has its own DWARF language code
+        )
 
-    case fb: FlagBag =>
-      tuple(fb.flags.map(_.tok.render): _*)
+      case fb: FlagBag =>
+        tuple(fb.flags.map(_.tok.render): _*)
 
-    case IntAttr(conflictType, name, value) =>
-      tuple(
-        s"i32 $conflictType",
-        "!" + Val.Str(name).render,
-        s"i32 $value"
-      )
+      case IntAttr(conflictType, name, value) =>
+        tuple(
+          s"i32 $conflictType",
+          "!" + Val.Str(name).render,
+          s"i32 $value"
+        )
 
-    case DILocation(line, column, scope) =>
-      inst(
-        "DILocation",
-        "line" -> line.v,
-        "column" -> column.v,
-        "scope" -> scope.tok.v
-      )
+      case DILocation(line, column, scope) =>
+        inst(
+          "DILocation",
+          "line" -> line.v,
+          "column" -> column.v,
+          "scope" -> scope.tok.v
+        )
 
-    case DIFile(name, directory) =>
-      inst("DIFile", "filename" -> name.v, "directory" -> directory.v)
+      case DIFile(name, directory) =>
+        inst("DIFile", "filename" -> name.v, "directory" -> directory.v)
 
-    case dis: DISubprogram =>
-      import dis._
-      val dst = if (distinct) "distinct " else ""
-      dst + inst(
-        "DISubprogram",
-        // "name" -> name.v,
-        "linkageName" -> linkageName.v,
-        "isDefinition" -> true.v,
-        "scope" -> scope.tok.v,
-        "unit" -> unit.tok.v,
-        "file" -> file.tok.v,
-        "line" -> line.v,
-        "scopeLine" -> line.v,
-        "type" -> tpe.tok.v,
-        "spFlags" -> "DISPFlagDefinition".const
-      )
+      case dis: DISubprogram =>
+        import dis._
+        val dst = if (distinct) "distinct " else ""
+        dst + inst(
+          "DISubprogram",
+          // "name" -> name.v,
+          "linkageName" -> linkageName.v,
+          "isDefinition" -> true.v,
+          "scope" -> scope.tok.v,
+          "unit" -> unit.tok.v,
+          "file" -> file.tok.v,
+          "line" -> line.v,
+          "scopeLine" -> line.v,
+          "type" -> tpe.tok.v,
+          "spFlags" -> "DISPFlagDefinition".const
+        )
 
-    case DILocalVariable(name, scope, file, line, tpe) =>
-      inst(
-        "DILocalVariable",
-        "name" -> name.v,
-        "scope" -> scope.tok.v,
-        "file" -> file.tok.v,
-        "line" -> line.v,
-        "type" -> tpe.tok.v
-      )
+      case DILocalVariable(name, scope, file, line, tpe) =>
+        inst(
+          "DILocalVariable",
+          "name" -> name.v,
+          "scope" -> scope.tok.v,
+          "file" -> file.tok.v,
+          "line" -> line.v,
+          "type" -> tpe.tok.v
+        )
 
-    case DIBasicType(name, size) =>
-      inst("DIBasicType", "name" -> name.v, "size" -> size.v)
+      case DIBasicType(name, size) =>
+        inst("DIBasicType", "name" -> name.v, "size" -> size.v)
 
-    case DIDerivedType(tag, baseType, size) =>
-      inst(
-        "DIDerivedType",
-        "tag" -> tag.tg.const,
-        "baseType" -> baseType.tok.v,
-        "size" -> size.v
-      )
+      case DIDerivedType(tag, baseType, size) =>
+        inst(
+          "DIDerivedType",
+          "tag" -> tag.tg.const,
+          "baseType" -> baseType.tok.v,
+          "size" -> size.v
+        )
 
-    case DISubroutineType(types) =>
-      inst("DISubroutineType", "types" -> types.tok.v)
+      case DISubroutineType(types) =>
+        inst("DISubroutineType", "types" -> types.tok.v)
 
-    case DITypes(retTpe, arguments) =>
-      (retTpe.map(_.tok.v).getOrElse(Val.NULL) +: arguments.map(_.tok.v))
-        .map(_.render)
-        .mkString("!{", ", ", "}")
-  }
+      case DITypes(retTpe, arguments) =>
+        (retTpe.map(_.tok.v).getOrElse(Val.NULL) +: arguments.map(_.tok.v))
+          .map(_.render)
+          .mkString("!{", ", ", "}")
+    }
 }
 object LLVMDebugInformation {
   object Constants {
@@ -176,8 +178,10 @@ object LLVMDebugInformation {
   case class IntAttr(conflictType: Int, name: String, value: Int)
       extends LLVMDebugInformation
 
-  abstract class FlagBag(override val name: String, val flags: Seq[Incr[IntAttr]])
-      extends Named(name)
+  abstract class FlagBag(
+      override val name: String,
+      val flags: Seq[Incr[IntAttr]]
+  ) extends Named(name)
 
   case class `llvm.module.flags`(override val flags: Seq[Incr[IntAttr]])
       extends FlagBag("llvm.module.flags", flags)
@@ -234,18 +238,21 @@ object LLVMDebugInformation {
 
 object DebugInformationSection {
   class Token {
-    def render(implicit dwf: DebugInformationSection.Builder) = s"!${dwf.gidx.id(this)}"
+    def render(implicit dwf: DebugInformationSection.Builder) =
+      s"!${dwf.gidx.id(this)}"
   }
   class Builder(val gidx: GenIdx) {
     private val b = collection.mutable.Map
       .empty[Global, Incr[LLVMDebugInformation]]
 
-    private val anon = collection.mutable.ListBuffer.empty[Incr[LLVMDebugInformation]]
+    private val anon =
+      collection.mutable.ListBuffer.empty[Incr[LLVMDebugInformation]]
 
     private val globals = collection.mutable.Map
       .empty[LLVMDebugInformation, Incr[LLVMDebugInformation]]
 
-    private val keyCache = collection.mutable.Map.empty[Any, Incr[LLVMDebugInformation]]
+    private val keyCache =
+      collection.mutable.Map.empty[Any, Incr[LLVMDebugInformation]]
 
     def register[T <: LLVMDebugInformation](in: Global, dwarf: T): Incr[T] = {
       val newTok = gidx.gen
@@ -273,7 +280,11 @@ object DebugInformationSection {
     def fileLocation(pos: Position): Incr[LLVMDebugInformation.DILocation] =
       cachedBy(
         pos,
-        LLVMDebugInformation.DILocation(pos.line, pos.column, fileFromPosition(pos))
+        LLVMDebugInformation.DILocation(
+          pos.line,
+          pos.column,
+          fileFromPosition(pos)
+        )
       )
     def scopeLocation(
         pos: Position,
@@ -284,11 +295,15 @@ object DebugInformationSection {
         LLVMDebugInformation.DILocation(pos.line, pos.column, scope)
       )
 
-    def cached[T <: LLVMDebugInformation](in: LLVMDebugInformation): Incr[T] = globals.synchronized {
-      globals.getOrElseUpdate(in, Incr(gidx.gen, in)).asInstanceOf[Incr[T]]
-    }
+    def cached[T <: LLVMDebugInformation](in: LLVMDebugInformation): Incr[T] =
+      globals.synchronized {
+        globals.getOrElseUpdate(in, Incr(gidx.gen, in)).asInstanceOf[Incr[T]]
+      }
 
-    def cachedBy[K, T <: LLVMDebugInformation](k: K, in: => LLVMDebugInformation)(implicit
+    def cachedBy[K, T <: LLVMDebugInformation](
+        k: K,
+        in: => LLVMDebugInformation
+    )(implicit
         ct: ClassTag[T]
     ): Incr[T] =
       keyCache.synchronized {
