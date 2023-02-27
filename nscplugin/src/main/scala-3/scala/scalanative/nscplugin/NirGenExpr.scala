@@ -82,38 +82,6 @@ trait NirGenExpr(using Context) {
     object SafeZoneHandle extends Property.Key[Val]
 
     def genApply(app: Apply): Val = {
-      app match {
-        // available only when compiling with CC support
-        case Apply(_, List(sz, tree))
-            if defnNir.SafeZoneCompat_withSafeZone.contains(app.fun.symbol) =>
-          // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
-          // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
-          tree match {
-            case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
-            case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
-            case _ =>
-              report.error(
-                s"Unexpected tree in withSafeZone: `${tree}`",
-                tree.srcPos
-              )
-          }
-          // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
-          val handle = genExpr(Select(sz, termName("handle")))
-          if tree.hasAttachment(SafeZoneHandle) then
-            report.warning(
-              s"Safe zone handle is already attached to ${tree}, which is unexpected.",
-              tree.srcPos
-            );
-          tree.putAttachment(SafeZoneHandle, handle)
-          // Translate `withSafeZone(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
-          val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
-          val block = Block(List(checkOpen), tree)
-          genExpr(block)
-        case _ => genApplyNormal(app)
-      }
-    }
-
-    def genApplyNormal(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(fun, args) = app
 
@@ -1067,6 +1035,7 @@ trait NirGenExpr(using Context) {
       else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
       else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
       else if (code == STACKALLOC) genStackalloc(app)
+      else if (code == SAFEZONE_ALLOC) genSafeZoneAlloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else if (code == SIZE_OF) genSizeOf(app)
@@ -2133,6 +2102,33 @@ trait NirGenExpr(using Context) {
       val unboxed = buf.unbox(size.ty, size, unwind)(using sizep.span)
 
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
+    }
+
+    def genSafeZoneAlloc(app: Apply): Val = {
+      val Apply(_, Seq(sz, tree)) = app
+      // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
+      // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+      tree match {
+        case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
+        case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
+        case _ =>
+          report.error(
+            s"Unexpected tree in withSafeZone: `${tree}`",
+            tree.srcPos
+          )
+      }
+      // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
+      val handle = genExpr(Select(sz, termName("handle")))
+      if tree.hasAttachment(SafeZoneHandle) then
+        report.warning(
+          s"Safe zone handle is already attached to ${tree}, which is unexpected.",
+          tree.srcPos
+        )
+      tree.putAttachment(SafeZoneHandle, handle)
+      // Translate `withSafeZone(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
+      val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
+      val block = Block(List(checkOpen), tree)
+      genExpr(block)
     }
 
     def genCQuoteOp(app: Apply): Val = {
