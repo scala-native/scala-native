@@ -60,36 +60,38 @@ private[codegen] abstract class AbstractCodeGen(
       genConsts()
       genDeps()
     }
+    if (config.debugMetadata) {
+      val debugInfo = dir.write(Paths.get(s"$id-debug.ll")) { writer =>
+        implicit val sb: ShowBuilder = new FileShowBuilder(writer)
 
-    val debugInfo = dir.write(Paths.get(s"$id-debug.ll")) { writer =>
-      implicit val sb: ShowBuilder = new FileShowBuilder(writer)
-
-      db.anon(
-        LLVMDebugInformation.`llvm.module.flags`(
-          Seq(
-            db.anon(
-              LLVMDebugInformation
-                .IntAttr(
-                  7,
-                  "Dwarf Version",
-                  LLVMDebugInformation.Constants.DWARF_VERSION
+        db.anon(
+          LLVMDebugInformation.`llvm.module.flags`(
+            Seq(
+              db.anon(
+                LLVMDebugInformation
+                  .IntAttr(
+                    7,
+                    "Dwarf Version",
+                    LLVMDebugInformation.Constants.DWARF_VERSION
+                  )
+              ),
+              db.anon(
+                LLVMDebugInformation.IntAttr(
+                  2,
+                  "Debug Info Version",
+                  LLVMDebugInformation.Constants.DEBUG_INFO_VERSION
                 )
-            ),
-            db.anon(
-              LLVMDebugInformation.IntAttr(
-                2,
-                "Debug Info Version",
-                LLVMDebugInformation.Constants.DEBUG_INFO_VERSION
               )
             )
           )
         )
-      )
 
-      db.render
-    }
+        db.render
+      }
 
-    dir.merge(Seq(body, debugInfo), headers)
+      dir.merge(Seq(body, debugInfo), headers)
+    } else dir.merge(Seq(body), headers)
+
     headers
   }
 
@@ -275,10 +277,10 @@ private[codegen] abstract class AbstractCodeGen(
     }
 
     val debugInfo =
-      if (!isDecl)
+      if (!isDecl && config.debugMetadata)
         dwarfFunctionDefine(pos, name, retty, argtys)
       else None
-
+    
     debugInfo.foreach { dbg =>
       str(s" !dbg !${dbg.id}")
     }
@@ -1047,17 +1049,18 @@ private[codegen] abstract class AbstractCodeGen(
       .map(_.tok)
 
     def addDebug() =
-      dwarfTok.foreach { tok =>
-        /** There are situations where the position is empty, for example in
-         *  situations where a null check is generated (and the function call is
-         *  throwNullPointer)
-         *
-         *  in this case we can only use NoPosition
-         */
-        str(
-          s", !dbg ${tok.render}"
-        )
-      }
+      if (config.debugMetadata)
+        dwarfTok.foreach { tok =>
+          /** There are situations where the position is empty, for example in
+           *  situations where a null check is generated (and the function call
+           *  is throwNullPointer)
+           *
+           *  in this case we can only use NoPosition
+           */
+          str(
+            s", !dbg ${tok.render}"
+          )
+        }
 
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
@@ -1269,9 +1272,10 @@ private[codegen] abstract class AbstractCodeGen(
         str("label %_")
         str(exc.id)
         str(".landingpad")
-        dwarfToken.foreach { tok =>
-          str(s", !dbg ${tok.render}")
-        }
+        if (config.debugMetadata)
+          dwarfToken.foreach { tok =>
+            str(s", !dbg ${tok.render}")
+          }
       case next =>
         str("label %")
         genLocal(next.name)
