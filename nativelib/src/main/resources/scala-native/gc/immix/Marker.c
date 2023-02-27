@@ -109,7 +109,7 @@ NO_SANITIZE void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
     assert(to != NULL);
     for (word_t **current = from; current <= to; current += 1) {
         word_t *addr = *current;
-        if (Heap_IsWordInHeap(heap, addr)) {
+        if (Heap_IsWordInHeap(heap, addr) && Bytemap_isPtrAligned(addr)) {
             Marker_markConservative(heap, stack, addr);
         }
     }

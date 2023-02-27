@@ -35,14 +35,16 @@ static long SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
         if (SafepointInstance == (void *)addr) {
             Synchronizer_wait();
             return EXCEPTION_CONTINUE_EXECUTION;
-        } else if (defaultFilter != NULL) {
-            return defaultFilter(ex);
         }
-        break;
+        // pass-through
     default:
-        break;
+        fprintf(stderr, "Unhandled exception code %p\n",
+                (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
+        StackTrace_PrintStackTrace();
+        if (defaultFilter != NULL)
+            return defaultFilter(ex);
+        return EXCEPTION_EXECUTE_HANDLER;
     }
-    return EXCEPTION_EXECUTE_HANDLER;
 }
 #else
 #ifdef __APPLE__

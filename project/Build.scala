@@ -442,10 +442,7 @@ object Build {
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
       .settings(nativeConfig ~= { c =>
-        c.withLTO(LTO.default)
-          .withMode(Mode.default)
-          .withGC(GC.default)
-          .withCompileOptions(c.compileOptions :+ "-g")
+        c.withCompileOptions(c.compileOptions :+ "-g")
           .withLinkingOptions(c.linkingOptions :+ "-g")
       })
       .withNativeCompilerPlugin
