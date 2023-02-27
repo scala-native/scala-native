@@ -2,6 +2,7 @@ package scala.scalanative.nir
 
 import java.nio.file.Paths
 import scala.util.Try
+import java.nio.file.Path
 
 final case class Position(
     /** Source file. */
@@ -12,7 +13,7 @@ final case class Position(
     column: Int
 ) {
 
-  lazy val path = {
+  lazy val path: Option[Path] = {
     source.getScheme() match {
       case "file"           => Some(Paths.get(source))
       case "https" | "http" => Some(Paths.get(source.getRawPath()))
@@ -21,9 +22,9 @@ final case class Position(
     }
   }
 
-  lazy val filename = path.map(_.getFileName().toString)
+  lazy val filename: Option[String] = path.map(_.getFileName().toString)
 
-  lazy val dir = source.getScheme() match {
+  lazy val dir: Option[String] = source.getScheme() match {
     case "file" => path.map(_.getParent().toString)
     case "http" | "https" =>
       val fullStr = source.toString()
