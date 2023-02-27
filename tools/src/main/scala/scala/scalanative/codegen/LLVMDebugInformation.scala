@@ -280,22 +280,25 @@ object DebugInformationSection {
     def fileFromPosition(
         pos: Position
     ): Incr[LLVMDebugInformation.DIFile] = {
-      pos.filename
-        .zip(pos.dir)
-        .map {
-          case (filename, dir) =>
-            cachedBy(
-              pos.source,
-              LLVMDebugInformation.DIFile(filename, dir)
-            )
-        }
-        .getOrElse(
-          cachedBy(
-            pos.source,
-            LLVMDebugInformation.DIFile("unknown", "unknown")
-          )
-        )
+
+      // It's done in this rather verbose way because on Java 8 any approach using `zip` fails with
+      // value getOrElse is not a member of Iterable[scala.scalanative.codegen.llvm.Incr[Nothing]]
+      // Error:  possible cause: maybe a semicolon is missing before `value getOrElse'?
+
+      for {
+        filename <- pos.filename
+        dir <- pos.dir
+      } yield cachedBy(
+        pos.source,
+        LLVMDebugInformation.DIFile(filename, dir)
+      )
     }
+      .getOrElse(
+        cachedBy(
+          pos.source,
+          LLVMDebugInformation.DIFile("unknown", "unknown")
+        )
+      )
 
     def fileLocation(pos: Position): Incr[LLVMDebugInformation.DILocation] =
       cachedBy(
