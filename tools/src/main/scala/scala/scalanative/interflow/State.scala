@@ -22,17 +22,17 @@ final class State(block: Local) {
       kind: Kind,
       cls: Class,
       values: Array[Val],
-      zoneHandle: Val
+      zoneHandle: Option[Val]
   ): Addr = {
     val addr = fresh().id
     heap(addr) = VirtualInstance(kind, cls, values, zoneHandle)
     addr
   }
-  def allocClass(cls: Class, zoneHandle: Val): Addr = {
+  def allocClass(cls: Class, zoneHandle: Option[Val]): Addr = {
     val fields = cls.fields.map(fld => Val.Zero(fld.ty).canonicalize)
     alloc(ClassKind, cls, fields.toArray[Val], zoneHandle)
   }
-  def allocArray(elemty: Type, count: Int, zoneHandle: Val)(implicit
+  def allocArray(elemty: Type, count: Int, zoneHandle: Option[Val])(implicit
       linked: linker.Result
   ): Addr = {
     val zero = Val.Zero(elemty).canonicalize
@@ -44,11 +44,11 @@ final class State(block: Local) {
       linked: linker.Result
   ): Addr = {
     val boxcls = linked.infos(boxname).asInstanceOf[Class]
-    alloc(BoxKind, boxcls, Array(value), Val.Null)
+    alloc(BoxKind, boxcls, Array(value), zoneHandle = None)
   }
   def allocString(value: String)(implicit linked: linker.Result): Addr = {
     val charsArray = value.toArray
-    val charsAddr = allocArray(Type.Char, charsArray.length, Val.Null)
+    val charsAddr = allocArray(Type.Char, charsArray.length, zoneHandle = None)
     val chars = derefVirtual(charsAddr)
     charsArray.zipWithIndex.foreach {
       case (value, idx) =>
@@ -60,7 +60,7 @@ final class State(block: Local) {
     values(linked.StringCountField.index) = Val.Int(charsArray.length)
     values(linked.StringCachedHashCodeField.index) =
       Val.Int(Lower.stringHashCode(value))
-    alloc(StringKind, linked.StringClass, values, Val.Null)
+    alloc(StringKind, linked.StringClass, values, zoneHandle = None)
   }
   def delay(op: Op): Val = {
     if (delayed.contains(op)) {
@@ -167,9 +167,9 @@ final class State(block: Local) {
       if (heap.contains(addr) && !reachable.contains(addr)) {
         reachable += addr
         heap(addr) match {
-          case VirtualInstance(_, _, vals, value) =>
+          case VirtualInstance(_, _, vals, zoneHandle) =>
             vals.foreach(reachVal)
-            reachVal(value)
+            zoneHandle.foreach(reachVal)
           case EscapedInstance(value) =>
             reachVal(value)
           case DelayedInstance(op) =>
@@ -197,7 +197,7 @@ final class State(block: Local) {
       case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
       case Op.Conv(_, _, v)      => reachVal(v)
 
-      case _: Op.Classalloc            => ()
+      case Op.Classalloc(_, zh)        => zh.foreach(reachVal)
       case Op.Fieldload(_, v, _)       => reachVal(v)
       case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
       case Op.Field(v, _)              => reachVal(v)
@@ -213,7 +213,7 @@ final class State(block: Local) {
       case _: Op.Var                   => ()
       case Op.Varload(v)               => reachVal(v)
       case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v1, v2)    => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v1, zh)    => reachVal(v1); zh.foreach(reachVal)
       case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
       case Op.Arraystore(_, v1, v2, v3) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
@@ -266,10 +266,10 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, escapedVal(zoneHandle), Next.None)
+        emit.arrayalloc(elemty, init, Next.None, zoneHandle.map(escapedVal))
       case VirtualInstance(BoxKind, cls, Array(value), zoneHandle) =>
         reachVal(value)
-        reachVal(zoneHandle)
+        zoneHandle.foreach(reachVal)
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
       case VirtualInstance(StringKind, _, values, zoneHandle)
           if !hasEscaped(values(linked.StringValueField.index)) =>
@@ -286,7 +286,7 @@ final class State(block: Local) {
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values, zoneHandle) =>
-        emit.classalloc(cls.name, escapedVal(zoneHandle), Next.None)
+        emit.classalloc(cls.name, Next.None, zoneHandle.map(escapedVal))
       case DelayedInstance(op) =>
         reachOp(op)
         emit(escapedOp(op), idempotent = true)
@@ -307,7 +307,7 @@ final class State(block: Local) {
             case (value, idx) =>
               if (!value.isZero) {
                 reachVal(value)
-                reachVal(zoneHandle)
+                zoneHandle.foreach(reachVal)
                 emit.arraystore(
                   elemty,
                   local,
@@ -328,7 +328,7 @@ final class State(block: Local) {
           case (fld, value) =>
             if (!value.isZero) {
               reachVal(value)
-              reachVal(zoneHandle)
+              zoneHandle.foreach(reachVal)
               emit.fieldstore(
                 fld.ty,
                 local,
@@ -363,7 +363,7 @@ final class State(block: Local) {
       case Op.Comp(_, _, v1, v2) => reachVal(v1); reachVal(v2)
       case Op.Conv(_, _, v)      => reachVal(v)
 
-      case _: Op.Classalloc            => ()
+      case Op.Classalloc(_, zh)        => zh.foreach(reachVal)
       case Op.Fieldload(_, v, _)       => reachVal(v)
       case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
       case Op.Field(v, _)              => reachVal(v)
@@ -379,7 +379,7 @@ final class State(block: Local) {
       case _: Op.Var                   => ()
       case Op.Varload(v)               => reachVal(v)
       case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v1, v2)    => reachVal(v1); reachVal(v2)
+      case Op.Arrayalloc(_, v1, zh)    => reachVal(v1); zh.foreach(reachVal)
       case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
       case Op.Arraystore(_, v1, v2, v3) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
@@ -447,8 +447,8 @@ final class State(block: Local) {
         Op.Varload(escapedVal(v))
       case Op.Varstore(v1, v2) =>
         Op.Varstore(escapedVal(v1), escapedVal(v2))
-      case Op.Arrayalloc(ty, v1, v2) =>
-        Op.Arrayalloc(ty, escapedVal(v1), escapedVal(v2))
+      case Op.Arrayalloc(ty, v1, zh) =>
+        Op.Arrayalloc(ty, escapedVal(v1), zh.map(escapedVal))
       case Op.Arrayload(ty, v1, v2) =>
         Op.Arrayload(ty, escapedVal(v1), escapedVal(v2))
       case Op.Arraystore(ty, v1, v2, v3) =>

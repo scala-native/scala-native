@@ -373,7 +373,7 @@ final class BinarySerializer {
     case Op.Classalloc(n, zoneHandle) =>
       putInt(T.ClassallocOp)
       putGlobal(n)
-      putVal(zoneHandle)
+      putOpt(zoneHandle)(putVal)
 
     case Op.Fieldload(ty, obj, name) =>
       putInt(T.FieldloadOp)
@@ -452,7 +452,7 @@ final class BinarySerializer {
       putInt(T.ArrayallocOp)
       putType(ty)
       putVal(init)
-      putVal(zoneHandle)
+      putOpt(zoneHandle)(putVal)
 
     case Op.Arrayload(ty, arr, idx) =>
       putInt(T.ArrayloadOp)

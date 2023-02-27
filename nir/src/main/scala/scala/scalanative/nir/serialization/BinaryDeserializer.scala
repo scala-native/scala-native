@@ -229,7 +229,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.CompOp       => Op.Comp(getComp(), getType(), getVal(), getVal())
     case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
 
-    case T.ClassallocOp => Op.Classalloc(getGlobal(), getVal())
+    case T.ClassallocOp => Op.Classalloc(getGlobal(), getOpt(getVal()))
     case T.FieldloadOp  => Op.Fieldload(getType(), getVal(), getGlobal())
     case T.FieldstoreOp =>
       Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
@@ -246,7 +246,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.VarOp        => Op.Var(getType())
     case T.VarloadOp    => Op.Varload(getVal())
     case T.VarstoreOp   => Op.Varstore(getVal(), getVal())
-    case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal(), getVal())
+    case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal(), getOpt(getVal()))
     case T.ArrayloadOp  => Op.Arrayload(getType(), getVal(), getVal())
     case T.ArraystoreOp =>
       Op.Arraystore(getType(), getVal(), getVal(), getVal())

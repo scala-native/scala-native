@@ -18,11 +18,11 @@ object InstanceRef {
 object VirtualRef {
   def unapply(addr: Addr)(implicit
       state: State
-  ): Option[(Kind, Class, Array[Val], Val)] =
+  ): Option[(Kind, Class, Array[Val], Option[Val])] =
     unapply(Val.Virtual(addr))
   def unapply(
       value: Val
-  )(implicit state: State): Option[(Kind, Class, Array[Val], Val)] =
+  )(implicit state: State): Option[(Kind, Class, Array[Val], Option[Val])] =
     value match {
       case Val.Virtual(addr) =>
         state.deref(addr) match {

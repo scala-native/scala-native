@@ -43,7 +43,7 @@ final case class VirtualInstance(
     val kind: Kind,
     val cls: Class,
     var values: Array[Val],
-    val zoneHandle: Val
+    val zoneHandle: Option[Val]
 ) extends Instance {
 
   // We can't use case class generated equals, due to the fact
