@@ -221,8 +221,8 @@ object Discover {
       cache("opaque-pointers") { _ =>
         try {
           val version = clangInfo.majorVersion
-          if (version <= 13) Unavilable
-          // if version == 13 EnabledWithFalg("--force-opaque-pointers"): works on Unix and probably on Homebew Clang; on Apple Clang missing or exists with different name
+          if (version <= 13) Unavailable
+          // if version == 13 EnabledWithFlag("--force-opaque-pointers"): works on Unix and probably on Homebrew Clang; on Apple Clang missing or exists with different name
           else if (version < 15) EnabledWithFlag("--opaque-pointers")
           else Enabled
         } catch {
@@ -230,14 +230,14 @@ object Discover {
             System.err.println(
               "Failed to detect version of clang, assuming opaque-pointers are not supported"
             )
-            Unavilable
+            Unavailable
         }
       }
 
     sealed trait FeatureSupport {
       def isAvailable: Boolean = this match {
-        case Unavilable => false
-        case _          => true
+        case Unavailable => false
+        case _           => true
       }
       def requiredFlag: Option[String] = this match {
         case EnabledWithFlag(flag) => Some(flag)
@@ -245,7 +245,7 @@ object Discover {
       }
     }
     object FeatureSupport {
-      case object Unavilable extends FeatureSupport
+      case object Unavailable extends FeatureSupport
       case object Enabled extends FeatureSupport
       case class EnabledWithFlag(compilationFlag: String) extends FeatureSupport
     }
