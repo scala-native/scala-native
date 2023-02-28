@@ -38,4 +38,7 @@ object Platform {
 
   @name("scalanative_wide_char_size")
   final def SizeOfWChar: CSize = extern
+
+  @name("scalanative_platform_is_msys")
+  def isMsys(): Boolean = extern
 }

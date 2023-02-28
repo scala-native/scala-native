@@ -22,7 +22,12 @@ import java.security.{DigestInputStream, MessageDigest}
 private[scalanative] object IO {
 
   implicit class RichPath(val path: Path) extends AnyVal {
-    def abs: String = path.toAbsolutePath.toString
+    def abs: String = path.toAbsolutePath.toString.norm
+  }
+  implicit class RichString(val s: String) extends AnyVal {
+    // commands issued in shell environments require forward slash
+    // clang and llvm command line tools accept forward slash
+    def norm: String = s.replace('\\', '/')
   }
 
   /** Write bytes to given file. */
