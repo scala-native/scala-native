@@ -221,8 +221,8 @@ object Discover {
       cache("opaque-pointers") { _ =>
         try {
           val version = clangInfo.majorVersion
-          if (version < 13) Unavilable
-          else if (version == 13) EnabledWithFlag("--force-opaque-pointers")
+          if (version <= 13) Unavilable
+          // if version == 13 EnabledWithFalg("--force-opaque-pointers"): works on Unix and probably on Homebew Clang; on Apple Clang missing or exists with different name
           else if (version < 15) EnabledWithFlag("--opaque-pointers")
           else Enabled
         } catch {
