@@ -54,21 +54,12 @@ private[scalanative] object ResourceEmbedder {
                   s"Did not embed: $pathName - file in the ignored \'scala-native\' folder."
                 )
                 None
-              } else if (isSourceFile((path))) {
-                config.logger.debug(
-                  s"Did not embed: $pathName - source file extension detected."
-                )
-                None
-              } else if (Files.isDirectory(correctedPath)) {
-                None
-              } else {
-                Some(ClasspathFile(path, pathName, virtualDir))
-              }
+              } else if (isSourceFile((path))) None
+              else if (Files.isDirectory(correctedPath)) None
+              else Some(ClasspathFile(path, pathName, virtualDir))
             }
         }
-      } else {
-        Seq.empty
-      }
+      } else Seq.empty
 
     def filterEqualPathNames(
         path: List[ClasspathFile]
