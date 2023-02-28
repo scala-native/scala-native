@@ -67,8 +67,11 @@ private[scalanative] object LLVM {
       } else Seq("-std=gnu11")
     }
     val platformFlags = {
-      if (config.targetsWindows) Seq("-g")
-      else Nil
+      if (config.targetsWindows) {
+        val common = Seq("-g") // needed for debug symbols in stack traces
+        val optional = if (config.targetsMsys) msysExtras else Nil
+        common ++ optional
+      } else Nil
     }
     val exceptionsHandling = {
       val opt = if (isCpp) List("-fcxx-exceptions") else Nil
@@ -82,12 +85,14 @@ private[scalanative] object LLVM {
     val compilec: Seq[String] =
       Seq(compiler, "-c", inpath, "-o", outpath) ++ flags
 
+    // compile
     config.logger.running(compilec)
     val result = Process(compilec, config.workdir.toFile) !
       Logger.toProcessLogger(config.logger)
     if (result != 0) {
       throw new BuildException(s"Failed to compile ${inpath}")
     }
+
     objPath
   }
 
@@ -308,18 +313,24 @@ private[scalanative] object LLVM {
     else str
   }
 
-  private def constructIdent(config: Config): String = {
-    val snVersion = scala.scalanative.nir.Versions.current
+  lazy val msysExtras = Seq(
+    "-D_WIN64",
+    "-D__MINGW64__",
+    "-D_X86_64_ -D__X86_64__ -D__x86_64",
+    "-D__USING_SJLJ_EXCEPTIONS__",
+    "-DNO_OLDNAMES",
+    "-D_LIBUNWIND_BUILD_ZERO_COST_APIS"
+  )
 
-    val ident1 = s"Scala Native ${snVersion}"
-    val ident2 = s"Mode: ${config.mode}, LTO: ${config.LTO}, GC: ${config.gc}"
+  private[scalanative] def generateLLVMIdent(config: Config): Seq[Path] = {
+    def constructIdent: String = {
+      val snVersion = scala.scalanative.nir.Versions.current
 
-    s"${ident1} (${ident2})"
-  }
+      val ident1 = s"Scala Native ${snVersion}"
+      val ident2 = s"Mode: ${config.mode}, LTO: ${config.LTO}, GC: ${config.gc}"
 
-  private[scalanative] def generateLLVMIdent(
-      config: Config
-  ): Seq[java.nio.file.Path] = {
+      s"${ident1} (${ident2})"
+    }
 
     /* Enable feature only where known to work. Add to list as experience grows
      * FreeBSD uses elf format so it _should_ work, but it has not been
@@ -330,7 +341,7 @@ private[scalanative] object LLVM {
       // From lld.llvm.org doc: readelf --string-dump .comment <output-file>
       val workDir = config.workdir
       val identPath = workDir.resolve("ScalaNativeIdent.ll")
-      val ident = constructIdent(config)
+      val ident = constructIdent
 
       val pw = new java.io.PrintWriter(identPath.toFile) // truncate if exists
 

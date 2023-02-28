@@ -20,7 +20,9 @@ trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix
-      }
+      },
+      s"$linktimeInfo.isMsys" -> Platform.isMsys,
+      s"$linktimeInfo.isCygwin" -> Platform.isCygwin
     )
     NativeConfig.checkLinktimeProperties(predefined)
     predefined ++ conf.linktimeProperties

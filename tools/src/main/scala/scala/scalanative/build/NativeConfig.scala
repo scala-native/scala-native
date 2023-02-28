@@ -185,8 +185,14 @@ object NativeConfig {
     def withCompileOptions(value: Seq[String]): NativeConfig =
       copy(compileOptions = value)
 
-    def withTargetTriple(value: Option[String]): NativeConfig =
+    def withTargetTriple(value: Option[String]): NativeConfig = {
+      val propertyName = "target.triple"
+      value match {
+        case Some(triple) => System.setProperty(propertyName, triple)
+        case None         => System.clearProperty(propertyName)
+      }
       copy(targetTriple = value)
+    }
 
     def withTargetTriple(value: String): NativeConfig = {
       withTargetTriple(Some(value))
