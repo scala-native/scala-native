@@ -85,6 +85,14 @@ int scalanative_platform_is_windows() {
 #endif
 }
 
+int scalanative_platform_is_msys() {
+#ifdef __MSYS__
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 // See http://stackoverflow.com/a/4181991
 int scalanative_little_endian() {
     int n = 1;

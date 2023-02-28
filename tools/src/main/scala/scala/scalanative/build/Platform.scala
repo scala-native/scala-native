@@ -41,4 +41,21 @@ object Platform {
    *    true if `FreeBSD`, false otherwise
    */
   lazy val isFreeBSD: Boolean = osUsed.contains("freebsd")
+
+  /** Test for the target type
+   *
+   *  @return
+   *    true if `msys`, false otherwise
+   */
+  lazy val isMsys: Boolean = target.endsWith("msys")
+
+  /** Test for the target type
+   *
+   *  @return
+   *    true if `cygnus`, false otherwise
+   */
+  lazy val isCygwin: Boolean = target.endsWith("cygnus")
+
+  private lazy val target =
+    System.getProperty("target.triple", "unknown").toLowerCase(Locale.ROOT)
 }

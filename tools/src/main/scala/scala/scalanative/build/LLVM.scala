@@ -35,8 +35,7 @@ private[scalanative] object LLVM {
   def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
     implicit val _config: Config = config
 
-    // generate .o files for all included source files in parallel
-    paths.par.map { srcPath =>
+    def compileIfNeeded(srcPath: Path): Path = {
       val inpath = srcPath.abs
       val outpath = inpath + oExt
       val objPath = Paths.get(outpath)
@@ -44,7 +43,21 @@ private[scalanative] object LLVM {
       if (needsCompiling(srcPath, objPath)) {
         compileFile(srcPath, objPath)
       } else objPath
-    }.seq
+    }
+    // generate .o files for included source files
+    if (config.targetsMsys || config.targetsCygwin) {
+      // TODO: should this be configurable in build.sbt?
+      // sequentially; produces correct clang command lines in sbt -debug mode
+      // clang command lines needed for quickly diagnosing failed compiles.
+      paths.map { srcPath =>
+        compileIfNeeded(srcPath)
+      }
+    } else {
+      // generate .o files for all included source files in parallel
+      paths.par.map { srcPath =>
+        compileIfNeeded(srcPath)
+      }.seq
+    }
   }
 
   private def compileFile(srcPath: Path, objPath: Path)(implicit
@@ -67,9 +80,13 @@ private[scalanative] object LLVM {
       } else Seq("-std=gnu11")
     }
     val platformFlags = {
-      if (config.targetsWindows) Seq("-g")
-      else Nil
+      if (config.targetsWindows) {
+        val common = Seq("-g") // needed for debug symbols in stack traces
+        val optional = if (config.targetsMsys) msysExtras else Nil
+        common ++ optional
+      } else Nil
     }
+
     val configFlags = {
       if (config.compilerConfig.multithreadingSupport)
         Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
@@ -331,20 +348,26 @@ private[scalanative] object LLVM {
     else str
   }
 
-  private def constructIdent(config: Config): String = {
-    val mt = config.compilerConfig.multithreadingSupport
-    val snVersion = scala.scalanative.nir.Versions.current
+  lazy val msysExtras = Seq(
+    "-D_WIN64",
+    "-D__MINGW64__",
+    "-D_X86_64_ -D__X86_64__ -D__x86_64",
+    "-D__USING_SJLJ_EXCEPTIONS__",
+    "-DNO_OLDNAMES",
+    "-D_LIBUNWIND_BUILD_ZERO_COST_APIS"
+  )
 
-    val ident1 = s"Scala Native ${snVersion}"
-    val ident2 = s"Multithread: ${mt},"
-    val ident3 = s"Mode: ${config.mode}, LTO: ${config.LTO}, GC: ${config.gc}"
+  private[scalanative] def generateLLVMIdent(config: Config): Seq[Path] = {
+    def constructIdent: String = {
+      val mt = config.compilerConfig.multithreadingSupport
+      val snVersion = scala.scalanative.nir.Versions.current
 
-    s"${ident1} (${ident2} ${ident3})"
-  }
+      val ident1 = s"Scala Native ${snVersion}"
+      val ident2 = s"Multithread: ${mt},"
+      val ident3 = s"Mode: ${config.mode}, LTO: ${config.LTO}, GC: ${config.gc}"
 
-  private[scalanative] def generateLLVMIdent(
-      config: Config
-  ): Seq[java.nio.file.Path] = {
+      s"${ident1} (${ident2} ${ident3})"
+    }
 
     /* Enable feature only where known to work. Add to list as experience grows
      * FreeBSD uses elf format so it _should_ work, but it has not been
@@ -355,7 +378,7 @@ private[scalanative] object LLVM {
       // From lld.llvm.org doc: readelf --string-dump .comment <output-file>
       val workDir = config.workDir
       val identPath = workDir.resolve("ScalaNativeIdent.ll")
-      val ident = constructIdent(config)
+      val ident = constructIdent
 
       val pw = new java.io.PrintWriter(identPath.toFile) // truncate if exists
 
