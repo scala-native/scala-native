@@ -91,6 +91,8 @@ object NirPrimitives {
   final val REFLECT_SELECTABLE_SELECTDYN = SIZE_OF + 1
   final val REFLECT_SELECTABLE_APPLYDYN = REFLECT_SELECTABLE_SELECTDYN + 1
 
+  final val SAFEZONE_ALLOC = 1 + REFLECT_SELECTABLE_APPLYDYN
+
   final val LastNirPrimitiveCode = REFLECT_SELECTABLE_APPLYDYN
 
   def isNirPrimitive(code: Int): Boolean =
@@ -212,6 +214,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       defnNir.ReflectSelectable_applyDynamic,
       REFLECT_SELECTABLE_APPLYDYN
     )
+    defnNir.SafeZoneCompat_withSafeZone.foreach(addPrimitive(_, SAFEZONE_ALLOC))
     primitives
   }
 }

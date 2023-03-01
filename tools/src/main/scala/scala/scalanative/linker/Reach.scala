@@ -812,7 +812,7 @@ class Reach(
 
     case Op.Classalloc(n, zoneHandle) =>
       classInfo(n).foreach(reachAllocation)
-      reachVal(zoneHandle)
+      zoneHandle.foreach(reachVal)
     case Op.Fieldload(ty, v, n) =>
       reachType(ty)
       reachVal(v)
@@ -864,7 +864,7 @@ class Reach(
       classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
       reachType(ty)
       reachVal(init)
-      reachVal(zoneHandle)
+      zoneHandle.foreach(reachVal)
     case Op.Arrayload(ty, arr, idx) =>
       reachType(ty)
       reachVal(arr)

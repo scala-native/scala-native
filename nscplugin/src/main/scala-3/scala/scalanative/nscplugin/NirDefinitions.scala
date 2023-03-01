@@ -101,6 +101,13 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val NatBaseClasses = (0 to 9).map(n => NatModule.requiredClass(s"_$n"))
   @tu lazy val NatDigitClasses = (2 to 9).map(n => NatModule.requiredClass(s"Digit$n"))
 
+  // Safe package
+  @tu lazy val SafeZoneCompatModuleRef = requiredModuleRef("scala.scalanative.safe.SafeZoneCompat")
+  @tu lazy val SafeZoneCompatModule = SafeZoneCompatModuleRef.symbol
+  @tu lazy val SafeZoneCompat_withSafeZone =
+    try Some(SafeZoneCompatModule.requiredMethod("withSafeZone"))
+    catch { case _: dotty.tools.dotc.core.TypeError => None }
+
   // Tags
   @tu lazy val TagModuleRef = requiredModuleRef("scala.scalanative.unsafe.Tag")
   @tu lazy val TagModule = TagModuleRef.symbol

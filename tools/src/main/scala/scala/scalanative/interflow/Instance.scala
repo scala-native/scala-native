@@ -30,8 +30,8 @@ sealed abstract class Instance extends Cloneable {
     case DelayedInstance(op) =>
       s"DelayedInstance(${op.show})"
     case VirtualInstance(kind, cls, values, zoneHandle) =>
-      s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show)}), ${if (zoneHandle == Val.Null) "Heap"
-        else s"SafeZone{$zoneHandle}"})"
+      val allocation = zoneHandle.fold("Heap")(handle => s"SafeZone{$handle}")
+      s"VirtualInstance($kind, ${cls.name.show}, Array(${values.map(_.show)}), $allocation)"
   }
 }
 
@@ -43,7 +43,7 @@ final case class VirtualInstance(
     val kind: Kind,
     val cls: Class,
     var values: Array[Val],
-    val zoneHandle: Val
+    val zoneHandle: Option[Val]
 ) extends Instance {
 
   // We can't use case class generated equals, due to the fact
@@ -55,8 +55,7 @@ final case class VirtualInstance(
         Arrays.equals(
           values.asInstanceOf[Array[Object]],
           other.values.asInstanceOf[Array[Object]]
-        ) &&
-        zoneHandle == other.zoneHandle
+        ) && zoneHandle == other.zoneHandle
     case _ =>
       false
   }

@@ -203,7 +203,8 @@ trait Eval { self: Interflow =>
             combine(conv, ty, value)
         }
       case Op.Classalloc(ClassRef(cls), zoneHandle) =>
-        Val.Virtual(state.allocClass(cls, materialize(eval(zoneHandle))))
+        val zonePtr = zoneHandle.map(ptr => materialize(eval(ptr)))
+        Val.Virtual(state.allocClass(cls, zonePtr))
       case Op.Fieldload(ty, rawObj, name @ FieldRef(cls, fld)) =>
         eval(rawObj) match {
           case VirtualRef(_, _, values, _) =>
@@ -400,11 +401,19 @@ trait Eval { self: Interflow =>
         eval(init) match {
           case Val.Int(count) if count <= 128 =>
             Val.Virtual(
-              state.allocArray(ty, count, materialize(eval(zoneHandle)))
+              state.allocArray(
+                ty,
+                count,
+                zoneHandle.map(ptr => materialize(eval(ptr)))
+              )
             )
           case Val.ArrayValue(_, values) if values.size <= 128 =>
             val addr =
-              state.allocArray(ty, values.size, materialize(eval(zoneHandle)))
+              state.allocArray(
+                ty,
+                values.size,
+                zoneHandle.map(ptr => materialize(eval(ptr)))
+              )
             val instance = state.derefVirtual(addr)
             values.zipWithIndex.foreach {
               case (v, idx) =>
@@ -416,7 +425,7 @@ trait Eval { self: Interflow =>
               Op.Arrayalloc(
                 ty,
                 materialize(init),
-                materialize(eval(zoneHandle))
+                zoneHandle.map(zh => materialize(eval(zh)))
               )
             )
         }

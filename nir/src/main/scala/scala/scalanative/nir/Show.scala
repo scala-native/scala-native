@@ -266,8 +266,10 @@ object Show {
       case Op.Classalloc(name, zoneHandle) =>
         str("classalloc ")
         global_(name)
-        str(", ")
-        val_(zoneHandle)
+        zoneHandle.foreach { v =>
+          str(" inZone ")
+          val_(v)
+        }
       case Op.Fieldload(ty, obj, name) =>
         str("fieldload[")
         type_(ty)
@@ -348,8 +350,10 @@ object Show {
         type_(ty)
         str("] ")
         val_(init)
-        str(", ")
-        val_(zoneHandle)
+        zoneHandle.foreach { v =>
+          str(" inZone ")
+          val_(v)
+        }
       case Op.Arrayload(ty, arr, idx) =>
         str("arrayload[")
         type_(ty)

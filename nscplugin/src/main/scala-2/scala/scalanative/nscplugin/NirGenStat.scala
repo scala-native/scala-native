@@ -305,7 +305,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         args: Seq[Val]
     )(implicit pos: nir.Position): Val = {
 
-      val alloc = exprBuf.classalloc(name, Val.Null, unwind(curFresh))
+      val alloc = exprBuf.classalloc(name, unwind(curFresh))
       exprBuf.call(
         Type.Function(Type.Ref(name) +: argTypes, Type.Unit),
         Val.Global(name.member(Sig.Ctor(argTypes)), Type.Ptr),
@@ -423,7 +423,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val ctorsInfo = exprBuf.arrayalloc(
           Type.Array(tuple2Ref),
           Val.Int(ctors.length),
-          Val.Null,
           unwind(curFresh)
         )
 
@@ -517,7 +516,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val rtClasses = exprBuf.arrayalloc(
             jlClassRef,
             Val.Int(ctorSig.args.tail.length),
-            Val.Null,
             unwind(curFresh)
           )
           for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {

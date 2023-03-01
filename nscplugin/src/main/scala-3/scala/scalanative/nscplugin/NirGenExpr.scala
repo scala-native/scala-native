@@ -33,6 +33,7 @@ import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
 import dotty.tools.dotc.ast.desugar
+import dotty.tools.dotc.util.Property
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -78,6 +79,8 @@ trait NirGenExpr(using Context) {
       }
     }
 
+    object SafeZoneHandle extends Property.Key[Val]
+
     def genApply(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(fun, args) = app
@@ -108,8 +111,8 @@ trait NirGenExpr(using Context) {
             buf.arrayalloc(
               genType(componentType.typeValue),
               length,
-              Val.Null,
-              unwind
+              unwind,
+              zoneHandle = app.getAttachment(SafeZoneHandle)
             )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
@@ -400,7 +403,7 @@ trait NirGenExpr(using Context) {
       }
 
       def allocateClosure() = {
-        val alloc = buf.classalloc(anonClassName, Val.Null, unwind)
+        val alloc = buf.classalloc(anonClassName, unwind)
         val captures = allCaptureValues.map(genExpr)
         buf.call(
           ctorTy,
@@ -479,10 +482,9 @@ trait NirGenExpr(using Context) {
       given nir.Position = tree.span
 
       if (values.forall(_.isCanonical) && values.exists(v => !v.isZero))
-        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), Val.Null, unwind)
+        buf.arrayalloc(elemty, Val.ArrayValue(elemty, values), unwind)
       else
-        val alloc =
-          buf.arrayalloc(elemty, Val.Int(values.length), Val.Null, unwind)
+        val alloc = buf.arrayalloc(elemty, Val.Int(values.length), unwind)
         for (v, i) <- values.zipWithIndex if !v.isZero do
           given nir.Position = elems(i).span
           buf.arraystore(elemty, alloc, Val.Int(i), v, unwind)
@@ -712,7 +714,7 @@ trait NirGenExpr(using Context) {
       val Select(qualp, selp) = tree
 
       val sym = tree.symbol
-      val owner = sym.owner
+      val owner = if sym != NoSymbol then sym.owner else NoSymbol
 
       if (sym.is(Module)) genModule(sym)
       else if (sym.isStaticInNIR && !sym.isExtern)
@@ -1033,6 +1035,7 @@ trait NirGenExpr(using Context) {
       else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
       else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
       else if (code == STACKALLOC) genStackalloc(app)
+      else if (code == SAFEZONE_ALLOC) genSafeZoneAlloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else if (code == SIZE_OF) genSizeOf(app)
@@ -1081,7 +1084,12 @@ trait NirGenExpr(using Context) {
             "'new' call to non-constructor: " + ctor.name
           )
 
-          genApplyNew(cls, ctor, args)
+          genApplyNew(
+            cls,
+            ctor,
+            args,
+            zoneHandle = app.getAttachment(SafeZoneHandle)
+          )
 
         case SimpleType(sym, targs) =>
           unsupported(s"unexpected new: $sym with targs $targs")
@@ -1100,10 +1108,15 @@ trait NirGenExpr(using Context) {
       res
     }
 
-    private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
-        using nir.Position
+    private def genApplyNew(
+        clssym: Symbol,
+        ctorsym: Symbol,
+        args: List[Tree],
+        zoneHandle: Option[Val]
+    )(using
+        nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), Val.Null, unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), unwind, zoneHandle)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
@@ -1785,7 +1798,7 @@ trait NirGenExpr(using Context) {
           val ctorName = genMethodName(boxedClass.primaryConstructor)
           val ctorSig = genMethodSig(boxedClass.primaryConstructor)
 
-          val alloc = buf.classalloc(genTypeName(boxedClass), Val.Null, unwind)
+          val alloc = buf.classalloc(genTypeName(boxedClass), unwind)
           val ctor = buf.method(
             alloc,
             ctorName.asInstanceOf[nir.Global.Member].sig,
@@ -2091,6 +2104,33 @@ trait NirGenExpr(using Context) {
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
     }
 
+    def genSafeZoneAlloc(app: Apply): Val = {
+      val Apply(_, List(sz, tree)) = app
+      // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
+      // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+      tree match {
+        case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
+        case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
+        case _ =>
+          report.error(
+            s"Unexpected tree in withSafeZone: `${tree}`",
+            tree.srcPos
+          )
+      }
+      // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
+      val handle = genExpr(Select(sz, termName("handle")))
+      if tree.hasAttachment(SafeZoneHandle) then
+        report.warning(
+          s"Safe zone handle is already attached to ${tree}, which is unexpected.",
+          tree.srcPos
+        )
+      tree.putAttachment(SafeZoneHandle, handle)
+      // Translate `withSafeZone(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
+      val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
+      val block = Block(List(checkOpen), tree)
+      genExpr(block)
+    }
+
     def genCQuoteOp(app: Apply): Val = {
       app match {
         // case q"""
@@ -2331,7 +2371,7 @@ trait NirGenExpr(using Context) {
       val ctorName = className.member(Sig.Ctor(Seq(Type.Ptr)))
       val rawptr = buf.method(fnRef, ExternForwarderSig, unwind)
 
-      val alloc = buf.classalloc(className, Val.Null, unwind)
+      val alloc = buf.classalloc(className, unwind)
       buf.call(
         ctorTy,
         Val.Global(ctorName, Type.Ptr),

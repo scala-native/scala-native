@@ -764,34 +764,39 @@ object Lower {
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Classalloc(ClassRef(cls), ptr) = op: @unchecked
+      val Op.Classalloc(ClassRef(cls), zoneHandle) = op: @unchecked
 
       val size = MemoryLayout.sizeOf(layout(cls).struct)
       assert(size == size.toInt)
 
-      val zoneHandle = genVal(buf, ptr)
-      if (zoneHandle != Val.Null) {
-        buf.let(
-          n,
-          Op.Call(
-            zoneAllocSig,
-            zoneAlloc,
-            Seq(zoneHandle, rtti(cls).const, Val.Size(size.toInt))
-          ),
-          unwind
-        )
-      } else {
-        val allocMethod =
-          if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
-        buf.let(
-          n,
-          Op.Call(
-            allocSig,
-            allocMethod,
-            Seq(rtti(cls).const, Val.Size(size.toInt))
-          ),
-          unwind
-        )
+      zoneHandle match {
+        case Some(zoneHandle) =>
+          assert(zoneHandle != Val.Null, "ZoneHandle is null")
+          buf.let(
+            n,
+            Op.Call(
+              zoneAllocSig,
+              zoneAlloc,
+              Seq(
+                genVal(buf, zoneHandle),
+                rtti(cls).const,
+                Val.Size(size.toInt)
+              )
+            ),
+            unwind
+          )
+        case None =>
+          val allocMethod =
+            if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
+          buf.let(
+            n,
+            Op.Call(
+              allocSig,
+              allocMethod,
+              Seq(rtti(cls).const, Val.Size(size.toInt))
+            ),
+            unwind
+          )
       }
     }
 
@@ -1070,9 +1075,8 @@ object Lower {
     def genArrayallocOp(buf: Buffer, n: Local, op: Op.Arrayalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Arrayalloc(ty, v, ptr) = op
+      val Op.Arrayalloc(ty, v, zoneHandle) = op
       val init = genVal(buf, v)
-      val zoneHandle = genVal(buf, ptr)
       init match {
         case len if len.ty == Type.Int =>
           val sig = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
@@ -1083,7 +1087,11 @@ object Lower {
             Op.Call(
               sig,
               Val.Global(func, Type.Ptr),
-              Seq(module, len, zoneHandle)
+              Seq(
+                module,
+                len,
+                zoneHandle.map(genVal(buf, _)).getOrElse(Val.Null)
+              )
             ),
             unwind
           )

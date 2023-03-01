@@ -16,24 +16,24 @@ object InstanceRef {
 }
 
 object VirtualRef {
+  type VirtulRefExtract = (Kind, Class, Array[Val], Option[Val])
   def unapply(addr: Addr)(implicit
       state: State
-  ): Option[(Kind, Class, Array[Val], Val)] =
+  ): Option[VirtulRefExtract] =
     unapply(Val.Virtual(addr))
   def unapply(
       value: Val
-  )(implicit state: State): Option[(Kind, Class, Array[Val], Val)] =
-    value match {
-      case Val.Virtual(addr) =>
-        state.deref(addr) match {
-          case VirtualInstance(kind, cls, values, zoneHandle) =>
-            Some((kind, cls, values, zoneHandle))
-          case _ =>
-            None
-        }
-      case _ =>
-        None
-    }
+  )(implicit state: State): Option[VirtulRefExtract] = value match {
+    case Val.Virtual(addr) =>
+      state.deref(addr) match {
+        case VirtualInstance(kind, cls, values, zoneHandle) =>
+          Some((kind, cls, values, zoneHandle))
+        case _ =>
+          None
+      }
+    case _ =>
+      None
+  }
 }
 
 object DelayedRef {
