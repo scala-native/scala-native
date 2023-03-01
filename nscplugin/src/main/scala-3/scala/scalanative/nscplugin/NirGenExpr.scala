@@ -2105,7 +2105,7 @@ trait NirGenExpr(using Context) {
     }
 
     def genSafeZoneAlloc(app: Apply): Val = {
-      val Apply(_, List(tree, sz)) = app
+      val Apply(_, List(sz, tree)) = app
       // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
       // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
       tree match {
