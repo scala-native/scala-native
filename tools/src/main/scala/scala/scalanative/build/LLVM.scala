@@ -58,7 +58,7 @@ private[scalanative] object LLVM {
 
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
     val stdflag = {
-      if (isLl) Seq.empty
+      if (isLl) llvmIrFeatures
       else if (isCpp) {
         // C++14 or newer standard is needed to compile code using Windows API
         // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
@@ -279,6 +279,14 @@ private[scalanative] object LLVM {
       case Mode.ReleaseSize => "-Oz"
       case Mode.ReleaseFull => "-O3"
     }
+
+  private def llvmIrFeatures(implicit config: Config): Seq[String] = {
+    implicit def nativeConfig: NativeConfig = config.compilerConfig
+    val opaquePointers = Discover.features.opaquePointers.requiredFlag.toList
+      .flatMap(Seq("-mllvm", _))
+
+    opaquePointers
+  }
 
   private def buildTargetCompileOpts(implicit config: Config): Seq[String] =
     config.compilerConfig.buildTarget match {

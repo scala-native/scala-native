@@ -391,7 +391,11 @@ object Lower {
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
-          buf.let(n, Op.Store(ty, Val.Local(slot, Type.Ptr), value), unwind)
+          buf.let(
+            n,
+            Op.Store(ty, Val.Local(slot, Type.Ptr), genVal(buf, value)),
+            unwind
+          )
         case op: Op.Arrayalloc =>
           genArrayallocOp(buf, n, op)
         case op: Op.Arrayload =>
@@ -766,7 +770,10 @@ object Lower {
           branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
-          let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
+          if (platform.useOpaquePointers)
+            let(n, Op.Copy(v), unwind)
+          else
+            let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
 
         case Op.As(to, v) =>
           util.unsupported(s"can't cast from ${v.ty} to $to")

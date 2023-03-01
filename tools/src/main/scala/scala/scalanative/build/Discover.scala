@@ -91,41 +91,56 @@ object Discover {
     libs
   }
 
+  private case class ClangInfo(
+      majorVersion: Int,
+      fullVersion: String,
+      targetTriple: String
+  )
+  private def clangInfo(implicit config: NativeConfig): ClangInfo =
+    cache("clang-info")(config => clangInfo(config.clang))
+
+  private def clangInfo(clang: Path): ClangInfo = {
+    val versionCommand = Seq(clang.abs, "--version")
+    val cmdString = versionCommand.mkString(" ")
+    val processLines = Process(versionCommand)
+      .lineStream_!(silentLogger())
+      .toList
+
+    val (versionString, targetString) = processLines match {
+      case version :: target :: _ => (version, target)
+      case _ =>
+        throw new BuildException(
+          s"""Problem running '$cmdString'. Please check clang setup.
+              |Refer to ($docSetup)""".stripMargin
+        )
+    }
+
+    // Apple macOS clang is different vs brew installed or Linux
+    // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
+    // clang version 11.0.0
+    try {
+      val versionArray = versionString.split(" ")
+      val versionIndex = versionArray.indexWhere(_.equals("version"))
+      val version = versionArray(versionIndex + 1)
+      ClangInfo(
+        majorVersion = version.takeWhile(_.isDigit).toInt,
+        fullVersion = version,
+        targetTriple = targetString.drop("Target: ".size)
+      )
+    } catch {
+      case t: Throwable =>
+        throw new BuildException(s"""Output from '$versionCommand' unexpected.
+                |Was expecting '... version n.n.n ...'.
+                |Got '$versionString'.
+                |Cause: ${t}""".stripMargin)
+    }
+  }
+
   /** Tests whether the clang compiler is greater or equal to the minumum
    *  version required.
    */
   private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
-    def versionMajorFull(clang: String): (Int, String) = {
-      val versionCommand = Seq(clang, "--version")
-      val versionString = Process(versionCommand)
-        .lineStream_!(silentLogger())
-        .headOption
-        .getOrElse {
-          throw new BuildException(
-            s"""Problem running '${versionCommand
-                .mkString(" ")}'. Please check clang setup.
-               |Refer to ($docSetup)""".stripMargin
-          )
-        }
-      // Apple macOS clang is different vs brew installed or Linux
-      // Apple LLVM version 10.0.1 (clang-1001.0.46.4)
-      // clang version 11.0.0
-      try {
-        val versionArray = versionString.split(" ")
-        val versionIndex = versionArray.indexWhere(_.equals("version"))
-        val version = versionArray(versionIndex + 1)
-        val majorVersion = version.split("\\.").head
-        (majorVersion.toInt, version)
-      } catch {
-        case t: Throwable =>
-          throw new BuildException(s"""Output from '$versionCommand' unexpected.
-                 |Was expecting '... version n.n.n ...'.
-                 |Got '$versionString'.
-                 |Cause: ${t}""".stripMargin)
-      }
-    }
-
-    val (majorVersion, version) = versionMajorFull(pathToClangBinary.abs)
+    val ClangInfo(majorVersion, version, _) = clangInfo(pathToClangBinary)
 
     if (majorVersion < clangMinVersion) {
       throw new BuildException(
@@ -178,9 +193,89 @@ object Discover {
     path
   }
 
+  /** Detect the target architecture.
+   *
+   *  @param clang
+   *    A path to the executable `clang`.
+   *  @return
+   *    The detected target triple describing the target architecture.
+   */
+  def targetTriple(clang: Path): String = clangInfo(clang).targetTriple
+
+  def targetTriple(implicit config: NativeConfig) = cache("target-triple") {
+    _ => clangInfo.targetTriple
+  }
+
   private def silentLogger(): ProcessLogger =
     ProcessLogger(_ => (), _ => ())
 
   private def getenv(key: String): Option[String] =
     Option(System.getenv.get(key))
+
+  private object cache extends ContextBasedCache[NativeConfig, String, AnyRef]
+
+  private[scalanative] object features {
+    import FeatureSupport._
+
+    def opaquePointers(implicit config: NativeConfig): FeatureSupport =
+      cache("opaque-pointers") { _ =>
+        try {
+          val version = clangInfo.majorVersion
+          // if version == 13 EnabledWithFlag("--force-opaque-pointers"): works on Unix and probably on Homebrew Clang; on Apple Clang missing or exists with different name
+          // if version == 14 EnabledWithFlag("--opaque-pointers"): might require additional flag `--plugin-opt=opaque-pointers` to ld.lld linker on Unix, this opt is missing on ld64.lld in MacOS
+          if (version < 15) Unavailable
+          else Enabled
+        } catch {
+          case ex: Exception =>
+            System.err.println(
+              "Failed to detect version of clang, assuming opaque-pointers are not supported"
+            )
+            Unavailable
+        }
+      }
+
+    sealed trait FeatureSupport {
+      def isAvailable: Boolean = this match {
+        case Unavailable => false
+        case _           => true
+      }
+      def requiredFlag: Option[String] = this match {
+        case EnabledWithFlag(flag) => Some(flag)
+        case _                     => None
+      }
+    }
+    object FeatureSupport {
+      case object Unavailable extends FeatureSupport
+      case object Enabled extends FeatureSupport
+      case class EnabledWithFlag(compilationFlag: String) extends FeatureSupport
+    }
+  }
+
+  class ContextBasedCache[Ctx, Key, Value <: AnyRef] {
+    private val cachedValues = scala.collection.mutable.Map.empty[Key, Value]
+    private var lastContext: Ctx = _
+
+    def apply[T <: Value: reflect.ClassTag](
+        key: Key
+    )(resolve: Ctx => T)(implicit context: Ctx): T = {
+      lastContext match {
+        case `context` =>
+          val result = cachedValues.getOrElseUpdate(key, resolve(context))
+          // Make sure stored value has correct type in case of duplicate keys
+          val expectedType = implicitly[reflect.ClassTag[T]].runtimeClass
+          assert(
+            expectedType.isAssignableFrom(result.getClass),
+            s"unexpected type of result for entry: `$key`, got ${result
+                .getClass()}, expected $expectedType"
+          )
+          result.asInstanceOf[T]
+
+        case _ =>
+          // Context have changed
+          cachedValues.clear()
+          lastContext = context
+          this(key)(resolve) // retry with cleaned cached
+      }
+    }
+  }
 }
