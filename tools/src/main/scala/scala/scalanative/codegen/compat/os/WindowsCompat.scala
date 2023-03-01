@@ -9,8 +9,9 @@ import scala.scalanative.codegen.llvm.DebugInformationSection
 import scala.scalanative.nir.Defn
 import scala.scalanative.nir.Global
 
-private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
+private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
     extends OsCompat {
+  import codegen.{pointerType => ptrT}
   val ehWrapperTy = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
   val ehWrapperName = "c\".?AVExceptionWrapper@scalanative@@\\00\""
   val ehClass = "%\"class.scalanative::ExceptionWrapper\""
@@ -32,16 +33,17 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
 
   override def genPrelude()(implicit sb: ShowBuilder): Unit = {
     import sb._
-    line("declare i32 @llvm.eh.typeid.for(i8*)")
+    def PtrRef = if (useOpaquePointers) ptrT else s"$ptrT*"
+    line(s"declare i32 @llvm.eh.typeid.for($ptrT*)")
     line(s"declare i32 $osPersonalityType(...)")
-    line(s"$typeDescriptor = type { i8**, i8*, [35 x i8] }")
-    line(s"%$stdExceptionData = type { i8*, i8 }")
+    line(s"$typeDescriptor = type { $PtrRef, $ptrT, [35 x i8] }")
+    line(s"%$stdExceptionData = type { $ptrT, i8 }")
     line(s"%$stdExceptionClass = type { i32 (...)**, %$stdExceptionData }")
-    line(s"$ehClass = type { %$stdExceptionClass, i8* }")
-    line(s"@$typeInfo = external constant i8*")
+    line(s"$ehClass = type { %$stdExceptionClass, $ptrT }")
+    line(s"@$typeInfo = external constant $ptrT")
     line(s"$$$ehWrapperTy = comdat any")
     line(
-      s"@$ehWrapperTy = linkonce_odr global $typeDescriptor { i8** @$typeInfo, i8* null, [35 x i8] $ehWrapperName }, comdat"
+      s"@$ehWrapperTy = linkonce_odr global $typeDescriptor { $PtrRef @$typeInfo, $ptrT null, [35 x i8] $ehWrapperName }, comdat"
     )
   }
 
@@ -72,13 +74,25 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
 
     line(s"$excsucc:")
     indent()
-    line(
-      s"$cpad = catchpad within $rec [$typeDescriptor* @$ehWrapperTy, i32 8, $ehClass** $ehVar]"
-    )
-    line(s"$w1 = load $ehClass*, $ehClass** $ehVar, align 8")
-    line(s"$w2 = getelementptr inbounds $ehClass, $ehClass* $w1, i32 0, i32 1")
-    line(s"$exc = load i8*, i8** $w2, align 8")
-    line(s"catchret from $cpad to ")
+    if (useOpaquePointers) {
+      line(
+        s"$cpad = catchpad within $rec [ptr @$ehWrapperTy, i32 8, ptr $ehVar]"
+      )
+      line(s"$w1 = load ptr, ptr $ehVar, align 8")
+      line(s"$w2 = getelementptr inbounds $ehClass, ptr $w1, i32 0, i32 1")
+      line(s"$exc = load ptr, ptr $w2, align 8")
+      line(s"catchret from $cpad to ")
+    } else {
+      line(
+        s"$cpad = catchpad within $rec [$typeDescriptor* @$ehWrapperTy, i32 8, $ehClass** $ehVar]"
+      )
+      line(s"$w1 = load $ehClass*, $ehClass** $ehVar, align 8")
+      line(
+        s"$w2 = getelementptr inbounds $ehClass, $ehClass* $w1, i32 0, i32 1"
+      )
+      line(s"$exc = load i8*, i8** $w2, align 8")
+      line(s"catchret from $cpad to ")
+    }
     genNext(next)
     unindent()
   }

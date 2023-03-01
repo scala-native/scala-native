@@ -7,15 +7,20 @@ import scala.scalanative.util.ShowBuilder
 import scala.scalanative.codegen.llvm.GenIdx
 import scala.scalanative.codegen.llvm.DebugInformationSection
 
-private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
+private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
+    extends OsCompat {
+  import codegen.{pointerType => ptrT}
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
-  val excRecTy = "{ i8*, i32 }"
+  val excRecTy = s"{ $ptrT, i32 }"
   val beginCatch = "@__cxa_begin_catch"
   val endCatch = "@__cxa_end_catch"
+  val catchSig =
+    if (useOpaquePointers) s"$ptrT $ehWrapperTy"
+    else s"i8* bitcast ({ i8*, i8*, i8* }* $ehWrapperTy to i8*)"
   val landingpad =
-    s"landingpad $excRecTy catch i8* bitcast ({ i8*, i8*, i8* }* $ehWrapperTy to i8*)"
+    s"landingpad $excRecTy catch $catchSig"
   val typeid =
-    s"call i32 @llvm.eh.typeid.for(i8* bitcast ({ i8*, i8*, i8* }* $ehWrapperTy to i8*))"
+    s"call i32 @llvm.eh.typeid.for($catchSig)"
 
   protected val osPersonalityType: String = "@__gxx_personality_v0"
 
@@ -55,12 +60,17 @@ private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
 
     line(s"$excsucc:")
     indent()
-    line(s"$w0 = call i8* $beginCatch(i8* $r0)")
-    line(s"$w1 = bitcast i8* $w0 to i8**")
-    line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
-    line(s"$exc = load i8*, i8** $w2")
+    line(s"$w0 = call $ptrT $beginCatch($ptrT $r0)")
+    if (useOpaquePointers) {
+      line(s"$w2 = getelementptr ptr, ptr $w0, i32 1")
+      line(s"$exc = load ptr, ptr $w2")
+    } else {
+      line(s"$w1 = bitcast i8* $w0 to i8**")
+      line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
+      line(s"$exc = load i8*, i8** $w2")
+    }
     line(s"call void $endCatch()")
-    codeGen.genInst(Inst.Jump(next))
+    codegen.genInst(Inst.Jump(next))
     unindent()
 
     line(s"$excfail:")
@@ -71,10 +81,10 @@ private[codegen] class UnixCompat(codeGen: AbstractCodeGen) extends OsCompat {
 
   def genPrelude()(implicit builder: ShowBuilder): Unit = {
     import builder._
-    line("declare i32 @llvm.eh.typeid.for(i8*)")
+    line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
     line(s"declare i32 $osPersonalityType(...)")
-    line(s"declare i8* $beginCatch(i8*)")
+    line(s"declare $ptrT $beginCatch($ptrT)")
     line(s"declare void $endCatch()")
-    line(s"$ehWrapperTy = external constant { i8*, i8*, i8* }")
+    line(s"$ehWrapperTy = external constant { $ptrT, $ptrT, $ptrT }")
   }
 }
