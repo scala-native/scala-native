@@ -204,6 +204,29 @@ jobs:
           export LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
           sbt "test-scripted ${{matrix.scala}}"
 
+  test-llvm-versions:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.2]
+        llvm: [13, 14, 15, 16, 17] # Last 3 stable versions + available future versions
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: ${{ matrix.llvm }}
+          java-version: 8
+
+      - name: Run tests
+        env:
+          SCALANATIVE_MODE: release-fast
+          SCALANATIVE_LTO: thin
+          LLVM_BIN: "/usr/lib/llvm-${{ matrix.llvm }}/bin"
+        run: sbt "test-runtime ${{ matrix.scala }}"
+
   test-multihreading:
     name: Test experimental multithreading support
     runs-on: ubuntu-20.04

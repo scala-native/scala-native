@@ -75,7 +75,7 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
-  private lazy val detectedTriple = Discover.targetTriple(clang)
+  private lazy val detectedTriple = Discover.targetTriple(this)
 
   /** Are we targeting a 32-bit platform?
    *

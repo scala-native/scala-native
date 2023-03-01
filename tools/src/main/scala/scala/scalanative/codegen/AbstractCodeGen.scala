@@ -3,6 +3,7 @@ package scala.scalanative.codegen
 import java.nio.file.{Path, Paths}
 import java.{lang => jl}
 import scala.collection.mutable
+import scala.scalanative.build.Discover
 import scala.scalanative.codegen.compat.os.OsCompat
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
@@ -14,11 +15,12 @@ import scala.scalanative.{build, linker, nir}
 private[codegen] abstract class AbstractCodeGen(
     env: Map[Global, Defn],
     defns: Seq[Defn]
-)(implicit meta: Metadata) {
+)(implicit val meta: Metadata) {
   import meta.platform
   import platform._
 
   val os: OsCompat
+  val pointerType = if (useOpaquePointers) "ptr" else "i8*"
 
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _
@@ -364,9 +366,10 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genType(ty: Type)(implicit sb: ShowBuilder): Unit = {
     import sb._
     ty match {
-      case Type.Vararg                                           => str("...")
-      case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing => str("i8*")
-      case Type.Bool                                             => str("i1")
+      case Type.Vararg => str("...")
+      case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
+        str(pointerType)
+      case Type.Bool          => str("i1")
       case i: Type.FixedSizeI => str("i"); str(i.width)
       case Type.Size =>
         str("i")
@@ -452,11 +455,17 @@ private[codegen] abstract class AbstractCodeGen(
         str("%")
         genLocal(n)
       case Val.Global(n, ty) =>
-        str("bitcast (")
-        genType(lookup(n))
-        str("* @")
-        genGlobal(n)
-        str(" to i8*)")
+        if (useOpaquePointers) {
+          lookup(n)
+          str("@")
+          genGlobal(n)
+        } else {
+          str("bitcast (")
+          genType(lookup(n))
+          str("* @")
+          genGlobal(n)
+          str(" to i8*)")
+        }
       case _ =>
         unsupported(v)
     }
@@ -659,14 +668,16 @@ private[codegen] abstract class AbstractCodeGen(
         val isVolatile =
           isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
 
-        newline()
-        str("%")
-        genLocal(pointee)
-        str(" = bitcast ")
-        genVal(ptr)
-        str(" to ")
-        genType(ty)
-        str("*")
+        if (!useOpaquePointers) {
+          newline()
+          str("%")
+          genLocal(pointee)
+          str(" = bitcast ")
+          genVal(ptr)
+          str(" to ")
+          genType(ty)
+          str("*")
+        }
 
         newline()
         genBind()
@@ -675,9 +686,12 @@ private[codegen] abstract class AbstractCodeGen(
         if (isVolatile) str("volatile ")
         genType(ty)
         str(", ")
-        genType(ty)
-        str("* %")
-        genLocal(pointee)
+        if (useOpaquePointers) genVal(ptr)
+        else {
+          genType(ty)
+          str("* %")
+          genLocal(pointee)
+        }
         if (isAtomic) {
           str(" ")
           syncAttrs.foreach(genSyncAttrs)
@@ -708,14 +722,16 @@ private[codegen] abstract class AbstractCodeGen(
         val isVolatile =
           isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
 
-        newline()
-        str("%")
-        genLocal(pointee)
-        str(" = bitcast ")
-        genVal(ptr)
-        str(" to ")
-        genType(ty)
-        str("*")
+        if (!useOpaquePointers) {
+          newline()
+          str("%")
+          genLocal(pointee)
+          str(" = bitcast ")
+          genVal(ptr)
+          str(" to ")
+          genType(ty)
+          str("*")
+        }
 
         newline()
         genBind()
@@ -723,10 +739,15 @@ private[codegen] abstract class AbstractCodeGen(
         if (isAtomic) str("atomic ")
         if (isVolatile) str("volatile ")
         genVal(value)
-        str(", ")
-        genType(ty)
-        str("* %")
-        genLocal(pointee)
+        if (useOpaquePointers) {
+          str(", ptr")
+          genJustVal(ptr)
+        } else {
+          str(", ")
+          genType(ty)
+          str("* %")
+          genLocal(pointee)
+        }
         if (isAtomic) syncAttrs.foreach {
           str(" ")
           genSyncAttrs(_)
@@ -738,54 +759,76 @@ private[codegen] abstract class AbstractCodeGen(
         val pointee = fresh()
         val derived = fresh()
 
-        newline()
-        str("%")
-        genLocal(pointee)
-        str(" = bitcast ")
-        genVal(ptr)
-        str(" to ")
-        genType(ty)
-        str("*")
+        if (!useOpaquePointers) {
+          newline()
+          str("%")
+          genLocal(pointee)
+          str(" = bitcast ")
+          genVal(ptr)
+          str(" to ")
+          genType(ty)
+          str("*")
+        }
 
         newline()
-        str("%")
-        genLocal(derived)
-        str(" = getelementptr ")
+        if (useOpaquePointers) genBind()
+        else {
+          str("%")
+          genLocal(derived)
+          str(" = ")
+        }
+        str("getelementptr ")
         genType(ty)
         str(", ")
-        genType(ty)
-        str("* %")
-        genLocal(pointee)
+        if (ty.isInstanceOf[Type.AggregateKind] || !useOpaquePointers) {
+          genType(ty)
+          str("*")
+        } else str(pointerType)
+        str(" ")
+        if (useOpaquePointers) genJustVal(ptr)
+        else {
+          str("%")
+          genLocal(pointee)
+        }
         str(", ")
         rep(indexes, sep = ", ")(genVal)
 
-        newline()
-        genBind()
-        str("bitcast ")
-        genType(ty.elemty(indexes.tail))
-        str("* %")
-        genLocal(derived)
-        str(" to i8*")
+        if (!useOpaquePointers) {
+          newline()
+          genBind()
+          str("bitcast ")
+          genType(ty.elemty(indexes.tail))
+          str("* %")
+          genLocal(derived)
+          str(" to i8*")
+        }
 
       case Op.Stackalloc(ty, n) =>
         val pointee = fresh()
 
         newline()
-        str("%")
-        genLocal(pointee)
-        str(" = alloca ")
+        if (useOpaquePointers) genBind()
+        else {
+          str("%")
+          genLocal(pointee)
+          str(" = ")
+        }
+        str("alloca ")
         genType(ty)
         str(", ")
         genVal(n)
-        str(if (platform.is32Bit) ", align 4" else ", align 8")
+        str(", align ")
+        str(platform.sizeOfPtr)
 
-        newline()
-        genBind()
-        str("bitcast ")
-        genType(ty)
-        str("* %")
-        genLocal(pointee)
-        str(" to i8*")
+        if (!useOpaquePointers) {
+          newline()
+          genBind()
+          str("bitcast ")
+          genType(ty)
+          str("* %")
+          genLocal(pointee)
+          str(" to i8*")
+        }
 
       case _ =>
         newline()
@@ -832,21 +875,27 @@ private[codegen] abstract class AbstractCodeGen(
 
         val pointee = fresh()
 
-        newline()
-        str("%")
-        genLocal(pointee)
-        str(" = bitcast ")
-        genVal(ptr)
-        str(" to ")
-        genType(ty)
-        str("*")
+        if (!useOpaquePointers) {
+          newline()
+          str("%")
+          genLocal(pointee)
+          str(" = bitcast ")
+          genVal(ptr)
+          str(" to ")
+          genType(ty)
+          str("*")
+        }
 
         newline()
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
         genCallFunctionType(ty)
-        str(" %")
-        genLocal(pointee)
+        str(" ")
+        if (useOpaquePointers) genJustVal(ptr)
+        else {
+          str("%")
+          genLocal(pointee)
+        }
         str("(")
         rep(args, sep = ", ")(genCallArgument)
         str(")")

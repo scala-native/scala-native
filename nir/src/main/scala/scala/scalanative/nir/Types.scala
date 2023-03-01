@@ -135,6 +135,8 @@ object Type {
       .get(normalize(boxType))
       .contains(primitiveType)
   def isPtrBox(ty: Type): Boolean = isBoxOf(Type.Ptr)(ty)
+  def isPtrType(ty: Type): Boolean =
+    ty == Type.Ptr || ty.isInstanceOf[Type.RefKind]
   def isSizeBox(ty: Type): Boolean = isBoxOf(Type.Size)(ty)
 
   def normalize(ty: Type): Type = ty match {

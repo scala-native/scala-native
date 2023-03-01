@@ -537,16 +537,18 @@ object Lower {
         // Convert synchronized load(bool) into load(byte)
         // LLVM is not providing synchronization on booleans
         case Op.Load(Type.Bool, ptr, syncAttrs @ Some(_)) =>
-          val asPtr, valueAsByte = fresh()
-          genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+          val valueAsByte = fresh()
+          val asPtr =
+            if (platform.useOpaquePointers) ptr
+            else {
+              val asPtr = fresh()
+              genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+              Val.Local(asPtr, Type.Ptr)
+            }
           genLoadOp(
             buf,
             valueAsByte,
-            Op.Load(
-              Type.Byte,
-              Val.Local(asPtr, Type.Ptr),
-              syncAttrs
-            )
+            Op.Load(Type.Byte, asPtr, syncAttrs)
           )
           genConvOp(
             buf,
@@ -570,15 +572,21 @@ object Lower {
         // Convert synchronized store(bool) into store(byte)
         // LLVM is not providing synchronization on booleans
         case Op.Store(Type.Bool, ptr, value, syncAttrs @ Some(_)) =>
-          val asPtr, valueAsByte = fresh()
-          genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+          val valueAsByte = fresh()
+          val asPtr =
+            if (platform.useOpaquePointers) ptr
+            else {
+              val asPtr = fresh()
+              genConvOp(buf, asPtr, Op.Conv(Conv.Bitcast, Type.Ptr, ptr))
+              Val.Local(asPtr, Type.Ptr)
+            }
           genConvOp(buf, valueAsByte, Op.Conv(Conv.Zext, Type.Byte, value))
           genStoreOp(
             buf,
             n,
             Op.Store(
               Type.Byte,
-              Val.Local(asPtr, Type.Ptr),
+              asPtr,
               Val.Local(valueAsByte, Type.Byte),
               syncAttrs
             )
@@ -946,7 +954,10 @@ object Lower {
           branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
-          let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
+          if (platform.useOpaquePointers)
+            let(n, Op.Copy(v), unwind)
+          else
+            let(n, Op.Conv(Conv.Bitcast, ty, v), unwind)
 
         case Op.As(to, v) =>
           util.unsupported(s"can't cast from ${v.ty} to $to")
