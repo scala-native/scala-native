@@ -7,6 +7,8 @@ inputs:
   java-version:
     description: "Java version to use in tests"
     default: "8"
+  llvm-version:
+    description: "LLVM toolchain version"
 runs:
   using: "composite"
   steps:
@@ -38,6 +40,14 @@ runs:
           sudo apt-get update
           sudo apt-get install libgc-dev
 
+    - name: Install explicit LLVM toolchain
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        yes "" | sudo ./llvm.sh ${{ inputs.llvm-version }}
+        
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
       uses: actions/cache@v3
