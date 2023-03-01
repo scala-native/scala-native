@@ -27,56 +27,6 @@ static mutex_t synchronizerLock;
 #define SafepointInstance (scalanative_gc_safepoint)
 
 #ifdef _WIN32
-#include <DbgHelp.h>
-
-void printStackTrace(EXCEPTION_POINTERS *exceptionPtr) {
-    CONTEXT *context = exceptionPtr->ContextRecord;
-    HANDLE process = GetCurrentProcess();
-    HANDLE thread = GetCurrentThread();
-
-    // Initialize the symbol handler
-    SymInitialize(process, NULL, TRUE);
-
-    // Initialize the stack frame
-    STACKFRAME64 stackFrame = {0};
-    DWORD machineType = IMAGE_FILE_MACHINE_I386;
-
-#ifdef _M_X64
-    machineType = IMAGE_FILE_MACHINE_AMD64;
-    stackFrame.AddrPC.Offset = context->Rip;
-    stackFrame.AddrFrame.Offset = context->Rsp;
-    stackFrame.AddrStack.Offset = context->Rsp;
-#elif defined(_M_IX86)
-    stackFrame.AddrPC.Offset = context->Eip;
-    stackFrame.AddrFrame.Offset = context->Ebp;
-    stackFrame.AddrStack.Offset = context->Esp;
-#endif
-
-    stackFrame.AddrPC.Mode = AddrModeFlat;
-    stackFrame.AddrFrame.Mode = AddrModeFlat;
-    stackFrame.AddrStack.Mode = AddrModeFlat;
-
-    // Walk the stack and print the symbols
-    while (StackWalk64(machineType, process, thread, &stackFrame, context, NULL,
-                       SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
-        DWORD64 displacement = 0;
-        char symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + MAX_PATH] = {0};
-        IMAGEHLP_SYMBOL64 *symbol = (IMAGEHLP_SYMBOL64 *)symbolBuffer;
-
-        symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-        symbol->MaxNameLength = MAX_PATH;
-
-        if (SymGetSymFromAddr64(process, stackFrame.AddrPC.Offset,
-                                &displacement, symbol)) {
-            printf("  %s + %llx\n", symbol->Name, displacement);
-        } else {
-            printf("  [unknown symbol]\n");
-        }
-    }
-
-    SymCleanup(process);
-}
-
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     switch (ex->ExceptionRecord->ExceptionCode) {
     case EXCEPTION_ACCESS_VIOLATION:
@@ -85,12 +35,6 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
             Synchronizer_wait();
             return EXCEPTION_CONTINUE_EXECUTION;
         }
-    case STATUS_STACK_OVERFLOW:
-        printf("Unhandled exception code %p, addr=%p\n",
-               (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode,
-               (void *)addr);
-        fflush(stdout);
-        printStackTrace(ex);
         // pass-through
     default:
         return EXCEPTION_CONTINUE_SEARCH;
