@@ -221,9 +221,9 @@ object Discover {
       cache("opaque-pointers") { _ =>
         try {
           val version = clangInfo.majorVersion
-          if (version <= 13) Unavailable
           // if version == 13 EnabledWithFlag("--force-opaque-pointers"): works on Unix and probably on Homebrew Clang; on Apple Clang missing or exists with different name
-          else if (version < 15) EnabledWithFlag("--opaque-pointers")
+          // if version == 14 EnabledWithFlag("--opaque-pointers"): might require additional flag `--plugin-opt=opaque-pointers` to ld.lld linker on Unix, this opt is missing on ld64.lld in MacOS
+          if (version < 15) Unavailable
           else Enabled
         } catch {
           case ex: Exception =>
