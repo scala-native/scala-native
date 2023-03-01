@@ -686,10 +686,8 @@ private[codegen] abstract class AbstractCodeGen(
         if (isVolatile) str("volatile ")
         genType(ty)
         str(", ")
-        if (useOpaquePointers) {
-          str("ptr ")
-          genJustVal(ptr)
-        } else {
+        if (useOpaquePointers) genVal(ptr)
+        else {
           genType(ty)
           str("* %")
           genLocal(pointee)
@@ -785,7 +783,7 @@ private[codegen] abstract class AbstractCodeGen(
         if (ty.isInstanceOf[Type.AggregateKind] || !useOpaquePointers) {
           genType(ty)
           str("*")
-        } else str("ptr")
+        } else str(pointerType)
         str(" ")
         if (useOpaquePointers) genJustVal(ptr)
         else {
@@ -892,9 +890,10 @@ private[codegen] abstract class AbstractCodeGen(
         genBind()
         str(if (unwind ne Next.None) "invoke " else "call ")
         genCallFunctionType(ty)
+        str(" ")
         if (useOpaquePointers) genJustVal(ptr)
         else {
-          str(" %")
+          str("%")
           genLocal(pointee)
         }
         str("(")
