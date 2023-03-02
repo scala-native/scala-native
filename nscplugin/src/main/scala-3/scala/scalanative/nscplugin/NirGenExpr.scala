@@ -1596,7 +1596,7 @@ trait NirGenExpr(using Context) {
       val mergen = fresh()
 
       // scalanative.runtime.`package`.enterMonitor(receiver)
-      genExpr(Apply(ref(defnNir.RuntimePackage_enterMonitorR), List(receiverp)))
+      genExpr(Apply(ref(defnNir.RuntimePackage_enterMonitor), List(receiverp)))
 
       // synchronized block
       val retty = {
@@ -1621,7 +1621,7 @@ trait NirGenExpr(using Context) {
       buf.jump(Next(normaln))
       buf ++= genTryFinally(
         // scalanative.runtime.`package`.exitMonitor(receiver)
-        Apply(ref(defnNir.RuntimePackage_exitMonitorR), List(receiverp)),
+        Apply(ref(defnNir.RuntimePackage_exitMonitor), List(receiverp)),
         nested.toSeq
       )
       val mergev = Val.Local(fresh(), retty)

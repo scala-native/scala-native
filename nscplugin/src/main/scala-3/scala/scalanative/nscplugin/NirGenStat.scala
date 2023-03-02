@@ -246,13 +246,13 @@ trait NirGenStat(using Context) {
       else Nil
 
     val annotatedAttrs =
-      sym.annotations.map(_.symbol.typeRef).collect {
-        case defnNir.NoInlineType     => Attr.NoInline
-        case defnNir.AlwaysInlineType => Attr.AlwaysInline
-        case defnNir.InlineType       => Attr.InlineHint
-        case defnNir.NoOptimizeType   => Attr.NoOpt
-        case defnNir.NoSpecializeType => Attr.NoSpecialize
-        case defnNir.StubType         => Attr.Stub
+      sym.annotations.map(_.symbol).collect {
+        case defnNir.NoInlineClass     => Attr.NoInline
+        case defnNir.AlwaysInlineClass => Attr.AlwaysInline
+        case defnNir.InlineClass       => Attr.InlineHint
+        case defnNir.NoOptimizeClass   => Attr.NoOpt
+        case defnNir.NoSpecializeClass => Attr.NoSpecialize
+        case defnNir.StubClass         => Attr.Stub
       }
     val externAttrs = Option.when(sym.isExtern) {
       Attr.Extern(sym.isBlocking || sym.owner.isBlocking)

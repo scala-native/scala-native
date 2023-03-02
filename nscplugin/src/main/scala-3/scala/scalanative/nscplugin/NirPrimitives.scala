@@ -142,6 +142,8 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       primitives(s) = code
     }
 
+    def addPrimitives(alts: Seq[Symbol], tag: Int) = alts.foreach(addPrimitive(_, tag))
+
     // scalafmt: { maxColumn = 120}
     addPrimitive(defn.throwMethod, THROW)
     addPrimitive(defn.BoxedUnit_UNIT, BOXED_UNIT)
@@ -200,8 +202,8 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_castIntToRawSize, CAST_INT_TO_RAWSIZE)
     addPrimitive(defnNir.Intrinsics_castIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
     addPrimitive(defnNir.Intrinsics_castLongToRawSize, CAST_LONG_TO_RAWSIZE)
-    defnNir.CFuncPtr_apply.foreach(addPrimitive(_, CFUNCPTR_APPLY))
-    defnNir.CFuncPtr_fromScalaFunction.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
+    addPrimitives(defnNir.CFuncPtr_apply, CFUNCPTR_APPLY)
+    addPrimitives(defnNir.CFuncPtr_fromScalaFunction, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
     addPrimitive(defnNir.Intrinsics_sizeOf, SIZE_OF)
     addPrimitive(
