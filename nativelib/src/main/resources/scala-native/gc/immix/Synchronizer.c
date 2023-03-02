@@ -29,10 +29,10 @@ static mutex_t synchronizerLock;
 #ifdef _WIN32
 #include <DbgHelp.h>
 
-void printStackTrace(EXCEPTION_POINTERS *exceptionPtr) {
+void printStackTrace(EXCEPTION_POINTERS *exceptionPtr, HANDLE thread) {
     CONTEXT *context = exceptionPtr->ContextRecord;
     HANDLE process = GetCurrentProcess();
-    HANDLE thread = GetCurrentThread();
+    // HANDLE thread = GetCurrentThread();
 
     // Initialize the symbol handler
     SymInitialize(process, NULL, TRUE);
@@ -77,6 +77,43 @@ void printStackTrace(EXCEPTION_POINTERS *exceptionPtr) {
     SymCleanup(process);
 }
 
+struct ExceptionContext {
+    EXCEPTION_POINTERS *exceptionPtr;
+    HANDLE thread;
+    CONDITION_VARIABLE cv;
+    CRITICAL_SECTION cs;
+};
+
+static struct ExceptionContext globalContext = {};
+DWORD WINAPI StackPrinter(LPVOID lpParameter) {
+    // Enter the critical section
+    EnterCriticalSection(&globalContext.cs);
+
+    while (true) {
+        // Wait for the condition variable to be signaled
+        while (!SleepConditionVariableCS(&globalContext.cv, &globalContext.cs,
+                                         INFINITE)) {
+        }
+        printf("Print exception context of %p\n", globalContext.exceptionPtr);
+        printStackTrace(globalContext.exceptionPtr, globalContext.thread);
+        globalContext.exceptionPtr = NULL;
+    }
+
+    // Exit the critical section
+    LeaveCriticalSection(&globalContext.cs);
+
+    // Thread is complete.
+    return 0;
+}
+void startPrinterThread() {
+    InitializeConditionVariable(&globalContext.cv);
+    InitializeCriticalSection(&globalContext.cs);
+
+    // Create the thread
+    HANDLE thread = CreateThread(NULL, 0, StackPrinter, NULL, 0, NULL);
+    // // Trigger the condition variable
+}
+
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     switch (ex->ExceptionRecord->ExceptionCode) {
     case EXCEPTION_ACCESS_VIOLATION:
@@ -86,12 +123,20 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
             return EXCEPTION_CONTINUE_EXECUTION;
         }
     case STATUS_STACK_OVERFLOW:
-        printf("Unhandled exception code %p, addr=%p\n",
+        char sp = 0;
+        printf("Unhandled exception code %p, addr=%p, stackTop=%p, "
+               "stackBottom=%p\n",
                (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode,
-               (void *)addr);
+               (void *)addr, &sp, currentMutatorThread->stackBottom);
         fflush(stdout);
-        printStackTrace(ex);
-        // pass-through
+        while (globalContext.exceptionPtr != NULL) {
+        }
+        globalContext.exceptionPtr = ex;
+        WakeConditionVariable(&globalContext.cv);
+        while (globalContext.exceptionPtr != NULL) {
+        }
+    // printStackTrace(ex);
+    // pass-through
     default:
         return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -120,6 +165,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
 static void SetupPageFaultHandler() {
 #ifdef _WIN32
+    startPrinterThread();
     AddVectoredExceptionHandler(1, &SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);
