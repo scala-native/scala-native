@@ -10,10 +10,6 @@ import scala.scalanative.junit.utils.AssumesHelper
 object ObjectMonitorTest {
   @BeforeClass def checkRuntime(): Unit = {
     AssumesHelper.assumeMultithreadingIsEnabled()
-    assumeFalse(
-      "Spurious failures on Windows JVM",
-      Platform.executingInJVM && Platform.isWindows
-    )
   }
 }
 
