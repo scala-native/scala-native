@@ -1,4 +1,4 @@
-package scala.scalanative.safe
+package scala.scalanative
 
 import language.experimental.captureChecking
 import scalanative.unsigned._
