@@ -2107,13 +2107,13 @@ trait NirGenExpr(using Context) {
     def genSafeZoneAlloc(app: Apply): Val = {
       val Apply(_, List(sz, tree)) = app
       // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
-      // it's translated to `withSafeZone(sz, new T(...))` in TyperPhase.
+      // it's translated to `allocate(sz, new T(...))` in TyperPhase.
       tree match {
         case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
         case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
         case _ =>
           report.error(
-            s"Unexpected tree in withSafeZone: `${tree}`",
+            s"Unexpected tree in scala.scalanative.runtime.SafeZone.allocate: `${tree}`",
             tree.srcPos
           )
       }
@@ -2125,7 +2125,7 @@ trait NirGenExpr(using Context) {
           tree.srcPos
         )
       tree.putAttachment(SafeZoneHandle, handle)
-      // Translate `withSafeZone(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
+      // Translate `allocate(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
       val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
       val block = Block(List(checkOpen), tree)
       genExpr(block)

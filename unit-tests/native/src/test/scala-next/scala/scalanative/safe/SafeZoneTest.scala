@@ -5,7 +5,9 @@ import org.junit.Assert._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scala.language.experimental.captureChecking
-import scala.scalanative.safe.SafeZoneCompat.withSafeZone
+import scala.scalanative.runtime.SafeZone.allocate
+import scala.scalanative.safe.SafeZone
+import scala.scalanative.safe.SafeZone._
 import scala.util.{Try,Success,Failure}
 
 class SafeZoneTest {
@@ -24,7 +26,7 @@ class SafeZoneTest {
 
   /** The followings are instances allocation tests. The syntax of allocating an
    *  instance in the safe zone `sz` is `new {sz} T(...)`, and it's translated
-   *  to internal function call `withSafeZone(sz, new T(...))` by dotty in typer
+   *  to internal function call `allocate(sz, new T(...))` by dotty in typer
    *  phase. Instead of testing the syntax directly, here we test the internal
    *  function equaliventlly.
    */
@@ -34,7 +36,7 @@ class SafeZoneTest {
     assertThrows(classOf[IllegalStateException], 
       SafeZone { sz => 
         sz.close()
-        Try[{sz} A].apply(withSafeZone(sz, new A())) match {
+        Try[{sz} A].apply(allocate(sz, new A())) match {
           case Success(_) => fail("Should not allocate instances in a closed safe zone.")
           case Failure(e: IllegalStateException) => ()
           case Failure(_) => fail("Unexpected error.")
@@ -48,8 +50,8 @@ class SafeZoneTest {
 
     SafeZone { sz0 =>
       val a = SafeZone { sz1 =>
-        val a0 = withSafeZone(sz0, new A(0))
-        val a1 = withSafeZone(sz1, new A(1))
+        val a0 = allocate(sz0, new A(0))
+        val a1 = allocate(sz1, new A(1))
         a0
       }
       assertEquals(a.v, 0)
@@ -61,10 +63,10 @@ class SafeZoneTest {
     case class B(a: {*} A) {}
     SafeZone { sz0 =>
       SafeZone { sz1 => 
-        val aInSz0 = withSafeZone(sz0, new A())
+        val aInSz0 = allocate(sz0, new A())
         val aInHeap = new A()
-        val b0: {sz1, sz0} B = withSafeZone(sz1, new B(aInSz0))
-        val b1: {sz1} B = withSafeZone(sz1, new B(aInHeap))
+        val b0: {sz1, sz0} B = allocate(sz1, new B(aInSz0))
+        val b1: {sz1} B = allocate(sz1, new B(aInHeap))
         val b2: {sz0} B = new B(aInSz0)
         val b3: B = new B(aInHeap)
       }
@@ -75,11 +77,11 @@ class SafeZoneTest {
     case class A() {}
     SafeZone { sz0 =>
       SafeZone { sz1 => 
-        val aInSz0 = withSafeZone(sz0, new A())
+        val aInSz0 = allocate(sz0, new A())
         val aInHeap = new A()
-        val arr0: {sz1} Array[{sz0} A]= withSafeZone(sz1, new Array[{sz0} A](1))
+        val arr0: {sz1} Array[{sz0} A]= allocate(sz1, new Array[{sz0} A](1))
         arr0(0)  = aInSz0
-        val arr1: {sz1} Array[A] = withSafeZone(sz1, new Array[A](1))
+        val arr1: {sz1} Array[A] = allocate(sz1, new Array[A](1))
         arr1(0) = aInHeap
       }
     }
@@ -92,7 +94,7 @@ class SafeZoneTest {
       SafeZone { sz => 
         val ary = new Array[{sz} A](n)
         for i <- 0 until n do
-          ary(i) = withSafeZone(sz, new A(i))
+          ary(i) = allocate(sz, new A(i))
         var sum = 0
         for i <- n - 1 to 0 by -1 do
           sum += ary(i).v
@@ -107,10 +109,10 @@ class SafeZoneTest {
     case class DoubleWrapper(value: Double)
     SafeZone { sz =>
       val kArraySize = 500000
-      val array = withSafeZone(sz, new Array[{sz} DoubleWrapper](kArraySize))
+      val array = allocate(sz, new Array[{sz} DoubleWrapper](kArraySize))
       var i = 0
       while (i < kArraySize / 2) {
-        array(i) = withSafeZone(sz, new DoubleWrapper(1.0 / i))
+        array(i) = allocate(sz, new DoubleWrapper(1.0 / i))
         i += 1
       }
       assertTrue(array(1000).value == 1.0 / 1000)
