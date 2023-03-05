@@ -4,6 +4,7 @@ import language.experimental.captureChecking
 import scalanative.unsigned._
 import scala.annotation.implicitNotFound
 import scala.scalanative.runtime.{RawPtr, CZone}
+import scala.scalanative.runtime.SafeZone.allocate
 
 @implicitNotFound("Given method requires an implicit zone.")
 trait SafeZone {
@@ -25,6 +26,9 @@ trait SafeZone {
 
   /** Return the handle of this zone allocator. */
   private[scalanative] def handle: RawPtr
+
+  /** Allocates an object in this zone. The expression of obj must be an instance creation expression. */
+  infix inline def alloc[T <: AnyRef](inline obj: T): {this} T = allocate(this, obj)
 }
 
 final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {
@@ -48,4 +52,7 @@ object SafeZone {
     try f(sz)
     finally sz.close()
   }
+
+  /* Allocates an object in the implicit zone. The expression of obj must be an instance creation expression. */
+  inline def alloc[T <: AnyRef](inline obj: T)(using inline sz: {*} SafeZone): {sz} T = allocate(sz, obj)
 }

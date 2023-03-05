@@ -118,4 +118,18 @@ class SafeZoneTest {
       assertTrue(array(1000).value == 1.0 / 1000)
     }
   }
+
+  @Test def `can use alloc API instead of instance creation expression`(): Unit = {
+    case class A(v: Int) {}
+    SafeZone { implicit sz =>
+      // using explicit arguments
+      val a0 = sz alloc(new A(0))
+      val a1 = sz alloc new A(1)
+      assertTrue(a0.v == 0)
+      assertTrue(a1.v == 1)
+      // using implicit zone
+      val a2 = alloc(new A(2))
+      assertTrue(a2.v == 2)
+    }
+  }
 }
