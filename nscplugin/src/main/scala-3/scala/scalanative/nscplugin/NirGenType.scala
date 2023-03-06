@@ -108,7 +108,6 @@ trait NirGenType(using Context) {
       case ThisType(tref) =>
         if (tref == defn.ArrayType) ObjectClassType
         else SimpleType(tref.symbol, Nil)
-      case WildcardType => ObjectClassType
       case JavaArrayType(elemTpe) =>
         SimpleType(defn.ArrayClass, fromType(elemTpe) :: Nil)
       case ConstantType(c)            => fromType(c.tpe)
@@ -118,6 +117,8 @@ trait NirGenType(using Context) {
       case AppliedType(tycon, args) =>
         SimpleType(tycon.typeSymbol, args.map(fromType))
       case t @ TermRef(_, _) => fromType(t.info.resultType)
+      case WildcardType      => ObjectClassType
+      case TypeBounds(_, _)  => ObjectClassType
       case t                 => unsupported(s"unknown fromType($t)")
     }
   }

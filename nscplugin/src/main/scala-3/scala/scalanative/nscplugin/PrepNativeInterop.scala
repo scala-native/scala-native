@@ -38,10 +38,15 @@ class PrepNativeInterop extends PluginPhase {
   }
 
   private class DealiasSizeOfType(using Context) extends TypeMap {
-    override def apply(tp: Type): Type = tp.widenDealias match
-      case AppliedType(tycon, args) =>
-        AppliedType(this(tycon), args.map(this))
-      case ty => ty
+    override def apply(tp: Type): Type =
+      val sym = tp.typeSymbol
+      val dealiased =
+        if sym.isOpaqueAlias then sym.opaqueAlias
+        else tp
+      dealiased.widenDealias match
+        case AppliedType(tycon, args) =>
+          AppliedType(this(tycon), args.map(this))
+        case ty => ty
   }
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
