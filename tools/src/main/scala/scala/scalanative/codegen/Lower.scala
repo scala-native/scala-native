@@ -124,9 +124,6 @@ object Lower {
       insts.foreach {
         case inst @ Inst.Let(n, Op.Var(ty), unwind) =>
           buf.let(n, Op.Stackalloc(ty, one), unwind)(inst.pos)
-        case inst @ Inst.Let(n, op @ Op.Stackalloc(_, size), unwind)
-            if size.isCanonical =>
-          buf.let(n, op, unwind)(inst.pos)
         case _ =>
           ()
       }
@@ -405,7 +402,6 @@ object Lower {
         case op: Op.Module =>
           genModuleOp(buf, n, op)
         case Op.Var(_)                                  => () // Already emmited
-        case Op.Stackalloc(_, size) if size.isCanonical => () // Already emmited
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
