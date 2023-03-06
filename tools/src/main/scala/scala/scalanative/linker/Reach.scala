@@ -801,8 +801,9 @@ class Reach(
       reachType(ty)
       reachVal(v)
       ty match {
-        case ref: Type.RefKind => classInfo(ref.className).foreach(reachAllocation)
-        case _                    => ()
+        case ref: Type.RefKind =>
+          classInfo(ref.className).foreach(reachAllocation)
+        case _ => ()
       }
     case Op.Bin(bin, ty, lv, rv) =>
       reachType(ty)
@@ -854,8 +855,8 @@ class Reach(
       reachVal(v)
     case Op.Copy(v) =>
       reachVal(v)
-    case Op.Sizeof(ty) =>
-      reachType(ty)
+    case Op.SizeOf(ty)      => reachType(ty)
+    case Op.AlignmentOf(ty) => reachType(ty)
     case Op.Box(code, obj) =>
       reachVal(obj)
     case Op.Unbox(code, obj) =>

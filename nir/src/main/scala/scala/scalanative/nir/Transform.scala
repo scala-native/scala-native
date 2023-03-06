@@ -98,8 +98,8 @@ trait Transform {
       Op.Is(onType(ty), onVal(v))
     case Op.Copy(v) =>
       Op.Copy(onVal(v))
-    case Op.Sizeof(ty) =>
-      Op.Sizeof(onType(ty))
+    case Op.SizeOf(ty)      => Op.SizeOf(onType(ty))
+    case Op.AlignmentOf(ty) => Op.AlignmentOf(onType(ty))
     case Op.Box(code, obj) =>
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>

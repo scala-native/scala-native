@@ -386,8 +386,8 @@ object Lower {
           genIsOp(buf, n, op)
         case op: Op.As =>
           genAsOp(buf, n, op)
-        case op: Op.Sizeof =>
-          genSizeofOp(buf, n, op)
+        case op: Op.SizeOf      => genSizeOfOp(buf, n, op)
+        case op: Op.AlignmentOf => genAlignmentOfOp(buf, n, op)
         case op: Op.Classalloc =>
           genClassallocOp(buf, n, op)
         case op: Op.Conv =>
@@ -966,7 +966,7 @@ object Lower {
       }
     }
 
-    def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof)(implicit
+    def genSizeOfOp(buf: Buffer, n: Local, op: Op.SizeOf)(implicit
         pos: Position
     ): Unit = {
       val size = op.ty match {
@@ -980,6 +980,13 @@ object Lower {
         case _ => MemoryLayout.sizeOf(op.ty)
       }
       buf.let(n, Op.Copy(Val.Size(size)), unwind)
+    }
+
+    def genAlignmentOfOp(buf: Buffer, n: Local, op: Op.AlignmentOf)(implicit
+        pos: Position
+    ): Unit = {
+      val alignment = MemoryLayout.alignmentOf(op.ty)
+      buf.let(n, Op.Copy(Val.Size(alignment)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit

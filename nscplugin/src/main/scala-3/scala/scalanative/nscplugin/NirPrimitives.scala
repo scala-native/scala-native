@@ -87,8 +87,9 @@ object NirPrimitives {
 
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
   final val SIZE_OF = CLASS_FIELD_RAWPTR + 1
+  final val ALIGNMENT_OF = SIZE_OF + 1
 
-  final val REFLECT_SELECTABLE_SELECTDYN = SIZE_OF + 1
+  final val REFLECT_SELECTABLE_SELECTDYN = ALIGNMENT_OF + 1
   final val REFLECT_SELECTABLE_APPLYDYN = REFLECT_SELECTABLE_SELECTDYN + 1
 
   final val LastNirPrimitiveCode = REFLECT_SELECTABLE_APPLYDYN
@@ -142,14 +143,15 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       primitives(s) = code
     }
 
-    def addPrimitives(alts: Seq[Symbol], tag: Int) = alts.foreach(addPrimitive(_, tag))
+    def addPrimitives(alts: Seq[Symbol], tag: Int) =
+      alts.foreach(addPrimitive(_, tag))
 
     // scalafmt: { maxColumn = 120}
     addPrimitive(defn.throwMethod, THROW)
     addPrimitive(defn.BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(defn.Array_clone, ARRAY_CLONE)
     addPrimitive(defnNir.CQuote_c, CQUOTE)
-    addPrimitives(defnNir.Intrinsics_stackalloc, STACKALLOC)
+    addPrimitive(defnNir.Intrinsics_stackalloc, STACKALLOC)
     addPrimitive(defnNir.Intrinsics_divUInt, DIV_UINT)
     addPrimitive(defnNir.Intrinsics_divULong, DIV_ULONG)
     addPrimitive(defnNir.Intrinsics_remUInt, REM_UINT)
@@ -206,6 +208,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitives(defnNir.CFuncPtr_fromScalaFunction, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
     addPrimitives(defnNir.Intrinsics_sizeOfAlts, SIZE_OF)
+    addPrimitives(defnNir.Intrinsics_alignmentOfAlts, ALIGNMENT_OF)
     addPrimitive(
       defnNir.ReflectSelectable_selectDynamic,
       REFLECT_SELECTABLE_SELECTDYN

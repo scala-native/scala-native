@@ -76,7 +76,13 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
       }
     }
 
-    override def transform(tree: Tree): Tree =
+    override def transform(tree: Tree): Tree = {
+      // Recursivly widen and dealias all nested types (compler dealiases only top-level)
+      def widenDealiasType(tpe: Type): Type = {
+        val widened = tpe.dealias.map(_.dealias)
+        if (widened != tpe) widened.map(widenDealiasType(_))
+        else widened
+      }
       tree match {
         // Catch calls to Predef.classOf[T]. These should NEVER reach this phase
         // but unfortunately do. In normal cases, the typer phase replaces these
@@ -105,21 +111,25 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             EmptyTree
           }
 
-        // sizeOf[T] -> sizeOf(classOf[T])
-        case TypeApply(sizeOfTree, List(tpeArg))
-            if sizeOfTree.symbol == SizeOfTypeMethod =>
-          // Recursivly widen and dealias all nested types (compler dealiases only top-level)
-          def widenDealiasType(tpe: Type): Type = {
-            val widened = tpe.dealias.map(_.dealias)
-            if (widened != tpe) widened.map(widenDealiasType(_))
-            else widened
-          }
-          val widenedTpe = widenDealiasType(tpeArg.tpe)
+        // sizeOf[T] -> sizeOf(classOf[T]) + attachment
+        case TypeApply(fun, List(tpeArg)) if fun.symbol == SizeOfTypeMethod =>
+          val tpe = widenDealiasType(tpeArg.tpe)
           typer
             .typed {
-              Apply(SizeOfMethod, Literal(Constant(widenedTpe)))
+              Apply(SizeOfMethod, Literal(Constant(tpe)))
             }
-            .updateAttachment(NonErasedType(widenedTpe))
+            .updateAttachment(NonErasedType(tpe))
+            .setPos(tree.pos)
+
+        // alignmentOf[T] -> alignmentOf(classOf[T]) + attachment
+        case TypeApply(fun, List(tpeArg))
+            if fun.symbol == AlignmentOfTypeMethod =>
+          val tpe = widenDealiasType(tpeArg.tpe)
+          typer
+            .typed {
+              Apply(AlignmentOfMethod, Literal(Constant(tpe)))
+            }
+            .updateAttachment(NonErasedType(tpe))
             .setPos(tree.pos)
 
         // Catch the definition of scala.Enumeration itself
@@ -205,6 +215,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         case _ =>
           super.transform(tree)
       }
+    }
   }
 
   private def isScalaEnum(implDef: ImplDef) =

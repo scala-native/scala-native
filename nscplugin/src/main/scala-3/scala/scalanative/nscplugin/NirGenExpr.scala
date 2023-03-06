@@ -1030,6 +1030,7 @@ trait NirGenExpr(using Context) {
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else if (code == SIZE_OF) genSizeOf(app)
+      else if (code == ALIGNMENT_OF) genAlignmentOf(app)
       else if (code == REFLECT_SELECTABLE_SELECTDYN)
         // scala.reflect.Selectable.selectDynamic
         genReflectiveCall(app, isSelectDynamic = true)
@@ -2190,7 +2191,15 @@ trait NirGenExpr(using Context) {
         }
     }
 
-    def genSizeOf(app: Apply): Val = {
+    def genSizeOf(app: Apply): Val =
+      genLayoutValueOf("sizeOf", buf.sizeOf(_, unwind))(app)
+    def genAlignmentOf(app: Apply): Val =
+      genLayoutValueOf("alignmentOf", buf.alignmentOf(_, unwind))(app)
+
+    private def genLayoutValueOf(
+        opType: => String,
+        toVal: nir.Position ?=> nir.Type => nir.Val
+    )(app: Apply): Val = {
       given nir.Position = app.span
       def fail(msg: => String) =
         report.error(msg, app.srcPos)
@@ -2201,20 +2210,21 @@ trait NirGenExpr(using Context) {
           app.args match {
             case Seq(Literal(cls: Constant)) =>
               val nirTpe = genType(cls.typeValue, deconstructValueTypes = false)
-              buf.sizeof(nirTpe, unwind)
+              toVal(nirTpe)
             case _ =>
               fail(
-                "Method sizeOf requires single class literal argument, if you used sizeOf[T] report it as a bug"
+                s"Method $opType(Class[_]) requires single class literal argument, if you used $opType[T] report it as a bug"
               )
           }
         case Some(tpe) if tpe.typeSymbol.isTraitOrInterface =>
           fail(
-            s"Type ${tpe.show} is a trait or interface, its size cannot be calculated"
+            s"Type ${tpe.show} is a trait or interface, its $opType cannot be calculated"
           )
         case Some(tpe) =>
           try {
             val nirTpe = genType(tpe, deconstructValueTypes = true)
-            buf.sizeof(nirTpe, unwind)
+            println(opType -> tpe.show -> nirTpe)
+            toVal(nirTpe)
           } catch {
             case ex: Throwable =>
               fail(

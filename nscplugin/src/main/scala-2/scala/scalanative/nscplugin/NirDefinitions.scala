@@ -244,6 +244,12 @@ trait NirDefinitions {
       SizeOfMethods.find(_.paramss.flatten.nonEmpty).get
     lazy val SizeOfTypeMethod =
       SizeOfMethods.find(_.paramss.flatten.isEmpty).get
+    lazy val AlignmentOfMethods =
+      getMember(IntrinsicsModule, TermName("alignmentOf")).alternatives
+    lazy val AlignmentOfMethod =
+      AlignmentOfMethods.find(_.paramss.flatten.nonEmpty).get
+    lazy val AlignmentOfTypeMethod =
+      AlignmentOfMethods.find(_.paramss.flatten.isEmpty).get
 
     lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
       getMember(_, TermName("apply"))

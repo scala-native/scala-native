@@ -124,8 +124,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Is(ty, obj), unwind)
   def copy(value: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Copy(value), unwind)
-  def sizeof(ty: Type, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Sizeof(ty), unwind)
+  def sizeOf(ty: Type, unwind: Next)(implicit pos: Position): Val =
+    let(Op.SizeOf(ty), unwind)
+  def alignmentOf(ty: Type, unwind: Next)(implicit pos: Position): Val =
+    let(Op.AlignmentOf(ty), unwind)
   def box(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Box(ty, obj), unwind)
   def unbox(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =

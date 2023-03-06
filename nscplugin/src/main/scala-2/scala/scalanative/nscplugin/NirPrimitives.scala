@@ -74,6 +74,7 @@ object NirPrimitives {
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
   final val SIZE_OF = 1 + CLASS_FIELD_RAWPTR
+  final val ALIGNMENT_OF = 1 + SIZE_OF
 }
 
 abstract class NirPrimitives {
@@ -192,5 +193,6 @@ abstract class NirPrimitives {
     addPrimitives(CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
     addPrimitives(SizeOfMethods, SIZE_OF)
+    addPrimitives(AlignmentOfMethods, ALIGNMENT_OF)
   }
 }

@@ -171,8 +171,9 @@ object Tags {
   final val AsOp = 1 + ModuleOp
   final val IsOp = 1 + AsOp
   final val CopyOp = 1 + IsOp
-  final val SizeofOp = 1 + CopyOp
-  final val BoxOp = 1 + SizeofOp
+  final val SizeOfOp = 1 + CopyOp
+  final val AlignmentOfOp = 1 + SizeOfOp
+  final val BoxOp = 1 + AlignmentOfOp
   final val UnboxOp = 1 + BoxOp
   final val DynmethodOp = 1 + UnboxOp
   final val VarOp = 1 + DynmethodOp

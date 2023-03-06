@@ -37,7 +37,7 @@ class PrepNativeInterop extends PluginPhase {
     dd.symbol.isWrappedToplevelDef
   }
 
-  private class DealiasSizeOfType(using Context) extends TypeMap {
+  private class DealiasTypeMapper(using Context) extends TypeMap {
     override def apply(tp: Type): Type =
       val sym = tp.typeSymbol
       val dealiased =
@@ -51,18 +51,30 @@ class PrepNativeInterop extends PluginPhase {
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
     val TypeApply(fun, tArgs) = tree
+    val defnNir = this.defnNir
+    def dealiasTypeMapper = DealiasTypeMapper()
 
     // sizeOf[T] -> sizeOf(classOf[T])
-    if defnNir.Intrinsics_sizeOfType == fun.symbol then
-      val typeMap = DealiasSizeOfType()
-      val tpe = typeMap(tArgs.head.tpe)
-      cpy
-        .Apply(tree)(
-          ref(defnNir.Intrinsics_sizeOf),
-          List(Literal(Constant(tpe)))
-        )
-        .withAttachment(NirDefinitions.NonErasedType, tpe)
-    else tree
+    fun.symbol match
+      case defnNir.Intrinsics_sizeOfType =>
+        val tpe = dealiasTypeMapper(tArgs.head.tpe)
+        cpy
+          .Apply(tree)(
+            ref(defnNir.Intrinsics_sizeOf),
+            List(Literal(Constant(tpe)))
+          )
+          .withAttachment(NirDefinitions.NonErasedType, tpe)
+
+      case defnNir.Intrinsics_alignmentOfType =>
+        val tpe = dealiasTypeMapper(tArgs.head.tpe)
+        cpy
+          .Apply(tree)(
+            ref(defnNir.Intrinsics_alignmentOf),
+            List(Literal(Constant(tpe)))
+          )
+          .withAttachment(NirDefinitions.NonErasedType, tpe)
+
+      case _ => tree
   }
 
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
