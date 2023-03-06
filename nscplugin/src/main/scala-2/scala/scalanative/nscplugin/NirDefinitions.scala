@@ -10,6 +10,7 @@ trait NirDefinitions {
   import rootMirror._
 
   object nirDefinitions {
+    case class NonErasedType(tpe: Type) extends PlainAttachment
 
     // Native library
 
@@ -233,8 +234,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castIntToRawPtr"))
     lazy val CastLongToRawPtrMethod =
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
-    lazy val StackallocMethod =
-      getMember(IntrinsicsModule, TermName("stackalloc"))
+    lazy val StackallocMethods =
+      getMember(IntrinsicsModule, TermName("stackalloc")).alternatives
     lazy val ClassFieldRawPtrMethod =
       getMember(IntrinsicsModule, TermName("classFieldRawPtr"))
     lazy val SizeOfMethods =
@@ -361,14 +362,6 @@ trait NirDefinitions {
       ULongClass -> getDecl(RuntimeBoxesModule, TermName("boxToULong")),
       USizeClass -> getDecl(RuntimeBoxesModule, TermName("boxToUSize"))
     )
-
-    lazy val HashMethods = Seq(
-      getDecl(BoxesRunTimeModule, TermName("hashFromObject")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromNumber")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromFloat")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromDouble")),
-      getDecl(BoxesRunTimeModule, TermName("hashFromLong"))
-    ) ++ getMember(ScalaRunTimeModule, TermName("hash")).alternatives
 
     lazy val UnboxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("unboxToBoolean")),

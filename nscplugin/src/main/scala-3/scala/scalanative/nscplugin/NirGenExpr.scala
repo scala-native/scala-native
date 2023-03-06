@@ -2192,20 +2192,35 @@ trait NirGenExpr(using Context) {
 
     def genSizeOf(app: Apply): Val = {
       given nir.Position = app.span
-      def unsupported(msg: String) =
+      def fail(msg: => String) =
         report.error(msg, app.srcPos)
         Val.Zero(Type.Size)
-      app.args match
-        case Seq(clsType: Literal) =>
-          val tpe = clsType.const.typeValue
-          if !tpe.typeSymbol.isTraitOrInterface
-          then buf.sizeof(genType(tpe), unwind)
-          else
-            unsupported(
-              s"Type ${tpe.show} is a trait or interface, its size cannot be calculated"
-            )
-        case _ =>
-          unsupported("Argument of sizeOf needs to be a class literal")
+
+      app.getAttachment(NirDefinitions.NonErasedType) match
+        case None =>
+          app.args match {
+            case Seq(Literal(cls: Constant)) =>
+              val nirTpe = genType(cls.typeValue, deconstructValueTypes = false)
+              buf.sizeof(nirTpe, unwind)
+            case _ =>
+              fail(
+                "Method sizeOf requires single class literal argument, if you used sizeOf[T] report it as a bug"
+              )
+          }
+        case Some(tpe) if tpe.typeSymbol.isTraitOrInterface =>
+          fail(
+            s"Type ${tpe.show} is a trait or interface, its size cannot be calculated"
+          )
+        case Some(tpe) =>
+          try {
+            val nirTpe = genType(tpe, deconstructValueTypes = true)
+            buf.sizeof(nirTpe, unwind)
+          } catch {
+            case ex: Throwable =>
+              fail(
+                s"Failed to generate exact NIR type of ${tpe.show} - ${ex.getMessage}"
+              )
+          }
     }
 
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol)(using
@@ -2390,7 +2405,7 @@ trait NirGenExpr(using Context) {
         if (!isAdapted) sig
         else {
           val params :+ retty = evidences
-            .map(genType)
+            .map(genType(_))
             .map(t => nir.Type.box.getOrElse(t, t)): @unchecked
           Type.Function(params, retty)
         }

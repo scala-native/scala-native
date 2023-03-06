@@ -24,8 +24,8 @@ object PrepNativeInterop {
 }
 
 class PrepNativeInterop extends PluginPhase {
-  override val runsAfter = Set(transform.PostTyper.name)
-  override val runsBefore = Set(transform.Pickler.name)
+  override val runsAfter = Set(transform.Inlining.name)
+  override val runsBefore = Set(transform.FirstTransform.name)
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
@@ -37,14 +37,26 @@ class PrepNativeInterop extends PluginPhase {
     dd.symbol.isWrappedToplevelDef
   }
 
+  private class DealiasSizeOfType(using Context) extends TypeMap {
+    override def apply(tp: Type): Type = tp.widenDealias match
+      case AppliedType(tycon, args) =>
+        AppliedType(this(tycon), args.map(this))
+      case ty => ty
+  }
+
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
     val TypeApply(fun, tArgs) = tree
-    if fun.symbol == defnNir.Intrinsics_sizeOfType then
-      // sizeOf[T] -> sizeOf(classOf[T])
-      cpy.Apply(tree)(
-        ref(defnNir.Intrinsics_sizeOf),
-        tArgs.map(tpe => Literal(Constant(tpe.tpe.finalResultType)))
-      )
+
+    // sizeOf[T] -> sizeOf(classOf[T])
+    if defnNir.Intrinsics_sizeOfType == fun.symbol then
+      val typeMap = DealiasSizeOfType()
+      val tpe = typeMap(tArgs.head.tpe)
+      cpy
+        .Apply(tree)(
+          ref(defnNir.Intrinsics_sizeOf),
+          List(Literal(Constant(tpe)))
+        )
+        .withAttachment(NirDefinitions.NonErasedType, tpe)
     else tree
   }
 

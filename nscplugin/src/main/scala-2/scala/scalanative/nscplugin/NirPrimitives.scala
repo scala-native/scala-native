@@ -125,10 +125,13 @@ abstract class NirPrimitives {
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
+    def addPrimitives(alts: Seq[Symbol], tag: Int): Unit =
+      alts.foreach(addPrimitive(_, tag))
+
     addPrimitive(BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(Array_clone, ARRAY_CLONE)
     addPrimitive(CQuoteMethod, CQUOTE)
-    addPrimitive(StackallocMethod, STACKALLOC)
+    addPrimitives(StackallocMethods, STACKALLOC)
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
@@ -142,16 +145,6 @@ abstract class NirPrimitives {
     addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
     addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
-
-    {
-      import scala.tools.nsc.settings._
-      ScalaVersion.current match {
-        case SpecificScalaVersion(2, 11, _, _) =>
-          HashMethods.foreach(addPrimitive(_, HASH))
-        case _ =>
-      }
-    }
-
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)
@@ -195,9 +188,9 @@ abstract class NirPrimitives {
     addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
     addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWSIZE)
 
-    CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
-    CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
+    addPrimitives(CFuncPtrApplyMethods, CFUNCPTR_APPLY)
+    addPrimitives(CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
-    SizeOfMethods.foreach(addPrimitive(_, SIZE_OF))
+    addPrimitives(SizeOfMethods, SIZE_OF)
   }
 }

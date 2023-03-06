@@ -2089,21 +2089,33 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genSizeOf(app: Apply)(implicit pos: nir.Position): Val = {
-      def unsupported(msg: String) = {
+      def fail(msg: => String) = {
         reporter.error(app.pos, msg)
         Val.Zero(Type.Size)
       }
-      app.args match {
-        case Seq(clsType: Literal) =>
-          val tpe = clsType.value.typeValue
-          if (!tpe.typeSymbol.isTraitOrInterface)
-            buf.sizeof(genType(tpe), unwind)
-          else
-            unsupported(
-              s"Type ${tpe} is a trait or interface, its size cannot be calculated"
-            )
-        case _ =>
-          unsupported("Argument of sizeOf needs to be a class literal")
+      app.attachments.get[NonErasedType] match {
+        case None =>
+          app.args match {
+            case Seq(Literal(cls: Constant)) =>
+              val nirTpe = genType(cls.typeValue, deconstructValueTypes = false)
+              buf.sizeof(nirTpe, unwind)
+            case _ =>
+              fail(
+                "Method sizeOf requires single class literal argument, if you used sizeOf[T] report it as a bug"
+              )
+          }
+        case Some(NonErasedType(tpe)) if tpe.sym.isTraitOrInterface =>
+          fail(
+            s"Type ${tpe} is a trait or interface, its size cannot be calculated"
+          )
+        case Some(NonErasedType(tpe)) =>
+          try {
+            val nirTpe = genType(tpe, deconstructValueTypes = true)
+            buf.sizeof(nirTpe, unwind)
+          } catch {
+            case ex: Throwable =>
+              fail(s"Failed to generate exact NIR type of $tpe - ${ex.getMessage}")
+          }
       }
     }
 

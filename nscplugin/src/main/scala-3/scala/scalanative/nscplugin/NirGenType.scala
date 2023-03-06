@@ -14,6 +14,7 @@ import core.TypeErasure._
 import dotty.tools.dotc.transform.SymUtils._
 
 import scala.scalanative.nir
+import scala.scalanative.util.unsupported
 
 trait NirGenType(using Context) {
   self: NirCodeGen =>
@@ -60,6 +61,10 @@ trait NirGenType(using Context) {
     def isStruct: Boolean =
       sym.hasAnnotation(defnNir.StructClass)
 
+    def isAnonymousStruct: Boolean = defnNir.CStructClasses.contains(sym)
+
+    def isFixedSizeArray: Boolean = sym == defnNir.CArrayClass
+
     def isUnsignedType: Boolean =
       sym.isClass && UnsignedTypes.contains(sym.asClass)
 
@@ -98,12 +103,12 @@ trait NirGenType(using Context) {
     SimpleType(sym, sym.typeParams.map(fromSymbol))
   }
   given fromType: Conversion[Type, SimpleType] = {
+    def ObjectClassType = SimpleType(defn.ObjectClass, Nil)
     _.widenDealias match {
       case ThisType(tref) =>
-        if (tref == defn.ArrayType)
-          SimpleType(defn.ObjectClass, Nil)
-        else
-          SimpleType(tref.symbol, Nil)
+        if (tref == defn.ArrayType) ObjectClassType
+        else SimpleType(tref.symbol, Nil)
+      case WildcardType => ObjectClassType
       case JavaArrayType(elemTpe) =>
         SimpleType(defn.ArrayClass, fromType(elemTpe) :: Nil)
       case ConstantType(c)            => fromType(c.tpe)
@@ -113,7 +118,7 @@ trait NirGenType(using Context) {
       case AppliedType(tycon, args) =>
         SimpleType(tycon.typeSymbol, args.map(fromType))
       case t @ TermRef(_, _) => fromType(t.info.resultType)
-      case t => throw new RuntimeException(s"unknown fromType($t)")
+      case t                 => unsupported(s"unknown fromType($t)")
     }
   }
 
@@ -144,8 +149,14 @@ trait NirGenType(using Context) {
   }
 
   @inline
-  def genType(st: SimpleType): nir.Type = {
-    PrimitiveSymbolToNirTypes.getOrElse(st.sym, genRefType(st))
+  def genType(
+      st: SimpleType,
+      deconstructValueTypes: Boolean = false
+  ): nir.Type = {
+    PrimitiveSymbolToNirTypes.getOrElse(
+      st.sym,
+      genRefType(st, deconstructValueTypes)
+    )
   }
 
   private lazy val PrimitiveSymbolToNirTypes = Map[Symbol, nir.Type](
@@ -163,7 +174,10 @@ trait NirGenType(using Context) {
     defnNir.RawSizeClass -> nir.Type.Size
   )
 
-  def genRefType(st: SimpleType): nir.Type = {
+  def genRefType(
+      st: SimpleType,
+      deconstructValueTypes: Boolean = false
+  ): nir.Type = {
     val SimpleType(sym, targs) = st
     if (sym == defn.ObjectClass) nir.Rt.Object
     else if (sym == defn.UnitClass) nir.Type.Unit
@@ -171,7 +185,14 @@ trait NirGenType(using Context) {
     else if (sym == defn.NullClass) nir.Rt.RuntimeNull
     else if (sym == defn.ArrayClass) nir.Type.Array(genType(targs.head))
     else if (sym.isStruct) genStruct(st)
-    else nir.Type.Ref(genTypeName(sym))
+    else if (deconstructValueTypes) {
+      if (sym.isAnonymousStruct) genAnonymousStruct(st)
+      else if (sym.isFixedSizeArray) genFixedSizeArray(st)
+      else {
+        val ref = nir.Type.Ref(genTypeName(st.sym))
+        nir.Type.unbox.getOrElse(nir.Type.normalize(ref), ref)
+      }
+    } else nir.Type.Ref(genTypeName(sym))
   }
 
   def genTypeValue(st: SimpleType): nir.Val =
@@ -185,6 +206,10 @@ trait NirGenType(using Context) {
         case code => genTypeValue(defnNir.RuntimePrimitive(code))
       }
 
+  private def genAnonymousStruct(st: SimpleType): nir.Type = {
+    nir.Type.StructValue(st.targs.map(genType(_, deconstructValueTypes = true)))
+  }
+
   private def genStruct(st: SimpleType): nir.Type = {
     val symInfo = st.sym.info
     // In Scala 2 we used fields to create struct type, but this seems to be broken in Scala 3 -
@@ -196,7 +221,6 @@ trait NirGenType(using Context) {
     // Since structs in the current form are a legacy feature, and are used only to
     // receive output from native function returning Struct by value (only in LLVMIntriniscs)
     // we can leave it as it is in the current, simplified form using constructor arguments
-
     def ctorParams =
       symInfo
         .member(nme.CONSTRUCTOR)
@@ -207,6 +231,25 @@ trait NirGenType(using Context) {
         .map(genType(_))
 
     nir.Type.StructValue(ctorParams)
+  }
+
+  private def genFixedSizeArray(st: SimpleType): nir.Type = {
+    def natClassToInt(st: SimpleType): Int =
+      if (st.targs.isEmpty) defnNir.NatBaseClasses.indexOf(st.sym)
+      else
+        st.targs.foldLeft(0) {
+          case (acc, st) => acc * 10 + defnNir.NatBaseClasses.indexOf(st.sym)
+        }
+
+    val SimpleType(_, Seq(elemType, size)) = st
+    val tpe = genType(elemType, deconstructValueTypes = true)
+    val elems = natClassToInt(size)
+    nir.Type
+      .ArrayValue(tpe, elems)
+      .ensuring(
+        _.n >= 0,
+        s"fixed size array size needs to be positive integer, got $size"
+      )
   }
 
   def genArrayCode(st: SimpleType): Char =

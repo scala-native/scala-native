@@ -172,6 +172,8 @@ object Intrinsics {
   /** Intrinsified resolving of memory layout size of given type */
   def sizeOf[T]: RawSize = intrinsic
 
-  /** Intrinsified resolving of memory layout size of given type */
+  /** Internal intrinsified resolving of memory layout size of given type
+   *  Accepts only class literals. Whenever possible use `sizeOf[T]` instead
+   */
   def sizeOf(cls: Class[_]): RawSize = intrinsic
 }

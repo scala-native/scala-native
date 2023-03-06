@@ -11,11 +11,13 @@ import dotty.tools.backend.jvm.DottyPrimitives
 import scala.annotation.{threadUnsafe => tu}
 import dotty.tools.dotc.parsing.Scanners.IndentWidth.Run
 import dotty.tools.dotc.core.Definitions
+import dotty.tools.dotc.util.Property.StickyKey
 import NirGenUtil.ContextCached
 
 object NirDefinitions {
   private val cached = ContextCached(NirDefinitions())
   def get(using Context): NirDefinitions = cached.get
+  object NonErasedType extends StickyKey[Type]
 }
 
 // scalafmt: { maxColumn = 120}
@@ -62,11 +64,11 @@ final class NirDefinitions()(using ctx: Context) {
   // Unsafe package
   @tu lazy val UnsafePackageVal = requiredPackage("scala.scalanative.unsafe")
   @tu lazy val UnsafePackage = UnsafePackageVal.moduleClass.asClass
-  @tu lazy val UnsafePackage_extern =  UnsafePackageVal.requiredMethod("extern")
-  @tu lazy val UnsafePackage_resolved =  UnsafePackageVal.requiredMethod("resolved")
+  @tu lazy val UnsafePackage_extern = UnsafePackageVal.requiredMethod("extern")
+  @tu lazy val UnsafePackage_resolved = UnsafePackageVal.requiredMethod("resolved")
 
   @tu lazy val CQuoteClass = UnsafePackage.requiredClass("CQuote")
-  @tu lazy val CQuote_c =  CQuoteClass.requiredMethod("c")
+  @tu lazy val CQuote_c = CQuoteClass.requiredMethod("c")
 
   @tu lazy val NatModule = requiredModule("scala.scalanative.unsafe.Nat")
   @tu lazy val NatBaseClasses = (0 to 9).map(n => NatModule.requiredClass(s"_$n"))
@@ -164,8 +166,14 @@ final class NirDefinitions()(using ctx: Context) {
       .alternatives
       .map(_.symbol)
       .ensuring(_.size == 2)
-  @tu lazy val Intrinsics_classFieldRawPtr =  IntrinsicsModule.requiredMethod("classFieldRawPtr")
-  @tu lazy val Intrinsics_sizeOf =  IntrinsicsModule.requiredMethod("sizeOf")
+  @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
+  @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info
+    .member(termName("sizeOf"))
+    .alternatives
+    .map(_.symbol)
+    .ensuring(_.size == 2)
+  @tu lazy val Intrinsics_sizeOf = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
+  @tu lazy val Intrinsics_sizeOfType = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
 
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(

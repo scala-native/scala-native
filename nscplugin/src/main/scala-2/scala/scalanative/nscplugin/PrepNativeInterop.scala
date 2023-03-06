@@ -108,10 +108,19 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         // sizeOf[T] -> sizeOf(classOf[T])
         case TypeApply(sizeOfTree, List(tpeArg))
             if sizeOfTree.symbol == SizeOfTypeMethod =>
-          val widenedTpe = tpeArg.tpe.dealias.widen
-          typer.typed {
-            Apply(SizeOfMethod, Literal(Constant(widenedTpe)))
+          // Recursivly widen and dealias all nested types (compler dealiases only top-level)
+          def widenDealiasType(tpe: Type): Type = {
+            val widened = tpe.dealias.map(_.dealias)
+            if (widened != tpe) widened.map(widenDealiasType(_))
+            else widened
           }
+          val widenedTpe = widenDealiasType(tpeArg.tpe)
+          typer
+            .typed {
+              Apply(SizeOfMethod, Literal(Constant(widenedTpe)))
+            }
+            .updateAttachment(NonErasedType(widenedTpe))
+            .setPos(tree.pos)
 
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>

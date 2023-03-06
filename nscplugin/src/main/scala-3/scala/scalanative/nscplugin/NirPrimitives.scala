@@ -149,7 +149,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defn.BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(defn.Array_clone, ARRAY_CLONE)
     addPrimitive(defnNir.CQuote_c, CQUOTE)
-    addPrimitive(defnNir.Intrinsics_stackalloc, STACKALLOC)
+    addPrimitives(defnNir.Intrinsics_stackalloc, STACKALLOC)
     addPrimitive(defnNir.Intrinsics_divUInt, DIV_UINT)
     addPrimitive(defnNir.Intrinsics_divULong, DIV_ULONG)
     addPrimitive(defnNir.Intrinsics_remUInt, REM_UINT)
@@ -205,7 +205,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitives(defnNir.CFuncPtr_apply, CFUNCPTR_APPLY)
     addPrimitives(defnNir.CFuncPtr_fromScalaFunction, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
-    addPrimitive(defnNir.Intrinsics_sizeOf, SIZE_OF)
+    addPrimitives(defnNir.Intrinsics_sizeOfAlts, SIZE_OF)
     addPrimitive(
       defnNir.ReflectSelectable_selectDynamic,
       REFLECT_SELECTABLE_SELECTDYN
