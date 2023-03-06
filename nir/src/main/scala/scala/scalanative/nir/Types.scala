@@ -17,11 +17,11 @@ sealed abstract class Type {
   }
 
   def hasKnownSize: Boolean = this match {
-    case Type.Null | Type.Ptr => true
-    case _: Type.RefKind                  => false
-    case Type.ArrayValue(ty, _)           => ty.hasKnownSize
-    case Type.StructValue(tys)            => tys.forall(_.hasKnownSize)
-    case _                                => true
+    case Type.Null | Type.Ptr   => true
+    case _: Type.RefKind        => false
+    case Type.ArrayValue(ty, _) => ty.hasKnownSize
+    case Type.StructValue(tys)  => tys.forall(_.hasKnownSize)
+    case _                      => true
   }
 
   final def show: String = nir.Show(this)

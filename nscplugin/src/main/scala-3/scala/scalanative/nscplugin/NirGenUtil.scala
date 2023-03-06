@@ -32,7 +32,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     defnNir.NullClassTag -> defn.NullClass
   )
 
-  private lazy val materializePrimitiveTypeMethodTypes: Map[Symbol, ClassSymbol] = Map(
+  private lazy val materializePrimitiveTypeMethodTypes
+      : Map[Symbol, ClassSymbol] = Map(
     defnNir.UnsafeTag_materializeUnitTag -> defn.UnitClass,
     defnNir.UnsafeTag_materializeByteTag -> defn.ByteClass,
     defnNir.UnsafeTag_materializeBooleanTag -> defn.BooleanClass,

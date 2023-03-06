@@ -378,7 +378,7 @@ trait Eval { self: Interflow =>
         if (ty.hasKnownSize) Val.Size(MemoryLayout.sizeOf(ty))
         else emit(op)
       case Op.AlignmentOf(ty) =>
-         Val.Size(MemoryLayout.alignmentOf(ty))
+        Val.Size(MemoryLayout.alignmentOf(ty))
       case Op.Box(boxty @ Type.Ref(boxname, _, _), value) =>
         // Pointer boxes are special because null boxes to null,
         // which breaks the invariant that all virtual allocations

@@ -32,7 +32,9 @@ object CodeGen {
     emit(config, lowered)
   }
 
-  private def lower(defns: Seq[Defn])(implicit meta: Metadata, logger: build.Logger): Seq[Defn] = {
+  private def lower(
+      defns: Seq[Defn]
+  )(implicit meta: Metadata, logger: build.Logger): Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     partitionBy(defns)(_.name).par
