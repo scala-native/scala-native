@@ -133,7 +133,7 @@ private[codegen] abstract class AbstractCodeGen(
       val mn = mangled(defn.name)
       if (!generated.contains(mn)) {
         newline()
-        if (defn.pos != Position.NoPosition)
+        if (defn.pos.isDefined)
           dwf.fileFromPosition(defn.pos)
         genDefn(defn)
         generated += mn
@@ -280,7 +280,7 @@ private[codegen] abstract class AbstractCodeGen(
       if (!isDecl && config.debugMetadata)
         dwarfFunctionDefine(pos, name, retty, argtys)
       else None
-    
+
     debugInfo.foreach { dbg =>
       str(s" !dbg !${dbg.id}")
     }

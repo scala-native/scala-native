@@ -442,9 +442,10 @@ object Build {
     MultiScalaProject("sandbox", file("sandbox"))
       .enablePlugins(MyScalaNativePlugin)
       .settings(nativeConfig ~= { c =>
-        c.withCompileOptions(c.compileOptions :+ "-g")
-          .withLinkingOptions(c.linkingOptions :+ "-g")
+        c
           .withDebugMetadata(true)
+          .withCompileOptions(c.compileOptions :+ "-g")
+          .withLinkingOptions(c.linkingOptions :+ "-g")
       })
       .withNativeCompilerPlugin
       .withJUnitPlugin
@@ -825,5 +826,4 @@ object Build {
       }
     }
   }
-
 }

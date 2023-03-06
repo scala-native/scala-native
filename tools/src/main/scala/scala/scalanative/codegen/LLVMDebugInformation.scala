@@ -10,19 +10,17 @@ import scala.reflect.ClassTag
 
 private[llvm] trait GenIdx {
   def id(tok: DebugInformationSection.Token): Int
-  def gen: DebugInformationSection.Token
+  def gen(): DebugInformationSection.Token
 }
 private[llvm] object GenIdx {
   def create = new GenIdx {
     private val mp = collection.mutable.Map.empty[Token, Int]
     override def id(tok: Token): Int = mp(tok)
-    override def gen: Token = {
+    override def gen(): Token = {
       val newVal = new Token
       val newIdx = mp.size
 
-      mp.synchronized {
-        mp.update(newVal, newIdx)
-      }
+      mp.update(newVal, newIdx)
 
       newVal
     }
@@ -246,35 +244,31 @@ object DebugInformationSection {
       s"!${dwf.gidx.id(this)}"
   }
   class Builder(val gidx: GenIdx) {
-    private val b = collection.mutable.Map
+    private val b = collection.concurrent.TrieMap
       .empty[Global, Incr[LLVMDebugInformation]]
 
     private val anon =
       collection.mutable.ListBuffer.empty[Incr[LLVMDebugInformation]]
 
-    private val globals = collection.mutable.Map
+    private val globals = collection.concurrent.TrieMap
       .empty[LLVMDebugInformation, Incr[LLVMDebugInformation]]
 
     private val keyCache =
-      collection.mutable.Map.empty[Any, Incr[LLVMDebugInformation]]
+      collection.concurrent.TrieMap.empty[Any, Incr[LLVMDebugInformation]]
 
     def register[T <: LLVMDebugInformation](in: Global, dwarf: T): Incr[T] = {
-      val newTok = gidx.gen
-      b.synchronized {
-        if (b.contains(in))
-          throw new Exception(s"[dwarf] attempt to overwrite `$in` key")
+      val newTok = gidx.gen()
+      if (b.contains(in))
+        throw new Exception(s"[dwarf] attempt to overwrite `$in` key")
 
-        val computed = Incr(newTok, dwarf)
-        b.update(in, computed)
+      val computed = Incr(newTok, dwarf)
+      b.update(in, computed)
 
-        computed
-      }
+      computed
     }
 
     def put(in: Global, dwarf: Incr[LLVMDebugInformation]) = {
-      b.synchronized {
-        b.update(in, dwarf)
-      }
+      b.update(in, dwarf)
     }
 
     def fileFromPosition(
@@ -319,9 +313,7 @@ object DebugInformationSection {
       )
 
     def cached[T <: LLVMDebugInformation](in: LLVMDebugInformation): Incr[T] =
-      globals.synchronized {
-        globals.getOrElseUpdate(in, Incr(gidx.gen, in)).asInstanceOf[Incr[T]]
-      }
+      globals.getOrElseUpdate(in, Incr(gidx.gen(), in)).asInstanceOf[Incr[T]]
 
     def cachedBy[K, T <: LLVMDebugInformation](
         k: K,
@@ -329,14 +321,12 @@ object DebugInformationSection {
     )(implicit
         ct: ClassTag[T]
     ): Incr[T] =
-      keyCache.synchronized {
-        keyCache
-          .getOrElseUpdate(k -> ct, Incr(gidx.gen, in))
-          .asInstanceOf[Incr[T]]
-      }
+      keyCache
+        .getOrElseUpdate(k -> ct, Incr(gidx.gen(), in))
+        .asInstanceOf[Incr[T]]
 
     def anon[T <: LLVMDebugInformation](dwarf: T): Incr[T] = {
-      val newTok = gidx.gen
+      val newTok = gidx.gen()
       val res = Incr(newTok, dwarf)
 
       anon += res
