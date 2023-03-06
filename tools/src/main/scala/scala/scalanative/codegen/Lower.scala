@@ -972,8 +972,9 @@ object Lower {
       val size = op.ty match {
         case ClassRef(cls) =>
           if (!cls.allocated) {
+            val Global.Top(clsName) = cls.name: @unchecked
             logger.warn(
-              s"Referencing size of non allocated type ${cls.name} in ${pos.show}"
+              s"Referencing size of non allocated type ${clsName} in ${pos.show}"
             )
           }
           meta.layout(cls).size

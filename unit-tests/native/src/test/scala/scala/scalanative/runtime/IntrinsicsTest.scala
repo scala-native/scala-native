@@ -3,12 +3,43 @@ package scala.scalanative.runtime
 import org.junit.Test
 import org.junit.Assert
 import org.junit.Assert._
-import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+import scala.scalanative.meta.LinktimeInfo._
 import scala.language.implicitConversions
 import scala.scalanative.unsigned._
 import scala.scalanative.runtime.struct
 import scala.scalanative.unsafe.{Ptr, CArray}
 import scala.scalanative.unsafe.{CStruct1, CStruct2, CStruct3, CStruct4}
+import scala.scalanative.runtime.sizeOfPtr
+
+private object IntrinsicsTest {
+  object sizeOfClassTypes {
+    def outer = this
+    class A()
+    class B(a: Int = 0) { override def toString(): String = s"{$a}" }
+    class C(a: Long = 0L) { override def toString(): String = s"{$a}" }
+    class C2(a: Int = 0, b: Int = 0) {
+      override def toString(): String = s"{$a,$b}"
+    }
+    class D(a: Int = 0, b: Long = 0L) {
+      override def toString(): String = s"{$a,$b}"
+    }
+    class E(a: Int = 0, b: Long = 0, c: String = "") {
+      override def toString(): String = s"{$a,$b,$c}"
+    }
+    object E extends E(0, 0, ""){
+      val outerRef = outer
+      assert(outerRef != null)
+    }
+    class F(a: String = "") {
+      override def toString(): String = s"{$a}"
+    }
+
+    // Make sure each type and it's fields are reachable to prevent elimination of unused fields
+    def init() = Seq(new A(), new B(), new C(), new C2(), new D(), new E(), E, new F())
+      .map(_.toString())
+      .foreach(e => assert(e != null))
+  }
+}
 
 class IntrinsicsTest {
 
@@ -139,40 +170,22 @@ class IntrinsicsTest {
   }
 
   @Test def sizeOfClassTest(): Unit = {
-    case class Entry(actualSize: Int, fieldsSize64: Int, fieldsSize32: Int)
-    class A()
-    class B(a: Int = 0) { override def toString(): String = s"{$a}" }
-    class C(a: Long = 0L) { override def toString(): String = s"{$a}" }
-    class C2(a: Int = 0, b: Int = 0) {
-      override def toString(): String = s"{$a,$b}"
-    }
-    class D(a: Int = 0, b: Long = 0L) {
-      override def toString(): String = s"{$a,$b}"
-    }
-    class E(a: Int = 0, b: Long = 0, c: String = "") {
-      override def toString(): String = s"{$a,$b,$c}"
-    }
-    object E extends E(0, 0, "")
-    class F(a: String = "") {
-      override def toString(): String = s"{$a}"
-    }
-    // Make sure each type and it's fields are reachable to prevent elimination of unused fields
-    Seq(new A(), new B(), new C(), new C2(), new D(), new E(), E, new F())
-      .map(_.toString())
-
     import scala.scalanative.runtime.Intrinsics._
+    import IntrinsicsTest.sizeOfClassTypes._
+    init()
+
     implicit def rawSizeToInt(size: RawSize): Int = castRawSizeToInt(size)
+
+    case class Entry(actualSize: Int, fieldsSize64: Int, fieldsSize32: Int)
+    val SizeOfPtr = scalanative.runtime.sizeOfPtr: Int
+    val ClassHeaderSize =
+      if (isMultithreadingEnabled) 2 * SizeOfPtr
+      else SizeOfPtr
 
     assertEquals(4, sizeOf[Int]: Int)
     assertEquals(8, sizeOf[Long]: Int)
-    // unsafe.sizeof is based on the Tag[_].size
-    assertNotEquals(
-      scala.scalanative.unsafe.sizeof[String].toInt, // sizeOf[Ptr]
-      scala.scalanative.runtime.Intrinsics
-        .sizeOf[String]: Int // based on fields
-    )
+    assertEquals(SizeOfPtr, sizeOf[Ptr[_]]: Int)
 
-    val ClassHeaderSize = if (is32BitPlatform) 4 else 8
     for {
       Entry(actual, fieldsSize64, fieldsSize32) <- Seq(
         Entry(sizeOf[A], 0, 0),
@@ -187,7 +200,11 @@ class IntrinsicsTest {
       )
       fieldsSize = if (is32BitPlatform) fieldsSize32 else fieldsSize64
       expected = ClassHeaderSize + fieldsSize
-    } assertEquals(expected, actual)
+    } assertEquals(
+      s"fieldsSize=${fieldsSize64}/${fieldsSize32}, total=$expected",
+      expected,
+      actual
+    )
   }
 
   @Test def alignmentOfTest(): Unit = {
