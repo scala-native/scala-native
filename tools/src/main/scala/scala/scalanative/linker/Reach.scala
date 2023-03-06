@@ -800,6 +800,10 @@ class Reach(
     case Op.Stackalloc(ty, v) =>
       reachType(ty)
       reachVal(v)
+      ty match {
+        case ref: Type.RefKind => classInfo(ref.className).foreach(reachAllocation)
+        case _                    => ()
+      }
     case Op.Bin(bin, ty, lv, rv) =>
       reachType(ty)
       reachVal(lv)

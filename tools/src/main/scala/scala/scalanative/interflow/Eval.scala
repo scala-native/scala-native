@@ -375,14 +375,7 @@ trait Eval { self: Interflow =>
       case Op.Copy(v) =>
         eval(v)
       case Op.Sizeof(ty) =>
-        def canEval(ty: Type): Boolean = ty match {
-          case Type.ArrayValue(ty, _)  => canEval(ty)
-          case Type.StructValue(types) => types.forall(canEval)
-          case Type.Null               => true
-          case _: Type.ValueKind       => true
-          case _                       => false
-        }
-        if (canEval(ty)) Val.Size(MemoryLayout.sizeOf(ty))
+        if (ty.hasKnownSize) Val.Size(MemoryLayout.sizeOf(ty))
         else emit(op)
       case Op.Box(boxty @ Type.Ref(boxname, _, _), value) =>
         // Pointer boxes are special because null boxes to null,

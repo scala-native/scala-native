@@ -9,10 +9,10 @@ import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
 
-  def apply(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] =
+  def apply(defns: Seq[Defn])(implicit meta: Metadata, logger: build.Logger): Seq[Defn] =
     (new Impl).onDefns(defns)
 
-  private final class Impl(implicit meta: Metadata) extends Transform {
+  private final class Impl(implicit meta: Metadata, logger: build.Logger) extends Transform {
     import meta._
     import meta.config
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
@@ -970,9 +970,15 @@ object Lower {
     def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof)(implicit
         pos: Position
     ): Unit = {
-      val Op.Sizeof(ty) = op
-      val memorySize = MemoryLayout.sizeOf(ty, Some(meta))
-      buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
+      val size = op.ty match {
+        case ClassRef(cls) => 
+          if(!cls.allocated){
+            logger.warn(s"Referencing size of non allocated type ${cls.name} in ${pos.show}")
+          }
+          meta.layout(cls).size
+        case _             => MemoryLayout.sizeOf(op.ty)
+      }
+      buf.let(n, Op.Copy(Val.Size(size)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
@@ -980,7 +986,7 @@ object Lower {
     ): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op: @unchecked
 
-      val size = MemoryLayout.sizeOf(layout(cls).struct)
+      val size = meta.layout(cls).size
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 
