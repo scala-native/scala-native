@@ -2223,7 +2223,6 @@ trait NirGenExpr(using Context) {
         case Some(tpe) =>
           try {
             val nirTpe = genType(tpe, deconstructValueTypes = true)
-            println(opType -> tpe.show -> nirTpe)
             toVal(nirTpe)
           } catch {
             case ex: Throwable =>
