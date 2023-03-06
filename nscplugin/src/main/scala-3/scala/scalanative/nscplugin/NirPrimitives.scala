@@ -214,7 +214,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       defnNir.ReflectSelectable_applyDynamic,
       REFLECT_SELECTABLE_APPLYDYN
     )
-    defnNir.RuntimeSafeZone_allocate.foreach(addPrimitive(_, SAFEZONE_ALLOC))
+    defnNir.RuntimeSafeZoneAllocator_allocate.foreach(addPrimitive(_, SAFEZONE_ALLOC))
     primitives
   }
 }

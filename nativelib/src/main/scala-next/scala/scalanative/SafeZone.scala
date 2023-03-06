@@ -4,27 +4,27 @@ import language.experimental.captureChecking
 import scalanative.unsigned._
 import scala.annotation.implicitNotFound
 import scala.scalanative.runtime.{RawPtr, CZone}
-import scala.scalanative.runtime.SafeZone.allocate
+import scala.scalanative.runtime.SafeZoneAllocator.allocate
 
 @implicitNotFound("Given method requires an implicit zone.")
 trait SafeZone {
 
-  /** Return this zone allocator is open or not. */
+  /** Return this zone is open or not. */
   def isOpen: Boolean
 
-  /** Return this zone allocator is closed or not. */
+  /** Return this zone is closed or not. */
   def isClosed: Boolean = !isOpen
 
-  /** Require this zone allocator is open. */
+  /** Require this zone is open. */
   def checkOpen(): Unit = {
     if (!isOpen)
       throw new IllegalStateException(s"Zone ${this} is already closed.")
   }
 
-  /** Frees allocations. This zone allocator is not reusable once closed. */
+  /** Frees allocations. This zone is not reusable once closed. */
   private[scalanative] def close(): Unit
 
-  /** Return the handle of this zone allocator. */
+  /** Return the handle of this zone. */
   private[scalanative] def handle: RawPtr
 
   /** Allocates an object in this zone. The expression of obj must be an instance creation expression. */

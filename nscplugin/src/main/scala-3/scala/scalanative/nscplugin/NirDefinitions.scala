@@ -165,10 +165,10 @@ final class NirDefinitions()(using ctx: Context) {
   def RuntimeMonitor_enter(using Context) = RuntimeMonitor_enterR.symbol
   def RuntimeMonitor_exit(using Context) = RuntimeMonitor_exitR.symbol
 
-  @tu lazy val RuntimeSafeZoneModuleRef = requiredModuleRef("scala.scalanative.runtime.SafeZone")
-  @tu lazy val RuntimeSafeZoneModule = RuntimeSafeZoneModuleRef.symbol
-  @tu lazy val RuntimeSafeZone_allocate =
-    try Some(RuntimeSafeZoneModule.requiredMethod("allocate"))
+  @tu lazy val RuntimeSafeZoneAllocatorModuleRef = requiredModuleRef("scala.scalanative.runtime.SafeZoneAllocator")
+  @tu lazy val RuntimeSafeZoneAllocatorModule = RuntimeSafeZoneAllocatorModuleRef.symbol
+  @tu lazy val RuntimeSafeZoneAllocator_allocate =
+    try Some(RuntimeSafeZoneAllocatorModule.requiredMethod("allocate"))
     catch { case _: dotty.tools.dotc.core.TypeError => None }
 
   // Runtime intriniscs

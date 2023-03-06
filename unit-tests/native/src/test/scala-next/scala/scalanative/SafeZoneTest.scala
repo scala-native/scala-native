@@ -6,7 +6,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scala.util.{Try,Success,Failure}
 import scala.language.experimental.captureChecking
-import scala.scalanative.runtime.SafeZone.allocate
+import scala.scalanative.runtime.SafeZoneAllocator.allocate
 import scala.scalanative.SafeZone
 import scala.scalanative.SafeZone._
 

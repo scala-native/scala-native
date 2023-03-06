@@ -20,7 +20,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.SafeZone
-      |import scala.scalanative.runtime.SafeZone.allocate
+      |import scala.scalanative.runtime.SafeZoneAllocator.allocate
       |
       |class A (v: Int = 0) {}
       |
@@ -40,7 +40,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.SafeZone
-        |import scala.scalanative.runtime.SafeZone.allocate
+        |import scala.scalanative.runtime.SafeZoneAllocator.allocate
         |
         |class A (v: Int = 0) {}
         |class B (a: {*} A) {}
@@ -63,7 +63,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.SafeZone
-      |import scala.scalanative.runtime.SafeZone.allocate
+      |import scala.scalanative.runtime.SafeZoneAllocator.allocate
       |
       |class A (v: Int = 0) {}
       |class B (a: {*} A) {}
@@ -89,7 +89,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.SafeZone
-        |import scala.scalanative.runtime.SafeZone.allocate
+        |import scala.scalanative.runtime.SafeZoneAllocator.allocate
         |
         |class A (v: Int = 0) {}
         |class B (a: {*} A) {}

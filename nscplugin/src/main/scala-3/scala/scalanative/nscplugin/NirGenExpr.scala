@@ -2113,7 +2113,7 @@ trait NirGenExpr(using Context) {
         case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
         case _ =>
           report.error(
-            s"Unexpected tree in scala.scalanative.runtime.SafeZone.allocate: `${tree}`",
+            s"Unexpected tree in scala.scalanative.runtime.SafeZoneAllocator.allocate: `${tree}`",
             tree.srcPos
           )
       }
