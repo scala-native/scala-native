@@ -9,10 +9,13 @@ import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
 
-  def apply(defns: Seq[Defn])(implicit meta: Metadata, logger: build.Logger): Seq[Defn] =
+  def apply(
+      defns: Seq[Defn]
+  )(implicit meta: Metadata, logger: build.Logger): Seq[Defn] =
     (new Impl).onDefns(defns)
 
-  private final class Impl(implicit meta: Metadata, logger: build.Logger) extends Transform {
+  private final class Impl(implicit meta: Metadata, logger: build.Logger)
+      extends Transform {
     import meta._
     import meta.config
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
@@ -401,7 +404,7 @@ object Lower {
           genUnboxOp(buf, n, op)
         case op: Op.Module =>
           genModuleOp(buf, n, op)
-        case Op.Var(_)                                  => () // Already emmited
+        case Op.Var(_) => () // Already emmited
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
@@ -967,12 +970,14 @@ object Lower {
         pos: Position
     ): Unit = {
       val size = op.ty match {
-        case ClassRef(cls) => 
-          if(!cls.allocated){
-            logger.warn(s"Referencing size of non allocated type ${cls.name} in ${pos.show}")
+        case ClassRef(cls) =>
+          if (!cls.allocated) {
+            logger.warn(
+              s"Referencing size of non allocated type ${cls.name} in ${pos.show}"
+            )
           }
           meta.layout(cls).size
-        case _             => MemoryLayout.sizeOf(op.ty)
+        case _ => MemoryLayout.sizeOf(op.ty)
       }
       buf.let(n, Op.Copy(Val.Size(size)), unwind)
     }
