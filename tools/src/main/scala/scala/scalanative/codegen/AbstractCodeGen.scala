@@ -229,14 +229,12 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genFunctionReturnType(
       retty: Type
-  )(implicit sb: ShowBuilder): Unit = {
-    retty match {
-      case refty: Type.RefKind =>
-        genReferenceTypeAttribute(refty)
-      case _ =>
-        ()
-    }
-    genType(retty)
+  )(implicit sb: ShowBuilder): Unit = retty match {
+    case refty: Type.RefKind if refty != Type.Unit =>
+      genReferenceTypeAttribute(refty)
+      genType(retty)
+    case _ =>
+      genType(retty)
   }
 
   private[codegen] def genReferenceTypeAttribute(
@@ -310,6 +308,7 @@ private[codegen] abstract class AbstractCodeGen(
     if (!block.isEntry) {
       val params = block.params
       params.zipWithIndex.foreach {
+        case (Val.Local(name, Type.Unit), n) => () // skip
         case (Val.Local(name, ty), n) =>
           newline()
           str("%")
@@ -367,6 +366,7 @@ private[codegen] abstract class AbstractCodeGen(
     import sb._
     ty match {
       case Type.Vararg => str("...")
+      case Type.Unit   => str("void")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
         str(pointerType)
       case Type.Bool          => str("i1")

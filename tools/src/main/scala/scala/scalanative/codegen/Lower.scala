@@ -169,7 +169,11 @@ object Lower {
         case inst @ Inst.Ret(v) =>
           implicit val pos: Position = inst.pos
           genGCSafepoint(buf)
-          buf += Inst.Ret(genVal(buf, v))
+          val retVal = v.ty match {
+            case Type.Unit => Val.Unit
+            case _         => genVal(buf, v)
+          }
+          buf += Inst.Ret(retVal)
 
         case inst @ Inst.Jump(next) =>
           implicit val pos: Position = inst.pos
@@ -207,7 +211,14 @@ object Lower {
 
       buf ++= handlers
 
-      eliminateDeadCode(buf.toSeq.map(super.onInst))
+      eliminateDeadCode(buf.toSeq.map(onInst))
+    }
+
+    override def onInst(inst: Inst): Inst = {
+      inst match {
+        case Inst.Ret(v) if v.ty == Type.Unit => inst
+        case _                                => super.onInst(inst)
+      }
     }
 
     override def onVal(value: Val): Val = value match {
