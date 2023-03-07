@@ -205,15 +205,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       locally {
         buf.label(thenn)(thenp.pos)
         val thenv = genExpr(thenp)
-        buf.jump(mergen, Seq(thenv))
+        buf.jumpExcludeUnitValue(mergev.ty)(mergen, thenv)
       }
       locally {
         buf.label(elsen)(elsep.pos)
         val elsev = genExpr(elsep)
-        buf.jump(mergen, Seq(elsev))
+        buf.jumpExcludeUnitValue(mergev.ty)(mergen, elsev)
       }
-      buf.label(mergen, Seq(mergev))
-      mergev
+      buf.labelExcludeUnitValue(mergen, mergev)
     }
 
     def genMatch(m: Match): Val = {
@@ -261,15 +260,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val scrut = genExpr(scrutp)
         buf.switch(scrut, defaultnext, casenexts)
         buf.label(defaultnext.name)(defaultp.pos)
-        buf.jump(merge, Seq(genExpr(defaultp)))(defaultp.pos)
+        buf.jumpExcludeUnitValue(mergev.ty)(merge, genExpr(defaultp))(
+          defaultp.pos
+        )
         caseps.foreach {
           case (n, _, expr, pos) =>
             buf.label(n)(pos)
             val caseres = genExpr(expr)
-            buf.jump(merge, Seq(caseres))(pos)
+            buf.jumpExcludeUnitValue(mergev.ty)(merge, caseres)(pos)
         }
-        buf.label(merge, Seq(mergev))
-        mergev
+        buf.labelExcludeUnitValue(merge, mergev)
       }
 
       def genIfsChain(): Val = {
@@ -378,13 +378,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         scoped(curUnwindHandler := Some(handler)) {
           nested.label(normaln)
           val res = nested.genExpr(expr)
-          nested.jump(mergen, Seq(res))
+          nested.jumpExcludeUnitValue(mergev.ty)(mergen, res)
         }
       }
       locally {
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)(expr.pos)
-        nested.jump(mergen, Seq(res))
+        nested.jumpExcludeUnitValue(mergev.ty)(mergen, res)
       }
 
       // Append finally to the try/catch instructions and merge them back.
@@ -398,8 +398,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // Append try/catch instructions to the outher instruction buffer.
       buf.jump(Next(normaln))
       buf ++= insts
-      buf.label(mergen, Seq(mergev))
-      mergev
+      buf.labelExcludeUnitValue(mergen, mergev)
     }
 
     def genTryCatch(
@@ -424,7 +423,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               curMethodEnv.enter(sym, cast)
             }
             val res = genExpr(body)
-            buf.jump(mergen, Seq(res))
+            buf.jumpExcludeUnitValue(retty)(mergen, res)
             Val.Unit
           }
           (excty, f, exprPos)
@@ -2141,14 +2140,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         treeBuild.mkMethodCall(RuntimeEnterMonitorMethod, List(receiverp))
       )
       // synchronized block
-      val retty = {
-        scoped(curUnwindHandler := Some(handler)) {
-          nested.label(normaln)
-          val res = bodyGen(nested)
-          nested.jump(mergen, Seq(res))
-          res.ty
-        }
+      val retValue = scoped(curUnwindHandler := Some(handler)) {
+        nested.label(normaln)
+        bodyGen(nested)
       }
+      val retty = retValue.ty
+      nested.jumpExcludeUnitValue(retty)(mergen, retValue)
 
       // dummy exception handler,
       // monitor$.exit() call would be added to it in genTryFinally transformer
@@ -2156,7 +2153,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val excv = Val.Local(fresh(), Rt.Object)
         nested.label(handler, Seq(excv))
         nested.raise(excv, unwind)
-        nested.jump(mergen, Seq(Val.Zero(retty)))
+        nested.jumpExcludeUnitValue(retty)(mergen, Val.Zero(retty))
       }
 
       // Append try/catch instructions to the outher instruction buffer.
@@ -2168,8 +2165,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         insts = nested.toSeq
       )
       val mergev = Val.Local(fresh(), retty)
-      buf.label(mergen, Seq(mergev))
-      mergev
+      buf.labelExcludeUnitValue(mergen, mergev)
     }
 
     def genCoercion(app: Apply, receiver: Tree, code: Int): Val = {
@@ -2558,5 +2554,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] = {
       argsp.map(genExpr)
     }
+
+    private def labelExcludeUnitValue(label: Local, value: nir.Val.Local)(
+        implicit pos: nir.Position
+    ): nir.Val =
+      value.ty match {
+        case Type.Unit => buf.label(label); Val.Unit
+        case _         => buf.label(label, Seq(value)); value
+      }
+
+    private def jumpExcludeUnitValue(
+        mergeType: nir.Type
+    )(label: Local, value: nir.Val)(implicit pos: nir.Position): Unit =
+      mergeType match {
+        case Type.Unit => buf.jump(label, Nil)
+        case _         => buf.jump(label, Seq(value))
+      }
   }
 }
