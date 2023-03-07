@@ -429,6 +429,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.True     => str("true")
       case Val.False    => str("false")
       case Val.Null     => str("null")
+      case Val.Unit     => str("void")
       case Val.Zero(ty) => str("zeroinitializer")
       case Val.Byte(v)  => str(v)
       case Val.Size(v) =>
@@ -508,8 +509,10 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genVal(value: Val)(implicit sb: ShowBuilder): Unit = {
     import sb._
-    genType(value.ty)
-    str(" ")
+    if (value.ty != Type.Unit) {
+      genType(value.ty)
+      str(" ")
+    }
     genJustVal(value)
   }
 
