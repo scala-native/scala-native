@@ -1154,38 +1154,29 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code)) {
         genSimpleOp(app, receiver :: args, code)
-      } else if (code == CONCAT) {
+      } else if (code == CONCAT)
         genStringConcat(receiver, args.head)
-      } else if (code == HASH) {
-        genHashCode(args.head)
-      } else if (isArrayOp(code) || code == ARRAY_CLONE) {
-        genArrayOp(app, code)
-      } else if (nirPrimitives.isRawPtrOp(code)) {
-        genRawPtrOp(app, code)
-      } else if (nirPrimitives.isRawPtrCastOp(code)) {
-        genRawPtrCastOp(app, code)
-      } else if (code == CFUNCPTR_APPLY) {
-        genCFuncPtrApply(app, code)
-      } else if (code == CFUNCPTR_FROM_FUNCTION) {
-        genCFuncFromScalaFunction(app)
-      } else if (nirPrimitives.isRawSizeCastOp(code)) {
+      else if (code == HASH) genHashCode(args.head)
+      else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
+      else if (nirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
+      else if (nirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app, code)
+      else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app, code)
+      else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
+      else if (nirPrimitives.isRawSizeCastOp(code))
         genRawSizeCastOp(app, args.head, code)
-      } else if (isCoercion(code)) {
-        genCoercion(app, receiver, code)
-      } else if (code == SYNCHRONIZED) {
+      else if (isCoercion(code)) genCoercion(app, receiver, code)
+      else if (code == SYNCHRONIZED) {
         val Apply(Select(receiverp, _), List(argp)) = app
         genSynchronized(receiverp, argp)(app.pos)
-      } else if (code == STACKALLOC) {
-        genStackalloc(app)
-      } else if (code == CQUOTE) {
-        genCQuoteOp(app)
-      } else if (code == BOXED_UNIT) {
-        Val.Unit
-      } else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE) {
+      } else if (code == STACKALLOC) genStackalloc(app)
+      else if (code == CQUOTE) genCQuoteOp(app)
+      else if (code == BOXED_UNIT) Val.Unit
+      else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE)
         genUnsignedOp(app, code)
-      } else if (code == CLASS_FIELD_RAWPTR) {
-        genClassFieldRawPtr(app)
-      } else {
+      else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
+      else if (code == SIZE_OF) genSizeOf(app)
+      else if (code == ALIGNMENT_OF) genAlignmentOf(app)
+      else {
         abort(
           "Unknown primitive operation: " + sym.fullName + "(" +
             fun.symbol.simpleName + ") " + " at: " + (app.pos)
@@ -2084,6 +2075,48 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           Val.Int(-1)
         }
 
+    }
+
+    def genSizeOf(app: Apply)(implicit pos: nir.Position): Val =
+      genLayoutValueOf("sizeOf", buf.sizeOf(_, unwind))(app)
+
+    def genAlignmentOf(app: Apply)(implicit pos: nir.Position): Val =
+      genLayoutValueOf("alignmentOf", buf.alignmentOf(_, unwind))(app)
+
+    // used as internal implementation of sizeOf / alignmentOf
+    private def genLayoutValueOf(opType: String, toVal: nir.Type => Val)(
+        app: Apply
+    )(implicit pos: nir.Position): Val = {
+      def fail(msg: => String) = {
+        reporter.error(app.pos, msg)
+        Val.Zero(Type.Size)
+      }
+      app.attachments.get[NonErasedType] match {
+        case None =>
+          app.args match {
+            case Seq(Literal(cls: Constant)) =>
+              val nirTpe = genType(cls.typeValue, deconstructValueTypes = false)
+              toVal(nirTpe)
+            case _ =>
+              fail(
+                s"Method $opType(Class[_]) requires single class literal argument, if you used $opType[T] report it as a bug"
+              )
+          }
+        case Some(NonErasedType(tpe)) if tpe.sym.isTraitOrInterface =>
+          fail(
+            s"Type ${tpe} is a trait or interface, $opType cannot be calculated"
+          )
+        case Some(NonErasedType(tpe)) =>
+          try {
+            val nirTpe = genType(tpe, deconstructValueTypes = true)
+            toVal(nirTpe)
+          } catch {
+            case ex: Throwable =>
+              fail(
+                s"Failed to generate exact NIR type of $tpe - ${ex.getMessage}"
+              )
+          }
+      }
     }
 
     def genSynchronized(receiverp: Tree, bodyp: Tree)(implicit

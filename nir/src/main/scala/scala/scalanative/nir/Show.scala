@@ -338,8 +338,12 @@ object Show {
       case Op.Copy(value) =>
         str("copy ")
         val_(value)
-      case Op.Sizeof(ty) =>
-        str("sizeof[")
+      case Op.SizeOf(ty) =>
+        str("sizeOf[")
+        type_(ty)
+        str("] ")
+      case Op.AlignmentOf(ty) =>
+        str("alignmentOf[")
         type_(ty)
         str("] ")
       case Op.Box(ty, v) =>

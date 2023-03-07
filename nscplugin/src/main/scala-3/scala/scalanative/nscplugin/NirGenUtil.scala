@@ -11,6 +11,7 @@ import scalanative.util.unsupported
 import scalanative.util.ScopedVar.scoped
 import scalanative.nir.Fresh
 import dotty.tools.dotc.core.Phases
+import dotty.tools.dotc.core.Symbols
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   private lazy val materializeClassTagTypes: Map[Symbol, Symbol] = Map(
@@ -31,7 +32,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     defnNir.NullClassTag -> defn.NullClass
   )
 
-  private lazy val materializePrimitiveTypeMethodTypes = Map(
+  private lazy val materializePrimitiveTypeMethodTypes
+      : Map[Symbol, ClassSymbol] = Map(
     defnNir.UnsafeTag_materializeUnitTag -> defn.UnitClass,
     defnNir.UnsafeTag_materializeByteTag -> defn.ByteClass,
     defnNir.UnsafeTag_materializeBooleanTag -> defn.BooleanClass,

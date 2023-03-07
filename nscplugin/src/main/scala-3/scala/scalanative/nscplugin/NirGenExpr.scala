@@ -1029,6 +1029,8 @@ trait NirGenExpr(using Context) {
       else if (code == STACKALLOC) genStackalloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
+      else if (code == SIZE_OF) genSizeOf(app)
+      else if (code == ALIGNMENT_OF) genAlignmentOf(app)
       else if (code == REFLECT_SELECTABLE_SELECTDYN)
         // scala.reflect.Selectable.selectDynamic
         genReflectiveCall(app, isSelectDynamic = true)
@@ -1595,7 +1597,7 @@ trait NirGenExpr(using Context) {
       val mergen = fresh()
 
       // scalanative.runtime.`package`.enterMonitor(receiver)
-      genExpr(Apply(ref(defnNir.RuntimePackage_enterMonitorR), List(receiverp)))
+      genExpr(Apply(ref(defnNir.RuntimePackage_enterMonitor), List(receiverp)))
 
       // synchronized block
       val retty = {
@@ -1620,7 +1622,7 @@ trait NirGenExpr(using Context) {
       buf.jump(Next(normaln))
       buf ++= genTryFinally(
         // scalanative.runtime.`package`.exitMonitor(receiver)
-        Apply(ref(defnNir.RuntimePackage_exitMonitorR), List(receiverp)),
+        Apply(ref(defnNir.RuntimePackage_exitMonitor), List(receiverp)),
         nested.toSeq
       )
       val mergev = Val.Local(fresh(), retty)
@@ -2189,6 +2191,47 @@ trait NirGenExpr(using Context) {
         }
     }
 
+    def genSizeOf(app: Apply): Val =
+      genLayoutValueOf("sizeOf", buf.sizeOf(_, unwind))(app)
+    def genAlignmentOf(app: Apply): Val =
+      genLayoutValueOf("alignmentOf", buf.alignmentOf(_, unwind))(app)
+
+    private def genLayoutValueOf(
+        opType: => String,
+        toVal: nir.Position ?=> nir.Type => nir.Val
+    )(app: Apply): Val = {
+      given nir.Position = app.span
+      def fail(msg: => String) =
+        report.error(msg, app.srcPos)
+        Val.Zero(Type.Size)
+
+      app.getAttachment(NirDefinitions.NonErasedType) match
+        case None =>
+          app.args match {
+            case Seq(Literal(cls: Constant)) =>
+              val nirTpe = genType(cls.typeValue, deconstructValueTypes = false)
+              toVal(nirTpe)
+            case _ =>
+              fail(
+                s"Method $opType(Class[_]) requires single class literal argument, if you used $opType[T] report it as a bug"
+              )
+          }
+        case Some(tpe) if tpe.typeSymbol.isTraitOrInterface =>
+          fail(
+            s"Type ${tpe.show} is a trait or interface, its $opType cannot be calculated"
+          )
+        case Some(tpe) =>
+          try {
+            val nirTpe = genType(tpe, deconstructValueTypes = true)
+            toVal(nirTpe)
+          } catch {
+            case ex: Throwable =>
+              fail(
+                s"Failed to generate exact NIR type of ${tpe.show} - ${ex.getMessage}"
+              )
+          }
+    }
+
     def genLoadExtern(ty: nir.Type, externTy: nir.Type, sym: Symbol)(using
         nir.Position
     ): Val = {
@@ -2371,7 +2414,7 @@ trait NirGenExpr(using Context) {
         if (!isAdapted) sig
         else {
           val params :+ retty = evidences
-            .map(genType)
+            .map(genType(_))
             .map(t => nir.Type.box.getOrElse(t, t)): @unchecked
           Type.Function(params, retty)
         }

@@ -32,7 +32,7 @@ sealed abstract class Op {
     case Op.As(ty, _) => ty
     case Op.Is(_, _)  => Type.Bool
     case Op.Copy(v)   => v.ty
-    case Op.Sizeof(_) => Type.Size
+    case Op.SizeOf(_) | Op.AlignmentOf(_) => Type.Size
     case Op.Box(refty: Type.RefKind, _) =>
       val nullable = Type.isPtrBox(refty)
       Type.Ref(refty.className, exact = true, nullable = nullable)
@@ -60,7 +60,7 @@ sealed abstract class Op {
    */
   final def isPure: Boolean = this match {
     case _: Op.Elem | _: Op.Extract | _: Op.Insert | _: Op.Comp | _: Op.Conv |
-        _: Op.Is | _: Op.Copy | _: Op.Sizeof =>
+        _: Op.Is | _: Op.Copy | _: Op.SizeOf =>
       true
     // Division and modulo on integers is only pure if
     // divisor is a canonical non-zero value.
@@ -145,7 +145,8 @@ object Op {
   final case class As(ty: Type, obj: Val) extends Op
   final case class Is(ty: Type, obj: Val) extends Op
   final case class Copy(value: Val) extends Op
-  final case class Sizeof(ty: Type) extends Op
+  final case class SizeOf(ty: Type) extends Op
+  final case class AlignmentOf(ty: Type) extends Op
   final case class Box(ty: Type, obj: Val) extends Op
   final case class Unbox(ty: Type, obj: Val) extends Op
   final case class Var(ty: Type) extends Op

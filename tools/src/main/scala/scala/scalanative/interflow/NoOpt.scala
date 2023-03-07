@@ -111,8 +111,8 @@ trait NoOpt { self: Interflow =>
       noOptVal(v)
     case Op.Copy(v) =>
       noOptVal(v)
-    case _: Op.Sizeof =>
-      ()
+    case _: Op.SizeOf      => ()
+    case _: Op.AlignmentOf => ()
     case Op.Box(code, obj) =>
       noOptVal(obj)
     case Op.Unbox(code, obj) =>

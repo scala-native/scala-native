@@ -9,10 +9,13 @@ import scalanative.interflow.UseDef.eliminateDeadCode
 
 object Lower {
 
-  def apply(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] =
+  def apply(
+      defns: Seq[Defn]
+  )(implicit meta: Metadata, logger: build.Logger): Seq[Defn] =
     (new Impl).onDefns(defns)
 
-  private final class Impl(implicit meta: Metadata) extends Transform {
+  private final class Impl(implicit meta: Metadata, logger: build.Logger)
+      extends Transform {
     import meta._
     import meta.config
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
@@ -383,8 +386,8 @@ object Lower {
           genIsOp(buf, n, op)
         case op: Op.As =>
           genAsOp(buf, n, op)
-        case op: Op.Sizeof =>
-          genSizeofOp(buf, n, op)
+        case op: Op.SizeOf      => genSizeOfOp(buf, n, op)
+        case op: Op.AlignmentOf => genAlignmentOfOp(buf, n, op)
         case op: Op.Classalloc =>
           genClassallocOp(buf, n, op)
         case op: Op.Conv =>
@@ -401,8 +404,7 @@ object Lower {
           genUnboxOp(buf, n, op)
         case op: Op.Module =>
           genModuleOp(buf, n, op)
-        case op: Op.Var =>
-          ()
+        case Op.Var(_) => () // Already emmited
         case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
         case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
@@ -964,13 +966,28 @@ object Lower {
       }
     }
 
-    def genSizeofOp(buf: Buffer, n: Local, op: Op.Sizeof)(implicit
+    def genSizeOfOp(buf: Buffer, n: Local, op: Op.SizeOf)(implicit
         pos: Position
     ): Unit = {
-      val Op.Sizeof(ty) = op
+      val size = op.ty match {
+        case ClassRef(cls) =>
+          if (!cls.allocated) {
+            val Global.Top(clsName) = cls.name: @unchecked
+            logger.warn(
+              s"Referencing size of non allocated type ${clsName} in ${pos.show}"
+            )
+          }
+          meta.layout(cls).size
+        case _ => MemoryLayout.sizeOf(op.ty)
+      }
+      buf.let(n, Op.Copy(Val.Size(size)), unwind)
+    }
 
-      val memorySize = MemoryLayout.sizeOf(ty)
-      buf.let(n, Op.Copy(Val.Size(memorySize)), unwind)
+    def genAlignmentOfOp(buf: Buffer, n: Local, op: Op.AlignmentOf)(implicit
+        pos: Position
+    ): Unit = {
+      val alignment = MemoryLayout.alignmentOf(op.ty)
+      buf.let(n, Op.Copy(Val.Size(alignment)), unwind)
     }
 
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
@@ -978,7 +995,7 @@ object Lower {
     ): Unit = {
       val Op.Classalloc(ClassRef(cls)) = op: @unchecked
 
-      val size = layout(cls).size
+      val size = meta.layout(cls).size
       val allocMethod =
         if (size < LARGE_OBJECT_MIN_SIZE) alloc else largeAlloc
 

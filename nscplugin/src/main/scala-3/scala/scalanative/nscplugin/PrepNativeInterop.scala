@@ -24,8 +24,8 @@ object PrepNativeInterop {
 }
 
 class PrepNativeInterop extends PluginPhase {
-  override val runsAfter = Set(transform.PostTyper.name)
-  override val runsBefore = Set(transform.Pickler.name)
+  override val runsAfter = Set(transform.Inlining.name)
+  override val runsBefore = Set(transform.FirstTransform.name)
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
@@ -35,6 +35,46 @@ class PrepNativeInterop extends PluginPhase {
   private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&
     dd.symbol.isWrappedToplevelDef
+  }
+
+  private class DealiasTypeMapper(using Context) extends TypeMap {
+    override def apply(tp: Type): Type =
+      val sym = tp.typeSymbol
+      val dealiased =
+        if sym.isOpaqueAlias then sym.opaqueAlias
+        else tp
+      dealiased.widenDealias match
+        case AppliedType(tycon, args) =>
+          AppliedType(this(tycon), args.map(this))
+        case ty => ty
+  }
+
+  override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
+    val TypeApply(fun, tArgs) = tree
+    val defnNir = this.defnNir
+    def dealiasTypeMapper = DealiasTypeMapper()
+
+    // sizeOf[T] -> sizeOf(classOf[T])
+    fun.symbol match
+      case defnNir.Intrinsics_sizeOfType =>
+        val tpe = dealiasTypeMapper(tArgs.head.tpe)
+        cpy
+          .Apply(tree)(
+            ref(defnNir.Intrinsics_sizeOf),
+            List(Literal(Constant(tpe)))
+          )
+          .withAttachment(NirDefinitions.NonErasedType, tpe)
+
+      case defnNir.Intrinsics_alignmentOfType =>
+        val tpe = dealiasTypeMapper(tArgs.head.tpe)
+        cpy
+          .Apply(tree)(
+            ref(defnNir.Intrinsics_alignmentOf),
+            List(Literal(Constant(tpe)))
+          )
+          .withAttachment(NirDefinitions.NonErasedType, tpe)
+
+      case _ => tree
   }
 
   override def transformDefDef(dd: DefDef)(using Context): Tree = {

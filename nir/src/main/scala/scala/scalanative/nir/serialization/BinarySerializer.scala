@@ -430,8 +430,12 @@ final class BinarySerializer {
       putInt(T.CopyOp)
       putVal(v)
 
-    case Op.Sizeof(ty) =>
-      putInt(T.SizeofOp)
+    case Op.SizeOf(ty) =>
+      putInt(T.SizeOfOp)
+      putType(ty)
+
+    case Op.AlignmentOf(ty) =>
+      putInt(T.AlignmentOfOp)
       putType(ty)
 
     case Op.Box(ty, obj) =>

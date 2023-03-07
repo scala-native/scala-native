@@ -202,7 +202,8 @@ final class State(block: Local) {
       case Op.As(_, v)                 => reachVal(v)
       case Op.Is(_, v)                 => reachVal(v)
       case Op.Copy(v)                  => reachVal(v)
-      case _: Op.Sizeof                => ()
+      case _: Op.SizeOf                => ()
+      case _: Op.AlignmentOf           => ()
       case Op.Box(_, v)                => reachVal(v)
       case Op.Unbox(_, v)              => reachVal(v)
       case _: Op.Var                   => ()
@@ -366,7 +367,8 @@ final class State(block: Local) {
       case Op.As(_, v)                 => reachVal(v)
       case Op.Is(_, v)                 => reachVal(v)
       case Op.Copy(v)                  => reachVal(v)
-      case _: Op.Sizeof                => ()
+      case _: Op.SizeOf                => ()
+      case _: Op.AlignmentOf           => ()
       case Op.Box(_, v)                => reachVal(v)
       case Op.Unbox(_, v)              => reachVal(v)
       case _: Op.Var                   => ()
@@ -429,8 +431,8 @@ final class State(block: Local) {
         Op.Is(ty, escapedVal(v))
       case Op.Copy(v) =>
         Op.Copy(escapedVal(v))
-      case op: Op.Sizeof =>
-        op
+      case op: Op.SizeOf      => op
+      case op: Op.AlignmentOf => op
       case Op.Box(ty, v) =>
         Op.Box(ty, escapedVal(v))
       case Op.Unbox(ty, v) =>
