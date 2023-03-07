@@ -26,7 +26,7 @@ private object IntrinsicsTest {
     class E(a: Int = 0, b: Long = 0, c: String = "") {
       override def toString(): String = s"{$a,$b,$c}"
     }
-    object E extends E(0, 0, ""){
+    object E extends E(0, 0, "") {
       val outerRef = outer
       assert(outerRef != null)
     }
@@ -35,9 +35,10 @@ private object IntrinsicsTest {
     }
 
     // Make sure each type and it's fields are reachable to prevent elimination of unused fields
-    def init() = Seq(new A(), new B(), new C(), new C2(), new D(), new E(), E, new F())
-      .map(_.toString())
-      .foreach(e => assert(e != null))
+    def init() =
+      Seq(new A(), new B(), new C(), new C2(), new D(), new E(), E, new F())
+        .map(_.toString())
+        .foreach(e => assert(e != null))
   }
 }
 
