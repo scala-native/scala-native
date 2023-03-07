@@ -14,7 +14,7 @@ import scala.scalanative.SafeZone._
 class SafeZoneTest {
 
   @Test def `can get the handle of a safe zone`(): Unit = {
-    SafeZone { sz =>
+    SafeZone { sz ?=>
       assert(sz.handle != null)
     }
   }
@@ -22,7 +22,7 @@ class SafeZoneTest {
   @Test def `report error when trying to allocate an instances in a closed safe zone`(): Unit = {
     class A {}
     assertThrows(classOf[IllegalStateException], 
-      SafeZone { sz => 
+      SafeZone { sz ?=> 
         sz.close()
         Try[{sz} A].apply(allocate(sz, new A())) match {
           case Success(_) => fail("Should not allocate instances in a closed safe zone.")

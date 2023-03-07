@@ -12,7 +12,7 @@ import scala.util.{Try,Success,Failure}
 
 class SafeZoneTest {
   @Test def `correctly open and close a safe zone`(): Unit = {
-    SafeZone { sz => 
+    SafeZone { sz ?=> 
       assertTrue(sz.isOpen)
       assertFalse(sz.isClosed)
     }
@@ -27,8 +27,8 @@ class SafeZoneTest {
 
   @Test def `allocate instances in nested safe zones`(): Unit = {
     case class A(v: Int) {}
-    SafeZone { sz0 =>
-      val a = SafeZone { sz1 =>
+    SafeZone { sz0 ?=>
+      val a = SafeZone { sz1 ?=>
         val a0 = allocate(sz0, new A(0))
         val a1 = allocate(sz1, new A(1))
         a0
@@ -40,8 +40,8 @@ class SafeZoneTest {
   @Test def `allocate instances with members in different memory areas`(): Unit = {
     case class A() {}
     case class B(a: {*} A) {}
-    SafeZone { sz0 =>
-      SafeZone { sz1 => 
+    SafeZone { sz0 ?=>
+      SafeZone { sz1 ?=> 
         val aInSz0 = allocate(sz0, new A())
         val aInHeap = new A()
         val b0: {sz1, sz0} B = allocate(sz1, new B(aInSz0))
@@ -54,8 +54,8 @@ class SafeZoneTest {
 
   @Test def `arrays with elements in different memory areas`(): Unit = {
     case class A() {}
-    SafeZone { sz0 =>
-      SafeZone { sz1 => 
+    SafeZone { sz0 ?=>
+      SafeZone { sz1 ?=> 
         val aInSz0 = allocate(sz0, new A())
         val aInHeap = new A()
         val arr0: {sz1} Array[{sz0} A]= allocate(sz1, new Array[{sz0} A](1))
@@ -69,7 +69,7 @@ class SafeZoneTest {
   @Test def `objects allocated in safe zone is accessible`(): Unit = {
     def assertAccessible(n: Int): Unit = {
       case class A(v: Int) {}
-      SafeZone { sz => 
+      SafeZone { sz ?=> 
         val ary = new Array[{sz} A](n)
         for i <- 0 until n do
           ary(i) = allocate(sz, new A(i))
@@ -84,7 +84,7 @@ class SafeZoneTest {
 
   @Test def `allocate a large object in safe zone`(): Unit = {
     case class DoubleWrapper(value: Double)
-    SafeZone { sz =>
+    SafeZone { sz ?=>
       val kArraySize = 500000
       val array = allocate(sz, new Array[{sz} DoubleWrapper](kArraySize))
       var i = 0
@@ -97,16 +97,21 @@ class SafeZoneTest {
   }
 
   @Test def `can use alloc API instead of instance creation expression`(): Unit = {
-    case class A(v: Int) {}
-    SafeZone { implicit sz =>
-      // using explicit arguments
-      val a0 = sz alloc(new A(0))
-      val a1 = sz alloc new A(1)
-      assertTrue(a0.v == 0)
-      assertTrue(a1.v == 1)
-      // using implicit zone
-      val a2 = alloc(new A(2))
-      assertTrue(a2.v == 2)
+    case class A() {}
+    SafeZone { sz ?=>
+      // Using explicit zone.
+      val a0: {sz} A = sz alloc(new A())
+      val a1: {sz} A= sz alloc new A()
+      // Using implicit zone.
+      val a2: {sz} A = alloc(new A())
+    }
+    SafeZone {
+      // Using implicit zone.
+      val a2 = alloc(new A())
+      // Summon the zone to make it explicit.
+      val sz = summon[SafeZone]
+      val a0: {sz} A = sz alloc(new A())
+      val a1: {sz} A = sz alloc new A()
     }
   }
 }

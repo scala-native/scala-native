@@ -47,9 +47,9 @@ final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends Saf
 
 object SafeZone {
   /** Run given function with a fresh zone and destroy it afterwards. */
-  final def apply[T](f: ({*} SafeZone) => T): T = {
+  final def apply[T](f: ({*} SafeZone) ?=> T): T = {
     val sz: {*} SafeZone = new MemorySafeZone(CZone.open())
-    try f(sz)
+    try f(using sz)
     finally sz.close()
   }
 

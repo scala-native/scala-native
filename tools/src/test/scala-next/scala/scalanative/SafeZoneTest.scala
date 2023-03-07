@@ -25,8 +25,8 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |class A (v: Int = 0) {}
       |
       |def test(): Unit = {
-      |  SafeZone { sz0 =>
-      |    val a = SafeZone { sz1 => 
+      |  SafeZone { sz0 ?=>
+      |    val a = SafeZone { sz1 ?=> 
       |      val a0 = allocate(sz0, new A(0))
       |      a0
       |    }
@@ -47,8 +47,8 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |class C (a0: {*} A, a1: {*} A) {}
         |
         |def test(): Unit = {
-        |  SafeZone { sz0 =>
-        |    val a = SafeZone { sz1 => 
+        |  SafeZone { sz0 ?=>
+        |    val a = SafeZone { sz1 ?=> 
         |      val a0 = allocate(sz0, new A(0))
         |      val a1 = allocate(sz1, new A(1))
         |      a1
@@ -70,7 +70,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |class C (a0: {*} A, a1: {*} A) {}
       |
       |def test(): Unit = {
-      |  SafeZone { sz =>
+      |  SafeZone { sz ?=>
       |    val a: {sz} A = allocate(sz, new A(0)) 
       |    val ary: {sz} Array[A] = allocate(sz, new Array[A](10)) 
       |
@@ -95,7 +95,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |class B (a: {*} A) {}
         |
         |def test(): Unit = {
-        |  SafeZone { sz =>
+        |  SafeZone { sz ?=>
         |    val a: {sz} A = allocate(sz, new A(0)) 
         |    val ary: {sz} Array[A] = allocate(sz, new Array[A](10)) 
         |
