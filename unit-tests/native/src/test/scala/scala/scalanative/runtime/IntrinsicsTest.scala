@@ -133,7 +133,9 @@ class IntrinsicsTest {
     assertEquals("ubyte", 1, sizeOf[UByte])
     assertEquals("ushort", 2, sizeOf[UShort])
     assertEquals("uint", 4, sizeOf[UInt])
-    assertEquals("ulong", sizeOfPtr, sizeOf[ULong])
+    assertEquals("ulong", 8, sizeOf[ULong])
+    assertEquals("size", sizeOfPtr, sizeOf[Size])
+    assertEquals("usize", sizeOfPtr, sizeOf[USize])
 
     type S1 = CStruct1[Short]
     assertEquals("s1", 2, sizeOf[S1])
@@ -230,6 +232,8 @@ class IntrinsicsTest {
     assertEquals("ushort", 2, alignmentOf[UShort])
     assertEquals("uint", 4, alignmentOf[UInt])
     assertEquals("ulong", sizeOfPtr, alignmentOf[ULong])
+    assertEquals("size", sizeOfPtr, alignmentOf[Size])
+    assertEquals("usize", sizeOfPtr, alignmentOf[USize])
     assertEquals("ref", sizeOfPtr, alignmentOf[java.lang.String])
 
     type S1 = CStruct1[Short]
