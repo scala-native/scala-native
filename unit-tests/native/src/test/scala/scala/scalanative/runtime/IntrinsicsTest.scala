@@ -7,7 +7,7 @@ import scala.scalanative.meta.LinktimeInfo._
 import scala.language.implicitConversions
 import scala.scalanative.unsigned._
 import scala.scalanative.runtime.struct
-import scala.scalanative.unsafe.{Ptr, CArray}
+import scala.scalanative.unsafe.{Ptr, CArray, Size}
 import scala.scalanative.unsafe.{CStruct1, CStruct2, CStruct3, CStruct4}
 import scala.scalanative.runtime.sizeOfPtr
 
