@@ -205,12 +205,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       locally {
         buf.label(thenn)(thenp.pos)
         val thenv = genExpr(thenp)
-        buf.jumpExcludeUnitValue(mergev.ty)(mergen, thenv)
+        buf.jumpExcludeUnitValue(retty)(mergen, thenv)
       }
       locally {
         buf.label(elsen)(elsep.pos)
         val elsev = genExpr(elsep)
-        buf.jumpExcludeUnitValue(mergev.ty)(mergen, elsev)
+        buf.jumpExcludeUnitValue(retty)(mergen, elsev)
       }
       buf.labelExcludeUnitValue(mergen, mergev)
     }
@@ -260,14 +260,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val scrut = genExpr(scrutp)
         buf.switch(scrut, defaultnext, casenexts)
         buf.label(defaultnext.name)(defaultp.pos)
-        buf.jumpExcludeUnitValue(mergev.ty)(merge, genExpr(defaultp))(
+        buf.jumpExcludeUnitValue(retty)(merge, genExpr(defaultp))(
           defaultp.pos
         )
         caseps.foreach {
           case (n, _, expr, pos) =>
             buf.label(n)(pos)
             val caseres = genExpr(expr)
-            buf.jumpExcludeUnitValue(mergev.ty)(merge, caseres)(pos)
+            buf.jumpExcludeUnitValue(retty)(merge, caseres)(pos)
         }
         buf.labelExcludeUnitValue(merge, mergev)
       }
@@ -378,13 +378,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         scoped(curUnwindHandler := Some(handler)) {
           nested.label(normaln)
           val res = nested.genExpr(expr)
-          nested.jumpExcludeUnitValue(mergev.ty)(mergen, res)
+          nested.jumpExcludeUnitValue(retty)(mergen, res)
         }
       }
       locally {
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)(expr.pos)
-        nested.jumpExcludeUnitValue(mergev.ty)(mergen, res)
+        nested.jumpExcludeUnitValue(retty)(mergen, res)
       }
 
       // Append finally to the try/catch instructions and merge them back.

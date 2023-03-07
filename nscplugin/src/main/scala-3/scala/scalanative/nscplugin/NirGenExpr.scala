@@ -452,15 +452,15 @@ trait NirGenExpr(using Context) {
         given nir.Position = thenp.span
         buf.label(thenn)
         val thenv = genExpr(thenp)
-        buf.jumpExcludeUnitValue(mergev.ty)(mergen, thenv)
+        buf.jumpExcludeUnitValue(retty)(mergen, thenv)
       }
       locally {
         given nir.Position = elsep.span
         buf.label(elsen)
         val elsev = genExpr(elsep)
-        buf.jumpExcludeUnitValue(mergev.ty)(mergen, elsev)
+        buf.jumpExcludeUnitValue(retty)(mergen, elsev)
       }
-      labelExcludeUnitValue(mergen, mergev)
+      buf.labelExcludeUnitValue(mergen, mergev)
     }
 
     def genJavaSeqLiteral(tree: JavaSeqLiteral): Val = {
@@ -489,13 +489,17 @@ trait NirGenExpr(using Context) {
 
       val (labelEntry, labelExit) = curMethodLabels.enterLabel(label)
       val labelExitParam = Val.Local(fresh(), genType(bind.tpe))
+      curMethodLabels.enterExitType(labelExit, labelExitParam.ty)
 
       buf.jump(Next(labelEntry))
 
       buf.label(labelEntry, Nil)
-      jumpExcludeUnitValue(labelExitParam.ty)(labelExit, genExpr(label.expr))
+      buf.jumpExcludeUnitValue(labelExitParam.ty)(
+        labelExit,
+        genExpr(label.expr)
+      )
 
-      labelExcludeUnitValue(labelExit, labelExitParam)
+      buf.labelExcludeUnitValue(labelExit, labelExitParam)
     }
 
     def genLiteral(lit: Literal): Val = {
@@ -576,7 +580,7 @@ trait NirGenExpr(using Context) {
         val scrut = genExpr(scrutp)
         buf.switch(scrut, defaultnext, casenexts)
         buf.label(defaultnext.name)(using defaultCasePos)
-        buf.jumpExcludeUnitValue(mergev.ty)(merge, genExpr(defaultp))(using
+        buf.jumpExcludeUnitValue(retty)(merge, genExpr(defaultp))(using
           defaultCasePos
         )
         caseps.foreach {
@@ -584,7 +588,7 @@ trait NirGenExpr(using Context) {
             given nir.Position = pos
             buf.label(n)
             val caseres = genExpr(expr)
-            buf.jumpExcludeUnitValue(mergev.ty)(merge, caseres)
+            buf.jumpExcludeUnitValue(retty)(merge, caseres)
         }
         buf.labelExcludeUnitValue(merge, mergev)
       }
@@ -694,8 +698,11 @@ trait NirGenExpr(using Context) {
         else value
 
       from match {
-        case Some(label) => buf.jumpExcludeUnitValue(retv.ty)(label, retv)
-        case _           => buf.ret(retv)
+        case Some(label) =>
+          val retty = curMethodLabels.resolveExitType(label)
+          buf.jumpExcludeUnitValue(retty)(label, retv)
+        case _ if retv.ty == Type.Unit => buf.ret(Val.Unit)
+        case _                         => buf.ret(retv)
       }
       Val.Unit
     }
@@ -780,12 +787,12 @@ trait NirGenExpr(using Context) {
       scoped(curUnwindHandler := Some(handler)) {
         nested.label(normaln)
         val res = nested.genExpr(expr)
-        nested.jumpExcludeUnitValue(mergev.ty)(mergen, res)
+        nested.jumpExcludeUnitValue(retty)(mergen, res)
       }
       locally {
         nested.label(handler, Seq(excv))
-        val res = nested.genTryCatch(retty, excv, mergen, mergev.ty, catches)
-        nested.jumpExcludeUnitValue(mergev.ty)(mergen, res)
+        val res = nested.genTryCatch(retty, excv, mergen, catches)
+        nested.jumpExcludeUnitValue(retty)(mergen, res)
       }
 
       // Append finally to the try/catch instructions and merge them back.
@@ -803,7 +810,6 @@ trait NirGenExpr(using Context) {
         retty: nir.Type,
         exc: Val,
         mergen: Local,
-        mergeTy: nir.Type,
         catches: List[Tree]
     )(using exprPos: nir.Position): Val = {
       val cases = catches.map {
@@ -822,7 +828,7 @@ trait NirGenExpr(using Context) {
               curMethodEnv.enter(sym, cast)
             }
             val res = genExpr(body)
-            buf.jumpExcludeUnitValue(mergeTy)(mergen, res)
+            buf.jumpExcludeUnitValue(retty)(mergen, res)
             Val.Unit
           }
           (excty, f, exprPos)
@@ -1605,7 +1611,7 @@ trait NirGenExpr(using Context) {
       }
       val retty = retValue.ty
       val mergev = Val.Local(fresh(), retty)
-      nested.jumpExcludeUnitValue(mergev.ty)(mergen, retValue)
+      nested.jumpExcludeUnitValue(retty)(mergen, retValue)
 
       // dummy exception handler,
       // monitorExit call would be added to it in genTryFinally transformer
@@ -1613,7 +1619,7 @@ trait NirGenExpr(using Context) {
         val excv = Val.Local(fresh(), Rt.Object)
         nested.label(handler, Seq(excv))
         nested.raise(excv, unwind)
-        nested.jumpExcludeUnitValue(mergev.ty)(mergen, Val.Zero(retty))
+        nested.jumpExcludeUnitValue(retty)(mergen, Val.Zero(retty))
       }
 
       // Append try/catch instructions to the outher instruction buffer.
