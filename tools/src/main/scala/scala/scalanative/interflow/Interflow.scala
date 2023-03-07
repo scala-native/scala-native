@@ -160,4 +160,22 @@ object Interflow {
     interflow.visitLoop()
     interflow.result()
   }
+
+  object LLVMIntrinsics {
+    private val externAttrs = Attrs(isExtern = true)
+    private val LLVMI = Global.Top("scala.scalanative.runtime.LLVMIntrinsics$")
+    private def llvmIntrinsic(id: String) =
+      Val.Global(LLVMI.member(Sig.Extern(id)), Type.Ptr)
+
+    val StackSave = llvmIntrinsic("llvm.stacksave")
+    val StackSaveSig = Type.Function(Nil, Type.Ptr)
+
+    val StackRestore = llvmIntrinsic("llvm.stackrestore")
+    val StackRestoreSig = Type.Function(Seq(Type.Ptr), Type.Unit)
+  }
+
+  val depends: Seq[Global] = Seq(
+    LLVMIntrinsics.StackSave.name,
+    LLVMIntrinsics.StackRestore.name
+  )
 }
