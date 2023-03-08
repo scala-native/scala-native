@@ -509,7 +509,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genVal(value: Val)(implicit sb: ShowBuilder): Unit = {
     import sb._
-    if (value.ty != Type.Unit) {
+    if (value != Val.Unit) {
       genType(value.ty)
       str(" ")
     }
@@ -940,7 +940,9 @@ private[codegen] abstract class AbstractCodeGen(
     v match {
       case Val.Local(_, refty: Type.RefKind) =>
         val (nonnull, deref, size) = toDereferenceable(refty)
-        genType(refty)
+        // Primitive unit value cannot be passed as argument, probably BoxedUnit is expected
+        if (refty == Type.Unit) genType(Type.Ptr)
+        else genType(refty)
         if (nonnull) {
           str(" nonnull")
         }
