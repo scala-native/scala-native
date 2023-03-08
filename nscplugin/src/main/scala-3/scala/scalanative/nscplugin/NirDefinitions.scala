@@ -160,7 +160,11 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_castIntToRawSize = IntrinsicsModule.requiredMethod("castIntToRawSize")
   @tu lazy val Intrinsics_castIntToRawSizeUnsigned = IntrinsicsModule.requiredMethod("castIntToRawSizeUnsigned")
   @tu lazy val Intrinsics_castLongToRawSize = IntrinsicsModule.requiredMethod("castLongToRawSize")
-  @tu lazy val Intrinsics_stackalloc = IntrinsicsModule.requiredMethod("stackalloc")
+  @tu lazy val Intrinsics_stackallocAlts = IntrinsicsModule.info
+    .member(termName("stackalloc"))
+    .alternatives
+    .map(_.symbol)
+    .ensuring(_.size == 2)
   @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
   @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info
     .member(termName("sizeOf"))
