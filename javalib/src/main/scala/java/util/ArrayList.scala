@@ -178,11 +178,4 @@ class ArrayList[E] private (
     }
     _size = 0
   }
-
-  // TODO: JDK 1.8
-  // def forEach(action: Consumer[_ >: E]): Unit =
-  // def spliterator(): Spliterator[E] =
-  // def removeIf(filter: Predicate[_ >: E]): Boolean =
-  // def replaceAll(operator: UnaryOperator[E]): Unit =
-  // def sort(c: Comparator[_ >: E]): Unit =
 }

@@ -1,7 +1,8 @@
 // Ported from Scala.js commit: f122aa5 dated: 2019-07-03
-
+// Additional Spliterator code implemented for Scala Native
 package java.util
 
+import java.util.function.Consumer
 import java.util.function.Predicate
 
 trait Collection[E] extends java.lang.Iterable[E] {
@@ -33,4 +34,12 @@ trait Collection[E] extends java.lang.Iterable[E] {
   def clear(): Unit
   def equals(o: Any): Boolean
   def hashCode(): Int
+
+  /* From the Java documentation:
+   *   "The default implementation should be overridden by subclasses that
+   *    can return a more efficient spliterator."
+   */
+  override def spliterator(): Spliterator[E] = {
+    Spliterators.spliterator[E](this, Spliterator.SIZED | Spliterator.SUBSIZED)
+  }
 }

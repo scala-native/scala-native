@@ -637,7 +637,7 @@ class SynchronousQueue[E <: AnyRef](val fair: Boolean)
 
   override def iterator(): util.Iterator[E] = Collections.emptyIterator()
 
-  def spliterator(): Spliterator[E] = Spliterators.emptySpliterator()
+  override def spliterator(): Spliterator[E] = Spliterators.emptySpliterator()
 
   override def toArray() = new Array[AnyRef](0)
 
