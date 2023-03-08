@@ -154,6 +154,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   class MethodLabelsEnv(val fresh: nir.Fresh) {
     private val entries, exits = mutable.Map.empty[Symbol, Local]
+    private val exitTypes = mutable.Map.empty[Local, nir.Type]
 
     def enterLabel(ld: Labeled): (nir.Local, nir.Local) = {
       val sym = ld.bind.symbol
@@ -168,6 +169,10 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
     def resolveExit(sym: Symbol): nir.Local = exits(sym)
     def resolveExit(label: Labeled): nir.Local = exits(label.bind.symbol)
+
+    def enterExitType(local: nir.Local, exitType: nir.Type): Unit =
+      exitTypes += local -> exitType
+    def resolveExitType(local: nir.Local): nir.Type = exitTypes(local)
   }
 
   class MethodEnv(val fresh: nir.Fresh) {
