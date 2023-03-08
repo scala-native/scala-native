@@ -1,3 +1,5 @@
+#ifndef PARSING_H
+#define PARSING_H
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
@@ -23,3 +25,5 @@ typedef enum {
 } qualifier;
 
 size_t Choose_IF(size_t left, qualifier qualifier, size_t right);
+
+#endif // PARSING_H
