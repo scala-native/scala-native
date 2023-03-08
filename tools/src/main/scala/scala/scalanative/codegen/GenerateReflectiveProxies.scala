@@ -21,8 +21,7 @@ object GenerateReflectiveProxies {
     val unboxInsts = genArgUnboxes(label, defnType.args)
     val method = Inst.Let(Op.Method(label.params.head, sig), Next.None)
     val call = genCall(defnType, method, label.params, unboxInsts)
-    val box = genRetValBox(call.name, defnType.ret, proxyTy.ret)
-    val retInst = genRet(box.name, proxyTy.ret)
+    val retInsts = genRet(call.name, defnType.ret, proxyTy.ret)
 
     Defn.Define(
       Attrs.fromSeq(Seq(Attr.Dyn)),
@@ -31,7 +30,8 @@ object GenerateReflectiveProxies {
       Seq(
         Seq(label),
         unboxInsts,
-        Seq(method, call, box, retInst)
+        Seq(method, call),
+        retInsts
       ).flatten
     )
   }
@@ -43,8 +43,8 @@ object GenerateReflectiveProxies {
     Type.Function(
       args,
       defnTy.ret match {
-        case Type.Unit => Type.Unit
-        case _         => Type.Ref(Global.Top("java.lang.Object"))
+        case Type.Unit => Rt.BoxedUnit
+        case _         => Rt.Object
       }
     )
 
@@ -105,7 +105,7 @@ object GenerateReflectiveProxies {
       implicit
       pos: nir.Position,
       fresh: Fresh
-  ) =
+  ): Inst.Let =
     Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
         Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)), Next.None)
@@ -113,13 +113,20 @@ object GenerateReflectiveProxies {
         Inst.Let(Op.Copy(Val.Local(callName, defnRetTy)), Next.None)
     }
 
-  private def genRet(retValBoxName: Local, proxyRetTy: Type)(implicit
-      pos: nir.Position
-  ) =
-    proxyRetTy match {
-      case Type.Unit => Inst.Ret(Val.Unit)
-      case _         => Inst.Ret(Val.Local(retValBoxName, proxyRetTy))
+  private def genRet(callName: Local, defnRetTy: Type, proxyRetTy: Type)(
+      implicit
+      pos: nir.Position,
+      fresh: Fresh
+  ): Seq[Inst] = {
+    defnRetTy match {
+      case Type.Unit =>
+        Inst.Ret(Val.Unit) :: Nil
+      case _ =>
+        val box = genRetValBox(callName, defnRetTy, proxyRetTy)
+        val ret = Inst.Ret(Val.Local(box.name, proxyRetTy))
+        Seq(box, ret)
     }
+  }
 
   def apply(dynimpls: Seq[Global], defns: Seq[Defn]): Seq[Defn.Define] = {
 
