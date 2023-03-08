@@ -188,26 +188,4 @@ object Intrinsics {
    */
   def alignmentOf(cls: Class[_]): RawSize = intrinsic
 
-  
-  // sealed trait AtomicOrdering
-  // object AtomicOrdering {
-  //   final abstract class Unordered extends AtomicOrdering
-  //   final abstract class Monotonic extends AtomicOrdering
-  //   final abstract class Acquire extends AtomicOrdering
-  //   final abstract class Release extends AtomicOrdering
-  //   final abstract class AcqRel extends AtomicOrdering
-  //   final abstract class SeqCst extends AtomicOrdering
-  // }
-  // @struct class CompareExchangeResult[T](val value: T, val successful: Boolean)
-  // def cmpxchg[T, S <: AtomicOrdering, F <: AtomicOrdering](
-  //     pointer: RawPtr,
-  //     expected: T,
-  //     value: T
-  // ): CompareExchangeResult[T] = intrinsic
-  // def cmpxchgWeak[T, S <: AtomicOrdering, F <: AtomicOrdering](
-  //     pointer: RawPtr,
-  //     expected: T,
-  //     value: T
-  // ): CompareExchangeResult[T] = intrinsic
-
 }

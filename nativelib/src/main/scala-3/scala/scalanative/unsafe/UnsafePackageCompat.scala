@@ -26,19 +26,26 @@ private[scalanative] trait UnsafePackageCompat {
   /** The C 'sizeof' operator. */
   inline def ssizeof[T]: CSSize = fromRawSize(Intrinsics.sizeOf[T])
 
+  /** Heap allocate and zero-initialize value using current implicit allocator.
+   */
+  inline def alloc[T]()(using zone: Zone): Ptr[T] = {
+    val size = sizeof[T]
+    val ptr = zone.alloc(size)
+    libc.memset(ptr, 0, size)
+    ptr.asInstanceOf[Ptr[T]]
+  }
+
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
-  inline def alloc[T](
-      inline n: CSize = 1.toUSize
-  )(using zone: Zone): Ptr[T] = {
+  inline def alloc[T](inline n: CSize)(using zone: Zone): Ptr[T] = {
     val size = sizeof[T] * n
     val ptr = zone.alloc(size)
     libc.memset(ptr, 0, size)
     ptr.asInstanceOf[Ptr[T]]
   }
 
-  /** Stack allocate and zero-initialize n values of given type */
+  /** Stack allocate and zero-initialize value of given type */
   inline def stackalloc[T](): Ptr[T] = {
     val size = Intrinsics.sizeOf[T]
     val ptr = Intrinsics.stackalloc(size)

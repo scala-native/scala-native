@@ -3,11 +3,12 @@ package scala.scalanative.runtime.monitor
 import scala.annotation.{tailrec, switch}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.NativeThread
+import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.{RawPtr, sizeOfPtr}
 import scala.scalanative.runtime.libc._
 import scala.scalanative.runtime.libc.memory_order._
-import scala.scalanative.unsafe.{stackalloc => _, _}
+import scala.scalanative.unsafe.{stackalloc => _, sizeOf => _, _}
 import java.util.concurrent.locks.LockSupport
 
 /** Heavy weight monitor created only upon detection of access from multiple
@@ -363,7 +364,7 @@ private[monitor] class ObjectMonitor() {
   }
 
   private def acquireWaitList(): Unit = {
-    val expected = stackalloc(sizeof[Byte])
+    val expected = stackalloc(sizeOf[Byte])
     def tryAcquire() = {
       storeByte(expected, 0)
       atomic_compare_exchange_byte(
