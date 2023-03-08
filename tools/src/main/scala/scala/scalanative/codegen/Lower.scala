@@ -48,7 +48,7 @@ object Lower {
     private val unwindHandler = new util.ScopedVar[Option[Local]]
     private val currentDefn = new util.ScopedVar[Defn.Define]
     private def currentDefnRetType = {
-      val Type.Function(_, ret) = currentDefn.get.ty
+      val Type.Function(_, ret) = currentDefn.get.ty: @unchecked
       ret
     }
 
