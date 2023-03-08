@@ -7,7 +7,10 @@ import scalanative.unsigned.USize
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: USize): RawPtr = intrinsic
+  def stackalloc(size: RawSize): RawPtr = intrinsic
+
+  /** Intrinsified stack allocation of n bytes. */
+  def stackalloc(size: CSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -184,4 +187,27 @@ object Intrinsics {
    *  Accepts only class literals. Whenever possible use `alignment[T]` instead
    */
   def alignmentOf(cls: Class[_]): RawSize = intrinsic
+
+  
+  // sealed trait AtomicOrdering
+  // object AtomicOrdering {
+  //   final abstract class Unordered extends AtomicOrdering
+  //   final abstract class Monotonic extends AtomicOrdering
+  //   final abstract class Acquire extends AtomicOrdering
+  //   final abstract class Release extends AtomicOrdering
+  //   final abstract class AcqRel extends AtomicOrdering
+  //   final abstract class SeqCst extends AtomicOrdering
+  // }
+  // @struct class CompareExchangeResult[T](val value: T, val successful: Boolean)
+  // def cmpxchg[T, S <: AtomicOrdering, F <: AtomicOrdering](
+  //     pointer: RawPtr,
+  //     expected: T,
+  //     value: T
+  // ): CompareExchangeResult[T] = intrinsic
+  // def cmpxchgWeak[T, S <: AtomicOrdering, F <: AtomicOrdering](
+  //     pointer: RawPtr,
+  //     expected: T,
+  //     value: T
+  // ): CompareExchangeResult[T] = intrinsic
+
 }
