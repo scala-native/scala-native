@@ -19,6 +19,7 @@ import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
 import scala.scalanative.build.Platform
+import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
 
 /** ScalaNativePlugin delegates to this object
