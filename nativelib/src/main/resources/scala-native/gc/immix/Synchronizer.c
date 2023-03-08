@@ -27,93 +27,6 @@ static mutex_t synchronizerLock;
 #define SafepointInstance (scalanative_gc_safepoint)
 
 #ifdef _WIN32
-#include <DbgHelp.h>
-
-void printStackTrace(EXCEPTION_POINTERS *exceptionPtr, HANDLE thread) {
-    CONTEXT *context = exceptionPtr->ContextRecord;
-    HANDLE process = GetCurrentProcess();
-    // HANDLE thread = GetCurrentThread();
-
-    // Initialize the symbol handler
-    SymInitialize(process, NULL, TRUE);
-
-    // Initialize the stack frame
-    STACKFRAME64 stackFrame = {0};
-    DWORD machineType = IMAGE_FILE_MACHINE_I386;
-
-#ifdef _M_X64
-    machineType = IMAGE_FILE_MACHINE_AMD64;
-    stackFrame.AddrPC.Offset = context->Rip;
-    stackFrame.AddrFrame.Offset = context->Rsp;
-    stackFrame.AddrStack.Offset = context->Rsp;
-#elif defined(_M_IX86)
-    stackFrame.AddrPC.Offset = context->Eip;
-    stackFrame.AddrFrame.Offset = context->Ebp;
-    stackFrame.AddrStack.Offset = context->Esp;
-#endif
-
-    stackFrame.AddrPC.Mode = AddrModeFlat;
-    stackFrame.AddrFrame.Mode = AddrModeFlat;
-    stackFrame.AddrStack.Mode = AddrModeFlat;
-
-    // Walk the stack and print the symbols
-    while (StackWalk64(machineType, process, thread, &stackFrame, context, NULL,
-                       SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
-        DWORD64 displacement = 0;
-        char symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + MAX_PATH] = {0};
-        IMAGEHLP_SYMBOL64 *symbol = (IMAGEHLP_SYMBOL64 *)symbolBuffer;
-
-        symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-        symbol->MaxNameLength = MAX_PATH;
-
-        if (SymGetSymFromAddr64(process, stackFrame.AddrPC.Offset,
-                                &displacement, symbol)) {
-            printf("  %s + %llx\n", symbol->Name, displacement);
-        } else {
-            printf("  [unknown symbol]\n");
-        }
-    }
-
-    SymCleanup(process);
-}
-
-struct ExceptionContext {
-    EXCEPTION_POINTERS *exceptionPtr;
-    HANDLE thread;
-    CONDITION_VARIABLE cv;
-    CRITICAL_SECTION cs;
-};
-
-static struct ExceptionContext globalContext = {};
-DWORD WINAPI StackPrinter(LPVOID lpParameter) {
-    // Enter the critical section
-    EnterCriticalSection(&globalContext.cs);
-
-    while (true) {
-        // Wait for the condition variable to be signaled
-        while (!SleepConditionVariableCS(&globalContext.cv, &globalContext.cs,
-                                         INFINITE)) {
-        }
-        printf("Print exception context of %p\n", globalContext.exceptionPtr);
-        printStackTrace(globalContext.exceptionPtr, globalContext.thread);
-        globalContext.exceptionPtr = NULL;
-    }
-
-    // Exit the critical section
-    LeaveCriticalSection(&globalContext.cs);
-
-    // Thread is complete.
-    return 0;
-}
-void startPrinterThread() {
-    InitializeConditionVariable(&globalContext.cv);
-    InitializeCriticalSection(&globalContext.cs);
-
-    // Create the thread
-    HANDLE thread = CreateThread(NULL, 0, StackPrinter, NULL, 0, NULL);
-    // // Trigger the condition variable
-}
-
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     switch (ex->ExceptionRecord->ExceptionCode) {
     case EXCEPTION_ACCESS_VIOLATION:
@@ -122,20 +35,10 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
             Synchronizer_wait();
             return EXCEPTION_CONTINUE_EXECUTION;
         }
-    case STATUS_STACK_OVERFLOW:
-        char sp = 0;
-        printf("Unhandled exception code %p, addr=%p, stackTop=%p, "
-               "stackBottom=%p\n",
-               (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode,
-               (void *)addr, &sp, currentMutatorThread->stackBottom);
+        fprintf(stderr, "Cought exception code %p in GC exception handler\n",
+                (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
         fflush(stdout);
-        while (globalContext.exceptionPtr != NULL) {
-        }
-        globalContext.exceptionPtr = ex;
-        WakeConditionVariable(&globalContext.cv);
-        while (globalContext.exceptionPtr != NULL) {
-        }
-    // printStackTrace(ex);
+        StackTrace_PrintStackTrace(ex);
     // pass-through
     default:
         return EXCEPTION_CONTINUE_SEARCH;
@@ -165,7 +68,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
 static void SetupPageFaultHandler() {
 #ifdef _WIN32
-    startPrinterThread();
+    // Call it as last exception handler
     AddVectoredExceptionHandler(1, &SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);
