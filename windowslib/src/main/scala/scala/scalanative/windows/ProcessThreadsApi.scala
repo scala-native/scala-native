@@ -122,6 +122,10 @@ object ProcessThreadsApiExt {
   final val EXTENDED_STARTUPINFO_PRESENT = 0x00080000.toUInt
   final val INHERIT_PARENT_AFFINITY = 0x00010000.toUInt
 
+  // Thread creation flags
+  // final val CREATE_SUSPENDED = 0x00000004.toUInt // duplicated with process flag
+  final val STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000.toUInt
+
   // Thread Priority
   final val THREAD_MODE_BACKGROUND_BEGIN = 0x00010000
   final val THREAD_MODE_BACKGROUND_END = 0x00020000

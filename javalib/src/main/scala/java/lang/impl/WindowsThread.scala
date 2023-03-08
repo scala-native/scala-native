@@ -48,12 +48,16 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
       )
     else
       checkedHandle("create thread") {
+        val effectiveStackSize =
+          if (stackSize > 0) stackSize
+          else 0 // System default (1MB)
+
         GC.CreateThread(
           threadAttributes = null,
-          stackSize = stackSize.max(0L).toUSize, // Default
+          stackSize = effectiveStackSize.toUSize,
           startRoutine = NativeThread.threadRoutine,
           routineArg = NativeThread.threadRoutineArgs(this),
-          creationFlags = 0.toUInt, // Default, run immediately,
+          creationFlags = STACK_SIZE_PARAM_IS_A_RESERVATION, // Run immediately,
           threadId = null
         )
       }

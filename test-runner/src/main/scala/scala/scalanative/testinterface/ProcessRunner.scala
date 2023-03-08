@@ -56,7 +56,7 @@ private[testinterface] class ProcessRunner(
       else {
         runnerPromise.tryFailure(
           new RuntimeException(
-            s"Process $executableFile finished with non-zero value $exitCode"
+            s"Process $executableFile finished with non-zero value $exitCode (0x${exitCode.toHexString})"
           )
         )
         // Similarly to Bash programs, exitcode values higher

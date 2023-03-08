@@ -4,6 +4,7 @@
 #include <stdatomic.h>
 #include <setjmp.h>
 #include <ThreadUtil.h>
+#include <assert.h>
 
 static mutex_t threadListsModifiactionLock;
 
@@ -61,12 +62,10 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
 
 void MutatorThread_switchState(MutatorThread *self,
                                MutatorThreadState newState) {
+    assert(self != null);
     if (newState == MutatorThreadState_Unmanaged) {
-        // Dumps registers into 'regs' which is on stack
-        // jmp_buf is docummented as array type
-        jmp_buf regs;
-        setjmp(regs);
-        memcpy(self->executionContext, regs, sizeof(jmp_buf));
+        // Dump registers to allow for their marking later
+        setjmp(self->executionContext);
         self->stackTop = MutatorThread_approximateStackTop();
     } else {
         self->stackTop = NULL;

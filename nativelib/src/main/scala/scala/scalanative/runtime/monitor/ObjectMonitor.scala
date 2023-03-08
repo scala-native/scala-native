@@ -413,7 +413,7 @@ private[monitor] class ObjectMonitor() {
     }
   }
 
-  @inline private def trySpinAndLock(
+  @inline @tailrec private def trySpinAndLock(
       thread: Thread,
       remainingSpins: Int = 32
   ): Boolean = {

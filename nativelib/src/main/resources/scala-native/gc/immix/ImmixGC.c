@@ -80,7 +80,11 @@ typedef struct {
     RoutineArgs args;
 } WrappedFunctionCallArgs;
 
+#ifdef _WIN32
+static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
+#else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
+#endif
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;
     RoutineArgs originalArgs = wrapped->args;
