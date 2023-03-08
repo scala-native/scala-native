@@ -592,7 +592,7 @@ class IssuesTest {
   }
 
   @Test def i3195(): Unit = {
-    // Make sure that inlined calls are reseting the stack upon returning
+    // Make sure that inlined calls are resetting the stack upon returning
     // Otherwise calls to functions allocating on stack in loop might lead to stack overflow
     @alwaysinline def allocatingFunction(): CSize = {
       import scala.scalanative.unsafe.{CArray, Nat}
