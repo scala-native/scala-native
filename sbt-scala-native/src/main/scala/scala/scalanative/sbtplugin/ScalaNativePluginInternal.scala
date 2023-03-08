@@ -230,6 +230,16 @@ object ScalaNativePluginInternal {
               case (tf, Some(adapter)) => (tf, adapter)
             }
             .toMap
+        },
+
+        // Override default to avoid triggering a Test/nativeLink in a Test/compile
+        // without losing autocompletion.
+        definedTestNames := {
+          definedTests
+            .map(_.map(_.name).distinct)
+            .storeAs(definedTestNames)
+            .triggeredBy(loadedTestFrameworks)
+            .value
         }
       )
 
