@@ -104,8 +104,9 @@ trait Opt { self: Interflow =>
         case tys     => Sub.lub(tys, Some(origRetTy))
       }
       // Make sure to not override expected BoxedUnit with primitive Unit
-      val retty = if(retty0 == Type.Unit && origRetTy.isInstanceOf[Type.Ref]) origRetTy
-      else retty0
+      val retty =
+        if (retty0 == Type.Unit && origRetTy.isInstanceOf[Type.Ref]) origRetTy
+        else retty0
 
       result(retty, insts)
     }
