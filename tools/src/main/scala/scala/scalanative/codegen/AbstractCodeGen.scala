@@ -229,14 +229,12 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genFunctionReturnType(
       retty: Type
-  )(implicit sb: ShowBuilder): Unit = {
-    retty match {
-      case refty: Type.RefKind =>
-        genReferenceTypeAttribute(refty)
-      case _ =>
-        ()
-    }
-    genType(retty)
+  )(implicit sb: ShowBuilder): Unit = retty match {
+    case refty: Type.RefKind if refty != Type.Unit =>
+      genReferenceTypeAttribute(refty)
+      genType(retty)
+    case _ =>
+      genType(retty)
   }
 
   private[codegen] def genReferenceTypeAttribute(
@@ -310,6 +308,7 @@ private[codegen] abstract class AbstractCodeGen(
     if (!block.isEntry) {
       val params = block.params
       params.zipWithIndex.foreach {
+        case (Val.Local(name, Type.Unit), n) => () // skip
         case (Val.Local(name, ty), n) =>
           newline()
           str("%")
@@ -367,6 +366,7 @@ private[codegen] abstract class AbstractCodeGen(
     import sb._
     ty match {
       case Type.Vararg => str("...")
+      case Type.Unit   => str("void")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
         str(pointerType)
       case Type.Bool          => str("i1")
@@ -429,6 +429,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.True     => str("true")
       case Val.False    => str("false")
       case Val.Null     => str("null")
+      case Val.Unit     => str("void")
       case Val.Zero(ty) => str("zeroinitializer")
       case Val.Byte(v)  => str(v)
       case Val.Size(v) =>
@@ -508,8 +509,10 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genVal(value: Val)(implicit sb: ShowBuilder): Unit = {
     import sb._
-    genType(value.ty)
-    str(" ")
+    if (value != Val.Unit) {
+      genType(value.ty)
+      str(" ")
+    }
     genJustVal(value)
   }
 
@@ -937,7 +940,9 @@ private[codegen] abstract class AbstractCodeGen(
     v match {
       case Val.Local(_, refty: Type.RefKind) =>
         val (nonnull, deref, size) = toDereferenceable(refty)
-        genType(refty)
+        // Primitive unit value cannot be passed as argument, probably BoxedUnit is expected
+        if (refty == Type.Unit) genType(Type.Ptr)
+        else genType(refty)
         if (nonnull) {
           str(" nonnull")
         }
