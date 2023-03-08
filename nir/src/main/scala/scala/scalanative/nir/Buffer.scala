@@ -5,16 +5,13 @@ import scala.collection.mutable
 
 class Buffer(implicit fresh: Fresh) {
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
-  def +=(inst: Inst): Unit =
-    buffer += inst
-  def ++=(insts: Seq[Inst]): Unit =
-    buffer ++= insts
-  def ++=(other: Buffer): Unit =
-    buffer ++= other.buffer
-  def toSeq: Seq[Inst] =
-    buffer.toSeq
-  def size: Int =
-    buffer.size
+  def +=(inst: Inst): Unit = buffer += inst
+  def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
+  def ++=(other: Buffer): Unit = buffer ++= other.buffer
+
+  def toSeq: Seq[Inst] = buffer.toSeq
+  def size: Int = buffer.size
+  def exists(pred: Inst => Boolean) = buffer.exists(pred)
 
   // Control-flow ops
   def label(name: Local)(implicit pos: Position): Unit =

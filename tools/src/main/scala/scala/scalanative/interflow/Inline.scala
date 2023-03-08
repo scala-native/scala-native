@@ -154,10 +154,8 @@ trait Inline { self: Interflow =>
   ): Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
-        case build.Mode.Debug =>
-          getOriginal(name)
-        case _: build.Mode.Release =>
-          getDone(name)
+        case build.Mode.Debug      => getOriginal(name)
+        case _: build.Mode.Release => getDone(name)
       }
       val Type.Function(_, origRetTy) = defn.ty: @unchecked
 
@@ -223,7 +221,21 @@ trait Inline { self: Interflow =>
             }
       }
 
-      state.emit ++= emit
+      // Check if inlined function performed stack allocation, if so add
+      // insert stacksave/stackrestore LLVM Intrinsics to prevent affecting.
+      // By definition every stack allocation of inlined function is only needed within it's body
+      val allocatesOnStack = emit.exists {
+        case Inst.Let(_, _: Op.Stackalloc, _) => true
+        case _                                => false
+      }
+      if (allocatesOnStack) {
+        import Interflow.LLVMIntrinsics._
+        val stackState = state.emit
+          .call(StackSaveSig, StackSave, Nil, Next.None)
+        state.emit ++= emit
+        state.emit
+          .call(StackRestoreSig, StackRestore, Seq(stackState), Next.None)
+      } else state.emit ++= emit
       state.inherit(endState, res +: args)
 
       val Type.Function(_, retty) = defn.ty: @unchecked
