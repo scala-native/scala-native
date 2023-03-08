@@ -43,6 +43,10 @@ object Lower {
     private val fresh = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
     private val currentDefn = new util.ScopedVar[Defn.Define]
+    private def currentDefnRetType = {
+      val Type.Function(_, ret) = currentDefn.get.ty: @unchecked
+      ret
+    }
 
     private val unreachableSlowPath = mutable.Map.empty[Option[Local], Local]
     private val nullPointerSlowPath = mutable.Map.empty[Option[Local], Local]
@@ -99,6 +103,17 @@ object Lower {
           Next.Label(name, args.map(genVal(buf, _)))
         case n => n
       }
+    }
+
+    private def optionallyBoxedUnit(v: nir.Val)(implicit
+        pos: nir.Position
+    ): nir.Val = {
+      require(
+        v.ty == Type.Unit,
+        s"Definition is expected to return Unit type, found ${v.ty}"
+      )
+      if (currentDefnRetType == Type.Unit) Val.Unit
+      else unit
     }
 
     override def onInsts(insts: Seq[Inst]): Seq[Inst] = {
@@ -164,7 +179,10 @@ object Lower {
 
         case inst @ Inst.Ret(v) =>
           implicit val pos: Position = inst.pos
-          buf += Inst.Ret(genVal(buf, v))
+          val retVal =
+            if (v.ty == Type.Unit) optionallyBoxedUnit(v)
+            else genVal(buf, v)
+          buf += Inst.Ret(retVal)
 
         case inst @ Inst.Jump(next) =>
           implicit val pos: Position = inst.pos
@@ -191,7 +209,16 @@ object Lower {
 
       buf ++= handlers
 
-      eliminateDeadCode(buf.toSeq.map(super.onInst))
+      eliminateDeadCode(buf.toSeq.map(onInst))
+    }
+
+    override def onInst(inst: Inst): Inst = {
+      implicit def pos: nir.Position = inst.pos
+      inst match {
+        case Inst.Ret(v) if v.ty == Type.Unit =>
+          Inst.Ret(optionallyBoxedUnit(v))
+        case _ => super.onInst(inst)
+      }
     }
 
     override def onVal(value: Val): Val = value match {
