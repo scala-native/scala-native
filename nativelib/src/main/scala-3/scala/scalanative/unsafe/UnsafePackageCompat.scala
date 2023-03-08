@@ -1,32 +1,56 @@
 package scala.scalanative.unsafe
 
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr, toRawPtr, libc}
+import scala.scalanative.runtime._
 import scala.scalanative.unsigned._
+import scala.scalanative.runtime.Intrinsics.{
+  castRawSizeToLongUnsigned as toLong
+}
 
 private[scalanative] trait UnsafePackageCompat {
   private[scalanative] given reflect.ClassTag[Array[?]] =
     reflect.classTag[Array[AnyRef]].asInstanceOf[reflect.ClassTag[Array[?]]]
+
+  /** The Scala equivalent of C 'alignmentof', but always returns 64-bit integer
+   */
+  inline def alignmentOf[T]: Long = toLong(Intrinsics.alignmentOf[T])
+
+  /** The C 'alignmentof' operator. */
+  inline def alignmentof[T]: CSize = fromRawUSize(Intrinsics.alignmentOf[T])
+
+  /** The Scala equivalent of C 'ssizeof', but always returns 64-bit integer */
+  inline def sizeOf[T]: Long = toLong(Intrinsics.sizeOf[T])
+
+  /** The C 'sizeof' operator. */
+  inline def sizeof[T]: CSize = fromRawUSize(Intrinsics.sizeOf[T])
+
+  /** The C 'sizeof' operator. */
+  inline def ssizeof[T]: CSSize = fromRawSize(Intrinsics.sizeOf[T])
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
   inline def alloc[T](
       inline n: CSize = 1.toUSize
-  )(using tag: Tag[T], zone: Zone): Ptr[T] = {
+  )(using zone: Zone): Ptr[T] = {
     val size = sizeof[T] * n
     val ptr = zone.alloc(size)
-    val rawPtr = toRawPtr(ptr)
-    libc.memset(rawPtr, 0, size)
+    libc.memset(ptr, 0, size)
     ptr.asInstanceOf[Ptr[T]]
   }
 
   /** Stack allocate and zero-initialize n values of given type */
-  inline def stackalloc[T](
-      inline n: CSize = 1.toUSize
-  )(using Tag[T]): Ptr[T] = {
+  inline def stackalloc[T](): Ptr[T] = {
+    val size = Intrinsics.sizeOf[T]
+    val ptr = Intrinsics.stackalloc(size)
+    libc.memset(ptr, 0, size)
+    fromRawPtr[T](ptr)
+  }
+
+  /** Stack allocate and zero-initialize n values of given type */
+  inline def stackalloc[T](inline n: CSize): Ptr[T] = {
     val size = sizeof[T] * n
-    val rawPtr = Intrinsics.stackalloc(size)
-    libc.memset(rawPtr, 0, size)
-    fromRawPtr[T](rawPtr)
+    val ptr = fromRawPtr[T](Intrinsics.stackalloc(size))
+    libc.memset(ptr, 0, size)
+    ptr
   }
 }
