@@ -15,7 +15,7 @@ object zlib {
   type uLong = CUnsignedLong
   type uLongf = CUnsignedLong
   type alloc_func = CFuncPtr3[voidpf, uInt, uInt, voidpf]
-  type free_func = CFuncPtr2[voidpf, voidpf, Void]
+  type free_func = CFuncPtr2[voidpf, voidpf, Unit]
   type Bytef = Byte
   type z_size_t = CUnsignedLong
   type z_off_t = CLong

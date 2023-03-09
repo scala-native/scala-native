@@ -610,6 +610,17 @@ class IssuesTest {
     }
   }
 
+  @Test def issue3196(): Unit = {
+    object ctx {
+      type Foo
+    }
+    val ptr1 = stackalloc[Ptr[ctx.Foo]]()
+    println(!ptr1) // segfault
+
+    val ptr2 = stackalloc[Ptr[_]]()
+    println(!ptr2) // segfault
+  }
+
 }
 
 package issue1090 {

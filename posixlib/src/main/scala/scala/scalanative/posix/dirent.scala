@@ -7,7 +7,7 @@ import scala.scalanative.unsafe._, Nat._
 object dirent {
 
   type _256 = Digit3[_2, _5, _6]
-  type DIR = Void
+  type DIR = CStruct0
   type dirent =
     CStruct3[CUnsignedLongLong, CArray[CChar, _256], CShort]
 

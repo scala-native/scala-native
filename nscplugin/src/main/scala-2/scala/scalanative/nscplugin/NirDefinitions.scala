@@ -111,6 +111,10 @@ trait NirDefinitions {
     lazy val DoubleTagMethod =
       getDecl(TagModule, TermName("materializeDoubleTag"))
     lazy val PtrTagMethod = getDecl(TagModule, TermName("materializePtrTag"))
+    lazy val PtrWildcardTagMethod =
+      getDecl(TagModule, TermName("materializePtrWildcard"))
+    lazy val PtrClassNotGivenClassTagMethod =
+      getDecl(TagModule, TermName("materializePtrClassNotGivenClassTag"))
     lazy val ClassTagMethod =
       getDecl(TagModule, TermName("materializeClassTag"))
     lazy val NatBaseTagMethod = (0 to 9).map { n =>
