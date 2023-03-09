@@ -160,7 +160,11 @@ trait Visit { self: Interflow =>
         case (argty, origty) =>
           // Duplicate argument type should not be
           // less specific than the original declare type.
-          if (!Sub.is(argty, origty)) origty else argty
+          val tpe = if (!Sub.is(argty, origty)) origty else argty
+          // Lift Unit to BoxedUnit, only in that form it can be passed as a function argument
+          // It would be better to eliminate void arguments, but currently generates lots of problmes
+          if (tpe == nir.Type.Unit) Rt.BoxedUnit
+          else tpe
       }
       val Global.Member(top, sig) = orig: @unchecked
       Global.Member(top, Sig.Duplicate(sig, dupargtys))
