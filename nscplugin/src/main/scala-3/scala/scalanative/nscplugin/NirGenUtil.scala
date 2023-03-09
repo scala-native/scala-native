@@ -45,7 +45,9 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     defnNir.UnsafeTag_materializeUShortTag -> defnNir.UShortClass,
     defnNir.UnsafeTag_materializeUIntTag -> defnNir.UIntClass,
     defnNir.UnsafeTag_materializeULongTag -> defnNir.ULongClass,
-    defnNir.UnsafeTag_materializePtrTag -> defnNir.PtrClass
+    defnNir.UnsafeTag_materializePtrTag -> defnNir.PtrClass,
+    defnNir.UnsafeTag_materializePtrWildcardTag -> defnNir.PtrClass,
+    defnNir.UnsafeTag_materializePtrClassNotGivenClassTag -> defnNir.PtrClass
   )
 
   protected def desugarTree(tree: Tree): Tree = {
