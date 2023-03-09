@@ -6,7 +6,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.javalib.util.SpliteratorsTest
 
 /* Test Arrays.spliterator() methods. They were added for Scala Native after
  * the port from Scala.js.

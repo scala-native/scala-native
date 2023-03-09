@@ -19,7 +19,7 @@ class IterableSpliteratorTest {
   @Test def defaultSpliteratorShouldBeWellFormed(): Unit = {
 
     // Let compiler check type returned is as expected.
-    val spliter: Spliterator[Path] = Paths.get("").spliterator()
+    val spliter: Spliterator[Path] = Paths.get(".").spliterator()
     assertNotNull("Null coll.spliterator", spliter)
 
     assertEquals("estimateSize", Long.MaxValue, spliter.estimateSize())
