@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import scala.annotation.tailrec
 
-import scalanative.unsafe.sizeof
+import scalanative.unsafe.sizeOf
 
 class DataInputStream(in: InputStream)
     extends FilterInputStream(in)
@@ -19,7 +19,7 @@ class DataInputStream(in: InputStream)
   //      as only optionally thread-safe and requiring external
   //      synchronization. A buffer per instance does not introduce a
   //      concern.
-  private final val inBasket = new Array[Byte](sizeof[Long].toInt)
+  private final val inBasket = new Array[Byte](sizeOf[Long])
   private final val outBasket = ByteBuffer.wrap(inBasket) // default: BigEndian
 
   private final def rebuffer(n: Int): ByteBuffer = {
@@ -73,16 +73,16 @@ class DataInputStream(in: InputStream)
     readByte() != 0
 
   override final def readByte(): Byte =
-    rebuffer(sizeof[Byte].toInt).get()
+    rebuffer(sizeOf[Byte]).get()
 
   override final def readChar(): Char =
-    rebuffer(sizeof[Char].toInt).getChar()
+    rebuffer(sizeOf[Char]).getChar()
 
   override final def readDouble(): Double =
-    rebuffer(sizeof[Double].toInt).getDouble()
+    rebuffer(sizeOf[Double]).getDouble()
 
   override final def readFloat(): Float =
-    rebuffer(sizeof[Float].toInt).getFloat()
+    rebuffer(sizeOf[Float]).getFloat()
 
   override final def readFully(b: Array[Byte]): Unit =
     readFully(b, 0, b.length)
@@ -117,7 +117,7 @@ class DataInputStream(in: InputStream)
   }
 
   override final def readInt(): Int =
-    rebuffer(sizeof[Int].toInt).getInt()
+    rebuffer(sizeOf[Int]).getInt()
 
   @deprecated("BufferedReader.readLine() is preferred", "JDK 1.1")
   override final def readLine(): String = {
@@ -140,16 +140,16 @@ class DataInputStream(in: InputStream)
     }
   }
   override final def readLong(): Long =
-    rebuffer(sizeof[Long].toInt).getLong()
+    rebuffer(sizeOf[Long]).getLong()
 
   override final def readShort(): Short =
-    rebuffer(sizeof[Short].toInt).getShort()
+    rebuffer(sizeOf[Short]).getShort()
 
   override final def readUnsignedByte(): Int =
     readByte() & 0xff
 
   override final def readUnsignedShort(): Int =
-    rebuffer(sizeof[Short].toInt).getShort() & 0xffff
+    rebuffer(sizeOf[Short]).getShort() & 0xffff
 
   def readUTF(): String =
     DataInputStream.readUTF(this)
