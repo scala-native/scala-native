@@ -143,7 +143,9 @@ object CVarArgList {
         encoded.foreach(appendWord)
       }
     }
-    val resultStorage = alloc[Long](storage.size.toUSize)
+    val resultStorage = z
+      .alloc(fromRawUSize(Intrinsics.sizeOf[Long]) * storage.size.toUSize)
+      .asInstanceOf[Ptr[Long]]
     val storageStart = storage.at(0)
     libc.memcpy(
       toRawPtr(resultStorage),
@@ -155,7 +157,9 @@ object CVarArgList {
       else {
         val vrTop = resultStorage + fpRegisterWords * countFPRegisters
         val grTop = vrTop + countGPRegisters
-        val va = alloc[CVaList]()
+        val va = z
+          .alloc(fromRawUSize(Intrinsics.sizeOf[CVaList]))
+          .asInstanceOf[Ptr[CVaList]]
         va.stack = grTop.asInstanceOf[Ptr[Size]]
         va.grTop = grTop.asInstanceOf[Ptr[Size]]
         va.vrTop = vrTop.asInstanceOf[Ptr[Size]]
@@ -164,7 +168,9 @@ object CVarArgList {
         toRawPtr(va)
       }
     } else {
-      val resultHeader = alloc[Header]()
+      val resultHeader = z
+        .alloc(fromRawUSize(Intrinsics.sizeOf[Header]))
+        .asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = 0.toUInt
       resultHeader.fpOffset = {
         countGPRegisters.toUSize * fromRawUSize(Intrinsics.sizeOf[Long])
@@ -245,7 +251,9 @@ object CVarArgList {
       }
     }
 
-    val resultStorage = toRawPtr(z.alloc(count.toUInt * sizeof[Size]))
+    val resultStorage = toRawPtr(
+      z.alloc(count.toUInt * fromRawUSize(Intrinsics.sizeOf[Size]))
+    )
     libc.memcpy(
       resultStorage,
       toRawPtr(storage),

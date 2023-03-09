@@ -12,7 +12,8 @@ private[scalanative] trait UnsafePackageCompat { self =>
   /** The C 'sizeof' operator. */
   def ssizeof[T]: CSSize = macro MacroImpl.ssizeof[T]
 
-  /** The Scala equivalent of C 'alignmentof', but always returns 64-bit integer */
+  /** The Scala equivalent of C 'alignmentof', but always returns 64-bit integer
+   */
   def alignmentOf[T]: Long = macro MacroImpl.alignmentOf[T]
 
   /** The C 'alignmentof' operator. */
