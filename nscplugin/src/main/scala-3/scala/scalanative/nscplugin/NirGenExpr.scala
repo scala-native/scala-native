@@ -1516,14 +1516,14 @@ trait NirGenExpr(using Context) {
                       this.genCastOp(Type.Float, Type.Double, arg)
                     case Type.FixedSizeI(width, _) if width < Type.Int.width =>
                       val conv =
-                        if (isUnsigned) nir.Conv.Zext 
+                        if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext
                       buf.conv(conv, Type.Int, arg, unwind)
-                    case Type.Long => 
+                    case Type.Long =>
                       // On 32-bit systems Long needs to be truncated to Int
                       // Cast it to size to make undependent from architecture
                       val conv =
-                        if (isUnsigned) nir.Conv.ZSizeCast 
+                        if (isUnsigned) nir.Conv.ZSizeCast
                         else nir.Conv.SSizeCast
                       buf.conv(conv, Type.Size, arg, unwind)
 
