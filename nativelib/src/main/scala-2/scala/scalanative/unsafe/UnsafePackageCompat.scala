@@ -3,8 +3,8 @@ import scala.language.experimental.macros
 
 private[scalanative] trait UnsafePackageCompat { self =>
 
-  /** The Scala equivalent of C 'ssizeof', but always returns 64-bit integer */
-  def sizeOf[T]: Long = macro MacroImpl.sizeOf[T]
+  /** The Scala equivalent of C 'ssizeof', but always returns 32-bit integer */
+  def sizeOf[T]: Int = macro MacroImpl.sizeOf[T]
 
   /** The C 'sizeof' operator. */
   def sizeof[T]: CSize = macro MacroImpl.sizeof[T]
@@ -12,9 +12,9 @@ private[scalanative] trait UnsafePackageCompat { self =>
   /** The C 'sizeof' operator. */
   def ssizeof[T]: CSSize = macro MacroImpl.ssizeof[T]
 
-  /** The Scala equivalent of C 'alignmentof', but always returns 64-bit integer
+  /** The Scala equivalent of C 'alignmentof', but always returns 32-bit integer
    */
-  def alignmentOf[T]: Long = macro MacroImpl.alignmentOf[T]
+  def alignmentOf[T]: Int = macro MacroImpl.alignmentOf[T]
 
   /** The C 'alignmentof' operator. */
   def alignmentof[T]: CSize = macro MacroImpl.alignmentof[T]

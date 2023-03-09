@@ -2,23 +2,21 @@ package scala.scalanative.unsafe
 
 import scala.scalanative.runtime._
 import scala.scalanative.unsigned._
-import scala.scalanative.runtime.Intrinsics.{
-  castRawSizeToLongUnsigned as toLong
-}
+import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt}
 
 private[scalanative] trait UnsafePackageCompat {
   private[scalanative] given reflect.ClassTag[Array[?]] =
     reflect.classTag[Array[AnyRef]].asInstanceOf[reflect.ClassTag[Array[?]]]
 
-  /** The Scala equivalent of C 'alignmentof', but always returns 64-bit integer
+  /** The Scala equivalent of C 'alignmentof', but always returns 32-bit integer
    */
-  inline def alignmentOf[T]: Long = toLong(Intrinsics.alignmentOf[T])
+  inline def alignmentOf[T]: Int = toInt(Intrinsics.alignmentOf[T])
 
   /** The C 'alignmentof' operator. */
   inline def alignmentof[T]: CSize = fromRawUSize(Intrinsics.alignmentOf[T])
 
-  /** The Scala equivalent of C 'ssizeof', but always returns 64-bit integer */
-  inline def sizeOf[T]: Long = toLong(Intrinsics.sizeOf[T])
+  /** The Scala equivalent of C 'ssizeof', but always returns 32-bit integer */
+  inline def sizeOf[T]: Int = toInt(Intrinsics.sizeOf[T])
 
   /** The C 'sizeof' operator. */
   inline def sizeof[T]: CSize = fromRawUSize(Intrinsics.sizeOf[T])
@@ -61,3 +59,19 @@ private[scalanative] trait UnsafePackageCompat {
     ptr
   }
 }
+
+// import scala.compiletime.ops.int.*
+// import scala.compiletime.error
+// import scala.compiletime.constValue
+// inline def stackalloc[T, N <: Int]: Ptr[T] = {
+//   inline val size = inline constValue[N] match
+//     case 1          => sizeof[T]
+//     case n if n > 1 => sizeof[T] * constValue[N].toUSize
+//     case _ =>
+//       error(
+//         "Number of allocated elements needs to be postivie integer literal"
+//       )
+//   val ptr = fromRawPtr[T](Intrinsics.stackalloc(size))
+//   libc.memset(ptr, 0, size)
+//   ptr
+// }
