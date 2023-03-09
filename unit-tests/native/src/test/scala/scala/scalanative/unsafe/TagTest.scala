@@ -60,7 +60,7 @@ class TagTest {
     )
     // sizeOf objects calculates their final size based on memory layout
     // tagOf.size always returns sizeOf[Ptr[_]]
-    // assertTrue(tagof[Object].size == sizeof[Object]) // 
+    // assertTrue(tagof[Object].size == sizeof[Object])
     // assertTrue(tagof[Array[_]].size == sizeof[Array[_]])
   }
 
