@@ -590,6 +590,10 @@ class IssuesTest {
     }
     assertEquals(Foo.fooLiteral, Foo.fooLazy)
   }
+  @Test def i3147(): Unit = {
+    // It's not a runtime, but linktime bug related to nir.Show new lines escapes for string literals
+    println("$\n")
+  }
 
   @Test def i3195(): Unit = {
     // Make sure that inlined calls are resetting the stack upon returning
