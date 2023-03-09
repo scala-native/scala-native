@@ -997,7 +997,7 @@ object Lower {
         pos: Position
     ): Unit = {
       val size = op.ty match {
-        case ClassRef(cls) =>
+        case ClassRef(cls) if op.ty != Type.Unit =>
           if (!cls.allocated) {
             val Global.Top(clsName) = cls.name: @unchecked
             logger.warn(
