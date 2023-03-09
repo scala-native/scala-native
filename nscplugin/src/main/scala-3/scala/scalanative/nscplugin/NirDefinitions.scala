@@ -139,6 +139,9 @@ final class NirDefinitions()(using ctx: Context) {
   def UnsafeTag_materializeNatBaseTags(using Context) = UnsafeTag_materializeNatBaseTagsR.map(_.symbol)
   def UnsafeTag_materializeNatDigitTags(using Context) = UnsafeTag_materializeNatDigitTagsR.map(_.symbol)
   def UnsafeTag_materializeCStructTags(using Context) = UnsafeTag_materializeCStructTagsR.map(_.symbol)
+  @tu lazy val UnsafeTag_materializePtrWildcardTag = TagModule.requiredMethod("materializePtrWildcard")
+  @tu lazy val UnsafeTag_materializePtrClassNotGivenClassTag =
+    TagModule.requiredMethod("materializePtrClassNotGivenClassTag")
 
   // Native runtime package
   @tu lazy val RuntimePackageVal = requiredModuleRef("scala.scalanative.runtime.package")

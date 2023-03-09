@@ -232,4 +232,18 @@ class TagTest {
     assertTrue(tagof[sockaddr_in6].size == sizeof[sockaddr_in6])
     assertTrue(tagof[ipv6_mreq].size == sizeof[ipv6_mreq])
   }
+
+  @Test def abstractTypeTag(): Unit = {
+    // https://github.com/scala-native/scala-native/issues/3196
+    val PtrAnyClassTag = Tag.Ptr(Tag.Class(classOf[AnyRef]))
+    object abstractTagWrapper {
+      type Foo
+    }
+    assertEquals(PtrAnyClassTag, tagof[Ptr[abstractTagWrapper.Foo]])
+    assertEquals(PtrAnyClassTag, tagof[Ptr[_]])
+    assertEquals(
+      Tag.Ptr(PtrAnyClassTag),
+      tagof[Ptr[Ptr[abstractTagWrapper.Foo]]]
+    )
+  }
 }
