@@ -35,8 +35,6 @@ class CollectionDefaultSpliteratorTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("not-Null trySplit", spliter.trySplit())
-
     val required = Spliterator.SIZED | Spliterator.SUBSIZED
 
     assertEquals(

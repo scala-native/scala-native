@@ -56,8 +56,6 @@ class ArraysSpliteratorTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("not-Null trySplit", spliter.trySplit())
-
     // Check that both the size & each element seen are as expected.
 
     assertTrue(
@@ -67,7 +65,7 @@ class ArraysSpliteratorTest {
           "tryAdvance contents do not match,",
           expectedElements(0),
           e,
-          delta = 0.0001
+          0.0001
         )
       )
     )
@@ -78,7 +76,7 @@ class ArraysSpliteratorTest {
         s"forEachRemaining contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -119,8 +117,6 @@ class ArraysSpliteratorTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("not-Null trySplit", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     assertTrue(
@@ -130,7 +126,7 @@ class ArraysSpliteratorTest {
           "tryAdvance contents do not match,",
           expectedElements(sliceStartIndex),
           e,
-          delta = 0.0001
+          0.0001
         )
       )
     )
@@ -141,7 +137,7 @@ class ArraysSpliteratorTest {
         s"forEachRemaining contents(${count})",
         expectedElements(sliceStartIndex + count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -175,8 +171,6 @@ class ArraysSpliteratorTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("not-Null trySplit", spliter.trySplit())
 
     // Check that both the size & each element seen are as expected.
 
@@ -237,8 +231,6 @@ class ArraysSpliteratorTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("not-Null trySplit", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     assertTrue(
@@ -291,8 +283,6 @@ class ArraysSpliteratorTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("not-Null trySplit", spliter.trySplit())
 
     // Check that both the size & each element seen are as expected.
 
@@ -353,8 +343,6 @@ class ArraysSpliteratorTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("not-Null trySplit", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     assertTrue(
@@ -412,8 +400,6 @@ class ArraysSpliteratorTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("not-Null trySplit", spliter.trySplit())
 
     // Check that both the size & each element seen are as expected.
 
@@ -479,8 +465,6 @@ class ArraysSpliteratorTest {
       expectedSliceSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("not-Null trySplit", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 

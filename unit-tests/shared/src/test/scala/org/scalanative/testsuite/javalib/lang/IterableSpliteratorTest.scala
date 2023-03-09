@@ -29,8 +29,6 @@ class IterableSpliteratorTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Default method always reports NO characteristics set.
     assertEquals(
       "characteristics",

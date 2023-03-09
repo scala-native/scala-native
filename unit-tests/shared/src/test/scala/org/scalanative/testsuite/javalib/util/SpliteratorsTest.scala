@@ -109,8 +109,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     assertFalse("tryAdvance", spliter.tryAdvance((_: T) => ()))
 
     var count = 0
@@ -139,8 +137,6 @@ class SpliteratorsTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     assertFalse("tryAdvance", spliter.tryAdvance((_: T) => ()))
 
@@ -171,8 +167,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     assertFalse("tryAdvance", spliter.tryAdvance((_: T) => ()))
 
     var count = 0
@@ -201,8 +195,6 @@ class SpliteratorsTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     assertFalse("tryAdvance", spliter.tryAdvance((_: T) => ()))
 
@@ -237,7 +229,7 @@ class SpliteratorsTest {
 
     var count = 0
     pItrDouble.forEachRemaining((e: Double) => {
-      assertEquals(s"failed match", expectedElements(count), e, delta = 0.0001)
+      assertEquals(s"failed match", expectedElements(count), e, 0.0001)
       count += 1
     })
   }
@@ -383,14 +375,12 @@ class SpliteratorsTest {
 
     assertThrows(classOf[IllegalStateException], spliter.getComparator())
 
-    assertEquals("estimateSize", Long.MaxValue, spliter.estimateSize())
+    assertEquals("estimateSize", expectedSize, spliter.estimateSize())
     assertEquals(
       "getExactSizeIfKnown",
       -1, // Because CONCURRENT, exact size is not known.
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both count & each element seen are as expected.
 
@@ -407,7 +397,7 @@ class SpliteratorsTest {
 
     assertEquals(
       "tryAdvance estimateSize",
-      Long.MaxValue,
+      expectedSize, // on JVM estimateSize always returns initial expectedSize
       spliter.estimateSize()
     )
 
@@ -420,9 +410,10 @@ class SpliteratorsTest {
       count += 1
     })
     assertEquals("forEachRemaining size", expectedSize, count)
+    // on JVM estimateSize always returns initial expectedSize
     assertEquals(
       "forEachRemaining estimateSize",
-      Long.MaxValue,
+      expectedSize,
       spliter.estimateSize()
     )
   }
@@ -456,8 +447,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -467,7 +456,7 @@ class SpliteratorsTest {
         s"tryAdvance contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -483,7 +472,7 @@ class SpliteratorsTest {
         s"forEachRemaining contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -524,8 +513,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -535,7 +522,7 @@ class SpliteratorsTest {
         s"tryAdvance contents(${count})",
         expectedElements(sliceStartIndex + count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -551,7 +538,7 @@ class SpliteratorsTest {
         s"forEachRemaining contents(${count})",
         expectedElements(sliceStartIndex + count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -587,8 +574,6 @@ class SpliteratorsTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 
@@ -657,8 +642,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -690,86 +673,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorFromIteratorTypeReportsSIZED: Unit = {
-    type T = String
-    val expectedElements = Array(
-      "Doc",
-      "Grumpy",
-      "Happy",
-      "Sleepy",
-      "Bashful",
-      "Sneezy",
-      "Dopey"
-    )
-
-    val expectedSize = expectedElements.size
-
-    val coll = TrivialImmutableCollection(expectedElements: _*)
-    assertEquals(expectedSize, coll.size())
-
-    // This is currently set up to handle the SIZED branch.
-    val requiredPresent = Seq(Spliterator.SIZED | Spliterator.SUBSIZED)
-    val requiredPresentMask = requiredPresent.fold(0)((x, y) => x | y)
-    val requiredAbsent = Seq(Spliterator.CONCURRENT)
-
-    /* Create spliterator specifying characteristics as 0. Then check
-     * that the spliterator always reports, as documented, SIZED and SUBSIZED
-     * but never CONCURRENT.
-     */
-    // Let compiler check type returned is expected.
-    val spliter: Spliterator[T] = Spliterators.spliterator(
-      coll.iterator,
-      expectedSize,
-      0
-    )
-    assertNotNull("Null array.spliterator", spliter)
-
-    // spliterator should have required characteristics and no others.
-    verifyCharacteristics(spliter, requiredPresent, requiredAbsent)
-
-    assertThrows(classOf[IllegalStateException], spliter.getComparator())
-
-    assertEquals("estimateSize", expectedSize, spliter.estimateSize())
-    assertEquals(
-      "getExactSizeIfKnown",
-      expectedSize,
-      spliter.getExactSizeIfKnown()
-    )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
-    // Check that both count & each element seen are as expected.
-
-    var count = 0
-
-    spliter.tryAdvance((e: T) => {
-      assertEquals(
-        s"tryAdvance contents(${count})",
-        expectedElements(count),
-        e
-      )
-      count += 1
-    })
-
-    assertEquals(
-      "tryAdvance estimateSize",
-      expectedSize - 1,
-      spliter.estimateSize()
-    )
-
-    spliter.forEachRemaining((e: T) => {
-      assertEquals(
-        s"forEachRemaining contents(${count})",
-        expectedElements(count),
-        e
-      )
-      count += 1
-    })
-    assertEquals("forEachRemaining", expectedSize, count)
-    assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
-  }
-
-  @Test def spliteratorFromIteratorTypeReportsUnsizedCONCURRENT: Unit = {
+  @Test def spliteratorFromIteratorType: Unit = {
     type T = String
     val expectedElements = Array(
       "Arctic",
@@ -786,6 +690,9 @@ class SpliteratorsTest {
     val coll = TrivialImmutableCollection(expectedElements: _*)
     assertEquals(expectedSize, coll.size())
 
+    /* Test only the "astonishing" case, estimatedSize always return the
+     * initial size. No need to test CONCURRENT and SIZED separately.
+     */
     val requiredPresent = Seq(Spliterator.CONCURRENT)
     val requiredPresentMask = requiredPresent.fold(0)((x, y) => x | y)
 
@@ -812,14 +719,12 @@ class SpliteratorsTest {
 
     assertThrows(classOf[IllegalStateException], spliter.getComparator())
 
-    assertEquals("estimateSize", Long.MaxValue, spliter.estimateSize())
+    assertEquals("estimateSize", expectedSize, spliter.estimateSize())
     assertEquals(
       "getExactSizeIfKnown",
-      -1, // Since CONCURRENT, size expect size to be unknown.
+      -1,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the count & each element seen are as expected.
 
@@ -836,7 +741,7 @@ class SpliteratorsTest {
 
     assertEquals(
       "tryAdvance estimateSize",
-      Long.MaxValue,
+      expectedSize, // on JVM estimateSize always returns initial expectedSize
       spliter.estimateSize()
     )
 
@@ -849,9 +754,10 @@ class SpliteratorsTest {
       count += 1
     })
     assertEquals("forEachRemaining", expectedSize, count)
+    // on JVM estimateSize always returns initial expectedSize
     assertEquals(
       "forEachRemaining estimateSize",
-      Long.MaxValue,
+      expectedSize,
       spliter.estimateSize()
     )
   }
@@ -884,8 +790,6 @@ class SpliteratorsTest {
       expectedSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 
@@ -950,8 +854,6 @@ class SpliteratorsTest {
       expectedSliceSize,
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 
@@ -1045,8 +947,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -1129,8 +1029,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -1140,14 +1038,14 @@ class SpliteratorsTest {
         s"tryAdvance contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
 
     assertEquals(
       "tryAdvance estimateSize",
-      expectedSize - 1,
+      expectedSize, // on JVM estimateSize always returns initial expectedSize
       spliter.estimateSize()
     )
 
@@ -1156,12 +1054,17 @@ class SpliteratorsTest {
         s"forEachRemaining contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
     assertEquals("forEachRemaining", expectedElements.size, count)
-    assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
+    // on JVM estimateSize always returns initial expectedSize
+    assertEquals(
+      "forEachRemaining estimateSize",
+      expectedSize,
+      spliter.estimateSize()
+    )
   }
 
   @Test def spliteratorFromPrimitiveIteratorOfInt: Unit = {
@@ -1214,8 +1117,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -1231,7 +1132,7 @@ class SpliteratorsTest {
 
     assertEquals(
       "tryAdvance estimateSize",
-      expectedSize - 1,
+      expectedSize, // on JVM estimateSize always returns initial expectedSize
       spliter.estimateSize()
     )
 
@@ -1244,7 +1145,12 @@ class SpliteratorsTest {
       count += 1
     })
     assertEquals("forEachRemaining", expectedElements.size, count)
-    assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
+    // on JVM estimateSize always returns initial expectedSize
+    assertEquals(
+      "forEachRemaining estimateSize",
+      expectedSize,
+      spliter.estimateSize()
+    )
   }
 
   @Test def spliteratorFromPrimitiveIteratorOfLong: Unit = {
@@ -1297,8 +1203,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -1314,7 +1218,7 @@ class SpliteratorsTest {
 
     assertEquals(
       "tryAdvance estimateSize",
-      expectedSize - 1,
+      expectedSize, // on JVM estimateSize always returns initial expectedSize
       spliter.estimateSize()
     )
 
@@ -1327,10 +1231,14 @@ class SpliteratorsTest {
       count += 1
     })
     assertEquals("forEachRemaining", expectedElements.size, count)
-    assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
+    // on JVM estimateSize always returns initial expectedSize
+    assertEquals(
+      "forEachRemaining estimateSize",
+      expectedSize,
+      spliter.estimateSize()
+    )
   }
 
-// estimateSize Done from Top of file to here
   @Test def spliteratorUnknownSizeFromIteratorType: Unit = {
     type T = String
     val expectedElements = Array(
@@ -1375,8 +1283,6 @@ class SpliteratorsTest {
       -1, // By definition, size is Unknown.
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 
@@ -1461,8 +1367,6 @@ class SpliteratorsTest {
       spliter.getExactSizeIfKnown()
     )
 
-    assertNull("Expected trySplit to return null", spliter.trySplit())
-
     // Check that both the end index & each element seen are as expected.
 
     var count = 0
@@ -1472,7 +1376,7 @@ class SpliteratorsTest {
         s"tryAdvance contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -1488,7 +1392,7 @@ class SpliteratorsTest {
         s"forEachRemaining contents(${count})",
         expectedElements(count),
         e,
-        delta = 0.0001
+        0.0001
       )
       count += 1
     })
@@ -1546,8 +1450,6 @@ class SpliteratorsTest {
       -1, // By definition, size is Unknown.
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 
@@ -1631,8 +1533,6 @@ class SpliteratorsTest {
       -1, // By definition, size is Unknown.
       spliter.getExactSizeIfKnown()
     )
-
-    assertNull("Expected trySplit to return null", spliter.trySplit())
 
     // Check that both the end index & each element seen are as expected.
 

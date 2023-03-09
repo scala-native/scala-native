@@ -263,18 +263,14 @@ object Spliterators {
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractSpliterator[T](c.size(), harmonized) {
       lazy val it = c.iterator()
-      var remaining = c.size()
 
-      override def estimateSize(): Long =
-        if (isMaskSet(harmonized, sizedCharacteristicsMask)) remaining
-        else Long.MaxValue
+      override def estimateSize(): Long = c.size() // even if CONCURRENT
 
       def tryAdvance(action: Consumer[_ >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!it.hasNext()) false
         else {
           action.accept(it.next())
-          remaining -= 1
           true
         }
       }
@@ -422,18 +418,13 @@ object Spliterators {
     Objects.requireNonNull(iterator)
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractSpliterator[T](size, harmonized) {
-      var remaining = size
-
-      override def estimateSize(): Long =
-        if (isMaskSet(harmonized, sizedCharacteristicsMask)) remaining
-        else Long.MaxValue
+      override def estimateSize(): Long = size // always initial size
 
       def tryAdvance(action: Consumer[_ >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
         else {
           action.accept(iterator.next())
-          remaining -= 1
           true
         }
       }
@@ -568,18 +559,13 @@ object Spliterators {
 
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractDoubleSpliterator(size, harmonized) {
-      var remaining = size
-
-      override def estimateSize(): Long =
-        if (isMaskSet(harmonized, sizedCharacteristicsMask)) remaining
-        else Long.MaxValue
+      override def estimateSize(): Long = size // always initial size
 
       def tryAdvance(action: DoubleConsumer): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
         else {
           action.accept(iterator.nextDouble())
-          remaining -= 1
           true
         }
       }
@@ -595,18 +581,13 @@ object Spliterators {
 
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractIntSpliterator(size, harmonized) {
-      var remaining = size
-
-      override def estimateSize(): Long =
-        if (isMaskSet(harmonized, sizedCharacteristicsMask)) remaining
-        else Long.MaxValue
+      override def estimateSize(): Long = size // always initial size
 
       def tryAdvance(action: IntConsumer): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
         else {
           action.accept(iterator.nextInt())
-          remaining -= 1
           true
         }
       }
@@ -622,18 +603,13 @@ object Spliterators {
 
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractLongSpliterator(size, harmonized) {
-      var remaining = size
-
-      override def estimateSize(): Long =
-        if (isMaskSet(harmonized, sizedCharacteristicsMask)) remaining
-        else Long.MaxValue
+      override def estimateSize(): Long = size // always initial size
 
       def tryAdvance(action: LongConsumer): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
         else {
           action.accept(iterator.nextLong())
-          remaining -= 1
           true
         }
       }
