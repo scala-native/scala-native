@@ -51,7 +51,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    runs-on: ubuntu-20.04
+    runs-on: macos-11
     needs: [test-runtime]
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:

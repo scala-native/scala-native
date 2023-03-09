@@ -123,7 +123,7 @@ jobs:
             gc: commix
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/linux-setup-env
+      - uses: ./.github/actions/windows-setup-env
         with:
           scala-version: ${{matrix.scala}}
   
