@@ -187,5 +187,4 @@ object Intrinsics {
    *  Accepts only class literals. Whenever possible use `alignment[T]` instead
    */
   def alignmentOf(cls: Class[_]): RawSize = intrinsic
-
 }

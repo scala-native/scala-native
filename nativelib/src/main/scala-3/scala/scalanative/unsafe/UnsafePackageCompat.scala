@@ -59,19 +59,3 @@ private[scalanative] trait UnsafePackageCompat {
     ptr
   }
 }
-
-// import scala.compiletime.ops.int.*
-// import scala.compiletime.error
-// import scala.compiletime.constValue
-// inline def stackalloc[T, N <: Int]: Ptr[T] = {
-//   inline val size = inline constValue[N] match
-//     case 1          => sizeof[T]
-//     case n if n > 1 => sizeof[T] * constValue[N].toUSize
-//     case _ =>
-//       error(
-//         "Number of allocated elements needs to be postivie integer literal"
-//       )
-//   val ptr = fromRawPtr[T](Intrinsics.stackalloc(size))
-//   libc.memset(ptr, 0, size)
-//   ptr
-// }
