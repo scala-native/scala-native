@@ -215,47 +215,46 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       sym: Symbol,
       isExtern: Boolean
   ): nir.Type.Function = {
-    require(sym.isMethod || sym.isStaticMember, "symbol is not a method")
+    def resolve() = {
+      require(sym.isMethod || sym.isStaticMember, "symbol is not a method")
 
-    val tpe = sym.tpe
-    val owner = sym.owner
-    val paramtys = genMethodSigParamsImpl(sym, isExtern)
-    val selfty =
-      if (isExtern || sym.isStaticInNIR) None
-      else Some(genType(owner.tpe))
-    val retty =
-      if (sym.isClassConstructor) nir.Type.Unit
-      else if (isExtern) genExternType(sym.tpe.resultType)
-      else genType(sym.tpe.resultType)
+      val tpe = sym.tpe
+      val owner = sym.owner
+      val paramtys = genMethodSigParamsImpl(sym, isExtern)
+      val selfty =
+        if (isExtern || sym.isStaticInNIR) None
+        else Some(genType(owner.tpe))
+      val retty =
+        if (sym.isClassConstructor) nir.Type.Unit
+        else if (isExtern) genExternType(sym.tpe.resultType)
+        else genType(sym.tpe.resultType)
 
-    nir.Type.Function(selfty ++: paramtys, retty)
+      nir.Type.Function(selfty ++: paramtys, retty)
+    }
+    cachedMethodSig.getOrElseUpdate((sym, isExtern), resolve())
   }
 
   private def genMethodSigParamsImpl(
       sym: Symbol,
       isExtern: Boolean
   ): Seq[nir.Type] = {
-    val wereRepeated = exitingPhase(currentRun.typerPhase) {
-      for {
-        params <- sym.tpe.paramss
-        param <- params
-      } yield {
-        param.name -> isScalaRepeatedParamType(param.tpe)
-      }
-    }.toMap
-
-    sym.tpe.params.map {
-      case p
-          if wereRepeated.getOrElse(p.name, false) &&
-            sym.owner.isExternType =>
-        nir.Type.Vararg
-
-      case p =>
-        if (isExtern) {
-          genExternType(p.tpe)
-        } else {
-          genType(p.tpe)
+    val params = sym.tpe.params
+    if (!isExtern && !sym.owner.isExternType)
+      params.map { p => genType(p.tpe) }
+    else {
+      val wereRepeated = exitingPhase(currentRun.typerPhase) {
+        for {
+          params <- sym.tpe.paramss
+          param <- params
+        } yield {
+          param.name -> isScalaRepeatedParamType(param.tpe)
         }
+      }.toMap
+
+      params.map { p =>
+        if (wereRepeated(p.name)) nir.Type.Vararg
+        else genExternType(p.tpe)
+      }
     }
   }
 }

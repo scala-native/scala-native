@@ -1460,36 +1460,76 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] = {
-      if !sym.isExtern then genSimpleArgs(argsp)
-      else {
-        val res = Seq.newBuilder[Val]
-        argsp.zip(sym.paramInfo.paramInfoss.flatten).foreach {
-          case (argp, paramTpe) =>
-            given nir.Position = argp.span
-            val externType = genExternType(paramTpe.finalResultType)
-            val arg = (genExpr(argp), Type.box.get(externType)) match {
-              case (value @ Val.Null, Some(unboxedType)) =>
-                externType match {
-                  case Type.Ptr | _: Type.RefKind => value
-                  case _ =>
-                    report.warning(
-                      s"Passing null as argument of type ${paramTpe.show} to the extern method is unsafe. " +
-                        s"The argument would be unboxed to primitive value of type $externType.",
-                      argp.srcPos
-                    )
-                    Val.Zero(unboxedType)
-                }
-              case (value, _) => value
-            }
-            res += toExtern(externType, arg)
-        }
-        res.result()
-      }
-    }
+    def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] =
+      if sym.isExtern
+      then genExternMethodArgs(sym, argsp)
+      else genSimpleArgs(argsp)
 
-    private def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] = {
-      argsp.map(genExpr)
+    private def genSimpleArgs(argsp: Seq[Tree]): Seq[Val] = argsp.map(genExpr)
+
+    private def genExternMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] = {
+      val res = Seq.newBuilder[Val]
+      val Type.Function(argTypes, _) = genExternMethodSig(sym)
+      val paramTypes = sym.paramInfo.paramInfoss.flatten
+      assert(
+        argTypes.size == argsp.size && argTypes.size == paramTypes.size,
+        "Different number of arguments passed to method signature and apply method"
+      )
+
+      def genArg(
+          argp: Tree,
+          paramTpe: Types.Type
+      ): nir.Val = {
+        given nir.Position = argp.span
+        val externType = genExternType(paramTpe.finalResultType)
+        val value = (genExpr(argp), Type.box.get(externType)) match {
+          case (value @ Val.Null, Some(unboxedType)) =>
+            externType match {
+              case Type.Ptr | _: Type.RefKind => value
+              case _ =>
+                report.warning(
+                  s"Passing null as argument of type ${paramTpe.show} to the extern method is unsafe. " +
+                    s"The argument would be unboxed to primitive value of type $externType.",
+                  argp.srcPos
+                )
+                Val.Zero(unboxedType)
+            }
+          case (value, _) => value
+        }
+        toExtern(externType, value)
+      }
+
+      for ((argp, sigType), paramTpe) <- argsp zip argTypes zip paramTypes
+      do
+        sigType match {
+          case nir.Type.Vararg =>
+            argp match {
+              case Apply(_, List(seqLiteral: JavaSeqLiteral)) =>
+                for tree <- seqLiteral.elems
+                do
+                  given nir.Position = tree.span
+                  val arg = genArg(tree, tree.tpe)
+                  // Decimal varargs needs to be promoted to at least Int, and Float needs to be promoted to Double
+                  val promotedArg = arg.ty match {
+                    case Type.Float =>
+                      this.genCastOp(Type.Float, Type.Double, arg)
+                    case Type.FixedSizeI(width, _) if width < Type.Int.width =>
+                      val isUnsigned = Type.isUnsignedType(genType(tree.tpe))
+                      val conv =
+                        if (isUnsigned) nir.Conv.Zext else nir.Conv.Sext
+                      buf.conv(conv, Type.Int, arg, unwind)
+                    case _ => arg
+                  }
+                  res += promotedArg
+              case _ =>
+                report.error(
+                  "Unable to extract vararg arguments, varargs to extern methods must be passed directly to the applied function",
+                  argp.srcPos
+                )
+            }
+          case _ => res += genArg(argp, paramTpe)
+        }
+      res.result()
     }
 
     private def genArrayOp(app: Apply, code: Int): Val = {
@@ -1770,8 +1810,10 @@ trait NirGenExpr(using Context) {
           Some(nir.Conv.Bitcast)
         case (Type.F(w1), Type.FixedSizeI(w2, _)) if w1 == w2 =>
           Some(nir.Conv.Bitcast)
-        case _ if fromty == toty => None
-        case _                   => unsupported(s"cast from $fromty to $toty")
+        case _ if fromty == toty       => None
+        case (Type.Float, Type.Double) => Some(nir.Conv.Fpext)
+        case (Type.Double, Type.Float) => Some(nir.Conv.Fptrunc)
+        case _ => unsupported(s"cast from $fromty to $toty")
       }
 
     /** Boxes a value of the given type before `elimErasedValueType`.

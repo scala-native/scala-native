@@ -11,6 +11,8 @@ import core.Types._
 import core.Symbols._
 import core.StdNames._
 import core.TypeErasure._
+import dotty.tools.dotc.report
+import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.transform.SymUtils._
 
 import scala.scalanative.nir
@@ -280,38 +282,69 @@ trait NirGenType(using Context) {
       sym: Symbol,
       isExtern: Boolean
   ): nir.Type.Function = {
-    require(
-      sym.is(Method) || sym.isStatic,
-      s"symbol ${sym.owner} $sym is not a method"
-    )
+    def resolve() = {
+      require(
+        sym.is(Method) || sym.isStatic,
+        s"symbol ${sym.owner} $sym is not a method"
+      )
 
-    val owner = sym.owner
-    val paramtys = genMethodSigParamsImpl(sym, isExtern)
-    val selfty = Option.unless(isExtern || sym.isStaticInNIR) {
-      genType(owner)
+      val owner = sym.owner
+      val paramtys = genMethodSigParamsImpl(sym, isExtern)
+      val selfty = Option.unless(isExtern || sym.isStaticInNIR) {
+        genType(owner)
+      }
+      val resultType = sym.info.resultType
+      val retty =
+        if (sym.isConstructor) nir.Type.Unit
+        else if (isExtern) genExternType(resultType)
+        else genType(resultType)
+      nir.Type.Function(selfty ++: paramtys, retty)
     }
-    val resultType = sym.info.resultType
-    val retty =
-      if (sym.isConstructor) nir.Type.Unit
-      else if (isExtern) genExternType(resultType)
-      else genType(resultType)
 
-    nir.Type.Function(selfty ++: paramtys, retty)
+    cachedMethodSig.getOrElseUpdate((sym, isExtern), resolve())
   }
 
   private def genMethodSigParamsImpl(
       sym: Symbol,
       isExtern: Boolean
-  ): Seq[nir.Type] = {
+  )(using Context): Seq[nir.Type] = {
+    import core.Phases._
+    val repeatedParams = if (sym.isExtern) {
+      atPhase(typerPhase) {
+        sym.paramInfo match {
+          // @extern def foo(a: Int): Int
+          case MethodTpe(paramNames, paramTypes, _) =>
+            for (name, tpe) <- paramNames zip paramTypes
+            yield name -> tpe.isRepeatedParam
+          // @extern def foo[T](ptr: Ptr[T]): Int
+          case PolyType(_, MethodTpe(paramNames, paramTypes, _)) =>
+            for (name, tpe) <- paramNames zip paramTypes
+            yield name -> tpe.isRepeatedParam
+          // @extern def foo: Int
+          case ExprType(_) => Nil
+          // @extern var foo: Int
+          case TypeRef(_, _) => Nil
+          // @extern def foo: Ptr[Int]
+          case AppliedType(_, _) => Nil
+          case _ =>
+            report.warning(
+              "Unable to resolve method sig params for symbol, extern VarArgs would not work",
+              sym.srcPos
+            )
+            Nil
+        }
+      }.toMap
+    } else Map.empty
 
+    val info = sym.info
     for {
-      paramList <- sym.info.paramInfoss
-      param <- paramList
+      (paramTypes, paramNames) <- info.paramInfoss zip info.paramNamess
+      (paramType, paramName) <- paramTypes zip paramNames
     } yield {
-      if (param.isRepeatedParam && sym.isExtern)
-        nir.Type.Vararg
-      else if (isExtern) genExternType(param)
-      else genType(param)
+      def isRepeated = repeatedParams.getOrElse(paramName, false)
+      if (isExtern && isRepeated) nir.Type.Vararg
+      else if (isExtern) genExternType(paramType)
+      else genType(paramType)
     }
   }
 }
