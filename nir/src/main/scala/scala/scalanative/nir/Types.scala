@@ -89,11 +89,22 @@ object Type {
   final case class Var(ty: Type) extends SpecialKind
   final case class Function(args: Seq[Type], ret: Type) extends SpecialKind
 
-  val boxesTo = Seq[(Type, Type)](
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UByte")) -> Type.Byte,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UShort")) -> Type.Short,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.UInt")) -> Type.Int,
-    Type.Ref(Global.Top("scala.scalanative.unsigned.ULong")) -> Type.Long,
+  private object unsigned {
+    val Byte = Type.Ref(Global.Top("scala.scalanative.unsigned.UByte"))
+    val Short = Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))
+    val Int = Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))
+    val Long = Type.Ref(Global.Top("scala.scalanative.unsigned.ULong"))
+
+    val values: Set[nir.Type] = Set(Byte, Short, Int, Long)
+  }
+  private val unsignedBoxesTo = Seq[(Type, Type)](
+    unsigned.Byte -> Type.Byte,
+    unsigned.Short -> Type.Short,
+    unsigned.Int -> Type.Int,
+    unsigned.Long -> Type.Long
+  )
+
+  val boxesTo: Seq[(Type, Type)] = unsignedBoxesTo ++ Seq(
     Type.Ref(Global.Top("scala.scalanative.unsafe.CArray")) -> Type.Ptr,
     Type.Ref(Global.Top("scala.scalanative.unsafe.CVarArgList")) -> Type.Ptr,
     Type.Ref(Global.Top("scala.scalanative.unsafe.Ptr")) -> Type.Ptr,
@@ -127,6 +138,8 @@ object Type {
   def isPtrBox(ty: Type): Boolean = isBoxOf(Type.Ptr)(ty)
   def isPtrType(ty: Type): Boolean =
     ty == Type.Ptr || ty.isInstanceOf[Type.RefKind]
+  def isUnsignedType(ty: Type): Boolean =
+    unsigned.values.contains(normalize(ty))
 
   def normalize(ty: Type): Type = ty match {
     case ArrayValue(ty, n)          => ArrayValue(normalize(ty), n)
