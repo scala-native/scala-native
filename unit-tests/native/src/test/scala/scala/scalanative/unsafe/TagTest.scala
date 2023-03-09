@@ -36,8 +36,6 @@ class TagTest {
 
   @Test def tagSizeShouldBeConsistentWithSizeof(): Unit = {
     assertTrue(tagof[Ptr[_]].size == sizeof[Ptr[_]])
-    assertTrue(tagof[Object].size == sizeof[Object])
-    assertTrue(tagof[Array[_]].size == sizeof[Array[_]])
     assertTrue(tagof[Unit].size == sizeof[Unit])
     assertTrue(tagof[Boolean].size == sizeof[Boolean])
     assertTrue(tagof[Char].size == sizeof[Char])
@@ -60,6 +58,10 @@ class TagTest {
     assertTrue(
       tagof[CStruct3[Byte, Byte, Int]].size == sizeof[CStruct3[Byte, Byte, Int]]
     )
+    // sizeOf objects calculates their final size based on memory layout
+    // tagOf.size always returns sizeOf[Ptr[_]]
+    // assertTrue(tagof[Object].size == sizeof[Object]) // 
+    // assertTrue(tagof[Array[_]].size == sizeof[Array[_]])
   }
 
   @Test def tagAlignment(): Unit = {
