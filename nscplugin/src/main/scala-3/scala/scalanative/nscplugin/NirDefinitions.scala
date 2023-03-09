@@ -100,6 +100,9 @@ final class NirDefinitions()(using ctx: Context) {
     (0 to 22).map(n => TagModule.requiredMethod(s"materializeCStruct${n}Tag"))
   @tu lazy val UnsafeTag_materializeSizeTag = TagModule.requiredMethod("materializeSizeTag")
   @tu lazy val UnsafeTag_materializeUSizeTag = TagModule.requiredMethod("materializeUSizeTag")
+  @tu lazy val UnsafeTag_materializePtrWildcardTag = TagModule.requiredMethod("materializePtrWildcard")
+  @tu lazy val UnsafeTag_materializePtrClassNotGivenClassTag =
+    TagModule.requiredMethod("materializePtrClassNotGivenClassTag")
 
   // Native runtime package
   @tu lazy val RuntimePackageClass = requiredModule("scala.scalanative.runtime.package")
