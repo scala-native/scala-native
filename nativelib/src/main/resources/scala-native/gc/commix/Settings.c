@@ -49,7 +49,7 @@ char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
 #endif
 
 int Settings_GCThreadCount() {
-    char *str = getenv("SCALANATIVE_GC_THREADS");
+    char *str = getenv("GC_NPROCS");
     if (str == NULL) {
         // default is number of cores - 1, but no less than 1 and no more than 8
 #ifdef _WIN32

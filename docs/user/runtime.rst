@@ -29,8 +29,13 @@ The plan is to add more GC settings in the future using the Boehm setting names 
 Boehm GC
 --------
 
-The Boehm GC uses the two variables shown above. The following document shows all the variables
-available for Boehm: `README <https://github.com/ivmai/bdwgc/blob/master/docs/README.environment>`_.
+The Boehm GC uses the two variables shown above. The following is available for Boehm
+and Commix.
+
+* GC_NPROCS
+
+The following document shows all the variables available for Boehm:
+`README <https://github.com/ivmai/bdwgc/blob/master/docs/README.environment>`_.
 
 None GC
 -------
@@ -47,15 +52,18 @@ The Immix GC uses the two variables shown above as well as the following variabl
 Commix GC
 ---------
 
-In addition to the variables described above for Immix, Commix
-also adds a few more variables which do not match the Boehm settings yet.
+In addition to the variables described above for Immix, Commix has the following
+variable shared with Boehm.
 
-Note: `STATS_FILE_SETTING` is only available if the compiler defines
-`-DENABLE_GC_STATS` for Commix.
+* GC_NPROCS (default is processor count - 1 up to 8 maximum)
 
-* SCALANATIVE_GC_THREADS (default is processor count - 1)
+Commix also adds a few more variables which do not match the Boehm settings yet.
+
 * SCALANATIVE_TIME_RATIO (default is .05)
 * SCALANATIVE_FREE_RATIO (default is .5)
+
+Note: STATS_FILE_SETTING shared with Immix is only available if the compiler defines
+-DENABLE_GC_STATS for Commix.
 
 Examples
 --------
