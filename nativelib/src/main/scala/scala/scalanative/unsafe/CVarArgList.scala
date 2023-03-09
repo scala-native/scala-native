@@ -2,17 +2,9 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
-import scalanative.unsigned._
-import scalanative.runtime.{
-  intrinsic,
-  RawPtr,
-  toRawPtr,
-  libc,
-  LongArray,
-  PlatformExt,
-  Platform
-}
-import scalanative.meta.LinktimeInfo._
+import scala.scalanative.unsigned._
+import scala.scalanative.runtime.{Array => _, _}
+import scala.scalanative.meta.LinktimeInfo._
 
 /** Type of a C-style vararg list (va_list in C). */
 final class CVarArgList private[scalanative] (
@@ -60,7 +52,8 @@ object CVarArgList {
     else 6
   private final val countFPRegisters = 8
   private final val fpRegisterWords =
-    if (PlatformExt.isArm64 && !isWindowsOrMac) 16 / sizeof[Size].toInt
+    if (PlatformExt.isArm64 && !isWindowsOrMac)
+      16 / fromRawUSize(Intrinsics.sizeOf[Size]).toInt
     else 2
   private final val registerSaveWords =
     countGPRegisters + countFPRegisters * fpRegisterWords
@@ -98,7 +91,9 @@ object CVarArgList {
         encode(value.toDouble)
       case _ =>
         val count =
-          ((sizeof(tag) + sizeof[Long] - 1.toUSize) / sizeof[Long]).toInt
+          ((tag.size +
+            fromRawUSize(Intrinsics.sizeOf[Long]) -
+            1.toUSize) / fromRawUSize(Intrinsics.sizeOf[Long])).toInt
         val words = new Array[Long](count)
         val start = words.at(0).asInstanceOf[Ptr[T]]
         tag.store(start, value)
@@ -148,20 +143,23 @@ object CVarArgList {
         encoded.foreach(appendWord)
       }
     }
-    val resultStorage =
-      z.alloc(sizeof[Long] * storage.size.toUSize).asInstanceOf[Ptr[Long]]
+    val resultStorage = z
+      .alloc(fromRawUSize(Intrinsics.sizeOf[Long]) * storage.size.toUSize)
+      .asInstanceOf[Ptr[Long]]
     val storageStart = storage.at(0)
     libc.memcpy(
       toRawPtr(resultStorage),
       toRawPtr(storageStart),
-      wordsUsed.toUSize * sizeof[Long]
+      wordsUsed.toUSize * fromRawUSize(Intrinsics.sizeOf[Long])
     )
     val rawPtr = if (PlatformExt.isArm64) {
       if (Platform.isMac()) toRawPtr(storageStart)
       else {
         val vrTop = resultStorage + fpRegisterWords * countFPRegisters
         val grTop = vrTop + countGPRegisters
-        val va = z.alloc(sizeof[CVaList]).asInstanceOf[Ptr[CVaList]]
+        val va = z
+          .alloc(fromRawUSize(Intrinsics.sizeOf[CVaList]))
+          .asInstanceOf[Ptr[CVaList]]
         va.stack = grTop.asInstanceOf[Ptr[Size]]
         va.grTop = grTop.asInstanceOf[Ptr[Size]]
         va.vrTop = vrTop.asInstanceOf[Ptr[Size]]
@@ -170,9 +168,13 @@ object CVarArgList {
         toRawPtr(va)
       }
     } else {
-      val resultHeader = z.alloc(sizeof[Header]).asInstanceOf[Ptr[Header]]
+      val resultHeader = z
+        .alloc(fromRawUSize(Intrinsics.sizeOf[Header]))
+        .asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = 0.toUInt
-      resultHeader.fpOffset = (countGPRegisters.toUSize * sizeof[Long]).toUInt
+      resultHeader.fpOffset = {
+        countGPRegisters.toUSize * fromRawUSize(Intrinsics.sizeOf[Long])
+      }.toUInt
       resultHeader.regSaveArea = resultStorage
       resultHeader.overflowArgArea = resultStorage + registerSaveWords
       toRawPtr(resultHeader)
@@ -239,7 +241,7 @@ object CVarArgList {
         storage = fromRawPtr(
           realloc(
             toRawPtr(storage),
-            allocated.toUInt * sizeof[Size]
+            allocated.toUInt * fromRawUSize(Intrinsics.sizeOf[Size])
           )
         )
       }
@@ -249,11 +251,13 @@ object CVarArgList {
       }
     }
 
-    val resultStorage = toRawPtr(z.alloc(count.toUInt * sizeof[Size]))
+    val resultStorage = toRawPtr(
+      z.alloc(count.toUInt * fromRawUSize(Intrinsics.sizeOf[Size]))
+    )
     libc.memcpy(
       resultStorage,
       toRawPtr(storage),
-      count.toUInt * sizeof[Size]
+      count.toUInt * fromRawUSize(Intrinsics.sizeOf[Size])
     )
     libc.free(toRawPtr(storage))
     new CVarArgList(resultStorage)

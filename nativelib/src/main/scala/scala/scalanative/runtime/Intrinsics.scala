@@ -7,7 +7,10 @@ import scalanative.unsigned.USize
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: USize): RawPtr = intrinsic
+  def stackalloc(size: RawSize): RawPtr = intrinsic
+
+  /** Intrinsified stack allocation of n bytes. */
+  def stackalloc(size: CSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic

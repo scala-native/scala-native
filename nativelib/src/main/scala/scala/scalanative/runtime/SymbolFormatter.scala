@@ -19,7 +19,11 @@ object SymbolFormatter {
     val len = strlen(sym)
     var pos = 0
     val ident =
-      fromRawPtr[CChar](Intrinsics.stackalloc(sizeof[CChar] * 1024.toUSize))
+      fromRawPtr[CChar](
+        Intrinsics.stackalloc(
+          fromRawUSize(Intrinsics.sizeOf[CChar]) * 1024.toUSize
+        )
+      )
     classNameOut(0) = 0.toByte
     methodNameOut(0) = 0.toByte
 
