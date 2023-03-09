@@ -1509,15 +1509,24 @@ trait NirGenExpr(using Context) {
                 do
                   given nir.Position = tree.span
                   val arg = genArg(tree, tree.tpe)
+                  def isUnsigned = Type.isUnsignedType(genType(tree.tpe))
                   // Decimal varargs needs to be promoted to at least Int, and Float needs to be promoted to Double
                   val promotedArg = arg.ty match {
                     case Type.Float =>
                       this.genCastOp(Type.Float, Type.Double, arg)
                     case Type.FixedSizeI(width, _) if width < Type.Int.width =>
-                      val isUnsigned = Type.isUnsignedType(genType(tree.tpe))
                       val conv =
-                        if (isUnsigned) nir.Conv.Zext else nir.Conv.Sext
+                        if (isUnsigned) nir.Conv.Zext 
+                        else nir.Conv.Sext
                       buf.conv(conv, Type.Int, arg, unwind)
+                    case Type.Long => 
+                      // On 32-bit systems Long needs to be truncated to Int
+                      // Cast it to size to make undependent from architecture
+                      val conv =
+                        if (isUnsigned) nir.Conv.ZSizeCast 
+                        else nir.Conv.SSizeCast
+                      buf.conv(conv, Type.Size, arg, unwind)
+
                     case _ => arg
                   }
                   res += promotedArg
