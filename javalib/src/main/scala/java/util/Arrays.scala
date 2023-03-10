@@ -1,4 +1,5 @@
 // Ported from Scala.js commit: ba618ed dated: 2020-10-05
+// Arrays.spliterator() methods added for Scala Native.
 
 package java.util
 
@@ -996,5 +997,110 @@ object Arrays {
         case _          => false
       }
     }
+  }
+
+// Scala Native additions --------------------------------------------------
+  import java.util.{Spliterator, Spliterators}
+
+  private final val standardArraySpliteratorCharacteristics =
+    Spliterator.SIZED |
+      Spliterator.SUBSIZED |
+      Spliterator.ORDERED |
+      Spliterator.IMMUTABLE
+
+  def spliterator(array: Array[Double]): Spliterator.OfDouble = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      0,
+      array.size,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator(
+      array: Array[Double],
+      startInclusive: Int,
+      endExclusive: Int
+  ): Spliterator.OfDouble = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      startInclusive,
+      endExclusive,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator(array: Array[Int]): Spliterator.OfInt = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      0,
+      array.size,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator(
+      array: Array[Int],
+      startInclusive: Int,
+      endExclusive: Int
+  ): Spliterator.OfInt = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      startInclusive,
+      endExclusive,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator(array: Array[Long]): Spliterator.OfLong = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      0,
+      array.size,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator(
+      array: Array[Long],
+      startInclusive: Int,
+      endExclusive: Int
+  ): Spliterator.OfLong = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      startInclusive,
+      endExclusive,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator[T](array: Array[Object]): Spliterator[T] = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      0,
+      array.size,
+      standardArraySpliteratorCharacteristics
+    )
+  }
+
+  def spliterator[T](
+      array: Array[Object],
+      startInclusive: Int,
+      endExclusive: Int
+  ): Spliterator[T] = {
+    Objects.requireNonNull(array)
+    Spliterators.spliterator(
+      array,
+      startInclusive,
+      endExclusive,
+      standardArraySpliteratorCharacteristics
+    )
   }
 }

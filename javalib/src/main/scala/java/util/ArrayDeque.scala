@@ -851,7 +851,7 @@ class ArrayDeque[E](
    *    a {@code Spliterator} over the elements in this deque
    *  @since 1.8
    */
-  def spliterator(): Spliterator[E] = {
+  override def spliterator(): Spliterator[E] = {
     return new DeqSpliterator()
   }
 

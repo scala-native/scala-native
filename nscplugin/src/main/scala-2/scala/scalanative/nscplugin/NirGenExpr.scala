@@ -1855,7 +1855,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case (_: Type.I, _: Type.RefKind)            => Some(nir.Conv.Inttoptr)
         case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
-        case _ if fromty == toty                     => Nonecase (Type.Float, Type.Double) => Some(nir.Conv.Fpext)
+        case _ if fromty == toty                     => None
+        case (Type.Float, Type.Double) => Some(nir.Conv.Fpext)
         case (Type.Double, Type.Float) => Some(nir.Conv.Fptrunc)
         case _ =>
           unsupported(s"cast from $fromty to $toty")
@@ -2474,18 +2475,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   val promotedArg = arg.ty match {
                     case Type.Float =>
                       this.genCastOp(Type.Float, Type.Double, arg)
-                    case Type.FixedSizeI(width, _) if width < Type.Int.width =>
+                    case Type.I(width, _) if width < Type.Int.width =>
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext
                       buf.conv(conv, Type.Int, arg, unwind)
-                    case Type.Long =>
-                      // On 32-bit systems Long needs to be truncated to Int
-                      // Cast it to size to make undependent from architecture
-                      val conv =
-                        if (isUnsigned) nir.Conv.ZSizeCast
-                        else nir.Conv.SSizeCast
-                      buf.conv(conv, Type.Size, arg, unwind)
                     case _ => arg
                   }
                   res += promotedArg
