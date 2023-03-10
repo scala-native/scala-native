@@ -31,7 +31,17 @@ object unistd {
   def close(fildes: CInt): CInt = extern
   def dup(fildes: CInt): CInt = extern
   def dup2(fildes: CInt, fildesnew: CInt): CInt = extern
-  def execve(path: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
+
+  def _exit(status: CInt): Unit = extern
+
+  // XSI
+  def encrypt(block: Ptr[Byte], edflag: Int): Unit = extern
+
+  def execl(pathname: CString, arg: CString, vargs: Any*): CInt = extern
+  def execlp(file: CString, arg: CString, vargs: Any*): CInt = extern
+  def execle(pathname: CString, arg: CString, vargs: Any*): CInt = extern
+  def execv(pathname: CString, argv: Ptr[CString]): CInt = extern
+  def execve(pathname: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
     extern
   def fork(): CInt = extern
   def fsync(fildes: CInt): CInt = extern
