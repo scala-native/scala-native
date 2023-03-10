@@ -1,9 +1,10 @@
 // Ported from Scala.js commit: f9fc1ae dated: 2020-03-06
+// Spliterator test added to celebrate Scala Native multithreading.
 
 package org.scalanative.testsuite.javalib.util
 
 import java.{util => ju, lang => jl}
-
+import java.util.Spliterator
 import org.junit.Test
 import org.junit.Assert._
 
@@ -14,6 +15,18 @@ import scala.reflect.ClassTag
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import Utils._
+
+/* Design Note:
+ *     Note the "trait" keyword and not the "class" keyword. That
+ *     means that CollectionTest does not run by itself. It is only run
+ *     when other tests which extend this trait are run.
+ *     "sbt tests3/testOnly *.CollectionTest" will fail. If you are lucky
+ *     it will take only a few days of your life to understand the failure.
+ *     If you are even luckier, you will remember the cause when you
+ *     encounter the quirk six months or a year later.
+ *
+ *     "sbt tests3/testOnly *.AbstractCollectionTest", for one, should work.
+ */
 
 trait CollectionTest extends IterableTest {
 
@@ -284,6 +297,30 @@ trait CollectionTest extends IterableTest {
     )
   }
 
+  @Test def spliteratorShouldExist(): Unit = {
+    /* CollectionTest is a trait, which get mixed into the tests for
+     * several Collections. Spliterators() tend to be tailored to the
+     * individual collection: the whole reason for overriding the default
+     * implementation.
+     *
+     * Trying to account here for some Collections using the default
+     * Collection.spliterator() and some overriding it quickly leads to
+     * a tangled mess.
+     *
+     * CollectionDefaultSpliteratorTest.scala exercises the default
+     * Collection.spliterator() method using a collection know to use
+     * that implementation. Because it is a separate test (and a "class"),
+     * it is called once, in a known environment.
+     */
+    val coll =
+      factory.fromElements[String]("Aegle", "Arethusa", "Hesperethusa")
+
+    val expectedSize = 3
+    assertEquals(expectedSize, coll.size())
+
+    val spliter = coll.spliterator()
+    assertNotNull("Null coll.spliterator", spliter)
+  }
 }
 
 trait CollectionFactory extends IterableFactory {

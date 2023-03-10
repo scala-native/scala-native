@@ -993,7 +993,7 @@ class ArrayBlockingQueue[E <: AnyRef](val capacity: Int, val fair: Boolean)
     // }
   }
 
-  def spliterator(): Spliterator[E] = Spliterators.spliterator(
+  override def spliterator(): Spliterator[E] = Spliterators.spliterator(
     this,
     Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.CONCURRENT
   )

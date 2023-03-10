@@ -579,7 +579,7 @@ class LinkedBlockingQueue[E <: AnyRef](
       Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.CONCURRENT
   }
 
-  def spliterator(): Spliterator[E] = new LBQSpliterator
+  override def spliterator(): Spliterator[E] = new LBQSpliterator
 
   override def forEach(action: Consumer[_ >: E]): Unit = {
     Objects.requireNonNull(action)

@@ -583,7 +583,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
       Spliterator.NONNULL | Spliterator.SIZED | Spliterator.SUBSIZED
   }
 
-  def spliterator(): Spliterator[E] = new PBQSpliterator
+  override def spliterator(): Spliterator[E] = new PBQSpliterator
 
   override def removeIf(filter: Predicate[_ >: E]) = {
     Objects.requireNonNull(filter)
