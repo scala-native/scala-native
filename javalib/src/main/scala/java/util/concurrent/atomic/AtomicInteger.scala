@@ -1,5 +1,7 @@
 package java.util.concurrent.atomic
 
+import java.util.function.IntUnaryOperator
+
 class AtomicInteger(private[this] var value: Int)
     extends Number
     with Serializable {
@@ -53,6 +55,17 @@ class AtomicInteger(private[this] var value: Int)
     val newValue = value + delta
     value = newValue
     newValue
+  }
+
+  final def getAndUpdate(updateFunction: IntUnaryOperator): Int = {
+    val old = value
+    value = updateFunction.applyAsInt(old)
+    old
+  }
+
+  final def updateAndGet(updateFunction: IntUnaryOperator): Int = {
+    value = updateFunction.applyAsInt(value)
+    value
   }
 
   override def toString(): String =

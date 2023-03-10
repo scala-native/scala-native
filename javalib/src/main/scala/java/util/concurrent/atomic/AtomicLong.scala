@@ -1,5 +1,7 @@
 package java.util.concurrent.atomic
 
+import java.util.function.LongUnaryOperator
+
 class AtomicLong(private[this] var value: Long)
     extends Number
     with Serializable {
@@ -52,6 +54,17 @@ class AtomicLong(private[this] var value: Long)
     val newValue = value + delta
     value = newValue
     newValue
+  }
+
+  final def getAndUpdate(updateFunction: LongUnaryOperator): Long = {
+    val old = value
+    value = updateFunction.applyAsLong(old)
+    old
+  }
+
+  final def updateAndGet(updateFunction: LongUnaryOperator): Long = {
+    value = updateFunction.applyAsLong(value)
+    value
   }
 
   override def toString(): String =
