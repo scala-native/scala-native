@@ -2,6 +2,7 @@ package scala.scalanative.runtime
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo.asanEnabled
 
 /** Efficient pool of fixed-size memory pages. Allocations from underlying
  *  allocator are performed in big chunks of memory that are sliced into pages
@@ -27,6 +28,14 @@ final class MemoryPool private {
     val chunkSize = MemoryPool.PAGE_SIZE * chunkPageCount
     val start = libc.malloc(chunkSize)
     chunk = new MemoryPool.Chunk(start, 0.toUSize, chunkSize, chunk)
+  }
+
+  /** Released all claimed memory chunks */
+  private[scalanative] def freeChunks(): Unit = synchronized {
+    while (chunk != null) {
+      libc.free(chunk.start)
+      chunk = chunk.next
+    }
   }
 
   /** Allocate a single page as a fraction of a larger chunk allocation. */
@@ -59,7 +68,13 @@ object MemoryPool {
   final val MIN_PAGE_COUNT = 4.toUSize
   final val MAX_PAGE_COUNT = 256.toUSize
 
-  lazy val defaultMemoryPool: MemoryPool = new MemoryPool()
+  lazy val defaultMemoryPool: MemoryPool = {
+    // Release allocated chunks satisfy AdressSanitizer
+    if (asanEnabled) libc.atexit { () =>
+      defaultMemoryPool.freeChunks()
+    }
+    new MemoryPool()
+  }
 
   private final class Chunk(
       val start: RawPtr,

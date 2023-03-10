@@ -23,6 +23,7 @@ object libc {
   def memset(dest: Ptr[_], ch: CInt, count: CSize): RawPtr = extern
   def memmove(dest: RawPtr, src: RawPtr, count: CSize): RawPtr = extern
   def remove(fname: CString): CInt = extern
+  def atexit(func: CFuncPtr0[Unit]): CInt = extern
 
   // Glue layer defined in libc
   @name("scalanative_atomic_compare_exchange_strong_byte")
