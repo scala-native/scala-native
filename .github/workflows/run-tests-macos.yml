@@ -88,14 +88,16 @@ jobs:
           scala-version: ${{matrix.scala}}
           gc: ${{ matrix.gc }}
 
-
       - name: Run tests
         env:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
-        run: sbt "test-runtime ${{ matrix.scala }}"
+        run: |
+          export LLVM_BIN="$(brew --prefix llvm@15)/bin"
+          $LLVM_BIN/clang --version
+          sbt "test-runtime ${{ matrix.scala }}"
 
   run-scripted-tests:
     name: Scripted tests
@@ -185,10 +187,6 @@ jobs:
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
         run: |
-          # lld fails to link with BoehmGC when using shared library, force linking using static library
-          if [[ "${{matrix.gc}}" == "boehm" ]]; then 
-            unlink /usr/local/lib/libgc.dylib
-          fi
           export LLVM_BIN="$(brew --prefix llvm@15)/bin"
           $LLVM_BIN/clang --version
           sbt -J-Xmx5G "${TEST_COMMAND}"

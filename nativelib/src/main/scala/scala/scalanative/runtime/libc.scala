@@ -11,6 +11,7 @@ object libc {
   def malloc(size: CSize): RawPtr = extern
   def realloc(ptr: RawPtr, size: CSize): RawPtr = extern
   def free(ptr: RawPtr): Unit = extern
+  def free(ptr: Ptr[_]): Unit = extern
   def strlen(str: CString): CSize = extern
   def wcslen(str: CWideString): CSize = extern
   def strcpy(dest: CString, src: CString): CString = extern
@@ -22,6 +23,7 @@ object libc {
   def memset(dest: Ptr[_], ch: CInt, count: CSize): RawPtr = extern
   def memmove(dest: RawPtr, src: RawPtr, count: CSize): RawPtr = extern
   def remove(fname: CString): CInt = extern
+  def atexit(func: CFuncPtr0[Unit]): CInt = extern
 
   // Glue layer defined in libc
   @name("scalanative_atomic_compare_exchange_strong_byte")
