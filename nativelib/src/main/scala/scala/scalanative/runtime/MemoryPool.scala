@@ -78,7 +78,7 @@ object MemoryPool {
 final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
   private[this] var tailPage = pool.claim()
   private[this] var headPage = tailPage
-  private[this] var largeAllocations: scala.Array[RawPtr] = null
+  private[this] var largeAllocations: scala.Array[Ptr[_]] = null
   private[this] var largeOffset = 0
 
   private def checkOpen(): Unit =
@@ -157,11 +157,11 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
 
   private def allocLarge(size: CSize): Ptr[Byte] = {
     if (largeAllocations == null) {
-      largeAllocations = new scala.Array[RawPtr](16)
+      largeAllocations = new scala.Array[Ptr[_]](16)
     }
     if (largeOffset == largeAllocations.size) {
       val newLargeAllocations =
-        new scala.Array[RawPtr](largeAllocations.size * 2)
+        new scala.Array[Ptr[_]](largeAllocations.size * 2)
       Array.copy(
         largeAllocations,
         0,
@@ -171,11 +171,11 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
       )
       largeAllocations = newLargeAllocations
     }
-    val result = libc.malloc(size)
+    val result = fromRawPtr[Byte](libc.malloc(size))
     largeAllocations(largeOffset) = result
     largeOffset += 1
 
-    fromRawPtr(result)
+    result
   }
 }
 
