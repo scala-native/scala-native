@@ -660,8 +660,9 @@ object Show {
       """([^\\]|^)\n""".r.replaceAllIn(
         s,
         _.matched.toSeq match {
-          case Seq(sngl)     => s"""\\\\n"""
-          case Seq(fst, snd) => s"""${fst}\\\\n"""
+          case Seq(sngl)     => raw"\\n"
+          case Seq('$', snd) => raw"\$$\\n"
+          case Seq(fst, snd) => raw"\${fst}\\n"
         }
       )
 
