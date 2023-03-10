@@ -188,7 +188,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       isExtern: Boolean
   ): Seq[nir.Type] = {
     val params = sym.tpe.params
-    if (!isExtern && !sym.owner.isExternType)
+    if (!isExtern && !sym.owner.isExternModule)
       params.map { p => genType(p.tpe) }
     else {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {

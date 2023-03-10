@@ -25,7 +25,6 @@ object unistd {
   var optopt: CInt = extern
 
 // Methods/functions
-  def _exit(status: CInt): Unit = extern
   def access(pathname: CString, mode: CInt): CInt = extern
   def chdir(path: CString): CInt = extern
   def close(fildes: CInt): CInt = extern
