@@ -10,7 +10,7 @@ void StackTrace_PrintStackTrace() {
     scalanative_unwind_init_local(cursor, context);
 
     while (scalanative_unwind_step(cursor) > 0) {
-        uint64_t offset, pc;
+        size_t offset, pc;
         scalanative_unwind_get_reg(cursor, scalanative_unw_reg_ip(), &pc);
         if (pc == 0) {
             break;
