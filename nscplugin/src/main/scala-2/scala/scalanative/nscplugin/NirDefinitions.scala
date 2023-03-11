@@ -27,6 +27,7 @@ trait NirDefinitions {
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
     lazy val NameClass = getRequiredClass("scala.scalanative.unsafe.name")
+    lazy val CompileClass = getRequiredClass("scala.scalanative.unsafe.compile")
     lazy val LinkClass = getRequiredClass("scala.scalanative.unsafe.link")
     lazy val ExternClass = getRequiredClass(
       "scala.scalanative.unsafe.package$extern"

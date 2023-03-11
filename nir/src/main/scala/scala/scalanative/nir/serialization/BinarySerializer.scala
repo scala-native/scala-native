@@ -109,6 +109,10 @@ final class BinarySerializer {
     case Attr.Extern(isBlocking) =>
       putInt(T.ExternAttr)
       putBool(isBlocking)
+    case Attr.Compile(path, opts) =>
+      putInt(T.CompileAttr)
+      putUTF8String(path)
+      putSeq(opts)(putUTF8String)
     case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
     case Attr.Volatile => putInt(T.VolatileAttr)

@@ -99,6 +99,12 @@ object Show {
       case Attr.Extern(isBlocking) =>
         str("extern")
         if (isBlocking) str(" blocking")
+      case Attr.Compile(path, options) => 
+        str("compile(")
+        str(escapeQuotes(path))
+        str(", opts=[")
+        str(options.map(escapeQuotes).mkString(", "))
+        str("])")
       case Attr.Link(name) =>
         str("link(\"")
         str(escapeQuotes(name))

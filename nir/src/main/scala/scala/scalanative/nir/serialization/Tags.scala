@@ -23,7 +23,8 @@ object Tags {
   final val DidOptAttr = 1 + NoOptAttr
   final val BailOptAttr = 1 + DidOptAttr
   final val ExternAttr = 1 + BailOptAttr
-  final val LinkAttr = 1 + ExternAttr
+  final val CompileAttr = 1 + ExternAttr
+  final val LinkAttr = 1 + CompileAttr
   final val DynAttr = 1 + LinkAttr
   final val StubAttr = 1 + DynAttr
   final val AbstractAttr = 1 + StubAttr

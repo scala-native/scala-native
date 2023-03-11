@@ -29,6 +29,7 @@ object Attr {
   case object Stub extends Attr
   case class Extern(blocking: Boolean) extends Attr
   final case class Link(name: String) extends Attr
+  final case class Compile(relPath: String, options: Seq[String]) extends Attr
   case object Abstract extends Attr
   case object Volatile extends Attr
   case object Final extends Attr
@@ -45,7 +46,8 @@ final case class Attrs(
     isAbstract: Boolean = false,
     isVolatile: Boolean = false,
     isFinal: Boolean = false,
-    links: Seq[Attr.Link] = Seq.empty
+    compiles: Seq[Attr.Compile] = Nil,
+    links: Seq[Attr.Link] = Nil
 ) {
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]
@@ -59,6 +61,7 @@ final case class Attrs(
     if (isAbstract) out += Abstract
     if (isVolatile) out += Volatile
     if (isFinal) out += Final
+    out ++= compiles
     out ++= links
 
     out.result()
@@ -78,6 +81,7 @@ object Attrs {
     var isBlocking = false
     var isVolatile = false
     var isFinal = false
+    val compiles = Seq.newBuilder[Attr.Compile]
     val links = Seq.newBuilder[Attr.Link]
 
     attrs.foreach {
@@ -87,12 +91,13 @@ object Attrs {
       case Extern(blocking) =>
         isExtern = true
         isBlocking = blocking
-      case Dyn             => isDyn = true
-      case Stub            => isStub = true
-      case link: Attr.Link => links += link
-      case Abstract        => isAbstract = true
-      case Volatile        => isVolatile = true
-      case Final           => isFinal = true
+      case Dyn                   => isDyn = true
+      case Stub                  => isStub = true
+      case compile: Attr.Compile => compiles += compile
+      case link: Attr.Link       => links += link
+      case Abstract              => isAbstract = true
+      case Volatile              => isVolatile = true
+      case Final                 => isFinal = true
     }
 
     new Attrs(
@@ -106,6 +111,7 @@ object Attrs {
       isAbstract = isAbstract,
       isVolatile = isVolatile,
       isFinal = isFinal,
+      compiles = compiles.result(),
       links = links.result()
     )
   }
