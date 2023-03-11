@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe.{CInt, extern, name}
+import scalanative.unsafe._
 
 @extern object errno extends errno
 

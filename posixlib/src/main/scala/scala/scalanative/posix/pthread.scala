@@ -9,8 +9,9 @@ import scala.scalanative.posix.sys.types._
 // SUSv2 version is used for compatibility
 // see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html
 
-@link("pthread")
 @extern
+@link("pthread")
+@compile("pthread.c")
 object pthread {
 
   // simpify definitions - not in spec

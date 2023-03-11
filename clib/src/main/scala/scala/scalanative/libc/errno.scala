@@ -5,7 +5,9 @@ import scalanative.unsafe._
 
 @extern object errno extends errno
 
-@extern private[scalanative] trait errno {
+@extern
+@compile("errno.c")
+ private[scalanative] trait errno {
   @name("scalanative_errno")
   def errno: CInt = extern
   @name("scalanative_set_errno")

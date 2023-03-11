@@ -10,7 +10,9 @@ import scala.scalanative.posix.signal.sigevent
 
 @extern object time extends time
 
-@extern trait time extends libc.time {
+@extern 
+@compile("time.c")
+trait time extends libc.time {
 
   type clock_t = types.clock_t
   type clockid_t = types.clockid_t

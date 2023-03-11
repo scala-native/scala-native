@@ -1,10 +1,11 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe.{CInt, CString, CStruct5, extern, name, Ptr}
+import scalanative.unsafe._
 import scalanative.posix.sys.types.{uid_t, gid_t}
 
 @extern
+@compile("pwd.c")
 object pwd {
 
   type passwd = CStruct5[

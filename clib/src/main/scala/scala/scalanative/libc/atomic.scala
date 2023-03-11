@@ -8,7 +8,9 @@ import scala.scalanative.annotation._
 import scala.language.implicitConversions
 
 
-@extern object atomic {
+@extern 
+@compile("atomic.c")
+object atomic {
   type memory_order = Int // enum
   @extern object memory_order{
     @name("scalanative_atomic_memory_order_relaxed")
