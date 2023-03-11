@@ -149,21 +149,74 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         Some(genTypeName(sym.superClass))
     }
 
-    def genClassAttrs(cd: ClassDef): Attrs = {
-      val sym = cd.symbol
-      val annotationAttrs = sym.annotations.collect {
+    def genAttrsForExtern(sym: Symbol): Seq[nir.Attr] = {
+      def getStringLiteral(usage: String)(tree: Tree): Option[String] = {
+        tree match {
+          case Literal(Constant(value: String)) => Some(value)
+          case t =>
+            reporter.error(
+              t.pos,
+              s"Only string literals can be used for ${usage}"
+            )
+            None
+        }
+      }
+
+      val externAttr = Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
+      val annots = sym.annotations ++ sym.baseClasses.flatMap(_.annotations)
+      val attrs = annots.collect {
+        case ann if ann.symbol == CompileClass =>
+          val Apply(_, pathTree :: optTrees) = ann.tree
+          val path = getStringLiteral("source path")(pathTree)
+          val opts = optTrees.flatMap(getStringLiteral("compilation options"))
+
+          // Todo: it should be opt-in compiler plugin setting with path
+          import java.nio.file.{Path, Paths, Files}
+          val sourceFile = currentUnit.source.file
+          lazy val root = Paths.get("").toAbsolutePath
+          lazy val source = sourceFile.file.toPath
+          val nativeSourcesDir =
+            if (!sourceFile.isVirtual && source.startsWith(root)) {
+              val relPath = root relativize source
+              val resourcesDir = Paths.get("resources", "scala-native")
+              def findResourceDir(path: Path): Option[Path] = {
+                val candidate = path resolve resourcesDir
+                if (Files.exists(candidate)) Some(candidate)
+                else if (path == root) None
+                else findResourceDir(path.getParent())
+              }
+              findResourceDir(source)
+            } else None
+
+          path.zip(nativeSourcesDir).foreach {
+            case (relPath, sourceDir) =>
+              val expectedPath =
+                relPath.split("/").foldLeft(sourceDir)(_.resolve(_))
+              if (!Files.exists(expectedPath)) {
+                reporter
+                  .error(pathTree.pos, "The referenced file does not exist")
+              }
+          }
+          Attr.Compile(path.getOrElse("<none>"), opts)
+
+        case ann if ann.symbol == LinkClass =>
+          val Apply(_, Seq(nameTree)) = ann.tree
+          val name = getStringLiteral("linked library name")(nameTree)
+          Attr.Link(name.getOrElse("<none>"))
+
         case ann if ann.symbol == ExternClass =>
           Attr.Extern(sym.isBlocking)
-        case ann if ann.symbol == LinkClass =>
-          val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
-          Attr.Link(name)
-        case ann if ann.symbol == StubClass =>
-          Attr.Stub
       }
-      val abstractAttr =
-        if (sym.isAbstract) Seq(Attr.Abstract) else Seq.empty
+      externAttr :: attrs
 
-      Attrs.fromSeq(annotationAttrs ++ abstractAttr)
+    }
+
+    def genClassAttrs(cd: ClassDef): Attrs = {
+      val sym = cd.symbol
+      val isStub = if (sym.hasAnnotation(StubClass)) Seq(Attr.Stub) else Nil
+      val abstractAttr = if (sym.isAbstract) Seq(Attr.Abstract) else Nil
+      val externAttrs = if (sym.isExternType) genAttrsForExtern(sym) else Nil
+      Attrs.fromSeq(isStub ++ abstractAttr ++ externAttrs)
     }
 
     def genClassInterfaces(sym: Symbol) = {
@@ -829,9 +882,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case NoSpecializeClass => Attr.NoSpecialize
         }
       val externAttrs =
-        if (sym.owner.isExternType)
-          Seq(Attr.Extern(sym.isBlocking || sym.owner.isBlocking))
-        else Nil
+        if (sym.owner.isExternType) genAttrsForExtern(sym) else Nil
 
       Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
     }
