@@ -214,11 +214,12 @@ final class Field(
     owner.asInstanceOf[Class].fields.indexOf(this)
 }
 
-final class Result(
+final case class Result(
     val infos: mutable.Map[Global, Info],
     val entries: Seq[Global],
     val unavailable: Seq[Global],
     val referencedFrom: mutable.Map[Global, Global],
+    val compilations: Set[CompilationRequests],
     val links: Seq[Attr.Link],
     val defns: Seq[Defn],
     val dynsigs: Seq[Sig],
@@ -233,3 +234,5 @@ final class Result(
   lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
     .asInstanceOf[Field]
 }
+
+case class CompilationRequests(attrs: nir.Attr.Compile, requestedBy: Global.Top)

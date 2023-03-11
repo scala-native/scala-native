@@ -4,6 +4,9 @@ package runtime
 import scalanative.unsafe._
 
 @extern
+@compile("platform/posix/libunwind")
+@compile("platform/posix/unwind.c")
+@compile("platform/windows/unwind.c")
 object unwind {
   @name("scalanative_unwind_get_context")
   def get_context(context: Ptr[Byte]): CInt = extern

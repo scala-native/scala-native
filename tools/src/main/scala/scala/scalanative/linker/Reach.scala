@@ -19,6 +19,7 @@ class Reach(
   var todo = List.empty[Global]
   val done = mutable.Map.empty[Global, Defn]
   var stack = List.empty[Global]
+  val compilations = mutable.Set.empty[CompilationRequests]
   val links = mutable.Set.empty[Attr.Link]
   val infos = mutable.Map.empty[Global, Info]
   val from = mutable.Map.empty[Global, Global]
@@ -63,6 +64,7 @@ class Reach(
       entries,
       unavailable.toSeq,
       from,
+      compilations.toSet,
       links.toSeq,
       defns.toSeq,
       dynsigs.toSeq,
@@ -539,7 +541,7 @@ class Reach(
         rhs
       )
     )
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
     reachType(ty)
     reachVal(rhs)
   }
@@ -557,7 +559,7 @@ class Reach(
         rhs
       )
     )
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
     reachType(ty)
     reachVal(rhs)
   }
@@ -568,7 +570,7 @@ class Reach(
     newInfo(
       new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array())
     )
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
     reachType(ty)
   }
 
@@ -661,7 +663,7 @@ class Reach(
         insts.toArray
       )
     )
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
     reachType(ty)
     reachInsts(insts)
   }
@@ -670,7 +672,7 @@ class Reach(
     val Defn.Trait(attrs, name, traits) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(new Trait(attrs, name, traits.flatMap(traitInfo)))
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
   }
 
   def reachClass(defn: Defn.Class): Unit = {
@@ -685,7 +687,7 @@ class Reach(
         isModule = false
       )
     )
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
   }
 
   def reachModule(defn: Defn.Module): Unit = {
@@ -700,11 +702,13 @@ class Reach(
         isModule = true
       )
     )
-    reachAttrs(attrs)
+    reachAttrs(attrs)(defn)
   }
 
-  def reachAttrs(attrs: Attrs): Unit =
+  def reachAttrs(attrs: Attrs)(ofDefn: Defn): Unit = {
     links ++= attrs.links
+    compilations ++= attrs.compiles.map(CompilationRequests(_, ofDefn.name.top))
+  }
 
   def reachType(ty: Type): Unit = ty match {
     case Type.ArrayValue(ty, n) =>

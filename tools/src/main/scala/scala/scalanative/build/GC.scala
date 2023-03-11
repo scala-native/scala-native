@@ -34,18 +34,32 @@ sealed abstract class GC private (
    *    the [[GC]] name
    */
   override def toString: String = name
+  private def compile(dir: String) = scalanative.linker.CompilationRequests(
+    scalanative.nir.Attr.Compile(s"$dir", Seq(s"-I<LIB_PATH>")),
+    scalanative.nir.Rt.BoxedPtr.name.top
+  )
+  private[scalanative] lazy val compilationRequests =
+    compile(s"gc/$name") :: include.map(compile).toList
 }
 
 /** Utility to create a [[GC]] object */
 object GC {
+  val immixCommixDeps = Seq(
+    "gc/shared",
+    "gc/immix_commix",
+    "time_nano.c",
+    "platform/posix/libunwind",
+    "platform/posix/unwind.c",
+    "platform/windows/unwind.c"
+  )
   private[scalanative] case object None
-      extends GC("none", Seq.empty, Seq("shared"))
+      extends GC("none", Seq.empty, Seq("gc/shared"))
   private[scalanative] case object Boehm
       extends GC("boehm", Seq("gc"), Seq.empty)
   private[scalanative] case object Immix
-      extends GC("immix", Seq.empty, Seq("shared", "immix_commix"))
+      extends GC(        "immix", Seq.empty, immixCommixDeps)
   private[scalanative] case object Commix
-      extends GC("commix", Seq.empty, Seq("shared", "immix_commix"))
+      extends GC("commix", Seq.empty, immixCommixDeps)
   private[scalanative] case object Experimental
       extends GC("experimental", Seq.empty, Seq.empty)
 

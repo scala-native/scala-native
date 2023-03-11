@@ -121,11 +121,21 @@ object Build {
       config: Config,
       linkerResult: linker.Result
   ): Seq[Path] = {
+    def compile(path: String) = scalanative.linker.CompilationRequests(
+      scalanative.nir.Attr.Compile(path, Nil),
+      scalanative.nir.Rt.BoxedPtr.name.top
+    )
+    val injectedRequests = config.compilerConfig.gc.compilationRequests ++ Seq(
+      compile("eh.cpp"),
+      compile("module_load.c")
+    )
+
+    val ctx = linkerResult.copy(compilations =
+      linkerResult.compilations ++ injectedRequests.toSet
+    )
     NativeLib
       .findNativeLibs(config)
-      .flatMap(nativeLib =>
-        NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
-      )
+      .flatMap(NativeLib.compileNativeLibrary(config, ctx, _))
   }
 
   // create workDir if it doesn't exist

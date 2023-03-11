@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.unsafe.{CLongLong, extern}
+import scala.scalanative.unsafe.{CLongLong, extern, compile}
 
 @extern
 object time {
@@ -11,6 +11,7 @@ object time {
    *  @return
    *    increasing time hopefully at better than millisecond resolution
    */
+  @compile("time_nano.c")
   def scalanative_nano_time(): CLongLong = extern
 
   /** Milliseconds from the UNIX epoch to implement
@@ -19,6 +20,7 @@ object time {
    *  @return
    *    time in millis (UTC)
    */
+  @compile("time_millis.c")
   def scalanative_current_time_millis(): CLongLong = extern
 
   /** Time zone offset in seconds from UTC. Negative to the west and positive to
@@ -27,5 +29,6 @@ object time {
    *  @return
    *    offset in seconds from UTC
    */
+  @compile("time_zone_offset.c")
   def scalanative_time_zone_offset(): CLongLong = extern
 }

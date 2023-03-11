@@ -144,6 +144,7 @@ object NativeThread {
   }
 
   @extern
+  @compile("nativeThreadTLS.c")
   private object TLS {
     @name("scalanative_assignCurrentThread")
     def assignCurrentThread(
@@ -160,6 +161,7 @@ object NativeThread {
 
   @extern object Platform {
     @blocking
+    @compile("yield_processor.c")
     @name("scalanative_yield_processor")
     def yieldProcessor(): Unit = extern
   }

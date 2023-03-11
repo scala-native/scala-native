@@ -94,6 +94,7 @@ object GC {
    *  execution of the thread.
    */
   @name("scalanative_gc_safepoint")
+  @compile("gc/shared/safepoint.c")
   private[scalanative] var safepoint: RawPtr = extern
 
 }

@@ -1,10 +1,10 @@
 package scala.scalanative
 package runtime
 
-import scala.scalanative.unsafe.{CSize, CString, CFuncPtr2, extern, name}
-import scala.scalanative.unsafe.CInt
+import scala.scalanative.unsafe._
 
 @extern
+@compile("platform/platform.c")
 object Platform {
   @name("scalanative_platform_is_freebsd")
   def isFreeBSD(): Boolean = extern
