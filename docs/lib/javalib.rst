@@ -423,6 +423,7 @@ java.util
 * ``NoSuchElementException``
 * ``Objects``
 * ``Optional``
+* ``PrimitiveIterator``
 * ``PriorityQueue``
 * ``Properties``
 * ``Queue``
@@ -434,6 +435,8 @@ java.util
 * ``SizeChangeEvent``
 * ``SortedMap``
 * ``SortedSet``
+* ``Spliterator``
+* ``Spliterators``
 * ``StringTokenizer``
 * ``TooManyListenersException``
 * ``TreeSet``

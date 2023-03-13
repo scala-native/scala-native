@@ -203,7 +203,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining size", expectedSize, count)
   }
 
-  @Test def primitiveIteratorFromSpliteratorDouble: Unit = {
+  @Test def primitiveIteratorFromSpliteratorDouble(): Unit = {
     val expectedElements = Array(
       0.0, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6
     )
@@ -234,7 +234,7 @@ class SpliteratorsTest {
     })
   }
 
-  @Test def primitiveIteratorFromSpliteratorInt: Unit = {
+  @Test def primitiveIteratorFromSpliteratorInt(): Unit = {
     val expectedElements = Array(
       0, 1, 2, 3, 4, 5, 6
     )
@@ -265,7 +265,7 @@ class SpliteratorsTest {
     })
   }
 
-  @Test def primitiveIteratorFromSpliteratorLong: Unit = {
+  @Test def primitiveIteratorFromSpliteratorLong(): Unit = {
     val expectedElements = Array(0, 11L, 22L, 33L, 44L, 55L, 66L)
     val expectedSize = expectedElements.size
 
@@ -294,7 +294,7 @@ class SpliteratorsTest {
     })
   }
 
-  @Test def iteratorFromSpliteratorType: Unit = {
+  @Test def iteratorFromSpliteratorType(): Unit = {
     type T = String
     val expectedElements = Array(
       "lliu",
@@ -333,7 +333,7 @@ class SpliteratorsTest {
     })
   }
 
-  @Test def spliteratorOfTypeFromCollection: Unit = {
+  @Test def spliteratorOfTypeFromCollection(): Unit = {
     type T = String
     val expectedElements = Array(
       "Bertha von Suttner",
@@ -418,7 +418,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorOfDoubleFromArray: Unit = {
+  @Test def spliteratorOfDoubleFromArray(): Unit = {
     type T = Double
     val expectedElements = Array(
       0.0, 10.1, 20.2, 30.3, 44.4, 55.5, 66.6
@@ -480,7 +480,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorOfDoubleFromArrayRange: Unit = {
+  @Test def spliteratorOfDoubleFromArrayRange(): Unit = {
     type T = Double
     val expectedElements = Array(
       0.0, 10.1, 20.2, 30.3, 44.4, 55.5, 66.6
@@ -546,7 +546,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorOfIntFromArray: Unit = {
+  @Test def spliteratorOfIntFromArray(): Unit = {
     type T = Int
     val expectedElements = Array(
       0, 1, 2, 3, 4, 5, 6
@@ -606,7 +606,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorOfIntFromArrayRange: Unit = {
+  @Test def spliteratorOfIntFromArrayRange(): Unit = {
     type T = Int
     val expectedElements = Array(
       1, 11, 22, 33, 44, 55, 66
@@ -673,7 +673,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorFromIteratorType: Unit = {
+  @Test def spliteratorFromIteratorType(): Unit = {
     type T = String
     val expectedElements = Array(
       "Arctic",
@@ -762,7 +762,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorOfLongFromArray: Unit = {
+  @Test def spliteratorOfLongFromArray(): Unit = {
     type T = Long
     val expectedElements = Array(
       0L, 1L, 2L, 3L, 4L, 5L, 6L
@@ -822,7 +822,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorOfLongFromArrayRange: Unit = {
+  @Test def spliteratorOfLongFromArrayRange(): Unit = {
     type T = Long
     val expectedElements = Array(
       1L, 11L, 22L, 33L, 44L, 55L, 66L
@@ -886,7 +886,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorOfTypeFromArrayRange: Unit = {
+  @Test def spliteratorOfTypeFromArrayRange(): Unit = {
     type T = String
     val expectedElements = Array(
       "nul'",
@@ -978,7 +978,7 @@ class SpliteratorsTest {
     assertEquals("forEachRemaining estimateSize", 0, spliter.estimateSize())
   }
 
-  @Test def spliteratorFromPrimitiveIteratorOfDouble: Unit = {
+  @Test def spliteratorFromPrimitiveIteratorOfDouble(): Unit = {
     type T = Double
     val expectedElements = Array(
       0.0, 10.1, 20.2, 30.3, 44.4, 55.5, 66.6
@@ -1067,7 +1067,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorFromPrimitiveIteratorOfInt: Unit = {
+  @Test def spliteratorFromPrimitiveIteratorOfInt(): Unit = {
     type T = Int
     val expectedElements = Array(
       0, 1, 2, 3, 4, 5, 6
@@ -1153,7 +1153,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorFromPrimitiveIteratorOfLong: Unit = {
+  @Test def spliteratorFromPrimitiveIteratorOfLong(): Unit = {
     type T = Long
     val expectedElements = Array(
       0L, 1L, 2L, 3L, 4L, 5L, 6L
@@ -1239,7 +1239,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorUnknownSizeFromIteratorType: Unit = {
+  @Test def spliteratorUnknownSizeFromIteratorType(): Unit = {
     type T = String
     val expectedElements = Array(
       "pride",
@@ -1318,8 +1318,8 @@ class SpliteratorsTest {
       spliter.estimateSize()
     )
   }
-// ---
-  @Test def spliteratorUnknownSizeFromPrimitiveIteratorOfDouble: Unit = {
+
+  @Test def spliteratorUnknownSizeFromPrimitiveIteratorOfDouble(): Unit = {
     type T = Double
     val expectedElements = Array(
       0.0, 10.1, 20.2, 30.3, 44.4, 55.5, 66.6
@@ -1404,7 +1404,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorUnknownSizeFromPrimitiveIteratorOfInt: Unit = {
+  @Test def spliteratorUnknownSizeFromPrimitiveIteratorOfInt(): Unit = {
     type T = Int
     val expectedElements = Array(
       0, 1, 2, 3, 4, 5, 6
@@ -1486,7 +1486,7 @@ class SpliteratorsTest {
     )
   }
 
-  @Test def spliteratorUnknownSizeFromPrimitiveIteratorOfLong: Unit = {
+  @Test def spliteratorUnknownSizeFromPrimitiveIteratorOfLong(): Unit = {
     type T = Long
     val expectedElements = Array(
       0L, 1L, 2L, 3L, 4L, 5L, 6L
