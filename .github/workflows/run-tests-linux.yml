@@ -149,7 +149,7 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
-        run: sbt "test-runtime ${{ matrix.scala }}"
+        run: sbt -J-Xmx5G "test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
