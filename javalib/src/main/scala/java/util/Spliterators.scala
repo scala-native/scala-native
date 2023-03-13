@@ -20,8 +20,6 @@ import Spliterator._
  *
  *  Future evolutions should, over time, remove these limitations:
  *
- *    - Their trySplit() methods never split, they always return null.
- *
  *    - spliterators specified by Java as late-binding may not be late-binding.
  *
  *    - spliterators never check for concurrent modification.
@@ -29,8 +27,8 @@ import Spliterator._
  *    - A number of spliterator methods have JVM descriptions of what happens
  *      after iteration starts and one of certain methods, say, trySplit() is
  *      called. This implementation may not follow the JVM description. Even in
- *      Java, it is better to never trySplit() after having begun iterating over
- *      a spliterator.
+ *      Java, it is better to never trySplit() after having begun using a
+ *      spliterator to iterate.
  *
  *  Also noted:
  *
@@ -38,17 +36,20 @@ import Spliterator._
  *      implementation follows that guidance.
  */
 
-/* Developer Notes on evolving trySplit()
+/* Developer Notes on evolving Spliterators
  *
- *   1) A first evolution could implement trySplit() for Spliterators which
- *      are backed by arrays.
+ *   1) The limitations listed above should be corrected, or at least relaxed.
  *
- *   2) A second evolution could implement trySplit() for Spliterators which
- *      are backed by a Collection. Collections are SIZED. That should make
- *      working with the underlying iterator easier.
+ *   2) Performance, especially with spliterators which have a large,
+ *      say million or US billion elements, should be measured. That
+ *      will probably show that both execution time and memory usage
+ *      need to be reduced.
  *
- *   3) Later evolutions can address issues with un-SIZED iterators and
- *      other deficiencies.
+ *      For example, an individual development-only Test
+ *      in SpliteratorsTrySplitTest showed an an un-optimized Scala Native
+ *      executable having results matching the same Test on JVM but taking
+ *      approximately 50% longer (a minute or so), possibly due to swapping
+ *      caused by higher memory usage.
  */
 
 object Spliterators {
@@ -70,54 +71,261 @@ object Spliterators {
     else maskOn(characteristics, sizedCharacteristicsMask)
   }
 
+  /* This implementation of trySplit() is reverse engineered from the
+   * default JVM algorithm for Iterable and Collection, without having
+   * looked at the JVM code.
+   *
+   * It allows unit-tests to run in either JVM or Scala Native with the
+   * matching results.
+   *
+   * The JVM algorithm switches from a first "count-them-out" iteration
+   * algorithm to a reasonably efficient array based "bisection" algorithm.
+   *
+   * As advised by the Java documentation authors, sub-classes may benefit
+   * from overriding this implementation with a more efficient one.
+   *
+   * Case in Point, JSR-166 implementations, which can be examined, tend to
+   * use a different algorithm for batch sizing.
+   */
+
+  private final val ABSTRACT_TRYSPLIT_BATCH_SIZE = 1024
+
+  private def getTrySplitBatchSize(multiplier: Long): Int = {
+    /* To be discovered:
+     *     JVM may have a lower maximum batch size.
+     *
+     *     JSR-166 LinkedBlockingQueue.scala specifies a MAX_BATCH of
+     *     1 << 25 (33_554_432), well less than Integer.MAX_VALUE.
+     */
+    val computedSize = multiplier * ABSTRACT_TRYSPLIT_BATCH_SIZE
+    Math.min(computedSize, Integer.MAX_VALUE).toInt
+  }
+
+  private def trySplitUsageRatioOK(used: Long, total: Long): Boolean = {
+    /* This method concentrates the decision of whether trySplit() should take
+     * the faster and easier route of passing its work buffer directly to
+     * Spliterators or if it should reduce it to an exact size by copying.
+     *
+     * The issue is that the size of the allocated buffer grows after
+     * repeated splits on the same spliterator. If a buffer is filled,
+     * there is no need to copy. The opposite is also clear, if there is
+     * one byte in a megabyte buffer, it makes sense to pay the Array allocation
+     * and copy in order to free up the unused memory.
+     *
+     * Somewhere between the two scenarios is a sweet spot, which probably
+     * varies by workload and available resources. Configuration is the
+     * classical solution but it brings complexity. Auto-tuning of buffer size
+     * or a different, perhaps capped, scale-up buffer size algorithm
+     * is the other classical solution. Here that would mean no longer
+     * matching the JVM size progression.
+     *
+     * This is a place to make it easier to tune heuristics. The current
+     * ones are best guesses, without the benefit of configuration.
+     *
+     * Life is choices!
+     */
+    if (total < ABSTRACT_TRYSPLIT_BATCH_SIZE) true // avoid copy on first split
+    else if (used == total) true
+    else {
+      val usageRatio = used / total
+      usageRatio > 0.8 // Allow 20% wastage.
+    }
+  }
+
   abstract class AbstractDoubleSpliterator(
       est: Long,
       additionalCharacteristics: Int
   ) extends Spliterator.OfDouble {
+    private var remaining = est
+
+    // JVM uses an arithmetic progression, incrementing factor with each split.
+    private var trySplitsMultiplier = 1L // a Long to ease overflow checking
+
     def characteristics(): Int = additionalCharacteristics
 
-    def estimateSize(): Long = est
+    def estimateSize(): Long = remaining
 
-    def trySplit(): Spliterator.OfDouble =
-      null.asInstanceOf[Spliterator.OfDouble]
+    def trySplit(): Spliterator.OfDouble = {
+      // Guard ArrayList(size) constructor by avoiding int overflow (to minus).
+      val batchSize = getTrySplitBatchSize(trySplitsMultiplier)
+      val buf = new Array[Double](batchSize)
+
+      var count = 0
+
+      val action: DoubleConsumer =
+        (e: Double) => { buf(count) = e; count += 1 }
+
+      while ((count < batchSize) && tryAdvance(action)) { /* side-effect */ }
+
+      if (count == 0) null.asInstanceOf[Spliterator.OfDouble]
+      else {
+        remaining -= count
+        trySplitsMultiplier += 1
+
+        /* Passing an Array down allows the created spliterator to
+         * traverse and split more efficiently.
+         *
+         * Pass accumulating buffer if small or if unused, wasted space is
+         * tolerable. Otherwise, pay the cost of an allocation and
+         * potentially large copy.
+         */
+
+        val batch =
+          if (trySplitUsageRatioOK(count, batchSize)) buf
+          else Arrays.copyOf(buf, count)
+
+        Spliterators.spliterator(
+          batch, // of AnyVal primitives
+          0,
+          count,
+          additionalCharacteristics
+        )
+      }
+    }
   }
 
   abstract class AbstractIntSpliterator(
       est: Long,
       additionalCharacteristics: Int
   ) extends Spliterator.OfInt {
+    private var remaining = est
+
+    // JVM uses an arithmetic progression, incrementing factor with each split.
+    private var trySplitsMultiplier = 1L // a Long to ease overflow checking
+
     def characteristics(): Int = additionalCharacteristics
 
-    def estimateSize(): Long = est
+    def estimateSize(): Long = remaining
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator.OfInt =
-      null.asInstanceOf[Spliterator.OfInt]
+    def trySplit(): Spliterator.OfInt = {
+      // Guard ArrayList(size) constructor by avoiding int overflow (to minus).
+      val batchSize = getTrySplitBatchSize(trySplitsMultiplier)
+      val buf = new Array[Int](batchSize)
+
+      var count = 0
+
+      val action: IntConsumer =
+        (e: Int) => { buf(count) = e; count += 1 }
+
+      while ((count < batchSize) && tryAdvance(action)) { /* side-effect */ }
+
+      if (count == 0) null.asInstanceOf[Spliterator.OfInt]
+      else {
+        remaining -= count
+        trySplitsMultiplier += 1
+
+        // See comment in corresponding place in AbstractDoubleSpliterator
+        val batch =
+          if (trySplitUsageRatioOK(count, batchSize)) buf
+          else Arrays.copyOf(buf, count)
+
+        Spliterators.spliterator(
+          batch, // of AnyVal primitives
+          0,
+          count,
+          additionalCharacteristics
+        )
+      }
+    }
   }
 
   abstract class AbstractLongSpliterator(
       est: Long,
       additionalCharacteristics: Int
   ) extends Spliterator.OfLong {
+    private var remaining = est
+
+    // JVM uses an arithmetic progression, incrementing factor with each split.
+    private var trySplitsMultiplier = 1L // a Long to ease overflow checking
+
     def characteristics(): Int = additionalCharacteristics
 
-    def estimateSize(): Long = est
+    def estimateSize(): Long = remaining
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator.OfLong =
-      null.asInstanceOf[Spliterator.OfLong]
+    def trySplit(): Spliterator.OfLong = {
+      // Guard ArrayList(size) constructor by avoiding int overflow (to minus).
+      val batchSize = getTrySplitBatchSize(trySplitsMultiplier)
+      val buf = new Array[Long](batchSize)
+
+      var count = 0
+
+      val action: LongConsumer =
+        (e: Long) => { buf(count) = e; count += 1 }
+
+      while ((count < batchSize) && tryAdvance(action)) { /* side-effect */ }
+
+      if (count == 0) null.asInstanceOf[Spliterator.OfLong]
+      else {
+        remaining -= count
+        trySplitsMultiplier += 1
+
+        // See comment in corresponding place in AbstractDoubleSpliterator
+        val batch =
+          if (trySplitUsageRatioOK(count, batchSize)) buf
+          else Arrays.copyOf(buf, count)
+
+        Spliterators.spliterator(
+          batch, // of AnyVal primitives
+          0,
+          count,
+          additionalCharacteristics
+        )
+      }
+    }
   }
 
   abstract class AbstractSpliterator[T](
       est: Long,
       additionalCharacteristics: Int
   ) extends Spliterator[T] {
+    private var remaining = est
+
+    // JVM uses an arithmetic progression, incrementing factor with each split.
+    private var trySplitsMultiplier = 1L // a Long to ease overflow checking
+
     def characteristics(): Int = additionalCharacteristics
 
-    def estimateSize(): Long = est
+    def estimateSize(): Long = remaining
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator[T] = null.asInstanceOf[Spliterator[T]]
+    def trySplit(): Spliterator[T] = {
+      // Guard ArrayList(size) constructor by avoiding int overflow (to minus).
+      val batchSize = getTrySplitBatchSize(trySplitsMultiplier)
+      val buf = new Array[Object](batchSize)
+
+      var count = 0
+
+      /* Someday it would be nice to get rid of the cost of the runtime cast.
+       * The current issue is that type T has no upper bound, such as
+       * Object or AnyRef. With current declarations, an uninformed,
+       * unwary, unfortunate, or malicious user could specify an AnyVal
+       * for T, such as "new AbstractSplitertor[scala.Double]".
+       *
+       * The Scala Native compiler checks the signature of "action"
+       * against the JDK, so that signature can not be modified.
+       */
+      val action: Consumer[_ >: T] =
+        (e: T) => { buf(count) = e.asInstanceOf[Object]; count += 1 }
+
+      while ((count < batchSize) && tryAdvance(action)) { /* side-effect */ }
+
+      if (count == 0) null.asInstanceOf[Spliterator[T]]
+      else {
+        remaining -= count
+        trySplitsMultiplier += 1
+
+        // See comment in corresponding place in AbstractDoubleSpliterator
+        val batch =
+          if (trySplitUsageRatioOK(count, batchSize)) buf
+          else Arrays.copyOf(buf, count)
+
+        Spliterators.spliterator(
+          batch, // of AnyRef Objects
+          0,
+          count,
+          additionalCharacteristics
+        )
+      }
+    }
   }
 
   def emptyDoubleSpliterator(): Spliterator.OfDouble = {
@@ -264,8 +472,6 @@ object Spliterators {
     new AbstractSpliterator[T](c.size(), harmonized) {
       lazy val it = c.iterator()
 
-      override def estimateSize(): Long = c.size() // even if CONCURRENT
-
       def tryAdvance(action: Consumer[_ >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!it.hasNext()) false
@@ -288,9 +494,21 @@ object Spliterators {
     // current index, modified on traverse/split
     private var cursor: Int = fromIndex
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator.OfDouble =
-      null.asInstanceOf[Spliterator.OfDouble]
+    def trySplit(): Spliterator.OfDouble = {
+      val hi = toIndex
+      val lo = cursor
+      val mid = (lo + hi) >>> 1
+      if (lo >= mid) null
+      else {
+        cursor = mid
+        new SpliteratorFromArrayDouble(
+          array,
+          lo,
+          mid,
+          additionalCharacteristics
+        )
+      }
+    }
 
     def tryAdvance(action: DoubleConsumer): Boolean = {
       Objects.requireNonNull(action)
@@ -365,9 +583,16 @@ object Spliterators {
     // current index, modified on traverse/split
     private var cursor: Int = fromIndex
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator.OfInt =
-      null.asInstanceOf[Spliterator.OfInt]
+    def trySplit(): Spliterator.OfInt = {
+      val hi = toIndex
+      val lo = cursor
+      val mid = (lo + hi) >>> 1
+      if (lo >= mid) null
+      else {
+        cursor = mid
+        new SpliteratorFromArrayInt(array, lo, mid, additionalCharacteristics)
+      }
+    }
 
     def tryAdvance(action: IntConsumer): Boolean = {
       Objects.requireNonNull(action)
@@ -418,8 +643,6 @@ object Spliterators {
     Objects.requireNonNull(iterator)
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractSpliterator[T](size, harmonized) {
-      override def estimateSize(): Long = size // always initial size
-
       def tryAdvance(action: Consumer[_ >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
@@ -442,9 +665,16 @@ object Spliterators {
     // current index, modified on traverse/split
     private var cursor: Int = fromIndex
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator.OfLong =
-      null.asInstanceOf[Spliterator.OfLong]
+    def trySplit(): Spliterator.OfLong = {
+      val hi = toIndex
+      val lo = cursor
+      val mid = (lo + hi) >>> 1
+      if (lo >= mid) null
+      else {
+        cursor = mid
+        new SpliteratorFromArrayLong(array, lo, mid, additionalCharacteristics)
+      }
+    }
 
     def tryAdvance(action: LongConsumer): Boolean = {
       Objects.requireNonNull(action)
@@ -498,8 +728,21 @@ object Spliterators {
     // current index, modified on traverse/split
     private var cursor: Int = fromIndex
 
-    // BEWARE: non-functional, never splits, always returns null
-    def trySplit(): Spliterator[T] = null.asInstanceOf[Spliterator[T]]
+    def trySplit(): Spliterator[T] = {
+      val hi = toIndex
+      val lo = cursor
+      val mid = (lo + hi) >>> 1
+      if (lo >= mid) null
+      else {
+        cursor = mid
+        new SpliteratorFromArrayObject[T](
+          array,
+          lo,
+          mid,
+          additionalCharacteristics
+        )
+      }
+    }
 
     def tryAdvance(action: Consumer[_ >: T]): Boolean = {
       Objects.requireNonNull(action)
@@ -559,8 +802,6 @@ object Spliterators {
 
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractDoubleSpliterator(size, harmonized) {
-      override def estimateSize(): Long = size // always initial size
-
       def tryAdvance(action: DoubleConsumer): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
@@ -581,8 +822,6 @@ object Spliterators {
 
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractIntSpliterator(size, harmonized) {
-      override def estimateSize(): Long = size // always initial size
-
       def tryAdvance(action: IntConsumer): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
@@ -603,8 +842,6 @@ object Spliterators {
 
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractLongSpliterator(size, harmonized) {
-      override def estimateSize(): Long = size // always initial size
-
       def tryAdvance(action: LongConsumer): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
