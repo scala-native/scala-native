@@ -15,7 +15,7 @@ class CVarArgTest {
   def vatest(cstr: CString, output: String)(
       generator: (CString, Ptr[CChar]) => Unit
   ): Unit = {
-    val buff: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
+    val buff: Ptr[CChar] = stackalloc[CChar](1024.toUInt)
     generator(buff, cstr)
     val got = fromCString(buff)
     assertEquals(got, output)
@@ -254,13 +254,11 @@ class CVarArgTest {
   @Test def longValueMinus1(): Unit =
     vatest(c"%d", "-1")(stdio.sprintf(_, _, -1L))
   @Test def longValueMin(): Unit = {
-    assumeNot32Bit()
     vatest(c"%lld", "-9223372036854775808")(
       stdio.sprintf(_, _, java.lang.Long.MIN_VALUE)
     )
   }
   @Test def longValueMax(): Unit = {
-    assumeNot32Bit()
     vatest(c"%lld", "9223372036854775807")(
       stdio.sprintf(_, _, java.lang.Long.MAX_VALUE)
     )
@@ -567,11 +565,9 @@ class CVarArgTest {
     )
 
   @Test def ulongValueMin(): Unit = {
-    assumeNot32Bit()
     vatest(c"%llu", "0")(stdio.sprintf(_, _, ULong.MinValue))
   }
   @Test def ulongValueMax(): Unit = {
-    assumeNot32Bit()
     vatest(c"%llu", "18446744073709551615")(stdio.sprintf(_, _, ULong.MaxValue))
   }
   @Test def ulongArgs1(): Unit =

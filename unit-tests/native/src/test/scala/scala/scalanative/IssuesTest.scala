@@ -601,14 +601,14 @@ class IssuesTest {
     @alwaysinline def allocatingFunction(): CSize = {
       import scala.scalanative.unsafe.{CArray, Nat}
       import Nat._
-      def `64KB` = (64 * 1024).toUSize
+      def `64KB` = (64 * 1024).toUInt
       val chunk = stackalloc[Byte](`64KB`)
       assertNotNull("stackalloc was null", chunk)
       `64KB`
     }
     // 32MB, may more then available stack 1MB on Windows, < 8 MB on Unix
-    val toAllocate = (32 * 1024 * 1024).toUSize
-    var allocated = 0.toUSize
+    val toAllocate = (32 * 1024 * 1024).toULong
+    var allocated = 0.toULong
     while (allocated < toAllocate) {
       allocated += allocatingFunction()
     }

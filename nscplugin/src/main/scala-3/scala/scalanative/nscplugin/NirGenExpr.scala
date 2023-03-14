@@ -1512,19 +1512,11 @@ trait NirGenExpr(using Context) {
                   val promotedArg = arg.ty match {
                     case Type.Float =>
                       this.genCastOp(Type.Float, Type.Double, arg)
-                    case Type.FixedSizeI(width, _) if width < Type.Int.width =>
+                    case Type.I(width, _) if width < Type.Int.width =>
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext
                       buf.conv(conv, Type.Int, arg, unwind)
-                    case Type.Long =>
-                      // On 32-bit systems Long needs to be truncated to Int
-                      // Cast it to size to make undependent from architecture
-                      val conv =
-                        if (isUnsigned) nir.Conv.ZSizeCast
-                        else nir.Conv.SSizeCast
-                      buf.conv(conv, Type.Size, arg, unwind)
-
                     case _ => arg
                   }
                   res += promotedArg
@@ -1797,9 +1789,9 @@ trait NirGenExpr(using Context) {
         case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case _ if fromty == toty                     => None
-        case (Type.Float, Type.Double) => Some(nir.Conv.Fpext)
-        case (Type.Double, Type.Float) => Some(nir.Conv.Fptrunc)
-        case_ => unsupported(s"cast from $fromty to $toty")
+        case (Type.Float, Type.Double)               => Some(nir.Conv.Fpext)
+        case (Type.Double, Type.Float)               => Some(nir.Conv.Fptrunc)
+        case _ => unsupported(s"cast from $fromty to $toty")
       }
 
     /** Boxes a value of the given type before `elimErasedValueType`.

@@ -1856,8 +1856,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case (Type.I(w1, _), Type.F(w2)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case (Type.F(w1), Type.I(w2, _)) if w1 == w2 => Some(nir.Conv.Bitcast)
         case _ if fromty == toty                     => None
-        case (Type.Float, Type.Double) => Some(nir.Conv.Fpext)
-        case (Type.Double, Type.Float) => Some(nir.Conv.Fptrunc)
+        case (Type.Float, Type.Double)               => Some(nir.Conv.Fpext)
+        case (Type.Double, Type.Float)               => Some(nir.Conv.Fptrunc)
         case _ =>
           unsupported(s"cast from $fromty to $toty")
       }
