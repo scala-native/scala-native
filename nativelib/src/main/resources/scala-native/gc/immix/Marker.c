@@ -96,7 +96,7 @@ void Marker_markProgramStack(Heap *heap, Stack *stack) {
     setjmp(regs);
     word_t *dummy;
 
-    word_t **current = &dummy;
+    word_t **stackTop = &dummy;
     word_t **stackBottom = __stack_bottom;
 
     Marker_markRange(heap, stack, stackTop, stackBottom);

@@ -369,7 +369,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Type.Unit   => str("void")
       case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
         str(pointerType)
-      case Type.Bool          => str("i1")
+      case Type.Bool   => str("i1")
       case i: Type.I   => str("i"); str(i.width)
       case Type.Float  => str("float")
       case Type.Double => str("double")
@@ -426,7 +426,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.True      => str("true")
       case Val.False     => str("false")
       case Val.Null      => str("null")
-      case Val.Unit     => str("void")
+      case Val.Unit      => str("void")
       case Val.Zero(ty)  => str("zeroinitializer")
       case Val.Byte(v)   => str(v)
       case Val.Char(v)   => str(v.toInt)
