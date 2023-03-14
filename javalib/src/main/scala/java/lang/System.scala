@@ -6,7 +6,7 @@ import java.util.{Collections, HashMap, Map, Properties, WindowsHelperMethods}
 import scala.scalanative.posix.pwdOps._
 import scala.scalanative.posix.{pwd, unistd}
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.runtime.{GC, Intrinsics, Platform, time}
+import scala.scalanative.runtime.{Intrinsics, Platform, time}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.FileApi._
@@ -133,7 +133,8 @@ object System {
   def setErr(err: PrintStream): Unit =
     this.err = err
 
-  def gc(): Unit = GC.collect()
+  def gc(): Unit =
+    Runtime.getRuntime().gc()
 
   private def getCurrentDirectory(): Option[String] = {
     val bufSize = 1024.toUInt
