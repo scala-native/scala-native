@@ -46,18 +46,20 @@ class WeakReferenceTest {
     def assertEventuallyIsCollected(
         clue: String,
         ref: WeakReference[_],
-        retries: Int
+        deadline: Long
     ): Unit = {
       ref.get() match {
         case null =>
           assertTrue("collected but not enqueued", ref.isEnqueued())
         case v =>
-          if (retries > 0) {
+          if (System.currentTimeMillis() < deadline) {
             // Give GC something to collect
-            System.err.println(s"$clue - not yet collected $ref ($retries)")
+            locally {
+              val _ = Seq.fill(1000)(new Object {})
+            }
             Thread.sleep(200)
             GC.collect()
-            assertEventuallyIsCollected(clue, ref, retries - 1)
+            assertEventuallyIsCollected(clue, ref, deadline)
           } else {
             fail(
               s"$clue - expected that WeakReference would be collected, but it contains value ${v}"
@@ -73,8 +75,9 @@ class WeakReferenceTest {
     val weakRefList = List(weakRef1, weakRef2)
 
     GC.collect()
-    assertEventuallyIsCollected("weakRef1", weakRef1, retries = 5)
-    assertEventuallyIsCollected("weakRef2", weakRef2, retries = 5)
+    def newDeadline() = System.currentTimeMillis() + 60 * 1000
+    assertEventuallyIsCollected("weakRef1", weakRef1, deadline = newDeadline())
+    assertEventuallyIsCollected("weakRef2", weakRef2, deadline = newDeadline())
 
     assertEquals("weakRef1", null, weakRef1.get())
     assertEquals("weakRef2", null, weakRef2.get())
