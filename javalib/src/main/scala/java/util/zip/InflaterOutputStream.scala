@@ -16,7 +16,13 @@ class InflaterOutputStream private (
   private var closed = false
 
   def this(out: OutputStream, inf: Inflater, bufferSize: Int) = {
-    this(out, inf, new Array[Byte](bufferSize))
+    this(
+      out,
+      inf,
+      if (bufferSize <= 0)
+        throw new IllegalArgumentException("bufferSize <= 0: " + bufferSize)
+      else new Array[Byte](bufferSize)
+    )
     if (out == null) {
       throw new NullPointerException("out == null")
     } else if (inf == null) {
