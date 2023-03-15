@@ -26,7 +26,8 @@ runs:
           echo "binary-version=3" >> $GITHUB_ENV
           echo "project-version=3" >> $GITHUB_ENV
         fi
-
+        ifconfig -a // Show 0.4.x CI interface names
+        
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
       uses: actions/cache@v3
