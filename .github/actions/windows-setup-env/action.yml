@@ -66,7 +66,6 @@ runs:
     # Choco-Install is GH Actions wrappers around choco, which does retries
     - name: Install LLVM
       shell: pwsh
-      
       run: Choco-Install -PackageName llvm -ArgumentList "--version=${{ inputs.llvm-version }}", "--allow-downgrade"
 
     - name: Add LLVM on Path
