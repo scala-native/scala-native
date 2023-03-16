@@ -168,7 +168,6 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
-          clang --version &
           sbt ++${{matrix.scala}} "test-runtime ${{matrix.scala}}"
 
 
