@@ -85,7 +85,8 @@ object BinaryIncompatibilities {
       "scala.scalanative.posix.limits.PATH_MAX"
     ),
     // Moved to javalib, used internally and in scripted-tests
-    exclude[MissingClassProblem]("scala.scalanative.runtime.SocketHelpers*")
+    exclude[MissingClassProblem]("scala.scalanative.runtime.SocketHelpers*"),
+    exclude[Problem]("scala.scalanative.posix.monetaryExtern*")
   )
   final val WindowsLib: Filters = Nil
 
