@@ -8,7 +8,7 @@ inputs:
     description: "Java version to use in tests"
     default: "8"
   llvm-version:
-    description: "Java version to use in tests"
+    description: "LLVM version to use"
     default: "11.0.0"
 outputs:
   vcpkg-dir:
