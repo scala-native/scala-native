@@ -3,12 +3,11 @@
 
 #include "metadata/BlockMeta.h"
 #include "datastructures/BlockList.h"
-#include <bits/stdint-uintn.h>
 
 #define SUPERBLOCK_LOCAL_LIST_SIZE 4
 #define SUPERBLOCK_LOCAL_LIST_MAX ((1 << SUPERBLOCK_LOCAL_LIST_SIZE) - 1)
 
-typedef struct SweepResult {
+typedef struct {
     LocalBlockList recycledBlocks;
     LocalBlockList freeSuperblocks[SUPERBLOCK_LOCAL_LIST_SIZE];
 } SweepResult;

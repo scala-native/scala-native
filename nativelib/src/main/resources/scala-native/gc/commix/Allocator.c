@@ -23,19 +23,16 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 
     BlockList_Init(&allocator->recycledBlocks);
     allocator->recycledBlockCount = 0;
-
-    Allocator_InitCursors(allocator);
 }
 
 void Allocator_InitCursors(Allocator *allocator) {
-    bool didInit;
-    do {
-        didInit = Allocator_newBlock(allocator) &&
-                  Allocator_newOverflowBlock(allocator);
-    } while (Allocator_CanInitCursors(allocator));
-
-    // Init cursor
-    assert(didInit);
+    while (true) {
+        bool didInit = Allocator_newBlock(allocator) &&
+                       Allocator_newOverflowBlock(allocator);
+        if (didInit)
+            break;
+        Heap_Collect(&heap);
+    }
 }
 
 /**

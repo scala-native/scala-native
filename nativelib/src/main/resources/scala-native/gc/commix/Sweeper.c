@@ -329,7 +329,7 @@ void Sweep_applyResult(BlockAllocator *blockAllocator) {
             LocalBlockList item = result->freeSuperblocks[i];
             BlockMeta *first = item.first;
             if (first != NULL) {
-                BlockList_PushAll(&blockAllocator->freeSuperblocks[i],
+                BlockList_PushAll(&blockAllocator->freeSuperblocks[i],  
                                   allocator->blockMetaStart, first, item.last);
             }
         }

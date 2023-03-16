@@ -301,8 +301,11 @@ void Heap_GrowIfNeeded(Heap *heap) {
             }
         }
     }
-    if (!Allocator_CanInitCursors(&currentMutatorThread->allocator)) {
-        Heap_exitWithOutOfMemory("re-init cursors");
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        if (!Allocator_CanInitCursors(&thread->allocator)) {
+            Heap_exitWithOutOfMemory("growIfNeeded:re-init cursors");
+        }
     }
 }
 

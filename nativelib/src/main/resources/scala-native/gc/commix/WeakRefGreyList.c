@@ -17,7 +17,6 @@
 // Grey Packets are being distributed over different threads, until no
 // more are available.
 
-extern word_t *__modules;
 bool anyVisited = false;
 void (*handlerFn)() = NULL;
 

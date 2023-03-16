@@ -30,11 +30,6 @@ void MutatorThread_init(Field_t *stackbottom) {
 
     LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
                         heap.blockMetaStart, heap.heapStart);
-    Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
-                   heap.blockMetaStart, heap.heapStart);
-
-    LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
-                        heap.blockMetaStart, heap.heapStart);
     SweepResult_Init(&self->sweepResult);
     MutatorThreads_add(self);
     // Following init operations might trigger GC, needs to be executed after
@@ -63,7 +58,7 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
 
 void MutatorThread_switchState(MutatorThread *self,
                                MutatorThreadState newState) {
-    assert(self != null);
+    assert(self != NULL);
     if (newState == MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
         setjmp(self->executionContext);

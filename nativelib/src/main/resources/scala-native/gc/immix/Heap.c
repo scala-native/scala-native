@@ -360,7 +360,6 @@ void Heap_Recycle(Heap *heap) {
     MutatorThread *mainThread = currentMutatorThread;
 #define NextMutatorThread() mainThread
 #endif
-    MutatorThreads threadsCursor = mutatorThreads;
     while ((word_t *)current < end) {
         int size = 1;
 

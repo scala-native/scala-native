@@ -14,7 +14,6 @@
 
 extern word_t *__modules;
 extern int __modules_size;
-extern word_t **__stack_bottom;
 
 #define LAST_FIELD_OFFSET -1
 
@@ -97,15 +96,21 @@ static inline void Marker_giveWeakRefPacket(Heap *heap, Stats *stats,
     }
 }
 
+static inline void Marker_markLockWords(Heap *heap, Stats *stats,
+                                        GreyPacket **outHolder,
+                                        GreyPacket **outWeakRefHolder,
+                                        Object *object);
+
 void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
                        GreyPacket **outWeakRefHolder, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta) ||
            ObjectMeta_IsMarked(objectMeta));
 
+    Marker_markLockWords(heap, stats, outHolder, outWeakRefHolder, object);
+
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
-
     GreyPacket *out;
     if (Object_IsWeakReference(object)) {
         out = *outWeakRefHolder;
@@ -136,6 +141,30 @@ static inline bool Marker_markField(Heap *heap, Stats *stats,
         }
     }
     return false;
+}
+
+/* If compiling with enabled lock words check if object monitor is inflated and
+ * can be marked. Otherwise, in singlethreaded mode this funciton is no-op
+ */
+static inline void Marker_markLockWords(Heap *heap, Stats *stats,
+                                        GreyPacket **outHolder,
+                                        GreyPacket **outWeakRefHolder,
+                                        Object *object) {
+#ifdef USES_LOCKWORD
+    if (object != NULL) {
+        Field_t rttiLock = object->rtti->rt.lockWord;
+        if (Field_isInflatedLock(rttiLock)) {
+            Field_t field = Field_allignedLockRef(rttiLock);
+            Marker_markField(heap, stats, outHolder, outWeakRefHolder, field);
+        }
+
+        Field_t objectLock = object->lockWord;
+        if (Field_isInflatedLock(objectLock)) {
+            Field_t field = Field_allignedLockRef(objectLock);
+            Marker_markField(heap, stats, outHolder, outWeakRefHolder, field);
+        }
+    }
+#endif
 }
 
 void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
@@ -411,7 +440,6 @@ void Marker_markProgramStack(MutatorThread *thread, Heap *heap, Stats *stats,
     } while (stackTop == NULL);
 
     size_t stackSize = stackBottom - stackTop;
-    printf("StackSize of %p, =%lu\n", thread, stackSize);
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
                      stackSize);
 
@@ -429,9 +457,7 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
     Bytemap *bytemap = heap->bytemap;
     word_t **limit = modules + nb_modules;
     for (word_t **current = modules; current < limit; current++) {
-        Object *object = (Object *)*current;
-        Marker_markField(heap, stats, outHolder, outWeakRefHolder,
-                         (Field_t)object);
+        Marker_markField(heap, stats, outHolder, outWeakRefHolder, *current);
     }
 }
 
