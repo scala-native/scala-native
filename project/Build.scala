@@ -29,6 +29,7 @@ object Build {
   lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
   lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
+    nirJVM, utilJVM, toolsJVM,
     nativelib, clib, posixlib, windowslib,
     auxlib, javalib, scalalib,
     testInterface, testInterfaceSbtDefs, testRunner,
@@ -133,8 +134,8 @@ object Build {
       case "2.12" => _.settings(disabledDocsSettings)
       case _      => identity
     }
-    .dependsOnSource(nir)
-    .dependsOnSource(util)
+    .dependsOnSource(nirJVM)
+    .dependsOnSource(utilJVM)
     .dependsOn(testingCompilerInterface % "test")
     .zippedSettings(Seq("testingCompiler", "nativelib")) {
       case Seq(testingCompiler, nativelib) =>
@@ -159,87 +160,119 @@ object Build {
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
     .settings(compilerPluginSettings)
 
-  // NIR compiler
-  lazy val util = MultiScalaProject("util")
-    .settings(toolSettings, mavenPublishSettings)
+  private val withSharedSources = Def.settings(
+    // baseDirectory = project/jvm/.<scala-version>
+    Compile / unmanagedSourceDirectories += baseDirectory.value.getParentFile.getParentFile / "main"
+  )
 
-  lazy val nir = MultiScalaProject("nir")
-    .settings(
-      toolSettings,
-      mavenPublishSettings,
-      libraryDependencies ++= Deps.JUnitJvm
-    )
-    .mapBinaryVersions {
-      // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
-      case "2.12" => _.settings(disabledDocsSettings)
-      case _      => identity
-    }
+  // NIR compiler
+  lazy val util = MultiScalaProject("util", file("util/native"))
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(toolSettings, mavenPublishSettings, withSharedSources)
+
+  lazy val utilJVM =
+    MultiScalaProject(id = "utilJVM", name = "util", file("util/jvm"))
+      .settings(toolSettings, mavenPublishSettings, withSharedSources)
+
+  lazy val nir = MultiScalaProject("nir", file("nir/native"))
+    .settings(toolSettings, mavenPublishSettings, withSharedSources)
+    .enablePlugins(MyScalaNativePlugin)
     .dependsOn(util)
 
-  lazy val tools = MultiScalaProject("tools")
-    .enablePlugins(BuildInfoPlugin)
-    .settings(toolSettings, mavenPublishSettings, buildInfoSettings)
-    .settings(
-      libraryDependencies ++= Deps.JUnitJvm,
-      Test / fork := true,
-      scalacOptions ++= {
-        val scala213StdLibDeprecations = Seq(
-          // In 2.13 lineStream_! was replaced with lazyList_!.
-          "method lineStream_!",
-          // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
-          // Should not be replaced with HashMap due to performance reasons.
-          "class|object OpenHashMap",
-          "class Stream",
-          "method retain in trait SetOps"
-        ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
-        CrossVersion
-          .partialVersion(scalaVersion.value)
-          .fold(Seq.empty[String]) {
-            case (2, 12) => Nil
-            case (2, 13) => scala213StdLibDeprecations
-            case (3, _)  => scala213StdLibDeprecations
-          }
-      },
-      buildInfoKeys ++= Seq(
-        BuildInfoKey.map(scalaInstance) {
-          case (_, v) =>
-            "scalacJars" -> v.allJars
-              .map(_.getAbsolutePath())
-              .mkString(pathSeparator)
-        },
-        BuildInfoKey.map(Compile / managedClasspath) {
-          case (_, v) =>
-            "compileClasspath" -> v.files
-              .map(_.getAbsolutePath())
-              .mkString(pathSeparator)
+  lazy val nirJVM =
+    MultiScalaProject(id = "nirJVM", name = "nir", file("nir/jvm"))
+      .settings(toolSettings, mavenPublishSettings, withSharedSources)
+      .settings(
+        libraryDependencies ++= Deps.JUnitJvm
+      )
+      .mapBinaryVersions {
+        // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
+        case "2.12" => _.settings(disabledDocsSettings)
+        case _      => identity
+      }
+      .dependsOn(utilJVM)
+
+  private val commonToolsSettings = Def.settings(
+    toolSettings,
+    mavenPublishSettings,
+    withSharedSources,
+    buildInfoSettings,
+    scalacOptions ++= {
+      val scala213StdLibDeprecations = Seq(
+        // In 2.13 lineStream_! was replaced with lazyList_!.
+        "method lineStream_!",
+        // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+        // Should not be replaced with HashMap due to performance reasons.
+        "class|object OpenHashMap",
+        "class Stream",
+        "method retain in trait SetOps"
+      ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
+      CrossVersion
+        .partialVersion(scalaVersion.value)
+        .fold(Seq.empty[String]) {
+          case (2, 12) => Nil
+          case (2, 13) => scala213StdLibDeprecations
+          case (3, _)  => scala213StdLibDeprecations
         }
-      ),
-      // Running tests in parallel results in `FileSystemAlreadyExistsException`
-      Test / parallelExecution := false
-    )
-    .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
-      case Seq(nscPlugin, nativelib, scalalib) =>
-        buildInfoKeys ++= Seq[BuildInfoKey](
-          BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
-            case (_, v) => "pluginJar" -> v.getAbsolutePath()
-          },
-          BuildInfoKey.map(nativelib / Compile / fullClasspath) {
-            case (_, v) =>
-              "nativelibCp" ->
-                v.files
-                  .map(_.getAbsolutePath)
-                  .mkString(pathSeparator)
-          },
-          BuildInfoKey.map(scalalib / Compile / fullClasspath) {
-            case (_, v) =>
-              "scalalibCp" ->
-                v.files
-                  .map(_.getAbsolutePath)
-                  .mkString(pathSeparator)
-          }
-        )
-    }
-    .dependsOn(nir, util, testingCompilerInterface % "test")
+    },
+    buildInfoKeys ++= Seq(
+      BuildInfoKey.map(scalaInstance) {
+        case (_, v) =>
+          "scalacJars" -> v.allJars
+            .map(_.getAbsolutePath())
+            .mkString(pathSeparator)
+      },
+      BuildInfoKey.map(Compile / managedClasspath) {
+        case (_, v) =>
+          "compileClasspath" -> v.files
+            .map(_.getAbsolutePath())
+            .mkString(pathSeparator)
+      }
+    ),
+    // Running tests in parallel results in `FileSystemAlreadyExistsException`
+    Test / parallelExecution := false
+  )
+
+  lazy val tools = MultiScalaProject("tools", file("tools/native"))
+    .enablePlugins(BuildInfoPlugin, MyScalaNativePlugin)
+    .withJUnitPlugin
+    .withNativeCompilerPlugin
+    .settings(commonToolsSettings)
+    .dependsOn(nir, util)
+
+  lazy val toolsJVM =
+    MultiScalaProject(id = "toolsJVM", name = "tools", file("tools/jvm"))
+      .enablePlugins(BuildInfoPlugin)
+      .settings(
+        commonToolsSettings,
+        libraryDependencies ++= Deps.JUnitJvm,
+        Test / fork := true,
+        // Running tests in parallel results in `FileSystemAlreadyExistsException`
+        Test / parallelExecution := false
+      )
+      .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
+        case Seq(nscPlugin, nativelib, scalalib) =>
+          buildInfoKeys ++= Seq[BuildInfoKey](
+            BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
+              case (_, v) => "pluginJar" -> v.getAbsolutePath()
+            },
+            BuildInfoKey.map(nativelib / Compile / fullClasspath) {
+              case (_, v) =>
+                "nativelibCp" ->
+                  v.files
+                    .map(_.getAbsolutePath)
+                    .mkString(pathSeparator)
+            },
+            BuildInfoKey.map(scalalib / Compile / fullClasspath) {
+              case (_, v) =>
+                "scalalibCp" ->
+                  v.files
+                    .map(_.getAbsolutePath)
+                    .mkString(pathSeparator)
+            }
+          )
+      }
+      .dependsOn(nir, util, testingCompilerInterface % "test")
 
   lazy val toolsBenchmarks =
     MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
@@ -338,9 +371,9 @@ object Build {
                     testInterface.forBinaryVersion(ver) / publishLocal,
                     junitRuntime.forBinaryVersion(ver) / publishLocal,
                     // JVM libraries
-                    util.forBinaryVersion(ver) / publishLocal,
-                    nir.forBinaryVersion(ver) / publishLocal,
-                    tools.forBinaryVersion(ver) / publishLocal,
+                    utilJVM.forBinaryVersion(ver) / publishLocal,
+                    nirJVM.forBinaryVersion(ver) / publishLocal,
+                    toolsJVM.forBinaryVersion(ver) / publishLocal,
                     testRunner.forBinaryVersion(ver) / publishLocal
                   )
               }
@@ -355,7 +388,7 @@ object Build {
             .value
         }
       )
-      .dependsOn(tools.v2_12, testRunner.v2_12)
+      .dependsOn(toolsJVM.v2_12, testRunner.v2_12)
 
 // Native moduels ------------------------------------------------
   lazy val nativelib =
@@ -623,7 +656,7 @@ object Build {
         testInterfaceCommonSourcesSettings,
         libraryDependencies ++= Deps.TestRunner
       )
-      .dependsOn(tools, junitAsyncJVM % "test")
+      .dependsOn(toolsJVM, junitAsyncJVM % "test")
 
 // JUnit modules ------------------------------------------------
   lazy val junitRuntime =
@@ -734,7 +767,7 @@ object Build {
           else (Compile / sources).value
         }
       )
-      .dependsOn(nscPlugin, tools)
+      .dependsOn(nscPlugin, toolsJVM)
 
   lazy val scalaPartestTests =
     MultiScalaProject("scalaPartestTests", file("scala-partest-tests"))
