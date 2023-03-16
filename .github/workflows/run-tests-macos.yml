@@ -40,13 +40,13 @@ jobs:
         env: 
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-        run: sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
+        run: sbt "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
         # No partests support for Scala 3
         if: ${{ !startsWith(matrix.scala, '3') }}
         run: >
-          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sbt "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   test-runtime-ext:
     name: Test runtime extension
@@ -120,7 +120,7 @@ jobs:
         run: |
           export LLVM_BIN="$(brew --prefix llvm@15)/bin"
           $LLVM_BIN/clang --version
-          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} -J-Xmx5G "${TEST_COMMAND}"
+          sbt -J-Xmx5G "${TEST_COMMAND}"
 
   run-scripted-tests:
     name: Scripted tests
