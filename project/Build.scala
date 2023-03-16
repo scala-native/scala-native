@@ -162,7 +162,7 @@ object Build {
 
   private val withSharedSources = Def.settings(
     // baseDirectory = project/jvm/.<scala-version>
-    Compile / unmanagedSourceDirectories += baseDirectory.value.getParentFile.getParentFile / "main"
+    Compile / unmanagedSourceDirectories += baseDirectory.value.getParentFile.getParentFile / "src"
   )
 
   // NIR compiler
