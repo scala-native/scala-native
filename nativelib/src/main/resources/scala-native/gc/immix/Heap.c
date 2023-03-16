@@ -347,23 +347,31 @@ void Heap_Recycle(Heap *heap) {
     word_t *currentBlockStart = heap->heapStart;
     LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
     word_t *end = heap->blockMetaEnd;
+
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    MutatorThreads threadsCursor = mutatorThreads;
+#define NextMutatorThread()                                                    \
+    threadsCursor = threadsCursor->next;                                       \
+    if (threadsCursor == NULL) {                                               \
+        threadsCursor = mutatorThreads;                                        \
+    }                                                                          \
+    threadsCursor->value
+#else
+    MutatorThread *mainThread = currentMutatorThread;
+#define NextMutatorThread() mainThread
+#endif
     MutatorThreads threadsCursor = mutatorThreads;
     while ((word_t *)current < end) {
         int size = 1;
-        MutatorThread *recycleBlocksTo = threadsCursor->value;
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
-        threadsCursor = threadsCursor->next;
-        if (threadsCursor == NULL) {
-            threadsCursor = mutatorThreads;
-        }
-#endif
 
         assert(!BlockMeta_IsSuperblockMiddle(current));
         if (BlockMeta_IsSimpleBlock(current)) {
+            MutatorThread *recycleBlocksTo = NextMutatorThread();
             Block_Recycle(&recycleBlocksTo->allocator, current,
                           currentBlockStart, lineMetas);
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
+            MutatorThread *recycleBlocksTo = NextMutatorThread();
             LargeAllocator_Sweep(&recycleBlocksTo->largeAllocator, current,
                                  currentBlockStart);
         } else {

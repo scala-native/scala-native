@@ -127,8 +127,11 @@ void Phase_Nullify(Heap *heap, Stats *stats) {
 }
 
 void Phase_StartSweep(Heap *heap) {
-    Allocator_Clear(&allocator);
-    LargeAllocator_Clear(&largeAllocator);
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        Allocator_Clear(&thread->allocator);
+        LargeAllocator_Clear(&thread->largeAllocator);
+    }
     BlockAllocator_Clear(&blockAllocator);
 
     // use the reserved block so mutator can does not have to lazy sweep

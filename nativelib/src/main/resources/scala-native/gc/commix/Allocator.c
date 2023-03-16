@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include "shared/ThreadUtil.h"
+#include <assert.h>
 
 bool Allocator_getNextLine(Allocator *allocator);
 bool Allocator_newBlock(Allocator *allocator);
@@ -21,16 +22,20 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
     allocator->heapStart = heapStart;
 
     BlockList_Init(&allocator->recycledBlocks);
-
     allocator->recycledBlockCount = 0;
 
-    // Init cursor
-    bool didInit = Allocator_newBlock(allocator);
-    assert(didInit);
+    Allocator_InitCursors(allocator);
+}
 
-    // Init large cursor
-    bool didLargeInit = Allocator_newOverflowBlock(allocator);
-    assert(didLargeInit);
+void Allocator_InitCursors(Allocator *allocator) {
+    bool didInit;
+    do {
+        didInit = Allocator_newBlock(allocator) &&
+                  Allocator_newOverflowBlock(allocator);
+    } while (Allocator_CanInitCursors(allocator));
+
+    // Init cursor
+    assert(didInit);
 }
 
 /**
@@ -218,7 +223,7 @@ bool Allocator_newBlock(Allocator *allocator) {
 }
 
 INLINE
-word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
+word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
     word_t *object = NULL;
     Stats_DefineOrNothing(stats, heap->stats);
     Stats_RecordTime(stats, start_ns);
@@ -227,12 +232,12 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
         Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
                       LAZY_SWEEP_MIN_BATCH);
-        object = Allocator_tryAlloc(&allocator, size);
+        object = Allocator_tryAlloc(allocator, size);
     }
     // mark as inactive
     heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-        object = Allocator_tryAlloc(&allocator, size);
+        object = Allocator_tryAlloc(allocator, size);
         if (object == NULL) {
             thread_yield();
         }
@@ -242,15 +247,16 @@ word_t *Allocator_lazySweep(Heap *heap, uint32_t size) {
     return object;
 }
 
-NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
-    word_t *object = Allocator_tryAlloc(&allocator, size);
+NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
+                                     uint32_t size) {
+    word_t *object = Allocator_tryAlloc(allocator, size);
 
     if (object != NULL) {
     done:
         assert(Heap_IsWordInHeap(heap, object));
         assert(object != NULL);
         memset(object, 0, size);
-        ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
+        ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
 #ifdef DEBUG_ASSERT
         ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
@@ -259,20 +265,20 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
     }
 
     if (!Sweeper_IsSweepDone(heap)) {
-        object = Allocator_lazySweep(heap, size);
+        object = Allocator_lazySweep(allocator, heap, size);
 
         if (object != NULL)
             goto done;
     }
 
     Heap_Collect(heap);
-    object = Allocator_tryAlloc(&allocator, size);
+    object = Allocator_tryAlloc(allocator, size);
 
     if (object != NULL)
         goto done;
 
     if (!Sweeper_IsSweepDone(heap)) {
-        object = Allocator_lazySweep(heap, size);
+        object = Allocator_lazySweep(allocator, heap, size);
 
         if (object != NULL)
             goto done;
@@ -281,7 +287,7 @@ NOINLINE word_t *Allocator_allocSlow(Heap *heap, uint32_t size) {
     // A small object can always fit in a single free block
     // because it is no larger than 8K while the block is 32K.
     Heap_Grow(heap, 1);
-    object = Allocator_tryAlloc(&allocator, size);
+    object = Allocator_tryAlloc(allocator, size);
 
     goto done;
 }
@@ -290,20 +296,21 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
-    word_t *start = allocator.cursor;
+    Allocator *allocator = &currentMutatorThread->allocator;
+    word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // Checks if the end of the block overlaps with the limit
-    if (end > allocator.limit) {
-        return Allocator_allocSlow(heap, size);
+    if (end > allocator->limit) {
+        return Allocator_allocSlow(allocator, heap, size);
     }
 
-    allocator.cursor = end;
+    allocator->cursor = end;
 
     memset(start, 0, size);
 
     word_t *object = start;
-    ObjectMeta *objectMeta = Bytemap_Get(allocator.bytemap, object);
+    ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, object);
 #ifdef DEBUG_ASSERT
     ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif

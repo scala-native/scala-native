@@ -63,6 +63,7 @@ typedef struct {
     } mark;
     Bytemap *bytemap;
     Stats *stats;
+    mutex_t lock;
 } Heap;
 
 extern long long scalanative_nano_time();

@@ -2,15 +2,17 @@
 #define IMMIX_STATE_H
 
 #include "Heap.h"
-#include "Allocator.h"
-#include "LargeAllocator.h"
 #include "BlockAllocator.h"
+#include "shared/ThreadUtil.h"
+#include "shared/MutatorThread.h"
+#include "Safepoint.h"
 #include "immix_commix/GCRoots.h"
 
 extern Heap heap;
-extern Allocator allocator;
-extern LargeAllocator largeAllocator;
 extern BlockAllocator blockAllocator;
+extern MutatorThreads mutatorThreads;
+extern thread_local MutatorThread *currentMutatorThread;
+extern safepoint_t scalanative_gc_safepoint;
 extern GC_Roots *roots;
 
 #endif // IMMIX_STATE_H
