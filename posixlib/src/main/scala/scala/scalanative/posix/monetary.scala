@@ -19,7 +19,7 @@ object monetary {
       str: CString,
       max: size_t,
       format: CString,
-      vargs: Any*
+      vargs: Double*
   ): ssize_t = extern
 
   def strfmon_l(
@@ -27,6 +27,6 @@ object monetary {
       max: size_t,
       locale: locale_t,
       format: CString,
-      vargs: Any*
+      vargs: Double*
   ): ssize_t = extern
 }
