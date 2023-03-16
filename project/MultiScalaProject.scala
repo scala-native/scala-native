@@ -131,8 +131,11 @@ object MultiScalaProject {
 
   def apply(id: String): MultiScalaProject =
     apply(id, file(id))
+  def apply(id: String, base: File): MultiScalaProject =
+    apply(id, id, file(id))
   def apply(
       id: String,
+      name: String,
       base: File
   ): MultiScalaProject = {
     val projects = for {
@@ -143,7 +146,7 @@ object MultiScalaProject {
         base = new File(base, "." + major)
       ).settings(
         Settings.commonSettings,
-        name := Settings.projectName(id),
+        Keys.name := Settings.projectName(name),
         scalaVersion := scalaVersions(major),
         crossScalaVersions := minors
       )
