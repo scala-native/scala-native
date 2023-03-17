@@ -421,4 +421,15 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include(CannotExportField)
   }
 
+  // https://github.com/scala-native/scala-native/issues/3228
+  it should "allow to define fields in extern object" in NIRCompiler(_.compile {
+    """
+    |import scala.scalanative.unsafe._
+    |
+    |@extern
+    |object Foo {
+    |  final val bar = 42
+    |}""".stripMargin
+  })
+
 }
