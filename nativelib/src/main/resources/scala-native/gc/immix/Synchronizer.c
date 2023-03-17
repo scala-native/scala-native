@@ -38,7 +38,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
         fprintf(stderr, "Cought exception code %p in GC exception handler\n",
                 (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
         fflush(stdout);
-        StackTrace_PrintStackTrace(ex);
+        StackTrace_PrintStackTrace();
     // pass-through
     default:
         return EXCEPTION_CONTINUE_SEARCH;
