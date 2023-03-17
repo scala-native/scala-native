@@ -7,7 +7,7 @@ on:
       - main
       - 0.4.x
 concurrency:
-  group: windows-${{ github.head_ref }}
+  group: windows-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -132,3 +132,30 @@ jobs:
           tests${{env.project-version}}/test
           testsExt${{env.project-version}}/test
         shell: cmd
+
+  test-llvm-versions:
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.2]
+        llvm: ["13.0.1", "14.0.6", "15.0.7"] # Last 3 stable versions
+    steps:
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: ${{ matrix.llvm }}
+          java-version: 8
+
+      - name: Run tests
+        shell: cmd
+        run: >
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}} "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
