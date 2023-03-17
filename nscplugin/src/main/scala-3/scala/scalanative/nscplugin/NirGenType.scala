@@ -261,27 +261,18 @@ trait NirGenType(using Context) {
     import core.Phases._
     val repeatedParams = if (sym.isExtern) {
       atPhase(typerPhase) {
-        sym.paramInfo match {
+        sym.paramInfo.stripPoly match {
           // @extern def foo(a: Int): Int
           case MethodTpe(paramNames, paramTypes, _) =>
             for (name, tpe) <- paramNames zip paramTypes
             yield name -> tpe.isRepeatedParam
-          // @extern def foo[T](ptr: Ptr[T]): Int
-          case PolyType(_, MethodTpe(paramNames, paramTypes, _)) =>
-            for (name, tpe) <- paramNames zip paramTypes
-            yield name -> tpe.isRepeatedParam
-          // @extern def foo: Int
-          case ExprType(_) => Nil
-          // @extern var foo: Int
-          case TypeRef(_, _) => Nil
-          // @extern def foo: Ptr[Int]
-          case AppliedType(_, _) => Nil
-          case _ =>
+          case t if t.isVarArgsMethod =>
             report.warning(
               "Unable to resolve method sig params for symbol, extern VarArgs would not work",
               sym.srcPos
             )
             Nil
+          case _ => Nil
         }
       }.toMap
     } else Map.empty
