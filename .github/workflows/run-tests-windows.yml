@@ -150,7 +150,7 @@ jobs:
       matrix:
         scala: [3.2.2]
         llvm: ["13.0.1", "14.0.6", "15.0.7"] # Last 3 stable versions 
-    # if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false
@@ -169,7 +169,7 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}} "test-runtime ${{matrix.scala}}"
+          sbt ++${{matrix.scala}} "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
 
 
   test-multihreading:
