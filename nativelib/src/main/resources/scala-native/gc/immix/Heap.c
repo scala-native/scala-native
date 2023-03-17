@@ -350,16 +350,19 @@ void Heap_Recycle(Heap *heap) {
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     MutatorThreads threadsCursor = mutatorThreads;
+    // NextMutatorThread is always going to be assigned with it's first
+    // expression
 #define NextMutatorThread()                                                    \
+    threadsCursor->value;                                                      \
     threadsCursor = threadsCursor->next;                                       \
     if (threadsCursor == NULL) {                                               \
         threadsCursor = mutatorThreads;                                        \
-    }                                                                          \
-    threadsCursor->value
+    }
 #else
     MutatorThread *mainThread = currentMutatorThread;
 #define NextMutatorThread() mainThread
 #endif
+
     while ((word_t *)current < end) {
         int size = 1;
 
