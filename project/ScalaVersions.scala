@@ -18,7 +18,8 @@ object ScalaVersions {
   val scala213: String = crossScala213.last
   val scala3: String = "3.1.3"
 
-  val sbt10Version: String = "1.1.6" // minimum version
+  // minimum version - 1.5 is required for Scala 3 and 1.5.8 has log4j vulnerability fixed
+  val sbt10Version: String = "1.5.8"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =
