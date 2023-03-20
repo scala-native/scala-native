@@ -173,7 +173,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
             // the allocator thread must see the sweeping changes in recycled
             // blocks
             atomic_thread_fence(memory_order_release);
-            LocalBlockList_Push(&thread->sweepResult.recycledBlocks,
+            LocalBlockList_Push(&result->recycledBlocks,
                                 allocator->blockMetaStart, blockMeta);
 #ifdef DEBUG_PRINT
             printf(
@@ -312,38 +312,41 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     return freeCount;
 }
 
-void Sweep_applyResult(BlockAllocator *blockAllocator) {
-    MutatorThreads_foreach(mutatorThreads, node) {
-        MutatorThread *thread = node->value;
-        SweepResult *result = &thread->sweepResult;
-        Allocator *allocator = &thread->allocator;
-        {
-            BlockMeta *first = result->recycledBlocks.first;
-            if (first != NULL) {
-                BlockList_PushAll(&allocator->recycledBlocks,
-                                  allocator->blockMetaStart, first,
-                                  result->recycledBlocks.last);
-            }
+static atomic_uint_fast32_t sweepCounter;
+void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator) {
+    int sweepId = atomic_fetch_add(&sweepCounter, 1);
+    int mutatorThreadsCount = 0;
+    MutatorThreads_foreach(mutatorThreads, node) { mutatorThreadsCount += 1; }
+    int threadId = sweepId % mutatorThreadsCount;
+    MutatorThreads thread = mutatorThreads;
+    for(int i = 0; i < threadId; i++){thread = thread->next;}
+    printf("Apply result: threads=%d thread=%p, idx=%d\n", mutatorThreadsCount, thread->value, threadId);
+    Allocator *allocator = &thread->value->allocator;
+    {
+        BlockMeta *first = result->recycledBlocks.first;
+        if (first != NULL) {
+            BlockList_PushAll(&allocator->recycledBlocks,
+                              allocator->blockMetaStart, first,
+                              result->recycledBlocks.last);
         }
-        for (int i = 0; i < SUPERBLOCK_LOCAL_LIST_SIZE; i++) {
-            LocalBlockList item = result->freeSuperblocks[i];
-            BlockMeta *first = item.first;
-            if (first != NULL) {
-                BlockList_PushAll(&blockAllocator->freeSuperblocks[i],  
-                                  allocator->blockMetaStart, first, item.last);
-            }
-        }
-        SweepResult_clear(result);
     }
+
+    for (int i = 0; i < SUPERBLOCK_LOCAL_LIST_SIZE; i++) {
+        LocalBlockList item = result->freeSuperblocks[i];
+        BlockMeta *first = item.first;
+        if (first != NULL) {
+            BlockList_PushAll(&blockAllocator->freeSuperblocks[i],
+                              allocator->blockMetaStart, first, item.last);
+        }
+    }
+    SweepResult_clear(result);
 }
 
 void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                    uint32_t maxCount) {
     Stats_RecordTimeBatch(stats, start_ns);
-    MutatorThreads_foreach(mutatorThreads, node) {
-        MutatorThread *thread = node->value;
-        SweepResult_clear(&thread->sweepResult);
-    }
+    SweepResult sweepResult;
+    SweepResult_Init(&sweepResult);
     uint32_t cursor = heap->sweep.cursor;
     uint32_t sweepLimit = heap->sweep.limit;
     // protect against sweep.cursor overflow
@@ -425,7 +428,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
             MutatorThread *recycleBlocksTo = NextMutatorThread();
             freeCount = Sweeper_sweepSimpleBlock(recycleBlocksTo, current,
                                                  currentBlockStart, lineMetas,
-                                                 &recycleBlocksTo->sweepResult);
+                                                 &sweepResult);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep SimpleBlock %p %" PRIu32 "\n", current,
                    BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
@@ -482,10 +485,8 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
                     BlockAllocator_AddFreeSuperblock(
                         &blockAllocator, lastFreeBlockStart, totalSize);
                 } else {
-                    MutatorThread *recycleBlocksTo = NextMutatorThread();
                     BlockAllocator_AddFreeSuperblockLocal(
-                        &blockAllocator,
-                        recycleBlocksTo->sweepResult.freeSuperblocks,
+                        &blockAllocator, sweepResult.freeSuperblocks,
                         lastFreeBlockStart, totalSize);
                 }
             }
@@ -509,7 +510,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 
     Stats_RecordTimeSync(stats, postsync_start_ns);
 
-    Sweep_applyResult(&blockAllocator);
+    Sweep_applyResult(&sweepResult, &blockAllocator);
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
     atomic_thread_fence(memory_order_release);

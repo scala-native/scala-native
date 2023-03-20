@@ -30,7 +30,6 @@ void MutatorThread_init(Field_t *stackbottom) {
 
     LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
                         heap.blockMetaStart, heap.heapStart);
-    SweepResult_Init(&self->sweepResult);
     MutatorThreads_add(self);
     // Following init operations might trigger GC, needs to be executed after
     // acknownleding the new thread in MutatorThreads_add

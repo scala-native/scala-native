@@ -21,7 +21,6 @@ typedef struct {
     word_t **stackBottom;
     Allocator allocator;
     LargeAllocator largeAllocator;
-    SweepResult sweepResult;
 #ifdef _WIN32
     HANDLE wakeupEvent;
 #else
