@@ -4,7 +4,7 @@ import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
 import dotc._
 import dotc.ast.tpd._
-import dotc.transform.SymUtils.setter
+import dotc.transform.SymUtils._
 import core.Contexts._
 import core.Definitions
 import core.Names._
@@ -12,8 +12,8 @@ import core.Symbols._
 import core.Types._
 import core.StdNames._
 import core.Constants.Constant
+import core.Flags._
 import NirGenUtil.ContextCached
-import dotty.tools.dotc.core.Flags
 
 /** This phase does:
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
@@ -36,6 +36,24 @@ class PrepNativeInterop extends PluginPhase {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&
     dd.symbol.isWrappedToplevelDef
   }
+
+  extension (sym: Symbol)
+    def isTraitOrInterface(using Context): Boolean =
+      sym.is(Trait) || sym.isAllOf(JavaInterface)
+
+    def isScalaModule(using Context): Boolean =
+      sym.is(ModuleClass, butNot = Lifted)
+
+    def isExtern(using Context): Boolean = sym.exists && {
+      sym.owner.isExternType ||
+      sym.hasAnnotation(defnNir.ExternClass) ||
+      (sym.is(Accessor) && sym.field.isExtern)
+    }
+
+    def isExternType(using Context): Boolean =
+      (isScalaModule || sym.isTraitOrInterface) &&
+        sym.hasAnnotation(defnNir.ExternClass)
+  end extension
 
   private class DealiasTypeMapper(using Context) extends TypeMap {
     override def apply(tp: Type): Type =
@@ -78,11 +96,28 @@ class PrepNativeInterop extends PluginPhase {
   }
 
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
+    val sym = dd.symbol
+    lazy val rhsSym = dd.rhs.symbol
     // Set `@extern` annotation for top-level extern functions
-    if (isTopLevelExtern(dd) && !dd.symbol.hasAnnotation(defnNir.ExternClass)) {
-      dd.symbol.addAnnotation(defnNir.ExternClass)
+    if (isTopLevelExtern(dd) && !sym.hasAnnotation(defnNir.ExternClass)) {
+      sym.addAnnotation(defnNir.ExternClass)
     }
-    dd
+
+    def usesVariadicArgs = sym.paramInfo.stripPoly match {
+      case MethodTpe(paramNames, paramTypes, _) =>
+        paramTypes.exists(param => param.isRepeatedParam)
+      case t => t.isVarArgsMethod
+    }
+
+    if sym.is(Exported) && rhsSym.isExtern && usesVariadicArgs
+    then
+      // Externs with varargs need to be called directly, replace proxy
+      // with redifintion of extern method
+      // from: <exported> def foo(args: Any*): Unit = origin.foo(args)
+      // into: <exported> def foo(args: Any*): Unit = extern
+      sym.addAnnotation(defnNir.ExternClass)
+      cpy.DefDef(dd)(rhs = ref(defnNir.UnsafePackage_extern))
+    else dd
   }
 
   override def transformValDef(vd: ValDef)(using Context): Tree = {
@@ -103,9 +138,7 @@ class PrepNativeInterop extends PluginPhase {
         if (isTopLevelExtern(vd) &&
             !sym.hasAnnotation(defnNir.ExternClass)) {
           sym.addAnnotation(defnNir.ExternClass)
-          if (vd.symbol.is(
-                Flags.Mutable
-              )) {
+          if (vd.symbol.is(Mutable)) {
             sym.setter.addAnnotation(defnNir.ExternClass)
           }
         }
