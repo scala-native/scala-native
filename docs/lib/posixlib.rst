@@ -16,7 +16,7 @@ C Header          Scala Native Module
 `cpio.h`_         scala.scalanative.posix.cpio_
 `ctype.h`_        scala.scalanative.posix.ctype_
 `dirent.h`_       scala.scalanative.posix.dirent_
-`dlfcn.h`_        N/A
+`dlfcn.h`_        scala.scalanative.posix.dlfcn_
 `errno.h`_        scala.scalanative.posix.errno_
 `fcntl.h`_        scala.scalanative.posix.fcntl_
 `fenv.h`_         scala.scalanative.posix.fenv_
@@ -181,6 +181,7 @@ C Header          Scala Native Module
 .. _scala.scalanative.posix.ctype: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/ctype.scala
 .. _scala.scalanative.posix.cpio: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/cpio.scala
 .. _scala.scalanative.posix.dirent: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/dirent.scala
+.. _scala.scalanative.posix.dlfcn: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/dlfcn.scala
 .. _scala.scalanative.posix.errno: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/errno.scala
 .. _scala.scalanative.posix.fcntl: https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/fcntl.scala
 .. _scala.scalanative.posix.fenv: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/fenv.scala
