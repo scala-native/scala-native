@@ -24,9 +24,7 @@ class DlfcnTest {
   @Test def dlfcnOpensAndObtainsSymbolAddressLinux(): Unit = {
     if (isLinux) Zone { implicit z =>
       val soFilePrefix =
-        if (is32BitPlatform)
-          "/lib/i386-linux-gnu/"
-        else if (PlatformExt.isArm64)
+        if (PlatformExt.isArm64)
           "/usr/lib/aarch64-linux-gnu"
         else
           "/lib/x86_64-linux-gnu"

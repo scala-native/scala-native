@@ -64,13 +64,13 @@ class IssuesSpec extends LinkerSpec with Matchers {
       |import scala.scalanative.unsigned._
       |
       |@extern trait string {
-      |  def memset(dest: Ptr[Byte], ch: Int, count: USize): Ptr[Byte] = extern
+      |  def memset(dest: Ptr[Byte], ch: Int, count: ULong): Ptr[Byte] = extern
       |}
       |@extern object string extends string
       |
       |object Test {
       |  def main(args: Array[String]): Unit = {
-      |     val privilegeSetLength = stackalloc[USize]()
+      |     val privilegeSetLength = stackalloc[ULong]()
       |     val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
       |     
       |     // real case
@@ -88,7 +88,7 @@ class IssuesSpec extends LinkerSpec with Matchers {
           case Defn.Declare(attrs, StringMemset, tpe) =>
             assert(attrs.isExtern)
             tpe shouldEqual Type.Function(
-              Seq(Type.Ptr, Type.Int, Type.Size),
+              Seq(Type.Ptr, Type.Int, Type.Long),
               Type.Ptr
             )
         }
@@ -118,7 +118,6 @@ class IssuesSpec extends LinkerSpec with Matchers {
       val decls = result.defns
         .collect {
           case defn @ Defn.Declare(attrs, LibField, tpe) =>
-            println(s"got $defn")
             assert(attrs.isExtern)
         }
       if (decls.isEmpty) fail("Not found extern declaration")
