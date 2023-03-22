@@ -28,12 +28,7 @@ trait NirGenName[G <: Global with Singleton] {
   def genTypeName(sym: Symbol): nir.Global.Top = {
     val id = {
       val fullName = sym.fullName
-      if (fullName == "java.lang._String") "java.lang.String"
-      else if (fullName == "java.lang._Object") "java.lang.Object"
-      else if (fullName == "java.lang._Class") "java.lang.Class"
-      else if (fullName == "scala.Nothing") "scala.runtime.Nothing$"
-      else if (fullName == "scala.Null") "scala.runtime.Null$"
-      else fullName
+      MappedNames.getOrElse(fullName, fullName)
     }
     val name = sym match {
       case ObjectClass =>
@@ -97,8 +92,7 @@ trait NirGenName[G <: Global with Singleton] {
 
     val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
 
-    def isExtern =
-      sym.owner.isExternType || implClassTarget(sym.owner).isExternType
+    def isExtern = sym.owner.isExternType
 
     if (sym == String_+)
       genMethodName(StringConcatMethod)
@@ -183,5 +177,19 @@ trait NirGenName[G <: Global with Singleton] {
        */
       id.replace("\"", "$u0022")
     }
+  }
+
+  private val MappedNames = Map(
+    "java.lang._Class" -> "java.lang.Class",
+    "java.lang._Enum" -> "java.lang.Enum",
+    "java.lang._Object" -> "java.lang.Object",
+    "java.lang._String" -> "java.lang.String",
+    "scala.Nothing" -> "scala.runtime.Nothing$",
+    "scala.Null" -> "scala.runtime.Null$"
+  ).flatMap {
+    case classEntry @ (nativeName, javaName) =>
+      classEntry ::
+        (nativeName + "$", javaName + "$") ::
+        Nil
   }
 }

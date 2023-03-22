@@ -89,10 +89,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClass(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      // ImplClass does not copy annotations from the trait
-      if (isImplClass(sym) && implClassTarget(sym).isExternType) {
-        sym.addAnnotation(ExternClass)
-      }
 
       scoped(
         curClassSym := sym,
@@ -139,8 +135,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassParent(sym: Symbol): Option[nir.Global] = {
       if (sym.isExternType &&
-          sym.superClass != ObjectClass &&
-          !isImplClass(sym)) {
+          sym.superClass != ObjectClass) {
         reporter.error(
           sym.pos,
           s"Extern object can only extend extern traits"
@@ -200,7 +195,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       for (f <- sym.info.decls
           if !f.isMethod && f.isTerm && !f.isModule) {
-        if (f.owner.isExternModule && !f.isMutable) {
+        if (f.owner.isExternType && !f.isMutable) {
           reporter.error(f.pos, "`extern` cannot be used in val definition")
         }
         val ty = genType(f.tpe)
@@ -712,26 +707,21 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     ): Option[nir.Defn] = {
       val rhs = dd.rhs
       def externMethodDecl() = {
-        val externAttrs = Attrs(isExtern = true)
         val externSig = genExternMethodSig(curMethodSym)
-        val externDefn = Defn.Declare(externAttrs, name, externSig)(rhs.pos)
+        val externDefn = Defn.Declare(attrs, name, externSig)(rhs.pos)
+
         Some(externDefn)
       }
 
-      def isCallingExternMethod(sym: Symbol) = {
-        val owner = sym.owner match {
-          case sym if isImplClass(sym) => implClassTarget(sym)
-          case sym                     => sym
-        }
-        owner.isExternType
-      }
+      def isCallingExternMethod(sym: Symbol) =
+        sym.owner.isExternType
 
       def isExternMethodAlias(target: Symbol) =
         (name, genName(target)) match {
           case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
           case _                                                => false
         }
-
+      val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
         case _ if defaultArgs.nonEmpty =>
           reporter.error(
@@ -773,12 +763,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def isCurClassSetter(sym: Symbol) =
-        sym.isSetter && {
-          val owner = sym.owner.tpe
-          owner <:< classSym.tpe || {
-            isImplClass(classSym) && owner <:< implClassTarget(classSym).tpe
-          }
-        }
+        sym.isSetter && sym.owner.tpe <:< classSym.tpe
 
       rhs match {
         case Block(Nil, _) => () // empty mixin constructor
@@ -851,7 +836,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
       val isStatic = sym.isStaticInNIR
-      val isExtern = sym.owner.isExternModule
+      val isExtern = sym.owner.isExternType
 
       implicit val pos: nir.Position = bodyp.pos
 
