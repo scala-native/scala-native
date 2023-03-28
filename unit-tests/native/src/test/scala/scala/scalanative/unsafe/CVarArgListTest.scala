@@ -21,7 +21,8 @@ class CVarArgListTest {
       val got = fromCString(buff)
       assertTrue(s"$got != $output", got == output)
     }
-
+  @Test def empty(): Unit =
+    vatest(c"hello", Seq(), "hello")
   @Test def byteValue0(): Unit =
     vatest(c"%d", Seq(0.toByte), "0")
   @Test def byteValue1(): Unit =
