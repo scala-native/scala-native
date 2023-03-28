@@ -21,6 +21,8 @@ class CVarArgTest {
     assertEquals(got, output)
   }
 
+  @Test def empty(): Unit =
+    vatest(c"hello", "hello")(stdio.sprintf(_, _))
   @Test def byteValue0(): Unit =
     vatest(c"%d", "0")(stdio.sprintf(_, _, 0.toByte))
   @Test def byteValue1(): Unit =
