@@ -189,7 +189,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
       NIRCompiler(_.compile("""
            |import scala.scalanative.unsafe.*
            |
-           |@exportedAccessors inline val foo: Int = 42
+           |@exportAccessors inline val foo: Int = 42
            |""".stripMargin))
     }.getMessage should include("Exported field cannot be inlined")
   }
