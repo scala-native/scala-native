@@ -140,27 +140,57 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
         |""".stripMargin
   )
 
-  it should "allow to report error if function passed to CFuncPtr.fromScalaFunction is not inlineable" in {
+  it should "report error when inlining extern function" in {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
-        |import scala.scalanative.unsafe.*
-        |
-        |opaque type Visitor = CFuncPtr1[Int, Int]
-        |object Visitor:
-        |  def apply(f: Int => Int): Visitor = f
-        |
-        |@extern def useVisitor(x: Visitor): Unit = extern
-        |
-        |@main def test(n: Int): Unit = 
-        |  def callback(x: Int) = x*x + 2*n*n
-        |  val visitor: Visitor = (n: Int) => n * 10
-        |  useVisitor(Visitor(callback))
-        |  useVisitor(Visitor(_ * 10))
-        |  useVisitor(visitor)
-        | 
-        |""".stripMargin))
-    }.getMessage should include(
-      "Function passed to method fromScalaFunction needs to be inlined"
-    )
+           |import scala.scalanative.unsafe.*
+           |
+           |@extern object Foo{
+           |   inline def foo(): Int = extern
+           |}
+           |""".stripMargin))
+    }.getMessage should include("Extern method cannot be inlined")
+  }
+
+  it should "report error when inlining extern function in extern trait" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |@extern trait Foo{
+           |   inline def foo(): Int = extern
+           |}
+           |""".stripMargin))
+    }.getMessage should include("Extern method cannot be inlined")
+  }
+
+  it should "report error when inlining extern function in top-level" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |@extern inline def foo(): Int = extern
+           |""".stripMargin))
+    }.getMessage should include("Extern method cannot be inlined")
+  }
+
+  it should "report error when inlining exported function" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |@exported inline def foo(): Int = 42
+           |""".stripMargin))
+    }.getMessage should include("Exported method cannot be inlined")
+  }
+
+  it should "report error when inlining exported field" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |@exportAccessors inline val foo: Int = 42
+           |""".stripMargin))
+    }.getMessage should include("Exported field cannot be inlined")
   }
 }
