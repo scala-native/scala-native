@@ -2484,6 +2484,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   }
                   res += promotedArg
                 }
+              // Scala 2.13 only
+              case Select(_, name) if name == definitions.NilModule.name => ()
               case _ =>
                 reporter.error(
                   argp.pos,
