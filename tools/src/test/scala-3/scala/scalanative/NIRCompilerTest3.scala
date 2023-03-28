@@ -173,4 +173,24 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
            |""".stripMargin))
     }.getMessage should include("Extern method cannot be inlined")
   }
+
+  it should "report error when inlining exported function" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |@exported inline def foo(): Int = 42
+           |""".stripMargin))
+    }.getMessage should include("Exported method cannot be inlined")
+  }
+
+  it should "report error when inlining exported field" in {
+    intercept[CompilationFailedException] {
+      NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |@exportedAccessors inline val foo: Int = 42
+           |""".stripMargin))
+    }.getMessage should include("Exported field cannot be inlined")
+  }
 }

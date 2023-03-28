@@ -53,6 +53,10 @@ class PrepNativeInterop extends PluginPhase {
     def isExternType(using Context): Boolean =
       (isScalaModule || sym.isTraitOrInterface) &&
         sym.hasAnnotation(defnNir.ExternClass)
+
+    def isExported(using Context) =
+      sym.hasAnnotation(defnNir.ExportedClass) ||
+        sym.hasAnnotation(defnNir.ExportAccessorsClass)
   end extension
 
   private class DealiasTypeMapper(using Context) extends TypeMap {
@@ -75,8 +79,11 @@ class PrepNativeInterop extends PluginPhase {
       sym.addAnnotation(defnNir.ExternClass)
     }
 
-    if sym.isExtern && sym.is(Inline)
-    then report.error("Extern method cannot be inlined", dd.srcPos)
+    if sym.is(Inline) then
+      if sym.isExtern then
+        report.error("Extern method cannot be inlined", dd.srcPos)
+      else if sym.isExported then
+        report.error("Exported method cannot be inlined", dd.srcPos)
 
     def usesVariadicArgs = sym.paramInfo.stripPoly match {
       case MethodTpe(paramNames, paramTypes, _) =>
@@ -117,6 +124,9 @@ class PrepNativeInterop extends PluginPhase {
             sym.setter.addAnnotation(defnNir.ExternClass)
           }
         }
+
+        if sym.is(Inline) && sym.isExported
+        then report.error("Exported field cannot be inlined", vd.srcPos)
 
         vd
     }
