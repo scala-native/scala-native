@@ -24,8 +24,8 @@ object PrepNativeInterop {
 }
 
 class PrepNativeInterop extends PluginPhase {
-  override val runsAfter = Set(transform.Inlining.name)
-  override val runsBefore = Set(transform.FirstTransform.name)
+  override val runsAfter = Set(transform.PostTyper.name)
+  override val runsBefore = Set(transform.Pickler.name)
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
@@ -67,34 +67,6 @@ class PrepNativeInterop extends PluginPhase {
         case ty => ty
   }
 
-  override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
-    val TypeApply(fun, tArgs) = tree
-    val defnNir = this.defnNir
-    def dealiasTypeMapper = DealiasTypeMapper()
-
-    // sizeOf[T] -> sizeOf(classOf[T])
-    fun.symbol match
-      case defnNir.Intrinsics_sizeOfType =>
-        val tpe = dealiasTypeMapper(tArgs.head.tpe)
-        cpy
-          .Apply(tree)(
-            ref(defnNir.Intrinsics_sizeOf),
-            List(Literal(Constant(tpe)))
-          )
-          .withAttachment(NirDefinitions.NonErasedType, tpe)
-
-      case defnNir.Intrinsics_alignmentOfType =>
-        val tpe = dealiasTypeMapper(tArgs.head.tpe)
-        cpy
-          .Apply(tree)(
-            ref(defnNir.Intrinsics_alignmentOf),
-            List(Literal(Constant(tpe)))
-          )
-          .withAttachment(NirDefinitions.NonErasedType, tpe)
-
-      case _ => tree
-  }
-
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
     val sym = dd.symbol
     lazy val rhsSym = dd.rhs.symbol
@@ -102,6 +74,9 @@ class PrepNativeInterop extends PluginPhase {
     if (isTopLevelExtern(dd) && !sym.hasAnnotation(defnNir.ExternClass)) {
       sym.addAnnotation(defnNir.ExternClass)
     }
+
+    if sym.isExtern && sym.is(Inline)
+    then report.error("Extern method cannot be inlined", dd.srcPos)
 
     def usesVariadicArgs = sym.paramInfo.stripPoly match {
       case MethodTpe(paramNames, paramTypes, _) =>
