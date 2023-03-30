@@ -3,9 +3,9 @@ package scala.scalanative.runtime
 import NativeThread.Registry
 import Thread.MainThread
 
-object JoinNonDeamonThreads {
+object JoinNonDaemonThreads {
   def registerExitHook(): Unit = Shutdown.addHook { () =>
-    def pollDeamonThreads = Registry.aliveThreads.iterator
+    def pollDaemonThreads = Registry.aliveThreads.iterator
       .map(_.thread)
       .filter { thread =>
         !thread.isDaemon() && thread.isAlive()
@@ -13,7 +13,7 @@ object JoinNonDeamonThreads {
 
     Registry.onMainThreadTermination()
     Iterator
-      .continually(pollDeamonThreads)
+      .continually(pollDaemonThreads)
       .takeWhile(_.hasNext)
       .flatten
       .foreach(_.join())
