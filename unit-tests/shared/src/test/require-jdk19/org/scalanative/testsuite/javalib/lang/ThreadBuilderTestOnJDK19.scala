@@ -18,6 +18,8 @@ object ThreadBuilderTestOnJDK19 {
 
   val Local = new ThreadLocal[AnyRef]
   val InheritedLocal = new InheritableThreadLocal[AnyRef]
+
+  class FooException extends RuntimeException {}
 }
 
 class ThreadBuilderTestOnJDK19 {
@@ -315,7 +317,6 @@ class ThreadBuilderTestOnJDK19 {
   }
 
   @Test def testUncaughtExceptionHandler1(): Unit = {
-    class FooException extends RuntimeException {}
     val threadRef = new AtomicReference[Thread]
     val exceptionRef =
       new AtomicReference[Throwable]
@@ -338,7 +339,6 @@ class ThreadBuilderTestOnJDK19 {
 
   @Ignore("VirtualThreads unimplemented")
   @Test def testUncaughtExceptionHandler2(): Unit = {
-    class FooException extends RuntimeException {}
     val threadRef = new AtomicReference[Thread]
     val exceptionRef =
       new AtomicReference[Throwable]
@@ -360,7 +360,6 @@ class ThreadBuilderTestOnJDK19 {
   }
 
   @Test def testUncaughtExceptionHandler3(): Unit = {
-    class FooException extends RuntimeException {}
     val threadRef = new AtomicReference[Thread]
     val exceptionRef =
       new AtomicReference[Throwable]
@@ -383,7 +382,6 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(exceptionRef.get.isInstanceOf[FooException])
   }
   @Test def testUncaughtExceptionHandler4(): Unit = {
-    class FooException extends RuntimeException {}
     val threadRef = new AtomicReference[Thread]
     val exceptionRef =
       new AtomicReference[Throwable]

@@ -50,8 +50,7 @@ object LockSupport {
   }
 
   def unpark(thread: Thread): Unit = {
-    assert(!thread.isVirtual())
-    thread.platformCtx.unpark()
+    if (thread != null) thread.platformCtx.unpark()
   }
 
   @alwaysinline private def parkBlockerRef(thread: Thread): Ptr[Object] =

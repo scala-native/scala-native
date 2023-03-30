@@ -18,6 +18,9 @@ class CharsetTest {
   def javaSet[A](elems: A*): java.util.Set[A] =
     new java.util.HashSet(TrivialImmutableCollection(elems: _*))
 
+  val USASCIICharsetIsDefaultAlias =
+    !executingInJVM || (executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17)
+
   @Test def defaultCharset(): Unit = {
     assertSame(UTF_8, Charset.defaultCharset())
   }
@@ -30,7 +33,7 @@ class CharsetTest {
     assertSame(ISO_8859_1, Charset.forName("l1"))
 
     assertSame(US_ASCII, Charset.forName("US-ASCII"))
-    if (executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17) {
+    if (USASCIICharsetIsDefaultAlias) {
       assertSame(US_ASCII, Charset.forName("Default"))
     }
 
@@ -65,7 +68,7 @@ class CharsetTest {
     assertTrue(Charset.isSupported("ISO-8859-1"))
     assertTrue(Charset.isSupported("US-ASCII"))
     assertEquals(
-      executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17,
+      USASCIICharsetIsDefaultAlias,
       Charset.isSupported("Default")
     )
     assertTrue(Charset.isSupported("utf-8"))
@@ -111,9 +114,8 @@ class CharsetTest {
           "646",
           "us"
         )
-        // Since JDK-18 UTF-8 is default charset encoding
-        if (executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17)
-          aliases.add("default")
+        // Since JDK-18 US-ASCII is no longer aliased as default
+        if (USASCIICharsetIsDefaultAlias) aliases.add("default")
         aliases
       }
     )

@@ -613,7 +613,7 @@ object Thread {
   }
 
   // Scala Native specific:
-  def nextThreadName(): String = s"Thread-${ThreadNamesNumbering.next()}"
+  private[lang] def nextThreadName(): String = s"Thread-${ThreadNamesNumbering.next()}"
 
   // Counter used to generate thread's ID, 0 resevered for main
   sealed abstract class Numbering {
