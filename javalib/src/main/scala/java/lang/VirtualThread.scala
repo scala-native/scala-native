@@ -6,7 +6,7 @@ final private[lang] class VirtualThread(
     task: Runnable
 ) extends Thread(name, characteristics) {
 
-  // TODO: continuations baed thread implementation
+  // TODO: continuations-based thread implementation
   override def run(): Unit = throw new UnsupportedOperationException(
     "Running VirtualThreads is not yet supported"
   )

@@ -12,7 +12,7 @@ import org.junit.Assert._
 
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import org.scalanative.testsuite.utils.Platform._
 
 class CharsetTest {
   def javaSet[A](elems: A*): java.util.Set[A] =
@@ -30,7 +30,9 @@ class CharsetTest {
     assertSame(ISO_8859_1, Charset.forName("l1"))
 
     assertSame(US_ASCII, Charset.forName("US-ASCII"))
-    assertSame(US_ASCII, Charset.forName("Default"))
+    if (executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17) {
+      assertSame(US_ASCII, Charset.forName("Default"))
+    }
 
     assertSame(UTF_8, Charset.forName("UTF-8"))
     assertSame(UTF_8, Charset.forName("utf-8"))
@@ -62,7 +64,10 @@ class CharsetTest {
   @Test def isSupported(): Unit = {
     assertTrue(Charset.isSupported("ISO-8859-1"))
     assertTrue(Charset.isSupported("US-ASCII"))
-    assertTrue(Charset.isSupported("Default"))
+    assertEquals(
+      executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17,
+      Charset.isSupported("Default")
+    )
     assertTrue(Charset.isSupported("utf-8"))
     assertTrue(Charset.isSupported("UnicodeBigUnmarked"))
     assertTrue(Charset.isSupported("Utf_16le"))
@@ -90,23 +95,27 @@ class CharsetTest {
       javaSet("UnicodeLittleUnmarked", "UTF_16LE", "X-UTF-16LE")
     )
     assertEquals(
-      Charset.forName("US-ASCII").aliases(),
-      javaSet(
-        "ANSI_X3.4-1968",
-        "cp367",
-        "csASCII",
-        "iso-ir-6",
-        "ASCII",
-        "iso_646.irv:1983",
-        "ANSI_X3.4-1986",
-        "ascii7",
-        "default",
-        "ISO_646.irv:1991",
-        "ISO646-US",
-        "IBM367",
-        "646",
-        "us"
-      )
+      Charset.forName("US-ASCII").aliases(), {
+        val aliases = javaSet(
+          "ANSI_X3.4-1968",
+          "cp367",
+          "csASCII",
+          "iso-ir-6",
+          "ASCII",
+          "iso_646.irv:1983",
+          "ANSI_X3.4-1986",
+          "ascii7",
+          "ISO_646.irv:1991",
+          "ISO646-US",
+          "IBM367",
+          "646",
+          "us"
+        )
+        // Since JDK-18 UTF-8 is default charset encoding
+        if (executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17)
+          aliases.add("default")
+        aliases
+      }
     )
     assertEquals(
       Charset.forName("ISO-8859-1").aliases(),

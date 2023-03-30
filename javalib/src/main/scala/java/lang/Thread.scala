@@ -350,12 +350,6 @@ class Thread private[lang] (
   }
 
   final def threadId(): scala.Long = tid
-
-  private[lang] def clearReferences(): Unit = {
-    threadLocals = null
-    inheritableThreadLocals = null
-    if (unhandledExceptionHandler != null) unhandledExceptionHandler = null
-  }
 }
 
 object Thread {
