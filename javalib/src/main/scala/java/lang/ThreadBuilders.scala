@@ -59,11 +59,6 @@ object ThreadBuilders {
       self
     }
 
-    // override def factory(): ThreadFactory
-
-    // def start(task: Runnable): Thread
-
-    // def unstarted(task: Runnable): Thread
   }
 
   final class PlatformThreadBuilder
