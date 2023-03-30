@@ -97,21 +97,32 @@ class SafeZoneTest {
   }
 
   @Test def `can use alloc API instead of instance creation expression`(): Unit = {
-    case class A() {}
+    case class A(v: Int) {}
     SafeZone { sz ?=>
       // Using explicit zone.
-      val a0: {sz} A = sz alloc(new A())
-      val a1: {sz} A= sz alloc new A()
+      val a0: {sz} A = sz alloc(new A(0))
+      val a1: {sz} A= sz alloc new A(1)
       // Using implicit zone.
-      val a2: {sz} A = alloc(new A())
+      val a2: {sz} A = alloc(new A(2))
+      assertTrue(a0.v + a1.v + a2.v == 3)
     }
     SafeZone {
       // Using implicit zone.
-      val a2 = alloc(new A())
+      val a2 = alloc(new A(2))
       // Summon the zone to make it explicit.
       val sz = summon[SafeZone]
-      val a0: {sz} A = sz alloc(new A())
-      val a1: {sz} A = sz alloc new A()
+      val a0: {sz} A = sz alloc(new A(0))
+      val a1: {sz} A = sz alloc new A(1)
+      assertTrue(a0.v + a1.v + a2.v == 3)
+    }
+  }
+
+  @Test def `can use the zone API to summon implicit zone`(): Unit = {
+    case class A(v: Int) {}
+    SafeZone { 
+      val a0: {zone} A = zone alloc(new A(0))
+      val a1: {zone} A = zone alloc new A(1)
+      assertTrue(a0.v + a1.v == 1)
     }
   }
 }
