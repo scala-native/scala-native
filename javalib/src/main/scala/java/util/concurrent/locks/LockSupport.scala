@@ -6,12 +6,16 @@
 
 package java.util.concurrent.locks
 
+import java.util.Objects
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.NativeThread
+import scala.scalanative.runtime.{NativeThread, fromRawPtr}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.unsafe.Ptr
 
 object LockSupport {
 
-  def getBlocker(t: Thread): Object = t.parkBlocker.get()
+  def getBlocker(t: Thread): Object = t.parkBlocker
 
   def park(): Unit = NativeThread.currentNativeThread.park()
 
@@ -45,20 +49,21 @@ object LockSupport {
     setBlocker(thread, null: Object)
   }
 
-  def unpark(thread: Thread): Unit =
-    if (thread != null && thread.nativeThread != null) {
-      thread.nativeThread.unpark()
-    }
+  def unpark(thread: Thread): Unit = {
+    assert(!thread.isVirtual())
+    thread.platformCtx.unpark()
+  }
+
+  @alwaysinline private def parkBlockerRef(thread: Thread): Ptr[Object] =
+    fromRawPtr(classFieldRawPtr(Thread.currentThread(), "parkBlocker"))
 
   @alwaysinline private def setBlocker(
       thread: Thread,
       blocker: Object
-  ): Unit = {
-    thread.parkBlocker.setOpaque(blocker)
-  }
+  ): Unit = !parkBlockerRef(thread) = blocker
 
   @alwaysinline def setCurrentBlocker(blocker: Object): Unit =
-    Thread.currentThread().parkBlocker.setOpaque(blocker)
+    setBlocker(Thread.currentThread(), blocker)
 
-  private[locks] def getThreadId(thread: Thread) = thread.threadId
+  private[locks] def getThreadId(thread: Thread) = thread.threadId()
 }
