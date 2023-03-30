@@ -49,9 +49,11 @@ object ThreadLocal {
     private def DefaultMask = DefaultCapacity - 1
     private def DefaultMaximumLoad = DefaultCapacity * 2 / 3
 
-    /** Placeholder for deleted entries.
-     */
+    /** Placeholder for deleted entries. */
     private case object TOMBSTONE
+
+    /** Placeholder used when thread local values are not allowed */
+    object Unsupported extends Values(Array.empty, -1, 0)
   }
 
   /** Constructs a new, empty instance. */
@@ -67,7 +69,7 @@ object ThreadLocal {
   ) {
 
     /** Number of live entries. */
-    private var size = 0
+    private[lang] var size = 0
 
     /** Number of tombstones. */
     private var tombstones = 0
@@ -348,6 +350,7 @@ object ThreadLocal {
 }
 
 class ThreadLocal[T <: AnyRef]() {
+  import ThreadLocal.Values.Unsupported
 
   /** Returns the value of this variable for the current thread. If an entry
    *  doesn't yet exist for this variable on this thread, this method will
@@ -356,12 +359,17 @@ class ThreadLocal[T <: AnyRef]() {
   def get(): T = {
     // Optimized for the fast path.
     val currentThread = Thread.currentThread()
-    val values = this.values(currentThread)
-    assert(values != null)
-    val table = values.table
-    val index = hash & values.mask
-    if (this.reference eq table(index))
-      return table(index + 1).asInstanceOf[T]
+    val values = this.values(currentThread) match {
+      case Unsupported => return initialValue()
+      case null        => initializeValues(currentThread)
+      case values =>
+        assert(values != null)
+        val table = values.table
+        val index = hash & values.mask
+        if (this.reference eq table(index))
+          return table(index + 1).asInstanceOf[T]
+        values
+    }
     values.getAfterMiss(this).asInstanceOf[T]
   }
 
@@ -376,7 +384,12 @@ class ThreadLocal[T <: AnyRef]() {
    */
   def set(value: T): Unit = {
     val currentThread = Thread.currentThread()
-    values(currentThread).put(this, value)
+    val values = this.values(currentThread) match {
+      case Unsupported => throw new UnsupportedOperationException()
+      case null        => initializeValues(currentThread)
+      case values      => values
+    }
+    values.put(this, value)
   }
 
   /** Removes the entry for this variable in the current thread. If this call is
@@ -386,13 +399,19 @@ class ThreadLocal[T <: AnyRef]() {
   def remove(): Unit = {
     val currentThread = Thread.currentThread()
     val values = this.values(currentThread)
-    if (values != null) values.remove(this)
+    if (values != null && values != Unsupported) values.remove(this)
   }
 
   /** Gets Values instance for this thread and variable type.
    */
   protected[lang] def values(current: Thread): ThreadLocal.Values =
     current.threadLocals
+
+  protected[lang] def initializeValues(current: Thread): ThreadLocal.Values = {
+    val instance = new ThreadLocal.Values()
+    current.threadLocals = instance
+    instance
+  }
 
   /** Weak reference to this thread local instance. */
   final private val reference = new WeakReference[ThreadLocal[T]](this)

@@ -20,4 +20,12 @@ class InheritableThreadLocal[T <: AnyRef] extends ThreadLocal[T] {
 
   override protected[lang] def values(current: Thread): ThreadLocal.Values =
     current.inheritableThreadLocals
+
+  override protected[lang] def initializeValues(
+      current: Thread
+  ): ThreadLocal.Values = {
+    val instance = new ThreadLocal.Values()
+    current.inheritableThreadLocals = instance
+    instance
+  }
 }
