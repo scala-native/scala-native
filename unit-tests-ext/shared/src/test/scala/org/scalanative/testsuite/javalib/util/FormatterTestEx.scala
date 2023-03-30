@@ -11,6 +11,7 @@ import org.junit.Assert._
 /** Additional tests for java.lang.String that require `java.util.Locale` as
  *  well as classes in `java.text.*`.
  */
+@deprecated
 class FormatterTestEx {
 
   /* Note: there is no test for a grouping size != 3, because I (sjrd) could
