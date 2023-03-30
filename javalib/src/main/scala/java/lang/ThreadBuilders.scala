@@ -43,7 +43,9 @@ object ThreadBuilders {
       self
     }
 
-    override def inheritInheritableThreadLocals(inherit: scala.Boolean): Self = {
+    override def inheritInheritableThreadLocals(
+        inherit: scala.Boolean
+    ): Self = {
       val flag = Characteristics.NoInheritThreadLocal
       if (inherit) this.characteristics &= ~flag
       else characteristics |= flag
@@ -104,7 +106,8 @@ object ThreadBuilders {
 
     override def unstarted(task: Runnable): Thread = {
       Objects.requireNonNull(task)
-      val thread = new Thread(group, nextThreadName(), characteristics, task, stackSize)
+      val thread =
+        new Thread(group, nextThreadName(), characteristics, task, stackSize)
       daemonOpt.foreach(thread.setDaemon(_))
       if (priority != 0) thread.setPriority(priority)
       if (ueh != null) thread.setUncaughtExceptionHandler(ueh)
@@ -186,7 +189,8 @@ object ThreadBuilders {
 
     override def newThread(task: Runnable): Thread = {
       Objects.requireNonNull(task)
-      val thread = new Thread(group, nextThreadName(), characteristics, task, stackSize)
+      val thread =
+        new Thread(group, nextThreadName(), characteristics, task, stackSize)
       daemon.foreach(thread.setDaemon(_))
       if (priority != 0) thread.setPriority(priority)
       if (ueh != null) thread.setUncaughtExceptionHandler(ueh)
