@@ -1222,7 +1222,7 @@ object Lower {
   val largeAllocName = extern("scalanative_alloc_large")
   val largeAlloc = Val.Global(largeAllocName, allocSig)
 
-  val SafeZone = Type.Ref(Global.Top("scala.scalanative.SafeZone"))
+  val SafeZone = Type.Ref(Global.Top("scala.scalanative.memory.SafeZone"))
   val safeZoneAllocImplSig =
     Type.Function(Seq(SafeZone, Type.Ptr, Type.Size), Type.Ptr)
   val safeZoneAllocImpl = SafeZone.name.member(

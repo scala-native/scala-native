@@ -1,4 +1,4 @@
-package scala.scalanative
+package scala.scalanative.memory
 
 import scala.scalanative.runtime.{RawPtr, RawSize, intrinsic}
 

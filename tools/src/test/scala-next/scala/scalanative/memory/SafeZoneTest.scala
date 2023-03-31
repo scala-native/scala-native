@@ -1,4 +1,4 @@
-package scala.scalanative
+package scala.scalanative.memory
 
 import java.nio.file.Files
 
@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.scalanative.api.CompilationFailedException
 
-class SafeZoneCompileTest extends AnyFlatSpec with Matchers {
+class SafeZoneTest extends AnyFlatSpec with Matchers {
   def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
@@ -19,7 +19,7 @@ class SafeZoneCompileTest extends AnyFlatSpec with Matchers {
   "The compiler" should "allow returning a reference to object in zone if it doesn't escape the zone" in nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
-      |import scala.scalanative.SafeZone
+      |import scala.scalanative.memory.SafeZone
       |import scala.scalanative.runtime.SafeZoneAllocator.allocate
       |
       |class A (v: Int = 0) {}
@@ -39,7 +39,7 @@ class SafeZoneCompileTest extends AnyFlatSpec with Matchers {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
-        |import scala.scalanative.SafeZone
+        |import scala.scalanative.memory.SafeZone
         |import scala.scalanative.runtime.SafeZoneAllocator.allocate
         |
         |class A (v: Int = 0) {}
@@ -62,7 +62,7 @@ class SafeZoneCompileTest extends AnyFlatSpec with Matchers {
   it should "type check when the types capture zones correctly" in nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
-      |import scala.scalanative.SafeZone
+      |import scala.scalanative.memory.SafeZone
       |import scala.scalanative.runtime.SafeZoneAllocator.allocate
       |
       |class A (v: Int = 0) {}
@@ -88,7 +88,7 @@ class SafeZoneCompileTest extends AnyFlatSpec with Matchers {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
-        |import scala.scalanative.SafeZone
+        |import scala.scalanative.memory.SafeZone
         |import scala.scalanative.runtime.SafeZoneAllocator.allocate
         |
         |class A (v: Int = 0) {}

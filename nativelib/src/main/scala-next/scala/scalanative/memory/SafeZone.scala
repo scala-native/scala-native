@@ -1,4 +1,4 @@
-package scala.scalanative
+package scala.scalanative.memory
 
 import language.experimental.captureChecking
 import scalanative.unsigned._
