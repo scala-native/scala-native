@@ -4,7 +4,7 @@ import java.nio.file.Files
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
-
+import scala.scalanative.NIRCompiler
 import scala.scalanative.api.CompilationFailedException
 
 class SafeZoneTest extends AnyFlatSpec with Matchers {
