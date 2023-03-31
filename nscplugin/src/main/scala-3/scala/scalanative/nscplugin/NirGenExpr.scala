@@ -79,7 +79,7 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    object SafeZoneHandle extends Property.Key[Val]
+    object SafeZoneInstance extends Property.Key[Val]
 
     def genApply(app: Apply): Val = {
       given nir.Position = app.span
@@ -112,7 +112,7 @@ trait NirGenExpr(using Context) {
               genType(componentType.typeValue),
               length,
               unwind,
-              zoneHandle = app.getAttachment(SafeZoneHandle)
+              zone = app.getAttachment(SafeZoneInstance)
             )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
@@ -1088,7 +1088,7 @@ trait NirGenExpr(using Context) {
             cls,
             ctor,
             args,
-            zoneHandle = app.getAttachment(SafeZoneHandle)
+            zone = app.getAttachment(SafeZoneInstance)
           )
 
         case SimpleType(sym, targs) =>
@@ -1112,11 +1112,11 @@ trait NirGenExpr(using Context) {
         clssym: Symbol,
         ctorsym: Symbol,
         args: List[Tree],
-        zoneHandle: Option[Val]
+        zone: Option[Val]
     )(using
         nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), unwind, zoneHandle)
+      val alloc = buf.classalloc(genTypeName(clssym), unwind, zone)
       val call = genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
@@ -2117,18 +2117,14 @@ trait NirGenExpr(using Context) {
             tree.srcPos
           )
       }
-      // Extract the handle of `sz` and put it into the attachment of `new T(...)`.
-      val handle = genExpr(Select(sz, termName("handle")))
-      if tree.hasAttachment(SafeZoneHandle) then
+      // Put the zone into the attachment of `new T(...)`.
+      if tree.hasAttachment(SafeZoneInstance) then
         report.warning(
           s"Safe zone handle is already attached to ${tree}, which is unexpected.",
           tree.srcPos
         )
-      tree.putAttachment(SafeZoneHandle, handle)
-      // Translate `allocate(sz, new T(...))` to `{ sz.checkOpen(); new T(...) }`.
-      val checkOpen = Apply(Select(sz, termName("checkOpen")), List())
-      val block = Block(List(checkOpen), tree)
-      genExpr(block)
+      tree.putAttachment(SafeZoneInstance, genExpr(sz))
+      genExpr(tree)
     }
 
     def genCQuoteOp(app: Apply): Val = {

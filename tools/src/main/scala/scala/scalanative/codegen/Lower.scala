@@ -764,24 +764,26 @@ object Lower {
     def genClassallocOp(buf: Buffer, n: Local, op: Op.Classalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Classalloc(ClassRef(cls), zoneHandle) = op: @unchecked
+      val Op.Classalloc(ClassRef(cls), v) = op: @unchecked
+      val zone = v.map(genVal(buf, _))
 
       val size = MemoryLayout.sizeOf(layout(cls).struct)
       assert(size == size.toInt)
 
-      zoneHandle match {
-        case Some(zoneHandle) =>
-          assert(zoneHandle != Val.Null, "ZoneHandle is null")
+      zone match {
+        case Some(zone) =>
+          val safeZoneAllocImplMethod = Val.Local(fresh(), Type.Ptr)
+          genMethodOp(
+            buf,
+            safeZoneAllocImplMethod.name,
+            Op.Method(zone, safeZoneAllocImpl.sig)
+          )
           buf.let(
             n,
             Op.Call(
-              zoneAllocSig,
-              zoneAlloc,
-              Seq(
-                genVal(buf, zoneHandle),
-                rtti(cls).const,
-                Val.Size(size.toInt)
-              )
+              safeZoneAllocImplSig,
+              safeZoneAllocImplMethod,
+              Seq(zone, rtti(cls).const, Val.Size(size.toInt))
             ),
             unwind
           )
@@ -1075,10 +1077,15 @@ object Lower {
     def genArrayallocOp(buf: Buffer, n: Local, op: Op.Arrayalloc)(implicit
         pos: Position
     ): Unit = {
-      val Op.Arrayalloc(ty, v, zoneHandle) = op
-      val init = genVal(buf, v)
+      val Op.Arrayalloc(ty, v1, v2) = op
+      val init = genVal(buf, v1)
+      val zone = v2.map(genVal(buf, _))
       init match {
         case len if len.ty == Type.Int =>
+          val (arrayAlloc, arrayAllocSig) = zone match {
+            case Some(_) => (arrayZoneAlloc, arrayZoneAllocSig)
+            case None    => (arrayHeapAlloc, arrayHeapAllocSig)
+          }
           val sig = arrayAllocSig.getOrElse(ty, arrayAllocSig(Rt.Object))
           val func = arrayAlloc.getOrElse(ty, arrayAlloc(Rt.Object))
           val module = genModuleOp(buf, fresh(), Op.Module(func.owner))
@@ -1087,11 +1094,10 @@ object Lower {
             Op.Call(
               sig,
               Val.Global(func, Type.Ptr),
-              Seq(
-                module,
-                len,
-                zoneHandle.map(genVal(buf, _)).getOrElse(Val.Null)
-              )
+              zone match {
+                case Some(zone) => Seq(module, len, zone)
+                case None       => Seq(module, len)
+              }
             ),
             unwind
           )
@@ -1216,9 +1222,12 @@ object Lower {
   val largeAllocName = extern("scalanative_alloc_large")
   val largeAlloc = Val.Global(largeAllocName, allocSig)
 
-  val zoneAllocSig = Type.Function(Seq(Type.Ptr, Type.Ptr, Type.Size), Type.Ptr)
-  val zoneAllocName = extern("scalanative_zone_alloc")
-  val zoneAlloc = Val.Global(zoneAllocName, zoneAllocSig)
+  val SafeZone = Type.Ref(Global.Top("scala.scalanative.SafeZone"))
+  val safeZoneAllocImplSig =
+    Type.Function(Seq(SafeZone, Type.Ptr, Type.Size), Type.Ptr)
+  val safeZoneAllocImpl = SafeZone.name.member(
+    Sig.Method("allocImpl", Seq(Type.Ptr, Type.Size, Type.Ptr))
+  )
 
   val dyndispatchName = extern("scalanative_dyndispatch")
   val dyndispatchSig =
@@ -1281,20 +1290,37 @@ object Lower {
   val throwSig = Type.Function(Seq(Type.Ptr), Type.Nothing)
   val throw_ = Val.Global(throwName, Type.Ptr)
 
-  val arrayAlloc = Type.typeToArray.map {
+  val arrayHeapAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
-        Sig.Method("alloc", Seq(Type.Int, Type.Ptr, arrcls))
+        Sig.Method("alloc", Seq(Type.Int, arrcls))
       )
   }.toMap
-  val arrayAllocSig = Type.typeToArray.map {
+  val arrayHeapAllocSig = Type.typeToArray.map {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       ty -> Type.Function(
-        Seq(Type.Ref(Global.Top(id + "$")), Type.Int, Type.Ptr),
+        Seq(Type.Ref(Global.Top(id + "$")), Type.Int),
+        Type.Ref(arrname)
+      )
+  }.toMap
+  val arrayZoneAlloc = Type.typeToArray.map {
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname: @unchecked
+      val arrcls = Type.Ref(arrname)
+      ty -> Global.Member(
+        Global.Top(id + "Extension" + "$"),
+        Sig.Method("alloc", Seq(Type.Int, SafeZone, arrcls))
+      )
+  }.toMap
+  val arrayZoneAllocSig = Type.typeToArray.map {
+    case (ty, arrname) =>
+      val Global.Top(id) = arrname: @unchecked
+      ty -> Type.Function(
+        Seq(Type.Ref(Global.Top(id + "Extension" + "$")), Type.Int, SafeZone),
         Type.Ref(arrname)
       )
   }.toMap
@@ -1427,7 +1453,6 @@ object Lower {
     val buf = mutable.UnrolledBuffer.empty[Defn]
     buf += Defn.Declare(Attrs.None, allocSmallName, allocSig)
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
-    buf += Defn.Declare(Attrs.None, zoneAllocName, zoneAllocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
     buf.toSeq
@@ -1453,7 +1478,8 @@ object Lower {
     buf ++= BoxTo.values
     buf ++= UnboxTo.values
     buf += arrayLength
-    buf ++= arrayAlloc.values
+    buf ++= arrayHeapAlloc.values
+    buf ++= arrayZoneAlloc.values
     buf ++= arraySnapshot.values
     buf ++= arrayApplyGeneric.values
     buf ++= arrayApply.values

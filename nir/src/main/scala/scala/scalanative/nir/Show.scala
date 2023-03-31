@@ -263,10 +263,10 @@ object Show {
         str("] ")
         val_(v)
 
-      case Op.Classalloc(name, zoneHandle) =>
+      case Op.Classalloc(name, zone) =>
         str("classalloc ")
         global_(name)
-        zoneHandle.foreach { v =>
+        zone.foreach { v =>
           str(" inZone ")
           val_(v)
         }
@@ -345,12 +345,12 @@ object Show {
         val_(slot)
         str(", ")
         val_(value)
-      case Op.Arrayalloc(ty, init, zoneHandle) =>
+      case Op.Arrayalloc(ty, init, zone) =>
         str("arrayalloc[")
         type_(ty)
         str("] ")
         val_(init)
-        zoneHandle.foreach { v =>
+        zone.foreach { v =>
           str(" inZone ")
           val_(v)
         }

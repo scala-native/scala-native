@@ -171,9 +171,6 @@ object Array {
 %{
    allocGC = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
-%{
-   allocSZ = 'CZone.alloc'
-}%
 
 final class ${T}Array private () extends Array[${T}] {
 
@@ -211,29 +208,30 @@ final class ${T}Array private () extends Array[${T}] {
 
 object ${T}Array {
 
-  @inline def alloc(length: Int, zoneHandle: RawPtr): ${T}Array = {
-    if (length < 0) {
-      throw new NegativeArraySizeException
-    }
+  @inline def arrayRawSize(length: Int): RawSize = {
+    if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
+    else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
+  }
 
-    val arrcls  = classOf[${T}Array]
-    val arrsize = new USize(
-      if (is32BitPlatform) castIntToRawSize((castRawSizeToInt(sizeOfPtr) + 8) + ${sizeT} * length)
-      else castLongToRawSize((castRawSizeToLong(sizeOfPtr) + 8L) + ${sizeT}.toLong * length.toLong)
-    )
-    val arr = 
-      if (zoneHandle == null) ${allocGC}(arrcls, arrsize) 
-      else ${allocSZ}(zoneHandle, Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+  @inline def storeArrayInfo(arr: RawPtr, length: Int): Unit = {
     storeInt(elemRawPtr(arr, ${sizePtr}), length)
     storeInt(elemRawPtr(
       arr,
       if (is32BitPlatform) castIntToRawSize(castRawSizeToInt(${sizePtr}) + 4)
       else castLongToRawSize(castRawSizeToLong(${sizePtr}) + 4L)
     ), ${sizeT})
-    castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
-  @inline def alloc(length: Int): ${T}Array = alloc(length, null)
+  @inline def alloc(length: Int): ${T}Array = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[${T}Array]
+    val arrsize = arrayRawSize(length)
+    val arr = ${allocGC}(arrcls, new USize(arrsize)) 
+    storeArrayInfo(arr, length)
+    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+  }
 
   @inline def snapshot(length: Int, data: RawPtr): ${T}Array = {
     val arr  = alloc(length)

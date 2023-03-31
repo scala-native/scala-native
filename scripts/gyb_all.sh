@@ -2,9 +2,12 @@
 
 set -e
 
-scalanativeUnsafe=nativelib/src/main/scala/scala/scalanative/unsafe
-scalanativeUnsigned=nativelib/src/main/scala/scala/scalanative/unsigned
-scalanativeRuntime=nativelib/src/main/scala/scala/scalanative/runtime
+nativelib=nativelib/src/main
+scala=scala
+scalaNext=scala-next
+unsafe=scala/scalanative/unsafe
+unsigned=scala/scalanative/unsigned
+runtime=scala/scalanative/runtime
 
 function gyb {
   file=$1
@@ -16,14 +19,17 @@ function gyb {
   fi
 }
 
-gyb $scalanativeUnsafe/Tag.scala.gyb
-gyb $scalanativeUnsafe/Nat.scala.gyb
-gyb $scalanativeUnsafe/CStruct.scala.gyb
-gyb $scalanativeUnsafe/CFuncPtr.scala.gyb
-gyb $scalanativeUnsafe/Size.scala.gyb
+gyb_files() {
+  local lib="$1"
+  local scalaVersion="$2"
+  local package="$3"
+  shift 3
+  for name in "$@"; do
+      gyb "$lib/$scalaVersion/$package/$name.scala.gyb"
+  done
+}
 
-gyb $scalanativeUnsigned/USize.scala.gyb
-
-gyb $scalanativeRuntime/Arrays.scala.gyb
-gyb $scalanativeRuntime/Boxes.scala.gyb
-gyb $scalanativeRuntime/Primitives.scala.gyb
+gyb_files $nativelib $scala $unsafe Tag Nat CStruct CFuncPtr Size
+gyb_files $nativelib $scala $unsigned USize
+gyb_files $nativelib $scala $runtime Arrays Boxes Primitives
+gyb_files $nativelib $scalaNext $runtime ArrayExtensions

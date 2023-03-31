@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.scalanative.api.CompilationFailedException
 
-class SafeZoneTest extends AnyFlatSpec with Matchers {
+class SafeZoneCompileTest extends AnyFlatSpec with Matchers {
   def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {

@@ -126,7 +126,7 @@ object Op {
   final case class Conv(conv: nir.Conv, ty: Type, value: Val) extends Op
 
   // high-level
-  final case class Classalloc(name: Global, zoneHandle: Option[Val]) extends Op
+  final case class Classalloc(name: Global, zone: Option[Val]) extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op
@@ -143,7 +143,7 @@ object Op {
   final case class Var(ty: Type) extends Op
   final case class Varload(slot: Val) extends Op
   final case class Varstore(slot: Val, value: Val) extends Op
-  final case class Arrayalloc(ty: Type, init: Val, zoneHandle: Option[Val])
+  final case class Arrayalloc(ty: Type, init: Val, zone: Option[Val])
       extends Op
   final case class Arrayload(ty: Type, arr: Val, idx: Val) extends Op
   final case class Arraystore(ty: Type, arr: Val, idx: Val, value: Val)

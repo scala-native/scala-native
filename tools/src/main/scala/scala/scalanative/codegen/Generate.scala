@@ -314,7 +314,7 @@ object Generate {
                 Inst.Label(initialize, Seq()),
                 Inst.Let(
                   alloc.name,
-                  Op.Classalloc(name, zoneHandle = None),
+                  Op.Classalloc(name, zone = None),
                   Next.None
                 ),
                 Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),

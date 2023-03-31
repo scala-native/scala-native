@@ -1,0 +1,48 @@
+// format: off
+
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
+package scala.scalanative
+package runtime
+
+import scalanative.unsafe._
+import scalanative.unsigned._
+import scalanative.runtime.Intrinsics._
+import scala.scalanative.SafeZone
+import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, sizeOfPtr}
+
+%{
+   types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(sizeOfPtr)'}
+}%
+% # BEWARE: Order of iteration of the dictionary depends on version of Python
+% #         used to run this script.
+% #         Python as of 3.6 is documented to give insertion order.
+% #         Lower versions of Python usually give insertion order but
+% #         can and do return arbitrary order.
+% #         
+% #	    To reduce time consuming git differences, python >= 3.6 should be
+% #         used to run this script.
+% for T, sizeT in types.items():
+
+object ${T}ArrayExtension {
+  import ${T}Array.{arrayRawSize, storeArrayInfo}
+
+  @inline def alloc(length: Int, zone: SafeZone): ${T}Array = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[${T}Array]
+    val arrsize = arrayRawSize(length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    storeArrayInfo(arr, length)
+    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+  }
+}
+% end

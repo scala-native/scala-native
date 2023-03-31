@@ -20,7 +20,7 @@ class SafeZoneTest {
   }
 
   @Test def `report error when trying to allocate an instances in a closed safe zone`(): Unit = {
-    class A {}
+    case class A() {}
     assertThrows(classOf[IllegalStateException], 
       SafeZone { sz ?=> 
         sz.close()

@@ -3,7 +3,9 @@ package scala.scalanative
 import language.experimental.captureChecking
 import scalanative.unsigned._
 import scala.annotation.implicitNotFound
-import scala.scalanative.runtime.{RawPtr, CZone}
+import scala.scalanative.unsafe.CSize
+import scala.scalanative.unsigned.USize
+import scala.scalanative.runtime.{RawPtr, RawSize, CZone, Intrinsics}
 import scala.scalanative.runtime.SafeZoneAllocator.allocate
 
 @implicitNotFound("Given method requires an implicit zone.")
@@ -15,11 +17,14 @@ trait SafeZone {
   /** Return this zone is closed or not. */
   def isClosed: Boolean = !isOpen
 
-  /** Require this zone is open. */
+  /** Require this zone to be open. */
   def checkOpen(): Unit = {
     if (!isOpen)
       throw new IllegalStateException(s"Zone ${this} is already closed.")
   }
+
+  /** Allocates an object in this zone. The expression of obj must be an instance creation expression. */
+  infix inline def alloc[T <: AnyRef](inline obj: T): {this} T = allocate(this, obj)
 
   /** Frees allocations. This zone is not reusable once closed. */
   private[scalanative] def close(): Unit
@@ -27,8 +32,11 @@ trait SafeZone {
   /** Return the handle of this zone. */
   private[scalanative] def handle: RawPtr
 
-  /** Allocates an object in this zone. The expression of obj must be an instance creation expression. */
-  infix inline def alloc[T <: AnyRef](inline obj: T): {this} T = allocate(this, obj)
+  /** The low-level implementation of allocation. */
+  private[scalanative] def allocImpl(cls: RawPtr, size: RawSize): RawPtr = {
+    checkOpen()
+    CZone.alloc(handle, cls, USize(size).asInstanceOf[CSize])
+  }
 }
 
 final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {

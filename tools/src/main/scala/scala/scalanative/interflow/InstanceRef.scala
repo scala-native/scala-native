@@ -26,8 +26,8 @@ object VirtualRef {
   )(implicit state: State): Option[VirtulRefExtract] = value match {
     case Val.Virtual(addr) =>
       state.deref(addr) match {
-        case VirtualInstance(kind, cls, values, zoneHandle) =>
-          Some((kind, cls, values, zoneHandle))
+        case VirtualInstance(kind, cls, values, zone) =>
+          Some((kind, cls, values, zone))
         case _ =>
           None
       }

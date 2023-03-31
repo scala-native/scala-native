@@ -18,6 +18,8 @@ private[scalanative] object ScalaNative {
    */
   def entries(config: Config): Seq[Global] = {
     val entry = encodedMainClass(config).map(_.member(Rt.ScalaMainSig))
+    // val entry =
+    //   encodedMainClass(config).map(t => Entry(t.member(Rt.ScalaMainSig)))
     entry ++: CodeGen.depends
   }
 
