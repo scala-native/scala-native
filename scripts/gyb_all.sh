@@ -32,4 +32,3 @@ gyb_files() {
 gyb_files $nativelib $scala $unsafe Tag Nat CStruct CFuncPtr Size
 gyb_files $nativelib $scala $unsigned USize
 gyb_files $nativelib $scala $runtime Arrays Boxes Primitives
-gyb_files $nativelib $scalaNext $runtime ArrayExtensions

@@ -1312,7 +1312,7 @@ object Lower {
       val Global.Top(id) = arrname: @unchecked
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
-        Global.Top(id + "Extension" + "$"),
+        Global.Top(id + "$"),
         Sig.Method("alloc", Seq(Type.Int, SafeZone, arrcls))
       )
   }.toMap
@@ -1320,7 +1320,7 @@ object Lower {
     case (ty, arrname) =>
       val Global.Top(id) = arrname: @unchecked
       ty -> Type.Function(
-        Seq(Type.Ref(Global.Top(id + "Extension" + "$")), Type.Int, SafeZone),
+        Seq(Type.Ref(Global.Top(id + "$")), Type.Int, SafeZone),
         Type.Ref(arrname)
       )
   }.toMap

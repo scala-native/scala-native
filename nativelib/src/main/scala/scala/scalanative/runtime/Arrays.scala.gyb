@@ -31,6 +31,7 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.Intrinsics._
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, sizeOfPtr}
+import scala.scalanative.SafeZone
 
 % sizePtr = 'sizeOfPtr'
 
@@ -229,6 +230,17 @@ object ${T}Array {
     val arrcls  = classOf[${T}Array]
     val arrsize = arrayRawSize(length)
     val arr = ${allocGC}(arrcls, new USize(arrsize)) 
+    storeArrayInfo(arr, length)
+    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): ${T}Array = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[${T}Array]
+    val arrsize = arrayRawSize(length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeArrayInfo(arr, length)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
