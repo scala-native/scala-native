@@ -459,28 +459,24 @@ class ForkJoinPool19Test extends JSR166Test {
     }
   }
 
-  import scala.util.Using // mock java try-with-resource
-
   /** Implicitly closing a new pool using try-with-resources terminates it
    */
   @Test def testClose(): Unit = {
     val f = new FibAction(8)
-    val pool = Using(new ForkJoinPool()) { p =>
-      p.execute(f)
-      p
-    }.get
+    val p = new ForkJoinPool()
+    try p.execute(f)
+    finally p.close()
     checkCompletedNormally(f)
-    assertTrue(pool != null && pool.isTerminated())
+    assertTrue(p != null && p.isTerminated())
   }
 
   @Test def testCloseCommonPool(): Unit = {
     val f = new FibAction(8)
-    val pool = Using(ForkJoinPool.commonPool()) { p =>
-      p.execute(f)
-      p
-    }.get
-    assertFalse(pool.isShutdown())
-    assertFalse(pool.isTerminating())
-    assertFalse(pool.isTerminated())
+    val p = ForkJoinPool.commonPool()
+    try p.execute(f)
+    finally p.close()
+    assertFalse(p.isShutdown())
+    assertFalse(p.isTerminating())
+    assertFalse(p.isTerminated())
   }
 }

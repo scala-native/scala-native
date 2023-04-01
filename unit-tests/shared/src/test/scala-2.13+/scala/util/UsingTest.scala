@@ -19,7 +19,10 @@ import org.junit.Assert._
 import scala.reflect.ClassTag
 import scala.runtime.NonLocalReturnControl
 
-@deprecated("Uses type UsingInterruption=ThreadDeath which is deprecated", since = "JDK 19")
+@deprecated(
+  "Uses type UsingInterruption=ThreadDeath which is deprecated",
+  since = "JDK 19"
+)
 class UsingTest {
   import UsingTest._
 
