@@ -619,7 +619,10 @@ abstract class AbstractQueuedSynchronizer protected ()
 
     private def canReacquire(node: AbstractQueuedSynchronizer.ConditionNode) = {
       // check links, not status to avoid enqueue race
-      node != null && node.prev != null && isEnqueued(node)
+      var p: Node = null
+      node != null && {
+        p = node.prev; p != null
+      } && (p.next == node || isEnqueued(node))
     }
 
     private def unlinkCancelledWaiters(

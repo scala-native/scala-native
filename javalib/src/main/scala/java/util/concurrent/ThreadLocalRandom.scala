@@ -230,7 +230,7 @@ object ThreadLocalRandom {
     probe
   }
 
-  private[concurrent] def nextSecondarySeed = {
+  private[concurrent] def nextSecondarySeed(): Int = {
     val t = Thread.currentThread()
     var r: Int = t.threadLocalRandomSecondarySeed
     if (r != 0) {
@@ -247,9 +247,8 @@ object ThreadLocalRandom {
   }
 
   private[concurrent] def eraseThreadLocals(thread: Thread): Unit = {
-    // TOOD: Adapt ThreadLocal implementation
-    // thread.localValues = null
-    // thread.inheritableValues = null
+    thread.threadLocals = null
+    thread.inheritableThreadLocals = null
   }
 
   private val GAMMA = 0x9e3779b97f4a7c15L
