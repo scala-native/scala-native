@@ -37,6 +37,7 @@ class ThreadTest {
     }
   }
 
+  @deprecated
   @Test def getId(): Unit = {
     val id = Thread.currentThread().getId
     if (isMultithreadingEnabled) assertTrue(id >= 0)

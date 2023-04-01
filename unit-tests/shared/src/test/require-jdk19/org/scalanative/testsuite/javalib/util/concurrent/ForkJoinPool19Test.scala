@@ -119,15 +119,15 @@ class ForkJoinPool19Test extends JSR166Test {
     assertNull(a.join)
     assertFalse(a.cancel(false))
     assertFalse(a.cancel(true))
-    val (v1, v2) =
-      try {
-        val v1 = a.get
-        val v2 = a.get(randomTimeout(), randomTimeUnit())
-        (v1, v2)
-      } catch {
-        case fail: Throwable =>
-          threadUnexpectedException(fail)
-      }
+    var v1, v2: Any = null.asInstanceOf[Any]
+    try {
+      v1 = a.get()
+      v2 = a.get(randomTimeout(), randomTimeUnit())
+      (v1, v2)
+    } catch {
+      case fail: Throwable =>
+        threadUnexpectedException(fail)
+    }
     assertNull(v1)
     assertNull(v2)
   }
