@@ -28,7 +28,9 @@ class DelegatingExecutorService(delegate: ExecutorService)
   override def submit[T](task: Runnable, result: T): Future[T] = wrap(
     delegate.submit(task, result)
   )
-  override def submit(task: Runnable): Future[_] = wrap(delegate.submit(task))
+  override def submit(task: Runnable): Future[_] = wrap(
+    delegate.submit(task): Future[_]
+  )
   override def invokeAll[T](
       tasks: Collection[_ <: Callable[T]]
   ): List[Future[T]] = {

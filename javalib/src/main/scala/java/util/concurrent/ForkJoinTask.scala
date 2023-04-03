@@ -36,7 +36,8 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   )
   @alwaysinline private def casStatus(expected: Int, value: Int): Boolean =
     statusAtomic.compareExchangeWeak(expected, value)
-  @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int = statusAtomic.fetchOr(v)
+  @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int =
+    statusAtomic.fetchOr(v)
   @alwaysinline private def casAux(c: Aux, v: Aux): Boolean =
     auxAtomic.compareExchangeStrong(c, v)
 
