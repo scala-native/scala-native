@@ -31,7 +31,7 @@ trait Future[V] {
     var interrupted = false
     try
       while (true) {
-        try get()
+        try return get()
         catch {
           case _: InterruptedException => interrupted = true
           case _: ExecutionException =>
@@ -61,7 +61,7 @@ trait Future[V] {
           throw new IllegalStateException("Task completed with a result")
         } catch {
           case _: InterruptedException => interrupted = true
-          case e: ExecutionException   => e.getCause()
+          case e: ExecutionException   => return e.getCause()
         }
       }
     finally {

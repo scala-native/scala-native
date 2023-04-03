@@ -15,6 +15,7 @@ import java.lang.invoke.VarHandle
 import scala.scalanative.libc.atomic._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.unsafe.{Ptr, stackalloc}
+import scala.scalanative.annotation.alwaysinline
 
 import scala.annotation.tailrec
 
@@ -33,10 +34,10 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   private val auxAtomic = new CAtomicRef[Aux](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "aux"))
   )
-  private def casStatus(expected: Int, value: Int): Boolean =
+  @alwaysinline private def casStatus(expected: Int, value: Int): Boolean =
     statusAtomic.compareExchangeWeak(expected, value)
-  private def getAndBitwiseOrStatus(v: Int): Int = statusAtomic.fetchOr(v)
-  private def casAux(c: Aux, v: Aux): Boolean =
+  @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int = statusAtomic.fetchOr(v)
+  @alwaysinline private def casAux(c: Aux, v: Aux): Boolean =
     auxAtomic.compareExchangeStrong(c, v)
 
   private[concurrent] final def markPoolSubmission(): Unit =

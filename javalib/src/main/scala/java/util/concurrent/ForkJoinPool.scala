@@ -86,7 +86,7 @@ class ForkJoinPool private (
   @alwaysinline
   private def getAndSetParallelism(v: Int): Int = parallelismAtomic.exchange(v)
   @alwaysinline
-  private def getParallelismOpaque(): Int = parallelism
+  private def getParallelismOpaque(): Int = parallelismAtomic.load()
 
   // Creating, registering, and deregistering workers
 
@@ -222,7 +222,7 @@ class ForkJoinPool private (
       while (!break) {
         val sp = c.toInt & ~INACTIVE
         val v = qs(sp & (n - 1))
-        val deficit = pc - (c >>> TC_SHIFT).toShort
+        val deficit: Int = pc - (c >>> TC_SHIFT).toShort
         val ac: Long = (c + RC_UNIT) & RC_MASK
         var nc = 0L
         if (sp != 0 && v != null)
@@ -383,7 +383,7 @@ class ForkJoinPool private (
   private def awaitWork(w: WorkQueue): Int = {
     if (w == null)
       return -1 // already terminated
-    var p = (w.phase + SS_SEQ) & ~INACTIVE
+    var p: Int = (w.phase + SS_SEQ) & ~INACTIVE
     var idle = false // true if possibly quiescent
     if (runState < 0)
       return -1 // terminating
@@ -1331,8 +1331,8 @@ class ForkJoinPool private (
 
     val pc = parallelism
     val c = ctl
-    val tc = (c >>> TC_SHIFT).toShort
-    val ac = (c >>> RC_SHIFT).toShort match {
+    val tc: Int = (c >>> TC_SHIFT).toShort
+    val ac: Int = (c >>> RC_SHIFT).toShort match {
       case n if n < 0 => 0 // ignore transient negative
       case n          => n
     }
