@@ -32,7 +32,8 @@ trait SafeZone {
   /** Return the handle of this zone. */
   private[scalanative] def handle: RawPtr
 
-  /** The low-level implementation of allocation. */
+  /** The low-level implementation of allocation. This function shouldn't be inlined because it's directly called in the lowering phase. */
+  @noinline
   private[scalanative] def allocImpl(cls: RawPtr, size: RawSize): RawPtr = {
     checkOpen()
     CZone.alloc(handle, cls, USize(size).asInstanceOf[CSize])
