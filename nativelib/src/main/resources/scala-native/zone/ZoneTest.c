@@ -14,24 +14,11 @@
 
 // void scalanative_add_roots(void *start, void *end) {}
 // void scalanative_remove_roots(void *start, void *end) {}
-
 // void calculate_memory_pool_info(size_t n, size_t *sizes, size_t *pagesSize,
-//                                 size_t *pageOffsets) {
-//     size_t sum = 0;
-//     *pagesSize = 0;
-//     for (int i = 0; i < n; i++) {
-//         if (sizes[i] <= MEMORYPOOL_PAGE_SIZE) {
-//             if (sum + sizes[i] > MEMORYPOOL_PAGE_SIZE) {
-//                 pageOffsets[*pagesSize] = sum;
-//                 *pagesSize += 1;
-//                 sum = 0;
-//             }
-//             sum += sizes[i];
-//         }
-//     }
-//     pageOffsets[*pagesSize] = sum;
-//     *pagesSize += 1;
-// }
+//                                 size_t *pageOffsets);
+// size_t Util_debug_pages_length(MemoryPage *head);
+// void Util_debug_print_page(MemoryPage *page, size_t idx);
+// void Util_debug_print_pages(MemoryPage *head);
 
 // void test() {
 //     size_t sizes[] = {0x10,  0x2000, 0x800,  0x700, 0x900,
@@ -113,4 +100,50 @@
 // int main() {
 //     test();
 //     return 0;
+// }
+
+// void calculate_memory_pool_info(size_t n, size_t *sizes, size_t *pagesSize,
+//                                 size_t *pageOffsets) {
+//     size_t sum = 0;
+//     *pagesSize = 0;
+//     for (int i = 0; i < n; i++) {
+//         if (sizes[i] <= MEMORYPOOL_PAGE_SIZE) {
+//             if (sum + sizes[i] > MEMORYPOOL_PAGE_SIZE) {
+//                 pageOffsets[*pagesSize] = sum;
+//                 *pagesSize += 1;
+//                 sum = 0;
+//             }
+//             sum += sizes[i];
+//         }
+//     }
+//     pageOffsets[*pagesSize] = sum;
+//     *pagesSize += 1;
+// }
+
+// size_t Util_debug_pages_length(MemoryPage *head) {
+//     MemoryPage *page = head;
+//     size_t length = 0;
+//     while (page != NULL) {
+//         page = page->next;
+//         length += 1;
+//     }
+//     return length;
+// }
+
+// void Util_debug_print_page(MemoryPage *page, size_t idx) {
+//     printf("%02zu page (start: %p, size: %zx, offset: %zx)\n", idx,
+//     page->start,
+//            page->size, page->offset);
+// }
+
+// void Util_debug_print_pages(MemoryPage *head) {
+//     printf("== pages start ==\n");
+//     MemoryPage *page = head;
+//     int idx = Util_debug_pages_length(head) - 1;
+//     while (page != NULL) {
+//         Util_debug_print_page(page, idx);
+//         page = page->next;
+//         idx -= 1;
+//     }
+//     printf("== pages end ==\n\n");
 // }
