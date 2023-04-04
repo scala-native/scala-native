@@ -11,6 +11,7 @@ import core.Types._
 import core.Symbols._
 import core.StdNames._
 import core.TypeErasure._
+import core.TypeError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.transform.SymUtils._
@@ -237,11 +238,22 @@ trait NirGenType(using Context) {
   }
 
   private def genFixedSizeArray(st: SimpleType): nir.Type = {
+    def parseDigit(st: SimpleType): Int = {
+      try defnNir.NatBaseClasses.indexOf(st.sym)
+      catch {
+        case e: TypeError =>
+          // Can happen when Nat class is not yet availble, etc. usages withing nativelib
+          st.sym.name.toSimpleName.toString match
+            case s"Nat$$_${digit}" if digit.length == 1 =>
+              digit.toIntOption.getOrElse(throw e)
+            case _ => throw e
+      }
+    }
     def natClassToInt(st: SimpleType): Int =
-      if (st.targs.isEmpty) defnNir.NatBaseClasses.indexOf(st.sym)
+      if (st.targs.isEmpty) parseDigit(st)
       else
         st.targs.foldLeft(0) {
-          case (acc, st) => acc * 10 + defnNir.NatBaseClasses.indexOf(st.sym)
+          case (acc, st) => acc * 10 + parseDigit(st)
         }
 
     val SimpleType(_, Seq(elemType, size)) = st
