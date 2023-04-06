@@ -141,7 +141,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
         val testMethods = annotatedMethods(testClass, JUnitAnnots.Test)
 
         val defs = List(
-          genConstructor(bootSym),
+            genConstructor(bootSym),
           genCallOnModule(
             bootSym,
             Names.beforeClass,
@@ -156,12 +156,12 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
             JUnitAnnots.AfterClass,
             callParentsFirst = false
           ),
-          genCallOnParam(bootSym, Names.before, testClass, JUnitAnnots.Before),
-          genCallOnParam(bootSym, Names.after, testClass, JUnitAnnots.After),
+            genCallOnParam(bootSym, Names.before, testClass, JUnitAnnots.Before),
+            genCallOnParam(bootSym, Names.after, testClass, JUnitAnnots.After),
           genTestMetadata(bootSym, testClass),
-          genTests(bootSym, testMethods),
-          genInvokeTest(bootSym, testClass, testMethods),
-          genNewInstance(bootSym, testClass)
+            genTests(bootSym, testMethods),
+            genInvokeTest(bootSym, testClass, testMethods),
+            genNewInstance(bootSym, testClass)
         )
 
         ClassDef(bootSym, defs)
@@ -349,11 +349,15 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
             val newSuccess =
               gen.mkMethodCall(SuccessModule_apply, List(boxedUnit))
             Block(
-              gen.mkMethodCall(instance, sym, Nil, Nil),
-              gen.mkMethodCall(FutureModule_successful, List(newSuccess))
+                gen.mkMethodCall(instance, sym, Nil, Nil),
+                gen.mkMethodCall(FutureModule_successful, List(newSuccess))
             )
 
+          case FutureClass =>
+            gen.mkMethodCall(instance, sym, Nil, Nil)
+
           case _ =>
+            // We lie in the error message to not expose that we support async testing.
             reporter.error(sym.pos, "JUnit test must have Unit return type")
             EmptyTree
         }
