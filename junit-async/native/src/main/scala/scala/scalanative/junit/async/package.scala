@@ -1,17 +1,18 @@
 package scala.scalanative.junit
 
+import scala.util.{Try, Success}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 package object async {
-  type AsyncResult = Unit
+  type AsyncResult = Future[Try[Unit]]
   def await(future: Future[_]): AsyncResult = {
     if (isMultithreadingEnabled)
-      Await.result(future, Duration.Inf)
-    else {
-      future.map(_ => Success(()))
-    }
+      Await.ready(future, Duration.Inf)
+    else
+      scala.scalanative.runtime.loop()
+    future.map(_ => Success(()))
   }
 }
