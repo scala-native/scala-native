@@ -44,7 +44,7 @@ abstract class JUnitTest {
     List('v', 's', 'n')
   )
 
-  @Test def testJUnitOutput(): AsyncResult = await {
+  @Test def testJUnitOutput(): Unit = await {
     val futs = for (args <- frameworkArgss) yield {
       for {
         rawOut <- runTests(args.map("-" + _))
