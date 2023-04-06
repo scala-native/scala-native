@@ -34,10 +34,10 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   private val auxAtomic = new CAtomicRef[Aux](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "aux"))
   )
-  @alwaysinline private def casStatus(expected: Int, value: Int): Boolean =
-    statusAtomic.compareExchangeWeak(expected, value)
   @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int =
     statusAtomic.fetchOr(v)
+  @alwaysinline private def casStatus(expected: Int, value: Int): Boolean =
+    statusAtomic.compareExchangeWeak(expected, value)
   @alwaysinline private def casAux(c: Aux, v: Aux): Boolean =
     auxAtomic.compareExchangeStrong(c, v)
 
@@ -77,11 +77,7 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
     var s = status
     while ({
       s = status
-      s >= 0 && {
-        val prevStatus = s
-        s |= (DONE | ABNORMAL)
-        !casStatus(prevStatus, s)
-      }
+      s >= 0 && !casStatus(s, { s |= (DONE | ABNORMAL); s })
     }) ()
     signalWaiters()
     s
@@ -170,7 +166,9 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
         node = new Aux(Thread.currentThread(), null)
       else if (!queued) {
         if (({ a = aux; a == null || a.ex == null }) && {
-              node.next = a; queued = casAux(node.next, node); queued
+              node.next = a
+              queued = casAux(node.next, node)
+              queued
             })
           LockSupport.setCurrentBlocker(this)
       } else if (timed && { ns = deadline - System.nanoTime(); ns <= 0 }) {
@@ -191,7 +189,8 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
       else
         LockSupport.park()
     }
-    if (uncompensate) p.uncompensate()
+    if (uncompensate)
+      p.uncompensate()
 
     if (queued) {
       LockSupport.setCurrentBlocker(null)
@@ -208,7 +207,6 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
               if (trail != null)
                 trail.casNext(trail, next)
               else if (casAux(a, next)) {
-                break = true
                 breakOuter = true
               }
               break = true
@@ -257,26 +255,26 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
     val exception: Throwable =
       if (s == ABNORMAL) new InterruptedException()
       else if (s >= 0) new TimeoutException()
-      else if ((s & THROWN) != 0) {
+      else
         getThrowableException() match {
           case null => null
           case ex   => new ExecutionException(ex)
         }
-      } else null
     uncheckedThrow[RuntimeException](exception)
   }
 
   final def fork(): ForkJoinTask[V] = {
     VarHandle.storeStoreFence()
+    def push(p: ForkJoinPool, q: ForkJoinPool.WorkQueue) = q.push(this, p, true)
     Thread.currentThread() match {
       case wt: ForkJoinWorkerThread =>
         val p = wt.pool
         val q = wt.workQueue
-        q.push(this, p, true)
+        push(p, q)
       case _ =>
         val p = ForkJoinPool.common
         val q = p.submissionQueue(false)
-        q.push(this, p, true)
+        push(p, q)
     }
     this
   }
@@ -290,10 +288,10 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
 
   final def invoke(): V = {
     var s = doExec()
-    if (s >= 0) {
+    if (s >= 0)
       s = awaitDone(RAN, 0L)
-    }
-    if ((s & ABNORMAL) != 0) reportException(s)
+    if ((s & ABNORMAL) != 0)
+      reportException(s)
     getRawResult()
   }
 
@@ -339,12 +337,13 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   }
 
   def complete(value: V): Unit = {
-    try {
-      setRawResult(value)
-      setDone()
-    } catch {
-      case rex: Throwable => trySetException(rex)
+    try setRawResult(value)
+    catch {
+      case rex: Throwable =>
+        trySetException(rex)
+        return
     }
+    setDone()
   }
 
   final def quietlyComplete(): Unit = setDone()
@@ -357,7 +356,8 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
       s = ABNORMAL
     else if ({ s = status; s >= 0 })
       s = awaitDone((s & POOLSUBMIT) | INTERRUPTIBLE, 0L)
-    if ((s & ABNORMAL) != 0) reportExecutionException(s)
+    if ((s & ABNORMAL) != 0)
+      reportExecutionException(s)
     getRawResult()
   }
 
@@ -374,17 +374,20 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
         (s & POOLSUBMIT) | INTERRUPTIBLE | TIMED,
         nanos + System.nanoTime()
       )
-    if (s >= 0 || (s & ABNORMAL) != 0) reportExecutionException(s)
+    if (s >= 0 || (s & ABNORMAL) != 0)
+      reportExecutionException(s)
     getRawResult()
   }
 
   final def quietlyJoin(): Unit = {
     val s = status
-    if (s >= 0) awaitDone(s & POOLSUBMIT, 0L)
+    if (s >= 0)
+      awaitDone(s & POOLSUBMIT, 0L)
   }
 
   final def quietlyInvoke(): Unit = {
-    if (doExec() >= 0) awaitDone(RAN, 0L)
+    if (doExec() >= 0)
+      awaitDone(RAN, 0L)
   }
 
   // since JDK 19
@@ -403,6 +406,7 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
     else
       s < 0
   }
+
   // Since JDK 19
   final def quietlyJoinUninterruptibly(
       timeout: Long,
@@ -476,11 +480,11 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
 
 object ForkJoinTask {
 
-  final private[concurrent] class Aux private[concurrent] (
+  final private[concurrent] class Aux(
       val thread: Thread,
       val ex: Throwable // null if a waiter
   ) {
-    @volatile var next: Aux = _
+    var next: Aux = _ // accessed only via memory-acquire chains
     final private val nextAtomic =
       new CAtomicRef[Aux](fromRawPtr(Intrinsics.classFieldRawPtr(this, "next")))
     final def casNext(c: Aux, v: Aux) = nextAtomic.compareExchangeStrong(c, v)
@@ -525,7 +529,8 @@ object ForkJoinTask {
     if (t1 == null || t2 == null) throw new NullPointerException
     t2.fork()
     var s1 = t1.doExec()
-    if (s1 >= 0) s1 = t1.awaitDone(RAN, 0L)
+    if (s1 >= 0)
+      s1 = t1.awaitDone(RAN, 0L)
     if ((s1 & ABNORMAL) != 0) {
       cancelIgnoringExceptions(t2)
       t1.reportException(s1)
@@ -545,15 +550,17 @@ object ForkJoinTask {
       val t = tasks(i)
       if (t == null) {
         ex = new NullPointerException()
-        false
+        false // break
       } else if (i == 0) {
         var s = t.doExec()
-        if (s >= 0) s = t.awaitDone(RAN, 0L)
-        if ((s & ABNORMAL) != 0) ex = t.getException(s)
-        false
+        if (s >= 0)
+          s = t.awaitDone(RAN, 0L)
+        if ((s & ABNORMAL) != 0)
+          ex = t.getException(s)
+        false // break
       } else {
         t.fork()
-        true
+        true // continue
       }
     }
 
@@ -561,13 +568,17 @@ object ForkJoinTask {
       val t = tasks(i)
       t == null || {
         var s = t.status
-        if (s >= 0) s = t.awaitDone(0, 0L)
-        if ((s & ABNORMAL) != 0) ex = t.getException(s)
-        ex == null
+        if (s >= 0)
+          s = t.awaitDone(0, 0L)
+        if ((s & ABNORMAL) != 0) {
+          ex = t.getException(s)
+          ex == null
+        } else true
       }
     }
     if (ex != null) {
-      for (i <- 1 to last) { cancelIgnoringExceptions(tasks(i)) }
+      for (i <- 1 to last)
+        cancelIgnoringExceptions(tasks(i))
       rethrow(ex)
     }
   }
@@ -580,32 +591,36 @@ object ForkJoinTask {
         ts.get(i) match {
           case null =>
             ex = new NullPointerException()
-            false
+            false // break
 
           case t if i == 0 =>
             var s = t.doExec()
-            if (s >= 0) s = t.awaitDone(RAN, 0L)
-            if ((s & ABNORMAL) != 0) ex = t.getException(s)
-            false
+            if (s >= 0)
+              s = t.awaitDone(RAN, 0L)
+            if ((s & ABNORMAL) != 0)
+              ex = t.getException(s)
+            false // break
 
           case t =>
             t.fork()
-            true
+            true // continue
         }
       }
       if (ex == null) (1 to last).takeWhile { i =>
         val t = ts.get(i)
         t == null || {
           var s = t.status
-          if (s >= 0) s = t.awaitDone(0, 0L)
+          if (s >= 0)
+            s = t.awaitDone(0, 0L)
           if ((s & ABNORMAL) != 0) {
             ex = t.getException(s)
-          }
-          ex == null
+            ex == null
+          } else true // continue
         }
       }
       if (ex != null) {
-        for (i <- 1 to last) cancelIgnoringExceptions((ts.get(i)))
+        for (i <- 1 to last)
+          cancelIgnoringExceptions(ts.get(i))
         rethrow(ex)
       }
     }
@@ -790,9 +805,8 @@ object ForkJoinTask {
       super.toString + "[Wrapped task = " + callable + "]"
   }
 
-  def adapt(runnable: Runnable): ForkJoinTask[_] = new AdaptedRunnableAction(
-    runnable
-  )
+  def adapt(runnable: Runnable): ForkJoinTask[_] =
+    new AdaptedRunnableAction(runnable)
 
   def adapt[T](runnable: Runnable, result: T): ForkJoinTask[T] =
     new AdaptedRunnable[T](runnable, result)

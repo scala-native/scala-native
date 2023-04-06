@@ -21,8 +21,6 @@ import scala.annotation._
 import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
-import scala.scalanative.libc.atomic.atomic_thread_fence
-import scala.scalanative.libc.atomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics, ObjectArray}
 
 import ForkJoinPool._
@@ -217,9 +215,9 @@ class ForkJoinPool private (
     val qs = queues
     val n = if (qs != null) qs.length else 0
     if ((c >>> RC_SHIFT).toShort < pc && n > 0) {
-      var create = false
       var break = false
       while (!break) {
+        var create = false
         val sp = c.toInt & ~INACTIVE
         val v = qs(sp & (n - 1))
         val deficit: Int = pc - (c >>> TC_SHIFT).toShort
@@ -233,17 +231,15 @@ class ForkJoinPool private (
           create = true
           nc = ((c + TC_UNIT) & TC_MASK)
         }
-        if (!break && {
-              val c0 = c
-              c = compareAndExchangeCtl(c0, nc | ac)
-              c0 == c
-            }) {
+        if (!break &&
+            c == { c = compareAndExchangeCtl(c, nc | ac); c }) {
           if (create)
             createWorker()
           else {
             val owner = v.owner
             v.phase = sp
-            if (v.access == PARKED) LockSupport.unpark(owner)
+            if (v.access == PARKED)
+              LockSupport.unpark(owner)
           }
           break = true
         }
@@ -267,7 +263,8 @@ class ForkJoinPool private (
             }) {
           val owner = v.owner
           v.phase = sp
-          if (v.access == PARKED) LockSupport.unpark(owner)
+          if (v.access == PARKED)
+            LockSupport.unpark(owner)
           return v
         }
       }
@@ -415,7 +412,9 @@ class ForkJoinPool private (
       LockSupport.setCurrentBlocker(this)
 
       var break = false
+      var counter = 0
       while (!break) { // await signal or termination
+        counter += 1
         if (runState < 0)
           return -1
         w.access = PARKED
@@ -455,7 +454,6 @@ class ForkJoinPool private (
         return true
       if ((c & RC_MASK) > 0L || hasTasks(false))
         return false
-
       c != { c = ctl; c } // validate
     }) ()
     true
@@ -1433,24 +1431,20 @@ class ForkJoinPool private (
   @throws[InterruptedException]
   private def compensatedBlock(blocker: ManagedBlocker): Unit = {
     if (blocker == null) throw new NullPointerException()
-
-    @tailrec
-    def loop(): Unit = {
+    while (true) {
       val c = ctl
-      if (blocker.isReleasable()) return ()
-
+      if (blocker.isReleasable())
+        return
       val comp = tryCompensate(c, false)
       if (comp >= 0) {
-        val post = if (comp == 0) 0L else RC_UNIT
+        val post: Long = if (comp == 0) 0L else RC_UNIT
         val done =
           try blocker.block()
           finally getAndAddCtl(post)
-        if (done) return ()
-        else loop()
+        if (done)
+          return
       }
     }
-
-    loop()
   }
 
   // AbstractExecutorService.newTaskFor overrides rely on
