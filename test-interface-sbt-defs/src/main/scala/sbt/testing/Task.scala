@@ -32,13 +32,14 @@ trait Task {
    */
   def execute(eventHandler: EventHandler, loggers: Array[Logger]): Array[Task]
 
-  /** Scala.js specific: Same as basic
+  /** Scala.js / Scala Native specific: Same as basic
    *  [[[sbt.testing.Task.execute(eventHandler:sbt\.testing\.EventHandler,loggers:Array[sbt\.testing\.Logger])* execute]]]
    *  but takes a continuation.
    *
    *  This is to support JavaScripts asynchronous nature.
    *
-   *  When running in a JavaScript environment, only this method will be called.
+   *  When running in a Scala Native/JavaScript environment, only this method
+   *  will be called.
    */
   def execute(
       eventHandler: EventHandler,
@@ -54,4 +55,5 @@ trait Task {
    *    <code>Task</code>.
    */
   def taskDef(): TaskDef
+}
 }
