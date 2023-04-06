@@ -10,6 +10,12 @@ import scala.scalanative.reflect.Reflect
 import scala.util.{Failure, Success, Try}
 import org.junit.TestCouldNotBeSkippedException
 
+/* Implementation note: In JUnitTask we use Future[Try[Unit]] instead of simply
+ * Future[Unit]. This is to prevent Scala's Future implementation to box/wrap
+ * fatal errors (most importantly AssertionError) in ExecutionExceptions. We
+ * need to prevent the wrapping in order to hide the fact that we use async
+ * under the hood and stay consistent with JVM JUnit.
+ */
 private[junit] final class JUnitTask(
     _taskDef: TaskDef,
     runSettings: RunSettings
@@ -113,7 +119,7 @@ private[junit] final class JUnitTask(
         reportExecutionErrors(reporter, Some(test.name), timeInSeconds, errors)
       reporter.reportTestFinished(test.name, errors.isEmpty, timeInSeconds)
 
-      // Scala.js-specific: timeouts are warnings only, after the fact
+      // Scala Native-specific: timeouts are warnings only, after the fact
       val timeout = test.annotation.timeout
       if (timeout != 0 && timeout <= timeInSeconds) {
         reporter.log(
