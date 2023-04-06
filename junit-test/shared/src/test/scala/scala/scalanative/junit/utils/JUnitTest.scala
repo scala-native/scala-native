@@ -30,21 +30,21 @@ abstract class JUnitTest {
 
   private val frameworkArgss: List[List[Char]] = List(
     List.empty,
-    List('a'),
-    List('v'),
-    List('n'),
-    List('n', 'a'),
-    List('n', 'v'),
-    List('n', 'v', 'a'),
-    List('n', 'v', 'c'),
-    List('n', 'v', 'c', 'a'),
-    List('v', 'a'),
-    List('v', 'c'),
-    List('v', 's'),
-    List('v', 's', 'n')
+      List('a'),
+      List('v'),
+      List('n'),
+      List('n', 'a'),
+      List('n', 'v'),
+      List('n', 'v', 'a'),
+      List('n', 'v', 'c'),
+      List('n', 'v', 'c', 'a'),
+      List('v', 'a'),
+      List('v', 'c'),
+      List('v', 's'),
+      List('v', 's', 'n')
   )
 
-  @Test def testJUnitOutput(): Unit = await {
+  @Test def testJUnitOutput(): AsyncResult = await {
     val futs = for (args <- frameworkArgss) yield {
       for {
         rawOut <- runTests(args.map("-" + _))
