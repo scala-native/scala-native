@@ -56,4 +56,3 @@ trait Task {
    */
   def taskDef(): TaskDef
 }
-}
