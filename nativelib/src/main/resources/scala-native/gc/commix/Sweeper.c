@@ -312,16 +312,20 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     return freeCount;
 }
 
-static atomic_uint_fast32_t sweepCounter;
-void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator) {
+static MutatorThread *Sweep_SelectMutatorThread() {
+    static atomic_uint_fast32_t sweepCounter;
     int sweepId = atomic_fetch_add(&sweepCounter, 1);
-    int mutatorThreadsCount = 0;
-    MutatorThreads_foreach(mutatorThreads, node) { mutatorThreadsCount += 1; }
     int threadId = sweepId % mutatorThreadsCount;
     MutatorThreads thread = mutatorThreads;
-    for(int i = 0; i < threadId; i++){thread = thread->next;}
-    printf("Apply result: threads=%d thread=%p, idx=%d\n", mutatorThreadsCount, thread->value, threadId);
-    Allocator *allocator = &thread->value->allocator;
+    for (int i = 0; i < threadId && thread->next != NULL; i++) {
+        thread = thread->next;
+    }
+    return thread->value;
+}
+
+void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator) {
+    MutatorThread *selectedThread = Sweep_SelectMutatorThread();
+    Allocator *allocator = &selectedThread->allocator;
     {
         BlockMeta *first = result->recycledBlocks.first;
         if (first != NULL) {

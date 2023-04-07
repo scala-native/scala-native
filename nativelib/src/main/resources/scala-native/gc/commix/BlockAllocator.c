@@ -150,13 +150,15 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
 }
 
 INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
+    BlockMeta *block;
     BlockAllocator_Acquire(blockAllocator);
     if (blockAllocator->smallestSuperblock.cursor >=
         blockAllocator->smallestSuperblock.limit) {
+        block = BlockAllocator_getFreeBlockSlow(blockAllocator);
         BlockAllocator_Release(blockAllocator);
-        return BlockAllocator_getFreeBlockSlow(blockAllocator);
+        return block;
     }
-    BlockMeta *block = blockAllocator->smallestSuperblock.cursor;
+    block = blockAllocator->smallestSuperblock.cursor;
     assert(BlockMeta_IsFree(block));
     assert(block->debugFlag == dbg_free_in_collection);
 #ifdef DEBUG_ASSERT
@@ -399,6 +401,7 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
 }
 
 void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
+    BlockAllocator_Acquire(blockAllocator);
     int index = MathUtils_Log2Ceil((size_t)SWEEP_RESERVE_BLOCKS);
     assert(blockAllocator->concurrent);
     BlockMeta *superblock =
@@ -435,14 +438,17 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
     } else {
         blockAllocator->reservedSuperblock = (word_t)NULL;
     }
+    BlockAllocator_Release(blockAllocator);
 }
 
 void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
+    BlockAllocator_Acquire(blockAllocator);
     BlockMeta *reserved = (BlockMeta *)blockAllocator->reservedSuperblock;
     if (reserved != NULL) {
         BlockAllocator_splitAndAdd(blockAllocator, reserved,
                                    SWEEP_RESERVE_BLOCKS);
     }
+    BlockAllocator_Release(blockAllocator);
 }
 
 #endif

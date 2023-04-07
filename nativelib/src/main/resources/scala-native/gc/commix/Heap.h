@@ -86,9 +86,11 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
+bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
 void Heap_Collect(Heap *heap);
 void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
+void Heap_exitWithOutOfMemory(const char *details);
 size_t Heap_getMemoryLimit();
 
 #endif // IMMIX_HEAP_H

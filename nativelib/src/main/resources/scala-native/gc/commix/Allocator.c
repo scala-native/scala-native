@@ -243,47 +243,50 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
 
 NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                                      uint32_t size) {
-    word_t *object = Allocator_tryAlloc(allocator, size);
+    do {
+        word_t *object = Allocator_tryAlloc(allocator, size);
 
-    if (object != NULL) {
-    done:
-        assert(Heap_IsWordInHeap(heap, object));
-        assert(object != NULL);
-        memset(object, 0, size);
-        ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
+        if (object != NULL) {
+        done:
+            assert(Heap_IsWordInHeap(heap, object));
+            assert(object != NULL);
+            memset(object, 0, size);
+            ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
 #ifdef DEBUG_ASSERT
-        ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+            ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
-        ObjectMeta_SetAllocated(objectMeta);
-        return object;
-    }
+            ObjectMeta_SetAllocated(objectMeta);
+            return object;
+        }
 
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = Allocator_lazySweep(allocator, heap, size);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = Allocator_lazySweep(allocator, heap, size);
 
-        if (object != NULL)
-            goto done;
-    }
+            if (object != NULL)
+                goto done;
+        }
 
-    Heap_Collect(heap);
-    object = Allocator_tryAlloc(allocator, size);
-
-    if (object != NULL)
-        goto done;
-
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = Allocator_lazySweep(allocator, heap, size);
+        Heap_Collect(heap);
+        object = Allocator_tryAlloc(allocator, size);
 
         if (object != NULL)
             goto done;
-    }
 
-    // A small object can always fit in a single free block
-    // because it is no larger than 8K while the block is 32K.
-    Heap_Grow(heap, 1);
-    object = Allocator_tryAlloc(allocator, size);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = Allocator_lazySweep(allocator, heap, size);
 
-    goto done;
+            if (object != NULL)
+                goto done;
+        }
+
+        // A small object can always fit in a single free block
+        // because it is no larger than 8K while the block is 32K.
+        if (Heap_isGrowingPossible(heap, 1))
+            Heap_Grow(heap, 1);
+        else
+            Heap_exitWithOutOfMemory("");
+    } while (true);
+    return NULL; // unreachable
 }
 
 INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {

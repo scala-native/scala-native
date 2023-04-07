@@ -1,8 +1,6 @@
 #ifndef IMMIX_LOG_H
 #define IMMIX_LOG_H
 
-// #define DEBUG_PRINT
-#define DEBUG_ASSERT
 #ifndef DEBUG_ASSERT
 
 #ifndef NDEBUG
@@ -14,5 +12,6 @@
 #include <assert.h>
 #include <inttypes.h>
 
+// #define DEBUG_PRINT
 
 #endif // IMMIX_LOG_H

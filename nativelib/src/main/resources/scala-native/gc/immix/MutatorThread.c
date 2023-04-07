@@ -64,7 +64,7 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
 
 void MutatorThread_switchState(MutatorThread *self,
                                MutatorThreadState newState) {
-    assert(self != null);
+    assert(self != NULL);
     if (newState == MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
         setjmp(self->executionContext);

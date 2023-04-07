@@ -222,13 +222,15 @@ void Heap_Collect(Heap *heap) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
         return;
+    while (!Sweeper_IsSweepDone(heap))
+        thread_yield();
 #else
     MutatorThread_switchState(currentMutatorThread,
                               MutatorThreadState_Unmanaged);
+    assert(Sweeper_IsSweepDone(heap));
 #endif
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
-    assert(Sweeper_IsSweepDone(heap));
 #ifdef DEBUG_ASSERT
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);

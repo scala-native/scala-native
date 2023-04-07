@@ -11,6 +11,7 @@
 extern Heap heap;
 extern BlockAllocator blockAllocator;
 extern MutatorThreads mutatorThreads;
+extern atomic_int_fast32_t mutatorThreadsCount;
 extern thread_local MutatorThread *currentMutatorThread;
 extern safepoint_t scalanative_gc_safepoint;
 extern GC_Roots *roots;
