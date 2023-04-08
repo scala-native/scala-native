@@ -409,7 +409,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         threadsCursor = mutatorThreads;                                        \
     }
 #else
-    MutatorThread *mainThread = currentMutatorThread;
+    MutatorThread *mainThread = mutatorThreads->value;
 #define NextMutatorThread() mainThread
 #endif
 
