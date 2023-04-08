@@ -181,7 +181,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         // demend when growing the heap.
         memoryCommit(heapStart, minHeapSize);
     if (!commitStatus) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("Failed to commit memory");
     }
 #endif // _WIN32
 
@@ -251,8 +251,7 @@ void Heap_Collect(Heap *heap) {
     // Skip calling WeakRef handlers on thread which is being initialized
     // If the current block is set to null it means it failed to allocate
     // memory for allocator and forced GC
-    if (currentMutatorThread->allocator.block)
-        WeakRefGreyList_CallHandlers();
+    WeakRefGreyList_CallHandlers();
 }
 
 bool Heap_shouldGrow(Heap *heap) {
