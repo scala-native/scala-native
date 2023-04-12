@@ -12,7 +12,7 @@ package object async {
     if (isMultithreadingEnabled)
       Await.ready(future, Duration.Inf)
     else
-      scala.scalanative.runtime.loop()
+      while (!future.isCompleted) scala.scalanative.runtime.loop()
     future.map(_ => Success(()))
   }
 }
