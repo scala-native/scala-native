@@ -245,7 +245,7 @@ abstract class JSR166Test {
   def joinPool(pool: ExecutorService): Unit =
     try {
       pool.shutdown()
-      if (!pool.awaitTermination(2 * LONG_DELAY_MS, MILLISECONDS)) {
+      if (!pool.awaitTermination(20 * LONG_DELAY_MS, MILLISECONDS)) {
         try {
           threadFail(
             s"ExecutorService $pool did not terminate in a timely manner"

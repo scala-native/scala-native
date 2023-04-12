@@ -3,6 +3,7 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+// revision 1.72
 package java.util.concurrent
 
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}

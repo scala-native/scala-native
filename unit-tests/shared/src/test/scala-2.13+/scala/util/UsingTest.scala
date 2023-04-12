@@ -19,6 +19,10 @@ import org.junit.Assert._
 import scala.reflect.ClassTag
 import scala.runtime.NonLocalReturnControl
 
+@deprecated(
+  "Uses type UsingInterruption=ThreadDeath which is deprecated",
+  since = "JDK 19"
+)
 class UsingTest {
   import UsingTest._
 
@@ -868,7 +872,7 @@ object UsingTest {
   final class ClosingLinkageError(message: String) extends LinkageError(message)
   final class UsingLinkageError(message: String) extends LinkageError(message)
   type ClosingInterruption = InterruptedException
-  type UsingInterruption = ThreadDeath
+  @deprecated type UsingInterruption = ThreadDeath
   // `NonLocalReturnControl` incorrectly suppresses exceptions, so this tests that
   //   `Using` special-cases it.
   final class ClosingControl(message: String)

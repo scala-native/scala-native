@@ -9,6 +9,8 @@ import scalanative.unsafe._
 import scala.annotation.nowarn
 import scala.scalanative.annotation.alwaysinline
 
+import scala.language.higherKinds
+
 class IssuesTest {
 
   def foo(arg: Int): Unit = ()
