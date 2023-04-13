@@ -47,6 +47,7 @@ object Lower {
     private val fresh = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
     private val currentDefn = new util.ScopedVar[Defn.Define]
+    private val nullGuardedVals = mutable.Set.empty[Val]
     private def currentDefnRetType = {
       val Type.Function(_, ret) = currentDefn.get.ty: @unchecked
       ret
@@ -90,7 +91,8 @@ object Lower {
           fresh := Fresh(defn.insts),
           currentDefn := defn
         ) {
-          super.onDefn(defn)
+          try super.onDefn(defn)
+          finally nullGuardedVals.clear()
         }
       case _ =>
         super.onDefn(defn)
@@ -465,7 +467,7 @@ object Lower {
         case ty: Type.RefKind if !ty.isNullable =>
           ()
 
-        case _ =>
+        case _ if nullGuardedVals.add(obj) =>
           import buf._
           val v = genVal(buf, obj)
 
@@ -476,6 +478,8 @@ object Lower {
           val isNull = comp(Comp.Ine, v.ty, v, Val.Null, unwind)
           branch(isNull, Next(notNullL), Next(isNullL))
           label(notNullL)
+
+        case _ => ()
       }
 
     def genGuardInBounds(buf: Buffer, idx: Val, len: Val)(implicit
