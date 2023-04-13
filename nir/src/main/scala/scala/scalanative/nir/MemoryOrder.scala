@@ -5,8 +5,7 @@ import scala.annotation.switch
 
 case class SyncAttrs(
     memoryOrder: MemoryOrder,
-    isVolatile: Boolean = true,
-    scope: Option[Global] = None
+    isVolatile: Boolean = true
 )
 
 sealed abstract class MemoryOrder(private[nir] val tag: Int) {

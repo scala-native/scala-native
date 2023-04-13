@@ -1028,12 +1028,7 @@ private[codegen] abstract class AbstractCodeGen(
       attrs: SyncAttrs
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
-    val SyncAttrs(memoryOrder, _, scope) = attrs
-    scope.foreach { scope =>
-      str("syncscope(")
-      genGlobal(scope)
-      str(") ")
-    }
+    val SyncAttrs(memoryOrder, _) = attrs
     str(memoryOrder match {
       case MemoryOrder.Unordered => "unordered"
       case MemoryOrder.Monotonic => "monotonic"

@@ -333,8 +333,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getSyncAttrs(): SyncAttrs =
     SyncAttrs(
       memoryOrder = getMemoryOrder(),
-      isVolatile = getBool(),
-      scope = getGlobalOpt()
+      isVolatile = getBool()
     )
 
   private def getMemoryOrder(): MemoryOrder = getInt() match {
