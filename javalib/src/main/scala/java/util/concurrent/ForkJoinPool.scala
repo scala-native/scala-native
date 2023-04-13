@@ -412,9 +412,7 @@ class ForkJoinPool private (
       LockSupport.setCurrentBlocker(this)
 
       var break = false
-      var counter = 0
       while (!break) { // await signal or termination
-        counter += 1
         if (runState < 0)
           return -1
         w.access = PARKED
