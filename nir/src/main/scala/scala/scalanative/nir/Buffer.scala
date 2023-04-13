@@ -151,4 +151,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Arraystore(ty, arr, idx, value), unwind)
   def arraylength(arr: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Arraylength(arr), unwind)
+
+  def fence(memoryOrder: MemoryOrder)(implicit pos: Position): Val =
+    let(
+      Op.Fence(SyncAttrs(memoryOrder = memoryOrder, isVolatile = false)),
+      Next.None
+    )
 }

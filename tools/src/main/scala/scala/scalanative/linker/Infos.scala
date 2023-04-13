@@ -120,6 +120,8 @@ final class Class(
     out.toSeq
   }
 
+  lazy val hasFinalFields: Boolean = fields.exists(_.attrs.isFinal)
+
   val ty: Type =
     Type.Ref(name)
   def isConstantModule(implicit top: Result): Boolean = {

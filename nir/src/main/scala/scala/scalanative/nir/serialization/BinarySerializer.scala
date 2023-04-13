@@ -560,7 +560,6 @@ final class BinarySerializer {
   def putSyncAttrs(value: SyncAttrs) = {
     putMemoryOrder(value.memoryOrder)
     putBool(value.isVolatile)
-    putGlobalOpt(value.scope)
   }
 
   def putMemoryOrder(value: MemoryOrder): Unit = {

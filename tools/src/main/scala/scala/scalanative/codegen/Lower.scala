@@ -47,6 +47,7 @@ object Lower {
     private val fresh = new util.ScopedVar[Fresh]
     private val unwindHandler = new util.ScopedVar[Option[Local]]
     private val currentDefn = new util.ScopedVar[Defn.Define]
+    private val nullGuardedVals = mutable.Set.empty[Val]
     private def currentDefnRetType = {
       val Type.Function(_, ret) = currentDefn.get.ty: @unchecked
       ret
@@ -90,7 +91,8 @@ object Lower {
           fresh := Fresh(defn.insts),
           currentDefn := defn
         ) {
-          super.onDefn(defn)
+          try super.onDefn(defn)
+          finally nullGuardedVals.clear()
         }
       case _ =>
         super.onDefn(defn)
@@ -183,6 +185,13 @@ object Lower {
 
         case inst @ Inst.Ret(v) =>
           implicit val pos: Position = inst.pos
+          currentDefn.get.name match {
+            case Global.Member(ClassRef(cls), sig)
+                if sig.isCtor && cls.hasFinalFields =>
+              // Release memory fence after initialization of constructor with final fields
+              buf.fence(MemoryOrder.Release)
+            case _ => ()
+          }
           genGCSafepoint(buf)
           val retVal =
             if (v.ty == Type.Unit) optionallyBoxedUnit(v)
@@ -458,7 +467,7 @@ object Lower {
         case ty: Type.RefKind if !ty.isNullable =>
           ()
 
-        case _ =>
+        case _ if nullGuardedVals.add(obj) =>
           import buf._
           val v = genVal(buf, obj)
 
@@ -469,6 +478,8 @@ object Lower {
           val isNull = comp(Comp.Ine, v.ty, v, Val.Null, unwind)
           branch(isNull, Next(notNullL), Next(isNullL))
           label(notNullL)
+
+        case _ => ()
       }
 
     def genGuardInBounds(buf: Buffer, idx: Val, len: Val)(implicit
@@ -512,13 +523,13 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      val isSynchronized = field.attrs.isFinal || field.attrs.isVolatile
+      val isVolatile = field.attrs.isVolatile
       val syncAttrs = SyncAttrs(
         memoryOrder =
-          if (isSynchronized) MemoryOrder.Acquire
+          if (isVolatile) MemoryOrder.SeqCst
+          else if (field.attrs.isFinal) MemoryOrder.Monotonic
           else MemoryOrder.Unordered,
-        isVolatile = isSynchronized,
-        scope = Some(field.name)
+        isVolatile = isVolatile
       )
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
@@ -535,20 +546,16 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      val isFinal = field.attrs.isFinal
-      val isSynchronized = isFinal || field.attrs.isVolatile
+      val isVolatile = field.attrs.isVolatile
       val syncAttrs = SyncAttrs(
         memoryOrder =
-          if (isSynchronized) MemoryOrder.Release
+          if (isVolatile) MemoryOrder.SeqCst
+          else if (field.attrs.isFinal) MemoryOrder.Monotonic
           else MemoryOrder.Unordered,
-        isVolatile = isSynchronized,
-        scope = Some(field.name)
+        isVolatile = isVolatile
       )
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
       genStoreOp(buf, n, Op.Store(ty, elem, value, Some(syncAttrs)))
-      if (isFinal) {
-        buf.let(Op.Fence(syncAttrs), unwind)
-      }
     }
 
     def genFieldOp(buf: Buffer, n: Local, op: Op)(implicit
@@ -679,8 +686,7 @@ object Lower {
         }
         val syncAttrs = SyncAttrs(
           memoryOrder = MemoryOrder.Unordered,
-          isVolatile = true,
-          scope = None
+          isVolatile = true
         )
         val safepointAddr = buf.load(Type.Ptr, GCSafepoint, handler)
         buf.load(Type.Ptr, safepointAddr, handler, Some(syncAttrs))
