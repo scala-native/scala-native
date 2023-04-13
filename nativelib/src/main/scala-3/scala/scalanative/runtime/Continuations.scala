@@ -7,23 +7,24 @@ import scala.scalanative.runtime.Intrinsics.castIntToRawPtr
 
 object Continuations:
   import ContImpl.*
+
+  private def allocObj[T](using Tag[T]) =
+    val arr = ObjectArray.alloc(1)
+    arr.at(0).asInstanceOf[Ptr[T]]
+
   inline def boundary[T](inline f: BoundaryLabel[T] ?=> T)(using Tag[T]): T =
-    val fPtr = fromRawPtr[ContImpl.BoundaryLabel ?=> Ptr[Byte]](
-      malloc(sizeOf[Object].toUSize)
-    )
+    val fPtr = allocObj[ContImpl.BoundaryLabel ?=> Ptr[Byte]]
     !fPtr = (x: ContImpl.BoundaryLabel) ?=>
       val r = f
-      val resPtr = fromRawPtr[T](malloc(sizeof[T]))
+      val resPtr = allocObj[T]
       !resPtr = r
       resPtr.asInstanceOf[Ptr[Byte]]
     val resP = ContImpl.boundary(contFn, fPtr.asInstanceOf[Ptr[Byte]])
-    val res = !resP.asInstanceOf[Ptr[T]]
-    free(resP)
-    res
+    !resP.asInstanceOf[Ptr[T]]
 
-  opaque type BoundaryLabel[+T] = ContImpl.BoundaryLabel
+  opaque type BoundaryLabel[-T] = ContImpl.BoundaryLabel
 
-  opaque type Continuation[-R, +T] = ContImpl.Continuation
+  type Continuation[-R, +T] = ContImpl.Continuation
 
   inline def suspend[R, T](
       inline f: (R => T) => T
@@ -33,16 +34,13 @@ object Continuations:
   ): R =
     suspendCont(cont => f(r => resumeCont(cont, r)))
 
-  inline def suspend[T](
-      inline f: (() => T) => T
+  def suspend[T](
+      f: (() => T) => T
   )(using label: BoundaryLabel[T])(using Tag[T]): Unit =
-    val fPtr =
-      fromRawPtr[ContImpl.Continuation => Ptr[Byte]](
-        malloc(sizeOf[Object].toUSize)
-      )
+    val fPtr = allocObj[ContImpl.Continuation => Ptr[Byte]]
     !fPtr = (cont: ContImpl.Continuation) =>
       val r = f(() => resumeCont(cont))
-      val resPtr = fromRawPtr[T](malloc(sizeof[T]))
+      val resPtr = allocObj[T]
       !resPtr = r
       resPtr.asInstanceOf[Ptr[Byte]]
     ContImpl.suspend(label, suspendFn, fPtr.asInstanceOf[Ptr[Byte]])
@@ -53,30 +51,24 @@ object Continuations:
       Tag[T],
       Tag[R]
   ): R =
-    val fPtr =
-      fromRawPtr[ContImpl.Continuation => Ptr[Byte]](
-        malloc(sizeOf[Object].toUSize)
-      )
+    val fPtr = allocObj[ContImpl.Continuation => Ptr[Byte]]
     !fPtr = (cont: ContImpl.Continuation) =>
       val r = f(cont)
-      val resPtr = fromRawPtr[T](malloc(sizeof[T]))
+      val resPtr = allocObj[T]
       !resPtr = r
       resPtr.asInstanceOf[Ptr[Byte]]
     val resP = ContImpl.suspend(label, suspendFn, fPtr.asInstanceOf[Ptr[Byte]])
-    val res = !resP.asInstanceOf[Ptr[R]]
-    free(resP)
-    res
+    !resP.asInstanceOf[Ptr[R]]
 
   inline def resumeCont[R, T](cont: Continuation[R, T], input: R)(using
       Tag[T],
       Tag[R]
   ): T =
-    val rPtr = fromRawPtr[R](malloc(sizeOf[R].toUSize))
+    val rPtr = allocObj[R]
     !rPtr = input
     val resP =
       ContImpl.resume(cont, rPtr.asInstanceOf[Ptr[Byte]]).asInstanceOf[Ptr[T]]
     val res = !resP
-    free(resP)
     res
 
   // special case for R = Unit
@@ -88,22 +80,18 @@ object Continuations:
         .resume(cont, fromRawPtr[Byte](castIntToRawPtr(0)))
         .asInstanceOf[Ptr[T]]
     val res = !resP
-    free(resP)
     res
 
   private val suspendFn: SuspendFn = CFuncPtr2.fromScalaFunction((cont, f) =>
     val fp = f.asInstanceOf[Ptr[ContImpl.Continuation => Ptr[Byte]]]
     val fn = !fp
-    free(fp)
     fn(cont)
   )
 
   private val contFn: ContFn = CFuncPtr2.fromScalaFunction((label, f) =>
     given ContImpl.BoundaryLabel = label
     val fp = f.asInstanceOf[Ptr[ContImpl.BoundaryLabel ?=> Ptr[Byte]]]
-    val fn = !fp
-    free(fp)
-    fn
+    !fp
   )
 end Continuations
 

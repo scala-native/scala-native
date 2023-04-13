@@ -36,7 +36,7 @@ typedef struct Handlers {
 volatile static thread_local Handlers *__handlers = NULL;
 
 static void handler_push(Handler *h) {
-    fprintf(stderr, "Pushing handler with label %lu\n", h->id);
+    // fprintf(stderr, "Pushing handler with label %lu\n", h->id);
     Handlers *hs = malloc(sizeof(Handlers));
     hs->h = h;
     hs->next = (Handlers *)__handlers;
@@ -45,7 +45,7 @@ static void handler_push(Handler *h) {
 
 static void handler_pop() {
     assert(__handlers != NULL);
-    fprintf(stderr, "Popping handler with label %lu\n", __handlers->h->id);
+    // fprintf(stderr, "Popping handler with label %lu\n", __handlers->h->id);
     Handlers *old = (Handlers *)__handlers;
     __handlers = __handlers->next;
     free(old);
@@ -71,17 +71,15 @@ Handlers *handler_split_at(ContLabel l) {
 
 __attribute__((noinline)) static void **get(void **btm) { return btm; }
 
-static const unsigned BOUNDARY_IMPL_INTERNAL_STACK_SIZE =
-    /* self */ 1 + /*args*/ 2 + /*stored registers*/ 4;
-
-static const ptrdiff_t BOUNDARY_LR_OFFSET = 32 - 8 /* bytes_from_end */;
+static const ptrdiff_t BOUNDARY_LR_OFFSET = 8 /* bytes_from_end */;
 
 __attribute__((noinline, optnone, returns_twice,
                no_stack_protector)) static void *
-boundaryImpl(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
-    void *inner_btm = NULL;
-    void **ptr = get(&inner_btm);
-    void **btm = ptr + BOUNDARY_IMPL_INTERNAL_STACK_SIZE;
+boundaryImpl(void **btm, ContFn *f, void *arg)
+    __attribute__((disable_tail_calls)) {
+    // void *inner_btm = NULL;
+    // void **ptr = get(&inner_btm);
+    // void **btm = ptr + BOUNDARY_IMPL_INTERNAL_STACK_SIZE;
     // check the stack
     // assert(ptr < stack_btm);
     // for (unsigned i = 0; i <= 10; ++i) {
@@ -106,7 +104,7 @@ boundaryImpl(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
         .stack_btm = btm,
         .result = &result,
     };
-    fprintf(stderr, "Setting up result slot at %p\n", &result);
+    // fprintf(stderr, "Setting up result slot at %p\n", &result);
     ContBoundaryLabel l = {.id = h.id};
     handler_push(&h);
 
@@ -126,8 +124,11 @@ boundaryImpl(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
 //     boundaryImpl(f, arg, r);
 // }
 
-void *cont_boundary(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
-    return boundaryImpl(f, arg);
+__attribute__((noinline, optnone, returns_twice, no_stack_protector)) void *
+cont_boundary(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
+    void *p = NULL;
+    void **btm = get(&p) - 1;
+    return boundaryImpl(btm, f, arg);
 }
 
 // ========== SUSPENDING ===========
@@ -171,8 +172,9 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
 
     // assign it to the handler's return value
     *last_handler->h->result = f(cont, arg);
-    fprintf(stderr, "Putting result %p to slot %p\n", *last_handler->h->result,
-            last_handler->h->result);
+    // fprintf(stderr, "Putting result %p to slot %p\n",
+    // *last_handler->h->result,
+    //         last_handler->h->result);
 
     // we will be back...
     if (_lh_setjmp(cont->buf) == 0) {
@@ -190,7 +192,9 @@ static void jmpbuf_fix(lh_jmp_buf buf, ptrdiff_t diff) {
     // fp = 11
     fixAddr(buf[11]);
     // sp = 13
+    // fprintf(stderr, "> fixing sp from %p", buf[13]);
     fixAddr(buf[13]);
+    // fprintf(stderr, " to %p\n", buf[13]);
 }
 
 __attribute__((noinline)) static Handlers *handler_clone_fix(Handlers *other,
@@ -230,7 +234,7 @@ __attribute__((noinline, optnone, no_stack_protector)) static void *
 resumeImpl(Continuation *cont, void *out);
 
 __attribute__((noinline, optnone, no_stack_protector)) static void *
-indirect(Continuation *cont, void *out) {
+indirect(Continuation *cont, void *out) __attribute__((disable_tail_calls)) {
     return resumeImpl(cont, out);
 }
 
@@ -265,9 +269,9 @@ resumeImpl(Continuation *cont, void *out) {
         return indirect(cont, out);
     }
     assert((diff & 15) == 0);
-    fprintf(stderr,
-            "diff is %ld, stack (size = %ld) goes %p -> %p | on heap = %p\n",
-            diff, cont->size, cont->stack_top, target, stack);
+    // fprintf(stderr,
+    //         "diff is %ld, stack (size = %ld) goes %p -> %p | on heap = %p\n",
+    //         diff, cont->size, cont->stack_top, target, stack);
     // clone the handler chain, with fixes.
     nw = handler_clone_fix(cont->handlers, diff, cont, stack);
     // install the handlers and fix the return buf
