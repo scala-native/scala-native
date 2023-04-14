@@ -27,7 +27,7 @@ class IssuesTestScala3 {
   @Test def i3231(): Unit = {
     @extern object extern_functions:
       @name("sprintf")
-      def test(buffer: CString, format: CString, args: Any*): Unit = extern
+      def test(buffer: CString, format: CString, args: Any*): CInt = extern
 
     object functions:
       export extern_functions.test // should compile
