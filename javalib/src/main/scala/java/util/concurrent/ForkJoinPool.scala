@@ -21,6 +21,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics, ObjectArray}
 
+import scala.scalanative.libc.atomic.memory_order._
 import ForkJoinPool._
 
 class ForkJoinPool private (
@@ -79,7 +80,8 @@ class ForkJoinPool private (
   @alwaysinline
   private def getAndSetParallelism(v: Int): Int = parallelismAtomic.exchange(v)
   @alwaysinline
-  private def getParallelismOpaque(): Int = parallelismAtomic.load()
+  private def getParallelismOpaque(): Int =
+    parallelismAtomic.load(memory_order_relaxed)
 
   // Creating, registering, and deregistering workers
 
@@ -607,7 +609,7 @@ class ForkJoinPool private (
         r += 2
       }
     }
-    ??? // unreachable
+    -1 // unreachable
   }
 
   final private[concurrent] def helpComplete(
@@ -667,8 +669,8 @@ class ForkJoinPool private (
               }
             } else
               t match {
-                case _f: CountedCompleter[_] =>
-                  var f: CountedCompleter[_] = _f
+                case t: CountedCompleter[_] =>
+                  var f: CountedCompleter[_] = t
                   var break = false
                   while (!break) {
                     if (f eq task) break = true
@@ -694,7 +696,7 @@ class ForkJoinPool private (
         r += 1
       }
     }
-    ??? // unreachable
+    -1 // unreachable
   }
 
   private def helpQuiesce(
@@ -1586,7 +1588,7 @@ object ForkJoinPool {
     @alwaysinline final def getAndSetAccess(v: Int): Int =
       accessAtomic.exchange(v)
     @alwaysinline final def releaseAccess(): Unit =
-      accessAtomic.store(0)
+      accessAtomic.store(0, memory_order_release)
 
     final def getPoolIndex(): Int =
       (config & 0xffff) >>> 1 // ignore odd/even tag bit
@@ -1851,8 +1853,8 @@ object ForkJoinPool {
           val k = (cap - 1) & s
           val t = if (cap > 0) a(k) else null
           t match {
-            case _f: CountedCompleter[_] =>
-              var f: CountedCompleter[_] = _f
+            case t: CountedCompleter[_] =>
+              var f: CountedCompleter[_] = t
               var break = false
               while (!break) {
                 if (f eq task)

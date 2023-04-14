@@ -68,7 +68,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
 static void SetupPageFaultHandler() {
 #ifdef _WIN32
-    // Call it as last exception handler
+    // Call it as first exception handler
     AddVectoredExceptionHandler(1, &SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);

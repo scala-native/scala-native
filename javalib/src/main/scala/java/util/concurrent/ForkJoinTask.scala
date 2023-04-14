@@ -43,26 +43,18 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   private[concurrent] final def markPoolSubmission(): Unit =
     getAndBitwiseOrStatus(POOLSUBMIT)
 
-  @tailrec
   private def signalWaiters(): Unit = {
-    @tailrec
-    def unparkThreads(a: Aux): Unit = {
-      if (a != null) {
-        val t = a.thread
-        if (t != Thread.currentThread() && t != null) {
-          LockSupport.unpark(t)
+    var a: Aux = aux
+    while ({ a = aux; a != null } && a.ex == null) {
+      if (casAux(a, null)) { // detach entire list
+        while (a != null) {
+          val t = a.thread
+          if ((t ne Thread.currentThread()) && t != null)
+            LockSupport.unpark(t) // don't self signal
+          a = a.next
         }
-        unparkThreads(a.next)
+        return
       }
-    }
-
-    aux match {
-      case null => ()
-      case a =>
-        if (a.ex == null) {
-          if (casAux(a, null)) unparkThreads(a)
-          else signalWaiters()
-        }
     }
   }
 
