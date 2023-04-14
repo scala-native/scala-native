@@ -18,10 +18,19 @@ class InexactComparisonCriteria private (val fDelta: AnyRef)
       expected: AnyRef,
       actual: AnyRef
   ): Unit = {
-    Assert.assertEquals(
-      expected.asInstanceOf[Double],
-      actual.asInstanceOf[Double],
-      fDelta.asInstanceOf[Double]
-    )
+    fDelta match {
+      case delta: java.lang.Double =>
+        Assert.assertEquals(
+          expected.asInstanceOf[Double],
+          actual.asInstanceOf[Double],
+          delta
+        )
+      case delta: java.lang.Float =>
+        Assert.assertEquals(
+          expected.asInstanceOf[Float],
+          actual.asInstanceOf[Float],
+          delta
+        )
+    }
   }
 }
