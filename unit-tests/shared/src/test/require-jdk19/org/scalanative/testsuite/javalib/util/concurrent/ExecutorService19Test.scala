@@ -25,7 +25,7 @@ class ExecutorService19Test extends JSR166Test {
     // Executors.newThreadPerTaskExecutor(Executors.defaultThreadFactory())
     // TODO: requires VirtualThreads
     // Executors.newThreadPerTaskExecutor(Thread.ofVirtual().factory()),
-  ).foreach(test)
+  ).foreach(usingPoolCleaner(_)(test))
 
   // Future state/result
 

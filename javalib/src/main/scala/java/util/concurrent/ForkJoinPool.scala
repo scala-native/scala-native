@@ -1556,11 +1556,11 @@ object ForkJoinPool {
   final class WorkQueue private (
       val owner: ForkJoinWorkerThread
   ) {
-    var base: Int = _ // index of next slot for poll
     var config: Int = _ // index, mode, ORed with SRC after init
-    var top: Int = _ // index of next slot for push
-    var stackPred: Int = 0 // pool stack (ctl) predecessor link
     var array: Array[ForkJoinTask[_]] = _ // the queued tasks power of 2 size
+    var stackPred: Int = 0 // pool stack (ctl) predecessor link
+    var base: Int = _ // index of next slot for poll
+    var top: Int = _ // index of next slot for push
     @volatile var access: Int = 0 // values 0, 1 (locked), PARKED, STOP
     @volatile var phase: Int = 0 // versioned, negative if inactive
     @volatile var source: Int = 0 // source queue id, lock, or sentinel
@@ -1588,13 +1588,13 @@ object ForkJoinPool {
     @alwaysinline final def getAndSetAccess(v: Int): Int =
       accessAtomic.exchange(v)
     @alwaysinline final def releaseAccess(): Unit =
-      accessAtomic.store(0, memory_order_release)
+      accessAtomic.store(0)
 
     final def getPoolIndex(): Int =
       (config & 0xffff) >>> 1 // ignore odd/even tag bit
 
     final def queueSize(): Int = {
-      val _ = access // for ordering effect
+      VarHandle.acquireFence()
       0.max(top - base) // ignore transient negative
     }
 
@@ -1633,6 +1633,8 @@ object ForkJoinPool {
               task != null
             }) ()
           }
+          VarHandle.releaseFence()
+          array = newArray
         } else a(m & s) = task
         getAndSetAccess(0)
         if ((resize || (a(m & (s - 1)) == null && signalIfEmpty)) &&
@@ -1668,7 +1670,7 @@ object ForkJoinPool {
           }
           !break && (p - b > 0)
         }) ()
-        VarHandle.releaseFence() // for timely index updates
+        VarHandle.storeStoreFence() // for timely index updates
       }
       t
     }
@@ -1760,7 +1762,7 @@ object ForkJoinPool {
           else if (t != null) {
             if (WorkQueue.casSlotToNull(a, k, t)) {
               base = nb
-              VarHandle.releaseFence()
+              VarHandle.storeStoreFence()
               return t
             }
             break = true // contended
@@ -1912,7 +1914,7 @@ object ForkJoinPool {
                 break = true
               else if (WorkQueue.casSlotToNull(a, k, t)) {
                 base = nb
-                VarHandle.releaseFence()
+                VarHandle.storeStoreFence()
                 t.doExec()
               }
             } else if (a(nk) == null)
