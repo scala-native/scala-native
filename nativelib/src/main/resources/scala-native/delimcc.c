@@ -13,9 +13,14 @@
 #define __returnstwice __attribute__((returns_twice))
 // define the lh_jmp_buf in terms of `void*` elements to have natural alignment
 typedef void *lh_jmp_buf[ASM_JMPBUF_SIZE / sizeof(void *)];
+// Non-standard setjmp.
 __externc __returnstwice int _lh_setjmp(lh_jmp_buf buf);
-__externc void *_lh_longjmp(lh_jmp_buf buf, void *arg);
-__externc __noreturn void __lh_longjmp(lh_jmp_buf buf, int arg);
+// Jumps to the given setjmp'd buffer after storing the return address to *lr.
+// Always returns 1 to setjmp.
+__externc void *_lh_store_lr_longjmp(lh_jmp_buf buf, void *lr);
+// Jumps to the given setjmp'd buffer, returning arg as the value.
+// arg must be non-zero.
+__externc __noreturn void _lh_longjmp(lh_jmp_buf buf, int arg);
 
 // Label counter
 volatile static ContLabel label_count = 0;

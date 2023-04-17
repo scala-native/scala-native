@@ -42,11 +42,11 @@ jump_buf layout:
 */
 
 .global _lh_setjmp
+.global _lh_store_lr_longjmp
 .global _lh_longjmp
-.global __lh_longjmp
 .type _lh_setjmp,%function
+.type _lh_store_lr_longjmp,%function
 .type _lh_longjmp,%function
-.type __lh_longjmp,%function
 
 /* called with x0: &jmp_buf */
 _lh_setjmp:                 
@@ -73,7 +73,7 @@ _lh_setjmp:
 
     
 /* called with x0: &jmp_buf, x1: address to paste the return address into */
-_lh_longjmp:                  
+_lh_store_lr_longjmp:                  
     str   x30, [x1]
     ldp   x18, x19, [x0], #16
     ldp   x20, x21, [x0], #16
@@ -99,7 +99,7 @@ _lh_longjmp:
     ret                         /* jump to lr */
 
 /* called with x0: &jmp_buf, x1: value to return */
-__lh_longjmp:
+_lh_longjmp:
     ldp   x18, x19, [x0], #16
     ldp   x20, x21, [x0], #16
     ldp   x22, x23, [x0], #16
