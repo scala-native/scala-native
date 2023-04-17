@@ -7,7 +7,16 @@
 #include <string.h>
 
 // setjmp, longjmp
+#if defined(__aarch64__)
 #define ASM_JMPBUF_SIZE 192
+#define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
+#define STACK_TOP_OFFSET 2
+#elif defined(__x86_64__) && defined(__linux__)
+#define ASM_JMPBUF_SIZE 72
+#define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#define STACK_TOP_OFFSET 2
+#endif
+
 #define __externc extern
 #define __noreturn __attribute__((noreturn))
 #define __returnstwice __attribute__((returns_twice))
@@ -76,6 +85,12 @@ Handlers *handler_split_at(ContLabel l) {
 
 __attribute__((noinline)) static void **get(void **btm) { return btm; }
 
+__attribute__((noinline, optnone, no_stack_protector)) static void **
+get_stack_top() {
+    void *v = NULL;
+    return get(&v) + STACK_TOP_OFFSET;
+}
+
 static const ptrdiff_t BOUNDARY_LR_OFFSET = 8 /* bytes_from_end */;
 
 __attribute__((noinline, optnone, returns_twice,
@@ -131,9 +146,7 @@ boundaryImpl(void **btm, ContFn *f, void *arg)
 
 __attribute__((noinline, optnone, returns_twice, no_stack_protector)) void *
 cont_boundary(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
-    void *p = NULL;
-    void **btm = get(&p) - 1;
-    return boundaryImpl(btm, f, arg);
+    return boundaryImpl(get_stack_top(), f, arg);
 }
 
 // ========== SUSPENDING ===========
@@ -149,12 +162,6 @@ struct Continuation {
     lh_jmp_buf buf;
 };
 
-__attribute__((noinline, optnone, no_stack_protector)) static void **
-get_stack_top() {
-    void *v = NULL;
-    return get(&v);
-}
-
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
 __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
                                                       SuspendFn *f, void *arg)
@@ -168,6 +175,7 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
         last_handler = last_handler->next;
     assert(last_handler->h->stack_btm != NULL); // not a resume handler
     cont->size = last_handler->h->stack_btm - cont->stack_top;
+    // make the continuation size a multiple of 16
     cont->stack = malloc(cont->size);
     memcpy(cont->stack, cont->stack_top, cont->size);
 
@@ -183,7 +191,7 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
 
     // we will be back...
     if (_lh_setjmp(cont->buf) == 0) {
-        __lh_longjmp(last_handler->h->buf, 1);
+        _lh_longjmp(last_handler->h->buf, 1);
     } else {
         // We're back, just collect value from return slot.
         return ret_val;
@@ -194,12 +202,10 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
 #define fixAddr(X) X = fixedAddr(X);
 
 static void jmpbuf_fix(lh_jmp_buf buf, ptrdiff_t diff) {
-    // fp = 11
-    fixAddr(buf[11]);
-    // sp = 13
-    // fprintf(stderr, "> fixing sp from %p", buf[13]);
-    fixAddr(buf[13]);
-    // fprintf(stderr, " to %p\n", buf[13]);
+    // fprintf(stderr, "> fixing sp at %p from %p", buf,
+    //         buf[JMPBUF_STACK_POINTER_OFFSET]);
+    fixAddr(buf[JMPBUF_STACK_POINTER_OFFSET]);
+    // fprintf(stderr, " to %p\n", buf[JMPBUF_STACK_POINTER_OFFSET]);
 }
 
 __attribute__((noinline)) static Handlers *handler_clone_fix(Handlers *other,
@@ -238,11 +244,6 @@ __attribute__((noinline)) static void call_memcpy(void *dest, void *src,
 __attribute__((noinline, optnone, no_stack_protector)) static void *
 resumeImpl(Continuation *cont, void *out);
 
-__attribute__((noinline, optnone, no_stack_protector)) static void *
-indirect(Continuation *cont, void *out) __attribute__((disable_tail_calls)) {
-    return resumeImpl(cont, out);
-}
-
 // resume[T, R] : Continuation[T, R] -> R -> Result
 // Consumes the Continuation.
 __attribute__((noinline, optnone, no_stack_protector)) static void *
@@ -258,10 +259,10 @@ resumeImpl(Continuation *cont, void *out) {
     void *result;
     void *stack;
 
+    char pad[12];
     void *stackTop; // our stack top
-    void *stackTop_ = NULL;
     // get the stack difference
-    stackTop = get(&stackTop_) - 1 /* = sp */;
+    stackTop = get_stack_top() /* = sp */;
     target = stackTop - cont->size;
     diff = target - cont->stack_top;
     // set up stuff
@@ -269,14 +270,12 @@ resumeImpl(Continuation *cont, void *out) {
     call_memcpy(return_buf, cont->buf, ASM_JMPBUF_SIZE);
     stack = malloc(cont->size);
     call_memcpy(stack, cont->stack, cont->size);
-    if (diff & 15) {
-        // unaligned stack, try to allocate more
-        return indirect(cont, out);
-    }
     assert((diff & 15) == 0);
-    // fprintf(stderr,
-    //         "diff is %ld, stack (size = %ld) goes %p -> %p | on heap = %p\n",
-    //         diff, cont->size, cont->stack_top, target, stack);
+    // fprintf(
+    //     stderr,
+    //     "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | on heap =
+    //     %p\n", diff, cont->size, cont->stack_top, cont->stack_top +
+    //     cont->size, target, stackTop, stack);
     // clone the handler chain, with fixes.
     nw = handler_clone_fix(cont->handlers, diff, cont, stack);
     // install the handlers and fix the return buf
@@ -291,7 +290,8 @@ resumeImpl(Continuation *cont, void *out) {
     // fprintf(stderr, "return slot is %p\n", new_return_slot);
     *new_return_slot = out;
     // fire!
-    result = _lh_longjmp(return_buf, target + cont->size - BOUNDARY_LR_OFFSET);
+    result = _lh_store_lr_longjmp(return_buf,
+                                  target + cont->size - BOUNDARY_LR_OFFSET);
     // clean up copied stack
     free(stack);
     free(return_buf);
@@ -305,7 +305,7 @@ cont_resume(Continuation *cont, void *out) __attribute__((disable_tail_calls)) {
     handler_push(&h);
     if (_lh_setjmp(h.buf) == 0) {
         result = resumeImpl(cont, out);
-        __lh_longjmp(h.buf, 1);
+        _lh_longjmp(h.buf, 1);
     }
     handler_pop();
     return result;
