@@ -93,6 +93,13 @@ object Continuations:
     val fp = f.asInstanceOf[Ptr[ContImpl.BoundaryLabel ?=> Ptr[Byte]]]
     !fp
   )
+
+  private def allocateBlob(size: CUnsignedLong): Ptr[Byte] =
+    val obj = ObjectArray.alloc((size.toInt + 7) / 8) // round up the blob size
+    obj.at(0).asInstanceOf[Ptr[Byte]]
+
+  ContImpl.setAlloc(CFuncPtr1.fromScalaFunction(allocateBlob))
+
 end Continuations
 
 @extern private object ContImpl:
@@ -116,3 +123,6 @@ end Continuations
 
   @name("cont_resume")
   def resume(cont: Continuation, arg: Ptr[Byte]): Ptr[Byte] = extern
+
+  @name("cont_set_alloc")
+  def setAlloc(fn: CFuncPtr1[CUnsignedLong, Ptr[Byte]]): Unit = extern

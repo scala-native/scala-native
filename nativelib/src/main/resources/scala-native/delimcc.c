@@ -96,7 +96,7 @@ Handlers *handler_split_at(ContLabel l) {
 __attribute__((noinline, optnone, returns_twice, no_stack_protector)) void *
 __cont_boundary_impl(void **btm, ContFn *f, void *arg)
     __attribute__((disable_tail_calls)) {
-    fprintf(stderr, "Boundary btm is %p\n", btm);
+    // fprintf(stderr, "Boundary btm is %p\n", btm);
 
     // allocate handlers and such
     void *result = NULL;
@@ -139,12 +139,16 @@ struct Continuation {
     lh_jmp_buf buf;
 };
 
+static void *(*alloc_function)(unsigned long) = malloc;
+
+void cont_set_alloc(void *(*f)(unsigned long)) { alloc_function = f; }
+
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
 __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
                                                       SuspendFn *f, void *arg)
     __attribute__((disable_tail_calls)) {
     // set up the continuation
-    Continuation *cont = malloc(sizeof(Continuation));
+    Continuation *cont = alloc_function(sizeof(Continuation));
     cont->stack_top = _lh_get_sp();
     cont->handlers = handler_split_at(b.id);
     Handlers *last_handler = cont->handlers;
@@ -153,7 +157,7 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
     assert(last_handler->h->stack_btm != NULL); // not a resume handler
     cont->size = last_handler->h->stack_btm - cont->stack_top;
     // make the continuation size a multiple of 16
-    cont->stack = malloc(cont->size);
+    cont->stack = alloc_function(cont->size);
     memcpy(cont->stack, cont->stack_top, cont->size);
 
     // set up return value slot
@@ -243,11 +247,12 @@ resumeImpl(Continuation *cont, void *out) {
     stack = malloc(cont->size);
     call_memcpy(stack, cont->stack, cont->size);
     assert((diff & 15) == 0);
-    fprintf(
-        stderr,
-        "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | on heap = %p\n",
-        diff, cont->size, cont->stack_top, cont->stack_top + cont->size, target,
-        stackTop, stack);
+    // fprintf(stderr,
+    //         "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | on heap =
+    //         "
+    //         "%p | original cont = %p [%p]\n",
+    //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
+    //         target, stackTop, stack, cont, cont->stack);
     // clone the handler chain, with fixes.
     nw = handler_clone_fix(cont->handlers, diff, cont, stack);
     // install the handlers and fix the return buf
