@@ -176,6 +176,7 @@ jump_buf layout (compatible with FreeBSD):
 .global _lh_longjmp
 .global _lh_store_lr_longjmp
 .global _lh_boundary_entry
+.global _lh_get_sp
 
 /* under MacOSX the c-compiler adds underscores to cdecl functions
    add these labels too so the linker can resolve it. */
@@ -183,6 +184,7 @@ jump_buf layout (compatible with FreeBSD):
 .global __lh_longjmp
 .global __lh_store_lr_longjmp
 .global __lh_boundary_entry
+.global __lh_get_sp
 
 __lh_setjmp:
 _lh_setjmp:                 /* rdi: jmp_buf */
@@ -253,12 +255,15 @@ __lh_boundary_entry: /* rdi: arg 1, rsi : arg 2, (rdx: arg 3) */
   movq  %rsi, %rdx
   movq  %rdi, %rsi
   movq  %rsp, %rdi
+  addq  $8, %rdi
+  pushq %rbx /* for rsp alignment */
   call  __cont_boundary_impl
+  popq  %rbx
   ret
 
 _lh_get_sp:
 __lh_get_sp:
   movq %rsp, %rax
-  subq $8, %rax
+  addq $8, %rax
   ret
 #endif
