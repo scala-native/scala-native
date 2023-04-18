@@ -38,4 +38,4 @@ jobs:
         run: >
           sbt 
           -Dbuild.customCrossScalaVersion.scala3=${{ inputs.scala-version }} 
-          "++${{ inputs.scala-version }};  nscplugin3/publishSigned; junitPlugin3/publishSigned"
+          "++${{ inputs.scala-version }}; nscplugin3/publishSigned; junitPlugin3/publishSigned"
