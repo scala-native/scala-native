@@ -6,16 +6,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-// setjmp, longjmp
+// Defined symbols here:
+// - ASM_JMPBUF_SIZE: The size of the jmpbuf, should be a constant defined in
+// `setjmp.S`.
+// - JMPBUF_STACK_POINTER_OFFSET: The offset within the jmpbuf where
+//   the stack pointer is located. Should be defined in `setjmp.S`.
 #if defined(__aarch64__)
 #define ASM_JMPBUF_SIZE 192
 #define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
-#define STACK_TOP_OFFSET 2
 #elif defined(__x86_64__) && defined(__linux__)
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
-#define STACK_TOP_OFFSET 2
 #endif
+
+// The return address is always stored in stack_btm - BOUNDARY_LR_OFFSET.
+// See `_lh_boundary_entry`.
+#define BOUNDARY_LR_OFFSET 8
 
 #define __externc extern
 #define __noreturn __attribute__((noreturn))
@@ -30,6 +36,10 @@ __externc void *_lh_store_lr_longjmp(lh_jmp_buf buf, void *lr);
 // Jumps to the given setjmp'd buffer, returning arg as the value.
 // arg must be non-zero.
 __externc __noreturn void _lh_longjmp(lh_jmp_buf buf, int arg);
+// Stores the return address in sp+8, then calls __cont_boundary_impl.
+__externc __returnstwice void *_lh_boundary_entry(ContFn *f, void *arg);
+// Returns the stack pointer of the calling function.
+__externc void *_lh_get_sp();
 
 // Label counter
 volatile static ContLabel label_count = 0;
@@ -83,38 +93,10 @@ Handlers *handler_split_at(ContLabel l) {
     return ret;
 }
 
-__attribute__((noinline)) static void **get(void **btm) { return btm; }
-
-__attribute__((noinline, optnone, no_stack_protector)) static void **
-get_stack_top() {
-    void *v = NULL;
-    return get(&v) + STACK_TOP_OFFSET;
-}
-
-static const ptrdiff_t BOUNDARY_LR_OFFSET = 8 /* bytes_from_end */;
-
-__attribute__((noinline, optnone, returns_twice,
-               no_stack_protector)) static void *
-boundaryImpl(void **btm, ContFn *f, void *arg)
+__attribute__((noinline, optnone, returns_twice, no_stack_protector)) void *
+__cont_boundary_impl(void **btm, ContFn *f, void *arg)
     __attribute__((disable_tail_calls)) {
-    // void *inner_btm = NULL;
-    // void **ptr = get(&inner_btm);
-    // void **btm = ptr + BOUNDARY_IMPL_INTERNAL_STACK_SIZE;
-    // check the stack
-    // assert(ptr < stack_btm);
-    // for (unsigned i = 0; i <= 10; ++i) {
-    //     fprintf(stderr, "  i = %u, ptr = %p, v = %lx\n", i, ptr + i,
-    //             ((unsigned long *)(ptr))[i]);
-    // }
-    /* Output:
-  i = 0, ptr = 0xffffffffa6b0, v = 0 <- ptr
-  i = 1, ptr = 0xffffffffa6b8, v = a79cfcd675dbbb00 <- gibberish
-  i = 2, ptr = 0xffffffffa6c0, v = ffffffffa6f0 <- sp
-  i = 3, ptr = 0xffffffffa6c8, v = 4009ac <- return addr
-  i = 4, ptr = 0xffffffffa6d0, v = ffffffffa708 <- arg
-  i = 5, ptr = 0xffffffffa6d8, v = 4007fc <- arg
-  i = 6, ptr = 0xffffffffa6e0, v = 0
-    */
+    fprintf(stderr, "Boundary btm is %p\n", btm);
 
     // allocate handlers and such
     void *result = NULL;
@@ -139,14 +121,9 @@ boundaryImpl(void **btm, ContFn *f, void *arg)
 
 // boundary : BoundaryFn -> Result
 // Result MUST BE HEAP ALLOCATED
-// void cont_boundary(ContFn *f, void *arg, ContResult *r)
-//     __attribute__((disable_tail_calls)) {
-//     boundaryImpl(f, arg, r);
-// }
-
 __attribute__((noinline, optnone, returns_twice, no_stack_protector)) void *
 cont_boundary(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
-    return boundaryImpl(get_stack_top(), f, arg);
+    return _lh_boundary_entry(f, arg);
 }
 
 // ========== SUSPENDING ===========
@@ -168,7 +145,7 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
     __attribute__((disable_tail_calls)) {
     // set up the continuation
     Continuation *cont = malloc(sizeof(Continuation));
-    cont->stack_top = get_stack_top();
+    cont->stack_top = _lh_get_sp();
     cont->handlers = handler_split_at(b.id);
     Handlers *last_handler = cont->handlers;
     while (last_handler->next != NULL)
@@ -181,7 +158,7 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
 
     // set up return value slot
     void *ret_val = NULL;
-    cont->return_slot = get(&ret_val);
+    cont->return_slot = &ret_val;
 
     // assign it to the handler's return value
     *last_handler->h->result = f(cont, arg);
@@ -236,10 +213,6 @@ __attribute__((noinline)) static void call_memcpy(void *dest, void *src,
                                                   ptrdiff_t size) {
     memcpy(dest, src, size);
 }
-// __attribute__((noinline)) void call_memcpy(Continuation *cont, void *target)
-// {
-//     memcpy(target, cont->stack, cont->size);
-// }
 
 __attribute__((noinline, optnone, no_stack_protector)) static void *
 resumeImpl(Continuation *cont, void *out);
@@ -259,10 +232,9 @@ resumeImpl(Continuation *cont, void *out) {
     void *result;
     void *stack;
 
-    char pad[12];
     void *stackTop; // our stack top
     // get the stack difference
-    stackTop = get_stack_top() /* = sp */;
+    stackTop = _lh_get_sp();
     target = stackTop - cont->size;
     diff = target - cont->stack_top;
     // set up stuff
@@ -271,11 +243,11 @@ resumeImpl(Continuation *cont, void *out) {
     stack = malloc(cont->size);
     call_memcpy(stack, cont->stack, cont->size);
     assert((diff & 15) == 0);
-    // fprintf(
-    //     stderr,
-    //     "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | on heap =
-    //     %p\n", diff, cont->size, cont->stack_top, cont->stack_top +
-    //     cont->size, target, stackTop, stack);
+    fprintf(
+        stderr,
+        "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | on heap = %p\n",
+        diff, cont->size, cont->stack_top, cont->stack_top + cont->size, target,
+        stackTop, stack);
     // clone the handler chain, with fixes.
     nw = handler_clone_fix(cont->handlers, diff, cont, stack);
     // install the handlers and fix the return buf

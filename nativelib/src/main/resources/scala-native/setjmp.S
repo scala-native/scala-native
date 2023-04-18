@@ -45,9 +45,13 @@ jump_buf layout:
 .global _lh_setjmp
 .global _lh_store_lr_longjmp
 .global _lh_longjmp
+.global _lh_boundary_entry
+.global _lh_get_sp
 .type _lh_setjmp,%function
 .type _lh_store_lr_longjmp,%function
 .type _lh_longjmp,%function
+.type _lh_boundary_entry,%function
+.type _lh_get_sp,%function
 
 /* called with x0: &jmp_buf */
 _lh_setjmp:                 
@@ -124,6 +128,20 @@ _lh_longjmp:
     cinc  w0, w1, eq
     ret                         /* jump to lr */
 
+_lh_boundary_entry:
+    mov   x2, x1
+    mov   x1, x0
+    mov   x0, sp
+    sub   sp, sp, #16
+    str	  x30, [sp, #8]                  // 8-byte Folded Spill
+    bl    __cont_boundary_impl
+    ldr	  x30, [sp, #8]                  // 8-byte Folded Spill
+    add   sp, sp, #16
+    ret
+
+_lh_get_sp:
+    mov  x0, sp
+    ret
 #elif defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__))
 
 /* ----------------------------------------------------------------------------
@@ -157,12 +175,14 @@ jump_buf layout (compatible with FreeBSD):
 .global _lh_setjmp
 .global _lh_longjmp
 .global _lh_store_lr_longjmp
+.global _lh_boundary_entry
 
 /* under MacOSX the c-compiler adds underscores to cdecl functions
    add these labels too so the linker can resolve it. */
 .global __lh_setjmp
 .global __lh_longjmp
 .global __lh_store_lr_longjmp
+.global __lh_boundary_entry
 
 __lh_setjmp:
 _lh_setjmp:                 /* rdi: jmp_buf */
@@ -228,4 +248,17 @@ ok:
   movq  16 (%rdi), %rsp       /* restore the stack pointer */
   jmpq *(%rdi)                /* and jump to rip */
 
+_lh_boundary_entry: 
+__lh_boundary_entry: /* rdi: arg 1, rsi : arg 2, (rdx: arg 3) */
+  movq  %rsi, %rdx
+  movq  %rdi, %rsi
+  movq  %rsp, %rdi
+  call  __cont_boundary_impl
+  ret
+
+_lh_get_sp:
+__lh_get_sp:
+  movq %rsp, %rax
+  subq $8, %rax
+  ret
 #endif
