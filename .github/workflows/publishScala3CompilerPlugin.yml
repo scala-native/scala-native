@@ -36,6 +36,11 @@ jobs:
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: >
-          sbt 
-          -Dbuild.customCrossScalaVersion.scala3=${{ inputs.scala-version }} 
-          "++${{ inputs.scala-version }}; nscplugin3/publishSigned; junitPlugin3/publishSigned"
+          sbt '
+            set crossScalaVersions += "${{ inputs.scala-version }}";
+            set nscPlugin.forBinaryVersion("3")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set junitPlugin.forBinaryVersion("3")/crossScalaVersions += "${{ inputs.scala-version }}";
+            ++${{ inputs.scala-version }} -v; 
+            nscplugin3/publishSigned;
+            junitPlugin3/publishSigned
+          '

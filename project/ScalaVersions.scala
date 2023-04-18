@@ -7,8 +7,7 @@ object ScalaVersions {
   val crossScala3 = List(
     (0 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v")
-  ).flatten ++
-    util.Properties.propOrNone("build.customCrossScalaVersion.scala3")
+  ).flatten
 
   // Version of Scala 3 standard library sources used for publishing
   // Workaround allowing to produce NIR for Scala 3.2.x+ and allowing to consume existing libraries using 3.1.x
