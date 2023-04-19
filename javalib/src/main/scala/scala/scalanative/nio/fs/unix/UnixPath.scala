@@ -50,10 +50,6 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     else subpath(0, nameCount - 1)
   }
 
-  private lazy val nameCount =
-    if (rawPath.isEmpty()) 1
-    else path.split("/").filter(_.nonEmpty).length
-
   private lazy val normalizedPath = new UnixPath(fs, normalized(this))
 
   private lazy val absPath =

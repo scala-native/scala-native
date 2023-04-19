@@ -2,10 +2,9 @@ package scala.scalanative.runtime
 package monitor
 
 import LockWord._
-import scala.annotation.{tailrec, switch}
+import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe.{stackalloc => _, _}
-import scala.scalanative.runtime.NativeThread
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.libc._
 import scala.scalanative.runtime.libc.memory_order._

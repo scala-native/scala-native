@@ -50,7 +50,6 @@ object URLEncoder {
       enc: String
   ): Unit = {
     val bytes = s.getBytes(enc)
-    var j = 0
     @tailrec
     def loop(j: Int): Unit = {
       if (j < bytes.length) {

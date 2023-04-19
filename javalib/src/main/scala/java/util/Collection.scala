@@ -2,7 +2,6 @@
 // Additional Spliterator code implemented for Scala Native
 package java.util
 
-import java.util.function.Consumer
 import java.util.function.Predicate
 
 trait Collection[E] extends java.lang.Iterable[E] {

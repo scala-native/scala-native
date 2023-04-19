@@ -2,7 +2,6 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
-import runtime.intrinsic
 
 /** Type of a C-style vararg in an extern method. */
 final class CVarArg(val value: Any, val tag: Tag[Any])

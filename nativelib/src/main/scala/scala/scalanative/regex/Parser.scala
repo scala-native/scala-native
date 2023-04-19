@@ -9,10 +9,7 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
-import java.util.Arrays
 import java.util.HashMap
-import java.util.List
-import java.util.Map
 
 import java.util.regex.PatternSyntaxException
 
@@ -335,7 +332,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
       re.subs = newsubs
 
       if (op == ROP.ALTERNATE) {
-        re.subs = factor(re.subs, re.flags)
+        re.subs = factor(re.subs)
         if (re.subs.length == 1) {
           val old = re
           re = re.subs(0)
@@ -357,7 +354,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
   // which simplifies by character class introduction to
   //	 A(B[CD]|EF)|BC[XY]
   //
-  private def factor(array: Array[Regexp], flags: Int): Array[Regexp] = {
+  private def factor(array: Array[Regexp]): Array[Regexp] = {
     if (array.length < 2) {
       array
     } else {
@@ -1337,7 +1334,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
             t.rewindTo(beforePos)
 
             // Single character or simple range.
-            var lo = parseClassChar(t, startPos)
+            var lo = parseClassChar(t)
             var hi = lo
             if (t.more() && t.lookingAt('-')) {
               t.skip(1) // '-'
@@ -1345,7 +1342,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
                 // [a-] means (a|-) so check for final ].
                 t.skip(-1)
               } else {
-                hi = parseClassChar(t, startPos)
+                hi = parseClassChar(t)
                 if (hi < lo) {
                   throw new PatternSyntaxException(
                     ERR_INVALID_CHAR_RANGE,
@@ -1379,10 +1376,6 @@ object Parser {
 
   // SN re2s-to-regex porting note.  The goal is for the text here
   // to be identical with the JVM.
-
-  // Unexpected error
-  private final val ERR_INTERNAL_ERROR =
-    "regexp/syntax: internal error"
 
   // Parse errors
   // For sanity & matching to equivalent JVM text, please keep in
@@ -1575,7 +1568,6 @@ object Parser {
 
         case StateStart =>
           state = StateTwo
-          val start = t.pos()
           if (!t.more() || !t.lookingAt('{')) {
             state = StateDone
           }
@@ -1751,7 +1743,6 @@ object Parser {
   // and returns the rune.
   // Pre: t at '\\'.  Post: after escape.
   private def parseEscape(t: StringIterator): Int = {
-    val startPos = t.pos()
     def invalidEscape: Nothing = {
       throw new PatternSyntaxException(ERR_INVALID_ESCAPE, t.str, t.pos() - 1)
     }
@@ -1882,9 +1873,8 @@ object Parser {
   }
 
   // parseClassChar parses a character class character and returns it.
-  // wholeClassPos is the position of the start of the entire class "[...".
   // Pre: t at class char Post: t after it.
-  private def parseClassChar(t: StringIterator, wholeClassPos: Int): Int = {
+  private def parseClassChar(t: StringIterator): Int = {
     if (!t.more()) {
       throw new PatternSyntaxException(
         ERR_INVALID_CHAR_CLASS,

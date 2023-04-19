@@ -14,10 +14,7 @@ import java.nio.file.{
   WatchService
 }
 import java.util.Iterator
-import scala.scalanative.nio.fs.unix._
-import scala.collection.mutable.UnrolledBuffer
 import scalanative.annotation.alwaysinline
-import java.awt.Window
 
 class WindowsPath private[windows] (
     val pathType: WindowsPath.PathType,

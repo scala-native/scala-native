@@ -9,8 +9,6 @@ import dotty.tools.dotc.ast.Trees._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Symbols._
-import core.Names._
-import dotty.tools.FatalError
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -81,11 +79,11 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       .foreach(genClass)
 
     generatedDefns.toSeq
-      .groupBy(defn => getFileFor(cunit, defn.name.top))
+      .groupBy(defn => getFileFor(defn.name.top))
       .foreach(genIRFile(_, _))
 
     reflectiveInstantiationBuffers
-      .groupMapReduce(buf => getFileFor(cunit, buf.name.top))(_.toSeq)(_ ++ _)
+      .groupMapReduce(buf => getFileFor(buf.name.top))(_.toSeq)(_ ++ _)
       .foreach(genIRFile(_, _))
 
     if (generatedMirrorClasses.nonEmpty) {
@@ -116,7 +114,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
         val MirrorClass(classDef, forwarders) = staticCls
         val caseInsensitiveName = caseInsensitiveNameOf(classDef)
         if (!generatedCaseInsensitiveNames.contains(caseInsensitiveName)) {
-          val file = getFileFor(cunit, classDef.name)
+          val file = getFileFor(classDef.name)
           val defs = classDef +: forwarders
           genIRFile(file, defs)
         } else {
@@ -143,10 +141,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     }
   }
 
-  private def getFileFor(
-      cunit: CompilationUnit,
-      ownerName: nir.Global
-  ): dotty.tools.io.AbstractFile = {
+  private def getFileFor(ownerName: nir.Global): dotty.tools.io.AbstractFile = {
     val nir.Global.Top(className) = ownerName: @unchecked
     val outputDirectory = ctx.settings.outputDir.value
     val pathParts = className.split('.')

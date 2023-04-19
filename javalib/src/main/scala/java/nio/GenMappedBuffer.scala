@@ -1,7 +1,5 @@
 package java.nio
 
-import java.nio.channels.FileChannel
-import scala.scalanative.windows.HandleApi._
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._

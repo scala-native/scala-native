@@ -5,8 +5,6 @@
  */
 
 package java.util.concurrent
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.VarHandle
 import java.util.concurrent.locks.LockSupport
 import scalanative.libc.atomic.{CAtomicInt, CAtomicRef}
 import scalanative.libc.atomic.memory_order._

@@ -1,6 +1,6 @@
 package java.util.zip
 
-import java.io.{FilterInputStream, IOException, InputStream}
+import java.io.{FilterInputStream, InputStream}
 
 // Ported from Apache Harmony
 

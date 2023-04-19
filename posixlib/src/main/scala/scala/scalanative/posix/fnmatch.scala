@@ -3,8 +3,6 @@ package posix
 
 import scalanative.unsafe._
 
-import scalanative.posix.sys.types
-
 /** POSIX fnmatch.h for Scala
  *
  *  The Open Group Base Specifications

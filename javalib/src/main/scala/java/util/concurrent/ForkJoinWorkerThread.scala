@@ -6,13 +6,10 @@
 
 package java.util.concurrent;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 class ForkJoinWorkerThread private[concurrent] (
     group: ThreadGroup,
     private[concurrent] val pool: ForkJoinPool,
-    useSystemClassLoader: Boolean,
+    useSystemClassLoader: Boolean, // unused
     clearThreadLocals: Boolean
 ) extends Thread(
       group = group,

@@ -25,8 +25,6 @@
 
 package java.math
 
-import scala.annotation.switch
-
 enum RoundingMode extends Enum[RoundingMode]():
   case UP extends RoundingMode
   case DOWN extends RoundingMode

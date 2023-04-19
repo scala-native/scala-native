@@ -76,7 +76,6 @@ class ThreadGroup(
   def isDestroyed(): scala.Boolean = false
 
   def activeCount(): Int = {
-    var n = 0
     NativeThread.Registry.aliveThreads
       .count { nativeThread =>
         val group = nativeThread.thread.getThreadGroup()

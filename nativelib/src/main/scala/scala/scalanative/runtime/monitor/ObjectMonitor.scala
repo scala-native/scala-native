@@ -236,13 +236,11 @@ private[monitor] class ObjectMonitor() {
     // assert(ownerThread != currentThread)
 
     // Current thread is no longer the owner, wait for the notification
-    val deadline = if (nanos > 0) System.nanoTime() + nanos else -1
     val interruped = currentThread.isInterrupted()
     if (!interruped && !node.isNotified) {
       if (nanos == 0) LockSupport.park(this)
       else LockSupport.parkNanos(this, nanos)
     }
-    val isTimedout = nanos > 0 && System.nanoTime() >= deadline
     if (node.state == WaiterNode.Waiting) {
       acquireWaitList()
       // Skip unlinking node if was moved from waitQueue to enterQueue by notify call
@@ -318,8 +316,6 @@ private[monitor] class ObjectMonitor() {
     classFieldRawPtr(this, "ownerThread")
   @alwaysinline private def arriveQueuePtr =
     classFieldRawPtr(this, "arriveQueue")
-  @alwaysinline private def enterQueuePtr =
-    classFieldRawPtr(this, "enterQueue")
 
   @alwaysinline private def waitListModificationLockPtr =
     classFieldRawPtr(this, "waitListModifcationLock")

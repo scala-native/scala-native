@@ -2,7 +2,6 @@ package java.util
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import java.io.IOException
 import scala.scalanative.windows.ProcessThreadsApi._
 import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.HandleApiExt._

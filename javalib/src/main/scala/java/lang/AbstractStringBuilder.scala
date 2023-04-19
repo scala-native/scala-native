@@ -1,7 +1,6 @@
 // Contains parts ported from Android Luni
 package java.lang
 
-import java.io.InvalidObjectException
 import java.util.Arrays
 import scala.util.control.Breaks._
 

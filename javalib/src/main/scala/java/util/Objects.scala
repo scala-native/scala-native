@@ -8,8 +8,6 @@ package java.util
 
 import java.util.function.Supplier
 
-import scala.reflect.ClassTag
-
 object Objects {
 
   @inline

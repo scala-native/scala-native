@@ -1,7 +1,6 @@
 package java.util
 package regex
 
-import scalanative.regex.RE2
 import scalanative.regex.{Matcher => rMatcher}
 
 // Inspired & informed by:
@@ -18,8 +17,6 @@ final class Matcher private[regex] (
 ) extends MatchResult {
 
   private val underlying = new rMatcher(_pattern.compiled, _inputSequence)
-
-  private var _groupCount = _pattern.compiled.groupCount()
 
   private var anchoringBoundsInUse = true
 

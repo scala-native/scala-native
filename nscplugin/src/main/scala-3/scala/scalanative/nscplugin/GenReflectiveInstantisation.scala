@@ -6,7 +6,6 @@ import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Symbols._
-import core.Constants._
 import core.StdNames._
 import core.Flags._
 

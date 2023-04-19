@@ -7,8 +7,6 @@
 package java.util
 package concurrent
 
-import java.security.{PrivilegedAction, PrivilegedExceptionAction}
-
 trait ExecutorService extends Executor with AutoCloseable {
 
   def shutdown(): Unit

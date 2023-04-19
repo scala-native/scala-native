@@ -2,8 +2,6 @@ package java.security.cert
 
 // Ported from Harmony
 
-import java.security.GeneralSecurityException
-
 @SerialVersionUID(6219492851589449162L)
 class CertificateEncodingException(
     private[this] val message: String,

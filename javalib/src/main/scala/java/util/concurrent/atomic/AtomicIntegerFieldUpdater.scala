@@ -5,7 +5,6 @@
  */
 package java.util.concurrent.atomic
 
-import java.util.Objects
 import java.util.function.BinaryOperator
 import java.util.function.UnaryOperator
 

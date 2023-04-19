@@ -34,7 +34,6 @@ object Array {
       dimensions: scala.Array[Int]
   ): AnyRef = {
     import scala.scalanative.runtime.{Array => NativeArray, ObjectArray}
-    val ty = componentType
     if (componentType eq null)
       throw new NullPointerException()
     if (dimensions.length == 0 || dimensions.length > 255)

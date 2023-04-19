@@ -16,7 +16,6 @@ import scala.scalanative.posix.timeOps._
 import scala.scalanative.posix.sched._
 import scala.scalanative.posix.schedOps._
 import scala.scalanative.posix.pthread._
-import scala.scalanative.posix.signal._
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.unistd._
@@ -201,7 +200,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
       try
         while (millis > 0) {
           state = State.ParkedWaitingTimed
-          val status = poll(fds, 1.toUInt, (millis min Int.MaxValue).toInt)
+          poll(fds, 1.toUInt, (millis min Int.MaxValue).toInt)
           state = State.Running
           if (Thread.interrupted()) throw new InterruptedException()
 

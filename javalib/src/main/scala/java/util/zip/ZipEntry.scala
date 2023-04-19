@@ -4,13 +4,10 @@ package java.util.zip
 
 import java.io.{
   EOFException,
-  IOException,
   InputStream,
   RandomAccessFile,
   UnsupportedEncodingException
 }
-import java.util.{Calendar, Date, GregorianCalendar}
-
 class ZipEntry private (
     private[zip] var name: String,
     private[zip] var comment: String,

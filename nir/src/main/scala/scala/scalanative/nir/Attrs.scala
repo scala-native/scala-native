@@ -1,7 +1,6 @@
 package scala.scalanative
 package nir
 
-import scala.collection.mutable
 import nir.Attr._
 
 sealed abstract class Attr {

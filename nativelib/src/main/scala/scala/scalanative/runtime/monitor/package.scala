@@ -1,6 +1,5 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.unsafe._
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}

@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe, unsafe._
+import scalanative.unsafe._
 import scalanative.posix.sys.types, types.{off_t, size_t}
 
 @extern object stdio extends stdio

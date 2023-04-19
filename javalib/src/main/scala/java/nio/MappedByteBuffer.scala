@@ -1,8 +1,5 @@
 package java.nio
 
-import java.nio.channels.FileChannel
-import scala.scalanative.windows.HandleApi._
-
 abstract class MappedByteBuffer private[nio] (
     _capacity: Int,
     private[nio] override val _mappedData: MappedByteBufferData,

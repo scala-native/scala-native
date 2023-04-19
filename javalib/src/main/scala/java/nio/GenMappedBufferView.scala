@@ -1,7 +1,5 @@
 package java.nio
 
-import scala.scalanative.runtime.ByteArray
-
 // Based on the code ported from Scala.js,
 // see GenHeapBufferView.scala
 private[nio] object GenMappedBufferView {

@@ -5,11 +5,8 @@ import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.{HashMap, Map}
 
-import scala.scalanative.nio.fs.unix.{UnixFileSystem, UnixFileSystemProvider}
-import scala.scalanative.nio.fs.windows.{
-  WindowsFileSystem,
-  WindowsFileSystemProvider
-}
+import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
+import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 object FileSystems {

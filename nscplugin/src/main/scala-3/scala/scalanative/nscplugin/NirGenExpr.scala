@@ -5,7 +5,6 @@ import scala.annotation.tailrec
 
 import dotty.tools.dotc.ast
 import ast.tpd._
-import ast.TreeInfo._
 import dotty.tools.backend.ScalaPrimitivesOps._
 import dotty.tools.dotc.core
 import core.Contexts._
@@ -26,13 +25,11 @@ import transform.SymUtils._
 import transform.{ValueClasses, Erasure}
 import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 
-import scala.collection.mutable
 import scala.scalanative.nir
 import nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
-import dotty.tools.dotc.ast.desugar
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -210,8 +207,6 @@ trait NirGenExpr(using Context) {
       val treeTpe = tree.tpe.typeSymbol
       val funSym = fun.symbol
       val funInterfaceSym = functionalInterface.tpe.typeSymbol
-      val isFunction =
-        !funInterfaceSym.exists || defn.isFunctionClass(funInterfaceSym)
 
       val anonClassName = {
         val Global.Top(className) = genTypeName(curClassSym)
@@ -465,7 +460,6 @@ trait NirGenExpr(using Context) {
 
     def genJavaSeqLiteral(tree: JavaSeqLiteral): Val = {
       val JavaArrayType(elemTpe) = tree.tpe: @unchecked
-      val arrayLength = Val.Int(tree.elems.length)
 
       val elems = tree.elems
       val elemty = genType(elemTpe)
@@ -503,7 +497,6 @@ trait NirGenExpr(using Context) {
     }
 
     def genLiteral(lit: Literal): Val = {
-      given nir.Position = lit.span
       val value = lit.const
 
       value.tag match {
@@ -778,7 +771,7 @@ trait NirGenExpr(using Context) {
         finallyp: Tree
     ): Val = {
       given nir.Position = expr.span
-      val handler, excn, normaln, mergen = fresh()
+      val handler, normaln, mergen = fresh()
       val excv = Val.Local(fresh(), Rt.Object)
       val mergev = Val.Local(fresh(), retty)
 
@@ -886,7 +879,7 @@ trait NirGenExpr(using Context) {
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
           finalies.label(finallyn)(cf.pos)
-          val res = finalies.genExpr(finallyp)
+          finalies.genExpr(finallyp)
           finalies += cf
           // The original jump outside goes through finally block first.
           Inst.Jump(Next(finallyn))(cf.pos)
@@ -1026,7 +1019,7 @@ trait NirGenExpr(using Context) {
       else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
       else if (isCoercion(code)) genCoercion(app, receiver, code)
       else if (NirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
-      else if (NirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app, code)
+      else if (NirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app)
       else if (NirPrimitives.isRawSizeCastOp(code)) genRawSizeCastOp(app, code)
       else if (NirPrimitives.isUnsignedOp(code)) genUnsignedOp(app, code)
       else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
@@ -1057,7 +1050,7 @@ trait NirGenExpr(using Context) {
       given nir.Position = fun.span
 
       val funSym = fun.symbol
-      val value = genExpr(receiverp)
+      genExpr(receiverp)
       if (funSym == defn.Object_synchronized)
         assert(argsp.size == 1, "synchronized with wrong number of args")
         genSynchronized(receiverp, argsp.head)
@@ -1102,7 +1095,7 @@ trait NirGenExpr(using Context) {
         using nir.Position
     ): Val = {
       val alloc = buf.classalloc(genTypeName(clssym), unwind)
-      val call = genApplyMethod(ctorsym, statically = true, alloc, args)
+      genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
 
@@ -1914,7 +1907,7 @@ trait NirGenExpr(using Context) {
     private def genRawPtrOp(app: Apply, code: Int): Val = {
       if (NirPrimitives.isRawPtrLoadOp(code)) genRawPtrLoadOp(app, code)
       else if (NirPrimitives.isRawPtrStoreOp(code)) genRawPtrStoreOp(app, code)
-      else if (code == NirPrimitives.ELEM_RAW_PTR) genRawPtrElemOp(app, code)
+      else if (code == NirPrimitives.ELEM_RAW_PTR) genRawPtrElemOp(app)
       else {
         report.error(s"Unknown pointer operation #$code : $app", app.sourcePos)
         Val.Null
@@ -1971,7 +1964,7 @@ trait NirGenExpr(using Context) {
       buf.store(ty, ptr, value, unwind, syncAttrs)
     }
 
-    private def genRawPtrElemOp(app: Apply, code: Int): Val = {
+    private def genRawPtrElemOp(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(_, Seq(ptrp, offsetp)) = app
 
@@ -1980,7 +1973,7 @@ trait NirGenExpr(using Context) {
       buf.elem(Type.Byte, ptr, Seq(offset), unwind)
     }
 
-    private def genRawPtrCastOp(app: Apply, code: Int): Val = {
+    private def genRawPtrCastOp(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(_, Seq(argp)) = app
 
@@ -1996,19 +1989,13 @@ trait NirGenExpr(using Context) {
       given pos: nir.Position = app.span
       val Apply(_, Seq(argp)) = app
       val rec = genExpr(argp)
-      val (fromty, toty, conv) = code match {
-        case CAST_RAWSIZE_TO_INT =>
-          (nir.Type.Size, nir.Type.Int, Conv.SSizeCast)
-        case CAST_RAWSIZE_TO_LONG =>
-          (nir.Type.Size, nir.Type.Long, Conv.SSizeCast)
-        case CAST_RAWSIZE_TO_LONG_UNSIGNED =>
-          (nir.Type.Size, nir.Type.Long, Conv.ZSizeCast)
-        case CAST_INT_TO_RAWSIZE =>
-          (nir.Type.Int, nir.Type.Size, Conv.SSizeCast)
-        case CAST_INT_TO_RAWSIZE_UNSIGNED =>
-          (nir.Type.Int, nir.Type.Size, Conv.ZSizeCast)
-        case CAST_LONG_TO_RAWSIZE =>
-          (nir.Type.Long, nir.Type.Size, Conv.SSizeCast)
+      val (toty, conv) = code match {
+        case CAST_RAWSIZE_TO_INT           => nir.Type.Int -> Conv.SSizeCast
+        case CAST_RAWSIZE_TO_LONG          => nir.Type.Long -> Conv.SSizeCast
+        case CAST_RAWSIZE_TO_LONG_UNSIGNED => nir.Type.Long -> Conv.ZSizeCast
+        case CAST_INT_TO_RAWSIZE           => nir.Type.Size -> Conv.SSizeCast
+        case CAST_INT_TO_RAWSIZE_UNSIGNED  => nir.Type.Size -> Conv.ZSizeCast
+        case CAST_LONG_TO_RAWSIZE          => nir.Type.Size -> Conv.SSizeCast
       }
 
       buf.conv(conv, toty, rec, unwind)
@@ -2480,9 +2467,6 @@ trait NirGenExpr(using Context) {
             .map(t => nir.Type.unbox.getOrElse(t, t)): @unchecked
           Type.Function(params, retty)
         }
-
-      val methodName = genMethodName(funSym)
-      val method = Val.Global(methodName, Type.Ptr)
 
       val forwarderName = funcName.member(ExternForwarderSig)
       val forwarderBody = scoped(

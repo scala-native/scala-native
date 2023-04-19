@@ -1,7 +1,6 @@
 package scala.scalanative.windows
 
 import scala.scalanative.unsafe.{Word => _, _}
-import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi.Handle
 
 @link("Advapi32")

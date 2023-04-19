@@ -12,7 +12,6 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
 import scala.scalanative.windows.WinBaseApiExt._
 import scala.scalanative.windows.MemoryApi._
-import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows._
 
 import java.io.IOException

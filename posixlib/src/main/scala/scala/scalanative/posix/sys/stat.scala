@@ -6,8 +6,6 @@ import scalanative.unsafe._
 import scalanative.posix.time._
 import scalanative.posix.sys.types._
 
-import scalanative.meta.LinktimeInfo.is32BitPlatform
-
 @extern
 object stat {
 

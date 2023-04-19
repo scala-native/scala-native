@@ -4,7 +4,6 @@ package java.util
 
 import java.io.Serializable
 import java.lang.Long.bitCount
-import java.lang.Integer.toUnsignedLong
 import java.nio.{ByteBuffer, LongBuffer}
 import java.util
 

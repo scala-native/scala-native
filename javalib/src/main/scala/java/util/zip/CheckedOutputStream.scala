@@ -2,7 +2,7 @@ package java.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.{FilterOutputStream, IOException, OutputStream}
+import java.io.{FilterOutputStream, OutputStream}
 
 class CheckedOutputStream(out: OutputStream, cksum: Checksum)
     extends FilterOutputStream(out) {

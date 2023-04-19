@@ -159,7 +159,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
-  private def getDefns(): Seq[Defn] = getSeq(getDefn())
   private def getDefn(): Defn = {
     implicit val pos: nir.Position = getPosition()
     getInt() match {

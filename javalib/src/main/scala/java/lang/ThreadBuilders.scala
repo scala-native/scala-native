@@ -150,9 +150,7 @@ object ThreadBuilders {
 
   private abstract class BaseThreadFactory(
       name: String,
-      start: scala.Long,
-      characteristics: Int,
-      ueh: Thread.UncaughtExceptionHandler
+      start: scala.Long
   ) extends ThreadFactory {
     @volatile var counter: scala.Long = start
 
@@ -176,7 +174,7 @@ object ThreadBuilders {
       priority: Int,
       stackSize: scala.Long,
       ueh: Thread.UncaughtExceptionHandler
-  ) extends BaseThreadFactory(name, start, characteristics, ueh) {
+  ) extends BaseThreadFactory(name, start) {
     override def nextThreadName(): String = super.nextThreadName() match {
       case null => Thread.nextThreadName()
       case name => name
@@ -198,7 +196,7 @@ object ThreadBuilders {
       start: scala.Long,
       characteristics: Int,
       ueh: Thread.UncaughtExceptionHandler
-  ) extends BaseThreadFactory(name, start, characteristics, ueh) {
+  ) extends BaseThreadFactory(name, start) {
     override def newThread(task: Runnable): Thread = {
       Objects.requireNonNull(task)
       val thread = new VirtualThread(nextThreadName(), characteristics, task)

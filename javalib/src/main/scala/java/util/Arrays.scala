@@ -1000,8 +1000,6 @@ object Arrays {
   }
 
 // Scala Native additions --------------------------------------------------
-  import java.util.{Spliterator, Spliterators}
-
   private final val standardArraySpliteratorCharacteristics =
     Spliterator.SIZED |
       Spliterator.SUBSIZED |

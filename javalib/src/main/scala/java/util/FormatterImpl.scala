@@ -16,7 +16,6 @@ import java.lang.{
 }
 import java.math.{BigDecimal, BigInteger}
 import java.nio.CharBuffer
-import java.nio.charset.Charset
 import scala.annotation.{switch, tailrec}
 
 private[util] abstract class FormatterImpl protected (
@@ -551,7 +550,6 @@ private[util] abstract class FormatterImpl protected (
     if (rounded.negative)
       builder.append('-')
 
-    val minDigits = 1 + scale // 1 before the '.' plus `scale` after it
     if (intStrLen > scale) {
       // There is at least one digit of intStr before the '.'
       // (we always take this branch when scale == 0)
@@ -978,9 +976,6 @@ private[util] abstract class FormatterImpl protected (
    * are here for consistency.
    */
 
-  private def throwDuplicateFormatFlagsException(flag: Char): Nothing =
-    throw new DuplicateFormatFlagsException(flag.toString())
-
   private def throwUnknownFormatConversionException(conversion: Char): Nothing =
     throw new UnknownFormatConversionException(conversion.toString())
 
@@ -1358,7 +1353,6 @@ object FormatterImpl extends FormatterCompanionImpl {
       @tailrec
       def loop(state: Int): FormatToken = {
         // FINITE STATE MACHINE
-        val prevChar = currentChar
         if (ParserStateMachine.Exit != state) {
           // exit state does not need to get next char
           currentChar = getNextFormatChar()

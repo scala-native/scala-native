@@ -13,12 +13,8 @@ package unsafe
 
 import scala.language.implicitConversions
 
-import scala.runtime.BoxesRunTime._
-import scala.reflect.ClassTag
-
 import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
-import scalanative.runtime.Boxes._
 
 import scalanative.unsigned._
 

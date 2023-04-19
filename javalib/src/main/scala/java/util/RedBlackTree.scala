@@ -192,10 +192,6 @@ private[util] object RedBlackTree {
 
   // ---- size ----
 
-  private def size(node: Node[_, _]): Int =
-    if (node eq null) 0
-    else 1 + size(node.left) + size(node.right)
-
   def size(tree: Tree[_, _]): Int = tree.size
 
   def projectionSize[A, B](

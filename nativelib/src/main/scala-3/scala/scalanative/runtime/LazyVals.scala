@@ -6,7 +6,6 @@ import scala.scalanative.runtime.libc._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.libc.memory_order._
-import scala.scalanative.unsigned._
 
 // Factored out LazyVals immutable state, allowing to treat LazyVals as constant module,
 // alowing to skip loading of the module on each call to its methods

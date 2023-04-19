@@ -17,28 +17,16 @@ import java.io.{
 
 import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.channels.{FileChannel, SeekableByteChannel}
+import java.nio.channels.SeekableByteChannel
 import java.util.function.BiPredicate
-import java.util.{
-  EnumSet,
-  HashMap,
-  HashSet,
-  Iterator,
-  LinkedList,
-  List,
-  Map,
-  Set
-}
+import java.util.{EnumSet, HashMap, HashSet, LinkedList, List, Map, Set}
 import java.util.stream.{Stream, WrappedScalaStream}
-
-import scala.annotation.tailrec
 
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
 
 import scalanative.posix.errno.{errno, EEXIST, ENOENT, ENOTEMPTY}
-import scalanative.posix.dirent, dirent._
 import scalanative.posix.{fcntl, limits, unistd}
 
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
@@ -55,7 +43,6 @@ import scalanative.nio.fs.FileHelpers
 import scalanative.compat.StreamsCompat._
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.immutable.{Map => SMap, Set => SSet}
-import java.io.FileNotFoundException
 
 object Files {
 
@@ -451,7 +438,6 @@ object Files {
     path.getFileSystem().provider().getFileAttributeView(path, tpe, options)
 
   def getLastModifiedTime(path: Path, options: Array[LinkOption]): FileTime = {
-    val realPath = path.toRealPath(options)
     val attributes =
       getFileAttributeView(path, classOf[BasicFileAttributeView], options)
         .readAttributes()

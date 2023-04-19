@@ -7,8 +7,6 @@
 package java.util.concurrent
 package locks
 
-import java.util.concurrent.atomic.AtomicReference
-
 abstract class AbstractOwnableSynchronizer protected ()
     extends java.io.Serializable {
 

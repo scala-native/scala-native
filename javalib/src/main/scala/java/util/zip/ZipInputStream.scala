@@ -8,7 +8,7 @@ import java.io.{
   PushbackInputStream,
   UTFDataFormatException
 }
-import java.util.jar.{Attributes, JarEntry}
+import java.util.jar.JarEntry
 
 // Ported from Apache Harmony
 

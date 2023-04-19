@@ -13,9 +13,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.RejectedExecutionException
 import scala.annotation.tailrec
-import java.util.concurrent.atomic.{AtomicReference, AtomicInteger}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicRef}
 import scala.scalanative.libc.atomic.memory_order._
 
@@ -484,12 +482,11 @@ abstract class AbstractQueuedSynchronizer protected ()
     val h = head
     val s = if (h != null) h.next else null
     var first = if (s != null) s.waiter else null
-    val current =
-      if (h != null && (s == null ||
-            first == null ||
-            s.prev == null)) {
-        first = getFirstQueuedThread()
-      }
+    if (h != null && (s == null ||
+          first == null ||
+          s.prev == null)) {
+      first = getFirstQueuedThread()
+    }
     first != null && (first ne Thread.currentThread())
   }
 

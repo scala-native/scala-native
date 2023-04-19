@@ -1,7 +1,6 @@
 package scala.scalanative.unsafe
 
 import scala.scalanative.runtime._
-import scala.scalanative.unsigned._
 import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt}
 
 private[scalanative] trait UnsafePackageCompat {
