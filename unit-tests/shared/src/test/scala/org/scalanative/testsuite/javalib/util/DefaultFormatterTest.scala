@@ -774,7 +774,7 @@ class DefaultFormatterTest {
 
   @Test def formatForFloatDoubleConversionType_sS_WithExcessPrecision()
       : Unit = {
-    val triple = Array(
+    val triple = Array[Array[Any]](
       Array(1.1f, "%-6.4s", "1.1   "),
       Array(1.1f, "%.5s", "1.1"),
       Array(1.1d, "%-6.4s", "1.1   "),
@@ -1058,7 +1058,7 @@ class DefaultFormatterTest {
       f.format("%#c", 'c'.asInstanceOf[Object])
     )
 
-    val triple = Array(
+    val triple = Array[Array[Any]](
       Array('c', "%c", "c"),
       Array('c', "%-2c", "c "),
       Array('\u0123', "%c", "\u0123"),
@@ -1112,7 +1112,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForLegalByteShortIntegerLongConversionType_d(): Unit = {
-    val triple = Array(
+    val triple = Array[Array[Any]](
       Array(0, "%d", "0"),
       Array(0, "%10d", "         0"),
       Array(0, "%-1d", "0"),
@@ -1199,7 +1199,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForLegalByteShortIntegerLongConversionType_o(): Unit = {
-    val triple = Array(
+    val triple = Array[Array[Any]](
       Array(0, "%o", "0"),
       Array(0, "%-6o", "0     "),
       Array(0, "%08o", "00000000"),
@@ -1258,7 +1258,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForLegalByteShortIntegerLongConversionType_xX(): Unit = {
-    val triple = Array(
+    val triple = Array[Array[Any]](
       Array(0, "%x", "0"),
       Array(0, "%-8x", "0       "),
       Array(0, "%06x", "000000"),
@@ -1783,7 +1783,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_eE(): Unit = {
-    val tripleE = Array(
+    val tripleE = Array[Array[Any]](
       Array(0f, "%e", "0.000000e+00"),
       Array(0f, "%#.0e", "0.e+00"),
       Array(0f, "%#- (9.8e", " 0.00000000e+00"),
@@ -1987,7 +1987,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_gG(): Unit = {
-    val tripleG = Array(
+    val tripleG = Array[Array[Any]](
       Array(1001f, "%g", "1001.00"),
       Array(1001f, "%- (,9.8g", " 1,001.0000"),
       Array(1001f, "%+0(,8.4g", "+001,001"),
@@ -2224,7 +2224,7 @@ class DefaultFormatterTest {
   @Test def formatForFloatDoubleMaxValueConversionType_f(): Unit = {
     // These need a way to reproduce the same decimal representation of
     // extreme values as JVM.
-    val tripleF = Array(
+    val tripleF = Array[Array[Any]](
       Array(-1234567890.012345678d, "% 0#(9.8f", "(1234567890.01234580)"),
       Array(
         java.lang.Double.MAX_VALUE,
@@ -2312,7 +2312,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_f(): Unit = {
-    val tripleF = Array(
+    val tripleF = Array[Array[Any]](
       Array(0f, "%f", "0.000000"),
       Array(0f, "%#.3f", "0.000"),
       Array(0f, "%,5f", "0.000000"),
@@ -2487,7 +2487,7 @@ class DefaultFormatterTest {
       Array(java.lang.Double.NEGATIVE_INFINITY, "%#+0(1.6f", "(Infinity)"),
       Array(java.lang.Double.NEGATIVE_INFINITY, "%-+(8.4f", "(Infinity)"),
       Array(java.lang.Double.NEGATIVE_INFINITY, "% 0#(9.8f", "(Infinity)")
-    ).asInstanceOf[Array[Array[Any]]]
+    )
     val input: Int = 0
     val pattern: Int = 1
     val output: Int = 2
@@ -2535,7 +2535,7 @@ class DefaultFormatterTest {
   }
 
   @Test def formatForFloatDoubleConversionType_aA(): Unit = {
-    val tripleA = Array(
+    val tripleA = Array[Array[Any]](
       Array(-0f, "%a", "-0x0.0p0"),
       Array(-0f, "%#.3a", "-0x0.000p0"),
       Array(-0f, "%5a", "-0x0.0p0"),
