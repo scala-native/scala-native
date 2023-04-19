@@ -1,20 +1,6 @@
 package scala.scalanative.nio.fs.windows
 
-import java.io.File
-import java.net.URI
-import java.nio.file.{
-  FileSystem,
-  Files,
-  LinkOption,
-  NoSuchFileException,
-  Path,
-  WatchEvent,
-  WatchKey
-}
-import java.util.Iterator
-import scala.collection.mutable.UnrolledBuffer
 import scalanative.annotation.alwaysinline
-import java.awt.Window
 import java.nio.file.InvalidPathException
 import scala.annotation.tailrec
 

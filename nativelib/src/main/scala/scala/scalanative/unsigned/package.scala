@@ -1,9 +1,6 @@
 package scala.scalanative
 
-import java.nio.charset.Charset
 import scala.language.experimental.macros
-import scalanative.runtime.{libc, intrinsic, fromRawPtr}
-import scalanative.runtime.Intrinsics.castLongToRawSize
 
 package object unsigned {
 

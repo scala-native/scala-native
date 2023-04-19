@@ -1,7 +1,6 @@
 package java.net
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
 
 object URIEncoderDecoder {
 

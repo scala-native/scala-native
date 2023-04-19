@@ -2,7 +2,6 @@ package scala.scalanative
 package runtime
 
 import scalanative.unsafe._
-import scalanative.unsigned.USize
 
 object Intrinsics {
 

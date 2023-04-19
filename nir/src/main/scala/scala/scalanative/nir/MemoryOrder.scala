@@ -1,8 +1,6 @@
 package scala.scalanative
 package nir
 
-import scala.annotation.switch
-
 case class SyncAttrs(
     memoryOrder: MemoryOrder,
     isVolatile: Boolean = true

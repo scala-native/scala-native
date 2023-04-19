@@ -14,7 +14,6 @@ import java.lang.invoke.VarHandle
 
 import scala.scalanative.libc.atomic._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.unsafe.{Ptr, stackalloc}
 import scala.scalanative.annotation.alwaysinline
 
 import scala.annotation.tailrec
@@ -457,24 +456,6 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
     if (s.toShort != expect) false
     else if (casStatus(s, (s & ~SMASK) | (update & SMASK))) true
     else compareAndSetForkJoinTaskTag(expect, update)
-  }
-
-  @throws[java.io.IOException]
-  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
-    val a = aux
-    s.defaultWriteObject()
-    s.writeObject(
-      if (a == null) null
-      else a.ex
-    )
-  }
-
-  @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
-  private def readObject(s: java.io.ObjectInputStream): Unit = {
-    s.defaultReadObject()
-    val ex = s.readObject
-    if (ex != null) trySetThrown(ex.asInstanceOf[Throwable])
   }
 }
 

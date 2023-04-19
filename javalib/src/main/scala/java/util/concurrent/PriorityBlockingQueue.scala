@@ -5,8 +5,6 @@
  */
 
 package java.util.concurrent
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.VarHandle
 import java.util
 import java.util._
 import java.util.concurrent.locks._
@@ -167,8 +165,6 @@ class PriorityBlockingQueue[E <: AnyRef] private (
   private val atomicAllocationSpinLock = new CAtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "allocationSpinLock"))
   )
-
-  private var q = null
 
   def this(initialCapacity: Int, comparator: Comparator[_ >: E]) = {
     this(

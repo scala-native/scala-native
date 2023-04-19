@@ -21,7 +21,6 @@ object ThreadPoolExecutor {
   private val TIDYING: Int = 2 << COUNT_BITS
   private val TERMINATED: Int = 3 << COUNT_BITS
 // Packing and unpacking ctl
-  private def runStateOf(c: Int): Int = c & ~(COUNT_MASK)
   private def workerCountOf(c: Int): Int = c & COUNT_MASK
   private def ctlOf(rs: Int, wc: Int): Int = rs | wc
   private def runStateLessThan(c: Int, s: Int): Boolean = c < s
@@ -647,7 +646,6 @@ class ThreadPoolExecutor(
         // queue, but stop if queue becomes empty while doing so.
         var k: Int = delta min workQueue.size()
         while ({
-          var idx = k
           k -= 1
           k > 0 && addWorker(null, true) && !workQueue.isEmpty()
         }) ()

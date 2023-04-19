@@ -4,8 +4,6 @@ package sys
 
 import scalanative.unsafe._
 
-import scalanative.posix.signal
-
 /** POSIX wait.h for Scala
  *
  *  The Open Group Base Specifications

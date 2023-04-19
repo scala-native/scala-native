@@ -1,7 +1,6 @@
 package scala.scalanative.runtime
 
 import NativeThread.Registry
-import Thread.MainThread
 
 object JoinNonDaemonThreads {
   def registerExitHook(): Unit = Shutdown.addHook { () =>

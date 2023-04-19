@@ -22,7 +22,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
 import windows._
-import windows.MinWinBaseApi.{FileTime => WinFileTime, _}
+import windows.MinWinBaseApi.{FileTime => WinFileTime}
 import windows.MinWinBaseApiOps.FileTimeOps._
 import windows.WinBaseApi._
 import windows.WinBaseApiExt._
@@ -707,10 +707,6 @@ class File(_path: String) extends Serializable with Comparable[File] {
 object File {
 
   private val `1U` = 1.toUInt
-  private val `4096U` = 4096.toUInt
-  private val `4095U` = 4095.toUInt
-
-  private val random = new java.util.Random()
 
   private def octal(v: String): UInt =
     Integer.parseInt(v, 8).toUInt
@@ -910,8 +906,6 @@ object File {
       else limits.PATH_MAX - `1U`
     val buffer: CString = alloc[Byte](bufferSize)
     if (isWindows) {
-      val filename = fromCString(link)
-
       withFileOpen(
         fromCString(link),
         access = FILE_GENERIC_READ,
@@ -946,8 +940,6 @@ object File {
   val pathSeparator: String = pathSeparatorChar.toString
   val separatorChar: Char = if (Platform.isWindows()) '\\' else '/'
   val separator: String = separatorChar.toString
-  private var counter: Int = 0
-  private var counterBase: Int = 0
   private val caseSensitive: Boolean = !Platform.isWindows()
 
   def listRoots(): Array[File] = {

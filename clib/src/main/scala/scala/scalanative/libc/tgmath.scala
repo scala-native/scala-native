@@ -9,7 +9,6 @@ object tgmath extends tgmath
 private[scalanative] trait tgmath {
   // real
 
-  import scala.scalanative.libc.math
   def fabs(x: CDouble): CDouble = math.fabs(x)
   def fabs(x: CFloat): CFloat = math.fabsf(x)
   def exp(x: CDouble): CDouble = math.exp(x)

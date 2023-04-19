@@ -204,7 +204,6 @@ object ThreadLocalRandom {
       if (consumer == null)
         throw new NullPointerException
 
-      var i = index
       if (index < fence) {
         val rng = ThreadLocalRandom.current()
         var i = index

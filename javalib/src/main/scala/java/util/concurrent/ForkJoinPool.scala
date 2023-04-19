@@ -8,16 +8,14 @@
 package java.util.concurrent
 
 import java.lang.Thread.UncaughtExceptionHandler
-import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
 import java.util.concurrent.ForkJoinPool.WorkQueue.getAndClearSlot
 import java.util.{ArrayList, Collection, Collections, List, concurrent}
 import java.util.function.Predicate
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.Condition
-import scala.annotation._
 import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
@@ -54,9 +52,6 @@ class ForkJoinPool private (
   )
   @alwaysinline private def runStateAtomic = new CAtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "runState"))
-  )
-  @alwaysinline private def stealCountAtomic = new CAtomicLongLong(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "stealCount"))
   )
   @alwaysinline private def threadIdsAtomic = new CAtomicLongLong(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "threadIds"))
@@ -1009,7 +1004,6 @@ class ForkJoinPool private (
     if (factory == null || unit == null) throw new NullPointerException
     val p = parallelism
     val size: Int = 1 << (33 - Integer.numberOfLeadingZeros(p - 1))
-    val corep = corePoolSize.max(p).min(MAX_CAP)
     this.parallelism = p
     this.queues = new Array[WorkQueue](size)
   }

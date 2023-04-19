@@ -3,7 +3,6 @@ package java.lang
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.libc.string.memcmp
-import scalanative.runtime.CharArray
 import java.io.Serializable
 import java.util._
 import java.util.regex._

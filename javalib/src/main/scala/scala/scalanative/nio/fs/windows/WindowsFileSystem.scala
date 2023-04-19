@@ -12,7 +12,6 @@ import java.nio.file.{
   PathMatcherImpl,
   WatchService
 }
-import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{LinkedList, Set}
 

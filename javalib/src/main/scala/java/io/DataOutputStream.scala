@@ -1,7 +1,5 @@
 package java.io
 
-import java.nio.charset.StandardCharsets
-
 class DataOutputStream(out: OutputStream)
     extends FilterOutputStream(out)
     with DataOutput {

@@ -3,7 +3,6 @@ package java.nio.file.glob
 import java.util.regex.PatternSyntaxException
 
 import scala.collection.mutable
-import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 
 class GlobPattern(pattern: String) {

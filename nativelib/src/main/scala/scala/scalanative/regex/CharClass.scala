@@ -14,22 +14,16 @@ package regex
 //
 // All methods mutate the internal state and return {@code this}, allowing
 // operations to be chained.
-class CharClass private (unit: Unit) {
+// Constructs a CharClass with initial ranges |r|.
+// The right to mutate |r| is passed to the callee.
+class CharClass(
+    // inclusive ranges, pairs of [lo,hi].  r.length is even.
+    private var r: Array[Int]
+) {
   import CharClass._
 
-  // inclusive ranges, pairs of [lo,hi].  r.length is even.
-  private var r: Array[Int] = _
-
   // prefix of |r| that is defined.  Even.
-  private var len: Int = _
-
-  // Constructs a CharClass with initial ranges |r|.
-  // The right to mutate |r| is passed to the callee.
-  def this(r: Array[Int]) = {
-    this(())
-    this.r = r
-    this.len = r.length
-  }
+  private var len: Int = r.length
 
   // Size the initial allocaton to reduce the number of doublings & copies
   // yet still be provident with memory.
@@ -37,9 +31,7 @@ class CharClass private (unit: Unit) {
 
   // Constructs an empty CharClass.
   def this() = {
-    this(())
-    val initialCapacity = 16
-    this.r = new Array[Int](initialCapacity)
+    this(new Array[Int](16))
     this.len = 0
   }
 

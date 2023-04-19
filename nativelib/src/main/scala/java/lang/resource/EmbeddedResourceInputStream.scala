@@ -1,7 +1,6 @@
 package java.lang.resource
 
 import java.io.InputStream
-import scala.scalanative.runtime._
 
 private[lang] class EmbeddedResourceInputStream(resourceId: Int)
     extends InputStream {
@@ -38,12 +37,6 @@ private[lang] class EmbeddedResourceInputStream(resourceId: Int)
   override def reset(): Unit = {
     position = markPosition
     leftSeq = markSeq
-    markReadLimit = 0
-  }
-
-  private def invalidateMark(): Unit = {
-    markPosition = 0
-    markSeq = Seq.empty
     markReadLimit = 0
   }
 }

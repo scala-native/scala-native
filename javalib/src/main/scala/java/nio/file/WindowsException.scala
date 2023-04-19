@@ -1,16 +1,11 @@
 package java.nio.file
 
-import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.posix.errno._
 import scala.scalanative.windows._
 import java.io.IOException
-import java.nio.charset.StandardCharsets
 import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.ErrorHandlingApiOps.errorMessage
-import scala.scalanative.windows.WinBaseApi._
-import java.nio.file._
-import scalanative.libc.string
 
 trait WindowsException extends Exception
 object WindowsException {

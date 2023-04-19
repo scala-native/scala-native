@@ -2,9 +2,7 @@ package scala.scalanative
 package unsafe
 
 import scala.annotation.implicitNotFound
-import scalanative.runtime.{libc, RawPtr, fromRawPtr}
 import scalanative.runtime.{MemoryPool, MemoryPoolZone}
-import scalanative.unsigned._
 
 /** Zone allocator which manages memory allocations. */
 @implicitNotFound("Given method requires an implicit zone.")

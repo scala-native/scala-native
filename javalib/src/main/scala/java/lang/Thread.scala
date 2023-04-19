@@ -2,7 +2,6 @@ package java.lang
 
 import java.lang.impl._
 import java.lang.Thread._
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.ThreadFactory
 import java.time.Duration
@@ -280,7 +279,6 @@ class Thread private[lang] (
         if (interrupted()) throw new InterruptedException()
         val end = System.nanoTime() + 1000000 * millis + nanos.toLong
         var rest = 0L
-        var continue = true
         while (isAlive() && { rest = end - System.nanoTime(); rest > 0 }) {
           wait(millis, nanos)
           nanos = (rest % 1000000).toInt

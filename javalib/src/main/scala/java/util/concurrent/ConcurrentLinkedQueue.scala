@@ -3,7 +3,6 @@
 package java.util.concurrent
 
 import java.util._
-import java.util.ScalaOps._
 
 class ConcurrentLinkedQueue[E]()
     extends AbstractQueue[E]
@@ -67,13 +66,6 @@ class ConcurrentLinkedQueue[E]()
 
   override def size(): Int =
     if (_size > Int.MaxValue) Int.MaxValue else _size.toInt
-
-  private def getNodeAt(index: Int): Node[E] = {
-    var current: Node[E] = head
-    for (_ <- 0 until index)
-      current = current.next
-    current
-  }
 
   private def removeNode(node: Node[E]): Unit = {
     if (node eq head) {

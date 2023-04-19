@@ -5,10 +5,7 @@ import scalanative.unsafe._
 import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.monitor._
-import scala.scalanative.meta.LinktimeInfo.{
-  isMultithreadingEnabled,
-  is32BitPlatform
-}
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 package object runtime {
 

@@ -2,7 +2,6 @@ package java.lang
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.libc.string.memcpy
 import scalanative.libc.errno._
 
 private[java] object IEEE754Helpers {

@@ -4,7 +4,6 @@ import java.io._
 import scala.annotation.tailrec
 import scala.scalanative.annotation.stub
 import scala.scalanative.unsafe._
-import scala.scalanative.libc._, signal._
 import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows.DWord

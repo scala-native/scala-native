@@ -32,8 +32,6 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   import URI._
 
-  private val serialVersionUID = -6052424284110960213L
-
   private var string: String = _
 
   @transient private var scheme: String = _

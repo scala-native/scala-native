@@ -2,10 +2,7 @@ package scala.scalanative.nscplugin
 
 import dotty.tools._
 import dotc._
-import dotc.transform.{LazyVals, MoveStatics}
 import dotc.ast.tpd._
-import plugins._
-import core.Flags._
 import core.Contexts._
 import core.Names._
 import core.Symbols._
@@ -45,7 +42,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
       val template @ Template(_, _, _, _) = td.rhs: @unchecked
       bitmapFieldNames ++= template.body.collect {
         case vd: ValDef if isLazyFieldOffset(vd.name) =>
-          import LazyValsNames.{LazyVals, *}
+          import LazyValsNames.*
           val fieldname = vd.rhs match {
             // Scala 3.1.x
             case Apply(

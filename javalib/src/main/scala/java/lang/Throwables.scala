@@ -292,7 +292,7 @@ class AssertionError private (s: String, e: Throwable) extends Error(s, e) {
   def this(d: scala.Double) = this(d.toString, null)
 }
 
-class BootstrapMethodError(s: String, e: Throwable) extends LinkageError(s) {
+class BootstrapMethodError(s: String, e: Throwable) extends LinkageError(s, e) {
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
   def this(s: String) = this(s, null)
   def this() = this(null, null)
@@ -386,7 +386,8 @@ class VerifyError(s: String) extends LinkageError(s) {
   def this() = this(null)
 }
 
-abstract class VirtualMachineError(s: String, e: Throwable) extends Error(s) {
+abstract class VirtualMachineError(s: String, e: Throwable)
+    extends Error(s, e) {
   def this(s: String) = this(s, null)
   def this(e: Throwable) = this(null, e)
   def this() = this(null, null)

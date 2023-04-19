@@ -266,6 +266,7 @@ class Properties(protected val defaults: Properties)
         } else if (prevValueContinue && valueContinues()) {
           val value = parseValue()
           prevValueContinue = valueContinues()
+          setProperty(key, value)
         } else {
           val value = parseValue()
           setProperty(key, value)

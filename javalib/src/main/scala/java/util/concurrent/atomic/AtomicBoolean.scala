@@ -6,14 +6,12 @@
 
 package java.util.concurrent.atomic
 
-import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.memory_order._
 import scala.scalanative.libc.atomic.CAtomicByte
-import scala.scalanative.runtime.{fromRawPtr, MemoryLayout}
-import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 @SerialVersionUID(4654671469794556979L)
 class AtomicBoolean private (private var value: Byte) extends Serializable {

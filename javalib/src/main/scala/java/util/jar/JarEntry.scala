@@ -2,17 +2,15 @@ package java.util.jar
 
 // Ported from Apache Harmony
 
-import java.io.IOException
 import java.security.CodeSigner
 import java.security.cert.{
-  CertPath,
   Certificate,
   CertificateException,
   CertificateFactory,
   X509Certificate
 }
 import java.util.zip.{ZipConstants, ZipEntry}
-import java.util.{ArrayList, List}
+import java.util.ArrayList
 
 import javax.security.auth.x500.X500Principal
 

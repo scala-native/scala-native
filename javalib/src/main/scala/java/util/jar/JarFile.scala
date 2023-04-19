@@ -2,14 +2,8 @@ package java.util.jar
 
 // Ported from Apache Harmony
 
-import java.io.{
-  ByteArrayOutputStream,
-  File,
-  FilterInputStream,
-  IOException,
-  InputStream
-}
-import java.util.{Enumeration, List}
+import java.io.{ByteArrayOutputStream, File, FilterInputStream, InputStream}
+import java.util.{Enumeration}
 import java.util.zip.{ZipConstants, ZipEntry, ZipFile}
 
 class JarFile(file: File, verify: Boolean, mode: Int)

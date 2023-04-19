@@ -16,15 +16,13 @@ import signal.{kill, SIGKILL}
 import time._
 import sys.time._
 
-import java.lang.ProcessBuilder.Redirect
-
 private[lang] class UnixProcessGen1 private (
     pid: CInt,
     builder: ProcessBuilder,
     infds: Ptr[CInt],
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
-) extends UnixProcess(pid, builder, infds, outfds, errfds) {
+) extends UnixProcess() {
 
   override def destroy(): Unit = kill(pid, sig.SIGTERM)
 
@@ -168,7 +166,7 @@ object UnixProcessGen1 {
     val argv = nullTerminate(cmd)
     val envp = nullTerminate {
       val list = new ArrayList[String]
-      val it = builder
+      builder
         .environment()
         .entrySet()
         .iterator()

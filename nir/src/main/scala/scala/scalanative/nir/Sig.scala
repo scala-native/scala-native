@@ -1,7 +1,6 @@
 package scala.scalanative
 package nir
 
-import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 final class Sig(val mangle: String) {

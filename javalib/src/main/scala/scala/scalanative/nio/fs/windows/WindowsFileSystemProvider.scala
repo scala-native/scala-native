@@ -1,7 +1,5 @@
 package scala.scalanative.nio.fs.windows
 
-import scala.scalanative.unsafe.{CChar, fromCString, stackalloc}
-import scala.scalanative.unsigned._
 import scala.collection.immutable.{Map => SMap}
 import scala.scalanative.nio.fs.GenericFileSystemProvider
 import java.nio.file.attribute._

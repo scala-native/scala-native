@@ -6,11 +6,9 @@
 
 package java.lang
 
-import java.util.{ArrayList, List}
-import java.util.Map
-import java.io.{File, IOException}
+import java.util.List
+import java.io.File
 import java.util.Arrays
-import ProcessBuilder.Redirect
 import java.lang.process.ProcessBuilderImpl
 
 final class ProcessBuilder(_command: List[String])

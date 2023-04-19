@@ -12,7 +12,6 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.CAtomicLongLong
 import scala.scalanative.libc.atomic.memory_order._
-import scala.scalanative.runtime.MemoryLayout
 
 import java.util.function.{LongBinaryOperator, LongUnaryOperator}
 import java.util.Arrays

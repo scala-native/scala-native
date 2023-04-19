@@ -6,11 +6,7 @@ import core.Symbols.{toClassDenot, toDenot}
 import core.Contexts._
 import core.Names._
 import core.Types._
-import core.Decorators._
-import dotty.tools.backend.jvm.DottyPrimitives
 import scala.annotation.{threadUnsafe => tu}
-import dotty.tools.dotc.parsing.Scanners.IndentWidth.Run
-import dotty.tools.dotc.core.Definitions
 import dotty.tools.dotc.util.Property.StickyKey
 import NirGenUtil.ContextCached
 

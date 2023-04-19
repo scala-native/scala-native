@@ -6,7 +6,6 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 
 import scala.scalanative.posix.net.`if`._
-import scala.scalanative.posix.net.ifOps._
 import scala.scalanative.posix.stddef
 
 final class Inet6Address private (

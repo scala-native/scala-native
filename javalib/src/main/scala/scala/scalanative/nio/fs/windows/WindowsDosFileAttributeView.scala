@@ -5,10 +5,8 @@ import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
 import java.lang.{Boolean => JBoolean}
-import niocharset.StandardCharsets
 import scalanative.unsigned._
 import scalanative.unsafe._
-import scalanative.libc._
 import scala.scalanative.windows._
 import scala.scalanative.windows.MinWinBaseApi.{FileTime => WinFileTime, _}
 import scala.scalanative.windows.MinWinBaseApiOps.FileTimeOps._
@@ -17,7 +15,6 @@ import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.FileApiOps._
 import scala.scalanative.windows.winnt.AccessRights._
 import java.nio.file.WindowsException
-import scala.scalanative.annotation.alwaysinline
 import java.util.WindowsHelperMethods._
 
 final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])

@@ -62,8 +62,6 @@ private[math] object Elementary {
    */
   def add(op1: BigInteger, op2: BigInteger): BigInteger = {
     // scalastyle:off return
-    var resDigits: Array[Int] = null
-    var resSign: Int = 0
     val op1Sign = op1.sign
     val op2Sign = op2.sign
     val op1Len: Int = op1.numberLength
@@ -322,8 +320,6 @@ private[math] object Elementary {
    */
   def subtract(op1: BigInteger, op2: BigInteger): BigInteger = {
     // scalastyle:off return
-    var resSign = 0
-    var resDigits: Array[Int] = null
     val op1Sign = op1.sign
     val op2Sign = op2.sign
     val op1Len = op1.numberLength

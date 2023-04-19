@@ -102,8 +102,6 @@ private[niocharset] abstract class ISO_8859_1_And_US_ASCII_Common protected (
   private class Encoder
       extends CharsetEncoder(ISO_8859_1_And_US_ASCII_Common.this, 1.0f, 1.0f) {
     def encodeLoop(in: CharBuffer, out: ByteBuffer): CoderResult = {
-      import java.lang.Character.{MIN_SURROGATE, MAX_SURROGATE}
-
       val maxValue = ISO_8859_1_And_US_ASCII_Common.this.maxValue
       val inRemaining = in.remaining()
       if (inRemaining == 0) {

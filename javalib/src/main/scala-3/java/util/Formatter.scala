@@ -8,15 +8,8 @@ package java.util
 // Ported from Scala.js, commit: 0383e9f, dated: 2021-03-07
 
 import java.io._
-import java.lang.{
-  Double => JDouble,
-  Boolean => JBoolean,
-  StringBuilder => JStringBuilder
-}
-import java.math.{BigDecimal, BigInteger}
-import java.nio.CharBuffer
+import java.lang.{StringBuilder => JStringBuilder}
 import java.nio.charset.Charset
-import scala.annotation.{switch, tailrec}
 
 final class Formatter private (
     dest: Appendable,

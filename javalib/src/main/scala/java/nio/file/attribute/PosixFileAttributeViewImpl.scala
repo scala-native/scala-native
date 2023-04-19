@@ -5,7 +5,6 @@ import java.util.{HashMap, HashSet, Set}
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path, PosixException}
 import java.nio.file.attribute._
-import java.io.IOException
 
 import scalanative.unsigned._
 import scalanative.unsafe._
