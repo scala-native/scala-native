@@ -80,28 +80,8 @@ _lh_setjmp:
 /* called with x0: &jmp_buf, x1: address to paste the return address into */
 _lh_store_lr_longjmp:                  
     str   x30, [x1]
-    ldp   x18, x19, [x0], #16
-    ldp   x20, x21, [x0], #16
-    ldp   x22, x23, [x0], #16
-    ldp   x24, x25, [x0], #16
-    ldp   x26, x27, [x0], #16
-    ldp   x28, x29, [x0], #16   /* x28 and fp */
-    ldp   x30, x10, [x0], #16   /* lr and sp */
-    mov   sp,  x10
-    /* load fp control and status */
-    ldp   x10, x11, [x0], #16
-    msr   fpcr, x10
-    msr   fpsr, x11
-    /* load float registers */
-    ldp   d8,  d9,  [x0], #16
-    ldp   d10, d11, [x0], #16
-    ldp   d12, d13, [x0], #16
-    ldp   d14, d15, [x0], #16
-    /* never return zero */
-    mov   x0, #1
-    cmp   w1, #0
-    cinc  w0, w1, eq
-    ret                         /* jump to lr */
+    mov   x1, #1
+    bl    _lh_longjmp
 
 /* called with x0: &jmp_buf, x1: value to return */
 _lh_longjmp:
@@ -225,30 +205,16 @@ _lh_longjmp:                  /* rdi: jmp_buf, rsi: arg */
   testl %eax, %eax            /* longjmp should never return 0 */
   jnz   ok
   incl  %eax
-
-__lh_store_lr_longjmp:
-_lh_store_lr_longjmp:         /* rdi: jmp_buf, rsi: addr */
-  ; movq   0 (%rsp), %rax               
-  ; movq   %rax, 0 (%rsi)
-  movq   $1, %rax               /* return 1 to rax */
-
-  movq   8 (%rdi), %rbx       /* restore registers */
-  movq  24 (%rdi), %rbp
-  movq  32 (%rdi), %r12
-  movq  40 (%rdi), %r13
-  movq  48 (%rdi), %r14
-  movq  56 (%rdi), %r15
-
-  ldmxcsr 68 (%rdi)           /* restore sse control word */
-  fnclex                      /* clear fpu exception flags */
-  fldcw   64 (%rdi)           /* restore fpu control word */
-
-  testl %eax, %eax            /* longjmp should never return 0 */
-  jnz   ok
-  incl  %eax
 ok:
   movq  16 (%rdi), %rsp       /* restore the stack pointer */
   jmpq *(%rdi)                /* and jump to rip */
+
+__lh_store_lr_longjmp:
+_lh_store_lr_longjmp:           /* rdi: jmp_buf, rsi: addr */
+  movq   0 (%rsp), %rax
+  movq   %rax, 0 (%rsi)
+  movq   $1, %rsi               /* put 1 as arg to _lh_longjmp */
+  jmpq   _lh_longjmp
 
 _lh_boundary_entry: 
 __lh_boundary_entry: /* rdi: arg 1, rsi : arg 2, (rdx: arg 3) */
