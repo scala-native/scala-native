@@ -146,15 +146,19 @@ struct Continuation {
     lh_jmp_buf buf;
 };
 
-static void *(*alloc_function)(unsigned long) = malloc;
+static void *cont_malloc(unsigned long size, void *arg) {
+    (void)arg;
+    return malloc(size);
+}
+static void *(*alloc_function)(unsigned long, void *) = cont_malloc;
 
-void cont_set_alloc(void *(*f)(unsigned long)) { alloc_function = f; }
+void cont_set_alloc(void *(*f)(unsigned long, void *)) { alloc_function = f; }
 
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
-void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg)
-    __attribute__((disable_tail_calls)) {
+void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
+                   void *alloc_arg) __attribute__((disable_tail_calls)) {
     // set up the continuation
-    Continuation *cont = alloc_function(sizeof(Continuation));
+    Continuation *cont = alloc_function(sizeof(Continuation), alloc_arg);
     cont->stack_top = _lh_get_sp();
     cont->handlers = handler_split_at(b.id);
     cont->handlers_len = handler_len(cont->handlers);
@@ -164,7 +168,7 @@ void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg)
     assert(last_handler->h->stack_btm != NULL); // not a resume handler
     cont->size = last_handler->h->stack_btm - cont->stack_top;
     // make the continuation size a multiple of 16
-    cont->stack = alloc_function(cont->size);
+    cont->stack = alloc_function(cont->size, alloc_arg);
     memcpy(cont->stack, cont->stack_top, cont->size);
 
     // set up return value slot
@@ -220,11 +224,11 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     memcpy(return_buf, cont->buf, ASM_JMPBUF_SIZE);
 
     assert((diff & 15) == 0);
-    fprintf(stderr,
-            "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | original "
-            "cont = %p [%p]\n",
-            diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
-            target, tail, cont, cont->stack);
+    // fprintf(stderr,
+    //         "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | original "
+    //         "cont = %p [%p]\n",
+    //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
+    //         target, tail, cont, cont->stack);
     // clone the handler chain, with fixes.
     nw = handler_clone_fix(cont->handlers, diff);
     // install the handlers and fix the return buf
@@ -247,8 +251,6 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     *new_return_slot = out;
     // fix the return address of the bottom of our new stack fragment.
     *(void **)(target + cont->size - BOUNDARY_LR_OFFSET) = ret_addr;
-    fprintf(stderr, "Flying to %p (written return %p)!\n", return_buf[96 / 8],
-            ret_addr);
     _lh_longjmp(return_buf, 1);
 }
 

@@ -21,17 +21,18 @@ typedef void *SuspendFn(Continuation *, void *);
 
 // set the allocation function for Continuations and stack fragments.
 // without calling this, malloc is the default allocation function.
-void cont_set_alloc(void *(*alloc_f)(unsigned long));
+// The allocation function may take another parameter, as given in
+// `cont_suspend`.
+void cont_set_alloc(void *(*alloc_f)(unsigned long, void *));
 
 // cont_boundary : ContFn -> any -> Result
 // void cont_boundary(ContFn *, void *, ContResult *);
 
 void *cont_boundary(ContFn *, void *);
 
-// cont_suspend[T, R] : BoundaryLabel[T] -> T -> R
-// void *cont_suspend(ContBoundaryLabel b, void *in);
-
-void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg);
+// cont_suspend[T, R] : BoundaryLabel[T] -> (Continuation[T, R] -> T) -> R
+void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
+                   void *alloc_arg);
 
 // resume[T, R] : Continuation[T, R] -> R -> Result
 // void cont_resume(Continuation *cont, void *out, ContResult *r);

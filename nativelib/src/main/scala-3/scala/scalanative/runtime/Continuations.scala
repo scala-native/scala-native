@@ -4,6 +4,7 @@ import scala.scalanative.unsafe.*
 import scala.scalanative.runtime.libc.{malloc, free}
 import scala.scalanative.unsafe.Size.intToSize
 import scala.scalanative.runtime.Intrinsics.*
+import scala.collection.mutable
 
 object Continuations:
   import ContImpl.*
@@ -26,21 +27,18 @@ object Continuations:
 
   opaque type BoundaryLabel[-T] = ContImpl.BoundaryLabel
 
-  type Continuation[-R, +T] = ContImpl.Continuation
-
   inline def suspend[R, T](
       inline f: (R => T) => T
   )(using label: BoundaryLabel[T])(using
       Tag[T],
       Tag[R]
   ): R =
-    suspendCont(cont => f(r => resumeCont(cont, r)))
+    suspendCont[R, T](cont => f(r => cont(r)))
 
   def suspend[T](
       f: (() => T) => T
   )(using label: BoundaryLabel[T])(using Tag[T]): Unit =
-    val call = (cont: ContImpl.Continuation) => pObj(f(() => resumeCont(cont)))
-    ContImpl.suspend(label, suspendFn, pObj(call))
+    suspendCont[Unit, T](cont => f(() => cont(())))
 
   inline def suspendCont[R, T](
       inline f: Continuation[R, T] => T
@@ -48,21 +46,12 @@ object Continuations:
       Tag[T],
       Tag[R]
   ): R =
-    val call = (cont: ContImpl.Continuation) => pObj(f(cont))
-    val resP = ContImpl.suspend(label, suspendFn, pObj(call))
+    val cont = Continuation()
+    val call = (c: ContImpl.Continuation) =>
+      cont.cont = c
+      pObj(f(cont))
+    val resP = ContImpl.suspend(label, suspendFn, pObj(call), pObj(cont))
     objP[R](resP)
-
-  inline def resumeCont[R, T](cont: Continuation[R, T], input: R)(using
-      Tag[T],
-      Tag[R]
-  ): T =
-    objP[T](ContImpl.resume(cont, pObj(input)))
-
-  // special case for R = Unit
-  inline private def resumeCont[T](cont: Continuation[Unit, T])(using
-      Tag[T]
-  ): T =
-    objP[T](ContImpl.resume(cont, pNull))
 
   private val suspendFn: SuspendFn = CFuncPtr2.fromScalaFunction((cont, f) =>
     val fn = objP[ContImpl.Continuation => Ptr[Byte]](f)
@@ -74,11 +63,22 @@ object Continuations:
     fp(label)
   )
 
-  private def allocateBlob(size: CUnsignedLong): Ptr[Byte] =
-    val obj = ObjectArray.alloc(size.toInt) // round up the blob size
-    obj.at(0).asInstanceOf[Ptr[Byte]]
+  private def allocateBlob(size: CUnsignedLong, cont: Ptr[Byte]): Ptr[Byte] =
+    objP[Continuation[_, _]](cont).alloc(size)
 
-  ContImpl.setAlloc(CFuncPtr1.fromScalaFunction(allocateBlob))
+  ContImpl.setAlloc(CFuncPtr2.fromScalaFunction(allocateBlob))
+
+  class Continuation[-R, +T] extends (R => T):
+    private[Continuations] var cont: ContImpl.Continuation = pNull
+    private val allocs = mutable.ArrayBuffer[ObjectArray]()
+
+    def apply(x: R): T = objP[T](resume(cont, pObj(x)))
+
+    private[Continuations] def alloc(size: CUnsignedLong): Ptr[Byte] =
+      val obj = ObjectArray.alloc(size.toInt) // round up the blob size
+      allocs += obj
+      obj.at(0).asInstanceOf[Ptr[Byte]]
+  end Continuation
 
 end Continuations
 
@@ -98,11 +98,18 @@ end Continuations
   def boundary(f: ContFn, arg: Ptr[Byte]): Ptr[Byte] = extern
 
   @name("cont_suspend")
-  def suspend(l: BoundaryLabel, f: SuspendFn, arg: Ptr[Byte]): Ptr[Byte] =
+  def suspend(
+      l: BoundaryLabel,
+      f: SuspendFn,
+      arg: Ptr[Byte],
+      allocArg: Ptr[Byte]
+  ): Ptr[Byte] =
     extern
 
   @name("cont_resume")
   def resume(cont: Continuation, arg: Ptr[Byte]): Ptr[Byte] = extern
 
-  @name("cont_set_alloc")
-  def setAlloc(fn: CFuncPtr1[CUnsignedLong, Ptr[Byte]]): Unit = extern
+  @name("cont_set_alloc") def setAlloc(
+      fn: CFuncPtr2[CUnsignedLong, Ptr[Byte], Ptr[Byte]]
+  ): Unit =
+    extern
