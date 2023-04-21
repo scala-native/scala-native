@@ -84,12 +84,21 @@ static void handler_install(Handlers *hs) {
     __handlers = hs;
 }
 
-Handlers *handler_split_at(ContLabel l) {
+static Handlers *handler_split_at(ContLabel l) {
     Handlers *ret = (Handlers *)__handlers, **cur = &ret;
     while ((*cur)->h->id != l)
         cur = (&(*cur)->next);
     __handlers = (*cur)->next;
     (*cur)->next = NULL;
+    return ret;
+}
+
+static unsigned int handler_len(Handlers *h) {
+    unsigned int ret = 0;
+    while (h != NULL) {
+        ret++;
+        h = h->next;
+    }
     return ret;
 }
 
@@ -134,6 +143,7 @@ struct Continuation {
     ptrdiff_t size;
 
     Handlers *handlers;
+    unsigned int handlers_len;
 
     void **return_slot;
     lh_jmp_buf buf;
@@ -151,6 +161,7 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
     Continuation *cont = alloc_function(sizeof(Continuation));
     cont->stack_top = _lh_get_sp();
     cont->handlers = handler_split_at(b.id);
+    cont->handlers_len = handler_len(cont->handlers);
     Handlers *last_handler = cont->handlers;
     while (last_handler->next != NULL)
         last_handler = last_handler->next;
@@ -179,33 +190,16 @@ __attribute__((noinline, optnone)) void *cont_suspend(ContBoundaryLabel b,
     }
 }
 
-#define fixedAddr(X) (void *)(X) + diff
-#define fixAddr(X) X = fixedAddr(X);
+#define fixed_addr(X) (void *)(X) + diff
+#define fix_addr(X) X = fixed_addr(X)
 
-static void jmpbuf_fix(lh_jmp_buf buf, ptrdiff_t diff) {
-    // fprintf(stderr, "> fixing sp at %p from %p", buf,
-    //         buf[JMPBUF_STACK_POINTER_OFFSET]);
-    fixAddr(buf[JMPBUF_STACK_POINTER_OFFSET]);
-    // fprintf(stderr, " to %p\n", buf[JMPBUF_STACK_POINTER_OFFSET]);
-}
+#define jmpbuf_fix(buf) fix_addr(buf[JMPBUF_STACK_POINTER_OFFSET])
 
-__attribute__((noinline)) static Handlers *handler_clone_fix(Handlers *other,
-                                                             ptrdiff_t diff,
-                                                             Continuation *cont,
-                                                             void *stack) {
+static Handlers *handler_clone_fix(Handlers *other, ptrdiff_t diff) {
     Handlers *nw = NULL, **cur = &nw;
     while (other != NULL) {
         *cur = malloc(sizeof(Handlers));
         (*cur)->h = (Handler *)((void *)other->h + diff);
-        // fix the handlers in cont->stack
-        {
-            Handler *nh_in_mem =
-                (Handler *)((void *)other->h - cont->stack_top + stack);
-            fixAddr(nh_in_mem->result);
-            if (nh_in_mem->stack_btm != NULL)
-                fixAddr(nh_in_mem->stack_btm);
-            jmpbuf_fix(nh_in_mem->buf, diff);
-        }
         cur = &(*cur)->next;
         other = other->next;
     }
@@ -213,28 +207,16 @@ __attribute__((noinline)) static Handlers *handler_clone_fix(Handlers *other,
     return nw;
 }
 
-__attribute__((noinline)) static void call_memcpy(void *dest, void *src,
-                                                  ptrdiff_t size) {
-    memcpy(dest, src, size);
-}
-
-__attribute__((noinline, optnone, no_stack_protector)) static void *
-resumeImpl(Continuation *cont, void *out);
-
 // resume[T, R] : Continuation[T, R] -> R -> Result
 // Consumes the Continuation.
-__attribute__((noinline, optnone, no_stack_protector)) static void *
-resumeImpl(Continuation *cont, void *out) {
+static void *resumeImpl(Continuation *cont, void *out) {
     // Allocate all values up front so we know how many to deal with.
     Handlers *nw; // new handler chain
     ptrdiff_t i;
     ptrdiff_t diff;         // pointer difference and stack size
     void *target;           // our target stack
     void **new_return_slot; // new return slot
-    void *return_buf;
-
-    void *result;
-    void *stack;
+    lh_jmp_buf return_buf;
 
     void *stackTop; // our stack top
     // get the stack difference
@@ -242,41 +224,56 @@ resumeImpl(Continuation *cont, void *out) {
     target = stackTop - cont->size;
     diff = target - cont->stack_top;
     // set up stuff
-    return_buf = malloc(ASM_JMPBUF_SIZE);
-    call_memcpy(return_buf, cont->buf, ASM_JMPBUF_SIZE);
-    stack = malloc(cont->size);
-    call_memcpy(stack, cont->stack, cont->size);
+    memcpy(return_buf, cont->buf, ASM_JMPBUF_SIZE);
+
     assert((diff & 15) == 0);
-    // fprintf(stderr,
-    //         "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | on heap =
-    //         "
-    //         "%p | original cont = %p [%p]\n",
-    //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
-    //         target, stackTop, stack, cont, cont->stack);
+    fprintf(stderr,
+            "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | original "
+            "cont = %p [%p]\n",
+            diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
+            target, stackTop, cont, cont->stack);
     // clone the handler chain, with fixes.
-    nw = handler_clone_fix(cont->handlers, diff, cont, stack);
+    nw = handler_clone_fix(cont->handlers, diff);
     // install the handlers and fix the return buf
     handler_install(nw);
-    jmpbuf_fix(return_buf, diff);
+    jmpbuf_fix(return_buf);
     // copy and fix the remaining information in the continuation
-    new_return_slot = fixedAddr(cont->return_slot);
+    new_return_slot = fixed_addr(cont->return_slot);
     // install the memory
+    // not really doable on x86 right now, messes up stack.
+    // memcpy(target, cont->stack, cont->size);
     for (i = 0; i < cont->size; ++i)
-        ((char *)target)[i] = ((char *)stack)[i];
+        ((char *)target)[i] = ((char *)cont->stack)[i];
+    // fix the handlers in cont->stack
+    for (i = 0; i < cont->handlers_len; ++i, nw = nw->next) {
+        fix_addr(nw->h->result);
+        if (nw->h->stack_btm != NULL)
+            fix_addr(nw->h->stack_btm);
+        jmpbuf_fix(nw->h->buf);
+    }
+
     // set return value for the return slot
     // fprintf(stderr, "return slot is %p\n", new_return_slot);
     *new_return_slot = out;
     // fire!
-    result = _lh_store_lr_longjmp(return_buf,
-                                  target + cont->size - BOUNDARY_LR_OFFSET);
-    // clean up copied stack
-    free(stack);
-    free(return_buf);
-    return result;
+    return _lh_store_lr_longjmp(return_buf,
+                                target + cont->size - BOUNDARY_LR_OFFSET);
 }
 
 __attribute__((noinline, optnone, no_stack_protector)) void *
 cont_resume(Continuation *cont, void *out) __attribute__((disable_tail_calls)) {
+    /*
+     * Why we need a setjmp/longjmp.
+     *
+     * `resume` stack doesn't know which registers are changed, and so we
+     * basically need to save all of them. setjmp/longjmp-ing to the same place
+     * is the easiest way to do so.
+     *
+     * Why we need a Handler.
+     *
+     * Resumed computation might suspend on a parent, and mess up the setjmp
+     * buffer that way.
+     * */
     void *result = NULL;
     Handler h = {.id = ++label_count, .result = &result, .stack_btm = NULL};
     handler_push(&h);
