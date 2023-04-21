@@ -43,14 +43,14 @@ jump_buf layout:
 */
 
 .global _lh_setjmp
-.global _lh_store_lr_longjmp
 .global _lh_longjmp
 .global _lh_boundary_entry
+.global _lh_resume_entry
 .global _lh_get_sp
 .type _lh_setjmp,%function
-.type _lh_store_lr_longjmp,%function
 .type _lh_longjmp,%function
 .type _lh_boundary_entry,%function
+.type _lh_resume_entry,%function
 .type _lh_get_sp,%function
 
 /* called with x0: &jmp_buf */
@@ -76,13 +76,6 @@ _lh_setjmp:
     mov   x0, #0
     ret                         /* jump to lr */
 
-    
-/* called with x0: &jmp_buf, x1: address to paste the return address into */
-_lh_store_lr_longjmp:                  
-    str   x30, [x1]
-    mov   x1, #1
-    bl    _lh_longjmp
-
 /* called with x0: &jmp_buf, x1: value to return */
 _lh_longjmp:
     ldp   x18, x19, [x0], #16
@@ -104,8 +97,8 @@ _lh_longjmp:
     ldp   d14, d15, [x0], #16
     /* never return zero */
     mov   x0, x1
-    cmp   w1, #0
-    cinc  w0, w1, eq
+    cmp   x1, #0
+    cinc  x0, x1, eq
     ret                         /* jump to lr */
 
 _lh_boundary_entry:
@@ -118,6 +111,12 @@ _lh_boundary_entry:
     ldr	  x30, [sp, #8]                  // 8-byte Folded Spill
     add   sp, sp, #16
     ret
+
+_lh_resume_entry: /* x0 = cont_size, x1 = cont, x2 = arg */
+    sub   sp, sp, x0
+    add   x0, sp, x0
+    mov   x3, x30 /* copy lr */
+    bl    __cont_resume_impl /* it will just return from here */
 
 _lh_get_sp:
     mov  x0, sp
