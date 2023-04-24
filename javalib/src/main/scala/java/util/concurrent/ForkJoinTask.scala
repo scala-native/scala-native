@@ -36,33 +36,25 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int =
     statusAtomic.fetchOr(v)
   @alwaysinline private def casStatus(expected: Int, value: Int): Boolean =
-    statusAtomic.compareExchangeWeak(expected, value)
+    statusAtomic.compareExchangeStrong(expected, value)
   @alwaysinline private def casAux(c: Aux, v: Aux): Boolean =
     auxAtomic.compareExchangeStrong(c, v)
 
   private[concurrent] final def markPoolSubmission(): Unit =
     getAndBitwiseOrStatus(POOLSUBMIT)
 
-  @tailrec
   private def signalWaiters(): Unit = {
-    @tailrec
-    def unparkThreads(a: Aux): Unit = {
-      if (a != null) {
-        val t = a.thread
-        if (t != Thread.currentThread() && t != null) {
-          LockSupport.unpark(t)
+    var a: Aux = aux
+    while ({ a = aux; a != null } && a.ex == null) {
+      if (casAux(a, null)) { // detach entire list
+        while (a != null) {
+          val t = a.thread
+          if ((t ne Thread.currentThread()) && t != null)
+            LockSupport.unpark(t) // don't self signal
+          a = a.next
         }
-        unparkThreads(a.next)
+        return
       }
-    }
-
-    aux match {
-      case null => ()
-      case a =>
-        if (a.ex == null) {
-          if (casAux(a, null)) unparkThreads(a)
-          else signalWaiters()
-        }
     }
   }
 
@@ -166,7 +158,7 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
       else if (!queued) {
         if (({ a = aux; a == null || a.ex == null }) && {
               node.next = a
-              queued = casAux(node.next, node)
+              queued = casAux(a, node)
               queued
             })
           LockSupport.setCurrentBlocker(this)
@@ -527,35 +519,38 @@ object ForkJoinTask {
   def invokeAll(tasks: Array[ForkJoinTask[_]]): Unit = {
     var ex = null: Throwable
     val last = tasks.length - 1
-    (last to 0 by -1).takeWhile { i =>
+    var i = last
+    var break = false
+    while (!break && i >= 0) {
       val t = tasks(i)
       if (t == null) {
         ex = new NullPointerException()
-        false // break
+        break = true
       } else if (i == 0) {
         var s = t.doExec()
         if (s >= 0)
           s = t.awaitDone(RAN, 0L)
         if ((s & ABNORMAL) != 0)
           ex = t.getException(s)
-        false // break
+        break = true
       } else {
         t.fork()
-        true // continue
       }
+      i -= 1
     }
 
-    if (ex == null) (1 to last).takeWhile { i =>
+    i = 1
+    break = false
+    if (ex == null) while (!break && i <= last) {
       val t = tasks(i)
-      t == null || {
+      if (t != null) {
         var s = t.status
         if (s >= 0)
           s = t.awaitDone(0, 0L)
-        if ((s & ABNORMAL) != 0) {
-          ex = t.getException(s)
-          ex == null
-        } else true
+        if ((s & ABNORMAL) != 0 && { ex = t.getException(s); ex != null })
+          break = true
       }
+      i += 1
     }
     if (ex != null) {
       for (i <- 1 to last)
@@ -568,36 +563,38 @@ object ForkJoinTask {
     def invokeAllImpl(ts: java.util.List[_ <: ForkJoinTask[_]]): Unit = {
       var ex: Throwable = null
       val last = ts.size() - 1 // nearly same as array version
-      (last to 0 by -1).takeWhile { i =>
-        ts.get(i) match {
-          case null =>
-            ex = new NullPointerException()
-            false // break
-
-          case t if i == 0 =>
-            var s = t.doExec()
-            if (s >= 0)
-              s = t.awaitDone(RAN, 0L)
-            if ((s & ABNORMAL) != 0)
-              ex = t.getException(s)
-            false // break
-
-          case t =>
-            t.fork()
-            true // continue
-        }
-      }
-      if (ex == null) (1 to last).takeWhile { i =>
+      var i = last
+      var break = false
+      while (!break && i >= 0) {
         val t = ts.get(i)
-        t == null || {
+        if (t == null) {
+          ex = new NullPointerException()
+          break = true
+        } else if (i == 0) {
+          var s = t.doExec()
+          if (s >= 0)
+            s = t.awaitDone(RAN, 0L)
+          if ((s & ABNORMAL) != 0)
+            ex = t.getException(s)
+          break = true
+        } else {
+          t.fork()
+        }
+        i -= 1
+      }
+
+      i = 1
+      break = false
+      if (ex == null) while (!break && i <= last) {
+        val t = ts.get(i)
+        if (t != null) {
           var s = t.status
           if (s >= 0)
             s = t.awaitDone(0, 0L)
-          if ((s & ABNORMAL) != 0) {
-            ex = t.getException(s)
-            ex == null
-          } else true // continue
+          if ((s & ABNORMAL) != 0 && { ex = t.getException(s); ex != null })
+            break = true
         }
+        i += 1
       }
       if (ex != null) {
         for (i <- 1 to last)

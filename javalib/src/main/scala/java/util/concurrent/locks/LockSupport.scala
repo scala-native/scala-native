@@ -21,8 +21,8 @@ object LockSupport {
     val nativeThread = NativeThread.currentNativeThread
     val thread = nativeThread.thread
     setBlocker(thread, blocker)
-    nativeThread.park()
-    setBlocker(thread, null: Object)
+    try nativeThread.park()
+    finally setBlocker(thread, null: Object)
   }
 
   def parkNanos(nanos: Long): Unit =
@@ -32,8 +32,8 @@ object LockSupport {
     val nativeThread = NativeThread.currentNativeThread
     val thread = nativeThread.thread
     setBlocker(thread, blocker)
-    nativeThread.parkNanos(nanos)
-    setBlocker(thread, null: Object)
+    try nativeThread.parkNanos(nanos)
+    finally setBlocker(thread, null: Object)
   }
 
   def parkUntil(deadline: Long): Unit =
@@ -43,8 +43,8 @@ object LockSupport {
     val nativeThread = NativeThread.currentNativeThread
     val thread = nativeThread.thread
     setBlocker(thread, blocker)
-    nativeThread.parkUntil(deadline)
-    setBlocker(thread, null: Object)
+    try nativeThread.parkUntil(deadline)
+    finally setBlocker(thread, null: Object)
   }
 
   def unpark(thread: Thread): Unit = {
