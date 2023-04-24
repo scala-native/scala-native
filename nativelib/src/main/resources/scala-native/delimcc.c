@@ -2,7 +2,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <assert.h>
-#include <threads.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,6 +16,19 @@
 #elif defined(__x86_64__) && defined(__linux__)
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#endif
+
+// Apple platforms mangle the names of some symbols in assembly. We override the
+// names here.
+#if defined(__APPLE__)
+#define _lh_setjmp lh_setjmp
+#define _lh_longjmp lh_longjmp
+#define _lh_boundary_entry lh_boundary_entry
+#define _lh_resume_entry lh_resume_entry
+#define _lh_get_sp lh_get_sp
+
+#define __cont_boundary_impl _cont_boundary_impl
+#define __cont_resume_impl _cont_resume_impl
 #endif
 
 // The return address is always stored in stack_btm - BOUNDARY_LR_OFFSET.
@@ -57,7 +69,7 @@ typedef struct Handlers {
     struct Handlers *next;
 } Handlers;
 
-volatile static thread_local Handlers *__handlers = NULL;
+volatile static _Thread_local Handlers *__handlers = NULL;
 
 static void handler_push(Handler *h) {
     // fprintf(stderr, "Pushing handler with label %lu\n", h->id);

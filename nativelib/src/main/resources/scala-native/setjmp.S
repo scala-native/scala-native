@@ -47,12 +47,15 @@ jump_buf layout:
 .global _lh_boundary_entry
 .global _lh_resume_entry
 .global _lh_get_sp
+#if !defined(__APPLE__)
 .type _lh_setjmp,%function
 .type _lh_longjmp,%function
 .type _lh_boundary_entry,%function
 .type _lh_resume_entry,%function
 .type _lh_get_sp,%function
+#endif
 
+.balign 4
 /* called with x0: &jmp_buf */
 _lh_setjmp:                 
     stp   x18, x19, [x0], #16
@@ -76,6 +79,7 @@ _lh_setjmp:
     mov   x0, #0
     ret                         /* jump to lr */
 
+.balign 4
 /* called with x0: &jmp_buf, x1: value to return */
 _lh_longjmp:
     ldp   x18, x19, [x0], #16
@@ -101,6 +105,7 @@ _lh_longjmp:
     cinc  x0, x1, eq
     ret                         /* jump to lr */
 
+.balign 4
 _lh_boundary_entry:
     mov   x2, x1
     mov   x1, x0
@@ -112,12 +117,14 @@ _lh_boundary_entry:
     add   sp, sp, #16
     ret
 
+.balign 4
 _lh_resume_entry: /* x0 = cont_size, x1 = cont, x2 = arg */
     sub   sp, sp, x0
     add   x0, sp, x0
     mov   x3, x30 /* copy lr */
     bl    __cont_resume_impl /* it will just return from here */
 
+.balign 4
 _lh_get_sp:
     mov  x0, sp
     ret
