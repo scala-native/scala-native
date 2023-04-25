@@ -141,6 +141,7 @@ object CodeGen {
     def apply(env: Map[Global, Defn], defns: Seq[Defn])(implicit
         meta: Metadata
     ): AbstractCodeGen = {
+      println("generating code!!")
       new AbstractCodeGen(env, defns) {
         override val os: OsCompat = {
           if (this.meta.platform.targetsWindows) new WindowsCompat(this)

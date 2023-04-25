@@ -236,11 +236,11 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     memcpy(return_buf, cont->buf, ASM_JMPBUF_SIZE);
 
     assert((diff & 15) == 0);
-    // fprintf(stderr,
-    //         "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | original "
-    //         "cont = %p [%p]\n",
-    //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
-    //         target, tail, cont, cont->stack);
+    fprintf(stderr,
+            "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | original "
+            "cont = %p [%p]\n",
+            diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
+            target, tail, cont, cont->stack);
     // clone the handler chain, with fixes.
     nw = handler_clone_fix(cont->handlers, diff);
     // install the handlers and fix the return buf

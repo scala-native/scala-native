@@ -807,6 +807,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
 
       case Op.Stackalloc(ty, n) =>
+        println(s"alloca on ty = $ty, n = $n => ${deconstify(n)}")
         val pointee = fresh()
 
         newline()
