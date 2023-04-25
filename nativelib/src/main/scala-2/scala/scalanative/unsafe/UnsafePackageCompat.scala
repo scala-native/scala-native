@@ -139,7 +139,7 @@ private object MacroImpl {
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
           val $size    = $runtime.fromRawUSize($rawSize) * $n
           val $rawptr  = $runtime.Intrinsics.stackalloc($size)
-          $runtime.libc.memset($rawptr, 0, $rawSize)
+          $runtime.libc.memset($rawptr, 0, $runtime.toRawSize($size))
           $runtime.fromRawPtr[$T]($rawptr)
         }"""
   }
