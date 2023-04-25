@@ -2139,19 +2139,33 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genStackalloc(app: Apply): Val = {
-      val Apply(_, Seq(sizep)) = app
-
+    private def getUnboxedSize(sizep: Tree)(implicit pos: Position): Val = {
       val size = genExpr(sizep)
       val sizeTy = Type.normalize(size.ty)
-      val unboxed =
-        if Type.isSizeBox(sizeTy) then
-          buf.unbox(sizeTy, size, unwind)(using sizep.span)
-        else
-          assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
-          size
+      println(s"getting unboxed size $size ($sizeTy) from ${sizep}")
+      if Type.isSizeBox(sizeTy) then
+        buf.unbox(sizeTy, size, unwind)(using sizep.span)
+      else
+        assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
+        if sizeTy != nir.Type.Size then
+          // (nir.Type.Long, nir.Type.Size, Conv.SSizeCast)
+          buf.conv(Conv.SSizeCast, nir.Type.Size, size, unwind)
+        else size
+    }
 
-      buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
+    private def genStackalloc(app: Apply): Val = app match {
+      case Apply(_, Seq(sizep)) =>
+        val unboxed = getUnboxedSize(sizep)(using app.span)
+        buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
+      case Apply(_, Seq(nump, sizep)) =>
+        val num = getUnboxedSize(nump)(using app.span)
+        val size = getUnboxedSize(sizep)(using app.span)
+        val total =
+          buf.bin(nir.Bin.Imul, nir.Type.Size, num, size, unwind)(using
+            app.span
+          )
+        buf.stackalloc(nir.Type.Byte, total, unwind)(using app.span)
+      case _ => ???
     }
 
     def genCQuoteOp(app: Apply): Val = {

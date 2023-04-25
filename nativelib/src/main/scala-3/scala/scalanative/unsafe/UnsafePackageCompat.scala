@@ -57,4 +57,16 @@ private[scalanative] trait UnsafePackageCompat {
     libc.memset(ptr, 0, size)
     ptr
   }
+
+  /** Stack allocate and zero-initialize n values of given type, better static
+   *  version.
+   */
+  inline def stackalloc[T](n: Long): Ptr[T] = {
+    import scala.scalanative.unsigned.UnsignedRichLong
+    assert(n >= 0L)
+    val size = Intrinsics.sizeOf[T]
+    val ptr = fromRawPtr[T](Intrinsics.stackalloc(n, size))
+    libc.memset(ptr, 0, n.toUSize * sizeof[T])
+    ptr
+  }
 }
