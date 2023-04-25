@@ -12,6 +12,9 @@ object Intrinsics {
   /** Intrinsified stack allocation of n bytes. */
   def stackalloc(size: CSize): RawPtr = intrinsic
 
+  /** Intrinsified stack allocation of num * size bytes. */
+  def stackalloc(num: Long, size: RawSize): RawPtr = intrinsic
+
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
 

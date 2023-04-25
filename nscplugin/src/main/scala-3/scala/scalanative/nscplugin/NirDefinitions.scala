@@ -141,7 +141,7 @@ final class NirDefinitions()(using ctx: Context) {
     .member(termName("stackalloc"))
     .alternatives
     .map(_.symbol)
-    .ensuring(_.size == 2)
+    .ensuring(_.size == 3)
   @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
   @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info
     .member(termName("sizeOf"))
