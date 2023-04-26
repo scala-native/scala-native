@@ -75,7 +75,8 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
-  private lazy val detectedTriple = Discover.targetTriple(this)
+  private[scalanative] lazy val configuredOrDetectedTriple =
+    targetTriple.getOrElse(Discover.targetTriple(this))
 
   /** Are we targeting a 32-bit platform?
    *
@@ -84,8 +85,7 @@ sealed trait NativeConfig {
    *  architecture for a name that is not found seems excessive perhaps?
    */
   def is32BitPlatform = {
-    targetTriple
-      .getOrElse(detectedTriple)
+    configuredOrDetectedTriple
       .split('-')
       .headOption
       .getOrElse("") match {

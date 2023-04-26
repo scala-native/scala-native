@@ -24,6 +24,9 @@ object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isFreeBSD")
   def isFreeBSD: Boolean = resolved
 
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.arch")
+  def arch: String = resolved
+
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
   def is32BitPlatform: Boolean = resolved
 
