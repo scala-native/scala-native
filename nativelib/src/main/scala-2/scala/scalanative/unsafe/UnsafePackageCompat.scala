@@ -34,6 +34,11 @@ private[scalanative] trait UnsafePackageCompat { self =>
 
   /** Stack allocate and zero-initialize n values of given type */
   def stackalloc[T](n: CSize): Ptr[T] = macro MacroImpl.stackallocN[T]
+
+  /** Stack allocate and zero-initialize n values of given type. Better static
+   *  version.
+   */
+  def stackalloc[T](n: Long): Ptr[T] = macro MacroImpl.stackallocNLong[T]
 }
 
 private object MacroImpl {
@@ -138,8 +143,26 @@ private object MacroImpl {
     q"""{
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
           val $size    = $runtime.fromRawUSize($rawSize) * $n
-          val $rawptr  = $runtime.Intrinsics.stackalloc($size)
+          val $rawptr  = $runtime.Intrinsics.stackalloc($n.toLong, $rawSize)
           $runtime.libc.memset($rawptr, 0, $runtime.toRawSize($size))
+          $runtime.fromRawPtr[$T]($rawptr)
+        }"""
+  }
+
+  def stackallocNLong[T: c.WeakTypeTag](c: Context)(n: c.Tree): c.Tree = {
+    import c.universe._
+
+    val T = weakTypeOf[T]
+
+    val size, rawptr, rawSize = TermName(c.freshName())
+
+    val runtime = q"_root_.scala.scalanative.runtime"
+
+    q"""{
+          val $rawSize = $runtime.Intrinsics.sizeOf[$T]
+          val $size    = $runtime.fromRawUSize($rawSize) * $runtime.fromRawUSize($runtime.Intrinsics.castLongToRawSize($n))
+          val $rawptr  = $runtime.Intrinsics.stackalloc($n, $rawSize)
+          $runtime.libc.memset($rawptr, 0, $rawSize)
           $runtime.fromRawPtr[$T]($rawptr)
         }"""
   }

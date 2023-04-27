@@ -2148,7 +2148,6 @@ trait NirGenExpr(using Context) {
       else
         assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
         if sizeTy != nir.Type.Size then
-          // (nir.Type.Long, nir.Type.Size, Conv.SSizeCast)
           buf.conv(Conv.SSizeCast, nir.Type.Size, size, unwind)
         else size
     }
