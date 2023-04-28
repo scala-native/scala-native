@@ -28,10 +28,10 @@ private[scalanative] object TargetTriple {
     val components = triple.split("-", 4).toList
     val unknown = "unknown"
     TargetTriple(
-      components.unapply(0).map(Arch.parse).getOrElse(unknown),
-      components.unapply(1).map(Vendor.parse).getOrElse(unknown),
-      components.unapply(2).map(OS.parse).getOrElse(unknown),
-      components.unapply(3).map(Env.parse).getOrElse(unknown)
+      components.lift(0).map(Arch.parse).getOrElse(unknown),
+      components.lift(1).map(Vendor.parse).getOrElse(unknown),
+      components.lift(2).map(OS.parse).getOrElse(unknown),
+      components.lift(3).map(Env.parse).getOrElse(unknown)
     )
   }
 
