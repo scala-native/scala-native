@@ -185,8 +185,9 @@ object Build {
     MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
       .enablePlugins(JmhPlugin, BuildInfoPlugin)
       .dependsOn(tools % "compile->test")
-      .settings(toolSettings)
       .settings(
+        toolSettings,
+        noPublishSettings,
         inConfig(Jmh)(
           Def.settings(
             sourceDirectory := (Compile / sourceDirectory).value,
@@ -201,19 +202,16 @@ object Build {
         case Seq(tests) =>
           Def.settings(
             // Only generate build info for test configuration
-            Compile / buildInfoObject := "TestSuiteBuildInfo",
-            Compile / buildInfoPackage := "scala.scalanative.internal.build",
+            // Compile / buildInfoObject := "TestSuiteBuildInfo",
+            Compile / buildInfoPackage := "scala.scalanative.benchmarks",
             Compile / buildInfoKeys := List(
-              BuildInfoKey.map(Keys.fullClasspath.in(Test).in(tests)) {
+              BuildInfoKey.map(tests / Test / fullClasspath) {
                 case (key, value) =>
                   ("fullTestSuiteClasspath", value.toList.map(_.data))
               }
             )
           )
       }
-  // Set up java options to profile with async-profiler and flight recorder
-  // Jmh/javaOptions ++= List("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints")
-  // )
 
   lazy val sbtScalaNative: Project =
     project
