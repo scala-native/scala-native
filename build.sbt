@@ -8,6 +8,7 @@ lazy val sbtScalaNative           = Build.sbtScalaNative
 lazy val nir                      = Build.nir
 lazy val util                     = Build.util
 lazy val tools                    = Build.tools
+lazy val toolsBenchmarks          = Build.toolsBenchmarks
 lazy val nativelib                = Build.nativelib
 lazy val clib                     = Build.clib
 lazy val posixlib                 = Build.posixlib
