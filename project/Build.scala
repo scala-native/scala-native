@@ -39,7 +39,8 @@ object Build {
       junitTestOutputsJVM, junitTestOutputsNative,
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
       scalaPartest, scalaPartestRuntime,
-      scalaPartestTests, scalaPartestJunitTests
+      scalaPartestTests, scalaPartestJunitTests,
+      toolsBenchmarks
     )
 // format: on
   lazy val allMultiScalaProjects =
