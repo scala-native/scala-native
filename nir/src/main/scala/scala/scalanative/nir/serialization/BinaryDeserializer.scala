@@ -81,6 +81,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.AbstractAttr => Attr.Abstract
     case T.VolatileAttr => Attr.Volatile
     case T.FinalAttr    => Attr.Final
+
+    case T.LinktimeResolvedAttr => Attr.LinktimeResolved
   }
 
   private def getBin(): Bin = getInt match {

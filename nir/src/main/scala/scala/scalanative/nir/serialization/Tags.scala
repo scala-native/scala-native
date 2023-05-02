@@ -29,6 +29,7 @@ object Tags {
   final val AbstractAttr = 1 + StubAttr
   final val VolatileAttr = 1 + AbstractAttr
   final val FinalAttr = 1 + VolatileAttr
+  final val LinktimeResolvedAttr = 1 + FinalAttr
 
   // Binary ops
 

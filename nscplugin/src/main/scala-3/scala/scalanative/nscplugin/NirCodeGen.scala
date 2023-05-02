@@ -214,23 +214,4 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     }
   }
 
-  protected object LinktimeProperty {
-    def unapply(tree: Tree): Option[(String, nir.Position)] = {
-      if (tree.symbol == null) None
-      else {
-        tree.symbol
-          .getAnnotation(defnNir.ResolvedAtLinktimeClass)
-          .flatMap(_.argumentConstantString(0))
-          .map(_ -> positionsConversions.fromSpan(tree.span))
-          .orElse {
-            report.error(
-              "Name used to resolve link-time property needs to be non-null literal constant",
-              tree.sourcePos
-            )
-            None
-          }
-      }
-    }
-  }
-
 end NirCodeGen

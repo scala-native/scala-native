@@ -109,6 +109,8 @@ object Show {
         str("volatile")
       case Attr.Final =>
         str("final")
+      case Attr.LinktimeResolved =>
+        str("linktime")
     }
 
     def next_(next: Next): Unit = next match {
