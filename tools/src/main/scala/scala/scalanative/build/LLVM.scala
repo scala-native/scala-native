@@ -87,6 +87,10 @@ private[scalanative] object LLVM {
       } else Nil
     }
 
+    val gcFlags = {
+      val gc = config.compilerConfig.gc.toString
+      Seq(s"-DSCALANATIVE_GC=$gc")
+    }
     val configFlags = {
       if (config.compilerConfig.multithreadingSupport)
         Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
@@ -99,7 +103,7 @@ private[scalanative] object LLVM {
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ asan ++ target ++
         stdflag ++ platformFlags ++ exceptionsHandling ++
-        configFlags ++ Seq("-fvisibility=hidden", opt) ++
+        gcFlags ++ configFlags ++ Seq("-fvisibility=hidden", opt) ++
         config.compileOptions
     val compilec: Seq[String] =
       Seq(compiler, "-c", inpath, "-o", outpath) ++ flags
