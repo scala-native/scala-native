@@ -112,6 +112,8 @@ final class BinarySerializer {
     case Attr.Abstract => putInt(T.AbstractAttr)
     case Attr.Volatile => putInt(T.VolatileAttr)
     case Attr.Final    => putInt(T.FinalAttr)
+
+    case Attr.LinktimeResolved => putInt(T.LinktimeResolvedAttr)
   }
 
   private def putBin(bin: Bin) = bin match {
