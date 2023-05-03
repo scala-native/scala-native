@@ -40,6 +40,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
   protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
+  protected var curMethodUsesLinktimeResolvedValues = false
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
@@ -211,25 +212,6 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     def collect(tree: Tree): CollectMethodInfo = {
       traverse(tree)
       this
-    }
-  }
-
-  protected object LinktimeProperty {
-    def unapply(tree: Tree): Option[(String, nir.Position)] = {
-      if (tree.symbol == null) None
-      else {
-        tree.symbol
-          .getAnnotation(defnNir.ResolvedAtLinktimeClass)
-          .flatMap(_.argumentConstantString(0))
-          .map(_ -> positionsConversions.fromSpan(tree.span))
-          .orElse {
-            report.error(
-              "Name used to resolve link-time property needs to be non-null literal constant",
-              tree.sourcePos
-            )
-            None
-          }
-      }
     }
   }
 
