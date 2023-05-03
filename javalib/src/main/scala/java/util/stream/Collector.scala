@@ -17,54 +17,27 @@ trait Collector[T, A, R] {
 }
 
 object Collector {
-
-  /* Design Note:
-   *   enums are a tangle in each of Java and Scala.
-   *   To make things more fun, enum changes between Scala 2 and Scala 3.
-   *
-   *   Scala Native currently supports both Scala 2 & 3. There are mechanisms
-   *   for handling code which must vary by Scala version.
-   *
-   *   This is an acknowledgedly incomplete & inaccurate Scala 2 style
-   *   emulation of the parts of the Java Collector.Characteristics
-   *   enum needed to implement the Collectors class. It is intended to
-   *   hit the Pareto point of benefit/cost.
-   *
-   *   Of course, somebody, somewhere, is going to use one of the features
-   *   not emulated.  Then it will be time for a better iteration.
-   */
-
-  case class Characteristics(name: String)
+  sealed class Characteristics(name: String, ordinal: Int)
+      extends _Enum[Characteristics](name, ordinal) {
+    override def toString() = this.name
+  }
 
   object Characteristics {
+    final val CONCURRENT = new Characteristics("CONCURRENT", 0)
+    final val UNORDERED = new Characteristics("UNORDERED", 1)
+    final val IDENTITY_FINISH = new Characteristics("IDENTITY_FINISH", 2)
 
-    final val CONCURRENT = new Characteristics("CONCURRENT")
-    final val IDENTITY_FINISH = new Characteristics("IDENTITIY_FINISH")
-    final val UNORDERED = new Characteristics("UNORDERED")
+    private[this] val cachedValues =
+      Array(CONCURRENT, IDENTITY_FINISH, UNORDERED)
 
-    def valueOf(name: String): Collector.Characteristics = {
-      name match {
-        case nom if (nom == "CONCURRENT") => Characteristics.CONCURRENT
-        case nom if (nom == "UNORDERED")  => Characteristics.UNORDERED
-        case nom if (nom == "IDENTITY_FINISH") =>
-          Characteristics.IDENTITY_FINISH
-        case _ =>
-          val missingName =
-            s"java.util.stream.Collector.Characteristics.${name}"
-          throw new IllegalArgumentException(s"No enum constant ${missingName}")
+    def values(): Array[Characteristics] = cachedValues.clone()
+
+    def valueOf(name: String): Characteristics = {
+      cachedValues.find(_.name() == name).getOrElse {
+        throw new IllegalArgumentException(
+          s"No enum const Collector.Characteristics. ${name}"
+        )
       }
-    }
-
-    def values(): Array[Collector.Characteristics] = {
-      // Fill the array in the same order as shown by the JVM.
-      // Since an Array is mutable, create & fill on each call, rather than
-      // returning a static array.
-      val va = new Array[Collector.Characteristics](3)
-      va(0) = Characteristics.CONCURRENT
-      va(1) = Characteristics.UNORDERED
-      va(2) = Characteristics.IDENTITY_FINISH
-
-      va
     }
   }
 
