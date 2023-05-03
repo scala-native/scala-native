@@ -643,8 +643,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             scoped(
               curMethodSig := sig
             ) {
+              curMethodUsesLinktimeResolvedValues = false
               val body = genMethodBody(dd, rhs)
-              Some(Defn.Define(attrs, name, sig, body))
+              val methodAttrs =
+                if (curMethodUsesLinktimeResolvedValues)
+                  attrs.copy(isLinktimeResolved = true)
+                else attrs
+              Some(Defn.Define(methodAttrs, name, sig, body))
             }
         }
       }

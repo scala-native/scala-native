@@ -442,6 +442,7 @@ trait NirGenExpr(using Context) {
         given nir.Position = condp.span
         getLinktimeCondition(condp) match {
           case Some(cond) =>
+            curMethodUsesLinktimeResolvedValues = true
             buf.branchLinktime(cond, Next(thenn), Next(elsen))
           case None =>
             if ensureLinktime then

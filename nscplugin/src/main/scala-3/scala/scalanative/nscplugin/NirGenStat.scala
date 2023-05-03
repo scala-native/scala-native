@@ -228,12 +228,13 @@ trait NirGenStat(using Context) {
           scoped(
             curMethodSig := sig
           ) {
-            val defn = Defn.Define(
-              attrs,
-              name,
-              sig,
-              genMethodBody(dd, rhs)
-            )
+            curMethodUsesLinktimeResolvedValues = false
+            val body = genMethodBody(dd, rhs)
+            val methodAttrs =
+              if (curMethodUsesLinktimeResolvedValues)
+                attrs.copy(isLinktimeResolved = true)
+              else attrs
+            val defn = Defn.Define(methodAttrs, name, sig, body)
             Some(defn)
           }
       }

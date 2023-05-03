@@ -41,6 +41,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected val curStatBuffer = new util.ScopedVar[StatBuffer]
   protected val cachedMethodSig =
     collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
+  protected var curMethodUsesLinktimeResolvedValues = false
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>

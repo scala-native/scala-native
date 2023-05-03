@@ -209,6 +209,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val cond = genExpr(condp)
         buf.branch(cond, Next(thenn), Next(elsen))(condp.pos)
       } { cond =>
+        curMethodUsesLinktimeResolvedValues = true
         buf.branchLinktime(cond, Next(thenn), Next(elsen))(condp.pos)
       }
 

@@ -41,7 +41,7 @@ trait LinktimeValueResolver { self: Reach =>
   protected def resolveLinktimeDefine(defn: Defn.Define): Defn.Define = {
     implicit def position: Position = defn.pos
 
-    def resolveInDefinition() = {
+    def evaluated() = {
       implicit val fresh = Fresh()
       lazy val buf = {
         val buf = new Buffer()
@@ -72,7 +72,7 @@ trait LinktimeValueResolver { self: Reach =>
 
     }
 
-    def resolveInUsage() = {
+    def partiallyEvaluated() = {
       val resolvedInsts = ControlFlow.removeDeadBlocks {
         defn.insts.map {
           case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
@@ -86,15 +86,40 @@ trait LinktimeValueResolver { self: Reach =>
       defn.copy(insts = resolvedInsts)
     }
 
-    if (defn.attrs.isLinktimeResolved) resolveInDefinition()
-    else if (defn.insts.exists(shouldResolveInst)) resolveInUsage()
-    else defn
-  }
+    def isRuntimeOnly(inst: Inst): Boolean = inst match {
+      case Inst.Label(_, _)         => false
+      case Inst.LinktimeIf(_, _, _) => false
+      case Inst.Jump(_: Next.Label) => false
+      case Inst.Ret(_)              => false
+      case Inst.Let(_, op, Next.None) =>
+        op match {
+          case Op.Call(_, Val.Global(name, _), _) =>
+            name != Linktime.PropertyResolveFunctionName &&
+              !lookup(name).exists(_.attrs.isLinktimeResolved)
+          case _: Op.Comp => false
+          case _          => true
+        }
+      case _ => true
+    }
 
-  protected def shouldResolveInst(inst: Inst): Boolean = inst match {
-    case _: Inst.LinktimeIf                      => true
-    case Inst.Let(_, ReferencedPropertyOp(_), _) => true
-    case _                                       => false
+    def canBeEvauluated =
+      !defn.insts.exists(isRuntimeOnly) && {
+        defn.ty match {
+          case Type.Function(_, retty) =>
+            retty match {
+              case _: Type.ValueKind    => true
+              case Type.Ref(name, _, _) => name == Rt.String.name
+              case Type.Null            => true
+              case _                    => false
+            }
+          case _ => false
+        }
+      }
+
+    if (defn.attrs.isLinktimeResolved)
+      if (canBeEvauluated) evaluated()
+      else partiallyEvaluated()
+    else defn
   }
 
   private def resolveLinktimeProperty(name: String)(implicit
@@ -235,6 +260,7 @@ trait LinktimeValueResolver { self: Reach =>
           )
       }
 
+      // Linktime resolved values always have blocks of size 1
       assert(block.insts.size == 1)
       interpret(block.insts.head)
     }
