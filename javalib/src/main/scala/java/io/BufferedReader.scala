@@ -132,13 +132,13 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
     val spliter =
       new Spliterators.AbstractSpliterator[String](Long.MaxValue, 0) {
         def tryAdvance(action: Consumer[_ >: String]): Boolean = {
-          Option(readLine()) match {
-            case None =>
+          readLine() match {
+            case null =>
               if (closeAtEnd)
                 close()
               false
 
-            case Some(line) =>
+            case line =>
               action.accept(line)
               true
           }
