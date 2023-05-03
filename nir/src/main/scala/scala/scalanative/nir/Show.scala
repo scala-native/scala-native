@@ -101,6 +101,8 @@ object Show {
         str("\")")
       case Attr.Abstract =>
         str("abstract")
+      case Attr.LinktimeResolved =>
+        str("linktime")
     }
 
     def next_(next: Next): Unit = next match {

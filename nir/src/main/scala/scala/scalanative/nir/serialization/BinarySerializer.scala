@@ -109,6 +109,8 @@ final class BinarySerializer {
     case Attr.Extern   => putInt(T.ExternAttr)
     case Attr.Link(s)  => putInt(T.LinkAttr); putUTF8String(s)
     case Attr.Abstract => putInt(T.AbstractAttr)
+
+    case Attr.LinktimeResolved => putInt(T.LinktimeResolvedAttr)
   }
 
   private def putBin(bin: Bin) = bin match {

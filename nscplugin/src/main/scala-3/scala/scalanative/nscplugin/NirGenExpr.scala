@@ -431,8 +431,14 @@ trait NirGenExpr(using Context) {
       genIf(retty, cond, thenp, elsep)
     }
 
-    private def genIf(retty: nir.Type, condp: Tree, thenp: Tree, elsep: Tree)(
-        using nir.Position
+    def genIf(
+        retty: nir.Type,
+        condp: Tree,
+        thenp: Tree,
+        elsep: Tree,
+        ensureLinktime: Boolean = false
+    )(using
+        nir.Position
     ): Val = {
       val thenn, elsen, mergen = fresh()
       val mergev = Val.Local(fresh(), retty)
@@ -441,8 +447,14 @@ trait NirGenExpr(using Context) {
         given nir.Position = condp.span
         getLinktimeCondition(condp) match {
           case Some(cond) =>
+            curMethodUsesLinktimeResolvedValues = true
             buf.branchLinktime(cond, Next(thenn), Next(elsen))
           case None =>
+            if ensureLinktime then
+              report.error(
+                "Cannot resolve given condition in linktime, it might be depending on runtime value",
+                condp.srcPos
+              )
             val cond = genExpr(condp)
             buf.branch(cond, Next(thenn), Next(elsen))(using condp.span)
         }
@@ -2008,7 +2020,7 @@ trait NirGenExpr(using Context) {
 
       condp match {
         // if(bool) (...)
-        case Apply(LinktimeProperty(name, position), Nil) =>
+        case Apply(LinktimeProperty(name, _, position), Nil) =>
           Some {
             SimpleCondition(
               propertyName = name,
@@ -2020,7 +2032,7 @@ trait NirGenExpr(using Context) {
         // if(!bool) (...)
         case Apply(
               Select(
-                Apply(LinktimeProperty(name, position), Nil),
+                Apply(LinktimeProperty(name, _, position), Nil),
                 nme.UNARY_!
               ),
               Nil
@@ -2035,7 +2047,7 @@ trait NirGenExpr(using Context) {
 
         // if(property <comp> x) (...)
         case Apply(
-              Select(LinktimeProperty(name, position), comp),
+              Select(LinktimeProperty(name, _, position), comp),
               List(arg @ Literal(Constant(_)))
             ) =>
           Some {
@@ -2052,7 +2064,7 @@ trait NirGenExpr(using Context) {
         case Apply(
               Select(
                 Apply(
-                  Select(LinktimeProperty(name, position), nme.EQ),
+                  Select(LinktimeProperty(name, _, position), nme.EQ),
                   List(arg @ Literal(Constant(_)))
                 ),
                 nme.UNARY_!
@@ -2535,24 +2547,6 @@ trait NirGenExpr(using Context) {
       )
     }
 
-    private object LinktimeProperty {
-      def unapply(tree: Tree): Option[(String, nir.Position)] = {
-        if (tree.symbol == null) None
-        else {
-          tree.symbol
-            .getAnnotation(defnNir.ResolvedAtLinktimeClass)
-            .flatMap(_.argumentConstantString(0).orElse {
-              report.error(
-                "Name used to resolve link-time property needs to be non-null literal constant",
-                tree.sourcePos
-              )
-              None
-            })
-            .zip(Some(fromSpan(tree.span)))
-        }
-      }
-    }
-
     private def labelExcludeUnitValue(label: Local, value: nir.Val.Local)(using
         nir.Position
     ): nir.Val =
@@ -2604,4 +2598,5 @@ trait NirGenExpr(using Context) {
     override def ++=(other: nir.Buffer): Unit =
       this ++= other.toSeq
   }
+
 }

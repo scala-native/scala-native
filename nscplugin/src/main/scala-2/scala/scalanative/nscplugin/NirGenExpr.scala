@@ -189,16 +189,27 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genIf(retty, cond, thenp, elsep)(tree.pos)
     }
 
-    def genIf(retty: nir.Type, condp: Tree, thenp: Tree, elsep: Tree)(implicit
-        ifPos: nir.Position
-    ): Val = {
+    def genIf(
+        retty: nir.Type,
+        condp: Tree,
+        thenp: Tree,
+        elsep: Tree,
+        ensureLinktime: Boolean = false
+    )(implicit ifPos: nir.Position): Val = {
       val thenn, elsen, mergen = fresh()
       val mergev = Val.Local(fresh(), retty)
 
       getLinktimeCondition(condp).fold {
+        if (ensureLinktime) {
+          globalError(
+            condp.pos,
+            "Cannot resolve given condition in linktime, it might be depending on runtime value"
+          )
+        }
         val cond = genExpr(condp)
         buf.branch(cond, Next(thenn), Next(elsen))(condp.pos)
       } { cond =>
+        curMethodUsesLinktimeResolvedValues = true
         buf.branchLinktime(cond, Next(thenn), Next(elsen))(condp.pos)
       }
 
@@ -1216,7 +1227,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       condp match {
         // if(bool) (...)
-        case Apply(LinktimeProperty(name, position), Nil) =>
+        case Apply(LinktimeProperty(name, _, position), Nil) =>
           Some {
             SimpleCondition(
               propertyName = name,
@@ -1228,7 +1239,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // if(!bool) (...)
         case Apply(
               Select(
-                Apply(LinktimeProperty(name, position), Nil),
+                Apply(LinktimeProperty(name, _, position), Nil),
                 nme.UNARY_!
               ),
               Nil
@@ -1243,7 +1254,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         // if(property <comp> x) (...)
         case Apply(
-              Select(LinktimeProperty(name, position), comp),
+              Select(LinktimeProperty(name, _, position), comp),
               List(arg @ Literal(Constant(_)))
             ) =>
           Some {

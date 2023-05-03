@@ -30,6 +30,7 @@ object Attr {
   case object Extern extends Attr
   final case class Link(name: String) extends Attr
   case object Abstract extends Attr
+  case object LinktimeResolved extends Attr
 }
 
 final case class Attrs(
@@ -40,6 +41,7 @@ final case class Attrs(
     isDyn: Boolean = false,
     isStub: Boolean = false,
     isAbstract: Boolean = false,
+    isLinktimeResolved: Boolean = false,
     links: Seq[Attr.Link] = Seq.empty
 ) {
   def toSeq: Seq[Attr] = {
@@ -52,6 +54,7 @@ final case class Attrs(
     if (isDyn) out += Dyn
     if (isStub) out += Stub
     if (isAbstract) out += Abstract
+    if (isLinktimeResolved) out += LinktimeResolved
     out ++= links
 
     out.result()
@@ -68,17 +71,19 @@ object Attrs {
     var isDyn = false
     var isStub = false
     var isAbstract = false
+    var isLinktimeResolved = false
     val links = Seq.newBuilder[Attr.Link]
 
     attrs.foreach {
       case attr: Inline     => inline = attr
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
-      case Extern           => isExtern = true
-      case Dyn              => isDyn = true
-      case Stub             => isStub = true
-      case link: Attr.Link  => links += link
-      case Abstract         => isAbstract = true
+      case Extern=>           isExtern = true
+      case Dyn             => isDyn = true
+      case Stub            => isStub = true
+      case link: Attr.Link => links += link
+      case Abstract        => isAbstract = true
+      case LinktimeResolved => isLinktimeResolved = true
     }
 
     new Attrs(
@@ -89,6 +94,7 @@ object Attrs {
       isDyn = isDyn,
       isStub = isStub,
       isAbstract = isAbstract,
+      isLinktimeResolved = isLinktimeResolved,
       links = links.result()
     )
   }
