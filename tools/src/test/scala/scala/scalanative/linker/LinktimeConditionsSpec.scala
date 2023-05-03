@@ -66,7 +66,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       s"$linktimeInfo.target.arch",
       s"$linktimeInfo.target.vendor",
       s"$linktimeInfo.target.os",
-      s"$linktimeInfo.target.env",
+      s"$linktimeInfo.target.env"
     )
   }
 
