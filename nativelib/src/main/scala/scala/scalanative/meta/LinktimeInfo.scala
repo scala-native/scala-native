@@ -12,17 +12,17 @@ object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.releaseMode")
   def releaseMode: Boolean = resolved
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
-  def isWindows: Boolean = resolved
+  @resolvedAtLinktime
+  def isWindows: Boolean = target.os == "windows"
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isLinux")
-  def isLinux: Boolean = resolved
+  @resolvedAtLinktime
+  def isLinux: Boolean = target.os == "linux"
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isMac")
-  def isMac: Boolean = resolved
+  @resolvedAtLinktime
+  def isMac: Boolean = target.vendor == "apple" && target.os == "darwin"
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isFreeBSD")
-  def isFreeBSD: Boolean = resolved
+  @resolvedAtLinktime
+  def isFreeBSD: Boolean = target.os == "freebsd"
 
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
   def is32BitPlatform: Boolean = resolved

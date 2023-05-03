@@ -15,10 +15,6 @@ trait LinktimeValueResolver { self: Reach =>
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
-      s"$linktimeInfo.isWindows" -> (triple.os == "windows"),
-      s"$linktimeInfo.isLinux" -> (triple.os == "linux"),
-      s"$linktimeInfo.isMac" -> (triple.vendor == "apple" && triple.os == "darwin"),
-      s"$linktimeInfo.isFreeBSD" -> (triple.os == "freebsd"),
       s"$linktimeInfo.isMultithreadingEnabled" -> conf.multithreadingSupport,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
