@@ -3,60 +3,60 @@ package java.util
 import java.{lang => jl}
 
 class DoubleSummaryStatistics() {
-  var _count: Long = 0L
-  var _min: Double = jl.Double.POSITIVE_INFINITY
-  var _max: Double = jl.Double.NEGATIVE_INFINITY
-  var _sum: Double = 0.0
+  private var count: Long = 0L
+  private var min: Double = jl.Double.POSITIVE_INFINITY
+  private var max: Double = jl.Double.NEGATIVE_INFINITY
+  private var sum: Double = 0.0
 
   def this(count: Long, min: Double, max: Double, sum: Double) = {
     this()
-    _count = count
-    _min = min
-    _max = max
-    _sum = sum
+    this.count = count
+    this.min = min
+    this.max = max
+    this.sum = sum
   }
 
   def accept(value: Double): Unit = {
-    _count += 1L
-    _sum += value
+    count += 1L
+    sum += value
 
-    if (value < _min)
-      _min = value
+    if (value < min)
+      min = value
 
-    if (value > _max)
-      _max = value
+    if (value > max)
+      max = value
   }
 
   def combine(other: DoubleSummaryStatistics): Unit = {
-    _count += other._count
-    _sum += other._sum
+    count += other.count
+    sum += other.sum
 
-    if (other._min < _min)
-      _min = other._min
+    if (other.min < min)
+      min = other.min
 
-    if (other._max > _max)
-      _max = other._max
+    if (other.max > max)
+      max = other.max
   }
 
   final def getAverage(): Double =
-    if (_count == 0) 0.0 // as defined by JVM DoubleSummaryStatistics
-    else _sum / _count
+    if (count == 0) 0.0 // as defined by JVM DoubleSummaryStatistics
+    else sum / count
 
-  final def getCount(): Long = _count
+  final def getCount(): Long = count
 
-  final def getMax(): Double = _max
+  final def getMax(): Double = max
 
-  final def getMin(): Double = _min
+  final def getMin(): Double = min
 
-  final def getSum(): Double = _sum
+  final def getSum(): Double = sum
 
   override def toString(): String = {
     "DoubleSummaryStatistics{" +
-      s"count=${_count}, " +
-      s"sum=${_sum}, " +
-      s"min=${_min}, " +
+      s"count=${count}, " +
+      s"sum=${sum}, " +
+      s"min=${min}, " +
       s"average=${getAverage()}, " +
-      s"max=${_max}" +
+      s"max=${max}" +
       "}"
   }
 
