@@ -1,0 +1,18 @@
+# Before refactor
+[info] Benchmark                                        Mode  Cnt     Score    Error  Units
+[info] LinkerBench.link                                 avgt   10   381.692 ± 21.700  ms/op
+[info] OptimizeDebug.optimize                           avgt   10   340.831 ± 18.205  ms/op
+[info] OptimizeReleaseFast.optimize                     avgt   10  1118.887 ±  8.960  ms/op
+[info] testinterface.CodeGen.codeGen                    avgt   10   201.963 ±  9.069  ms/op
+[info] testinterface.CodeGenWithDebugMetadata.codeGen   avgt   10   227.957 ± 19.301  ms/op
+[info] testinterface.CodeGenWithMultithreading.codeGen  avgt   10   278.591 ±  1.369  ms/op
+
+# After refactor
+[info] Benchmark                                        Mode  Cnt     Score    Error  Units
+[info] LinkerBench.link                                 avgt   10   362.773 ±  9.951  ms/op
+[info] OptimizeDebug.optimize                           avgt   10   308.945 ± 13.501  ms/op
+[info] OptimizeReleaseFast.optimize                     avgt   10  1095.197 ± 14.564  ms/op
+[info] testinterface.CodeGen.codeGen                    avgt   10   159.182 ± 16.184  ms/op
+[info] testinterface.CodeGenWithDebugMetadata.codeGen   avgt   10   161.618 ±  5.701  ms/op
+[info] testinterface.CodeGenWithMultithreading.codeGen  avgt   10   230.890 ±  4.489  ms/op
+

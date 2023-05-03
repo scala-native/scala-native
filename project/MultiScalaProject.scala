@@ -145,7 +145,7 @@ object MultiScalaProject {
   def apply(id: String): MultiScalaProject =
     apply(id, file(id))
   def apply(id: String, base: File): MultiScalaProject =
-    apply(id, id, file(id))
+    apply(id, id, base)
   def apply(
       id: String,
       name: String,

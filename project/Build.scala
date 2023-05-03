@@ -154,34 +154,83 @@ object Build {
             "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
             "-Dscalanative.nativeruntime.cp=" + nativelibCp
           )
-        },
+        }
     }
 
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
     .settings(compilerPluginSettings)
 
-  private val withSharedSources = Def.settings(
-    // baseDirectory = project/jvm/.<scala-version>
-    Compile / unmanagedSourceDirectories += baseDirectory.value.getParentFile.getParentFile / "src"
-  )
+  private val withSharedCrossPlatformSources = {
+    def sharedSourceDirs(
+        scalaVersion: String,
+        baseDirectory: File,
+        subDir: String
+    ) = {
+      // baseDirectory = project/jvm/.<scala-version>
+      val base = baseDirectory.getParentFile().getParentFile() / "src" / subDir
+      val common = base / "scala"
+      CrossVersion.partialVersion(scalaVersion) match {
+        case Some((2, 12)) =>
+          Seq(base / "scala", base / "scala-2", base / "scala-2.12")
+        case Some((2, 13)) =>
+          Seq(
+            base / "scala",
+            base / "scala-2",
+            base / "scala-2.13",
+            base / "scala-2.13+"
+          )
+        case Some((3, _)) =>
+          Seq(base / "scala", base / "scala-3", base / "scala-2.13+")
+        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion}")
+      }
+    }
+    Def.settings(
+      Compile / unmanagedSourceDirectories ++= sharedSourceDirs(
+        scalaVersion.value,
+        baseDirectory.value,
+        "main"
+      ),
+      Test / unmanagedSourceDirectories ++= sharedSourceDirs(
+        scalaVersion.value,
+        baseDirectory.value,
+        "test"
+      )
+    )
+  }
 
   // NIR compiler
   lazy val util = MultiScalaProject("util", file("util/native"))
     .enablePlugins(MyScalaNativePlugin)
-    .settings(toolSettings, mavenPublishSettings, withSharedSources)
+    .settings(
+      toolSettings,
+      mavenPublishSettings,
+      withSharedCrossPlatformSources
+    )
 
   lazy val utilJVM =
     MultiScalaProject(id = "utilJVM", name = "util", file("util/jvm"))
-      .settings(toolSettings, mavenPublishSettings, withSharedSources)
+      .settings(
+        toolSettings,
+        mavenPublishSettings,
+        withSharedCrossPlatformSources
+      )
 
   lazy val nir = MultiScalaProject("nir", file("nir/native"))
-    .settings(toolSettings, mavenPublishSettings, withSharedSources)
+    .settings(
+      toolSettings,
+      mavenPublishSettings,
+      withSharedCrossPlatformSources
+    )
     .enablePlugins(MyScalaNativePlugin)
     .dependsOn(util)
 
   lazy val nirJVM =
     MultiScalaProject(id = "nirJVM", name = "nir", file("nir/jvm"))
-      .settings(toolSettings, mavenPublishSettings, withSharedSources)
+      .settings(
+        toolSettings,
+        mavenPublishSettings,
+        withSharedCrossPlatformSources
+      )
       .settings(
         libraryDependencies ++= Deps.JUnitJvm
       )
@@ -195,7 +244,7 @@ object Build {
   private val commonToolsSettings = Def.settings(
     toolSettings,
     mavenPublishSettings,
-    withSharedSources,
+    withSharedCrossPlatformSources,
     buildInfoSettings,
     scalacOptions ++= {
       val scala213StdLibDeprecations = Seq(
@@ -238,6 +287,22 @@ object Build {
     .withJUnitPlugin
     .withNativeCompilerPlugin
     .settings(commonToolsSettings)
+    .settings(
+      Compile / unmanagedSourceDirectories ++= CrossVersion
+        .partialVersion(scalaVersion.value)
+        .collect {
+          case (3, _) | (2, 13) =>
+            (Compile / sourceDirectory).value / "scala-2.13+"
+        }
+        .toList,
+      Test / sources := Nil,
+      Test / test := {
+        val log = streams.value.log
+        log.warn(
+          "Unable to test tools using Scala Native - it does not use JUnit"
+        )
+      }
+    )
     .dependsOn(nir, util)
 
   lazy val toolsJVM =
