@@ -1847,3 +1847,7 @@ The original license notice is included below:
 
 Additions by this project to the original `epollcat` implementation carry
 the Scala Native license.
+
+# License notice for LLVM
+
+Scala Native's `tools/` contains parts that are derived from the [LLVM Project](https://llvm.org/). Those parts are either marked with `// ported from LLVM` and/or include the full copyright preamble in the source code file. The original code was licensed under Apache License Version v2.0 with LLVM Exceptions.

@@ -10,20 +10,21 @@ trait LinktimeValueResolver { self: Reach =>
 
   private lazy val linktimeProperties = {
     val conf = config.compilerConfig
+    val triple = conf.configuredOrDetectedTriple
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
-      s"$linktimeInfo.isWindows" -> Platform.isWindows,
-      s"$linktimeInfo.isLinux" -> Platform.isLinux,
-      s"$linktimeInfo.isMac" -> Platform.isMac,
-      s"$linktimeInfo.isFreeBSD" -> Platform.isFreeBSD,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix
       },
       s"$linktimeInfo.isMsys" -> Platform.isMsys,
-      s"$linktimeInfo.isCygwin" -> Platform.isCygwin
+      s"$linktimeInfo.isCygwin" -> Platform.isCygwin,
+      s"$linktimeInfo.target.arch" -> triple.arch,
+      s"$linktimeInfo.target.vendor" -> triple.vendor,
+      s"$linktimeInfo.target.os" -> triple.os,
+      s"$linktimeInfo.target.env" -> triple.env
     )
     NativeConfig.checkLinktimeProperties(predefined)
     predefined ++ conf.linktimeProperties

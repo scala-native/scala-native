@@ -65,11 +65,13 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
+  private[scalanative] lazy val configuredOrDetectedTriple =
+    TargetTriple.parse(targetTriple.getOrElse(Discover.targetTriple(this)))
+
+  // update methods - order as properties above
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
-
-  /** Create a new config with given compilation mode. */
-  def withMode(value: Mode): NativeConfig
 
   /** Create a new config with given path to clang. */
   def withClang(value: Path): NativeConfig
