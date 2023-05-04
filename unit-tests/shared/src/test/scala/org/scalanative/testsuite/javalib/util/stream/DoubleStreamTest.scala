@@ -29,9 +29,8 @@ import org.junit.Ignore
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 /* Design Note:
- *   Three tests requiring classes which have not been implemented yet
+ *   Two tests requiring classes which have not been implemented yet
  *   are commented out:
- *     - boxed
  *     - doubleStreamMapToInt, required IntStream
  *     - doubleStreamMapToLong, requires LongStream
  */
@@ -352,8 +351,34 @@ class DoubleStreamTest {
     )
   }
 
-  @Ignore // Not Yet Implemented, needs 'boxed()' first
-  @Test def doubleStreamBoxed(): Unit = {}
+  @Test def doubleStreamBoxed(): Unit = {
+    val nElements = 5
+    val data = new Array[Double](nElements)
+    data(0) = 0.0
+    data(1) = 1.1
+    data(2) = 2.2
+    data(3) = 3.3
+    data(4) = 4.4
+
+    val sd = Arrays.stream(data)
+
+    assertTrue(
+      "stream should be a DoubleStream",
+      sd.isInstanceOf[DoubleStream]
+    )
+
+    val sBoxed = sd.boxed()
+
+    assertTrue(
+      "resultant stream should be boxed Stream[Double]",
+      sBoxed.isInstanceOf[Stream[_]]
+    )
+
+    assertFalse(
+      "resultant stream should not be a DoubleStream",
+      sBoxed.isInstanceOf[DoubleStream]
+    )
+  }
 
   @Test def doubleStreamCollect_EmptyStreamUsingSupplier(): Unit = {
     type U = ju.ArrayList[Double]

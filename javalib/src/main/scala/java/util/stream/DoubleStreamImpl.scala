@@ -215,9 +215,8 @@ private[stream] class DoubleStreamImpl(
     else OptionalDouble.of(sum / count)
   }
 
-  // More complex than it looks.
   def boxed(): Stream[Double] =
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    this.mapToObj[Double](d => d)
 
   def collect[R](
       supplier: Supplier[R],
