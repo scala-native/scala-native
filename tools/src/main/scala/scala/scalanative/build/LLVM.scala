@@ -89,7 +89,7 @@ private[scalanative] object LLVM {
 
     val gcFlags = {
       val gc = config.compilerConfig.gc.toString
-      Seq(s"-DSCALANATIVE_GC=$gc")
+      Seq(s"-DSCALANATIVE_GC_${gc.toUpperCase}")
     }
     val configFlags = {
       if (config.compilerConfig.multithreadingSupport)
