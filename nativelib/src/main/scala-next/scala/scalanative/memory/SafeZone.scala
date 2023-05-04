@@ -5,7 +5,7 @@ import scalanative.unsigned._
 import scala.annotation.implicitNotFound
 import scala.scalanative.unsafe.CSize
 import scala.scalanative.unsigned.USize
-import scala.scalanative.runtime.{RawPtr, RawSize, CZone, Intrinsics}
+import scala.scalanative.runtime.{RawPtr, RawSize, SafeZoneAllocator, Intrinsics}
 import scala.scalanative.runtime.SafeZoneAllocator.allocate
 
 @implicitNotFound("Given method requires an implicit zone.")
@@ -36,7 +36,7 @@ trait SafeZone {
   @noinline
   private[scalanative] def allocImpl(cls: RawPtr, size: RawSize): RawPtr = {
     checkOpen()
-    CZone.alloc(handle, cls, USize(size).asInstanceOf[CSize])
+    SafeZoneAllocator.Impl.alloc(handle, cls, USize(size).asInstanceOf[CSize])
   }
 }
 
@@ -47,7 +47,7 @@ final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends Saf
   override def close(): Unit = {
     checkOpen()
     flagIsOpen = false
-    CZone.close(handle)
+    SafeZoneAllocator.Impl.close(handle)
   }
 
   override def isOpen: Boolean = flagIsOpen
@@ -57,7 +57,7 @@ final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends Saf
 object SafeZone {
   /** Run given function with a fresh zone and destroy it afterwards. */
   final def apply[T](f: ({*} SafeZone) ?=> T): T = {
-    val sz: {*} SafeZone = new MemorySafeZone(CZone.open())
+    val sz: {*} SafeZone = new MemorySafeZone(SafeZoneAllocator.Impl.open())
     try f(using sz)
     finally sz.close()
   }

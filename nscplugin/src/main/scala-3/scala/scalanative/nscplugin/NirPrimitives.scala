@@ -93,7 +93,7 @@ object NirPrimitives {
 
   final val SAFEZONE_ALLOC = 1 + REFLECT_SELECTABLE_APPLYDYN
 
-  final val LastNirPrimitiveCode = REFLECT_SELECTABLE_APPLYDYN
+  final val LastNirPrimitiveCode = SAFEZONE_ALLOC
 
   def isNirPrimitive(code: Int): Boolean =
     code >= FirstNirPrimitiveCode && code <= LastNirPrimitiveCode
