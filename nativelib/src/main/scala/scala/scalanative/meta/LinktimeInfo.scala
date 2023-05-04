@@ -12,17 +12,17 @@ object LinktimeInfo {
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.releaseMode")
   def releaseMode: Boolean = resolved
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isWindows")
-  def isWindows: Boolean = resolved
+  @resolvedAtLinktime
+  def isWindows: Boolean = target.os == "windows"
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isLinux")
-  def isLinux: Boolean = resolved
+  @resolvedAtLinktime
+  def isLinux: Boolean = target.os == "linux"
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isMac")
-  def isMac: Boolean = resolved
+  @resolvedAtLinktime
+  def isMac: Boolean = target.vendor == "apple" && target.os == "darwin"
 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isFreeBSD")
-  def isFreeBSD: Boolean = resolved
+  @resolvedAtLinktime
+  def isFreeBSD: Boolean = target.os == "freebsd"
 
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
   def is32BitPlatform: Boolean = resolved
@@ -39,4 +39,15 @@ object LinktimeInfo {
     "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
   )
   def isMultithreadingEnabled: Boolean = resolved
+
+  object target {
+    @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.arch")
+    def arch: String = resolved
+    @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.vendor")
+    def vendor: String = resolved
+    @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.os")
+    def os: String = resolved
+    @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.env")
+    def env: String = resolved
+  }
 }

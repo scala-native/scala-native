@@ -58,11 +58,15 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     Set(
       s"$linktimeInfo.asanEnabled",
       s"$linktimeInfo.is32BitPlatform",
-      s"$linktimeInfo.isFreeBSD",
-      s"$linktimeInfo.isMac",
-      s"$linktimeInfo.isWindows",
+      "M36scala.scalanative.meta.LinktimeInfo$D9isFreeBSDzEO",
+      "M36scala.scalanative.meta.LinktimeInfo$D5isMaczEO",
+      "M36scala.scalanative.meta.LinktimeInfo$D9isWindowszEO",
       s"$linktimeInfo.isMultithreadingEnabled",
-      s"$linktimeInfo.isWeakReferenceSupported"
+      s"$linktimeInfo.isWeakReferenceSupported",
+      s"$linktimeInfo.target.arch",
+      s"$linktimeInfo.target.vendor",
+      s"$linktimeInfo.target.os",
+      s"$linktimeInfo.target.env"
     )
   }
 
