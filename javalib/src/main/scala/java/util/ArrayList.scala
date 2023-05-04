@@ -181,20 +181,21 @@ class ArrayList[E] private (
   }
 
   override def spliterator(): Spliterator[E] = {
-    // Provide a more efficient spliterator.
-    //
-    // 'inner' has type Array[Any]. There is no Arrays.spliterator() method
-    // for element type Any. Closest is AnyRef but that is not close enough.
-    //
-    // Default spliterator from Collection.scala is provided by
-    // Spliterators.spliterator(collection) method. That uses the
-    // collection-in-question's iterator: here ArrayList
-    //
-    // ArrayList uses an iterator() implementation inherited from
-    // AbstractList.scala. That, eventually, returns a heavyweight
-    // RandomAccessListIterator. Given all that, custom spliterator has
-    // a good chance of having better performance, especially for large
-    // collections.
+    /* Provide a more efficient spliterator.
+     *
+     * 'inner' has type Array[Any]. There is no Arrays.spliterator() method
+     * for element type Any. Closest is AnyRef but that is not close enough.
+     *
+     * Default spliterator from Collection.scala is provided by
+     * Spliterators.spliterator(collection) method. That uses the
+     * collection-in-question's iterator: here ArrayList
+     *
+     * ArrayList uses an iterator() implementation inherited from
+     * AbstractList.scala. That, eventually, returns a heavyweight
+     * RandomAccessListIterator. Given all that, custom spliterator has
+     * a good chance of having better performance, especially for large
+     * collections.
+     */
 
     new Spliterators.AbstractSpliterator[E](
       _size,

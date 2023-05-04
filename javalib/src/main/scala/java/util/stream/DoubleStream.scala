@@ -309,10 +309,11 @@ object DoubleStream {
   }
 
   def of(values: Array[Double]): DoubleStream = {
-    // One would expect variables arguments to be declared as
-    // "values: Double*" here.
-    // However, that causes "symbol not found" errors at OS link time.
-    // An implicit conversion must be missing in the javalib environment.
+    /* One would expect variables arguments to be declared as
+     * "values: Objects*" here.
+     * However, that causes "symbol not found" errors at OS link time.
+     * An implicit conversion must be missing in the javalib environment.
+     */
 
     val bldr = DoubleStream.builder()
     for (j <- values)

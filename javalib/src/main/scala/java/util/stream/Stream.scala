@@ -396,10 +396,11 @@ object Stream {
   }
 
   def of[T](values: Array[Object]): Stream[T] = {
-    // One would expect variables arguments to be declared as
-    // "values: Objects*" here.
-    // However, that causes "symbol not found" errors at OS link time.
-    // An implicit conversion must be missing in the javalib environment.
+    /* One would expect variables arguments to be declared as
+     * "values: Objects*" here.
+     * However, that causes "symbol not found" errors at OS link time.
+     * An implicit conversion must be missing in the javalib environment.
+     */
 
     val bldr = Stream.builder[T]()
     for (j <- values)
