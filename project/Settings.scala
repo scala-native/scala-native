@@ -434,7 +434,7 @@ object Settings {
         val jdkVersion = s"jdk$v"
         Seq(
           sharedTestDir / s"require-$jdkVersion",
-          sharedTestDir / s"require-$jdkVersion-$scalaVersionDir"
+          sharedTestDir / s"require-$scalaVersionDir-$jdkVersion"
         )
       }
     }
