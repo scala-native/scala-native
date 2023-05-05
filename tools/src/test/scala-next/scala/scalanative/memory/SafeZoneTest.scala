@@ -105,6 +105,6 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |}
         |
         |""".stripMargin))
-    }.getMessage should include("Found:    {sz, aInHeap} B{val a: {aInHeap} A}")
+    }.getMessage should include("Found:    {aInHeap, sz} B{val a: {aInHeap} A}")
   }
 }

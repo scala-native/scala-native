@@ -8,8 +8,7 @@ import org.scalanative.testsuite.utils
 import scala.scalanative.libc.stdlib.{malloc, free}
 import scala.scalanative.libc.string.memset
 import scala.scalanative.runtime.toRawPtr
-import scala.scalanative.runtime.GC
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.{GC, Intrinsics}
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
@@ -124,7 +123,7 @@ object CustomGCRootsTest {
         throw new OutOfMemoryError()
 
       !(ptr.asInstanceOf[Ptr[Class[_]]]) = cls
-      castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[T]
+      Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[T]
     }
   }
 

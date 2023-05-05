@@ -89,7 +89,7 @@ trait Traverse {
       onType(ty)
       onVal(v)
 
-    case Op.Classalloc(n, zone) => 
+    case Op.Classalloc(n, zone) =>
       zone.foreach(onVal)
     case Op.Fieldload(ty, v, n) =>
       onType(ty)

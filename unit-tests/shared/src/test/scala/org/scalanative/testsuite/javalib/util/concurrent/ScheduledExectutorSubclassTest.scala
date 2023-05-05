@@ -1031,8 +1031,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
   @throws[Exception]
   @Test def testInvokeAll2(): Unit = usingPoolCleaner(new CustomExecutor(2)) {
     e =>
-      val emptyCollection = Collections.emptyList
-      val r = e.invokeAll(emptyCollection)
+      val r = e.invokeAll(Collections.emptyList)
       assertTrue(r.isEmpty)
   }
 
@@ -1103,10 +1102,10 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
   @throws[Exception]
   @Test def testTimedInvokeAny2(): Unit =
     usingPoolCleaner(new CustomExecutor(2)) { e =>
-      val emptyCollection = Collections.emptyList
       assertThrows(
         classOf[IllegalArgumentException],
-        () => e.invokeAny(emptyCollection, randomTimeout(), randomTimeUnit())
+        () =>
+          e.invokeAny(Collections.emptyList, randomTimeout(), randomTimeUnit())
       )
     }
 
@@ -1186,8 +1185,8 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
   @throws[Exception]
   @Test def testTimedInvokeAll2(): Unit =
     usingPoolCleaner(new CustomExecutor(2)) { e =>
-      val emptyCollection = Collections.emptyList
-      val r = e.invokeAll(emptyCollection, randomTimeout(), randomTimeUnit())
+      val r =
+        e.invokeAll(Collections.emptyList, randomTimeout(), randomTimeUnit())
       assertTrue(r.isEmpty)
     }
 
