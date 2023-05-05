@@ -6,7 +6,7 @@ import java.util.function._
 import java.util.stream.Collector._
 
 private[stream] class ObjectStreamImpl[T](
-    val _pipeline: ArrayDeque[ObjectStreamImpl[T]]
+    val pipeline: ArrayDeque[ObjectStreamImpl[T]]
 ) extends Stream[T] {
   var _spliterArg: Spliterator[T] = _
   var _supplier: Supplier[Spliterator[T]] = _
@@ -24,7 +24,7 @@ private[stream] class ObjectStreamImpl[T](
   var onCloseQueueActive = false
   lazy val onCloseQueue = new ArrayDeque[Runnable]()
 
-  _pipeline.addLast(this)
+  pipeline.addLast(this)
 
   def this(
       spliterator: Spliterator[T],
@@ -40,7 +40,7 @@ private[stream] class ObjectStreamImpl[T](
       parallel: Boolean,
       parent: Stream[_ <: T]
   ) = {
-    this(parent.asInstanceOf[ObjectStreamImpl[T]]._pipeline)
+    this(parent.asInstanceOf[ObjectStreamImpl[T]].pipeline)
     _spliterArg = spliterator
     _parallel = parallel
   }
@@ -84,7 +84,7 @@ private[stream] class ObjectStreamImpl[T](
   def close(): Unit = {
     if (!_closed) {
       val exceptionBuffer = new ObjectStreamImpl.CloseExceptionBuffer()
-      val it = _pipeline.iterator()
+      val it = pipeline.iterator()
 
       while (it.hasNext()) {
         try {
@@ -170,7 +170,7 @@ private[stream] class ObjectStreamImpl[T](
           _spliter.tryAdvance((e) => action.accept(e))
       }
 
-      new ObjectStreamImpl[T](spl, _parallel, _pipeline)
+      new ObjectStreamImpl[T](spl, _parallel, pipeline)
     }
   }
 
@@ -283,7 +283,7 @@ private[stream] class ObjectStreamImpl[T](
         }
       }
 
-    new ObjectStreamImpl[T](spl, _parallel, _pipeline)
+    new ObjectStreamImpl[T](spl, _parallel, pipeline)
   }
 
   def filter(pred: Predicate[_ >: T]): Stream[T] = {
@@ -315,7 +315,7 @@ private[stream] class ObjectStreamImpl[T](
         success
       }
     }
-    new ObjectStreamImpl[T](spl, _parallel, _pipeline)
+    new ObjectStreamImpl[T](spl, _parallel, pipeline)
   }
 
   /* delegating to findFirst() is an implementation ~~hack~~ expediency.
@@ -345,7 +345,7 @@ private[stream] class ObjectStreamImpl[T](
       closeOnFirstTouch = true
     )
 
-    val coercedPriorStages = _pipeline
+    val coercedPriorStages = pipeline
       .asInstanceOf[ArrayDeque[ObjectStreamImpl[R]]]
 
     new ObjectStreamImpl[R](csf.get(), _parallel, coercedPriorStages)
@@ -363,7 +363,7 @@ private[stream] class ObjectStreamImpl[T](
         closeOnFirstTouch = true
       )
 
-    val coercedPriorStages = _pipeline
+    val coercedPriorStages = pipeline
       .asInstanceOf[ArrayDeque[DoubleStreamImpl]]
 
     new DoubleStreamImpl(supplier.get(), _parallel, coercedPriorStages)
@@ -419,7 +419,7 @@ private[stream] class ObjectStreamImpl[T](
         }
     }
 
-    new ObjectStreamImpl[T](spl, _parallel, _pipeline)
+    new ObjectStreamImpl[T](spl, _parallel, pipeline)
   }
 
   def map[R](
@@ -442,7 +442,7 @@ private[stream] class ObjectStreamImpl[T](
     new ObjectStreamImpl[T](
       spl.asInstanceOf[Spliterator[T]],
       _parallel,
-      _pipeline
+      pipeline
     )
       .asInstanceOf[Stream[R]]
   }
@@ -458,7 +458,7 @@ private[stream] class ObjectStreamImpl[T](
         _spliter.tryAdvance((e: T) => action.accept(mapper.applyAsDouble(e)))
     }
 
-    val coercedPriorStages = _pipeline
+    val coercedPriorStages = pipeline
       .asInstanceOf[ArrayDeque[DoubleStreamImpl]]
 
     new DoubleStreamImpl(
@@ -536,7 +536,7 @@ private[stream] class ObjectStreamImpl[T](
         })
     }
 
-    new ObjectStreamImpl[T](spl, _parallel, _pipeline)
+    new ObjectStreamImpl[T](spl, _parallel, pipeline)
   }
 
   def reduce(accumulator: BinaryOperator[T]): Optional[T] = {
@@ -594,7 +594,7 @@ private[stream] class ObjectStreamImpl[T](
         && (_spliter.tryAdvance((e) => nSkipped += 1L))) { /* skip */ }
 
     // Follow JVM practice; return new stream, not remainder of "this" stream.
-    new ObjectStreamImpl[T](_spliter, _parallel, _pipeline)
+    new ObjectStreamImpl[T](_spliter, _parallel, pipeline)
   }
 
   def sorted(): Stream[T] = {
@@ -918,8 +918,8 @@ object ObjectStreamImpl {
       closeOnFirstTouch = false
     )
 
-    val pipelineA = aImpl._pipeline
-    val pipelineB = bImpl._pipeline
+    val pipelineA = aImpl.pipeline
+    val pipelineB = bImpl.pipeline
     val pipelines = new ArrayDeque[ObjectStreamImpl[T]](pipelineA)
     pipelines.addAll(pipelineB)
 

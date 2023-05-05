@@ -6,7 +6,7 @@ import java.util._
 import java.util.function._
 
 private[stream] class DoubleStreamImpl(
-    val _pipeline: ArrayDeque[DoubleStreamImpl]
+    val pipeline: ArrayDeque[DoubleStreamImpl]
 ) extends DoubleStream {
   var _spliterArg: Spliterator.OfDouble = _
   var _supplier: Supplier[Spliterator.OfDouble] = _
@@ -24,7 +24,7 @@ private[stream] class DoubleStreamImpl(
   var onCloseQueueActive = false
   lazy val onCloseQueue = new ArrayDeque[Runnable]()
 
-  _pipeline.addLast(this)
+  pipeline.addLast(this)
 
   def this(
       spliterator: Spliterator.OfDouble,
@@ -40,7 +40,7 @@ private[stream] class DoubleStreamImpl(
       parallel: Boolean,
       parent: DoubleStream
   ) = {
-    this(parent.asInstanceOf[DoubleStreamImpl]._pipeline)
+    this(parent.asInstanceOf[DoubleStreamImpl].pipeline)
     _spliterArg = spliterator
     _parallel = parallel
   }
@@ -84,7 +84,7 @@ private[stream] class DoubleStreamImpl(
   def close(): Unit = {
     if (!_closed) {
       val exceptionBuffer = new DoubleStreamImpl.CloseExceptionBuffer()
-      val it = _pipeline.iterator()
+      val it = pipeline.iterator()
 
       while (it.hasNext()) {
         try {
@@ -171,7 +171,7 @@ private[stream] class DoubleStreamImpl(
           _spliter.tryAdvance((e: Double) => action.accept(e))
       }
 
-      new DoubleStreamImpl(spl, _parallel, _pipeline)
+      new DoubleStreamImpl(spl, _parallel, pipeline)
     }
   }
 
@@ -274,7 +274,7 @@ private[stream] class DoubleStreamImpl(
         }
       }
 
-    new DoubleStreamImpl(spl, _parallel, _pipeline)
+    new DoubleStreamImpl(spl, _parallel, pipeline)
   }
 
   def filter(pred: DoublePredicate): DoubleStream = {
@@ -307,7 +307,7 @@ private[stream] class DoubleStreamImpl(
       }
     }
 
-    new DoubleStreamImpl(spl, _parallel, _pipeline)
+    new DoubleStreamImpl(spl, _parallel, pipeline)
   }
 
   /* delegating to findFirst() is an implementation ~~hack~~ expediency.
@@ -338,7 +338,7 @@ private[stream] class DoubleStreamImpl(
         closeOnFirstTouch = true
       )
 
-    val coercedPriorStages = _pipeline
+    val coercedPriorStages = pipeline
       .asInstanceOf[ArrayDeque[DoubleStreamImpl]]
 
     new DoubleStreamImpl(supplier.get(), _parallel, coercedPriorStages)
@@ -379,7 +379,7 @@ private[stream] class DoubleStreamImpl(
         }
     }
 
-    new DoubleStreamImpl(spl, _parallel, _pipeline)
+    new DoubleStreamImpl(spl, _parallel, pipeline)
   }
 
   def map(
@@ -397,7 +397,7 @@ private[stream] class DoubleStreamImpl(
         )
     }
 
-    new DoubleStreamImpl(spl, _parallel, _pipeline)
+    new DoubleStreamImpl(spl, _parallel, pipeline)
   }
 
   def mapToInt(mapper: DoubleToIntFunction): IntStream =
@@ -419,7 +419,7 @@ private[stream] class DoubleStreamImpl(
     new ObjectStreamImpl[U](
       spl,
       _parallel,
-      _pipeline
+      pipeline
         .asInstanceOf[ArrayDeque[ObjectStreamImpl[U]]]
     )
   }
@@ -497,7 +497,7 @@ private[stream] class DoubleStreamImpl(
         })
     }
 
-    new DoubleStreamImpl(spl, _parallel, _pipeline)
+    new DoubleStreamImpl(spl, _parallel, pipeline)
   }
 
   def reduce(accumulator: DoubleBinaryOperator): OptionalDouble = {
@@ -540,7 +540,7 @@ private[stream] class DoubleStreamImpl(
         && (_spliter.tryAdvance((e: Double) => nSkipped += 1L))) { /* skip */ }
 
     // Follow JVM practice; return new stream, not remainder of "this" stream.
-    new DoubleStreamImpl(_spliter, _parallel, _pipeline)
+    new DoubleStreamImpl(_spliter, _parallel, pipeline)
   }
 
   def sorted(): DoubleStream = {
@@ -816,8 +816,8 @@ object DoubleStreamImpl {
         Arrays.spliterator[DoubleStream](arr)
       )
 
-    val pipelineA = aImpl._pipeline
-    val pipelineB = bImpl._pipeline
+    val pipelineA = aImpl.pipeline
+    val pipelineB = bImpl.pipeline
     val pipelines = new ArrayDeque[DoubleStreamImpl](pipelineA)
     pipelines.addAll(pipelineB)
 
