@@ -1,7 +1,8 @@
 package java.io
 
-import scala.scalanative.compat.StreamsCompat._
-import java.util.stream.{Stream, WrappedScalaStream}
+import java.util.Spliterators
+import java.util.function.Consumer
+import java.util.stream.{Stream, StreamSupport}
 
 class BufferedReader(in: Reader, sz: Int) extends Reader {
 
@@ -127,8 +128,25 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   def lines(): Stream[String] =
     lines(false)
 
-  private[java] def lines(closeAtEnd: Boolean): Stream[String] =
-    new WrappedScalaStream(toScalaStream(closeAtEnd), None)
+  private[java] def lines(closeAtEnd: Boolean): Stream[String] = {
+    val spliter =
+      new Spliterators.AbstractSpliterator[String](Long.MaxValue, 0) {
+        def tryAdvance(action: Consumer[_ >: String]): Boolean = {
+          readLine() match {
+            case null =>
+              if (closeAtEnd)
+                close()
+              false
+
+            case line =>
+              action.accept(line)
+              true
+          }
+        } // tryAdvance
+      }
+
+    StreamSupport.stream(spliter, parallel = false)
+  }
 
   /** Prepare the buffer for reading. Returns false if EOF */
   private def prepareRead(): Boolean =
@@ -161,16 +179,4 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
       pos += 1
     }
   }
-
-  private[this] def toScalaStream(closeAtEnd: Boolean): SStream[String] = {
-    Option(readLine()) match {
-      case None =>
-        if (closeAtEnd) {
-          close()
-        }
-        SStream.empty
-      case Some(line) => line #:: toScalaStream(closeAtEnd)
-    }
-  }
-
 }

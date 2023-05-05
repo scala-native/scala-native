@@ -1,5 +1,6 @@
 // Ported from Scala.js commit: ba618ed dated: 2020-10-05
 // Arrays.spliterator() methods added for Scala Native.
+// Arrays.stream() methods added for Scala Native.
 
 package java.util
 
@@ -7,7 +8,8 @@ import scala.annotation.tailrec
 
 import scala.reflect.ClassTag
 
-import ScalaOps._
+import java.{util => ju}
+import java.util.stream.StreamSupport
 
 object Arrays {
   @inline
@@ -1080,7 +1082,7 @@ object Arrays {
     )
   }
 
-  def spliterator[T](array: Array[Object]): Spliterator[T] = {
+  def spliterator[T](array: Array[AnyRef]): Spliterator[T] = {
     Objects.requireNonNull(array)
     Spliterators.spliterator(
       array,
@@ -1091,7 +1093,7 @@ object Arrays {
   }
 
   def spliterator[T](
-      array: Array[Object],
+      array: Array[AnyRef],
       startInclusive: Int,
       endExclusive: Int
   ): Spliterator[T] = {
@@ -1102,5 +1104,82 @@ object Arrays {
       endExclusive,
       standardArraySpliteratorCharacteristics
     )
+  }
+
+  def stream(array: Array[Double]): ju.stream.DoubleStream = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator(array)
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
+
+  def stream(
+      array: Array[Double],
+      startInclusive: Int,
+      endExclusive: Int
+  ): ju.stream.DoubleStream = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator(array, startInclusive, endExclusive)
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
+
+  def stream(array: Array[Int]): ju.stream.IntStream = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator(array)
+    StreamSupport.intStream(spliter, parallel = false)
+  }
+
+  def stream(
+      array: Array[Int],
+      startInclusive: Int,
+      endExclusive: Int
+  ): ju.stream.IntStream = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator(array, startInclusive, endExclusive)
+    StreamSupport.intStream(spliter, parallel = false)
+  }
+
+  def stream(array: Array[Long]): ju.stream.LongStream = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator(array)
+    StreamSupport.longStream(spliter, parallel = false)
+  }
+
+  def stream(
+      array: Array[Long],
+      startInclusive: Int,
+      endExclusive: Int
+  ): ju.stream.LongStream = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator(array, startInclusive, endExclusive)
+    StreamSupport.longStream(spliter, parallel = false)
+  }
+
+  def stream[T <: AnyRef](array: Array[T]): ju.stream.Stream[T] = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator[T](array.asInstanceOf[Array[AnyRef]])
+    StreamSupport.stream(spliter, parallel = false)
+  }
+
+  def stream[T <: AnyRef](
+      array: Array[T],
+      startInclusive: Int,
+      endExclusive: Int
+  ): ju.stream.Stream[T] = {
+    Objects.requireNonNull(array)
+
+    val spliter = Arrays.spliterator[T](
+      array.asInstanceOf[Array[AnyRef]],
+      startInclusive,
+      endExclusive
+    )
+
+    StreamSupport.stream(spliter, parallel = false)
   }
 }
