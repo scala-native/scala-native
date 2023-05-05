@@ -49,8 +49,6 @@ object FileHelpers {
     }
   }
 
-  private[this] lazy val random = new scala.util.Random()
-  final case class Dirent(name: String, tpe: CShort)
   def list[T: ClassTag](
       path: String,
       f: (String, FileType) => T,
@@ -215,6 +213,8 @@ object FileHelpers {
     )
     dir
   }
+
+  private[this] lazy val random = new scala.util.Random()
 
   private def genTempFile(
       prefix: String,

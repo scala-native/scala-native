@@ -1,9 +1,11 @@
 // Ported from Scala.js commit: f122aa5 dated: 2019-07-03
 // Additional Spliterator code implemented for Scala Native
+// Additional Stream code implemented for Scala Native
 package java.util
 
 import java.util.function.Consumer
 import java.util.function.Predicate
+import java.util.stream.{Stream, StreamSupport}
 
 trait Collection[E] extends java.lang.Iterable[E] {
   def size(): Int
@@ -42,4 +44,16 @@ trait Collection[E] extends java.lang.Iterable[E] {
   override def spliterator(): Spliterator[E] = {
     Spliterators.spliterator[E](this, Spliterator.SIZED | Spliterator.SUBSIZED)
   }
+
+  /* From the Java documentation:
+   *   "The default implementation should be overridden by subclasses that
+   *   "This method should be overridden when the spliterator() method cannot
+   *    return a spliterator that is IMMUTABLE, CONCURRENT, or late-binding.
+   *    (See spliterator() for details.)""
+   */
+  def stream(): Stream[E] =
+    StreamSupport.stream(this.spliterator(), parallel = false)
+
+  def parallelStream(): Stream[E] =
+    StreamSupport.stream(this.spliterator(), parallel = true)
 }

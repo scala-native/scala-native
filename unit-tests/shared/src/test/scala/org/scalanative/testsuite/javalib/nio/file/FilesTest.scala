@@ -754,51 +754,119 @@ class FilesTest {
     }
   }
 
-  @Test def filesWalkWalksDirectory(): Unit = {
-    withTemporaryDirectory { dirFile =>
-      val dir = dirFile.toPath()
-      val f0 = dir.resolve("f0")
-      val f1 = dir.resolve("f1")
-      val d0 = dir.resolve("d0")
-      val f2 = d0.resolve("f2")
-
-      Files.createDirectory(d0)
-      Files.createFile(f0)
-      Files.createFile(f1)
-      Files.createFile(f2)
-      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
-
-      val it = Files.walk(dir).iterator()
-      val files = scala.collection.mutable.Set.empty[Path]
-      while (it.hasNext()) {
-        files += it.next()
-      }
-      assertTrue("a5", files.size == 5)
-      assertTrue("a6", files contains dir)
-      assertTrue("a7", files contains d0)
-      assertTrue("a8", files contains f2)
-      assertTrue("a9", files contains f0)
-      assertTrue("a10", files contains f1)
-    }
-  }
-
-  @Test def filesWalkWalksSingleFile(): Unit = {
+  @Test def filesWalk_File(): Unit = {
     withTemporaryDirectory { dirFile =>
       val f0 = dirFile.toPath.resolve("f0")
 
       Files.createFile(f0)
       assertTrue("a1", Files.exists(f0) && Files.isRegularFile(f0))
 
-      val it = Files.walk(f0).iterator()
+      val it = Files.walk(f0).iterator() // walk file, not directory
+
       val files = scala.collection.mutable.Set.empty[Path]
       while (it.hasNext) {
         files += it.next()
       }
-      assertTrue("a2", files.size == 1)
-      assertTrue("a3", files contains f0)
+
+      assertEquals("Unexpected number of files", 1, files.size)
+      assertTrue("stream should contain starting file", files contains f0)
+    }
+  }
+
+  @Test def filesWalk_EmptyDir(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val it = Files.walk(dir).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext) {
+        files += it.next()
+      }
+
+      assertEquals("Unexpected number of files", 1, files.size)
+      assertTrue("stream should contain starting dir", files contains dir)
+    }
+  }
+
+  @Test def filesWalk_Directory_OneDeep(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f1 = dir.resolve("f1")
+      val f2 = dir.resolve("f2")
+      val d1 = dir.resolve("d1")
+      val d1f1 = d1.resolve("d1f1")
+
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assertTrue("a1", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a2", Files.exists(f2) && Files.isRegularFile(f2))
+
+      Files.createDirectory(d1)
+      Files.createFile(d1f1)
+      assertTrue("a3", Files.exists(d1) && Files.isDirectory(d1))
+      assertTrue("a4", Files.exists(d1f1) && Files.isRegularFile(d1f1))
+
+      val it = Files.walk(dir).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext()) {
+        files += it.next()
+      }
+
+      assertEquals("Unexpected number of files", 5, files.size)
+
+      assertTrue("stream should contain starting dir", files contains dir)
+      assertTrue("a5", files contains f1)
+      assertTrue("a6", files contains f1)
+      assertTrue("a7", files contains d1)
+      assertTrue("a8", files contains d1f1)
+    }
+  }
+
+  @Test def filesWalk_Directory_TwoDeep(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+
+      val f1 = dir.resolve("f1")
+      val f2 = dir.resolve("f2")
+
+      val d1 = dir.resolve("d1")
+      val d1f1 = d1.resolve("d1f1")
+
+      val d2 = d1.resolve("d2")
+      val d2f1 = d2.resolve("d2f1")
+
+      Files.createFile(f1)
+      Files.createFile(f2)
+      assertTrue("a1", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a2", Files.exists(f2) && Files.isRegularFile(f2))
+
+      Files.createDirectory(d1)
+      Files.createFile(d1f1)
+      assertTrue("a3", Files.exists(d1) && Files.isDirectory(d1))
+      assertTrue("a4", Files.exists(d1f1) && Files.isRegularFile(d1f1))
+
+      Files.createDirectory(d2)
+      Files.createFile(d2f1)
+      assertTrue("a5", Files.exists(d2) && Files.isDirectory(d2))
+      assertTrue("a6", Files.exists(d2f1) && Files.isRegularFile(d2f1))
+
+      val it = Files.walk(dir).iterator()
+      val files = scala.collection.mutable.Set.empty[Path]
+      while (it.hasNext()) {
+        files += it.next()
+      }
+
+      assertEquals("Unexpected number of files", 7, files.size)
+
+      assertTrue("stream should contain starting dir", files contains dir)
+
+      assertTrue("a7", files contains f1)
+      assertTrue("a8", files contains f2)
+
+      assertTrue("a9", files contains d1)
+      assertTrue("a10", files contains d1f1)
+
+      assertTrue("a11", files contains d2)
+      assertTrue("a12", files contains d2f1)
     }
   }
 
