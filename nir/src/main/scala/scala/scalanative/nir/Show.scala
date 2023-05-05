@@ -288,9 +288,13 @@ object Show {
         str("fence ")
         syncAttrs_(syncAttrs)
 
-      case Op.Classalloc(name) =>
+      case Op.Classalloc(name, zone) =>
         str("classalloc ")
         global_(name)
+        zone.foreach { v =>
+          str(" inZone ")
+          val_(v)
+        }
       case Op.Fieldload(ty, obj, name) =>
         str("fieldload[")
         type_(ty)
@@ -370,11 +374,15 @@ object Show {
         val_(slot)
         str(", ")
         val_(value)
-      case Op.Arrayalloc(ty, init) =>
+      case Op.Arrayalloc(ty, init, zone) =>
         str("arrayalloc[")
         type_(ty)
         str("] ")
         val_(init)
+        zone.foreach { v =>
+          str(" inZone ")
+          val_(v)
+        }
       case Op.Arrayload(ty, arr, idx) =>
         str("arrayload[")
         type_(ty)

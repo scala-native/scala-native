@@ -18,7 +18,9 @@ class CustomGCRootsTest {
   @Test def `can mark objects referenced from non GC managed memory regions`()
       : Unit = {
     case class Node(var v: Int, var next: Node)
-    val sizeOfNode = castRawSizeToInt(sizeOf[Node]).toUSize
+    val sizeOfNode = sizeof[Node]
+    // It should be take at least 12 bytes on 32bit, or 20 bytes on 64bit arch
+    assert(sizeOfNode.toInt > 8)
     val zone = new CustomGCRootsTest.Zone(10.toUSize * sizeOfNode)
 
     @noinline def allocNode() = zone.alloc(sizeOfNode, classOf[Node])

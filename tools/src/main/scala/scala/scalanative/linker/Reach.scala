@@ -816,8 +816,9 @@ class Reach(
       reachVal(v)
     case Op.Fence(attrs) => ()
 
-    case Op.Classalloc(n) =>
+    case Op.Classalloc(n, zoneHandle) =>
       classInfo(n).foreach(reachAllocation)
+      zoneHandle.foreach(reachVal)
     case Op.Fieldload(ty, v, n) =>
       reachType(ty)
       reachVal(v)
@@ -865,10 +866,11 @@ class Reach(
     case Op.Varstore(slot, value) =>
       reachVal(slot)
       reachVal(value)
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zoneHandle) =>
       classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
       reachType(ty)
       reachVal(init)
+      zoneHandle.foreach(reachVal)
     case Op.Arrayload(ty, arr, idx) =>
       reachType(ty)
       reachVal(arr)
