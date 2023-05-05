@@ -29,16 +29,23 @@ object CFuncPtr {
 % for N in range(0, 23):
 %   args      = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
 %   allTps    = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
+%   wildcards = ", ".join(["_" for i in range(1, N+1)] + ["_"])
+%   tps       = ", ".join(["paramTy" + str(i) + ": Class[_]" for i in range(1, N+1)] + ["retTy: Class[_]"])
 %   evidences = ", ".join(["ev{}: Tag[T{}]".format(i, i) for i in range(1, N+1)] + ["evRet: Tag[R]"])
 %   CFuncPtrN = "CFuncPtr{}[{}]".format(N, allTps)
 %   FunctionN = "Function{}[{}]".format(N, allTps)
+%   CFuncPtrNWildcard = "CFuncPtr{}[{}]".format(N, wildcards)
+%   FunctionNWildcard = "Function{}[{}]".format(N, wildcards)
+%   evidencesWildcard = ", ".join(["ev{}: Tag[_]".format(i) for i in range(1, N+1)] + ["evRet: Tag[_]"])
 
 final class ${CFuncPtrN} private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
-  def apply(${args})(implicit ${evidences}): R = intrinsic
+  def apply(${args}): R = intrinsic
 }
 
 object CFuncPtr${N} {
-  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN})(implicit ${evidences}): ${CFuncPtrN} = intrinsic
+  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN}): ${CFuncPtrN} = intrinsic
+
+  def _fromScalaFunction(fn: ${FunctionNWildcard}): ${CFuncPtrNWildcard} = intrinsic
 
   private[scalanative] def fromRawPtr[${allTps}](ptr: RawPtr): ${CFuncPtrN} = {
     new ${CFuncPtrN}(ptr)

@@ -206,6 +206,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_castLongToRawSize, CAST_LONG_TO_RAWSIZE)
     addPrimitives(defnNir.CFuncPtr_apply, CFUNCPTR_APPLY)
     addPrimitives(defnNir.CFuncPtr_fromScalaFunction, CFUNCPTR_FROM_FUNCTION)
+    addPrimitives(defnNir._CFuncPtr_fromScalaFunction, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
     addPrimitives(defnNir.Intrinsics_sizeOfAlts, SIZE_OF)
     addPrimitives(defnNir.Intrinsics_alignmentOfAlts, ALIGNMENT_OF)

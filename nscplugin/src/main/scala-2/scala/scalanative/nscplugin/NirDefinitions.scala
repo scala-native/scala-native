@@ -11,6 +11,7 @@ trait NirDefinitions {
 
   object nirDefinitions {
     case class NonErasedType(tpe: Type) extends PlainAttachment
+    case class NonErasedTypes(tpes: List[Type]) extends PlainAttachment
 
     // Native library
 
@@ -263,6 +264,12 @@ trait NirDefinitions {
       CFuncPtrNModule.zipWithIndex.map {
         case (module, n) =>
           getMember(module, TermName(s"fromScalaFunction"))
+      }
+
+    lazy val _CFuncPtrFromFunctionMethods =
+      CFuncPtrNModule.zipWithIndex.map {
+        case (module, n) =>
+          getMember(module, TermName(s"_fromScalaFunction"))
       }
 
     lazy val CastRawSizeToInt =

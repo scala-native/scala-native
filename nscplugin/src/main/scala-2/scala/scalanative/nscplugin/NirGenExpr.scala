@@ -1894,23 +1894,25 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genCFuncPtrApply(app: Apply, code: Int): Val = {
       val Apply(appRec @ Select(receiverp, _), aargs) = app
 
+      val paramTypes = app.attachments.get[NonErasedTypes] match {
+        case None => 
+          reporter.error(app.pos, "test")
+          Nil
+        case Some(NonErasedTypes(paramTys)) => paramTys
+      }
+
       implicit val pos: nir.Position = app.pos
-      val argsp = if (aargs.size > 2) aargs.take(aargs.length / 2) else Nil
-      val evidences = aargs.drop(aargs.length / 2)
+      val argsp = aargs
 
       val self = genExpr(receiverp)
-
-      val retTypeEv = evidences.last
-      val unwrappedRetType = unwrapTag(retTypeEv)
-      val retType = genType(unwrappedRetType)
+      val retType = genType(paramTypes.last)
       val unboxedRetType = Type.unbox.getOrElse(retType, retType)
 
       val args = argsp
-        .zip(evidences)
+        .zip(paramTypes)
         .map {
-          case (arg, evidence) =>
-            val tag = unwrapTag(evidence)
-            val tpe = genType(tag)
+          case (arg, ty) =>
+            val tpe = genType(ty)
             val obj = genExpr(arg)
 
             /* buf.unboxValue does not handle Ref( Ptr | CArray | ... ) unboxing
@@ -1918,7 +1920,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             if (Type.unbox.isDefinedAt(tpe)) {
               buf.unbox(tpe, obj, unwind)(arg.pos)
             } else {
-              buf.unboxValue(tag, partial = false, obj)(arg.pos)
+              buf.unboxValue(fromType(ty), partial = false, obj)(arg.pos)
             }
         }
       val argTypes = args.map(_.ty)
@@ -1933,7 +1935,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       if (retType != unboxedRetType)
         buf.box(retType, result, unwind)
       else {
-        boxValue(unwrappedRetType, result)
+        boxValue(paramTypes.last, result)
       }
     }
 
