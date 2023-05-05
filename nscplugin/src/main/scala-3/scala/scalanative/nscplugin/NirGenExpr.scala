@@ -30,6 +30,8 @@ import nir._
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
+import dotty.tools.dotc.ast.desugar
+import dotty.tools.dotc.util.Property
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -75,6 +77,8 @@ trait NirGenExpr(using Context) {
       }
     }
 
+    object SafeZoneInstance extends Property.Key[Val]
+
     def genApply(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(fun, args) = app
@@ -102,7 +106,12 @@ trait NirGenExpr(using Context) {
           ) = args: @unchecked
           if (dimensions.size == 1)
             val length = genExpr(dimensions.head)
-            buf.arrayalloc(genType(componentType.typeValue), length, unwind)
+            buf.arrayalloc(
+              genType(componentType.typeValue),
+              length,
+              unwind,
+              zone = app.getAttachment(SafeZoneInstance)
+            )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
@@ -717,7 +726,7 @@ trait NirGenExpr(using Context) {
       val Select(qualp, selp) = tree
 
       val sym = tree.symbol
-      val owner = sym.owner
+      val owner = if sym != NoSymbol then sym.owner else NoSymbol
 
       if (sym.is(Module)) genModule(sym)
       else if (sym.isStaticInNIR && !sym.isExtern)
@@ -1037,6 +1046,7 @@ trait NirGenExpr(using Context) {
       else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
       else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
       else if (code == STACKALLOC) genStackalloc(app)
+      else if (code == SAFEZONE_ALLOC) genSafeZoneAlloc(app)
       else if (code == CQUOTE) genCQuoteOp(app)
       else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
       else if (code == SIZE_OF) genSizeOf(app)
@@ -1084,7 +1094,12 @@ trait NirGenExpr(using Context) {
             "'new' call to non-constructor: " + ctor.name
           )
 
-          genApplyNew(cls, ctor, args)
+          genApplyNew(
+            cls,
+            ctor,
+            args,
+            zone = app.getAttachment(SafeZoneInstance)
+          )
 
         case SimpleType(sym, targs) =>
           unsupported(s"unexpected new: $sym with targs $targs")
@@ -1103,10 +1118,15 @@ trait NirGenExpr(using Context) {
       res
     }
 
-    private def genApplyNew(clssym: Symbol, ctorsym: Symbol, args: List[Tree])(
-        using nir.Position
+    private def genApplyNew(
+        clssym: Symbol,
+        ctorsym: Symbol,
+        args: List[Tree],
+        zone: Option[Val]
+    )(using
+        nir.Position
     ): Val = {
-      val alloc = buf.classalloc(genTypeName(clssym), unwind)
+      val alloc = buf.classalloc(genTypeName(clssym), unwind, zone)
       genApplyMethod(ctorsym, statically = true, alloc, args)
       alloc
     }
@@ -2164,6 +2184,29 @@ trait NirGenExpr(using Context) {
           size
 
       buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
+    }
+
+    def genSafeZoneAlloc(app: Apply): Val = {
+      val Apply(_, List(sz, tree)) = app
+      // For new expression with a specified safe zone, e.g. `new {sz} T(...)`,
+      // it's translated to `allocate(sz, new T(...))` in TyperPhase.
+      tree match {
+        case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
+        case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
+        case _ =>
+          report.error(
+            s"Unexpected tree in scala.scalanative.runtime.SafeZoneAllocator.allocate: `${tree}`",
+            tree.srcPos
+          )
+      }
+      // Put the zone into the attachment of `new T(...)`.
+      if tree.hasAttachment(SafeZoneInstance) then
+        report.warning(
+          s"Safe zone handle is already attached to ${tree}, which is unexpected.",
+          tree.srcPos
+        )
+      tree.putAttachment(SafeZoneInstance, genExpr(sz))
+      genExpr(tree)
     }
 
     def genCQuoteOp(app: Apply): Val = {

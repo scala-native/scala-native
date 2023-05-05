@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "GCScalaNative.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.

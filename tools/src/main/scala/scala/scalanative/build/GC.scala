@@ -41,7 +41,7 @@ object GC {
   private[scalanative] case object None
       extends GC("none", Seq.empty, Seq("shared"))
   private[scalanative] case object Boehm
-      extends GC("boehm", Seq("gc"), Seq.empty)
+      extends GC("boehm", Seq("gc"), Seq("shared"))
   private[scalanative] case object Immix
       extends GC("immix", Seq.empty, Seq("shared", "immix_commix"))
   private[scalanative] case object Commix

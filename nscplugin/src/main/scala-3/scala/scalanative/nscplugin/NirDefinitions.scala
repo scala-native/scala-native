@@ -105,6 +105,12 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimePackage_enterMonitor = RuntimePackageClass.requiredMethod("enterMonitor")
   @tu lazy val RuntimePackage_exitMonitor = RuntimePackageClass.requiredMethod("exitMonitor")
 
+  @tu lazy val RuntimeSafeZoneAllocatorModuleRef = requiredModuleRef("scala.scalanative.runtime.SafeZoneAllocator")
+  @tu lazy val RuntimeSafeZoneAllocatorModule = RuntimeSafeZoneAllocatorModuleRef.symbol
+  @tu lazy val RuntimeSafeZoneAllocator_allocate =
+    try Some(RuntimeSafeZoneAllocatorModule.requiredMethod("allocate"))
+    catch { case _: dotty.tools.dotc.core.TypeError => None }
+
   // Runtime intriniscs
   @tu lazy val IntrinsicsModule = requiredModule("scala.scalanative.runtime.Intrinsics")
   @tu lazy val Intrinsics_divUInt = IntrinsicsModule.requiredMethod("divUInt")

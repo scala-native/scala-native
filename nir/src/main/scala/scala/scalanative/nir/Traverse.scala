@@ -89,7 +89,8 @@ trait Traverse {
       onType(ty)
       onVal(v)
 
-    case Op.Classalloc(n) => ()
+    case Op.Classalloc(n, zone) => 
+      zone.foreach(onVal)
     case Op.Fieldload(ty, v, n) =>
       onType(ty)
       onVal(v)
@@ -125,9 +126,10 @@ trait Traverse {
     case Op.Varstore(elem, value) =>
       onVal(elem)
       onVal(value)
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zone) =>
       onType(ty)
       onVal(init)
+      zone.foreach(onVal)
     case Op.Arrayload(ty, arr, idx) =>
       onType(ty)
       onVal(arr)

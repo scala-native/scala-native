@@ -332,7 +332,11 @@ object Generate {
                 Inst.Label(existing, Seq.empty),
                 Inst.Ret(self),
                 Inst.Label(initialize, Seq.empty),
-                Inst.Let(alloc.name, Op.Classalloc(name), Next.None),
+                Inst.Let(
+                  alloc.name,
+                  Op.Classalloc(name, zone = None),
+                  Next.None
+                ),
                 Inst.Let(Op.Store(clsTy, slot, alloc), Next.None),
                 Inst.Let(Op.Call(initSig, init, Seq(alloc)), Next.None),
                 Inst.Ret(alloc)

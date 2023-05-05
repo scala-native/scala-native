@@ -29,6 +29,7 @@ package runtime
 
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scala.scalanative.memory.SafeZone
 import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned => intToUSize, _}
 
 sealed abstract class Array[T]
@@ -166,7 +167,7 @@ object Array {
 % #         used to run this script.
 % for T, sizeT in types.items():
 %{
-   alloc = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
+   allocGC = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
 }%
 
 final class ${T}Array private () extends Array[${T}] {
@@ -189,7 +190,7 @@ final class ${T}Array private () extends Array[${T}] {
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
     val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
-    val arr     = ${alloc}(arrcls, arrsize)
+    val arr     = ${allocGC}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
@@ -202,10 +203,21 @@ object ${T}Array {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[${T}Array]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
-    val arr     = ${alloc}(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
+    val arr = ${allocGC}(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), ${sizeT})
+    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): ${T}Array = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[${T}Array]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]

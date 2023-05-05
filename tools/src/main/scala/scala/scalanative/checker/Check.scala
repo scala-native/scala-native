@@ -174,7 +174,7 @@ final class Check(implicit linked: linker.Result) {
     case Op.Conv(conv, ty, value) =>
       checkConvOp(conv, ty, value)
     case Op.Fence(_) => ok
-    case Op.Classalloc(name) =>
+    case Op.Classalloc(name, zone) =>
       linked.infos
         .get(name)
         .fold {
@@ -193,6 +193,8 @@ final class Check(implicit linked: linker.Result) {
           case _ =>
             error(s"can't instantiate ${name.show} with clasalloc")
         }
+      zone.foreach(checkZone)
+
     case Op.Fieldload(ty, obj, name) =>
       checkFieldOp(ty, obj, name, None)
     case Op.Fieldstore(ty, obj, name, value) =>
@@ -327,7 +329,7 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"can't varstore into non-var ${slot.show}")
       }
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zone) =>
       init match {
         case v if v.ty == Type.Int =>
           ok
@@ -336,6 +338,7 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"can't initialize array with ${init.show}")
       }
+      zone.foreach(checkZone)
     case Op.Arrayload(ty, arr, idx) =>
       val arrty = Type.Ref(Type.toArrayClass(ty))
       expect(arrty, arr)
@@ -347,6 +350,16 @@ final class Check(implicit linked: linker.Result) {
       expect(ty, value)
     case Op.Arraylength(arr) =>
       expect(Rt.GenericArray, arr)
+  }
+
+  def checkZone(zone: Val): Unit = zone match {
+    case Val.Null | Val.Unit =>
+      error(s"zone defined with null or unit")
+    case v =>
+      v.ty match {
+        case Type.Ptr | _: Type.RefKind => ()
+        case _ => error(s"zone defind with non reference type")
+      }
   }
 
   def checkAggregateOp(

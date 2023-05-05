@@ -17,6 +17,8 @@ import scala.collection.mutable
 import scala.scalanative.build.Platform
 import Build.{crossPublish, crossPublishSigned}
 
+import java.io.File
+
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
     "Fetches the scala source for the current scala version"
@@ -461,7 +463,7 @@ object Settings {
             sourceDir = relPath.toPath().getName(0).toString()
             normalizedPath <- f.relativeTo(sourcesDir / sourceDir)
             experimentalSource <- experimentalSources.get(
-              normalizedPath.toString()
+              normalizedPath.toString().replace(File.separatorChar, '/')
             )
             _ = log.info(
               s"Replacing source $relPath with experimental $baseDir/$normalizedPath in module ${thisProject.value.id}"
