@@ -1875,9 +1875,8 @@ class ThreadPoolExecutorSubclassTest extends JSR166Test {
       MILLISECONDS,
       new ArrayBlockingQueue[Runnable](10)
     )
-    val emptyCollection = Collections.emptyList
     usingPoolCleaner(e) { e =>
-      val r = e.invokeAll(emptyCollection)
+      val r = e.invokeAll(Collections.emptyList)
       assertTrue(r.isEmpty)
 
     }
@@ -2015,10 +2014,9 @@ class ThreadPoolExecutorSubclassTest extends JSR166Test {
       MILLISECONDS,
       new ArrayBlockingQueue[Runnable](10)
     )
-    val emptyCollection = Collections.emptyList
     usingPoolCleaner(e) { e =>
       try {
-        e.invokeAny(emptyCollection, randomTimeout(), randomTimeUnit())
+        e.invokeAny(Collections.emptyList, randomTimeout(), randomTimeUnit())
         shouldThrow()
       } catch {
         case success: IllegalArgumentException =>
@@ -2160,9 +2158,8 @@ class ThreadPoolExecutorSubclassTest extends JSR166Test {
       MILLISECONDS,
       new ArrayBlockingQueue[Runnable](10)
     )
-    val emptyCollection = Collections.emptyList
     usingPoolCleaner(e) { e =>
-      val r = e.invokeAll(emptyCollection, randomTimeout(), randomTimeUnit())
+      val r = e.invokeAll(Collections.emptyList, randomTimeout(), randomTimeUnit())
       assertTrue(r.isEmpty)
 
     }

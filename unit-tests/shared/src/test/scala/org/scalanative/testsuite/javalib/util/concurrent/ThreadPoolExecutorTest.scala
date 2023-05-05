@@ -1813,9 +1813,8 @@ class ThreadPoolExecutorTest extends JSR166Test {
       MILLISECONDS,
       new ArrayBlockingQueue[Runnable](10)
     )
-    val emptyCollection = Collections.emptyList
     usingPoolCleaner(e) { e =>
-      val r = e.invokeAll(emptyCollection)
+      val r = e.invokeAll(Collections.emptyList)
       assertTrue(r.isEmpty)
 
     }
@@ -2104,10 +2103,9 @@ class ThreadPoolExecutorTest extends JSR166Test {
       MILLISECONDS,
       new ArrayBlockingQueue[Runnable](10)
     )
-    val emptyCollection = Collections.emptyList
     usingPoolCleaner(e) { e =>
       val r =
-        e.invokeAll(emptyCollection, randomTimeout(), randomTimeUnit())
+        e.invokeAll( Collections.emptyList, randomTimeout(), randomTimeUnit())
       assertTrue(r.isEmpty)
 
     }
