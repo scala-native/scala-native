@@ -38,7 +38,7 @@ static size_t CHUNK;
 static size_t TO_NORMAL_MMAP = 1L;
 static size_t DO_PREALLOC = 0L; // No Preallocation.
 
-void exitWithOutOfMemory() {
+static void exitWithOutOfMemory() {
     fprintf(stderr, "Out of heap space\n");
     exit(1);
 }

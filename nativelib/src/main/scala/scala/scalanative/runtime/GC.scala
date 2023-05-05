@@ -100,7 +100,6 @@ object GC {
   @name("scalanative_gc_safepoint")
   private[scalanative] var safepoint: RawPtr = extern
 
-
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT
    *  allocated using the GC, eg. using malloc. Otherwise it might lead to the
