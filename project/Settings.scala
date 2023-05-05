@@ -422,9 +422,20 @@ object Settings {
     Test / unmanagedSourceDirectories ++= {
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile
       val sharedTestDir = testsRootDir / "shared/src/test"
+      val scalaVersionDir = CrossVersion
+        .partialVersion(scalaVersion.value)
+        .collect {
+          case (3, _)     => "scala3"
+          case (2, minor) => s"scala2.$minor"
+        }
+        .getOrElse(sys.error("Unsupported Scala version"))
       // Java 8 is reference so start at 9
-      (9 to (Global / javaVersion).value).map { v =>
-        sharedTestDir / s"require-jdk$v"
+      (9 to (Global / javaVersion).value).flatMap { v =>
+        val jdkVersion = s"jdk$v"
+        Seq(
+          sharedTestDir / s"require-$jdkVersion",
+          sharedTestDir / s"require-$scalaVersionDir-$jdkVersion"
+        )
       }
     }
   )
