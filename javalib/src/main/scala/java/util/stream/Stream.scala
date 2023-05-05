@@ -194,7 +194,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
     val coercedPriorStages = this
       .asInstanceOf[ObjectStreamImpl[T]]
-      ._pipeline
+      .pipeline
       .asInstanceOf[ArrayDeque[DoubleStreamImpl]]
 
     (new DoubleStreamImpl(
