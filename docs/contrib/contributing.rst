@@ -226,8 +226,8 @@ followed by details of the commit, in the form of free text, or bulleted list.
 .. _Apache Harmony project: https://github.com/apache/harmony
 .. _Scala CLA: http://typesafe.com/contribute/cla/scala
 .. _Pull Request: https://help.github.com/articles/using-pull-requests
-.. _DRY: http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself
-.. _Boy Scout Rule: http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule
+.. _DRY: https://www.oreilly.com/library/view/97-things-every/9780596809515/ch30.html
+.. _Boy Scout Rule: https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html
 .. _Git Workflow: http://sandofsky.com/blog/git-workflow.html
 .. _GPL and Scala License are compatible: https://www.gnu.org/licenses/license-list.html#ModifiedBSD
 .. _GPL and Scala CLA are compatible: https://www.gnu.org/licenses/license-list.html#apache2
