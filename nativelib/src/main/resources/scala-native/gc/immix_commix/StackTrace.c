@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -25,3 +27,5 @@ void StackTrace_PrintStackTrace() {
     free(cursor);
     free(context);
 }
+
+#endif

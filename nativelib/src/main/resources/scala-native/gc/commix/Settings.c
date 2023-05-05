@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
@@ -75,3 +77,5 @@ int Settings_GCThreadCount() {
         return count;
     }
 }
+
+#endif

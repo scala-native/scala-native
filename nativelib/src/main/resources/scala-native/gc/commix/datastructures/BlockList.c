@@ -1,3 +1,6 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
+
 #include <stddef.h>
 #include <stdio.h>
 #include "BlockList.h"
@@ -94,3 +97,5 @@ void LocalBlockList_Push(LocalBlockList *list, word_t *blockMetaStart,
 void LocalBlockList_Clear(LocalBlockList *list) {
     list->first = list->last = NULL;
 }
+
+#endif

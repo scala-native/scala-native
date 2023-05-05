@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
@@ -176,3 +178,5 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     Marker_markCustomRoots(heap, stack, roots);
     Marker_Mark(heap, stack);
 }
+
+#endif

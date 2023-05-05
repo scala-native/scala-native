@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
@@ -443,3 +445,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     BlockAllocator_SweepDone(&blockAllocator);
     BlockAllocator_Release(&blockAllocator);
 }
+
+#endif

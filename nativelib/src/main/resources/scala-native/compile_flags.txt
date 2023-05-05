@@ -1,3 +1,4 @@
+# GC setup
 # Boehm path on mac arm
 -I
 /opt/homebrew/include
@@ -28,3 +29,4 @@ gc/shared/
 -DENABLE_GC_STATS_SYNC
 -DDEBUG_PRINT
 -DDEBUG_ASSERT
+# end GC

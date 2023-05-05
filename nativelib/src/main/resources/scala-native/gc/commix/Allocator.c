@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdlib.h>
 #include "Allocator.h"
 #include "State.h"
@@ -316,3 +318,5 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     assert(Heap_IsWordInHeap(heap, object));
     return object;
 }
+
+#endif

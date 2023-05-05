@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stddef.h>
 #include <stdio.h>
 #include "Object.h"
@@ -88,3 +90,5 @@ void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
         }
     }
 }
+
+#endif

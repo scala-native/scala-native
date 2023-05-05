@@ -1,3 +1,6 @@
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
+    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
+
 #include "MemoryMap.h"
 
 #ifdef _WIN32
@@ -123,3 +126,4 @@ void memoryUnmapOrExitOnError(void *address, size_t memorySize) {
     }
 #endif
 }
+#endif

@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stddef.h>
 #include <stdio.h>
 #include "BlockList.h"
@@ -60,3 +62,5 @@ void BlockList_Clear(BlockList *blockList) {
     blockList->first = NULL;
     blockList->last = NULL;
 }
+
+#endif

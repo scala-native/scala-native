@@ -1,3 +1,6 @@
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
+    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // sscanf and getenv are deprecated in WinCRT, disable warnings
@@ -96,3 +99,5 @@ size_t Choose_IF(size_t left, qualifier qualifier, size_t right) {
         }
     }
 }
+
+#endif

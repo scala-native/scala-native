@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "GCThread.h"
 #include "Phase.h"
 #include "State.h"
@@ -178,3 +180,5 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
         heap->sweep.postSweepDone = true;
     }
 }
+
+#endif

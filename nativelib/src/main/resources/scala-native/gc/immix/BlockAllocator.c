@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include "BlockAllocator.h"
 #include "Log.h"
 #include "utils/MathUtils.h"
@@ -207,3 +209,5 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     blockAllocator->minNonEmptyIndex = SUPERBLOCK_LIST_SIZE;
     blockAllocator->maxNonEmptyIndex = -1;
 }
+
+#endif

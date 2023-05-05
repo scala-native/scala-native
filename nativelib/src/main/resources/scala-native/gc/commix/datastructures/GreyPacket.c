@@ -1,3 +1,6 @@
+
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "../Object.h"
 #include "GreyPacket.h"
 #include "Log.h"
@@ -113,3 +116,5 @@ GreyPacket *GreyList_Pop(GreyList *list, word_t *greyPacketsStart) {
     res->timesPoped += 1;
     return res;
 }
+
+#endif

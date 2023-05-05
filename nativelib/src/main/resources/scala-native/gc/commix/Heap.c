@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
@@ -335,3 +337,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     heap->blockCount += incrementInBlocks;
     mutex_unlock(&heap->sweep.growMutex);
 }
+
+#endif

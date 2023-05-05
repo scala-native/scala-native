@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -254,3 +256,5 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
 
     goto done;
 }
+
+#endif

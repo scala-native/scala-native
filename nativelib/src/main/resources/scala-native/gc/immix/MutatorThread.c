@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include "MutatorThread.h"
 #include "State.h"
 #include <stdlib.h>
@@ -112,3 +114,5 @@ void MutatorThreads_remove(MutatorThread *node) {
 void MutatorThreads_lock() { mutex_lock(&threadListsModifiactionLock); }
 
 void MutatorThreads_unlock() { mutex_unlock(&threadListsModifiactionLock); }
+
+#endif

@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "Sweeper.h"
 #include "Stats.h"
 #include "State.h"
@@ -660,4 +662,6 @@ void Sweeper_AssertIsConsistent(Heap *heap) {
     }
     assert(current == limit);
 }
+#endif // DEBUG_ASSERT
+
 #endif

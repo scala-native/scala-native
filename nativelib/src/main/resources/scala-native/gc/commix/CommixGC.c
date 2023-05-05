@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -112,3 +114,4 @@ void scalanative_remove_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
     GC_Roots_RemoveByRange(&roots, range);
 }
+#endif

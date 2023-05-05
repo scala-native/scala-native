@@ -1,3 +1,6 @@
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
+    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
+
 #include "Safepoint.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,3 +83,5 @@ void Safepoint_disarm(safepoint_t ref) {
         exit(errno);
     }
 }
+
+#endif

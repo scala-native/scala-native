@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #ifdef _WIN32
 // fopen is deprecated in WinCRT, disable warnings
 #define _CRT_SECURE_NO_WARNINGS
@@ -53,3 +55,5 @@ void Stats_OnExit(Stats *stats) {
         fclose(stats->outFile);
     }
 }
+
+#endif

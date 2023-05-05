@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -36,3 +38,5 @@ void Stack_doubleSize(Stack *stack) {
     stack->nb_words = nb_words;
     stack->bottom = realloc(stack->bottom, nb_words * sizeof(Stack_Type));
 }
+
+#endif

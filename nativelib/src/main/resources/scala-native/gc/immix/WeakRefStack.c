@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include "WeakRefStack.h"
 #include "datastructures/Stack.h"
 #include "metadata/ObjectMeta.h"
@@ -39,3 +41,5 @@ void WeakRefStack_CallHandlers(void) {
         handlerFn();
     }
 }
+
+#endif

@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #ifdef _WIN32
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
 #define _CRT_SECURE_NO_WARNINGS
@@ -17,3 +19,5 @@ size_t Settings_MaxHeapSize() {
 }
 
 char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
+
+#endif

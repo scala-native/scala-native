@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
@@ -449,3 +451,5 @@ bool Marker_IsMarkDone(Heap *heap) {
     uint32_t size = emptySize + weakRefSize;
     return size == heap->mark.total;
 }
+
+#endif

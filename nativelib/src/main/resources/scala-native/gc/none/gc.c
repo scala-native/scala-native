@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_NONE)
+
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
 // These functions are not used directly, but are included in "Parsing.h".
 // The definition used to disable warnings needs to be placed before the first
@@ -157,6 +159,10 @@ void scalanative_gc_set_mutator_thread_state(MutatorThreadState unused){};
 void scalanative_gc_safepoint_poll(){};
 safepoint_t scalanative_gc_safepoint = NULL;
 
+<<<<<<< HEAD
 void scalanative_add_roots(void *addr_low, void *addr_high) {}
 
 void scalanative_remove_roots(void *addr_low, void *addr_high) {}
+=======
+#endif
+>>>>>>> 2e004275 (Make GC compile work via defines)

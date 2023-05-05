@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #ifdef _WIN32
 // fopen is deprecated in WinCRT, disable warnings
 #define _CRT_SECURE_NO_WARNINGS
@@ -96,3 +98,5 @@ void Stats_NoNotEmptyPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns) {
     }
 }
 #endif // ENABLE_GC_STATS_SYNC
+
+#endif

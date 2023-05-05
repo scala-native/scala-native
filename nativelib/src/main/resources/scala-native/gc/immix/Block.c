@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdio.h>
 #include <memory.h>
 #include "Block.h"
@@ -99,3 +101,5 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
         }
     }
 }
+
+#endif
