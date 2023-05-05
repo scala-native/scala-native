@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "GCScalaNative.h"
 #include "GCTypes.h"
 #include "Heap.h"
 #include "Allocator.h"
@@ -102,12 +103,12 @@ size_t scalanative_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
 }
 
-INLINE void scalanative_add_roots(void *addr_low, void *addr_high) {
+void scalanative_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
     GC_Roots_Add(&roots, range);
 }
 
-INLINE void scalanative_remove_roots(void *addr_low, void *addr_high) {
+void scalanative_remove_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
     GC_Roots_RemoveByRange(&roots, range);
 }
