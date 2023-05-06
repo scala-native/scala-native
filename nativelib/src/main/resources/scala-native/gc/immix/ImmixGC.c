@@ -73,6 +73,14 @@ INLINE void scalanative_register_weak_reference_handler(void *handler) {
     WeakRefStack_SetHandler(handler);
 }
 
+unsigned long scalanative_get_min_heapsize() {
+    return Settings_MinHeapSize();
+}
+
+unsigned long scalanative_get_max_heapsize() {
+    return Settings_MaxHeapSize();
+}
+
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 typedef void *RoutineArgs;
 typedef struct {

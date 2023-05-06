@@ -83,3 +83,11 @@ INLINE void scalanative_collect() {
 INLINE void scalanative_register_weak_reference_handler(void *handler) {
     WeakRefGreyList_SetHandler(handler);
 }
+
+unsigned long scalanative_get_min_heapsize() {
+    return Settings_MinHeapSize();
+}
+
+unsigned long scalanative_get_max_heapsize() {
+    return Settings_MaxHeapSize();
+}
