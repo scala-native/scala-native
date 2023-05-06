@@ -26,7 +26,7 @@ object GC {
   @name("scalanative_register_weak_reference_handler")
   def registerWeakReferenceHandler(handler: Ptr[Byte]): Unit = extern
   @name("scalanative_get_init_heapsize")
-  def getMinHeapSize(): CSize = extern
+  def getInitHeapSize(): CSize = extern
   @name("scalanative_get_max_heapsize")
   def getMaxHeapSize(): CSize = extern
 
