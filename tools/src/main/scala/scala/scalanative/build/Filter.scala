@@ -61,9 +61,14 @@ private[scalanative] object Filter {
       // included files to the link phase
       val includePaths = allPaths.map(_.abs).filter(include)
 
+      val gcFlag = {
+        val gc = config.compilerConfig.gc.toString
+        s"-DSCALANATIVE_GC_${gc.toUpperCase}"
+      }
+
       val projectConfig = config.withCompilerConfig(
         _.withCompileOptions(
-          config.compileOptions ++ gcIncludePaths.map("-I" + _)
+          config.compileOptions ++ gcIncludePaths.map("-I" + _) :+ gcFlag
         )
       )
       val projectPaths = includePaths.map(Paths.get(_))
