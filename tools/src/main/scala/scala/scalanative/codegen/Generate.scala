@@ -68,7 +68,14 @@ object Generate {
     def genClassHasTrait(): Unit = {
       implicit val fresh = Fresh()
       val classid, traitid = Val.Local(fresh(), Type.Int)
-      val boolptr = Val.Local(fresh(), Type.Ptr)
+      val row = Val.Local(fresh(), Type.Int)
+      val columns = Val.Local(fresh(), Type.Int)
+      val bitIndex = Val.Local(fresh(), Type.Int)
+      val arrayPos = Val.Local(fresh(), Type.Int)
+      val long = Val.Local(fresh(), Type.Long)
+      val toShift = Val.Local(fresh(), Type.Int)
+      val mask = Val.Local(fresh(), Type.Long)
+      val and = Val.Local(fresh(), Type.Long)
       val result = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
@@ -78,15 +85,79 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(classid, traitid)),
           Inst.Let(
-            boolptr.name,
-            Op.Elem(
-              meta.hasTraitTables.classHasTraitTy,
-              meta.hasTraitTables.classHasTraitVal,
-              Seq(Val.Int(0), classid, traitid)
+            columns.name,
+            Op.Arraylength(meta.hasTraitTables.traitHasTraitVal),
+            Next.None
+          ),
+          Inst.Let(
+            row.name,
+            Op.Bin(Bin.Imul, Type.Long, classid, columns),
+            Next.None
+          ),
+          Inst.Let(
+            bitIndex.name,
+            Op.Bin(Bin.Iadd, Type.Long, row, traitid),
+            Next.None
+          ),
+          Inst.Let(
+            arrayPos.name,
+            Op.Bin(
+              Bin.Ashr,
+              Type.Long,
+              bitIndex,
+              Val.Const(Val.Int(BitMatrix.AddressBitsPerWord))
             ),
             Next.None
           ),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
+          Inst.Let(
+            long.name,
+            Op.Arrayload(
+              Type.Long,
+              meta.hasTraitTables.traitHasTraitVal,
+              Val.Const(Val.Int(BitMatrix.RightBits))
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            toShift.name,
+            Op.Bin(
+              Bin.And,
+              Type.Int,
+              bitIndex,
+              arrayPos
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            mask.name,
+            Op.Bin(
+              Bin.Shl,
+              Type.Int,
+              Val.Const(Val.Int(1)),
+              toShift
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            and.name,
+            Op.Bin(
+              Bin.And,
+              Type.Long,
+              long,
+              mask
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            result.name,
+            Op.Comp(
+              Comp.Ine,
+              Type.Long,
+              and,
+              Val.Const(Val.Long(0))
+            ),
+            Next.None
+          ),
           Inst.Ret(result)
         )
       )
@@ -103,7 +174,14 @@ object Generate {
     def genTraitHasTrait(): Unit = {
       implicit val fresh = Fresh()
       val leftid, rightid = Val.Local(fresh(), Type.Int)
-      val boolptr = Val.Local(fresh(), Type.Ptr)
+      val row = Val.Local(fresh(), Type.Int)
+      val columns = Val.Local(fresh(), Type.Int)
+      val bitIndex = Val.Local(fresh(), Type.Int)
+      val arrayPos = Val.Local(fresh(), Type.Int)
+      val long = Val.Local(fresh(), Type.Long)
+      val toShift = Val.Local(fresh(), Type.Int)
+      val mask = Val.Local(fresh(), Type.Long)
+      val and = Val.Local(fresh(), Type.Long)
       val result = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
@@ -113,15 +191,79 @@ object Generate {
         Seq(
           Inst.Label(fresh(), Seq(leftid, rightid)),
           Inst.Let(
-            boolptr.name,
-            Op.Elem(
-              meta.hasTraitTables.traitHasTraitTy,
-              meta.hasTraitTables.traitHasTraitVal,
-              Seq(Val.Int(0), leftid, rightid)
+            columns.name,
+            Op.Arraylength(meta.hasTraitTables.traitHasTraitVal),
+            Next.None
+          ),
+          Inst.Let(
+            row.name,
+            Op.Bin(Bin.Imul, Type.Long, leftid, columns),
+            Next.None
+          ),
+          Inst.Let(
+            bitIndex.name,
+            Op.Bin(Bin.Iadd, Type.Long, row, rightid),
+            Next.None
+          ),
+          Inst.Let(
+            arrayPos.name,
+            Op.Bin(
+              Bin.Ashr,
+              Type.Long,
+              bitIndex,
+              Val.Const(Val.Int(BitMatrix.AddressBitsPerWord))
             ),
             Next.None
           ),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
+          Inst.Let(
+            long.name,
+            Op.Arrayload(
+              Type.Long,
+              meta.hasTraitTables.traitHasTraitVal,
+              Val.Const(Val.Int(BitMatrix.RightBits))
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            toShift.name,
+            Op.Bin(
+              Bin.And,
+              Type.Int,
+              bitIndex,
+              arrayPos
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            mask.name,
+            Op.Bin(
+              Bin.Shl,
+              Type.Int,
+              Val.Const(Val.Int(1)),
+              toShift
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            and.name,
+            Op.Bin(
+              Bin.And,
+              Type.Long,
+              long,
+              mask
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            result.name,
+            Op.Comp(
+              Comp.Ine,
+              Type.Long,
+              and,
+              Val.Const(Val.Long(0))
+            ),
+            Next.None
+          ),
           Inst.Ret(result)
         )
       )
