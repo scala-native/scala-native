@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "GCTypes.h"
 
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // Boehm on Windows needs User32.lib linked
@@ -26,7 +27,7 @@ void *scalanative_alloc_large(void *info, size_t size);
 void *scalanative_alloc_atomic(void *info, size_t size);
 void scalanative_collect();
 void scalanative_register_weak_reference_handler(void *handler);
-size_t scalanative_get_min_heapsize();
+size_t scalanative_get_init_heapsize();
 size_t scalanative_get_max_heapsize();
 
 // Functions used to create a new thread supporting multithreading support in

@@ -42,7 +42,7 @@ void exitWithOutOfMemory() {
     exit(1);
 }
 
-size_t scalanative_get_min_heapsize() {
+size_t scalanative_get_init_heapsize() {
     return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
 }
 
