@@ -73,26 +73,21 @@ INLINE void scalanative_register_weak_reference_handler(void *handler) {
     WeakRefStack_SetHandler(handler);
 }
 
-/**
- * Get the minimum heap size
- * If the user has set a minimum heap size using the GC_INITIAL_HEAP_SIZE environment variable,
- * then this size will be returned.
- * Otherwise, the default minimum heap size will be returned.
- */
-size_t scalanative_get_init_heapsize() { 
-    return Settings_MinHeapSize(); 
-    }
+/* Get the minimum heap size */
+/* If the user has set a minimum heap size using the GC_INITIAL_HEAP_SIZE
+ * environment variable, */
+/* then this size will be returned. */
+/* Otherwise, the default minimum heap size will be returned.*/
+size_t scalanative_get_init_heapsize() { return Settings_MinHeapSize(); }
 
-/**
- * Get the maximum heap size
- * If the user has set a maximum heap size using the GC_MAXIMUM_HEAP_SIZE environment variable,
- * then this size will be returned.
- * Otherwise, the total size of the physical memory (guarded) will be returned
-*/
-
-size_t scalanative_get_max_heapsize() { 
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit()); 
-    }
+/* Get the maximum heap size */
+/* If the user has set a maximum heap size using the GC_MAXIMUM_HEAP_SIZE
+ * environment variable,*/
+/* then this size will be returned.*/
+/* Otherwise, the total size of the physical memory (guarded) will be returned*/
+size_t scalanative_get_max_heapsize() {
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
+}
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 typedef void *RoutineArgs;
