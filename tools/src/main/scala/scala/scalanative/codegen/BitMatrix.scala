@@ -8,8 +8,7 @@ private[scalanative] class BitMatrix private (
 
   def set(row: Int, col: Int): Unit = {
     val bitIndex = row * columns + col
-    val len = (bitIndex >> AddressBitsPerWord) + 1
-    bits(len - 1) |= 1L << (bitIndex & RightBits)
+    bits(bitIndex >> AddressBitsPerWord) |= 1L << (bitIndex & RightBits)
   }
 
   def toSeq = bits.toSeq

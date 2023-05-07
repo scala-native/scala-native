@@ -9,12 +9,10 @@ class HasTraitTables(meta: Metadata) {
 
   private val classHasTraitName = Global.Top("__class_has_trait")
   val classHasTraitVal = Val.Global(classHasTraitName, Type.Ptr)
-  var classHasTraitTy: Type = _
   var classHasTraitDefn: Defn = _
 
   private val traitHasTraitName = Global.Top("__trait_has_trait")
   val traitHasTraitVal = Val.Global(traitHasTraitName, Type.Ptr)
-  var traitHasTraitTy: Type = _
   var traitHasTraitDefn: Defn = _
 
   initClassHasTrait()
@@ -31,6 +29,8 @@ class HasTraitTables(meta: Metadata) {
   }
 
   private def initClassHasTrait(): Unit = {
+    println(s"meta.classes.length = ${meta.classes.length}")
+    println(s"meta.traits.length = ${meta.traits.length}")
     val matrix = BitMatrix(meta.classes.length, meta.traits.length)
     var row = 0
     meta.classes.foreach { cls =>
@@ -40,7 +40,6 @@ class HasTraitTables(meta: Metadata) {
     }
     val tableVal = Val.ArrayValue(Type.Long, matrix.toSeq.map(Val.Long))
 
-    classHasTraitTy = tableVal.ty
     classHasTraitDefn =
       Defn.Const(Attrs.None, classHasTraitName, tableVal.ty, tableVal)
   }
@@ -56,7 +55,6 @@ class HasTraitTables(meta: Metadata) {
     }
     val tableVal = Val.ArrayValue(Type.Long, matrix.toSeq.map(Val.Long))
 
-    traitHasTraitTy = tableVal.ty
     traitHasTraitDefn =
       Defn.Const(Attrs.None, traitHasTraitName, tableVal.ty, tableVal)
   }
