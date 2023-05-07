@@ -21,39 +21,39 @@ class UtsnameTest {
       0
     )
 
-    val sysname = u.at1.asInstanceOf[Ptr[CChar]]
-    val nodename = u.at2.asInstanceOf[Ptr[CChar]]
-    val release = u.at3.asInstanceOf[Ptr[CChar]]
-    val version = u.at4.asInstanceOf[Ptr[CChar]]
-    val machine = u.at5.asInstanceOf[Ptr[CChar]]
+    val sysname = u._1.asInstanceOf[CArray[Byte, _256]]
+    val nodename = u._2.asInstanceOf[CArray[Byte, _256]]
+    val release = u._3.asInstanceOf[CArray[Byte, _256]]
+    val version = u._4.asInstanceOf[CArray[Byte, _256]]
+    val machine = u._5.asInstanceOf[CArray[Byte, _256]]
 
     assertEquals(
       s"sysname obtained from both utsname and utsnameOps should be equal",
-      fromCString(sysname),
+      sysname,
       u.sysname
     )
 
     assertEquals(
       s"nodename obtained from both utsname and utsnameOps should be equal",
-      fromCString(nodename),
+      nodename,
       u.nodename
     )
 
     assertEquals(
       s"release obtained from both utsname and utsnameOps should be equal",
-      fromCString(release),
+      release,
       u.release
     )
 
     assertEquals(
       s"version obtained from both utsname and utsnameOps should be equal",
-      fromCString(version),
+      version,
       u.version
     )
 
     assertEquals(
       s"machine obtained from both utsname and utsnameOps should be equal",
-      fromCString(machine),
+      machine,
       u.machine
     )
 

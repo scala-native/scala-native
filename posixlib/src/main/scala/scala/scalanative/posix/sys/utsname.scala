@@ -12,11 +12,12 @@ object utsname {
 }
 
 object uname {
+  import utsname._
   implicit class utsnameOps(val c: Ptr[utsname.utsname]) {
-    def sysname = fromCString(c.at1.asInstanceOf[Ptr[CChar]])
-    def nodename = fromCString(c.at2.asInstanceOf[Ptr[CChar]])
-    def release = fromCString(c.at3.asInstanceOf[Ptr[CChar]])
-    def version = fromCString(c.at4.asInstanceOf[Ptr[CChar]])
-    def machine = fromCString(c.at5.asInstanceOf[Ptr[CChar]])
+    def sysname = c._1
+    def nodename = c._2
+    def release = c._3
+    def version = c._4
+    def machine = c._5
   }
 }
