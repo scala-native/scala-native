@@ -12,7 +12,6 @@ object utsname {
 }
 
 object uname {
-  import utsname._
   implicit class utsnameOps(val c: Ptr[utsname.utsname]) {
     def sysname = c._1
     def nodename = c._2
