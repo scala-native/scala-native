@@ -66,6 +66,14 @@ object Generate {
     }
 
     def genClassHasTrait(): Unit = {
+      genHasTrait(ClassHasTraitName, ClassHasTraitSig)
+    }
+
+    def genTraitHasTrait(): Unit = {
+      genHasTrait(TraitHasTraitName, TraitHasTraitSig)
+    }
+
+    private def genHasTrait(name: Global.Member, sig: Type.Function): Unit = {
       implicit val fresh = Fresh()
       val classid, traitid = Val.Local(fresh(), Type.Int)
       val row = Val.Local(fresh(), Type.Int)
@@ -74,14 +82,15 @@ object Generate {
       val arrayPos = Val.Local(fresh(), Type.Int)
       val long = Val.Local(fresh(), Type.Long)
       val toShift = Val.Local(fresh(), Type.Int)
+      val toShiftLong = Val.Local(fresh(), Type.Long)
       val mask = Val.Local(fresh(), Type.Long)
       val and = Val.Local(fresh(), Type.Long)
       val result = Val.Local(fresh(), Type.Bool)
 
       buf += Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
-        ClassHasTraitName,
-        ClassHasTraitSig,
+        name,
+        sig,
         Seq(
           Inst.Label(fresh(), Seq(classid, traitid)),
           Inst.Let(
@@ -91,21 +100,21 @@ object Generate {
           ),
           Inst.Let(
             row.name,
-            Op.Bin(Bin.Imul, Type.Long, classid, columns),
+            Op.Bin(Bin.Imul, Type.Int, classid, columns),
             Next.None
           ),
           Inst.Let(
             bitIndex.name,
-            Op.Bin(Bin.Iadd, Type.Long, row, traitid),
+            Op.Bin(Bin.Iadd, Type.Int, row, traitid),
             Next.None
           ),
           Inst.Let(
             arrayPos.name,
             Op.Bin(
               Bin.Ashr,
-              Type.Long,
+              Type.Int,
               bitIndex,
-              Val.Const(Val.Int(BitMatrix.AddressBitsPerWord))
+              Val.Int(BitMatrix.AddressBitsPerWord)
             ),
             Next.None
           ),
@@ -114,7 +123,7 @@ object Generate {
             Op.Arrayload(
               Type.Long,
               meta.hasTraitTables.traitHasTraitVal,
-              Val.Const(Val.Int(BitMatrix.RightBits))
+              arrayPos
             ),
             Next.None
           ),
@@ -124,7 +133,16 @@ object Generate {
               Bin.And,
               Type.Int,
               bitIndex,
-              arrayPos
+              Val.Int(BitMatrix.RightBits)
+            ),
+            Next.None
+          ),
+          Inst.Let(
+            toShiftLong.name,
+            Op.Conv(
+              Conv.Sext,
+              Type.Long,
+              toShift
             ),
             Next.None
           ),
@@ -132,9 +150,9 @@ object Generate {
             mask.name,
             Op.Bin(
               Bin.Shl,
-              Type.Int,
-              Val.Const(Val.Int(1)),
-              toShift
+              Type.Long,
+              Val.Long(1),
+              toShiftLong
             ),
             Next.None
           ),
@@ -154,7 +172,7 @@ object Generate {
               Comp.Ine,
               Type.Long,
               and,
-              Val.Const(Val.Long(0))
+              Val.Long(0)
             ),
             Next.None
           ),
@@ -169,104 +187,6 @@ object Generate {
         val pos = trt.position
         buf += Defn.Var(Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
       }
-    }
-
-    def genTraitHasTrait(): Unit = {
-      implicit val fresh = Fresh()
-      val leftid, rightid = Val.Local(fresh(), Type.Int)
-      val row = Val.Local(fresh(), Type.Int)
-      val columns = Val.Local(fresh(), Type.Int)
-      val bitIndex = Val.Local(fresh(), Type.Int)
-      val arrayPos = Val.Local(fresh(), Type.Int)
-      val long = Val.Local(fresh(), Type.Long)
-      val toShift = Val.Local(fresh(), Type.Int)
-      val mask = Val.Local(fresh(), Type.Long)
-      val and = Val.Local(fresh(), Type.Long)
-      val result = Val.Local(fresh(), Type.Bool)
-
-      buf += Defn.Define(
-        Attrs(inlineHint = Attr.AlwaysInline),
-        TraitHasTraitName,
-        TraitHasTraitSig,
-        Seq(
-          Inst.Label(fresh(), Seq(leftid, rightid)),
-          Inst.Let(
-            columns.name,
-            Op.Arraylength(meta.hasTraitTables.traitHasTraitVal),
-            Next.None
-          ),
-          Inst.Let(
-            row.name,
-            Op.Bin(Bin.Imul, Type.Long, leftid, columns),
-            Next.None
-          ),
-          Inst.Let(
-            bitIndex.name,
-            Op.Bin(Bin.Iadd, Type.Long, row, rightid),
-            Next.None
-          ),
-          Inst.Let(
-            arrayPos.name,
-            Op.Bin(
-              Bin.Ashr,
-              Type.Long,
-              bitIndex,
-              Val.Const(Val.Int(BitMatrix.AddressBitsPerWord))
-            ),
-            Next.None
-          ),
-          Inst.Let(
-            long.name,
-            Op.Arrayload(
-              Type.Long,
-              meta.hasTraitTables.traitHasTraitVal,
-              Val.Const(Val.Int(BitMatrix.RightBits))
-            ),
-            Next.None
-          ),
-          Inst.Let(
-            toShift.name,
-            Op.Bin(
-              Bin.And,
-              Type.Int,
-              bitIndex,
-              arrayPos
-            ),
-            Next.None
-          ),
-          Inst.Let(
-            mask.name,
-            Op.Bin(
-              Bin.Shl,
-              Type.Int,
-              Val.Const(Val.Int(1)),
-              toShift
-            ),
-            Next.None
-          ),
-          Inst.Let(
-            and.name,
-            Op.Bin(
-              Bin.And,
-              Type.Long,
-              long,
-              mask
-            ),
-            Next.None
-          ),
-          Inst.Let(
-            result.name,
-            Op.Comp(
-              Comp.Ine,
-              Type.Long,
-              and,
-              Val.Const(Val.Long(0))
-            ),
-            Next.None
-          ),
-          Inst.Ret(result)
-        )
-      )
     }
 
     /* Generate set of instructions using common exception handling, generate method
@@ -646,7 +566,7 @@ object Generate {
     }
   }
 
-  private object Impl {
+  object Impl {
     val rttiModule = Global.Top("java.lang.rtti$")
 
     val ClassHasTraitName =
