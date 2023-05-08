@@ -1,11 +1,6 @@
-//> using dep "io.github.java-diff-utils:java-diff-utils:4.12"
-//> using dep "com.lihaoyi::os-lib:0.9.1"
-//> using dep "com.lihaoyi::mainargs:0.4.0"
-
-import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
-import os._
-import mainargs._
-
+import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
+import $ivy.`io.github.java-diff-utils:java-diff-utils:4.9`,
+com.github.difflib.{DiffUtils, UnifiedDiffUtils}
 import scala.util._
 
 val ignoredFiles = {
@@ -24,26 +19,27 @@ def main(
     cmd: Command,
     @arg(doc = "Scala version used for fetching sources")
     scalaVersion: String,
-    // @arg(
-    //   doc =
-    //     "Path to directory containing overrides, defaults to scalalib/overrides-$scalaBinaryVersion"
-    // )
-    // overridesDir: Option[os.Path] = None
+    @arg(
+      doc =
+        "Path to directory containing overrides, defaults to scalalib/overrides-$scalaBinaryVersion"
+    )
+    overridesDir: Option[os.Path] = None
 ) = {
   val Array(vMajor, vMinor, vPatch) = scalaVersion.split('.')
 
   implicit val wd: os.Path = pwd
 
-  val sourcesDir = pwd / "scalalib" / "target" / "scalaSources" / scalaVersion
+  val sourcesDir = pwd / 'scalalib / 'target / 'scalaSources / scalaVersion
   val overridesDirPath = {
-      {
+    overridesDir
+      .orElse {
         val overridesDir = s"overrides"
         val scalaEpochDir = s"$overridesDir-$vMajor"
         val binaryVersionDir = s"$scalaEpochDir.$vMinor"
         val scalaVersionDir = s"$binaryVersionDir.$vPatch"
 
         List(scalaVersionDir, binaryVersionDir, scalaEpochDir, overridesDir)
-          .map(pwd / "scalalib" / _)
+          .map(pwd / 'scalalib / _)
           .find(exists(_))
       }
       .getOrElse(
@@ -60,23 +56,21 @@ def main(
        | - ${ignoredFiles.mkString("\n - ")}
        |""".stripMargin)
 
-  assert(os.exists(overridesDirPath), "Overrides dir does not exists")
+  assert(exists ! overridesDirPath, "Overrides dir does not exists")
 
   cmd match {
     // Create patches based on fetched Scala sources and it's overrideds
     case CreatePatches =>
       sourcesExistsOrFetch(scalaVersion, sourcesDir)
 
-      println(os.walk(overridesDirPath).filterNot(p => p.ext == "scala" || os.isDir(p)))//, p => p.ext == "scala" || os.isDir(p)))
       for {
-        overridePath <- os.walk(overridesDirPath).filterNot(p => p.ext != "scala" || os.isDir(p))
+        overridePath <- ls.rec ! overridesDirPath |? (_.ext == "scala")
         relativePath = overridePath relativeTo overridesDirPath
         if !ignoredFiles.contains(relativePath)
-        sourcePath = sourcesDir / relativePath if os.exists(sourcePath)
+        sourcePath = sourcesDir / relativePath if exists ! sourcePath
         patchPath = overridePath / up / s"${overridePath.last}.patch"
-        _ = if (os.exists(patchPath)) os.remove(patchPath)
+        _ = if (exists ! patchPath) rm ! patchPath
       } {
-        println(patchPath)
         val originalLines = fileToLines(sourcePath)
         val diff = DiffUtils.diff(
           originalLines,
@@ -113,13 +107,13 @@ def main(
       sourcesExistsOrFetch(scalaVersion, sourcesDir)
 
       for {
-        patchPath <- os.walk(overridesDirPath).filterNot(p => p.ext != "patch" || os.isDir(p))
+        patchPath <- ls.rec ! overridesDirPath |? (_.ext == "patch")
         overridePath = patchPath / up / patchPath.last.stripSuffix(".patch")
         relativePath = overridePath relativeTo overridesDirPath
         if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath
 
-        _ = if (exists(overridePath)) os.remove(overridePath)
+        _ = if (exists(overridePath)) rm ! overridePath
 
       } {
         // There is no JVM library working with diffs which can apply fuzzy
@@ -132,13 +126,13 @@ def main(
           copyAttributes = true
         )
         try {
-          os.proc(
+          %%(
             "git",
             "apply",
             "--whitespace=fix",
             "--recount",
             patchPath
-          )call(cwd = sourcesDir)
+          )(sourcesDir)
           os.move(sourcePath, overridePath, replaceExisting = true)
           os.move(sourceCopyPath, sourcePath)
           println(s"Recreated $overridePath")
@@ -153,7 +147,7 @@ def main(
     // Walk overrides dir and remove all `.scala` sources which has defined `.scala.patch` sibling
     case PruneOverrides =>
       for {
-        patchPath <- os.walk(overridesDirPath, skip = _.ext != "patch", includeTarget = false)
+        patchPath <- ls.rec ! overridesDirPath |? (_.ext == "patch")
         overridePath = patchPath / up / patchPath.last.stripSuffix(".patch")
         relativePath = overridePath relativeTo overridesDirPath
 
@@ -161,7 +155,7 @@ def main(
           !ignoredFiles.contains(relativePath)
       } {
         if (shallPrune) {
-          os.remove(overridePath)
+          rm ! overridePath
         }
       }
   }
@@ -184,7 +178,6 @@ implicit object CommandReader
     )
 
 def fileToLines(path: os.Path) = {
-  println(path)
   val list = new java.util.LinkedList[String]()
   read.lines(path).foreach(list.add(_))
   list
@@ -195,9 +188,7 @@ def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
 ) = {
   if (!exists(sourcesDir)) {
     println(s"Fetching Scala $scalaVersion sources")
-    os.proc("sbt", s"++ $scalaVersion", "scalalib/fetchScalaSource").call()
+    %("sbt", s"++ $scalaVersion", "scalalib/fetchScalaSource")
   }
-  assert(os.exists(sourcesDir), s"Sources at $sourcesDir missing")
+  assert(exists ! sourcesDir, s"Sources at $sourcesDir missing")
 }
-
-ParserForMethods(this).runOrThrow(args)
