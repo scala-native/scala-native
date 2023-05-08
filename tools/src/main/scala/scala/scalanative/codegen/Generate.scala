@@ -66,14 +66,43 @@ object Generate {
     }
 
     def genClassHasTrait(): Unit = {
-      genHasTrait(ClassHasTraitName, ClassHasTraitSig)
+      genHasTrait(
+        ClassHasTraitName,
+        ClassHasTraitSig,
+        meta.hasTraitTables.classHasTraitTy,
+        meta.hasTraitTables.classHasTraitVal
+      )
     }
 
     def genTraitHasTrait(): Unit = {
-      genHasTrait(TraitHasTraitName, TraitHasTraitSig)
+      genHasTrait(
+        TraitHasTraitName,
+        TraitHasTraitSig,
+        meta.hasTraitTables.traitHasTraitTy,
+        meta.hasTraitTables.traitHasTraitVal
+      )
     }
 
-    private def genHasTrait(name: Global.Member, sig: Type.Function): Unit = {
+    // def __get_[class,trait]_has_trait(firstid: Int, secondid: Int): Boolean = {
+    //   val columns = meta.traits.length
+    //   val row = firstid * columns
+    //   val bitIndex = row + secondid
+    //   val arrayPos = bitIndex >> AddressBitsPerWord
+    //   val long = bits(arrayPos)
+    //   val toShift = bitIndex & RightBits
+    //   val toShiftLong = toShift.toLong
+    //   val mask = 1L << toShiftLong
+    //   val and = long & mask
+    //   val result = and != 0L
+    //
+    //   result
+    // }
+    private def genHasTrait(
+        name: Global.Member,
+        sig: Type.Function,
+        tableTy: Type,
+        tableVal: Val
+    ): Unit = {
       implicit val fresh = Fresh()
       val firstid, secondid = Val.Local(fresh(), Type.Int)
       val row = Val.Local(fresh(), Type.Int)
@@ -117,8 +146,8 @@ object Generate {
           Inst.Let(
             longptr.name,
             Op.Elem(
-              meta.hasTraitTables.traitHasTraitTy,
-              meta.hasTraitTables.traitHasTraitVal,
+              tableTy,
+              tableVal,
               Seq(Val.Int(0), arrayPos)
             ),
             Next.None

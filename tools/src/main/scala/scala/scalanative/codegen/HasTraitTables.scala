@@ -9,6 +9,7 @@ class HasTraitTables(meta: Metadata) {
 
   private val classHasTraitName = Global.Top("__class_has_trait")
   val classHasTraitVal = Val.Global(classHasTraitName, Type.Ptr)
+  var classHasTraitTy: Type = _
   var classHasTraitDefn: Defn = _
 
   private val traitHasTraitName = Global.Top("__trait_has_trait")
@@ -41,6 +42,7 @@ class HasTraitTables(meta: Metadata) {
 
     classHasTraitDefn =
       Defn.Const(Attrs.None, classHasTraitName, tableVal.ty, tableVal)
+    classHasTraitTy = tableVal.ty
   }
 
   private def initTraitHasTrait(): Unit = {
