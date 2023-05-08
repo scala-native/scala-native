@@ -2337,38 +2337,39 @@ trait NirGenExpr(using Context) {
      *  and boxing result Apply.args can contain different number of arguments
      *  depending on usage, however they are passed in constant order:
      *    - 0..N args
-     *    - 0..N+1 type evidences of args (scalanative.Tag)
      *    - return type evidence
      */
     private def genCFuncPtrApply(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(appRec @ Select(receiverp, _), aargs) = app: @unchecked
 
-      val argsp = if (aargs.size > 2) aargs.take(aargs.length / 2) else Nil
-      val evidences = aargs.drop(aargs.length / 2)
+      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
+        case None =>
+          report.error(
+            s"Failed to generated exact NIR types for $app, something is wrong with scala-native internls.",
+            app.srcPos
+          )
+          Nil
+        case Some(paramTys) => paramTys
 
       val self = genExpr(receiverp)
-
-      val retTypeEv = evidences.last
-      val unwrappedRetType = unwrapTag(retTypeEv)
-      val retType = genType(unwrappedRetType)
+      val retType = genType(paramTypes.last)
       val unboxedRetType = Type.unbox.getOrElse(retType, retType)
 
-      val args = argsp
-        .zip(evidences)
+      val args = aargs
+        .zip(paramTypes)
         .map {
           case (Apply(Select(_, nme.box), List(value)), _) =>
             genExpr(value)
-          case (arg, evidence) =>
+          case (arg, ty) =>
             given nir.Position = arg.span
-            val tag = unwrapTag(evidence)
-            val tpe = genType(tag)
+            val tpe = genType(ty)
             val obj = genExpr(arg)
 
             /* buf.unboxValue does not handle Ref( Ptr | CArray | ... ) unboxing
              * That's why we're doing it directly */
             if (Type.unbox.isDefinedAt(tpe)) buf.unbox(tpe, obj, unwind)
-            else buf.unboxValue(tag, partial = false, obj)
+            else buf.unboxValue(fromType(ty), partial = false, obj)
         }
       val argTypes = args.map(_.ty)
       val funcSig = Type.Function(argTypes, unboxedRetType)
@@ -2380,15 +2381,24 @@ trait NirGenExpr(using Context) {
       val target = buf.fieldload(Type.Ptr, self, getRawPtrName, unwind)
       val result = buf.call(funcSig, target, args, unwind)
       if (retType != unboxedRetType) buf.box(retType, result, unwind)
-      else boxValue(unwrappedRetType, result)
+      else boxValue(paramTypes.last, result)
     }
 
     private final val ExternForwarderSig = Sig.Generated("$extern$forwarder")
 
     private def genCFuncFromScalaFunction(app: Apply): Val = {
       given pos: nir.Position = app.span
-      val fn :: evidences = app.args: @unchecked
-      val paramTypes = evidences.map(unwrapTag)
+      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
+        case None =>
+          report.error(
+            s"Failed to generated exact NIR types for $app, something is wrong with scala-native internls.",
+            app.srcPos
+          )
+          Nil
+        case Some(paramTys) =>
+          paramTys.map(fromType)
+
+      val fn :: _ = app.args: @unchecked
 
       @tailrec
       def resolveFunction(tree: Tree): Val = tree match {

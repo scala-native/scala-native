@@ -48,6 +48,28 @@ class PostInlineNativeInterop extends PluginPhase {
         case ty => ty
   }
 
+  override def transformApply(tree: Apply)(using Context): Tree = {
+    val defnNir = this.defnNir
+    def dealiasTypeMapper = DealiasTypeMapper()
+
+    // Attach exact type information to the AST to preserve the type information
+    // during the type erase phase and refer to it in the NIR generation phase.
+    tree match
+      case app @ Apply(TypeApply(fun, tArgs), _)
+          if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>
+        val tys = tArgs.map(t => dealiasTypeMapper(t.tpe))
+        app.withAttachment(NirDefinitions.NonErasedTypes, tys)
+
+      case Apply(fun, args) if defnNir.CFuncPtr_apply.contains(fun.symbol) =>
+        val paramTypes =
+          args.map(a => dealiasTypeMapper(a.tpe)) :+
+            dealiasTypeMapper(tree.tpe.finalResultType)
+        tree.withAttachment(NirDefinitions.NonErasedTypes, paramTypes)
+
+      case _ => tree
+
+  }
+
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
     val TypeApply(fun, tArgs) = tree
     val defnNir = this.defnNir

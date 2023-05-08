@@ -14,6 +14,7 @@ object NirDefinitions {
   private val cached = ContextCached(NirDefinitions())
   def get(using Context): NirDefinitions = cached.get
   object NonErasedType extends StickyKey[Type]
+  object NonErasedTypes extends StickyKey[List[Type]]
 }
 
 // scalafmt: { maxColumn = 120}
@@ -69,36 +70,6 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val NatModule = requiredModule("scala.scalanative.unsafe.Nat")
   @tu lazy val NatBaseClasses = (0 to 9).map(n => NatModule.requiredClass(s"_$n"))
   @tu lazy val NatDigitClasses = (2 to 9).map(n => NatModule.requiredClass(s"Digit$n"))
-
-  // Tags
-  @tu lazy val TagModule = requiredModule("scala.scalanative.unsafe.Tag")
-  @tu lazy val UnsafeTag_materializeUnitTag = TagModule.requiredMethod("materializeUnitTag")
-  @tu lazy val UnsafeTag_materializeBooleanTag = TagModule.requiredMethod("materializeBooleanTag")
-  @tu lazy val UnsafeTag_materializeCharTag = TagModule.requiredMethod("materializeCharTag")
-  @tu lazy val UnsafeTag_materializeByteTag = TagModule.requiredMethod("materializeByteTag")
-  @tu lazy val UnsafeTag_materializeUByteTag = TagModule.requiredMethod("materializeUByteTag")
-  @tu lazy val UnsafeTag_materializeShortTag = TagModule.requiredMethod("materializeShortTag")
-  @tu lazy val UnsafeTag_materializeUShortTag = TagModule.requiredMethod("materializeUShortTag")
-  @tu lazy val UnsafeTag_materializeIntTag = TagModule.requiredMethod("materializeIntTag")
-  @tu lazy val UnsafeTag_materializeUIntTag = TagModule.requiredMethod("materializeUIntTag")
-  @tu lazy val UnsafeTag_materializeLongTag = TagModule.requiredMethod("materializeLongTag")
-  @tu lazy val UnsafeTag_materializeULongTag = TagModule.requiredMethod("materializeULongTag")
-  @tu lazy val UnsafeTag_materializeFloatTag = TagModule.requiredMethod("materializeFloatTag")
-  @tu lazy val UnsafeTag_materializeDoubleTag = TagModule.requiredMethod("materializeDoubleTag")
-  @tu lazy val UnsafeTag_materializePtrTag = TagModule.requiredMethod("materializePtrTag")
-  @tu lazy val UnsafeTag_materializeClassTag = TagModule.requiredMethod("materializeClassTag")
-  @tu lazy val UnsafeTag_materializeCArrayTag = TagModule.requiredMethod("materializeCArrayTag")
-  @tu lazy val UnsafeTag_materializeNatBaseTags =
-    (0 to 9).map(n => TagModule.requiredMethod(s"materializeNat${n}Tag"))
-  @tu lazy val UnsafeTag_materializeNatDigitTags =
-    (2 to 9).map(n => TagModule.requiredMethod(s"materializeNatDigit${n}Tag"))
-  @tu lazy val UnsafeTag_materializeCStructTags =
-    (0 to 22).map(n => TagModule.requiredMethod(s"materializeCStruct${n}Tag"))
-  @tu lazy val UnsafeTag_materializeSizeTag = TagModule.requiredMethod("materializeSizeTag")
-  @tu lazy val UnsafeTag_materializeUSizeTag = TagModule.requiredMethod("materializeUSizeTag")
-  @tu lazy val UnsafeTag_materializePtrWildcardTag = TagModule.requiredMethod("materializePtrWildcard")
-  @tu lazy val UnsafeTag_materializePtrClassNotGivenClassTag =
-    TagModule.requiredMethod("materializePtrClassNotGivenClassTag")
 
   // Native runtime package
   @tu lazy val RuntimePackageClass = requiredModule("scala.scalanative.runtime.package")
@@ -267,25 +238,6 @@ final class NirDefinitions()(using ctx: Context) {
 
   @tu lazy val EnableReflectiveInstantiationAnnotationClass =
     requiredClass("scala.scalanative.reflect.annotation.EnableReflectiveInstantiation")
-
-  // Scala reflect
-  @tu lazy val ClasstagModule = requiredModule("scala.reflect.ClassTag")
-  @tu lazy val ClassTagApply = ClasstagModule.requiredMethod("apply")
-  @tu lazy val ByteClassTag = ClasstagModule.requiredMethod("Byte")
-  @tu lazy val ShortClassTag = ClasstagModule.requiredMethod("Short")
-  @tu lazy val CharClassTag = ClasstagModule.requiredMethod("Char")
-  @tu lazy val IntClassTag = ClasstagModule.requiredMethod("Int")
-  @tu lazy val LongClassTag = ClasstagModule.requiredMethod("Long")
-  @tu lazy val FloatClassTag = ClasstagModule.requiredMethod("Float")
-  @tu lazy val DoubleClassTag = ClasstagModule.requiredMethod("Double")
-  @tu lazy val BooleanClassTag = ClasstagModule.requiredMethod("Boolean")
-  @tu lazy val UnitClassTag = ClasstagModule.requiredMethod("Unit")
-  @tu lazy val AnyClassTag = ClasstagModule.requiredMethod("Any")
-  @tu lazy val ObjectClassTag = ClasstagModule.requiredMethod("Object")
-  @tu lazy val AnyValClassTag = ClasstagModule.requiredMethod("AnyVal")
-  @tu lazy val AnyRefClassTag = ClasstagModule.requiredMethod("AnyRef")
-  @tu lazy val NothingClassTag = ClasstagModule.requiredMethod("Nothing")
-  @tu lazy val NullClassTag = ClasstagModule.requiredMethod("Null")
 
   @tu lazy val ReflectSelectableClass = requiredClass("scala.reflect.Selectable")
   @tu lazy val ReflectSelectable_selectDynamic = ReflectSelectableClass.requiredMethod("selectDynamic")
