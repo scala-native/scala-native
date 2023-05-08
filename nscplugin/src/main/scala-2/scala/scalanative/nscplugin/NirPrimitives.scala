@@ -191,7 +191,6 @@ abstract class NirPrimitives {
 
     addPrimitives(CFuncPtrApplyMethods, CFUNCPTR_APPLY)
     addPrimitives(CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
-    addPrimitives(_CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
     addPrimitives(SizeOfMethods, SIZE_OF)
     addPrimitives(AlignmentOfMethods, ALIGNMENT_OF)

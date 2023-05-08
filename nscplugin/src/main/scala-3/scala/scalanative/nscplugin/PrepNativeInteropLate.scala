@@ -53,28 +53,20 @@ class PostInlineNativeInterop extends PluginPhase {
     def dealiasTypeMapper = DealiasTypeMapper()
 
     tree match
-      // fromScalaFunction[T1, R](fn) -> _fromScalaFunction(fn)
-      case Apply(TypeApply(fun, tArgs), args) if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>
-        val idx = defnNir.CFuncPtr_fromScalaFunction.indexOf(fun.symbol)
-        val transformed = defnNir._CFuncPtr_fromScalaFunction(idx)
-        val cls = defnNir.CFuncPtrNClass(idx)
-        val tys = tArgs.map(t => dealiasTypeMapper(t.typeOpt))
-        cpy
-          .Apply(tree)(
-            ref(transformed),
-            args
-          )
-          .withAttachment(NirDefinitions.NonErasedTypes, tys)
-      
+      case app @ Apply(TypeApply(fun, tArgs), _)
+          if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>
+        val tys = tArgs.map(t => dealiasTypeMapper(t.tpe))
+        app.withAttachment(NirDefinitions.NonErasedTypes, tys)
+
       case Apply(fun, args) if defnNir.CFuncPtr_apply.contains(fun.symbol) =>
-        val paramTypes = args.map(a => dealiasTypeMapper(a.tpe)) :+ dealiasTypeMapper(tree.tpe.finalResultType)
+        val paramTypes =
+          args.map(a => dealiasTypeMapper(a.tpe)) :+
+            dealiasTypeMapper(tree.tpe.finalResultType)
         tree.withAttachment(NirDefinitions.NonErasedTypes, paramTypes)
 
       case _ => tree
 
   }
-
-
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
     val TypeApply(fun, tArgs) = tree

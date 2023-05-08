@@ -212,19 +212,10 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           )
           super.transform(tree)
 
-        case Apply(TypeApply(fun, tArgs), args) if CFuncPtrFromFunctionMethods.contains(fun.symbol) =>
-          val idx = CFuncPtrFromFunctionMethods.indexOf(fun.symbol)
-          val transformed = _CFuncPtrFromFunctionMethods(idx)
-          val tys = tArgs.map(t => widenDealiasType(t.tpe))
-          typer
-            .typed {
-              Apply(transformed, args: _*)
-            }
-            .updateAttachment(NonErasedTypes(tys))
-            .setPos(tree.pos)
-
         case Apply(fun, args) if CFuncPtrApplyMethods.contains(fun.symbol) =>
-          val paramTypes = args.map(t => widenDealiasType(t.tpe)) :+ widenDealiasType(tree.tpe.finalResultType)
+          val paramTypes =
+            args.map(t => widenDealiasType(t.tpe)) :+
+              widenDealiasType(tree.tpe.finalResultType)
           tree.updateAttachment(NonErasedTypes(paramTypes))
 
         case _ =>

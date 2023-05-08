@@ -266,12 +266,6 @@ trait NirDefinitions {
           getMember(module, TermName(s"fromScalaFunction"))
       }
 
-    lazy val _CFuncPtrFromFunctionMethods =
-      CFuncPtrNModule.zipWithIndex.map {
-        case (module, n) =>
-          getMember(module, TermName(s"_fromScalaFunction"))
-      }
-
     lazy val CastRawSizeToInt =
       getMember(IntrinsicsModule, TermName("castRawSizeToInt"))
     lazy val CastRawSizeToLong =

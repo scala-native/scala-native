@@ -2412,7 +2412,7 @@ trait NirGenExpr(using Context) {
             fn,
             paramTypes
           )
-          
+
           fnRef
 
         case ref: RefTree =>

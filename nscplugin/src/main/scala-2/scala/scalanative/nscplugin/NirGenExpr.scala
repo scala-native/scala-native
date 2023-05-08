@@ -1895,7 +1895,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val Apply(appRec @ Select(receiverp, _), aargs) = app
 
       val paramTypes = app.attachments.get[NonErasedTypes] match {
-        case None => 
+        case None =>
           reporter.error(app.pos, "test")
           Nil
         case Some(NonErasedTypes(paramTys)) => paramTys

@@ -58,7 +58,6 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val CFuncPtrNModules = CFuncPtrNNames.map(requiredModule)
   @tu lazy val CFuncPtr_apply = CFuncPtrNClass.map(_.requiredMethod("apply"))
   @tu lazy val CFuncPtr_fromScalaFunction = CFuncPtrNModules.map(_.requiredMethod("fromScalaFunction"))
-  @tu lazy val _CFuncPtr_fromScalaFunction = CFuncPtrNModules.map(_.requiredMethod("_fromScalaFunction"))
 
   @tu lazy val CStructClasses = (0 to 22).map(n => requiredClass("scala.scalanative.unsafe.CStruct" + n))
   @tu lazy val CArrayClass = requiredClass("scala.scalanative.unsafe.CArray")
