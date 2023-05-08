@@ -11,6 +11,10 @@
 #include <sys/mman.h>
 #endif
 
+#if defined(__APPLE__)
+#include <mach/mach.h>
+#endif
+
 void Safepoint_init(safepoint_t *ref) {
     void *addr =
 #ifdef _WIN32
@@ -26,6 +30,25 @@ void Safepoint_init(safepoint_t *ref) {
         perror("Failed to create GC safepoint trap");
         exit(errno);
     }
+
+#if defined(__APPLE__)
+    /* LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
+     * exceptions first to any registered "activation" handler and then to
+     * any registered task handler before dispatching the exception to a
+     * host-wide Mach exception handler that does translation to POSIX
+     * signals. This makes it impossible to use LLDB with safepoints;
+     * continuing execution after LLDB
+     * traps an EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler
+     * being invoked again. Work around this here by
+     * installing a no-op task-wide Mach exception handler for
+     * EXC_BAD_ACCESS.
+     */
+    kern_return_t kr = task_set_exception_ports(
+        mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL,
+        EXCEPTION_STATE_IDENTITY, MACHINE_THREAD_STATE);
+    if (kr != KERN_SUCCESS)
+        perror("Failed to create GC safepoint bad access handler");
+#endif
 }
 
 void Safepoint_arm(safepoint_t ref) {
