@@ -29,8 +29,6 @@ object CFuncPtr {
 % for N in range(0, 23):
 %   args      = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
 %   allTps    = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-%   wildcards = ", ".join(["_" for i in range(1, N+1)] + ["_"])
-%   evidences = ", ".join(["ev{}: Tag[T{}]".format(i, i) for i in range(1, N+1)] + ["evRet: Tag[R]"])
 %   CFuncPtrN = "CFuncPtr{}[{}]".format(N, allTps)
 %   FunctionN = "Function{}[{}]".format(N, allTps)
 

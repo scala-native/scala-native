@@ -52,6 +52,8 @@ class PostInlineNativeInterop extends PluginPhase {
     val defnNir = this.defnNir
     def dealiasTypeMapper = DealiasTypeMapper()
 
+    // Attach exact type information to the AST to preserve the type information
+    // during the type erase phase and refer to it in the NIR generation phase.
     tree match
       case app @ Apply(TypeApply(fun, tArgs), _)
           if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>

@@ -2338,27 +2338,29 @@ trait NirGenExpr(using Context) {
      *  and boxing result Apply.args can contain different number of arguments
      *  depending on usage, however they are passed in constant order:
      *    - 0..N args
-     *    - 0..N+1 type evidences of args (scalanative.Tag)
      *    - return type evidence
      */
     private def genCFuncPtrApply(app: Apply): Val = {
       given nir.Position = app.span
       val Apply(appRec @ Select(receiverp, _), aargs) = app: @unchecked
 
-      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes).get
+      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
+        case None =>
+          report.error(
+            s"Failed to generated exact NIR types for $app, something is wrong with scala-native internls.",
+            app.srcPos
+          )
+          Nil
+        case Some(paramTys) => paramTys
 
-      val argsp = aargs
       val self = genExpr(receiverp)
-
       val retType = genType(paramTypes.last)
       val unboxedRetType = Type.unbox.getOrElse(retType, retType)
 
-      val args = argsp
+      val args = aargs
         .zip(paramTypes)
         .map {
           case (Apply(Select(_, nme.box), List(value)), _) =>
-            genExpr(value)
-          case (Apply(Ident(nme.box), List(value)), _) =>
             genExpr(value)
           case (arg, ty) =>
             given nir.Position = arg.span
@@ -2387,8 +2389,15 @@ trait NirGenExpr(using Context) {
 
     private def genCFuncFromScalaFunction(app: Apply): Val = {
       given pos: nir.Position = app.span
-      val paramTys = app.getAttachment(NirDefinitions.NonErasedTypes).get
-      val paramTypes: List[SimpleType] = paramTys.map(fromType)
+      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
+        case None =>
+          report.error(
+            s"Failed to generated exact NIR types for $app, something is wrong with scala-native internls.",
+            app.srcPos
+          )
+          Nil
+        case Some(paramTys) =>
+          paramTys.map(fromType)
 
       val fn :: _ = app.args: @unchecked
 
@@ -2412,7 +2421,6 @@ trait NirGenExpr(using Context) {
             fn,
             paramTypes
           )
-
           fnRef
 
         case ref: RefTree =>

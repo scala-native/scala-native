@@ -1888,7 +1888,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
      *  and boxing result Apply.args can contain different number of arguments
      *  depending on usage, however they are passed in constant order:
      *    - 0..N args
-     *    - 0..N+1 type evidences of args (scalanative.Tag)
      *    - return type evidence
      */
     def genCFuncPtrApply(app: Apply, code: Int): Val = {
@@ -1896,19 +1895,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val paramTypes = app.attachments.get[NonErasedTypes] match {
         case None =>
-          reporter.error(app.pos, "test")
+          reporter.error(
+            app.pos,
+            s"Failed to generate exact NIR types for $app, something is wrong with scala-native internal."
+          )
           Nil
         case Some(NonErasedTypes(paramTys)) => paramTys
       }
 
       implicit val pos: nir.Position = app.pos
-      val argsp = aargs
 
       val self = genExpr(receiverp)
       val retType = genType(paramTypes.last)
       val unboxedRetType = Type.unbox.getOrElse(retType, retType)
 
-      val args = argsp
+      val args = aargs
         .zip(paramTypes)
         .map {
           case (arg, ty) =>
