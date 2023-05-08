@@ -6,13 +6,15 @@ import scala.scalanative.unsafe.Size.intToSize
 import scala.scalanative.runtime.Intrinsics.*
 import scala.collection.mutable
 
+import scala.util.Try
+
 object Continuations:
   import ContImpl.*
 
   inline def boundary[T](inline f: BoundaryLabel[T] ?=> T): T =
-    val call: ContFnT = (x: ContImpl.BoundaryLabel) => pObj(f(using x))
+    val call: ContFnT = (x: ContImpl.BoundaryLabel) => pObj(Try(f(using x)))
     val resP = ContImpl.boundary(contFn, pObj(call))
-    objP[T](resP)
+    objP[Try[T]](resP).get
 
   opaque type BoundaryLabel[-T] = ContImpl.BoundaryLabel
 
@@ -37,7 +39,7 @@ object Continuations:
     val cont = Continuation()
     val call = (c: ContImpl.Continuation) =>
       cont.cont = c
-      pObj(f(cont))
+      pObj(Try(f(cont)))
     val resP = ContImpl.suspend(label, suspendFn, pObj(call), pObj(cont))
     objP[R](resP)
 
@@ -45,7 +47,7 @@ object Continuations:
     private[Continuations] var cont: ContImpl.Continuation = pNull
     private val allocs = mutable.ArrayBuffer[ObjectArray]()
 
-    def apply(x: R): T = objP[T](resume(cont, pObj(x)))
+    def apply(x: R): T = objP[Try[T]](resume(cont, pObj(x))).get
 
     private[Continuations] def alloc(size: CUnsignedLong): Ptr[Byte] =
       val obj = ObjectArray.alloc(size.toInt) // round up the blob size
