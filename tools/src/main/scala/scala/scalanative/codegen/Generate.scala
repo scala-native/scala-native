@@ -75,11 +75,12 @@ object Generate {
 
     private def genHasTrait(name: Global.Member, sig: Type.Function): Unit = {
       implicit val fresh = Fresh()
-      val classid, traitid = Val.Local(fresh(), Type.Int)
+      val firstid, secondid = Val.Local(fresh(), Type.Int)
       val row = Val.Local(fresh(), Type.Int)
-      val columns = Val.Local(fresh(), Type.Int)
+      val columns = Val.Int(meta.traits.length)
       val bitIndex = Val.Local(fresh(), Type.Int)
       val arrayPos = Val.Local(fresh(), Type.Int)
+      val longptr = Val.Local(fresh(), Type.Ptr)
       val long = Val.Local(fresh(), Type.Long)
       val toShift = Val.Local(fresh(), Type.Int)
       val toShiftLong = Val.Local(fresh(), Type.Long)
@@ -92,20 +93,15 @@ object Generate {
         name,
         sig,
         Seq(
-          Inst.Label(fresh(), Seq(classid, traitid)),
-          Inst.Let(
-            columns.name,
-            Op.Arraylength(meta.hasTraitTables.traitHasTraitVal),
-            Next.None
-          ),
+          Inst.Label(fresh(), Seq(firstid, secondid)),
           Inst.Let(
             row.name,
-            Op.Bin(Bin.Imul, Type.Int, classid, columns),
+            Op.Bin(Bin.Imul, Type.Int, firstid, columns),
             Next.None
           ),
           Inst.Let(
             bitIndex.name,
-            Op.Bin(Bin.Iadd, Type.Int, row, traitid),
+            Op.Bin(Bin.Iadd, Type.Int, row, secondid),
             Next.None
           ),
           Inst.Let(
@@ -119,14 +115,15 @@ object Generate {
             Next.None
           ),
           Inst.Let(
-            long.name,
-            Op.Arrayload(
-              Type.Long,
+            longptr.name,
+            Op.Elem(
+              meta.hasTraitTables.traitHasTraitTy,
               meta.hasTraitTables.traitHasTraitVal,
-              arrayPos
+              Seq(Val.Int(0), arrayPos)
             ),
             Next.None
           ),
+          Inst.Let(long.name, Op.Load(Type.Long, longptr), Next.None),
           Inst.Let(
             toShift.name,
             Op.Bin(
