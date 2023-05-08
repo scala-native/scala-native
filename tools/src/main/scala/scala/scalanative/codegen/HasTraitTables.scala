@@ -38,7 +38,7 @@ class HasTraitTables(meta: Metadata) {
 
       row += 1
     }
-    val tableVal = Val.ArrayValue(Type.Long, matrix.toSeq.map(Val.Long))
+    val tableVal = Val.ArrayValue(Type.Long, matrix.toSeq.map(l => Val.Long(l)))
 
     classHasTraitDefn =
       Defn.Const(Attrs.None, classHasTraitName, tableVal.ty, tableVal)
@@ -54,7 +54,7 @@ class HasTraitTables(meta: Metadata) {
 
       row += 1
     }
-    val tableVal = Val.ArrayValue(Type.Long, matrix.toSeq.map(Val.Long))
+    val tableVal = Val.ArrayValue(Type.Long, matrix.toSeq.map(l => Val.Long(l)))
 
     traitHasTraitDefn =
       Defn.Const(Attrs.None, traitHasTraitName, tableVal.ty, tableVal)
