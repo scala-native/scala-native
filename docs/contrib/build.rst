@@ -140,11 +140,11 @@ If you need to test your copy of Scala Native in the larger context of a
 separate build, you will need to locally publish all the artifacts of Scala
 Native.
 
-Use the special script that publishes all the cross versions:
+Use the custom sbt command to publish all projects for a specific Scala version (`x,y,z`):
 
 .. code-block:: text
 
-    $ scripts/publish-local
+    > publish-local-dev x.y.z
 
 Afterwards, set the version of `sbt-scala-native` in the target project's
 `project/plugins.sbt` to the current SNAPSHOT version of Scala Native, and use
