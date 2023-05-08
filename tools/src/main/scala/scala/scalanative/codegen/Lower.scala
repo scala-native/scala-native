@@ -953,7 +953,10 @@ object Lower {
           let(
             Op.Call(
               Generate.Impl.ClassHasTraitSig,
-              Val.Global(Generate.Impl.ClassHasTraitName, Generate.Impl.ClassHasTraitSig),
+              Val.Global(
+                Generate.Impl.ClassHasTraitName,
+                Generate.Impl.ClassHasTraitSig
+              ),
               Seq(id, Val.Int(meta.ids(trt)))
             ),
             unwind
