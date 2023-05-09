@@ -91,19 +91,11 @@ object Generate {
       )
     }
 
-    // def __get_[class,trait]_has_trait(firstid: Int, secondid: Int): Boolean = {
-    //   val columns = meta.traits.length
-    //   val row = firstid * columns
-    //   val bitIndex = row + secondid
-    //   val arrayPos = bitIndex >> AddressBitsPerWord
-    //   val long = bits(arrayPos)
-    //   val toShift = bitIndex & RightBits
-    //   val toShiftLong = toShift.toLong
-    //   val mask = 1L << toShiftLong
-    //   val and = long & mask
-    //   val result = and != 0L
-    //
-    //   result
+    // BitMatrix get adapted from the java.util.BitSet implementation.
+    // Equivalent to the following Scala code:
+    // def get_[class,trait]_has_trait(firstid: Int, secondid: Int): Boolean = {
+    //   val bitIndex = firstid * meta.traits.length + secondid
+    //   (table(bitIndex >> AddressBitsPerWord) & (1L << (bitIndex & RightBits))) != 0
     // }
     private def genHasTrait(
         name: Global.Member,
