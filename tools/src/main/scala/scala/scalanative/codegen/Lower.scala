@@ -952,10 +952,10 @@ object Lower {
           val id = let(Op.Load(Type.Int, idptr), unwind)
           let(
             Op.Call(
-              Generate.Impl.ClassHasTraitSig,
+              Generate.ClassHasTraitSig,
               Val.Global(
-                Generate.Impl.ClassHasTraitName,
-                Generate.Impl.ClassHasTraitSig
+                Generate.ClassHasTraitName,
+                Generate.ClassHasTraitSig
               ),
               Seq(id, Val.Int(meta.ids(trt)))
             ),

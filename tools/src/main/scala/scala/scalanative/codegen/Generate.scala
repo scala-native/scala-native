@@ -9,6 +9,14 @@ import scala.scalanative.build.Logger
 object Generate {
   import Impl._
 
+  val ClassHasTraitName =
+    Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
+  val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+
+  val TraitHasTraitName =
+    Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
+  val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+
   def apply(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ): Seq[Defn] =
@@ -592,16 +600,8 @@ object Generate {
     }
   }
 
-  object Impl {
+  private object Impl {
     val rttiModule = Global.Top("java.lang.rtti$")
-
-    val ClassHasTraitName =
-      Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
-    val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
-
-    val TraitHasTraitName =
-      Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
-    val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
     val ObjectArray =
       Type.Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
