@@ -21,25 +21,20 @@ struct scalanative_utsname {
 
 #define SIZEOF_FIELD(t, f) (sizeof(((t *)0)->f))
 
-_Static_assert(SIZEOF_FIELD(struct scalanative_utsname, sysname) <=
-                   SCALANATIVE_UTSNAMELEN,
-               "Unexpected size: scalanative_utsname sysname");
+_Static_assert(SIZEOF_FIELD(struct utsname, sysname) <= SCALANATIVE_UTSNAMELEN,
+               "Unexpected size: OS utsname.sysname");
 
-_Static_assert(SIZEOF_FIELD(struct scalanative_utsname, nodename) <=
-                   SCALANATIVE_UTSNAMELEN,
-               "Unexpected size: scalanative_utsname nodename");
+_Static_assert(SIZEOF_FIELD(struct utsname, nodename) <= SCALANATIVE_UTSNAMELEN,
+               "Unexpected size: OS utsname.nodename");
 
-_Static_assert(SIZEOF_FIELD(struct scalanative_utsname, release) <=
-                   SCALANATIVE_UTSNAMELEN,
-               "Unexpected size: scalanative_utsname release");
+_Static_assert(SIZEOF_FIELD(struct utsname, release) <= SCALANATIVE_UTSNAMELEN,
+               "Unexpected size: OS utsname.release");
 
-_Static_assert(SIZEOF_FIELD(struct scalanative_utsname, version) <=
-                   SCALANATIVE_UTSNAMELEN,
-               "Unexpected size: scalanative_utsname version");
+_Static_assert(SIZEOF_FIELD(struct utsname, version) <= SCALANATIVE_UTSNAMELEN,
+               "Unexpected size: OS utsname.version");
 
-_Static_assert(SIZEOF_FIELD(struct scalanative_utsname, machine) <=
-                   SCALANATIVE_UTSNAMELEN,
-               "Unexpected size: scalanative_utsname machine");
+_Static_assert(SIZEOF_FIELD(struct utsname, machine) <= SCALANATIVE_UTSNAMELEN,
+               "Unexpected size: OS utsname.machine");
 
 #define SET_FIELD(dst, src) memccpy(dst, src, 0, SCALANATIVE_UTSNAMELEN)
 

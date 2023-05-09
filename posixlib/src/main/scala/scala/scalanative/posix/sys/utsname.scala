@@ -26,6 +26,7 @@ object utsname {
    *         fromCString(u.sysname.at(0).asInstanceOf[CString])
    */
 
+  // If changes are made here, corresponding changes in uname.c may be needed.
   type _256 = Digit3[_2, _5, _6]
   private type str = CArray[Byte, _256]
   type utsname = CStruct5[str, str, str, str, str]
