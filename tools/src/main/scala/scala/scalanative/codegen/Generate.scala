@@ -117,90 +117,77 @@ object Generate {
       val and = Val.Local(fresh(), Type.Long)
       val result = Val.Local(fresh(), Type.Bool)
 
+      def let(local: Val.Local, op: Op) = Inst.Let(local.name, op, Next.None)
+
       buf += Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
         name,
         sig,
         Seq(
           Inst.Label(fresh(), Seq(firstid, secondid)),
-          Inst.Let(
-            row.name,
-            Op.Bin(Bin.Imul, Type.Int, firstid, columns),
-            Next.None
-          ),
-          Inst.Let(
-            bitIndex.name,
-            Op.Bin(Bin.Iadd, Type.Int, row, secondid),
-            Next.None
-          ),
-          Inst.Let(
-            arrayPos.name,
+          let(row, Op.Bin(Bin.Imul, Type.Int, firstid, columns)),
+          let(bitIndex, Op.Bin(Bin.Iadd, Type.Int, row, secondid)),
+          let(
+            arrayPos,
             Op.Bin(
               Bin.Ashr,
               Type.Int,
               bitIndex,
               Val.Int(BitMatrix.AddressBitsPerWord)
-            ),
-            Next.None
+            )
           ),
-          Inst.Let(
-            longptr.name,
+          let(
+            longptr,
             Op.Elem(
               tableTy,
               tableVal,
               Seq(Val.Int(0), arrayPos)
-            ),
-            Next.None
+            )
           ),
-          Inst.Let(long.name, Op.Load(Type.Long, longptr), Next.None),
-          Inst.Let(
-            toShift.name,
+          let(long, Op.Load(Type.Long, longptr)),
+          let(
+            toShift,
             Op.Bin(
               Bin.And,
               Type.Int,
               bitIndex,
               Val.Int(BitMatrix.RightBits)
-            ),
-            Next.None
+            )
           ),
-          Inst.Let(
-            toShiftLong.name,
+          let(
+            toShiftLong,
             Op.Conv(
               Conv.Sext,
               Type.Long,
               toShift
-            ),
-            Next.None
+            )
           ),
-          Inst.Let(
-            mask.name,
+          let(
+            mask,
             Op.Bin(
               Bin.Shl,
               Type.Long,
               Val.Long(1),
               toShiftLong
-            ),
-            Next.None
+            )
           ),
-          Inst.Let(
-            and.name,
+          let(
+            and,
             Op.Bin(
               Bin.And,
               Type.Long,
               long,
               mask
-            ),
-            Next.None
+            )
           ),
-          Inst.Let(
-            result.name,
+          let(
+            result,
             Op.Comp(
               Comp.Ine,
               Type.Long,
               and,
               Val.Long(0)
-            ),
-            Next.None
+            )
           ),
           Inst.Ret(result)
         )
