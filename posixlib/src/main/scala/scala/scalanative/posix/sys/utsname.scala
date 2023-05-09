@@ -17,6 +17,13 @@ object utsname {
    *    the Open Group 2018 POSIX description. That is, the fields are
    *    actual arrays (CArray) and not the pointers to the beginning of an
    *    array (Ptr[Byte]) one might expect.
+   *
+   *  3) The CArrays are somewhat difficult to work with in Scala.
+   *     The operating system will have placed a null
+   *     somewhere in the CArray provided to it. Given that, proper
+   *     Scala Strings can be obtained by:
+   *         import scala.scalanative.unsafe._
+   *         fromCString(u.sysname.at(0).asInstanceOf[CString])
    */
 
   type _256 = Digit3[_2, _5, _6]
