@@ -246,11 +246,13 @@ onto source defined for the current Scala version inside its standard library.
 In case `overrides*` directory contains both `*.scala` file and its corresponding patch file,
 only `*.scala` file would be added to the compilation sources.  
 
-To operate with patches it is recommended to use Ammonite script `scripts/scalalib-patch-tool.sc`. 
+To operate with patches it is recommended to use ScalaCLI script `scripts/scalalib-patch-tool.sc`. 
 It takes 2 mandatory arguments: command to use and Scala version. There are currently 3 supported commands defined:
 * recreate - creates `*.scala` files based on original sources with applied patches corresponding to their name;
 * create - creates `*.scala.patch` files from defined `*.scala` files in overrides directory with corresponding name;
 * prune - deletes all `*.scala` files which does not have corresponding `*.scala.patch` file;
+
+(e.g. `scala-cli scripts/scalalib-patch-tool.sc -- recreate 2.13.10`)
 
 Each of these commands is applied to all files defined in the overrides directory. 
 By default override directory is selected based on the used scala version, 
