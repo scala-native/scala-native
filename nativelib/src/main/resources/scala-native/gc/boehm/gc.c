@@ -41,8 +41,7 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
 }
 
 size_t scalanative_get_init_heapsize() {
-    return 0L;
-    // return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
+    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
 }
 
 size_t scalanative_get_max_heapsize() {
@@ -51,8 +50,7 @@ size_t scalanative_get_max_heapsize() {
     GC_get_prof_stats(stats, sizeof(struct GC_prof_stats_s));
     size_t heap_sz = stats->heapsize_full;
     free(stats);
-    return heap_sz;
-    // return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", heap_sz);
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", heap_sz);
 }
 
 void scalanative_collect() { GC_gcollect(); }
