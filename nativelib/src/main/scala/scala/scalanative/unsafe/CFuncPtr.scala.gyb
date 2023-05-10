@@ -29,16 +29,15 @@ object CFuncPtr {
 % for N in range(0, 23):
 %   args      = ", ".join("arg" + str(i) + ": T" + str(i) for i in range(1, N+1))
 %   allTps    = ", ".join(["T" + str(i) for i in range(1, N+1)] + ["R"])
-%   evidences = ", ".join(["ev{}: Tag[T{}]".format(i, i) for i in range(1, N+1)] + ["evRet: Tag[R]"])
 %   CFuncPtrN = "CFuncPtr{}[{}]".format(N, allTps)
 %   FunctionN = "Function{}[{}]".format(N, allTps)
 
 final class ${CFuncPtrN} private (rawptr: RawPtr) extends CFuncPtr(rawptr) {
-  def apply(${args})(implicit ${evidences}): R = intrinsic
+  def apply(${args}): R = intrinsic
 }
 
 object CFuncPtr${N} {
-  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN})(implicit ${evidences}): ${CFuncPtrN} = intrinsic
+  implicit def fromScalaFunction[${allTps}](fn: ${FunctionN}): ${CFuncPtrN} = intrinsic
 
   private[scalanative] def fromRawPtr[${allTps}](ptr: RawPtr): ${CFuncPtrN} = {
     new ${CFuncPtrN}(ptr)

@@ -11,6 +11,7 @@ trait NirDefinitions {
 
   object nirDefinitions {
     case class NonErasedType(tpe: Type) extends PlainAttachment
+    case class NonErasedTypes(tpes: List[Type]) extends PlainAttachment
 
     // Native library
 
@@ -85,49 +86,6 @@ trait NirDefinitions {
     }
     lazy val CArrayClass =
       getRequiredClass("scala.scalanative.unsafe.CArray")
-
-    lazy val TagModule = getRequiredModule("scala.scalanative.unsafe.Tag")
-    lazy val UnitTagMethod = getDecl(TagModule, TermName("materializeUnitTag"))
-    lazy val BooleanTagMethod =
-      getDecl(TagModule, TermName("materializeBooleanTag"))
-    lazy val SizeTagMethod = getDecl(TagModule, TermName("materializeSizeTag"))
-    lazy val USizeTagMethod =
-      getDecl(TagModule, TermName("materializeUSizeTag"))
-    lazy val CharTagMethod = getDecl(TagModule, TermName("materializeCharTag"))
-    lazy val ByteTagMethod = getDecl(TagModule, TermName("materializeByteTag"))
-    lazy val UByteTagMethod =
-      getDecl(TagModule, TermName("materializeUByteTag"))
-    lazy val ShortTagMethod =
-      getDecl(TagModule, TermName("materializeShortTag"))
-    lazy val UShortTagMethod =
-      getDecl(TagModule, TermName("materializeUShortTag"))
-    lazy val IntTagMethod = getDecl(TagModule, TermName("materializeIntTag"))
-    lazy val UIntTagMethod = getDecl(TagModule, TermName("materializeUIntTag"))
-    lazy val LongTagMethod = getDecl(TagModule, TermName("materializeLongTag"))
-    lazy val ULongTagMethod =
-      getDecl(TagModule, TermName("materializeULongTag"))
-    lazy val FloatTagMethod =
-      getDecl(TagModule, TermName("materializeFloatTag"))
-    lazy val DoubleTagMethod =
-      getDecl(TagModule, TermName("materializeDoubleTag"))
-    lazy val PtrTagMethod = getDecl(TagModule, TermName("materializePtrTag"))
-    lazy val PtrWildcardTagMethod =
-      getDecl(TagModule, TermName("materializePtrWildcard"))
-    lazy val PtrClassNotGivenClassTagMethod =
-      getDecl(TagModule, TermName("materializePtrClassNotGivenClassTag"))
-    lazy val ClassTagMethod =
-      getDecl(TagModule, TermName("materializeClassTag"))
-    lazy val NatBaseTagMethod = (0 to 9).map { n =>
-      getDecl(TagModule, TermName("materializeNat" + n + "Tag"))
-    }
-    lazy val NatDigitTagMethod = (2 to 9).map { n =>
-      getDecl(TagModule, TermName(s"materializeNatDigit${n}Tag"))
-    }
-    lazy val CArrayTagMethod =
-      getDecl(TagModule, TermName("materializeCArrayTag"))
-    lazy val CStructTagMethod = (0 to 22).map { n =>
-      getDecl(TagModule, TermName("materializeCStruct" + n + "Tag"))
-    }
 
     // scala names
 
@@ -391,24 +349,6 @@ trait NirDefinitions {
       ULongClass -> getDecl(RuntimeBoxesModule, TermName("unboxToULong")),
       USizeClass -> getDecl(RuntimeBoxesModule, TermName("unboxToUSize"))
     )
-
-    lazy val ClassTagModule = getRequiredModule("scala.reflect.ClassTag")
-    lazy val ClassTagApply = getDecl(ClassTagModule, TermName("apply"))
-    lazy val ByteClassTag = getDecl(ClassTagModule, TermName("Byte"))
-    lazy val ShortClassTag = getDecl(ClassTagModule, TermName("Short"))
-    lazy val CharClassTag = getDecl(ClassTagModule, TermName("Char"))
-    lazy val IntClassTag = getDecl(ClassTagModule, TermName("Int"))
-    lazy val LongClassTag = getDecl(ClassTagModule, TermName("Long"))
-    lazy val FloatClassTag = getDecl(ClassTagModule, TermName("Float"))
-    lazy val DoubleClassTag = getDecl(ClassTagModule, TermName("Double"))
-    lazy val BooleanClassTag = getDecl(ClassTagModule, TermName("Boolean"))
-    lazy val UnitClassTag = getDecl(ClassTagModule, TermName("Unit"))
-    lazy val AnyClassTag = getDecl(ClassTagModule, TermName("Any"))
-    lazy val ObjectClassTag = getDecl(ClassTagModule, TermName("Object"))
-    lazy val AnyValClassTag = getDecl(ClassTagModule, TermName("AnyVal"))
-    lazy val AnyRefClassTag = getDecl(ClassTagModule, TermName("AnyRef"))
-    lazy val NothingClassTag = getDecl(ClassTagModule, TermName("Nothing"))
-    lazy val NullClassTag = getDecl(ClassTagModule, TermName("Null"))
 
     lazy val ReflectModule =
       getRequiredModule("scala.scalanative.reflect.Reflect")

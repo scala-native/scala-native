@@ -13,10 +13,10 @@ object utsname {
 
 object uname {
   implicit class utsnameOps(val c: Ptr[utsname.utsname]) {
-    def sysname = fromCString(c._1.asInstanceOf[Ptr[CChar]])
-    def nodename = fromCString(c._2.asInstanceOf[Ptr[CChar]])
-    def release = fromCString(c._3.asInstanceOf[Ptr[CChar]])
-    def version = fromCString(c._4.asInstanceOf[Ptr[CChar]])
-    def machine = fromCString(c._5.asInstanceOf[Ptr[CChar]])
+    def sysname = c._1
+    def nodename = c._2
+    def release = c._3
+    def version = c._4
+    def machine = c._5
   }
 }

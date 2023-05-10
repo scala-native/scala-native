@@ -212,6 +212,14 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           )
           super.transform(tree)
 
+        // Attach exact type information to the AST to preserve the type information
+        // during the type erase phase and refer to it in the NIR generation phase.
+        case Apply(fun, args) if CFuncPtrApplyMethods.contains(fun.symbol) =>
+          val paramTypes =
+            args.map(t => widenDealiasType(t.tpe)) :+
+              widenDealiasType(tree.tpe.finalResultType)
+          tree.updateAttachment(NonErasedTypes(paramTypes))
+
         case _ =>
           super.transform(tree)
       }
