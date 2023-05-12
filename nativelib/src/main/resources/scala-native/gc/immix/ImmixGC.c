@@ -12,6 +12,10 @@
 #include "Constants.h"
 #include "Settings.h"
 #include "WeakRefStack.h"
+#include "Parsing.h"
+
+// Stack boottom of the main thread
+extern word_t **__stack_bottom;
 
 void scalanative_collect();
 

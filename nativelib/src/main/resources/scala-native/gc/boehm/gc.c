@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "../shared/Parsing.h"
 
 #if defined(_WIN32) || defined(WIN32)
 // Boehm on Windows needs User32.lib linked
@@ -36,6 +37,19 @@ void *scalanative_alloc_atomic(void *info, size_t size) {
     memset(alloc, 0, size);
     *alloc = info;
     return (void *)alloc;
+}
+
+size_t scalanative_get_init_heapsize() {
+    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
+}
+
+size_t scalanative_get_max_heapsize() {
+    struct GC_prof_stats_s *stats =
+        (struct GC_prof_stats_s *)malloc(sizeof(struct GC_prof_stats_s));
+    GC_get_prof_stats(stats, sizeof(struct GC_prof_stats_s));
+    size_t heap_sz = stats->heapsize_full;
+    free(stats);
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", heap_sz);
 }
 
 void scalanative_collect() { GC_gcollect(); }
