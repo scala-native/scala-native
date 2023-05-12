@@ -77,7 +77,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       )
       val entry = "A"
       val changedTop = Set[String]("A", "A$")
-      val outDir = Files.createTempDirectory("native-test-out")
+      val outDir = Files.createTempDirectory("native-test-out1")
       val compiler = NIRCompiler.getCompiler(outDir)
       val sourcesDir = NIRCompiler.writeSources(sources)
       val files = compiler.compile(sourcesDir)
@@ -132,6 +132,5 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
     .withGC(Discover.GC())
     .withMode(Discover.mode())
     .withOptimize(Discover.optimize())
-    .withBaseName("out")
 
 }
