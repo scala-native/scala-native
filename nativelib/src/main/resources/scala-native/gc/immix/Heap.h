@@ -52,5 +52,6 @@ void Heap_Collect(Heap *heap, Stack *stack);
 
 void Heap_Recycle(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
+size_t Heap_getMemoryLimit();
 
 #endif // IMMIX_HEAP_H

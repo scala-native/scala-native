@@ -88,5 +88,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 void Heap_Collect(Heap *heap);
 void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
+size_t Heap_getMemoryLimit();
 
 #endif // IMMIX_HEAP_H
