@@ -544,7 +544,8 @@ object Character {
   def isWhitespace(codePoint: scala.Int): scala.Boolean = {
     def isSeparator(tpe: Int): scala.Boolean =
       tpe == SPACE_SEPARATOR || tpe == LINE_SEPARATOR || tpe == PARAGRAPH_SEPARATOR
-    if (codePoint < 256) {
+    if (codePoint < 0) false
+    else if (codePoint < 256) {
       codePoint == '\t' || codePoint == '\n' || codePoint == '\u000B' ||
       codePoint == '\f' || codePoint == '\r' ||
       ('\u001C' <= codePoint && codePoint <= '\u001F') ||
@@ -592,7 +593,8 @@ object Character {
     isLowerCase(c.toInt)
 
   def isLowerCase(c: Int): scala.Boolean = {
-    if (c < 256)
+    if (c < 0) false
+    else if (c < 256)
       c == '\u00AA' || c == '\u00BA' || getTypeLT256(c) == LOWERCASE_LETTER
     else
       isLowerCaseGE256(c)

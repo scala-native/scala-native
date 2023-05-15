@@ -487,6 +487,13 @@ class CharacterTest {
 
   }
 
+  @Test def isLowerCase(): Unit = {
+    assertTrue(Character.isLowerCase('a'))
+    assertTrue(Character.isLowerCase('z'))
+    assertFalse(Character.isLowerCase('A'))
+    assertFalse(Character.isLowerCase(-1))
+  }
+
   @Test def toLowerCaseLow(): Unit = {
     // low chars
     assertTrue(toLowerCase('\n') equals '\n')
@@ -606,4 +613,20 @@ class CharacterTest {
     // unspecified for non-supplementary code points
   }
 
+  @Test def isWhitespace(): Unit = {
+    assertTrue(Character.isWhitespace(' '))
+    assertTrue(Character.isWhitespace('\t'))
+    assertTrue(Character.isWhitespace('\n'))
+    assertTrue(Character.isWhitespace('\f'))
+    assertTrue(Character.isWhitespace('\r'))
+    assertTrue(Character.isWhitespace('\u001C')) // file separator
+    assertTrue(Character.isWhitespace('\u001D')) // group separator
+    assertTrue(Character.isWhitespace('\u001E')) // record separator
+    assertTrue(Character.isWhitespace('\u001F')) // unit separator
+
+    assertFalse(Character.isWhitespace('\b'))
+    assertFalse(Character.isWhitespace('a'))
+    // https://github.com/scala-native/scala-native/issues/3154
+    assertFalse(Character.isWhitespace(-1))
+  }
 }
