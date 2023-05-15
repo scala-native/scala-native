@@ -7,8 +7,10 @@ import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.serialization.deserializeBinary
 import scala.scalanative.nir.{Defn, Global, Prelude => NirPrelude}
+import java.nio.file.attribute.FileTime
 
 sealed trait ClassPath {
+  private[scalanative] def lastModifiedMillis: Long
 
   /** Check if given global is present in this classpath. */
   private[scalanative] def contains(name: Global): Boolean
@@ -30,6 +32,8 @@ object ClassPath {
     new Impl(directory)
 
   private final class Impl(directory: VirtualDirectory) extends ClassPath {
+    override def lastModifiedMillis = directory.lastModified.toMillis()
+
     private val files =
       directory.files
         .filter(_.toString.endsWith(".nir"))

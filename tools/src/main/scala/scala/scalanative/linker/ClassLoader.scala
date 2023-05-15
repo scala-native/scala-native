@@ -14,6 +14,10 @@ sealed abstract class ClassLoader {
 
 object ClassLoader {
 
+  def fromClasspath(classPath: Seq[ClassPath]): ClassLoader = {
+    new FromDisk(classPath)
+  }
+
   def fromDisk(config: build.Config)(implicit in: Scope): ClassLoader = {
     val classpath = config.classPath.map { path =>
       ClassPath(VirtualDirectory.real(path))

@@ -8,6 +8,7 @@ import java.nio.file._
 import java.nio.channels._
 import java.util.HashMap
 import scalanative.util.{Scope, acquire, defer}
+import java.nio.file.attribute.FileTime
 
 sealed trait VirtualDirectory {
 
@@ -35,6 +36,9 @@ sealed trait VirtualDirectory {
 
   /** Merges content of source paths into single file in target */
   def merge(sources: Seq[Path], target: Path): Unit
+
+  /* Returns a file's last modified time. */
+  def lastModified: FileTime
 }
 
 object VirtualDirectory {
@@ -147,6 +151,8 @@ object VirtualDirectory {
           .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
           .iterator()
       }.map(fp => path.relativize(fp))
+
+    override def lastModified: FileTime = Files.getLastModifiedTime(path)
   }
 
   private final class JarDirectory(path: Path)(implicit in: Scope)
@@ -176,6 +182,8 @@ object VirtualDirectory {
           }
         }
     }
+
+    override def lastModified: FileTime = Files.getLastModifiedTime(path)
   }
 
   private object EmptyDirectory extends VirtualDirectory {
@@ -200,5 +208,9 @@ object VirtualDirectory {
     override def merge(sources: Seq[Path], target: Path): Unit =
       throw new UnsupportedOperationException("Can't merge in empty directory.")
 
+    override def lastModified: FileTime =
+      throw new UnsupportedOperationException(
+        "Can't get mtime attribute of an empty directory."
+      )
   }
 }
