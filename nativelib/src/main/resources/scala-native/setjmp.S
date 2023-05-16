@@ -160,16 +160,16 @@ jump_buf layout (compatible with FreeBSD):
 
 .global _lh_setjmp
 .global _lh_longjmp
-.global _lh_store_lr_longjmp
 .global _lh_boundary_entry
+.global _lh_resume_entry
 .global _lh_get_sp
 
 /* under MacOSX the c-compiler adds underscores to cdecl functions
    add these labels too so the linker can resolve it. */
 .global __lh_setjmp
 .global __lh_longjmp
-.global __lh_store_lr_longjmp
 .global __lh_boundary_entry
+.global __lh_resume_entry
 .global __lh_get_sp
 
 __lh_setjmp:
@@ -215,13 +215,6 @@ ok:
   movq  16 (%rdi), %rsp       /* restore the stack pointer */
   jmpq *(%rdi)                /* and jump to rip */
 
-__lh_store_lr_longjmp:
-_lh_store_lr_longjmp:           /* rdi: jmp_buf, rsi: addr */
-  movq   0 (%rsp), %rax
-  movq   %rax, 0 (%rsi)
-  movq   $1, %rsi               /* put 1 as arg to _lh_longjmp */
-  jmpq   _lh_longjmp
-
 _lh_boundary_entry: 
 __lh_boundary_entry: /* rdi: arg 1, rsi : arg 2, (rdx: arg 3) */
   movq  %rsi, %rdx
@@ -232,6 +225,16 @@ __lh_boundary_entry: /* rdi: arg 1, rsi : arg 2, (rdx: arg 3) */
   call  __cont_boundary_impl
   popq  %rbx
   ret
+
+_lh_resume_entry: /* rdi = cont_size, rsi = cont, rdx = arg */
+__lh_resume_entry:
+  movq  0 (%rsp), %rcx /* store lr */
+  movq  %rsp, %rax /* store sp */
+  subq  %rdi, %rsp /* move sp */
+  movq  %rax, %rdi /* pass old sp as arg 1 */
+  addq  $8, %rdi   /* forget about lr in stack tail */
+  jmp   __cont_resume_impl /* it will just return from here */
+
 
 _lh_get_sp:
 __lh_get_sp:
