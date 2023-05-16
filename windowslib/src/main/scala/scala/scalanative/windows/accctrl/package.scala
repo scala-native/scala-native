@@ -6,7 +6,6 @@ import scala.scalanative.windows._
 
 import AclApi._
 import SecurityBaseApi._
-import WinBaseApi._
 
 package object accctrl {
   type AccessMode = CInt

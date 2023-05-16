@@ -13,7 +13,7 @@
 #include "Constants.h"
 #include "Settings.h"
 #include "WeakRefStack.h"
-
+#include "Parsing.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "Synchronizer.h"
 #endif
@@ -73,6 +73,22 @@ INLINE void scalanative_register_weak_reference_handler(void *handler) {
     WeakRefStack_SetHandler(handler);
 }
 
+/* Get the minimum heap size */
+/* If the user has set a minimum heap size using the GC_INITIAL_HEAP_SIZE
+ * environment variable, */
+/* then this size will be returned. */
+/* Otherwise, the default minimum heap size will be returned.*/
+size_t scalanative_get_init_heapsize() { return Settings_MinHeapSize(); }
+
+/* Get the maximum heap size */
+/* If the user has set a maximum heap size using the GC_MAXIMUM_HEAP_SIZE
+ * environment variable,*/
+/* then this size will be returned.*/
+/* Otherwise, the total size of the physical memory (guarded) will be returned*/
+size_t scalanative_get_max_heapsize() {
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
+}
+
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 typedef void *RoutineArgs;
 typedef struct {
@@ -80,7 +96,11 @@ typedef struct {
     RoutineArgs args;
 } WrappedFunctionCallArgs;
 
+#ifdef _WIN32
+static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
+#else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
+#endif
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;
     RoutineArgs originalArgs = wrapped->args;

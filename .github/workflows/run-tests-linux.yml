@@ -32,7 +32,7 @@ jobs:
           java-version: 8
 
       - name: Test tools
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-tools ${{ matrix.scala }}"
+        run: sbt "++ ${{ matrix.scala }} -v" "test-tools ${{ matrix.scala }}; toolsBenchmarks${{env.project-version}}/Jmh/compile"
 
         # Make sure that Scala partest blacklisted tests contain only valid test names
       - name: Setup Scala-cli
@@ -43,7 +43,6 @@ jobs:
         if: ${{ !startsWith(matrix.scala, '3.') }}
         run: |
           sbt "++ ${{ matrix.scala }} -v" \
-          "-no-colors" \
           "scalaPartest${{env.project-version}}/fetchScalaSource"
           scala-cli scripts/partest-check-files.scala -- ${{ matrix.scala }}
 
@@ -149,7 +148,7 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
-        run: sbt "test-runtime ${{ matrix.scala }}"
+        run: sbt -J-Xmx5G "test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC

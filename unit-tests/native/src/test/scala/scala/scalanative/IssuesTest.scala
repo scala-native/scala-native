@@ -7,6 +7,9 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scala.annotation.nowarn
+import scala.scalanative.annotation.alwaysinline
+
+import scala.language.higherKinds
 
 class IssuesTest {
 
@@ -588,6 +591,40 @@ class IssuesTest {
         else fooLiteral
     }
     assertEquals(Foo.fooLiteral, Foo.fooLazy)
+  }
+  @Test def i3147(): Unit = {
+    // It's not a runtime, but linktime bug related to nir.Show new lines escapes for string literals
+    println("$\n")
+  }
+
+  @Test def i3195(): Unit = {
+    // Make sure that inlined calls are resetting the stack upon returning
+    // Otherwise calls to functions allocating on stack in loop might lead to stack overflow
+    @alwaysinline def allocatingFunction(): CSize = {
+      import scala.scalanative.unsafe.{CArray, Nat}
+      import Nat._
+      def `64KB` = (64 * 1024).toUSize
+      val chunk = stackalloc[Byte](`64KB`)
+      assertNotNull("stackalloc was null", chunk)
+      `64KB`
+    }
+    // 32MB, may more then available stack 1MB on Windows, < 8 MB on Unix
+    val toAllocate = (32 * 1024 * 1024).toUSize
+    var allocated = 0.toUSize
+    while (allocated < toAllocate) {
+      allocated += allocatingFunction()
+    }
+  }
+
+  @Test def issue3196(): Unit = {
+    object ctx {
+      type Foo
+    }
+    val ptr1 = stackalloc[Ptr[ctx.Foo]]()
+    println(!ptr1) // segfault
+
+    val ptr2 = stackalloc[Ptr[_]]()
+    println(!ptr2) // segfault
   }
 
 }

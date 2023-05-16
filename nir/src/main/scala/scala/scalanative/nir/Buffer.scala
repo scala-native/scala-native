@@ -5,16 +5,13 @@ import scala.collection.mutable
 
 class Buffer(implicit fresh: Fresh) {
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
-  def +=(inst: Inst): Unit =
-    buffer += inst
-  def ++=(insts: Seq[Inst]): Unit =
-    buffer ++= insts
-  def ++=(other: Buffer): Unit =
-    buffer ++= other.buffer
-  def toSeq: Seq[Inst] =
-    buffer.toSeq
-  def size: Int =
-    buffer.size
+  def +=(inst: Inst): Unit = buffer += inst
+  def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
+  def ++=(other: Buffer): Unit = buffer ++= other.buffer
+
+  def toSeq: Seq[Inst] = buffer.toSeq
+  def size: Int = buffer.size
+  def exists(pred: Inst => Boolean) = buffer.exists(pred)
 
   // Control-flow ops
   def label(name: Local)(implicit pos: Position): Unit =
@@ -124,8 +121,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Is(ty, obj), unwind)
   def copy(value: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Copy(value), unwind)
-  def sizeof(ty: Type, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Sizeof(ty), unwind)
+  def sizeOf(ty: Type, unwind: Next)(implicit pos: Position): Val =
+    let(Op.SizeOf(ty), unwind)
+  def alignmentOf(ty: Type, unwind: Next)(implicit pos: Position): Val =
+    let(Op.AlignmentOf(ty), unwind)
   def box(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Box(ty, obj), unwind)
   def unbox(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
@@ -152,4 +151,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Arraystore(ty, arr, idx, value), unwind)
   def arraylength(arr: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Arraylength(arr), unwind)
+
+  def fence(memoryOrder: MemoryOrder)(implicit pos: Position): Val =
+    let(
+      Op.Fence(SyncAttrs(memoryOrder = memoryOrder, isVolatile = false)),
+      Next.None
+    )
 }

@@ -34,11 +34,14 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
   override def genPrelude()(implicit sb: ShowBuilder): Unit = {
     import sb._
     def PtrRef = if (useOpaquePointers) ptrT else s"$ptrT*"
-    line(s"declare i32 @llvm.eh.typeid.for($ptrT*)")
+    line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
     line(s"declare i32 $osPersonalityType(...)")
     line(s"$typeDescriptor = type { $PtrRef, $ptrT, [35 x i8] }")
     line(s"%$stdExceptionData = type { $ptrT, i8 }")
-    line(s"%$stdExceptionClass = type { i32 (...)**, %$stdExceptionData }")
+    if (useOpaquePointers)
+      line(s"%$stdExceptionClass = type { $ptrT, %$stdExceptionData }")
+    else
+      line(s"%$stdExceptionClass = type { i32 (...)**, %$stdExceptionData }")
     line(s"$ehClass = type { %$stdExceptionClass, $ptrT }")
     line(s"@$typeInfo = external constant $ptrT")
     line(s"$$$ehWrapperTy = comdat any")

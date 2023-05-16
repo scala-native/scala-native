@@ -20,10 +20,8 @@ import FileApiExt._
 import NamedPipeApi._
 import SynchApi._
 import WinBaseApi._
-import WinBaseApiExt._
 import WinBaseApiOps._
 import winnt.AccessRights._
-import WindowsProcess._
 
 private[lang] class WindowsProcess private (
     val handle: Handle,
@@ -158,7 +156,7 @@ object WindowsProcess {
     val argv = toCWideStringUTF16LE(cmd.scalaOps.mkString("", " ", ""))
     val envp = nullTerminatedBlock {
       val list = new ArrayList[String]
-      val it = builder
+      builder
         .environment()
         .entrySet()
         .iterator()
@@ -218,7 +216,7 @@ object WindowsProcess {
       stdHandle: Handle,
       isStdIn: Boolean,
       msg: => String
-  )(implicit z: Zone): (Handle, Handle) = {
+  ): (Handle, Handle) = {
 
     val securityAttributes = stackalloc[SecurityAttributes]()
     securityAttributes.length = sizeof[SecurityAttributes].toUInt

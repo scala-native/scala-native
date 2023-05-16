@@ -46,7 +46,7 @@ runs:
       run: |
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
-        yes "" | sudo ./llvm.sh ${{ inputs.llvm-version }}
+        (yes "" || true) | sudo ./llvm.sh ${{ inputs.llvm-version }}
         
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies

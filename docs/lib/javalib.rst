@@ -385,6 +385,7 @@ java.util
 * ``Date``
 * ``Deque``
 * ``Dictionary``
+* ``DoubleSummaryStatistics``
 * ``DuplicateFormatFlagsException``
 * ``EmptyStackException``
 * ``EnumSet``
@@ -409,20 +410,30 @@ java.util
 * ``IllformedLocaleException``
 * ``InputMismatchException``
 * ``InvalidPropertiesFormatException``
+* ``IntSummaryStatistics``
 * ``Iterator``
 * ``LinkedHashMap``
 * ``LinkedHashSet``
 * ``LinkedList``
 * ``List``
 * ``ListIterator``
+* ``LongSummaryStatistics``
 * ``MissingFormatArgumentException``
 * ``MissingFormatWidthException``
 * ``MissingResourceException``
+* ``Map``
 * ``NavigableMap``
 * ``NavigableSet``
 * ``NoSuchElementException``
 * ``Objects``
 * ``Optional``
+* ``OptionalDouble``
+* ``OptionalInt``
+* ``OptionalLong``
+* ``PrimitiveIterator``
+* ``PrimitiveIterator.OfDouble``
+* ``PrimitiveIterator.OfInt``
+* ``PrimitiveIterator.OfLong``
 * ``PriorityQueue``
 * ``Properties``
 * ``Queue``
@@ -434,6 +445,8 @@ java.util
 * ``SizeChangeEvent``
 * ``SortedMap``
 * ``SortedSet``
+* ``Spliterator``
+* ``Spliterators``
 * ``StringTokenizer``
 * ``TooManyListenersException``
 * ``TreeSet``
@@ -441,77 +454,100 @@ java.util
 * ``UnknownFormatConversionException``
 * ``UnknownFormatFlagsException``
 * ``WeakHashMap``
-* ``concurrent.Callable``
-* ``concurrent.CancellationException``
-* ``concurrent.ConcurrentHashMap``
-* ``concurrent.ConcurrentHashMap.KeySetView``
-* ``concurrent.ConcurrentLinkedQueue``
-* ``concurrent.ConcurrentMap``
-* ``concurrent.ConcurrentSkipListSet``
-* ``concurrent.ExecutionException``
-* ``concurrent.Executor``
-* ``concurrent.RejectedExecutionException``
-* ``concurrent.Semaphore``
-* ``concurrent.ThreadFactory``
-* ``concurrent.ThreadLocalRandom``
-* ``concurrent.TimeUnit``
-* ``concurrent.TimeoutException``
-* ``concurrent.atomic.AtomicBoolean``
-* ``concurrent.atomic.AtomicInteger``
-* ``concurrent.atomic.AtomicLong``
-* ``concurrent.atomic.AtomicLongArray``
-* ``concurrent.atomic.AtomicReference``
-* ``concurrent.atomic.AtomicReferenceArray``
-* ``concurrent.atomic.LongAdder``
-* ``concurrent.locks.AbstractOwnableSynchronizer``
-* ``concurrent.locks.AbstractQueuedSynchronizer``
-* ``concurrent.locks.Lock``
-* ``concurrent.locks.ReentrantLock``
-* ``function.BiConsumer``
-* ``function.BiFunction``
-* ``function.BiPredicate``
-* ``function.BinaryOperator``
-* ``function.Consumer``
-* ``function.Function``
-* ``function.IntUnaryOperator``
-* ``function.Predicate``
-* ``function.Supplier``
-* ``function.UnaryOperator``
-* ``jar.Attributes``
-* ``jar.Attributes.Name``
-* ``jar.InitManifest``
-* ``jar.JarEntry``
-* ``jar.JarFile``
-* ``jar.JarInputStream``
-* ``jar.JarOutputStream``
-* ``jar.Manifest``
-* ``regex.MatchResult``
-* ``regex.Matcher``
-* ``regex.Pattern``
-* ``regex.PatternSyntaxException``
-* ``stream.BaseStream``
-* ``stream.CompositeStream``
-* ``stream.EmptyIterator``
-* ``stream.Stream``
-* ``stream.Stream.Builder``
-* ``zip.Adler32``
-* ``zip.CRC32``
-* ``zip.CheckedInputStream``
-* ``zip.CheckedOutputStream``
-* ``zip.Checksum``
-* ``zip.DataFormatException``
-* ``zip.Deflater``
-* ``zip.DeflaterOutputStream``
-* ``zip.GZIPInputStream``
-* ``zip.GZIPOutputStream``
-* ``zip.Inflater``
-* ``zip.InflaterInputStream``
-* ``zip.ZipConstants``
-* ``zip.ZipEntry``
-* ``zip.ZipException``
-* ``zip.ZipFile``
-* ``zip.ZipInputStream``
-* ``zip.ZipOutputStream``
+
+java.util.concurrent
+""""""""""""""""""""
+* ``Callable``
+* ``CancellationException``
+* ``ConcurrentHashMap``
+* ``ConcurrentHashMap.KeySetView``
+* ``ConcurrentLinkedQueue``
+* ``ConcurrentMap``
+* ``ConcurrentSkipListSet``
+* ``ExecutionException``
+* ``Executor``
+* ``RejectedExecutionException``
+* ``Semaphore``
+* ``ThreadFactory``
+* ``ThreadLocalRandom``
+* ``TimeUnit``
+* ``TimeoutException``
+* ``atomic.AtomicBoolean``
+* ``atomic.AtomicInteger``
+* ``atomic.AtomicLong``
+* ``atomic.AtomicLongArray``
+* ``atomic.AtomicReference``
+* ``atomic.AtomicReferenceArray``
+* ``atomic.LongAdder``
+* ``locks.AbstractOwnableSynchronizer``
+* ``locks.AbstractQueuedSynchronizer``
+* ``locks.Lock``
+* ``locks.ReentrantLock``
+
+java.util.function
+""""""""""""""""""
+* ``BiConsumer``
+* ``BiFunction``
+* ``BiPredicate``
+* ``BinaryOperator``
+* ``Consumer``
+* ``Function``
+* ``IntUnaryOperator``
+* ``Predicate``
+* ``Supplier``
+* ``UnaryOperator``
+
+java.util.jar
+"""""""""""""
+* ``Attributes``
+* ``Attributes.Name``
+* ``InitManifest``
+* ``JarEntry``
+* ``JarFile``
+* ``JarInputStream``
+* ``JarOutputStream``
+* ``Manifest``
+
+java.util.regex
+"""""""""""""""
+* ``MatchResult``
+* ``Matcher``
+* ``Pattern``
+* ``PatternSyntaxException``
+
+java.util.stream
+""""""""""""""""
+* ``BaseStream``
+* ``Collector``
+* ``Collector.Characteristics``
+* ``Collectors``
+* ``DoubleStream``
+* ``DoubleStream.Builder``
+* ``DoubleStream.DoubleMapMultiConsumer``
+* ``Stream``
+* ``Stream.Builder``
+* ``StreamSupport``
+
+java.util.zip
+"""""""""""""
+* ``Adler32``
+* ``CRC32``
+* ``CheckedInputStream``
+* ``CheckedOutputStream``
+* ``Checksum``
+* ``DataFormatException``
+* ``Deflater``
+* ``DeflaterOutputStream``
+* ``GZIPInputStream``
+* ``GZIPOutputStream``
+* ``Inflater``
+* ``InflaterInputStream``
+* ``ZipConstants``
+* ``ZipEntry``
+* ``ZipException``
+* ``ZipFile``
+* ``ZipInputStream``
+* ``ZipOutputStream``
 
   
 **Note:** This is an ongoing effort, some of the classes listed here might

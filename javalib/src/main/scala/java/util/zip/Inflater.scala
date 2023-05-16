@@ -3,7 +3,7 @@ package java.util.zip
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc._
-import scala.scalanative.runtime.{ByteArray, zlib}
+import scala.scalanative.runtime.zlib
 import scala.scalanative.runtime.zlibExt.z_stream
 import scala.scalanative.runtime.zlibOps._
 import zlib._

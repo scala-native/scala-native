@@ -2,8 +2,6 @@
 
 package java.util.concurrent
 
-import java.sql.Time
-
 // Ported from Scala.js
 
 enum TimeUnit extends Enum[TimeUnit] {

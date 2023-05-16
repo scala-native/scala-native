@@ -7,9 +7,7 @@
 package java.util
 package concurrent
 
-import java.security.{PrivilegedAction, PrivilegedExceptionAction}
-
-trait ExecutorService extends Executor {
+trait ExecutorService extends Executor with AutoCloseable {
 
   def shutdown(): Unit
 
@@ -44,5 +42,27 @@ trait ExecutorService extends Executor {
       timeout: Long,
       unit: TimeUnit
   ): T
+
+  // Since JDK 19
+  override def close(): Unit = {
+    var terminated = isTerminated()
+    if (!terminated) {
+      shutdown()
+      var interrupted = false
+      while (!terminated) {
+        try terminated = awaitTermination(1L, TimeUnit.DAYS)
+        catch {
+          case e: InterruptedException =>
+            if (!interrupted) {
+              shutdownNow()
+              interrupted = true
+            }
+        }
+      }
+      if (interrupted) {
+        Thread.currentThread().interrupt()
+      }
+    }
+  }
 
 }

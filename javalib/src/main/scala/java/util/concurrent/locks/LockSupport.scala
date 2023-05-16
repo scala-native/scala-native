@@ -7,11 +7,13 @@
 package java.util.concurrent.locks
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.NativeThread
+import scala.scalanative.runtime.{NativeThread, fromRawPtr}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.unsafe.Ptr
 
 object LockSupport {
 
-  def getBlocker(t: Thread): Object = t.parkBlocker.get()
+  def getBlocker(t: Thread): Object = t.parkBlocker
 
   def park(): Unit = NativeThread.currentNativeThread.park()
 
@@ -19,8 +21,8 @@ object LockSupport {
     val nativeThread = NativeThread.currentNativeThread
     val thread = nativeThread.thread
     setBlocker(thread, blocker)
-    nativeThread.park()
-    setBlocker(thread, null: Object)
+    try nativeThread.park()
+    finally setBlocker(thread, null: Object)
   }
 
   def parkNanos(nanos: Long): Unit =
@@ -30,8 +32,8 @@ object LockSupport {
     val nativeThread = NativeThread.currentNativeThread
     val thread = nativeThread.thread
     setBlocker(thread, blocker)
-    nativeThread.parkNanos(nanos)
-    setBlocker(thread, null: Object)
+    try nativeThread.parkNanos(nanos)
+    finally setBlocker(thread, null: Object)
   }
 
   def parkUntil(deadline: Long): Unit =
@@ -41,24 +43,24 @@ object LockSupport {
     val nativeThread = NativeThread.currentNativeThread
     val thread = nativeThread.thread
     setBlocker(thread, blocker)
-    nativeThread.parkUntil(deadline)
-    setBlocker(thread, null: Object)
+    try nativeThread.parkUntil(deadline)
+    finally setBlocker(thread, null: Object)
   }
 
-  def unpark(thread: Thread): Unit =
-    if (thread != null && thread.nativeThread != null) {
-      thread.nativeThread.unpark()
-    }
+  def unpark(thread: Thread): Unit = {
+    if (thread != null) thread.platformCtx.unpark()
+  }
+
+  @alwaysinline private def parkBlockerRef(thread: Thread): Ptr[Object] =
+    fromRawPtr(classFieldRawPtr(thread, "parkBlocker"))
 
   @alwaysinline private def setBlocker(
       thread: Thread,
       blocker: Object
-  ): Unit = {
-    thread.parkBlocker.setOpaque(blocker)
-  }
+  ): Unit = !parkBlockerRef(thread) = blocker
 
   @alwaysinline def setCurrentBlocker(blocker: Object): Unit =
-    Thread.currentThread().parkBlocker.setOpaque(blocker)
+    setBlocker(Thread.currentThread(), blocker)
 
-  private[locks] def getThreadId(thread: Thread) = thread.threadId
+  private[locks] def getThreadId(thread: Thread) = thread.threadId()
 }

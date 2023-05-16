@@ -1,7 +1,6 @@
 package scala.scalanative
 package nir
 
-import scala.collection.mutable
 import nir.Attr._
 
 sealed abstract class Attr {
@@ -32,6 +31,7 @@ object Attr {
   case object Abstract extends Attr
   case object Volatile extends Attr
   case object Final extends Attr
+  case object LinktimeResolved extends Attr
 }
 
 final case class Attrs(
@@ -45,6 +45,7 @@ final case class Attrs(
     isAbstract: Boolean = false,
     isVolatile: Boolean = false,
     isFinal: Boolean = false,
+    isLinktimeResolved: Boolean = false,
     links: Seq[Attr.Link] = Seq.empty
 ) {
   def toSeq: Seq[Attr] = {
@@ -59,6 +60,7 @@ final case class Attrs(
     if (isAbstract) out += Abstract
     if (isVolatile) out += Volatile
     if (isFinal) out += Final
+    if (isLinktimeResolved) out += LinktimeResolved
     out ++= links
 
     out.result()
@@ -78,6 +80,7 @@ object Attrs {
     var isBlocking = false
     var isVolatile = false
     var isFinal = false
+    var isLinktimeResolved = false
     val links = Seq.newBuilder[Attr.Link]
 
     attrs.foreach {
@@ -93,6 +96,8 @@ object Attrs {
       case Abstract        => isAbstract = true
       case Volatile        => isVolatile = true
       case Final           => isFinal = true
+
+      case LinktimeResolved => isLinktimeResolved = true
     }
 
     new Attrs(
@@ -106,6 +111,7 @@ object Attrs {
       isAbstract = isAbstract,
       isVolatile = isVolatile,
       isFinal = isFinal,
+      isLinktimeResolved = isLinktimeResolved,
       links = links.result()
     )
   }

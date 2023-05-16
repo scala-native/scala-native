@@ -14,12 +14,11 @@ import java.io.IOException
 
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.libc.stdio
 import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsigned._
-import scala.scalanative.{runtime, windows}
+import scala.scalanative.windows
 import scalanative.libc.stdio
 import scala.scalanative.libc.errno.errno
 

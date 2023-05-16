@@ -7,6 +7,9 @@ inputs:
   java-version:
     description: "Java version to use in tests"
     default: "8"
+  llvm-version:
+    description: "LLVM version to use"
+    default: "11.0.0"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries"
@@ -63,7 +66,7 @@ runs:
     # Choco-Install is GH Actions wrappers around choco, which does retries
     - name: Install LLVM
       shell: pwsh
-      run: Choco-Install -PackageName llvm -ArgumentList "--version=11.0.0", "--allow-downgrade"
+      run: Choco-Install -PackageName llvm -ArgumentList "--version=${{ inputs.llvm-version }}", "--allow-downgrade", "--force"
 
     - name: Add LLVM on Path
       shell: pwsh

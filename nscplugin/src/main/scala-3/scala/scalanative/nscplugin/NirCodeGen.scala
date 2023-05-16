@@ -9,8 +9,6 @@ import dotty.tools.dotc.ast.Trees._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Symbols._
-import core.Names._
-import dotty.tools.FatalError
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -29,6 +27,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
   protected val positionsConversions = new NirPositions(settings.sourceURIMaps)
+  protected val cachedMethodSig =
+    collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
 
   protected val curClassSym = new util.ScopedVar[ClassSymbol]
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]
@@ -40,6 +40,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
   protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
+  protected var curMethodUsesLinktimeResolvedValues = false
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
@@ -60,6 +61,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       generatedDefns.clear()
       generatedMirrorClasses.clear()
       reflectiveInstantiationBuffers.clear()
+      cachedMethodSig.clear()
     }
   }
 
@@ -78,11 +80,11 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       .foreach(genClass)
 
     generatedDefns.toSeq
-      .groupBy(defn => getFileFor(cunit, defn.name.top))
+      .groupBy(defn => getFileFor(defn.name.top))
       .foreach(genIRFile(_, _))
 
     reflectiveInstantiationBuffers
-      .groupMapReduce(buf => getFileFor(cunit, buf.name.top))(_.toSeq)(_ ++ _)
+      .groupMapReduce(buf => getFileFor(buf.name.top))(_.toSeq)(_ ++ _)
       .foreach(genIRFile(_, _))
 
     if (generatedMirrorClasses.nonEmpty) {
@@ -113,7 +115,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
         val MirrorClass(classDef, forwarders) = staticCls
         val caseInsensitiveName = caseInsensitiveNameOf(classDef)
         if (!generatedCaseInsensitiveNames.contains(caseInsensitiveName)) {
-          val file = getFileFor(cunit, classDef.name)
+          val file = getFileFor(classDef.name)
           val defs = classDef +: forwarders
           genIRFile(file, defs)
         } else {
@@ -140,10 +142,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     }
   }
 
-  private def getFileFor(
-      cunit: CompilationUnit,
-      ownerName: nir.Global
-  ): dotty.tools.io.AbstractFile = {
+  private def getFileFor(ownerName: nir.Global): dotty.tools.io.AbstractFile = {
     val nir.Global.Top(className) = ownerName: @unchecked
     val outputDirectory = ctx.settings.outputDir.value
     val pathParts = className.split('.')
@@ -154,6 +153,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   class MethodLabelsEnv(val fresh: nir.Fresh) {
     private val entries, exits = mutable.Map.empty[Symbol, Local]
+    private val exitTypes = mutable.Map.empty[Local, nir.Type]
 
     def enterLabel(ld: Labeled): (nir.Local, nir.Local) = {
       val sym = ld.bind.symbol
@@ -168,6 +168,10 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
     def resolveExit(sym: Symbol): nir.Local = exits(sym)
     def resolveExit(label: Labeled): nir.Local = exits(label.bind.symbol)
+
+    def enterExitType(local: nir.Local, exitType: nir.Type): Unit =
+      exitTypes += local -> exitType
+    def resolveExitType(local: nir.Local): nir.Type = exitTypes(local)
   }
 
   class MethodEnv(val fresh: nir.Fresh) {
@@ -208,25 +212,6 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     def collect(tree: Tree): CollectMethodInfo = {
       traverse(tree)
       this
-    }
-  }
-
-  protected object LinktimeProperty {
-    def unapply(tree: Tree): Option[(String, nir.Position)] = {
-      if (tree.symbol == null) None
-      else {
-        tree.symbol
-          .getAnnotation(defnNir.ResolvedAtLinktimeClass)
-          .flatMap(_.argumentConstantString(0))
-          .map(_ -> positionsConversions.fromSpan(tree.span))
-          .orElse {
-            report.error(
-              "Name used to resolve link-time property needs to be non-null literal constant",
-              tree.sourcePos
-            )
-            None
-          }
-      }
     }
   }
 

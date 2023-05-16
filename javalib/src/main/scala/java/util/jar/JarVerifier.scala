@@ -2,20 +2,14 @@ package java.util.jar
 
 // Ported from Apache Harmony
 
-import java.io.{
-  ByteArrayInputStream,
-  InputStream,
-  IOException,
-  OutputStream,
-  UnsupportedEncodingException
-}
+import java.io.{IOException, OutputStream}
 import java.security.{
   GeneralSecurityException,
   MessageDigest,
   NoSuchAlgorithmException
 }
 import java.security.cert.Certificate
-import java.util.{Map, HashMap, Iterator, StringTokenizer}
+import java.util.{Map, HashMap, StringTokenizer}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -138,7 +132,6 @@ private[jar] class JarVerifier(jarName: String) {
       case (null, _) | (_, null) =>
         ()
       case (sfBytes, manifest) =>
-        val sBlockBytes = metaEntries.get(certFile)
         try {
           // TODO: Port JarUtils from Apache Harmony, see #956.
           // val signerCertChain = JarUtils.verifySignature(

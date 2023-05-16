@@ -13,7 +13,7 @@ import dotty.tools.dotc.transform.SymUtils.*
 
 import scala.scalanative.nir
 import nir._
-import scala.scalanative.util.ScopedVar.{scoped, toValue}
+import scala.scalanative.util.ScopedVar.scoped
 
 trait GenNativeExports(using Context):
   self: NirCodeGen =>

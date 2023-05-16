@@ -3,20 +3,18 @@ package scala.scalanative.linker
 import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.build._
+import scala.scalanative.util.unsupported
 
 trait LinktimeValueResolver { self: Reach =>
   import LinktimeValueResolver._
 
   private lazy val linktimeProperties = {
     val conf = config.compilerConfig
+    val triple = conf.configuredOrDetectedTriple
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
-      s"$linktimeInfo.isWindows" -> Platform.isWindows,
-      s"$linktimeInfo.isLinux" -> Platform.isLinux,
-      s"$linktimeInfo.isMac" -> Platform.isMac,
-      s"$linktimeInfo.isFreeBSD" -> Platform.isFreeBSD,
       s"$linktimeInfo.isMultithreadingEnabled" -> conf.multithreadingSupport,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
@@ -25,7 +23,11 @@ trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.is32BitPlatform" -> conf.is32BitPlatform,
       s"$linktimeInfo.asanEnabled" -> conf.asan,
       s"$linktimeInfo.isMsys" -> Platform.isMsys,
-      s"$linktimeInfo.isCygwin" -> Platform.isCygwin
+      s"$linktimeInfo.isCygwin" -> Platform.isCygwin,
+      s"$linktimeInfo.target.arch" -> triple.arch,
+      s"$linktimeInfo.target.vendor" -> triple.vendor,
+      s"$linktimeInfo.target.os" -> triple.os,
+      s"$linktimeInfo.target.env" -> triple.env
     )
     NativeConfig.checkLinktimeProperties(predefined)
     predefined ++ conf.linktimeProperties
@@ -40,8 +42,38 @@ trait LinktimeValueResolver { self: Reach =>
   protected def resolveLinktimeDefine(defn: Defn.Define): Defn.Define = {
     implicit def position: Position = defn.pos
 
-    if (!defn.insts.exists(shouldResolveInst)) defn
-    else {
+    def evaluated() = {
+      implicit val fresh = Fresh()
+      lazy val buf = {
+        val buf = new Buffer()
+        buf += defn.insts.head
+        buf
+      }
+
+      defn.insts match {
+        case Seq(_, Inst.Ret(_)) => defn
+
+        case Seq(
+              _,
+              Inst.Let(_, ReferencedPropertyOp(propertyName), _),
+              Inst.Ret(_)
+            ) =>
+          val value = resolveLinktimeProperty(propertyName)
+          resolvedValues.getOrElseUpdate(propertyName, value)
+          buf.ret(value.nirValue)
+          defn.copy(insts = buf.toSeq)
+
+        case _ =>
+          val mangledName = Mangle(defn.name)
+          val value = resolveLinktimeProperty(mangledName)
+          buf.ret(value.nirValue)
+          resolvedValues.getOrElseUpdate(mangledName, value)
+          defn.copy(insts = buf.toSeq)
+      }
+
+    }
+
+    def partiallyEvaluated() = {
       val resolvedInsts = ControlFlow.removeDeadBlocks {
         defn.insts.map {
           case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
@@ -54,12 +86,41 @@ trait LinktimeValueResolver { self: Reach =>
 
       defn.copy(insts = resolvedInsts)
     }
-  }
 
-  protected def shouldResolveInst(inst: Inst): Boolean = inst match {
-    case _: Inst.LinktimeIf                      => true
-    case Inst.Let(_, ReferencedPropertyOp(_), _) => true
-    case _                                       => false
+    def isRuntimeOnly(inst: Inst): Boolean = inst match {
+      case Inst.Label(_, _)         => false
+      case Inst.LinktimeIf(_, _, _) => false
+      case Inst.Jump(_: Next.Label) => false
+      case Inst.Ret(_)              => false
+      case Inst.Let(_, op, Next.None) =>
+        op match {
+          case Op.Call(_, Val.Global(name, _), _) =>
+            name != Linktime.PropertyResolveFunctionName &&
+              !lookup(name).exists(_.attrs.isLinktimeResolved)
+          case _: Op.Comp => false
+          case _          => true
+        }
+      case _ => true
+    }
+
+    def canBeEvauluated =
+      !defn.insts.exists(isRuntimeOnly) && {
+        defn.ty match {
+          case Type.Function(_, retty) =>
+            retty match {
+              case _: Type.ValueKind    => true
+              case Type.Ref(name, _, _) => name == Rt.String.name
+              case Type.Null            => true
+              case _                    => false
+            }
+          case _ => false
+        }
+      }
+
+    if (defn.attrs.isLinktimeResolved)
+      if (canBeEvauluated) evaluated()
+      else partiallyEvaluated()
+    else defn
   }
 
   private def resolveLinktimeProperty(name: String)(implicit
@@ -70,9 +131,30 @@ trait LinktimeValueResolver { self: Reach =>
   private def lookupLinktimeProperty(
       propertyName: String
   )(implicit pos: Position): LinktimeValue = {
-    linktimeProperties
-      .get(propertyName)
-      .map(ComparableVal.fromAny(_).asAny)
+    def fromProvidedValue =
+      linktimeProperties
+        .get(propertyName)
+        .map(ComparableVal.fromAny(_).asAny)
+
+    def fromCalculatedValue =
+      util
+        .Try(Unmangle.unmangleGlobal(propertyName))
+        .toOption
+        .flatMap(lookup(_))
+        .collect {
+          case defn: Defn.Define if defn.attrs.isLinktimeResolved =>
+            try interpretLinktimeDefn(defn)
+            catch {
+              case ex: Exception =>
+                throw new LinkingException(
+                  s"Link-time method `$propertyName` cannot be interpreted at linktime"
+                )
+            }
+        }
+        .map(ComparableVal.fromNir)
+
+    fromProvidedValue
+      .orElse(fromCalculatedValue)
       .getOrElse {
         throw new LinkingException(
           s"Link-time property named `$propertyName` not defined in the config"
@@ -126,12 +208,64 @@ trait LinktimeValueResolver { self: Reach =>
 
   private def resolveLinktimeIf(
       inst: Inst.LinktimeIf
-  )(implicit pos: Position): Inst = {
+  )(implicit pos: Position): Inst.Jump = {
     val Inst.LinktimeIf(cond, thenp, elsep) = inst
 
     val matchesCondition = resolveCondition(cond)
     if (matchesCondition) Inst.Jump(thenp)
     else Inst.Jump(elsep)
+  }
+
+  private def interpretLinktimeDefn(defn: Defn.Define): Val = {
+    require(defn.attrs.isLinktimeResolved)
+    val cf = ControlFlow.Graph(defn.insts)
+    val locals = scala.collection.mutable.Map.empty[Val.Local, Val]
+
+    def resolveLocalVal(local: Val.Local): Val = locals(local) match {
+      case v: Val.Local => resolveLocalVal(v)
+      case value        => value
+    }
+
+    def interpretBlock(block: ControlFlow.Block): Val = {
+      def interpret(inst: Inst): Val = inst match {
+        case Inst.Ret(value) =>
+          value match {
+            case v: Val.Local => resolveLocalVal(v)
+            case _            => value
+          }
+
+        case Inst.Jump(next) =>
+          val nextBlock = cf.find(next.name)
+          next match {
+            case Next.Label(_, values) =>
+              locals ++= nextBlock.params.zip(values).toMap
+            case _ =>
+              unsupported(
+                "Only normal labels are expected in linktime resolved methods"
+              )
+          }
+          interpretBlock(nextBlock)
+
+        case Inst.Label(next, params) =>
+          val insts = cf.find(next).insts
+          assert(insts.size == 1)
+          interpret(insts.head)
+
+        case branch: Inst.LinktimeIf =>
+          interpret(resolveLinktimeIf(branch)(branch.pos))
+
+        case _: Inst.If | _: Inst.Let | _: Inst.Switch | _: Inst.Throw |
+            _: Inst.Unreachable =>
+          unsupported(
+            "Unexpected instruction found in linktime resolved method: " + inst
+          )
+      }
+
+      // Linktime resolved values always have blocks of size 1
+      assert(block.insts.size == 1)
+      interpret(block.insts.head)
+    }
+    interpretBlock(cf.entry)
   }
 
 }

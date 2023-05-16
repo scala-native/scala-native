@@ -5,16 +5,13 @@ import java.nio.file.attribute._
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.windows._
-import java.util.WindowsHelperMethods._
 import java.nio.file.WindowsException
 
 sealed trait WindowsUserPrincipal extends UserPrincipal
 
 object WindowsUserPrincipal {
   import SecurityBaseApi._
-  import MinWinBaseApi._
   import WinBaseApi._
-  import AclApi._
   import winnt.SidNameUse
 
   case class User(sidString: String, accountName: String, sidType: SidNameUse)

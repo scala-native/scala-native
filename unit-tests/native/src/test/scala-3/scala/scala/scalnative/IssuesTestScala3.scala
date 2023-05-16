@@ -23,6 +23,19 @@ class IssuesTestScala3 {
     // Check links
     (!ctx).text_width = CFuncPtr2.fromScalaFunction { (_, _) => 0 }
   }
+
+  @Test def i3231(): Unit = {
+    @extern object extern_functions:
+      @name("sprintf")
+      def test(buffer: CString, format: CString, args: Any*): CInt = extern
+
+    object functions:
+      export extern_functions.test // should compile
+
+    val buff: Ptr[CChar] = stackalloc[CChar](128.toUSize)
+    functions.test(buff, c"%d %d %d", -1, 1, 42)
+    assertEquals("-1 1 42", fromCString(buff))
+  }
 }
 
 object issue2485:

@@ -279,7 +279,29 @@ final class Check(implicit linked: linker.Result) {
       expect(Rt.Object, obj)
     case Op.Copy(value) =>
       ok
-    case Op.Sizeof(ty) =>
+    case Op.SizeOf(ty) =>
+      ty match {
+        case _: Type.ValueKind                               => ok
+        case Type.Ptr | Type.Nothing | Type.Null | Type.Unit => ok
+        case ScopeRef(kind) =>
+          kind match {
+            case _: Class => ok
+            case _: Trait => error(s"can't calculate size of a trait")
+          }
+        case _ => error(s"can't calucate size of ${ty.show}")
+      }
+      ok
+    case Op.AlignmentOf(ty) =>
+      ty match {
+        case _: Type.ValueKind                               => ok
+        case Type.Ptr | Type.Nothing | Type.Null | Type.Unit => ok
+        case ScopeRef(kind) =>
+          kind match {
+            case _: Class => ok
+            case _: Trait => error(s"can't calculate alignment of a trait")
+          }
+        case _ => error(s"can't calucate alignment of ${ty.show}")
+      }
       ok
     case Op.Box(ty, value) =>
       Type.unbox

@@ -21,7 +21,10 @@ jobs:
       matrix:
         os: [ubuntu-20.04, macos-11]
         scala: [3.2.2]
-        java: [11, 17]
+        java: [11, 17, 20]
+        include:
+          - java: 20
+            java-options: "--enable-preview"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
@@ -36,7 +39,12 @@ jobs:
           java-version: ${{matrix.java}}
 
       - name: Test runtime
-        run: sbt "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" "test-runtime ${{matrix.scala}}"
+        run: > 
+          _JAVA_OPTIONS='${{ matrix.java-options }}' 
+          sbt 
+          -Dscala.scalanative.multithreading.enable=true 
+          "++ ${{ matrix.scala }} -v" "-no-colors" "-J-Xmx3G" 
+          "test-runtime ${{matrix.scala}}"
 
   tests-windows-jdk-compliance:
     name: Test Windows JDK compliance
@@ -45,7 +53,10 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3.2.2]
-        java: [11, 17]
+        java: [11, 17, 20]
+        include:
+          - java: 20
+            java-options: "--enable-preview"
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -63,5 +74,8 @@ jobs:
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
-          sbt ++${{matrix.scala}}
+          set _JAVA_OPTIONS=${{ matrix.java-options }} &
+          sbt 
+          -Dscala.scalanative.multithreading.enable=true 
+          ++${{matrix.scala}}
           "test-runtime ${{matrix.scala}}"

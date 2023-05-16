@@ -1,49 +1,30 @@
 package java.nio.file
 
+import java.io._
 import java.lang.Iterable
-import java.io.{
-  BufferedReader,
-  BufferedWriter,
-  File,
-  FileOutputStream,
-  IOException,
-  InputStream,
-  InputStreamReader,
-  OutputStream,
-  OutputStreamWriter,
-  StringWriter,
-  UncheckedIOException
-}
 
-import java.nio.file.attribute._
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.channels.{FileChannel, SeekableByteChannel}
-import java.util.function.BiPredicate
-import java.util.{
-  EnumSet,
-  HashMap,
-  HashSet,
-  Iterator,
-  LinkedList,
-  List,
-  Map,
-  Set
-}
-import java.util.stream.{Stream, WrappedScalaStream}
+import java.nio.channels.SeekableByteChannel
+import java.nio.file.attribute._
+import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 
-import scala.annotation.tailrec
+import java.util._
+import java.util.function.BiPredicate
+import java.util.stream.Stream
 
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
 
 import scalanative.posix.errno.{errno, EEXIST, ENOENT, ENOTEMPTY}
-import scalanative.posix.dirent, dirent._
 import scalanative.posix.{fcntl, limits, unistd}
-
-import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
-import scalanative.nio.fs.unix.UnixException
 import scalanative.posix.sys.stat
+
+import scalanative.meta.LinktimeInfo.isWindows
+
+import scalanative.nio.fs.FileHelpers
+import scalanative.nio.fs.unix.UnixException
+
 import scalanative.windows._
 import scalanative.windows.WinBaseApi._
 import scalanative.windows.WinBaseApiExt._
@@ -51,16 +32,8 @@ import scalanative.windows.FileApiExt._
 import scalanative.windows.ErrorHandlingApi._
 import scalanative.windows.winnt.AccessRights._
 import java.util.WindowsHelperMethods._
-import scalanative.nio.fs.FileHelpers
-import scalanative.compat.StreamsCompat._
-import scalanative.meta.LinktimeInfo.isWindows
-import scala.collection.immutable.{Map => SMap, Set => SSet}
-import java.io.FileNotFoundException
 
 object Files {
-
-  private final val `1U` = 1.toUInt
-
   private final val emptyPath = Paths.get("", Array.empty)
 
   // def getFileStore(path: Path): FileStore
@@ -405,22 +378,24 @@ object Files {
       options: Array[FileVisitOption]
   ): Stream[Path] = {
     val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
-    val stream = walk(start, maxDepth, 0, options, SSet.empty).filter { p =>
-      val brokenSymLink =
-        if (isSymbolicLink(p)) {
-          val target = readSymbolicLink(p)
-          val targetExists = exists(target, nofollow)
-          !targetExists
-        } else false
-      val linkOpts =
-        if (!brokenSymLink) linkOptsFromFileVisitOpts(options) else nofollow
-      val attributes =
-        getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
-          .readAttributes()
+    val stream =
+      walk(start, maxDepth, 0, options, new HashSet[Path]()).filter { p =>
+        val brokenSymLink =
+          if (isSymbolicLink(p)) {
+            val target = readSymbolicLink(p)
+            val targetExists = exists(target, nofollow)
+            !targetExists
+          } else false
+        val linkOpts =
+          if (!brokenSymLink) linkOptsFromFileVisitOpts(options) else nofollow
+        val attributes =
+          getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
+            .readAttributes()
 
-      matcher.test(p, attributes)
-    }
-    new WrappedScalaStream(stream, None)
+        matcher.test(p, attributes)
+      }
+
+    stream
   }
 
   def getAttribute(
@@ -436,9 +411,11 @@ object Files {
           attribute.substring(0, sepIndex),
           attribute.substring(sepIndex + 1, attribute.length)
         )
-    val viewClass = viewNamesToClasses
-      .get(viewName)
-      .getOrElse(throw new UnsupportedOperationException())
+    val viewClass = {
+      if (!viewNamesToClasses.containsKey(viewName))
+        throw new UnsupportedOperationException()
+      viewNamesToClasses.get(viewName)
+    }
     val view = getFileAttributeView(path, viewClass, options)
     view.getAttribute(attrName)
   }
@@ -451,7 +428,6 @@ object Files {
     path.getFileSystem().provider().getFileAttributeView(path, tpe, options)
 
   def getLastModifiedTime(path: Path, options: Array[LinkOption]): FileTime = {
-    val realPath = path.toRealPath(options)
     val attributes =
       getFileAttributeView(path, classOf[BasicFileAttributeView], options)
         .readAttributes()
@@ -548,10 +524,7 @@ object Files {
       if (dir.equals(emptyPath)) "./"
       else dir.toString()
 
-    new WrappedScalaStream(
-      FileHelpers.list(dirString, (n, _) => dir.resolve(n)).toScalaStream,
-      None
-    )
+    Arrays.stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
   }
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
@@ -765,9 +738,11 @@ object Files {
       tpe: Class[A],
       options: Array[LinkOption]
   ): A = {
-    val viewClass = attributesClassesToViews
-      .get(tpe)
-      .getOrElse(throw new UnsupportedOperationException())
+    val viewClass = {
+      if (!attributesClassesToViews.containsKey(tpe))
+        throw new UnsupportedOperationException()
+      attributesClassesToViews.get(tpe)
+    }
     val view = getFileAttributeView(path, viewClass, options)
     view.readAttributes().asInstanceOf[A]
   }
@@ -783,9 +758,11 @@ object Files {
       else (parts(0), parts(1))
 
     if (atts == "*") {
-      val viewClass = viewNamesToClasses
-        .get(viewName)
-        .getOrElse(throw new UnsupportedOperationException())
+      val viewClass = {
+        if (!viewNamesToClasses.containsKey(viewName))
+          throw new UnsupportedOperationException()
+        viewNamesToClasses.get(viewName)
+      }
       getFileAttributeView(path, viewClass, options).asMap
     } else {
       val attrs = atts.split(",")
@@ -848,7 +825,7 @@ object Files {
           if (unistd.readlink(
                 toCString(link.toString),
                 buf,
-                limits.PATH_MAX - `1U`
+                limits.PATH_MAX - 1.toUInt
               ) == -1) {
             throw UnixException(link.toString, errno)
           }
@@ -871,9 +848,11 @@ object Files {
           attribute.substring(0, sepIndex),
           attribute.substring(sepIndex + 1, attribute.length)
         )
-    val viewClass = viewNamesToClasses
-      .get(viewName)
-      .getOrElse(throw new UnsupportedOperationException())
+    val viewClass = {
+      if (!viewNamesToClasses.containsKey(viewName))
+        throw new UnsupportedOperationException()
+      viewNamesToClasses.get(viewName)
+    }
     val view = getFileAttributeView(path, viewClass, options)
     view.setAttribute(attrName, value)
     path
@@ -913,52 +892,73 @@ object Files {
       start: Path,
       maxDepth: Int,
       options: Array[FileVisitOption]
-  ): Stream[Path] =
-    new WrappedScalaStream(walk(start, maxDepth, 0, options, Set(start)), None)
+  ): Stream[Path] = {
+    val visited = new HashSet[Path]()
+    visited.add(start)
+    walk(start, maxDepth, 0, options, visited)
+  }
 
   private def walk(
       start: Path,
       maxDepth: Int,
       currentDepth: Int,
       options: Array[FileVisitOption],
-      visited: SSet[Path]
-  ): SStream[Path] = {
-    start #:: {
-      if (!isDirectory(start, linkOptsFromFileVisitOpts(options))) SStream.empty
-      else {
-        FileHelpers
-          .list(start.toString, (n, t) => (n, t))
-          .toScalaStream
-          .flatMap {
+      visited: Set[Path] // Java Set, gets mutated. Private so no footgun.
+  ): Stream[Path] = {
+    /* Design Note:
+     *    This implementation is an update to Java streams of this historical
+     *    Scala  stream implementation.  It is somewhat inefficient/costly
+     *    in that it converts known single names to a singleton Stream
+     *    and then relies upon flatmap() to merge streams. Creating a
+     *    full blown Stream has some overhead. A less costly implementation
+     *    would be a good use of time.
+     *
+     *    Some of the historical design is due to the JVM requirements on
+     *    Stream#flatMap. Java 16 introduced Stream#mapMulti which
+     *    relaxes the requirement to create small intermediate streams.
+     *    When Scala Native requires a minimum JDK >= 16, that method
+     *    would fix the problem described.  So watchful waiting is
+     *    probably the most economic approach, once the problem is described.
+     */
+
+    if (!isDirectory(start, linkOptsFromFileVisitOpts(options)))
+      Stream.of(start)
+    else {
+      Stream.concat(
+        Stream.of(start),
+        Arrays
+          .asList(FileHelpers.list(start.toString, (n, t) => (n, t)))
+          .stream()
+          .flatMap[Path] {
             case (name, FileHelpers.FileType.Link)
                 if options.contains(FileVisitOption.FOLLOW_LINKS) =>
               val path = start.resolve(name)
-              val newVisited = visited + path
+
               val target = readSymbolicLink(path)
-              if (newVisited.contains(target))
+
+              visited.add(path)
+
+              if (visited.contains(target))
                 throw new UncheckedIOException(
                   new FileSystemLoopException(path.toString)
                 )
               else if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
-                start.resolve(name) #:: SStream.empty
+                Stream.of(start.resolve(name))
               else
-                walk(path, maxDepth, currentDepth + 1, options, newVisited)
+                walk(path, maxDepth, currentDepth + 1, options, visited)
 
             case (name, FileHelpers.FileType.Directory)
                 if currentDepth < maxDepth =>
               val path = start.resolve(name)
-              val newVisited =
-                if (options.contains(FileVisitOption.FOLLOW_LINKS))
-                  visited + path
-                else visited
-              walk(path, maxDepth, currentDepth + 1, options, newVisited)
+              if (options.contains(FileVisitOption.FOLLOW_LINKS))
+                visited.add(path)
+              walk(path, maxDepth, currentDepth + 1, options, visited)
 
             case (name, _) =>
-              start.resolve(name) #:: SStream.empty
+              Stream.of(start.resolve(name))
           }
-      }
+      )
     }
-
   }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
@@ -999,10 +999,12 @@ object Files {
   ): Path = {
     val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
     val optsArray = options.toArray(new Array[FileVisitOption](options.size()))
-    val stream = walk(start, maxDepth, 0, optsArray, SSet.empty)
-    val dirsToSkip = scala.collection.mutable.Set.empty[Path]
+    val dirsToSkip = new HashSet[Path]
     val openDirs = scala.collection.mutable.Stack.empty[Path]
-    stream.foreach { p =>
+
+    val stream = walk(start, maxDepth, 0, optsArray, new HashSet[Path])
+
+    stream.forEach { p =>
       val parent = p.getParent()
 
       if (dirsToSkip.contains(parent)) ()
@@ -1046,8 +1048,8 @@ object Files {
           result match {
             case FileVisitResult.TERMINATE =>
               throw TerminateTraversalException
-            case FileVisitResult.SKIP_SUBTREE  => dirsToSkip += p
-            case FileVisitResult.SKIP_SIBLINGS => dirsToSkip += parent
+            case FileVisitResult.SKIP_SUBTREE  => dirsToSkip.add(p)
+            case FileVisitResult.SKIP_SIBLINGS => dirsToSkip.add(parent)
             case FileVisitResult.CONTINUE      => ()
           }
 
@@ -1121,24 +1123,32 @@ object Files {
         setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
     }
 
-  private val attributesClassesToViews: SMap[Class[
+  private val attributesClassesToViews: Map[Class[
     _ <: BasicFileAttributes
-  ], Class[_ <: BasicFileAttributeView]] =
-    SMap(
-      classOf[BasicFileAttributes] -> classOf[BasicFileAttributeView],
-      classOf[DosFileAttributes] -> classOf[DosFileAttributeView],
-      classOf[PosixFileAttributes] -> classOf[PosixFileAttributeView]
-    )
+  ], Class[_ <: BasicFileAttributeView]] = {
+    type HMK = Class[_ <: BasicFileAttributes]
+    type HMV = Class[_ <: BasicFileAttributeView]
 
-  private val viewNamesToClasses: SMap[String, Class[_ <: FileAttributeView]] =
-    SMap(
-      "acl" -> classOf[AclFileAttributeView],
-      "basic" -> classOf[BasicFileAttributeView],
-      "dos" -> classOf[DosFileAttributeView],
-      "owner" -> classOf[FileOwnerAttributeView],
-      "user" -> classOf[UserDefinedFileAttributeView],
-      "posix" -> classOf[PosixFileAttributeView]
-    )
+    val map = new HashMap[HMK, HMV]()
+    map.put(classOf[BasicFileAttributes], classOf[BasicFileAttributeView])
+    map.put(classOf[DosFileAttributes], classOf[DosFileAttributeView])
+    map.put(classOf[PosixFileAttributes], classOf[PosixFileAttributeView])
+
+    map
+  }
+
+  private val viewNamesToClasses: Map[String, Class[_ <: FileAttributeView]] = {
+    val map = new HashMap[String, Class[_ <: FileAttributeView]]()
+
+    map.put("acl", classOf[AclFileAttributeView])
+    map.put("basic", classOf[BasicFileAttributeView])
+    map.put("dos", classOf[DosFileAttributeView])
+    map.put("owner", classOf[FileOwnerAttributeView])
+    map.put("user", classOf[UserDefinedFileAttributeView])
+    map.put("posix", classOf[PosixFileAttributeView])
+
+    map
+  }
 
   // Since: Java 11
   def writeString(

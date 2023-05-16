@@ -5,10 +5,7 @@ import scalanative.unsafe._
 import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.monitor._
-import scala.scalanative.meta.LinktimeInfo.{
-  isMultithreadingEnabled,
-  is32BitPlatform
-}
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 package object runtime {
 
@@ -86,8 +83,7 @@ package object runtime {
   @alwaysinline def toRawSize(size: USize): RawSize =
     Boxes.unboxToUSize(size)
 
-  @alwaysinline def sizeOfPtr =
-    castIntToRawSize(if (is32BitPlatform) 4 else 8)
+  @alwaysinline def sizeOfPtr = Intrinsics.sizeOf[Ptr[_]]
 
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.

@@ -10,7 +10,6 @@ abstract class MessageDigest(private var algorithm: String)
 }
 
 object MessageDigest {
-  private final val SERVICE = "MessageDigest"
   def isEqual(digestA: Array[Byte], digestB: Array[Byte]): Boolean =
     true
 

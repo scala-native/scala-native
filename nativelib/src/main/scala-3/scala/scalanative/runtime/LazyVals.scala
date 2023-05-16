@@ -6,8 +6,6 @@ import scala.scalanative.runtime.libc._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.libc.memory_order._
-import scala.scalanative.unsafe.sizeof
-import scala.scalanative.unsigned._
 
 // Factored out LazyVals immutable state, allowing to treat LazyVals as constant module,
 // alowing to skip loading of the module on each call to its methods
@@ -42,7 +40,7 @@ private object LazyVals {
     val n = (e & mask) | (v.toLong << (ord * BITS_PER_LAZY_VAL))
     if (isMultithreadingEnabled) {
       // multi-threaded
-      val expected = stackalloc(sizeof[Long])
+      val expected = stackalloc(sizeOf[Long])
       storeLong(expected, e)
       atomic_compare_exchange_llong(bitmap, expected, n)
     } else {
@@ -58,7 +56,7 @@ private object LazyVals {
   def objCAS(objPtr: RawPtr, exp: Object, n: Object): Boolean = {
     if (isMultithreadingEnabled) {
       // multi-threaded
-      val expected = stackalloc(new USize(sizeOfPtr))
+      val expected = stackalloc(sizeOf[RawPtr])
       storeObject(expected, exp)
       atomic_compare_exchange_intptr(objPtr, expected, castObjectToRawPtr(n))
     } else {

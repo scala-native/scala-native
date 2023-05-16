@@ -63,9 +63,6 @@ object BigInteger {
   /** The {@code BigInteger} constant -1 used for comparison. */
   private[math] final val MINUS_ONE = new BigInteger(-1, 1)
 
-  /** 2^32. */
-  private final val POW32 = 4294967296d
-
   /** All the {@code BigInteger} numbers in the range [0,10] are cached. */
   private final val SMALL_VALUES = Array(
     ZERO,

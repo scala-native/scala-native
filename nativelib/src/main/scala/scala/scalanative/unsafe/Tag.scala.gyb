@@ -294,4 +294,33 @@ object Tag {
     }
   }
   % end
+
+  // Scala 3 defines scala.util.NotGiven, but it has a special handling in the compiler
+  // For Scala 2 we can use well known hack to get implicit negation (via ambigious defs)
+  type NotGivenCompat[+T] = NotGivenCompatDef.Proxy.NotGivenCompat[T]
+  object NotGivenCompatDef{
+    import MockImpl._
+    object Proxy {
+      import scala.util._
+      type NotGivenCompat[+T] = NotGiven[T]
+      val NotGivenCompat = NotGiven
+    }
+
+    object MockImpl {
+      final class NotGiven[+T] private ()
+      sealed trait LowPriorityNotGiven {
+          implicit def default[T]: NotGiven[T] = NotGiven.value
+      }
+      object NotGiven extends LowPriorityNotGiven {
+        def value: NotGiven[Nothing] = new NotGiven[Nothing]()
+
+        implicit def amb1[T](implicit ev: T): NotGiven[T] = ???
+        implicit def amb2[T](implicit ev: T): NotGiven[T] = ???
+      }
+    }
+  }
+
+  private def TagOfPtrAnyClass = Tag.Ptr(Tag.Class(classOf[AnyRef]))
+  implicit def materializePtrWildcard: Tag[unsafe.Ptr[_]] = TagOfPtrAnyClass.asInstanceOf[Tag[unsafe.Ptr[_]]]
+  implicit def materializePtrClassNotGivenClassTag[T](implicit ev: NotGivenCompat[ClassTag[T]]): Tag[unsafe.Ptr[T]] = TagOfPtrAnyClass.asInstanceOf[Tag[unsafe.Ptr[T]]]
 }

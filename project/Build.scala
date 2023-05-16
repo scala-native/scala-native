@@ -9,6 +9,10 @@ import java.io.File.pathSeparator
 import sbtbuildinfo.BuildInfoPlugin
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import pl.project13.scala.sbt.JmhPlugin
+import JmhPlugin.JmhKeys._
+import sbtbuildinfo._
+import sbtbuildinfo.BuildInfoKeys._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.build._
@@ -35,7 +39,8 @@ object Build {
       junitTestOutputsJVM, junitTestOutputsNative,
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
       scalaPartest, scalaPartestRuntime,
-      scalaPartestTests, scalaPartestJunitTests
+      scalaPartestTests, scalaPartestJunitTests,
+      toolsBenchmarks
     )
 // format: on
   lazy val allMultiScalaProjects =
@@ -176,6 +181,38 @@ object Build {
         },
     }
     .dependsOn(nir, util, testingCompilerInterface % "test")
+
+  lazy val toolsBenchmarks =
+    MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
+      .enablePlugins(JmhPlugin, BuildInfoPlugin)
+      .dependsOn(tools % "compile->test")
+      .settings(
+        toolSettings,
+        noPublishSettings,
+        inConfig(Jmh)(
+          Def.settings(
+            sourceDirectory := (Compile / sourceDirectory).value,
+            classDirectory := (Compile / classDirectory).value,
+            dependencyClasspath := (Compile / dependencyClasspath).value,
+            compile := (Jmh / compile).dependsOn(Compile / compile).value,
+            run := (Jmh / run).dependsOn(Jmh / compile).evaluated
+          )
+        )
+      )
+      .zippedSettings(Seq("tests")) {
+        case Seq(tests) =>
+          Def.settings(
+            // Only generate build info for test configuration
+            // Compile / buildInfoObject := "TestSuiteBuildInfo",
+            Compile / buildInfoPackage := "scala.scalanative.benchmarks",
+            Compile / buildInfoKeys := List(
+              BuildInfoKey.map(tests / Test / fullClasspath) {
+                case (key, value) =>
+                  ("fullTestSuiteClasspath", value.toList.map(_.data))
+              }
+            )
+          )
+      }
 
   lazy val sbtScalaNative: Project =
     project

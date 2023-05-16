@@ -205,7 +205,7 @@ class FilesTestOnJDK11 {
     val ioPath = getCleanIoPath("StringBuilderSmall")
     val dataOut = getDataOut()
 
-    val output = jl.StringBuilder(dataOut)
+    val output = new jl.StringBuilder(dataOut)
     Files.writeString(ioPath, output)
 
     verifySmallUtf8Payload(ioPath)
@@ -215,7 +215,7 @@ class FilesTestOnJDK11 {
     val ioPath = getCleanIoPath("StringBufferSmall")
     val dataOut = getDataOut()
 
-    val output = jl.StringBuffer(dataOut)
+    val output = new jl.StringBuffer(dataOut)
     Files.writeString(ioPath, output)
 
     verifySmallUtf8Payload(ioPath)

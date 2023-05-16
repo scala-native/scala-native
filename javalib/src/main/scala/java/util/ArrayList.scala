@@ -1,6 +1,7 @@
 package java.util
 
 import java.io.Serializable
+import java.util.function.Consumer
 
 // Added extra private constructors to handle all of the overloads.
 // To preserve method signatures, we cannot take ClassTag via implicit parameters.
@@ -179,10 +180,38 @@ class ArrayList[E] private (
     _size = 0
   }
 
-  // TODO: JDK 1.8
-  // def forEach(action: Consumer[_ >: E]): Unit =
-  // def spliterator(): Spliterator[E] =
-  // def removeIf(filter: Predicate[_ >: E]): Boolean =
-  // def replaceAll(operator: UnaryOperator[E]): Unit =
-  // def sort(c: Comparator[_ >: E]): Unit =
+  override def spliterator(): Spliterator[E] = {
+    /* Provide a more efficient spliterator.
+     *
+     * 'inner' has type Array[Any]. There is no Arrays.spliterator() method
+     * for element type Any. Closest is AnyRef but that is not close enough.
+     *
+     * Default spliterator from Collection.scala is provided by
+     * Spliterators.spliterator(collection) method. That uses the
+     * collection-in-question's iterator: here ArrayList
+     *
+     * ArrayList uses an iterator() implementation inherited from
+     * AbstractList.scala. That, eventually, returns a heavyweight
+     * RandomAccessListIterator. Given all that, custom spliterator has
+     * a good chance of having better performance, especially for large
+     * collections.
+     */
+
+    new Spliterators.AbstractSpliterator[E](
+      _size,
+      Spliterator.SIZED | Spliterator.SUBSIZED
+    ) {
+      private var cursor = 0
+      private val limit = _size
+
+      def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+        if (cursor >= limit) false
+        else {
+          action.accept(inner(cursor).asInstanceOf[E])
+          cursor += 1
+          true
+        }
+      }
+    }
+  }
 }

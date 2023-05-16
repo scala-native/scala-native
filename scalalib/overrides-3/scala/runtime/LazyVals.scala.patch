@@ -1,6 +1,6 @@
---- 3.2.2/scala/runtime/LazyVals.scala
+--- 3.3.0-RC4/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
-@@ -4,42 +4,13 @@
+@@ -4,44 +4,13 @@
  
  import scala.annotation.*
  
@@ -11,19 +11,21 @@
   */
  object LazyVals {
 -  @nowarn
--  private[this] val unsafe: sun.misc.Unsafe =
--      classOf[sun.misc.Unsafe].getDeclaredFields.nn.find { field =>
--        field.nn.getType == classOf[sun.misc.Unsafe] && {
--          field.nn.setAccessible(true)
--          true
--        }
--      }
--      .map(_.nn.get(null).asInstanceOf[sun.misc.Unsafe])
--      .getOrElse {
--        throw new ExceptionInInitializerError {
--          new IllegalStateException("Can't find instance of sun.misc.Unsafe")
--        }
--      }
+-  private[this] val unsafe: sun.misc.Unsafe = {
+-    def throwInitializationException() = 
+-      throw new ExceptionInInitializerError(
+-        new IllegalStateException("Can't find instance of sun.misc.Unsafe")
+-      )
+-    try
+-      val unsafeField = classOf[sun.misc.Unsafe].getDeclaredField("theUnsafe").nn
+-      if unsafeField.getType == classOf[sun.misc.Unsafe] then
+-        unsafeField.setAccessible(true)
+-        unsafeField.get(null).asInstanceOf[sun.misc.Unsafe]
+-      else
+-        throwInitializationException()
+-    catch case _: NoSuchFieldException =>
+-      throwInitializationException()
+-  }
 -
 -  private[this] val base: Int = {
 -    val processors = java.lang.Runtime.getRuntime.nn.availableProcessors()
@@ -45,7 +47,7 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -71,96 +42,49 @@
+@@ -70,94 +39,47 @@
  
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK
@@ -63,7 +65,6 @@
 +    unexpectedUsage()
    }
  
-   @experimental
    def objCAS(t: Object, offset: Long, exp: Object, n: Object): Boolean = {
 -    if (debug)
 -      println(s"objCAS($t, $exp, $n)")
@@ -129,7 +130,6 @@
 +    unexpectedUsage()
    }
  
-   @experimental
    def getStaticFieldOffset(field: java.lang.reflect.Field): Long = {
 -    @nowarn
 -    val r = unsafe.staticFieldOffset(field)

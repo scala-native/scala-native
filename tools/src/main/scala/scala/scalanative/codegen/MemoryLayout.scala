@@ -5,6 +5,9 @@ import scala.collection.mutable
 import scalanative.nir.Type.RefKind
 import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
+import scalanative.codegen.MemoryLayout.PositionedType
+import scala.scalanative.build.Config
+import scala.scalanative.linker.ClassRef
 
 final case class MemoryLayout(
     size: Long,
@@ -30,33 +33,24 @@ object MemoryLayout {
 
   final case class PositionedType(ty: Type, offset: Long)
 
-  def sizeOf(ty: Type)(implicit platform: PlatformInfo): Long = ty match {
-    case primitive: Type.PrimitiveKind =>
-      math.max(primitive.width / BITS_IN_BYTE, 1)
-    case Type.ArrayValue(ty, n) =>
-      sizeOf(ty) * n
-    case Type.StructValue(tys) =>
-      MemoryLayout(tys).size
-    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      platform.sizeOfPtr
-    case _ =>
-      unsupported(s"sizeof $ty")
-  }
+  def sizeOf(ty: Type)(implicit platform: PlatformInfo): Long =
+    ty match {
+      case _: Type.RefKind | Type.Nothing | Type.Ptr => platform.sizeOfPtr
+      case Type.Size                                 => platform.sizeOfPtr
+      case t: Type.PrimitiveKind  => math.max(t.width / BITS_IN_BYTE, 1)
+      case Type.ArrayValue(ty, n) => sizeOf(ty) * n
+      case Type.StructValue(tys)  => MemoryLayout(tys).size
+      case _                      => unsupported(s"sizeof $ty")
+    }
 
   def alignmentOf(ty: Type)(implicit platform: PlatformInfo): Long = ty match {
-    case Type.Long | Type.Double => platform.sizeOfPtr
-    case primitive: Type.PrimitiveKind =>
-      math.max(primitive.width / BITS_IN_BYTE, 1)
-    case Type.ArrayValue(ty, n) =>
-      alignmentOf(ty)
-    case Type.StructValue(Seq()) =>
-      1
-    case Type.StructValue(tys) =>
-      tys.map(alignmentOf(_)).max
-    case Type.Size | Type.Nothing | Type.Ptr | _: Type.RefKind =>
-      platform.sizeOfPtr
-    case _ =>
-      unsupported(s"alignment $ty")
+    case Type.Long | Type.Double | Type.Size       => platform.sizeOfPtr
+    case Type.Nothing | Type.Ptr | _: Type.RefKind => platform.sizeOfPtr
+    case t: Type.PrimitiveKind   => math.max(t.width / BITS_IN_BYTE, 1)
+    case Type.ArrayValue(ty, n)  => alignmentOf(ty)
+    case Type.StructValue(Seq()) => 1
+    case Type.StructValue(tys)   => tys.map(alignmentOf).max
+    case _                       => unsupported(s"alignment $ty")
   }
 
   def align(offset: Long, alignment: Long): Long = {

@@ -2,12 +2,14 @@ package scala.scalanative
 package runtime
 
 import scalanative.unsafe._
-import scalanative.unsigned.USize
 
 object Intrinsics {
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: USize): RawPtr = intrinsic
+  def stackalloc(size: RawSize): RawPtr = intrinsic
+
+  /** Intrinsified stack allocation of n bytes. */
+  def stackalloc(size: CSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -168,4 +170,20 @@ object Intrinsics {
   /** Intrinsified resolving of class field as a raw pointer */
   def classFieldRawPtr[T <: AnyRef](obj: T, fieldName: String): RawPtr =
     intrinsic
+
+  /** Intrinsified resolving of memory layout size of given type */
+  def sizeOf[T]: RawSize = intrinsic
+
+  /** Internal intrinsified resolving of memory layout size of given type
+   *  Accepts only class literals. Whenever possible use `sizeOf[T]` instead
+   */
+  def sizeOf(cls: Class[_]): RawSize = intrinsic
+
+  /** Intrinsified resolving of memory layout alignment of given type */
+  def alignmentOf[T]: RawSize = intrinsic
+
+  /** Internal intrinsified resolving of memory layout alignment of given type
+   *  Accepts only class literals. Whenever possible use `alignment[T]` instead
+   */
+  def alignmentOf(cls: Class[_]): RawSize = intrinsic
 }

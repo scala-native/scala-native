@@ -3,10 +3,9 @@ package regex
 
 import scalanative.{regex => snRegex}
 
+import java.util.Arrays
 import java.util.function.Predicate
 import java.util.stream.Stream
-import java.util.stream.WrappedScalaStream
-import scala.scalanative.compat.StreamsCompat._
 
 // Inspired & informed by:
 // https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
@@ -133,7 +132,9 @@ final class Pattern private[regex] (_regex: String, _flags: Int) {
     compiled.split(input, limit)
 
   def splitAsStream(input: CharSequence): Stream[String] =
-    new WrappedScalaStream(split(input).toScalaStream, None)
+    Arrays
+      .stream(split(input))
+      .asInstanceOf[Stream[String]]
 
   override def toString: String = _regex
 }

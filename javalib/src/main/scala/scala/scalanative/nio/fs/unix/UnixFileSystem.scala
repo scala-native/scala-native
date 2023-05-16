@@ -16,14 +16,7 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.attribute.PosixUserPrincipalLookupService
 import java.{util => ju}
 
-import scala.scalanative.unsafe.{
-  CUnsignedLong,
-  Ptr,
-  sizeof,
-  toCString,
-  Zone,
-  alloc
-}
+import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.sys.statvfs
 

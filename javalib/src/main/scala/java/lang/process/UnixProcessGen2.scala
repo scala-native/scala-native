@@ -44,7 +44,7 @@ private[lang] class UnixProcessGen2 private (
     infds: Ptr[CInt],
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
-) extends UnixProcess(pid, builder, infds, outfds, errfds) {
+) extends UnixProcess() {
 
   private[this] var _exitValue: Option[Int] = None
 
@@ -488,7 +488,6 @@ object UnixProcessGen2 {
       throwOnError(unistd.pipe(errfds), s"Couldn't create errfds pipe.")
 
     val exec = localCmd.get(0)
-    val dir = builder.directory()
     val argv = nullTerminate(localCmd)
     val envp = nullTerminate {
       val list = new ArrayList[String]

@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
-import scala.scalanative.unsigned.{USize, UnsignedRichLong}
+import scala.scalanative.unsigned.USize
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr
@@ -37,21 +37,21 @@ final class Ptr[T] private[scalanative] (
     tag.store(this, value)
 
   @alwaysinline def +(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (offset * sizeof[T].toSize).rawSize))
+    new Ptr(elemRawPtr(rawptr, (offset * tag.size.toSize).rawSize))
 
   @alwaysinline def +(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (offset * sizeof[T]).rawSize))
+    new Ptr(elemRawPtr(rawptr, (offset * tag.size).rawSize))
 
   @alwaysinline def -(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (-offset * sizeof[T].toSize).rawSize))
+    new Ptr(elemRawPtr(rawptr, (-offset * tag.size.toSize).rawSize))
 
   @alwaysinline def -(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (-((offset * sizeof[T]).toSize)).rawSize))
+    new Ptr(elemRawPtr(rawptr, (-((offset * tag.size).toSize)).rawSize))
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
     val left = if (is32BitPlatform) this.toInt.toSize else this.toLong.toSize
     val right = if (is32BitPlatform) other.toInt.toSize else other.toLong.toSize
-    (left - right) / ssizeof[T]
+    (left - right) / tag.size.toSize
   }
 
   @alwaysinline def apply(offset: USize)(implicit tag: Tag[T]): T =

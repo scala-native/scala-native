@@ -5,8 +5,6 @@
  */
 
 package java.util.concurrent
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.VarHandle
 import java.util.concurrent.locks.LockSupport
 import scalanative.libc.atomic.{CAtomicInt, CAtomicRef}
 import scalanative.libc.atomic.memory_order._
@@ -33,7 +31,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   if (callable == null) throw new NullPointerException()
   import FutureTask._
 
-  @volatile private var state = NEW
+  @volatile private var _state = NEW
 
   @volatile private var runner: Thread = _
 
@@ -42,7 +40,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   private var outcome: AnyRef = _
 
   private val atomicState = new CAtomicInt(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "state"))
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "_state"))
   )
   private val atomicRunner = new CAtomicRef[Thread](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "runner"))
@@ -62,11 +60,11 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   def this(runnable: Runnable, result: V) =
     this(Executors.callable(runnable, result))
 
-  override def isCancelled(): Boolean = state >= CANCELLED
-  override def isDone(): Boolean = state != NEW
+  override def isCancelled(): Boolean = _state >= CANCELLED
+  override def isDone(): Boolean = _state != NEW
   override def cancel(mayInterruptIfRunning: Boolean): Boolean = {
     def newState = if (mayInterruptIfRunning) INTERRUPTING else CANCELLED
-    if (!(state == NEW &&
+    if (!(_state == NEW &&
           atomicState.compareExchangeStrong(NEW, newState))) return false
     try { // in case call to interrupt throws exception
       if (mayInterruptIfRunning) try {
@@ -80,7 +78,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   @throws[InterruptedException]
   @throws[ExecutionException]
   override def get(): V = {
-    var s = state
+    var s = _state
     if (s <= COMPLETING) s = awaitDone(false, 0L)
     report(s)
   }
@@ -89,12 +87,45 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   @throws[TimeoutException]
   override def get(timeout: Long, unit: TimeUnit): V = {
     if (unit == null) throw new NullPointerException
-    var s = state
+    var s = _state
     if (s <= COMPLETING && {
           s = awaitDone(true, unit.toNanos(timeout))
           s <= COMPLETING
         }) throw new TimeoutException
     report(s)
+  }
+
+  override def resultNow(): V = state() match {
+    case Future.State.SUCCESS => outcome.asInstanceOf[V]
+    case Future.State.FAILED =>
+      throw new IllegalStateException("Task completed with exception");
+    case Future.State.CANCELLED =>
+      throw new IllegalStateException("Task was cancelled");
+    case _ => throw new IllegalStateException("Task has not completed");
+  }
+
+  override def exceptionNow(): Throwable = state() match {
+    case Future.State.SUCCESS =>
+      throw new IllegalStateException("Task completed with a result")
+    case Future.State.FAILED => outcome.asInstanceOf[Throwable]
+    case Future.State.CANCELLED =>
+      throw new IllegalStateException("Task was cancelled");
+    case _ => throw new IllegalStateException("Task has not completed");
+  }
+
+  override def state(): Future.State = {
+    var s = _state
+    while (s == COMPLETING) {
+      // waiting for transition to NORMAL or EXCEPTIONAL
+      Thread.`yield`()
+      s = _state
+    }
+    s match {
+      case NORMAL                                 => Future.State.SUCCESS;
+      case EXCEPTIONAL                            => Future.State.FAILED;
+      case CANCELLED | INTERRUPTING | INTERRUPTED => Future.State.CANCELLED;
+      case _                                      => Future.State.RUNNING;
+    }
   }
 
   protected def done(): Unit = {}
@@ -115,13 +146,13 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
     }
   }
   override def run(): Unit = {
-    if (state != NEW || !atomicRunner.compareExchangeStrong(
+    if (_state != NEW || !atomicRunner.compareExchangeStrong(
           null: Thread,
           Thread.currentThread()
         )) return ()
     try {
       val c = callable
-      if (c != null && state == NEW) {
+      if (c != null && _state == NEW) {
         var result: V = null.asInstanceOf[V]
         var ran = false
         try {
@@ -135,23 +166,23 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
         if (ran) set(result)
       }
     } finally {
-      // runner must be non-null until state is settled to
+      // runner must be non-null until _state is settled to
       // prevent concurrent calls to run()
       runner = null
       // state must be re-read after nulling runner to prevent
       // leaked interrupts
-      val s = state
+      val s = _state
       if (s >= INTERRUPTING) handlePossibleCancellationInterrupt(s)
     }
   }
 
   protected def runAndReset(): Boolean = {
-    if (state != NEW || !atomicRunner.compareExchangeStrong(
+    if (_state != NEW || !atomicRunner.compareExchangeStrong(
           null: Thread,
           Thread.currentThread()
         )) return false
     var ran = false
-    var s = state
+    var s = _state
     try {
       val c = callable
       if (c != null && s == NEW) try {
@@ -161,7 +192,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
       } catch { case ex: Throwable => setException(ex) }
     } finally {
       runner = null
-      s = state
+      s = _state
       if (s >= INTERRUPTING) handlePossibleCancellationInterrupt(s)
     }
     ran && s == NEW
@@ -171,7 +202,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
     // It is possible for our interrupter to stall before getting a
     // chance to interrupt us.  Let's spin-wait patiently.
     if (s == INTERRUPTING)
-      while (state == INTERRUPTING)
+      while (_state == INTERRUPTING)
         Thread.`yield`() // wait out pending interrupt
     // assert state == INTERRUPTED;
     // We want to clear any interrupt we may have received from
@@ -221,7 +252,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
     var queued = false
 
     while (true) {
-      val s = state
+      val s = _state
       if (s > COMPLETING) {
         if (q != null) q.thread = null
         return s
@@ -247,12 +278,12 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
           val elapsed = System.nanoTime() - startTime
           if (elapsed >= nanos) {
             removeWaiter(q)
-            return state
+            return _state
           }
           parkNanos = nanos - elapsed
         }
         // nanoTime may be slow; recheck before parking
-        if (state < COMPLETING) LockSupport.parkNanos(this, parkNanos)
+        if (_state < COMPLETING) LockSupport.parkNanos(this, parkNanos)
       } else LockSupport.park(this)
     }
     -1 // unreachable
@@ -288,7 +319,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   }
 
   override def toString: String = {
-    val status = state match {
+    val status = _state match {
       case NORMAL      => "[Completed normally]"
       case EXCEPTIONAL => "[Completed exceptionally: " + outcome + "]"
       case CANCELLED | INTERRUPTED | INTERRUPTING => "[Cancelled]"

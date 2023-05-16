@@ -73,6 +73,8 @@ object NirPrimitives {
   final val CFUNCPTR_FROM_FUNCTION = 1 + CAST_LONG_TO_RAWSIZE
   final val CFUNCPTR_APPLY = 1 + CFUNCPTR_FROM_FUNCTION
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
+  final val SIZE_OF = 1 + CLASS_FIELD_RAWPTR
+  final val ALIGNMENT_OF = 1 + SIZE_OF
 }
 
 abstract class NirPrimitives {
@@ -124,10 +126,13 @@ abstract class NirPrimitives {
   private val nirPrimitives = mutable.Map.empty[Symbol, Int]
 
   private def initWithPrimitives(addPrimitive: (Symbol, Int) => Unit): Unit = {
+    def addPrimitives(alts: Seq[Symbol], tag: Int): Unit =
+      alts.foreach(addPrimitive(_, tag))
+
     addPrimitive(BoxedUnit_UNIT, BOXED_UNIT)
     addPrimitive(Array_clone, ARRAY_CLONE)
     addPrimitive(CQuoteMethod, CQUOTE)
-    addPrimitive(StackallocMethod, STACKALLOC)
+    addPrimitives(StackallocMethods, STACKALLOC)
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
@@ -141,16 +146,6 @@ abstract class NirPrimitives {
     addPrimitive(ULongToFloatMethod, ULONG_TO_FLOAT)
     addPrimitive(UIntToDoubleMethod, UINT_TO_DOUBLE)
     addPrimitive(ULongToDoubleMethod, ULONG_TO_DOUBLE)
-
-    {
-      import scala.tools.nsc.settings._
-      ScalaVersion.current match {
-        case SpecificScalaVersion(2, 11, _, _) =>
-          HashMethods.foreach(addPrimitive(_, HASH))
-        case _ =>
-      }
-    }
-
     addPrimitive(LoadBoolMethod, LOAD_BOOL)
     addPrimitive(LoadCharMethod, LOAD_CHAR)
     addPrimitive(LoadByteMethod, LOAD_BYTE)
@@ -194,8 +189,10 @@ abstract class NirPrimitives {
     addPrimitive(CastIntToRawSizeUnsigned, CAST_INT_TO_RAWSIZE_UNSIGNED)
     addPrimitive(CastLongToRawSize, CAST_LONG_TO_RAWSIZE)
 
-    CFuncPtrApplyMethods.foreach(addPrimitive(_, CFUNCPTR_APPLY))
-    CFuncPtrFromFunctionMethods.foreach(addPrimitive(_, CFUNCPTR_FROM_FUNCTION))
+    addPrimitives(CFuncPtrApplyMethods, CFUNCPTR_APPLY)
+    addPrimitives(CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
+    addPrimitives(SizeOfMethods, SIZE_OF)
+    addPrimitives(AlignmentOfMethods, ALIGNMENT_OF)
   }
 }

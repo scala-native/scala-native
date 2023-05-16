@@ -1,15 +1,8 @@
 package java.lang.process
 
-import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
 
-private[lang] abstract class UnixProcess protected (
-    pid: CInt,
-    builder: ProcessBuilder,
-    infds: Ptr[CInt],
-    outfds: Ptr[CInt],
-    errfds: Ptr[CInt]
-) extends GenericProcess {}
+private[lang] abstract class UnixProcess extends GenericProcess {}
 
 object UnixProcess {
   def apply(builder: ProcessBuilder): Process = {

@@ -5,7 +5,6 @@ package serialization
 import java.net.URI
 import java.io.{DataOutputStream, OutputStream}
 import java.nio.charset.StandardCharsets
-import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
@@ -113,6 +112,8 @@ final class BinarySerializer {
     case Attr.Abstract => putInt(T.AbstractAttr)
     case Attr.Volatile => putInt(T.VolatileAttr)
     case Attr.Final    => putInt(T.FinalAttr)
+
+    case Attr.LinktimeResolved => putInt(T.LinktimeResolvedAttr)
   }
 
   private def putBin(bin: Bin) = bin match {
@@ -430,8 +431,12 @@ final class BinarySerializer {
       putInt(T.CopyOp)
       putVal(v)
 
-    case Op.Sizeof(ty) =>
-      putInt(T.SizeofOp)
+    case Op.SizeOf(ty) =>
+      putInt(T.SizeOfOp)
+      putType(ty)
+
+    case Op.AlignmentOf(ty) =>
+      putInt(T.AlignmentOfOp)
       putType(ty)
 
     case Op.Box(ty, obj) =>
@@ -556,7 +561,6 @@ final class BinarySerializer {
   def putSyncAttrs(value: SyncAttrs) = {
     putMemoryOrder(value.memoryOrder)
     putBool(value.isVolatile)
-    putGlobalOpt(value.scope)
   }
 
   def putMemoryOrder(value: MemoryOrder): Unit = {

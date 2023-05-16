@@ -1,8 +1,10 @@
 package java.util
 
 // Ported from Scala.js commit SHA1: 9c79cb9 dated: 2022-03-18
+// stream() method added for Scala Native
 
 import java.util.function._
+import java.util.{stream => jus}
 
 final class Optional[T] private (value: T) {
   import Optional._
@@ -61,6 +63,11 @@ final class Optional[T] private (value: T) {
   def orElseThrow[X <: Throwable](exceptionSupplier: Supplier[_ <: X]): T =
     if (isPresent()) value
     else throw exceptionSupplier.get()
+
+  // Since: Java 9
+  def stream(): jus.Stream[T] =
+    if (isPresent()) jus.Stream.of(value.asInstanceOf[Object])
+    else jus.Stream.empty[T]()
 
   override def equals(obj: Any): Boolean = {
     obj match {

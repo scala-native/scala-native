@@ -1,15 +1,14 @@
 package scala.scalanative.nio.fs
 
-import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.libc._
 import scalanative.posix.dirent._
 
 // Import posix name errno as variable, not class or type.
 import scalanative.posix.{errno => posixErrno}, posixErrno._
-import scalanative.posix.{fcntl, unistd}, unistd.access
+import scalanative.posix.unistd, unistd.access
 
-import scalanative.unsafe._, stdlib._, stdio._, string._
+import scalanative.unsafe._, stdio._
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
@@ -28,7 +27,6 @@ import scala.scalanative.windows.winnt.AccessRights._
 
 import java.nio.file.WindowsException
 import scala.scalanative.nio.fs.unix.UnixException
-import java.nio.file.attribute.FileAttribute
 
 object FileHelpers {
   sealed trait FileType
@@ -53,8 +51,6 @@ object FileHelpers {
     }
   }
 
-  private[this] lazy val random = new scala.util.Random()
-  final case class Dirent(name: String, tpe: CShort)
   def list[T: ClassTag](
       path: String,
       f: (String, FileType) => T,
@@ -219,6 +215,8 @@ object FileHelpers {
     )
     dir
   }
+
+  private[this] lazy val random = new scala.util.Random()
 
   private def genTempFile(
       prefix: String,

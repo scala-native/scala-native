@@ -2,6 +2,7 @@ package scala.scalanative.runtime
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo.asanEnabled
 
 /** Efficient pool of fixed-size memory pages. Allocations from underlying
  *  allocator are performed in big chunks of memory that are sliced into pages
@@ -27,6 +28,14 @@ final class MemoryPool private {
     val chunkSize = MemoryPool.PAGE_SIZE * chunkPageCount
     val start = libc.malloc(chunkSize)
     chunk = new MemoryPool.Chunk(start, 0.toUSize, chunkSize, chunk)
+  }
+
+  /** Released all claimed memory chunks */
+  private[scalanative] def freeChunks(): Unit = synchronized {
+    while (chunk != null) {
+      libc.free(chunk.start)
+      chunk = chunk.next
+    }
   }
 
   /** Allocate a single page as a fraction of a larger chunk allocation. */
@@ -59,7 +68,13 @@ object MemoryPool {
   final val MIN_PAGE_COUNT = 4.toUSize
   final val MAX_PAGE_COUNT = 256.toUSize
 
-  lazy val defaultMemoryPool: MemoryPool = new MemoryPool()
+  lazy val defaultMemoryPool: MemoryPool = {
+    // Release allocated chunks satisfy AdressSanitizer
+    if (asanEnabled) libc.atexit { () =>
+      defaultMemoryPool.freeChunks()
+    }
+    new MemoryPool()
+  }
 
   private final class Chunk(
       val start: RawPtr,
@@ -78,7 +93,7 @@ object MemoryPool {
 final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
   private[this] var tailPage = pool.claim()
   private[this] var headPage = tailPage
-  private[this] var largeAllocations: scala.Array[RawPtr] = null
+  private[this] var largeAllocations: scala.Array[Ptr[_]] = null
   private[this] var largeOffset = 0
 
   private def checkOpen(): Unit =
@@ -157,11 +172,11 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
 
   private def allocLarge(size: CSize): Ptr[Byte] = {
     if (largeAllocations == null) {
-      largeAllocations = new scala.Array[RawPtr](16)
+      largeAllocations = new scala.Array[Ptr[_]](16)
     }
     if (largeOffset == largeAllocations.size) {
       val newLargeAllocations =
-        new scala.Array[RawPtr](largeAllocations.size * 2)
+        new scala.Array[Ptr[_]](largeAllocations.size * 2)
       Array.copy(
         largeAllocations,
         0,
@@ -171,11 +186,11 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
       )
       largeAllocations = newLargeAllocations
     }
-    val result = libc.malloc(size)
+    val result = fromRawPtr[Byte](libc.malloc(size))
     largeAllocations(largeOffset) = result
     largeOffset += 1
 
-    fromRawPtr(result)
+    result
   }
 }
 

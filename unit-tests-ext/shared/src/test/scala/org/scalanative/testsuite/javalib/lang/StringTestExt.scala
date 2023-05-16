@@ -8,6 +8,7 @@ import org.junit.Test
 import java.util.Locale
 
 /** Additional tests for java.lang.String that require `java.util.Locale`. */
+@deprecated
 class StringTestExt {
   val English = new Locale("en")
   val Lithuanian = new Locale("lt")

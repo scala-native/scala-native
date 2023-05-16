@@ -782,12 +782,10 @@ class Reach(
     case Op.Load(ty, ptrv, syncAttrs) =>
       reachType(ty)
       reachVal(ptrv)
-      syncAttrs.foreach(reachSyncAttrs(_))
     case Op.Store(ty, ptrv, v, syncAttrs) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
-      syncAttrs.foreach(reachSyncAttrs(_))
     case Op.Elem(ty, ptrv, indexvs) =>
       reachType(ty)
       reachVal(ptrv)
@@ -800,6 +798,11 @@ class Reach(
     case Op.Stackalloc(ty, v) =>
       reachType(ty)
       reachVal(v)
+      ty match {
+        case ref: Type.RefKind =>
+          classInfo(ref.className).foreach(reachAllocation)
+        case _ => ()
+      }
     case Op.Bin(bin, ty, lv, rv) =>
       reachType(ty)
       reachVal(lv)
@@ -811,8 +814,7 @@ class Reach(
     case Op.Conv(conv, ty, v) =>
       reachType(ty)
       reachVal(v)
-    case Op.Fence(attrs) =>
-      reachSyncAttrs(attrs)
+    case Op.Fence(attrs) => ()
 
     case Op.Classalloc(n) =>
       classInfo(n).foreach(reachAllocation)
@@ -850,8 +852,8 @@ class Reach(
       reachVal(v)
     case Op.Copy(v) =>
       reachVal(v)
-    case Op.Sizeof(ty) =>
-      reachType(ty)
+    case Op.SizeOf(ty)      => reachType(ty)
+    case Op.AlignmentOf(ty) => reachType(ty)
     case Op.Box(code, obj) =>
       reachVal(obj)
     case Op.Unbox(code, obj) =>
@@ -878,10 +880,6 @@ class Reach(
       reachVal(value)
     case Op.Arraylength(arr) =>
       reachVal(arr)
-  }
-
-  def reachSyncAttrs(attrs: SyncAttrs): Unit = {
-    attrs.scope.foreach(reachGlobal(_))
   }
 
   def reachNext(next: Next): Unit = next match {

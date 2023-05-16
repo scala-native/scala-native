@@ -1,6 +1,5 @@
 package java.lang
 
-import scala.scalanative.unsafe._
 import scala.scalanative.runtime._
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.unsigned._

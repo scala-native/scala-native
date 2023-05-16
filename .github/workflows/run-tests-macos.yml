@@ -51,7 +51,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    runs-on: ubuntu-20.04
+    runs-on: macos-11
     needs: [test-runtime]
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
@@ -88,6 +88,17 @@ jobs:
           scala-version: ${{matrix.scala}}
           gc: ${{ matrix.gc }}
 
+      - name: Prepare setConfig command
+        # Linking on MacOS in GithubActions fails when using default linker (ld), use lld instead
+        run: |
+          SetConfigTemplate=$(cat << EOM
+            nativeConfig ~= { prev =>
+              prev
+                .withLinkingOptions(prev.linkingOptions ++ Seq("-fuse-ld=lld") )
+            }
+          EOM
+          )
+          echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
 
       - name: Run tests
         env:
@@ -95,7 +106,25 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
-        run: sbt "test-runtime ${{ matrix.scala }}"
+          TEST_COMMAND: >
+            ++${{matrix.scala}} -v;
+            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+
+            show tests${{env.project-version}}/nativeConfig;
+
+            sandbox${{env.project-version}}/run;
+            testsJVM${{env.project-version}}/test;
+            tests${{env.project-version}}/test;
+            junitTestOutputsJVM${{env.project-version}}/test;
+            junitTestOutputsNative${{env.project-version}}/test;
+            scalaPartestJunitTests${{env.project-version}}/test
+        run: |
+          export LLVM_BIN="$(brew --prefix llvm@15)/bin"
+          $LLVM_BIN/clang --version
+          sbt -J-Xmx5G "${TEST_COMMAND}"
 
   run-scripted-tests:
     name: Scripted tests
@@ -185,10 +214,6 @@ jobs:
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
         run: |
-          # lld fails to link with BoehmGC when using shared library, force linking using static library
-          if [[ "${{matrix.gc}}" == "boehm" ]]; then 
-            unlink /usr/local/lib/libgc.dylib
-          fi
           export LLVM_BIN="$(brew --prefix llvm@15)/bin"
           $LLVM_BIN/clang --version
           sbt -J-Xmx5G "${TEST_COMMAND}"

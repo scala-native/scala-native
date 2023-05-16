@@ -2,6 +2,7 @@ package scala.scalanative
 package util
 
 import scala.collection.mutable
+import scala.annotation.nowarn
 
 object Stats {
   private val times = mutable.Map.empty[String, Long]
@@ -72,6 +73,7 @@ object Stats {
     times.clear()
     counts.clear()
   }
+  @nowarn // "Thread.getId() is deprecated")
   private def threadKey(key: String): String =
     "" + java.lang.Thread.currentThread.getId + ":" + key
   def in[T](f: => T): T = {

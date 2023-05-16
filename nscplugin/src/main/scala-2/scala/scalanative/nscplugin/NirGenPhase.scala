@@ -39,6 +39,9 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
   protected val curStatBuffer = new util.ScopedVar[StatBuffer]
+  protected val cachedMethodSig =
+    collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
+  protected var curMethodUsesLinktimeResolvedValues = false
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>
@@ -158,6 +161,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
         .forEach { case (path, stats) => genIRFile(path, stats) }
     } finally {
       generatedMirrorClasses.clear()
+      cachedMethodSig.clear()
     }
   }
 

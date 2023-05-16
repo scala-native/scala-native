@@ -65,12 +65,9 @@ object unistd {
   // XSI
   def encrypt(block: Ptr[Byte], edflag: Int): Unit = extern
 
-// Check _very_ carefully, may be issues with ... (and not varargs?)
-// Read & re-read that section in ReadTheDocs.
-// int		execl(const char *, const char *, ...);
-// int		execle(const char *, const char *, ...);
-// int		execlp(const char *, const char *, ...);
-
+  def execl(pathname: CString, arg: CString, vargs: Any*): CInt = extern
+  def execlp(file: CString, arg: CString, vargs: Any*): CInt = extern
+  def execle(pathname: CString, arg: CString, vargs: Any*): CInt = extern
   def execv(pathname: CString, argv: Ptr[CString]): CInt = extern
   def execve(pathname: CString, argv: Ptr[CString], envp: Ptr[CString]): CInt =
     extern

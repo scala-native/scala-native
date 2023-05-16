@@ -42,6 +42,14 @@ void exitWithOutOfMemory() {
     exit(1);
 }
 
+size_t scalanative_get_init_heapsize() {
+    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
+}
+
+size_t scalanative_get_max_heapsize() {
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
+}
+
 void Prealloc_Or_Default() {
 
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible

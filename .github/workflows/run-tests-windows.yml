@@ -122,11 +122,15 @@ jobs:
             lto: full
             gc: commix
     steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/linux-setup-env
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
         with:
           scala-version: ${{matrix.scala}}
-  
+
       - name: Run tests
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
@@ -138,6 +142,35 @@ jobs:
           set SCALANATIVE &
           sbt ++${{matrix.scala}} "test-runtime ${{matrix.scala}}"
         shell: cmd
+
+  test-llvm-versions:
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3.2.2]
+        llvm: ["13.0.1", "14.0.6", "15.0.7"] # Last 3 stable versions 
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    steps:
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: ${{ matrix.llvm }}
+          java-version: 8
+
+      - name: Run tests
+        shell: cmd
+        run: >
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE &
+          sbt ++${{matrix.scala}} "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
+
 
   test-multihreading:
     name: Test experimental multithreading support

@@ -133,7 +133,6 @@ class ArrayDeque[E](
         i += 1
       }
     }
-    // checkInvariants();
   }
 
   /** Capacity calculation for edge conditions, especially overflow. */
@@ -164,7 +163,6 @@ class ArrayDeque[E](
     val needed = minCapacity + 1 - elements.length
     if (needed > 0)
       grow(needed)
-    // checkInvariants();
   }
 
   /** Minimizes the internal storage of this collection.
@@ -179,7 +177,6 @@ class ArrayDeque[E](
       head = 0
       tail = size
     }
-    // checkInvariants();
   }
 
   /** Constructs an empty array deque with an initial capacity sufficient to
@@ -299,7 +296,6 @@ class ArrayDeque[E](
     es(head) = e.asInstanceOf[Object]
     if (head == tail)
       grow(1)
-    // checkInvariants();
   }
 
   /** Inserts the specified element at the end of this deque.
@@ -319,7 +315,6 @@ class ArrayDeque[E](
     tail = inc(tail, es.length)
     if (head == tail)
       grow(1)
-    // checkInvariants();
   }
 
   /** Adds all of the elements in the specified collection at the end of this
@@ -339,7 +334,6 @@ class ArrayDeque[E](
     if (needed > 0)
       grow(needed)
     copyElements(c)
-    // checkInvariants();
     return size() > s
   }
 
@@ -380,7 +374,6 @@ class ArrayDeque[E](
     val e = pollFirst()
     if (e == null)
       throw new NoSuchElementException()
-    // checkInvariants();
     return e
   }
 
@@ -389,7 +382,6 @@ class ArrayDeque[E](
     val e = pollLast()
     if (e == null)
       throw new NoSuchElementException()
-    // checkInvariants();
     return e
   }
 
@@ -401,7 +393,6 @@ class ArrayDeque[E](
       es(h) = null
       head = inc(h, es.length)
     }
-    // checkInvariants();
     return e
   }
 
@@ -413,7 +404,6 @@ class ArrayDeque[E](
       tail = t
       es(t) = null
     }
-    // checkInvariants();
     return e
   }
 
@@ -422,7 +412,6 @@ class ArrayDeque[E](
     val e = elementAt(elements, head)
     if (e == null)
       throw new NoSuchElementException()
-    // checkInvariants();
     return e
   }
 
@@ -432,17 +421,14 @@ class ArrayDeque[E](
     val e = elementAt(es, dec(tail, es.length))
     if (e == null)
       throw new NoSuchElementException()
-    // checkInvariants();
     return e
   }
 
   def peekFirst(): E = {
-    // checkInvariants();
     return elementAt(elements, head)
   }
 
   def peekLast(): E = {
-    // checkInvariants();
     val es = elements
     return elementAt(es, dec(tail, es.length))
   }
@@ -648,7 +634,6 @@ class ArrayDeque[E](
    *    true if elements near tail moved backwards
    */
   private def delete(i: Int): Boolean = {
-    // checkInvariants();
     val es = elements
     val capacity = es.length
     val h = head
@@ -668,7 +653,6 @@ class ArrayDeque[E](
       }
       es(h) = null
       head = inc(h, capacity)
-      // checkInvariants();
       return false
     } else {
       // move back elements backwards
@@ -681,7 +665,6 @@ class ArrayDeque[E](
         System.arraycopy(es, 1, es, 0, t - 1)
       }
       es(tail) = null
-      // checkInvariants();
       return true
     }
   }
@@ -851,7 +834,7 @@ class ArrayDeque[E](
    *    a {@code Spliterator} over the elements in this deque
    *  @since 1.8
    */
-  def spliterator(): Spliterator[E] = {
+  override def spliterator(): Spliterator[E] = {
     return new DeqSpliterator()
   }
 
@@ -959,7 +942,6 @@ class ArrayDeque[E](
       i = 0
       to = end
     }
-    // checkInvariants();
   }
 
   /** Replaces each element of this deque with the result of applying the
@@ -987,7 +969,6 @@ class ArrayDeque[E](
       i = 0
       to = end
     }
-    // checkInvariants();
   }
 
   /** @throws java.lang.NullPointerException */
@@ -1010,7 +991,6 @@ class ArrayDeque[E](
 
   /** Implementation of bulk remove methods. */
   def bulkRemove(filter: Predicate[_ >: E]): Boolean = {
-    // checkInvariants();
     val es = elements
     // Optimize for initial run of survivors
     var i = head
@@ -1118,7 +1098,6 @@ class ArrayDeque[E](
     if (end != tail) throw new ConcurrentModificationException()
     tail = w
     circularClear(es, tail, end)
-    // checkInvariants();
     return true;
   }
 
@@ -1176,7 +1155,6 @@ class ArrayDeque[E](
     circularClear(elements, head, tail)
     head = 0
     tail = 0
-    // checkInvariants();
   }
 
   /** Nulls out slots starting at array index i, upto index end. Condition i ==
@@ -1305,37 +1283,6 @@ class ArrayDeque[E](
     result.head = this.head
     result.tail = this.tail
     result
-  }
-
-  /** debugging */
-  private def checkInvariants(): Unit = {
-    // Use head and tail fields with empty slot at tail strategy.
-    // head == tail disambiguates to "empty".
-    try {
-      val capacity = elements.length
-      // assert 0 <= head && head < capacity;
-      // assert 0 <= tail && tail < capacity;
-      // assert capacity > 0;
-      // assert size() < capacity;
-      // assert head == tail || elements[head] != null;
-      // assert elements[tail] == null;
-      // assert head == tail || elements[dec(tail, capacity)] != null;
-    } catch {
-      case t: Throwable =>
-        System.err.printf(
-          "head=%d tail=%d capacity=%d%n",
-          Array[Object](
-            Integer.valueOf(head),
-            Integer.valueOf(tail),
-            Integer.valueOf(elements.length)
-          )
-        )
-        System.err.printf(
-          "elements=%s%n",
-          Array[Object](Arrays.toString(elements))
-        )
-        throw t
-    }
   }
 
 }

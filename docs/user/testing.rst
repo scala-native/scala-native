@@ -21,8 +21,7 @@ To enable JUnit support, add the following lines to your `build.sbt` file:
 
 .. parsed-literal::
 
-    libraryDependencies += "org.scala-native" %%% "junit-runtime" % |release|
-    addCompilerPlugin("org.scala-native" % "junit-plugin" % |release| cross CrossVersion.full)
+    enablePlugins(ScalaNativeJUnitPlugin)
 
 If you want to get more detailed output from the JUnit runtime, also include the following line:
 

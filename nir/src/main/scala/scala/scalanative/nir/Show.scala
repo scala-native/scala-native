@@ -109,6 +109,8 @@ object Show {
         str("volatile")
       case Attr.Final =>
         str("final")
+      case Attr.LinktimeResolved =>
+        str("linktime")
     }
 
     def next_(next: Next): Unit = next match {
@@ -338,8 +340,12 @@ object Show {
       case Op.Copy(value) =>
         str("copy ")
         val_(value)
-      case Op.Sizeof(ty) =>
-        str("sizeof[")
+      case Op.SizeOf(ty) =>
+        str("sizeOf[")
+        type_(ty)
+        str("] ")
+      case Op.AlignmentOf(ty) =>
+        str("alignmentOf[")
         type_(ty)
         str("] ")
       case Op.Box(ty, v) =>
@@ -680,13 +686,6 @@ object Show {
     def syncAttrs_(attrs: SyncAttrs): Unit = {
       if (attrs.isVolatile) str("volatile ")
       memoryOrder_(attrs.memoryOrder)
-      str(" ")
-      attrs.scope.foreach { scope =>
-        str("syncscope(")
-        global_(scope)
-        str(")")
-        str(" ")
-      }
     }
 
     def linktimeCondition(cond: LinktimeCondition): Unit = {
@@ -710,8 +709,9 @@ object Show {
       """([^\\]|^)\n""".r.replaceAllIn(
         s,
         _.matched.toSeq match {
-          case Seq(sngl)     => s"""\\\\n"""
-          case Seq(fst, snd) => s"""${fst}\\\\n"""
+          case Seq(sngl)     => raw"\\n"
+          case Seq('$', snd) => raw"\$$\\n"
+          case Seq(fst, snd) => raw"\${fst}\\n"
         }
       )
 

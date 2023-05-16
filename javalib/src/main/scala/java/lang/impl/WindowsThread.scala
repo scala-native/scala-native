@@ -48,12 +48,16 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
       )
     else
       checkedHandle("create thread") {
+        val effectiveStackSize =
+          if (stackSize > 0) stackSize
+          else 0 // System default (1MB)
+
         GC.CreateThread(
           threadAttributes = null,
-          stackSize = stackSize.max(0L).toUSize, // Default
+          stackSize = effectiveStackSize.toUSize,
           startRoutine = NativeThread.threadRoutine,
           routineArg = NativeThread.threadRoutineArgs(this),
-          creationFlags = 0.toUInt, // Default, run immediately,
+          creationFlags = STACK_SIZE_PARAM_IS_A_RESERVATION, // Run immediately,
           threadId = null
         )
       }
@@ -111,17 +115,17 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
         millis.max(1).toUInt
       }
 
-    def isSignaled() =
-      WaitForSingleObject(parkEvent, 0.toUInt) == WAIT_OBJECT_0
-    if (thread.isInterrupted() || isSignaled()) ()
+    if (thread.isInterrupted() ||
+        WaitForSingleObject(parkEvent, 0.toUInt) == WAIT_OBJECT_0)
+      ResetEvent(parkEvent)
     else {
       state =
         if (parkTime == Infinite) State.ParkedWaiting
         else State.ParkedWaitingTimed
       WaitForSingleObject(parkEvent, parkTime)
+      ResetEvent(parkEvent)
       state = State.Running
     }
-    ResetEvent(parkEvent)
   }
 
   @inline override def unpark(): Unit = if (isMultithreadingEnabled) {

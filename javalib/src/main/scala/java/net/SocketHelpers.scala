@@ -12,7 +12,6 @@ import scala.scalanative.posix.string.memcpy
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiOps
 
 object SocketHelpers {

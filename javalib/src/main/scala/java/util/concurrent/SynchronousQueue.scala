@@ -12,7 +12,6 @@ import java.util.concurrent.locks._
 import scala.scalanative.libc.atomic.CAtomicRef
 import scala.scalanative.libc.atomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.collection.concurrent.SNode
 
 /** A {@linkplain BlockingQueue blocking queue} in which each insert operation
  *  must wait for a corresponding remove operation by another thread, and vice
@@ -637,7 +636,7 @@ class SynchronousQueue[E <: AnyRef](val fair: Boolean)
 
   override def iterator(): util.Iterator[E] = Collections.emptyIterator()
 
-  def spliterator(): Spliterator[E] = Spliterators.emptySpliterator()
+  override def spliterator(): Spliterator[E] = Spliterators.emptySpliterator()
 
   override def toArray() = new Array[AnyRef](0)
 

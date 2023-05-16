@@ -1,6 +1,8 @@
 #ifndef IMMIX_CONSTANTS_H
 #define IMMIX_CONSTANTS_H
+
 #include "CommonConstants.h"
+#include "metadata/BlockMeta.h"
 
 #define METADATA_PER_BLOCK                                                     \
     (sizeof(BlockMeta) + LINE_COUNT * LINE_METADATA_SIZE +                     \

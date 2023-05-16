@@ -81,6 +81,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.AbstractAttr => Attr.Abstract
     case T.VolatileAttr => Attr.Volatile
     case T.FinalAttr    => Attr.Final
+
+    case T.LinktimeResolvedAttr => Attr.LinktimeResolved
   }
 
   private def getBin(): Bin = getInt match {
@@ -159,7 +161,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
     case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
-  private def getDefns(): Seq[Defn] = getSeq(getDefn())
   private def getDefn(): Defn = {
     implicit val pos: nir.Position = getPosition()
     getInt() match {
@@ -255,7 +256,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       case T.AsOp         => Op.As(getType(), getVal())
       case T.IsOp         => Op.Is(getType(), getVal())
       case T.CopyOp       => Op.Copy(getVal())
-      case T.SizeofOp     => Op.Sizeof(getType())
       case T.BoxOp        => Op.Box(getType(), getVal())
       case T.UnboxOp      => Op.Unbox(getType(), getVal())
       case T.VarOp        => Op.Var(getType())
@@ -266,6 +266,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
       case T.ArraystoreOp =>
         Op.Arraystore(getType(), getVal(), getVal(), getVal())
       case T.ArraylengthOp => Op.Arraylength(getVal())
+      case T.SizeOfOp      => Op.SizeOf(getType())
+      case T.AlignmentOfOp => Op.AlignmentOf(getType())
     }
   }
 
@@ -332,8 +334,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
   private def getSyncAttrs(): SyncAttrs =
     SyncAttrs(
       memoryOrder = getMemoryOrder(),
-      isVolatile = getBool(),
-      scope = getGlobalOpt()
+      isVolatile = getBool()
     )
 
   private def getMemoryOrder(): MemoryOrder = getInt() match {

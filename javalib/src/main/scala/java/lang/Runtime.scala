@@ -21,7 +21,7 @@ class Runtime private () {
     available max 1
   }
   def exit(status: Int): Unit = stdlib.exit(status)
-  def gc(): Unit = ()
+  def gc(): Unit = System.gc()
 
   @stub
   def addShutdownHook(thread: java.lang.Thread): Unit = ???

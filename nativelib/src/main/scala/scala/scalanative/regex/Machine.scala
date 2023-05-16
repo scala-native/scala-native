@@ -68,10 +68,6 @@ class Machine(re2: RE2) {
     t
   }
 
-  // free() returns t to the free pool.
-  private def free(t: Thread): Unit =
-    pool.add(t)
-
   // match() runs the machine over the input |in| starting at |pos| with the
   // RE2 Anchor |anchor|.
   // It reports whether a match was found.

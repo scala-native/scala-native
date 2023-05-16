@@ -1,7 +1,5 @@
 package java.nio.file.glob
 
-import java.nio.file.{PathMatcher, Path}
-import scala.util.matching.Regex
 import scala.annotation.tailrec
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
@@ -85,9 +83,6 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
               true
           }.isDefined
         } else {
-          val filteredStates = newStates.filter(node =>
-            node.minSepsLeft <= newSepsLeft && node.minCharsLeft <= newCharsLeft
-          )
           matchesInternal(inputIdx + 1, newStates, newCharsLeft, newSepsLeft)
         }
       } else {

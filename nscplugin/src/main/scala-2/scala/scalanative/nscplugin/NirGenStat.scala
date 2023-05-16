@@ -643,8 +643,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             scoped(
               curMethodSig := sig
             ) {
+              curMethodUsesLinktimeResolvedValues = false
               val body = genMethodBody(dd, rhs)
-              Some(Defn.Define(attrs, name, sig, body))
+              val methodAttrs =
+                if (curMethodUsesLinktimeResolvedValues)
+                  attrs.copy(isLinktimeResolved = true)
+                else attrs
+              Some(Defn.Define(methodAttrs, name, sig, body))
             }
         }
       }
@@ -659,46 +664,89 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           "Link-time property cannot be constant value, it would be inlined by scalac compiler"
         )
       }
+      val retty = genType(dd.tpt.tpe)
 
-      dd.rhs.symbol match {
-        case ResolvedMethod =>
-          checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
-          dd match {
-            case LinktimeProperty(propertyName, _) =>
-              val retty = genType(dd.tpt.tpe)
-              val defn = genLinktimeResolvedMethod(retty, propertyName, name)
-              Some(defn)
-            case _ => None
+      import LinktimeProperty.Type._
+      dd match {
+        case LinktimeProperty(propertyName, Provided, _) =>
+          if (dd.rhs.symbol == ResolvedMethod) Some {
+            checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
+            genLinktimeResolvedMethod(dd, retty, name) {
+              _.call(
+                Linktime.PropertyResolveFunctionTy(retty),
+                Linktime.PropertyResolveFunction(retty),
+                Val.String(propertyName) :: Nil,
+                Next.None
+              )
+            }
           }
+          else {
+            globalError(
+              dd.pos,
+              s"Link-time resolved property must have ${ResolvedMethod.fullName} as body"
+            )
+            None
+          }
+
+        case LinktimeProperty(_, Calculated, _) =>
+          Some {
+            genLinktimeResolvedMethod(dd, retty, name) { buf =>
+              def resolve(tree: Tree): nir.Val = tree match {
+                case Literal(Constant(_)) =>
+                  buf.genExpr(tree)
+                case If(cond, thenp, elsep) =>
+                  buf.genIf(retty, cond, thenp, elsep, ensureLinktime = true)
+                case tree: Apply if retty == nir.Type.Bool =>
+                  val True = ValTree(nir.Val.True)
+                  val False = ValTree(nir.Val.False)
+                  buf.genIf(retty, tree, True, False, ensureLinktime = true)
+                case Block(stats, expr) =>
+                  stats.foreach { v =>
+                    globalError(
+                      v.pos,
+                      "Linktime resolved block can only contain other linktime resolved def defintions"
+                    )
+                    // unused, generated to prevent compiler plugin crash when referencing ident
+                    buf.genExpr(v)
+                  }
+                  resolve(expr)
+              }
+              resolve(dd.rhs)
+            }
+          }
+
         case _ =>
           globalError(
             dd.pos,
-            s"Link-time resolved property must have ${ResolvedMethod.fullName} as body"
+            "Cannot transform to linktime resolved expression"
           )
           None
       }
     }
 
-    /* Generate stub method that can be used to get value of link-time property at runtime */
     private def genLinktimeResolvedMethod(
+        dd: DefDef,
         retty: nir.Type,
-        propertyName: String,
         methodName: nir.Global
-    )(implicit pos: nir.Position): nir.Defn = {
+    )(genValue: ExprBuffer => nir.Val)(implicit pos: nir.Position): nir.Defn = {
       implicit val fresh: Fresh = Fresh()
       val buf = new ExprBuffer()
 
-      buf.label(fresh())
-      val value = buf.call(
-        Linktime.PropertyResolveFunctionTy(retty),
-        Linktime.PropertyResolveFunction(retty),
-        Val.String(propertyName) :: Nil,
-        Next.None
-      )
-      buf.ret(value)
+      scoped(
+        curFresh := fresh,
+        curMethodSym := dd.symbol,
+        curMethodThis := None,
+        curMethodEnv := new MethodEnv(fresh),
+        curMethodInfo := new CollectMethodInfo,
+        curUnwindHandler := None
+      ) {
+        buf.label(fresh())
+        val value = genValue(buf)
+        buf.ret(value)
+      }
 
       Defn.Define(
-        Attrs(inlineHint = Attr.AlwaysInline),
+        Attrs(inlineHint = Attr.AlwaysInline, isLinktimeResolved = true),
         methodName,
         Type.Function(Seq.empty, retty),
         buf.toSeq
@@ -1148,22 +1196,29 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   }
 
   protected object LinktimeProperty {
-    def unapply(tree: Tree): Option[(String, nir.Position)] = {
+    sealed trait Type
+    object Type {
+      case object Provided extends Type
+      case object Calculated extends Type
+    }
+    def unapply(tree: Tree): Option[(String, Type, nir.Position)] = {
       if (tree.symbol == null) None
-      else {
+      else
         tree.symbol
           .getAnnotation(ResolvedAtLinktimeClass)
-          .flatMap(_.args.headOption)
-          .flatMap {
-            case Literal(Constant(name: String)) => Some((name, tree.pos))
-            case _ =>
+          .flatMap(_.args match {
+            case Literal(Constant(name: String)) :: Nil =>
+              Some(name, Type.Provided, tree.pos)
+            case _ :: Nil =>
               globalError(
                 tree.symbol.pos,
                 s"Name used to resolve link-time property needs to be non-null literal constant"
               )
               None
-          }
-      }
+            case Nil =>
+              val syntheticName = genName(tree.symbol).mangle
+              Some(syntheticName, Type.Calculated, tree.pos)
+          })
     }
   }
 }

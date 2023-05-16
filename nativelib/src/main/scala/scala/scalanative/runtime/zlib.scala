@@ -15,7 +15,7 @@ object zlib {
   type uLong = CUnsignedLong
   type uLongf = CUnsignedLong
   type alloc_func = CFuncPtr3[voidpf, uInt, uInt, voidpf]
-  type free_func = CFuncPtr2[voidpf, voidpf, Void]
+  type free_func = CFuncPtr2[voidpf, voidpf, Unit]
   type Bytef = Byte
   type z_size_t = CUnsignedLong
   type z_off_t = CLong
@@ -352,9 +352,10 @@ object zlibExt {
     // We can distinguish to layouts using different size of integers:
     // 64-bit: using uint32 and uint64, it can be found on Unix
     // 32-bit  using uint15 and uint32, which is present on Windows
-    def size: CSize =
-      if (isWindows) sizeof[z_stream_32]
-      else sizeof[z_stream_64]
+    def size: CSize = fromRawUSize(
+      if (isWindows) Intrinsics.sizeOf[z_stream_32]
+      else Intrinsics.sizeOf[z_stream_64]
+    )
   }
 
   private[scalanative] type z_stream[UINT, ULONG] =
@@ -384,9 +385,10 @@ object zlibExt {
     // Depending on the OS zlib can use different types inside gz_header
     // For details see comment in z_stream
 
-    def size: CSize =
-      if (isWindows) sizeof[gz_header_32]
-      else sizeof[gz_header_64]
+    def size: CSize = fromRawUSize(
+      if (isWindows) Intrinsics.sizeOf[gz_header_32]
+      else Intrinsics.sizeOf[gz_header_64]
+    )
   }
 
   private[scalanative] type gz_header[UINT, ULONG] =

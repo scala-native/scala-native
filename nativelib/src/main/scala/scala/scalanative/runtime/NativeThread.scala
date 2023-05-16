@@ -8,6 +8,7 @@ import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.scalanative.runtime.libc.atomic_thread_fence
 import scala.scalanative.runtime.libc.memory_order._
 import scala.collection.concurrent.TrieMap
+import scala.annotation.nowarn
 
 trait NativeThread {
   import NativeThread._
@@ -49,6 +50,7 @@ trait NativeThread {
     park(deadlineEpoch, isAbsolute = true)
 
   @alwaysinline
+  @nowarn // Thread.getId is deprecated since JDK 19
   protected final def isMainThread = thread.getId() == MainThreadId
 
   protected def onTermination(): Unit = if (isMultithreadingEnabled) {
@@ -97,10 +99,10 @@ object NativeThread {
     private val _aliveThreads = TrieMap.empty[Long, NativeThread]
 
     private[NativeThread] def add(thread: NativeThread): Unit =
-      _aliveThreads.put(thread.thread.getId(), thread)
+      _aliveThreads.put(thread.thread.getId(): @nowarn, thread)
 
     private[NativeThread] def remove(thread: NativeThread): Unit =
-      _aliveThreads.remove(thread.thread.getId())
+      _aliveThreads.remove(thread.thread.getId(): @nowarn)
 
     def aliveThreads: scala.Array[NativeThread] =
       _aliveThreads.values.toArray

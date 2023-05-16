@@ -13,6 +13,7 @@ import org.junit.Test
  *  cause tests to "fail to fail" if they are not respected.
  */
 class LocaleTest {
+  @deprecated
   @Test def testLanguageIsNormalizedLowerCase(): Unit = {
     /* Our implementations of `String.toLowerCase(locale: Locale)` and
      * `String.toUpperCase(locale: Locale)` assume that the result of

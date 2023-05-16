@@ -6,21 +6,27 @@
 
 package java.util.concurrent;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 class ForkJoinWorkerThread private[concurrent] (
     group: ThreadGroup,
     private[concurrent] val pool: ForkJoinPool,
-    useSystemClassLoader: Boolean,
-    isInnocuous: Boolean
-) extends Thread(group, null, pool.nextWorkerThreadName(), 0L) {
+    useSystemClassLoader: Boolean, // unused
+    clearThreadLocals: Boolean
+) extends Thread(
+      group = group,
+      task = null,
+      name = pool.nextWorkerThreadName(),
+      stackSize = 0L,
+      inheritThreadLocals = !clearThreadLocals
+    ) {
+  private[concurrent] val workQueue =
+    new ForkJoinPool.WorkQueue(this, 0)
+
   super.setDaemon(true)
   if (pool.ueh != null) {
     super.setUncaughtExceptionHandler(pool.ueh)
   }
-  private[concurrent] val workQueue =
-    new ForkJoinPool.WorkQueue(this, isInnocuous);
+  if (clearThreadLocals)
+    workQueue.setClearThreadLocals()
 
   private[concurrent] def this(group: ThreadGroup, pool: ForkJoinPool) = {
     this(group, pool, false, false);
@@ -30,13 +36,16 @@ class ForkJoinWorkerThread private[concurrent] (
     this(null, pool, false, false);
   }
 
-  def getPool(): ForkJoinPool = {
-    pool;
-  }
+  // Since JDK 19
+  protected def this(
+      group: ThreadGroup,
+      pool: ForkJoinPool,
+      preserveThreadLocals: Boolean
+  ) = this(group, pool, false, !preserveThreadLocals)
 
-  def getPoolIndex(): Int = {
-    workQueue.getPoolIndex();
-  }
+  def getPool(): ForkJoinPool = pool
+
+  def getPoolIndex(): Int = workQueue.getPoolIndex()
 
   protected def onStart(): Unit = ()
 

@@ -20,6 +20,7 @@ object CodeGen {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
+    implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
     implicit val meta: Metadata =
       new Metadata(linked, config.compilerConfig, proxies)
@@ -31,7 +32,9 @@ object CodeGen {
     emit(config, lowered)
   }
 
-  private def lower(defns: Seq[Defn])(implicit meta: Metadata): Seq[Defn] = {
+  private def lower(
+      defns: Seq[Defn]
+  )(implicit meta: Metadata, logger: build.Logger): Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     partitionBy(defns)(_.name).par

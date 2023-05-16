@@ -2,8 +2,9 @@ package java.lang
 
 import java.lang.impl._
 import java.lang.Thread._
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
+import java.util.concurrent.ThreadFactory
+import java.time.Duration
 
 import scala.scalanative.meta.LinktimeInfo.{isWindows, isMultithreadingEnabled}
 
@@ -15,62 +16,107 @@ import scala.scalanative.runtime.NativeThread.State._
 import scala.scalanative.libc.atomic.{CAtomicLongLong, atomic_thread_fence}
 import scala.scalanative.libc.atomic.memory_order._
 
-import scala.scalanative.runtime.JoinNonDeamonThreads
+import scala.scalanative.runtime.JoinNonDaemonThreads
 
 class Thread private[lang] (
-    group: ThreadGroup,
-    target: Runnable,
-    stackSize: Long,
-    private[java] val inheritableThreadLocals: ThreadLocal.Values
+    @volatile private var name: String,
+    private[java] val platformCtx: PlatformThreadContext /* | Null */
 ) extends Runnable {
-  private[java] val threadId = getNextThreadId()
+  protected val tid = ThreadIdentifiers.next()
+
   @volatile private var interruptedState = false
-  private var name: String = s"Thread-$threadId"
-  private var priority: Int = Thread.NORM_PRIORITY
-  private var daemon = false
-  // Uncaught exception handler for this thread
-  private var exceptionHandler: Thread.UncaughtExceptionHandler = _
+  @volatile private[java] var parkBlocker: Object = _
+
+  private var unhandledExceptionHandler: Thread.UncaughtExceptionHandler = _
 
   // ThreadLocal values : local and inheritable
-  private[java] lazy val threadLocals: ThreadLocal.Values =
-    new ThreadLocal.Values()
-  private[java] var threadLocalRandomSeed: Long = 0
+  private[java] var threadLocals: ThreadLocal.Values = _
+  private[java] var inheritableThreadLocals: ThreadLocal.Values = _
+
+  private[java] var threadLocalRandomSeed: scala.Long = 0
   private[java] var threadLocalRandomProbe: Int = 0
   private[java] var threadLocalRandomSecondarySeed: Int = 0
 
-  private[java] val parkBlocker: AtomicReference[Object] =
-    new AtomicReference[Object]()
+  // Construct platform thread
+  private[java] def this(
+      group: ThreadGroup,
+      name: String,
+      characteristics: Int,
+      task: Runnable,
+      stackSize: scala.Long
+  ) = {
+    this(
+      name = name,
+      platformCtx = {
+        val parent = Thread.currentThread()
+        val threadGroup =
+          if (group != null) group
+          else parent.getThreadGroup()
+        PlatformThreadContext(
+          group = threadGroup,
+          task = task,
+          stackSize = stackSize,
+          daemon = parent.isDaemon(),
+          priority = parent.getPriority() min threadGroup.getMaxPriority()
+        )
+      }
+    )
+    if (name == null)
+      throw new IllegalArgumentException("Thread name cannot be null")
 
-  private[java] var nativeThread: NativeThread = _
+    def hasFlag(flag: Int) = (characteristics & flag) != 0
+
+    if (hasFlag(Characteristics.NoThreadLocal)) {
+      threadLocals = ThreadLocal.Values.Unsupported
+      inheritableThreadLocals = ThreadLocal.Values.Unsupported
+    } else if (!hasFlag(Characteristics.NoInheritThreadLocal)) {
+      val parent = Thread.currentThread()
+      val parentLocals = parent.inheritableThreadLocals
+      if (parentLocals != null && parentLocals != ThreadLocal.Values.Unsupported &&
+          parentLocals.size > 0) {
+        this.inheritableThreadLocals =
+          new ThreadLocal.Values(parent.inheritableThreadLocals)
+      }
+    }
+  }
+
+  // Construct virtual thread
+  private[java] def this(name: String, characteristics: Int) = {
+    this(
+      name = if (name != null) name else "",
+      platformCtx = null
+    )
+    def hasFlag(flag: Int) = (characteristics & flag) != 0
+    if (hasFlag(Characteristics.NoThreadLocal)) {
+      threadLocals = ThreadLocal.Values.Unsupported
+      inheritableThreadLocals = ThreadLocal.Values.Unsupported
+    } else if (!hasFlag(Characteristics.NoInheritThreadLocal)) {
+      val parent = Thread.currentThread()
+      val parentLocals = parent.inheritableThreadLocals
+      if (parentLocals != null && parentLocals != ThreadLocal.Values.Unsupported &&
+          parentLocals.size > 0) {
+        this.inheritableThreadLocals =
+          new ThreadLocal.Values(parent.inheritableThreadLocals)
+      }
+    }
+  }
 
   // constructors
   def this(
       group: ThreadGroup,
-      target: Runnable,
+      task: Runnable,
       name: String,
-      stacksize: scala.Long,
-      inheritThreadLocals: Boolean
-  ) = {
-    this(
-      group =
-        if (group != null) group
-        else Thread.currentThread().getThreadGroup(),
-      target = target,
-      stackSize = stacksize,
-      inheritableThreadLocals = {
-        val parent = Thread.currentThread()
-        if (inheritThreadLocals && parent != null)
-          new ThreadLocal.Values(parent.inheritableThreadLocals)
-        else new ThreadLocal.Values()
-      }
-    )
-    val parent = Thread.currentThread()
-    if (parent != null) {
-      this.daemon = parent.daemon
-      this.priority = parent.priority
-    }
-    if (name != null) this.name = name
-  }
+      stackSize: scala.Long,
+      inheritThreadLocals: scala.Boolean
+  ) = this(
+    group = group,
+    name = name,
+    characteristics =
+      if (inheritThreadLocals) 0
+      else Characteristics.NoInheritThreadLocal,
+    task = task,
+    stackSize = stackSize
+  )
 
   // since Java 9
   def this(
@@ -80,13 +126,13 @@ class Thread private[lang] (
       stacksize: scala.Long
   ) = this(group, target, name, stacksize, inheritThreadLocals = true)
 
-  def this() = this(null, null, null, 0)
+  def this() = this(null, null, nextThreadName(), 0)
 
   def this(target: Runnable) =
-    this(null, target, null, 0)
+    this(null, target, nextThreadName(), 0)
 
   def this(group: ThreadGroup, target: Runnable) =
-    this(group, target, null, 0)
+    this(group, target, nextThreadName(), 0)
 
   def this(name: String) =
     this(null, null, name, 0)
@@ -104,7 +150,11 @@ class Thread private[lang] (
   // def getContextClassLoader(): ClassLoader = null
   // def setContextClassLoader(classLoader: ClassLoader): Unit = ()
 
-  def getId(): scala.Long = threadId
+  @deprecated(
+    "This method is not final and may be overridden to return a value that is not the thread ID. Use threadId() instead.",
+    "JDK 19"
+  )
+  def getId(): scala.Long = threadId()
 
   final def getName(): String = name
   final def setName(name: String): Unit = {
@@ -112,20 +162,28 @@ class Thread private[lang] (
     this.name = name
   }
 
-  final def getPriority(): Int = priority
+  final def getPriority(): Int =
+    if (isVirtual()) Thread.NORM_PRIORITY
+    else platformCtx.priority
+
   final def setPriority(priority: Int): Unit = {
     if (priority > Thread.MAX_PRIORITY || priority < Thread.MIN_PRIORITY) {
       throw new IllegalArgumentException("Wrong Thread priority value")
     }
-    this.priority = priority
-    if (nativeThread != null) nativeThread.setPriority(priority)
+    if (!isVirtual()) {
+      platformCtx.priority = priority
+      if (platformCtx.nativeThread != null)
+        platformCtx.nativeThread.setPriority(priority)
+    }
   }
 
   def getStackTrace(): Array[StackTraceElement] =
     new Array[StackTraceElement](0)
 
   def getState(): State = {
+    assert(!isVirtual(), "should be overriden by virtual threads")
     import NativeThread.State._
+    val nativeThread = platformCtx.nativeThread
     if (nativeThread == null) State.NEW
     else
       nativeThread.state match {
@@ -138,54 +196,67 @@ class Thread private[lang] (
       }
   }
 
-  final def getThreadGroup(): ThreadGroup = group
+  final def getThreadGroup(): ThreadGroup = {
+    if (isVirtual()) ??? // special group for virtual threads
+    else
+      getState() match {
+        case State.TERMINATED => null
+        case _                => platformCtx.group
+      }
+  }
 
   def getUncaughtExceptionHandler(): Thread.UncaughtExceptionHandler = {
-    if (exceptionHandler != null) exceptionHandler
+    if (unhandledExceptionHandler != null) unhandledExceptionHandler
     else getThreadGroup()
   }
   def setUncaughtExceptionHandler(eh: Thread.UncaughtExceptionHandler): Unit =
-    exceptionHandler = eh
+    unhandledExceptionHandler = eh
 
-  final def isAlive(): scala.Boolean = nativeThread != null && {
-    nativeThread.state match {
-      case New | Terminated => false
-      case _                => true
-    }
+  final def isAlive(): scala.Boolean = getState() match {
+    case State.NEW | State.TERMINATED => false
+    case _                            => true
   }
 
-  final def isDaemon(): scala.Boolean = daemon
-  final def setDaemon(daemon: scala.Boolean): Unit = {
+  final def isDaemon(): scala.Boolean =
+    if (isVirtual()) true
+    else platformCtx.daemon
+
+  final def setDaemon(on: scala.Boolean): Unit = {
     if (isAlive()) throw new IllegalThreadStateException()
-    this.daemon = daemon
+    if (isVirtual() && !on)
+      throw new IllegalArgumentException(
+        "VirtualThread cannot be non-deamon thread"
+      )
+    else platformCtx.daemon = on
+
   }
 
   def isInterrupted(): scala.Boolean = interruptedState
-  def interrupt(): Unit = synchronized {
-    interruptedState = true
-    if (nativeThread != null) nativeThread.interrupt()
+  def interrupt(): Unit = if (isAlive()) {
+    synchronized {
+      interruptedState = true
+      if (isVirtual()) ??? // TODO
+      else platformCtx.nativeThread.interrupt()
+    }
   }
 
   def run(): Unit = {
-    if (target != null) target.run()
+    // Overriden in VirtualThread
+    val task = platformCtx.task
+    if (task != null) task.run()
   }
 
   def start(): Unit = synchronized {
-    if (nativeThread != null) {
-      throw new IllegalThreadStateException(
-        "This thread was already started!"
-      )
-    }
     if (!isMultithreadingEnabled)
       throw new IllegalStateException(
         "ScalaNative application linked with disabled multithreading support"
       )
-    atomic_thread_fence(memory_order_seq_cst)
-    nativeThread = Thread.nativeCompanion.create(this, stackSize)
-    atomic_thread_fence(memory_order_release)
-    while (nativeThread.state == New) Thread.onSpinWait()
-    atomic_thread_fence(memory_order_acquire)
-    nativeThread.setPriority(priority)
+    if (isVirtual())
+      throw new UnsupportedOperationException(
+        "VirtualThreads are not yet supported"
+      )
+    else
+      platformCtx.start(this)
   }
 
   final def join(): Unit = synchronized {
@@ -208,7 +279,6 @@ class Thread private[lang] (
         if (interrupted()) throw new InterruptedException()
         val end = System.nanoTime() + 1000000 * millis + nanos.toLong
         var rest = 0L
-        var continue = true
         while (isAlive() && { rest = end - System.nanoTime(); rest > 0 }) {
           wait(millis, nanos)
           nanos = (rest % 1000000).toInt
@@ -248,12 +318,36 @@ class Thread private[lang] (
     if (isAlive()) LockSupport.unpark(this)
 
   override def toString(): String = {
-    val groupName = if (group != null) group.getName() else ""
-    s"Thread[$threadId,$name,$priority,$groupName]"
+    val groupName = getThreadGroup() match {
+      case null  => ""
+      case group => group.getName()
+    }
+    s"Thread[${threadId()},${getName()},${getPriority()},$groupName]"
   }
 
   @deprecated("Deprecated for removal", "17")
   def checkAccess(): Unit = ()
+
+  // Since JDK 19
+  final def isVirtual(): scala.Boolean = isInstanceOf[VirtualThread]
+
+  @throws[InterruptedException](
+    "if the current thread is interrupted while waiting"
+  )
+  @throws[IllegalThreadStateException]("if this thread has not been started")
+  final def join(duration: Duration): scala.Boolean = {
+    getState() match {
+      case Thread.State.NEW =>
+        throw new IllegalThreadStateException("Cannot join unstarted thread")
+      case _ =>
+        if (duration.isNegative() || duration.isZero()) {
+          join(duration.getSeconds() * 1000, duration.getNano())
+        }
+        getState() == Thread.State.TERMINATED
+    }
+  }
+
+  final def threadId(): scala.Long = tid
 }
 
 object Thread {
@@ -284,23 +378,154 @@ object Thread {
     }
   }
 
+  // Since JDK 19
+  trait Builder {
+
+    /** Sets whether the thread is allowed to set values for its copy of
+     *  thread-local variables.
+     */
+    def allowSetThreadLocals(allow: scala.Boolean): Builder
+
+    /** Returns a ThreadFactory to create threads from the current state of the
+     *  builder.
+     */
+    def factory(): ThreadFactory
+
+    /** Sets whether the thread inherits the initial values of
+     *  inheritable-thread-local variables from the constructing thread.
+     */
+    def inheritInheritableThreadLocals(inherit: scala.Boolean): Builder
+
+    /** Sets the thread name. */
+    def name(name: String): Builder
+
+    /** Sets the thread name to be the concatenation of a string prefix and the
+     *  string representation of a counter value.
+     */
+    @throws[IllegalArgumentException]("if start is negative")
+    def name(prefix: String, start: scala.Long): Builder
+
+    /** Creates a new Thread from the current state of the builder and schedules
+     *  it to execute.
+     */
+    def start(task: Runnable): Thread
+
+    /** Sets the uncaught exception handler. */
+    def uncaughtExceptionHandler(
+        ueh: Thread.UncaughtExceptionHandler
+    ): Builder
+
+    /** Creates a new Thread from the current state of the builder to run the
+     *  given task.
+     */
+    def unstarted(task: Runnable): Thread
+  }
+
+  object Builder {
+    trait OfPlatform extends Builder {
+
+      /** Sets the daemon status to true. */
+      def daemon(): OfPlatform = daemon(true)
+
+      /** Sets the daemon status. */
+      def daemon(on: scala.Boolean): OfPlatform
+
+      /** Sets the thread group. */
+      def group(group: ThreadGroup): OfPlatform
+
+      /** Sets the thread priority. */
+      @throws[IllegalArgumentException](
+        "if the priority is less than Thread.MIN_PRIORITY or greater than Thread.MAX_PRIORITY"
+      )
+      def priority(priority: Int): OfPlatform
+
+      /** Sets the desired stack size. */
+      @throws[IllegalArgumentException]("if the stack size is negative")
+      def stackSize(stackSize: scala.Long): OfPlatform
+
+      /** Sets whether the thread is allowed to set values for its copy of
+       *  thread-local variables.
+       */
+      override def allowSetThreadLocals(allow: scala.Boolean): OfPlatform
+
+      /** Sets whether the thread inherits the initial values of
+       *  inheritable-thread-local variables from the constructing thread.
+       */
+      override def inheritInheritableThreadLocals(
+          inherit: scala.Boolean
+      ): OfPlatform
+
+      /** Sets the thread name. */
+      override def name(name: String): OfPlatform
+
+      /** Sets the thread name to be the concatenation of a string prefix and
+       *  the string representation of a counter value.
+       */
+      @throws[IllegalArgumentException]("if start is negative")
+      override def name(prefix: String, start: scala.Long): OfPlatform
+
+      /** Sets the uncaught exception handler. */
+      def uncaughtExceptionHandler(
+          ueh: Thread.UncaughtExceptionHandler
+      ): OfPlatform
+    }
+
+    trait OfVirtual extends Builder {
+
+      /** Sets whether the thread is allowed to set values for its copy of
+       *  thread-local variables.
+       */
+      override def allowSetThreadLocals(allow: scala.Boolean): OfVirtual
+
+      /** Sets whether the thread inherits the initial values of
+       *  inheritable-thread-local variables from the constructing thread.
+       */
+      override def inheritInheritableThreadLocals(
+          inherit: scala.Boolean
+      ): OfVirtual
+
+      /** Sets the thread name. */
+      override def name(name: String): OfVirtual
+
+      /** Sets the thread name to be the concatenation of a string prefix and
+       *  the string representation of a counter value.
+       */
+      @throws[IllegalArgumentException]("if start is negative")
+      override def name(prefix: String, start: scala.Long): OfVirtual
+
+      /** Sets the uncaught exception handler. */
+      def uncaughtExceptionHandler(
+          ueh: Thread.UncaughtExceptionHandler
+      ): OfVirtual
+    }
+  }
+
+  // Implementation detai
+  private[java] object Characteristics {
+    final val Default = 0
+    final val NoThreadLocal = 1 << 1
+    final val NoInheritThreadLocal = 1 << 2
+  }
+
   final val MAX_PRIORITY: Int = 10
   final val MIN_PRIORITY: Int = 1
   final val NORM_PRIORITY: Int = 5
 
   final val MainThread = new Thread(
-    group = new ThreadGroup(ThreadGroup.System, "main"),
-    target = null: Runnable,
-    stackSize = 0L,
-    inheritableThreadLocals = new ThreadLocal.Values()
+    name = "main",
+    platformCtx = PlatformThreadContext(
+      group = new ThreadGroup(ThreadGroup.System, "main"),
+      task = null: Runnable,
+      stackSize = 0L
+    )
   ) {
-    override private[java] val threadId: scala.Long = 0L
-    nativeThread = nativeCompanion.create(this, 0L)
-    setName("main")
-    JoinNonDeamonThreads.registerExitHook()
+    override protected val tid: scala.Long = 0L
+    inheritableThreadLocals = new ThreadLocal.Values()
+    platformCtx.nativeThread = nativeCompanion.create(this, 0L)
+    JoinNonDaemonThreads.registerExitHook()
   }
 
-  @alwaysinline private def nativeCompanion: NativeThread.Companion =
+  @alwaysinline private[lang] def nativeCompanion: NativeThread.Companion =
     if (isWindows) WindowsThread
     else PosixThread
 
@@ -344,7 +569,7 @@ object Thread {
 
   def sleep(millis: scala.Long): Unit = sleep(millis, 0)
 
-  def sleep(millis: scala.Long, nanos: scala.Int): Unit = {
+  def sleep(millis: scala.Long, nanos: Int): Unit = {
     if (millis < 0)
       throw new IllegalArgumentException("millis must be >= 0")
     if (nanos < 0 || nanos > 999999)
@@ -362,13 +587,68 @@ object Thread {
 
   @alwaysinline def `yield`(): Unit = nativeCompanion.yieldThread()
 
-  // Counter used to generate thread's ID, 0 resevered for main
-  final protected var threadId = 1L
-  private def getNextThreadId(): scala.Long = {
-    val threadIdRef = new CAtomicLongLong(
-      fromRawPtr(classFieldRawPtr(this, "threadId"))
+  // Since JDK 19
+  @throws[InterruptedException](
+    "if the current thread is interrupted while sleeping"
+  )
+  def sleep(duration: Duration): Unit =
+    sleep(millis = duration.getSeconds() * 1000, nanos = duration.getNano())
+
+  def ofPlatform(): Builder.OfPlatform =
+    new ThreadBuilders.PlatformThreadBuilder
+
+  def ofVirtual(): Builder.OfVirtual =
+    new ThreadBuilders.VirtualThreadBuilder
+
+  def startVirtualThread(task: Runnable): Thread = {
+    val thread = new VirtualThread(
+      name = null,
+      characteristics = Characteristics.Default,
+      task = task
     )
-    threadIdRef.fetchAdd(1L)
+    thread.start()
+    thread
   }
 
+  // Scala Native specific:
+  private[lang] def nextThreadName(): String =
+    s"Thread-${ThreadNamesNumbering.next()}"
+
+  // Counter used to generate thread's ID, 0 resevered for main
+  sealed abstract class Numbering {
+    final protected var cursor = 1L
+    final protected val cursorRef = new CAtomicLongLong(
+      fromRawPtr(classFieldRawPtr(this, "cursor"))
+    )
+    def next(): scala.Long = cursorRef.fetchAdd(1L)
+  }
+  object ThreadNamesNumbering extends Numbering
+  object ThreadIdentifiers extends Numbering
+}
+
+// ScalaNative specific
+private[java] case class PlatformThreadContext(
+    group: ThreadGroup,
+    task: Runnable,
+    stackSize: scala.Long,
+    @volatile var priority: Int = Thread.NORM_PRIORITY,
+    @volatile var daemon: scala.Boolean = false
+) {
+  var nativeThread: NativeThread = _
+
+  def unpark(): Unit = if (nativeThread != null) nativeThread.unpark()
+
+  def start(thread: Thread): Unit = {
+    assert(thread.platformCtx == this)
+    if (nativeThread != null) {
+      throw new IllegalThreadStateException("This thread was already started!")
+    }
+
+    atomic_thread_fence(memory_order_seq_cst)
+    nativeThread = Thread.nativeCompanion.create(thread, stackSize)
+    atomic_thread_fence(memory_order_release)
+    while (nativeThread.state == New) Thread.onSpinWait()
+    atomic_thread_fence(memory_order_acquire)
+    nativeThread.setPriority(priority)
+  }
 }

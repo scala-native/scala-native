@@ -58,11 +58,15 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
     Set(
       s"$linktimeInfo.asanEnabled",
       s"$linktimeInfo.is32BitPlatform",
-      s"$linktimeInfo.isFreeBSD",
-      s"$linktimeInfo.isMac",
-      s"$linktimeInfo.isWindows",
+      "M36scala.scalanative.meta.LinktimeInfo$D9isFreeBSDzEO",
+      "M36scala.scalanative.meta.LinktimeInfo$D5isMaczEO",
+      "M36scala.scalanative.meta.LinktimeInfo$D9isWindowszEO",
       s"$linktimeInfo.isMultithreadingEnabled",
-      s"$linktimeInfo.isWeakReferenceSupported"
+      s"$linktimeInfo.isWeakReferenceSupported",
+      s"$linktimeInfo.target.arch",
+      s"$linktimeInfo.target.vendor",
+      s"$linktimeInfo.target.os",
+      s"$linktimeInfo.target.env"
     )
   }
 
@@ -422,6 +426,86 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       // Check if compiles and does not fail to optimize
       result.unavailable.isEmpty
     }
+  }
+
+  it should "allow to define linktime methods calculated based on linktime values" in {
+    linkWithProps(
+      "props.scala" ->
+        """package scala.scalanative
+          |
+          |object props{
+          |   @scalanative.unsafe.resolvedAtLinktime("os")
+          |   def os: String = scala.scalanative.unsafe.resolved
+          | 
+          |   @scalanative.unsafe.resolvedAtLinktime
+          |   def isWindows: Boolean = os == "windows"
+          |    
+          |   @scalanative.unsafe.resolvedAtLinktime
+          |   def isMac: Boolean = {
+          |     @scalanative.unsafe.resolvedAtLinktime
+          |     def vendor = "apple"
+          |     
+          |     os == "darwin" && vendor == "apple"
+          |   }
+          |
+          |   @scalanative.unsafe.resolvedAtLinktime
+          |   def dynLibExt: String = 
+          |     if(isWindows) ".dll"
+          |     else if(isMac) ".dylib"
+          |     else ".so"
+          |}
+          |""".stripMargin,
+      "main.scala" -> """
+          |import scala.scalanative.props._
+          |object Main {
+          |  def main(args: Array[String]): Unit = {
+          |    println(dynLibExt)
+          |  }
+          |}""".stripMargin
+    )("os" -> "darwin") { (_, result) =>
+      val Props = Global.Top("scala.scalanative.props$")
+      def calculatedVal(
+          name: String,
+          ty: Type,
+          scope: Sig.Scope = Sig.Scope.Public
+      ) = {
+        val global = Props.member(Sig.Method(name, Seq(ty), scope))
+        val mangled = scalanative.nir.Mangle(global)
+        result.resolvedVals.get(mangled)
+      }
+      result.resolvedVals("os") shouldEqual Val.String("darwin")
+      // nested method is defined as private
+      calculatedVal("vendor$1", Rt.String, Sig.Scope.Private(Props)) should
+        contain(Val.String("apple"))
+      calculatedVal("isWindows", Type.Bool) should contain(Val.False)
+      calculatedVal("isMac", Type.Bool) should contain(Val.True)
+      calculatedVal("dynLibExt", Rt.String) should contain(Val.String(".dylib"))
+    }
+  }
+
+  it should "not allow to define linktime resolved vals in blocks" in {
+    val caught = intercept[scala.scalanative.api.CompilationFailedException] {
+      linkWithProps(
+        "props.scala" ->
+          """package scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime
+            |   def linktimeProperty = {
+            |     val foo = 42
+            |     foo
+            |  }
+            |}""".stripMargin,
+        "main.scala" ->
+          """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty != 42) ???
+            |  }
+            |}""".stripMargin
+      )() { (_, _) => () }
+    }
+    // Multiple errors
+    // caught.getMessage should contain("Linktime resolved block can only contain other linktime resolved def defintions")
   }
 
   private def shouldContainAll[T](

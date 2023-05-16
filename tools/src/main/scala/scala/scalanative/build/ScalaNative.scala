@@ -5,6 +5,7 @@ import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
 import scala.scalanative.codegen.CodeGen
+import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
@@ -17,7 +18,8 @@ private[scalanative] object ScalaNative {
    */
   def entries(config: Config): Seq[Global] = {
     val entry = encodedMainClass(config).map(_.member(Rt.ScalaMainSig))
-    entry ++: CodeGen.depends
+    val dependencies = CodeGen.depends ++ Interflow.depends
+    entry ++: dependencies
   }
 
   /** Given the classpath and main entry point, link under closed-world

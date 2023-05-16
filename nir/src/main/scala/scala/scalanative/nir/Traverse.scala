@@ -112,8 +112,8 @@ trait Traverse {
       onVal(v)
     case Op.Copy(v) =>
       onVal(v)
-    case Op.Sizeof(ty) =>
-      onType(ty)
+    case Op.SizeOf(ty)      => onType(ty)
+    case Op.AlignmentOf(ty) => onType(ty)
     case Op.Box(code, obj) =>
       onVal(obj)
     case Op.Unbox(code, obj) =>

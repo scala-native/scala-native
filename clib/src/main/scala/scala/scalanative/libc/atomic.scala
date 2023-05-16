@@ -1,10 +1,9 @@
 // format: off
 package scala.scalanative.libc
 
-import scala.scalanative.runtime.{fromRawPtr, toRawPtr, Intrinsics}
+import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.annotation._
 import scala.language.implicitConversions
 
 
@@ -1398,9 +1397,6 @@ import scala.language.implicitConversions
   }
 
   final class CAtomicRef[T <: AnyRef](private val underlying: Ptr[T]) extends AnyVal {
-    implicit private def toAtomicPtr(v: T): Ptr[T] = fromRawPtr(Intrinsics.castObjectToRawPtr(v))
-    implicit private def fromAtomicPtr(v: Ptr[T]): T = Intrinsics.castRawPtrToObject(toRawPtr(v)).asInstanceOf[T]
-
     def init(value: T): Unit = atomic_init(underlying, value)
 
     def load(): T = atomic_load(underlying)

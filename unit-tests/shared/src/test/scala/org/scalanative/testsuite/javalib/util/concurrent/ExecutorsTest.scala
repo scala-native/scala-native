@@ -258,9 +258,8 @@ class ExecutorsTest extends JSR166Test {
     val executors = Array(
       Executors.newSingleThreadExecutor,
       Executors.newCachedThreadPool,
-      Executors.newFixedThreadPool(2)
-      // TODO
-      // Executors.newScheduledThreadPool(2)
+      Executors.newFixedThreadPool(2),
+      Executors.newScheduledThreadPool(2)
     )
     val done = new CountDownLatch(1)
     val sleeper = new CheckedRunnable() {

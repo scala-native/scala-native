@@ -7,7 +7,6 @@ import java.io.{
   BufferedInputStream,
   Closeable,
   File,
-  FileInputStream,
   InputStream,
   RandomAccessFile
 }
