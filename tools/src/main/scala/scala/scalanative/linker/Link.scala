@@ -4,11 +4,12 @@ package linker
 import scalanative.nir._
 import scalanative.util.Scope
 import scala.scalanative.io.VirtualDirectory
+import java.nio.file.Path
 
 object Link {
 
   private val cache =
-    collection.mutable.HashMap[(String, Seq[Global], Seq[Long]), Result]()
+    collection.mutable.HashMap[(Path, Seq[Global], Seq[Long]), Result]()
 
   /** Load all clases and methods reachable from the entry points. */
   def apply(config: build.Config, entries: Seq[Global])(implicit
@@ -18,7 +19,7 @@ object Link {
       ClassPath(VirtualDirectory.real(path))
     }
     val classPathMtime = classpath.map(_.lastModifiedMillis)
-    val key = (config.artifactName, entries, classPathMtime)
+    val key = (config.buildPath, entries, classPathMtime)
     cache.get(key) match {
       case None =>
         val res = Reach(config, entries, ClassLoader.fromClasspath(classpath))
