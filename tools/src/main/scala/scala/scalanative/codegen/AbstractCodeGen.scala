@@ -898,9 +898,7 @@ private[codegen] abstract class AbstractCodeGen(
               }
               str(", !")
               str(deref)
-              str(" !{i")
-              str(platform.sizeOfPtrBits)
-              str(" ")
+              str(" !{i64 ")
               str(size)
               str("}")
             case _ =>
