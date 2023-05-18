@@ -1077,13 +1077,13 @@ private[codegen] abstract class AbstractCodeGen(
         rep(args, sep = ", ")(genCallArgument)
         str(")")
         if (unwind eq Next.None) addDebug()
-
-        if (unwind ne Next.None) {
+        else {
           str(" to label %")
           currentBlockSplit += 1
           genBlockSplitName()
           str(" unwind ")
           genNext(unwind, dwarfTok)
+          addDebug()
 
           unindent()
           genBlockHeader()
@@ -1120,13 +1120,13 @@ private[codegen] abstract class AbstractCodeGen(
         rep(args, sep = ", ")(genCallArgument)
         str(")")
         if (unwind eq Next.None) addDebug()
-
-        if (unwind ne Next.None) {
+        else {
           str(" to label %")
           currentBlockSplit += 1
           genBlockSplitName()
           str(" unwind ")
           genNext(unwind)
+          addDebug()
 
           unindent()
           genBlockHeader()
