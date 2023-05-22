@@ -150,8 +150,8 @@ object Build {
     // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
     (
       config,
-      config.classPath.map(getNewestMtime(_)),
-      getLastModifiedTimeMillis(config.artifactPath)
+      config.classPath.map(getLatestMtime(_)),
+      getLastModified(config.artifactPath)
     ).hashCode()
   }
 
@@ -183,17 +183,18 @@ object Build {
     }
   }
 
-  private def getLastModifiedTimeMillis(path: Path): Long =
-    if (Files.exists(path)) Files.getLastModifiedTime(path).toMillis()
-    else 0L
+  private def getLastModified(path: Path): FileTime =
+    if (Files.exists(path))
+      Try(Files.getLastModifiedTime(path)).getOrElse(FileTime.fromMillis(0L))
+    else FileTime.fromMillis(0L)
 
-  /** Get the newest file's last modified time in millis under the given path.
+  /** Get the latest last modified time under the given path.
    */
-  private def getNewestMtime(path: Path): Optional[FileTime] =
+  private def getLatestMtime(path: Path): Optional[FileTime] =
     if (Files.exists(path))
       Files
         .walk(path, FileVisitOption.FOLLOW_LINKS)
-        .map[FileTime](Files.getLastModifiedTime(_))
+        .map[FileTime](getLastModified(_))
         .max(_.compareTo(_))
     else Optional.empty()
 
