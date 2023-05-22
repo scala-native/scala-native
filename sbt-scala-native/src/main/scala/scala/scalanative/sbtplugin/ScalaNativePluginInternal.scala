@@ -147,7 +147,7 @@ object ScalaNativePluginInternal {
 
         interceptBuildException {
           // returns config.artifactPath
-          Build.build(config)(sharedScope).toFile()
+          Build.buildCached(config)(sharedScope).toFile()
         }
       }
       .tag(NativeTags.Link)

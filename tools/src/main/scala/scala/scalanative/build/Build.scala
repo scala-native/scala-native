@@ -15,6 +15,34 @@ object Build {
   private var prevBuildInputCheckSum: Int = 0
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
+   *  producing a native binary in the end, same as `build` method.
+   *
+   *  This method skips the whole build and link process if the input hasn't
+   *  changed from the previous build, and the previous build artifact is
+   *  available at Config#artifactPath.
+   *
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @return
+   *    [[Config#artifactPath]], the path to the resulting native binary.
+   */
+  def buildCached(config: Config)(implicit scope: Scope): Path = {
+    val inputHash = checkSum(config)
+    if (Files.exists(config.artifactPath) &&
+        prevBuildInputCheckSum == inputHash) {
+      config.logger.info(
+        "Build skipped: No changes detected in build configuration and class path contents since last build."
+      )
+      config.artifactPath
+    } else {
+      val output = build(config)
+      // Need to re-calculate the checksum because the content of `output` have changed.
+      prevBuildInputCheckSum = checkSum(config)
+      output
+    }
+  }
+
+  /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
    *  producing a native binary in the end.
    *
    *  For example, to produce a binary one needs a classpath, a working
@@ -66,68 +94,53 @@ object Build {
 
       // validate Config
       val fconfig = Validator.validate(config)
-      val inputHash = checkSum(fconfig)
 
-      if (Files.exists(fconfig.artifactPath) &&
-          prevBuildInputCheckSum == inputHash) {
-        fconfig.logger.info(
-          "Build skipped: No changes detected in build configuration and class path contents since last build."
-        )
-        fconfig.artifactPath
-      } else {
-        buildImpl(config)
-      }
-    }
-
-  private def buildImpl(config: Config)(implicit scope: Scope): Path = {
-    // find and link
-    val linked = {
-      val entries = ScalaNative.entries(config)
-      val linked = ScalaNative.link(config, entries)
-      ScalaNative.logLinked(config, linked)
-      linked
-    }
-
-    // optimize and generate ll
-    val generated = {
-      val optimized = ScalaNative.optimize(config, linked)
-      ScalaNative.codegen(config, optimized) ++:
-        ScalaNative.genBuildInfo(config) // ident list may be empty
-    }
-
-    val objectPaths = config.logger.time("Compiling to native code") {
-      // compile generated LLVM IR
-      val llObjectPaths = LLVM.compile(config, generated)
-
-      /* Used to pass alternative paths of compiled native (lib) sources,
-       * eg: reused native sources used in partests.
-       */
-      val libObjectPaths = scala.util.Properties
-        .propOrNone("scalanative.build.paths.libobj") match {
-        case None =>
-          /* Finds all the libraries on the classpath that contain native
-           * code and then compiles them.
-           */
-          findAndCompileNativeLibs(config, linked)
-        case Some(libObjectPaths) =>
-          libObjectPaths
-            .split(java.io.File.pathSeparatorChar)
-            .toSeq
-            .map(Paths.get(_))
+      // find and link
+      val linked = {
+        val entries = ScalaNative.entries(fconfig)
+        val linked = ScalaNative.link(fconfig, entries)
+        ScalaNative.logLinked(fconfig, linked)
+        linked
       }
 
-      libObjectPaths ++ llObjectPaths
-    }
+      // optimize and generate ll
+      val generated = {
+        val optimized = ScalaNative.optimize(fconfig, linked)
+        ScalaNative.codegen(fconfig, optimized) ++:
+          ScalaNative.genBuildInfo(fconfig) // ident list may be empty
+      }
 
-    // finally link
-    val output = config.logger.time(
-      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
-    ) {
-      LLVM.link(config, linked, objectPaths)
+      val objectPaths = fconfig.logger.time("Compiling to native code") {
+        // compile generated LLVM IR
+        val llObjectPaths = LLVM.compile(fconfig, generated)
+
+        /* Used to pass alternative paths of compiled native (lib) sources,
+         * eg: reused native sources used in partests.
+         */
+        val libObjectPaths = scala.util.Properties
+          .propOrNone("scalanative.build.paths.libobj") match {
+          case None =>
+            /* Finds all the libraries on the classpath that contain native
+             * code and then compiles them.
+             */
+            findAndCompileNativeLibs(fconfig, linked)
+          case Some(libObjectPaths) =>
+            libObjectPaths
+              .split(java.io.File.pathSeparatorChar)
+              .toSeq
+              .map(Paths.get(_))
+        }
+
+        libObjectPaths ++ llObjectPaths
+      }
+
+      // finally link
+      fconfig.logger.time(
+        s"Linking native code (${fconfig.gc.name} gc, ${fconfig.LTO.name} lto)"
+      ) {
+        LLVM.link(fconfig, linked, objectPaths)
+      }
     }
-    previousBuildInputHash = checkSum(config)
-    output
-  }
 
   private def checkSum(config: Config): Int = {
     // skip the whole nativeLink process if the followings are unchanged since the previous build
