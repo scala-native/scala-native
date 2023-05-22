@@ -180,7 +180,6 @@ object Config {
       moduleName = "",
       mainClass = None,
       classPath = Seq.empty,
-      logger = Logger.default,
       compilerConfig = NativeConfig.empty
     )
 
@@ -190,7 +189,6 @@ object Config {
       moduleName: String,
       mainClass: Option[String],
       classPath: Seq[Path],
-      logger: Logger,
       compilerConfig: NativeConfig
   ) extends Config {
 
@@ -209,8 +207,15 @@ object Config {
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
 
-    def withLogger(value: Logger): Config =
-      copy(logger = value)
+    def logger = _logger.getOrElse(defaultLogger)
+
+    private lazy val defaultLogger = Logger.default
+    private var _logger: Option[Logger] = None
+
+    def withLogger(value: Logger): Config = {
+      _logger = Some(value)
+      this
+    }
 
     override def withCompilerConfig(value: NativeConfig): Config =
       copy(compilerConfig = value)

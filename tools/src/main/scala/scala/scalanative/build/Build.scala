@@ -12,7 +12,7 @@ import java.nio.file.attribute.FileTime
 /** Utility methods for building code using Scala Native. */
 object Build {
 
-  private var previousBuildInputHash: Int = 0
+  private var prevBuildInputCheckSum: Int = 0
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
    *  producing a native binary in the end.
@@ -69,7 +69,7 @@ object Build {
       val inputHash = checkSum(fconfig)
 
       if (Files.exists(fconfig.artifactPath) &&
-          previousBuildInputHash == inputHash) {
+          prevBuildInputCheckSum == inputHash) {
         fconfig.logger.info(
           "Build skipped: No changes detected in build configuration and class path contents since last build."
         )
@@ -136,12 +136,11 @@ object Build {
     // - the output native binary ('s mtime)
     // Since the NIR code is shipped in jars, we should be able to detect the changes in NIRs.
     // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
-    val key = (
-      config.toString, // we use toString because `config` object contains Logger instance that changes for every invocation
+    (
+      config,
       config.classPath.map(getNewestMtime(_)),
       getLastModifiedTimeMillis(config.artifactPath)
-    )
-    key.hashCode()
+    ).hashCode()
   }
 
   /** Convenience method to combine finding and compiling native libaries.
