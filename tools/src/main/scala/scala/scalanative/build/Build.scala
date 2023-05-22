@@ -4,7 +4,6 @@ package build
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
 import scala.util.Try
-import java.security.MessageDigest
 import java.nio.file.FileVisitOption
 import java.util.Optional
 import java.nio.file.attribute.FileTime
