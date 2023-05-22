@@ -11,5 +11,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ammaraskar/sphinx-action@0.4
         with:
+          pre-build-command: "pip install Sphinx==7.0.1 recommonmark==0.7.1"
           docs-folder: "docs/"
-          build-command: 'sphinx-build -b html . _build/html -W --keep-going -n -Dexclude_patterns=["**/requirements.txt"]'
+          build-command: 'sphinx-build -b html . _build/html -W --keep-going -n'
