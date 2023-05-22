@@ -191,29 +191,29 @@ object Config {
       classPath: Seq[Path],
       compilerConfig: NativeConfig
   )(
-      val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
+      implicit val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
   ) extends Config {
 
     def withBaseDir(value: Path): Config =
-      copy(baseDir = value)(logger)
+      copy(baseDir = value)
 
     def withTestConfig(value: Boolean): Config =
-      copy(testConfig = value)(logger)
+      copy(testConfig = value)
 
     def withModuleName(value: String): Config =
-      copy(moduleName = value)(logger)
+      copy(moduleName = value)
 
     def withMainClass(value: Option[String]): Config =
-      copy(mainClass = value)(logger)
+      copy(mainClass = value)
 
     def withClassPath(value: Seq[Path]): Config =
-      copy(classPath = value)(logger)
+      copy(classPath = value)
 
     override def withCompilerConfig(value: NativeConfig): Config =
-      copy(compilerConfig = value)(logger)
+      copy(compilerConfig = value)
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
-      copy(compilerConfig = fn(compilerConfig))(logger)
+      copy(compilerConfig = fn(compilerConfig))
 
     override def withLogger(value: Logger): Config =
       copy()(value)
