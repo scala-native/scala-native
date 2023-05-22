@@ -11,6 +11,8 @@ import scala.util.Try
 object Continuations:
   import ContImpl.*
 
+  ContImpl.init(CFuncPtr2.fromScalaFunction(allocateBlob))
+
   inline def boundary[T](inline f: BoundaryLabel[T] ?=> T): T =
     val call: ContFnT = (x: ContImpl.BoundaryLabel) => pObj(Try(f(using x)))
     val resP = ContImpl.boundary(contFn, pObj(call))
@@ -70,7 +72,6 @@ object Continuations:
   private def allocateBlob(size: CUnsignedLong, cont: Ptr[Byte]): Ptr[Byte] =
     objP[Continuation[_, _]](cont).alloc(size)
 
-  ContImpl.setAlloc(CFuncPtr2.fromScalaFunction(allocateBlob))
 
   // FOR WORKING WITH POINTERS
 
@@ -114,7 +115,7 @@ end Continuations
   @name("cont_resume")
   def resume(cont: Continuation, arg: Ptr[Byte]): Ptr[Byte] = extern
 
-  @name("cont_set_alloc") def setAlloc(
+  @name("cont_init") def init(
       fn: CFuncPtr2[CUnsignedLong, Ptr[Byte], Ptr[Byte]]
   ): Unit =
     extern

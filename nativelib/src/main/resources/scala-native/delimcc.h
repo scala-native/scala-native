@@ -19,11 +19,12 @@ typedef void *ContFn(ContBoundaryLabel, void *);
 
 typedef void *SuspendFn(Continuation *, void *);
 
+// Initializes the continuation helpers,
 // set the allocation function for Continuations and stack fragments.
 // without calling this, malloc is the default allocation function.
 // The allocation function may take another parameter, as given in
 // `cont_suspend`.
-void cont_set_alloc(void *(*alloc_f)(unsigned long, void *));
+void cont_init(void *(*alloc_f)(unsigned long, void *));
 
 // cont_boundary : ContFn -> any -> Result
 // void cont_boundary(ContFn *, void *, ContResult *);

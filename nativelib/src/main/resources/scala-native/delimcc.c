@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
 
 // Defined symbols here:
 // - ASM_JMPBUF_SIZE: The size of the jmpbuf, should be a constant defined in
@@ -38,13 +39,14 @@
 #define __externc extern
 #define __noreturn __attribute__((noreturn))
 #define __returnstwice __attribute__((returns_twice))
+#define __noinline __attribute__((noinline))
 // define the lh_jmp_buf in terms of `void*` elements to have natural alignment
 typedef void *lh_jmp_buf[ASM_JMPBUF_SIZE / sizeof(void *)];
 // Non-standard setjmp.
 __externc __returnstwice int _lh_setjmp(lh_jmp_buf buf);
 // Jumps to the given setjmp'd buffer, returning arg as the value.
 // arg must be non-zero.
-__externc __noreturn void _lh_longjmp(lh_jmp_buf buf, int arg);
+__externc void *_lh_longjmp(lh_jmp_buf buf, int arg);
 // Stores the return address in sp+8, then calls __cont_boundary_impl.
 __externc __returnstwice void *_lh_boundary_entry(ContFn *f, void *arg);
 // Allocate enough stack for the resumption, and then call __cont_resume_impl.
@@ -54,7 +56,8 @@ __externc void *_lh_resume_entry(ptrdiff_t cont_size, Continuation *c,
 __externc void *_lh_get_sp();
 
 // Label counter
-volatile static ContLabel label_count = 0;
+volatile static atomic_ulong label_count;
+static ContLabel next_label_count() { return ++label_count; }
 
 typedef struct Handler {
     ContLabel id;
@@ -69,40 +72,72 @@ typedef struct Handlers {
     struct Handlers *next;
 } Handlers;
 
-volatile static _Thread_local Handlers *__handlers = NULL;
+/**
+ * Handler chain, thread local.
+ *
+ * All handler chain handling functions should be __noinline,
+ * to make sure that the handlers' address is looked up every time. If a
+ * function is suspended and resumed on different threads, a cached thread-local
+ * address might wreck havoc on its users.
+ */
+static _Thread_local Handlers *__handlers = NULL;
 
-static void handler_push(Handler *h) {
-    // fprintf(stderr, "Pushing handler with label %lu\n", h->id);
+static void print_handlers(Handlers *hs) {
+    while (hs != NULL) {
+        fprintf(stderr, "[id = %lu, addr = %p | %p] -> ", hs->h->id, hs->h, hs);
+        hs = hs->next;
+    }
+    fprintf(stderr, "nil\n");
+}
+
+__noinline static void handler_push(Handler *h) {
+    assert(__handlers == NULL || __handlers->h->id != h->id);
+    // fprintf(stderr, "Pushing [id = %lu, addr = %p]: ", h->id, h);
+    // print_handlers((Handlers *)__handlers);
     Handlers *hs = malloc(sizeof(Handlers));
     hs->h = h;
     hs->next = (Handlers *)__handlers;
     __handlers = hs;
 }
 
-static void handler_pop() {
-    assert(__handlers != NULL);
-    // fprintf(stderr, "Popping handler with label %lu\n", __handlers->h->id);
+__noinline static void handler_pop(ContLabel label) {
+    // fprintf(stderr, "Popping: ");
+    // print_handlers((Handlers *)__handlers);
+    assert(__handlers != NULL && label == __handlers->h->id);
     Handlers *old = (Handlers *)__handlers;
     __handlers = __handlers->next;
     free(old);
 }
 
-static void handler_install(Handlers *hs) {
+__noinline static void handler_install(Handlers *hs) {
     assert(hs != NULL);
     Handlers *tail = hs;
-    while (tail->next != NULL)
+    // fprintf(stderr, "Installing: ");
+    // print_handlers(hs);
+    // fprintf(stderr, "  to : ");
+    // print_handlers((Handlers *)__handlers);
+    while (tail->next != NULL) {
         tail = tail->next;
+    }
     tail->next = (Handlers *)__handlers;
     __handlers = hs;
 }
 
-static Handlers *handler_split_at(ContLabel l) {
-    Handlers *ret = (Handlers *)__handlers, **cur = &ret;
-    while ((*cur)->h->id != l)
-        cur = (&(*cur)->next);
-    __handlers = (*cur)->next;
-    (*cur)->next = NULL;
+__noinline static Handlers *handler_split_at(ContLabel l) {
+    // fprintf(stderr, "Splitting [id = %lu]: ", l);
+    // print_handlers((Handlers *)__handlers);
+    Handlers *ret = (Handlers *)__handlers, *cur = ret;
+    while (cur->h->id != l)
+        cur = cur->next;
+    __handlers = cur->next;
+    cur->next = NULL;
     return ret;
+}
+
+// longjmp to the head handler. Useful for `cont_resume`.
+__noinline static void *handler_head_longjmp(int arg) {
+    assert(__handlers != NULL);
+    return _lh_longjmp(__handlers->h->buf, arg);
 }
 
 static unsigned int handler_len(Handlers *h) {
@@ -114,6 +149,20 @@ static unsigned int handler_len(Handlers *h) {
     return ret;
 }
 
+// =============================
+
+static void *cont_malloc(unsigned long size, void *arg);
+static void *(*alloc_function)(unsigned long, void *);
+
+void cont_init(void *(*alloc_f)(unsigned long, void *)) {
+    if (alloc_f != NULL)
+        alloc_function = alloc_f;
+    else
+        alloc_function = cont_malloc;
+
+    atomic_init(&label_count, 0);
+}
+
 __returnstwice void *__cont_boundary_impl(void **btm, ContFn *f, void *arg) {
     // fprintf(stderr, "Boundary btm is %p\n", btm);
 
@@ -121,8 +170,9 @@ __returnstwice void *__cont_boundary_impl(void **btm, ContFn *f, void *arg) {
     volatile void *result = NULL; // we need to force the compiler to re-read
                                   // this from stack every time.
     // ContResult local_r = {.cont = NULL, .in = NULL};
+    volatile ContLabel label = next_label_count();
     Handler h = {
-        .id = ++label_count,
+        .id = label,
         .stack_btm = btm,
         .result = &result,
     };
@@ -133,7 +183,7 @@ __returnstwice void *__cont_boundary_impl(void **btm, ContFn *f, void *arg) {
     // setjmp and call
     if (_lh_setjmp(h.buf) == 0) {
         result = f(l, arg);
-        handler_pop();
+        handler_pop(label);
     }
     return (void *)result;
 }
@@ -162,9 +212,6 @@ static void *cont_malloc(unsigned long size, void *arg) {
     (void)arg;
     return malloc(size);
 }
-static void *(*alloc_function)(unsigned long, void *) = cont_malloc;
-
-void cont_set_alloc(void *(*f)(unsigned long, void *)) { alloc_function = f; }
 
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
 void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
@@ -195,7 +242,7 @@ void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
 
     // we will be back...
     if (_lh_setjmp(cont->buf) == 0) {
-        _lh_longjmp(last_handler->h->buf, 1);
+        return _lh_longjmp(last_handler->h->buf, 1);
     } else {
         // We're back, ret_val should be populated.
         return (void *)ret_val;
@@ -223,7 +270,7 @@ static Handlers *handler_clone_fix(Handlers *other, ptrdiff_t diff) {
 void __cont_resume_impl(void *tail, Continuation *cont, void *out,
                         void *ret_addr) {
     // Allocate all values up front so we know how many to deal with.
-    Handlers *nw; // new handler chain
+    Handlers *nw, *to_install; // new handler chain
     ptrdiff_t i;
     ptrdiff_t diff;         // pointer difference and stack size
     void *target;           // our target stack
@@ -242,9 +289,7 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
             diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
             target, tail, cont, cont->stack);
     // clone the handler chain, with fixes.
-    nw = handler_clone_fix(cont->handlers, diff);
-    // install the handlers and fix the return buf
-    handler_install(nw);
+    to_install = nw = handler_clone_fix(cont->handlers, diff);
     jmpbuf_fix(return_buf);
     // copy and fix the remaining information in the continuation
     new_return_slot = fixed_addr(cont->return_slot);
@@ -257,6 +302,8 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
             fix_addr(nw->h->stack_btm);
         jmpbuf_fix(nw->h->buf);
     }
+    // install the handlers and fix the return buf
+    handler_install(to_install);
 
     // set return value for the return slot
     // fprintf(stderr, "return slot is %p\n", new_return_slot);
@@ -266,7 +313,7 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     _lh_longjmp(return_buf, 1);
 }
 
-__attribute__((optnone)) void *cont_resume(Continuation *cont, void *out) {
+void *cont_resume(Continuation *cont, void *out) {
     /*
      * Why we need a setjmp/longjmp.
      *
@@ -280,15 +327,16 @@ __attribute__((optnone)) void *cont_resume(Continuation *cont, void *out) {
      * buffer that way.
      * */
     volatile void *result = NULL; // we need to force the compiler to re-read
-                                  // this from stack every time.
-    Handler h = {.id = ++label_count, .result = &result, .stack_btm = NULL};
+    // this from stack every time.
+    volatile ContLabel label = next_label_count();
+    Handler h = {.id = label, .result = &result, .stack_btm = NULL};
     handler_push(&h);
     if (_lh_setjmp(h.buf) == 0) {
         result = _lh_resume_entry(cont->size, cont, out);
-        _lh_longjmp(h.buf, 1); // top handler is always ours, avoid
-                               // refering to non-volatile `h`
+        handler_head_longjmp(1); // top handler is always ours, avoid
+                                 // refering to non-volatile `h`
     }
-    handler_pop();
+    handler_pop(label);
     return (void *)result;
 }
 
