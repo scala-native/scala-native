@@ -181,7 +181,7 @@ object Config {
       mainClass = None,
       classPath = Seq.empty,
       compilerConfig = NativeConfig.empty
-    )
+    )(Logger.default)
 
   private final case class Impl(
       baseDir: Path,
@@ -190,38 +190,33 @@ object Config {
       mainClass: Option[String],
       classPath: Seq[Path],
       compilerConfig: NativeConfig
+  )(
+      val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
   ) extends Config {
 
     def withBaseDir(value: Path): Config =
-      copy(baseDir = value)
+      copy(baseDir = value)(logger)
 
     def withTestConfig(value: Boolean): Config =
-      copy(testConfig = value)
+      copy(testConfig = value)(logger)
 
     def withModuleName(value: String): Config =
-      copy(moduleName = value)
+      copy(moduleName = value)(logger)
 
     def withMainClass(value: Option[String]): Config =
-      copy(mainClass = value)
+      copy(mainClass = value)(logger)
 
     def withClassPath(value: Seq[Path]): Config =
-      copy(classPath = value)
-
-    def logger = _logger.getOrElse(defaultLogger)
-
-    private lazy val defaultLogger = Logger.default
-    private var _logger: Option[Logger] = None
-
-    def withLogger(value: Logger): Config = {
-      _logger = Some(value)
-      this
-    }
+      copy(classPath = value)(logger)
 
     override def withCompilerConfig(value: NativeConfig): Config =
-      copy(compilerConfig = value)
+      copy(compilerConfig = value)(logger)
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
-      copy(compilerConfig = fn(compilerConfig))
+      copy(compilerConfig = fn(compilerConfig))(logger)
+
+    override def withLogger(value: Logger): Config =
+      copy()(value)
 
     override lazy val workDir: Path =
       baseDir.resolve(s"native$nameSuffix")
