@@ -6,7 +6,8 @@ import scala.scalanative.util.Scope
 import scala.util.Try
 import java.security.MessageDigest
 import java.nio.file.FileVisitOption
-import scala.collection.JavaConverters._
+import java.util.Optional
+import java.nio.file.attribute.FileTime
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -58,28 +59,14 @@ object Build {
    *  @return
    *    [[Config#artifactPath]], the path to the resulting native binary.
    */
-  def build(config: Config)(implicit scope: Scope): Path = {
-    def makeKey(config: Config): Int = {
-      // skip the whole nativeLink process if the followings are unchanged since the previous build
-      // - build configuration
-      // - class paths' mtime
-      // - the output native binary ('s mtime)
-      // Since the NIR code is shipped in jars, we should be able to detect the changes in NIRs.
-      // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
-      val key = (
-        config.toString, // we use toString because `config` object contains Logger instance that changes for every invocation
-        config.classPath.map(getNewestMtime(_)),
-        getLastModifiedTimeMillis(config.artifactPath)
-      )
-      key.hashCode()
-    }
+  def build(config: Config)(implicit scope: Scope): Path =
     config.logger.time("Total") {
       // called each time for clean or directory removal
       checkWorkdirExists(config)
 
       // validate Config
       val fconfig = Validator.validate(config)
-      val inputHash = makeKey(fconfig)
+      val inputHash = checkSum(fconfig)
 
       if (Files.exists(fconfig.artifactPath) &&
           previousBuildInputHash == inputHash) {
@@ -88,56 +75,73 @@ object Build {
         )
         fconfig.artifactPath
       } else {
-        // find and link
-        val linked = {
-          val entries = ScalaNative.entries(fconfig)
-          val linked = ScalaNative.link(fconfig, entries)
-          ScalaNative.logLinked(fconfig, linked)
-          linked
-        }
+        buildImpl(config)
+      }
+    }
 
-        // optimize and generate ll
-        val generated = {
-          val optimized = ScalaNative.optimize(config, linked)
-          ScalaNative.codegen(config, optimized) ++:
-            ScalaNative.genBuildInfo(fconfig) // ident list may be empty
-        }
+  private def buildImpl(config: Config)(implicit scope: Scope): Path = {
+    // find and link
+    val linked = {
+      val entries = ScalaNative.entries(config)
+      val linked = ScalaNative.link(config, entries)
+      ScalaNative.logLinked(config, linked)
+      linked
+    }
 
-        val objectPaths = fconfig.logger.time("Compiling to native code") {
-          // compile generated LLVM IR
-          val llObjectPaths = LLVM.compile(fconfig, generated)
+    // optimize and generate ll
+    val generated = {
+      val optimized = ScalaNative.optimize(config, linked)
+      ScalaNative.codegen(config, optimized) ++:
+        ScalaNative.genBuildInfo(config) // ident list may be empty
+    }
 
-          /* Used to pass alternative paths of compiled native (lib) sources,
-           * eg: reused native sources used in partests.
+    val objectPaths = config.logger.time("Compiling to native code") {
+      // compile generated LLVM IR
+      val llObjectPaths = LLVM.compile(config, generated)
+
+      /* Used to pass alternative paths of compiled native (lib) sources,
+       * eg: reused native sources used in partests.
+       */
+      val libObjectPaths = scala.util.Properties
+        .propOrNone("scalanative.build.paths.libobj") match {
+        case None =>
+          /* Finds all the libraries on the classpath that contain native
+           * code and then compiles them.
            */
-          val libObjectPaths = scala.util.Properties
-            .propOrNone("scalanative.build.paths.libobj") match {
-            case None =>
-              /* Finds all the libraries on the classpath that contain native
-               * code and then compiles them.
-               */
-              findAndCompileNativeLibs(fconfig, linked)
-            case Some(libObjectPaths) =>
-              libObjectPaths
-                .split(java.io.File.pathSeparatorChar)
-                .toSeq
-                .map(Paths.get(_))
-          }
-
-          libObjectPaths ++ llObjectPaths
-        }
-
-        // finally link
-        val output = fconfig.logger.time(
-          s"Linking native code (${fconfig.gc.name} gc, ${fconfig.LTO.name} lto)"
-        ) {
-          LLVM.link(fconfig, linked, objectPaths)
-        }
-        previousBuildInputHash = makeKey(fconfig)
-        output
+          findAndCompileNativeLibs(config, linked)
+        case Some(libObjectPaths) =>
+          libObjectPaths
+            .split(java.io.File.pathSeparatorChar)
+            .toSeq
+            .map(Paths.get(_))
       }
 
+      libObjectPaths ++ llObjectPaths
     }
+
+    // finally link
+    val output = config.logger.time(
+      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
+    ) {
+      LLVM.link(config, linked, objectPaths)
+    }
+    previousBuildInputHash = checkSum(config)
+    output
+  }
+
+  private def checkSum(config: Config): Int = {
+    // skip the whole nativeLink process if the followings are unchanged since the previous build
+    // - build configuration
+    // - class paths' mtime
+    // - the output native binary ('s mtime)
+    // Since the NIR code is shipped in jars, we should be able to detect the changes in NIRs.
+    // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
+    val key = (
+      config.toString, // we use toString because `config` object contains Logger instance that changes for every invocation
+      config.classPath.map(getNewestMtime(_)),
+      getLastModifiedTimeMillis(config.artifactPath)
+    )
+    key.hashCode()
   }
 
   /** Convenience method to combine finding and compiling native libaries.
@@ -174,12 +178,10 @@ object Build {
 
   /** Get the newest file's last modified time in millis under the given path.
    */
-  private def getNewestMtime(path: Path): Long =
+  private def getNewestMtime(path: Path): Optional[FileTime] =
     Files
       .walk(path, FileVisitOption.FOLLOW_LINKS)
-      .iterator()
-      .asScala
-      .map(p => Files.getLastModifiedTime(p).toMillis())
-      .max
+      .map[FileTime](Files.getLastModifiedTime(_))
+      .max(_.compareTo(_))
 
 }
