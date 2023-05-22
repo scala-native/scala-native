@@ -191,9 +191,11 @@ object Build {
   /** Get the newest file's last modified time in millis under the given path.
    */
   private def getNewestMtime(path: Path): Optional[FileTime] =
-    Files
-      .walk(path, FileVisitOption.FOLLOW_LINKS)
-      .map[FileTime](Files.getLastModifiedTime(_))
-      .max(_.compareTo(_))
+    if (Files.exists(path))
+      Files
+        .walk(path, FileVisitOption.FOLLOW_LINKS)
+        .map[FileTime](Files.getLastModifiedTime(_))
+        .max(_.compareTo(_))
+    else Optional.empty()
 
 }
