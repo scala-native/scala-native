@@ -12,4 +12,4 @@ jobs:
       - uses: ammaraskar/sphinx-action@0.4
         with:
           docs-folder: "docs/"
-          build-command: 'sphinx-build -b html . _build/html -W --keep-going -n'
+          build-command: 'sphinx-build -b html . _build/html -W --keep-going -n -Dexclude_patterns=["**/requirements.txt"]'
