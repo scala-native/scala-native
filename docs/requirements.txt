@@ -1,0 +1,2 @@
+Sphinx==7.0.1
+recommonmark==0.7.1
