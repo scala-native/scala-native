@@ -190,8 +190,8 @@ object Config {
       mainClass: Option[String],
       classPath: Seq[Path],
       compilerConfig: NativeConfig
-  )(
-      implicit val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
+  )(implicit
+      val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
   ) extends Config {
 
     def withBaseDir(value: Path): Config =
