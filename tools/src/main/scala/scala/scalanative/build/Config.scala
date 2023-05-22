@@ -180,9 +180,8 @@ object Config {
       moduleName = "",
       mainClass = None,
       classPath = Seq.empty,
-      logger = Logger.default,
       compilerConfig = NativeConfig.empty
-    )
+    )(Logger.default)
 
   private final case class Impl(
       baseDir: Path,
@@ -190,8 +189,9 @@ object Config {
       moduleName: String,
       mainClass: Option[String],
       classPath: Seq[Path],
-      logger: Logger,
       compilerConfig: NativeConfig
+  )(implicit
+      val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
   ) extends Config {
 
     def withBaseDir(value: Path): Config =
@@ -209,14 +209,14 @@ object Config {
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
 
-    def withLogger(value: Logger): Config =
-      copy(logger = value)
-
     override def withCompilerConfig(value: NativeConfig): Config =
       copy(compilerConfig = value)
 
     override def withCompilerConfig(fn: NativeConfig => NativeConfig): Config =
       copy(compilerConfig = fn(compilerConfig))
+
+    override def withLogger(value: Logger): Config =
+      copy()(value)
 
     override lazy val workDir: Path =
       baseDir.resolve(s"native$nameSuffix")
