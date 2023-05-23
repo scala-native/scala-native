@@ -19,6 +19,7 @@ import scalanative.unsafe._
 import scalanative.libc._
 
 import java.nio.channels.SeekableByteChannel
+import scalanative.libc.errno.errno
 import scalanative.posix.errno.{EEXIST, ENOENT, ENOTEMPTY}
 import scalanative.posix.{fcntl, limits, unistd}
 import scalanative.posix.sys.stat

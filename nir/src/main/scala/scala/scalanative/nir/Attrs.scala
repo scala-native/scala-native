@@ -78,11 +78,11 @@ object Attrs {
       case attr: Inline     => inline = attr
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
-      case Extern=>           isExtern = true
-      case Dyn             => isDyn = true
-      case Stub            => isStub = true
-      case link: Attr.Link => links += link
-      case Abstract        => isAbstract = true
+      case Extern           => isExtern = true
+      case Dyn              => isDyn = true
+      case Stub             => isStub = true
+      case link: Attr.Link  => links += link
+      case Abstract         => isAbstract = true
       case LinktimeResolved => isLinktimeResolved = true
     }
 
