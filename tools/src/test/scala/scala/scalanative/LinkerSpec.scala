@@ -3,7 +3,7 @@ package scala.scalanative
 import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import scalanative.build.{Config, NativeConfig}
+import scalanative.build.{Config, NativeConfig, Discover}
 import scalanative.build.core.ScalaNative
 import scalanative.util.Scope
 import org.scalatest.flatspec.AnyFlatSpec
@@ -61,7 +61,12 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withWorkdir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(entry)
-      .withCompilerConfig(setupNativeConfig)
+      .withCompilerConfig(setupNativeConfig.compose(withDefaults))
+  }
+
+  private def withDefaults(config: NativeConfig): NativeConfig = {
+    config
+      .withTargetTriple("x86_64-unknown-unknown")
   }
 
   protected implicit def String2MapStringString(

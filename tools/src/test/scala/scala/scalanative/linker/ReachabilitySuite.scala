@@ -108,6 +108,9 @@ trait ReachabilitySuite extends AnyFunSuite {
     default
       .withWorkdir(outDir)
       .withClassPath(paths.toSeq)
+      .withCompilerConfig {
+        _.withTargetTriple("x86_64-unknown-unknown")
+      }
       .withMainClass(mainClass)
   }
 }
