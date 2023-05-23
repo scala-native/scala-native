@@ -17,8 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2, 2.13.10]
-        gc: [boehm, immix, commix]
+        scala: [3.3.0, 2.13.10]
+        gc: [none, boehm, immix, commix]
         include:
           - scala: 2.12.17
             gc: immix
@@ -94,14 +94,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2, 2.13.10]
-        build-mode: [release-fast]
-        lto: [thin]
-        optimize: [true]
+        scala: [3.3.0, 2.13.10]
+        build-mode: [debug, release-fast]
+        lto: [none, thin]
+        gc: [boehm, immix, commix]
+        exclude:
+          # Covered in basic test-runtime
+          - scala: 3.3.0
+            build-mode: debug
+          - scala: 2.13.10
+            build-mode: debug
+            gc: immix
+          - build-mode: release-fast
+            lto: none
         include:
-          - scala: 3.2.2
-            lto: full
-            optimize: true
+          - scala: 3.3.0
+            build-mode: release-size
+            lto: thin
+            gc: immix
+          - scala: 3.3.0
+            build-mode: release-full
+            lto: thin
+            gc: commix
           - scala: 2.13.10
             lto: full
             optimize: true
@@ -138,7 +152,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2]
+        scala: [3.3.0]
         llvm: ["13.0.1", "14.0.6", "15.0.7"] # Last 3 stable versions
     steps:
       - name: Setup git config
