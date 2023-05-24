@@ -128,6 +128,7 @@ _lh_resume_entry: /* x0 = cont_size, x1 = cont, x2 = arg */
 _lh_get_sp:
     mov  x0, sp
     ret
+
 #elif defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__))
 
 /* ----------------------------------------------------------------------------

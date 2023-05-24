@@ -11,10 +11,11 @@
 // `setjmp.S`.
 // - JMPBUF_STACK_POINTER_OFFSET: The offset within the jmpbuf where
 //   the stack pointer is located. Should be defined in `setjmp.S`.
-#if defined(__aarch64__)
+#if defined(__aarch64__) // ARM64
 #define ASM_JMPBUF_SIZE 192
 #define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
-#elif defined(__x86_64__) && defined(__linux__)
+#elif defined(__x86_64__) &&                                                   \
+    (defined(__linux__) || defined(__APPLE__)) // x86-64 linux and macOS
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
 #endif
