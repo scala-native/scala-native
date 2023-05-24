@@ -25,6 +25,10 @@ object GC {
   def init(): Unit = extern
   @name("scalanative_register_weak_reference_handler")
   def registerWeakReferenceHandler(handler: Ptr[Byte]): Unit = extern
+  @name("scalanative_get_init_heapsize")
+  def getInitHeapSize(): CSize = extern
+  @name("scalanative_get_max_heapsize")
+  def getMaxHeapSize(): CSize = extern
 
   /*  Multithreading awareness for GC Every implementation of GC supported in
    *  ScalaNative needs to register a given thread The main thread is

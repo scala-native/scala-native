@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, macos-11]
-        scala: [3.2.2]
+        scala: [3.3.0]
         java: [11, 17, 20]
         include:
           - java: 20
@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.2.2]
+        scala: [3.3.0]
         java: [11, 17, 20]
         include:
           - java: 20
