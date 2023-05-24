@@ -234,14 +234,14 @@ void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
     volatile void *ret_val = NULL;
     cont->return_slot = &ret_val;
 
-    // assign it to the handler's return value
-    *last_handler->h->result = f(cont, arg);
     // fprintf(stderr, "Putting result %p to slot %p\n",
     // *last_handler->h->result,
     //         last_handler->h->result);
 
     // we will be back...
     if (_lh_setjmp(cont->buf) == 0) {
+        // assign it to the handler's return value
+        *last_handler->h->result = f(cont, arg);
         return _lh_longjmp(last_handler->h->buf, 1);
     } else {
         // We're back, ret_val should be populated.
