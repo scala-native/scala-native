@@ -94,6 +94,8 @@ object Build {
       // validate Config
       val fconfig = Validator.validate(config)
 
+      config.logger.debug(config.toString())
+
       // find and link
       val linked = {
         val entries = ScalaNative.entries(fconfig)
