@@ -95,7 +95,7 @@ object Generate {
     // Equivalent to the following Scala code:
     // def get_[class,trait]_has_trait(firstid: Int, secondid: Int): Boolean = {
     //   val bitIndex = firstid * meta.traits.length + secondid
-    //   (table(bitIndex >> AddressBitsPerWord) & (1L << (bitIndex & RightBits))) != 0
+    //   (table(bitIndex >> AddressBitsPerWord) & (1 << (bitIndex & RightBits))) != 0
     // }
     private def genHasTrait(
         name: Global.Member,
@@ -109,12 +109,11 @@ object Generate {
       val columns = Val.Int(meta.traits.length)
       val bitIndex = Val.Local(fresh(), Type.Int)
       val arrayPos = Val.Local(fresh(), Type.Int)
-      val longptr = Val.Local(fresh(), Type.Ptr)
-      val long = Val.Local(fresh(), Type.Long)
+      val intptr = Val.Local(fresh(), Type.Ptr)
+      val int = Val.Local(fresh(), Type.Int)
       val toShift = Val.Local(fresh(), Type.Int)
-      val toShiftLong = Val.Local(fresh(), Type.Long)
-      val mask = Val.Local(fresh(), Type.Long)
-      val and = Val.Local(fresh(), Type.Long)
+      val mask = Val.Local(fresh(), Type.Int)
+      val and = Val.Local(fresh(), Type.Int)
       val result = Val.Local(fresh(), Type.Bool)
 
       def let(local: Val.Local, op: Op) = Inst.Let(local.name, op, Next.None)
@@ -137,14 +136,14 @@ object Generate {
             )
           ),
           let(
-            longptr,
+            intptr,
             Op.Elem(
               tableTy,
               tableVal,
               Seq(Val.Int(0), arrayPos)
             )
           ),
-          let(long, Op.Load(Type.Long, longptr)),
+          let(int, Op.Load(Type.Int, intptr)),
           let(
             toShift,
             Op.Bin(
@@ -155,28 +154,20 @@ object Generate {
             )
           ),
           let(
-            toShiftLong,
-            Op.Conv(
-              Conv.Sext,
-              Type.Long,
-              toShift
-            )
-          ),
-          let(
             mask,
             Op.Bin(
               Bin.Shl,
-              Type.Long,
-              Val.Long(1),
-              toShiftLong
+              Type.Int,
+              Val.Int(1),
+              toShift
             )
           ),
           let(
             and,
             Op.Bin(
               Bin.And,
-              Type.Long,
-              long,
+              Type.Int,
+              int,
               mask
             )
           ),
@@ -184,9 +175,9 @@ object Generate {
             result,
             Op.Comp(
               Comp.Ine,
-              Type.Long,
+              Type.Int,
               and,
-              Val.Long(0)
+              Val.Int(0)
             )
           ),
           Inst.Ret(result)
