@@ -41,8 +41,8 @@ final case class Attrs(
     isDyn: Boolean = false,
     isStub: Boolean = false,
     isAbstract: Boolean = false,
-    isLinktimeResolved: Boolean = false,
-    links: Seq[Attr.Link] = Seq.empty
+    links: Seq[Attr.Link] = Seq.empty,
+    isLinktimeResolved: Boolean = false
 ) {
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]
@@ -59,6 +59,69 @@ final case class Attrs(
 
     out.result()
   }
+
+  // backward compatibilty
+  def this(
+      inlineHint: Inline,
+      specialize: Specialize,
+      opt: Opt,
+      isExtern: Boolean,
+      isDyn: Boolean,
+      isStub: Boolean,
+      isAbstract: Boolean,
+      links: Seq[Attr.Link]
+  ) = this(
+    inlineHint = inlineHint,
+    specialize = specialize,
+    opt = opt,
+    isExtern = isExtern,
+    isDyn = isDyn,
+    isStub = isStub,
+    isAbstract = isAbstract,
+    isLinktimeResolved = false,
+    links = links
+  )
+  def copy(
+      inlineHint: Inline = this.inlineHint,
+      specialize: Specialize = this.specialize,
+      opt: Opt = this.opt,
+      isExtern: Boolean = this.isExtern,
+      isDyn: Boolean = this.isDyn,
+      isStub: Boolean = this.isStub,
+      isAbstract: Boolean = this.isAbstract,
+      links: Seq[Attr.Link] = this.links,
+      isLinktimeResolved: Boolean = this.isLinktimeResolved
+  ): Attrs = new Attrs(
+    inlineHint = inlineHint,
+    specialize = specialize,
+    opt = opt,
+    isExtern = isExtern,
+    isDyn = isDyn,
+    isStub = isStub,
+    isAbstract = isAbstract,
+    links = links,
+    isLinktimeResolved = false
+  )
+  def copy(
+      inlineHint: Inline,
+      specialize: Specialize,
+      opt: Opt,
+      isExtern: Boolean,
+      isDyn: Boolean,
+      isStub: Boolean,
+      isAbstract: Boolean,
+      links: Seq[Attr.Link]
+  ): Attrs = new Attrs(
+    inlineHint = inlineHint,
+    specialize = specialize,
+    opt = opt,
+    isExtern = isExtern,
+    isDyn = isDyn,
+    isStub = isStub,
+    isAbstract = isAbstract,
+    links = links,
+    isLinktimeResolved = false
+  )
 }
 object Attrs {
   val None = new Attrs()
@@ -98,4 +161,26 @@ object Attrs {
       links = links.result()
     )
   }
+
+  // backward compatibilty
+  def apply(
+      inlineHint: Inline,
+      specialize: Specialize,
+      opt: Opt,
+      isExtern: Boolean,
+      isDyn: Boolean,
+      isStub: Boolean,
+      isAbstract: Boolean,
+      links: Seq[Attr.Link]
+  ): Attrs = new Attrs(
+    inlineHint = inlineHint,
+    specialize = specialize,
+    opt = opt,
+    isExtern = isExtern,
+    isDyn = isDyn,
+    isStub = isStub,
+    isAbstract = isAbstract,
+    isLinktimeResolved = false,
+    links = links
+  )
 }
