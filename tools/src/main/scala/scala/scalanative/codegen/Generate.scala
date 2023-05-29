@@ -9,6 +9,14 @@ import scala.scalanative.build.Logger
 object Generate {
   import Impl._
 
+  val ClassHasTraitName =
+    Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
+  val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+
+  val TraitHasTraitName =
+    Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
+  val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
+
   def apply(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
   ): Seq[Defn] =
@@ -66,27 +74,112 @@ object Generate {
     }
 
     def genClassHasTrait(): Unit = {
+      genHasTrait(
+        ClassHasTraitName,
+        ClassHasTraitSig,
+        meta.hasTraitTables.classHasTraitTy,
+        meta.hasTraitTables.classHasTraitVal
+      )
+    }
+
+    def genTraitHasTrait(): Unit = {
+      genHasTrait(
+        TraitHasTraitName,
+        TraitHasTraitSig,
+        meta.hasTraitTables.traitHasTraitTy,
+        meta.hasTraitTables.traitHasTraitVal
+      )
+    }
+
+    // BitMatrix get adapted from the java.util.BitSet implementation.
+    // Equivalent to the following Scala code:
+    // def get_[class,trait]_has_trait(firstid: Int, secondid: Int): Boolean = {
+    //   val bitIndex = firstid * meta.traits.length + secondid
+    //   (table(bitIndex >> AddressBitsPerWord) & (1 << (bitIndex & RightBits))) != 0
+    // }
+    private def genHasTrait(
+        name: Global.Member,
+        sig: Type.Function,
+        tableTy: Type,
+        tableVal: Val
+    ): Unit = {
       implicit val fresh = Fresh()
-      val classid, traitid = Val.Local(fresh(), Type.Int)
-      val boolptr = Val.Local(fresh(), Type.Ptr)
+      val firstid, secondid = Val.Local(fresh(), Type.Int)
+      val row = Val.Local(fresh(), Type.Int)
+      val columns = Val.Int(meta.traits.length)
+      val bitIndex = Val.Local(fresh(), Type.Int)
+      val arrayPos = Val.Local(fresh(), Type.Int)
+      val intptr = Val.Local(fresh(), Type.Ptr)
+      val int = Val.Local(fresh(), Type.Int)
+      val toShift = Val.Local(fresh(), Type.Int)
+      val mask = Val.Local(fresh(), Type.Int)
+      val and = Val.Local(fresh(), Type.Int)
       val result = Val.Local(fresh(), Type.Bool)
+
+      def let(local: Val.Local, op: Op) = Inst.Let(local.name, op, Next.None)
 
       buf += Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
-        ClassHasTraitName,
-        ClassHasTraitSig,
+        name,
+        sig,
         Seq(
-          Inst.Label(fresh(), Seq(classid, traitid)),
-          Inst.Let(
-            boolptr.name,
-            Op.Elem(
-              meta.hasTraitTables.classHasTraitTy,
-              meta.hasTraitTables.classHasTraitVal,
-              Seq(Val.Int(0), classid, traitid)
-            ),
-            Next.None
+          Inst.Label(fresh(), Seq(firstid, secondid)),
+          let(row, Op.Bin(Bin.Imul, Type.Int, firstid, columns)),
+          let(bitIndex, Op.Bin(Bin.Iadd, Type.Int, row, secondid)),
+          let(
+            arrayPos,
+            Op.Bin(
+              Bin.Ashr,
+              Type.Int,
+              bitIndex,
+              Val.Int(BitMatrix.AddressBitsPerWord)
+            )
           ),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
+          let(
+            intptr,
+            Op.Elem(
+              tableTy,
+              tableVal,
+              Seq(Val.Int(0), arrayPos)
+            )
+          ),
+          let(int, Op.Load(Type.Int, intptr)),
+          let(
+            toShift,
+            Op.Bin(
+              Bin.And,
+              Type.Int,
+              bitIndex,
+              Val.Int(BitMatrix.RightBits)
+            )
+          ),
+          let(
+            mask,
+            Op.Bin(
+              Bin.Shl,
+              Type.Int,
+              Val.Int(1),
+              toShift
+            )
+          ),
+          let(
+            and,
+            Op.Bin(
+              Bin.And,
+              Type.Int,
+              int,
+              mask
+            )
+          ),
+          let(
+            result,
+            Op.Comp(
+              Comp.Ine,
+              Type.Int,
+              and,
+              Val.Int(0)
+            )
+          ),
           Inst.Ret(result)
         )
       )
@@ -98,33 +191,6 @@ object Generate {
         val pos = trt.position
         buf += Defn.Var(Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
       }
-    }
-
-    def genTraitHasTrait(): Unit = {
-      implicit val fresh = Fresh()
-      val leftid, rightid = Val.Local(fresh(), Type.Int)
-      val boolptr = Val.Local(fresh(), Type.Ptr)
-      val result = Val.Local(fresh(), Type.Bool)
-
-      buf += Defn.Define(
-        Attrs(inlineHint = Attr.AlwaysInline),
-        TraitHasTraitName,
-        TraitHasTraitSig,
-        Seq(
-          Inst.Label(fresh(), Seq(leftid, rightid)),
-          Inst.Let(
-            boolptr.name,
-            Op.Elem(
-              meta.hasTraitTables.traitHasTraitTy,
-              meta.hasTraitTables.traitHasTraitVal,
-              Seq(Val.Int(0), leftid, rightid)
-            ),
-            Next.None
-          ),
-          Inst.Let(result.name, Op.Load(Type.Bool, boolptr), Next.None),
-          Inst.Ret(result)
-        )
-      )
     }
 
     /* Generate set of instructions using common exception handling, generate method
@@ -506,14 +572,6 @@ object Generate {
 
   private object Impl {
     val rttiModule = Global.Top("java.lang.rtti$")
-
-    val ClassHasTraitName =
-      Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
-    val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
-
-    val TraitHasTraitName =
-      Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
-    val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
     val ObjectArray =
       Type.Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
