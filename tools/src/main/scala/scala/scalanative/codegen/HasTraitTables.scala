@@ -7,12 +7,12 @@ import scalanative.linker.{Trait, Class}
 class HasTraitTables(meta: Metadata) {
   private implicit val pos: Position = Position.NoPosition
 
-  val classHasTraitName = Global.Top("__class_has_trait")
+  private val classHasTraitName = Global.Top("__class_has_trait")
   val classHasTraitVal = Val.Global(classHasTraitName, Type.Ptr)
   var classHasTraitTy: Type = _
   var classHasTraitDefn: Defn = _
 
-  val traitHasTraitName = Global.Top("__trait_has_trait")
+  private val traitHasTraitName = Global.Top("__trait_has_trait")
   val traitHasTraitVal = Val.Global(traitHasTraitName, Type.Ptr)
   var traitHasTraitTy: Type = _
   var traitHasTraitDefn: Defn = _
@@ -20,43 +20,44 @@ class HasTraitTables(meta: Metadata) {
   initClassHasTrait()
   initTraitHasTrait()
 
-  def markTraits(row: Array[Boolean], cls: Class): Unit = {
-    cls.traits.foreach(markTraits(row, _))
-    cls.parent.foreach(markTraits(row, _))
+  private def markTraits(matrix: BitMatrix, row: Int, cls: Class): Unit = {
+    cls.traits.foreach(markTraits(matrix, row, _))
+    cls.parent.foreach(markTraits(matrix, row, _))
   }
 
-  def markTraits(row: Array[Boolean], trt: Trait): Unit = {
-    row(meta.ids(trt)) = true
-    trt.traits.foreach { right => row(meta.ids(right)) = true }
-    trt.traits.foreach(markTraits(row, _))
+  private def markTraits(matrix: BitMatrix, row: Int, trt: Trait): Unit = {
+    matrix.set(row, meta.ids(trt))
+    trt.traits.foreach(markTraits(matrix, row, _))
   }
 
-  def initClassHasTrait(): Unit = {
-    val columns = meta.classes.map { cls =>
-      val row = new Array[Boolean](meta.traits.length)
-      markTraits(row, cls)
-      Val.ArrayValue(Type.Bool, row.toSeq.map(Val.Bool))
+  private def initClassHasTrait(): Unit = {
+    val matrix = BitMatrix(meta.classes.length, meta.traits.length)
+    var row = 0
+    meta.classes.foreach { cls =>
+      markTraits(matrix, row, cls)
+
+      row += 1
     }
-    val table =
-      Val.ArrayValue(Type.ArrayValue(Type.Bool, meta.traits.length), columns)
+    val tableVal = Val.ArrayValue(Type.Int, matrix.toSeq.map(i => Val.Int(i)))
 
-    classHasTraitTy = table.ty
     classHasTraitDefn =
-      Defn.Const(Attrs.None, classHasTraitName, table.ty, table)
+      Defn.Const(Attrs.None, classHasTraitName, tableVal.ty, tableVal)
+    classHasTraitTy = tableVal.ty
   }
 
-  def initTraitHasTrait(): Unit = {
-    val columns = meta.traits.map { left =>
-      val row = new Array[Boolean](meta.traits.length)
-      markTraits(row, left)
-      row(meta.ids(left)) = true
-      Val.ArrayValue(Type.Bool, row.toSeq.map(Val.Bool))
-    }
-    val table =
-      Val.ArrayValue(Type.ArrayValue(Type.Bool, meta.traits.length), columns)
+  private def initTraitHasTrait(): Unit = {
+    val matrix = BitMatrix(meta.traits.length, meta.traits.length)
+    var row = 0
+    meta.traits.foreach { left =>
+      markTraits(matrix, row, left)
+      matrix.set(row, meta.ids(left))
 
-    traitHasTraitTy = table.ty
+      row += 1
+    }
+    val tableVal = Val.ArrayValue(Type.Int, matrix.toSeq.map(l => Val.Int(l)))
+
     traitHasTraitDefn =
-      Defn.Const(Attrs.None, traitHasTraitName, table.ty, table)
+      Defn.Const(Attrs.None, traitHasTraitName, tableVal.ty, tableVal)
+    traitHasTraitTy = tableVal.ty
   }
 }
