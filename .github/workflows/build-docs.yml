@@ -8,7 +8,7 @@ jobs:
   build-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ammaraskar/sphinx-action@0.4
         with:
           pre-build-command: "pip install Sphinx==7.0.1 recommonmark==0.7.1"
