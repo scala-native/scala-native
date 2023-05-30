@@ -950,16 +950,17 @@ object Lower {
               unwind
             )
           val id = let(Op.Load(Type.Int, idptr), unwind)
-          val boolptr = let(
-            Op.Elem(
-              hasTraitTables.classHasTraitTy,
-              hasTraitTables.classHasTraitVal,
-              Seq(zero, id, Val.Int(meta.ids(trt)))
+          let(
+            Op.Call(
+              Generate.ClassHasTraitSig,
+              Val.Global(
+                Generate.ClassHasTraitName,
+                Generate.ClassHasTraitSig
+              ),
+              Seq(id, Val.Int(meta.ids(trt)))
             ),
             unwind
           )
-          let(Op.Load(Type.Bool, boolptr), unwind)
-
         case _ =>
           util.unsupported(s"is[$ty] $obj")
       }
