@@ -66,7 +66,9 @@ class WindowsPath private[windows] (
 
   override def getParent(): Path = {
     val nameCount = getNameCount()
-    if (nameCount == 0 || (nameCount == 1 && !isAbsolute()))
+    if (nameCount == 0) 
+      null
+    else if (nameCount == 1 && pathType != PathType.Absolute && pathType != PathType.DirectoryRelative)  
       null
     else if (root.isDefined)
       new WindowsPath(pathType, root, segments.init)
