@@ -20,12 +20,12 @@ object WindowsPathParser {
         // URI specific, absolute path starts with / followed by absolute path
         Absolute -> Some(rawPath.substring(1, 4))
       else
-        DriveRelative -> None
+        DirectoryRelative -> Some(rawPath.substring(0, 1))
     } else if (charAtIdx(0, isASCIILetter) && charAtIdx(1, _ == ':')) {
       if (charAtIdx(2, isSlash))
         Absolute -> Some(rawPath.substring(0, 3))
       else
-        DirectoryRelative -> Some(rawPath.substring(0, 2))
+        DriveRelative -> Some(rawPath.substring(0, 2))
     } else Relative -> None
 
     val relativePath = root

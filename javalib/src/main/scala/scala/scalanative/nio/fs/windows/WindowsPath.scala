@@ -39,10 +39,10 @@ class WindowsPath private[windows] (
           case Array(host, share) => share + "\\"
           case _                  => ""
         }
-      case (PathType.Absolute, Some(root))          => root
-      case (PathType.DirectoryRelative, Some(root)) => root + "\\"
-      case (PathType.DriveRelative, _)              => "\\"
-      case _                                        => ""
+      case (PathType.Absolute, Some(root))      => root
+      case (PathType.DirectoryRelative, _)      => "\\"
+      case (PathType.DriveRelative, Some(root)) => root
+      case _                                    => ""
     }
     drivePrefix + segments.mkString(seperator)
   }
