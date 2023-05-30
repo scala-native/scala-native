@@ -166,17 +166,17 @@ class WindowsPath private[windows] (
     if (isAbsolute() ^ other.isAbsolute()) {
       throw new IllegalArgumentException("'other' is different type of Path")
     } else {
-      val normThis = new WindowsPath(WindowsPath.normalized(this))
+      val normThis = WindowsPathParser(WindowsPath.normalized(this))
       if (normThis.toString.isEmpty()) {
         other
       } else if (other.startsWith(normThis)) {
         other.subpath(getNameCount(), other.getNameCount())
       } else if (normThis.getParent() == null) {
-        new WindowsPath("../" + other.toString())
+        WindowsPathParser("../" + other.toString())
       } else {
         val next = normThis.getParent().relativize(other).toString()
         if (next.isEmpty()) new WindowsPath("..")
-        else new WindowsPath("../" + next)
+        else WindowsPathParser("../" + next)
       }
     }
   }
