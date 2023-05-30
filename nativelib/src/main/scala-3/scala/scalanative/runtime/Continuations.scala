@@ -72,7 +72,6 @@ object Continuations:
   private def allocateBlob(size: CUnsignedLong, cont: Ptr[Byte]): Ptr[Byte] =
     objP[Continuation[_, _]](cont).alloc(size)
 
-
   // FOR WORKING WITH POINTERS
 
   type ContFnT = ContImpl.BoundaryLabel => Ptr[Byte]
