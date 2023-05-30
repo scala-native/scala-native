@@ -1,9 +1,9 @@
-package scala
+package scala.scalanative.runtime
 
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.runtime.Continuations._
+import Continuations._
 
 class Scala3ContinuationsTests:
   @Test def canBoundaryNoSuspend() =
