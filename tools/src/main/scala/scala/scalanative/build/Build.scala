@@ -65,6 +65,8 @@ object Build {
         config.withClassPath(fclasspath)
       }
 
+      config.logger.debug(config.toString())
+
       // find and link
       val linked = {
         val entries = ScalaNative.entries(fconfig)
