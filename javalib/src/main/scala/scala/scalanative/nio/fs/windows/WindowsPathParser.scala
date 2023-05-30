@@ -13,20 +13,23 @@ object WindowsPathParser {
       rawPath.size > n && pred(rawPath.charAt(n))
     }
 
-    val (tpe, root) = if (charAtIdx(0, isSlash)) {
-      if (charAtIdx(1, isSlash))
-        UNC -> Some(getUNCRoot(rawPath))
-      else if (charAtIdx(1, isASCIILetter) && charAtIdx(2, _ == ':'))
-        // URI specific, absolute path starts with / followed by absolute path
-        Absolute -> Some(rawPath.substring(1, 4))
-      else
-        DirectoryRelative -> Some(rawPath.substring(0, 1))
-    } else if (charAtIdx(0, isASCIILetter) && charAtIdx(1, _ == ':')) {
-      if (charAtIdx(2, isSlash))
-        Absolute -> Some(rawPath.substring(0, 3))
-      else
-        DriveRelative -> Some(rawPath.substring(0, 2))
-    } else Relative -> None
+    val (tpe, root) =
+      if (rawPath.isEmpty)
+        Relative -> None
+      else if (charAtIdx(0, isSlash)) {
+        if (charAtIdx(1, isSlash))
+          UNC -> Some(getUNCRoot(rawPath))
+        else if (charAtIdx(1, isASCIILetter) && charAtIdx(2, _ == ':'))
+          // URI specific, absolute path starts with / followed by absolute path
+          Absolute -> Some(rawPath.substring(1, 4))
+        else
+          DirectoryRelative -> Some(rawPath.substring(0, 1))
+      } else if (charAtIdx(0, isASCIILetter) && charAtIdx(1, _ == ':')) {
+        if (charAtIdx(2, isSlash))
+          Absolute -> Some(rawPath.substring(0, 3))
+        else
+          DriveRelative -> Some(rawPath.substring(0, 2))
+      } else Relative -> None
 
     val relativePath = root
       .map(r => rawPath.substring(r.length))
