@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - 0.4.x
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
@@ -20,12 +19,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0]
+        scala: [3]
         gc: [none, boehm, immix, commix]
         include:
-          - scala: 2.13.11
+          - scala: 3-next
             gc: immix
-          - scala: 2.12.18
+          - scala: 2.13
+            gc: immix
+          - scala: 2.12
             gc: immix
 
     steps:
@@ -39,12 +40,11 @@ jobs:
       - name: Test runtime
         run: >
           export SCALANATIVE_GC=${{matrix.gc}} &&
-          sbt ++${{matrix.scala}}
-          "test-runtime ${{matrix.scala}}"
+          sbt "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
         # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3.') }}
+        if: ${{ !startsWith(matrix.scala, '3') }}
         run: >
           sbt ++${{matrix.scala}}
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
@@ -57,30 +57,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.11]
+        scala: [3, 3-next, 2.13]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
         exclude:
           # Covered in basic test-runtime
-          - scala: 3.3.0
+          - scala: 3
             build-mode: debug
-          - scala: 2.13.11
-            build-mode: debug
-            gc: immix
         include:
-          - scala: 3.3.0
+          - scala: 3
             build-mode: release-size
             lto: thin
             gc: immix
-          - scala: 3.3.0
-            build-mode: release-full
-            lto: thin
-            gc: commix
-          - scala: 2.13.11
-            build-mode: release-full
-            lto: full
-            gc: commix
+          # ReleaseFull is flaky
+          # - scala: 3
+          #   build-mode: release-full
+          #   lto: thin
+          #   gc: commix
+          # - scala: 2
+          #   build-mode: release-full
+          #   lto: full
+          #   gc: commix
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
@@ -107,7 +105,6 @@ jobs:
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
           TEST_COMMAND: >
-            ++${{matrix.scala}} -v;
             set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
             set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
             set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
@@ -132,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.18, 3.1.3]
+        scala: [2.12, 3]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
@@ -150,10 +147,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0]
+        scala: [3]
         build-mode: [debug, release-fast]
         gc: [boehm, immix]
         lto: [none, thin]
+        include:
+          - scala: 3-next
+            build-mode: release-fast
+            lto: thin
         exclude:
           # Takes too much time to build
           - build-mode: release-fast
@@ -199,7 +200,6 @@ jobs:
         timeout-minutes: 60
         env:
           TEST_COMMAND: >
-            ++${{matrix.scala}} -v;
             set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
             set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
             set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};

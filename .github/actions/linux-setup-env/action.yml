@@ -24,6 +24,9 @@ runs:
           binaryVersion=${version%.*}
           echo "binary-version=${binaryVersion}" >> $GITHUB_ENV
           echo "project-version=${binaryVersion/./_}" >> $GITHUB_ENV
+        elif [[ $version == "3-next" ]]; then
+          echo "binary-version=3-next" >> $GITHUB_ENV
+          echo "project-version=3_next" >> $GITHUB_ENV
         else 
           echo "binary-version=3" >> $GITHUB_ENV
           echo "project-version=3" >> $GITHUB_ENV

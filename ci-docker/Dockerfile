@@ -53,7 +53,7 @@ ENV LC_ALL "C.UTF-8"
 ENV LANG "C.UTF-8"
 ENV PATH=/usr/lib/llvm-$LLVM_VERSION/bin:~/.sdkman/candidates/java/current/bin:~/.sdkman/candidates/sbt/current/bin:${PATH}
 
-CMD sbt "++ $SCALA_VERSION -v" \
+CMD sbt \
   "-Dscala.scalanative.testinterface.processrunner.emulator=$TARGET_EMULATOR" \
   "-J-Xmx5G" \
   "set sbtScalaNative/scriptedBufferLog := false" \

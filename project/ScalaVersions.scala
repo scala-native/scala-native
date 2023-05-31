@@ -23,7 +23,8 @@ object ScalaVersions {
   val crossScala3 = List(
     (0 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
-    (0 to 0).map(v => s"3.3.$v")
+    (0 to 0).map(v => s"3.3.$v"),
+    Seq(scala3Nightly)
   ).flatten
 
   // Version of Scala 3 standard library sources used for publishing
@@ -34,6 +35,8 @@ object ScalaVersions {
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last
   val scala3: String = "3.1.3"
+  // List of nightly version can be found here: https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/
+  lazy val scala3Nightly = "3.3.1-RC1-bin-20230524-5262680-NIGHTLY"
 
   // minimum version - 1.5 is required for Scala 3 and 1.5.8 has log4j vulnerability fixed
   val sbt10Version: String = "1.5.8"
