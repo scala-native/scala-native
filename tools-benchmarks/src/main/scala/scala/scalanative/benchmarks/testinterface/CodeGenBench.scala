@@ -25,20 +25,20 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
   def setup(): Unit = {
     val workdir = Files.createTempDirectory("codegen-bench")
     config = defaultConfig
-      .withBaseDir(workdir)
-      .withMainClass(Some(TestMain))
+      .withWorkdir(workdir)
+      .withMainClass(TestMain)
       .withCompilerConfig(nativeConfig)
-    Files.createDirectories(config.workDir)
+    Files.createDirectories(config.workdir)
 
-    val entries = build.ScalaNative.entries(config)
+    val entries = build.core.ScalaNative.entries(config)
     util.Scope { implicit scope =>
-      linked = ScalaNative.link(config, entries)
+      linked = core.ScalaNative.link(config, entries)
     }
   }
 
   @TearDown(Level.Trial)
   def cleanup(): Unit = {
-    val workdir = config.baseDir
+    val workdir = config.workdir
     Files
       .walk(workdir)
       .sorted(Comparator.reverseOrder())
@@ -49,19 +49,12 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
 
   @Benchmark
   def codeGen(): Unit = {
-    val paths = ScalaNative.codegen(config, linked)
+    val paths = core.ScalaNative.codegen(config, linked)
     assert(paths.nonEmpty)
   }
 }
 
 class CodeGen
     extends CodeGenBench(
-      nativeConfig = _.withMultithreadingSupport(false)
-        .withIncrementalCompilation(false)
-    )
-class CodeGenWithMultithreading
-    extends CodeGenBench(
-      nativeConfig = _.withMultithreadingSupport(true)
-        .withGC(GC.Immix) // to ensure generation of safepoints
-        .withIncrementalCompilation(false)
+      nativeConfig = _.withIncrementalCompilation(false)
     )
