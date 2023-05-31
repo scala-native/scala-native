@@ -1726,7 +1726,7 @@ object Lower {
     buf.toSeq
   }
 
-  val depends: Seq[Global] = {
+  def depends(implicit platform: PlatformInfo): Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
     buf += Rt.ClassName
     buf += Rt.ClassIdName
@@ -1760,8 +1760,10 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
-    buf += GCSafepoint.name
-    buf += GCSetMutatorThreadState.name
+    if (platform.isMultithreadingEnabled) {
+      buf += GCSafepoint.name
+      buf += GCSetMutatorThreadState.name
+    }
     buf.toSeq
   }
 }

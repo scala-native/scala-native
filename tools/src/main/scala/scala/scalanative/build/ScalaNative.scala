@@ -4,7 +4,7 @@ package build
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
-import scala.scalanative.codegen.CodeGen
+import scala.scalanative.codegen.{CodeGen, PlatformInfo}
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._
@@ -17,6 +17,7 @@ private[scalanative] object ScalaNative {
   /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
+    implicit val platform: PlatformInfo = PlatformInfo(config)
     val entry = encodedMainClass(config).map(_.member(Rt.ScalaMainSig))
     val dependencies = CodeGen.depends ++ Interflow.depends
     entry ++: dependencies
