@@ -100,7 +100,7 @@ final case class Attrs(
     isStub = isStub,
     isAbstract = isAbstract,
     links = links,
-    isLinktimeResolved = false
+    isLinktimeResolved = isLinktimeResolved
   )
   def copy(
       inlineHint: Inline,
@@ -120,7 +120,7 @@ final case class Attrs(
     isStub = isStub,
     isAbstract = isAbstract,
     links = links,
-    isLinktimeResolved = false
+    isLinktimeResolved = this.isLinktimeResolved
   )
 }
 object Attrs {
