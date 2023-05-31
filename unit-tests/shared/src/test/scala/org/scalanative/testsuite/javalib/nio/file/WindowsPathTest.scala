@@ -284,54 +284,66 @@ class WindowsPathTest {
   }
 
   @Test def pathRelativize(): Unit = {
-    assertEquals("", Paths.get("").relativize(Paths.get("")).toString)
+    assertEquals("#1", "", Paths.get("").relativize(Paths.get("")).toString)
     assertEquals(
+      "#2",
       "bar",
       Paths.get("foo").relativize(Paths.get("foo/bar")).toString
     )
     assertEquals(
+      "#3",
       "..",
       Paths.get("foo/bar").relativize(Paths.get("foo")).toString
     )
     assertEquals(
+      "#4",
       "..\\bar",
       Paths.get("foo").relativize(Paths.get("bar")).toString
     )
     assertEquals(
+      "#5",
       "..\\baz",
       Paths
         .get("foo/bar")
         .relativize(Paths.get("foo/baz"))
         .toString
     )
-    // TODO Java 8-
-//    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+      // TODO Java 8-
 //      assertEquals(
+//        "#6-JVM8",
 //        "..\\foo",
 //        Paths.get("").relativize(Paths.get("foo")).toString
 //      )
-//    } else {
-    assertEquals("foo", Paths.get("").relativize(Paths.get("foo")).toString)
-//    }
-    // TODO Java 8-
-//    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+    } else {
+      assertEquals(
+        "#6",
+        "foo",
+        Paths.get("").relativize(Paths.get("foo")).toString
+      )
+    }
+    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+      // TODO Java 8-
 //      assertEquals(
+//        "#7-JVM8",
 //        "..\\..\\..\\bar",
 //        Paths
 //          .get("foo/../bar")
 //          .relativize(Paths.get("bar"))
 //          .toString
 //      )
-//    } else {
+    } else {
+      assertEquals(
+        "#7",
+        "",
+        Paths
+          .get("foo/../bar")
+          .relativize(Paths.get("bar"))
+          .toString
+      )
+    }
     assertEquals(
-      "",
-      Paths
-        .get("foo/../bar")
-        .relativize(Paths.get("bar"))
-        .toString
-    )
-//    }
-    assertEquals(
+      "#8",
       "..\\foo",
       Paths
         .get("bar")
@@ -339,36 +351,48 @@ class WindowsPathTest {
         .toString
     )
     assertThrows(
+      "#9",
       classOf[IllegalArgumentException],
       assertEquals("", Paths.get("/").relativize(Paths.get("")).toString)
     )
-    assertEquals("", Paths.get("/").relativize(Paths.get("/")).toString)
-    assertEquals("", Paths.get("x:/").relativize(Paths.get("x:/")).toString)
+    assertEquals("#10", "", Paths.get("/").relativize(Paths.get("/")).toString)
     assertEquals(
+      "#11",
+      "",
+      Paths.get("x:/").relativize(Paths.get("x:/")).toString
+    )
+    assertEquals(
+      "#12",
       "bar",
       Paths.get("/foo").relativize(Paths.get("/foo/bar")).toString
     )
     assertEquals(
+      "#13",
       "bar",
       Paths.get("x:/foo").relativize(Paths.get("x:/foo/bar")).toString
     )
     assertEquals(
+      "#14",
       "..",
       Paths.get("/foo/bar").relativize(Paths.get("/foo")).toString
     )
     assertEquals(
+      "#15",
       "..",
       Paths.get("x:/foo/bar").relativize(Paths.get("x:/foo")).toString
     )
     assertEquals(
+      "#17",
       "..\\bar",
       Paths.get("/foo").relativize(Paths.get("/bar")).toString
     )
     assertEquals(
+      "#18",
       "..\\bar",
       Paths.get("x:/foo").relativize(Paths.get("x:/bar")).toString
     )
     assertEquals(
+      "#19",
       "..\\baz",
       Paths
         .get("/foo/bar")
@@ -376,50 +400,60 @@ class WindowsPathTest {
         .toString
     )
     assertEquals(
+      "#20",
       "..\\baz",
       Paths
         .get("x:/foo/bar")
         .relativize(Paths.get("x:/foo/baz"))
         .toString
     )
-    assertEquals("foo", Paths.get("/").relativize(Paths.get("/foo")).toString)
-    // TODO Java 8-
-    //    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+    assertEquals(
+      "#21",
+      "foo",
+      Paths.get("/").relativize(Paths.get("/foo")).toString
+    )
+    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+      // TODO Java 8-
 //      assertEquals(
+//        "#22-JVM8",
 //        "..\\..\\..\\bar",
 //        Paths
 //          .get("/foo/../bar")
 //          .relativize(Paths.get("/bar"))
 //          .toString
 //      )
-//    } else {
-    assertEquals(
-      "",
-      Paths
-        .get("/foo/../bar")
-        .relativize(Paths.get("/bar"))
-        .toString
-    )
-//    }
-    // TODO Java 8-
-//    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+    } else {
+      assertEquals(
+        "#22",
+        "",
+        Paths
+          .get("/foo/../bar")
+          .relativize(Paths.get("/bar"))
+          .toString
+      )
+    }
+    if (org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower) {
+      // TODO Java 8-
 //      assertEquals(
+//        "#23-JVM8",
 //        "..\\..\\..\\bar",
 //        Paths
 //          .get("x:/foo/../bar")
 //          .relativize(Paths.get("x:/bar"))
 //          .toString
 //      )
-//    } else {
+    } else {
+      assertEquals(
+        "#24",
+        "",
+        Paths
+          .get("x:/foo/../bar")
+          .relativize(Paths.get("x:/bar"))
+          .toString
+      )
+    }
     assertEquals(
-      "",
-      Paths
-        .get("x:/foo/../bar")
-        .relativize(Paths.get("x:/bar"))
-        .toString
-    )
-//    }
-    assertEquals(
+      "#25",
       "..\\foo",
       Paths
         .get("/bar")
@@ -427,6 +461,7 @@ class WindowsPathTest {
         .toString
     )
     assertEquals(
+      "#26",
       "..\\foo",
       Paths
         .get("x:/bar")
@@ -434,6 +469,7 @@ class WindowsPathTest {
         .toString
     )
     assertEquals(
+      "#27",
       "b\\c.jar",
       Paths
         .get("C:\\a")
