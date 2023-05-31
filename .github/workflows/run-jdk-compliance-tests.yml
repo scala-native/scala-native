@@ -42,7 +42,7 @@ jobs:
           _JAVA_OPTIONS='${{ matrix.java-options }}' 
           sbt 
           -Dscala.scalanative.multithreading.enable=true 
-          "-no-colors" "-J-Xmx3G" 
+          "-J-Xmx3G" 
           "test-runtime ${{matrix.scala}}"
 
   tests-windows-jdk-compliance:

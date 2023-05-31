@@ -46,8 +46,7 @@ jobs:
         # No partests support for Scala 3
         if: ${{ !startsWith(matrix.scala, '3') }}
         run: >
-          sbt ++${{matrix.scala}}
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sbt "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   test-runtime-ext:
     name: Test runtime extension
@@ -155,6 +154,7 @@ jobs:
           - scala: 3-next
             build-mode: release-fast
             lto: thin
+            gc: immix
         exclude:
           # Takes too much time to build
           - build-mode: release-fast

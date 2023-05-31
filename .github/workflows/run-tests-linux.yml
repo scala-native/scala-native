@@ -39,10 +39,9 @@ jobs:
 
       - name: Check partest disabled tests list
         # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3.') }}
+        if: ${{ !startsWith(matrix.scala, '3') }}
         run: |
-          sbt "++ ${{ matrix.scala }} -v" \
-          "scalaPartest${{env.project-version}}/fetchScalaSource"
+          sbt "scalaPartest${{env.project-version}}/fetchScalaSource"
           scala-cli scripts/partest-check-files.scala -- ${{ matrix.scala }}
 
         # scala-cli-setup can override default java version
@@ -55,10 +54,9 @@ jobs:
         # to make sure that infrastructure works correctly.
       - name: Run subset of partest tests
         # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3.') }}
+        if: ${{ !startsWith(matrix.scala, '3') }}
         run: |
-          sbt "++ ${{ matrix.scala }} -v" \
-          "-no-colors" \
+          sbt \
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
