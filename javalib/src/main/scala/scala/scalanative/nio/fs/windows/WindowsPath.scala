@@ -66,9 +66,9 @@ class WindowsPath private[windows] (
 
   override def getParent(): Path = {
     val nameCount = getNameCount()
-    if (nameCount == 0) 
+    if (nameCount == 0)
       null
-    else if (nameCount == 1 && pathType != PathType.Absolute && pathType != PathType.DirectoryRelative)  
+    else if (nameCount == 1 && pathType != PathType.Absolute && pathType != PathType.DirectoryRelative)
       null
     else if (root.isDefined)
       new WindowsPath(pathType, root, segments.init)
@@ -163,7 +163,13 @@ class WindowsPath private[windows] (
     resolveSibling(WindowsPathParser(other))
 
   override def relativize(other: Path): Path = {
-    if (isAbsolute() ^ other.isAbsolute()) {
+    val otherType = other match {
+      case null           => throw new NullPointerException()
+      case p: WindowsPath => p.pathType
+      case _ =>
+        throw new IllegalArgumentException("'other' is different Path class")
+    }
+    if (pathType != otherType) {
       throw new IllegalArgumentException("'other' is different type of Path")
     } else {
       val normThis = WindowsPathParser(WindowsPath.normalized(this))
