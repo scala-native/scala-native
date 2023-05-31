@@ -48,7 +48,7 @@ runs:
         "VcpkgLibs=${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static" >> $env:GITHUB_OUTPUT
         if ("${{inputs.scala-version}}".StartsWith("2.")) {
           echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
-        elseif ("${{inputs.scala-version}}".StartsWith("3-next")) {
+        } elseif ("${{inputs.scala-version}}".StartsWith("3-next")) {
           echo ("project-version=3_next") >> $env:GITHUB_ENV
         } else {
           echo "project-version=3" >> $env:GITHUB_ENV
