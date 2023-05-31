@@ -24,19 +24,19 @@ abstract class OptimizerBench(mode: build.Mode) {
   def setup(): Unit = {
     val workdir = Files.createTempDirectory("optimize-bench")
     config = defaultConfig
-      .withBaseDir(workdir)
-      .withMainClass(Some(TestMain))
+      .withWorkdir(workdir)
+      .withMainClass(TestMain)
       .withCompilerConfig(_.withMode(mode))
 
-    val entries = build.ScalaNative.entries(config)
+    val entries = core.ScalaNative.entries(config)
     util.Scope { implicit scope =>
-      linked = ScalaNative.link(config, entries)
+      linked = core.ScalaNative.link(config, entries)
     }
   }
 
   @TearDown(Level.Trial)
   def cleanup(): Unit = {
-    val workdir = config.baseDir
+    val workdir = config.workdir
     Files
       .walk(workdir)
       .sorted(Comparator.reverseOrder())
@@ -47,7 +47,7 @@ abstract class OptimizerBench(mode: build.Mode) {
 
   @Benchmark
   def optimize(): Unit = {
-    val optimized = ScalaNative.optimize(config, linked)
+    val optimized = core.ScalaNative.optimize(config, linked)
     assert(optimized.unavailable.size == 0)
   }
 }

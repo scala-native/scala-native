@@ -34,11 +34,11 @@ class LinkerBench {
   @Benchmark
   def link(): Unit = util.Scope { implicit scope =>
     val config = defaultConfig
-      .withBaseDir(workdir)
-      .withMainClass(Some(TestMain))
+      .withWorkdir(workdir)
+      .withMainClass(TestMain)
 
-    val entries = build.ScalaNative.entries(config)
-    val linked = build.ScalaNative.link(config, entries)
+    val entries = build.core.ScalaNative.entries(config)
+    val linked = build.core.ScalaNative.link(config, entries)
     assert(linked.unavailable.size == 0)
   }
 }
