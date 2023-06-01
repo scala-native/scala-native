@@ -288,6 +288,7 @@ trait Eval { self: Interflow =>
 
         if (targets.size == 0) {
           emit(Op.Method(materialize(obj), sig))
+          Val.Zero(Type.Nothing)
         } else if (targets.size == 1) {
           Val.Global(targets.head, Type.Ptr)
         } else {

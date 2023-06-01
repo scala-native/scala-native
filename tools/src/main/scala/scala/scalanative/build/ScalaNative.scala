@@ -138,34 +138,32 @@ private[scalanative] object ScalaNative {
       log: String => Unit,
       showContext: Boolean
   )(errors: Seq[Check.Error], linked: linker.Result): Unit = {
-    val grouped = mutable.Map.empty[Global, mutable.UnrolledBuffer[Check.Error]]
-    errors.foreach { err =>
-      grouped.getOrElseUpdate(err.name, mutable.UnrolledBuffer.empty) += err
-    }
-    grouped.foreach {
-      case (name, errs) =>
-        log(s"\nFound ${errs.length} errors on ${name.show} :")
-        def showError(err: Check.Error): Unit = log("    " + err.msg)
-        if (showContext) {
-          linked.defns
-            .collectFirst {
-              case defn if defn != null && defn.name == name => defn
-            }
-            .foreach { defn =>
-              val str = defn.show
-              val lines = str.split("\n")
-              lines.zipWithIndex.foreach {
-                case (line, idx) =>
-                  log(String.format("  %04d  ", Integer.valueOf(idx)) + line)
+    errors
+      .groupBy(_.name)
+      .foreach {
+        case (name, errs) =>
+          log(s"\nFound ${errs.length} errors on ${name.show} :")
+          def showError(err: Check.Error): Unit = log("    " + err.msg)
+          if (showContext) {
+            linked.defns
+              .collectFirst {
+                case defn if defn != null && defn.name == name => defn
               }
+              .foreach { defn =>
+                val str = defn.show
+                val lines = str.split("\n")
+                lines.zipWithIndex.foreach {
+                  case (line, idx) =>
+                    log(String.format("  %04d  ", Integer.valueOf(idx)) + line)
+                }
+              }
+            log("")
+            errs.foreach { err =>
+              log("  in " + err.ctx.reverse.mkString(" / ") + " : ")
+              showError(err)
             }
-          log("")
-          errs.foreach { err =>
-            log("  in " + err.ctx.reverse.mkString(" / ") + " : ")
-            showError(err)
-          }
-        } else errs.foreach(showError)
-    }
+          } else errs.foreach(showError)
+      }
     log(s"\n${errors.size} errors found")
   }
 
