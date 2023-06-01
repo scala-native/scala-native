@@ -39,10 +39,10 @@ class WindowsPath private[windows] (
           case Array(host, share) => share + "\\"
           case _                  => ""
         }
-      case (PathType.Absolute, Some(root))          => root
-      case (PathType.DirectoryRelative, Some(root)) => root + "\\"
-      case (PathType.DriveRelative, _)              => "\\"
-      case _                                        => ""
+      case (PathType.Absolute, Some(root))      => root
+      case (PathType.DirectoryRelative, _)      => "\\"
+      case (PathType.DriveRelative, Some(root)) => root
+      case _                                    => ""
     }
     drivePrefix + segments.mkString(seperator)
   }
@@ -66,7 +66,9 @@ class WindowsPath private[windows] (
 
   override def getParent(): Path = {
     val nameCount = getNameCount()
-    if (nameCount == 0 || (nameCount == 1 && !isAbsolute()))
+    if (nameCount == 0)
+      null
+    else if (nameCount == 1 && pathType != PathType.Absolute && pathType != PathType.DirectoryRelative)
       null
     else if (root.isDefined)
       new WindowsPath(pathType, root, segments.init)
@@ -161,20 +163,26 @@ class WindowsPath private[windows] (
     resolveSibling(WindowsPathParser(other))
 
   override def relativize(other: Path): Path = {
-    if (isAbsolute() ^ other.isAbsolute()) {
+    val otherType = other match {
+      case null           => throw new NullPointerException()
+      case p: WindowsPath => p.pathType
+      case _ =>
+        throw new IllegalArgumentException("'other' is different Path class")
+    }
+    if (pathType != otherType) {
       throw new IllegalArgumentException("'other' is different type of Path")
     } else {
-      val normThis = new WindowsPath(WindowsPath.normalized(this))
+      val normThis = WindowsPathParser(WindowsPath.normalized(this))
       if (normThis.toString.isEmpty()) {
         other
       } else if (other.startsWith(normThis)) {
         other.subpath(getNameCount(), other.getNameCount())
       } else if (normThis.getParent() == null) {
-        new WindowsPath("../" + other.toString())
+        WindowsPathParser("../" + other.toString())
       } else {
         val next = normThis.getParent().relativize(other).toString()
         if (next.isEmpty()) new WindowsPath("..")
-        else new WindowsPath("../" + next)
+        else WindowsPathParser("../" + next)
       }
     }
   }
