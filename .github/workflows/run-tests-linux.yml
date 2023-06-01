@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10, 2.12.17]
+        scala: [3.3.0, 2.13.10, 2.12.18]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10, 2.12.17]
+        scala: [3.3.0, 2.13.10, 2.12.18]
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
@@ -92,7 +92,7 @@ jobs:
         include:
           - scala: 2.13.10
             gc: immix
-          - scala: 2.12.17
+          - scala: 2.12.18
             gc: immix
     steps:
       - uses: actions/checkout@v3
@@ -187,7 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12.17, 3.1.3]
+        scala: [2.12.18, 3.1.3]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
