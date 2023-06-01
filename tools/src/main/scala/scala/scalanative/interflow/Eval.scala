@@ -254,7 +254,7 @@ trait Eval { self: Interflow =>
         visitRoot(name)
         delay(Op.Field(materialize(obj), name))
 
-      case method @ Op.Method(rawObj, sig) =>
+      case Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
         val objty = {
           /* If method is not virtual (eg. constructor) we need to ensure that
@@ -288,8 +288,6 @@ trait Eval { self: Interflow =>
 
         if (targets.size == 0) {
           emit(Op.Method(materialize(obj), sig))
-          reporter.virtualMethodDispatchError(method, origPos)
-          Val.Zero(Type.Nothing)
         } else if (targets.size == 1) {
           Val.Global(targets.head, Type.Ptr)
         } else {
