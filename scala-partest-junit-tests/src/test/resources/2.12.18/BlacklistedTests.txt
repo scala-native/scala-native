@@ -175,6 +175,11 @@ scala/collection/convert/NullSafetyToScalaTest.scala
 scala/collection/convert/NullSafetyToJavaTest.scala
 
 # Concurrency primitives
+scala/collection/SetMapRulesTest.scala
+scala/collection/ParallelConsistencyTest.scala
+scala/collection/parallel/immutable/ParRangeTest.scala
+scala/collection/concurrent/TrieMapTest.scala
+scala/runtime/ScalaRunTimeTest.scala
 scala/io/SourceTest.scala
 scala/sys/process/ProcessTest.scala
 
