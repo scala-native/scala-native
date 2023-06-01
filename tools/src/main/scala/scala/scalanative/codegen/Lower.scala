@@ -3,6 +3,7 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.util.{ScopedVar, unsupported}
+import scalanative.build.{Logger, ErrorReporter}
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
@@ -11,11 +12,17 @@ object Lower {
 
   def apply(
       defns: Seq[Defn]
-  )(implicit meta: Metadata, logger: build.Logger): Seq[Defn] =
-    (new Impl).onDefns(defns)
+  )(implicit meta: Metadata, logger: Logger): Seq[Defn] =
+    ErrorReporter.boundary(logger, meta.config)("lowering phase") {
+      implicit reporter: ErrorReporter =>
+        (new Impl).onDefns(defns)
+    }
 
-  private final class Impl(implicit meta: Metadata, logger: build.Logger)
-      extends Transform {
+  private final class Impl(implicit
+      meta: Metadata,
+      logger: Logger,
+      reporter: ErrorReporter
+  ) extends Transform {
     import meta._
     import meta.config
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
@@ -820,6 +827,7 @@ object Lower {
         // Method call with `null` ref argument might be inlined, in such case materialization of local value in Eval would
         // result with Val.Null. We're directly throwing NPE which normally would be handled in slow path of `genGuardNotNull`
         case Type.Null =>
+          reporter.virtualMethodDispatchError(op, pos)
           let(
             n,
             Op.Call(throwNullPointerTy, throwNullPointerVal, Seq(Val.Null)),

@@ -5,10 +5,14 @@ import scala.collection.mutable
 import scala.scalanative.codegen.PlatformInfo
 import scala.scalanative.nir._
 import scala.scalanative.linker._
+import scala.scalanative.build.ErrorReporter
 import scala.scalanative.util.ScopedVar
 import java.util.function.Supplier
 
-class Interflow(val config: build.Config)(implicit
+class Interflow(
+    val config: build.Config,
+    protected val reporter: ErrorReporter
+)(implicit
     val linked: linker.Result
 ) extends Visit
     with Opt
@@ -154,12 +158,14 @@ class Interflow(val config: build.Config)(implicit
 }
 
 object Interflow {
-  def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
-    val interflow = new Interflow(config)(linked)
-    interflow.visitEntries()
-    interflow.visitLoop()
-    interflow.result()
-  }
+  def apply(config: build.Config, linked: linker.Result): Seq[Defn] =
+    ErrorReporter.boundary(config.logger, config.compilerConfig)("optimizer") {
+      reporter =>
+        val interflow = new Interflow(config, reporter)(linked)
+        interflow.visitEntries()
+        interflow.visitLoop()
+        interflow.result()
+    }
 
   object LLVMIntrinsics {
     private val externAttrs = Attrs(isExtern = true)
