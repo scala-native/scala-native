@@ -23,7 +23,7 @@ jobs:
         scala: [3.3.0]
         gc: [none, boehm, immix, commix]
         include:
-          - scala: 2.13.10
+          - scala: 2.13.11
             gc: immix
           - scala: 2.12.18
             gc: immix
@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10]
+        scala: [3.3.0, 2.13.11]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -65,7 +65,7 @@ jobs:
           # Covered in basic test-runtime
           - scala: 3.3.0
             build-mode: debug
-          - scala: 2.13.10
+          - scala: 2.13.11
             build-mode: debug
             gc: immix
         include:
@@ -77,7 +77,7 @@ jobs:
             build-mode: release-full
             lto: thin
             gc: commix
-          - scala: 2.13.10
+          - scala: 2.13.11
             build-mode: release-full
             lto: full
             gc: commix
