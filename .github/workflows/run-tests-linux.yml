@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10, 2.12.18]
+        scala: [3.3.0, 2.13.11, 2.12.18]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10, 2.12.18]
+        scala: [3.3.0, 2.13.11, 2.12.18]
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
@@ -80,7 +80,7 @@ jobs:
         scala: [3.3.0]
         gc: [none, boehm, immix, commix]
         include:
-          - scala: 2.13.10
+          - scala: 2.13.11
             gc: immix
           - scala: 2.12.18
             gc: immix
@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10]
+        scala: [3.3.0, 2.13.11]
         build-mode: [debug, release-fast]
         gc: [boehm, immix, commix]
         # Create holes in grid to lower number of tests.
@@ -110,7 +110,7 @@ jobs:
           # Covered in basic test-runtime
           - scala: 3.3.0
             build-mode: debug
-          - scala: 2.13.10
+          - scala: 2.13.11
             build-mode: debug
             gc: immix
         include:
@@ -145,10 +145,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.0, 2.13.10]
+        scala: [3.3.0, 2.13.11]
         build-mode: [debug]
         include:
-          - scala: 2.13.10
+          - scala: 2.13.11
             build-mode: release-fast
     steps:
       - uses: actions/checkout@v3
