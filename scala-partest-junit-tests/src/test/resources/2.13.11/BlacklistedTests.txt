@@ -153,6 +153,12 @@ scala/runtime/IntBoxingTest.scala
 scala/runtime/LongBoxingTest.scala
 scala/runtime/FloatBoxingTest.scala
 scala/runtime/DoubleBoxingTest.scala
+scala/collection/concurrent/ConcurrentMapTester.scala
+scala/collection/concurrent/ConcurrentMapTestHelper.scala
+scala/collection/concurrent/TrieMapTest.scala
+scala/collection/convert/MapWrapperTest.scala
+scala/collection/SetMapRulesTest.scala
+scala/collection/IterableTest.scala
 
 ## Do not link
 scala/jdk/DurationConvertersTest.scala
