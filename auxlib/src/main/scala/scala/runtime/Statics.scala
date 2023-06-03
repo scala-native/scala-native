@@ -1,8 +1,5 @@
 package scala.runtime
 
-import scala.scalanative.libc.atomic._
-import scala.scalanative.libc.atomic.memory_order._
-
 /** Not for public consumption. Usage by the runtime only.
  */
 object Statics {
@@ -89,7 +86,7 @@ object Statics {
 
   private object PFMarker
 
-  @inline def releaseFence(): Unit = atomic_thread_fence(memory_order_release)
+  @inline def releaseFence(): Unit = ()
 
   /** Just throws an exception.
    *
