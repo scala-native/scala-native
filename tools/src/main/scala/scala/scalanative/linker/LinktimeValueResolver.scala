@@ -114,9 +114,17 @@ trait LinktimeValueResolver { self: Reach =>
         }
       }
 
+    def hasLinktimeResolvedInsts = defn.insts.exists {
+      case _: Inst.LinktimeIf                      => true
+      case Inst.Let(_, ReferencedPropertyOp(_), _) => true
+      case _                                       => false
+    }
+
     if (defn.attrs.isLinktimeResolved)
       if (canBeEvauluated) evaluated()
       else partiallyEvaluated()
+    else if (hasLinktimeResolvedInsts) // Legacy variant for 0.4.12- compat
+      partiallyEvaluated()
     else defn
   }
 
