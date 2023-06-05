@@ -1,6 +1,5 @@
 #if defined(SCALANATIVE_GC_COMMIX)
 
-
 #include <stddef.h>
 #include <stdio.h>
 #include "BlockList.h"
