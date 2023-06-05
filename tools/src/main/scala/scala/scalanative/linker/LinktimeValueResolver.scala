@@ -15,6 +15,10 @@ trait LinktimeValueResolver { self: Reach =>
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
+      s"$linktimeInfo.isWindows" -> Platform.isWindows,
+      s"$linktimeInfo.isLinux" -> Platform.isLinux,
+      s"$linktimeInfo.isMac" -> Platform.isMac,
+      s"$linktimeInfo.isFreeBSD" -> Platform.isFreeBSD,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix
