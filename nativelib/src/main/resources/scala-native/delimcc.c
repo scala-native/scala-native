@@ -18,6 +18,9 @@
     (defined(__linux__) || defined(__APPLE__)) // x86-64 linux and macOS
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#elif defined(__x86_64__) && defined(_WIN64) // x86-64 Windows
+#define ASM_JMPBUF_SIZE 256
+#define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
 #endif
 
 // Apple platforms mangle the names of some symbols in assembly. We override the
