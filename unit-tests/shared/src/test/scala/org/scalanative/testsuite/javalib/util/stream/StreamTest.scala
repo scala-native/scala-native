@@ -1,5 +1,6 @@
 package org.scalanative.testsuite.javalib.util.stream
 
+import java.{lang => jl}
 import java.{util => ju}
 import java.util._
 
@@ -226,7 +227,7 @@ class StreamTest {
   }
 
   @Test def streamIterate_Unbounded_Characteristics(): Unit = {
-    val s = Stream.iterate(0, n => n + 1)
+    val s = Stream.iterate[jl.Double](0.0, n => n + 1)
     val spliter = s.spliterator()
 
     // spliterator should have required characteristics and no others.

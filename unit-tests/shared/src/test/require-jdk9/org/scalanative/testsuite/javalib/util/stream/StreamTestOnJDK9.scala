@@ -100,9 +100,7 @@ class StreamTestOnJDK9 {
     )
 
     val spliter = s.spliterator()
-// 2023-06-03 19:48 -0400 FIXME
-    val hexMask = s"0X${spliter.characteristics().toHexString}"
-    printf(s"splitr.characteristics: ${hexMask}\n")
+
     // spliterator should have required characteristics and no others.
     val requiredPresent = Seq(Spliterator.ORDERED, Spliterator.IMMUTABLE)
 
