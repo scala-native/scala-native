@@ -1,9 +1,25 @@
 package java.util.stream
 
+import java.{lang => jl}
+
 import java.util._
 import java.util.function._
 
-trait DoubleStream extends BaseStream[Double, DoubleStream] {
+/* Design Note:
+ *
+ * DoubleStream extends BaseStream[jl.Double, DoubleStream]
+ * in correspondence to the documentation & usage of Spliterator.Of*
+ * and PrimitiveIterator.Of*. That is, the first type is a Java container.
+ *
+ * In this file "Double" types should be qualified to ease tracing the code
+ * and prevent confusion & defects.
+ *   * jl.Double indicates an Java Object qua Scala AnyRef is desired.
+ *   * scala.Double indicates a Java "double" primitive is desired.
+ *     Someday, the generated code should be examined to ensure that
+ *     unboxed primitives are actually being used.
+ */
+
+trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
 
   def allMatch(pred: DoublePredicate): Boolean
 
@@ -11,7 +27,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
 
   def average(): OptionalDouble
 
-  def boxed(): Stream[Double]
+  def boxed(): Stream[jl.Double]
 
   def collect[R](
       supplier: Supplier[R],
@@ -46,12 +62,12 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
 
       def tryAdvance(action: DoubleConsumer): Boolean = {
         if (doneDropping) {
-          spliter.tryAdvance((e) => action.accept(e))
+          spliter.tryAdvance(e => action.accept(e))
         } else {
           var doneLooping = false
           while (!doneLooping) {
             val advanced =
-              spliter.tryAdvance((e) => {
+              spliter.tryAdvance(e => {
                 if (!pred.test(e)) {
                   action.accept(e)
                   doneDropping = true
@@ -108,7 +124,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
 
     val spliter = this.spliterator() //  also marks this stream "operated upon"
 
-    val buffer = new ArrayDeque[Double]()
+    val buffer = new ArrayDeque[scala.Double]()
 
     // Can not predict replacements, so Spliterator can not be SIZED.
     // May need to adjust other characteristics.
@@ -125,9 +141,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
           while (!done) {
             if (buffer.size() == 0) {
               val stepped =
-                spliter.tryAdvance((e: Double) =>
-                  mapper.accept(e, r => buffer.add(r))
-                )
+                spliter.tryAdvance(e => mapper.accept(e, r => buffer.add(r)))
               done = !stepped
             } else {
               action.accept(buffer.removeFirst())
@@ -161,7 +175,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
 
   def peek(action: DoubleConsumer): DoubleStream
 
-  def reduce(identity: Double, op: DoubleBinaryOperator): Double
+  def reduce(identity: scala.Double, op: DoubleBinaryOperator): Double
 
   def reduce(op: DoubleBinaryOperator): OptionalDouble
 
@@ -169,7 +183,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
 
   def sorted(): DoubleStream
 
-  def sum(): Double
+  def sum(): scala.Double
 
   def summaryStatistics(): DoubleSummaryStatistics
 
@@ -196,7 +210,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
       def tryAdvance(action: DoubleConsumer): Boolean = {
         if (done) false
         else
-          spliter.tryAdvance((e) =>
+          spliter.tryAdvance(e =>
             if (!pred.test(e)) done = true
             else action.accept(e)
           )
@@ -206,7 +220,7 @@ trait DoubleStream extends BaseStream[Double, DoubleStream] {
     new DoubleStreamImpl(spl, parallel = false, parent = this)
   }
 
-  def toArray(): Array[Double]
+  def toArray(): Array[scala.Double]
 
 }
 
@@ -223,7 +237,7 @@ object DoubleStream {
 
   @FunctionalInterface
   trait DoubleMapMultiConsumer {
-    def accept(value: Double, dc: DoubleConsumer): Unit
+    def accept(value: scala.Double, dc: DoubleConsumer): Unit
   }
 
   def builder(): DoubleStream.Builder =
@@ -252,16 +266,19 @@ object DoubleStream {
 
   // Since: Java 9
   def iterate(
-      seed: Double,
+      seed: scala.Double,
       hasNext: DoublePredicate,
       next: DoubleUnaryOperator
   ): DoubleStream = {
-    // "seed" on RHS here is to keep compiler happy with local var init
+    // "seed" on RHS here is to keep compiler happy with local var initialize.
     var previous = seed
     var seedUsed = false
 
     val spliter =
-      new Spliterators.AbstractDoubleSpliterator(Long.MaxValue, 0) {
+      new Spliterators.AbstractDoubleSpliterator(
+        Long.MaxValue,
+        Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL
+      ) {
         def tryAdvance(action: DoubleConsumer): Boolean = {
           val current =
             if (seedUsed) next.applyAsDouble(previous)
@@ -283,14 +300,18 @@ object DoubleStream {
   }
 
   def iterate(
-      seed: Double,
+      seed: scala.Double,
       f: DoubleUnaryOperator
   ): DoubleStream = {
-    var previous = seed // "seed" here is just to keep compiler happy.
+    // "seed" on RHS here is to keep compiler happy with local var initialize.
+    var previous = seed
     var seedUsed = false
 
     val spliter =
-      new Spliterators.AbstractDoubleSpliterator(Long.MaxValue, 0) {
+      new Spliterators.AbstractDoubleSpliterator(
+        Long.MaxValue,
+        Spliterator.ORDERED | Spliterator.IMMUTABLE | Spliterator.NONNULL
+      ) {
         def tryAdvance(action: DoubleConsumer): Boolean = {
           val current =
             if (seedUsed) f.applyAsDouble(previous)
@@ -308,7 +329,10 @@ object DoubleStream {
     new DoubleStreamImpl(spliter, parallel = false)
   }
 
-  def of(values: Array[Double]): DoubleStream = {
+  def of(t: scala.Double): DoubleStream =
+    DoubleStream.builder().add(t).build()
+
+  def of(values: Array[scala.Double]): DoubleStream = {
     /* One would expect variables arguments to be declared as
      * "values: Objects*" here.
      * However, that causes "symbol not found" errors at OS link time.
@@ -321,8 +345,5 @@ object DoubleStream {
 
     bldr.build()
   }
-
-  def of(t: Double): DoubleStream =
-    DoubleStream.builder().add(t).build()
 
 }

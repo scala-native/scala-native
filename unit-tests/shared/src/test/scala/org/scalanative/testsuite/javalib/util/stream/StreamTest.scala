@@ -225,6 +225,30 @@ class StreamTest {
     assertTrue("stream should not be empty", it.hasNext())
   }
 
+  @Test def streamIterate_Unbounded_Characteristics(): Unit = {
+    val s = Stream.iterate(0, n => n + 1)
+    val spliter = s.spliterator()
+
+    // spliterator should have required characteristics and no others.
+    val requiredPresent = Seq(Spliterator.ORDERED, Spliterator.IMMUTABLE)
+
+    val requiredAbsent = Seq(
+      Spliterator.SORTED,
+      Spliterator.SIZED,
+      Spliterator.SUBSIZED
+    )
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      requiredPresent,
+      requiredAbsent
+    )
+
+    // If SIZED is really missing, these conditions should hold.
+    assertEquals(s"getExactSizeIfKnown", -1L, spliter.getExactSizeIfKnown())
+    assertEquals(s"estimateSize", Long.MaxValue, spliter.estimateSize())
+  }
+
   @Test def streamOf_NoItems(): Unit = {
     val s = Stream.of()
 

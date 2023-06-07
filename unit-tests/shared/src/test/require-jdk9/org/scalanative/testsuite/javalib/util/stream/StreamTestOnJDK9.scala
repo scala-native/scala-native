@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.util.stream
 
 import java.util.stream._
+import java.util.Spliterator
 
 import org.junit.Test
 import org.junit.Assert._
@@ -62,16 +63,11 @@ class StreamTestOnJDK9 {
     var count = -1
     val limit = 5
 
-    // Use old style predicate rather than lambda to keep Scala 2.12 happy.
-    val predicate = new java.util.function.Predicate[String] {
-      def test(str: String): Boolean = count < limit
-    }
-
     val expectedSeed = "Red bellied woodpecker"
     val s = Stream.iterate[String](
       expectedSeed,
-      predicate,
-      (e: String) => { // Specify parameter type to keep keep Scala 2.12 happy.
+      str => count < limit,
+      e => {
         count += 1
         count.toString()
       }
@@ -87,6 +83,44 @@ class StreamTestOnJDK9 {
       assertEquals(s"element: ${j}", String.valueOf(j), it.next())
 
     assertFalse("stream should be empty", it.hasNext())
+  }
+
+  @Test def streamIterate_BoundedByPredicate_Characteristics(): Unit = {
+    var count = -1
+    val limit = 5
+
+    val expectedSeed = "Red bellied woodpecker"
+    val s = Stream.iterate[String](
+      expectedSeed,
+      str => count < limit,
+      e => {
+        count += 1
+        count.toString()
+      }
+    )
+
+    val spliter = s.spliterator()
+// 2023-06-03 19:48 -0400 FIXME
+    val hexMask = s"0X${spliter.characteristics().toHexString}"
+    printf(s"splitr.characteristics: ${hexMask}\n")
+    // spliterator should have required characteristics and no others.
+    val requiredPresent = Seq(Spliterator.ORDERED, Spliterator.IMMUTABLE)
+
+    val requiredAbsent = Seq(
+      Spliterator.SORTED,
+      Spliterator.SIZED,
+      Spliterator.SUBSIZED
+    )
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      requiredPresent,
+      requiredAbsent
+    )
+
+    // If SIZED is really missing, these conditions should hold.
+    assertEquals(s"getExactSizeIfKnown", -1L, spliter.getExactSizeIfKnown())
+    assertEquals(s"estimateSize", Long.MaxValue, spliter.estimateSize())
   }
 
   @Test def streamOfNullable_Empty(): Unit = {
