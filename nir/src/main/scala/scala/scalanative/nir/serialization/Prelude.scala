@@ -64,7 +64,7 @@ object Prelude {
     out.writeInt(magic)
     out.writeInt(compat)
     out.writeInt(revision)
-        
+
     out.writeInt(offsets.offsets)
     out.writeInt(offsets.strings)
     out.writeInt(offsets.positions)
