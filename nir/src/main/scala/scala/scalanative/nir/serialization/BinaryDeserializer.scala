@@ -323,8 +323,10 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
   private def getOp(): Op = {
     (getTag(): @switch) match {
       case T.CallOp       => Op.Call(getType(), getVal(), getVals())
-      case T.LoadOp       => Op.Load(getType(), getVal(), getOpt(getSyncAttrs()))
-      case T.StoreOp      => Op.Store(getType(), getVal(), getVal(), getOpt(getSyncAttrs()))
+      case T.LoadOp       => Op.Load(getType(), getVal(), None)
+      case T.LoadSyncOp   => Op.Load(getType(), getVal(), Some(getSyncAttrs()))
+      case T.StoreOp      => Op.Store(getType(), getVal(), getVal(), None)
+      case T.StoreSyncOp  => Op.Store(getType(), getVal(), getVal(), Some(getSyncAttrs()))
       case T.ElemOp       => Op.Elem(getType(), getVal(), getVals())
       case T.ExtractOp    => Op.Extract(getVal(), getSeq(getLebSignedInt()))
       case T.InsertOp     => Op.Insert(getVal(), getVal(), getSeq(getLebSignedInt()))

@@ -436,18 +436,29 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putVal(l)
         putVal(r)
 
-      case Op.Load(ty, ptr, syncAttrs) =>
+      case Op.Load(ty, ptr, None) =>
         putTag(T.LoadOp)
         putType(ty)
         putVal(ptr)
-        putOptSyncAttrs(syncAttrs)
 
-      case Op.Store(ty, value, ptr, syncAttrs) =>
+      case Op.Load(ty, ptr, Some(syncAttrs)) =>
+        putTag(T.LoadSyncOp)
+        putType(ty)
+        putVal(ptr)
+        putSyncAttrs(syncAttrs)
+
+      case Op.Store(ty, value, ptr, None) =>
         putTag(T.StoreOp)
         putType(ty)
         putVal(value)
         putVal(ptr)
-        putOptSyncAttrs(syncAttrs)
+
+      case Op.Store(ty, value, ptr, Some(syncAttrs)) =>
+        putTag(T.StoreOp)
+        putType(ty)
+        putVal(value)
+        putVal(ptr)
+        putSyncAttrs(syncAttrs)
 
       case Op.Box(ty, obj) =>
         putTag(T.BoxOp)
