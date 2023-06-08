@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_GC_BOEHM)
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 // Enable support for multithreading in BoehmGC
 #define GC_THREADS
@@ -87,3 +88,4 @@ void scalanative_add_roots(void *addr_low, void *addr_high) {
 void scalanative_remove_roots(void *addr_low, void *addr_high) {
     GC_remove_roots(addr_low, addr_high);
 }
+#endif
