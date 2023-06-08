@@ -402,7 +402,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.DoubleVal      => Val.Double(getDouble)
       case T.StructValueVal => Val.StructValue(getVals())
       case T.ArrayValueVal  => Val.ArrayValue(getType(), getVals())
-      case T.CharsVal       => Val.Chars(getBytes().toIndexedSeq)
+      case T.ByteStringVal  => Val.ByteString(getBytes())
       case T.LocalVal       => Val.Local(getLocal(), getType())
       case T.GlobalVal      => Val.Global(getGlobal(), getType())
 

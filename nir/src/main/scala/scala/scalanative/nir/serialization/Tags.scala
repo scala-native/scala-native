@@ -194,8 +194,8 @@ object Tags {
   final val DoubleVal = 1 + FloatVal
   final val StructValueVal = 1 + DoubleVal
   final val ArrayValueVal = 1 + StructValueVal
-  final val CharsVal = 1 + ArrayValueVal
-  final val LocalVal = 1 + CharsVal
+  final val ByteStringVal = 1 + ArrayValueVal
+  final val LocalVal = 1 + ByteStringVal
   final val GlobalVal = 1 + LocalVal
   final val UnitVal = 1 + GlobalVal
   final val ConstVal = 1 + UnitVal

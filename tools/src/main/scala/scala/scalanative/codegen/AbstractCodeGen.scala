@@ -450,8 +450,8 @@ private[codegen] abstract class AbstractCodeGen(
         str("[ ")
         rep(vs, sep = ", ")(genVal)
         str(" ]")
-      case v: Val.Chars =>
-        genChars(v.bytes)
+      case Val.ByteString(v) =>
+        genByteString(v)
       case Val.Local(n, ty) =>
         str("%")
         genLocal(n)
@@ -472,7 +472,7 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genChars(
+  private[codegen] def genByteString(
       bytes: Array[Byte]
   )(implicit sb: ShowBuilder): Unit = {
     import sb._

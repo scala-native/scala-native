@@ -507,10 +507,9 @@ object Show {
         str(" {")
         rep(values, sep = ", ")(val_)
         str("}")
-      case v: Val.Chars =>
+      case v: Val.ByteString =>
         str("c\"")
-        val stringValue =
-          new java.lang.String(v.bytes, StandardCharsets.ISO_8859_1)
+        val stringValue = new String(v.bytes, StandardCharsets.ISO_8859_1)
         str(escapeNewLine(escapeQuotes(stringValue)))
         str("\"")
       case Val.Local(name, ty) =>
