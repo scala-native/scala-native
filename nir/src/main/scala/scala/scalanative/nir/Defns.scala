@@ -1,11 +1,17 @@
 package scala.scalanative
 package nir
+import scala.scalanative.nir.Defn.Define
 
 sealed abstract class Defn {
   def name: Global
   def attrs: Attrs
   def pos: Position
   final def show: String = nir.Show(this)
+  final def isEntryPoint = this match {
+    case Define(attrs, Global.Member(_, sig), _, _) =>
+      sig.isClinit || attrs.isExtern
+    case _ => false
+  }
 }
 
 object Defn {
@@ -45,13 +51,4 @@ object Defn {
       traits: Seq[Global]
   )(implicit val pos: Position)
       extends Defn
-
-  def isEntryPoint(defn: Defn) = defn match {
-    case defn: Defn.Define =>
-      val Global.Member(_, sig) = defn.name: @unchecked
-      sig.isClinit || defn.attrs.isExtern
-    case _ => false
-  }
-  
-  def existsEntryPoint(defns: Seq[Defn]): Boolean = defns.exists(isEntryPoint)
 }
