@@ -3,85 +3,29 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
-import java.nio.channels.ByteChannel
+import java.nio.channels.WritableByteChannel
 import scala.collection.mutable
 import java.nio.charset.StandardCharsets
-import java.net.URI
 import serialization.{Tags => T}
 
 // scalafmt: { maxColumn = 120}
-sealed abstract class NIRSectionWriter(init: Int = 1024 * 1024) {
-  protected val buffer = ByteBuffer.allocate(init)
-
-  def position(): Int = buffer.position()
-  def put(values: Array[Byte]): Unit = buffer.put(values)
-  def put(value: Byte): Unit = buffer.put(value)
-  def putShort(value: Short): Unit = buffer.putShort(value)
-  def putChar(value: Char): Unit = buffer.putChar(value)
-  def putInt(value: Int): Unit = buffer.putInt(value)
-  def putLong(value: Long): Unit = buffer.putLong(value)
-  def putFloat(value: Float): Unit = buffer.putFloat(value)
-  def putDouble(value: Double): Unit = buffer.putDouble(value)
-  def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
-  def putLeb(v: Int): Unit = {
-    var value = v
-    var remaining = value >> 7
-    var hasMore = true
-    val end = if ((value & java.lang.Integer.MIN_VALUE) == 0) 0 else -1
-    while (hasMore) {
-      hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1))
-      buffer.put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
-      value = remaining
-      remaining >>= 7
+final class BinarySerializer(channel: WritableByteChannel) {
+  def serialize(defns: Seq[Defn]) = {
+    // Write to in-memory buffers
+    for (defn <- defns) {
+      val offset = Defns.position()
+      Defns.put(defn)
+      Offsets.put(defn.name, offset)
     }
+    // Mark the end of offsets
+    Offsets.put(Global.None, -1)
+    // Fill header info with buffer positions
+    Header.put()
+    // Write prepared data to final output channel
+    sections.foreach(_.commit(channel))
   }
-  def putLeb(v: Long): Unit = {
-    var value = v
-    var remaining = value >> 7
-    var hasMore = true
-    val end = if ((value & java.lang.Long.MIN_VALUE) == 0) 0L else -1L
-    while (hasMore) {
-      hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1))
-      buffer.put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
-      value = remaining
-      remaining >>= 7
-    }
-  }
-  def putLebs(ints: Seq[Int]): Unit = putSeq[Int](ints)(putLeb(_))
-  def putSeq[T](seq: Seq[T])(putT: T => Unit): Unit = {
-    putLeb(seq.length)
-    seq.foreach(putT)
-  }
-  def putOpt[T](opt: Option[T])(putT: T => Unit): Unit = opt match {
-    case None    => put(0.toByte)
-    case Some(t) => put(1.toByte); putT(t)
-  }
-  def putTag(value: Byte): Unit = put(value)
-  def write(channel: ByteChannel): Unit = {
-    buffer.flip()
-    channel.write(buffer)
-  }
-}
 
-sealed abstract class InternedBinarySectionWriter[T] extends NIRSectionWriter {
-  protected val entries = mutable.Map.empty[T, Int]
-  def put(value: T): Unit
-  def internDeps(value: T): Unit
-  def intern(value: T): Int =
-    entries
-      .get(value)
-      .getOrElse {
-        internDeps(value)
-        val offset = position()
-        entries(value) = offset
-        put(value)
-        offset
-      }
-}
-
-final class NIRWriter {
-  def sections = Seq(Header, Offsets, Strings, Positions, Globals, Types, Defns, Vals, Insts)
-
+  private val sections = Seq(Header, Offsets, Strings, Positions, Globals, Types, Defns, Vals, Insts)
   private var hasEntryPoints: Boolean = false
 
   private object Header extends NIRSectionWriter(Prelude.length) {
@@ -97,38 +41,35 @@ final class NIRWriter {
             sectionStart + section.position()
         }
       putBool(hasEntryPoints)
-
     }
   }
 
   private trait Common { self: NIRSectionWriter =>
-    def putVal(value: Val): Unit = putLeb(Vals.intern(value))
+    def putVal(value: Val): Unit = putLebUnsignedInt(Vals.intern(value))
     def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
-    def putLocal(local: Local): Unit = putLeb(local.id)
-    def putGlobal(g: Global): Unit = putLeb(Globals.intern(g))
+    def putLocal(local: Local): Unit = putLebUnsignedLong(local.id)
+    def putGlobal(g: Global): Unit = putLebUnsignedInt(Globals.intern(g))
     def putGlobals(gs: Seq[Global]): Unit = putSeq(gs)(putGlobal)
     def putGlobalOpt(gopt: Option[Global]): Unit = putOpt(gopt)(putGlobal)
     def putSig(sig: Sig): Unit = putString(sig.mangle)
-    def putType(ty: Type): Unit = putLeb(Types.intern(ty))
+    def putType(ty: Type): Unit = putLebUnsignedInt(Types.intern(ty))
     def putTypes(tys: Seq[Type]): Unit = putSeq(tys)(putType)
-    def putString(s: String): Unit = putLeb(Strings.intern(s))
-    def putPosition(pos: Position): Unit = putLeb(Positions.intern(pos))
-    def putFullPosition(pos: Position): Unit = putLeb(Positions.internFullPosition(pos))
+    def putString(s: String): Unit = putLebUnsignedInt(Strings.intern(s))
+    def putPosition(pos: Position): Unit = putLebUnsignedInt(Positions.intern(pos))
+    def putFullPosition(pos: Position): Unit = putLebUnsignedInt(Positions.internFullPosition(pos))
   }
 
   private object Offsets extends NIRSectionWriter with Common {
     def put(global: Global, defnOffset: Int): Unit = {
       putGlobal(global)
-      putLeb(defnOffset)
+      putLebSignedInt(defnOffset) // signed due to -1 in the last offset
     }
   }
 
   private object Strings extends InternedBinarySectionWriter[String] with Common {
     override def internDeps(v: String): Unit = ()
     override def put(v: String) = {
-      val bytes = v.getBytes(StandardCharsets.UTF_8)
-      putLeb(bytes.length)
-      put(bytes)
+      putSeq(v)(putLebChar)
     }
   }
 
@@ -142,7 +83,8 @@ final class NIRWriter {
     def internFullPosition(pos: Position): Int = {
       if (fullPositions.contains(pos)) entries(pos)
       else {
-        // Effectivly overwrite delta position
+        // Effectivly overwrite delta position to ensure that interned delta position would not be used.
+        // This can happend due to synthetic methods generated by compiler
         entries -= pos
         lastPosition = Position.NoPosition
         intern(pos)
@@ -153,8 +95,8 @@ final class NIRWriter {
       def writeFull() = {
         put(FormatFullMaskValue.toByte)
         putString(pos.source.toString) // interned
-        putLeb(pos.line)
-        putLeb(pos.column)
+        putLebUnsignedInt(pos.line)
+        putLebUnsignedInt(pos.column)
         fullPositions += pos
       }
 
@@ -228,7 +170,7 @@ final class NIRWriter {
       case Type.Double                  => putTag(T.DoubleType)
       case Type.Ptr                     => putTag(T.PtrType)
       case Type.Size                    => putTag(T.SizeType)
-      case Type.ArrayValue(ty, n)       => putTag(T.ArrayValueType); putType(ty); putLeb(n)
+      case Type.ArrayValue(ty, n)       => putTag(T.ArrayValueType); putType(ty); putLebUnsignedInt(n)
       case Type.StructValue(tys)        => putTag(T.StructValueType); putTypes(tys)
       case Type.Vararg                  => putTag(T.VarargType)
       case Type.Var(ty)                 => putTag(T.VarType); putType(ty)
@@ -251,25 +193,28 @@ final class NIRWriter {
       case Val.Null               => putTag(T.NullVal)
       case Val.True               => putTag(T.TrueVal)
       case Val.False              => putTag(T.FalseVal)
-      case Val.Char(v)            => putTag(T.CharVal); putShort(v.toShort)
       case Val.Byte(v)            => putTag(T.ByteVal); put(v)
-      case Val.Short(v)           => putTag(T.ShortVal); putShort(v)
-      case Val.Int(v)             => putTag(T.IntVal); putLeb(v)
-      case Val.Long(v)            => putTag(T.LongVal); putLeb(v)
+      case Val.Char(v)            => putTag(T.CharVal); putLebChar(v)
+      case Val.Short(v)           => putTag(T.ShortVal); putLebSignedInt(v)
+      case Val.Int(v)             => putTag(T.IntVal); putLebSignedInt(v)
+      case Val.Long(v)            => putTag(T.LongVal); putLebSignedLong(v)
       case Val.Float(v)           => putTag(T.FloatVal); putFloat(v)
       case Val.Double(v)          => putTag(T.DoubleVal); putDouble(v)
-      case Val.String(v)          => putTag(T.StringVal); putLeb(v.length); v.foreach(putChar(_))
+      case Val.String(v)          => putTag(T.StringVal); putString(v)
       case v: Val.Chars           => putTag(T.CharsVal); putBytes(v.bytes)
       case Val.Const(v)           => putTag(T.ConstVal); putVal(v)
-      case Val.Size(v)            => putTag(T.SizeVal); putLeb(v)
+      case Val.Size(v)            => putTag(T.SizeVal); putLebUnsignedLong(v)
       case Val.ClassOf(cls)       => putTag(T.ClassOfVal); putGlobal(cls)
       case Val.Zero(ty)           => putTag(T.ZeroVal); putType(ty)
       case Val.ArrayValue(ty, vs) => putTag(T.ArrayValueVal); putType(ty); putVals(vs)
       case Val.StructValue(vs)    => putTag(T.StructValueVal); putVals(vs)
-      case Val.Virtual(v)         => putTag(T.VirtualVal); putLeb(v)
+      case Val.Virtual(v)         => putTag(T.VirtualVal); putLebUnsignedLong(v)
     }
 
-    private def putBytes(bytes: Array[Byte]) = { putLeb(bytes.length); put(bytes) }
+    private def putBytes(bytes: Array[Byte]) = {
+      putLebUnsignedInt(bytes.length)
+      put(bytes)
+    }
   }
 
   private object Defns extends NIRSectionWriter with Common {
@@ -277,16 +222,19 @@ final class NIRWriter {
       putSeq(attrs.toSeq)(putAttr)
 
     private def putAttr(attr: Attr) = attr match {
-      case Attr.MayInline          => putTag(T.MayInlineAttr)
-      case Attr.InlineHint         => putTag(T.InlineHintAttr)
-      case Attr.NoInline           => putTag(T.NoInlineAttr)
-      case Attr.AlwaysInline       => putTag(T.AlwaysInlineAttr)
-      case Attr.MaySpecialize      => putTag(T.MaySpecialize)
-      case Attr.NoSpecialize       => putTag(T.NoSpecialize)
-      case Attr.UnOpt              => putTag(T.UnOptAttr)
-      case Attr.NoOpt              => putTag(T.NoOptAttr)
-      case Attr.DidOpt             => putTag(T.DidOptAttr)
-      case Attr.BailOpt(msg)       => putTag(T.BailOptAttr); putString(msg)
+      case Attr.MayInline    => putTag(T.MayInlineAttr)
+      case Attr.InlineHint   => putTag(T.InlineHintAttr)
+      case Attr.NoInline     => putTag(T.NoInlineAttr)
+      case Attr.AlwaysInline => putTag(T.AlwaysInlineAttr)
+
+      case Attr.MaySpecialize => putTag(T.MaySpecialize)
+      case Attr.NoSpecialize  => putTag(T.NoSpecialize)
+
+      case Attr.UnOpt        => putTag(T.UnOptAttr)
+      case Attr.NoOpt        => putTag(T.NoOptAttr)
+      case Attr.DidOpt       => putTag(T.DidOptAttr)
+      case Attr.BailOpt(msg) => putTag(T.BailOptAttr); putString(msg)
+
       case Attr.Dyn                => putTag(T.DynAttr)
       case Attr.Stub               => putTag(T.StubAttr)
       case Attr.Extern(isBlocking) => putTag(T.ExternAttr); putBool(isBlocking)
@@ -294,11 +242,12 @@ final class NIRWriter {
       case Attr.Abstract           => putTag(T.AbstractAttr)
       case Attr.Volatile           => putTag(T.VolatileAttr)
       case Attr.Final              => putTag(T.FinalAttr)
-      case Attr.LinktimeResolved   => putTag(T.LinktimeResolvedAttr)
+
+      case Attr.LinktimeResolved => putTag(T.LinktimeResolvedAttr)
     }
 
     private def putInsts(insts: Seq[Inst]): Unit = {
-      putLeb(Insts.position())
+      putLebUnsignedInt(Insts.position())
       Insts.put(insts)
     }
 
@@ -310,6 +259,7 @@ final class NIRWriter {
         putFullPosition(defn.pos)
       }
 
+      hasEntryPoints ||= defn.isEntryPoint
       defn match {
         case defn: Defn.Var =>
           putHeader(T.VarDefn)
@@ -326,14 +276,12 @@ final class NIRWriter {
           putType(defn.ty)
 
         case defn: Defn.Define =>
-          hasEntryPoints ||= Defn.isEntryPoint(defn)
           putHeader(T.DefineDefn)
           putType(defn.ty)
           putInsts(defn.insts)
 
         case defn: Defn.Trait =>
           putHeader(T.TraitDefn)
-          putGlobal(defn.name)
           putGlobals(defn.traits)
 
         case defn: Defn.Class =>
@@ -434,14 +382,14 @@ final class NIRWriter {
 
     private def putLinktimeCondition(cond: LinktimeCondition): Unit = cond match {
       case LinktimeCondition.SimpleCondition(propertyName, comparison, value) =>
-        putLeb(LinktimeCondition.Tag.SimpleCondition)
+        putTag(LinktimeCondition.Tag.SimpleCondition)
         putString(propertyName)
         putComp(comparison)
         putVal(value)
         putPosition(cond.position)
 
       case LinktimeCondition.ComplexCondition(op, left, right) =>
-        putLeb(LinktimeCondition.Tag.ComplexCondition)
+        putTag(LinktimeCondition.Tag.ComplexCondition)
         putBin(op)
         putLinktimeCondition(left)
         putLinktimeCondition(right)
@@ -487,13 +435,13 @@ final class NIRWriter {
       case Op.Extract(v, indexes) =>
         putTag(T.ExtractOp)
         putVal(v)
-        putLebs(indexes)
+        putSeq(indexes)(putLebSignedInt)
 
       case Op.Insert(v, value, indexes) =>
         putTag(T.InsertOp)
         putVal(v)
         putVal(value)
-        putLebs(indexes)
+        putSeq(indexes)(putLebSignedInt)
 
       case Op.Copy(v) =>
         putTag(T.CopyOp)
@@ -620,7 +568,7 @@ final class NIRWriter {
 
     private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
     private def putParam(param: Val.Local) = {
-      putLeb(param.name.id)
+      putLebUnsignedLong(param.name.id)
       putType(param.ty)
     }
 
@@ -687,19 +635,97 @@ final class NIRWriter {
     def put(insts: Seq[Inst]) = putSeq(insts)(putInst)
   }
 
-  /** Serialize defns to in-memory byte buffers. */
-  def put(assembly: Seq[Defn]): Unit =
-    assembly.foreach { defn =>
-      val defnOffset = Defns.position()
-      // println(defnOffset -> defn.name)
-      Defns.put(defn)
-      Offsets.put(defn.name, defnOffset)
-    }
+}
 
-  /** Commit byte-buffer contents to the file. */
-  def write(channel: ByteChannel): Unit = {
-    Offsets.put(Global.None, -1)
-    Header.put()
-    sections.foreach(_.write(channel))
+sealed abstract class NIRSectionWriter(init: Int = 1024 * 1024) {
+  protected val buffer = ByteBuffer.allocate(init)
+
+  def position(): Int = buffer.position()
+  def put(values: Array[Byte]): Unit = buffer.put(values)
+  def put(value: Byte): Unit = buffer.put(value)
+  def putShort(value: Short): Unit = buffer.putShort(value)
+  def putInt(value: Int): Unit = buffer.putInt(value)
+  def putFloat(value: Float): Unit = buffer.putFloat(value)
+  def putDouble(value: Double): Unit = buffer.putDouble(value)
+  def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
+  // Leb128 encoders
+  def putLebShort(value: Short): Unit = putLebSignedInt(value)
+  def putLebChar(value: Char): Unit = putLebUnsignedInt(value)
+  def putLebUnsignedInt(v: Int): Unit = {
+    require(v >= 0, s"Unsigned integer expected, got $v")
+    var remaining = v
+    while ({
+      val byte = (remaining & 0x7f).toByte
+      remaining >>= 7
+      val hasMore = remaining != 0
+      buffer.put(if (hasMore) (byte | 0x80).toByte else byte)
+      hasMore
+    }) ()
   }
+  def putLebUnsignedLong(v: Long): Unit = {
+    require(v >= 0L, s"Unsigned integer expected, got $v")
+    var remaining = v
+    while ({
+      val byte = (remaining & 0x7f).toByte
+      remaining >>= 7
+      val hasMore = remaining != 0
+      buffer.put(if (hasMore) (byte | 0x80).toByte else byte)
+      hasMore
+    }) ()
+  }
+  def putLebSignedInt(v: Int): Unit = {
+    var value = v
+    var remaining = value >> 7
+    var hasMore = true
+    val end = if ((value & java.lang.Integer.MIN_VALUE) == 0) 0 else -1
+    while (hasMore) {
+      hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1))
+      buffer.put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
+      value = remaining
+      remaining >>= 7
+    }
+  }
+  def putLebSignedLong(v: Long): Unit = {
+    var value = v
+    var remaining = value >> 7
+    var hasMore = true
+    val end = if ((value & java.lang.Long.MIN_VALUE) == 0) 0L else -1L
+    while (hasMore) {
+      hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1))
+      buffer.put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
+      value = remaining
+      remaining >>= 7
+    }
+  }
+
+  def putSeq[T](seq: Seq[T])(putT: T => Unit): Unit = {
+    putLebUnsignedInt(seq.length)
+    seq.foreach(putT)
+  }
+  def putOpt[T](opt: Option[T])(putT: T => Unit): Unit = opt match {
+    case None    => put(0.toByte)
+    case Some(t) => put(1.toByte); putT(t)
+  }
+  def putTag(value: Byte): Unit = put(value)
+
+  def commit(channel: WritableByteChannel): Unit = {
+    buffer.flip()
+    channel.write(buffer)
+  }
+}
+
+sealed abstract class InternedBinarySectionWriter[T] extends NIRSectionWriter {
+  protected val entries = mutable.Map.empty[T, Int]
+  def put(value: T): Unit
+  def internDeps(value: T): Unit
+  def intern(value: T): Int =
+    entries
+      .get(value)
+      .getOrElse {
+        internDeps(value)
+        val offset = position()
+        entries(value) = offset
+        put(value)
+        offset
+      }
 }

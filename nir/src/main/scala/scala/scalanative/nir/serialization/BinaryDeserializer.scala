@@ -11,27 +11,42 @@ import scala.scalanative.nir.Global.{Top, Member}
 
 import scala.annotation.{tailrec, switch}
 
-final class BinaryReader(buffer: ByteBuffer, fileName: String) {
+class DeserializationException(
+    global: nir.Global,
+    file: String,
+    compatVersion: Int,
+    revision: Int,
+    cause: Throwable
+) extends RuntimeException(
+      s"Failed to deserialize definition of ${global} defined in $file. NIR version:${compatVersion}.${revision}.",
+      cause
+    )
+
+// scalafmt: { maxColumn = 120}
+final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
   import buffer._
 
-  final def deserialize(g: Global): Option[Defn] = offsets
-    .get(g)
-    .map { offset =>
-      position(prelude.sections.defns + offset)
-      getDefn()
-    }
+  lazy val prelude = Prelude.readFrom(buffer, fileName)
 
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
     offsets.foreach {
-      case (g, offset) =>
+      case (global, offset) =>
         buffer.position(prelude.sections.defns + offset)
-        allDefns += getDefn()
+        try allDefns += getDefn()
+        catch {
+          case ex: Throwable =>
+            throw new DeserializationException(
+              global,
+              fileName,
+              compatVersion = prelude.compat,
+              revision = prelude.revision,
+              cause = ex
+            )
+        }
     }
     allDefns.toSeq
   }
-
-  private lazy val prelude = Prelude.readFrom(buffer, fileName)
 
   private lazy val offsets: mutable.Map[Global, Int] = {
     buffer.position(prelude.sections.offsets)
@@ -39,7 +54,7 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
 
     while ({
       val global = getGlobal()
-      val offset = getLeb()
+      val offset = getLebSignedInt()
       global match {
         case Global.None => false
         case _ =>
@@ -54,7 +69,7 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
 
   private val cache = new mutable.LongMap[Any]
   private def in[T](start: Int)(getT: => T): T = {
-    val target = start + getLeb()
+    val target = start + getLebUnsignedInt()
     cache
       .getOrElseUpdate(
         target, {
@@ -69,46 +84,90 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
 
   private def getTag(): Byte = get()
 
-  private def getLeb(): Int = {
-    var result = 0
-    var cur = 0
-    var count = 0
+  // Leb128 decoders
+  private def getLebChar(): Char = getLebUnsignedInt().toChar
+  private def getLebShort(): Short = getLebSignedInt().toShort
+  private def getLebSignedInt(): Int = {
+    var result, shift, count = 0
+    var byte: Byte = -1
     while ({
-      cur = get() & 0xff
-      result |= (cur & 0x7f) << (count * 7)
+      byte = buffer.get()
+      result |= (byte & 0x7f).toInt << shift
+      shift += 7
       count += 1
-      ((cur & 0x80) == 0x80) && count < 5
+      (byte & 0x80) != 0 && count < 5
     }) ()
-    if ((cur & 0x80) == 0x80) throw new Exception("invalid LEB128 sequence")
+    if ((byte & 0x80) == 0x80) throw new Exception("Invalid LEB128 sequence")
+
+    // Sign extend
+    if (shift < 32 && (byte & 0x40) != 0) {
+      result |= (-1 << shift)
+    }
     result
   }
 
-  private def getLongLeb(): Long = {
+  private def getLebSignedLong(): Long = {
     var result = 0L
-    var cur = 0
-    var count = 0
+    var shift, count = 0
+    var byte: Byte = -1
     while ({
-      cur = get() & 0xff
-      result |= (cur & 0x7f).toLong << (count * 7)
+      byte = buffer.get()
+      result |= (byte & 0x7f).toLong << shift
+      shift += 7
       count += 1
-      ((cur & 0x80) == 0x80) && count < 10
+      (byte & 0x80) != 0 && count < 10
     }) ()
-    if ((cur & 0x80) == 0x80) throw new Exception("invalid LEB128 sequence")
+
+    if ((byte & 0x80) == 0x80) throw new Exception("Invalid LEB128 sequence")
+    // Sign extend
+    if (shift < 64 && (byte & 0x40) != 0) {
+      result |= (-1L << shift)
+    }
     result
   }
 
-  private def getLebs(): Seq[Int] = getSeq(getLeb())
-  private def getSeq[T](getT: => T): Seq[T] = Seq.fill(getLeb())(getT)
+  def getLebUnsignedInt(): Int = {
+    var result, shift, count = 0
+    var byte: Byte = -1
+    while ({
+      byte = buffer.get()
+      result |= (byte & 0x7f) << shift
+      shift += 7
+      count += 1
+      (byte & 0x80) != 0 && count < 5
+    }) ()
+    if ((byte & 0x80) == 0x80) throw new Exception("Invalid LEB128 sequence")
+    result
+  }
+
+  def getLebUnsignedLong(): Long = {
+    var result = 0L
+    var shift, count = 0
+    var byte: Byte = -1
+    while ({
+      byte = buffer.get()
+      result |= (byte & 0x7f).toLong << shift
+      shift += 7
+      count += 1
+      (byte & 0x80) != 0 && count < 10
+    }) ()
+    if ((byte & 0x80) == 0x80) throw new Exception("Invalid LEB128 sequence")
+    result
+  }
+
+  private def getSeq[T](getT: => T): Seq[T] =
+    Seq.fill(getLebUnsignedInt())(getT)
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None
     else Some(getT)
 
-  private def getUTF8String(): String = in(prelude.sections.strings) {
-    new String(getBytes(), StandardCharsets.UTF_8)
+  private def getString(): String = in(prelude.sections.strings) {
+    val chars = Array.fill(getLebUnsignedInt())(getLebChar())
+    new String(chars)
   }
 
   private def getBytes(): Array[Byte] = {
-    val arr = new Array[Byte](getLeb())
+    val arr = new Array[Byte](getLebUnsignedInt())
     get(arr)
     arr
   }
@@ -128,12 +187,12 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
     case T.UnOptAttr   => Attr.UnOpt
     case T.NoOptAttr   => Attr.NoOpt
     case T.DidOptAttr  => Attr.DidOpt
-    case T.BailOptAttr => Attr.BailOpt(getUTF8String())
+    case T.BailOptAttr => Attr.BailOpt(getString())
 
     case T.DynAttr      => Attr.Dyn
     case T.StubAttr     => Attr.Stub
     case T.ExternAttr   => Attr.Extern(getBool())
-    case T.LinkAttr     => Attr.Link(getUTF8String())
+    case T.LinkAttr     => Attr.Link(getString())
     case T.AbstractAttr => Attr.Abstract
     case T.VolatileAttr => Attr.Volatile
     case T.FinalAttr    => Attr.Final
@@ -224,29 +283,15 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
     val tag = getTag()
     val name = getGlobal()
     val attrs = getAttrs()
-    val p = buffer.position()
-    implicit val position: nir.Position =
-      try getPosition()
-      catch {
-        case ex: Throwable =>
-          println(ex)
-          println(tag)
-          println(name)
-          println(attrs)
-          buffer.position(p)
-          println(p -> getLeb())
-          throw ex
-      }
+    implicit val position: nir.Position = getPosition()
     (tag: @switch) match {
       case T.VarDefn     => Defn.Var(attrs, name, getType(), getVal())
       case T.ConstDefn   => Defn.Const(attrs, name, getType(), getVal())
       case T.DeclareDefn => Defn.Declare(attrs, name, getType())
       case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts())
       case T.TraitDefn   => Defn.Trait(attrs, name, getGlobals())
-      case T.ClassDefn =>
-        Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
-      case T.ModuleDefn =>
-        Defn.Module(attrs, name, getGlobalOpt(), getGlobals())
+      case T.ClassDefn   => Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
+      case T.ModuleDefn  => Defn.Module(attrs, name, getGlobalOpt(), getGlobals())
     }
   }
 
@@ -255,14 +300,14 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
   private def getGlobal(): Global = in(prelude.sections.globals) {
     (getTag(): @switch) match {
       case T.NoneGlobal   => Global.None
-      case T.TopGlobal    => Global.Top(getUTF8String())
+      case T.TopGlobal    => Global.Top(getString())
       case T.MemberGlobal => Global.Member(getGlobal(), getSig())
     }
   }
 
-  private def getSig(): Sig = new Sig(getUTF8String())
+  private def getSig(): Sig = new Sig(getString())
 
-  private def getLocal(): Local = Local(getLeb())
+  private def getLocal(): Local = Local(getLebUnsignedLong())
 
   private def getNexts(): Seq[Next] = getSeq(getNext())
   private def getNext(): Next = (getTag(): @switch) match {
@@ -274,49 +319,36 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
 
   private def getOp(): Op = {
     (getTag(): @switch) match {
-      case T.CallOp => Op.Call(getType(), getVal(), getVals())
-      case T.LoadOp =>
-        Op.Load(
-          ty = getType(),
-          ptr = getVal(),
-          syncAttrs = getOpt(getSyncAttrs())
-        )
-      case T.StoreOp =>
-        Op.Store(
-          ty = getType(),
-          ptr = getVal(),
-          value = getVal(),
-          syncAttrs = getOpt(getSyncAttrs())
-        )
+      case T.CallOp       => Op.Call(getType(), getVal(), getVals())
+      case T.LoadOp       => Op.Load(getType(), getVal(), getOpt(getSyncAttrs()))
+      case T.StoreOp      => Op.Store(getType(), getVal(), getVal(), getOpt(getSyncAttrs()))
       case T.ElemOp       => Op.Elem(getType(), getVal(), getVals())
-      case T.ExtractOp    => Op.Extract(getVal(), getLebs())
-      case T.InsertOp     => Op.Insert(getVal(), getVal(), getLebs())
+      case T.ExtractOp    => Op.Extract(getVal(), getSeq(getLebSignedInt()))
+      case T.InsertOp     => Op.Insert(getVal(), getVal(), getSeq(getLebSignedInt()))
       case T.StackallocOp => Op.Stackalloc(getType(), getVal())
       case T.BinOp        => Op.Bin(getBin(), getType(), getVal(), getVal())
       case T.CompOp       => Op.Comp(getComp(), getType(), getVal(), getVal())
       case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
       case T.FenceOp      => Op.Fence(getSyncAttrs())
 
-      case T.ClassallocOp => Op.Classalloc(getGlobal())
-      case T.FieldloadOp  => Op.Fieldload(getType(), getVal(), getGlobal())
-      case T.FieldstoreOp =>
-        Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
-      case T.FieldOp      => Op.Field(getVal(), getGlobal())
-      case T.MethodOp     => Op.Method(getVal(), getSig())
-      case T.DynmethodOp  => Op.Dynmethod(getVal(), getSig())
-      case T.ModuleOp     => Op.Module(getGlobal())
-      case T.AsOp         => Op.As(getType(), getVal())
-      case T.IsOp         => Op.Is(getType(), getVal())
-      case T.CopyOp       => Op.Copy(getVal())
-      case T.BoxOp        => Op.Box(getType(), getVal())
-      case T.UnboxOp      => Op.Unbox(getType(), getVal())
-      case T.VarOp        => Op.Var(getType())
-      case T.VarloadOp    => Op.Varload(getVal())
-      case T.VarstoreOp   => Op.Varstore(getVal(), getVal())
-      case T.ArrayallocOp => Op.Arrayalloc(getType(), getVal())
-      case T.ArrayloadOp  => Op.Arrayload(getType(), getVal(), getVal())
-      case T.ArraystoreOp =>
-        Op.Arraystore(getType(), getVal(), getVal(), getVal())
+      case T.ClassallocOp  => Op.Classalloc(getGlobal())
+      case T.FieldloadOp   => Op.Fieldload(getType(), getVal(), getGlobal())
+      case T.FieldstoreOp  => Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
+      case T.FieldOp       => Op.Field(getVal(), getGlobal())
+      case T.MethodOp      => Op.Method(getVal(), getSig())
+      case T.DynmethodOp   => Op.Dynmethod(getVal(), getSig())
+      case T.ModuleOp      => Op.Module(getGlobal())
+      case T.AsOp          => Op.As(getType(), getVal())
+      case T.IsOp          => Op.Is(getType(), getVal())
+      case T.CopyOp        => Op.Copy(getVal())
+      case T.BoxOp         => Op.Box(getType(), getVal())
+      case T.UnboxOp       => Op.Unbox(getType(), getVal())
+      case T.VarOp         => Op.Var(getType())
+      case T.VarloadOp     => Op.Varload(getVal())
+      case T.VarstoreOp    => Op.Varstore(getVal(), getVal())
+      case T.ArrayallocOp  => Op.Arrayalloc(getType(), getVal())
+      case T.ArrayloadOp   => Op.Arrayload(getType(), getVal(), getVal())
+      case T.ArraystoreOp  => Op.Arraystore(getType(), getVal(), getVal(), getVal())
       case T.ArraylengthOp => Op.Arraylength(getVal())
       case T.SizeOfOp      => Op.SizeOf(getType())
       case T.AlignmentOfOp => Op.AlignmentOf(getType())
@@ -339,7 +371,7 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
       case T.LongType        => Type.Long
       case T.FloatType       => Type.Float
       case T.DoubleType      => Type.Double
-      case T.ArrayValueType  => Type.ArrayValue(getType(), getLeb())
+      case T.ArrayValueType  => Type.ArrayValue(getType(), getLebUnsignedInt())
       case T.StructValueType => Type.StructValue(getTypes())
       case T.FunctionType    => Type.Function(getTypes(), getType())
 
@@ -361,11 +393,11 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
       case T.FalseVal       => Val.False
       case T.NullVal        => Val.Null
       case T.ZeroVal        => Val.Zero(getType())
-      case T.CharVal        => Val.Char(getShort.toChar)
-      case T.ByteVal        => Val.Byte(get)
-      case T.ShortVal       => Val.Short(getShort)
-      case T.IntVal         => Val.Int(getLeb())
-      case T.LongVal        => Val.Long(getLongLeb())
+      case T.ByteVal        => Val.Byte(get())
+      case T.CharVal        => Val.Char(getLebChar())
+      case T.ShortVal       => Val.Short(getLebShort())
+      case T.IntVal         => Val.Int(getLebSignedInt())
+      case T.LongVal        => Val.Long(getLebSignedLong())
       case T.FloatVal       => Val.Float(getFloat)
       case T.DoubleVal      => Val.Double(getDouble)
       case T.StructValueVal => Val.StructValue(getVals())
@@ -374,16 +406,12 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
       case T.LocalVal       => Val.Local(getLocal(), getType())
       case T.GlobalVal      => Val.Global(getGlobal(), getType())
 
-      case T.UnitVal  => Val.Unit
-      case T.ConstVal => Val.Const(getVal())
-      case T.StringVal =>
-        Val.String {
-          val chars = Array.fill(getLeb())(getChar)
-          new String(chars)
-        }
-      case T.VirtualVal => Val.Virtual(getLong)
+      case T.UnitVal    => Val.Unit
+      case T.ConstVal   => Val.Const(getVal())
+      case T.StringVal  => Val.String(getString())
+      case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
       case T.ClassOfVal => Val.ClassOf(getGlobal())
-      case T.SizeVal    => Val.Size(getLong)
+      case T.SizeVal    => Val.Size(getLebUnsignedLong())
     }
   }
 
@@ -406,7 +434,7 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
     (getTag(): @switch) match {
       case LinktimeCondition.Tag.SimpleCondition =>
         LinktimeCondition.SimpleCondition(
-          propertyName = getUTF8String(),
+          propertyName = getString(),
           comparison = getComp(),
           value = getVal()
         )(getPosition())
@@ -430,9 +458,9 @@ final class BinaryReader(buffer: ByteBuffer, fileName: String) {
       Position.NoPosition
     } else {
       val position = if ((first & FormatFullMask) == FormatFullMaskValue) {
-        val file = new URI(getUTF8String())
-        val line = getLeb()
-        val column = getLeb()
+        val file = new URI(getString())
+        val line = getLebUnsignedInt()
+        val column = getLebUnsignedInt()
         Position(file, line, column)
       } else {
         assert(
