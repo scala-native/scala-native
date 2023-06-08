@@ -5,7 +5,10 @@ package serialization
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+
 import scala.collection.mutable
+import scala.util.control.NonFatal
+
 import scala.scalanative.nir.serialization.{Tags => T}
 import scala.scalanative.nir.Global.{Top, Member}
 
@@ -35,7 +38,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
         buffer.position(prelude.sections.defns + offset)
         try allDefns += getDefn()
         catch {
-          case ex: Throwable =>
+          case NonFatal(ex) =>
             throw new DeserializationException(
               global,
               fileName,

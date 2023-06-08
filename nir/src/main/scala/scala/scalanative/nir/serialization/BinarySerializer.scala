@@ -136,17 +136,17 @@ final class BinarySerializer(channel: WritableByteChannel) {
     }
 
     override def put(value: Global): Unit = value match {
-      case Global.None           => putTag(T.NoneGlobal)
-      case Global.Top(id)        => putTag(T.TopGlobal); putString(id)
       case Global.Member(n, sig) => putTag(T.MemberGlobal); putGlobal(n); putSig(sig)
+      case Global.Top(id)        => putTag(T.TopGlobal); putString(id)
+      case Global.None           => putTag(T.NoneGlobal)
     }
 
   }
 
   private object Types extends InternedBinarySectionWriter[Type] with Common {
     override def internDeps(ty: Type): Unit = ty match {
-      case Type.Array(ty, _)      => intern(ty)
       case Type.Function(tys, ty) => tys.foreach(intern); intern(ty)
+      case Type.Array(ty, _)      => intern(ty)
       case Type.StructValue(tys)  => tys.foreach(intern)
       case Type.ArrayValue(ty, _) => intern(ty)
       case Type.Var(ty)           => intern(ty)
@@ -154,12 +154,11 @@ final class BinarySerializer(channel: WritableByteChannel) {
     }
 
     override def put(ty: Type): Unit = ty match {
-      case Type.Ref(n, exact, nullable) => putTag(T.RefType); putGlobal(n); putBool(exact); putBool(nullable)
-      case Type.Array(ty, nullable)     => putTag(T.ArrayType); putType(ty); putBool(nullable)
       case Type.Function(args, ret)     => putTag(T.FunctionType); putTypes(args); putType(ret)
-      case Type.Null                    => putTag(T.NullType)
-      case Type.Nothing                 => putTag(T.NothingType)
+      case Type.Ref(n, exact, nullable) => putTag(T.RefType); putGlobal(n); putBool(exact); putBool(nullable)
+      case Type.Ptr                     => putTag(T.PtrType)
       case Type.Unit                    => putTag(T.UnitType)
+      case Type.Array(ty, nullable)     => putTag(T.ArrayType); putType(ty); putBool(nullable)
       case Type.Bool                    => putTag(T.BoolType)
       case Type.Char                    => putTag(T.CharType)
       case Type.Byte                    => putTag(T.ByteType)
@@ -168,8 +167,9 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Type.Long                    => putTag(T.LongType)
       case Type.Float                   => putTag(T.FloatType)
       case Type.Double                  => putTag(T.DoubleType)
-      case Type.Ptr                     => putTag(T.PtrType)
       case Type.Size                    => putTag(T.SizeType)
+      case Type.Null                    => putTag(T.NullType)
+      case Type.Nothing                 => putTag(T.NothingType)
       case Type.ArrayValue(ty, n)       => putTag(T.ArrayValueType); putType(ty); putLebUnsignedInt(n)
       case Type.StructValue(tys)        => putTag(T.StructValueType); putTypes(tys)
       case Type.Vararg                  => putTag(T.VarargType)
@@ -201,7 +201,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Val.Float(v)           => putTag(T.FloatVal); putFloat(v)
       case Val.Double(v)          => putTag(T.DoubleVal); putDouble(v)
       case Val.String(v)          => putTag(T.StringVal); putString(v)
-      case Val.ByteString(v)      => putTag(T.ByteStringVal); putBytes(v)
+      case Val.ByteString(v)      => putTag(T.ByteStringVal); putLebUnsignedInt(v.length); put(v)
       case Val.Const(v)           => putTag(T.ConstVal); putVal(v)
       case Val.Size(v)            => putTag(T.SizeVal); putLebUnsignedLong(v)
       case Val.ClassOf(cls)       => putTag(T.ClassOfVal); putGlobal(cls)
@@ -209,11 +209,6 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Val.ArrayValue(ty, vs) => putTag(T.ArrayValueVal); putType(ty); putVals(vs)
       case Val.StructValue(vs)    => putTag(T.StructValueVal); putVals(vs)
       case Val.Virtual(v)         => putTag(T.VirtualVal); putLebUnsignedLong(v)
-    }
-
-    private def putBytes(bytes: Array[Byte]) = {
-      putLebUnsignedInt(bytes.length)
-      put(bytes)
     }
   }
 
@@ -261,38 +256,38 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
       hasEntryPoints ||= defn.isEntryPoint
       defn match {
-        case defn: Defn.Var =>
-          putHeader(T.VarDefn)
-          putType(defn.ty)
-          putVal(defn.rhs)
-
-        case defn: Defn.Const =>
-          putHeader(T.ConstDefn)
-          putType(defn.ty)
-          putVal(defn.rhs)
-
-        case defn: Defn.Declare =>
-          putHeader(T.DeclareDefn)
-          putType(defn.ty)
-
         case defn: Defn.Define =>
           putHeader(T.DefineDefn)
           putType(defn.ty)
           putInsts(defn.insts)
 
-        case defn: Defn.Trait =>
-          putHeader(T.TraitDefn)
-          putGlobals(defn.traits)
+        case defn: Defn.Var =>
+          putHeader(T.VarDefn)
+          putType(defn.ty)
+          putVal(defn.rhs)
 
         case defn: Defn.Class =>
           putHeader(T.ClassDefn)
           putGlobalOpt(defn.parent)
           putGlobals(defn.traits)
 
+        case defn: Defn.Trait =>
+          putHeader(T.TraitDefn)
+          putGlobals(defn.traits)
+
         case defn: Defn.Module =>
           putHeader(T.ModuleDefn)
           putGlobalOpt(defn.parent)
           putGlobals(defn.traits)
+
+        case defn: Defn.Declare =>
+          putHeader(T.DeclareDefn)
+          putType(defn.ty)
+
+        case defn: Defn.Const =>
+          putHeader(T.ConstDefn)
+          putType(defn.ty)
+          putVal(defn.rhs)
       }
     }
   }
@@ -300,8 +295,11 @@ final class BinarySerializer(channel: WritableByteChannel) {
   private object Insts extends NIRSectionWriter with Common {
     private def putBin(bin: Bin) = bin match {
       case Bin.Iadd => putTag(T.IaddBin)
-      case Bin.Fadd => putTag(T.FaddBin)
       case Bin.Isub => putTag(T.IsubBin)
+      case Bin.Xor  => putTag(T.XorBin)
+      case Bin.And  => putTag(T.AndBin)
+      case Bin.Or   => putTag(T.OrBin)
+      case Bin.Fadd => putTag(T.FaddBin)
       case Bin.Fsub => putTag(T.FsubBin)
       case Bin.Imul => putTag(T.ImulBin)
       case Bin.Fmul => putTag(T.FmulBin)
@@ -314,9 +312,6 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Bin.Shl  => putTag(T.ShlBin)
       case Bin.Lshr => putTag(T.LshrBin)
       case Bin.Ashr => putTag(T.AshrBin)
-      case Bin.And  => putTag(T.AndBin)
-      case Bin.Or   => putTag(T.OrBin)
-      case Bin.Xor  => putTag(T.XorBin)
     }
 
     private def putComp(comp: Comp) = comp match {
@@ -359,10 +354,10 @@ final class BinarySerializer(channel: WritableByteChannel) {
       putSeq(nexts)(putNext)
 
     private def putNext(next: Next): Unit = next match {
-      case Next.None         => putTag(T.NoneNext)
+      case Next.Label(n, vs) => putTag(T.LabelNext); putLocal(n); putVals(vs)
       case Next.Unwind(e, n) => putTag(T.UnwindNext); putParam(e); putNext(n)
       case Next.Case(v, n)   => putTag(T.CaseNext); putVal(v); putNext(n)
-      case Next.Label(n, vs) => putTag(T.LabelNext); putLocal(n); putVals(vs)
+      case Next.None         => putTag(T.NoneNext)
     }
 
     private def putOptSyncAttrs(attrs: Option[SyncAttrs]): Unit = putOpt(attrs)(putSyncAttrs(_))
@@ -402,6 +397,44 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putType(ty);
         putVal(v);
         putVals(args);
+
+      case Op.Module(name) =>
+        putTag(T.ModuleOp)
+        putGlobal(name)
+
+      case Op.Classalloc(n) =>
+        putTag(T.ClassallocOp)
+        putGlobal(n)
+
+      case Op.Field(v, name) =>
+        putTag(T.FieldOp)
+        putVal(v)
+        putGlobal(name)
+
+      case Op.Method(v, sig) =>
+        putTag(T.MethodOp)
+        putVal(v)
+        putSig(sig)
+
+      case Op.Comp(comp, ty, l, r) =>
+        putTag(T.CompOp)
+        putComp(comp)
+        putType(ty)
+        putVal(l)
+        putVal(r)
+
+      case Op.Conv(conv, ty, v) =>
+        putTag(T.ConvOp)
+        putConv(conv)
+        putType(ty)
+        putVal(v)
+
+      case Op.Bin(bin, ty, l, r) =>
+        putTag(T.BinOp)
+        putBin(bin)
+        putType(ty)
+        putVal(l)
+        putVal(r)
 
       case Op.Load(ty, ptr, syncAttrs) =>
         putTag(T.LoadOp)
@@ -452,34 +485,6 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putType(ty)
         putVal(n)
 
-      case Op.Bin(bin, ty, l, r) =>
-        putTag(T.BinOp)
-        putBin(bin)
-        putType(ty)
-        putVal(l)
-        putVal(r)
-
-      case Op.Comp(comp, ty, l, r) =>
-        putTag(T.CompOp)
-        putComp(comp)
-        putType(ty)
-        putVal(l)
-        putVal(r)
-
-      case Op.Conv(conv, ty, v) =>
-        putTag(T.ConvOp)
-        putConv(conv)
-        putType(ty)
-        putVal(v)
-
-      case Op.Classalloc(n) =>
-        putTag(T.ClassallocOp)
-        putGlobal(n)
-
-      case Op.Module(name) =>
-        putTag(T.ModuleOp)
-        putGlobal(name)
-
       case Op.Arrayalloc(ty, init) =>
         putTag(T.ArrayallocOp)
         putType(ty)
@@ -514,16 +519,6 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putVal(obj)
         putGlobal(name)
         putVal(value)
-
-      case Op.Field(v, name) =>
-        putTag(T.FieldOp)
-        putVal(v)
-        putGlobal(name)
-
-      case Op.Method(v, sig) =>
-        putTag(T.MethodOp)
-        putVal(v)
-        putSig(sig)
 
       case Op.Dynmethod(obj, sig) =>
         putTag(T.DynmethodOp)
