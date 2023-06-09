@@ -245,8 +245,6 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
   def skip(n: Long): Stream[T]
 
-  def spliterator(): Spliterator[_ <: T]
-
   def sorted(): Stream[T]
 
   def sorted(comparator: Comparator[_ >: T]): Stream[T]
@@ -351,7 +349,10 @@ object Stream {
     var seedUsed = false
 
     val spliter =
-      new Spliterators.AbstractSpliterator[T](Long.MaxValue, 0) {
+      new Spliterators.AbstractSpliterator[T](
+        Long.MaxValue,
+        Spliterator.ORDERED | Spliterator.IMMUTABLE
+      ) {
         def tryAdvance(action: Consumer[_ >: T]): Boolean = {
           val current =
             if (seedUsed) next(previous)
@@ -377,7 +378,10 @@ object Stream {
     var seedUsed = false
 
     val spliter =
-      new Spliterators.AbstractSpliterator[T](Long.MaxValue, 0) {
+      new Spliterators.AbstractSpliterator[T](
+        Long.MaxValue,
+        Spliterator.ORDERED | Spliterator.IMMUTABLE
+      ) {
         def tryAdvance(action: Consumer[_ >: T]): Boolean = {
           val current =
             if (seedUsed) f(previous)
