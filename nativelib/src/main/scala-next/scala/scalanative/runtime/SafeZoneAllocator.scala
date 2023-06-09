@@ -11,7 +11,7 @@ import scala.scalanative.unsafe._
   * private to package scalanative for unit tests.
 */
 object SafeZoneAllocator {
-  def allocate[T](sz: {*} SafeZone, obj: T): {sz} T = intrinsic
+  def allocate[T](sz: SafeZone^, obj: T): T^{sz} = intrinsic
 
   @extern object Impl{
     @name("scalanative_zone_open")

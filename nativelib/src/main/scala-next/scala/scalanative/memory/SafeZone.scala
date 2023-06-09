@@ -24,7 +24,7 @@ trait SafeZone {
   }
 
   /** Allocates an object in this zone. The expression of obj must be an instance creation expression. */
-  infix inline def alloc[T <: AnyRef](inline obj: T): {this} T = allocate(this, obj)
+  infix inline def alloc[T <: AnyRef](inline obj: T): T^{this} = allocate(this, obj)
 
   /** Frees allocations. This zone is not reusable once closed. */
   private[scalanative] def close(): Unit
@@ -40,31 +40,28 @@ trait SafeZone {
   }
 }
 
-final class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {
-
-  private[this] var flagIsOpen = true
-
-  override def close(): Unit = {
-    checkOpen()
-    flagIsOpen = false
-    SafeZoneAllocator.Impl.close(handle)
-  }
-
-  override def isOpen: Boolean = flagIsOpen
-}
-
-
 object SafeZone {
   /** Run given function with a fresh zone and destroy it afterwards. */
-  final def apply[T](f: ({*} SafeZone) ?=> T): T = {
-    val sz: {*} SafeZone = new MemorySafeZone(SafeZoneAllocator.Impl.open())
+  final def apply[T](f: (SafeZone^) ?=> T): T = {
+    val sz: SafeZone^ = new MemorySafeZone(SafeZoneAllocator.Impl.open())
     try f(using sz)
     finally sz.close()
   }
 
   /* Allocates an object in the implicit zone. The expression of obj must be an instance creation expression. */
-  inline def alloc[T <: AnyRef](inline obj: T)(using inline sz: {*} SafeZone): {sz} T = allocate(sz, obj)
+  inline def alloc[T <: AnyRef](inline obj: T)(using inline sz: SafeZone^): T^{sz} = allocate(sz, obj)
 
   /** Summon the implicit zone. */
-  transparent inline def zone(using sz: {*} SafeZone): {sz} SafeZone = sz
+  transparent inline def zone(using sz: SafeZone^): SafeZone^{sz} = sz
+
+  private class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {
+    private[this] var flagIsOpen = true
+    override def isOpen: Boolean = flagIsOpen
+    override def close(): Unit = {
+      checkOpen()
+      flagIsOpen = false
+      SafeZoneAllocator.Impl.close(handle)
+    }
+  }
+
 }

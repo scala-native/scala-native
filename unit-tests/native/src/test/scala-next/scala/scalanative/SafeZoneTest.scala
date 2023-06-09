@@ -20,11 +20,11 @@ class SafeZoneTest {
   }
 
   @Test def `report error when trying to allocate an instances in a closed safe zone`(): Unit = {
-    case class A() {}
+    case class A()
     assertThrows(classOf[IllegalStateException], 
       SafeZone { sz ?=> 
         sz.close()
-        Try[{sz} A].apply(allocate(sz, new A())) match {
+        Try[A^{sz}].apply(allocate(sz, new A())) match {
           case Success(_) => fail("Should not allocate instances in a closed safe zone.")
           case Failure(e: IllegalStateException) => ()
           case Failure(_) => fail("Unexpected error.")

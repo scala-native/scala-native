@@ -22,7 +22,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |import scala.scalanative.memory.SafeZone
       |import scala.scalanative.runtime.SafeZoneAllocator.allocate
       |
-      |class A (v: Int = 0) {}
+      |class A(v: Int = 0)
       |
       |def test(): Unit = {
       |  SafeZone { sz0 ?=>
@@ -35,23 +35,20 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |""".stripMargin
   )
 
-  it should "forbid any reference to object in zone from escaping the zone" in {
+  // https://github.com/lampepfl/dotty/issues/17949scala
+  ignore should "forbid any reference to object in zone from escaping the zone" in {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
         |import scala.scalanative.runtime.SafeZoneAllocator.allocate
         |
-        |class A (v: Int = 0) {}
-        |class B (a: {*} A) {}
-        |class C (a0: {*} A, a1: {*} A) {}
+        |class A(v: Int = 0)
         |
         |def test(): Unit = {
         |  SafeZone { sz0 ?=>
         |    val a = SafeZone { sz1 ?=> 
-        |      val a0 = allocate(sz0, new A(0))
-        |      val a1 = allocate(sz1, new A(1))
-        |      a1
+        |      allocate(sz1, new A(1))
         |    }
         |  }
         |}
@@ -65,20 +62,20 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |import scala.scalanative.memory.SafeZone
       |import scala.scalanative.runtime.SafeZoneAllocator.allocate
       |
-      |class A (v: Int = 0) {}
-      |class B (a: {*} A) {}
-      |class C (a0: {*} A, a1: {*} A) {}
+      |class A(v: Int = 0)
+      |class B(a: A^) {}
+      |class C(a0: A^, a1: A^)
       |
       |def test(): Unit = {
       |  SafeZone { sz ?=>
-      |    val a: {sz} A = allocate(sz, new A(0)) 
-      |    val ary: {sz} Array[A] = allocate(sz, new Array[A](10)) 
+      |    val a: A^{sz} = allocate(sz, new A(0)) 
+      |    val ary: Array[A]^{sz} = allocate(sz, new Array[A](10)) 
       |
-      |    val aInHeap: {*} A = new A(0)
-      |    val b: {sz, aInHeap} B = allocate(sz, new B(aInHeap)) 
+      |    val aInHeap: A^ = new A(0)
+      |    val b: B^{sz, aInHeap} = allocate(sz, new B(aInHeap)) 
       |
-      |    val aInZone: {*} A = allocate(sz, new A(0))
-      |    val c: {sz, aInZone, aInHeap} C = allocate(sz, new C(aInZone, aInHeap)) 
+      |    val aInZone: A^ = allocate(sz, new A(0))
+      |    val c: C^{sz, aInZone, aInHeap} = allocate(sz, new C(aInZone, aInHeap)) 
       |  }
       |}
       |""".stripMargin
@@ -91,20 +88,20 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |import scala.scalanative.memory.SafeZone
         |import scala.scalanative.runtime.SafeZoneAllocator.allocate
         |
-        |class A (v: Int = 0) {}
-        |class B (a: {*} A) {}
+        |class A (v: Int = 0)
+        |class B (a: A^)
         |
         |def test(): Unit = {
         |  SafeZone { sz ?=>
-        |    val a: {sz} A = allocate(sz, new A(0)) 
-        |    val ary: {sz} Array[A] = allocate(sz, new Array[A](10)) 
+        |    val a: A^{sz} = allocate(sz, new A(0)) 
+        |    val ary: Array[A]^{sz} = allocate(sz, new Array[A](10)) 
         |
-        |    val aInHeap: {*} A = new A(0)
-        |    val b: {sz} B = allocate(sz, new B(aInHeap)) 
+        |    val aInHeap: A^ = new A(0)
+        |    val b: B^{sz} = allocate(sz, new B(aInHeap)) 
         |  }
         |}
         |
         |""".stripMargin))
-    }.getMessage should include("Found:    {aInHeap, sz} B{val a: {aInHeap} A}")
+    }.getMessage should include("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}")
   }
 }
