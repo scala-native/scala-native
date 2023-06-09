@@ -42,7 +42,7 @@ jobs:
         if: ${{ !startsWith(matrix.scala, '3') }}
         run: |
           sbt "scalaPartest${{env.project-version}}/fetchScalaSource"
-          scala-cli scripts/partest-check-files.scala -- ${{ matrix.scala }}
+          scala-cli scripts/partest-check-files.scala
 
         # scala-cli-setup can override default java version
       - uses: ./.github/actions/linux-setup-env
