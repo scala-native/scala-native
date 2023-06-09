@@ -1035,6 +1035,9 @@ object JSR166Test {
     AssumesHelper.assumeMultithreadingIsEnabled()
   }
 
+  // Epsilon is added for Scala Native Test environment.
+  final val epsilon = 0.00001 // tolerance for Floating point comparisons.
+
   final val expensiveTests = true
 
   /** If true, also run tests that are not part of the official tck because they
@@ -1207,7 +1210,7 @@ object JSR166Test {
     assertEquals(x, y)
   }
   def mustEqual(x: Double, y: Double): Unit = {
-    assertEquals(x, y)
+    assertEquals(x, y, JSR166Test.epsilon) // epsilon added for Scala Native
   }
   def mustContain(c: Collection[Item], i: Int): Unit = {
     assertTrue(c.contains(itemFor(i)))
