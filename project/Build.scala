@@ -120,6 +120,12 @@ object Build {
         case (2, _) => Seq("-Xno-patmat-analysis")
       }
     )
+    .mapBinaryVersions {
+      // Scaladoc for Scala 2.12 does not handle literal constants correctly
+      // It does not allow integer contstant < 255 to be passed as arugment of function taking byte
+      case "2.12" => _.settings(disabledDocsSettings)
+      case _      => identity
+    }
     .dependsOnSource(nir)
     .dependsOnSource(util)
 
@@ -132,6 +138,11 @@ object Build {
 
   lazy val nir = MultiScalaProject("nir")
     .settings(toolSettings, mavenPublishSettings)
+    .mapBinaryVersions {
+      // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
+      case "2.12" => _.settings(disabledDocsSettings)
+      case _      => identity
+    }
     .dependsOn(util)
 
   lazy val tools = MultiScalaProject("tools")

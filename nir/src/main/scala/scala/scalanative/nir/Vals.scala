@@ -19,7 +19,7 @@ sealed abstract class Val {
     case Val.Double(_)            => Type.Double
     case Val.StructValue(vals)    => Type.StructValue(vals.map(_.ty))
     case Val.ArrayValue(ty, vals) => Type.ArrayValue(ty, vals.length)
-    case v: Val.Chars             => Type.ArrayValue(Type.Byte, v.byteCount)
+    case v: Val.ByteString        => Type.ArrayValue(Type.Byte, v.byteCount)
     case Val.Local(_, ty)         => ty
     case Val.Global(_, ty)        => ty
 
@@ -185,9 +185,8 @@ object Val {
   }
   final case class StructValue(values: Seq[Val]) extends Val
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
-  final case class Chars(value: Seq[scala.Byte]) extends Val {
-    lazy val byteCount: scala.Int = value.length + 1
-    lazy val bytes: Array[scala.Byte] = value.toArray
+  final case class ByteString(bytes: Array[scala.Byte]) extends Val {
+    def byteCount: scala.Int = bytes.length + 1
   }
   final case class Local(name: nir.Local, valty: nir.Type) extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
