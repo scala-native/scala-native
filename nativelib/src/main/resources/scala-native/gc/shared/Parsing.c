@@ -1,5 +1,8 @@
+// Parsing.c is used for all GCs now so techinally we could omit this
+// conditional
 #if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
-    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
+    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL) ||    \
+    defined(SCALANATIVE_GC_BOEHM)
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
