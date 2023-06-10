@@ -42,7 +42,7 @@ trait SafeZone {
 
 object SafeZone {
   /** Run given function with a fresh zone and destroy it afterwards. */
-  final def apply[T](f: (SafeZone^) ?=> T): T = {
+  final def apply[sealed T](f: (SafeZone^) ?=> T): T = {
     val sz: SafeZone^ = new MemorySafeZone(SafeZoneAllocator.Impl.open())
     try f(using sz)
     finally sz.close()

@@ -35,8 +35,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |""".stripMargin
   )
 
-  // https://github.com/lampepfl/dotty/issues/17949scala
-  ignore should "forbid any reference to object in zone from escaping the zone" in {
+  it should "forbid any reference to object in zone from escaping the zone" in {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
@@ -53,7 +52,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |  }
         |}
         |""".stripMargin))
-    }.getMessage should include("box {x$0, *} A cannot be box-converted to {x$0} A")
+    }.getMessage should include("Sealed type variable T cannot  be instantiated to box A^")
   }
 
   it should "type check when the types capture zones correctly" in nativeCompilation(
