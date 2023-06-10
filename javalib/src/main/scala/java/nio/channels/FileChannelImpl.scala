@@ -35,8 +35,36 @@ private[java] final class FileChannelImpl(
     file: Option[File],
     deleteFileOnClose: Boolean,
     openForReading: Boolean,
-    openForWriting: Boolean
+    openForWriting: Boolean,
+    openForAppending: Boolean = false
 ) extends FileChannel {
+
+  /* Note on thread safety or, rather, the lack thereof
+   *
+   * The Java 8 description of channels states that they are thread-safe.
+   * This implantation is NOT! For example, trace either
+   * "position(offset: Long)" or "def write(src: ByteBuffer, pos: Long)"
+   *
+   * When all threads sharing the channel are only doing read()s, things
+   * are probably safe enough, as long as one does re-position.
+   *
+   * When the channel is opened for simple WRITE, one or more channels does
+   * a write(), all bets are off.
+   *
+   * Do get me started about when the file is opened for APPEND.
+   *
+   * The fix for Issue #3316 introduces a patently non-thread-safe
+   * variable. Given the discussion, that introduction does not make
+   * the thread-safety issue any worse that it was before. It does not
+   * make sense spending time & effort polishing the detail when the whole
+   * surrounding it lacks safety.
+   */
+  private var relativeWriteMustSeekEOF = {
+    if (openForAppending)
+      seekEOF() // so a position() before first APPEND write() matches JVM.
+    false
+  }
+
   override def force(metadata: Boolean): Unit =
     fd.sync()
 
@@ -137,6 +165,10 @@ private[java] final class FileChannelImpl(
         FILE_BEGIN
       )
     else unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
+
+    if (openForAppending && !relativeWriteMustSeekEOF)
+      relativeWriteMustSeekEOF = true
+
     this
   }
 
@@ -309,51 +341,33 @@ private[java] final class FileChannelImpl(
         } else {
           unistd.ftruncate(fd.fd, size.toSize) == 0
         }
-      if (!hasSucceded) {
+
+      if (!hasSucceded)
         throw new IOException("Failed to truncate file")
-      }
+
       if (currentPosition > size) position(size)
-      else position(currentPosition)
+      else if (currentPosition < size) {
+        position(currentPosition)
+        // position has grown; so APPEND must skip new null chars.
+        if (openForAppending && !relativeWriteMustSeekEOF)
+          relativeWriteMustSeekEOF = true
+      } // else no change necessary on currentPosition == size
+
       this
     }
 
-  override def write(
-      buffers: Array[ByteBuffer],
-      offset: Int,
-      length: Int
-  ): Long = {
-    ensureOpen()
-    var i = 0
-    while (i < length) {
-      write(buffers(offset + i))
-      i += 1
-    }
-    i
+  private def seekEOF(): Unit = {
+    if (isWindows) {
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = null,
+        moveMethod = FILE_END
+      )
+    } else unistd.lseek(fd.fd, 0, stdio.SEEK_END);
+
+    relativeWriteMustSeekEOF = false
   }
-
-  override def write(buffer: ByteBuffer, pos: Long): Int = {
-    ensureOpen()
-    position(pos)
-    val srcPos: Int = buffer.position()
-    val srcLim: Int = buffer.limit()
-    val lim = math.abs(srcLim - srcPos)
-    val bytes = if (buffer.hasArray()) {
-      buffer.array()
-    } else {
-      val bytes = new Array[Byte](lim)
-      buffer.get(bytes)
-      bytes
-    }
-    write(bytes, 0, lim)
-    buffer.position(srcPos + lim)
-    lim
-  }
-
-  override def write(src: ByteBuffer): Int =
-    write(src, position())
-
-  private def ensureOpen(): Unit =
-    if (!isOpen()) throw new ClosedChannelException()
 
   private[java] def write(
       buffer: Array[Byte],
@@ -390,6 +404,67 @@ private[java] final class FileChannelImpl(
       }
     }
   }
+
+  private def writeByteBuffer(src: ByteBuffer): Int = {
+    val srcPos = src.position()
+    val srcLim = src.limit()
+    val nBytes = srcLim - srcPos // number of bytes in range.
+
+    val (arr, offset) = if (src.hasArray()) {
+      (src.array(), srcPos)
+    } else {
+      val ba = new Array[Byte](nBytes)
+      src.get(ba, srcPos, nBytes)
+      (ba, 0)
+    }
+
+    write(arr, offset, nBytes)
+
+    src.position(srcPos + nBytes)
+
+    nBytes // or else immediately previous write() would have thrown Exception.
+  }
+
+  override def write(
+      buffers: Array[ByteBuffer],
+      offset: Int,
+      length: Int
+  ): Long = {
+    // write(ByteBuffer) will call ensureOpen(), saveCPU cycles by no call here
+    var i = 0
+    while (i < length) {
+      write(buffers(offset + i))
+      i += 1
+    }
+    i
+  }
+
+  /* Write to absolute position, do not change current position but do
+   * mark for next APPEND, if any, to seek to EOF before writing.
+   */
+  override def write(src: ByteBuffer, pos: Long): Int = {
+    ensureOpen()
+    val stashPosition = position()
+    position(pos) // First subsequent APPEND, if any, will now seekEOF().
+
+    val nBytesWritten = writeByteBuffer(src)
+
+    position(stashPosition)
+
+    nBytesWritten
+  }
+
+  // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END
+  override def write(src: ByteBuffer): Int = {
+    ensureOpen()
+    if (relativeWriteMustSeekEOF)
+      seekEOF()
+
+    writeByteBuffer(src)
+  }
+
+  private def ensureOpen(): Unit =
+    if (!isOpen()) throw new ClosedChannelException()
 
   def available(): Int = {
     if (isWindows) {

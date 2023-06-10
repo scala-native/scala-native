@@ -15,6 +15,13 @@ import java.io.{FileInputStream, FileOutputStream}
 import java.io.RandomAccessFile
 
 class FileChannelTest {
+  def withTemporaryDirectory(fn: Path => Unit): Unit = {
+    val file = File.createTempFile("test", ".tmp")
+    assertTrue(file.delete())
+    assertTrue(file.mkdir())
+    fn(file.toPath)
+  }
+
   @Test def fileChannelCanReadBufferFromFile(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -186,21 +193,77 @@ class FileChannelTest {
     }
   }
 
+  // Issue #3316
+  @Test def canWriteToChannelWithRepositionThenAppend(): Unit = {
+    withTemporaryDirectory { dir =>
+      val prefix = "Γειά "
+      val suffix = "σου Κόσμε"
+      val message = s"${prefix}${suffix}"
+
+      val prefixBytes = prefix.getBytes("UTF-8") // Greek uses 2 bytes per char
+      val suffixBytes = suffix.getBytes("UTF-8")
+
+      val f = dir.resolve("rePositionThenAppend.txt")
+      Files.write(f, prefixBytes)
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", prefix, lines.get(0))
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.APPEND,
+        StandardOpenOption.WRITE
+      )
+
+      // channel starts off positioned at EOF.
+      assertEquals("position at open", prefixBytes.length, channel.position())
+
+      /* Java 8 SeekableByteChannel description says:
+       *   Setting the channel's position is not recommended when connected
+       *   to an entity, typically a file, that is opened with the APPEND
+       *   option.
+       *
+       * However, that is exactly what Issue #3316 does, distilling some
+       * code from the wild.
+       *
+       * On JVM, append write after resetting the position works.
+       * Given that, Scala Native should also work, despite the clear
+       * warning in the JVM documentation.
+       */
+      channel.position(0)
+
+      assertEquals("position", 0, channel.position())
+
+      val src = ByteBuffer.wrap(suffixBytes)
+
+      while (src.remaining() > 0)
+        channel.write(src)
+
+      val newLines = Files.readAllLines(f)
+      assertEquals("Second lines size", 1, newLines.size())
+
+      // Verify append happened at expected place; end of line, not beginning.
+      assertEquals("Second lines content", message, newLines.get(0))
+    }
+  }
+
   @Test def canMoveFilePointer(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       Files.write(f, "hello".getBytes("UTF-8"))
       val channel = new RandomAccessFile(f.toFile(), "rw").getChannel()
-      assertEquals(0, channel.position())
+      assertEquals("position", 0, channel.position())
       channel.position(3)
-      assertEquals(3, channel.position())
+      assertEquals("position", 3, channel.position())
       channel.write(ByteBuffer.wrap("a".getBytes()))
 
       channel.close()
 
       val newLines = Files.readAllLines(f)
-      assertTrue(newLines.size() == 1)
-      assertTrue(newLines.get(0) == "helao")
+      assertEquals("size", 1, newLines.size())
+      assertEquals("content", "helao", newLines.get(0))
     }
   }
 
@@ -264,10 +327,4 @@ class FileChannelTest {
     }
   }
 
-  def withTemporaryDirectory(fn: Path => Unit): Unit = {
-    val file = File.createTempFile("test", ".tmp")
-    assertTrue(file.delete())
-    assertTrue(file.mkdir())
-    fn(file.toPath)
-  }
 }
