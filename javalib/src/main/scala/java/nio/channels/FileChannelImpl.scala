@@ -8,13 +8,18 @@ import scala.scalanative.nio.fs.unix.UnixException
 
 import java.io.FileDescriptor
 import java.io.File
+import java.io.IOException
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import java.io.IOException
+
+import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.unsafe._
+import scala.scalanative.posix.string
+
+import scala.scalanative.posix.sys.stat
+import scala.scalanative.posix.sys.statOps._
 
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsigned._
@@ -39,31 +44,17 @@ private[java] final class FileChannelImpl(
     openForAppending: Boolean = false
 ) extends FileChannel {
 
-  /* Note on thread safety or, rather, the lack thereof
-   *
-   * The Java 8 description of channels states that they are thread-safe.
-   * This implantation is NOT! For example, trace either
-   * "position(offset: Long)" or "def write(src: ByteBuffer, pos: Long)"
-   *
-   * When all threads sharing the channel are only doing read()s, things
-   * are probably safe enough, as long as one does re-position.
-   *
-   * When the channel is opened for simple WRITE, one or more channels does
-   * a write(), all bets are off.
-   *
-   * Do get me started about when the file is opened for APPEND.
-   *
-   * The fix for Issue #3316 introduces a patently non-thread-safe
-   * variable. Given the discussion, that introduction does not make
-   * the thread-safety issue any worse that it was before. It does not
-   * make sense spending time & effort polishing the detail when the whole
-   * surrounding it lacks safety.
+  /* Note:
+   *   Channels are described in the Java documentation as thread-safe.
+   *   This implementation is, most patently _not_ thread-safe.
+   *   Use with only one thread accessing the channel, even for READS.
    */
-  private var relativeWriteMustSeekEOF = {
-    if (openForAppending)
-      seekEOF() // so a position() before first APPEND write() matches JVM.
-    false
-  }
+
+  if (openForAppending)
+    seekEOF() // so a position() before first APPEND write() matches JVM.
+
+  private def ensureOpen(): Unit =
+    if (!isOpen()) throw new ClosedChannelException()
 
   override def force(metadata: Boolean): Unit =
     fd.sync()
@@ -151,12 +142,15 @@ private[java] final class FileChannelImpl(
   ): MappedByteBuffer = {
     if ((mode eq FileChannel.MapMode.READ_ONLY) && !openForReading)
       throw new NonReadableChannelException
-    if ((mode eq FileChannel.MapMode.READ_WRITE) && (!openForReading || !openForWriting))
+    if ((mode eq FileChannel.MapMode.READ_WRITE) &&
+        (!openForReading || !openForWriting))
       throw new NonWritableChannelException
     MappedByteBufferImpl(mode, position, size.toInt, fd, this)
   }
 
-  override def position(offset: Long): FileChannel = {
+// FIXME - Add error checking, especially for unix
+  // change position, even in APPEND mode.
+  private def compelPosition(offset: Long): FileChannel = {
     if (isWindows)
       FileApi.SetFilePointerEx(
         fd.handle,
@@ -166,8 +160,12 @@ private[java] final class FileChannelImpl(
       )
     else unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
 
-    if (openForAppending && !relativeWriteMustSeekEOF)
-      relativeWriteMustSeekEOF = true
+    this
+  }
+
+  override def position(offset: Long): FileChannel = {
+    if (!openForAppending)
+      compelPosition(offset)
 
     this
   }
@@ -292,11 +290,18 @@ private[java] final class FileChannelImpl(
       val size = stackalloc[windows.LargeInteger]()
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
-    } else {
-      val size = unistd.lseek(fd.fd, 0, stdio.SEEK_END);
-      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
-      size.toLong
-    }
+    } else
+      Zone { implicit z =>
+        val statBuf = alloc[stat.stat]()
+
+        val err = stat.fstat(fd.fd, statBuf)
+        if (err != 0) {
+          val errnoText = fromCString(string.strerror(errno))
+          throw new IOException("fstat failed: ${errnoText}")
+        }
+
+        statBuf.st_size.toLong
+      }
   }
 
   override def transferFrom(
@@ -323,12 +328,18 @@ private[java] final class FileChannelImpl(
     nb
   }
 
-  override def truncate(size: Long): FileChannel =
-    if (!openForWriting) {
-      throw new IOException("Invalid argument")
-    } else {
-      ensureOpen()
-      val currentPosition = position()
+  override def truncate(size: Long): FileChannel = {
+    if (size < 0)
+      throw new IllegalArgumentException("Negative size")
+
+    ensureOpen()
+
+    if (!openForWriting)
+      throw new NonWritableChannelException() // same null message as JVM
+
+    val currentPosition = position()
+
+    if (size < this.size()) {
       val hasSucceded =
         if (isWindows) {
           FileApi.SetFilePointerEx(
@@ -339,23 +350,31 @@ private[java] final class FileChannelImpl(
           ) &&
           FileApi.SetEndOfFile(fd.handle)
         } else {
-          unistd.ftruncate(fd.fd, size.toSize) == 0
+
+          // FIXME -- add error handling
+          val success = unistd.ftruncate(fd.fd, size.toSize) == 0
+          // unistd.ftruncate(fd.fd, size.toSize) == 0
+          /* JVM truncate() updates current position. POSIX ftruncate() does
+           * not do that.
+           */
+          if (success)
+            unistd.lseek(fd.fd, size.toSize, stdio.SEEK_SET)
+
+          success
         }
 
       if (!hasSucceded)
         throw new IOException("Failed to truncate file")
-
-      if (currentPosition > size) position(size)
-      else if (currentPosition < size) {
-        position(currentPosition)
-        // position has grown; so APPEND must skip new null chars.
-        if (openForAppending && !relativeWriteMustSeekEOF)
-          relativeWriteMustSeekEOF = true
-      } // else no change necessary on currentPosition == size
-
-      this
     }
 
+    if (currentPosition > size)
+      position(size)
+
+    this
+  }
+
+// 2023-06-10 21:15 -0400 FIXME - add error checking, based on models in this
+//                                file.
   private def seekEOF(): Unit = {
     if (isWindows) {
       SetFilePointerEx(
@@ -365,8 +384,6 @@ private[java] final class FileChannelImpl(
         moveMethod = FILE_END
       )
     } else unistd.lseek(fd.fd, 0, stdio.SEEK_END);
-
-    relativeWriteMustSeekEOF = false
   }
 
   private[java] def write(
@@ -439,17 +456,15 @@ private[java] final class FileChannelImpl(
     i
   }
 
-  /* Write to absolute position, do not change current position but do
-   * mark for next APPEND, if any, to seek to EOF before writing.
-   */
+  // Write to absolute position, do not change current position.
   override def write(src: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     val stashPosition = position()
-    position(pos) // First subsequent APPEND, if any, will now seekEOF().
+    compelPosition(pos)
 
     val nBytesWritten = writeByteBuffer(src)
 
-    position(stashPosition)
+    compelPosition(stashPosition)
 
     nBytesWritten
   }
@@ -457,14 +472,8 @@ private[java] final class FileChannelImpl(
   // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END
   override def write(src: ByteBuffer): Int = {
     ensureOpen()
-    if (relativeWriteMustSeekEOF)
-      seekEOF()
-
     writeByteBuffer(src)
   }
-
-  private def ensureOpen(): Unit =
-    if (!isOpen()) throw new ClosedChannelException()
 
   def available(): Int = {
     if (isWindows) {

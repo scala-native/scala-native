@@ -173,7 +173,7 @@ class FileChannelTest {
     }
   }
 
-  @Test def canWriteToChannelWithAppend(): Unit = {
+  @Test def canRelativeWriteToChannelWithAppend(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       Files.write(f, "hello, ".getBytes("UTF-8"))
@@ -185,6 +185,7 @@ class FileChannelTest {
       val bytes = "world".getBytes("UTF-8")
       val src = ByteBuffer.wrap(bytes)
       val channel = FileChannel.open(f, StandardOpenOption.APPEND)
+
       while (src.remaining() > 0) channel.write(src)
 
       val newLines = Files.readAllLines(f)
@@ -194,7 +195,7 @@ class FileChannelTest {
   }
 
   // Issue #3316
-  @Test def canWriteToChannelWithRepositionThenAppend(): Unit = {
+  @Test def canRepositionChannelThenRelativeWriteAppend(): Unit = {
     withTemporaryDirectory { dir =>
       val prefix = "Γειά "
       val suffix = "σου Κόσμε"
@@ -213,53 +214,280 @@ class FileChannelTest {
       val channel = Files.newByteChannel(
         f,
         StandardOpenOption.CREATE,
-        StandardOpenOption.APPEND,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.APPEND
+      )
+
+      try {
+        // channel must start off positioned at EOF.
+        val positionAtOpen = channel.position()
+        assertEquals("position at open", channel.size(), positionAtOpen)
+
+        /* Java 8 SeekableByteChannel description says:
+         *   Setting the channel's position is not recommended when connected
+         *   to an entity, typically a file, that is opened with the APPEND
+         *   option.
+         *
+         * JVM re-inforces this caution by "position(pos)" on a channel
+         * opened for APPEND silently not actually move the position; it is
+         * a no-op.
+         */
+        channel.position(0L)
+
+        assertEquals("reposition", positionAtOpen, channel.position())
+
+        val src = ByteBuffer.wrap(suffixBytes)
+
+        while (src.remaining() > 0)
+          channel.write(src)
+
+        val newLines = Files.readAllLines(f)
+        assertEquals("Second lines size", 1, newLines.size())
+
+        // Verify append happened at expected place; end of line, not beginning.
+        assertEquals("Second lines content", message, newLines.get(0))
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
+  @Test def canAbsoluteWriteToChannel(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, ".getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertTrue(lines.size() == 1)
+      assertTrue(lines.get(0) == "hello, ")
+
+      val bytes = "world".getBytes("UTF-8")
+      val src = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f, StandardOpenOption.WRITE)
+
+      try {
+        val preWritePos = channel.position()
+        assertEquals("pre-write position", 0, preWritePos)
+
+        channel.write(src, 3)
+
+        // Absolute write should not move current position
+        assertEquals("post-write position", preWritePos, channel.position())
+
+        val bytes2 = "%".getBytes("UTF-8")
+        val src2 = ByteBuffer.wrap(bytes2)
+
+        channel.write(src2)
+      } finally
+        channel.close()
+
+      val newLines = Files.readAllLines(f)
+      assertEquals("size", 1, newLines.size())
+      assertEquals("content", "%elworld", newLines.get(0))
+    }
+  }
+
+  @Test def canAbsoluteWriteToChannelWithAppend(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, ".getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertTrue(lines.size() == 1)
+      assertTrue(lines.get(0) == "hello, ")
+
+      val bytes = "world".getBytes("UTF-8")
+      val src = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f, StandardOpenOption.APPEND)
+
+      try {
+        val preWritePos = channel.position()
+        assertEquals("pre-write position", preWritePos, channel.size())
+
+        channel.write(src, 2)
+
+        // Absolute write should not move current position
+        assertEquals("post-write position", preWritePos, channel.position())
+
+        val bytes2 = "!".getBytes("UTF-8")
+        val src2 = ByteBuffer.wrap(bytes2)
+
+        channel.write(src2) // relative write should be at EOF, not position
+      } finally
+        channel.close()
+
+      val newLines = Files.readAllLines(f)
+      assertEquals("size", 1, newLines.size())
+      assertEquals("content", "heworld!", newLines.get(0))
+    }
+  }
+
+  @Test def cannotTruncateChannelUsingNegativeSize(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("negativeSize.txt")
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
         StandardOpenOption.WRITE
       )
 
-      // channel starts off positioned at EOF.
-      assertEquals("position at open", prefixBytes.length, channel.position())
-
-      /* Java 8 SeekableByteChannel description says:
-       *   Setting the channel's position is not recommended when connected
-       *   to an entity, typically a file, that is opened with the APPEND
-       *   option.
-       *
-       * However, that is exactly what Issue #3316 does, distilling some
-       * code from the wild.
-       *
-       * On JVM, append write after resetting the position works.
-       * Given that, Scala Native should also work, despite the clear
-       * warning in the JVM documentation.
-       */
-      channel.position(0)
-
-      assertEquals("position", 0, channel.position())
-
-      val src = ByteBuffer.wrap(suffixBytes)
-
-      while (src.remaining() > 0)
-        channel.write(src)
-
-      val newLines = Files.readAllLines(f)
-      assertEquals("Second lines size", 1, newLines.size())
-
-      // Verify append happened at expected place; end of line, not beginning.
-      assertEquals("Second lines content", message, newLines.get(0))
+      try {
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.truncate(-1)
+        )
+      } finally {
+        channel.close()
+      }
     }
   }
+
+  @Test def cannotTruncateChannelOpenedReadOnly(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("truncateReadOnly.txt")
+      Files.write(f, "".getBytes("UTF-8")) // "touch" file so it gets created
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.READ
+      )
+
+      try {
+        assertThrows(
+          classOf[NonWritableChannelException],
+          channel.truncate(0)
+        )
+      } finally
+        channel.close()
+    }
+  }
+
+  @Test def canTruncateChannelOpenForWrite(): Unit = {
+    withTemporaryDirectory { dir =>
+      val prefix = "Γειά "
+      val suffix = "σου Κόσμε"
+      val message = s"${prefix}${suffix}"
+
+      val f = dir.resolve("truncateChannelOpenForWrite.txt")
+      Files.write(f, message.getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", message, lines.get(0))
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE
+      )
+
+      try {
+        val startingSize = channel.size()
+
+        // channel must start off positioned at beginning of file.
+        assertEquals("position at open", 0, channel.position())
+
+        val workingPos = 8L // arbitrary mid-range pos; gives room to move
+        channel.position(workingPos)
+        assertEquals("first re-position", workingPos, channel.position())
+
+        // Truncate to size greater than current position
+        val gtTruncateSize = workingPos + 20
+        channel.truncate(gtTruncateSize)
+        assertEquals("gtTruncate size", startingSize, channel.size())
+        assertEquals("gtTruncate position", workingPos, channel.position())
+
+        // Truncate to size equal to current position
+        val eqTruncateSize = workingPos
+        channel.truncate(eqTruncateSize)
+        assertEquals("eqTruncate size", eqTruncateSize, channel.size())
+        assertEquals("eqTruncate position", workingPos, channel.position())
+
+        // Truncate to size less than current position
+        val ltTruncateSize = workingPos - 2
+        channel.truncate(ltTruncateSize)
+        assertEquals("ltTruncate size", ltTruncateSize, channel.size())
+        assertEquals("ltTruncate position", ltTruncateSize, channel.position())
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
+  @Test def canTruncateChannelOpenForAppend(): Unit = {
+    withTemporaryDirectory { dir =>
+      val prefix = "Γειά "
+      val suffix = "σου Κόσμε"
+      val message = s"${prefix}${suffix}"
+
+      val f = dir.resolve("truncateChannelOpenForAppend.txt")
+      Files.write(f, message.getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", message, lines.get(0))
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.APPEND
+      )
+
+      try {
+        val startingSize = channel.size()
+
+        // channel must start off positioned at EOF.
+        val positionAtOpen = channel.position()
+        assertEquals("position at open", startingSize, positionAtOpen)
+
+        val workingPos = 8L // should silently not change position when APPEND
+        channel.position(workingPos)
+        assertEquals("first re-position", positionAtOpen, channel.position())
+
+        // Truncate to size greater than current position
+        val gtTruncateSize = startingSize + 20
+        channel.truncate(gtTruncateSize)
+        assertEquals("gtTruncate size", startingSize, channel.size())
+        assertEquals("gtTruncate position", positionAtOpen, channel.position())
+
+        // Truncate to size equal to current position
+        val eqTruncateSize = startingSize
+        channel.truncate(eqTruncateSize)
+        assertEquals("eqTruncate size", eqTruncateSize, channel.size())
+        assertEquals("eqTruncate position", positionAtOpen, channel.position())
+
+        val ltTruncateSize = startingSize - 3
+        channel.truncate(ltTruncateSize)
+        assertEquals("ltTruncate size", ltTruncateSize, channel.size())
+        assertEquals("ltTruncate position", ltTruncateSize, channel.position())
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
+  // Note: By intention, this _does_not_ use APPEND mode.
+  //       if it did, position would be expected to not move.
 
   @Test def canMoveFilePointer(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       Files.write(f, "hello".getBytes("UTF-8"))
       val channel = new RandomAccessFile(f.toFile(), "rw").getChannel()
-      assertEquals("position", 0, channel.position())
-      channel.position(3)
-      assertEquals("position", 3, channel.position())
-      channel.write(ByteBuffer.wrap("a".getBytes()))
 
-      channel.close()
+      try {
+        assertEquals("position", 0, channel.position())
+        channel.position(3)
+        assertEquals("position", 3, channel.position())
+        channel.write(ByteBuffer.wrap("a".getBytes()))
+      } finally
+        channel.close()
 
       val newLines = Files.readAllLines(f)
       assertEquals("size", 1, newLines.size())
