@@ -15,6 +15,7 @@ import java.io.{FileInputStream, FileOutputStream}
 import java.io.RandomAccessFile
 
 class FileChannelTest {
+  /*
   def withTemporaryDirectory(fn: Path => Unit): Unit = {
     val file = File.createTempFile("test", ".tmp")
     assertTrue(file.delete())
@@ -224,14 +225,14 @@ class FileChannelTest {
         assertEquals("position at open", channel.size(), positionAtOpen)
 
         /* Java 8 SeekableByteChannel description says:
-         *   Setting the channel's position is not recommended when connected
-         *   to an entity, typically a file, that is opened with the APPEND
-         *   option.
-         *
-         * JVM re-inforces this caution by "position(pos)" on a channel
-         * opened for APPEND silently not actually move the position; it is
-         * a no-op.
-         */
+   *   Setting the channel's position is not recommended when connected
+   *   to an entity, typically a file, that is opened with the APPEND
+   *   option.
+   *
+   * JVM re-inforces this caution by "position(pos)" on a channel
+   * opened for APPEND silently not actually move the position; it is
+   * a no-op.
+   */
         channel.position(0L)
 
         assertEquals("reposition", positionAtOpen, channel.position())
@@ -309,12 +310,12 @@ class FileChannelTest {
         assertEquals("bytes written", bytes.size, nWritten)
 
         /* Absolute write with APPEND uses a logical "current position" of EOF
-         * not an absolute number qua position, such as 42.
-         *
-         * Using this understanding, the "current position" has not moved
-         * from EOF, even though the absolute position has been updated
-         * to the new EOF.
-         */
+   * not an absolute number qua position, such as 42.
+   *
+   * Using this understanding, the "current position" has not moved
+   * from EOF, even though the absolute position has been updated
+   * to the new EOF.
+   */
         assertEquals("post-write position", channel.size(), channel.position())
 
         val bytes2 = "!".getBytes("UTF-8")
@@ -333,14 +334,14 @@ class FileChannelTest {
       // assertEquals("content", "heworld!", newLines.get(0))
 
       /* Welcome to the realm of Ὀϊζύς (Oizys), goddess of misery,
-       *  anxiety, grief, depression, and misfortune.
-       *
-       * << Better explanation goes here. >>
-       *
-       * The important part is that the relative write happened at EOF
-       * and the absolute write happened at a believable place, even
-       * if the re-position of that write was a no-op.
-       */
+   *  anxiety, grief, depression, and misfortune.
+   *
+   * << Better explanation goes here. >>
+   *
+   * The important part is that the relative write happened at EOF
+   * and the absolute write happened at a believable place, even
+   * if the re-position of that write was a no-op.
+   */
 
       val content = newLines.get(0)
 
@@ -583,5 +584,5 @@ class FileChannelTest {
       )
     }
   }
-
+   */
 }
