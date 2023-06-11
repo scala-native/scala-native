@@ -1,15 +1,15 @@
-package java.util.concurrent
-
-import java.util.NavigableMap;
-import java.util.NavigableSet;
-
-// Ported form jsr166, revision: 1.20
+// Ported from JSR 166 revision 1.20
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+
+package java.util.concurrent
+
+import java.util.NavigableMap
+import java.util.NavigableSet
 
 trait ConcurrentNavigableMap[K, V]
     extends ConcurrentMap[K, V]
