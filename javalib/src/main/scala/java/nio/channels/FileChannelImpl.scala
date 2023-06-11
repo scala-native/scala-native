@@ -56,6 +56,28 @@ private[java] final class FileChannelImpl(
   private def ensureOpen(): Unit =
     if (!isOpen()) throw new ClosedChannelException()
 
+  private def seekEOF(): Unit = {
+    if (isWindows) {
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = null,
+        moveMethod = FILE_END
+      )
+    } else {
+      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_END);
+      if (pos < 0)
+        throwPosixException("lseek")
+    }
+  }
+
+  private def throwPosixException(functionName: String): Unit = {
+    if (!isWindows) {
+      val errnoString = fromCString(string.strerror(errno))
+      throw new IOException("${functionName} failed: ${errnoString}")
+    }
+  }
+
   override def force(metadata: Boolean): Unit =
     fd.sync()
 
@@ -148,8 +170,7 @@ private[java] final class FileChannelImpl(
     MappedByteBufferImpl(mode, position, size.toInt, fd, this)
   }
 
-// FIXME - Add error checking, especially for unix
-  // change position, even in APPEND mode.
+  // change position, even in APPEND mode. Use _carefully_.
   private def compelPosition(offset: Long): FileChannel = {
     if (isWindows)
       FileApi.SetFilePointerEx(
@@ -158,7 +179,11 @@ private[java] final class FileChannelImpl(
         null,
         FILE_BEGIN
       )
-    else unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
+    else {
+      val pos = unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
+      if (pos < 0)
+        throwPosixException("lseek")
+    }
 
     this
   }
@@ -181,7 +206,10 @@ private[java] final class FileChannelImpl(
       )
       !filePointer
     } else {
-      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+      if (pos < 0)
+        throwPosixException("lseek")
+      pos
     }
 
   override def read(
@@ -295,10 +323,8 @@ private[java] final class FileChannelImpl(
         val statBuf = alloc[stat.stat]()
 
         val err = stat.fstat(fd.fd, statBuf)
-        if (err != 0) {
-          val errnoText = fromCString(string.strerror(errno))
-          throw new IOException("fstat failed: ${errnoText}")
-        }
+        if (err != 0)
+          throwPosixException("fstat")
 
         statBuf.st_size.toLong
       }
@@ -335,55 +361,42 @@ private[java] final class FileChannelImpl(
     ensureOpen()
 
     if (!openForWriting)
-      throw new NonWritableChannelException() // same null message as JVM
+      throw new NonWritableChannelException() // same message as JVM, null
 
     val currentPosition = position()
 
     if (size < this.size()) {
-      val hasSucceded =
-        if (isWindows) {
+      if (isWindows) {
+        val hasSucceded =
           FileApi.SetFilePointerEx(
             fd.handle,
             size,
             null,
             FILE_BEGIN
           ) &&
-          FileApi.SetEndOfFile(fd.handle)
-        } else {
+            FileApi.SetEndOfFile(fd.handle)
+        if (!hasSucceded)
+          throw new IOException("Failed to truncate file")
+      } else {
+        val status = unistd.ftruncate(fd.fd, size.toSize)
 
-          // FIXME -- add error handling
-          val success = unistd.ftruncate(fd.fd, size.toSize) == 0
-          // unistd.ftruncate(fd.fd, size.toSize) == 0
-          /* JVM truncate() updates current position. POSIX ftruncate() does
-           * not do that.
-           */
-          if (success)
-            unistd.lseek(fd.fd, size.toSize, stdio.SEEK_SET)
+        /* JVM truncate() updates current position. POSIX ftruncate() does
+         * not, so must update position explicitly.
+         */
+        if (status < 0)
+          throwPosixException("ftruncate")
 
-          success
-        }
-
-      if (!hasSucceded)
-        throw new IOException("Failed to truncate file")
+        // Leaves "current position" at EOF.
+        val pos = unistd.lseek(fd.fd, size.toSize, stdio.SEEK_SET)
+        if (pos < 0)
+          throwPosixException("lseek")
+      }
     }
 
     if (currentPosition > size)
-      position(size)
+      compelPosition(size)
 
     this
-  }
-
-// 2023-06-10 21:15 -0400 FIXME - add error checking, based on models in this
-//                                file.
-  private def seekEOF(): Unit = {
-    if (isWindows) {
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = 0,
-        newFilePointer = null,
-        moveMethod = FILE_END
-      )
-    } else unistd.lseek(fd.fd, 0, stdio.SEEK_END);
   }
 
   private[java] def write(
@@ -456,7 +469,17 @@ private[java] final class FileChannelImpl(
     i
   }
 
-  // Write to absolute position, do not change current position.
+  /* Write to absolute position, do not change current position.
+   *
+   * Understanding "does not change current position" when the channel
+   * has been opened requires some mind_bending/understanding.
+   *
+   * "Current position" when file has been opened for APPEND is
+   * a logical place, End of File (EOF), not an absolute number.
+   * When APPEND mode changes the position it reports as "current" to the
+   * new EOF rather than stashed position, according to JVM is is not
+   * really changing the "current position".
+   */
   override def write(src: ByteBuffer, pos: Long): Int = {
     ensureOpen()
     val stashPosition = position()
@@ -464,7 +487,10 @@ private[java] final class FileChannelImpl(
 
     val nBytesWritten = writeByteBuffer(src)
 
-    compelPosition(stashPosition)
+    if (!openForAppending)
+      compelPosition(stashPosition)
+    else
+      seekEOF()
 
     nBytesWritten
   }
@@ -499,9 +525,8 @@ private[java] final class FileChannelImpl(
 
       (!lastPosition - !currentPosition).toInt
     } else {
-      val currentPosition = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
-      val lastPosition = unistd.lseek(fd.fd, 0, stdio.SEEK_END)
-      unistd.lseek(fd.fd, currentPosition, stdio.SEEK_SET)
+      val currentPosition = position()
+      val lastPosition = size()
       (lastPosition - currentPosition).toInt
     }
   }
