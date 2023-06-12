@@ -2192,8 +2192,8 @@ trait NirGenExpr(using Context) {
           given nir.Position = app.span
           val List(Literal(Constant(str: String))) =
             javaSeqLiteral.elems: @unchecked
-          val chars = Val.Chars(StringUtils.processEscapes(str).toIndexedSeq)
-          val const = Val.Const(chars)
+          val bytes = Val.ByteString(StringUtils.processEscapes(str))
+          val const = Val.Const(bytes)
           buf.box(nir.Rt.BoxedPtr, const, unwind)
 
         case _ =>

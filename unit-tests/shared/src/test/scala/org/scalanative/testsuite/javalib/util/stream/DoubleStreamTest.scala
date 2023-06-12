@@ -13,10 +13,12 @@ import java.{lang => jl}
 
 import java.{util => ju}
 import java.util.Arrays
+import java.util.{OptionalDouble, DoubleSummaryStatistics}
+import java.util.Spliterator
+
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._
 
-import java.util.{OptionalDouble, DoubleSummaryStatistics}
 import java.util.function.{DoubleConsumer, DoubleFunction, DoubleSupplier}
 import java.util.function.Supplier
 
@@ -234,6 +236,32 @@ class DoubleStreamTest {
       assertEquals(s"element: ${j})", expected(j), it.nextDouble(), epsilon)
 
     assertTrue("DoubleStream should not be empty", it.hasNext())
+  }
+
+  @Test def doubleStreamIterate_Unbounded_Characteristics(): Unit = {
+    val s = DoubleStream.iterate(0.0, n => n + 1.1)
+    val spliter = s.spliterator()
+
+    // spliterator should have required characteristics and no others.
+    // Note: DoubleStream requires NONNULL, whereas Stream[T] does not.
+    val requiredPresent =
+      Seq(Spliterator.ORDERED, Spliterator.IMMUTABLE, Spliterator.NONNULL)
+
+    val requiredAbsent = Seq(
+      Spliterator.SORTED,
+      Spliterator.SIZED,
+      Spliterator.SUBSIZED
+    )
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      requiredPresent,
+      requiredAbsent
+    )
+
+    // If SIZED is indeed missing, as expected, these conditions should hold.
+    assertEquals(s"getExactSizeIfKnown", -1L, spliter.getExactSizeIfKnown())
+    assertEquals(s"estimateSize", Long.MaxValue, spliter.estimateSize())
   }
 
   @Test def doubleStreamOf_NoItems(): Unit = {

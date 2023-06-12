@@ -2017,8 +2017,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               ),
               _
             ) =>
-          val chars = Val.Chars(StringUtils.processEscapes(str).toIndexedSeq)
-          val const = Val.Const(chars)
+          val bytes = Val.ByteString(StringUtils.processEscapes(str))
+          val const = Val.Const(bytes)
           buf.box(nir.Rt.BoxedPtr, const, unwind)(app.pos)
 
         case _ =>

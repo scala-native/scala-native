@@ -2,6 +2,7 @@ package scala.scalanative.nscplugin
 
 import scala.scalanative.util
 import scala.scalanative.nir
+import scalanative.nir.serialization.serializeBinary
 
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.ast.tpd
@@ -9,6 +10,8 @@ import dotty.tools.dotc.ast.Trees._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Symbols._
+
+import java.nio.channels.Channels
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -133,13 +136,9 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       outfile: dotty.tools.io.AbstractFile,
       defns: Seq[nir.Defn]
   ): Unit = {
-    import scalanative.nir.serialization.serializeBinary
-    val output = outfile.bufferedOutput
-    try {
-      serializeBinary(defns, output)
-    } finally {
-      output.close()
-    }
+    val channel = Channels.newChannel(outfile.bufferedOutput)
+    try serializeBinary(defns, channel)
+    finally channel.close()
   }
 
   private def getFileFor(ownerName: nir.Global): dotty.tools.io.AbstractFile = {
