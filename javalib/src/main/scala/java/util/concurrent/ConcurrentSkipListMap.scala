@@ -81,8 +81,8 @@ import java.util.concurrent.atomic.LongAdder;
 //  * @param < V> the type of mapped values
 //  * @since 1.6
 //  */
-// @SerialVersionUID(-8627078645895051609L)
-// object ConcurrentSkipListMap {
+@SerialVersionUID(-8627078645895051609L)
+object ConcurrentSkipListMap {
 //   /**
 //    * Nodes hold keys and values, and are singly linked in sorted
 //    * order, possibly with some intervening marker nodes. The list is
@@ -90,15 +90,21 @@ import java.util.concurrent.atomic.LongAdder;
 //    * marker nodes have null keys. The val field (but currently not
 //    * the key field) is nulled out upon deletion.
 //    */
-//   final private[concurrent] class Node[K, V] private[concurrent](val key: K // currently, never detached
-//                                                                  , var `val`: V, var next: ConcurrentSkipListMap.Node[K, V]) {
-//   }
+  final private[concurrent] class Node[K, V] (
+    key: K,
+    `val`: V,
+    next: Node[K, V]) {
+  }
 
 //   /**
 //    * Index nodes represent the levels of the skip list.
 //    */
-//   final private[concurrent] class Index[K, V] private[concurrent](val node: ConcurrentSkipListMap.Node[K, V], val down: ConcurrentSkipListMap.Index[K, V], var right: ConcurrentSkipListMap.Index[K, V]) {
-//   }
+  final private[concurrent] class Index[K, V] (
+    node: Node[K, V],
+    down: Index[K, V],
+    right: Index[K, V]
+  ) {
+  }
 
 //   /**
 //    * Compares using comparator or natural ordering if null.
@@ -1227,7 +1233,7 @@ import java.util.concurrent.atomic.LongAdder;
 //       throw new ExceptionInInitializerError(e)
 //   }
 
-// }
+}
 
 @SerialVersionUID(-8627078645895051609L)
 class ConcurrentSkipListMap[K, V]()
