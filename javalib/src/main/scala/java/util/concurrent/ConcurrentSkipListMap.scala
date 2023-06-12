@@ -142,91 +142,116 @@ object ConcurrentSkipListMap {
 //   private val LT = 2
 //   private val GT = 0 // Actually checked as !LT
 
-//   private[concurrent] def toList[E](c: Collection[E]) = { // Using size() here would be a pessimization.
-//     val list = new ArrayList[E]
-//     import scala.collection.JavaConversions._
-//     for (e <- c) {
-//       list.add(e)
-//     }
-//     list
-//   }
+  private[concurrent] def toList[E](c: Collection[E]) = {
+    val list = new ArrayList[E]
+    c.forEach { e =>
+      list.add(e)
+    }
+    list
+  }
 
-//   final private[concurrent] class KeySet[K, V] private[concurrent](val m: ConcurrentNavigableMap[K, V]) extends AbstractSet[K] with NavigableSet[K] {
-//     override def size: Int = m.size
+  final private[concurrent] class KeySet[K, V](
+      val m: ConcurrentNavigableMap[K, V]
+  ) extends AbstractSet[K]
+      with NavigableSet[K] {
 
-//     override def isEmpty: Boolean = m.isEmpty
+    override def size(): Int = m.size()
 
-//     override def contains(o: Any): Boolean = m.containsKey(o)
+    override def isEmpty(): Boolean = m.isEmpty()
 
-//     override def remove(o: Any): Boolean = m.remove(o) != null
+    override def contains(o: Any): Boolean = m.containsKey(o)
 
-//     override def clear(): Unit = {
-//       m.clear()
-//     }
+    override def remove(o: Any): Boolean = m.remove(o) != null
 
-//     override def lower(e: K): K = m.lowerKey(e)
+    override def clear(): Unit = {
+      m.clear()
+    }
 
-//     override def floor(e: K): K = m.floorKey(e)
+    override def lower(e: K): K = m.lowerKey(e)
 
-//     override def ceiling(e: K): K = m.ceilingKey(e)
+    override def floor(e: K): K = m.floorKey(e)
 
-//     override def higher(e: K): K = m.higherKey(e)
+    override def ceiling(e: K): K = m.ceilingKey(e)
 
-//     override def comparator: Comparator[_ >: K] = m.comparator
+    override def higher(e: K): K = m.higherKey(e)
 
-//     override def first: K = m.firstKey
+    override def comparator(): Comparator[_ >: K] = m.comparator()
 
-//     override def last: K = m.lastKey
+    override def first(): K = m.firstKey()
 
-//     override def pollFirst: K = {
-//       val e = m.pollFirstEntry
-//       if (e == null) null
-//       else e.getKey
-//     }
+    override def last(): K = m.lastKey()
 
-//     override def pollLast: K = {
-//       val e = m.pollLastEntry
-//       if (e == null) null
-//       else e.getKey
-//     }
+    override def pollFirst(): K = {
+      val e = m.pollFirstEntry()
+      if (e == null) null.asInstanceOf[K]
+      else e.getKey()
+    }
 
-//     override def iterator: Iterator[K] = if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) new ConcurrentSkipListMap[K, V]#KeyIterator
-//     else new ConcurrentSkipListMap.SubMap[K, V]#SubMapKeyIterator
+    override def pollLast(): K = {
+      val e = m.pollLastEntry()
+      if (e == null) null.asInstanceOf[K]
+      else e.getKey()
+    }
 
-//     override def equals(o: Any): Boolean = {
-//       if (o eq this) return true
-//       if (!o.isInstanceOf[Set[_]]) return false
-//       val c = o.asInstanceOf[Collection[_]]
-//       try containsAll(c) && c.containsAll(this)
-//       catch {
-//         case unused@(_: ClassCastException | _: NullPointerException) =>
-//           false
-//       }
-//     }
+    override def iterator(): Iterator[K] =
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
+        // TODO: impl
+        ???
+      } else {
+        ???
+      }
 
-//     override def toArray: Array[AnyRef] = toList(this).toArray
+    override def equals(o: Any): Boolean = {
+      if (o == this) return true
+      if (!o.isInstanceOf[Set[_]]) return false
+      val c = o.asInstanceOf[Collection[_]]
+      try containsAll(c) && c.containsAll(this)
+      catch {
+        case _ @(_: ClassCastException | _: NullPointerException) =>
+          false
+      }
+    }
 
-//     override def toArray[T](a: Array[T]): Array[T] = toList(this).toArray(a)
+    override def toArray(): Array[AnyRef] = toList(this).toArray()
 
-//     override def descendingIterator: Iterator[K] = descendingSet.iterator
+    override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
+      toList(this).toArray[T](a)
 
-//     override def subSet(fromElement: K, fromInclusive: Boolean, toElement: K, toInclusive: Boolean) = new ConcurrentSkipListMap.KeySet[K, V](m.subMap(fromElement, fromInclusive, toElement, toInclusive))
+    override def descendingIterator(): Iterator[K] = descendingSet().iterator()
 
-//     override def headSet(toElement: K, inclusive: Boolean) = new ConcurrentSkipListMap.KeySet[K, V](m.headMap(toElement, inclusive))
+    override def subSet(
+        fromElement: K,
+        fromInclusive: Boolean,
+        toElement: K,
+        toInclusive: Boolean
+    ) = new ConcurrentSkipListMap.KeySet[K, V](
+      m.subMap(fromElement, fromInclusive, toElement, toInclusive)
+    )
 
-//     override def tailSet(fromElement: K, inclusive: Boolean) = new ConcurrentSkipListMap.KeySet[K, V](m.tailMap(fromElement, inclusive))
+    override def headSet(toElement: K, inclusive: Boolean) =
+      new ConcurrentSkipListMap.KeySet[K, V](m.headMap(toElement, inclusive))
 
-//     override def subSet(fromElement: K, toElement: K): NavigableSet[K] = subSet(fromElement, true, toElement, false)
+    override def tailSet(fromElement: K, inclusive: Boolean) =
+      new ConcurrentSkipListMap.KeySet[K, V](m.tailMap(fromElement, inclusive))
 
-//     override def headSet(toElement: K): NavigableSet[K] = headSet(toElement, false)
+    override def subSet(fromElement: K, toElement: K): NavigableSet[K] =
+      subSet(fromElement, true, toElement, false)
 
-//     override def tailSet(fromElement: K): NavigableSet[K] = tailSet(fromElement, true)
+    override def headSet(toElement: K): NavigableSet[K] =
+      headSet(toElement, false)
 
-//     override def descendingSet = new ConcurrentSkipListMap.KeySet[K, V](m.descendingMap)
+    override def tailSet(fromElement: K): NavigableSet[K] =
+      tailSet(fromElement, true)
 
-//     override def spliterator: Spliterator[K] = if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) m.asInstanceOf[ConcurrentSkipListMap[K, V]].keySpliterator
-//     else new ConcurrentSkipListMap.SubMap[K, V]#SubMapKeyIterator
-//   }
+    override def descendingSet() =
+      new ConcurrentSkipListMap.KeySet[K, V](m.descendingMap())
+
+    override def spliterator(): Spliterator[K] =
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
+        // TODO: impl
+        ???
+      else ???
+  }
 
 //   final private[concurrent] class Values[K, V] private[concurrent](val m: ConcurrentNavigableMap[K, V]) extends AbstractCollection[V] {
 //     override def iterator: Iterator[V] = if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) new ConcurrentSkipListMap[K, V]#ValueIterator
@@ -1182,28 +1207,20 @@ class ConcurrentSkipListMap[K, V]()
     with Cloneable
     with Serializable {
 
-  // this.comparator = null
-  // /**
-  //  * The comparator used to maintain order in this map, or null if
-  //  * using natural ordering.  (Non-private to simplify access in
-  //  * nested classes.)
-  //  *
-  //  * @serial
-  //  */
-  // @SuppressWarnings(Array("serial")) // Conditionally serializable final private[concurrent]  var comparator: Comparator[_ >: K] = null
+  @SuppressWarnings(Array("serial")) // Conditionally serializable
+  final private var _comparator: Comparator[_ >: K] = null
 
-//   /** Lazily initialized topmost index of the skiplist. */
-//   private var head = null
-//   /** Lazily initialized element count */
-//   private var adder = null
-//   /** Lazily initialized key set */
-//   private var keySet = null
-//   /** Lazily initialized values collection */
-//   private var values = null
-//   /** Lazily initialized entry set */
-//   private var entrySet = null
-//   /** Lazily initialized descending map */
-//   private var descendingMap = null
+  // private var head: ConcurrentSkipListMap.Index[K, V] = null
+
+  // private var adder: LongAdder = null
+
+  private var _keySet: ConcurrentSkipListMap.KeySet[K, V] = null
+
+  // private var values: Values[K, V] = null
+
+  // private var entrySet: EntrySet[K, V] = null
+
+  // private var descendingMap: SubMap[K, V] = null
 
 //   /**
 //    * Returns the header for base node list, or null if uninitialized
@@ -2295,36 +2312,6 @@ class ConcurrentSkipListMap[K, V]()
 //     }
 //   }
 
-//   /**
-//    * Returns a {@link NavigableSet} view of the keys contained in this map.
-//    *
-//    * <p>The set's iterator returns the keys in ascending order.
-//    * The set's spliterator additionally reports {@link Spliterator# CONCURRENT},
-//    * {@link Spliterator# NONNULL}, {@link Spliterator# SORTED} and
-//    * {@link Spliterator# ORDERED}, with an encounter order that is ascending
-//    * key order.
-//    *
-//    * <p>The {@linkplain Spliterator# getComparator ( ) spliterator's comparator}
-//    * is {@code null} if the {@linkplain # comparator ( ) map's comparator}
-//    * is {@code null}.
-//    * Otherwise, the spliterator's comparator is the same as or imposes the
-//    * same total ordering as the map's comparator.
-//    *
-//    * <p>The set is backed by the map, so changes to the map are
-//    * reflected in the set, and vice-versa.  The set supports element
-//    * removal, which removes the corresponding mapping from the map,
-//    * via the {@code Iterator.remove}, {@code Set.remove},
-//    * {@code removeAll}, {@code retainAll}, and {@code clear}
-//    * operations.  It does not support the {@code add} or {@code addAll}
-//    * operations.
-//    *
-//    * <p>The view's iterators and spliterators are
-//    * <a href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
-//    *
-//    * <p>This method is equivalent to method {@code navigableKeySet}.
-//    *
-//    * @return a navigable set view of the keys in this map
-//    */
   override def keySet(): NavigableSet[K] = ???
   // override def keySet: NavigableSet[K] = {
   //   var ks = null
@@ -2546,8 +2533,7 @@ class ConcurrentSkipListMap[K, V]()
 //     }
 //   }
 
-  override def comparator(): Comparator[_ >: K] = ???
-  // override def comparator: Comparator[_ >: K] = comparator
+  override def comparator(): Comparator[_ >: K] = _comparator
 
   override def firstKey(): K = ???
 //   override def firstKey: K = {
