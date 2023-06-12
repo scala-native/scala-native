@@ -55,8 +55,16 @@ object ScalaNativePluginInternal {
       .partialVersion(scalaVersion.value)
       .fold(throw new RuntimeException("Unsupported Scala Version")) {
         // Add only dependency to scalalib, nativeStanardLibraries would be added transitively
-        case (2, _) => "org.scala-native" %%% "scalalib" % scalalibVersion(scalaVersion.value, nativeVersion)
-        case (3, _) => "org.scala-native" %%% "scala3lib" % scalalibVersion(scalaVersion.value, nativeVersion)
+        case (2, _) =>
+          "org.scala-native" %%% "scalalib" % scalalibVersion(
+            scalaVersion.value,
+            nativeVersion
+          )
+        case (3, _) =>
+          "org.scala-native" %%% "scala3lib" % scalalibVersion(
+            scalaVersion.value,
+            nativeVersion
+          )
       },
     excludeDependencies ++= {
       // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
