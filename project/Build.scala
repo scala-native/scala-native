@@ -49,7 +49,8 @@ object Build {
 // format: on
   lazy val allMultiScalaProjects =
     publishedMultiScalaProjects ::: testMultiScalaProjects
-
+  lazy val crossPublishedMultiScalaProjects =
+    scalalib :: compilerPlugins
   lazy val publishedProjects =
     sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
   lazy val testProjects =
@@ -79,14 +80,12 @@ object Build {
     }.value
   }
 
-  val crossPublish =
-    taskKey[Unit](
-      "Cross publish compiler plugin project without signing and excluding currently used version"
-    )
-  val crossPublishSigned =
-    taskKey[Unit](
-      "Cross publish signed compiler plugin project excluding currently used version"
-    )
+  val crossPublish = taskKey[Unit](
+    "Cross publish project without signing and excluding currently used version"
+  )
+  val crossPublishSigned = taskKey[Unit](
+    "Cross publish signed project excluding currently used version"
+  )
 
   lazy val root: Project =
     Project(id = "scala-native", base = file("."))
@@ -110,7 +109,7 @@ object Build {
         Seq(crossPublish, crossPublishSigned).map(
           setDepenencyForCurrentBinVersion(
             _,
-            compilerPlugins,
+            crossPublishedMultiScalaProjects,
             includeSbtPlugin = false
           )
         )
@@ -544,7 +543,7 @@ object Build {
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
           _.settings(
-            commonScalalibSettings("scala-library", None),
+            commonScalalibSettings("scala-library"),
             scalacOptions ++= Seq(
               "-deprecation:false",
               "-language:postfixOps",
@@ -573,14 +572,14 @@ object Build {
           }
           _.settings(
             name := "scala3lib",
-            commonScalalibSettings(
-              "scala3-library_3",
-              Some(stdlibVersion)
-            ),
+            commonScalalibSettings("scala3-library_3"),
             scalacOptions ++= Seq(
               "-language:implicitConversions"
             ),
-            libraryDependencies += ("org.scala-native" %%% "scalalib" % nativeVersion)
+            libraryDependencies += ("org.scala-native" %%% "scalalib" % scalalibVersion(
+              ScalaVersions.scala213,
+              nativeVersion
+            ))
               .excludeAll(ExclusionRule("org.scala-native"))
               .cross(CrossVersion.for3Use2_13),
             update := {

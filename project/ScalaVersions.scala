@@ -27,10 +27,6 @@ object ScalaVersions {
     (0 to 0).map(v => s"3.3.$v")
   ).flatten
 
-  // Version of Scala 3 standard library sources used for publishing
-  // Workaround allowing to produce NIR for Scala 3.2.x+ and allowing to consume existing libraries using 3.1.x
-  val scala3libSourcesVersion = crossScala3.last
-
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last

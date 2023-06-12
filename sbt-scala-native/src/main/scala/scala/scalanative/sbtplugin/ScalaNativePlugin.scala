@@ -14,6 +14,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     val nativeVersion = nir.Versions.current
 
+    def scalalibVersion(scalaVersion: String, nativeVersion: String): String =
+      s"$scalaVersion+$nativeVersion"
+
     /** Declares `Tag`s which may be used to limit the concurrency of build
      *  tasks.
      *
