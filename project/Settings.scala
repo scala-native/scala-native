@@ -196,17 +196,19 @@ object Settings {
     licenses := Seq(
       "BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")
     ),
-    developers += Developer(
-      email = "denys.shabalin@epfl.ch",
-      id = "densh",
-      name = "Denys Shabalin",
-      url = url("http://den.sh")
-    ),
-    developers += Developer(
-      id = "wojciechmazur",
-      name = "Wojciech Mazur",
-      email = "wmazur@virtuslab.com",
-      url = url("https://github.com/WojciechMazur")
+    developers := List(
+      Developer(
+        email = "denys.shabalin@epfl.ch",
+        id = "densh",
+        name = "Denys Shabalin",
+        url = url("http://den.sh")
+      ),
+      Developer(
+        id = "wojciechmazur",
+        name = "Wojciech Mazur",
+        email = "wmazur@virtuslab.com",
+        url = url("https://github.com/WojciechMazur")
+      )
     ),
     scmInfo := Some(
       ScmInfo(
