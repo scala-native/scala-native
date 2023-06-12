@@ -31,80 +31,20 @@ import java.util.concurrent.atomic.LongAdder;
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
-
-// /**
-//  * A scalable concurrent {@link ConcurrentNavigableMap} implementation.
-//  * The map is sorted according to the {@linkplain Comparable natural
-//  * ordering} of its keys, or by a {@link Comparator} provided at map
-//  * creation time, depending on which constructor is used.
-//  *
-//  * <p>This class implements a concurrent variant of <a
-//  * href="http://en.wikipedia.org/wiki/Skip_list" target="_top">SkipLists</a>
-//  * providing expected average <i>log(n)</i> time cost for the
-//  * {@code containsKey}, {@code get}, {@code put} and
-//  * {@code remove} operations and their variants.  Insertion, removal,
-//  * update, and access operations safely execute concurrently by
-//  * multiple threads.
-//  *
-//  * <p>Iterators and spliterators are
-//  * <a href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
-//  *
-//  * <p>Ascending key ordered views and their iterators are faster than
-//  * descending ones.
-//  *
-//  * <p>All {@code Map.Entry} pairs returned by methods in this class
-//  * and its views represent snapshots of mappings at the time they were
-//  * produced. They do <em>not</em> support the {@code Entry.setValue}
-//  * method. (Note however that it is possible to change mappings in the
-//  * associated map using {@code put}, {@code putIfAbsent}, or
-//  * {@code replace}, depending on exactly which effect you need.)
-//  *
-//  * <p>Beware that bulk operations {@code putAll}, {@code equals},
-//  * {@code toArray}, {@code containsValue}, and {@code clear} are
-//  * <em>not</em> guaranteed to be performed atomically. For example, an
-//  * iterator operating concurrently with a {@code putAll} operation
-//  * might view only some of the added elements.
-//  *
-//  * <p>This class and its views and iterators implement all of the
-//  * <em>optional</em> methods of the {@link Map} and {@link Iterator}
-//  * interfaces. Like most other concurrent collections, this class does
-//  * <em>not</em> permit the use of {@code null} keys or values because some
-//  * null return values cannot be reliably distinguished from the absence of
-//  * elements.
-//  *
-//  * <p>This class is a member of the
-//  * <a href="{@docRoot }/java.base/java/util/package-summary.html#CollectionsFramework">
-//  * Java Collections Framework</a>.
-//  *
-//  * @author Doug Lea
-//  * @param < K> the type of keys maintained by this map
-//  * @param < V> the type of mapped values
-//  * @since 1.6
-//  */
 @SerialVersionUID(-8627078645895051609L)
 object ConcurrentSkipListMap {
-//   /**
-//    * Nodes hold keys and values, and are singly linked in sorted
-//    * order, possibly with some intervening marker nodes. The list is
-//    * headed by a header node accessible as head.node. Headers and
-//    * marker nodes have null keys. The val field (but currently not
-//    * the key field) is nulled out upon deletion.
-//    */
-  final private[concurrent] class Node[K, V] (
-    key: K,
-    `val`: V,
-    next: Node[K, V]) {
-  }
 
-//   /**
-//    * Index nodes represent the levels of the skip list.
-//    */
-  final private[concurrent] class Index[K, V] (
-    node: Node[K, V],
-    down: Index[K, V],
-    right: Index[K, V]
-  ) {
-  }
+  final private[concurrent] class Node[K, V](
+      key: K,
+      `val`: V,
+      next: Node[K, V]
+  ) {}
+
+  final private[concurrent] class Index[K, V](
+      node: Node[K, V],
+      down: Index[K, V],
+      right: Index[K, V]
+  ) {}
 
 //   /**
 //    * Compares using comparator or natural ordering if null.
@@ -1237,11 +1177,10 @@ object ConcurrentSkipListMap {
 
 @SerialVersionUID(-8627078645895051609L)
 class ConcurrentSkipListMap[K, V]()
-
-/**
- * Constructs a new, empty map, sorted according to the
- * {@linkplain Comparable natural ordering} of the keys.
- */ extends AbstractMap[K, V] with ConcurrentNavigableMap[K, V] with Cloneable with Serializable {
+    extends AbstractMap[K, V]
+    with ConcurrentNavigableMap[K, V]
+    with Cloneable
+    with Serializable {
 
   // this.comparator = null
   // /**
@@ -2610,9 +2549,6 @@ class ConcurrentSkipListMap[K, V]()
   override def comparator(): Comparator[_ >: K] = ???
   // override def comparator: Comparator[_ >: K] = comparator
 
-  /**
-   * @throws NoSuchElementException {@inheritDoc }
-   */
   override def firstKey(): K = ???
 //   override def firstKey: K = {
 //     val n = findFirst
@@ -2627,34 +2563,30 @@ class ConcurrentSkipListMap[K, V]()
 //     n.key
 //   }
 
-  /**
-   * @throws ClassCastException       {@inheritDoc }
-   * @throws NullPointerException     if {@code fromKey} or {@code toKey} is null
-   * @throws IllegalArgumentException {@inheritDoc }
-   */
-    override def subMap(fromKey: K, fromInclusive: Boolean, toKey: K, toInclusive: Boolean): ConcurrentNavigableMap[K, V] = ???
+  override def subMap(
+      fromKey: K,
+      fromInclusive: Boolean,
+      toKey: K,
+      toInclusive: Boolean
+  ): ConcurrentNavigableMap[K, V] = ???
   // override def subMap(fromKey: K, fromInclusive: Boolean, toKey: K, toInclusive: Boolean): ConcurrentNavigableMap[K, V] = {
   //   if (fromKey == null || toKey == null) throw new NullPointerException
   //   new ConcurrentSkipListMap.SubMap[K, V](this, fromKey, fromInclusive, toKey, toInclusive, false)
   // }
 
-  /**
-   * @throws ClassCastException       {@inheritDoc }
-   * @throws NullPointerException     if {@code toKey} is null
-   * @throws IllegalArgumentException {@inheritDoc }
-   */
-  override def headMap(toKey: K, inclusive: Boolean): ConcurrentNavigableMap[K, V] = ???
+  override def headMap(
+      toKey: K,
+      inclusive: Boolean
+  ): ConcurrentNavigableMap[K, V] = ???
   // override def headMap(toKey: K, inclusive: Boolean): ConcurrentNavigableMap[K, V] = {
   //   if (toKey == null) throw new NullPointerException
   //   new ConcurrentSkipListMap.SubMap[K, V](this, null, false, toKey, inclusive, false)
   // }
 
-  /**
-   * @throws ClassCastException       {@inheritDoc }
-   * @throws NullPointerException     if {@code fromKey} is null
-   * @throws IllegalArgumentException {@inheritDoc }
-   */
-  override def tailMap(fromKey: K, inclusive: Boolean): ConcurrentNavigableMap[K, V] = ???
+  override def tailMap(
+      fromKey: K,
+      inclusive: Boolean
+  ): ConcurrentNavigableMap[K, V] = ???
   // override def tailMap(fromKey: K, inclusive: Boolean): ConcurrentNavigableMap[K, V] = {
   //   if (fromKey == null) throw new NullPointerException
   //   new ConcurrentSkipListMap.SubMap[K, V](this, fromKey, inclusive, null, false, false)
@@ -2669,22 +2601,9 @@ class ConcurrentSkipListMap[K, V]()
   override def tailMap(fromKey: K): ConcurrentNavigableMap[K, V] = ???
   // override def tailMap(fromKey: K): ConcurrentNavigableMap[K, V] = tailMap(fromKey, true)
 
-  /**
-   * Returns a key-value mapping associated with the greatest key
-   * strictly less than the given key, or {@code null} if there is
-   * no such key. The returned entry does <em>not</em> support the
-   * {@code Entry.setValue} method.
-   *
-   * @throws ClassCastException   {@inheritDoc }
-   * @throws NullPointerException if the specified key is null
-   */
   override def lowerEntry(key: K): Map.Entry[K, V] = ???
 //   override def lowerEntry(key: K): Map.Entry[K, V] = findNearEntry(key, ConcurrentSkipListMap.LT, comparator)
 
-  /**
-   * @throws ClassCastException   {@inheritDoc }
-   * @throws NullPointerException if the specified key is null
-   */
   override def lowerKey(key: K): K = ???
 //   override def lowerKey(key: K): K = {
 //     val n = findNear(key, ConcurrentSkipListMap.LT, comparator)
@@ -2692,24 +2611,9 @@ class ConcurrentSkipListMap[K, V]()
 //     else n.key
 //   }
 
-  /**
-   * Returns a key-value mapping associated with the greatest key
-   * less than or equal to the given key, or {@code null} if there
-   * is no such key. The returned entry does <em>not</em> support
-   * the {@code Entry.setValue} method.
-   *
-   * @param key the key
-   * @throws ClassCastException   {@inheritDoc }
-   * @throws NullPointerException if the specified key is null
-   */
   override def floorEntry(key: K): Map.Entry[K, V] = ???
 //   override def floorEntry(key: K): Map.Entry[K, V] = findNearEntry(key, ConcurrentSkipListMap.LT | ConcurrentSkipListMap.EQ, comparator)
 
-  /**
-   * @param key the key
-   * @throws ClassCastException   {@inheritDoc }
-   * @throws NullPointerException if the specified key is null
-   */
   override def floorKey(key: K): K = ???
 //   override def floorKey(key: K): K = {
 //     val n = findNear(key, ConcurrentSkipListMap.LT | ConcurrentSkipListMap.EQ, comparator)
@@ -2717,15 +2621,6 @@ class ConcurrentSkipListMap[K, V]()
 //     else n.key
 //   }
 
-  /**
-   * Returns a key-value mapping associated with the least key
-   * greater than or equal to the given key, or {@code null} if
-   * there is no such entry. The returned entry does <em>not</em>
-   * support the {@code Entry.setValue} method.
-   *
-   * @throws ClassCastException   {@inheritDoc }
-   * @throws NullPointerException if the specified key is null
-   */
   override def ceilingEntry(key: K): Map.Entry[K, V] = ???
   // override def ceilingEntry(key: K): Map.Entry[K, V] = findNearEntry(key, ConcurrentSkipListMap.GT | ConcurrentSkipListMap.EQ, comparator)
 
@@ -2736,16 +2631,6 @@ class ConcurrentSkipListMap[K, V]()
 //     else n.key
 //   }
 
-  /**
-   * Returns a key-value mapping associated with the least key
-   * strictly greater than the given key, or {@code null} if there
-   * is no such key. The returned entry does <em>not</em> support
-   * the {@code Entry.setValue} method.
-   *
-   * @param key the key
-   * @throws ClassCastException   {@inheritDoc }
-   * @throws NullPointerException if the specified key is null
-   */
   override def higherEntry(key: K): Map.Entry[K, V] = ???
 //   override def higherEntry(key: K): Map.Entry[K, V] = findNearEntry(key, ConcurrentSkipListMap.GT, comparator)
 
@@ -2756,39 +2641,15 @@ class ConcurrentSkipListMap[K, V]()
 //     else n.key
 //   }
 
-  /**
-   * Returns a key-value mapping associated with the least
-   * key in this map, or {@code null} if the map is empty.
-   * The returned entry does <em>not</em> support
-   * the {@code Entry.setValue} method.
-   */
   override def firstEntry(): Map.Entry[K, V] = ???
 //   override def firstEntry: Map.Entry[K, V] = findFirstEntry
 
-  /**
-   * Returns a key-value mapping associated with the greatest
-   * key in this map, or {@code null} if the map is empty.
-   * The returned entry does <em>not</em> support
-   * the {@code Entry.setValue} method.
-   */
   override def lastEntry(): Map.Entry[K, V] = ???
 //   override def lastEntry: Map.Entry[K, V] = findLastEntry
 
-  /**
-   * Removes and returns a key-value mapping associated with
-   * the least key in this map, or {@code null} if the map is empty.
-   * The returned entry does <em>not</em> support
-   * the {@code Entry.setValue} method.
-   */
   override def pollFirstEntry(): Map.Entry[K, V] = ???
 //   override def pollFirstEntry: Map.Entry[K, V] = doRemoveFirstEntry
 
-  /**
-   * Removes and returns a key-value mapping associated with
-   * the greatest key in this map, or {@code null} if the map is empty.
-   * The returned entry does <em>not</em> support
-   * the {@code Entry.setValue} method.
-   */
   override def pollLastEntry(): Map.Entry[K, V] = ???
 //   override def pollLastEntry: Map.Entry[K, V] = doRemoveLastEntry
 
