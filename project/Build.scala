@@ -26,7 +26,7 @@ object Build {
   import MyScalaNativePlugin.{isGeneratingForIDE, ideScalaVersion}
 
 // format: off
-  lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
+  lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)
   lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
