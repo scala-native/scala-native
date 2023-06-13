@@ -26,7 +26,9 @@ final case class MultiScalaProject private (
       Settings.noPublishSettings
     )
 
-  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3, v3Next)
+  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
+    if (enableExperimentalCompiler) Some(v3Next) else None
+  }
 
   def mapBinaryVersions(
       mapping: String => Project => Project
@@ -118,6 +120,18 @@ object ScopedMultiScalaProject {
 object MultiScalaProject {
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
+
+  private final val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
+  lazy val enableExperimentalCompiler = {
+    val enabled = scala.sys.env.contains(ExperimentalCompilerEnv)
+    val msg =
+      if (enabled)
+        s"Found `$ExperimentalCompilerEnv` env var: enabled sub-projects using Scala experimental version ${ScalaVersions.scala3Nightly}, using suffix `3_next`."
+      else
+        s"Not found `$ExperimentalCompilerEnv` env var: sub-projects using Scala experimental version would not be available."
+    println(msg)
+    enabled
+  }
 
   final val scalaCrossVersions = Map[String, Seq[String]](
     "2.12" -> ScalaVersions.crossScala212,

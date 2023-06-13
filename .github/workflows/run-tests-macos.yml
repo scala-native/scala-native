@@ -16,6 +16,8 @@ jobs:
   test-runtime:
     name: Test runtime
     runs-on: macos-11
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
@@ -52,6 +54,8 @@ jobs:
     name: Test runtime extension
     runs-on: macos-11
     needs: [test-runtime]
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
@@ -143,6 +147,8 @@ jobs:
   test-multihreading:
     name: Test experimental multithreading support
     runs-on: macos-11
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
