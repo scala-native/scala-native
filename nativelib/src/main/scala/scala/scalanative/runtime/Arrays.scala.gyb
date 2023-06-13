@@ -12,7 +12,7 @@
 //   scripts/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
 //     --line-directive '' \
-//     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
+//     -o nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
 //
 //  After executing the script, you may want to edit this file to remove
 //  personally or build-system specific identifiable information.
@@ -175,7 +175,7 @@ final class ${T}Array private () extends Array[${T}] {
     ${sizeT}.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i >= length) {
+    if (i < 0 || i > length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
