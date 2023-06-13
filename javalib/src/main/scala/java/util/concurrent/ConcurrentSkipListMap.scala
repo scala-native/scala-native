@@ -138,9 +138,9 @@ object ConcurrentSkipListMap {
 //     false
 //   }
 
-//   private val EQ = 1
-//   private val LT = 2
-//   private val GT = 0 // Actually checked as !LT
+  private val EQ = 1
+  private val LT = 2
+  private val GT = 0 // Actually checked as !LT
 
   private[concurrent] def toList[E](c: Collection[E]) = {
     val list = new ArrayList[E]
@@ -361,28 +361,17 @@ object ConcurrentSkipListMap {
 //    *
 //    * @serial include
 //    */
-//   @SerialVersionUID(-7647078645895051609L)
-//   final private[concurrent] class SubMap[K, V] private[concurrent](/** Underlying map */
-//                                                                    val m: ConcurrentSkipListMap[K, V],
-
-//                                                                    /** lower bound key, or null if from start */
-//                                                                    val lo: K,
-
-//                                                                    /** inclusion flag for lo */
-//                                                                    val loInclusive: Boolean,
-
-//                                                                    /** upper bound key, or null if to end */
-//                                                                    val hi: K,
-
-//                                                                    /** inclusion flag for hi */
-//                                                                    val hiInclusive: Boolean,
-
-//                                                                    /** direction */
-//                                                                    val isDescending: Boolean)
-
-//   /**
-//    * Creates a new submap, initializing all fields.
-//    */ extends AbstractMap[K, V] with ConcurrentNavigableMap[K, V] with Serializable {
+  @SerialVersionUID(-7647078645895051609L)
+  final private[concurrent] class SubMap[K, V] private[concurrent] (
+      val m: ConcurrentSkipListMap[K, V],
+      val lo: K,
+      val loInclusive: Boolean,
+      val hi: K,
+      val hiInclusive: Boolean,
+      val isDescending: Boolean
+  ) extends AbstractMap[K, V]
+      with ConcurrentNavigableMap[K, V]
+      with Serializable {
 //     val cmp: Comparator[_ >: K] = m.comparator
 //     if (lo != null && hi != null && cpr(cmp, lo, hi) > 0) throw new IllegalArgumentException("inconsistent range")
 //     // Lazily initialized view holders
@@ -440,6 +429,7 @@ object ConcurrentSkipListMap {
 //     /**
 //      * Returns lowest absolute key (ignoring directionality).
 //      */
+    private[concurrent] def lowestKey = ???
 //     private[concurrent] def lowestKey = {
 //       val cmp = m.comparator
 //       val n = loNode(cmp)
@@ -450,6 +440,7 @@ object ConcurrentSkipListMap {
 //     /**
 //      * Returns highest absolute key (ignoring directionality).
 //      */
+    private[concurrent] def highestKey: K = ???
 //     private[concurrent] def highestKey: K = {
 //       val cmp = m.comparator
 //       val n = hiNode(cmp)
@@ -460,6 +451,7 @@ object ConcurrentSkipListMap {
 //       throw new NoSuchElementException
 //     }
 
+    private[concurrent] def lowestEntry: Map.Entry[K, V] = ???
 //     private[concurrent] def lowestEntry: Map.Entry[K, V] = {
 //       val cmp = m.comparator
 
@@ -473,6 +465,7 @@ object ConcurrentSkipListMap {
 //       }
 //     }
 
+    private[concurrent] def highestEntry: Map.Entry[K, V] = ???
 //     private[concurrent] def highestEntry: Map.Entry[K, V] = {
 //       val cmp = m.comparator
 
@@ -486,6 +479,7 @@ object ConcurrentSkipListMap {
 //       }
 //     }
 
+    private[concurrent] def removeLowest: Map.Entry[K, V] = ???
 //     private[concurrent] def removeLowest: Map.Entry[K, V] = {
 //       val cmp = m.comparator
 
@@ -501,6 +495,7 @@ object ConcurrentSkipListMap {
 //       }
 //     }
 
+    private[concurrent] def removeHighest: Map.Entry[K, V] = ???
 //     private[concurrent] def removeHighest: Map.Entry[K, V] = {
 //       val cmp = m.comparator
 
@@ -516,9 +511,8 @@ object ConcurrentSkipListMap {
 //       }
 //     }
 
-//     /**
-//      * Submap version of ConcurrentSkipListMap.findNearEntry.
-//      */
+    private[concurrent] def getNearEntry(key: K, rel: Int): Map.Entry[K, V] =
+      ???
 //     private[concurrent] def getNearEntry(key: K, rel: Int): Map.Entry[K, V] = {
 //       val cmp = m.comparator
 //       if (isDescending) { // adjust relation for direction
@@ -534,7 +528,7 @@ object ConcurrentSkipListMap {
 //       else e
 //     }
 
-//     // Almost the same as getNearEntry, except for keys
+    private[concurrent] def getNearKey(key: K, rel: Int): K = ???
 //     private[concurrent] def getNearKey(key: K, rel: Int): K = {
 //       val cmp = m.comparator
 //       if (isDescending) if ((rel & LT) == 0) rel |= LT
@@ -649,16 +643,19 @@ object ConcurrentSkipListMap {
 //       m.replace(key, value)
 //     }
 
+    override def comparator(): Comparator[_ >: K] = ???
 //     override def comparator: Comparator[_ >: K] = {
 //       val cmp = m.comparator
 //       if (isDescending) Collections.reverseOrder(cmp)
 //       else cmp
 //     }
 
-//     /**
-//      * Utility to create submaps, where given bounds override
-//      * unbounded(null) ones and/or are checked against bounded ones.
-//      */
+    private[concurrent] def newSubMap(
+        fromKey: K,
+        fromInclusive: Boolean,
+        toKey: K,
+        toInclusive: Boolean
+    ) = ???
 //     private[concurrent] def newSubMap(fromKey: K, fromInclusive: Boolean, toKey: K, toInclusive: Boolean) = {
 //       val cmp = m.comparator
 //       if (isDescending) { // flip senses
@@ -688,69 +685,98 @@ object ConcurrentSkipListMap {
 //       new ConcurrentSkipListMap.SubMap[K, V](m, fromKey, fromInclusive, toKey, toInclusive, isDescending)
 //     }
 
-//     override def subMap(fromKey: K, fromInclusive: Boolean, toKey: K, toInclusive: Boolean): ConcurrentSkipListMap.SubMap[K, V] = {
-//       if (fromKey == null || toKey == null) throw new NullPointerException
-//       newSubMap(fromKey, fromInclusive, toKey, toInclusive)
-//     }
+    override def subMap(
+        fromKey: K,
+        fromInclusive: Boolean,
+        toKey: K,
+        toInclusive: Boolean
+    ): ConcurrentSkipListMap.SubMap[K, V] = {
+      if (fromKey == null || toKey == null) throw new NullPointerException
+      newSubMap(fromKey, fromInclusive, toKey, toInclusive)
+    }
 
-//     override def headMap(toKey: K, inclusive: Boolean): ConcurrentSkipListMap.SubMap[K, V] = {
-//       if (toKey == null) throw new NullPointerException
-//       newSubMap(null, false, toKey, inclusive)
-//     }
+    override def headMap(
+        toKey: K,
+        inclusive: Boolean
+    ): ConcurrentSkipListMap.SubMap[K, V] = {
+      if (toKey == null) throw new NullPointerException
+      newSubMap(null.asInstanceOf[K], false, toKey, inclusive)
+    }
 
-//     override def tailMap(fromKey: K, inclusive: Boolean): ConcurrentSkipListMap.SubMap[K, V] = {
-//       if (fromKey == null) throw new NullPointerException
-//       newSubMap(fromKey, inclusive, null, false)
-//     }
+    override def tailMap(
+        fromKey: K,
+        inclusive: Boolean
+    ): ConcurrentSkipListMap.SubMap[K, V] = {
+      if (fromKey == null) throw new NullPointerException
+      newSubMap(fromKey, inclusive, null.asInstanceOf[K], false)
+    }
 
-//     override def subMap(fromKey: K, toKey: K): ConcurrentSkipListMap.SubMap[K, V] = subMap(fromKey, true, toKey, false)
+    override def subMap(
+        fromKey: K,
+        toKey: K
+    ): ConcurrentSkipListMap.SubMap[K, V] = subMap(fromKey, true, toKey, false)
 
-//     override def headMap(toKey: K): ConcurrentSkipListMap.SubMap[K, V] = headMap(toKey, false)
+    override def headMap(toKey: K): ConcurrentSkipListMap.SubMap[K, V] =
+      headMap(toKey, false)
 
-//     override def tailMap(fromKey: K): ConcurrentSkipListMap.SubMap[K, V] = tailMap(fromKey, true)
+    override def tailMap(fromKey: K): ConcurrentSkipListMap.SubMap[K, V] =
+      tailMap(fromKey, true)
 
-//     override def descendingMap = new ConcurrentSkipListMap.SubMap[K, V](m, lo, loInclusive, hi, hiInclusive, !isDescending)
+    override def descendingMap() = new ConcurrentSkipListMap.SubMap[K, V](
+      m,
+      lo,
+      loInclusive,
+      hi,
+      hiInclusive,
+      !isDescending
+    )
 
-//     override def ceilingEntry(key: K): Map.Entry[K, V] = getNearEntry(key, GT | EQ)
+    override def ceilingEntry(key: K): Map.Entry[K, V] =
+      getNearEntry(key, GT | EQ)
 
-//     override def ceilingKey(key: K): K = getNearKey(key, GT | EQ)
+    override def ceilingKey(key: K): K = getNearKey(key, GT | EQ)
 
-//     override def lowerEntry(key: K): Map.Entry[K, V] = getNearEntry(key, LT)
+    override def lowerEntry(key: K): Map.Entry[K, V] = getNearEntry(key, LT)
 
-//     override def lowerKey(key: K): K = getNearKey(key, LT)
+    override def lowerKey(key: K): K = getNearKey(key, LT)
 
-//     override def floorEntry(key: K): Map.Entry[K, V] = getNearEntry(key, LT | EQ)
+    override def floorEntry(key: K): Map.Entry[K, V] =
+      getNearEntry(key, LT | EQ)
 
-//     override def floorKey(key: K): K = getNearKey(key, LT | EQ)
+    override def floorKey(key: K): K = getNearKey(key, LT | EQ)
 
-//     override def higherEntry(key: K): Map.Entry[K, V] = getNearEntry(key, GT)
+    override def higherEntry(key: K): Map.Entry[K, V] = getNearEntry(key, GT)
 
-//     override def higherKey(key: K): K = getNearKey(key, GT)
+    override def higherKey(key: K): K = getNearKey(key, GT)
 
-//     override def firstKey: K = if (isDescending) highestKey
-//     else lowestKey
+    override def firstKey(): K = if (isDescending) highestKey
+    else lowestKey
 
-//     override def lastKey: K = if (isDescending) lowestKey
-//     else highestKey
+    override def lastKey(): K = if (isDescending) lowestKey
+    else highestKey
 
-//     override def firstEntry: Map.Entry[K, V] = if (isDescending) highestEntry
-//     else lowestEntry
+    override def firstEntry(): Map.Entry[K, V] = if (isDescending) highestEntry
+    else lowestEntry
 
-//     override def lastEntry: Map.Entry[K, V] = if (isDescending) lowestEntry
-//     else highestEntry
+    override def lastEntry(): Map.Entry[K, V] = if (isDescending) lowestEntry
+    else highestEntry
 
-//     override def pollFirstEntry: Map.Entry[K, V] = if (isDescending) removeHighest
-//     else removeLowest
+    override def pollFirstEntry(): Map.Entry[K, V] = if (isDescending)
+      removeHighest
+    else removeLowest
 
-//     override def pollLastEntry: Map.Entry[K, V] = if (isDescending) removeLowest
-//     else removeHighest
+    override def pollLastEntry(): Map.Entry[K, V] = if (isDescending)
+      removeLowest
+    else removeHighest
 
+    override def keySet(): NavigableSet[K] = ???
 //     override def keySet: NavigableSet[K] = {
 //       var ks = null
 //       if ((ks = keySetView) != null) return ks
 //       keySetView = new ConcurrentSkipListMap.KeySet[K, V](this)
 //     }
 
+    override def navigableKeySet(): NavigableSet[K] = ???
 //     override def navigableKeySet: NavigableSet[K] = {
 //       var ks = null
 //       if ((ks = keySetView) != null) return ks
@@ -763,13 +789,15 @@ object ConcurrentSkipListMap {
 //       valuesView = new ConcurrentSkipListMap.Values[K, V](this)
 //     }
 
+    override def entrySet(): Set[Map.Entry[K, V]] = ???
 //     override def entrySet: Set[Map.Entry[K, V]] = {
 //       var es = null
 //       if ((es = entrySetView) != null) return es
 //       entrySetView = new ConcurrentSkipListMap.EntrySet[K, V](this)
 //     }
 
-//     override def descendingKeySet: NavigableSet[K] = descendingMap.navigableKeySet
+    override def descendingKeySet(): NavigableSet[K] =
+      descendingMap().navigableKeySet()
 
 //     /**
 //      * Variant of main Iter class to traverse through submaps.
@@ -903,7 +931,7 @@ object ConcurrentSkipListMap {
 
 //       override def characteristics: Int = Spliterator.DISTINCT
 //     }
-//   }
+  }
 
 //   /**
 //    * Base class providing common structure for Spliterators.
