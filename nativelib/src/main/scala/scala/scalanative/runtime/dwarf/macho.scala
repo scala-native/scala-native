@@ -43,12 +43,12 @@ object MachO {
     (0 until header.ncmds.toInt).foreach { cmdId =>
       val commandType = uint32()
       val commandSize = uint32()
-      if (commandSize > 0) {
-        commandType match {
+      if (commandSize > 0.toUInt) {
+        commandType.toInt match {
           case LoadCommand.LC_SEGMENT_64 =>
             segments += Segment.parse()
           case _ =>
-            skipBytes(commandSize - 8)
+            skipBytes((commandSize - 8.toUInt).toLong)
         }
       }
 

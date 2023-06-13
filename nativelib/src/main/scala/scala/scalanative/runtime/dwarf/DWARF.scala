@@ -40,15 +40,15 @@ object DWARF {
 
       val version = uint16()
       assert(
-        version >= 2 && version <= 5,
+        version >= 2.toUInt && version <= 5.toUInt,
         s"Expected DWARF version 2-5, got $version instead"
       )
 
       def read_ulong: Long =
-        if (dwarf64) uint64() else uint32()
+        if (dwarf64) uint64() else uint32().toLong
 
-      val (unit_type, address_size, debug_abbrev_offset) =
-        if (version >= 5) {
+      val (unit_type, address_size, debug_abbrev_offset): (UByte, UByte, Long) =
+        if (version >= 5.toUInt) {
           (
             uint8(),
             uint8(),
@@ -57,13 +57,13 @@ object DWARF {
         } else {
           val dao = read_ulong
           (
-            0,
+            0.toUByte,
             uint8(),
             dao
           )
         }
       Header(
-        version = version,
+        version = version.toInt,
         is64 = dwarf64,
         unit_length = unit_length,
         unit_type = unit_type,
@@ -141,7 +141,7 @@ object DWARF {
     def read(at: UInt): String = {
 
       // WARNING: lots of precision loss
-      assert(at < buf.length)
+      assert(at < buf.length.toUInt)
       val until = buf.indexWhere(_ == 0, at.toInt)
 
       new String(buf.slice(at.toInt, until))
@@ -150,7 +150,7 @@ object DWARF {
   object Strings {
     def parse(debug_str: Section)(implicit bf: BinaryFile): Strings = {
       val pos = bf.position()
-      bf.seek(debug_str.offset)
+      bf.seek(debug_str.offset.toLong)
 
       val buf = Array.ofDim[Byte](debug_str.size.toInt)
       bf.readFully(buf)
@@ -164,8 +164,8 @@ object DWARF {
       debug_info: Section,
       debug_abbrev: Section
   )(implicit bf: BinaryFile): Vector[DIE] = {
-    bf.seek(debug_info.offset)
-    val end_offset = debug_info.offset + debug_info.size
+    bf.seek(debug_info.offset.toLong)
+    val end_offset = debug_info.offset.toLong + debug_info.size
     def stop = bf.position() >= end_offset
     val dies = Vector.newBuilder[DIE]
     while (!stop) {
@@ -187,7 +187,7 @@ object DWARF {
       val header = Header.parse(bf)
       val pos = bf.position()
 
-      bf.seek(debug_abbrev.offset + header.debug_abbrev_offset)
+      bf.seek(debug_abbrev.offset.toLong + header.debug_abbrev_offset)
       val abbrev = Abbrev.parse(bf)
       val idx = IntMap(abbrev.map(a => a.code -> a): _*)
 
@@ -270,18 +270,20 @@ object DWARF {
         case DW_FORM_ref8 =>
           header.header_offset + uint64()
         case DW_FORM_ref4 =>
-          header.header_offset + uint32()
+          header.header_offset + uint32().toLong
         case DW_FORM_ref2 =>
-          header.header_offset + uint16()
+          header.header_offset + uint16().toLong
         case DW_FORM_ref1 =>
-          header.header_offset + uint8()
+          header.header_offset + uint8().toLong
         case DW_FORM_exprloc =>
           val len = read_unsigned_leb128()
           ds.readNBytes(len)
 
         case DW_FORM_block1 =>
           val len = uint8()
-          ds.readNBytes(len)
+          ds.readNBytes(len.toInt)
+        case _ =>
+          throw new Exception(s"Unsupported form: $form")
 
       }
 
@@ -594,7 +596,7 @@ object DWARF {
   object Lines {
 
     def parse(section: Section)(implicit bf: BinaryFile) = {
-      bf.seek(section.offset)
+      bf.seek(section.offset.toLong)
       val header = Header.parse()
       println(header)
     }
@@ -624,11 +626,11 @@ object DWARF {
         val line_range = uint8()
         val opcode_base = uint8()
 
-        pprint.log(
-          s"$unit_length, $version, $header_length, " +
-            s"$minimum_instruction_length, $maximum_operations_per_instruction, " +
-            s"$default_is_stmt, $line_base, $line_range,$opcode_base"
-        )
+        // pprint.log(
+        //   s"$unit_length, $version, $header_length, " +
+        //     s"$minimum_instruction_length, $maximum_operations_per_instruction, " +
+        //     s"$default_is_stmt, $line_base, $line_range,$opcode_base"
+        // )
 
       }
     }

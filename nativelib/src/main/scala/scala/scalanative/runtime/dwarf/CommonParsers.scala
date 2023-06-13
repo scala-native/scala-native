@@ -22,7 +22,7 @@ object CommonParsers {
         val b1 = stream.readByte()
         val b2 = stream.readByte()
 
-        ((b1 & 0xff) | (b2 & 0xff) << 8).toShort
+        ((b1 & 0xff) | (b2 & 0xff) << 8).toShort.toUShort
       case BIG =>
         stream.readUnsignedShort()
     }
@@ -35,12 +35,12 @@ object CommonParsers {
         val b3 = stream.readUnsignedByte().toLong
         val b4 = stream.readUnsignedByte().toLong
 
-        (b1 & 0xff) |
+        ((b1 & 0xff) |
           (b2 & 0xff) << 8 |
           (b3 & 0xff) << 16 |
-          (b4 & 0xff) << 24
+          (b4 & 0xff) << 24).toUInt
       case BIG =>
-        stream.readInt()
+        stream.readInt().toUInt
     }
 
   def uint64()(implicit endi: Endianness, stream: BinaryFile): Long =
