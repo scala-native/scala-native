@@ -113,6 +113,8 @@ jobs:
     name: Test runtime extension
     runs-on: ubuntu-20.04
     needs: [tests-tools, test-runtime]
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
@@ -162,6 +164,8 @@ jobs:
     name: Test runtime no-opt
     runs-on: ubuntu-20.04
     needs: tests-tools
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
@@ -238,6 +242,8 @@ jobs:
     name: Test experimental multithreading support
     runs-on: ubuntu-20.04
     needs: tests-tools
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
