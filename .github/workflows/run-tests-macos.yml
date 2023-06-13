@@ -16,6 +16,8 @@ jobs:
   test-runtime:
     name: Test runtime
     runs-on: macos-11
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:

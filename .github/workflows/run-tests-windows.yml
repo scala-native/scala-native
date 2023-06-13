@@ -16,6 +16,8 @@ jobs:
   test-runtime:
     name: Test runtime
     runs-on: windows-2019
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:

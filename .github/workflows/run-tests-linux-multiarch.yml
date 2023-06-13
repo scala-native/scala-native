@@ -77,6 +77,8 @@ jobs:
     name: Test runtime
     runs-on: ubuntu-22.04
     needs: build-image
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:

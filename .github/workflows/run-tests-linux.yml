@@ -19,6 +19,8 @@ jobs:
   tests-tools:
     name: Compile & test tools
     runs-on: ubuntu-20.04
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +64,8 @@ jobs:
 
   test-compiler-plugins:
     runs-on: ubuntu-20.04
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
@@ -81,6 +85,8 @@ jobs:
     name: Test runtime
     runs-on: ubuntu-22.04
     needs: tests-tools
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
