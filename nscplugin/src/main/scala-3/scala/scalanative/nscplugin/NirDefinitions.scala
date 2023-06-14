@@ -4,6 +4,7 @@ import dotty.tools.dotc.core
 import core.Symbols._
 import core.Symbols.{toClassDenot, toDenot}
 import core.Contexts._
+import core.StdNames._
 import core.Names._
 import core.Types._
 import scala.annotation.{threadUnsafe => tu}
@@ -43,6 +44,9 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val SizeClass = requiredClass("scala.scalanative.unsafe.Size")
   @tu lazy val USizeClass = requiredClass("scala.scalanative.unsigned.USize")
   @tu lazy val RawSizeClass = requiredClass("scala.scalanative.runtime.RawSize")
+
+  @tu lazy val NewUIntClass = requiredClass("scala.scalanative.unsigned.NewUInt")
+  @tu lazy val UnsignedIntClass = requiredClass("scala.scalanative.unsigned.UnsignedInt")
 
   // Pointers
   @tu lazy val PtrClass = requiredClass("scala.scalanative.unsafe.Ptr")
@@ -157,6 +161,14 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_alignmentOf = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
   @tu lazy val Intrinsics_alignmentOfType = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
 
+  @tu lazy val UnsignedModule = requiredModule("scala.scalanative.unsigned.NewUInt")
+  @tu lazy val Intrinsics_unsignedAlts =
+    UnsignedModule.info
+      .member(termName("unsigned"))
+      .alternatives
+      .map(_.symbol)
+      .ensuring(_.size == 1)
+
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
     'B' -> requiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
@@ -202,14 +214,17 @@ final class NirDefinitions()(using ctx: Context) {
     UShortClass -> RuntimeBoxesModule.requiredMethod("boxToUShort"),
     UIntClass -> RuntimeBoxesModule.requiredMethod("boxToUInt"),
     ULongClass -> RuntimeBoxesModule.requiredMethod("boxToULong"),
-    USizeClass -> RuntimeBoxesModule.requiredMethod("boxToUSize")
+    USizeClass -> RuntimeBoxesModule.requiredMethod("boxToUSize"),
+    NewUIntClass -> RuntimeBoxesModule.companionModule.requiredMethod("boxToUnsignedInt")
   )
   @tu lazy val UnboxUnsignedMethod = Map[Symbol, Symbol](
     UByteClass -> RuntimeBoxesModule.requiredMethod("unboxToUByte"),
     UShortClass -> RuntimeBoxesModule.requiredMethod("unboxToUShort"),
     UIntClass -> RuntimeBoxesModule.requiredMethod("unboxToUInt"),
     ULongClass -> RuntimeBoxesModule.requiredMethod("unboxToULong"),
-    USizeClass -> RuntimeBoxesModule.requiredMethod("unboxToUSize")
+    USizeClass -> RuntimeBoxesModule.requiredMethod("unboxToUSize"),
+    NewUIntClass -> RuntimeBoxesModule.companionModule.requiredMethod("unboxToUnsignedInt"),
+    UnsignedIntClass -> RuntimeBoxesModule.companionModule.requiredMethod("unboxToUnsignedInt")
   )
 
   // Scala boxes

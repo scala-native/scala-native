@@ -51,5 +51,8 @@ class ScalaNativePlugin extends StandardPlugin:
           }
         case (config, _) => config
       }
-    List(PrepNativeInterop(), PostInlineNativeInterop(), GenNIR(genNirSettings))
+    PrepNativeInterop() ::
+      PostInlineNativeInterop() ::
+      UnsignedIntegersErasure() ::
+      GenNIR(genNirSettings) :: Nil
   }

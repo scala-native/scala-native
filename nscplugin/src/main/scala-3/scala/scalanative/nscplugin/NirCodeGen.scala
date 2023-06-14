@@ -83,6 +83,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       .foreach(genClass)
 
     generatedDefns.toSeq
+      .tapEach(defn => println(nir.Show(defn)))
       .groupBy(defn => getFileFor(defn.name.top))
       .foreach(genIRFile(_, _))
 

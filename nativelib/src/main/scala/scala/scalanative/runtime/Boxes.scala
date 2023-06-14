@@ -34,6 +34,11 @@ object Boxes {
   @inline def boxToSize(v: RawSize): Size   = new Size(v)
   @inline def boxToUSize(v: RawSize): USize = new USize(v)
 
+  @inline def boxToUnsignedInt(v: NewUInt): UnsignedInt = new UnsignedInt(v)
+  @inline def unboxToUnsignedInt(v: java.lang.Object): NewUInt = 
+    if(v == null) NewUInt.unsigned(0) 
+    else v.asInstanceOf[UnsignedInt].value  
+
   @inline def unboxToSize(o: java.lang.Object): RawSize =
     if (o == null) Intrinsics.castIntToRawSize(0)
     else o.asInstanceOf[Size].rawSize
@@ -41,6 +46,7 @@ object Boxes {
     if (o == null) Intrinsics.castIntToRawSize(0)
     else o.asInstanceOf[USize].rawSize
 
+    
   @inline def boxToUByte(v: Byte): UByte = new UByte(v)
   @inline def unboxToUByte(o: java.lang.Object): Byte =
     if (o == null) 0.toByte else o.asInstanceOf[UByte].underlying

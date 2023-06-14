@@ -5,6 +5,7 @@ import dotty.tools.backend.jvm.DottyPrimitives
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.util.ReadOnlyMap
 import dotty.tools.dotc.core._
+import dotty.tools.dotc.report
 import Names.TermName
 import StdNames._
 import Types._
@@ -28,7 +29,9 @@ object NirPrimitives {
   final val REM_UINT = 1 + DIV_ULONG
   final val REM_ULONG = 1 + REM_UINT
 
-  final val BYTE_TO_UINT = 1 + REM_ULONG
+  final val TO_UNSIGNED = 1 + REM_ULONG
+
+  final val BYTE_TO_UINT = 1 + TO_UNSIGNED
   final val BYTE_TO_ULONG = 1 + BYTE_TO_UINT
   final val SHORT_TO_UINT = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
@@ -148,6 +151,14 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     def addPrimitives(alts: Seq[Symbol], tag: Int) =
       alts.foreach(addPrimitive(_, tag))
 
+    def addDottyPrimitives(cls: Symbol, method: TermName, code: Int)(using
+        Context
+    ): Unit = {
+      val alts = cls.info.member(method).alternatives.map(_.symbol)
+      if (alts.isEmpty) report.error(s"Unknown primitive method $cls.$method")
+      else alts.foreach(s => addPrimitive(s, code))
+    }
+
     // scalafmt: { maxColumn = 120}
     addPrimitive(defn.throwMethod, THROW)
     addPrimitive(defn.BoxedUnit_UNIT, BOXED_UNIT)
@@ -158,6 +169,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_divULong, DIV_ULONG)
     addPrimitive(defnNir.Intrinsics_remUInt, REM_UINT)
     addPrimitive(defnNir.Intrinsics_remULong, REM_ULONG)
+    addPrimitives(defnNir.Intrinsics_unsignedAlts, TO_UNSIGNED)
     addPrimitive(defnNir.Intrinsics_byteToUInt, BYTE_TO_UINT)
     addPrimitive(defnNir.Intrinsics_byteToULong, BYTE_TO_ULONG)
     addPrimitive(defnNir.Intrinsics_shortToUInt, SHORT_TO_UINT)
@@ -220,6 +232,36 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       REFLECT_SELECTABLE_APPLYDYN
     )
     defnNir.RuntimeSafeZoneAllocator_allocate.foreach(addPrimitive(_, SAFEZONE_ALLOC))
+
+    import dotty.tools.backend.ScalaPrimitivesOps.*
+    lazy val UIntClass = defnNir.NewUIntClass
+    addDottyPrimitives(UIntClass, nme.EQ, EQ)
+    addDottyPrimitives(UIntClass, nme.NE, NE)
+    addDottyPrimitives(UIntClass, nme.ADD, ADD)
+    addDottyPrimitives(UIntClass, nme.SUB, SUB)
+    addDottyPrimitives(UIntClass, nme.MUL, MUL)
+    addDottyPrimitives(UIntClass, nme.DIV, DIV)
+    addDottyPrimitives(UIntClass, nme.MOD, MOD)
+    addDottyPrimitives(UIntClass, nme.LT, LT)
+    addDottyPrimitives(UIntClass, nme.LE, LE)
+    addDottyPrimitives(UIntClass, nme.GT, GT)
+    addDottyPrimitives(UIntClass, nme.GE, GE)
+    addDottyPrimitives(UIntClass, nme.XOR, XOR)
+    addDottyPrimitives(UIntClass, nme.OR, OR)
+    addDottyPrimitives(UIntClass, nme.AND, AND)
+    addDottyPrimitives(UIntClass, nme.LSL, LSL)
+    addDottyPrimitives(UIntClass, nme.LSR, LSR)
+    addDottyPrimitives(UIntClass, nme.ASR, ASR)
+    // conversions
+    addDottyPrimitives(UIntClass, nme.toByte, I2B)
+    addDottyPrimitives(UIntClass, nme.toShort, I2S)
+    addDottyPrimitives(UIntClass, nme.toChar, I2C)
+    addDottyPrimitives(UIntClass, nme.toInt, I2I)
+    addDottyPrimitives(UIntClass, nme.toLong, I2L)
+    // unary methods
+    addDottyPrimitives(UIntClass, nme.UNARY_~, NOT)
+    // addDottyPrimitives(UIntClass, nme.toFloat, I2F)
+    // addDottyPrimitives(UIntClass, nme.toDouble, I2D)
     primitives
   }
 }

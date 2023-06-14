@@ -2036,9 +2036,16 @@ trait NirGenExpr(using Context) {
     private def genUnsignedOp(app: Tree, code: Int): Val = {
       given nir.Position = app.span
       import NirPrimitives._
+      def castToUnsigned = code == TO_UNSIGNED
       def castUnsignedInteger = code >= BYTE_TO_UINT && code <= INT_TO_ULONG
       def castUnsignedToFloat = code >= UINT_TO_FLOAT && code <= ULONG_TO_DOUBLE
       app match {
+        case Apply(_, Seq(argp)) if castToUnsigned =>
+          val arg = genExpr(argp)
+          println(argp -> arg)
+          arg
+          // buf.copy(arg, unwind)
+
         case Apply(_, Seq(argp)) if castUnsignedInteger =>
           val ty = genType(app.tpe)
           val arg = genExpr(argp)

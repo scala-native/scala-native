@@ -111,6 +111,8 @@ object Type {
     val Short = Type.Ref(Global.Top("scala.scalanative.unsigned.UShort"))
     val Int = Type.Ref(Global.Top("scala.scalanative.unsigned.UInt"))
     val Long = Type.Ref(Global.Top("scala.scalanative.unsigned.ULong"))
+    val NewInt = Type.Ref(Global.Top("scala.scalanative.unsigned.NewUInt"))
+    val NewIntBox = Type.Ref(Global.Top("scala.scalanative.unsigned.UnsignedInt"))
 
     val values: Set[nir.Type] = Set(Size, Byte, Short, Int, Long)
   }
@@ -119,6 +121,8 @@ object Type {
     unsigned.Byte -> Type.Byte,
     unsigned.Short -> Type.Short,
     unsigned.Int -> Type.Int,
+    unsigned.NewIntBox -> Type.Int,
+    // unsigned.NewIntBox -> Type.Int,
     unsigned.Long -> Type.Long
   )
 
