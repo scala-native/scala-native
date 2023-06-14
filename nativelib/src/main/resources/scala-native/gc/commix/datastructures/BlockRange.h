@@ -1,7 +1,7 @@
 #ifndef IMMIX_BLOCKRANGE_H
 #define IMMIX_BLOCKRANGE_H
 
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include "../Constants.h"
 #include <stdbool.h>
 #include <stdatomic.h>

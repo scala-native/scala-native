@@ -1,7 +1,6 @@
-#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
-    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
+// MemoryMap.c is used by all GCs and Zone
 
-#include "MemoryMap.h"
+#include "shared/MemoryMap.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -126,4 +125,3 @@ void memoryUnmapOrExitOnError(void *address, size_t memorySize) {
     }
 #endif
 }
-#endif

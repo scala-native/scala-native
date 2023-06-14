@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "LargeMemoryPool.h"
-#include "../gc/shared/GCScalaNative.h"
-#include "../gc/shared/MemoryMap.h"
+#include "shared/GCScalaNative.h"
+#include "shared/MemoryMap.h"
 #include "Util.h"
 
 LargeMemoryPool *LargeMemoryPool_open() {

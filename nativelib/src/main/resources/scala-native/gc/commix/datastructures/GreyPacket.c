@@ -1,9 +1,9 @@
 
 #if defined(SCALANATIVE_GC_COMMIX)
 
-#include "../Object.h"
+#include "commix/Object.h"
 #include "GreyPacket.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include <string.h>
 
 bool GreyPacket_Push(GreyPacket *packet, Stack_Type value) {

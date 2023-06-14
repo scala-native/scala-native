@@ -2,7 +2,7 @@
 
 #include "Bytemap.h"
 #include <stdio.h>
-#include "utils/MathUtils.h"
+#include "immix_commix/utils/MathUtils.h"
 
 void Bytemap_Init(Bytemap *bytemap, word_t *firstAddress, size_t size) {
     bytemap->firstAddress = firstAddress;

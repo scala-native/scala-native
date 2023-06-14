@@ -4,7 +4,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 
 typedef struct AddressRange {
     word_t *address_low;

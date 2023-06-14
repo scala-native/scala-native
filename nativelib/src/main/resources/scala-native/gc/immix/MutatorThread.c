@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <setjmp.h>
-#include <ThreadUtil.h>
+#include "shared/ThreadUtil.h"
 #include <assert.h>
 
 static mutex_t threadListsModifiactionLock;

@@ -1,8 +1,4 @@
-// Parsing.c is used for all GCs now so techinally we could omit this
-// conditional
-#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
-    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL) ||    \
-    defined(SCALANATIVE_GC_BOEHM)
+// Parsing.c is used by all GCs
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -14,7 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "Parsing.h"
+#include "shared/Parsing.h"
 
 size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     if (str == NULL) {
@@ -102,5 +98,3 @@ size_t Choose_IF(size_t left, qualifier qualifier, size_t right) {
         }
     }
 }
-
-#endif

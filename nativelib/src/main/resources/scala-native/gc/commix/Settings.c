@@ -14,7 +14,7 @@
 #include <string.h>
 #include "Settings.h"
 #include "Constants.h"
-#include "Parsing.h"
+#include "shared/Parsing.h"
 
 size_t Settings_MinHeapSize() {
     return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", DEFAULT_MIN_HEAP_SIZE);

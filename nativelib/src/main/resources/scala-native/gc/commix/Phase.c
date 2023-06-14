@@ -7,7 +7,7 @@
 #include "BlockAllocator.h"
 #include <stdio.h>
 #include <limits.h>
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 #include <errno.h>
 #include <stdlib.h>
 #include "WeakRefGreyList.h"

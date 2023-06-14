@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 #include "Settings.h"
-#include "Parsing.h"
+#include "shared/Parsing.h"
 #include "Constants.h"
 
 size_t Settings_MinHeapSize() {

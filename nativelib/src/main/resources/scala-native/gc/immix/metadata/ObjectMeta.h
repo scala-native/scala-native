@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include "shared/GCTypes.h"
 
 typedef enum {
     om_free = 0x0,

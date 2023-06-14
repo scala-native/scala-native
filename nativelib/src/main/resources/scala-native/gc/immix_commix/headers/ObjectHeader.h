@@ -5,10 +5,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "../CommonConstants.h"
-#include "../Log.h"
-#include "../utils/MathUtils.h"
-#include "GCTypes.h"
+#include "immix_commix/CommonConstants.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/utils/MathUtils.h"
+#include "shared/GCTypes.h"
 
 extern int __object_array_id;
 extern int __weak_ref_id;

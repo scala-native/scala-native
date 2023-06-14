@@ -1,22 +1,21 @@
 #if defined(SCALANATIVE_GC_IMMIX)
 
-#include <ScalaNativeGC.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "GCScalaNative.h"
-#include "GCTypes.h"
+#include "shared/GCScalaNative.h"
+#include "shared/GCTypes.h"
 #include "Heap.h"
 #include "datastructures/Stack.h"
 #include "Marker.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Object.h"
 #include "State.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/utils/MathUtils.h"
 #include "Constants.h"
 #include "Settings.h"
 #include "WeakRefStack.h"
-#include "Parsing.h"
+#include "shared/Parsing.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "Synchronizer.h"
 #endif

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "StackTrace.h"
+#include "immix_commix/StackTrace.h"
 
 void StackTrace_PrintStackTrace() {
     void *cursor = malloc(scalanative_unwind_sizeof_cursor());

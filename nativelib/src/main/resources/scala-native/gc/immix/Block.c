@@ -5,7 +5,7 @@
 #include "Block.h"
 #include "Object.h"
 #include "metadata/ObjectMeta.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Allocator.h"
 #include "Marker.h"
 

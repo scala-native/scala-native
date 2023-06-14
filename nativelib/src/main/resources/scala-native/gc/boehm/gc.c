@@ -5,12 +5,12 @@
 #endif
 
 #include <gc/gc.h>
-#include "../shared/ScalaNativeGC.h"
+#include "shared/ScalaNativeGC.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../shared/Parsing.h"
-#include "GCScalaNative.h"
+#include "shared/Parsing.h"
+#include "shared/GCScalaNative.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.

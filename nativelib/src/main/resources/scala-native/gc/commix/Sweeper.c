@@ -4,7 +4,7 @@
 #include "Stats.h"
 #include "State.h"
 #include "GCThread.h"
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 
 // Sweeper implements concurrent sweeping by coordinating lazy sweeper on the
 // mutator thread with one or more concurrent sweepers on GC threads.

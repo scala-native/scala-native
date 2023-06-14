@@ -2,10 +2,10 @@
 #define IMMIX_STATE_H
 
 #include "Heap.h"
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 #include "MutatorThread.h"
-#include "Safepoint.h"
-#include "GCRoots.h"
+#include "shared/Safepoint.h"
+#include "immix_commix/GCRoots.h"
 #include "stddef.h"
 
 extern Heap heap;

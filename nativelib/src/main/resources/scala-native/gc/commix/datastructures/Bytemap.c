@@ -1,9 +1,9 @@
 #if defined(SCALANATIVE_GC_COMMIX)
 
 #include "Bytemap.h"
-#include "../Constants.h"
-#include "Log.h"
-#include "utils/MathUtils.h"
+#include "commix/Constants.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/utils/MathUtils.h"
 #include <stdio.h>
 
 void Bytemap_Init(Bytemap *bytemap, word_t *firstAddress, size_t size) {

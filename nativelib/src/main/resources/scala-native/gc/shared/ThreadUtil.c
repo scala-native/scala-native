@@ -1,7 +1,7 @@
 #if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
     defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
 
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 #include <stdio.h>
 
 INLINE

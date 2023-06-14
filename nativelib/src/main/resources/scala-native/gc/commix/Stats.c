@@ -6,7 +6,7 @@
 #endif
 
 #include "Stats.h"
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include <stdio.h>
 #include <inttypes.h>
 

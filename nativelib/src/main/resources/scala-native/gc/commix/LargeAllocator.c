@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "LargeAllocator.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/utils/MathUtils.h"
 #include "Object.h"
 #include "State.h"
 #include "Sweeper.h"
-#include "Log.h"
-#include "headers/ObjectHeader.h"
-#include "ThreadUtil.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/headers/ObjectHeader.h"
+#include "shared/ThreadUtil.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);

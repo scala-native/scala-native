@@ -3,7 +3,7 @@
 #include "WeakRefStack.h"
 #include "datastructures/Stack.h"
 #include "metadata/ObjectMeta.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/headers/ObjectHeader.h"
 #include "State.h"
 #include <stdbool.h>
 

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "Stack.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 
 void Stack_doubleSize(Stack *stack);
 
