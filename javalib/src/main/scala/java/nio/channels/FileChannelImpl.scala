@@ -8,15 +8,21 @@ import scala.scalanative.nio.fs.unix.UnixException
 
 import java.io.FileDescriptor
 import java.io.File
+import java.io.IOException
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import java.io.IOException
+
+import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.unsafe._
+import scala.scalanative.posix.string
+
+import scala.scalanative.posix.sys.stat
+import scala.scalanative.posix.sys.statOps._
 
 import scala.scalanative.posix.unistd
+
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
 import scalanative.libc.stdio
@@ -37,6 +43,13 @@ private[java] final class FileChannelImpl(
     openForReading: Boolean,
     openForWriting: Boolean
 ) extends FileChannel {
+  private def throwPosixException(functionName: String): Unit = {
+    if (!isWindows) {
+      val errnoString = fromCString(string.strerror(errno))
+      throw new IOException("${functionName} failed: ${errnoString}")
+    }
+  }
+
   override def force(metadata: Boolean): Unit =
     fd.sync()
 
@@ -260,11 +273,22 @@ private[java] final class FileChannelImpl(
       val size = stackalloc[windows.LargeInteger]()
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
-    } else {
-      val size = unistd.lseek(fd.fd, 0, stdio.SEEK_END);
-      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
-      size.toLong
-    }
+    } else
+      Zone { implicit z =>
+        /* statbuf is too large to be thread stack friendly.
+         * Even a Zone and an alloc() per size() call should be cheaper than
+         * the required three (yes 3 to get it right and not move current
+         * position) lseek() calls. Room for performance improvements remain.
+         */
+
+        val statBuf = alloc[stat.stat]()
+
+        val err = stat.fstat(fd.fd, statBuf)
+        if (err != 0)
+          throwPosixException("fstat")
+
+        statBuf.st_size.toLong
+      }
   }
 
   override def transferFrom(
