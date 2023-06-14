@@ -34,34 +34,28 @@ import java.util.concurrent.atomic.LongAdder;
 @SerialVersionUID(-8627078645895051609L)
 object ConcurrentSkipListMap {
 
-  final private[concurrent] class Node[K, V](
+  final private[concurrent] case class Node[K, V](
       key: K,
       `val`: V,
       next: Node[K, V]
   ) {}
 
-  final private[concurrent] class Index[K, V](
+  final private[concurrent] case class Index[K, V](
       node: Node[K, V],
       down: Index[K, V],
       right: Index[K, V]
   ) {}
 
-//   /**
-//    * Compares using comparator or natural ordering if null.
-//    * Called only by methods that have performed required type checks.
-//    */
-//   @SuppressWarnings(Array(Array("unchecked", "rawtypes"))) private[concurrent] def cpr(c: Comparator[_], x: Any, y: Any) = if (c != null) c.compare(x, y)
-//   else x.asInstanceOf[Comparable[_]].compareTo(y)
+  @SuppressWarnings(
+    Array("unchecked", "rawtypes")
+  ) private[concurrent] def cpr[T](c: Comparator[T], x: T, y: T) =
+    if (c != null) c.compare(x, y)
+    else x.asInstanceOf[Comparable[T]].compareTo(y)
 
-//   /**
-//    * Tries to unlink deleted node n from predecessor b (if both
-//    * exist), by first splicing in a marker if not already present.
-//    * Upon return, node n is sure to be unlinked from b, possibly
-//    * via the actions of some other thread.
-//    *
-//    * @param b if nonnull, predecessor
-//    * @param n if nonnull, node known to be deleted
-//    */
+  private[concurrent] def unlinkNode[K, V](
+      b: ConcurrentSkipListMap.Node[K, V],
+      n: ConcurrentSkipListMap.Node[K, V]
+  ): Unit = ???
 //   private[concurrent] def unlinkNode[K, V](b: ConcurrentSkipListMap.Node[K, V], n: ConcurrentSkipListMap.Node[K, V]): Unit = {
 //     if (b != null && n != null) {
 //       var f = null
@@ -372,112 +366,118 @@ object ConcurrentSkipListMap {
   ) extends AbstractMap[K, V]
       with ConcurrentNavigableMap[K, V]
       with Serializable {
-//     val cmp: Comparator[_ >: K] = m.comparator
-//     if (lo != null && hi != null && cpr(cmp, lo, hi) > 0) throw new IllegalArgumentException("inconsistent range")
-//     // Lazily initialized view holders
-//     private var keySetView = null
-//     private var valuesView = null
-//     private var entrySetView = null
 
-//     private[concurrent] def tooLow(key: Any, cmp: Comparator[_ >: K]) = {
-//       var c = 0
-//       lo != null && ((c = cpr(cmp, key, lo)) < 0 || (c == 0 && !(loInclusive)))
-//     }
+    val cmp: Comparator[_ >: K] = m.comparator()
+    if (lo != null && hi != null && ConcurrentSkipListMap.cpr(cmp, lo, hi) > 0)
+      throw new IllegalArgumentException("inconsistent range")
+    private var keySetView = null
+    private var valuesView = null
+    private var entrySetView = null
 
-//     private[concurrent] def tooHigh(key: Any, cmp: Comparator[_ >: K]) = {
-//       var c = 0
-//       hi != null && ((c = cpr(cmp, key, hi)) > 0 || (c == 0 && !(hiInclusive)))
-//     }
+    private[concurrent] def tooLow(key: Any, cmp: Comparator[_ >: K]) = {
+      var c = 0
+      lo != null && {
+        c = cpr(cmp.asInstanceOf[Comparator[Any]], key, lo);
+        c < 0 || (c == 0 && !(loInclusive))
+      }
+    }
 
-//     private[concurrent] def inBounds(key: Any, cmp: Comparator[_ >: K]) = !tooLow(key, cmp) && !tooHigh(key, cmp)
+    private[concurrent] def tooHigh(key: Any, cmp: Comparator[_ >: K]) = {
+      var c = 0
+      hi != null && {
+        c = cpr(cmp.asInstanceOf[Comparator[Any]], key, hi);
+        c > 0 || (c == 0 && !(hiInclusive))
+      }
+    }
 
-//     private[concurrent] def checkKeyBounds(key: K, cmp: Comparator[_ >: K]): Unit = {
-//       if (key == null) throw new NullPointerException
-//       if (!inBounds(key, cmp)) throw new IllegalArgumentException("key out of range")
-//     }
+    private[concurrent] def inBounds(key: Any, cmp: Comparator[_ >: K]) =
+      !tooLow(key, cmp) && !tooHigh(key, cmp)
 
-//     /**
-//      * Returns true if node key is less than upper bound of range.
-//      */
-//     private[concurrent] def isBeforeEnd(n: ConcurrentSkipListMap.Node[K, V], cmp: Comparator[_ >: K]): Boolean = {
-//       if (n == null) return false
-//       if (hi == null) return true
-//       val k = n.key
-//       if (k == null) { // pass by markers and headers
-//         return true
-//       }
-//       val c = cpr(cmp, k, hi)
-//       c < 0 || (c == 0 && hiInclusive)
-//     }
+    private[concurrent] def checkKeyBounds(
+        key: K,
+        cmp: Comparator[_ >: K]
+    ): Unit = {
+      if (key == null) throw new NullPointerException
+      if (!inBounds(key, cmp))
+        throw new IllegalArgumentException("key out of range")
+    }
 
-//     /**
-//      * Returns lowest node. This node might not be in range, so
-//      * most usages need to check bounds.
-//      */
-//     private[concurrent] def loNode(cmp: Comparator[_ >: K]) = if (lo == null) m.findFirst
-//     else if (loInclusive) m.findNear(lo, GT | EQ, cmp)
-//     else m.findNear(lo, GT, cmp)
+    private[concurrent] def isBeforeEnd(
+        n: ConcurrentSkipListMap.Node[K, V],
+        cmp: Comparator[_ >: K]
+    ): Boolean = {
+      if (n == null) return false
+      if (hi == null) return true
+      val k = n.key
+      if (k == null) { // pass by markers and headers
+        return true
+      }
+      val c = ConcurrentSkipListMap.cpr(cmp, k, hi)
+      c < 0 || (c == 0 && hiInclusive)
+    }
 
-//     /**
-//      * Returns highest node. This node might not be in range, so
-//      * most usages need to check bounds.
-//      */
-//     private[concurrent] def hiNode(cmp: Comparator[_ >: K]) = if (hi == null) m.findLast
-//     else if (hiInclusive) m.findNear(hi, LT | EQ, cmp)
-//     else m.findNear(hi, LT, cmp)
+    private[concurrent] def loNode(cmp: Comparator[_ >: K]) = if (lo == null)
+      m.findFirst
+    else if (loInclusive) m.findNear(lo, GT | EQ, cmp)
+    else m.findNear(lo, GT, cmp)
 
-//     /**
-//      * Returns lowest absolute key (ignoring directionality).
-//      */
-    private[concurrent] def lowestKey = ???
-//     private[concurrent] def lowestKey = {
-//       val cmp = m.comparator
-//       val n = loNode(cmp)
-//       if (isBeforeEnd(n, cmp)) n.key
-//       else throw new NoSuchElementException
-//     }
+    private[concurrent] def hiNode(cmp: Comparator[_ >: K]) = if (hi == null)
+      m.findLast
+    else if (hiInclusive) m.findNear(hi, LT | EQ, cmp)
+    else m.findNear(hi, LT, cmp)
 
-//     /**
-//      * Returns highest absolute key (ignoring directionality).
-//      */
-    private[concurrent] def highestKey: K = ???
-//     private[concurrent] def highestKey: K = {
-//       val cmp = m.comparator
-//       val n = hiNode(cmp)
-//       if (n != null) {
-//         val last = n.key
-//         if (inBounds(last, cmp)) return last
-//       }
-//       throw new NoSuchElementException
-//     }
+    private[concurrent] def lowestKey = {
+      val cmp = m.comparator()
+      val n = loNode(cmp)
+      if (isBeforeEnd(n, cmp)) n.key
+      else throw new NoSuchElementException
+    }
 
-    private[concurrent] def lowestEntry: Map.Entry[K, V] = ???
-//     private[concurrent] def lowestEntry: Map.Entry[K, V] = {
-//       val cmp = m.comparator
+    private[concurrent] def highestKey: K = {
+      val cmp = m.comparator()
+      val n = hiNode(cmp)
+      if (n != null) {
+        val last = n.key
+        if (inBounds(last, cmp)) return last
+      }
+      throw new NoSuchElementException
+    }
 
-//       while ( {
-//         true
-//       }) {
-//         var n = null
-//         var v = null
-//         if ((n = loNode(cmp)) == null || !isBeforeEnd(n, cmp)) return null
-//         else if ((v = n.`val`) != null) return new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
-//       }
-//     }
+    private[concurrent] def lowestEntry: Map.Entry[K, V] = {
+      val cmp = m.comparator()
+      while (true) {
+        var n = null.asInstanceOf[ConcurrentSkipListMap.Node[K, V]]
+        var v = null.asInstanceOf[V]
+        if ({
+          n = loNode(cmp);
+          n == null || !isBeforeEnd(n, cmp)
+        }) return null
+        else if ({
+          v = n.`val`;
+          v != null
+        })
+          return new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
+      }
+      null
+    }
 
-    private[concurrent] def highestEntry: Map.Entry[K, V] = ???
-//     private[concurrent] def highestEntry: Map.Entry[K, V] = {
-//       val cmp = m.comparator
-
-//       while ( {
-//         true
-//       }) {
-//         var n = null
-//         var v = null
-//         if ((n = hiNode(cmp)) == null || !inBounds(n.key, cmp)) return null
-//         else if ((v = n.`val`) != null) return new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
-//       }
-//     }
+    private[concurrent] def highestEntry: Map.Entry[K, V] = {
+      val cmp = m.comparator()
+      while (true) {
+        var n = null.asInstanceOf[ConcurrentSkipListMap.Node[K, V]]
+        var v = null.asInstanceOf[V]
+        if ({
+          n = hiNode(cmp);
+          n == null || !inBounds(n.key, cmp)
+        }) return null
+        else if ({
+          v = n.`val`;
+          v != null
+        })
+          return new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
+      }
+      null
+    }
 
     private[concurrent] def removeLowest: Map.Entry[K, V] = ???
 //     private[concurrent] def removeLowest: Map.Entry[K, V] = {
@@ -1289,15 +1289,10 @@ class ConcurrentSkipListMap[K, V]()
 
 //   }
 
-//   /**
-//    * Returns an index node with key strictly less than given key.
-//    * Also unlinks indexes to deleted nodes found along the way.
-//    * Callers rely on this side-effect of clearing indices to deleted
-//    * nodes.
-//    *
-//    * @param key if nonnull the key
-//    * @return a predecessor node of key, or null if uninitialized or null key
-//    */
+  private def findPredecessor(
+      key: Any,
+      cmp: Comparator[_ >: K]
+  ): ConcurrentSkipListMap.Node[K, V] = ???
 //   private def findPredecessor(key: Any, cmp: Comparator[_ >: K]): ConcurrentSkipListMap.Node[K, V] = {
 //     var q = null
 //     VarHandle.acquireFence()
@@ -1550,16 +1545,6 @@ class ConcurrentSkipListMap[K, V]()
 //     }
 //   }
 
-//   /**
-//    * Main deletion method. Locates node, nulls value, appends a
-//    * deletion marker, unlinks predecessor, removes associated index
-//    * nodes, and possibly reduces head index level.
-//    *
-//    * @param key   the key
-//    * @param value if non-null, the value that must be
-//    *              associated with key
-//    * @return the node, or null if not found
-//    */
 //   final private[concurrent] def doRemove(key: Any, value: Any) = {
 //     if (key == null) throw new NullPointerException
 //     val cmp = comparator
@@ -1596,26 +1581,7 @@ class ConcurrentSkipListMap[K, V]()
 //     result
 //   }
 
-//   /**
-//    * Possibly reduce head level if it has no nodes.  This method can
-//    * (rarely) make mistakes, in which case levels can disappear even
-//    * though they are about to contain index nodes. This impacts
-//    * performance, not correctness.  To minimize mistakes as well as
-//    * to reduce hysteresis, the level is reduced by one only if the
-//    * topmost three levels look empty. Also, if the removed level
-//    * looks non-empty after CAS, we try to change it back quick
-//    * before anyone notices our mistake! (This trick works pretty
-//    * well because this method will practically never make mistakes
-//    * unless current thread stalls immediately before first CAS, in
-//    * which case it is very unlikely to stall again immediately
-//    * afterwards, so will recover.)
-//    *
-//    * We put up with all this rather than just let levels grow
-//    * because otherwise, even a small map that has undergone a large
-//    * number of insertions and removals will have a lot of levels,
-//    * slowing down access more than would an occasional unwanted
-//    * reduction.
-//    */
+  private def tryReduceLevel(): Unit = ???
 //   private def tryReduceLevel(): Unit = {
 //     var h = null
 //     var d = null
@@ -1625,11 +1591,8 @@ class ConcurrentSkipListMap[K, V]()
 //     }
 //   }
 
-//   /**
-//    * Gets first valid node, unlinking deleted nodes if encountered.
-//    *
-//    * @return first node or null if empty
-//    */
+  final private[concurrent] def findFirst: ConcurrentSkipListMap.Node[K, V] =
+    ???
 //   final private[concurrent] def findFirst: ConcurrentSkipListMap.Node[K, V] = {
 //     var b = null
 //     var n = null
@@ -1679,11 +1642,7 @@ class ConcurrentSkipListMap[K, V]()
 //     null
 //   }
 
-//   /**
-//    * Specialized version of find to get last valid node.
-//    *
-//    * @return last node or null if empty
-//    */
+  final private[concurrent] def findLast: ConcurrentSkipListMap.Node[K, V] = ???
 //   final private[concurrent] def findLast: ConcurrentSkipListMap.Node[K, V] = {
 //     outer //todo: labels are not supported
 
@@ -1802,13 +1761,11 @@ class ConcurrentSkipListMap[K, V]()
 //     null
 //   }
 
-//   /**
-//    * Utility for ceiling, floor, lower, higher methods.
-//    *
-//    * @param key the key
-//    * @param rel the relation -- OR'ed combination of EQ, LT, GT
-//    * @return nearest node fitting relation, or null if no such
-//    */
+  final private[concurrent] def findNear(
+      key: K,
+      rel: Int,
+      cmp: Comparator[_ >: K]
+  ) = ???
 //   final private[concurrent] def findNear(key: K, rel: Int, cmp: Comparator[_ >: K]) = {
 //     if (key == null) throw new NullPointerException
 //     var result = null
