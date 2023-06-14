@@ -38,3 +38,4 @@ bin/
 
 # Virtual env generated dependecies, for generating docs
 .venv
+/compile_flags.txt
