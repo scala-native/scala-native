@@ -5,7 +5,7 @@ package sys
 import scalanative.unsafe._
 import scalanative.unsigned._
 
-import scalanative.runtime.Platform
+import scalanative.meta.LinktimeInfo._
 
 /** POSIX sys/un.h for Scala
  */
@@ -33,8 +33,9 @@ object unOps {
   import un._
   import posix.inttypes.uint8_t
 
-  val useSinXLen = !Platform.isLinux() &&
-    (Platform.isMac() || Platform.isFreeBSD())
+  @resolvedAtLinktime
+  def useSinXLen = !isLinux &&
+    (isMac || isFreeBSD)
 
   implicit class sockaddr_unOps(val ptr: Ptr[sockaddr_un]) extends AnyVal {
     def sun_len: uint8_t = if (!useSinXLen) {

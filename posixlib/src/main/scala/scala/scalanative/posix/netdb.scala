@@ -4,7 +4,7 @@ import scalanative.unsafe._
 
 import scalanative.posix.sys.socket
 
-import scalanative.runtime.Platform
+import scala.scalanative.meta.LinktimeInfo
 
 /** netdb.h for Scala
  *  @see
@@ -148,9 +148,10 @@ object netdb {
 object netdbOps {
   import netdb._
 
-  final val useBsdAddrinfo = (Platform.isMac() ||
-    Platform.isFreeBSD() ||
-    Platform.isWindows())
+  @resolvedAtLinktime
+  def useBsdAddrinfo = (LinktimeInfo.isMac ||
+    LinktimeInfo.isFreeBSD ||
+    LinktimeInfo.isWindows)
 
   implicit class addrinfoOps(private val ptr: Ptr[addrinfo]) extends AnyVal {
     def ai_flags: CInt = ptr._1
