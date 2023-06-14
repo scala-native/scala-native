@@ -36,6 +36,8 @@ bin/
 # vim
 *.swp
 
-# Virtual env generated dependecies, for generating docs
+# Virtual env generated dependencies, for generating docs
 .venv
-/compile_flags.txt
+
+# Configuration for clangd
+**/compile_flags.txt
