@@ -22,13 +22,6 @@ int scalanative_unwind_step(void *cursor) {
 int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
                                      void *offset) {
 
-    unw_proc_info_t inf;
-    printf("Size: %d\n", inf.unwind_info_size);
-    printf("Address: %lu\n", inf.unwind_info);
-    logDWARF();
-
-    printf("Format: %d\n", inf.format);
-
     return unw_get_proc_name((unw_cursor_t *)cursor, buffer, length,
                              (unw_word_t *)offset);
 }

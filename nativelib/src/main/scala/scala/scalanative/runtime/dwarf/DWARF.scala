@@ -32,7 +32,7 @@ object DWARF {
       val header_offset = bf.position()
       val unit_length_s = uint32()
 
-      val (dwarf64, unit_length) = if (unit_length_s == 0xffffffff) {
+      val (dwarf64, unit_length) = if (unit_length_s == 0xffffffff.toUInt) {
         (true, uint64())
       } else (false, unit_length_s.toLong)
 
@@ -104,7 +104,7 @@ object DWARF {
         if (code == 0) None
         else {
           val tag = read_unsigned_leb128()
-          val children = uint8() == 1
+          val children = uint8() == 1.toUByte
 
           val attrs = Vector.newBuilder[Attr]
 
@@ -148,6 +148,7 @@ object DWARF {
     }
   }
   object Strings {
+    lazy val empty = Strings(Array.empty)
     def parse(debug_str: Section)(implicit bf: BinaryFile): Strings = {
       val pos = bf.position()
       bf.seek(debug_str.offset.toLong)
@@ -254,7 +255,7 @@ object DWARF {
               s"Uknown header size: ${header.address_size}"
             )
         case DW_FORM_flag =>
-          uint8() == 1
+          uint8() == 1.toUByte
         case DW_FORM_ref_addr =>
           if (header.is64) uint64()
           else uint32()
@@ -435,6 +436,8 @@ object DWARF {
 
   }
 
+  // DWARF v4 specification 7.5.4 describes
+
   object Form {
     case object DW_FORM_addr extends Form(0x01)
     case object DW_FORM_block2 extends Form(0x03)
@@ -495,6 +498,22 @@ object DWARF {
       code,
       throw new RuntimeException(s"Unknown DWARF abbrev code: $code")
     )
+
+    // DWARF v4 7.5.4 describes which form belongs to which classes
+    def isConstantClass(form: Form): Boolean =
+      form match {
+        case DW_FORM_data2 | DW_FORM_data4 | DW_FORM_data8 | DW_FORM_sdata |
+            DW_FORM_udata =>
+          true
+        case _ => false
+      }
+
+    def isAddressClass(form: Form): Boolean =
+      form match {
+        case DW_FORM_addr => true
+        case _            => false
+      }
+
   }
 
   sealed abstract class Tag(val code: Int) {
@@ -621,7 +640,7 @@ object DWARF {
         val header_length = uint32()
         val minimum_instruction_length = uint8()
         val maximum_operations_per_instruction = uint8()
-        val default_is_stmt = uint8() == 1
+        val default_is_stmt = uint8() == 1.toUByte
         val line_base = uint8()
         val line_range = uint8()
         val opcode_base = uint8()

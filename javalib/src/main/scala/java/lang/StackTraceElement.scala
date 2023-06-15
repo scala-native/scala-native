@@ -47,17 +47,17 @@ final class StackTraceElement(
 private[lang] object StackTraceElement {
   object Fail extends scala.util.control.NoStackTrace
 
-  def fromSymbol(sym: CString): StackTraceElement = {
+  def fromSymbol(sym: CString, fileline: (String, Int) = (null, 0)): StackTraceElement = {
     val className: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
     val methodName: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
     SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
-    println(fromCString(sym))
+    // println(fromCString(sym))
 
     new StackTraceElement(
       fromCString(className),
       fromCString(methodName),
-      null,
-      0
+      fileline._1,
+      fileline._2
     )
   }
 }

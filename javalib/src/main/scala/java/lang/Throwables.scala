@@ -7,12 +7,15 @@ import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
+import scala.scalanative.runtime.Backtrace
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
 
   private def makeStackTraceElement(
-      cursor: Ptr[scala.Byte]
+      cursor: Ptr[scala.Byte],
+      ip: CUnsignedLong,
+      addFileline: Boolean
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
     val name = alloc[CChar](nameMax.toUSize)
@@ -20,12 +23,16 @@ private[lang] object StackTrace {
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
+    if (addFileline)
+      Backtrace.decodeFileline(ip.toLong)
+
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
 
     StackTraceElement.fromSymbol(name)
+    // StackTraceElement.fromSymbol(name, fileline.getOrElse((null, 0)))
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
@@ -34,11 +41,13 @@ private[lang] object StackTrace {
    */
   private def cachedStackTraceElement(
       cursor: Ptr[scala.Byte],
-      ip: CUnsignedLong
+      ip: CUnsignedLong,
+      addFileline: Boolean
   )(implicit zone: Zone): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
+    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip, addFileline))
 
-  @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
+  @noinline private[lang] def currentStackTrace(addFileline: Boolean): Array[StackTraceElement] = {
+
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
     if (!LinktimeInfo.asanEnabled) {
       Zone { implicit z =>
@@ -46,11 +55,12 @@ private[lang] object StackTrace {
         val context = alloc[scala.Byte](unwind.sizeOfContext)
         val ip = stackalloc[CSize]()
 
+
         unwind.get_context(context)
         unwind.init_local(cursor, context)
         while (unwind.step(cursor) > 0) {
           unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          buffer += cachedStackTraceElement(cursor, !ip)
+          buffer += cachedStackTraceElement(cursor, !ip, addFileline)
         }
       }
     }
@@ -115,7 +125,7 @@ class Throwable protected (
     // currentStackTrace should be handling exclusion in its own
     // critical section, but does not. So do
     if (writableStackTrace) this.synchronized {
-      this.stackTrace = StackTrace.currentStackTrace()
+      this.stackTrace = StackTrace.currentStackTrace(s == "test")
     }
     this
   }
