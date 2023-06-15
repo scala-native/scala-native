@@ -482,7 +482,7 @@ object Build {
         c
           .withDebugMetadata(true)
           .withCompileOptions(c.compileOptions :+ "-g")
-          .withLinkingOptions(c.linkingOptions :+ "-g")
+          .withLinkingOptions(c.linkingOptions :+ "-g" :+ "-fno-pie")
       })
       .withNativeCompilerPlugin
       .withJUnitPlugin

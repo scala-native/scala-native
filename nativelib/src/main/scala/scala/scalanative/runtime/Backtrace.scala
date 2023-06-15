@@ -79,22 +79,26 @@ object Backtrace {
       strings: DWARF.Strings
   ): Option[String] = {
     val index = dies.indexOf(subprogram)
+    println(index)
     val prev = dies.splitAt(index)._1
-    for {
+    val res = for {
       cu <- prev.findLast(cu =>
         cu.abbrev.exists(_.tag == DWARF.Tag.DW_TAG_compile_unit)
       )
       name <- cu.values.collectFirst {
         case v if v._1.at == DWARF.Attribute.DW_AT_name =>
+          println(v)
           strings.read(v._2.asInstanceOf[UInt])
       }
     } yield name
+    println(res)
+    res
   }
 
   private def check(address: Long, die: DWARF.CompileUnit): Boolean = {
     def getLowPC: Option[Long] = die.values.collectFirst {
       case v if v._1.at == DWARF.Attribute.DW_AT_low_pc =>
-        println(v._2.asInstanceOf[Long])
+        // println(v._2.asInstanceOf[Long])
         v._2.asInstanceOf[Long]
     }
     def getHighPC(lowPC: Long): Option[Long] =
@@ -117,7 +121,9 @@ object Backtrace {
         lowPC <- getLowPC
         highPC <- getHighPC(lowPC)
       } yield {
-        val res = lowPC <= address// && address < highPC
+        val res = lowPC <= address && address < highPC
+        if (res)
+          println(s"$lowPC <= $address < $highPC: $res")
         res
       }).getOrElse(false)
     } else false

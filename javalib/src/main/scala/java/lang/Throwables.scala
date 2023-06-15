@@ -23,16 +23,18 @@ private[lang] object StackTrace {
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
-    if (addFileline)
-      Backtrace.decodeFileline(ip.toLong)
+    val fileline =
+      if (addFileline)
+        Backtrace.decodeFileline(ip.toLong)
+      else None
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
 
-    StackTraceElement.fromSymbol(name)
-    // StackTraceElement.fromSymbol(name, fileline.getOrElse((null, 0)))
+    // StackTraceElement.fromSymbol(name)
+    StackTraceElement.fromSymbol(name, fileline.getOrElse((null, 0)))
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
