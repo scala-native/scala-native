@@ -1,11 +1,14 @@
 package org.scalanative.testsuite.javalib.io
 
 import java.io._
+import java.nio.file.{Files, Path}
 
 import scala.util.Try
 
 import org.junit.Test
 import org.junit.Assert._
+
+import org.scalanative.testsuite.javalib.io.IoTestHelpers.withTemporaryDirectory
 
 import org.scalanative.testsuite.utils.Platform.isWindows
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -68,4 +71,27 @@ class FileInputStreamTest {
       new FileInputStream("/the/path/does/not/exist/for/sure")
     )
   }
+
+  @Test def available(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.toPath().resolve("FisTestDataForMethodAvailable.utf-8")
+      val str = "They were the best of us!"
+      Files.write(f, str.getBytes("UTF-8"))
+
+      val fis = new FileInputStream(f.toFile())
+      try {
+        // current position less than file size.
+        assertEquals("available pos < size", str.length(), fis.available())
+        // 2023-06-15 11:21 -0400 FIXME
+
+        // move current position to > than file size.
+        val channel = fis.getChannel()
+        channel.position(str.length * 2) // two is an arbitrary value > 1
+        assertEquals("available pos > size", 0, fis.available())
+      } finally {
+        fis.close()
+      }
+    }
+  }
+
 }

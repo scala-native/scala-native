@@ -6,50 +6,15 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
+import org.scalanative.testsuite.javalib.io.IoTestHelpers._
+
 import org.scalanative.testsuite.utils.Platform.isWindows
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class FileOutputStreamTest {
-  def withTempFile(f: File => Unit): Unit = {
-    val tmpfile = File.createTempFile("scala-native-test", null)
-    try {
-      f(tmpfile)
-    } finally {
-      tmpfile.delete()
-    }
-  }
-
-  def withTempDirectory(f: File => Unit): Unit = {
-    import java.nio.file._
-    import attribute._
-    val tmpdir = Files.createTempDirectory("scala-native-test")
-    try {
-      f(tmpdir.toFile())
-    } finally {
-      Files.walkFileTree(
-        tmpdir,
-        new SimpleFileVisitor[Path]() {
-          override def visitFile(
-              file: Path,
-              attrs: BasicFileAttributes
-          ): FileVisitResult = {
-            Files.delete(file)
-            FileVisitResult.CONTINUE
-          }
-          override def postVisitDirectory(
-              dir: Path,
-              exc: IOException
-          ): FileVisitResult = {
-            Files.delete(dir)
-            FileVisitResult.CONTINUE
-          }
-        }
-      )
-    }
-  }
 
   @Test def writeNull(): Unit = {
-    withTempFile { file =>
+    withTemporaryFile { file =>
       val fos = new FileOutputStream(file)
       assertThrows(classOf[NullPointerException], fos.write(null))
       assertThrows(classOf[NullPointerException], fos.write(null, 0, 0))
@@ -58,7 +23,7 @@ class FileOutputStreamTest {
   }
 
   @Test def writeOutOfBoundsNegativeCount(): Unit = {
-    withTempFile { file =>
+    withTemporaryFile { file =>
       val fos = new FileOutputStream(file)
       val arr = new Array[Byte](8)
       assertThrows(classOf[IndexOutOfBoundsException], fos.write(arr, 0, -1))
@@ -67,7 +32,7 @@ class FileOutputStreamTest {
   }
 
   @Test def writeOutOfBoundsNegativeOffset(): Unit = {
-    withTempFile { file =>
+    withTemporaryFile { file =>
       val fos = new FileOutputStream(file)
       val arr = new Array[Byte](8)
       assertThrows(classOf[IndexOutOfBoundsException], fos.write(arr, -1, 0))
@@ -76,7 +41,7 @@ class FileOutputStreamTest {
   }
 
   @Test def writeOutOfBoundsArrayTooSmall(): Unit = {
-    withTempFile { file =>
+    withTemporaryFile { file =>
       val fos = new FileOutputStream(file)
       val arr = new Array[Byte](8)
       assertThrows(classOf[IndexOutOfBoundsException], fos.write(arr, 0, 16))
@@ -86,14 +51,14 @@ class FileOutputStreamTest {
   }
 
   @Test def attemptToOpenReadonlyRegularFile(): Unit = {
-    withTempFile { ro =>
+    withTemporaryFile { ro =>
       ro.setReadOnly()
       assertThrows(classOf[FileNotFoundException], new FileOutputStream(ro))
     }
   }
 
   @Test def attemptToOpenDirectory(): Unit = {
-    withTempDirectory { dir =>
+    withTemporaryDirectory { dir =>
       assertThrows(classOf[FileNotFoundException], new FileOutputStream(dir))
     }
   }
@@ -103,7 +68,7 @@ class FileOutputStreamTest {
       "Setting directory read only in Windows does not have affect on creating new files",
       isWindows
     )
-    withTempDirectory { ro =>
+    withTemporaryDirectory { ro =>
       ro.setReadOnly()
       assertThrows(
         classOf[FileNotFoundException],

@@ -415,34 +415,60 @@ private[java] final class FileChannelImpl(
     }
   }
 
-  def available(): Int = {
-    if (isWindows) {
-      val currentPosition, lastPosition = stackalloc[windows.LargeInteger]()
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = 0,
-        newFilePointer = currentPosition,
-        moveMethod = FILE_CURRENT
-      )
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = 0,
-        newFilePointer = lastPosition,
-        moveMethod = FILE_END
-      )
-      SetFilePointerEx(
-        fd.handle,
-        distanceToMove = !currentPosition,
-        newFilePointer = null,
-        moveMethod = FILE_BEGIN
-      )
+  /* The Scala Native implementation of FileInputStream#available delegates
+   * to this method. This method now implements "available()" as described in
+   * the Java description of FileInputStream#available. So the delegator
+   * now matches the its JDK description and behavior (Issue 3333).
+   *
+   * There are a couple of fine points to this implemention which might
+   * be helpful to know:
+   *    1) There is no requirement that this method itself not block.
+   *       Indeed, depending upon what, if anything, is in the underlying
+   *       file system cache, this method may do so.
+   *
+   *       The current position should already be in the underlying OS fd but
+   *       calling "size()" may require reading an inode or equivalent.
+   *
+   *    2) Given JVM actual behavior, the "read (or skipped over) from this
+   *       input stream without blocking" clause of the JDK description might
+   *       be better read as "without blocking for additional data bytes".
+   *
+   *       A "skip()" should be a fast update of existing memory. Conceptually,
+   *       and by JDK definition FileChannel "read()"s may block transferring
+   *       bytes from slow storage to memory. Where is io_uring() when
+   *       you need it?
+   *
+   *    3) The value returned is exactly the "estimate" portion of the JDK
+   *       description:
+   *
+   *       - All bets are off is somebody, even this thread, decreases
+   *         size of the file in the interval between when "available()"
+   *         returns and "read()" is called.
+   *
+   *       - This method is defined in FileChannel#available as returning
+   *         an Int. This also matches the use above in the Windows
+   *         implementation of the private method
+   *         "read(buffer: Array[Byte], offset: Int, count: Int)"
+   *         Trace the count argument logic.
+   *
+   *         FileChannel defines "position()" and "size()" as Long values.
+   *         For large files and positions < Integer.MAX_VALUE,
+   *         The Long difference "lastPosition - currentPosition" might well
+   *         be greater than Integer.MAX_VALUE. In that case, the .toInt
+   *         truncation will return the low estimate of Integer.MAX_VALUE
+   *         not the true (Long) value. Matches the specification, but gotcha!
+   */
 
-      (!lastPosition - !currentPosition).toInt
-    } else {
-      val currentPosition = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR)
-      val lastPosition = unistd.lseek(fd.fd, 0, stdio.SEEK_END)
-      unistd.lseek(fd.fd, currentPosition, stdio.SEEK_SET)
-      (lastPosition - currentPosition).toInt
-    }
+  def available(): Int = {
+    ensureOpen()
+
+    val currentPosition = position()
+    val lastPosition = size()
+
+    val nAvailable =
+      if (currentPosition >= lastPosition) 0
+      else lastPosition - currentPosition
+
+    nAvailable.toInt
   }
 }
