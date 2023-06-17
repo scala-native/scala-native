@@ -22,6 +22,7 @@ import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.sys.statOps._
 
 import scala.scalanative.posix.unistd
+
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
 import scalanative.libc.stdio
@@ -42,7 +43,7 @@ private[java] final class FileChannelImpl(
     openForReading: Boolean,
     openForWriting: Boolean,
     openForAppending: Boolean = false
-) extends FileChannel {
+) extends FileChannel
 
   /* Note:
    *   Channels are described in the Java documentation as thread-safe.
@@ -320,6 +321,12 @@ private[java] final class FileChannelImpl(
       else 0L
     } else
       Zone { implicit z =>
+
+        /* statbuf is too large to be thread stack friendly.
+         * Even a Zone and an alloc() per size() call should be cheaper than
+         * the required three (yes 3 to get it right and not move current
+         * position) lseek() calls. Room for performance improvements remain.
+        
         val statBuf = alloc[stat.stat]()
 
         val err = stat.fstat(fd.fd, statBuf)

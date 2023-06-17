@@ -150,7 +150,7 @@ object CodeGen {
     }
   }
 
-  val depends: Seq[Global] = {
+  def depends(implicit platform: PlatformInfo): Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
     buf ++= Lower.depends
     buf ++= Generate.depends

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "GCScalaNative.h"
 #include "GCTypes.h"
 #include "Heap.h"
 #include "datastructures/Stack.h"
@@ -145,4 +146,14 @@ void scalanative_gc_set_mutator_thread_state(MutatorThreadState state) {
 }
 void scalanative_gc_safepoint_poll() {
     void *pollGC = *scalanative_gc_safepoint;
+}
+
+void scalanative_add_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_Add(&roots, range);
+}
+
+void scalanative_remove_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_RemoveByRange(&roots, range);
 }
