@@ -35,15 +35,15 @@ import java.util.concurrent.atomic.LongAdder;
 object ConcurrentSkipListMap {
 
   final private[concurrent] case class Node[K, V](
-      key: K,
+      var key: K,
       `val`: V,
-      next: Node[K, V]
+      var next: Node[K, V]
   ) {}
 
   final private[concurrent] case class Index[K, V](
       node: Node[K, V],
       down: Index[K, V],
-      right: Index[K, V]
+      var right: Index[K, V]
   ) {}
 
   @SuppressWarnings(
@@ -1238,9 +1238,9 @@ class ConcurrentSkipListMap[K, V]()
   @SuppressWarnings(Array("serial")) // Conditionally serializable
   final private var _comparator: Comparator[_ >: K] = null
 
-  // private var head: ConcurrentSkipListMap.Index[K, V] = null
+  private var head: ConcurrentSkipListMap.Index[K, V] = null
 
-  // private var adder: LongAdder = null
+  private var adder: LongAdder = null
 
   private var _keySet: ConcurrentSkipListMap.KeySet[K, V] = null
 
@@ -1260,19 +1260,21 @@ class ConcurrentSkipListMap[K, V]()
 //     else h.node
 //   }
 
-//   /**
-//    * Adds to element count, initializing adder if necessary
-//    *
-//    * @param c count to add
-//    */
-//   private def addCount(c: Long): Unit = {
-//     var a = null
-//     do {
-//     } while ( {
-//       (a = adder) == null && !ConcurrentSkipListMap.ADDER.compareAndSet(this, null, a = new LongAdder)
-//     })
-//     a.add(c)
-//   }
+  private def addCount(c: Long): Unit = {
+    // TODO: impl ADDER value
+
+    // var a = null
+    // do {} while ({
+    //   a = adder;
+    //   a == null && !ConcurrentSkipListMap.ADDER.compareAndSet(
+    //     this,
+    //     null,
+    //     a = new LongAdder
+    //   )
+    // })
+    // a.add(c)
+    ???
+  }
 
 //   /**
 //    * Returns element count, initializing adder if necessary.
@@ -1545,41 +1547,57 @@ class ConcurrentSkipListMap[K, V]()
 //     }
 //   }
 
-//   final private[concurrent] def doRemove(key: Any, value: Any) = {
-//     if (key == null) throw new NullPointerException
-//     val cmp = comparator
-//     var result = null
-//     var b = null
-//     outer //todo: labels are not supported
-//     while ( {
-//       (b = findPredecessor(key, cmp)) != null && result == null
-//     }) while ( {
-//       true
-//     }) {
-//       var n = null
-//       var k = null
-//       var v = null
-//       var c = 0
-//       if ((n = b.next) == null) break outer // todo: label break is not supported
-//       else if ((k = n.key) == null) break //todo: break is not supported
-//       else if ((v = n.`val`) == null) ConcurrentSkipListMap.unlinkNode(b, n)
-//       else if ((c = ConcurrentSkipListMap.cpr(cmp, key, k)) > 0) b = n
-//       else if (c < 0) break outer // todo: label break is not supported
-//       else if (value != null && !(value == v)) break outer // todo: label break is not supported
-//       else if (ConcurrentSkipListMap.VAL.compareAndSet(n, v, null)) {
-//         result = v
-//         ConcurrentSkipListMap.unlinkNode(b, n)
-//         break //todo: break is not supported
-//         // loop to clean up
-
-//       }
-//     }
-//     if (result != null) {
-//       tryReduceLevel()
-//       addCount(-1L)
-//     }
-//     result
-//   }
+  final private[concurrent] def doRemove(key: Any, value: Any) = {
+    if (key == null) throw new NullPointerException
+    val cmp = comparator()
+    var result = null.asInstanceOf[V]
+    var b = null.asInstanceOf[ConcurrentSkipListMap.Node[K, V]]
+    var continue1 = true
+    var continue2 = true
+    while ({
+      b = findPredecessor(key, cmp);
+      b != null && result == null
+    })
+      while (continue2) {
+        var n = null.asInstanceOf[ConcurrentSkipListMap.Node[K, V]]
+        var k = null.asInstanceOf[K]
+        var v = null.asInstanceOf[V]
+        var c = 0
+        if ({ n = b.next; n == null }) {
+          continue1 = false
+          continue2 = false
+        } else if ({ k = n.key; k == null })
+          continue2 = false
+        else if ({ v = n.`val`; v == null })
+          ConcurrentSkipListMap.unlinkNode(b, n)
+        else if ({
+          c = ConcurrentSkipListMap.cpr(
+            cmp.asInstanceOf[Comparator[Any]],
+            key,
+            k
+          ); c > 0
+        }) b = n
+        else if (c < 0) {
+          continue1 = false
+          continue2 = false
+        } else if (value != null && !(value == v)) {
+          continue1 = false
+          continue2 = false
+        } else if (false
+            // TODO: impl VAL
+            /** ConcurrentSkipListMap.VAL.compareAndSet(n, v, null) */
+        ) {
+          result = v
+          ConcurrentSkipListMap.unlinkNode(b, n)
+          continue2 = false
+        }
+      }
+    if (result != null) {
+      tryReduceLevel()
+      addCount(-1L)
+    }
+    result
+  }
 
   private def tryReduceLevel(): Unit = ???
 //   private def tryReduceLevel(): Unit = {
