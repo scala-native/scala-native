@@ -24,6 +24,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.concurrent.atomic.LongAdder;
+import scala.scalanative.annotation._
+import scala.scalanative.libc.atomic.CAtomicRef
+import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -38,13 +41,30 @@ object ConcurrentSkipListMap {
       var key: K,
       `val`: V,
       var next: Node[K, V]
-  ) {}
+  ) {
+    @volatile private[concurrent] var _key = key
+    @volatile private[concurrent] var _next = next
+
+    @alwaysinline def keyAtomic = new CAtomicRef(
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "_key"))
+    )
+
+    @alwaysinline def nextAtomic = new CAtomicRef(
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "_next"))
+    )
+  }
 
   final private[concurrent] case class Index[K, V](
       node: Node[K, V],
       down: Index[K, V],
       var right: Index[K, V]
-  ) {}
+  ) {
+    @volatile private[concurrent] var _right = right
+
+    @alwaysinline def rightAtomic = new CAtomicRef(
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "_right"))
+    )
+  }
 
   @SuppressWarnings(
     Array("unchecked", "rawtypes")
@@ -1238,9 +1258,18 @@ class ConcurrentSkipListMap[K, V]()
   @SuppressWarnings(Array("serial")) // Conditionally serializable
   final private var _comparator: Comparator[_ >: K] = null
 
-  private var head: ConcurrentSkipListMap.Index[K, V] = null
+  @volatile private[concurrent] var head: ConcurrentSkipListMap.Index[K, V] =
+    null
 
-  private var adder: LongAdder = null
+  @volatile private[concurrent] var adder: LongAdder = null
+
+  @alwaysinline private def headAtomic = new CAtomicRef(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
+  )
+
+  @alwaysinline private def adderAtomic = new CAtomicRef(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "adder"))
+  )
 
   private var _keySet: ConcurrentSkipListMap.KeySet[K, V] = null
 
