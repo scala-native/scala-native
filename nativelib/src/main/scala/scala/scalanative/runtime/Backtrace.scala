@@ -12,32 +12,43 @@ import scala.scalanative.unsigned.UInt
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.unsafe.Zone
 import scalanative.unsigned._
+import scala.io.Source
 
 object Backtrace {
+  private sealed trait Format
+  private case object MACHO extends Format
+  private case object ELF extends Format
+  private case class DwarfInfo(
+      dies: Vector[DWARF.DIE],
+      strings: DWARF.Strings,
+      pageZeroSize: Option[Long],
+      format: Format
+  )
+
   private val MACHO_MAGIC = "cffaedfe"
   private val ELF_MAGIC = "7f454c46"
 
-  private val cache = TrieMap.empty[String, (Vector[DWARF.DIE], DWARF.Strings)]
+  private val cache = TrieMap.empty[String, Option[DwarfInfo]]
 
   def decodeFileline(pc: Long)(implicit zone: Zone): Option[(String, Int)] = {
     println(s"decodeFileline: $pc")
     synchronized {
       cache.get(filename) match {
-        case Some((dies, strings)) if dies.isEmpty =>
+        case Some(None) =>
           None // cached, there's no debug section
-        case Some((dies, strings)) =>
-          impl(pc, dies, strings)
+        case Some(Some(info)) =>
+          impl(pc, info)
         case None =>
           processFile match {
             case None =>
               // there's no debug section, cache it so we don't parse the exec file any longer
               println("DIE not found, cache")
-              cache.put(filename, (Vector.empty, DWARF.Strings.empty))
+              cache.put(filename, None)
               None
-            case Some((dies, strings)) =>
+            case file @ Some(info) =>
               println("DIE found ")
-              cache.put(filename, (dies, strings))
-              impl(pc, dies, strings)
+              cache.put(filename, file)
+              impl(pc, info)
           }
       }
     }
@@ -45,20 +56,40 @@ object Backtrace {
 
   private def impl(
       pc: Long,
-      dies: Vector[DWARF.DIE],
-      strings: DWARF.Strings
+      info: DwarfInfo
   ): Option[(String, Int)] = {
+    val address = info.format match {
+      case MACHO =>
+        val pid = libc.getpid().intValue()
+        val proc = new ProcessBuilder("vmmap", "-summary", s"$pid").start()
+        // TODO: close input stream
+        val vmmap = Source.fromInputStream(proc.getInputStream())
+        (for {
+          loadAddress <- vmmap.getLines().find(_.startsWith("Load Address")).map { line =>
+            val addressStr = line.split(":").last.trim.drop(2)
+            java.lang.Long.parseLong(addressStr, 16)
+          }
+          pageZeroSize <- info.pageZeroSize
+        } yield {
+          pc - loadAddress + pageZeroSize
+        }).getOrElse(pc)
+      case ELF => pc
+    }
+
+    println(s"address: $address")
     def decode(dwarf: DWARF.DIE): Option[(String, Int)] = {
       dwarf.units.collectFirst {
-        case cu if check(pc, cu) =>
+        case cu if check(address, cu) =>
           for {
-            file <- extractFilename(dwarf.units, cu, strings)
+            file <- extractFilename(dwarf.units, cu, info.strings)
             line <- extractLine(cu)
           } yield (file, line)
       }.flatten
     }
 
-    dies
+    // TODO check if it's ET_DYN and then convert
+
+    info.dies
       .to(LazyList)
       .map(d => decode(d))
       .collectFirst {
@@ -121,18 +152,18 @@ object Backtrace {
         lowPC <- getLowPC
         highPC <- getHighPC(lowPC)
       } yield {
-        val res = lowPC <= address && address < highPC
-        if (res)
-          println(s"$lowPC <= $address < $highPC: $res")
-        res
+        lowPC <= address && address < highPC
       }).getOrElse(false)
     } else false
   }
 
-  private def processFile: Option[(Vector[DWARF.DIE], DWARF.Strings)] = {
+  private def processFile: Option[DwarfInfo] = {
     val file = new File(s"$filename.dSYM/Contents/Resources/DWARF/sandbox")
     implicit val bf: BinaryFile = new BinaryFile(
-      new RandomAccessFile(s"$filename.dSYM/Contents/Resources/DWARF/sandbox", "r")
+      new RandomAccessFile(
+        s"$filename.dSYM/Contents/Resources/DWARF/sandbox",
+        "r"
+      )
     )
 
     val head = bf.position()
@@ -150,10 +181,18 @@ object Backtrace {
 
       } yield {
         println("read DWARF")
-        readDWARF(
+        val (dies, strings) = readDWARF(
           debug_info = DWARF.Section(debug_info.offset, debug_info.size),
           debug_abbrev = DWARF.Section(debug_abbrev.offset, debug_abbrev.size),
           debug_str = DWARF.Section(debug_str.offset, debug_str.size)
+        )
+        val pageZeroSize =
+          macho.segments.find(_.segname == "__PAGEZERO").map(_.vmsize)
+        DwarfInfo(
+          dies,
+          strings,
+          pageZeroSize,
+          MACHO
         )
       }
     } else if (magic == ELF_MAGIC) {

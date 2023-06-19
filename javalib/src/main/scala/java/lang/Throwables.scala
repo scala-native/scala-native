@@ -48,7 +48,9 @@ private[lang] object StackTrace {
   )(implicit zone: Zone): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip, addFileline))
 
-  @noinline private[lang] def currentStackTrace(addFileline: Boolean): Array[StackTraceElement] = {
+  @noinline private[lang] def currentStackTrace(
+      addFileline: Boolean
+  ): Array[StackTraceElement] = {
 
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
     if (!LinktimeInfo.asanEnabled) {
@@ -56,7 +58,6 @@ private[lang] object StackTrace {
         val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
         val context = alloc[scala.Byte](unwind.sizeOfContext)
         val ip = stackalloc[CSize]()
-
 
         unwind.get_context(context)
         unwind.init_local(cursor, context)

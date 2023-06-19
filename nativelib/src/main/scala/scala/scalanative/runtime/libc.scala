@@ -8,6 +8,8 @@ import scalanative.unsafe._
 // and nativelib. The actual bindings should go to clib namespace.
 @extern
 object libc {
+  type pid_t = CInt
+
   def malloc(size: CSize): RawPtr = extern
   def realloc(ptr: RawPtr, size: CSize): RawPtr = extern
   def free(ptr: RawPtr): Unit = extern
@@ -24,6 +26,7 @@ object libc {
   def memmove(dest: RawPtr, src: RawPtr, count: CSize): RawPtr = extern
   def remove(fname: CString): CInt = extern
   def atexit(func: CFuncPtr0[Unit]): CInt = extern
+  def getpid(): pid_t = extern
 
   // Glue layer defined in libc
   @name("scalanative_atomic_compare_exchange_strong_byte")
