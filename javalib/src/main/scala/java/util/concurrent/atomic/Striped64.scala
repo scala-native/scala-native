@@ -8,13 +8,8 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.LongBinaryOperator;
 import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.CAtomicLong
+import scala.scalanative.libc.atomic.{CAtomicLongLong, memory_order}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-
-import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics, ObjectArray}
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -33,21 +28,20 @@ object Striped64 {
     )
 
     final private[atomic] def cas(cmp: Long, `val`: Long) =
-      valueAtomic().compareExchangeWeak(cmp, `val`)
+      valueAtomic().compareExchangeWeak(
+        cmp,
+        `val`,
+        memory_order.memory_order_release
+      )
 
-    final private[atomic] def reset(): Unit = {
-      valueAtomic().store(0L)
-      // Cell.VALUE.setVolatile(this, 0L)
-    }
+    final private[atomic] def reset(): Unit =
+      valueAtomic().store(0L, memory_order.memory_order_seq_cst)
 
-    final private[atomic] def reset(identity: Long): Unit = {
-      valueAtomic().store(identity)
-      // Cell.VALUE.setVolatile(this, identity)
-    }
+    final private[atomic] def reset(identity: Long): Unit =
+      valueAtomic().store(identity, memory_order.memory_order_seq_cst)
 
     final private[atomic] def getAndSet(`val`: Long) =
       valueAtomic().exchange(`val`).asInstanceOf[Long]
-    // Cell.VALUE.getAndSet(this, `val`).asInstanceOf[Long]
   }
 
   // private[atomic] val NCPU = Runtime.getRuntime.availableProcessors
