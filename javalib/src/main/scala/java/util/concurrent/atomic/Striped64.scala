@@ -8,7 +8,7 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.LongBinaryOperator;
 import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.{CAtomicLongLong, memory_order}
+import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, memory_order}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 /*
@@ -44,7 +44,7 @@ object Striped64 {
       valueAtomic().exchange(`val`).asInstanceOf[Long]
   }
 
-  // private[atomic] val NCPU = Runtime.getRuntime.availableProcessors
+  private[atomic] val NCPU = Runtime.getRuntime().availableProcessors()
 
   // private[atomic] def getProbe =
   //   THREAD_PROBE.get(Thread.currentThread).asInstanceOf[Int]
@@ -102,11 +102,26 @@ object Striped64 {
 @SuppressWarnings(Array("serial"))
 abstract class Striped64 private[atomic] () extends Number {
 
-  // private[atomic] var cells = null
+  @volatile private[atomic] var cells: Array[Striped64.Cell] = null
 
-  // private[atomic] val base = 0L
+  @volatile private[atomic] var base: Long = 0L
 
-  // private[atomic] var cellsBusy = 0
+  @volatile private[atomic] var cellsBusy: Int = 0
+
+  @alwaysinline private def baseAtomic = new CAtomicLongLong(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "base"))
+  )
+
+  @alwaysinline private def cellsBusyAtomic = new CAtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
+  )
+
+  @alwaysinline private def threadProbeAtomic(t: Thread) = new CAtomicInt(
+    fromRawPtr(
+      // TODO: check
+      Intrinsics.classFieldRawPtr(t, "threadLocalRandomProbe")
+    )
+  )
 
   // final private[atomic] def casBase(cmp: Long, `val`: Long) =
   //   Striped64.BASE.weakCompareAndSetRelease(this, cmp, `val`)
