@@ -9,6 +9,7 @@ import ScriptedPlugin.autoImport._
 object Commands {
   lazy val values = Seq(
     testAll,
+    testSandbox,
     testTools,
     testRuntime,
     testMima,
@@ -23,6 +24,20 @@ object Commands {
       "test-runtime" ::
       "test-scripted" ::
       "publish-local-dev" :: _
+  }
+
+  lazy val testSandbox = projectVersionCommand("test-sandbox") {
+    case (version, state) =>
+      val runs =
+        List(sandbox)
+          .map(_.forBinaryVersion(version).id)
+          .flatMap(id =>
+            List("none", "boehm", "immix", "commix").map(gc =>
+              s"set ThisBuild / nativeConfig ~= (_.withGC(scala.scalanative.build.GC.$gc)); $id/run"
+            )
+          )
+      runs :::
+        state
   }
 
   lazy val testRuntime = projectVersionCommand("test-runtime") {
