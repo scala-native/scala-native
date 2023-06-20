@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../shared/Parsing.h"
+#include "GCScalaNative.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
@@ -78,3 +79,11 @@ int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 void scalanative_gc_set_mutator_thread_state(MutatorThreadState unused){};
 void scalanative_gc_safepoint_poll(){};
 safepoint_t scalanative_gc_safepoint = NULL;
+
+void scalanative_add_roots(void *addr_low, void *addr_high) {
+    GC_add_roots(addr_low, addr_high);
+}
+
+void scalanative_remove_roots(void *addr_low, void *addr_high) {
+    GC_remove_roots(addr_low, addr_high);
+}

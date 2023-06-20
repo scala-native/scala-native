@@ -22,7 +22,7 @@ sealed abstract class Op {
     case Op.Conv(_, ty, _)         => ty
     case Op.Fence(_)               => Type.Unit
 
-    case Op.Classalloc(n)       => Type.Ref(n, exact = true, nullable = false)
+    case Op.Classalloc(n, _)    => Type.Ref(n, exact = true, nullable = false)
     case Op.Fieldload(ty, _, _) => ty
     case Op.Fieldstore(ty, _, _, _) => Type.Unit
     case Op.Field(_, _)             => Type.Ptr
@@ -40,7 +40,7 @@ sealed abstract class Op {
     case Op.Var(ty)           => Type.Var(ty)
     case Op.Varload(slot)     => val Type.Var(ty) = slot.ty: @unchecked; ty
     case Op.Varstore(slot, _) => Type.Unit
-    case Op.Arrayalloc(ty, _) =>
+    case Op.Arrayalloc(ty, _, _) =>
       Type.Ref(Type.toArrayClass(ty), exact = true, nullable = false)
     case Op.Arrayload(ty, _, _)    => ty
     case Op.Arraystore(_, _, _, _) => Type.Unit
@@ -134,7 +134,7 @@ object Op {
   final case class Fence(syncAttrs: SyncAttrs) extends Op
 
   // high-level
-  final case class Classalloc(name: Global) extends Op
+  final case class Classalloc(name: Global, zone: Option[Val]) extends Op
   final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
   final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
       extends Op
@@ -152,7 +152,7 @@ object Op {
   final case class Var(ty: Type) extends Op
   final case class Varload(slot: Val) extends Op
   final case class Varstore(slot: Val, value: Val) extends Op
-  final case class Arrayalloc(ty: Type, init: Val) extends Op
+  final case class Arrayalloc(ty: Type, init: Val, zone: Option[Val]) extends Op
   final case class Arrayload(ty: Type, arr: Val, idx: Val) extends Op
   final case class Arraystore(ty: Type, arr: Val, idx: Val, value: Val)
       extends Op

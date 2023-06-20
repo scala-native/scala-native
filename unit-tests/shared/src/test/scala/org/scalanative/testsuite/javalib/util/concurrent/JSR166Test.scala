@@ -1035,6 +1035,9 @@ object JSR166Test {
     AssumesHelper.assumeMultithreadingIsEnabled()
   }
 
+  // Epsilon is added for Scala Native Test environment.
+  final val epsilon = 0.00001 // tolerance for Floating point comparisons.
+
   final val expensiveTests = true
 
   /** If true, also run tests that are not part of the official tck because they
@@ -1134,6 +1137,30 @@ object JSR166Test {
    */
   final val SIZE = 20
 
+  def seqItems(size: Int) = {
+    val s = new Array[Item](size)
+    for (i <- 0 until size) {
+      s(i) = new Item(i)
+    }
+    s
+  }
+
+  def negativeSeqItems(size: Int) = {
+    val s = new Array[Item](size)
+    for (i <- 0 until size) {
+      s(i) = new Item(-i)
+    }
+    s
+  }
+
+  val defaultItems: Array[Item] = seqItems(SIZE);
+
+  def itemFor(i: Int) = { // check cache for defaultItems
+    val items = defaultItems
+    if (i >= 0 && i < items.length) items(i)
+    else new Item(i)
+  }
+
   // Some convenient Integer constants
   final val zero = Integer.valueOf(0)
   final val one = Integer.valueOf(1)
@@ -1152,6 +1179,75 @@ object JSR166Test {
   final val m5 = Integer.valueOf(-5)
   final val m6 = Integer.valueOf(-6)
   final val m10 = Integer.valueOf(-10)
+
+  def mustEqual(x: Item, y: Item): Unit = {
+    if (x ne y) assertEquals(x.value, y.value)
+  }
+  def mustEqual(x: Item, y: Int): Unit = {
+    assertEquals(x.value, y)
+  }
+  def mustEqual(x: Int, y: Item): Unit = {
+    assertEquals(x, y.value)
+  }
+  def mustEqual(x: Int, y: Int): Unit = {
+    assertEquals(x, y)
+  }
+  def mustEqual(x: Any, y: Any): Unit = {
+    if (x != y) assertEquals(x, y)
+  }
+  def mustEqual(x: Int, y: Any): Unit = {
+    if (y.isInstanceOf[Item]) assertEquals(x, y.asInstanceOf[Item].value)
+    else fail()
+  }
+  def mustEqual(x: Any, y: Int): Unit = {
+    if (x.isInstanceOf[Item]) assertEquals(x.asInstanceOf[Item].value, y)
+    else fail()
+  }
+  def mustEqual(x: Boolean, y: Boolean): Unit = {
+    assertEquals(x, y)
+  }
+  def mustEqual(x: Long, y: Long): Unit = {
+    assertEquals(x, y)
+  }
+  def mustEqual(x: Double, y: Double): Unit = {
+    assertEquals(x, y, JSR166Test.epsilon) // epsilon added for Scala Native
+  }
+  def mustContain(c: Collection[Item], i: Int): Unit = {
+    assertTrue(c.contains(itemFor(i)))
+  }
+  def mustContain(c: Collection[Item], i: Item): Unit = {
+    assertTrue(c.contains(i))
+  }
+  def mustNotContain(c: Collection[Item], i: Int): Unit = {
+    assertFalse(c.contains(itemFor(i)))
+  }
+  def mustNotContain(c: Collection[Item], i: Item): Unit = {
+    assertFalse(c.contains(i))
+  }
+  def mustRemove(c: Collection[Item], i: Int): Unit = {
+    assertTrue(c.remove(itemFor(i)))
+  }
+  def mustRemove(c: Collection[Item], i: Item): Unit = {
+    assertTrue(c.remove(i))
+  }
+  def mustNotRemove(c: Collection[Item], i: Int): Unit = {
+    assertFalse(c.remove(itemFor(i)))
+  }
+  def mustNotRemove(c: Collection[Item], i: Item): Unit = {
+    assertFalse(c.remove(i))
+  }
+  def mustAdd(c: Collection[Item], i: Int): Unit = {
+    assertTrue(c.add(itemFor(i)))
+  }
+  def mustAdd(c: Collection[Item], i: Item): Unit = {
+    assertTrue(c.add(i))
+  }
+  def mustOffer(c: Queue[Item], i: Int): Unit = {
+    assertTrue(c.offer(itemFor(i)))
+  }
+  def mustOffer(c: Queue[Item], i: Item): Unit = {
+    assertTrue(c.offer(i))
+  }
 
   /** Returns the number of milliseconds since time given by startNanoTime,
    *  which must have been previously returned from a call to {@link

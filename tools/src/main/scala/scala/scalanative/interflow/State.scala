@@ -18,32 +18,37 @@ final class State(block: Local) {
   var emit = new nir.Buffer()(fresh)
   var inlineDepth = 0
 
-  private def alloc(kind: Kind, cls: Class, values: Array[Val]): Addr = {
+  private def alloc(
+      kind: Kind,
+      cls: Class,
+      values: Array[Val],
+      zone: Option[Val]
+  ): Addr = {
     val addr = fresh().id
-    heap(addr) = VirtualInstance(kind, cls, values)
+    heap(addr) = VirtualInstance(kind, cls, values, zone)
     addr
   }
-  def allocClass(cls: Class): Addr = {
+  def allocClass(cls: Class, zone: Option[Val]): Addr = {
     val fields = cls.fields.map(fld => Val.Zero(fld.ty).canonicalize)
-    alloc(ClassKind, cls, fields.toArray[Val])
+    alloc(ClassKind, cls, fields.toArray[Val], zone)
   }
-  def allocArray(elemty: Type, count: Int)(implicit
+  def allocArray(elemty: Type, count: Int, zone: Option[Val])(implicit
       linked: linker.Result
   ): Addr = {
     val zero = Val.Zero(elemty).canonicalize
     val values = Array.fill[Val](count)(zero)
     val cls = linked.infos(Type.toArrayClass(elemty)).asInstanceOf[Class]
-    alloc(ArrayKind, cls, values)
+    alloc(ArrayKind, cls, values, zone)
   }
   def allocBox(boxname: Global, value: Val)(implicit
       linked: linker.Result
   ): Addr = {
     val boxcls = linked.infos(boxname).asInstanceOf[Class]
-    alloc(BoxKind, boxcls, Array(value))
+    alloc(BoxKind, boxcls, Array(value), zone = None)
   }
   def allocString(value: String)(implicit linked: linker.Result): Addr = {
     val charsArray = value.toArray
-    val charsAddr = allocArray(Type.Char, charsArray.length)
+    val charsAddr = allocArray(Type.Char, charsArray.length, zone = None)
     val chars = derefVirtual(charsAddr)
     charsArray.zipWithIndex.foreach {
       case (value, idx) =>
@@ -55,7 +60,7 @@ final class State(block: Local) {
     values(linked.StringCountField.index) = Val.Int(charsArray.length)
     values(linked.StringCachedHashCodeField.index) =
       Val.Int(Lower.stringHashCode(value))
-    alloc(StringKind, linked.StringClass, values)
+    alloc(StringKind, linked.StringClass, values, zone = None)
   }
   def delay(op: Op): Val = {
     if (delayed.contains(op)) {
@@ -162,8 +167,9 @@ final class State(block: Local) {
       if (heap.contains(addr) && !reachable.contains(addr)) {
         reachable += addr
         heap(addr) match {
-          case VirtualInstance(_, _, vals) =>
+          case VirtualInstance(_, _, vals, zone) =>
             vals.foreach(reachVal)
+            zone.foreach(reachVal)
           case EscapedInstance(value) =>
             reachVal(value)
           case DelayedInstance(op) =>
@@ -192,7 +198,7 @@ final class State(block: Local) {
       case Op.Conv(_, _, v)       => reachVal(v)
       case Op.Fence(_)            => ()
 
-      case _: Op.Classalloc            => ()
+      case Op.Classalloc(_, zh)        => zh.foreach(reachVal)
       case Op.Fieldload(_, v, _)       => reachVal(v)
       case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
       case Op.Field(v, _)              => reachVal(v)
@@ -209,7 +215,7 @@ final class State(block: Local) {
       case _: Op.Var                   => ()
       case Op.Varload(v)               => reachVal(v)
       case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayalloc(_, v1, zh)    => reachVal(v1); zh.foreach(reachVal)
       case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
       case Op.Arraystore(_, v1, v2, v3) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
@@ -250,7 +256,7 @@ final class State(block: Local) {
     }
 
     def reachAlloc(addr: Addr): Val = heap(addr) match {
-      case VirtualInstance(ArrayKind, cls, values) =>
+      case VirtualInstance(ArrayKind, cls, values, zone) =>
         val ArrayRef(elemty, _) = cls.ty: @unchecked
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
@@ -262,11 +268,12 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, Next.None)
-      case VirtualInstance(BoxKind, cls, Array(value)) =>
+        emit.arrayalloc(elemty, init, Next.None, zone.map(escapedVal))
+      case VirtualInstance(BoxKind, cls, Array(value), zone) =>
         reachVal(value)
+        zone.foreach(reachVal)
         emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
-      case VirtualInstance(StringKind, _, values)
+      case VirtualInstance(StringKind, _, values, zone)
           if !hasEscaped(values(linked.StringValueField.index)) =>
         val Val.Virtual(charsAddr) = values(
           linked.StringValueField.index
@@ -280,8 +287,8 @@ final class State(block: Local) {
           }
           .toArray[Char]
         Val.String(new java.lang.String(chars))
-      case VirtualInstance(_, cls, values) =>
-        emit.classalloc(cls.name, Next.None)
+      case VirtualInstance(_, cls, values, zone) =>
+        emit.classalloc(cls.name, Next.None, zone.map(escapedVal))
       case DelayedInstance(op) =>
         reachOp(op)
         emit(escapedOp(op), idempotent = true)
@@ -291,7 +298,7 @@ final class State(block: Local) {
     }
 
     def reachInit(local: Val, addr: Addr): Unit = heap(addr) match {
-      case VirtualInstance(ArrayKind, cls, values) =>
+      case VirtualInstance(ArrayKind, cls, values, zone) =>
         val ArrayRef(elemty, _) = cls.ty: @unchecked
         val canConstantInit =
           (!elemty.isInstanceOf[Type.RefKind]
@@ -302,6 +309,7 @@ final class State(block: Local) {
             case (value, idx) =>
               if (!value.isZero) {
                 reachVal(value)
+                zone.foreach(reachVal)
                 emit.arraystore(
                   elemty,
                   local,
@@ -312,16 +320,17 @@ final class State(block: Local) {
               }
           }
         }
-      case VirtualInstance(BoxKind, cls, Array(value)) =>
+      case VirtualInstance(BoxKind, cls, Array(value), _) =>
         ()
-      case VirtualInstance(StringKind, _, values)
+      case VirtualInstance(StringKind, _, values, _)
           if !hasEscaped(values(linked.StringValueField.index)) =>
         ()
-      case VirtualInstance(_, cls, vals) =>
+      case VirtualInstance(_, cls, vals, zone) =>
         cls.fields.zip(vals).foreach {
           case (fld, value) =>
             if (!value.isZero) {
               reachVal(value)
+              zone.foreach(reachVal)
               emit.fieldstore(
                 fld.ty,
                 local,
@@ -357,7 +366,7 @@ final class State(block: Local) {
       case Op.Conv(_, _, v)       => reachVal(v)
       case Op.Fence(_)            => ()
 
-      case _: Op.Classalloc            => ()
+      case Op.Classalloc(_, zh)        => zh.foreach(reachVal)
       case Op.Fieldload(_, v, _)       => reachVal(v)
       case Op.Fieldstore(_, v1, _, v2) => reachVal(v1); reachVal(v2)
       case Op.Field(v, _)              => reachVal(v)
@@ -374,7 +383,7 @@ final class State(block: Local) {
       case _: Op.Var                   => ()
       case Op.Varload(v)               => reachVal(v)
       case Op.Varstore(v1, v2)         => reachVal(v1); reachVal(v2)
-      case Op.Arrayalloc(_, v)         => reachVal(v)
+      case Op.Arrayalloc(_, v1, zh)    => reachVal(v1); zh.foreach(reachVal)
       case Op.Arrayload(_, v1, v2)     => reachVal(v1); reachVal(v2)
       case Op.Arraystore(_, v1, v2, v3) =>
         reachVal(v1); reachVal(v2); reachVal(v3)
@@ -443,7 +452,8 @@ final class State(block: Local) {
         Op.Varload(escapedVal(v))
       case Op.Varstore(v1, v2) =>
         Op.Varstore(escapedVal(v1), escapedVal(v2))
-      case Op.Arrayalloc(ty, v) => Op.Arrayalloc(ty, escapedVal(v))
+      case Op.Arrayalloc(ty, v1, zh) =>
+        Op.Arrayalloc(ty, escapedVal(v1), zh.map(escapedVal))
       case Op.Arrayload(ty, v1, v2) =>
         Op.Arrayload(ty, escapedVal(v1), escapedVal(v2))
       case Op.Arraystore(ty, v1, v2, v3) =>

@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "GCScalaNative.h"
 #include "MemoryMap.h"
 #include "MemoryInfo.h"
 #include "Parsing.h"
@@ -37,7 +38,7 @@ static size_t CHUNK;
 static size_t TO_NORMAL_MMAP = 1L;
 static size_t DO_PREALLOC = 0L; // No Preallocation.
 
-void exitWithOutOfMemory() {
+static void exitWithOutOfMemory() {
     fprintf(stderr, "Out of heap space\n");
     exit(1);
 }
@@ -155,3 +156,7 @@ int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 void scalanative_gc_set_mutator_thread_state(MutatorThreadState unused){};
 void scalanative_gc_safepoint_poll(){};
 safepoint_t scalanative_gc_safepoint = NULL;
+
+void scalanative_add_roots(void *addr_low, void *addr_high) {}
+
+void scalanative_remove_roots(void *addr_low, void *addr_high) {}

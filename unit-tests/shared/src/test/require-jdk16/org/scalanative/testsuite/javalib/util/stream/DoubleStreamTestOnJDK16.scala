@@ -12,7 +12,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class DoubleStreamTestOnJDK16 {
 
   // Since: Java 16
-  @Test def streamMapMulti_Eliding(): Unit = {
+  @Test def doubleStreamMapMulti_Eliding(): Unit = {
     val initialCount = 6
     val expectedCount = 4
 
@@ -40,9 +40,7 @@ class DoubleStreamTestOnJDK16 {
   }
 
   // Since: Java 16
-  @Test def streamMapMulti_Expanding(): Unit = {
-
-    case class Item(name: String, info: Double)
+  @Test def doubleStreamMapMulti_Expanding(): Unit = {
 
     val initialCount = 6
     val expectedCount = 7

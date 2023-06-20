@@ -1,5 +1,10 @@
 package scala.runtime
 
+import scala.scalanative.libc.atomic._
+import scala.scalanative.libc.atomic.memory_order._
+
+/** Not for public consumption. Usage by the runtime only.
+ */
 object Statics {
   @inline def mix(hash: Int, data: Int): Int = {
     val h1 = mixLast(hash, data)
@@ -68,18 +73,23 @@ object Statics {
 
   @inline def anyHash(x: Object): Int = x match {
     case null                => 0
-    case x: java.lang.Long   => longHash(x.longValue)
-    case x: java.lang.Double => doubleHash(x.doubleValue)
-    case x: java.lang.Float  => floatHash(x.floatValue)
+    case x: java.lang.Number => anyHashNumber(x)
     case _                   => x.hashCode
   }
 
+  @inline private def anyHashNumber(x: java.lang.Number): Int = x match {
+    case x: java.lang.Long   => longHash(x.longValue)
+    case x: java.lang.Double => doubleHash(x.doubleValue)
+    case x: java.lang.Float  => floatHash(x.floatValue)
+    case _                   => x.hashCode()
+  }
+
   /** Used as a marker object to return from PartialFunctions */
-  def pfMarker: AnyRef = PFMarker
+  @inline final def pfMarker: java.lang.Object = PFMarker
 
-  private object PFMarker extends AnyRef
+  private object PFMarker
 
-  def releaseFence(): Unit = ()
+  @inline def releaseFence(): Unit = atomic_thread_fence(memory_order_release)
 
   /** Just throws an exception.
    *

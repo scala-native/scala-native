@@ -178,9 +178,8 @@ class AbstractExecutorServiceTest extends JSR166Test {
   @Test def testInvokeAny2(): Unit =
     usingPoolCleaner(new AbstractExecutorServiceTest.DirectExecutorService) {
       e =>
-        val emptyCollection = Collections.emptyList
         try {
-          e.invokeAny(emptyCollection)
+          e.invokeAny(Collections.emptyList)
           shouldThrow()
         } catch { case success: IllegalArgumentException => () }
     }
@@ -252,8 +251,7 @@ class AbstractExecutorServiceTest extends JSR166Test {
   @Test def testInvokeAll2(): Unit = usingPoolCleaner(
     new AbstractExecutorServiceTest.DirectExecutorService
   ) { e =>
-    val emptyCollection = Collections.emptyList
-    val r = e.invokeAll(emptyCollection)
+    val r = e.invokeAll(Collections.emptyList)
     assertTrue(r.isEmpty)
   }
 
@@ -339,9 +337,8 @@ class AbstractExecutorServiceTest extends JSR166Test {
   @Test def testTimedInvokeAny2(): Unit = usingPoolCleaner(
     new AbstractExecutorServiceTest.DirectExecutorService
   ) { e =>
-    val emptyCollection = Collections.emptyList
     try {
-      e.invokeAny(emptyCollection, randomTimeout(), randomTimeUnit())
+      e.invokeAny(Collections.emptyList, randomTimeout(), randomTimeUnit())
       shouldThrow()
     } catch { case success: IllegalArgumentException => () }
   }
@@ -434,8 +431,8 @@ class AbstractExecutorServiceTest extends JSR166Test {
   @Test def testTimedInvokeAll2(): Unit = usingPoolCleaner(
     new AbstractExecutorServiceTest.DirectExecutorService
   ) { e =>
-    val emptyCollection = Collections.emptyList
-    val r = e.invokeAll(emptyCollection, randomTimeout(), randomTimeUnit())
+    val r =
+      e.invokeAll(Collections.emptyList, randomTimeout(), randomTimeUnit())
     assertTrue(r.isEmpty)
   }
 

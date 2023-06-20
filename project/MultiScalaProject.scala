@@ -20,8 +20,15 @@ final case class MultiScalaProject private (
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3")
+  lazy val v3Next: Project = project("3-next")
+    .settings(
+      Settings.experimentalScalaSources,
+      Settings.noPublishSettings
+    )
 
-  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3)
+  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
+    if (enableExperimentalCompiler) Some(v3Next) else None
+  }
 
   def mapBinaryVersions(
       mapping: String => Project => Project
@@ -114,20 +121,37 @@ object MultiScalaProject {
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
+  private final val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
+  lazy val enableExperimentalCompiler = {
+    val enabled = scala.sys.env.contains(ExperimentalCompilerEnv)
+    val msg =
+      if (enabled)
+        s"Found `$ExperimentalCompilerEnv` env var: enabled sub-projects using Scala experimental version ${ScalaVersions.scala3Nightly}, using suffix `3_next`."
+      else
+        s"Not found `$ExperimentalCompilerEnv` env var: sub-projects using Scala experimental version would not be available."
+    println(msg)
+    enabled
+  }
+
   final val scalaCrossVersions = Map[String, Seq[String]](
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
-    "3" -> ScalaVersions.crossScala3
+    "3" -> ScalaVersions.crossScala3,
+    "3-next" -> Seq(ScalaVersions.scala3Nightly)
   )
 
   final val scalaVersions = Map[String, String](
     "2.12" -> ScalaVersions.scala212,
     "2.13" -> ScalaVersions.scala213,
-    "3" -> ScalaVersions.scala3
+    "3" -> ScalaVersions.scala3,
+    "3-next" -> ScalaVersions.scala3Nightly
   )
 
   private def projectID(id: String, major: String) =
-    id + major.replace('.', '_')
+    major match {
+      case "3-next" => id + "3_next"
+      case _        => id + major.replace('.', '_')
+    }
 
   def apply(id: String): MultiScalaProject =
     apply(id, file(id))
