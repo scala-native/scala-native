@@ -16,6 +16,7 @@ import com.jsuereth.sbtpgp.PgpKeys
 import scala.collection.mutable
 import scala.scalanative.build.Platform
 import Build.{crossPublish, crossPublishSigned}
+import MyScalaNativePlugin.isGeneratingForIDE
 
 import java.io.File
 
@@ -891,7 +892,8 @@ object Settings {
   }
 
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
-    options.map(opt => s"-P:scalanative:$opt")
+    if (isGeneratingForIDE) Nil
+    else options.map(opt => s"-P:scalanative:$opt")
   }
 
   def scalaNativeMapSourceURIOption(

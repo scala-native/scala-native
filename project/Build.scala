@@ -22,6 +22,8 @@ object Build {
   import ScalaVersions._
   import Settings._
   import Deps._
+  import NoIDEExport.noIDEExportSettings
+  import MyScalaNativePlugin.{isGeneratingForIDE, ideScalaVersion}
 
 // format: off
   lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
@@ -89,6 +91,7 @@ object Build {
         name := "Scala Native",
         scalaVersion := ScalaVersions.scala212,
         crossScalaVersions := ScalaVersions.libCrossScalaVersions,
+        noIDEExportSettings,
         commonSettings,
         noPublishSettings,
         disabledTestsSettings,
@@ -210,14 +213,14 @@ object Build {
           )
         )
       )
-      .zippedSettings(Seq("tests")) {
-        case Seq(tests) =>
+      .zippedSettings(Seq("testInterface")) {
+        case Seq(testInterface) =>
           Def.settings(
             // Only generate build info for test configuration
             // Compile / buildInfoObject := "TestSuiteBuildInfo",
             Compile / buildInfoPackage := "scala.scalanative.benchmarks",
             Compile / buildInfoKeys := List(
-              BuildInfoKey.map(tests / Test / fullClasspath) {
+              BuildInfoKey.map(testInterface / Test / fullClasspath) {
                 case (key, value) =>
                   ("fullTestSuiteClasspath", value.toList.map(_.data))
               }
@@ -230,6 +233,10 @@ object Build {
       .in(file("sbt-scala-native"))
       .enablePlugins(ScriptedPlugin)
       .settings(
+        {
+          if (ideScalaVersion == "2.12") Nil
+          else noIDEExportSettings
+        },
         sbtPluginSettings,
         disabledDocsSettings,
         addSbtPlugin(Deps.SbtPlatformDeps),
@@ -357,14 +364,19 @@ object Build {
 
   lazy val auxlib = MultiScalaProject("auxlib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings, commonJavalibSettings, disabledDocsSettings)
+    .settings(
+      mavenPublishSettings,
+      commonJavalibSettings,
+      disabledDocsSettings,
+      noIDEExportSettings
+    )
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings, disabledDocsSettings)
+      .settings(mavenPublishSettings, disabledDocsSettings, noIDEExportSettings)
       .withNativeCompilerPlugin
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
@@ -445,6 +457,7 @@ object Build {
     .withJUnitPlugin
     .dependsOn(
       scalalib,
+      javalib,
       testInterface,
       junitRuntime
     )
@@ -499,7 +512,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
-      .dependsOn(scalalib, testInterface % "test")
+      .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =
@@ -551,6 +564,7 @@ object Build {
       .withJUnitPlugin
       .dependsOn(
         scalalib,
+        javalib,
         testInterfaceSbtDefs,
         junitRuntime,
         junitAsyncNative % "test"
@@ -562,7 +576,7 @@ object Build {
       .settings(mavenPublishSettings)
       .settings(docsSettings)
       .withNativeCompilerPlugin
-      .dependsOn(scalalib)
+      .dependsOn(scalalib, javalib)
 
   lazy val testRunner =
     MultiScalaProject("testRunner", file("test-runner"))
@@ -611,7 +625,7 @@ object Build {
         Compile / publishArtifact := false
       )
       .withNativeCompilerPlugin
-      .dependsOn(scalalib)
+      .dependsOn(scalalib, javalib)
 
   lazy val junitAsyncJVM =
     MultiScalaProject("junitAsyncJVM", file("junit-async/jvm"))
@@ -686,6 +700,7 @@ object Build {
       .settings(
         noPublishSettings,
         shouldPartestSetting,
+        noIDEExportSettings,
         Test / fork := true,
         Test / javaOptions += "-Xmx1G",
         // Override the dependency of partest - see Scala.js issue #1889
@@ -773,7 +788,7 @@ object Build {
           )
       }
       .withNativeCompilerPlugin
-      .dependsOn(scalalib)
+      .dependsOn(scalalib, javalib)
 
   lazy val scalaPartestJunitTests = MultiScalaProject(
     "scalaPartestJunitTests",
@@ -781,6 +796,7 @@ object Build {
   ).enablePlugins(MyScalaNativePlugin)
     .settings(
       noPublishSettings,
+      noIDEExportSettings,
       scalacOptions ++= Seq(
         "-language:higherKinds"
       ),
@@ -852,28 +868,33 @@ object Build {
 
     /** Uses the Scala Native compiler plugin. */
     def withNativeCompilerPlugin: MultiScalaProject = {
-      project.dependsOn(nscPlugin % "plugin")
+      if (isGeneratingForIDE) project
+      else project.dependsOn(nscPlugin % "plugin")
     }
 
     def withJUnitPlugin: MultiScalaProject = {
-      project.mapBinaryVersions { version =>
-        _.settings(
-          Test / scalacOptions += Def.taskDyn {
-            val pluginProject = junitPlugin.forBinaryVersion(version)
-            (pluginProject / Compile / packageBin).map { jar =>
-              s"-Xplugin:$jar"
-            }
-          }.value
-        )
-      }
+      if (isGeneratingForIDE) project
+      else
+        project.mapBinaryVersions { version =>
+          _.settings(
+            Test / scalacOptions += Def.taskDyn {
+              val pluginProject = junitPlugin.forBinaryVersion(version)
+              (pluginProject / Compile / packageBin).map { jar =>
+                s"-Xplugin:$jar"
+              }
+            }.value
+          )
+        }
     }
 
     /** Depends on the sources of another project. */
     def dependsOnSource(dependency: MultiScalaProject): MultiScalaProject = {
-      project.zippedSettings(dependency) { dependency =>
-        Compile / unmanagedSourceDirectories ++=
-          (dependency / Compile / unmanagedSourceDirectories).value
-      }
+      if (isGeneratingForIDE) project.dependsOn(dependency)
+      else
+        project.zippedSettings(dependency) { dependency =>
+          Compile / unmanagedSourceDirectories ++=
+            (dependency / Compile / unmanagedSourceDirectories).value
+        }
     }
   }
 
