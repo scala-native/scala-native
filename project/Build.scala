@@ -638,7 +638,10 @@ object Build {
       .settings(
         scalacOptions --= Seq(
           "-Xfatal-warnings"
-        ),
+        ), {
+          if (ideScalaVersion.startsWith("2.")) Nil
+          else noIDEExportSettings
+        },
         noPublishSettings,
         shouldPartestSetting,
         resolvers += Resolver.typesafeIvyRepo("releases"),
