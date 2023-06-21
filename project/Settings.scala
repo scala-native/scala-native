@@ -485,6 +485,14 @@ object Settings {
         }
         val newSources = experimentalSources.values.toList.diff(updatedSources)
         updatedSources ++ newSources
+      },
+      // Adjustment for bloopInstall which tries to add whole source directory leading to double definitions
+      scope / sourceDirectories --= {
+        val sourcesDir = (scope / sourceDirectory).value
+        lazy val experimentalSources = allScalaFromDir(sourcesDir / baseDir)
+        if (isGeneratingForIDE && experimentalSources.nonEmpty)
+          Seq((scope / scalaSource).value)
+        else Nil
       }
     )
 
