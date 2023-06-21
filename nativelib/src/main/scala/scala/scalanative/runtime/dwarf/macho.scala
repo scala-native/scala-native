@@ -14,7 +14,11 @@ object Endianness {
 
 import MachO._
 
-case class MachO private (header: Header, segments: List[Segment]) {}
+case class MachO private (
+    header: Header,
+    segments: List[Segment],
+    uuid: List[UInt]
+) {}
 
 object MachO {
   import CommonParsers._
@@ -38,6 +42,7 @@ object MachO {
     val reserved = skipBytes(INT)
 
     val segments = List.newBuilder[Segment]
+    val uuid = List.newBuilder[UInt]
 
     // WARNING: Long truncated
     (0 until header.ncmds.toInt).foreach { cmdId =>
@@ -47,6 +52,11 @@ object MachO {
         commandType.toInt match {
           case LoadCommand.LC_SEGMENT_64 =>
             segments += Segment.parse()
+          case LoadCommand.LC_UUID =>
+            val size = commandSize.toInt - 8 // should be 16
+            (1 to size).foreach { _ =>
+              uuid += uint8()
+            }
           case _ =>
             skipBytes((commandSize - 8.toUInt).toLong)
         }
@@ -54,7 +64,7 @@ object MachO {
 
     }
 
-    new MachO(header, segments.result())
+    new MachO(header, segments.result(), uuid.result())
 
   }
 

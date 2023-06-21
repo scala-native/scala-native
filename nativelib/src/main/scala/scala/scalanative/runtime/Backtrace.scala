@@ -39,7 +39,7 @@ object Backtrace {
         case Some(Some(info)) =>
           impl(pc, info)
         case None =>
-          processFile match {
+          processFile(filename, None) match {
             case None =>
               // there's no debug section, cache it so we don't parse the exec file any longer
               println("DIE not found, cache")
@@ -65,10 +65,13 @@ object Backtrace {
         // TODO: close input stream
         val vmmap = Source.fromInputStream(proc.getInputStream())
         (for {
-          loadAddress <- vmmap.getLines().find(_.startsWith("Load Address")).map { line =>
-            val addressStr = line.split(":").last.trim.drop(2)
-            java.lang.Long.parseLong(addressStr, 16)
-          }
+          loadAddress <- vmmap
+            .getLines()
+            .find(_.startsWith("Load Address"))
+            .map { line =>
+              val addressStr = line.split(":").last.trim.drop(2)
+              java.lang.Long.parseLong(addressStr, 16)
+            }
           pageZeroSize <- info.pageZeroSize
         } yield {
           pc - loadAddress + pageZeroSize
@@ -157,13 +160,41 @@ object Backtrace {
     } else false
   }
 
-  private def processFile: Option[DwarfInfo] = {
-    val file = new File(s"$filename.dSYM/Contents/Resources/DWARF/sandbox")
-    implicit val bf: BinaryFile = new BinaryFile(
-      new RandomAccessFile(
-        s"$filename.dSYM/Contents/Resources/DWARF/sandbox",
-        "r"
+  private def processMacho(
+      macho: MachO
+  )(implicit bf: BinaryFile): Option[DwarfInfo] = {
+    val sections = macho.segments.flatMap(_.sections)
+
+    for {
+      debug_info <- sections.find(_.sectname == "__debug_info")
+      debug_abbrev <- sections.find(_.sectname == "__debug_abbrev")
+      debug_str <- sections.find(_.sectname == "__debug_str")
+      debug_line <- sections.find(_.sectname == "__debug_line")
+
+    } yield {
+      println("read DWARF")
+      val (dies, strings) = readDWARF(
+        debug_info = DWARF.Section(debug_info.offset, debug_info.size),
+        debug_abbrev = DWARF.Section(debug_abbrev.offset, debug_abbrev.size),
+        debug_str = DWARF.Section(debug_str.offset, debug_str.size)
       )
+      val pageZeroSize =
+        macho.segments.find(_.segname == "__PAGEZERO").map(_.vmsize)
+      DwarfInfo(
+        dies,
+        strings,
+        pageZeroSize,
+        MACHO
+      )
+    }
+  }
+
+  private def processFile(
+      filename: String,
+      matchUUID: Option[List[UInt]]
+  ): Option[DwarfInfo] = {
+    implicit val bf: BinaryFile = new BinaryFile(
+      new RandomAccessFile(filename, "r")
     )
 
     val head = bf.position()
@@ -171,29 +202,19 @@ object Backtrace {
     bf.seek(head)
     if (magic == MACHO_MAGIC) {
       val macho = MachO.parse(bf)
-      val sections = macho.segments.flatMap(_.sections)
-
-      for {
-        debug_info <- sections.find(_.sectname == "__debug_info")
-        debug_abbrev <- sections.find(_.sectname == "__debug_abbrev")
-        debug_str <- sections.find(_.sectname == "__debug_str")
-        debug_line <- sections.find(_.sectname == "__debug_line")
-
-      } yield {
-        println("read DWARF")
-        val (dies, strings) = readDWARF(
-          debug_info = DWARF.Section(debug_info.offset, debug_info.size),
-          debug_abbrev = DWARF.Section(debug_abbrev.offset, debug_abbrev.size),
-          debug_str = DWARF.Section(debug_str.offset, debug_str.size)
-        )
-        val pageZeroSize =
-          macho.segments.find(_.segname == "__PAGEZERO").map(_.vmsize)
-        DwarfInfo(
-          dies,
-          strings,
-          pageZeroSize,
-          MACHO
-        )
+      processMacho(macho).orElse {
+        val basename = new File(filename).getName()
+        val dSymPath =
+          s"$filename.dSYM/Contents/Resources/DWARF/${basename}"
+        if (new File(dSymPath).exists()) {
+          val dSYMBin: BinaryFile = new BinaryFile(
+            new RandomAccessFile(dSymPath, "r")
+          )
+          val dSYMMacho = MachO.parse(dSYMBin)
+          if (dSYMMacho.uuid == macho.uuid)
+            processMacho(dSYMMacho)(dSYMBin)
+          else None
+        } else None
       }
     } else if (magic == ELF_MAGIC) {
       sys.error(
