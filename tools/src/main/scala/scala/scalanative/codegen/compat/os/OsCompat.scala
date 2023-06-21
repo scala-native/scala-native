@@ -4,10 +4,7 @@ package compat.os
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position}
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.llvm.GenIdx
 import scala.scalanative.codegen.llvm.DebugInformationSection
-import scala.scalanative.nir.Defn
-import scala.scalanative.nir.Global
 
 private[codegen] trait OsCompat {
   protected def codegen: AbstractCodeGen

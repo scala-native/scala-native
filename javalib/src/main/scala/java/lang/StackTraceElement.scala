@@ -51,7 +51,6 @@ private[lang] object StackTraceElement {
     val className: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
     val methodName: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
     SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
-    println(fromCString(sym))
 
     new StackTraceElement(
       fromCString(className),

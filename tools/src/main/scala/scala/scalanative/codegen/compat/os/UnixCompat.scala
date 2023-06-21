@@ -4,7 +4,6 @@ import scala.scalanative.codegen.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.llvm.GenIdx
 import scala.scalanative.codegen.llvm.DebugInformationSection
 
 private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
