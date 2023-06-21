@@ -1,29 +1,17 @@
 package scala.scalanative.codegen
+package llvm
 
 import java.nio.file.{Path, Paths}
 import java.{lang => jl}
 import scala.collection.mutable
 import scala.scalanative.build.Discover
-import scala.scalanative.codegen.compat.os.OsCompat
+import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
-import scala.scalanative.codegen.llvm.GenIdx
-import scala.scalanative.codegen.llvm.DebugInformationSection
-import scala.scalanative.nir.Type.Ref
-import scala.scalanative.nir.Type.Vararg
-import scala.scalanative.nir.Type.Var
-import scala.scalanative.nir.Type.Virtual
-import scala.scalanative.nir.Type.Bool
-import scala.scalanative.nir.Type.Size
-import scala.scalanative.nir.Type.Ptr
-import scala.scalanative.nir.Type.ArrayValue
-import scala.scalanative.nir.Type.StructValue
-import scala.scalanative.codegen.llvm.LLVMDebugInformation
-import scala.scalanative.codegen.llvm.Incr
 import scala.util.control.NonFatal
 
 private[codegen] abstract class AbstractCodeGen(
@@ -40,7 +28,7 @@ private[codegen] abstract class AbstractCodeGen(
   private var currentBlockName: Local = _
   private var currentBlockSplit: Int = _
 
-  private val copies = mutable.Map.empty[Local, Val]
+  private val copies = mutable.Map.empty[Local, nir.Val]
   private val deps = mutable.Set.empty[Global]
   private val generated = mutable.Set.empty[String]
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]

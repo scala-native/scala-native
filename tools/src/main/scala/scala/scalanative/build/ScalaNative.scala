@@ -4,7 +4,8 @@ package build
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
-import scala.scalanative.codegen.{CodeGen, PlatformInfo}
+import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._

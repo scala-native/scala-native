@@ -1,5 +1,5 @@
-package scala.scalanative
-package codegen
+package scala.scalanative.codegen
+package llvm
 
 import java.io.File
 import java.nio.file.{Path, Paths, Files}
@@ -8,11 +8,13 @@ import scala.scalanative.build.Config
 import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
+import scala.scalanative.{build, linker}
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import scala.scalanative.compat.CompatParColls.Converters._
 import java.nio.file.StandardCopyOption
 
 import scala.scalanative.build.ScalaNative
+import scala.scalanative.codegen.IncrementalCodeGenContext
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
@@ -135,8 +137,8 @@ object CodeGen {
     }
 
   object Impl {
-    import scala.scalanative.codegen.AbstractCodeGen
-    import scala.scalanative.codegen.compat.os._
+    import scala.scalanative.codegen.llvm.AbstractCodeGen
+    import scala.scalanative.codegen.llvm.compat.os._
 
     def apply(env: Map[Global, Defn], defns: Seq[Defn])(implicit
         meta: Metadata

@@ -3,8 +3,7 @@ package llvm
 
 import DebugInformationSection._
 import LLVMDebugInformation._
-import Val.Str
-import Val.Num
+import Value._
 import scala.scalanative.nir.{Position, Global}
 import scala.reflect.ClassTag
 
@@ -31,8 +30,8 @@ case class Incr[+T](tok: DebugInformationSection.Token, value: T) {
   def id(implicit dwf: DebugInformationSection.Builder): Int = dwf.gidx.id(tok)
 }
 
-sealed trait Val {
-  import Val._
+sealed trait Value {
+  import Value._
   def render = this match {
     case Str(raw)   => s"""  "$raw" """.trim // TODO: escaping!!
     case Num(raw)   => raw.toString
@@ -42,26 +41,26 @@ sealed trait Val {
     case NULL       => "!null"
   }
 }
-object Val {
-  case class Str(raw: String) extends Val
-  case class Const(raw: String) extends Val
-  case class Num(raw: Int) extends Val
-  case class Ref(raw: Int) extends Val
-  case class Bool(raw: Boolean) extends Val
-  case object NULL extends Val
+object Value {
+  case class Str(raw: String) extends Value
+  case class Const(raw: String) extends Value
+  case class Num(raw: Int) extends Value
+  case class Ref(raw: Int) extends Value
+  case class Bool(raw: Boolean) extends Value
+  case object NULL extends Value
 
   implicit class IOps(i: Int) {
-    def v: Val = Num(i)
+    def v: Value = Num(i)
   }
   implicit class BOps(i: Boolean) {
-    def v: Val = Bool(i)
+    def v: Value = Bool(i)
   }
   implicit class SOps(s: String) {
-    def v: Val = Str(s)
+    def v: Value = Str(s)
     def const = Const(s)
   }
   implicit class TOps(s: Token) {
-    def v(implicit dwf: DebugInformationSection.Builder): Val = Ref(
+    def v(implicit dwf: DebugInformationSection.Builder): Value = Ref(
       dwf.gidx.id(s)
     )
   }
@@ -69,15 +68,15 @@ object Val {
 
 sealed trait LLVMDebugInformation extends Product with Serializable {
 
-  import Val._
+  import Value._
 
-  private def fields(mp: (String, Val)*) =
+  private def fields(mp: (String, Value)*) =
     mp.map { case (k, v) => k + ": " + v.render }.mkString("(", ", ", ")")
 
-  private def inst(nm: String, mp: (String, Val)*) =
+  private def inst(nm: String, mp: (String, Value)*) =
     "!" + nm + fields(mp: _*)
 
-  private def instSeq(nm: String, mp: Seq[(String, Val)]) =
+  private def instSeq(nm: String, mp: Seq[(String, Value)]) =
     "!" + nm + fields(mp: _*)
 
   private def tuple(values: String*) =
@@ -104,7 +103,7 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
       case IntAttr(conflictType, name, value) =>
         tuple(
           s"i32 $conflictType",
-          "!" + Val.Str(name).render,
+          "!" + Value.Str(name).render,
           s"i32 $value"
         )
 
@@ -162,7 +161,7 @@ sealed trait LLVMDebugInformation extends Product with Serializable {
         inst("DISubroutineType", "types" -> types.tok.v)
 
       case DITypes(retTpe, arguments) =>
-        (retTpe.map(_.tok.v).getOrElse(Val.NULL) +: arguments.map(_.tok.v))
+        (retTpe.map(_.tok.v).getOrElse(Value.NULL) +: arguments.map(_.tok.v))
           .map(_.render)
           .mkString("!{", ", ", "}")
     }

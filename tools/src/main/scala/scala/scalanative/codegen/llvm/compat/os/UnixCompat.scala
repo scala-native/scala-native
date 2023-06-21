@@ -1,6 +1,6 @@
-package scala.scalanative.codegen.compat.os
+package scala.scalanative.codegen.llvm.compat.os
 
-import scala.scalanative.codegen.AbstractCodeGen
+import scala.scalanative.codegen.llvm.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder
