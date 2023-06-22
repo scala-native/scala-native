@@ -107,90 +107,100 @@ abstract class Striped64 private[atomic] () extends Number {
   final private[atomic] def casCellsBusy() =
     cellsBusyAtomic().compareExchangeWeak(0, 1)
 
-  // final private[atomic] def longAccumulate(
-  //     x: Long,
-  //     fn: LongBinaryOperator,
-  //     wasUncontended: Boolean,
-  //     index: Int
-  // ): Unit = {
-  //   if (index == 0) {
-  //     ThreadLocalRandom.current // force initialization
+  final private[atomic] def longAccumulate(
+      x: Long,
+      fn: LongBinaryOperator,
+      wasUncontended: Boolean,
+      index: Int
+  ): Unit = {
+    var _index = index
+    var _wasUncontended = wasUncontended
 
-  //     index = Striped64.getProbe
-  //     wasUncontended = true
-  //   }
-  //   var collide = false
-  //   while ({
-  //     true
-  //   }) { // True if last slot nonempty
-  //     var cs = null
-  //     var c = null
-  //     var n = 0
-  //     var v = 0L
-  //     if ((cs = cells) != null && (n = cs.length) > 0) {
-  //       if ((c = cs((n - 1) & index)) == null) {
-  //         if (cellsBusy == 0) { // Try to attach new Cell
-  //           val r = new Striped64.Cell(x) // Optimistically create
-  //           if (cellsBusy == 0 && casCellsBusy) {
-  //             try { // Recheck under lock
-  //               var rs = null
-  //               var m = 0
-  //               var j = 0
-  //               if ((rs = cells) != null && (m = rs.length) > 0 && rs(j =
-  //                     (m - 1) & index
-  //                   ) == null) {
-  //                 rs(j) = r
-  //                 break // todo: break is not supported
+    if (_index == 0) {
+      ThreadLocalRandom.current() // force initialization
 
-  //               }
-  //             } finally cellsBusy = 0
-  //             continue // todo: continue is not supported
-  //             // Slot is now non-empty
+      _index = Striped64.getProbe(this)
+      _wasUncontended = true
+    }
 
-  //           }
-  //         }
-  //         collide = false
-  //       } else if (!wasUncontended) { // CAS already known to fail
-  //         wasUncontended = true // Continue after rehash
-  //       } else if (c.cas(
-  //             v = c.value,
-  //             if (fn == null) v + x
-  //             else fn.applyAsLong(v, x)
-  //           )) break // todo: break is not supported
-  //       else if (n >= Striped64.NCPU || (cells ne cs))
-  //         collide = false // At max size or stale
-  //       else if (!collide) collide = true
-  //       else if (cellsBusy == 0 && casCellsBusy) {
-  //         try
-  //           if (cells eq cs) { // Expand table unless stale
-  //             cells = util.Arrays.copyOf(cs, n << 1)
-  //           }
-  //         finally cellsBusy = 0
-  //         collide = false
-  //         continue // todo: continue is not supported
-  //         // Retry with expanded table
+    var continue1 = true
+    var continue2 = true
+    var collide = false
+    while (continue1) { // True if last slot nonempty
+      continue2 = true
+      var cs: Array[Striped64.Cell] = null
+      var c: Striped64.Cell = null
+      var n: Int = 0
+      var v: Long = 0L
+      if ({ cs = cells; n = cs.length; cs != null && n > 0 }) {
+        if ({ c = cs((n - 1) & _index); c == null }) {
+          if (cellsBusy == 0) { // Try to attach new Cell
+            val r = new Striped64.Cell(x) // Optimistically create
+            if (cellsBusy == 0 && casCellsBusy()) {
+              try { // Recheck under lock
+                var rs: Array[Striped64.Cell] = null
+                var m = 0
+                var j = 0
+                if ({
+                  rs = cells; m = rs.length; j = (m - 1) & _index;
+                  rs != null && m > 0 && rs(j) == null
+                }) {
+                  rs(j) = r
+                  continue1 = false
+                  continue2 = false
 
-  //       }
-  //       index = Striped64.advanceProbe(index)
-  //     } else if (cellsBusy == 0 && (cells eq cs) && casCellsBusy)
-  //       try // Initialize table
-  //         if (cells eq cs) {
-  //           val rs = new Array[Striped64.Cell](2)
-  //           rs(index & 1) = new Striped64.Cell(x)
-  //           cells = rs
-  //           break // todo: break is not supported
+                }
+              } finally cellsBusy = 0
+              continue2 = false
+            }
+          }
+          collide = false
+        } else if (!_wasUncontended) { // CAS already known to fail
+          _wasUncontended = true // Continue after rehash
+        } else if (c.cas(
+              { v = c.value; v },
+              if (fn == null) v + x
+              else fn.applyAsLong(v, x)
+            )) {
+          continue1 = false
+          continue2 = false
+        } else if (n >= Striped64.NCPU || (cells != cs))
+          collide = false // At max size or stale
+        else if (!collide) collide = true
+        else if (cellsBusy == 0 && casCellsBusy()) {
+          try
+            if (cells == cs) { // Expand table unless stale
+              cells = Arrays.copyOf(cs, n << 1)
+            }
+          finally cellsBusy = 0
+          collide = false
+          continue2 = false
+          // Retry with expanded table
 
-  //         }
-  //       finally cellsBusy = 0
-  //     else { // Fall back on using base
-  //       if (casBase(
-  //             v = base,
-  //             if (fn == null) v + x
-  //             else fn.applyAsLong(v, x)
-  //           )) break // todo: break is not supported
-  //     }
-  //   }
-  // }
+        }
+        if (continue2 == true)
+          _index = Striped64.advanceProbe(this, _index)
+      } else if (cellsBusy == 0 && (cells == cs) && casCellsBusy())
+        try // Initialize table
+          if (cells == cs) {
+            val rs = new Array[Striped64.Cell](2)
+            rs(_index & 1) = new Striped64.Cell(x)
+            cells = rs
+            continue1 = false
+
+          }
+        finally cellsBusy = 0
+      else { // Fall back on using base
+        if (casBase(
+              { v = base; v },
+              if (fn == null) v + x
+              else fn.applyAsLong(v, x)
+            )) {
+          continue1 = false
+        }
+      }
+    }
+  }
 
   // final private[atomic] def doubleAccumulate(
   //     x: Double,
