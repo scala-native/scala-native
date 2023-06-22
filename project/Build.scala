@@ -221,6 +221,11 @@ object Build {
       mavenPublishSettings,
       withSharedCrossPlatformSources
     )
+    .mapBinaryVersions {
+      // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
+      case "2.12" => _.settings(disabledDocsSettings)
+      case _      => identity
+    }
     .enablePlugins(MyScalaNativePlugin)
     .dependsOn(util)
 
