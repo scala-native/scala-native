@@ -5,9 +5,32 @@ import sbt.Keys._
 
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.sys.env
 
 object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
+
+  final val isGeneratingForIDE =
+    env.getOrElse("METALS_ENABLED", "false").toBoolean
+
+  final val enableExperimentalCompiler = {
+    val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
+    val enabled = env.contains(ExperimentalCompilerEnv)
+    println(
+      if (enabled)
+        s"Found `$ExperimentalCompilerEnv` env var: enabled sub-projects using Scala experimental version ${ScalaVersions.scala3Nightly}, using suffix `3_next`."
+      else
+        s"Not found `$ExperimentalCompilerEnv` env var: sub-projects using Scala experimental version would not be available."
+    )
+    enabled
+  }
+
+  // Allowed values: 3, 3-next, 2.13, 2.12
+  final val ideScalaVersion = if (enableExperimentalCompiler) "3-next" else "3"
+
+  // Would be visible in Metals logs
+  if (isGeneratingForIDE)
+    println(s"IDE support enabled using Scala $ideScalaVersion")
 
   private def multithreadingEnabledBySbtSysProps(): Option[Boolean] = {
     /* Started as: sbt -Dscala.scalanative.multithreading.enable=true

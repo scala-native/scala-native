@@ -4,6 +4,7 @@ import sbt._
 import Keys._
 import Def.SettingsDefinition
 import scala.language.implicitConversions
+import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
 
 final case class MultiScalaProject private (
     private val projects: Map[String, Project]
@@ -121,18 +122,6 @@ object MultiScalaProject {
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
-  private final val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
-  lazy val enableExperimentalCompiler = {
-    val enabled = scala.sys.env.contains(ExperimentalCompilerEnv)
-    val msg =
-      if (enabled)
-        s"Found `$ExperimentalCompilerEnv` env var: enabled sub-projects using Scala experimental version ${ScalaVersions.scala3Nightly}, using suffix `3_next`."
-      else
-        s"Not found `$ExperimentalCompilerEnv` env var: sub-projects using Scala experimental version would not be available."
-    println(msg)
-    enabled
-  }
-
   final val scalaCrossVersions = Map[String, Seq[String]](
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
@@ -162,6 +151,10 @@ object MultiScalaProject {
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
+      val noIDEExportSettings =
+        if (major == ideScalaVersion) Nil
+        else NoIDEExport.noIDEExportSettings
+
       major -> Project(
         id = projectID(id, major),
         base = new File(base, "." + major)
@@ -169,7 +162,8 @@ object MultiScalaProject {
         Settings.commonSettings,
         name := Settings.projectName(id),
         scalaVersion := scalaVersions(major),
-        crossScalaVersions := minors
+        crossScalaVersions := minors,
+        noIDEExportSettings
       )
     }
 
