@@ -51,12 +51,12 @@ object Files {
 
     val out =
       if (!targetExists || (targetFile.isFile() && replaceExisting)) {
-        new FileOutputStream(targetFile, append = false)
+        new FileOutputStream(targetFile, /* append = */ false)
       } else if (targetFile.isDirectory() &&
           targetFile.list().isEmpty &&
           replaceExisting) {
         if (!targetFile.delete()) throw new IOException()
-        new FileOutputStream(targetFile, append = false)
+        new FileOutputStream(targetFile, /* append = */ false)
       } else if (targetFile.isDirectory() &&
           !targetFile.list().isEmpty &&
           replaceExisting) {
@@ -69,8 +69,8 @@ object Files {
       val copyResult = copy(in, out)
       // Make sure that created file has correct permissions
       if (!targetExists) {
-        targetFile.setReadable(true, ownerOnly = false)
-        targetFile.setWritable(true, ownerOnly = true)
+        targetFile.setReadable(true, /* ownerOnly = */ false)
+        targetFile.setWritable(true, /* ownerOnly = */ true)
       }
       copyResult
     } finally out.close()
@@ -411,10 +411,10 @@ object Files {
           attribute.substring(0, sepIndex),
           attribute.substring(sepIndex + 1, attribute.length)
         )
-    val viewClass = {
+    val viewClass: Class[FileAttributeView] = {
       if (!viewNamesToClasses.containsKey(viewName))
         throw new UnsupportedOperationException()
-      viewNamesToClasses.get(viewName)
+      viewNamesToClasses.get(viewName).asInstanceOf[Class[FileAttributeView]]
     }
     val view = getFileAttributeView(path, viewClass, options)
     view.getAttribute(attrName)
@@ -790,8 +790,7 @@ object Files {
       reader.transferTo(writer)
       writer.toString()
       // No need to close() StringWriter, so no inner try/finally.
-    } finally
-      reader.close()
+    } finally reader.close()
   }
 
   def readSymbolicLink(link: Path): Path =
@@ -930,7 +929,7 @@ object Files {
           .asList(FileHelpers.list(start.toString, (n, t) => (n, t)))
           .stream()
           .flatMap[Path] {
-            case (name, FileHelpers.FileType.Link)
+            case (name: String, FileHelpers.FileType.Link)
                 if options.contains(FileVisitOption.FOLLOW_LINKS) =>
               val path = start.resolve(name)
 
@@ -947,14 +946,14 @@ object Files {
               else
                 walk(path, maxDepth, currentDepth + 1, options, visited)
 
-            case (name, FileHelpers.FileType.Directory)
+            case (name: String, FileHelpers.FileType.Directory)
                 if currentDepth < maxDepth =>
               val path = start.resolve(name)
               if (options.contains(FileVisitOption.FOLLOW_LINKS))
                 visited.add(path)
               walk(path, maxDepth, currentDepth + 1, options, visited)
 
-            case (name, _) =>
+            case (name: String, _) =>
               Stream.of(start.resolve(name))
           }
       )

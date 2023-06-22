@@ -330,8 +330,8 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
       end: scala.Int
   ): Unit = {
     val chars0 = if (chars != null) chars else "null"
-    if (index < 0 || index > count || start < 0 || end < 0 || start > end ||
-        end > chars0.length()) {
+    if (index < 0 || index > count || start < 0 || end < 0 ||
+        start > end || end > chars0.length()) {
       throw new IndexOutOfBoundsException()
     }
     insert0(index, chars0.subSequence(start, end).toString)
