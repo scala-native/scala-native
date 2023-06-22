@@ -140,7 +140,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         val status = pthread_cond_wait(condition(conditionIdx), lock)
         assert(
           status == 0 ||
-            (scalanative.runtime.Platform.isMac() && status == ETIMEDOUT),
+            (isMac && status == ETIMEDOUT),
           "park, wait"
         )
       } else {
