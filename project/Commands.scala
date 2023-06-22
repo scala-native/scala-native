@@ -9,7 +9,7 @@ import ScriptedPlugin.autoImport._
 object Commands {
   lazy val values = Seq(
     testAll,
-    testSandbox,
+    testSandboxGC,
     testTools,
     testRuntime,
     testMima,
@@ -26,7 +26,7 @@ object Commands {
       "publish-local-dev" :: _
   }
 
-  lazy val testSandbox = projectVersionCommand("test-sandbox") {
+  lazy val testSandboxGC = projectVersionCommand("test-sandbox-gc") {
     case (version, state) =>
       val runs =
         List(sandbox)
