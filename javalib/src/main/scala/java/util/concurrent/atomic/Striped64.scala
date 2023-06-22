@@ -2,6 +2,7 @@
 
 package java.util.concurrent.atomic
 
+import java.lang.Double._
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.DoubleBinaryOperator;
@@ -46,57 +47,26 @@ object Striped64 {
 
   private[atomic] val NCPU = Runtime.getRuntime().availableProcessors()
 
-  // private[atomic] def getProbe =
-  //   THREAD_PROBE.get(Thread.currentThread).asInstanceOf[Int]
+  private[atomic] def getProbe(self: Striped64) =
+    self.threadProbeAtomic(Thread.currentThread()).load().asInstanceOf[Int]
 
-  // private[atomic] def advanceProbe(probe: Int) = {
-  //   probe ^= probe << 13 // xorshift
+  private[atomic] def advanceProbe(self: Striped64, probe: Int) = {
+    var _probe = probe
+    _probe = _probe ^ (_probe << 13) // xorshift
 
-  //   probe ^= probe >>> 17
-  //   probe ^= probe << 5
-  //   THREAD_PROBE.set(Thread.currentThread, probe)
-  //   probe
-  // }
+    _probe = _probe ^ (_probe >>> 17)
+    _probe = _probe ^ (_probe << 5)
+    self.threadProbeAtomic(Thread.currentThread()).store(_probe)
+    _probe
+  }
 
-  // private def apply(fn: DoubleBinaryOperator, v: Long, x: Double) = {
-  //   var d = Double.longBitsToDouble(v)
-  //   d =
-  //     if (fn == null) d + x
-  //     else fn.applyAsDouble(d, x)
-  //   Double.doubleToRawLongBits(d)
-  // }
-
-  // private var BASE = null
-  // private var CELLSBUSY = null
-  // private var THREAD_PROBE = null
-
-  // try
-  //   try {
-  //     val l = MethodHandles.lookup
-  //     BASE = l.findVarHandle(classOf[Striped64], "base", classOf[Long])
-  //     CELLSBUSY = l.findVarHandle(classOf[Striped64], "cellsBusy", classOf[Int])
-  //     @SuppressWarnings(Array("removal")) val l2 =
-  //       java.security.AccessController.doPrivileged(
-  //         new PrivilegedAction[MethodHandles.Lookup]() {
-  //           override def run: MethodHandles.Lookup = try
-  //             MethodHandles
-  //               .privateLookupIn(classOf[Thread], MethodHandles.lookup)
-  //           catch {
-  //             case e: ReflectiveOperationException =>
-  //               throw new ExceptionInInitializerError(e)
-  //           }
-  //         }
-  //       )
-  //     THREAD_PROBE = l2.findVarHandle(
-  //       classOf[Thread],
-  //       "threadLocalRandomProbe",
-  //       classOf[Int]
-  //     )
-  //   } catch {
-  //     case e: ReflectiveOperationException =>
-  //       throw new ExceptionInInitializerError(e)
-  //   }
-
+  private def _apply(fn: DoubleBinaryOperator, v: Long, x: Double) = {
+    var d = longBitsToDouble(v)
+    d =
+      if (fn == null) d + x
+      else fn.applyAsDouble(d, x)
+    doubleToRawLongBits(d)
+  }
 }
 
 @SuppressWarnings(Array("serial"))
@@ -108,14 +78,15 @@ abstract class Striped64 private[atomic] () extends Number {
 
   @volatile private[atomic] var cellsBusy: Int = 0
 
-  @alwaysinline private def baseAtomic = new CAtomicLongLong(
+  @alwaysinline private def baseAtomic() = new CAtomicLongLong(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "base"))
   )
 
-  @alwaysinline private def cellsBusyAtomic = new CAtomicInt(
+  @alwaysinline private def cellsBusyAtomic() = new CAtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
   )
 
+  // MEMO: is this ok?
   @alwaysinline private def threadProbeAtomic(t: Thread) = new CAtomicInt(
     fromRawPtr(
       // TODO: check
@@ -123,14 +94,18 @@ abstract class Striped64 private[atomic] () extends Number {
     )
   )
 
-  // final private[atomic] def casBase(cmp: Long, `val`: Long) =
-  //   Striped64.BASE.weakCompareAndSetRelease(this, cmp, `val`)
+  final private[atomic] def casBase(cmp: Long, `val`: Long) =
+    baseAtomic().compareExchangeWeak(
+      cmp,
+      `val`,
+      memory_order.memory_order_release
+    )
 
-  // final private[atomic] def getAndSetBase(`val`: Long) =
-  //   Striped64.BASE.getAndSet(this, `val`).asInstanceOf[Long]
+  final private[atomic] def getAndSetBase(`val`: Long) =
+    baseAtomic().exchange(`val`)
 
-  // final private[atomic] def casCellsBusy =
-  //   Striped64.CELLSBUSY.compareAndSet(this, 0, 1)
+  final private[atomic] def casCellsBusy() =
+    cellsBusyAtomic().compareExchangeWeak(0, 1)
 
   // final private[atomic] def longAccumulate(
   //     x: Long,
