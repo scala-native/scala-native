@@ -364,19 +364,14 @@ object Build {
 
   lazy val auxlib = MultiScalaProject("auxlib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(
-      mavenPublishSettings,
-      commonJavalibSettings,
-      disabledDocsSettings,
-      noIDEExportSettings
-    )
+    .settings(mavenPublishSettings, commonJavalibSettings, disabledDocsSettings)
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings, disabledDocsSettings, noIDEExportSettings)
+      .settings(mavenPublishSettings, disabledDocsSettings)
       .withNativeCompilerPlugin
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
@@ -457,7 +452,6 @@ object Build {
     .withJUnitPlugin
     .dependsOn(
       scalalib,
-      javalib,
       testInterface,
       junitRuntime
     )
@@ -512,7 +506,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
-      .dependsOn(scalalib, javalib, testInterface % "test")
+      .dependsOn(scalalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =
@@ -564,7 +558,6 @@ object Build {
       .withJUnitPlugin
       .dependsOn(
         scalalib,
-        javalib,
         testInterfaceSbtDefs,
         junitRuntime,
         junitAsyncNative % "test"
@@ -576,7 +569,7 @@ object Build {
       .settings(mavenPublishSettings)
       .settings(docsSettings)
       .withNativeCompilerPlugin
-      .dependsOn(scalalib, javalib)
+      .dependsOn(scalalib)
 
   lazy val testRunner =
     MultiScalaProject("testRunner", file("test-runner"))
@@ -791,7 +784,7 @@ object Build {
           )
       }
       .withNativeCompilerPlugin
-      .dependsOn(scalalib, javalib)
+      .dependsOn(scalalib)
 
   lazy val scalaPartestJunitTests = MultiScalaProject(
     "scalaPartestJunitTests",
