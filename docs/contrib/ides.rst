@@ -4,7 +4,7 @@ Metals
 ======
 Metals import should work out of the box for most of the modules, it's the recommended IDE.  
 To speed up indexing and prevent Bloop-related issues by default we export only 1 version of ``MultiScalaProject``, otherwise it would need to cross-compile sources for all binary Scala versions on each source-change.
-By default IDE would target Scala 3 projects, to change this behavior modify ``project/MyScalaNativeProject.scala`` and modify ``ideScalaVersion``. This change would be only required when developing Scala 2 compiler plugins, sbt plugins or Scala 2 specific sources.
+By default IDE would target Scala 3 projects, to change this behavior modify ``project/MyScalaNativePlugin.scala`` and modify ``ideScalaVersion``. This change would be only required when developing Scala 2 compiler plugins, sbt plugins or Scala 2 specific sources.
 
 
 IntelliJ IDEA

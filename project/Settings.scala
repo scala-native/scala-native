@@ -582,9 +582,6 @@ object Settings {
   )
 
   lazy val commonJavalibSettings = Def.settings(
-    // This is required to have incremental compilation to work in javalib.
-    // We put our classes on scalac's `javabootclasspath` so that it uses them
-    // when compiling rather than the definitions from the JDK.
     recompileAllOrNothingSettings,
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
