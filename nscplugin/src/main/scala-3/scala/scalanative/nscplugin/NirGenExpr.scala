@@ -85,7 +85,8 @@ trait NirGenExpr(using Context) {
 
       val sym = fun.symbol
       def isStatic = sym.owner.isStaticOwner
-      def qualifier = qualifierOf(fun)
+      def qualifier0 = qualifierOf(fun)
+      def qualifier = qualifier0.withSpan(qualifier0.span.orElse(fun.span))
 
       fun match {
         case _: TypeApply => genApplyTypeApply(app)
@@ -422,8 +423,8 @@ trait NirGenExpr(using Context) {
           else if (sym.is(Module))
             genModule(sym)
           else curMethodEnv.resolve(sym)
-        case desuaged: Select =>
-          genSelect(desuaged)
+        case desuagred: Select =>
+          genSelect(desuagred.withSpan(tree.span))
         case tree =>
           throw FatalError(s"Unsupported desugared ident tree: $tree")
       }
