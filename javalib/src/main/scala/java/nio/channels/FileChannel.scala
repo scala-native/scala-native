@@ -97,7 +97,7 @@ object FileChannel {
     }
 
     if (options.contains(APPEND) && options.contains(READ)) {
-      throw new IllegalArgumentException("APPEND + READ not allowed")
+      throw new IllegalArgumentException("READ + APPEND not allowed")
     }
 
     val writing = options.contains(WRITE) || options.contains(APPEND)
