@@ -76,13 +76,9 @@ final class BinarySerializer(channel: WritableByteChannel) {
     override def internDeps(pos: Position): Unit = ()
 
     override def put(pos: Position): Unit = {
-        putString(pos.source.toString) // interned
-        putLebUnsignedInt(pos.line)
-        putLebUnsignedInt(pos.column)
-// 23 748 455 // baseline
-// 24 018 968 // always-write full
-// 23 973 474 // always write-full no tag 
-// 23 909 912
+      putString(pos.source.toString) // interned
+      putLebUnsignedInt(pos.line)
+      putLebUnsignedInt(pos.column)
     }
   }
 

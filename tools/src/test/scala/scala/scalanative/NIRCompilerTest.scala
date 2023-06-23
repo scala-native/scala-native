@@ -549,10 +549,15 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
             ) =>
           checkPos(6, 8)(pos)
           checkLinesRange(6 to 8)(insts.map(_.pos))
-        
-        case Definition(FooModule, Sig.Method("writeReplace",_,_), pos, insts) => 
-          checkPos(1,7)(pos)
-          
+
+        case Definition(
+              FooModule,
+              Sig.Method("writeReplace", _, _),
+              pos,
+              insts
+            ) =>
+          checkPos(1, 7)(pos)
+
         case other => fail(s"Unexpected defn: ${nir.Show(other)}")
       }
     }

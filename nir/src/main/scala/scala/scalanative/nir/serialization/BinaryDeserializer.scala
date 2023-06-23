@@ -460,8 +460,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     val file = new URI(getString())
     val line = getLebUnsignedInt()
     val column = getLebUnsignedInt()
-    assert(line >= 0)
-    assert(column >= 0)
     Position(file, line, column)
   }
 }
