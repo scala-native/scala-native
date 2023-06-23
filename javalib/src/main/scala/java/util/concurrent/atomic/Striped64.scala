@@ -130,8 +130,8 @@ abstract class Striped64 private[atomic] () extends Number {
       continue2 = true
       var cs: Array[Striped64.Cell] = null
       var c: Striped64.Cell = null
-      var n: Int = 0
-      var v: Long = 0L
+      var n = 0
+      var v = 0L
       if ({ cs = cells; n = cs.length; cs != null && n > 0 }) {
         if ({ c = cs((n - 1) & _index); c == null }) {
           if (cellsBusy == 0) { // Try to attach new Cell
@@ -202,72 +202,82 @@ abstract class Striped64 private[atomic] () extends Number {
     }
   }
 
-  // final private[atomic] def doubleAccumulate(
-  //     x: Double,
-  //     fn: DoubleBinaryOperator,
-  //     wasUncontended: Boolean,
-  //     index: Int
-  // ): Unit = {
-  //   if (index == 0) {
-  //     ThreadLocalRandom.current
-  //     index = Striped64.getProbe
-  //     wasUncontended = true
-  //   }
-  //   var collide = false
-  //   while ({
-  //     true
-  //   }) {
-  //     var cs = null
-  //     var c = null
-  //     var n = 0
-  //     var v = 0L
-  //     if ((cs = cells) != null && (n = cs.length) > 0) {
-  //       if ((c = cs((n - 1) & index)) == null) {
-  //         if (cellsBusy == 0) {
-  //           val r = new Striped64.Cell(Double.doubleToRawLongBits(x))
-  //           if (cellsBusy == 0 && casCellsBusy) {
-  //             try {
-  //               var rs = null
-  //               var m = 0
-  //               var j = 0
-  //               if ((rs = cells) != null && (m = rs.length) > 0 && rs(j =
-  //                     (m - 1) & index
-  //                   ) == null) {
-  //                 rs(j) = r
-  //                 break // todo: break is not supported
-
-  //               }
-  //             } finally cellsBusy = 0
-  //             continue // todo: continue is not supported
-
-  //           }
-  //         }
-  //         collide = false
-  //       } else if (!wasUncontended) wasUncontended = true
-  //       else if (c.cas(v = c.value, Striped64.apply(fn, v, x)))
-  //         break // todo: break is not supported
-  //       else if (n >= Striped64.NCPU || (cells ne cs)) collide = false
-  //       else if (!collide) collide = true
-  //       else if (cellsBusy == 0 && casCellsBusy) {
-  //         try if (cells eq cs) cells = util.Arrays.copyOf(cs, n << 1)
-  //         finally cellsBusy = 0
-  //         collide = false
-  //         continue // todo: continue is not supported
-
-  //       }
-  //       index = Striped64.advanceProbe(index)
-  //     } else if (cellsBusy == 0 && (cells eq cs) && casCellsBusy)
-  //       try
-  //         if (cells eq cs) {
-  //           val rs = new Array[Striped64.Cell](2)
-  //           rs(index & 1) = new Striped64.Cell(Double.doubleToRawLongBits(x))
-  //           cells = rs
-  //           break // todo: break is not supported
-
-  //         }
-  //       finally cellsBusy = 0
-  //     else if (casBase(v = base, Striped64.apply(fn, v, x)))
-  //       break // todo: break is not supported
-  //   }
-  // }
+  final private[atomic] def doubleAccumulate(
+      x: Double,
+      fn: DoubleBinaryOperator,
+      wasUncontended: Boolean,
+      index: Int
+  ): Unit = {
+    var _index = index
+    var _wasUncontended = wasUncontended
+    if (_index == 0) {
+      ThreadLocalRandom.current()
+      _index = Striped64.getProbe(this)
+      _wasUncontended = true
+    }
+    var continue1 = true
+    var continue2 = true
+    var collide = false
+    while (continue1) {
+      var cs: Array[Striped64.Cell] = null
+      var c: Striped64.Cell = null
+      var n = 0
+      var v = 0L
+      if ({ cs = cells; n = cs.length; cs != null && n > 0 }) {
+        if ({ c = cs((n - 1) & _index); c == null }) {
+          if (cellsBusy == 0) {
+            val r = new Striped64.Cell(doubleToRawLongBits(x))
+            if (cellsBusy == 0 && casCellsBusy()) {
+              try {
+                var rs: Array[Striped64.Cell] = null
+                var m = 0
+                var j = 0
+                if ({
+                  rs = cells; m = rs.length; j = (m - 1) & _index;
+                  rs != null && m > 0 && rs(j) == null
+                }) {
+                  rs(j) = r
+                  continue1 = false
+                  continue2 = false
+                }
+              } finally cellsBusy = 0
+              continue2 = false
+            }
+          }
+          collide = false
+        } else if (!_wasUncontended) _wasUncontended = true
+        else if (c.cas({ v = c.value; v }, Striped64._apply(fn, v, x))) {
+          continue1 = false
+          continue2 = false
+        } else if (n >= Striped64.NCPU || (cells != cs)) collide = false
+        else if (!collide) collide = true
+        else if (cellsBusy == 0 && casCellsBusy()) {
+          try {
+            if (cells == cs)
+              cells = Arrays.copyOf(cs, n << 1)
+          } finally {
+            cellsBusy = 0
+          }
+          collide = false
+          continue2 = false
+        }
+        if (continue2 == true)
+          _index = Striped64.advanceProbe(this, _index)
+      } else if (cellsBusy == 0 && cells == cs && casCellsBusy())
+        try {
+          if (cells == cs) {
+            val rs = new Array[Striped64.Cell](2)
+            rs(_index & 1) = new Striped64.Cell(doubleToRawLongBits(x))
+            cells = rs
+            continue1 = false
+          }
+        } finally {
+          cellsBusy = 0
+        }
+      else if (casBase({ v = base; v }, Striped64._apply(fn, v, x))) {
+        continue1 = false
+        continue2 = false
+      }
+    }
+  }
 }
