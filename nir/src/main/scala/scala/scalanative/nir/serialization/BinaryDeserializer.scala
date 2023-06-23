@@ -456,48 +456,12 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
     }
 
-  // Ported from Scala.js
-  private var lastPosition = Position.NoPosition
   def getPosition(): Position = in(prelude.sections.positions) {
-    import PositionFormat._
-    val first = get()
-    if (first == FormatNoPositionValue) {
-      Position.NoPosition
-    } else {
-      val position = if ((first & FormatFullMask) == FormatFullMaskValue) {
-        val file = new URI(getString())
-        val line = getLebUnsignedInt()
-        val column = getLebUnsignedInt()
-        Position(file, line, column)
-      } else {
-        assert(
-          lastPosition != Position.NoPosition,
-          "Position format error: first position must be full" +
-            s", file=$fileName, first=$first"
-        )
-        if ((first & Format1Mask) == Format1MaskValue) {
-          val columnDiff = first >> Format1Shift
-          Position(
-            lastPosition.source,
-            lastPosition.line,
-            lastPosition.column + columnDiff
-          )
-        } else if ((first & Format2Mask) == Format2MaskValue) {
-          val lineDiff = first >> Format2Shift
-          val column = get() & 0xff // unsigned
-          Position(lastPosition.source, lastPosition.line + lineDiff, column)
-        } else {
-          assert(
-            (first & Format3Mask) == Format3MaskValue,
-            s"Position format error: first byte $first does not match any format"
-          )
-          val lineDiff = getShort()
-          val column = get() & 0xff // unsigned
-          Position(lastPosition.source, lastPosition.line + lineDiff, column)
-        }
-      }
-      lastPosition = position
-      position
-    }
+    val file = new URI(getString())
+    val line = getLebUnsignedInt()
+    val column = getLebUnsignedInt()
+    assert(line >= 0)
+    assert(column >= 0)
+    Position(file, line, column)
   }
 }
