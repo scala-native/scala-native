@@ -190,8 +190,8 @@ object MetadataCodeGen {
     def intern(t: T)(implicit ctx: Context): MetadataId = {
       val id = cache.getOrElseUpdate(
         t, {
-          val id = ctx.fresh().id.toInt
           internDeps(t)
+          val id = ctx.fresh().id.toInt
 
           sb.newline()
           sb.str("!")
