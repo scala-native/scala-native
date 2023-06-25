@@ -105,30 +105,21 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
 
   private val DIBasicTypes: Map[nir.Type, Metadata.Type] = {
     import nir.Type._
-    Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool).map { tpe =>
-      val name = tpe match {
-        case Byte         => "i8"
-        case Short | Char => "i16"
-        case Int          => "i32"
-        case Long         => "i64"
-        case Size         => if (platform.is32Bit) "i32" else "i64"
-        case Float        => "float"
-        case Double       => "double"
-        case Bool         => "i1"
-        case _            => unsupported(s"Not a primitive type $tpe")
-      }
+    Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
       tpe -> DIBasicType(
-        name,
-        MemoryLayout.sizeOf(tpe).toInt * 8 /*bits*/,
-        MemoryLayout.alignmentOf(tpe).toInt * 8 /*bits*/
+        name = tpe.show,
+        size = MemoryLayout.sizeOf(tpe).toInt * 8 /*bits*/,
+        align = MemoryLayout.alignmentOf(tpe).toInt * 8 /*bits*/,
+        encoding = tpe match {
+          case Bool           => DW_ATE.Boolean
+          case Float | Double => DW_ATE.Float
+          case Ptr            => DW_ATE.Address
+          case Char           => DW_ATE.Unsigned
+          case _              => DW_ATE.Signed
+        }
       )
     }.toMap
   }
-  private val DIPointerType = DIDerivedType(
-    tag = DWTag.Pointer,
-    baseType = DIBasicTypes(nir.Type.Byte),
-    size = MemoryLayout.sizeOf(nir.Type.Ptr).toInt * 8 /*bits*/
-  )
 
   private def toMetadataType(
       ty: nir.Type
@@ -142,8 +133,9 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     DIBasicTypes
       .get(ty)
       .orElse(ty match {
-        case nir.Type.Unit                     => None
-        case _: RefKind | Ptr | Null | Nothing => Some(DIPointerType)
+        case nir.Type.Unit => None
+        // TODO: describe RefKinds using DICompositeType
+        case _: RefKind | Null | Nothing => DIBasicTypes.get(Ptr)
         case other =>
           throw new NotImplementedError(s"No idea how to dwarfise $other")
       })
@@ -354,10 +346,11 @@ object MetadataCodeGen {
               field("line", line)
               field("type", tpe)
 
-            case DIBasicType(name, size, align) =>
+            case DIBasicType(name, size, align, encoding) =>
               field("name", name)
               field("size", size)
               field("align", align)
+              field("encoding", encoding)
 
             case DIDerivedType(tag, baseType, size) =>
               field("tag", tag)

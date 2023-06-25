@@ -50,7 +50,8 @@ object Metadata {
   ) extends LLVMDebugInformation
 
   sealed trait Type extends LLVMDebugInformation
-  case class DIBasicType(name: String, size: Int, align: Int) extends Type
+  case class DIBasicType(name: String, size: Int, align: Int, encoding: DW_ATE)
+      extends Type
   case class DIDerivedType(tag: DWTag, baseType: Type, size: Int) extends Type
   case class DISubroutineType(types: DITypes) extends Type
 
@@ -64,6 +65,17 @@ object Metadata {
   sealed class DWTag(tag: Predef.String) extends Const(tag)
   object DWTag {
     object Pointer extends DWTag("DW_TAG_pointer_type")
+  }
+
+  sealed class DW_ATE(tag: Predef.String) extends Const(tag)
+  object DW_ATE {
+    object Address extends DW_ATE("DW_ATE_address")
+    object Boolean extends DW_ATE("DW_ATE_boolean")
+    object Float extends DW_ATE("DW_ATE_float")
+    object Signed extends DW_ATE("DW_ATE_signed")
+    object SignedChar extends DW_ATE("DW_ATE_signed_char")
+    object Unsigned extends DW_ATE("DW_ATE_unsigned")
+    object UnsignedChar extends DW_ATE("DW_ATE_unsigned_char")
   }
 
   sealed class ModFlagBehavior(tag: Int) extends Value(Val.Int(tag))
