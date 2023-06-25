@@ -104,7 +104,6 @@ class WeakReferenceTest {
     assertTrue("!contains b", weakRefList.contains(b))
     assertTrue("!contains c", weakRefList.contains(c))
     assertTrue("!contains d", weakRefList.contains(d))
-    // assertNotEquals(a, b)
     def allDistinct(list: List[_]): Unit = list match {
       case head :: next =>
         next.foreach(assertNotEquals(_, head)); allDistinct(next)
