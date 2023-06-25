@@ -964,7 +964,7 @@ private[codegen] abstract class AbstractCodeGen(
           currentBlockSplit += 1
           genBlockSplitName()
           str(" unwind ")
-          genNext(unwind, dbgPosition)
+          genNext(unwind)
           genDbgPosition()
 
           unindent()
@@ -1139,10 +1139,7 @@ private[codegen] abstract class AbstractCodeGen(
     })
   }
 
-  private[codegen] def genNext(
-      next: Next,
-      dbgPosition: Option[Metadata.DILocation] = None
-  )(implicit sb: ShowBuilder, metaCtx: MetadataCodeGen.Context): Unit = {
+  private[codegen] def genNext(next: Next)(implicit sb: ShowBuilder): Unit = {
     import sb._
     next match {
       case Next.Case(v, next) =>
@@ -1154,7 +1151,6 @@ private[codegen] abstract class AbstractCodeGen(
         str("label %_")
         str(exc.id)
         str(".landingpad")
-        dbgPosition.foreach(dbg(",", _))
       case next =>
         str("label %")
         genLocal(next.name)
