@@ -13,11 +13,17 @@ import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
 import scala.util.control.NonFatal
+import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
+import MetadataCodeGen.Constants._
+
+import scala.language.implicitConversions
+import scala.scalanative.codegen.llvm.Metadata.conversions._
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[Global, Defn],
     defns: Seq[Defn]
-)(implicit val meta: Metadata) {
+)(implicit val meta: CodeGenMetadata)
+    extends MetadataCodeGen {
   import meta.platform
   import meta.config
   import platform._
@@ -34,58 +40,46 @@ private[codegen] abstract class AbstractCodeGen(
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
   def gen(id: String, dir: VirtualDirectory): Path = {
-    implicit val db: DebugInformationSection.Builder =
-      DebugInformationSection.builder()
+    val body = Paths.get(s"$id-body.ll")
+    val headers = Paths.get(s"$id.ll")
+    val metadata = Paths.get(s"$id-metadata.ll")
 
-    val body = dir.write(Paths.get(s"$id-body.ll")) { writer =>
-      implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
-      genDefns(defns)
-    }
+    dir.write(metadata) { metadataWriter =>
+      implicit val metadata: MetadataCodeGen.Context =
+        new MetadataCodeGen.Context(this, new FileShowBuilder(metadataWriter))
+      genDebugMetadata()
 
-    val headers = dir.write(Paths.get(s"$id.ll")) { writer =>
-      implicit val sb: ShowBuilder = new FileShowBuilder(writer)
-      genPrelude()
-      genConsts()
-      genDeps()
-    }
-    if (config.debugMetadata) {
-      val debugInfo = dir.write(Paths.get(s"$id-debug.ll")) { writer =>
-        implicit val sb: ShowBuilder = new FileShowBuilder(writer)
-
-        db.anon(
-          LLVMDebugInformation.`llvm.module.flags`(
-            Seq(
-              db.anon(
-                LLVMDebugInformation
-                  .IntAttr(
-                    7,
-                    "Dwarf Version",
-                    LLVMDebugInformation.Constants.DWARF_VERSION
-                  )
-              ),
-              db.anon(
-                LLVMDebugInformation.IntAttr(
-                  2,
-                  "Debug Info Version",
-                  LLVMDebugInformation.Constants.DEBUG_INFO_VERSION
-                )
-              )
-            )
-          )
-        )
-
-        db.render
+      dir.write(body) { writer =>
+        implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
+        genDefns(defns)
       }
 
-      dir.merge(Seq(body, debugInfo), headers)
-    } else dir.merge(Seq(body), headers)
+      dir.write(headers) { writer =>
+        implicit val sb: ShowBuilder = new FileShowBuilder(writer)
+        genPrelude()
+        genConsts()
+        genDeps()
+      }
 
-    headers
+      // Need to be generated after traversing all compilation units
+      dbg("llvm.dbg.cu")(this.compilationUnits: _*)
+    }
+
+    dir.merge(Seq(body, metadata), headers)
+  }
+
+  private def genDebugMetadata()(implicit
+      ctx: MetadataCodeGen.Context
+  ): Unit = {
+    dbg("llvm.module.flags")(
+      tuple(7, "Dwarf Version", DWARF_VERSION),
+      tuple(2, "Debug Info Version", DEBUG_INFO_VERSION)
+    )
   }
 
   private def genDeps()(implicit
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = deps.foreach { n =>
     val mn = mangled(n)
     if (!generated.contains(mn)) {
@@ -114,15 +108,13 @@ private[codegen] abstract class AbstractCodeGen(
       defns: Seq[Defn]
   )(implicit
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     def onDefn(defn: Defn): Unit = {
       val mn = mangled(defn.name)
       if (!generated.contains(mn)) {
         newline()
-        if (defn.pos.isDefined)
-          dwf.fileFromPosition(defn.pos)
         genDefn(defn)
         generated += mn
       }
@@ -177,7 +169,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def genDefn(defn: Defn)(implicit
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = defn match {
     case Defn.Var(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = false, ty, rhs)
@@ -221,7 +213,7 @@ private[codegen] abstract class AbstractCodeGen(
       pos: Position
   )(implicit
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
 
@@ -265,13 +257,9 @@ private[codegen] abstract class AbstractCodeGen(
     }
 
     val debugInfo =
-      if (!isDecl && config.debugMetadata)
-        dwarfFunctionDefine(pos, name, retty, argtys)
-      else None
-
-    debugInfo.foreach { dbg =>
-      str(s" !dbg !${dbg.id}")
-    }
+      if (isDecl || !config.debugMetadata) None
+      else Option(toDISubprogram(attrs, name, retty, argtys, pos))
+    debugInfo.foreach(dbg(_))
     if (!isDecl) {
       str(" {")
 
@@ -282,65 +270,17 @@ private[codegen] abstract class AbstractCodeGen(
           ()
       }
 
-      val cfg = CFG(insts)
-      cfg.all.foreach { block =>
-        genBlock(block, scope = debugInfo)(cfg, fresh, sb, dwf)
+      locally {
+        implicit val cfg: CFG = CFG(insts)
+        implicit val _fresh: Fresh = fresh
+        cfg.all.foreach(genBlock(_, scope = debugInfo))
+        cfg.all.foreach(genBlockLandingPads)
+        newline()
       }
-      cfg.all.foreach { block =>
-        genBlockLandingPads(block)(cfg, fresh, sb, dwf)
-      }
-      newline()
 
       str("}")
 
       copies.clear()
-    }
-  }
-
-  private def dwarfFunctionDefine(
-      pos: Position,
-      name: Global,
-      rettype: Type,
-      argtypes: Seq[Type]
-  )(implicit
-      dwf: DebugInformationSection.Builder
-  ): Option[Incr[LLVMDebugInformation.DISubprogram]] = {
-    try {
-      val diTypes = dwf.anon(
-        LLVMDebugInformation.DITypes(
-          dwarfType(rettype),
-          argtypes.map(dwarfType(_).get)
-        )
-      )
-      val subType = dwf.anon(LLVMDebugInformation.DISubroutineType(diTypes))
-
-      val file = dwf.fileFromPosition(pos)
-
-      val unit = dwf.cached(
-        LLVMDebugInformation.DICompileUnit(
-          file = file,
-          producer = LLVMDebugInformation.Constants.PRODUCER,
-          isOptimised = config.mode != build.Mode.Debug
-        )
-      )
-      val func =
-        dwf.register(
-          name,
-          LLVMDebugInformation.DISubprogram(
-            name = name.top.id,
-            linkageName = mangled(name),
-            scope = unit,
-            file = file,
-            unit = unit,
-            line = pos.line,
-            tpe = subType,
-            distinct = true
-          )
-        )
-      Option(func)
-    } catch {
-      case NonFatal(ex) =>
-        None
     }
   }
 
@@ -390,12 +330,12 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genBlock(
       block: Block,
-      scope: Option[Incr[LLVMDebugInformation.Scope]] = None
+      scope: Option[Metadata.Scope] = None
   )(implicit
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     val Block(name, params, insts, isEntry) = block
@@ -480,46 +420,13 @@ private[codegen] abstract class AbstractCodeGen(
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
         import inst.pos
         os.genLandingPad(unwind)
       case _ => ()
-    }
-  }
-
-  private def dwarfType(
-      ty: Type
-  )(implicit
-      dwf: DebugInformationSection.Builder
-  ): Option[Incr[LLVMDebugInformation.Type]] = {
-    @inline def basic(
-        name: String,
-        size: Int
-    ): Incr[LLVMDebugInformation.DIBasicType] =
-      dwf.cached(LLVMDebugInformation.DIBasicType(name, size * 8))
-
-    PartialFunction.condOpt(ty) {
-      case _: Type.RefKind | Type.Ptr | Type.Null | Type.Nothing =>
-        dwf.cached(
-          LLVMDebugInformation.DIDerivedType(
-            tag = LLVMDebugInformation.DWTag.Pointer,
-            baseType = basic("i8", 8),
-            size = 64
-          )
-        )
-
-      case Type.Float         => basic("float", 4)
-      case Type.Double        => basic("double", 8)
-      case Type.Bool          => basic("i1", 1)
-      case i: Type.FixedSizeI => basic(s"i${i.width / 8}", i.width / 8)
-      case Type.Size =>
-        if (platform.is32Bit) basic("i32", 4)
-        else basic("i64", 8)
-      case other if other != Type.Unit =>
-        throw new NotImplementedError(s"No idea how to dwarfise $other")
     }
   }
 
@@ -707,11 +614,11 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genInst(
       inst: Inst,
-      scope: Option[Incr[LLVMDebugInformation.Scope]] = None
+      scope: Option[Metadata.Scope] = None
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     inst match {
@@ -793,11 +700,11 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genLet(
       inst: Inst.Let,
-      scope: Option[Incr[LLVMDebugInformation.Scope]] = None
+      scope: Option[Metadata.Scope] = None
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     def isVoid(ty: Type): Boolean =
@@ -1020,33 +927,21 @@ private[codegen] abstract class AbstractCodeGen(
       call: Op.Call,
       unwind: Next,
       pos: Option[Position],
-      scope: Option[Incr[LLVMDebugInformation.Scope]]
+      scope: Option[Metadata.Scope]
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
 
-    val dwarfTok = scope
-      .map(subprogram =>
-        dwf.scopeLocation(pos.getOrElse(Position.NoPosition), subprogram)
-      )
-      .map(_.tok)
-
-    def addDebug() =
-      if (config.debugMetadata)
-        dwarfTok.foreach { tok =>
-          /** There are situations where the position is empty, for example in
-           *  situations where a null check is generated (and the function call
-           *  is throwNullPointer)
-           *
-           *  in this case we can only use NoPosition
-           */
-          str(
-            s", !dbg ${tok.render}"
-          )
-        }
+    /** There are situations where the position is empty, for example in
+     *  situations where a null check is generated (and the function call is
+     *  throwNullPointer) in this case we can only use NoPosition
+     */
+    val dbgPosition = scope
+      .map(toDILocation(pos.getOrElse(Position.NoPosition), _))
+    def genDbgPosition() = dbgPosition.foreach(dbg(",", _))
 
     call match {
       case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
@@ -1062,14 +957,14 @@ private[codegen] abstract class AbstractCodeGen(
         str("(")
         rep(args, sep = ", ")(genCallArgument)
         str(")")
-        if (unwind eq Next.None) addDebug()
+        if (unwind eq Next.None) genDbgPosition()
         else {
           str(" to label %")
           currentBlockSplit += 1
           genBlockSplitName()
           str(" unwind ")
-          genNext(unwind, dwarfTok)
-          addDebug()
+          genNext(unwind, dbgPosition)
+          genDbgPosition()
 
           unindent()
           genBlockHeader()
@@ -1105,14 +1000,14 @@ private[codegen] abstract class AbstractCodeGen(
         str("(")
         rep(args, sep = ", ")(genCallArgument)
         str(")")
-        if (unwind eq Next.None) addDebug()
+        if (unwind eq Next.None) genDbgPosition()
         else {
           str(" to label %")
           currentBlockSplit += 1
           genBlockSplitName()
           str(" unwind ")
           genNext(unwind)
-          addDebug()
+          genDbgPosition()
 
           unindent()
           genBlockHeader()
@@ -1245,8 +1140,8 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genNext(
       next: Next,
-      dwarfToken: Option[DebugInformationSection.Token] = None
-  )(implicit sb: ShowBuilder, dwf: DebugInformationSection.Builder): Unit = {
+      dbgPosition: Option[Metadata.DILocation] = None
+  )(implicit sb: ShowBuilder, metaCtx: MetadataCodeGen.Context): Unit = {
     import sb._
     next match {
       case Next.Case(v, next) =>
@@ -1258,10 +1153,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("label %_")
         str(exc.id)
         str(".landingpad")
-        if (config.debugMetadata)
-          dwarfToken.foreach { tok =>
-            str(s", !dbg ${tok.render}")
-          }
+        dbgPosition.foreach(dbg(",", _))
       case next =>
         str("label %")
         genLocal(next.name)

@@ -14,7 +14,7 @@ import scala.scalanative.compat.CompatParColls.Converters._
 import java.nio.file.StandardCopyOption
 
 import scala.scalanative.build.ScalaNative
-import scala.scalanative.codegen.IncrementalCodeGenContext
+import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
@@ -24,8 +24,8 @@ object CodeGen {
 
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
-    implicit val meta: Metadata =
-      new Metadata(linked, config.compilerConfig, proxies)
+    implicit val meta: CodeGenMetadata =
+      new CodeGenMetadata(linked, config.compilerConfig, proxies)
 
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)
@@ -36,7 +36,7 @@ object CodeGen {
 
   private def lower(
       defns: Seq[Defn]
-  )(implicit meta: Metadata, logger: build.Logger): Seq[Defn] = {
+  )(implicit meta: CodeGenMetadata, logger: build.Logger): Seq[Defn] = {
     val buf = mutable.UnrolledBuffer.empty[Defn]
 
     partitionBy(defns)(_.name).par
@@ -52,7 +52,7 @@ object CodeGen {
 
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
-      meta: Metadata
+      meta: CodeGenMetadata
   ): Seq[Path] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
@@ -141,7 +141,7 @@ object CodeGen {
     import scala.scalanative.codegen.llvm.compat.os._
 
     def apply(env: Map[Global, Defn], defns: Seq[Defn])(implicit
-        meta: Metadata
+        meta: CodeGenMetadata
     ): AbstractCodeGen = {
       new AbstractCodeGen(env, defns) {
         override val os: OsCompat = {

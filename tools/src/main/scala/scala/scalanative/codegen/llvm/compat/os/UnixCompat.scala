@@ -1,10 +1,10 @@
-package scala.scalanative.codegen.llvm.compat.os
+package scala.scalanative.codegen.llvm
+package compat.os
 
 import scala.scalanative.codegen.llvm.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir._
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.llvm.DebugInformationSection
 
 private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
     extends OsCompat {
@@ -32,7 +32,7 @@ private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind

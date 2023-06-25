@@ -1,11 +1,10 @@
 package scala.scalanative.codegen
-package llvm.compat.os
+package llvm
+package compat.os
 
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position}
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.llvm.DebugInformationSection
-import scala.scalanative.codegen.llvm.AbstractCodeGen
 
 private[codegen] trait OsCompat {
   protected def codegen: AbstractCodeGen
@@ -20,7 +19,7 @@ private[codegen] trait OsCompat {
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      dwf: MetadataCodeGen.Context
   ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 

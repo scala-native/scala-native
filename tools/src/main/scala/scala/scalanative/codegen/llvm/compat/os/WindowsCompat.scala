@@ -1,10 +1,10 @@
-package scala.scalanative.codegen.llvm.compat.os
+package scala.scalanative.codegen.llvm
+package compat.os
 
 import scala.scalanative.codegen.llvm.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position, Val}
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.llvm.DebugInformationSection
 
 private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
     extends OsCompat {
@@ -53,7 +53,7 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
-      dwf: DebugInformationSection.Builder
+      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import codegen._
     import sb._
