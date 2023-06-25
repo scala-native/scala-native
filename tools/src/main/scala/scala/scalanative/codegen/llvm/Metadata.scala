@@ -66,6 +66,27 @@ object Metadata {
     object Pointer extends DWTag("DW_TAG_pointer_type")
   }
 
+  sealed class ModFlagBehavior(tag: Int) extends Value(Val.Int(tag))
+  object ModFlagBehavior {
+    object Error extends ModFlagBehavior(1)
+    object Warning extends ModFlagBehavior(2)
+    object Require extends ModFlagBehavior(3)
+    object Override extends ModFlagBehavior(4)
+    object Append extends ModFlagBehavior(5)
+    object AppendUnique extends ModFlagBehavior(6)
+    object Max extends ModFlagBehavior(7)
+    object Min extends ModFlagBehavior(8)
+
+    final val ModFlagBehaviorFirstVal = Error
+    final val ModFlagBehaviorLastVal = Min
+  }
+
+  object Constants {
+    val PRODUCER = "Scala Native"
+    val DWARF_VERSION = 3
+    val DEBUG_INFO_VERSION = 3
+  }
+
   object conversions {
     def tuple(values: Metadata*) = Metadata.Tuple(values)
     implicit def intToValue(v: Int): Metadata.Value = Metadata.Value(Val.Int(v))

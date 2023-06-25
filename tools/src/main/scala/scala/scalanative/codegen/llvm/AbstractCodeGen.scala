@@ -14,7 +14,6 @@ import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
 import scala.util.control.NonFatal
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
-import MetadataCodeGen.Constants._
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
@@ -71,9 +70,11 @@ private[codegen] abstract class AbstractCodeGen(
   private def genDebugMetadata()(implicit
       ctx: MetadataCodeGen.Context
   ): Unit = {
+    import Metadata.Constants._
+    import Metadata.ModFlagBehavior._
     dbg("llvm.module.flags")(
-      tuple(7, "Dwarf Version", DWARF_VERSION),
-      tuple(2, "Debug Info Version", DEBUG_INFO_VERSION)
+      tuple(Max, "Dwarf Version", DWARF_VERSION),
+      tuple(Warning, "Debug Info Version", DEBUG_INFO_VERSION)
     )
   }
 

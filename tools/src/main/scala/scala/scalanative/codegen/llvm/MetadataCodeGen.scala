@@ -160,12 +160,6 @@ object MetadataCodeGen {
     private[MetadataCodeGen] val fresh: Fresh = Fresh()
   }
 
-  object Constants {
-    val PRODUCER = "Scala Native"
-    val DWARF_VERSION = 3
-    val DEBUG_INFO_VERSION = 3
-  }
-
   class MetadataId(val value: Int) extends AnyVal {
     def show = "!" + value.toString()
   }
