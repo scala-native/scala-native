@@ -34,7 +34,7 @@ sealed trait VirtualDirectory {
   def files: Seq[Path]
 
   /** Merges content of source paths into single file in target */
-  def merge(sources: Seq[Path], target: Path): Unit
+  def merge(sources: Seq[Path], target: Path): Path
 }
 
 object VirtualDirectory {
@@ -112,9 +112,10 @@ object VirtualDirectory {
       finally channel.close
     }
 
-    override def merge(sources: Seq[Path], target: Path): Unit = {
+    override def merge(sources: Seq[Path], target: Path): Path = {
+      val outputPath = resolve(target)
       val output = FileChannel.open(
-        resolve(target),
+        outputPath,
         StandardOpenOption.CREATE,
         StandardOpenOption.WRITE,
         StandardOpenOption.APPEND
@@ -131,6 +132,7 @@ object VirtualDirectory {
           } finally input.close()
         }
       } finally output.close()
+      outputPath
     }
   }
 
@@ -197,7 +199,7 @@ object VirtualDirectory {
     override def write(path: Path, buffer: ByteBuffer): Unit =
       throw new UnsupportedOperationException("Can't write to empty directory.")
 
-    override def merge(sources: Seq[Path], target: Path): Unit =
+    override def merge(sources: Seq[Path], target: Path): Path =
       throw new UnsupportedOperationException("Can't merge in empty directory.")
 
   }
