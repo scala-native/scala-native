@@ -1,55 +1,92 @@
-// Ported from Scala.js commit:  6a23632 dated: 1 Jul 2021
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
 package java.util.concurrent.atomic
 
 import java.io.Serializable
 
-class LongAdder extends Number with Serializable {
-  private[this] var value: Long = 0L
+@SerialVersionUID(7249069246863182397L)
+object LongAdder {
 
-  final def add(x: Long): Unit =
-    value = value + x
+  @SerialVersionUID(7249069246863182397L)
+  private class SerializationProxy private[atomic] (val a: LongAdder)
+      extends Serializable {
+    value = a.sum
 
-  final def increment(): Unit =
-    value = value + 1
+    final private var value = 0L
 
-  final def decrement(): Unit =
-    value = value - 1
+    private def readResolve = {
+      val a = new LongAdder
+      a.base = value
+      a
+    }
+  }
+}
 
-  final def sum(): Long =
-    value
+@SerialVersionUID(7249069246863182397L)
+class LongAdder() extends Striped64 with Serializable {
 
-  final def reset(): Unit =
-    value = 0
-
-  final def sumThenReset(): Long = {
-    val result = value
-    reset()
-    result
+  def add(x: Long): Unit = {
+    var cs = null
+    var b = 0L
+    var v = 0L
+    var m = 0
+    var c = null
+    if ((cs = cells) != null || !casBase(b = base, b + x)) {
+      val index = getProbe
+      var uncontended = true
+      if (cs == null || (m = cs.length - 1) < 0 || (c =
+            cs(index & m)) == null || !(uncontended =
+            c.cas(v = c.value, v + x)))
+        longAccumulate(x, null, uncontended, index)
+    }
   }
 
-  override def toString(): String =
-    String.valueOf(value)
+  def increment(): Unit = {
+    add(1L)
+  }
 
-  final def longValue(): Long =
-    value
+  def decrement(): Unit = {
+    add(-1L)
+  }
 
-  final def intValue(): Int =
-    value.toInt
+  def sum: Long = {
+    val cs = cells
+    var sum = base
+    if (cs != null) for (c <- cs) {
+      if (c != null) sum += c.value
+    }
+    sum
+  }
 
-  final def floatValue(): Float =
-    value.toFloat
+  def reset(): Unit = {
+    val cs = cells
+    base = 0L
+    if (cs != null) for (c <- cs) {
+      if (c != null) c.reset()
+    }
+  }
 
-  final def doubleValue(): Double =
-    value.toDouble
+  def sumThenReset: Long = {
+    val cs = cells
+    var sum = getAndSetBase(0L)
+    if (cs != null) for (c <- cs) {
+      if (c != null) sum += c.getAndSet(0L)
+    }
+    sum
+  }
+
+  override def toString: String = Long.toString(sum)
+
+  override def longValue: Long = sum
+
+  override def intValue: Int = sum.toInt
+
+  override def floatValue: Float = sum.toFloat
+
+  override def doubleValue: Double = sum.toDouble
+
+  private def writeReplace = new LongAdder.SerializationProxy(this)
+
+  @throws[java.io.InvalidObjectException]
+  private def readObject(s: ObjectInputStream): Unit = {
+    throw new InvalidObjectException("Proxy required")
+  }
 }
