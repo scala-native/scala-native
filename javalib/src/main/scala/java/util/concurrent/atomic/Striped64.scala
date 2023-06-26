@@ -45,10 +45,10 @@ object Striped64 {
       valueAtomic().exchange(`val`).asInstanceOf[Long]
   }
 
-  private[atomic] val NCPU = Runtime.getRuntime().availableProcessors()
+  private[atomic] val NCPU: Int = Runtime.getRuntime().availableProcessors()
 
-  private[atomic] def getProbe(self: Striped64) =
-    self.threadProbeAtomic(Thread.currentThread()).load().asInstanceOf[Int]
+  private[atomic] def getProbe(self: Striped64): Int =
+    self.threadProbeAtomic().load().asInstanceOf[Int]
 
   private[atomic] def advanceProbe(self: Striped64, probe: Int) = {
     var _probe = probe
@@ -56,7 +56,7 @@ object Striped64 {
 
     _probe = _probe ^ (_probe >>> 17)
     _probe = _probe ^ (_probe << 5)
-    self.threadProbeAtomic(Thread.currentThread()).store(_probe)
+    self.threadProbeAtomic().store(_probe)
     _probe
   }
 
@@ -86,11 +86,12 @@ abstract class Striped64 private[atomic] () extends Number {
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
   )
 
-  // MEMO: is this ok?
-  @alwaysinline private def threadProbeAtomic(t: Thread) = new CAtomicInt(
+  @alwaysinline private def threadProbeAtomic() = new CAtomicInt(
     fromRawPtr(
-      // TODO: check
-      Intrinsics.classFieldRawPtr(t, "threadLocalRandomProbe")
+      Intrinsics.classFieldRawPtr(
+        Thread.currentThread(),
+        "threadLocalRandomProbe"
+      )
     )
   )
 
@@ -150,11 +151,14 @@ abstract class Striped64 private[atomic] () extends Number {
                   continue2 = false
 
                 }
-              } finally cellsBusy = 0
+              } finally {
+                cellsBusy = 0
+              }
               continue2 = false
             }
           }
-          collide = false
+          if (continue2 == true)
+            collide = false
         } else if (!_wasUncontended) { // CAS already known to fail
           _wasUncontended = true // Continue after rehash
         } else if (c.cas(
@@ -168,15 +172,16 @@ abstract class Striped64 private[atomic] () extends Number {
           collide = false // At max size or stale
         else if (!collide) collide = true
         else if (cellsBusy == 0 && casCellsBusy()) {
-          try
+          try {
             if (cells == cs) { // Expand table unless stale
               cells = Arrays.copyOf(cs, n << 1)
             }
-          finally cellsBusy = 0
+          } finally {
+            cellsBusy = 0
+          }
           collide = false
           continue2 = false
           // Retry with expanded table
-
         }
         if (continue2 == true)
           _index = Striped64.advanceProbe(this, _index)
@@ -187,7 +192,6 @@ abstract class Striped64 private[atomic] () extends Number {
             rs(_index & 1) = new Striped64.Cell(x)
             cells = rs
             continue1 = false
-
           }
         finally cellsBusy = 0
       else { // Fall back on using base
@@ -244,7 +248,8 @@ abstract class Striped64 private[atomic] () extends Number {
               continue2 = false
             }
           }
-          collide = false
+          if (continue2 == true)
+            collide = false
         } else if (!_wasUncontended) _wasUncontended = true
         else if (c.cas({ v = c.value; v }, Striped64._apply(fn, v, x))) {
           continue1 = false
