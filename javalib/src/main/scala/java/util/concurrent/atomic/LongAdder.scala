@@ -1,3 +1,5 @@
+// Ported from JSR 166 revision 1.23
+
 package java.util.concurrent.atomic
 
 import java.io.Serializable
