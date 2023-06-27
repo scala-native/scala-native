@@ -6,11 +6,8 @@ import java.io.Serializable
 object LongAdder {
 
   @SerialVersionUID(7249069246863182397L)
-  private class SerializationProxy private[atomic] (val a: LongAdder)
-      extends Serializable {
-    value = a.sum
-
-    final private var value = 0L
+  private class SerializationProxy(val a: LongAdder) extends Serializable {
+    final private var value = a.sum
 
     private def readResolve = {
       val a = new LongAdder
@@ -24,17 +21,21 @@ object LongAdder {
 class LongAdder() extends Striped64 with Serializable {
 
   def add(x: Long): Unit = {
-    var cs = null
+    var cs: Array[Striped64.Cell] = null.asInstanceOf[Array[Striped64.Cell]]
     var b = 0L
     var v = 0L
     var m = 0
-    var c = null
-    if ((cs = cells) != null || !casBase(b = base, b + x)) {
-      val index = getProbe
+    var c: Striped64.Cell = null
+    if ({ cs = cells; cs != null || !casBase({ b = base; b }, b + x) }) {
+      val index = Striped64.getProbe(this)
       var uncontended = true
-      if (cs == null || (m = cs.length - 1) < 0 || (c =
-            cs(index & m)) == null || !(uncontended =
-            c.cas(v = c.value, v + x)))
+      if ({
+        m = cs.length;
+        c = cs(index & m);
+        v = c.value;
+        uncontended = c.cas(v, v + x);
+        cs == null || m < 0 || c == null || !uncontended
+      })
         longAccumulate(x, null, uncontended, index)
     }
   }
@@ -73,20 +74,20 @@ class LongAdder() extends Striped64 with Serializable {
     sum
   }
 
-  override def toString: String = Long.toString(sum)
+  override def toString: String = sum.toString()
 
-  override def longValue: Long = sum
+  override def longValue(): Long = sum
 
-  override def intValue: Int = sum.toInt
+  override def intValue(): Int = sum.toInt
 
-  override def floatValue: Float = sum.toFloat
+  override def floatValue(): Float = sum.toFloat
 
-  override def doubleValue: Double = sum.toDouble
+  override def doubleValue(): Double = sum.toDouble
 
   private def writeReplace = new LongAdder.SerializationProxy(this)
 
-  @throws[java.io.InvalidObjectException]
-  private def readObject(s: ObjectInputStream): Unit = {
-    throw new InvalidObjectException("Proxy required")
-  }
+  // @throws[java.io.InvalidObjectException]
+  // private def readObject(s: ObjectInputStream): Unit = {
+  //   throw new InvalidObjectException("Proxy required")
+  // }
 }
