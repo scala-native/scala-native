@@ -1,12 +1,7 @@
 package java.lang.reflect
 
-import scalanative.annotation.stub
-
 class Field {
-  @stub
-  def get(obj: Object): Object = ???
-  @stub
-  def getName(): String = ???
-  @stub
-  def getType(): Class[_] = ???
+  // def get(obj: Object): Object = ???
+  // def getName(): String = ???
+  // def getType(): Class[_] = ???
 }

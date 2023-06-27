@@ -1,7 +1,5 @@
 package java.util
 
-import scalanative.annotation.stub
-
 import java.io.Serializable
 
 abstract class Calendar
@@ -9,41 +7,32 @@ abstract class Calendar
     with Cloneable
     with Comparable[Calendar] {
 
-  @stub
-  def get(field: Int): Int = ???
+  // def get(field: Int): Int = ???
 
-  @stub
-  def set(field: Int, value: Int): Unit = ???
+  // def set(field: Int, value: Int): Unit = ???
 
-  @stub
-  def set(
-      year: Int,
-      month: Int,
-      date: Int,
-      hourOfDay: Int,
-      minute: Int,
-      second: Int
-  ): Unit = ???
+  // def set(
+  //     year: Int,
+  //     month: Int,
+  //     date: Int,
+  //     hourOfDay: Int,
+  //     minute: Int,
+  //     second: Int
+  // ): Unit = ???
 
-  @stub
-  def compareTo(anotherCalendar: Calendar): Int = ???
+  // def compareTo(anotherCalendar: Calendar): Int = ???
 
-  @stub
-  def getFirstDayOfWeek(): Int = ???
+  // def getFirstDayOfWeek(): Int = ???
 
-  @stub
-  def getMinimalDaysInFirstWeek(): Int = ???
+  // def getMinimalDaysInFirstWeek(): Int = ???
 
-  @stub
-  def getTime(): Date = ???
+  // def getTime(): Date = ???
 
-  @stub
-  def getTimeInMillis(): Long = ???
+  // def getTimeInMillis(): Long = ???
 
   // def getTimeZone(): TimeZone = ???
 
-  @stub
-  def setTime(date: Date): Unit = ???
+  // def setTime(date: Date): Unit = ???
 
   // def setTimeZone(timezone: TimeZone): Unit = ???
 }
