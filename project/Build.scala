@@ -172,6 +172,9 @@ object Build {
             case (3, _)  => scala213StdLibDeprecations
           }
       },
+      Test / scalacOptions --= Seq(
+        "-Xfatal-warnings"
+      ),
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
       Test / parallelExecution := false
     )

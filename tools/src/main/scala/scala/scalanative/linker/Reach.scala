@@ -198,7 +198,7 @@ class Reach(
     lookup(name).fold[Unit] {
       reachUnavailable(name)
     } { defn =>
-      if (defn.attrs.isStub && !config.linkStubs) {
+      if (defn.attrs.isStub) {
         reachUnavailable(name)
       } else {
         val maybeFixedDefn = defn match {

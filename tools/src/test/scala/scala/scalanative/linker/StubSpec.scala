@@ -36,10 +36,15 @@ class StubSpec extends LinkerSpec {
     }
   }
 
-  it should "be included when `linkStubs = true`" in {
+  it should "`linkStubs = true` is no-op now" in {
     link(entry, stubMethodSource, _.withLinkStubs(true)) { (cfg, result) =>
       assert(cfg.linkStubs)
-      assert(result.unavailable.isEmpty)
+      assert(result.unavailable.length == 1)
+      assert(
+        result.unavailable.head == Global
+          .Top("Main$")
+          .member(Sig.Method("stubMethod", Seq(Type.Int)))
+      )
     }
   }
 
@@ -54,7 +59,8 @@ class StubSpec extends LinkerSpec {
   it should "be included when `linkStubs = true`" in {
     link(entry, stubClassSource, _.withLinkStubs(true)) { (cfg, result) =>
       assert(cfg.linkStubs)
-      assert(result.unavailable.isEmpty)
+      assert(result.unavailable.length == 1)
+      assert(result.unavailable.head == Global.Top("StubClass"))
     }
   }
 
@@ -69,7 +75,8 @@ class StubSpec extends LinkerSpec {
   it should "be included when `linkStubs = true`" in {
     link(entry, stubModuleSource, _.withLinkStubs(true)) { (cfg, result) =>
       assert(cfg.linkStubs)
-      assert(result.unavailable.isEmpty)
+      assert(result.unavailable.length == 1)
+      assert(result.unavailable.head == Global.Top("StubModule$"))
     }
   }
 
