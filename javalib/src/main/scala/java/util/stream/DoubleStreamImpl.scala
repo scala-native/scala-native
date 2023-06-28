@@ -154,22 +154,25 @@ private[stream] class DoubleStreamImpl(
   }
 
   def unordered(): DoubleStream = {
-    /* JVM has an unenforced requirment that a stream and its spliterator
-     * (can you say Harlan Ellison?) should have the same characteristics.
-     */
-
     val masked = _spliter.characteristics() & Spliterator.ORDERED
 
-    if (masked == Spliterator.ORDERED) this
+    if (masked != Spliterator.ORDERED) this // already unordered.
     else {
       commenceOperation()
 
-      // Clear ORDERED
-      val unordered = _spliter.characteristics() & ~(Spliterator.ORDERED)
+      val bitsToClear =
+        (Spliterator.CONCURRENT
+          | Spliterator.IMMUTABLE
+          | Spliterator.NONNULL
+          | Spliterator.ORDERED
+          | Spliterator.SIZED
+          | Spliterator.SUBSIZED)
+
+      val purifiedBits = _characteristics & ~(bitsToClear)
 
       val spl = new Spliterators.AbstractDoubleSpliterator(
         _spliter.estimateSize(),
-        unordered
+        purifiedBits
       ) {
         def tryAdvance(action: DoubleConsumer): Boolean =
           _spliter.tryAdvance((e: scala.Double) => action.accept(e))
