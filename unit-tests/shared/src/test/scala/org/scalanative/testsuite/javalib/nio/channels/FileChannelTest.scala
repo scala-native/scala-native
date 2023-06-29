@@ -347,4 +347,155 @@ class FileChannelTest {
     }
   }
 
+  @Test def cannotTruncateChannelUsingNegativeSize(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("negativeSize.txt")
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE
+      )
+
+      try {
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.truncate(-1)
+        )
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
+  @Test def cannotTruncateChannelOpenedReadOnly(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("truncateReadOnly.txt")
+      Files.write(f, "".getBytes("UTF-8")) // "touch" file so it gets created
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.READ
+      )
+
+      try {
+        assertThrows(
+          classOf[NonWritableChannelException],
+          channel.truncate(0)
+        )
+      } finally
+        channel.close()
+    }
+  }
+
+  @Test def canTruncateChannelOpenForWrite(): Unit = {
+    withTemporaryDirectory { dir =>
+      val prefix = "Γειά "
+      val suffix = "σου Κόσμε"
+      val message = s"${prefix}${suffix}"
+
+      val f = dir.resolve("truncateChannelOpenForWrite.txt")
+      Files.write(f, message.getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", message, lines.get(0))
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE
+      )
+
+      try {
+        val startingSize = channel.size()
+
+        assertEquals(
+          "starting size UTF-8",
+          startingSize,
+          message.getBytes("UTF-8").size
+        )
+
+        // channel must start off positioned at beginning of file.
+        assertEquals("position at open", 0, channel.position())
+
+        val workingPos = 9L // arbitrary mid-range pos; gives room to move
+        channel.position(workingPos)
+        assertEquals("first re-position", workingPos, channel.position())
+
+        // Truncate to size greater than current position
+        val gtTruncateSize = workingPos + 20
+        channel.truncate(gtTruncateSize)
+        assertEquals("gtTruncate size", startingSize, channel.size())
+        assertEquals("gtTruncate position", workingPos, channel.position())
+
+        // Truncate to size equal to current position
+        val eqTruncateSize = workingPos
+        channel.truncate(eqTruncateSize)
+        assertEquals("eqTruncate size", eqTruncateSize, channel.size())
+        assertEquals("eqTruncate position", workingPos, channel.position())
+
+        // Truncate to size less than current position
+        val ltTruncateSize = workingPos - 2
+        channel.truncate(ltTruncateSize)
+        assertEquals("ltTruncate size", ltTruncateSize, channel.size())
+        assertEquals("ltTruncate position", ltTruncateSize, channel.position())
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
+  @Test def canTruncateChannelOpenForAppend(): Unit = {
+    withTemporaryDirectory { dir =>
+      val prefix = "Γειά "
+      val suffix = "σου Κόσμε"
+      val message = s"${prefix}${suffix}"
+
+      val f = dir.resolve("truncateChannelOpenForAppend.txt")
+      Files.write(f, message.getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", message, lines.get(0))
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.APPEND
+      )
+
+      try {
+        val startingSize = channel.size()
+
+        // channel must start off positioned at EOF.
+        val positionAtOpen = channel.position()
+        assertEquals("position at open", startingSize, positionAtOpen)
+
+        // Truncate to size greater than current position
+        val gtTruncateSize = startingSize + 20
+        channel.truncate(gtTruncateSize)
+        assertEquals("gtTruncate size", startingSize, channel.size())
+        assertEquals("gtTruncate position", positionAtOpen, channel.position())
+
+        // Truncate to size equal to current position
+        val eqTruncateSize = startingSize
+        channel.truncate(eqTruncateSize)
+        assertEquals("eqTruncate size", eqTruncateSize, channel.size())
+        assertEquals("eqTruncate position", positionAtOpen, channel.position())
+
+        val ltTruncateSize = startingSize - 3
+        channel.truncate(ltTruncateSize)
+        assertEquals("ltTruncate size", ltTruncateSize, channel.size())
+        assertEquals("ltTruncate position", ltTruncateSize, channel.position())
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
 }
