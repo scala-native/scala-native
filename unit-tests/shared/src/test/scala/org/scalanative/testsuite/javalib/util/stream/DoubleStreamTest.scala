@@ -41,6 +41,54 @@ class DoubleStreamTest {
 
   final val epsilon = 0.00001 // tolerance for Floating point comparisons.
 
+// Methods specified in interface BaseStream ----------------------------
+
+  @Test def streamUnorderedOnUnorderedStream(): Unit = {
+    val dataSet = new ju.HashSet[Double]()
+    dataSet.add(0.1)
+    dataSet.add(1.1)
+    dataSet.add(-1.1)
+    dataSet.add(2.2)
+    dataSet.add(-2.2)
+
+    val s0 = dataSet.stream()
+    val s0Spliter = s0.spliterator()
+    assertFalse(
+      "Unexpected ORDERED stream from hashset",
+      s0Spliter.hasCharacteristics(Spliterator.ORDERED)
+    )
+
+    val su = dataSet.stream().unordered()
+    val suSpliter = su.spliterator()
+
+    assertFalse(
+      "Unexpected ORDERED stream",
+      suSpliter.hasCharacteristics(Spliterator.ORDERED)
+    )
+  }
+
+  @Test def streamUnorderedOnOrderedStream(): Unit = {
+    val s = DoubleStream.of(0.1, 1.1, -1.1, 2.2, -2.2)
+    val sSpliter = s.spliterator()
+
+    assertTrue(
+      "Expected ORDERED on stream from array",
+      sSpliter.hasCharacteristics(Spliterator.ORDERED)
+    )
+
+    // s was ordered, 'so' should be same same. Avoid "already used" exception
+    val so = DoubleStream.of(0.1, 1.1, -1.1, 2.2, -2.2)
+    val su = so.unordered()
+    val suSpliter = su.spliterator()
+
+    assertFalse(
+      "ORDERED stream after unordered()",
+      suSpliter.hasCharacteristics(Spliterator.ORDERED)
+    )
+  }
+
+// Methods specified in interface Stream --------------------------------
+
   @Test def doubleStreamBuilderCanBuildAnEmptyStream(): Unit = {
     val s = DoubleStream.builder().build()
     val it = s.iterator()
