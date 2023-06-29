@@ -437,10 +437,10 @@ object Generate {
             Val.Int(value)
           )
 
-      val (weakRefId, modifiedFieldOffset) = linked.infos
+      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) = linked.infos
         .get(Global.Top("java.lang.ref.WeakReference"))
         .collect { case cls: Class if cls.allocated => cls }
-        .fold((-1, -1)) { weakRef =>
+        .fold((-1, -1, -1)) { weakRef =>
           // if WeakReferences are being compiled and therefore supported
           val gcModifiedFieldIndexes: Seq[Int] =
             meta.layout(weakRef).entries.zipWithIndex.collect {
@@ -454,9 +454,14 @@ object Generate {
               "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
             )
 
-          (meta.ids(weakRef), gcModifiedFieldIndexes.head)
+          (
+            meta.ranges(weakRef).start,
+            meta.ranges(weakRef).end,
+            gcModifiedFieldIndexes.head
+          )
         }
-      addToBuf(weakRefIdName, weakRefId)
+      addToBuf(weakRefIdsMaxName, weakRefIdsMax)
+      addToBuf(weakRefIdsMinName, weakRefIdsMin)
       addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)
     }
 
@@ -558,7 +563,8 @@ object Generate {
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
-    val weakRefIdName = extern("__weak_ref_id")
+    val weakRefIdsMaxName = extern("__weak_ref_ids_max")
+    val weakRefIdsMinName = extern("__weak_ref_ids_min")
     val weakRefFieldOffsetName = extern("__weak_ref_field_offset")
     val registryOffsetName = extern("__weak_ref_registry_module_offset")
     val registryFieldOffsetName = extern("__weak_ref_registry_field_offset")

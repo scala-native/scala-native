@@ -18,6 +18,8 @@ import org.scalanative.testsuite.utils.Platform
 class WeakReferenceTest {
 
   case class A()
+  class SubclassedWeakRef[A](a: A, referenceQueue: ReferenceQueue[A])
+      extends WeakReference[A](a, referenceQueue)
 
   def gcAssumption(): Unit = {
     assumeTrue(
@@ -31,6 +33,16 @@ class WeakReferenceTest {
   ): WeakReference[A] = {
     var a = A()
     val weakRef = new WeakReference(a, referenceQueue)
+    assertEquals("get() should return object reference", weakRef.get(), A())
+    a = null
+    weakRef
+  }
+
+  @noinline def allocSubclassedWeakRef(
+      referenceQueue: ReferenceQueue[A]
+  ): SubclassedWeakRef[A] = {
+    var a = A()
+    val weakRef = new SubclassedWeakRef(a, referenceQueue)
     assertEquals("get() should return object reference", weakRef.get(), A())
     a = null
     weakRef
@@ -71,22 +83,33 @@ class WeakReferenceTest {
     val refQueue = new ReferenceQueue[A]()
     val weakRef1 = allocWeakRef(refQueue)
     val weakRef2 = allocWeakRef(refQueue)
-    val weakRefList = List(weakRef1, weakRef2)
+    val weakRef3 = allocSubclassedWeakRef(refQueue)
+    val weakRefList = List(weakRef1, weakRef2, weakRef3)
 
     GC.collect()
     def newDeadline() = System.currentTimeMillis() + 60 * 1000
     assertEventuallyIsCollected("weakRef1", weakRef1, deadline = newDeadline())
     assertEventuallyIsCollected("weakRef2", weakRef2, deadline = newDeadline())
+    assertEventuallyIsCollected("weakRef3", weakRef3, deadline = newDeadline())
 
     assertEquals("weakRef1", null, weakRef1.get())
     assertEquals("weakRef2", null, weakRef2.get())
+    assertEquals("weakRef3", null, weakRef3.get())
     val a = refQueue.poll()
     assertNotNull("a was null", a)
     val b = refQueue.poll()
     assertNotNull("b was null", b)
+    val c = refQueue.poll()
+    assertNotNull("c was null", c)
     assertTrue("!contains a", weakRefList.contains(a))
     assertTrue("!contains b", weakRefList.contains(b))
-    assertNotEquals(a, b)
+    assertTrue("!contains c", weakRefList.contains(c))
+    def allDistinct(list: List[_]): Unit = list match {
+      case head :: next =>
+        next.foreach(assertNotEquals(_, head)); allDistinct(next)
+      case Nil => ()
+    }
+    allDistinct(List(a, b, c))
     assertEquals("pool not null", null, refQueue.poll())
   }
 
