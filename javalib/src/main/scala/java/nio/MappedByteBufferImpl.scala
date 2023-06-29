@@ -327,25 +327,8 @@ private[nio] object MappedByteBufferImpl {
       mode: MapMode,
       position: Long,
       size: Int,
-      fd: FileDescriptor,
-      channel: FileChannel
+      fd: FileDescriptor
   ): MappedByteBufferImpl = {
-
-    // JVM resizes file to accomodate mapping
-    if (mode ne MapMode.READ_ONLY) {
-      val prevSize = channel.size()
-      val minSize = position + size
-      if (minSize > prevSize) {
-        val prevPosition = channel.position()
-        channel.truncate(minSize)
-        if (isWindows) {
-          channel.position(prevSize)
-          for (i <- prevSize until minSize)
-            channel.write(ByteBuffer.wrap(Array[Byte](0.toByte)))
-          channel.position(prevPosition)
-        }
-      }
-    }
 
     val mappedData =
       if (isWindows) mapWindows(position, size, fd, mode)

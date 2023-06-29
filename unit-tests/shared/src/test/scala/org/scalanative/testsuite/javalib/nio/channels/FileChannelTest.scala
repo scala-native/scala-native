@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import java.io.{FileInputStream, FileOutputStream}
 import java.io.RandomAccessFile
 
@@ -296,4 +297,54 @@ class FileChannelTest {
       }
     }
   }
+
+  @Test def mapMethodIsTidy(): Unit = {
+    withTemporaryDirectory { dir =>
+      val data = s"abcdef"
+      val dataBytes = data.getBytes("UTF-8")
+
+      val f = dir.resolve("mapArguments.txt")
+      Files.write(f, dataBytes)
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", data, lines.get(0))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+
+      try {
+        // Fails where it should
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.map(FileChannel.MapMode.READ_WRITE, -1, 0)
+        )
+
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.map(FileChannel.MapMode.READ_WRITE, 0, -2)
+        )
+
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.map(FileChannel.MapMode.READ_WRITE, 0, Integer.MAX_VALUE + 1)
+        )
+
+        // succeeds where it should
+        val mappedChan = channel.map(
+          FileChannel.MapMode.READ_WRITE,
+          0,
+          dataBytes.size
+        ) // for this test, must be > 0.
+        val offset = 2 // two is an arbitrary non-zero position in range.
+        assertEquals("mappedChan", dataBytes(offset), mappedChan.get(offset))
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
 }
