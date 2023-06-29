@@ -149,22 +149,25 @@ private[stream] class ObjectStreamImpl[T](
   }
 
   def unordered(): Stream[T] = {
-    /* JVM has an unenforced requirment that a stream and its spliterator
-     * (can you say Harlan Ellison?) should have the same characteristics.
-     */
-
     val masked = _spliter.characteristics() & Spliterator.ORDERED
 
-    if (masked == Spliterator.ORDERED) this
+    if (masked != Spliterator.ORDERED) this // already unordered.
     else {
       commenceOperation()
 
-      // Clear ORDERED
-      val unordered = _spliter.characteristics() & ~(Spliterator.ORDERED)
+      val bitsToClear =
+        (Spliterator.CONCURRENT
+          | Spliterator.IMMUTABLE
+          | Spliterator.NONNULL
+          | Spliterator.ORDERED
+          | Spliterator.SIZED
+          | Spliterator.SUBSIZED)
+
+      val purifiedBits = _characteristics & ~(bitsToClear)
 
       val spl = new Spliterators.AbstractSpliterator[T](
         _spliter.estimateSize(),
-        unordered
+        purifiedBits
       ) {
         def tryAdvance(action: Consumer[_ >: T]): Boolean =
           _spliter.tryAdvance((e) => action.accept(e))

@@ -197,12 +197,14 @@ class ArrayList[E] private (
      * collections.
      */
 
+    // Flaw: This method makes no attempt to detect ConcurrentModification.
+
     new Spliterators.AbstractSpliterator[E](
       _size,
-      Spliterator.SIZED | Spliterator.SUBSIZED
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED
     ) {
       private var cursor = 0
-      private val limit = _size
+      private lazy val limit = _size // late binding
 
       def tryAdvance(action: Consumer[_ >: E]): Boolean = {
         if (cursor >= limit) false
