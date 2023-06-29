@@ -403,31 +403,43 @@ private[java] final class FileChannelImpl(
     force(true)
   }
 
-  override def truncate(size: Long): FileChannel =
-    if (!openForWriting) {
-      throw new IOException("Invalid argument")
-    } else {
-      ensureOpen()
-      val currentPosition = position()
-      val hasSucceded =
-        if (isWindows) {
+  override def truncate(newSize: Long): FileChannel = {
+    if (newSize < 0)
+      throw new IllegalArgumentException("Negative size")
+
+    ensureOpen()
+
+    if (!openForWriting)
+      throw new NonWritableChannelException()
+
+    val currentPosition = position()
+
+    if (newSize < size()) {
+      if (isWindows) {
+        val hasSucceded =
           FileApi.SetFilePointerEx(
             fd.handle,
-            size,
+            newSize,
             null,
             FILE_BEGIN
           ) &&
-          FileApi.SetEndOfFile(fd.handle)
-        } else {
-          unistd.ftruncate(fd.fd, size.toSize) == 0
-        }
-      if (!hasSucceded) {
-        throw new IOException("Failed to truncate file")
+            FileApi.SetEndOfFile(fd.handle)
+        if (!hasSucceded)
+          throw new IOException("Failed to truncate file")
+      } else {
+        val err = unistd.ftruncate(fd.fd, newSize.toSize)
+        if (err != 0)
+          throwPosixException("ftruncate")
       }
-      if (currentPosition > size) position(size)
-      else position(currentPosition)
-      this
+
     }
+
+    // Always check, to avoid moon-shot corner cases.
+    if (currentPosition > newSize)
+      position(newSize)
+
+    this
+  }
 
   override def write(
       buffers: Array[ByteBuffer],
