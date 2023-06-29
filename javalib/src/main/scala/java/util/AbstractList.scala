@@ -148,9 +148,12 @@ abstract class AbstractList[E] protected ()
   }
 
   protected def removeRange(fromIndex: Int, toIndex: Int): Unit = {
-    var i = 0
+    // JVM documents fromIndex as inclusive, toIndex as exclusive.
+    // Someday the arguments should be bounds checked.
+    var i = fromIndex
     val iter = listIterator(fromIndex)
-    while (iter.hasNext() && i <= toIndex) {
+    while (iter.hasNext() && (i < toIndex)) {
+      iter.next()
       iter.remove()
       i += 1
     }
