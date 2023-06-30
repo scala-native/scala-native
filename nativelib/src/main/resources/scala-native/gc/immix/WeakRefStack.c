@@ -1,7 +1,9 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include "WeakRefStack.h"
 #include "datastructures/Stack.h"
 #include "metadata/ObjectMeta.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/headers/ObjectHeader.h"
 #include "State.h"
 #include <stdbool.h>
 
@@ -39,3 +41,5 @@ void WeakRefStack_CallHandlers(void) {
         handlerFn();
     }
 }
+
+#endif

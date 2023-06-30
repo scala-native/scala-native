@@ -1,4 +1,6 @@
-#include "MemoryMap.h"
+// MemoryMap.c is used by all GCs and Zone
+
+#include "shared/MemoryMap.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

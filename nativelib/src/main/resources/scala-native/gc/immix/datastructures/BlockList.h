@@ -1,7 +1,7 @@
 #ifndef IMMIX_BLOCLIST_H
 #define IMMIX_BLOCLIST_H
 
-#include "../metadata/BlockMeta.h"
+#include "immix/metadata/BlockMeta.h"
 
 #define LAST_BLOCK -1
 

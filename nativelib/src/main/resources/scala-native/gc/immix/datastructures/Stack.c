@@ -1,8 +1,10 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include "Stack.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 
 void Stack_doubleSize(Stack *stack);
 
@@ -36,3 +38,5 @@ void Stack_doubleSize(Stack *stack) {
     stack->nb_words = nb_words;
     stack->bottom = realloc(stack->bottom, nb_words * sizeof(Stack_Type));
 }
+
+#endif

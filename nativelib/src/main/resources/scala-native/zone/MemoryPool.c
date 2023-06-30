@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "MemoryPool.h"
-#include "../gc/shared/GCScalaNative.h"
-#include "../gc/shared/MemoryMap.h"
+#include "shared/GCScalaNative.h"
+#include "shared/MemoryMap.h"
 
 MemoryPool *MemoryPool_open() {
     MemoryPool *pool = malloc(sizeof(MemoryPool));

@@ -1,23 +1,25 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "GCScalaNative.h"
-#include "GCTypes.h"
+#include "shared/GCScalaNative.h"
+#include "shared/GCTypes.h"
 #include "Heap.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Object.h"
 #include "State.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/utils/MathUtils.h"
 #include "Constants.h"
 #include "Settings.h"
 #include "GCThread.h"
 #include "WeakRefGreyList.h"
 #include "Sweeper.h"
 
-#include "Parsing.h"
+#include "shared/Parsing.h"
 
 void scalanative_collect();
 
@@ -112,3 +114,4 @@ void scalanative_remove_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
     GC_Roots_RemoveByRange(&roots, range);
 }
+#endif

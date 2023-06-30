@@ -1,10 +1,12 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #ifdef _WIN32
 // fopen is deprecated in WinCRT, disable warnings
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include "Stats.h"
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -96,3 +98,5 @@ void Stats_NoNotEmptyPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns) {
     }
 }
 #endif // ENABLE_GC_STATS_SYNC
+
+#endif

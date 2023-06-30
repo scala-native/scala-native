@@ -24,8 +24,7 @@ package scala.scalanative.build
  */
 sealed abstract class GC private (
     val name: String,
-    val links: Seq[String],
-    val include: Seq[String]
+    val links: Seq[String]
 ) {
 
   /** The name of the [[GC]] object
@@ -38,16 +37,12 @@ sealed abstract class GC private (
 
 /** Utility to create a [[GC]] object */
 object GC {
-  private[scalanative] case object None
-      extends GC("none", Seq.empty, Seq("shared"))
-  private[scalanative] case object Boehm
-      extends GC("boehm", Seq("gc"), Seq("shared"))
-  private[scalanative] case object Immix
-      extends GC("immix", Seq.empty, Seq("shared", "immix_commix"))
-  private[scalanative] case object Commix
-      extends GC("commix", Seq.empty, Seq("shared", "immix_commix"))
+  private[scalanative] case object None extends GC("none", Seq.empty)
+  private[scalanative] case object Boehm extends GC("boehm", Seq("gc"))
+  private[scalanative] case object Immix extends GC("immix", Seq.empty)
+  private[scalanative] case object Commix extends GC("commix", Seq.empty)
   private[scalanative] case object Experimental
-      extends GC("experimental", Seq.empty, Seq.empty)
+      extends GC("experimental", Seq.empty)
 
   /** Non-freeing garbage collector. */
   def none: GC = None

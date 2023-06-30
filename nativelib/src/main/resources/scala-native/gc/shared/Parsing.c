@@ -1,3 +1,5 @@
+// Parsing.c is used by all GCs
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // sscanf and getenv are deprecated in WinCRT, disable warnings
@@ -8,7 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "Parsing.h"
+#include "shared/Parsing.h"
 
 size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     if (str == NULL) {

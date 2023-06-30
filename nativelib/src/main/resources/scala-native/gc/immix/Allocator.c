@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdlib.h>
 #include "Allocator.h"
 #include "Block.h"
@@ -184,3 +186,5 @@ bool Allocator_newBlock(Allocator *allocator) {
 
     return true;
 }
+
+#endif
