@@ -387,6 +387,15 @@ class LinkedList[E]()
 
   override def clone(): AnyRef =
     new LinkedList[E](this)
+
+  override def spliterator(): Spliterator[E] = {
+    // Report the ORDERED characteristic, same as the JVM.
+    Spliterators.spliterator[E](
+      this,
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED
+    )
+  }
+
 }
 
 object LinkedList {
