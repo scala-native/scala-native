@@ -44,7 +44,7 @@ object Metadata {
   case class DILocalVariable(
       name: String,
       scope: Scope,
-      file: LLVMDebugInformation,
+      file: DIFile,
       line: Int,
       tpe: Type
   ) extends LLVMDebugInformation
@@ -104,6 +104,7 @@ object Metadata {
     implicit def intToValue(v: Int): Metadata.Value = Metadata.Value(Val.Int(v))
     implicit def stringToStr(v: String): Metadata.Str = Metadata.Str(v)
     implicit class StringOps(val v: String) extends AnyVal {
+      def string: Metadata.Str = Metadata.Str(v)
       def const: Metadata.Const = Metadata.Const(v)
     }
   }
