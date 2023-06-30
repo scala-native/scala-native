@@ -347,6 +347,39 @@ class FileChannelTest {
     }
   }
 
+  // Issue #3340
+  @Test def mapMethodMapZeroBytes(): Unit = {
+    withTemporaryDirectory { dir =>
+      val data = s"ABCDEF"
+      val dataBytes = data.getBytes("UTF-8")
+
+      val f = dir.resolve("mapZeroBytes.txt")
+      Files.write(f, dataBytes)
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", data, lines.get(0))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+
+      try {
+        val mappedChan = channel.map(FileChannel.MapMode.READ_WRITE, 0, 0)
+
+        assertThrows(
+          classOf[java.lang.IndexOutOfBoundsException],
+          mappedChan.get(0)
+        )
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
   @Test def cannotTruncateChannelUsingNegativeSize(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("negativeSize.txt")
