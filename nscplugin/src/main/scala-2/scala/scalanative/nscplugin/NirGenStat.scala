@@ -189,9 +189,50 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       } yield genTypeName(psym)
     }
 
+    private def getAlignmentAttr(sym: Symbol): Option[nir.Attr.Alignment] =
+      sym.getAnnotation(AlignClass).map { annot =>
+        val Apply(_, args) = annot.tree
+        val groupName: Option[String] =
+          args.collectFirst { case Literal(Constant(v: String)) => v }
+
+        def getFixedAlignment() = args
+          .take(1)
+          .collectFirst { case Literal(Constant(v: Int)) => v }
+          .map { value =>
+            if (value % 8 != 0 || value <= 0 || value > 8192) {
+              reporter.error(
+                annot.tree.pos,
+                "Alignment must be positive integer literal, multiple of 8, and less then 8192 (inclusive)"
+              )
+            }
+            value
+          }
+        def linktimeResolvedAlignment = args
+          .take(1)
+          .collectFirst {
+            // explicitly @align(contendedPaddingWidth)
+            case LinktimeProperty(
+                  "scala.scalanative.meta.linktimeinfo.contendedPaddingWidth",
+                  _,
+                  _
+                ) =>
+              nir.Attr.Alignment.linktimeResolved
+          }
+          .getOrElse(
+            // implicitly, @align() or @align(group)
+            nir.Attr.Alignment.linktimeResolved
+          )
+
+        nir.Attr.Alignment(
+          size = getFixedAlignment().getOrElse(linktimeResolvedAlignment),
+          group = groupName.filterNot(_.isEmpty)
+        )
+      }
+
     def genClassFields(cd: ClassDef): Unit = {
       val sym = cd.symbol
       val attrs = nir.Attrs(isExtern = sym.isExternType)
+      val classAlign = getAlignmentAttr(sym)
 
       for (f <- sym.info.decls
           if !f.isMethod && f.isTerm && !f.isModule) {
@@ -205,7 +246,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
         val fieldAttrs = attrs.copy(
           isVolatile = f.isVolatile,
-          isFinal = !f.isMutable
+          isFinal = !f.isMutable,
+          align = getAlignmentAttr(f).orElse(classAlign)
         )
 
         buf += Defn.Var(fieldAttrs, name, ty, Val.Zero(ty))(pos)
