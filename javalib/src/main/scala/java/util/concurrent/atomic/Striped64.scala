@@ -1,5 +1,10 @@
 // Ported from JSR 166 revision 1.28
 
+/*
+ * Written by Doug Lea with assistance from members of JCP JSR-166
+ * Expert Group and released to the public domain, as explained at
+ * http://creativecommons.org/publicdomain/zero/1.0/
+ */
 package java.util.concurrent.atomic
 
 import java.lang.Double._
@@ -11,12 +16,6 @@ import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, memory_order}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-
-/*
- * Written by Doug Lea with assistance from members of JCP JSR-166
- * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/publicdomain/zero/1.0/
- */
 
 @SuppressWarnings(Array("serial"))
 object Striped64 {
