@@ -8,7 +8,6 @@ package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.Ignore
 
 import java.util.LinkedList
 import java.util.Spliterator
@@ -174,7 +173,6 @@ class LinkedListTest extends AbstractListTest {
   }
 
   // Issue #3351
-  @Ignore // Issue #3351 not yet fixed
   @Test def spliteratorHasExpectedCharacteristics(): Unit = {
 
     val coll =
