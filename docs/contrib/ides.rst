@@ -25,7 +25,7 @@ Setup for clangd
 
 `clangd` is a Language Server Protocol (LSP) for C and C++. Your IDE of choice can connect to `clangd` to help development using C and C++.
 
-* VSCode: Add the `clangd` extension from LLVM. Full documentation for `clangd` is `here <https://clangd.llvm.org>`. You can also add the C/C++ extensions
+* VSCode: Add the `clangd` extension from LLVM. Full documentation for `clangd` is `here <https://clangd.llvm.org>`_. You can also add the C/C++ extensions
   from Microsoft if desired for highlighting and other features.
 
 A `compile_flags.txt` is needed to get the best setup to work on `nativelib` and the Garbage Collectors. Since we use conditional compilation for
