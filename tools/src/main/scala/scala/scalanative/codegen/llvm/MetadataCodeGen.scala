@@ -33,20 +33,20 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     /* Create a metadata entry by writing metadata reference in the current ShowBuilder,
      * and the metadata node definition in the metadata section
      **/
-  def dbg[T <: Metadata.Node: UniqueWriter](prefix: CharSequence, v: T)(implicit
+  def dbg[T <: Metadata.Node: InternedWriter](prefix: CharSequence, v: T)(implicit
       ctx: Context,
       sb: ShowBuilder
   ): Unit =
     if (generateDebugMetadata) {
       // In metadata section
-      val id = implicitly[UniqueWriter[T]].intern(v)
+      val id = implicitly[InternedWriter[T]].intern(v)
       // In reference section
       sb.str(prefix)
       sb.str(" !dbg ")
       id.write(sb)
     }
 
-  def dbg[T <: Metadata.Node: UniqueWriter](v: T)(implicit ctx: Context, sb: ShowBuilder): Unit =
+  def dbg[T <: Metadata.Node: InternedWriter](v: T)(implicit ctx: Context, sb: ShowBuilder): Unit =
     dbg("", v)
 
   def compilationUnits(implicit ctx: Context): Seq[DICompileUnit] =
@@ -173,7 +173,7 @@ object MetadataCodeGen {
     def writeMetadata(v: T, ctx: Context): Unit
   }
 
-  trait UniqueWriter[T <: Metadata.Node] extends Writer[T] {
+  trait InternedWriter[T <: Metadata.Node] extends Writer[T] {
     import Writer._
     final private[MetadataCodeGen] def cache(v: T)(implicit ctx: Context): ctx.WriterCache[T] =
       ctx.writersCache
@@ -210,12 +210,13 @@ object MetadataCodeGen {
     }
   }
 
-  trait Dispatch[T <: Metadata.Node] extends UniqueWriter[T] {
+  trait Dispatch[T <: Metadata.Node] extends InternedWriter[T] {
+    import Writer.MetadataInternedWriterOps
     final override def writeMetadata(v: T, ctx: Context): Unit = delegate(v).writeMetadata(v, ctx)
 
-    private def delegate(v: T): UniqueWriter[T] = dispatch(v).asInstanceOf[UniqueWriter[T]]
+    private def delegate(v: T): InternedWriter[T] = dispatch(v).asInstanceOf[InternedWriter[T]]
 
-    def dispatch(v: T): UniqueWriter[_ <: T]
+    def dispatch(v: T): InternedWriter[_ <: T]
   }
 
   object Writer {
@@ -227,23 +228,24 @@ object MetadataCodeGen {
           ctx: MetadataCodeGen.Context
       ): Unit = writer.write(value)
     }
-    implicit class UniqueMetadataWriterOps[T <: Metadata.Node](val value: T) extends AnyVal {
+    implicit class MetadataInternedWriterOps[T <: Metadata.Node](val value: T) extends AnyVal {
       def intern()(implicit
-          writer: UniqueWriter[T],
+          writer: InternedWriter[T],
           ctx: MetadataCodeGen.Context
       ): MetadataId = writer.intern(value)
+
+      def writeInterned()(implicit
+          writer: InternedWriter[T],
+          ctx: MetadataCodeGen.Context
+      ): Unit = value.intern().write(ctx.sb)
+
+      def writer(implicit writer: InternedWriter[T]): InternedWriter[T] = writer
     }
 
-    def writeInterned[T <: Metadata.Node: UniqueWriter](value: T)(implicit ctx: Context): Unit = {
+    def writeInterned[T <: Metadata.Node: InternedWriter](value: T)(implicit ctx: Context): Unit = {
       val id = value.intern()
       id.write(ctx.sb)
     }
-
-    def intern[T <: Metadata.Node: UniqueWriter](value: T)(implicit ctx: Context): MetadataId =
-      implicitly[UniqueWriter[T]].intern(value)
-
-    def dispatch[T <: Metadata.Node](v: T)(implicit writer: UniqueWriter[T]): UniqueWriter[T] =
-      writer
 
     implicit lazy val ofMetadata: Writer[Metadata] = (v, ctx) => {
       implicit def _ctx: Context = ctx
@@ -268,19 +270,17 @@ object MetadataCodeGen {
 
     implicit lazy val ofValue: Writer[Metadata.Value] = (v, ctx) =>
       ctx.codeGen.genVal(v.value)(ctx.sb)
-
     implicit def ofSubValue[T <: Metadata.Value]: Writer[T] =
       ofValue.asInstanceOf[Writer[T]]
 
     implicit def ofNode: Dispatch[Metadata.Node] = _ match {
-      case v: Metadata.Tuple           => dispatch(v)
-      case v: Metadata.SpecializedNode => dispatch(v)
+      case v: Metadata.Tuple           => v.writer
+      case v: Metadata.SpecializedNode => v.writer
     }
 
     // statefull metadata writers backed with cached
-    implicit def ofGenericTuple[T <: Metadata.Tuple]: UniqueWriter[T] =
-      ofTuple.asInstanceOf[UniqueWriter[T]]
-    implicit lazy val ofTuple: UniqueWriter[Metadata.Tuple] = (v, ctx) => {
+
+    implicit lazy val ofTuple: InternedWriter[Metadata.Tuple] = (v, ctx) => {
       implicit def _ctx: Context = ctx
       v.values.foreach {
         case v: Metadata.Node => v.intern()
@@ -295,6 +295,8 @@ object MetadataCodeGen {
       })
       sb.str("}")
     }
+    implicit def ofSubTuple[T <: Metadata.Tuple]: InternedWriter[T] =
+      ofTuple.asInstanceOf[InternedWriter[T]]
 
     object Specialized {
       object Builder {
@@ -324,7 +326,7 @@ object MetadataCodeGen {
           fieldImpl[String](name)(ctx.sb.quoted(value))
 
         def field[T <: Metadata.Node](name: String, value: T)(implicit
-            writer: UniqueWriter[T]
+            writer: InternedWriter[T]
         ): this.type =
           fieldImpl[T](name) { writeInterned(value)(writer, ctx) }
 
@@ -342,7 +344,7 @@ object MetadataCodeGen {
         }
       }
     }
-    trait Specialized[T <: Metadata.SpecializedNode] extends UniqueWriter[T] {
+    trait Specialized[T <: Metadata.SpecializedNode] extends InternedWriter[T] {
       def writeFields(v: T): Specialized.Builder[T] => Unit
       override def writeMetadata(v: T, ctx: Context): Unit = {
         implicit def _ctx: Context = ctx
@@ -361,15 +363,15 @@ object MetadataCodeGen {
       case v: Metadata.LLVMDebugInformation => ofLLVMDebugInformation
     }
     implicit lazy val ofLLVMDebugInformation: Dispatch[Metadata.LLVMDebugInformation] = _ match {
-      case v: Metadata.Scope  => dispatch(v)
-      case v: Metadata.Type   => dispatch(v)
-      case v: DILocation      => dispatch(v)
-      case v: DILocalVariable => dispatch(v)
+      case v: Metadata.Scope  => v.writer
+      case v: Metadata.Type   => v.writer
+      case v: DILocation      => v.writer
+      case v: DILocalVariable => v.writer
     }
     implicit lazy val ofScope: Dispatch[Metadata.Scope] = _ match {
-      case v: DICompileUnit => dispatch(v)
-      case v: DIFile        => dispatch(v)
-      case v: DISubprogram  => dispatch(v)
+      case v: DICompileUnit => v.writer
+      case v: DIFile        => v.writer
+      case v: DISubprogram  => v.writer
     }
 
     import Metadata.conversions.StringOps
@@ -402,9 +404,9 @@ object MetadataCodeGen {
     }
 
     implicit lazy val ofType: Dispatch[Metadata.Type] = _ match {
-      case v: DIBasicType      => dispatch(v)
-      case v: DIDerivedType    => dispatch(v)
-      case v: DISubroutineType => dispatch(v)
+      case v: DIBasicType      => v.writer
+      case v: DIDerivedType    => v.writer
+      case v: DISubroutineType => v.writer
     }
     implicit lazy val ofDIBasicType: Specialized[DIBasicType] = {
       case DIBasicType(name, size, align, encoding) =>
