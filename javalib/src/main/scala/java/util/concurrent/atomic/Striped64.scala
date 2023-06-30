@@ -112,17 +112,17 @@ abstract class Striped64 private[atomic] () extends Number {
   final private[atomic] def longAccumulate(
       x: Long,
       fn: LongBinaryOperator,
-      wasUncontended: Boolean,
-      index: Int
+      _wasUncontended: Boolean,
+      _index: Int
   ): Unit = {
-    var _index = index
-    var _wasUncontended = wasUncontended
+    var index = _index
+    var wasUncontended = _wasUncontended
 
-    if (_index == 0) {
+    if (index == 0) {
       ThreadLocalRandom.current() // force initialization
 
-      _index = Striped64.getProbe()
-      _wasUncontended = true
+      index = Striped64.getProbe()
+      wasUncontended = true
     }
 
     var continue1 = true
@@ -135,7 +135,7 @@ abstract class Striped64 private[atomic] () extends Number {
       var n = 0
       var v = 0L
       if ({ cs = cells; n = cs.length; cs != null && n > 0 }) {
-        if ({ c = cs((n - 1) & _index); c == null }) {
+        if ({ c = cs((n - 1) & index); c == null }) {
           if (cellsBusy == 0) { // Try to attach new Cell
             val r = new Striped64.Cell(x) // Optimistically create
             if (cellsBusy == 0 && casCellsBusy()) {
@@ -144,7 +144,7 @@ abstract class Striped64 private[atomic] () extends Number {
                 var m = 0
                 var j = 0
                 if ({
-                  rs = cells; m = rs.length; j = (m - 1) & _index;
+                  rs = cells; m = rs.length; j = (m - 1) & index;
                   rs != null && m > 0 && rs(j) == null
                 }) {
                   rs(j) = r
@@ -160,8 +160,8 @@ abstract class Striped64 private[atomic] () extends Number {
           }
           if (continue2 == true)
             collide = false
-        } else if (!_wasUncontended) { // CAS already known to fail
-          _wasUncontended = true // Continue after rehash
+        } else if (!wasUncontended) { // CAS already known to fail
+          wasUncontended = true // Continue after rehash
         } else if (c.cas(
               { v = c.value; v },
               if (fn == null) v + x
@@ -185,12 +185,12 @@ abstract class Striped64 private[atomic] () extends Number {
           // Retry with expanded table
         }
         if (continue2 == true)
-          _index = Striped64.advanceProbe(_index)
+          index = Striped64.advanceProbe(index)
       } else if (cellsBusy == 0 && (cells == cs) && casCellsBusy())
         try // Initialize table
           if (cells == cs) {
             val rs = new Array[Striped64.Cell](2)
-            rs(_index & 1) = new Striped64.Cell(x)
+            rs(index & 1) = new Striped64.Cell(x)
             cells = rs
             continue1 = false
           }
@@ -210,15 +210,15 @@ abstract class Striped64 private[atomic] () extends Number {
   final private[atomic] def doubleAccumulate(
       x: Double,
       fn: DoubleBinaryOperator,
-      wasUncontended: Boolean,
-      index: Int
+      _wasUncontended: Boolean,
+      _index: Int
   ): Unit = {
-    var _index = index
-    var _wasUncontended = wasUncontended
-    if (_index == 0) {
+    var index = _index
+    var wasUncontended = _wasUncontended
+    if (index == 0) {
       ThreadLocalRandom.current()
-      _index = Striped64.getProbe()
-      _wasUncontended = true
+      index = Striped64.getProbe()
+      wasUncontended = true
     }
     var continue1 = true
     var continue2 = true
@@ -229,7 +229,7 @@ abstract class Striped64 private[atomic] () extends Number {
       var n = 0
       var v = 0L
       if ({ cs = cells; n = cs.length; cs != null && n > 0 }) {
-        if ({ c = cs((n - 1) & _index); c == null }) {
+        if ({ c = cs((n - 1) & index); c == null }) {
           if (cellsBusy == 0) {
             val r = new Striped64.Cell(doubleToRawLongBits(x))
             if (cellsBusy == 0 && casCellsBusy()) {
@@ -238,7 +238,7 @@ abstract class Striped64 private[atomic] () extends Number {
                 var m = 0
                 var j = 0
                 if ({
-                  rs = cells; m = rs.length; j = (m - 1) & _index;
+                  rs = cells; m = rs.length; j = (m - 1) & index;
                   rs != null && m > 0 && rs(j) == null
                 }) {
                   rs(j) = r
@@ -251,7 +251,7 @@ abstract class Striped64 private[atomic] () extends Number {
           }
           if (continue2 == true)
             collide = false
-        } else if (!_wasUncontended) _wasUncontended = true
+        } else if (!wasUncontended) wasUncontended = true
         else if (c.cas({ v = c.value; v }, Striped64._apply(fn, v, x))) {
           continue1 = false
           continue2 = false
@@ -268,12 +268,12 @@ abstract class Striped64 private[atomic] () extends Number {
           continue2 = false
         }
         if (continue2 == true)
-          _index = Striped64.advanceProbe(_index)
+          index = Striped64.advanceProbe(index)
       } else if (cellsBusy == 0 && cells == cs && casCellsBusy())
         try {
           if (cells == cs) {
             val rs = new Array[Striped64.Cell](2)
-            rs(_index & 1) = new Striped64.Cell(doubleToRawLongBits(x))
+            rs(index & 1) = new Striped64.Cell(doubleToRawLongBits(x))
             cells = rs
             continue1 = false
           }
