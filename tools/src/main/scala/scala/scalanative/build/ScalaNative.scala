@@ -4,7 +4,8 @@ package build
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
-import scala.scalanative.codegen.{CodeGen, PlatformInfo}
+import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._
@@ -92,9 +93,13 @@ private[scalanative] object ScalaNative {
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, linked: linker.Result): Seq[Path] = {
-    val llPaths = config.logger.time("Generating intermediate code") {
-      CodeGen(config, linked)
-    }
+    val withMetadata =
+      if (config.compilerConfig.debugMetadata) " (with debug metadata)" else ""
+
+    val llPaths =
+      config.logger.time(s"Generating intermediate code$withMetadata") {
+        CodeGen(config, linked)
+      }
     config.logger.info(s"Produced ${llPaths.length} files")
     llPaths
   }

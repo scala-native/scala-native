@@ -1,6 +1,7 @@
-package scala.scalanative.codegen.compat.os
+package scala.scalanative.codegen.llvm
+package compat.os
 
-import scala.scalanative.codegen.AbstractCodeGen
+import scala.scalanative.codegen.llvm.AbstractCodeGen
 import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.{Fresh, Next, Position, Val}
 import scala.scalanative.util.ShowBuilder
@@ -48,7 +49,12 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
 
   override def genLandingPad(
       unwind: Next.Unwind
-  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder): Unit = {
+  )(implicit
+      fresh: Fresh,
+      pos: Position,
+      sb: ShowBuilder,
+      metaCtx: MetadataCodeGen.Context
+  ): Unit = {
     import codegen._
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind

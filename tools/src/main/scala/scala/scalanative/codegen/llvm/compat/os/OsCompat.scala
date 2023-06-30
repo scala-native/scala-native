@@ -1,4 +1,5 @@
 package scala.scalanative.codegen
+package llvm
 package compat.os
 
 import scala.scalanative.nir.ControlFlow.Block
@@ -14,7 +15,12 @@ private[codegen] trait OsCompat {
   def genPrelude()(implicit sb: ShowBuilder): Unit
   def genLandingPad(
       unwind: Next.Unwind
-  )(implicit fresh: Fresh, pos: Position, sb: ShowBuilder): Unit
+  )(implicit
+      fresh: Fresh,
+      pos: Position,
+      sb: ShowBuilder,
+      dwf: MetadataCodeGen.Context
+  ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 
   final lazy val gxxPersonality =

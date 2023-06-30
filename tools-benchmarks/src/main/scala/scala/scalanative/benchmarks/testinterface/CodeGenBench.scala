@@ -65,3 +65,9 @@ class CodeGenWithMultithreading
         .withGC(GC.Immix) // to ensure generation of safepoints
         .withIncrementalCompilation(false)
     )
+
+class CodeGenWithDebugMetadata
+    extends CodeGenBench(
+      nativeConfig = _.withDebugMetadata(true)
+        .withIncrementalCompilation(false)
+    )
