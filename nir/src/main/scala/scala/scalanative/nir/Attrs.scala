@@ -32,12 +32,18 @@ object Attr {
   case object Volatile extends Attr
   case object Final extends Attr
   case object LinktimeResolved extends Attr
+  case class Alignment(size: Int, group: Option[String]) extends Attr
+  object Alignment{
+    // Alignment by defintion must be positive integer, magic value treated specially by compiler
+    final val linktimeResolved = -1
+  }
 }
 
 final case class Attrs(
     inlineHint: Inline = MayInline,
     specialize: Specialize = MaySpecialize,
     opt: Opt = UnOpt,
+    align: Option[Alignment] = Option.empty,
     isExtern: Boolean = false,
     isBlocking: Boolean = false,
     isDyn: Boolean = false,
@@ -54,6 +60,7 @@ final case class Attrs(
     if (inlineHint != MayInline) out += inlineHint
     if (specialize != MaySpecialize) out += specialize
     if (opt != UnOpt) out += opt
+    out ++= align
     if (isExtern) out += Extern(isBlocking)
     if (isDyn) out += Dyn
     if (isStub) out += Stub
@@ -73,6 +80,7 @@ object Attrs {
     var inline = None.inlineHint
     var specialize = None.specialize
     var opt = None.opt
+    var align = None.align
     var isExtern = false
     var isDyn = false
     var isStub = false
@@ -87,6 +95,8 @@ object Attrs {
       case attr: Inline     => inline = attr
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
+      case attr: Alignment  => align = Some(attr)
+        println(attr)
       case Extern(blocking) =>
         isExtern = true
         isBlocking = blocking
@@ -104,6 +114,7 @@ object Attrs {
       inlineHint = inline,
       specialize = specialize,
       opt = opt,
+      align = align,
       isExtern = isExtern,
       isBlocking = isBlocking,
       isDyn = isDyn,
