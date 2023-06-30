@@ -2,6 +2,7 @@ package org.scalanative.testsuite.javalib.util.stream
 
 import java.util.stream._
 import java.util.Spliterator
+import java.util.function.{Predicate, UnaryOperator}
 
 import org.junit.Test
 import org.junit.Assert._
@@ -66,11 +67,11 @@ class StreamTestOnJDK9 {
     val expectedSeed = "Red bellied woodpecker"
     val s = Stream.iterate[String](
       expectedSeed,
-      str => count < limit,
-      e => {
+      (str => count < limit): Predicate[String],
+      (e => {
         count += 1
         count.toString()
-      }
+      }): UnaryOperator[String]
     )
 
     val it = s.iterator()
@@ -92,11 +93,11 @@ class StreamTestOnJDK9 {
     val expectedSeed = "Red bellied woodpecker"
     val s = Stream.iterate[String](
       expectedSeed,
-      str => count < limit,
-      e => {
+      (str => count < limit): Predicate[String],
+      (e => {
         count += 1
         count.toString()
-      }
+      }): UnaryOperator[String]
     )
 
     val spliter = s.spliterator()
