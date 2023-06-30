@@ -48,16 +48,25 @@ object Striped64 {
 
   private[atomic] val NCPU: Int = Runtime.getRuntime().availableProcessors()
 
-  private[atomic] def getProbe(self: Striped64): Int =
-    self.threadProbeAtomic().load().asInstanceOf[Int]
+  @alwaysinline private[atomic] def threadProbeAtomic() = new CAtomicInt(
+    fromRawPtr(
+      Intrinsics.classFieldRawPtr(
+        Thread.currentThread(),
+        "threadLocalRandomProbe"
+      )
+    )
+  )
 
-  private[atomic] def advanceProbe(self: Striped64, probe: Int) = {
+  private[atomic] def getProbe(): Int =
+    threadProbeAtomic().load().asInstanceOf[Int]
+
+  private[atomic] def advanceProbe(probe: Int) = {
     var _probe = probe
     _probe = _probe ^ (_probe << 13) // xorshift
 
     _probe = _probe ^ (_probe >>> 17)
     _probe = _probe ^ (_probe << 5)
-    self.threadProbeAtomic().store(_probe)
+    threadProbeAtomic().store(_probe)
     _probe
   }
 
@@ -87,15 +96,6 @@ abstract class Striped64 private[atomic] () extends Number {
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
   )
 
-  @alwaysinline private def threadProbeAtomic() = new CAtomicInt(
-    fromRawPtr(
-      Intrinsics.classFieldRawPtr(
-        Thread.currentThread(),
-        "threadLocalRandomProbe"
-      )
-    )
-  )
-
   final private[atomic] def casBase(cmp: Long, `val`: Long) =
     baseAtomic().compareExchangeWeak(
       cmp,
@@ -121,7 +121,7 @@ abstract class Striped64 private[atomic] () extends Number {
     if (_index == 0) {
       ThreadLocalRandom.current() // force initialization
 
-      _index = Striped64.getProbe(this)
+      _index = Striped64.getProbe()
       _wasUncontended = true
     }
 
@@ -185,7 +185,7 @@ abstract class Striped64 private[atomic] () extends Number {
           // Retry with expanded table
         }
         if (continue2 == true)
-          _index = Striped64.advanceProbe(this, _index)
+          _index = Striped64.advanceProbe(_index)
       } else if (cellsBusy == 0 && (cells == cs) && casCellsBusy())
         try // Initialize table
           if (cells == cs) {
@@ -217,7 +217,7 @@ abstract class Striped64 private[atomic] () extends Number {
     var _wasUncontended = wasUncontended
     if (_index == 0) {
       ThreadLocalRandom.current()
-      _index = Striped64.getProbe(this)
+      _index = Striped64.getProbe()
       _wasUncontended = true
     }
     var continue1 = true
@@ -268,7 +268,7 @@ abstract class Striped64 private[atomic] () extends Number {
           continue2 = false
         }
         if (continue2 == true)
-          _index = Striped64.advanceProbe(this, _index)
+          _index = Striped64.advanceProbe(_index)
       } else if (cellsBusy == 0 && cells == cs && casCellsBusy())
         try {
           if (cells == cs) {
