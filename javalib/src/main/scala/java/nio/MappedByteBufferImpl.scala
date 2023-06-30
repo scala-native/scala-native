@@ -324,6 +324,39 @@ private[nio] object MappedByteBufferImpl {
     new MappedByteBufferData(mode, ptr, size, None)
   }
 
+  private def mapData(
+      position: Long,
+      size: Int,
+      fd: FileDescriptor,
+      mode: MapMode
+  ): MappedByteBufferData = {
+
+    if (size > 0) {
+      if (isWindows) mapWindows(position, size, fd, mode)
+      else mapUnix(position, size, fd, mode)
+    } else {
+      /* Issue #3340
+       *   JVM silently succeeds on MappedByteBuffer creation and
+       *   throws "IndexOutOfBoundsException" on access; get or put.
+       *
+       *   Create and use an "empty" MappedByteBuffer so that Scala Native
+       *   matches the JVM behavior.
+       *
+       *   POSIX and most (all?) unix-like systems explicitly do not
+       *   allow mapping zero bytes and mapUnix() will throw an Exception.
+       *
+       *   On Windows, a request to map zero bytes causes the entire
+       *   file to be mapped. At the least, expensive in I/O and memory
+       *   for bytes which will never be used. The call to MapViewOfFile()
+       *   in mapWindows() may or may not use the same semantics. Someone
+       *   with Windows skills would have to check. Knowing the zero size,
+       *   it is easier to match the JDK by creating an empty
+       *   MappedByteBufferData on the Windows branch also.
+       */
+      new MappedByteBufferData()
+    }
+  }
+
   def apply(
       mode: MapMode,
       position: Long,
@@ -331,9 +364,7 @@ private[nio] object MappedByteBufferImpl {
       fd: FileDescriptor
   ): MappedByteBufferImpl = {
 
-    val mappedData =
-      if (isWindows) mapWindows(position, size, fd, mode)
-      else mapUnix(position, size, fd, mode)
+    val mappedData = mapData(position, size, fd, mode)
 
     new MappedByteBufferImpl(
       mappedData.length,
