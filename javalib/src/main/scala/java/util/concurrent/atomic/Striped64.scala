@@ -21,6 +21,8 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 @SuppressWarnings(Array("serial"))
 object Striped64 {
 
+  /** Currently, Contended annotation is not supported. */
+  // @jdk.internal.vm.annotation.Contended
   final private[atomic] class Cell private[atomic] (var value: Long) {
     @volatile private[concurrent] var _value = value
 
