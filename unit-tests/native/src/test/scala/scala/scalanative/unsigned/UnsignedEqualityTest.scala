@@ -6,9 +6,10 @@ import org.junit.Assert._
 class UnsignedEqualityTest {
 
   def testEquality(u1: AnyRef, u2: AnyRef, u3: AnyRef): Unit = {
-    assertFalse(u1.eq(u2))
-    assertFalse(u1.eq(u3))
-    assertFalse(u2.eq(u3))
+    // Small unsigned integers are cached
+    assertSame(u1, u2)
+    assertNotSame(u1, u3)
+    assertNotSame(u2, u3)
 
     assertTrue(u1 == u2)
     assertEquals(u1, u2)
