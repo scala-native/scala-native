@@ -33,7 +33,7 @@ object Attr {
   case object Final extends Attr
   case object LinktimeResolved extends Attr
   case class Alignment(size: Int, group: Option[String]) extends Attr
-  object Alignment{
+  object Alignment {
     // Alignment by defintion must be positive integer, magic value treated specially by compiler
     final val linktimeResolved = -1
   }
@@ -95,8 +95,8 @@ object Attrs {
       case attr: Inline     => inline = attr
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
-      case attr: Alignment  => align = Some(attr)
-        println(attr)
+      case attr: Alignment =>
+        align = Some(attr)
       case Extern(blocking) =>
         isExtern = true
         isBlocking = blocking

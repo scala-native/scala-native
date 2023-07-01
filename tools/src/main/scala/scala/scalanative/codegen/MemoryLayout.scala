@@ -114,7 +114,6 @@ object MemoryLayout {
       maxAlign = maxAlign.max(alignment)
 
       offset = align(offset, alignment)
-      println(offset)
       pos += PositionedType(ty, offset)
       offset += sizeOf(ty)
     }

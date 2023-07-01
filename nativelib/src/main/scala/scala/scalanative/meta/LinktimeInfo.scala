@@ -40,8 +40,10 @@ object LinktimeInfo {
   )
   def isMultithreadingEnabled: Boolean = resolved
 
-  // Referenced in nscplugin and codegen 
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.contendedPaddingWidth")
+  // Referenced in nscplugin and codegen
+  @resolvedAtLinktime(
+    "scala.scalanative.meta.linktimeinfo.contendedPaddingWidth"
+  )
   def contendedPaddingWidth: Int = resolved
 
   object target {
