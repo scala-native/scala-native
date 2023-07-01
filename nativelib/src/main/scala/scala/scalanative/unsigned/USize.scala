@@ -29,8 +29,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   @inline def toUByte: UByte   = toByte.toUByte
   @inline def toUShort: UShort = toShort.toUShort
-  @inline def toUInt: UInt     = UInt.valueOf(castRawSizeToInt(rawSize))
-  @inline def toULong: ULong   = ULong.valueOf(castRawSizeToLongUnsigned(rawSize))
+  @inline def toUInt: UInt     = unsignedOf(castRawSizeToInt(rawSize))
+  @inline def toULong: ULong   = unsignedOf(castRawSizeToLongUnsigned(rawSize))
 
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
@@ -248,8 +248,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) & castRawSizeToInt(other.rawSize)))
-    else USize.valueOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) & castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) & castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) & castRawSizeToLongUnsigned(other.rawSize)))
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(x: UByte): USize = this | x.toUSize
@@ -265,8 +265,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) | castRawSizeToInt(other.rawSize)))
-    else USize.valueOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) | castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) | castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) | castRawSizeToLongUnsigned(other.rawSize)))
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(x: UByte): USize = this ^ x.toUSize
@@ -282,8 +282,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) ^ castRawSizeToInt(other.rawSize)))
-    else USize.valueOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) ^ castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) ^ castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) ^ castRawSizeToLongUnsigned(other.rawSize)))
 
   /** Returns the sum of this value and `x`. */
   @inline def +(x: UByte): USize = this + x.toUSize
@@ -299,8 +299,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the sum of this value and `x`. */
   @inline def +(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) + castRawSizeToInt(other.rawSize)))
-    else USize.valueOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) + castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) + castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) + castRawSizeToLongUnsigned(other.rawSize)))
 
   /** Returns the difference of this value and `x`. */
   @inline def -(x: UByte): USize = this - x.toUSize
@@ -316,8 +316,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the difference of this value and `x`. */
   @inline def -(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) - castRawSizeToInt(other.rawSize)))
-    else USize.valueOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) - castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) - castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) - castRawSizeToLongUnsigned(other.rawSize)))
 
   /** Returns the product of this value and `x`. */
   @inline def *(x: UByte): USize = this * x.toUSize
@@ -333,8 +333,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the product of this value and `x`. */
   @inline def *(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) * castRawSizeToInt(other.rawSize)))
-    else USize.valueOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) * castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) * castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) * castRawSizeToLongUnsigned(other.rawSize)))
 
 
   /** Returns the quotient of this value and `x`. */
@@ -351,8 +351,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(divUInt(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
-    else USize.valueOf(castLongToRawSize(divULong(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(divUInt(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
+    else unsignedOf(castLongToRawSize(divULong(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(x: UByte): USize = this % x.toUSize
@@ -368,8 +368,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(other: USize): USize =
-    if (is32BitPlatform) USize.valueOf(castIntToRawSizeUnsigned(remUInt(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
-    else USize.valueOf(castLongToRawSize(remULong(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(remUInt(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
+    else unsignedOf(castLongToRawSize(remULong(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
 
 
   // "Rich" API

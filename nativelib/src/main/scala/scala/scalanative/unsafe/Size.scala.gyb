@@ -29,7 +29,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toUShort: UShort = toUSize.toUShort
   @inline def toUInt: UInt     = toUSize.toUInt
   @inline def toULong: ULong   = toUSize.toULong
-  @inline def toUSize: USize   = USize.valueOf(rawSize)
+  @inline def toUSize: USize   = unsignedOf(rawSize)
 
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))

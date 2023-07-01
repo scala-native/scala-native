@@ -1,7 +1,7 @@
 package scala.scalanative
 package unsigned
 
-import scalanative.runtime.Intrinsics.castIntToRawSizeUnsigned
+import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned, unsignedOf}
 
 /** `UByte`, a 8-bit unsigned integer. */
 final class UByte private[scalanative] (
@@ -18,11 +18,10 @@ final class UByte private[scalanative] (
   @inline final def toDouble: Double = toInt.toDouble
 
   @inline final def toUByte: UByte = this
-  @inline final def toUShort: UShort = UShort.valueOf(toShort)
-  @inline final def toUInt: UInt = UInt.valueOf(toInt)
-  @inline final def toULong: ULong = ULong.valueOf(toLong)
-  @inline final def toUSize: USize =
-    USize.valueOf(castIntToRawSizeUnsigned(toInt))
+  @inline final def toUShort: UShort = unsignedOf(toShort)
+  @inline final def toUInt: UInt = unsignedOf(toInt)
+  @inline final def toULong: ULong = unsignedOf(toLong)
+  @inline final def toUSize: USize = unsignedOf(castIntToRawSizeUnsigned(toInt))
 
   /** Returns the bitwise negation of this value.
    *  @example
@@ -293,10 +292,10 @@ final class UByte private[scalanative] (
 object UByte {
 
   /** The smallest value representable as a UByte. */
-  final val MinValue = UByte.valueOf(0.toByte)
+  final val MinValue = unsignedOf(0.toByte)
 
   /** The largest value representable as a UByte. */
-  final val MaxValue = UByte.valueOf((-1).toByte)
+  final val MaxValue = unsignedOf((-1).toByte)
 
   /** The String representation of the scala.UByte companion object. */
   override def toString(): String = "object scala.UByte"

@@ -6,7 +6,8 @@ import scalanative.runtime.Intrinsics.{
   remULong,
   ulongToFloat,
   ulongToDouble,
-  castLongToRawSize
+  castLongToRawSize,
+  unsignedOf
 }
 import java.lang.{Long => JLong}
 
@@ -24,16 +25,16 @@ final class ULong private[scalanative] (
   @inline final def toFloat: Float = ulongToFloat(underlying)
   @inline final def toDouble: Double = ulongToDouble(underlying)
 
-  @inline final def toUByte: UByte = UByte.valueOf(toByte)
-  @inline final def toUShort: UShort = UShort.valueOf(toShort)
-  @inline final def toUInt: UInt = UInt.valueOf(toInt)
+  @inline final def toUByte: UByte = unsignedOf(toByte)
+  @inline final def toUShort: UShort = unsignedOf(toShort)
+  @inline final def toUInt: UInt = unsignedOf(toInt)
   @inline final def toULong: ULong = this
   @inline final def toUSize: USize =
-    USize.valueOf(castLongToRawSize(underlying))
+    unsignedOf(castLongToRawSize(underlying))
 
   /** Returns the bitwise negation of this value.
    */
-  @inline final def unary_~ : ULong = ULong.valueOf(~underlying)
+  @inline final def unary_~ : ULong = unsignedOf(~underlying)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the new right bits with zeroes.
@@ -43,7 +44,7 @@ final class ULong private[scalanative] (
    *  6 << 3 == 48 // in binary: 0110 << 3 == 0110000
    *  }}}
    */
-  @inline final def <<(x: Int): ULong = ULong.valueOf(underlying << x)
+  @inline final def <<(x: Int): ULong = unsignedOf(underlying << x)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the new right bits with zeroes.
@@ -53,7 +54,7 @@ final class ULong private[scalanative] (
    *  6 << 3 == 48 // in binary: 0110 << 3 == 0110000
    *  }}}
    */
-  @inline final def <<(x: Long): ULong = ULong.valueOf(underlying << x)
+  @inline final def <<(x: Long): ULong = unsignedOf(underlying << x)
 
   /** Returns this value bit-shifted right by the specified number of bits,
    *  filling the new left bits with zeroes.
@@ -67,7 +68,7 @@ final class ULong private[scalanative] (
    *  //            00011111 11111111 11111111 11111101
    *  }}}
    */
-  @inline final def >>>(x: Int): ULong = ULong.valueOf(underlying >>> x)
+  @inline final def >>>(x: Int): ULong = unsignedOf(underlying >>> x)
 
   /** Returns this value bit-shifted right by the specified number of bits,
    *  filling the new left bits with zeroes.
@@ -81,7 +82,7 @@ final class ULong private[scalanative] (
    *  //            00011111 11111111 11111111 11111101
    *  }}}
    */
-  @inline final def >>>(x: Long): ULong = ULong.valueOf(underlying >>> x)
+  @inline final def >>>(x: Long): ULong = unsignedOf(underlying >>> x)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the right bits with the same value as the left-most bit of
@@ -94,7 +95,7 @@ final class ULong private[scalanative] (
    *  //            11111111 11111111 11111111 11111101
    *  }}}
    */
-  @inline final def >>(x: Int): ULong = ULong.valueOf(underlying >> x)
+  @inline final def >>(x: Int): ULong = unsignedOf(underlying >> x)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the right bits with the same value as the left-most bit of
@@ -107,7 +108,7 @@ final class ULong private[scalanative] (
    *  //            11111111 11111111 11111111 11111101
    *  }}}
    */
-  @inline final def >>(x: Long): ULong = ULong.valueOf(underlying >> x)
+  @inline final def >>(x: Long): ULong = unsignedOf(underlying >> x)
 
   @inline final override def compareTo(x: ULong): Int =
     JLong.compareUnsigned(underlying, x.underlying)
@@ -211,7 +212,7 @@ final class ULong private[scalanative] (
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline final def |(x: ULong): ULong =
-    ULong.valueOf(underlying | x.underlying)
+    unsignedOf(underlying | x.underlying)
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: UByte): ULong = this & x.toULong
@@ -224,7 +225,7 @@ final class ULong private[scalanative] (
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: ULong): ULong =
-    ULong.valueOf(underlying & x.underlying)
+    unsignedOf(underlying & x.underlying)
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: UByte): ULong = this ^ x.toULong
@@ -237,7 +238,7 @@ final class ULong private[scalanative] (
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: ULong): ULong =
-    ULong.valueOf(underlying ^ x.underlying)
+    unsignedOf(underlying ^ x.underlying)
 
   /** Returns the sum of this value and `x`. */
   @inline final def +(x: UByte): ULong = this + x.toULong
@@ -250,7 +251,7 @@ final class ULong private[scalanative] (
 
   /** Returns the sum of this value and `x`. */
   @inline final def +(x: ULong): ULong =
-    ULong.valueOf(underlying + x.underlying)
+    unsignedOf(underlying + x.underlying)
 
   /** Returns the difference of this value and `x`. */
   @inline final def -(x: UByte): ULong = this - x.toULong
@@ -263,7 +264,7 @@ final class ULong private[scalanative] (
 
   /** Returns the difference of this value and `x`. */
   @inline final def -(x: ULong): ULong =
-    ULong.valueOf(underlying - x.underlying)
+    unsignedOf(underlying - x.underlying)
 
   /** Returns the product of this value and `x`. */
   @inline final def *(x: UByte): ULong = this * x.toULong
@@ -276,7 +277,7 @@ final class ULong private[scalanative] (
 
   /** Returns the product of this value and `x`. */
   @inline final def *(x: ULong): ULong =
-    ULong.valueOf(underlying * x.underlying)
+    unsignedOf(underlying * x.underlying)
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: UByte): ULong = this / x.toULong
@@ -289,7 +290,7 @@ final class ULong private[scalanative] (
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: ULong): ULong =
-    ULong.valueOf(divULong(underlying, x.underlying))
+    unsignedOf(divULong(underlying, x.underlying))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: UByte): ULong = this % x.toULong
@@ -302,7 +303,7 @@ final class ULong private[scalanative] (
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: ULong): ULong =
-    ULong.valueOf(remULong(underlying, x.underlying))
+    unsignedOf(remULong(underlying, x.underlying))
 
   @inline final override def toString(): String =
     JLong.toUnsignedString(underlying)
@@ -327,10 +328,10 @@ final class ULong private[scalanative] (
 object ULong {
 
   /** The smallest value representable as a ULong. */
-  final val MinValue = ULong.valueOf(0L)
+  final val MinValue = unsignedOf(0L)
 
   /** The largest value representable as a ULong. */
-  final val MaxValue = ULong.valueOf(-1L)
+  final val MaxValue = unsignedOf(-1L)
 
   /** The String representation of the scala.ULong companion object. */
   override def toString(): String = "object scala.ULong"

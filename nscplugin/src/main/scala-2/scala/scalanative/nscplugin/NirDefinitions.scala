@@ -117,6 +117,9 @@ trait NirDefinitions {
     lazy val DivULongMethod = getMember(IntrinsicsModule, TermName("divULong"))
     lazy val RemUIntMethod = getMember(IntrinsicsModule, TermName("remUInt"))
     lazy val RemULongMethod = getMember(IntrinsicsModule, TermName("remULong"))
+    lazy val UnsignedOfMethods =
+      getMember(IntrinsicsModule, TermName("unsignedOf")).alternatives
+        .ensuring(_.size == 5)
     lazy val ByteToUIntMethod =
       getMember(IntrinsicsModule, TermName("byteToUInt"))
     lazy val ByteToULongMethod =
