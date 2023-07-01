@@ -18,7 +18,7 @@ import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, memory_order}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 @SuppressWarnings(Array("serial"))
-object Striped64 {
+private[atomic] object Striped64 {
 
   /** Currently, Contended annotation is not supported. */
   // @jdk.internal.vm.annotation.Contended
@@ -80,7 +80,7 @@ object Striped64 {
 }
 
 @SuppressWarnings(Array("serial"))
-abstract class Striped64 private[atomic] () extends Number {
+private[atomic] abstract class Striped64 private[atomic] () extends Number {
 
   @transient @volatile private[atomic] var cells: Array[Striped64.Cell] = null
 
