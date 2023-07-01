@@ -82,11 +82,11 @@ object Striped64 {
 @SuppressWarnings(Array("serial"))
 abstract class Striped64 private[atomic] () extends Number {
 
-  @volatile private[atomic] var cells: Array[Striped64.Cell] = null
+  @transient @volatile private[atomic] var cells: Array[Striped64.Cell] = null
 
-  @volatile private[atomic] var base: Long = 0L
+  @transient @volatile private[atomic] var base: Long = 0L
 
-  @volatile private[atomic] var cellsBusy: Int = 0
+  @transient @volatile private[atomic] var cellsBusy: Int = 0
 
   @alwaysinline private def baseAtomic() = new CAtomicLongLong(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "base"))
