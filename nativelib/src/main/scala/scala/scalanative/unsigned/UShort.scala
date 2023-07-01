@@ -304,4 +304,25 @@ object UShort {
   import scala.language.implicitConversions
   implicit def ubyte2uint(x: UShort): UInt = x.toUInt
   implicit def ubyte2ulong(x: UShort): ULong = x.toULong
+
+  @inline def valueOf(shortValue: scala.Short): UShort = {
+    import UShortCache.cache
+    val byteValue = shortValue.toByte
+    if (byteValue.toLong != shortValue) {
+      new UShort(shortValue)
+    } else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new UShort(shortValue)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsigned] object UShortCache {
+  private[unsigned] val cache = new Array[UShort](256)
 }

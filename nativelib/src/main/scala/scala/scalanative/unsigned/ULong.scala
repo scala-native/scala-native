@@ -327,4 +327,25 @@ object ULong {
 
   /** The String representation of the scala.ULong companion object. */
   override def toString(): String = "object scala.ULong"
+
+  @inline def valueOf(longValue: scala.Long): ULong = {
+    import ULongCache.cache
+    val byteValue = longValue.toByte
+    if (byteValue.toLong != longValue) {
+      new ULong(longValue)
+    } else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new ULong(longValue)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsigned] object ULongCache {
+  private[unsigned] val cache = new Array[ULong](256)
 }

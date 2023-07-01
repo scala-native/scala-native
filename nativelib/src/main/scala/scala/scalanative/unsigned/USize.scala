@@ -384,4 +384,25 @@ object USize {
   @inline implicit def ubyteToUSize(x: UByte): USize = x.toUSize
   @inline implicit def ushortToUSize(x: UShort): USize = x.toUSize
   @inline implicit def uintToUSize(x: UInt): USize = x.toUSize
+
+  @inline def valueOf(rawSize: RawSize): USize = {
+    import USizeCache.cache
+    val intValue = castRawSizeToInt(rawSize)
+    val byteValue = intValue.toByte
+    if(castIntToRawSizeUnsigned(byteValue) != rawSize) new USize(rawSize)
+    else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new USize(rawSize)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsigned] object USizeCache{
+  private[unsigned] val cache: scala.Array[USize] = new scala.Array[USize](256)
 }

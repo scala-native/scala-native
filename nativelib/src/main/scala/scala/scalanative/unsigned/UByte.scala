@@ -305,4 +305,20 @@ object UByte {
   implicit def ubyte2ushort(x: UByte): UShort = x.toUShort
   implicit def ubyte2uint(x: UByte): UInt = x.toUInt
   implicit def ubyte2ulong(x: UByte): ULong = x.toULong
+
+  @inline def valueOf(byteValue: scala.Byte): UByte = {
+    import UByteCache.cache
+    val idx = byteValue - scala.Byte.MinValue
+    val cached = cache(idx)
+    if (cached ne null) cached
+    else {
+      val newBox = new UByte(byteValue)
+      cache(idx) = newBox
+      newBox
+    }
+  }
+}
+
+private[unsigned] object UByteCache {
+  private[unsigned] val cache = new Array[UByte](256)
 }

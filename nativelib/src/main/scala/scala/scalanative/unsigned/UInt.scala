@@ -312,4 +312,26 @@ object UInt {
   /** Language mandated coercions from UInt to "wider" types. */
   import scala.language.implicitConversions
   implicit def uint2ulong(x: UInt): ULong = x.toULong
+
+  @inline def valueOf(intValue: scala.Int): UInt = {
+    import UIntCache.cache
+    val byteValue = intValue.toByte
+    if (byteValue.toInt != intValue) {
+      new UInt(intValue)
+    } else {
+      val idx = intValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new UInt(intValue)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+
+}
+
+private[unsigned] object UIntCache {
+  private[unsigned] val cache = new Array[UInt](256)
 }

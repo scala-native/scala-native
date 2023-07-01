@@ -196,10 +196,25 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 }
 
 object Size {
-  @inline implicit def byteToSize(x: Byte): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def shortToSize(x: Short): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def intToSize(x: Int): Size =
-    new Size(castIntToRawSize(x))
+
+  @inline def valueOf(rawSize: RawSize): Size = {
+    import SizeCache.cache
+    val intValue = castRawSizeToInt(rawSize)
+    val byteValue = intValue.toByte
+    if(castIntToRawSize(byteValue) != rawSize) new Size(rawSize)
+    else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new Size(rawSize)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsafe] object SizeCache{
+  private[unsafe] val cache: scala.Array[Size] = new scala.Array[Size](256)
 }
