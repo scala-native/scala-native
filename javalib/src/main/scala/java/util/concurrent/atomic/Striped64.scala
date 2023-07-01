@@ -22,11 +22,12 @@ private[atomic] object Striped64 {
 
   /** Currently, Contended annotation is not supported. */
   // @jdk.internal.vm.annotation.Contended
-  final private[atomic] class Cell private[atomic] (var value: Long) {
-    @volatile private[concurrent] var _value = value
+  final private[atomic] class Cell private[atomic] (
+      @volatile private[atomic] var value: Long
+  ) {
 
     @alwaysinline def valueAtomic() = new CAtomicLongLong(
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "_value"))
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
     )
 
     final private[atomic] def cas(cmp: Long, `val`: Long) =
