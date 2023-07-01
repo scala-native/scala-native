@@ -17,11 +17,11 @@ final class UShort private[scalanative] (
   @inline final def toFloat: Float = toInt.toFloat
   @inline final def toDouble: Double = toInt.toDouble
 
-  @inline final def toUByte: UByte = new UByte(toByte)
+  @inline final def toUByte: UByte = UByte.valueOf(toByte)
   @inline final def toUShort: UShort = this
-  @inline final def toUInt: UInt = new UInt(toInt)
-  @inline final def toULong: ULong = new ULong(toLong)
-  @inline final def toUSize: USize = new USize(castIntToRawSize(toInt))
+  @inline final def toUInt: UInt = UInt.valueOf(toInt)
+  @inline final def toULong: ULong = ULong.valueOf(toLong)
+  @inline final def toUSize: USize = USize.valueOf(castIntToRawSize(toInt))
 
   /** Returns the bitwise negation of this value.
    *  @example
@@ -292,10 +292,10 @@ final class UShort private[scalanative] (
 object UShort {
 
   /** The smallest value representable as a UShort. */
-  final val MinValue = new UShort(0.toShort)
+  final val MinValue = UShort.valueOf(0.toShort)
 
   /** The largest value representable as a UShort. */
-  final val MaxValue = new UShort((-1).toShort)
+  final val MaxValue = UShort.valueOf((-1).toShort)
 
   /** The String representation of the scala.UShort companion object. */
   override def toString(): String = "object scala.UShort"

@@ -23,33 +23,32 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def toFloat: Float = uintToFloat(underlying)
   @inline final def toDouble: Double = uintToDouble(underlying)
 
-  @inline final def toUByte: UByte = new UByte(toByte)
-  @inline final def toUShort: UShort = new UShort(toShort)
+  @inline final def toUByte: UByte = UByte.valueOf(toByte)
+  @inline final def toUShort: UShort = UShort.valueOf(toShort)
   @inline final def toUInt: UInt = this
-  @inline final def toULong: ULong = new ULong(toLong)
-  @inline final def toUSize: USize = new USize(
-    castIntToRawSizeUnsigned(underlying)
-  )
+  @inline final def toULong: ULong = ULong.valueOf(toLong)
+  @inline final def toUSize: USize =
+    USize.valueOf(castIntToRawSizeUnsigned(underlying))
 
   /** Returns the bitwise negation of this value.
    *  @example
    *    {{{~5 == 4294967290 // in binary: ~00000101 == // 11111010}}}
    */
-  @inline final def unary_~ : UInt = new UInt(~underlying)
+  @inline final def unary_~ : UInt = UInt.valueOf(~underlying)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the new right bits with zeroes.
    *  @example
    *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
-  @inline final def <<(x: Int): UInt = new UInt(underlying << x)
+  @inline final def <<(x: Int): UInt = UInt.valueOf(underlying << x)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the new right bits with zeroes.
    *  @example
    *    {{{6 << 3 == 48 // in binary: 0110 << 3 == 0110000}}}
    */
-  @inline final def <<(x: Long): UInt = new UInt(underlying << x.toInt)
+  @inline final def <<(x: Long): UInt = UInt.valueOf(underlying << x.toInt)
 
   /** Returns this value bit-shifted right by the specified number of bits,
    *  filling the new left bits with zeroes.
@@ -59,7 +58,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
    *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
-  @inline final def >>>(x: Int): UInt = new UInt(underlying >>> x)
+  @inline final def >>>(x: Int): UInt = UInt.valueOf(underlying >>> x)
 
   /** Returns this value bit-shifted right by the specified number of bits,
    *  filling the new left bits with zeroes.
@@ -69,7 +68,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    *    {{{ 4294967275 >>> 3 == 536870909 // in binary: 11111111 11111111
    *    11111111 11101011 >>> 3 == // 00011111 11111111 11111111 11111101 }}}
    */
-  @inline final def >>>(x: Long): UInt = new UInt(underlying >>> x.toInt)
+  @inline final def >>>(x: Long): UInt = UInt.valueOf(underlying >>> x.toInt)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the right bits with the same value as the left-most bit of
@@ -78,7 +77,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
    *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
-  @inline final def >>(x: Int): UInt = new UInt(underlying >> x)
+  @inline final def >>(x: Int): UInt = UInt.valueOf(underlying >> x)
 
   /** Returns this value bit-shifted left by the specified number of bits,
    *  filling in the right bits with the same value as the left-most bit of
@@ -87,7 +86,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
    *    {{{ 4294967275 >> 3 == 4294967293 // in binary: 11111111 11111111
    *    11111111 11101011 >> 3 == // 11111111 11111111 11111111 11111101 }}}
    */
-  @inline final def >>(x: Long): UInt = new UInt(underlying >> x.toInt)
+  @inline final def >>(x: Long): UInt = UInt.valueOf(underlying >> x.toInt)
 
   @inline final override def compareTo(x: UInt): Int =
     JInteger.compareUnsigned(underlying, x.underlying)
@@ -187,7 +186,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def |(x: UShort): UInt = this | x.toUInt
 
   /** Returns the bitwise OR of this value and `x`. */
-  @inline final def |(x: UInt): UInt = new UInt(underlying | x.underlying)
+  @inline final def |(x: UInt): UInt = UInt.valueOf(underlying | x.underlying)
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline final def |(x: ULong): ULong = this.toULong | x
@@ -199,7 +198,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def &(x: UShort): UInt = this & x.toUInt
 
   /** Returns the bitwise AND of this value and `x`. */
-  @inline final def &(x: UInt): UInt = new UInt(underlying & x.underlying)
+  @inline final def &(x: UInt): UInt = UInt.valueOf(underlying & x.underlying)
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline final def &(x: ULong): ULong = this.toULong & x
@@ -211,7 +210,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def ^(x: UShort): UInt = this ^ x.toUInt
 
   /** Returns the bitwise XOR of this value and `x`. */
-  @inline final def ^(x: UInt): UInt = new UInt(underlying ^ x.underlying)
+  @inline final def ^(x: UInt): UInt = UInt.valueOf(underlying ^ x.underlying)
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline final def ^(x: ULong): ULong = this.toULong ^ x
@@ -223,7 +222,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def +(x: UShort): UInt = this + x.toUInt
 
   /** Returns the sum of this value and `x`. */
-  @inline final def +(x: UInt): UInt = new UInt(underlying + x.underlying)
+  @inline final def +(x: UInt): UInt = UInt.valueOf(underlying + x.underlying)
 
   /** Returns the sum of this value and `x`. */
   @inline final def +(x: ULong): ULong = this.toULong + x
@@ -235,7 +234,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def -(x: UShort): UInt = this - x.toUInt
 
   /** Returns the difference of this value and `x`. */
-  @inline final def -(x: UInt): UInt = new UInt(underlying - x.underlying)
+  @inline final def -(x: UInt): UInt = UInt.valueOf(underlying - x.underlying)
 
   /** Returns the difference of this value and `x`. */
   @inline final def -(x: ULong): ULong = this.toULong - x
@@ -247,7 +246,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def *(x: UShort): UInt = this * x.toUInt
 
   /** Returns the product of this value and `x`. */
-  @inline final def *(x: UInt): UInt = new UInt(underlying * x.underlying)
+  @inline final def *(x: UInt): UInt = UInt.valueOf(underlying * x.underlying)
 
   /** Returns the product of this value and `x`. */
   @inline final def *(x: ULong): ULong = this.toULong * x
@@ -260,7 +259,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: UInt): UInt =
-    new UInt(divUInt(underlying, x.underlying))
+    UInt.valueOf(divUInt(underlying, x.underlying))
 
   /** Returns the quotient of this value and `x`. */
   @inline final def /(x: ULong): ULong = this.toULong / x
@@ -273,7 +272,7 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: UInt): UInt =
-    new UInt(remUInt(underlying, x.underlying))
+    UInt.valueOf(remUInt(underlying, x.underlying))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: ULong): ULong = this.toULong % x
@@ -301,10 +300,10 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
 object UInt {
 
   /** The smallest value representable as a UInt. */
-  final val MinValue = new UInt(0)
+  final val MinValue = UInt.valueOf(0)
 
   /** The largest value representable as a UInt. */
-  final val MaxValue = new UInt(-1)
+  final val MaxValue = UInt.valueOf(-1)
 
   /** The String representation of the scala.UInt companion object. */
   override def toString(): String = "object scala.UInt"

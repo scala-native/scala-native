@@ -6,7 +6,7 @@ package object unsigned {
 
   /** Scala Native unsigned extensions to the standard Byte. */
   implicit class UnsignedRichByte(val value: Byte) extends AnyVal {
-    @inline def toUByte: UByte = new UByte(value)
+    @inline def toUByte: UByte = UByte.valueOf(value)
     @inline def toUShort: UShort = toUByte.toUShort
     @inline def toUInt: UInt = toUByte.toUInt
     @inline def toULong: ULong = toUByte.toULong
@@ -15,7 +15,7 @@ package object unsigned {
   /** Scala Native unsigned extensions to the standard Short. */
   implicit class UnsignedRichShort(val value: Short) extends AnyVal {
     @inline def toUByte: UByte = toUShort.toUByte
-    @inline def toUShort: UShort = new UShort(value)
+    @inline def toUShort: UShort = UShort.valueOf(value)
     @inline def toUInt: UInt = toUShort.toUInt
     @inline def toULong: ULong = toUShort.toULong
   }
@@ -24,7 +24,7 @@ package object unsigned {
   implicit class UnsignedRichInt(val value: Int) extends AnyVal {
     @inline def toUByte: UByte = toUInt.toUByte
     @inline def toUShort: UShort = toUInt.toUShort
-    @inline def toUInt: UInt = new UInt(value)
+    @inline def toUInt: UInt = UInt.valueOf(value)
     @inline def toULong: ULong = toUInt.toULong
     @inline def toUSize: USize = toUInt.toUSize
   }
@@ -34,7 +34,7 @@ package object unsigned {
     @inline def toUByte: UByte = toULong.toUByte
     @inline def toUShort: UShort = toULong.toUShort
     @inline def toUInt: UInt = toULong.toUInt
-    @inline def toULong: ULong = new ULong(value)
+    @inline def toULong: ULong = ULong.valueOf(value)
     @inline def toUSize: USize = toULong.toUSize
   }
 }
