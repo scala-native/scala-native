@@ -1013,6 +1013,86 @@ class StreamTest {
     assertEquals(msg, nElements, count)
   }
 
+  @Test def streamSorted_Characteristics(): Unit = {
+    /* SN sequential, SN parallel, & JVM streams should all return the same
+     * characteristics both before (pre) and after (post) sorting.
+     *
+     * Test both sequential and parallel streams to verify this expectation.
+     * Testing 'sorted()' will call 'sorted(comparator)', so this one Test
+     * covers both methods.
+     */
+
+    val nElements = 8
+    val wild = new ArrayList[String](nElements)
+
+    // Ensure that the Elements are not inserted in sorted or reverse order.
+    wild.add("Dasher")
+    wild.add("Prancer")
+    wild.add("Vixen")
+    wild.add("Comet")
+    wild.add("Cupid")
+    wild.add("Donner")
+    wild.add("Blitzen")
+    wild.add("Rudolph")
+
+    val ordered = new ArrayList(wild)
+    ju.Collections.sort(ordered)
+
+    val seqStream = wild.stream()
+    assertFalse(
+      "Expected sequential stream",
+      seqStream.isParallel()
+    )
+
+    // same expected values for SN sequential, SN parallel, & JVM streams
+    val expectedPreCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
+
+    val expectedPostCharacteristics =
+      expectedPreCharacteristics + Spliterator.SORTED
+
+    val seqSpliter = seqStream.spliterator()
+
+    assertEquals(
+      "sequential characteristics",
+      expectedPreCharacteristics,
+      seqSpliter.characteristics()
+    )
+
+    val sortedSeqStream = wild.stream().sorted()
+    val sortedSeqSpliter = sortedSeqStream.spliterator()
+
+    assertEquals(
+      "sorted sequential characteristics",
+      expectedPostCharacteristics,
+      sortedSeqSpliter.characteristics()
+    )
+
+    val parStream = wild.stream().parallel()
+    assertFalse(
+      "Expected  parallel stream",
+      seqStream.isParallel()
+    )
+
+    val parSpliter = parStream.spliterator()
+
+    assertEquals(
+      "parallel characteristics",
+      expectedPreCharacteristics,
+      parSpliter.characteristics()
+    )
+
+    val sortedParStream = wild.stream().parallel().sorted()
+    val sortedParSpliter = sortedParStream.spliterator()
+
+    assertEquals(
+      "sorted parallel characteristics",
+      expectedPostCharacteristics,
+      sortedParSpliter.characteristics()
+    )
+
+  }
+
   @Test def streamSorted_UsingComparator(): Unit = {
     val nElements = 8
     val wild = new ArrayList[String](nElements)
