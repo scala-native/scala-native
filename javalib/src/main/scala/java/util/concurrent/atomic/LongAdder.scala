@@ -12,7 +12,8 @@ import java.io.Serializable
 @SerialVersionUID(7249069246863182397L)
 object LongAdder {
 
-  // for sufficient serialization, without unnecessary parent class info.
+  // This SerializationProxy provides sufficient serialization for LongAdder,
+  // without unnecessary parent class info.
   @SerialVersionUID(7249069246863182397L)
   private class SerializationProxy(a: LongAdder) extends Serializable {
     final private var value = a.sum
