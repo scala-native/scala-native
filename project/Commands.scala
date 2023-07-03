@@ -26,6 +26,7 @@ object Commands {
       "publish-local-dev" :: _
   }
 
+  // Compile and run the sandbox for each GC as a minimal check
   lazy val testSandboxGC = projectVersionCommand("test-sandbox-gc") {
     case (version, state) =>
       val runs =
