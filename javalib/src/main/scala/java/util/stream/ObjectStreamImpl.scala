@@ -149,22 +149,25 @@ private[stream] class ObjectStreamImpl[T](
   }
 
   def unordered(): Stream[T] = {
-    /* JVM has an unenforced requirment that a stream and its spliterator
-     * (can you say Harlan Ellison?) should have the same characteristics.
-     */
-
     val masked = _spliter.characteristics() & Spliterator.ORDERED
 
-    if (masked == Spliterator.ORDERED) this
+    if (masked != Spliterator.ORDERED) this // already unordered.
     else {
       commenceOperation()
 
-      // Clear ORDERED
-      val unordered = _spliter.characteristics() & ~(Spliterator.ORDERED)
+      val bitsToClear =
+        (Spliterator.CONCURRENT
+          | Spliterator.IMMUTABLE
+          | Spliterator.NONNULL
+          | Spliterator.ORDERED
+          | Spliterator.SIZED
+          | Spliterator.SUBSIZED)
+
+      val purifiedBits = _characteristics & ~(bitsToClear)
 
       val spl = new Spliterators.AbstractSpliterator[T](
         _spliter.estimateSize(),
-        unordered
+        purifiedBits
       ) {
         def tryAdvance(action: Consumer[_ >: T]): Boolean =
           _spliter.tryAdvance((e) => action.accept(e))
@@ -598,7 +601,7 @@ private[stream] class ObjectStreamImpl[T](
   }
 
   def sorted(): Stream[T] = {
-    // No commenceOperation() here. sorted(comparator) will make that happen.
+    // No commenceOperation() here. This is an intermediate operation.
 
     /* Be aware that this method will/should throw on first use if type
      * T is not Comparable[T]. This is described in the Java Stream doc.
@@ -620,13 +623,41 @@ private[stream] class ObjectStreamImpl[T](
   }
 
   def sorted(comparator: Comparator[_ >: T]): Stream[T] = {
-    commenceOperation()
+    // No commenceOperation() here. This is an intermediate operation.
 
-    val buffer = new ArrayList[T]()
-    _spliter.forEachRemaining((e) => buffer.add(e))
+    /* Someday figure out the types for the much cleaner 'toArray(generator)'
+     * There is a bit of type nastiness/abuse going on here.
+     * The hidden assumption is that type is a subclass of Object, or at
+     * least AnyRef (T <: Object). However the class declaration places
+     * no such restriction on T. It is T <: Any.
+     *
+     * The Ancients, in their wisdom, must have had a reason for declaring
+     * the type that way.
+     *
+     * I think the class declaration is _wrong_, or at leads one to
+     * type abuse, such as here. However, that declaration is pretty
+     * hardwired at this point.  Perhaps it will get corrected across
+     * the board for Scala Native 1.0.
+     *
+     * Until then make the shaky assumption that the class creator is always
+     * specifying T <: AnyRef so that the coercion will work at
+     * runtime.
+     */
+    val buffer = toArray()
 
-    buffer.sort(comparator)
-    buffer.stream()
+    /* Scala 3 and 2.13.11 both allow ""Arrays.sort(" here.
+     * Scala 2.12.18 requires "sort[Object](".
+     */
+    Arrays
+      .sort[Object](buffer, comparator.asInstanceOf[Comparator[_ >: Object]])
+
+    val spl = Spliterators.spliterator[T](
+      buffer,
+      Spliterator.SORTED | Spliterator.ORDERED |
+        Spliterator.SIZED | Spliterator.SUBSIZED
+    )
+
+    new ObjectStreamImpl[T](spl, _parallel, pipeline)
   }
 
   def toArray(): Array[Object] = {

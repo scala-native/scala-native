@@ -2503,10 +2503,10 @@ class DefaultFormatterTest {
 
   @Test def formatForDoubleMinValueConversionType_aA(): Unit = {
 
-    val tripleA = Array(
+    val tripleA = Array[Array[Any]](
       Array(java.lang.Double.MIN_VALUE, "%a", "0x0.0000000000001p-1022"),
       Array(java.lang.Double.MIN_VALUE, "%5a", "0x0.0000000000001p-1022")
-    ).asInstanceOf[Array[Array[Any]]]
+    )
     val input: Int = 0
     val pattern: Int = 1
     val output: Int = 2

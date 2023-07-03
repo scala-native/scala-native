@@ -1,4 +1,6 @@
-#include "MemoryMap.h"
+// MemoryMap.c is used by all GCs and Zone
+
+#include "shared/MemoryMap.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -47,6 +49,14 @@ word_t *memoryMap(size_t memorySize) {
 #endif
 }
 
+int memoryUnmap(void *address, size_t memorySize) {
+#ifdef _WIN32
+    return VirtualFree(address, memorySize, MEM_RELEASE);
+#else // Unix
+    return munmap(address, memorySize);
+#endif
+}
+
 word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
 #ifdef _WIN32
     // No special pre-alloc support on Windows is needed
@@ -73,5 +83,45 @@ bool memoryCommit(void *ref, size_t memorySize) {
 #else
     // No need for committing on UNIX
     return true;
+#endif
+}
+
+#include <stdio.h>
+#include <stdlib.h>
+
+static void exitWithOutOfMemory() {
+    fprintf(stderr, "Out of heap space\n");
+    exit(1);
+}
+
+word_t *memoryMapOrExitOnError(size_t memorySize) {
+    word_t *memory = memoryMap(memorySize);
+    if (memory == NULL) {
+        exitWithOutOfMemory();
+    }
+#ifdef _WIN32
+    if (!memoryCommit(memory, memorySize)) {
+        exitWithOutOfMemory();
+    };
+#endif // _WIN32
+    return memory;
+}
+
+static void exitWithFailToUnmapMemory() {
+    fprintf(stderr, "Fail to unmap memory.\n");
+    exit(1);
+}
+
+void memoryUnmapOrExitOnError(void *address, size_t memorySize) {
+#ifdef _WIN32
+    bool succeeded = memoryUnmap(address, memorySize);
+    if (!succeeded) {
+        exitWithFailToUnmapMemory();
+    }
+#else // Unix
+    int ret = memoryUnmap(address, memorySize);
+    if (ret != 0) {
+        exitWithFailToUnmapMemory();
+    }
 #endif
 }

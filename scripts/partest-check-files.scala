@@ -1,21 +1,30 @@
 //> using scala "3"
-//> using lib "com.lihaoyi::os-lib:0.8.1"
+//> using lib "com.lihaoyi::os-lib:0.9.1"
 
 import java.io.File
 import os._
+
+val partestSourcesDirs = pwd / "scala-partest" / "fetchedSources"
 
 /** Tool used to check integrity of files defined in partest tests and thoose
  *  actually defined in Scala (partest) repository. It allows to check which
  *  blacklisted files are not existing and can suggest correct blacklisted item
  *  name. Also checks for duplicates in blacklisted items
  */
-@main def checkFiles(scalaVersion: String) = {
+@main def checkAllFiles() =
+  os
+    .list(partestSourcesDirs)
+    .ensuring(_.nonEmpty, "Not found any Scala sources directories")
+    .map(_.last)
+    .foreach(checkFiles)
+
+def checkFiles(scalaVersion: String): Unit = {
+  println(s"Checking $scalaVersion")
   val partestTestsDir = pwd / "scala-partest-tests" /
     RelPath("src/test/resources") /
     RelPath("scala/tools/partest/scalanative") / scalaVersion
 
-  val partestSourcesDir =
-    pwd / "scala-partest" / "fetchedSources" / scalaVersion
+  val partestSourcesDir = partestSourcesDirs / scalaVersion
   val testFiles = partestSourcesDir / "test" / "files"
 
   def showRelPath(p: os.Path): String =

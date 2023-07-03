@@ -7,24 +7,10 @@ import scalanative.linker._
 import scalanative.util.partitionBy
 import scalanative.compat.CompatParColls.Converters._
 
-final class Check(implicit linked: linker.Result) {
+sealed abstract class NIRCheck(implicit linked: linker.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]
-
-  val labels = mutable.Map.empty[Local, Seq[Type]]
-  val env = mutable.Map.empty[Local, Type]
-
   var name: Global = Global.None
-  var retty: Type = Type.Unit
   var ctx: List[String] = Nil
-
-  def in[T](entry: String)(f: => T): T = {
-    try {
-      ctx = entry :: ctx
-      f
-    } finally {
-      ctx = ctx.tail
-    }
-  }
 
   def ok: Unit = ()
 
@@ -46,13 +32,63 @@ final class Check(implicit linked: linker.Result) {
     }
 
   def checkInfo(info: Info): Unit = info match {
-    case meth: Method =>
-      checkMethod(meth)
-    case _ =>
-      ok
+    case meth: Method => checkMethod(meth)
+    case _            => ok
   }
 
-  def checkMethod(meth: Method): Unit = {
+  def checkMethod(meth: Method): Unit
+
+  final protected def checkFieldOp(op: Op.Field): Unit = {
+    val Op.Field(obj, name) = op
+    obj.ty match {
+      case ScopeRef(scope) =>
+        scope.implementors.foreach { cls =>
+          if (cls.fields.exists(_.name == name)) ok
+          else error(s"can't acces field '${name.show}' in ${cls.name.show}")
+        }
+      case ty => error(s"can't access fields of a non-class type ${ty.show}")
+    }
+  }
+
+  final protected def checkMethodOp(op: Op.Method): Unit = {
+    val Op.Method(obj, sig) = op
+    expect(Rt.Object, obj)
+    sig match {
+      case sig if sig.isMethod || sig.isCtor || sig.isGenerated => ok
+      case _ => error(s"method must take a method signature, not ${sig.show}")
+    }
+
+    def checkCallable(cls: Class): Unit =
+      if (cls.allocated && cls.resolve(sig).isEmpty) {
+        error(s"can't call ${sig.show} on ${cls.name.show}")
+      }
+
+    obj.ty match {
+      case Type.Null => ok
+      case ScopeRef(info) if sig.isVirtual =>
+        info.implementors.foreach(checkCallable)
+      case ClassRef(info) =>
+        checkCallable(info)
+      case ty => error(s"can't resolve method on ${ty.show}")
+    }
+  }
+}
+
+final class Check(implicit linked: linker.Result) extends NIRCheck {
+  val labels = mutable.Map.empty[Local, Seq[Type]]
+  val env = mutable.Map.empty[Local, Type]
+
+  var retty: Type = Type.Unit
+
+  def in[T](entry: String)(f: => T): T = {
+    try {
+      ctx = entry :: ctx
+      f
+    } finally {
+      ctx = ctx.tail
+    }
+  }
+  override def checkMethod(meth: Method): Unit = {
     val Type.Function(_, methRetty) = meth.ty: @unchecked
     retty = methRetty
 
@@ -174,7 +210,7 @@ final class Check(implicit linked: linker.Result) {
     case Op.Conv(conv, ty, value) =>
       checkConvOp(conv, ty, value)
     case Op.Fence(_) => ok
-    case Op.Classalloc(name) =>
+    case Op.Classalloc(name, zone) =>
       linked.infos
         .get(name)
         .fold {
@@ -193,47 +229,14 @@ final class Check(implicit linked: linker.Result) {
           case _ =>
             error(s"can't instantiate ${name.show} with clasalloc")
         }
+      zone.foreach(checkZone)
+
     case Op.Fieldload(ty, obj, name) =>
       checkFieldOp(ty, obj, name, None)
     case Op.Fieldstore(ty, obj, name, value) =>
       checkFieldOp(ty, obj, name, Some(value))
-    case Op.Field(obj, name) =>
-      obj.ty match {
-        case ScopeRef(scope) =>
-          scope.implementors.foreach { cls =>
-            if (cls.fields.exists(_.name == name)) ok
-            else error(s"can't acces field '${name.show}' in ${cls.name.show}")
-          }
-        case ty =>
-          error(s"can't access fields of a non-class type ${ty.show}")
-      }
-    case Op.Method(obj, sig) =>
-      expect(Rt.Object, obj)
-      sig match {
-        case sig if sig.isMethod || sig.isCtor || sig.isGenerated =>
-          ok
-        case _ =>
-          error(s"method must take a method signature, not ${sig.show}")
-      }
-
-      def checkCallable(cls: Class): Unit = {
-        if (cls.allocated) {
-          if (cls.resolve(sig).isEmpty) {
-            error(s"can't call ${sig.show} on ${cls.name.show}")
-          }
-        }
-      }
-
-      obj.ty match {
-        case Type.Null =>
-          ok
-        case ScopeRef(info) if sig.isVirtual =>
-          info.implementors.foreach(checkCallable)
-        case ClassRef(info) =>
-          checkCallable(info)
-        case ty =>
-          error(s"can't resolve method on ${ty.show}")
-      }
+    case op: Op.Field  => checkFieldOp(op)
+    case op: Op.Method => checkMethodOp(op)
     case Op.Dynmethod(obj, sig) =>
       expect(Rt.Object, obj)
       sig match {
@@ -327,7 +330,7 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"can't varstore into non-var ${slot.show}")
       }
-    case Op.Arrayalloc(ty, init) =>
+    case Op.Arrayalloc(ty, init, zone) =>
       init match {
         case v if v.ty == Type.Int =>
           ok
@@ -336,6 +339,7 @@ final class Check(implicit linked: linker.Result) {
         case _ =>
           error(s"can't initialize array with ${init.show}")
       }
+      zone.foreach(checkZone)
     case Op.Arrayload(ty, arr, idx) =>
       val arrty = Type.Ref(Type.toArrayClass(ty))
       expect(arrty, arr)
@@ -347,6 +351,16 @@ final class Check(implicit linked: linker.Result) {
       expect(ty, value)
     case Op.Arraylength(arr) =>
       expect(Rt.GenericArray, arr)
+  }
+
+  def checkZone(zone: Val): Unit = zone match {
+    case Val.Null | Val.Unit =>
+      error(s"zone defined with null or unit")
+    case v =>
+      v.ty match {
+        case Type.Ptr | _: Type.RefKind => ()
+        case _ => error(s"zone defind with non reference type")
+      }
   }
 
   def checkAggregateOp(
@@ -707,18 +721,43 @@ final class Check(implicit linked: linker.Result) {
   }
 }
 
+final class QuickCheck(implicit linked: linker.Result) extends NIRCheck {
+  override def checkMethod(meth: Method): Unit = {
+    meth.insts.foreach(checkInst)
+  }
+
+  def checkInst(inst: Inst): Unit = inst match {
+    case Inst.Let(_, op, _) => checkOp(op)
+    case _                  => ok
+  }
+
+  def checkOp(op: Op): Unit = op match {
+    case op: Op.Field  => checkFieldOp(op)
+    case op: Op.Method => checkMethodOp(op)
+    case _             => ok
+  }
+
+}
+
 object Check {
   final case class Error(name: Global, ctx: List[String], msg: String)
 
-  def apply(linked: linker.Result): Seq[Error] =
+  private def run(
+      checkImpl: linker.Result => NIRCheck
+  )(linked: linker.Result): Seq[Error] =
     partitionBy(linked.infos.values.toSeq)(_.name).par
       .map {
         case (_, infos) =>
-          val check = new Check()(linked)
+          val check = checkImpl(linked)
           check.run(infos)
           check.errors
       }
       .seq
       .flatten
       .toSeq
+
+  def apply(linked: linker.Result): Seq[Error] =
+    run(new Check()(_))(linked)
+  def quick(linked: linker.Result): Seq[Error] =
+    run(new QuickCheck()(_))(linked)
 }

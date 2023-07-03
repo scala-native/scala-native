@@ -1,11 +1,11 @@
-#include <ScalaNativeGC.h>
-#include "GCTypes.h"
+#include "shared/ScalaNativeGC.h"
+#include "shared/GCTypes.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "State.h"
-#include "Safepoint.h"
+#include "shared/Safepoint.h"
 #include <stdatomic.h>
-#include <ThreadUtil.h>
+#include "shared/ThreadUtil.h"
 #include <setjmp.h>
 
 #ifndef MUTATOR_THREAD_H

@@ -1,7 +1,7 @@
 #ifndef IMMIX_ALLOCATOR_H
 #define IMMIX_ALLOCATOR_H
 
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include <stddef.h>
 #include "datastructures/BlockList.h"
 #include "datastructures/Bytemap.h"

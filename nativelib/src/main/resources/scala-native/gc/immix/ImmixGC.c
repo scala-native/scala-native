@@ -1,19 +1,21 @@
-#include <ScalaNativeGC.h>
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "GCTypes.h"
+#include "shared/GCScalaNative.h"
+#include "shared/GCTypes.h"
 #include "Heap.h"
 #include "datastructures/Stack.h"
 #include "Marker.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Object.h"
 #include "State.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/utils/MathUtils.h"
 #include "Constants.h"
 #include "Settings.h"
 #include "WeakRefStack.h"
-#include "Parsing.h"
+#include "shared/Parsing.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "Synchronizer.h"
 #endif
@@ -146,3 +148,14 @@ void scalanative_gc_set_mutator_thread_state(MutatorThreadState state) {
 void scalanative_gc_safepoint_poll() {
     void *pollGC = *scalanative_gc_safepoint;
 }
+
+void scalanative_add_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_Add(&roots, range);
+}
+
+void scalanative_remove_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_RemoveByRange(&roots, range);
+}
+#endif

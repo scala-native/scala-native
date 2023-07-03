@@ -4,7 +4,8 @@ package build
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
-import scala.scalanative.codegen.CodeGen
+import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._
@@ -17,6 +18,7 @@ private[scalanative] object ScalaNative {
   /** Compute all globals that must be reachable based on given configuration.
    */
   def entries(config: Config): Seq[Global] = {
+    implicit val platform: PlatformInfo = PlatformInfo(config)
     val entry = encodedMainClass(config).map(_.member(Rt.ScalaMainSig))
     val dependencies = CodeGen.depends ++ Interflow.depends
     entry ++: dependencies
@@ -29,7 +31,7 @@ private[scalanative] object ScalaNative {
       scope: Scope
   ): linker.Result =
     dump(config, "linked") {
-      check(config) {
+      check(config, forceQuickCheck = true) {
         val mtSupport = config.compilerConfig.multithreadingSupport.toString()
         val linkingMsg = s"Linking (multithreading ${mtSupport})"
         config.logger.time(linkingMsg)(Link(config, entries))
@@ -105,64 +107,70 @@ private[scalanative] object ScalaNative {
   /** Run NIR checker on the linker result. */
   def check(
       config: Config
+  )(linked: scalanative.linker.Result): scalanative.linker.Result =
+    check(config, forceQuickCheck = false)(linked)
+
+  private def check(
+      config: Config,
+      forceQuickCheck: Boolean
   )(linked: scalanative.linker.Result): scalanative.linker.Result = {
-    if (config.check) {
-      config.logger.time("Checking intermediate code") {
-        def warn(s: String) =
-          if (config.compilerConfig.checkFatalWarnings) config.logger.error(s)
-          else config.logger.warn(s)
-        val errors = Check(linked)
+    val performFullCheck = config.check
+    val checkMode = if (performFullCheck) "full" else "quick"
+    if (config.check || forceQuickCheck) {
+      config.logger.time(s"Checking intermediate code ($checkMode)") {
+        val fatalWarnings = config.compilerConfig.checkFatalWarnings
+        val errors =
+          if (performFullCheck) Check(linked)
+          else Check.quick(linked)
         if (errors.nonEmpty) {
-          val grouped =
-            mutable.Map.empty[Global, mutable.UnrolledBuffer[Check.Error]]
-          errors.foreach { err =>
-            val errs =
-              grouped.getOrElseUpdate(err.name, mutable.UnrolledBuffer.empty)
-            errs += err
-          }
-          grouped.foreach {
-            case (name, errs) =>
-              warn("")
-              warn(s"Found ${errs.length} errors on ${name.show} :")
-              warn("")
-              linked.defns
-                .collectFirst {
-                  case defn if defn != null && defn.name == name => defn
-                }
-                .foreach { defn =>
-                  val str = defn.show
-                  val lines = str.split("\n")
-                  lines.zipWithIndex.foreach {
-                    case (line, idx) =>
-                      warn(
-                        String
-                          .format(
-                            "  %04d  ",
-                            java.lang.Integer.valueOf(idx)
-                          ) + line
-                      )
-                  }
-                }
-              warn("")
-              errs.foreach { err =>
-                warn("  in " + err.ctx.reverse.mkString(" / ") + " : ")
-                warn("    " + err.msg)
-              }
-
-          }
-          warn("")
-          warn(s"${errors.size} errors found")
-
-          if (config.compilerConfig.checkFatalWarnings) {
+          showErrors(
+            log =
+              if (fatalWarnings) config.logger.error(_)
+              else config.logger.warn(_),
+            showContext = performFullCheck
+          )(errors, linked)
+          if (fatalWarnings)
             throw new BuildException(
               "Fatal warning(s) found; see the error output for details."
             )
-          }
         }
       }
     }
 
     linked
+  }
+
+  private def showErrors(
+      log: String => Unit,
+      showContext: Boolean
+  )(errors: Seq[Check.Error], linked: linker.Result): Unit = {
+    errors
+      .groupBy(_.name)
+      .foreach {
+        case (name, errs) =>
+          log(s"\nFound ${errs.length} errors on ${name.show} :")
+          def showError(err: Check.Error): Unit = log("    " + err.msg)
+          if (showContext) {
+            linked.defns
+              .collectFirst {
+                case defn if defn != null && defn.name == name => defn
+              }
+              .foreach { defn =>
+                val str = defn.show
+                val lines = str.split("\n")
+                lines.zipWithIndex.foreach {
+                  case (line, idx) =>
+                    log(String.format("  %04d  ", Integer.valueOf(idx)) + line)
+                }
+              }
+            log("")
+            errs.foreach { err =>
+              log("  in " + err.ctx.reverse.mkString(" / ") + " : ")
+              showError(err)
+            }
+          } else errs.foreach(showError)
+      }
+    log(s"\n${errors.size} errors found")
   }
 
   def dump(config: Config, phase: String)(

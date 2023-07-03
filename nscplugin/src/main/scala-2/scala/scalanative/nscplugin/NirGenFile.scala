@@ -6,6 +6,7 @@ import java.nio.file.{Path, Paths}
 import scala.scalanative.nir.serialization.serializeBinary
 import scala.tools.nsc.Global
 import scala.tools.nsc.io.AbstractFile
+import java.nio.channels.Channels
 
 trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
@@ -26,8 +27,8 @@ trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
   }
 
   def genIRFile(path: AbstractFile, defns: Seq[nir.Defn]): Unit = {
-    val outStream = path.bufferedOutput
-    try serializeBinary(defns, outStream)
-    finally outStream.close()
+    val channel = Channels.newChannel(path.bufferedOutput)
+    try serializeBinary(defns, channel)
+    finally channel.close()
   }
 }

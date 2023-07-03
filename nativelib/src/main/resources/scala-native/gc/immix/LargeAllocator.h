@@ -2,9 +2,9 @@
 #define IMMIX_LARGEALLOCATOR_H
 
 #include "datastructures/Bytemap.h"
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include "Constants.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/headers/ObjectHeader.h"
 #include "BlockAllocator.h"
 
 #define FREE_LIST_COUNT                                                        \

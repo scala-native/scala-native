@@ -1,6 +1,8 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "BlockAllocator.h"
-#include "Log.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/utils/MathUtils.h"
 #include <stdio.h>
 #include "Heap.h"
 
@@ -422,3 +424,5 @@ void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
                                    SWEEP_RESERVE_BLOCKS);
     }
 }
+
+#endif

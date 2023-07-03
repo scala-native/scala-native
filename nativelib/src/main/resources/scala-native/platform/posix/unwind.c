@@ -1,11 +1,8 @@
 // Unwind implementation used only on Posix compliant systems
-#include <stdio.h>
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include "../unwind.h"
 #include "libunwind/libunwind.h"
-#include "stdbool.h"
-#include "libunwind/config.h"
 
 int scalanative_unwind_get_context(void *context) {
     return unw_getcontext((unw_context_t *)context);
@@ -21,7 +18,6 @@ int scalanative_unwind_step(void *cursor) {
 
 int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
                                      void *offset) {
-
     return unw_get_proc_name((unw_cursor_t *)cursor, buffer, length,
                              (unw_word_t *)offset);
 }

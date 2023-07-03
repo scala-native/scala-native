@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
         with:
-          scala-version: "2.13.10" #Unused, any version can be placed here
+          scala-version: "2.13" #Unused, any version can be placed here
           java-version: 8
 
       - name: Setup PGP Key
@@ -38,4 +38,4 @@ jobs:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-        run: sbt "-v" "-no-colors" "-J-Xmx5G" "publishRelease"
+        run: sbt "-v" "-J-Xmx5G" "publishRelease"

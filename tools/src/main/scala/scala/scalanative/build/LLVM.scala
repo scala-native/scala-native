@@ -80,11 +80,8 @@ private[scalanative] object LLVM {
       } else Seq("-std=gnu11")
     }
     val platformFlags = {
-      if (config.targetsWindows) {
-        val common = Seq("-g") // needed for debug symbols in stack traces
-        val optional = if (config.targetsMsys) msysExtras else Nil
-        common ++ optional
-      } else Nil
+      if (config.targetsMsys) msysExtras
+      else Nil
     }
 
     val configFlags = {
@@ -96,9 +93,15 @@ private[scalanative] object LLVM {
       val opt = if (isCpp) List("-fcxx-exceptions") else Nil
       List("-fexceptions", "-funwind-tables") ::: opt
     }
+    // Always generate debug metadata on Windows, it's required for stack traces to work
+    val debugFlags =
+      if (config.compilerConfig.debugMetadata || config.targetsWindows)
+        Seq("-g")
+      else Nil
+
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ asan ++ target ++
-        stdflag ++ platformFlags ++ exceptionsHandling ++
+        stdflag ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         config.compileOptions
     val compilec: Seq[String] =
@@ -187,6 +190,10 @@ private[scalanative] object LLVM {
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
     val flags = {
+      val debugFlags =
+        if (config.compilerConfig.debugMetadata || config.targetsWindows)
+          Seq("-g")
+        else Nil
       val platformFlags =
         if (!config.targetsWindows) Nil
         else {
@@ -198,10 +205,10 @@ private[scalanative] object LLVM {
             case LTO.None => Nil
             case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
           }
-          Seq("-g") ++ ltoSupport
+          ltoSupport
         }
       val output = Seq("-o", config.buildPath.abs)
-      buildTargetLinkOpts ++ flto ++ platformFlags ++ output ++ asan ++ target
+      buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ output ++ asan ++ target
     }
     val paths = objectsPaths.map(_.abs)
     // it's a fix for passing too many file paths to the clang compiler,

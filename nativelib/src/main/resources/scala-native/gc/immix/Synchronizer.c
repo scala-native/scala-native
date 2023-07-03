@@ -1,15 +1,17 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include "Synchronizer.h"
-#include "ScalaNativeGC.h"
+#include "shared/ScalaNativeGC.h"
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <errno.h>
 
 #include "State.h"
-#include "ThreadUtil.h"
-#include "Safepoint.h"
+#include "shared/ThreadUtil.h"
+#include "shared/Safepoint.h"
 #include "MutatorThread.h"
-#include "StackTrace.h"
+#include "immix_commix/StackTrace.h"
 
 #ifdef _WIN32
 #include <errhandlingapi.h>
@@ -202,3 +204,5 @@ void Synchronizer_release() {
     MutatorThreads_unlock();
     mutex_unlock(&synchronizerLock);
 }
+
+#endif

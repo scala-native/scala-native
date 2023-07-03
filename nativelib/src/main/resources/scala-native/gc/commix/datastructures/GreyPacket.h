@@ -5,11 +5,11 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "../Constants.h"
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include "BlockRange.h"
-#include "Log.h"
-#include "headers/ObjectHeader.h"
-#include "UInt24.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/headers/ObjectHeader.h"
+#include "immix_commix/UInt24.h"
 
 typedef Object *Stack_Type;
 

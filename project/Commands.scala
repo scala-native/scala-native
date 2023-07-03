@@ -9,6 +9,7 @@ import ScriptedPlugin.autoImport._
 object Commands {
   lazy val values = Seq(
     testAll,
+    testSandboxGC,
     testTools,
     testRuntime,
     testMima,
@@ -23,6 +24,20 @@ object Commands {
       "test-runtime" ::
       "test-scripted" ::
       "publish-local-dev" :: _
+  }
+
+  lazy val testSandboxGC = projectVersionCommand("test-sandbox-gc") {
+    case (version, state) =>
+      val runs =
+        List(sandbox)
+          .map(_.forBinaryVersion(version).id)
+          .flatMap(id =>
+            List("none", "boehm", "immix", "commix").map(gc =>
+              s"set ThisBuild / nativeConfig ~= (_.withGC(scala.scalanative.build.GC.$gc)); $id/run"
+            )
+          )
+      runs :::
+        state
   }
 
   lazy val testRuntime = projectVersionCommand("test-runtime") {
@@ -70,9 +85,12 @@ object Commands {
   lazy val testScripted = Command.args("test-scripted", "<args>") {
     case (state, args) =>
       val version = args.headOption
+        .flatMap(MultiScalaProject.scalaVersions.get)
         .orElse(state.getSetting(scalaVersion))
         .getOrElse(
-          "Used command needs explicit Scala version as an argument"
+          sys.error(
+            "Used command needs explicit Scala version as an argument"
+          )
         )
       val setScriptedLaunchOpts =
         s"""set sbtScalaNative/scriptedLaunchOpts := {

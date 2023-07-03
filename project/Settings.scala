@@ -16,6 +16,9 @@ import com.jsuereth.sbtpgp.PgpKeys
 import scala.collection.mutable
 import scala.scalanative.build.Platform
 import Build.{crossPublish, crossPublishSigned}
+import MyScalaNativePlugin.isGeneratingForIDE
+
+import java.io.File
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -444,16 +447,58 @@ object Settings {
     def unmanagedSources(baseDirectory: File, dir: String) = baseDirectory
       .getParentFile()
       .getParentFile() / s"test-interface-common/src/$dir/scala"
+    def setSourceDirectory(scope: Configuration, dirName: String) =
+      scope / unmanagedSourceDirectories += unmanagedSources(
+        baseDirectory.value,
+        dirName
+      )
 
     Def.settings(
-      Compile / unmanagedSourceDirectories += unmanagedSources(
-        baseDirectory.value,
-        "main"
-      ),
-      Test / unmanagedSourceDirectories += unmanagedSources(
-        baseDirectory.value,
-        "test"
-      )
+      setSourceDirectory(Compile, "main"),
+      setSourceDirectory(Test, "test")
+    )
+  }
+
+  lazy val experimentalScalaSources: Seq[Setting[_]] = {
+    val baseDir = "scala-next"
+    def setSourceDirectory(scope: Configuration) = Def.settings(
+      // scope / unmanagedSourceDirectories += (scope / sourceDirectory).value / baseDir,
+      scope / unmanagedSources := {
+        val log = streams.value.log
+        val previous = (scope / unmanagedSources).value
+        val sourcesDir = (scope / sourceDirectory).value
+        val experimentalSources = allScalaFromDir(sourcesDir / baseDir).toMap
+
+        val updatedSources = previous.map { f =>
+          val replacement = for {
+            relPath <- f.relativeTo(sourcesDir)
+            sourceDir = relPath.toPath().getName(0).toString()
+            normalizedPath <- f.relativeTo(sourcesDir / sourceDir)
+            experimentalSource <- experimentalSources.get(
+              normalizedPath.toString().replace(File.separatorChar, '/')
+            )
+            _ = log.info(
+              s"Replacing source $relPath with experimental $baseDir/$normalizedPath in module ${thisProject.value.id}"
+            )
+          } yield experimentalSource
+          replacement.getOrElse(f)
+        }
+        val newSources = experimentalSources.values.toList.diff(updatedSources)
+        updatedSources ++ newSources
+      },
+      // Adjustment for bloopInstall which tries to add whole source directory leading to double definitions
+      scope / sourceDirectories --= {
+        val sourcesDir = (scope / sourceDirectory).value
+        lazy val experimentalSources = allScalaFromDir(sourcesDir / baseDir)
+        if (isGeneratingForIDE && experimentalSources.nonEmpty)
+          Seq((scope / scalaSource).value)
+        else Nil
+      }
+    )
+
+    Def.settings(
+      setSourceDirectory(Compile),
+      setSourceDirectory(Test)
     )
   }
 
@@ -537,18 +582,7 @@ object Settings {
   )
 
   lazy val commonJavalibSettings = Def.settings(
-    // This is required to have incremental compilation to work in javalib.
-    // We put our classes on scalac's `javabootclasspath` so that it uses them
-    // when compiling rather than the definitions from the JDK.
     recompileAllOrNothingSettings,
-    Compile / scalacOptions := {
-      val previous = (Compile / scalacOptions).value
-      val javaBootClasspath =
-        scala.tools.util.PathResolver.Environment.javaBootClassPath
-      val classDir = (Compile / classDirectory).value.getAbsolutePath
-      val separator = sys.props("path.separator")
-      "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
-    },
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
@@ -855,7 +889,8 @@ object Settings {
   }
 
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
-    options.map(opt => s"-P:scalanative:$opt")
+    if (isGeneratingForIDE) Nil
+    else options.map(opt => s"-P:scalanative:$opt")
   }
 
   def scalaNativeMapSourceURIOption(

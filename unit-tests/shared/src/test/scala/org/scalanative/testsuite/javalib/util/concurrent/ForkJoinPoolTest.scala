@@ -408,7 +408,11 @@ class ForkJoinPoolTest extends JSR166Test {
    */
   @Test def testSubmitNullCallable(): Unit =
     usingPoolCleaner(new ForkJoinPool(1)) { (e: ExecutorService) =>
-      assertThrows(classOf[NullPointerException], e.submit(null: Callable[_]))
+      val callable: Callable[_] = null
+      assertThrows(
+        classOf[NullPointerException],
+        e.submit(callable)
+      )
     }
 
   /** submit(callable).get() throws InterruptedException if interrupted

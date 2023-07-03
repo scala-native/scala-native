@@ -142,7 +142,12 @@ final class MergeProcessor(
                     }
                   }
                   mergeHeap(addr) = EscapedInstance(mergePhi(values, None))
-                case VirtualInstance(headKind, headCls, headValues) =>
+                case VirtualInstance(
+                      headKind,
+                      headCls,
+                      headValues,
+                      headZoneHandle
+                    ) =>
                   val mergeValues = headValues.zipWithIndex.map {
                     case (_, idx) =>
                       val values = states.map { state =>
@@ -159,8 +164,12 @@ final class MergeProcessor(
 
                       mergePhi(values, bound)
                   }
-                  mergeHeap(addr) =
-                    VirtualInstance(headKind, headCls, mergeValues)
+                  mergeHeap(addr) = VirtualInstance(
+                    headKind,
+                    headCls,
+                    mergeValues,
+                    headZoneHandle
+                  )
                 case DelayedInstance(op) =>
                   assert(
                     states.forall(s => s.derefDelayed(addr).delayedOp == op)

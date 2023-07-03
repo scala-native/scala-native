@@ -1,7 +1,7 @@
 #ifndef IMMIX_HEAP_H
 #define IMMIX_HEAP_H
 
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include "datastructures/Bytemap.h"
 #include "datastructures/BlockRange.h"
 #include "datastructures/GreyPacket.h"
@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdbool.h>
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 #include <fcntl.h>
 
 typedef struct {

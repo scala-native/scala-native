@@ -92,7 +92,9 @@ object NirPrimitives {
   final val REFLECT_SELECTABLE_SELECTDYN = ALIGNMENT_OF + 1
   final val REFLECT_SELECTABLE_APPLYDYN = REFLECT_SELECTABLE_SELECTDYN + 1
 
-  final val LastNirPrimitiveCode = REFLECT_SELECTABLE_APPLYDYN
+  final val SAFEZONE_ALLOC = 1 + REFLECT_SELECTABLE_APPLYDYN
+
+  final val LastNirPrimitiveCode = SAFEZONE_ALLOC
 
   def isNirPrimitive(code: Int): Boolean =
     code >= FirstNirPrimitiveCode && code <= LastNirPrimitiveCode
@@ -217,6 +219,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       defnNir.ReflectSelectable_applyDynamic,
       REFLECT_SELECTABLE_APPLYDYN
     )
+    defnNir.RuntimeSafeZoneAllocator_allocate.foreach(addPrimitive(_, SAFEZONE_ALLOC))
     primitives
   }
 }

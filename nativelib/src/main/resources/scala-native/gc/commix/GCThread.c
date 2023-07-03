@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "GCThread.h"
 #include "Constants.h"
 #include "Sweeper.h"
@@ -248,3 +250,5 @@ void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets) {
         }
     }
 }
+
+#endif

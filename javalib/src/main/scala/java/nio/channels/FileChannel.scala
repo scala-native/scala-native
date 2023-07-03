@@ -90,17 +90,20 @@ object FileChannel {
   ): FileChannel = {
     import StandardOpenOption._
 
-    if (options.contains(APPEND) && options.contains(TRUNCATE_EXISTING)) {
-      throw new IllegalArgumentException(
-        "APPEND + TRUNCATE_EXISTING not allowed"
-      )
-    }
+    val appending = options.contains(APPEND)
+    val writing = options.contains(WRITE) || appending
 
-    if (options.contains(APPEND) && options.contains(READ)) {
-      throw new IllegalArgumentException("APPEND + READ not allowed")
-    }
+    if (appending) {
+      if (options.contains(TRUNCATE_EXISTING)) {
+        throw new IllegalArgumentException(
+          "APPEND + TRUNCATE_EXISTING not allowed"
+        )
+      }
 
-    val writing = options.contains(WRITE) || options.contains(APPEND)
+      if (options.contains(READ)) {
+        throw new IllegalArgumentException("READ + APPEND not allowed")
+      }
+    }
 
     val mode = new StringBuilder("r")
     if (writing) mode.append("w")
@@ -127,13 +130,8 @@ object FileChannel {
     val raf = tryRandomAccessFile(path.toString, mode.toString)
 
     try {
-      if (writing && options.contains(TRUNCATE_EXISTING)) {
+      if (writing && options.contains(TRUNCATE_EXISTING))
         raf.setLength(0L)
-      }
-
-      if (writing && options.contains(APPEND)) {
-        raf.seek(raf.length())
-      }
 
       new FileChannelImpl(
         raf.getFD(),
@@ -141,7 +139,8 @@ object FileChannel {
         deleteFileOnClose =
           options.contains(StandardOpenOption.DELETE_ON_CLOSE),
         openForReading = true,
-        openForWriting = writing
+        openForWriting = writing,
+        openForAppending = appending
       )
     } catch {
       case e: Throwable =>

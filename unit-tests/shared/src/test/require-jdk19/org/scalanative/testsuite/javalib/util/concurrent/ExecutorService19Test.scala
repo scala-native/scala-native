@@ -61,7 +61,13 @@ class ExecutorService19Test extends JSR166Test {
     val future = executor.submit { () => null }
     awaitDone(future)
     assertEquals(SUCCESS, future.state())
-    assertEquals(null, future.resultNow())
+
+    /* Original Scala Native translation of Doug Lea Java code causes, for
+     * some unknown reason, a deprecation warning in testsJVM3. It is
+     * hard_to_evoke/not_seen using tests3.
+     * //  assertEquals(null, future.resultNow()) // Doug Lea original code.
+     */
+    assertNull("SN expected null result", future.resultNow()) // Scala Native
     assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
   }
 

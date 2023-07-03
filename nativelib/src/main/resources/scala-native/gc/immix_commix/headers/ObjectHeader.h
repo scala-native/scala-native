@@ -5,13 +5,14 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "../CommonConstants.h"
-#include "../Log.h"
-#include "../utils/MathUtils.h"
-#include "GCTypes.h"
+#include "immix_commix/CommonConstants.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/utils/MathUtils.h"
+#include "shared/GCTypes.h"
 
 extern int __object_array_id;
-extern int __weak_ref_id;
+extern int __weak_ref_ids_min;
+extern int __weak_ref_ids_max;
 extern int __weak_ref_field_offset;
 extern int __array_ids_min;
 extern int __array_ids_max;
@@ -86,7 +87,8 @@ static inline size_t Object_Size(Object *object) {
 }
 
 static inline bool Object_IsWeakReference(Object *object) {
-    return object->rtti->rt.id == __weak_ref_id;
+    int32_t id = object->rtti->rt.id;
+    return __weak_ref_ids_min <= id && id <= __weak_ref_ids_max;
 }
 
 static inline bool Object_IsReferantOfWeakReference(Object *object,

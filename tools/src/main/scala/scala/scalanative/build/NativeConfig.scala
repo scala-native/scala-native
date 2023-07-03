@@ -75,8 +75,7 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
-  /** Should we add LLVM metadata to the binary artifacts?
-   */
+  /** Should we add LLVM metadata to the binary artifacts? */
   def debugMetadata: Boolean
 
   private[scalanative] lazy val configuredOrDetectedTriple =

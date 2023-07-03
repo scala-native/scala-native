@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - 0.4.x
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
@@ -78,11 +77,13 @@ jobs:
     name: Test runtime
     runs-on: ubuntu-22.04
     needs: build-image
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
         arch: [linux-arm64, linux-x86]
-        scala: [3.2.2]
+        scala: [3, 3-next]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -114,6 +115,14 @@ jobs:
             build-mode: release-fast
           - gc: boehm
             build-mode: release-size
+          - scala: 3-next
+            build-mode: debug
+          - scala: 3-next
+            lto: none
+          - scala: 3-next
+            gc: boehm
+          - scala: 3-next
+            gc: commix
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -124,7 +133,7 @@ jobs:
         with:
           path: /tmp/docker-registry
           key: docker-registry-${{ hashFiles('ci-docker/Dockerfile') }}-${{matrix.arch}}
-     
+
       - name: Prepare native config
         shell: bash
         # Following envs CROSS_ are always present in docker container
@@ -176,7 +185,7 @@ jobs:
       # Conditionally disable some of the tests (Scala 2 only)
       - name: Set filters for partests
         shell: bash
-        if: ${{ !startsWith(matrix.scala, '3.') }}
+        if: ${{ !startsWith(matrix.scala, '3') }}
         run: |
           ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
           echo "" >> ${ignoredTestsFile}
@@ -208,4 +217,4 @@ jobs:
           timeout_minutes: 180
           max_attempts: 2
           retry_on: error
-          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}" ${{ matrix.scala }} ${{env.project-version}}
+          command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}"

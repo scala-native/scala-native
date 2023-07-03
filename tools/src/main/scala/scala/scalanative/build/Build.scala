@@ -4,9 +4,42 @@ package build
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
 import scala.util.Try
+import java.nio.file.FileVisitOption
+import java.util.Optional
+import java.nio.file.attribute.FileTime
 
 /** Utility methods for building code using Scala Native. */
 object Build {
+
+  private var prevBuildInputCheckSum: Int = 0
+
+  /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
+   *  producing a native binary in the end, same as `build` method.
+   *
+   *  This method skips the whole build and link process if the input hasn't
+   *  changed from the previous build, and the previous build artifact is
+   *  available at Config#artifactPath.
+   *
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @return
+   *    [[Config#artifactPath]], the path to the resulting native binary.
+   */
+  def buildCached(config: Config)(implicit scope: Scope): Path = {
+    val inputHash = checkSum(config)
+    if (Files.exists(config.artifactPath) &&
+        prevBuildInputCheckSum == inputHash) {
+      config.logger.info(
+        "Build skipped: No changes detected in build configuration and class path contents since last build."
+      )
+      config.artifactPath
+    } else {
+      val output = build(config)
+      // Need to re-calculate the checksum because the content of `output` have changed.
+      prevBuildInputCheckSum = checkSum(config)
+      output
+    }
+  }
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
    *  producing a native binary in the end.
@@ -61,6 +94,8 @@ object Build {
       // validate Config
       val fconfig = Validator.validate(config)
 
+      config.logger.debug(config.toString())
+
       // find and link
       val linked = {
         val entries = ScalaNative.entries(fconfig)
@@ -71,8 +106,8 @@ object Build {
 
       // optimize and generate ll
       val generated = {
-        val optimized = ScalaNative.optimize(config, linked)
-        ScalaNative.codegen(config, optimized) ++:
+        val optimized = ScalaNative.optimize(fconfig, linked)
+        ScalaNative.codegen(fconfig, optimized) ++:
           ScalaNative.genBuildInfo(fconfig) // ident list may be empty
       }
 
@@ -108,6 +143,20 @@ object Build {
       }
     }
 
+  private def checkSum(config: Config): Int = {
+    // skip the whole nativeLink process if the followings are unchanged since the previous build
+    // - build configuration
+    // - class paths' mtime
+    // - the output native binary ('s mtime)
+    // Since the NIR code is shipped in jars, we should be able to detect the changes in NIRs.
+    // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
+    (
+      config,
+      config.classPath.map(getLatestMtime(_)),
+      getLastModified(config.artifactPath)
+    ).hashCode()
+  }
+
   /** Convenience method to combine finding and compiling native libaries.
    *
    *  @param config
@@ -135,5 +184,20 @@ object Build {
       Files.createDirectories(workDir)
     }
   }
+
+  private def getLastModified(path: Path): FileTime =
+    if (Files.exists(path))
+      Try(Files.getLastModifiedTime(path)).getOrElse(FileTime.fromMillis(0L))
+    else FileTime.fromMillis(0L)
+
+  /** Get the latest last modified time under the given path.
+   */
+  private def getLatestMtime(path: Path): Optional[FileTime] =
+    if (Files.exists(path))
+      Files
+        .walk(path, FileVisitOption.FOLLOW_LINKS)
+        .map[FileTime](getLastModified(_))
+        .max(_.compareTo(_))
+    else Optional.empty()
 
 }

@@ -4,6 +4,7 @@ import sbt._
 import Keys._
 import Def.SettingsDefinition
 import scala.language.implicitConversions
+import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
 
 final case class MultiScalaProject private (
     private val projects: Map[String, Project]
@@ -20,8 +21,15 @@ final case class MultiScalaProject private (
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3")
+  lazy val v3Next: Project = project("3-next")
+    .settings(
+      Settings.experimentalScalaSources,
+      Settings.noPublishSettings
+    )
 
-  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3)
+  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
+    if (enableExperimentalCompiler) Some(v3Next) else None
+  }
 
   def mapBinaryVersions(
       mapping: String => Project => Project
@@ -117,17 +125,22 @@ object MultiScalaProject {
   final val scalaCrossVersions = Map[String, Seq[String]](
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
-    "3" -> ScalaVersions.crossScala3
+    "3" -> ScalaVersions.crossScala3,
+    "3-next" -> Seq(ScalaVersions.scala3Nightly)
   )
 
   final val scalaVersions = Map[String, String](
     "2.12" -> ScalaVersions.scala212,
     "2.13" -> ScalaVersions.scala213,
-    "3" -> ScalaVersions.scala3
+    "3" -> ScalaVersions.scala3,
+    "3-next" -> ScalaVersions.scala3Nightly
   )
 
   private def projectID(id: String, major: String) =
-    id + major.replace('.', '_')
+    major match {
+      case "3-next" => id + "3_next"
+      case _        => id + major.replace('.', '_')
+    }
 
   def apply(id: String): MultiScalaProject =
     apply(id, file(id))
@@ -138,6 +151,10 @@ object MultiScalaProject {
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
+      val noIDEExportSettings =
+        if (major == ideScalaVersion) Nil
+        else NoIDEExport.noIDEExportSettings
+
       major -> Project(
         id = projectID(id, major),
         base = new File(base, "." + major)
@@ -145,7 +162,8 @@ object MultiScalaProject {
         Settings.commonSettings,
         name := Settings.projectName(id),
         scalaVersion := scalaVersions(major),
-        crossScalaVersions := minors
+        crossScalaVersions := minors,
+        noIDEExportSettings
       )
     }
 

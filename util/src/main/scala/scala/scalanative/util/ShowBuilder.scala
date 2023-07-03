@@ -7,22 +7,31 @@ sealed trait ShowBuilder {
   protected def out: Appendable
   private var indentation = 0
 
+  def str(v: Char): Unit = out.append(v)
+  def str(v: CharSequence): Unit = out.append(v)
   def str(value: Any): Unit =
     out.append(value.toString)
+
+  def quoted(v: CharSequence): Unit = {
+    out.append('"')
+    out.append(v)
+    out.append('"')
+  }
 
   def line(value: Any): Unit = {
     str(value)
     newline()
   }
 
-  def rep[T](values: Seq[T], sep: String = "")(f: T => Unit): Unit =
-    if (values.nonEmpty) {
-      values.init.foreach { value =>
-        f(value)
-        str(sep)
-      }
-      f(values.last)
+  def rep[T](values: Iterable[T], sep: String = "")(f: T => Unit): Unit = {
+    val it = values.iterator
+    if (it.hasNext) {
+      while ({
+        f(it.next())
+        it.hasNext
+      }) str(sep)
     }
+  }
 
   def indent(n: Int = 1): Unit =
     indentation += n

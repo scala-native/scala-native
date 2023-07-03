@@ -1,16 +1,18 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
 #include "State.h"
-#include "utils/MathUtils.h"
-#include "StackTrace.h"
+#include "immix_commix/utils/MathUtils.h"
+#include "immix_commix/StackTrace.h"
 #include "Settings.h"
-#include "MemoryInfo.h"
-#include "MemoryMap.h"
+#include "shared/MemoryInfo.h"
+#include "shared/MemoryMap.h"
 #include "GCThread.h"
 #include "Sweeper.h"
 #include "Phase.h"
@@ -335,3 +337,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     heap->blockCount += incrementInBlocks;
     mutex_unlock(&heap->sweep.growMutex);
 }
+
+#endif

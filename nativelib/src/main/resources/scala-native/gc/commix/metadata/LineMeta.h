@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "GCTypes.h"
-#include "../Constants.h"
+#include "shared/GCTypes.h"
+#include "commix/Constants.h"
 
 typedef struct {
     int8_t next;
