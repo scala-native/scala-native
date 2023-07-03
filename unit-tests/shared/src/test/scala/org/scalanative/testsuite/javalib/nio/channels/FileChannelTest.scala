@@ -167,7 +167,7 @@ class FileChannelTest {
     }
   }
 
-  @Test def canWriteToChannelWithAppend(): Unit = {
+  @Test def canRelativeWriteToChannelWithAppend(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       Files.write(f, "hello, ".getBytes("UTF-8"))
@@ -184,6 +184,161 @@ class FileChannelTest {
       val newLines = Files.readAllLines(f)
       assertTrue(newLines.size() == 1)
       assertTrue(newLines.get(0) == "hello, world")
+    }
+  }
+
+  // Issue #3316
+  @Test def canRepositionChannelThenRelativeWriteAppend(): Unit = {
+    withTemporaryDirectory { dir =>
+      val prefix = "Γειά "
+      val suffix = "σου Κόσμε"
+      val message = s"${prefix}${suffix}"
+
+      val prefixBytes = prefix.getBytes("UTF-8") // Greek uses 2 bytes per char
+      val suffixBytes = suffix.getBytes("UTF-8")
+
+      val f = dir.resolve("rePositionThenAppend.txt")
+      Files.write(f, prefixBytes)
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", prefix, lines.get(0))
+
+      val channel = Files.newByteChannel(
+        f,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.APPEND
+      )
+
+      try {
+        // channel must start off positioned at EOF.
+        val positionAtOpen = channel.position()
+        assertEquals("position at open", channel.size(), positionAtOpen)
+
+        /* Java 8 SeekableByteChannel description says:
+         *   Setting the channel's position is not recommended when connected
+         *   to an entity, typically a file, that is opened with the APPEND
+         *   option.
+         *
+         * JVM re-inforces this caution by "position(pos)" on a channel
+         * opened for APPEND silently not actually move the position; it is
+         * a no-op.
+         */
+        channel.position(0L)
+
+        assertEquals("reposition", positionAtOpen, channel.position())
+
+        val src = ByteBuffer.wrap(suffixBytes)
+
+        while (src.remaining() > 0)
+          channel.write(src)
+
+        val newLines = Files.readAllLines(f)
+        assertEquals("Second lines size", 1, newLines.size())
+
+        // Verify append happened at expected place; end of line, not beginning
+        assertEquals("Second lines content", message, newLines.get(0))
+
+      } finally {
+        channel.close()
+      }
+    }
+  }
+
+  @Test def canAbsoluteWriteToChannel(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, ".getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertTrue(lines.size() == 1)
+      assertTrue(lines.get(0) == "hello, ")
+
+      val bytes = "world".getBytes("UTF-8")
+      val src = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f, StandardOpenOption.WRITE)
+
+      try {
+        val preWritePos = channel.position()
+        assertEquals("pre-write position", 0, preWritePos)
+
+        channel.write(src, 3)
+
+        // Absolute write without APPEND should not move current position.
+        assertEquals("post-write position", preWritePos, channel.position())
+
+        val bytes2 = "%".getBytes("UTF-8")
+        val src2 = ByteBuffer.wrap(bytes2)
+
+        channel.write(src2)
+      } finally channel.close()
+
+      val newLines = Files.readAllLines(f)
+      assertEquals("size", 1, newLines.size())
+      assertEquals("content", "%elworld", newLines.get(0))
+    }
+  }
+
+  @Test def canAbsoluteWriteToChannelWithAppend(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, ".getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertTrue(lines.size() == 1)
+      assertTrue(lines.get(0) == "hello, ")
+
+      val bytes = "world".getBytes("UTF-8")
+      val src = ByteBuffer.wrap(bytes)
+      val channel = FileChannel.open(f, StandardOpenOption.APPEND)
+
+      try {
+        val preWritePos = channel.position()
+        assertEquals("pre-write position", preWritePos, channel.size()) // EOF
+
+        val nWritten = channel.write(src, 2) // write at absolute position
+        assertEquals("bytes written", bytes.size, nWritten)
+
+        /* Absolute write with APPEND uses a logical "current position" of EOF
+         * not an absolute number qua position, such as 42.
+         *
+         * Using this understanding, the "current position" has not moved
+         * from EOF, even though the absolute position has been updated
+         * to the new EOF.
+         */
+
+        assertEquals("post-write position", channel.size(), channel.position())
+
+        val bytes2 = "!".getBytes("UTF-8")
+        val src2 = ByteBuffer.wrap(bytes2)
+
+        channel.write(src2) // APPEND relative write should be at EOF.
+      } finally channel.close()
+
+      val newLines = Files.readAllLines(f)
+      assertEquals("size", 1, newLines.size())
+
+      /* Welcome to the realm of Ὀϊζύς (Oizys), goddess of misery,
+       * anxiety, grief, depression, and misfortune.
+       *
+       * Skipping lightly over _lots_ of complexity, operating systems
+       * and their file systems differ in allowing the absolute write or not.
+       * Branching on all supported operating systems and each of _their_
+       * file systems is simply not feasible.
+       *
+       * The important part is that the relative write happened at EOF
+       * and the absolute write happened at a believable place, even
+       * if the re-position of that write was a no-op.
+       */
+
+      val content = newLines.get(0)
+
+      assertTrue(
+        s"unexpected content '${content}'",
+        (content == "heworld!") // write at absolute position happened
+          || (content == "hello, world!") // write happed at EOF.
+      )
     }
   }
 

@@ -36,12 +36,40 @@ private[java] final class FileChannelImpl(
     file: Option[File],
     deleteFileOnClose: Boolean,
     openForReading: Boolean,
-    openForWriting: Boolean
+    openForWriting: Boolean,
+    openForAppending: Boolean = false
 ) extends FileChannel {
+  /* Note:
+   *   Channels are described in the Java documentation as thread-safe.
+   *   This implementation is, most patently _not_ thread-safe.
+   *   Use with only one thread accessing the channel, even for READS.
+   */
+
+  if (openForAppending)
+    seekEOF() // so a position() before first APPEND write() matches JVM.
+
+  private def ensureOpen(): Unit =
+    if (!isOpen()) throw new ClosedChannelException()
+
+  private def seekEOF(): Unit = {
+    if (isWindows) {
+      SetFilePointerEx(
+        fd.handle,
+        distanceToMove = 0,
+        newFilePointer = null,
+        moveMethod = FILE_END
+      )
+    } else {
+      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_END);
+      if (pos < 0)
+        throwPosixException("lseek")
+    }
+  }
+
   private def throwPosixException(functionName: String): Unit = {
     if (!isWindows) {
       val errnoString = fromCString(string.strerror(errno.errno))
-      throw new IOException(s"${functionName} failed: ${errnoString}")
+      throw new IOException("${functionName} failed: ${errnoString}")
     }
   }
 
@@ -170,7 +198,8 @@ private[java] final class FileChannelImpl(
     MappedByteBufferImpl(mode, position, size.toInt, fd)
   }
 
-  override def position(offset: Long): FileChannel = {
+  // change position, even in APPEND mode. Use _carefully_.
+  private def compelPosition(offset: Long): FileChannel = {
     if (isWindows)
       FileApi.SetFilePointerEx(
         fd.handle,
@@ -178,7 +207,18 @@ private[java] final class FileChannelImpl(
         null,
         FILE_BEGIN
       )
-    else unistd.lseek(fd.fd, offset, stdio.SEEK_SET)
+    else {
+      val pos = unistd.lseek(fd.fd, offset, stdio.SEEK_SET)
+      if (pos < 0)
+        throwPosixException("lseek")
+    }
+
+    this
+  }
+
+  override def position(offset: Long): FileChannel = {
+    if (!openForAppending)
+      compelPosition(offset)
     this
   }
 
@@ -193,7 +233,10 @@ private[java] final class FileChannelImpl(
       )
       !filePointer
     } else {
-      unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+      if (pos < 0)
+        throwPosixException("lseek")
+      pos
     }
 
   override def read(
@@ -407,49 +450,20 @@ private[java] final class FileChannelImpl(
       if (!hasSucceded) {
         throw new IOException("Failed to truncate file")
       }
-      if (currentPosition > size) position(size)
-      else position(currentPosition)
-      this
-    }
+    if (currentPosition > size)
+      compelPosition(size)
 
-  override def write(
-      buffers: Array[ByteBuffer],
-      offset: Int,
-      length: Int
-  ): Long = {
-    ensureOpen()
-    var i = 0
-    while (i < length) {
-      write(buffers(offset + i))
-      i += 1
-    }
-    i
+    this
   }
 
-  override def write(buffer: ByteBuffer, pos: Long): Int = {
-    ensureOpen()
-    position(pos)
-    val srcPos: Int = buffer.position()
-    val srcLim: Int = buffer.limit()
-    val lim = math.abs(srcLim - srcPos)
-    val bytes = if (buffer.hasArray()) {
-      buffer.array()
-    } else {
-      val bytes = new Array[Byte](lim)
-      buffer.get(bytes)
-      bytes
-    }
-    write(bytes, 0, lim)
-    buffer.position(srcPos + lim)
-    lim
-  }
-
-  override def write(src: ByteBuffer): Int =
-    write(src, position())
-
-  private def ensureOpen(): Unit =
-    if (!isOpen()) throw new ClosedChannelException()
-
+  /* 2023-07-02 NOTE: This method is BROKEN!  It should be returning
+   *  an Int number of bytes written. It detects errors but not
+   *  partial writes.  Bad dog!
+   *
+   *  Fix 'writeByteBuffer()' after this methods gets fixed.
+   *  The former should return the actual number of bytes written
+   *  on partial writes.
+   */
   private[java] def write(
       buffer: Array[Byte],
       offset: Int,
@@ -484,6 +498,82 @@ private[java] final class FileChannelImpl(
         throw UnixException(file.fold("")(_.toString), errno.errno)
       }
     }
+  }
+
+  private def writeByteBuffer(src: ByteBuffer): Int = {
+    val srcPos = src.position()
+    val srcLim = src.limit()
+    val nBytes = srcLim - srcPos // number of bytes in range.
+
+    val (arr, offset) = if (src.hasArray()) {
+      (src.array(), srcPos)
+    } else {
+      val ba = new Array[Byte](nBytes)
+      src.get(ba, srcPos, nBytes)
+      (ba, 0)
+    }
+
+    write(arr, offset, nBytes)
+
+    src.position(srcPos + nBytes)
+
+    /* 2023-07-02 NOTE: This return is BROKEN!  It does not handle
+     * partial OS writes. Fix after/when the 'write(arr, offset, nBytes)'
+     * method gets fixed to return a value.
+     */
+    nBytes // BUGGY
+  }
+
+  /* 2023-07-02 NOTE: This method is BROKEN!  It should be returning
+   *  an Long number of bytes written. Instead it is wrongly returning
+   * 'i' the number of buffers written. At least here the return type is
+   * correct.
+   */
+
+  override def write(
+      buffers: Array[ByteBuffer],
+      offset: Int,
+      length: Int
+  ): Long = {
+    // write(ByteBuffer) will call ensureOpen(), saveCPU cycles by no call here
+    var i = 0
+    while (i < length) {
+      write(buffers(offset + i))
+      i += 1
+    }
+    i
+  }
+
+  /* Write to absolute position, do not change current position.
+   *
+   * Understanding "does not change current position" when the channel
+   * has been opened requires some mind_bending/understanding.
+   *
+   * "Current position" when file has been opened for APPEND is
+   * a logical place, End of File (EOF), not an absolute number.
+   * When APPEND mode changes the position it reports as "current" to the
+   * new EOF rather than stashed position, according to JVM is is not
+   * really changing the "current position".
+   */
+  override def write(src: ByteBuffer, pos: Long): Int = {
+    ensureOpen()
+    val stashPosition = position()
+    compelPosition(pos)
+
+    val nBytesWritten = writeByteBuffer(src)
+
+    if (!openForAppending)
+      compelPosition(stashPosition)
+    else
+      seekEOF()
+
+    nBytesWritten
+  }
+
+  // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END.
+  override def write(src: ByteBuffer): Int = {
+    ensureOpen()
+    writeByteBuffer(src)
   }
 
   /* The Scala Native implementation of FileInputStream#available delegates
