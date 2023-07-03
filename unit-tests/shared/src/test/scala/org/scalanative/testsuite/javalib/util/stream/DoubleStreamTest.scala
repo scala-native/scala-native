@@ -1125,6 +1125,64 @@ class DoubleStreamTest {
     assertEquals(msg, nElements, count)
   }
 
+  @Test def doubleStreamSorted_Characteristics(): Unit = {
+    // See comments in StreamTest#streamSorted_Characteristics
+
+    val nElements = 8
+    val wild = new Array[Double](nElements)
+
+    // Ensure that the Elements are not inserted in sorted or reverse order.
+    wild(0) = 45.32
+    wild(1) = 21.4
+    wild(2) = 11.2
+    wild(3) = 31.5
+    wild(4) = 68.16
+    wild(5) = 3.77
+    wild(6) = 61.44
+    wild(7) = 9.60
+
+    val seqDoubleStream = DoubleStream.of(wild: _*)
+    assertFalse(
+      "Expected sequential stream",
+      seqDoubleStream.isParallel()
+    )
+
+    // same expected values for SN sequential, SN parallel, & JVM streams
+    /* The characteristics here differ from those of the corresponding
+     * StreamTest because of the way the streams are constructed.
+     * StreamTest reports 0x4050, while this adds IMMUTABLE yeilding 0x4450.
+     * This stream is constructed using "of()" which is indeed IMMUTABLE.
+     * Mix things up, for variety and  to keep people trying to follow along
+     * at home on their toes.
+     */
+    val expectedPreCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE
+
+    // Drop IMMUTABLE, add SORTED
+    val expectedPostCharacteristics =
+      (expectedPreCharacteristics & ~Spliterator.IMMUTABLE) +
+        Spliterator.SORTED
+
+    val seqDoubleSpliter = seqDoubleStream.spliterator()
+
+    assertEquals(
+      "sequential characteristics",
+      expectedPreCharacteristics,
+      seqDoubleSpliter.characteristics()
+    )
+
+    val sortedSeqDoubleStream = DoubleStream.of(wild: _*).sorted()
+    val sortedSeqSpliter = sortedSeqDoubleStream.spliterator()
+
+    assertEquals(
+      "sorted sequential characteristics",
+      expectedPostCharacteristics,
+      sortedSeqSpliter.characteristics()
+    )
+
+  }
+
   @Test def doubleStreamSum(): Unit = {
     val nElements = 9
 
