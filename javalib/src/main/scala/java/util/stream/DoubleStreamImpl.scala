@@ -121,7 +121,7 @@ private[stream] class DoubleStreamImpl(
     exceptionBuffer.reportExceptions()
   }
 
-  def isParallel(): Boolean = false
+  def isParallel(): Boolean = _parallel
 
   def iterator(): ju.PrimitiveIterator.OfDouble = {
     commenceOperation()
@@ -143,10 +143,17 @@ private[stream] class DoubleStreamImpl(
     this
   }
 
-  // parallel is not yet implemented.
-  def parallel(): DoubleStreamImpl = this
+  def parallel(): DoubleStream = {
+    if (!_parallel)
+      _parallel = true
+    this
+  }
 
-  def sequential(): DoubleStreamImpl = this
+  def sequential(): DoubleStream = {
+    if (_parallel)
+      _parallel = false
+    this
+  }
 
   def spliterator(): Spliterator.OfDouble = {
     commenceOperation()
