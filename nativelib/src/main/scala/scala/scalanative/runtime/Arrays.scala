@@ -29,6 +29,7 @@ package runtime
 
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scala.scalanative.memory.SafeZone
 import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned => intToUSize, _}
 
 sealed abstract class Array[T]
@@ -186,10 +187,21 @@ object BooleanArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[BooleanArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 1)
+    castRawPtrToObject(arr).asInstanceOf[BooleanArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): BooleanArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[BooleanArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 1)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
@@ -238,10 +250,21 @@ object CharArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[CharArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 2)
+    castRawPtrToObject(arr).asInstanceOf[CharArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): CharArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[CharArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 2)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
@@ -290,10 +313,21 @@ object ByteArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[ByteArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 1)
+    castRawPtrToObject(arr).asInstanceOf[ByteArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): ByteArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[ByteArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 1)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
@@ -342,10 +376,21 @@ object ShortArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[ShortArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 2)
+    castRawPtrToObject(arr).asInstanceOf[ShortArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): ShortArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[ShortArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 2)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
@@ -394,10 +439,21 @@ object IntArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[IntArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 4)
+    castRawPtrToObject(arr).asInstanceOf[IntArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): IntArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[IntArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 4)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
@@ -446,10 +502,21 @@ object LongArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[LongArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 8)
+    castRawPtrToObject(arr).asInstanceOf[LongArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): LongArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[LongArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 8)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
@@ -498,10 +565,21 @@ object FloatArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[FloatArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 4)
+    castRawPtrToObject(arr).asInstanceOf[FloatArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): FloatArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[FloatArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 4)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
@@ -550,10 +628,21 @@ object DoubleArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[DoubleArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length))
-    val arr     = GC.alloc_atomic(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = GC.alloc_atomic(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 8)
+    castRawPtrToObject(arr).asInstanceOf[DoubleArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): DoubleArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[DoubleArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), 8)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
@@ -602,10 +691,21 @@ object ObjectArray {
     if (length < 0) {
       throw new NegativeArraySizeException
     }
-
     val arrcls  = classOf[ObjectArray]
-    val arrsize = new USize(intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length))
-    val arr     = GC.alloc(arrcls, arrsize)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length)
+    val arr = GC.alloc(arrcls, new USize(arrsize)) 
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(sizeOfPtr))
+    castRawPtrToObject(arr).asInstanceOf[ObjectArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): ObjectArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[ObjectArray]
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(sizeOfPtr))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]

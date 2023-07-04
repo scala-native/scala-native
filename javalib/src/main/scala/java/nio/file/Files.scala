@@ -790,8 +790,7 @@ object Files {
       reader.transferTo(writer)
       writer.toString()
       // No need to close() StringWriter, so no inner try/finally.
-    } finally
-      reader.close()
+    } finally reader.close()
   }
 
   def readSymbolicLink(link: Path): Path =

@@ -402,9 +402,14 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putTag(T.ModuleOp)
         putGlobal(name)
 
-      case Op.Classalloc(n) =>
+      case Op.Classalloc(n, None) =>
         putTag(T.ClassallocOp)
         putGlobal(n)
+
+      case Op.Classalloc(n, Some(zone)) =>
+        putTag(T.ClassallocZoneOp)
+        putGlobal(n)
+        putVal(zone)
 
       case Op.Field(v, name) =>
         putTag(T.FieldOp)
@@ -496,10 +501,16 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putType(ty)
         putVal(n)
 
-      case Op.Arrayalloc(ty, init) =>
+      case Op.Arrayalloc(ty, init, None) =>
         putTag(T.ArrayallocOp)
         putType(ty)
         putVal(init)
+
+      case Op.Arrayalloc(ty, init, Some(zone)) =>
+        putTag(T.ArrayallocZoneOp)
+        putType(ty)
+        putVal(init)
+        putVal(zone)
 
       case Op.Arrayload(ty, arr, idx) =>
         putTag(T.ArrayloadOp)

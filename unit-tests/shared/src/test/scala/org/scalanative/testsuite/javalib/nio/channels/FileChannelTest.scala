@@ -15,6 +15,13 @@ import java.io.{FileInputStream, FileOutputStream}
 import java.io.RandomAccessFile
 
 class FileChannelTest {
+  def withTemporaryDirectory(fn: Path => Unit): Unit = {
+    val file = File.createTempFile("test", ".tmp")
+    assertTrue(file.delete())
+    assertTrue(file.mkdir())
+    fn(file.toPath)
+  }
+
   @Test def fileChannelCanReadBufferFromFile(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -264,10 +271,29 @@ class FileChannelTest {
     }
   }
 
-  def withTemporaryDirectory(fn: Path => Unit): Unit = {
-    val file = File.createTempFile("test", ".tmp")
-    assertTrue(file.delete())
-    assertTrue(file.mkdir())
-    fn(file.toPath)
+  // Issue #3328
+  @Test def sizeQueryDoesNotChangeCurrentPosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      // To illustrate the problem, data file must exist and not be empty.
+      val data = s"They were the best of us."
+
+      val f = dir.resolve("sizeQuery.txt")
+      Files.write(f, data.getBytes("UTF-8"))
+
+      val lines = Files.readAllLines(f)
+      assertEquals("lines size", 1, lines.size())
+      assertEquals("lines content", data, lines.get(0))
+
+      val channel = Files.newByteChannel(f, StandardOpenOption.READ)
+
+      try {
+        val positionAtOpen = channel.position()
+        assertEquals("position before", 0, positionAtOpen)
+        assertEquals("size()", data.size, channel.size()) // pos stays same.
+        assertEquals("position after", positionAtOpen, channel.position())
+      } finally {
+        channel.close()
+      }
+    }
   }
 }

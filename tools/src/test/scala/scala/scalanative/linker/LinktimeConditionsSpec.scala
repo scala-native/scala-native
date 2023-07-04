@@ -3,7 +3,8 @@ package scala.scalanative.linker
 import org.scalatest.matchers.should.Matchers
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
-import scala.scalanative.nir.{Global, Sig, Type, Val, Rt}
+import scala.scalanative.nir.{Global, Sig, Type, Val, Rt, Unmangle}
+import scala.util._
 
 class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
   val entry = "Main"
@@ -53,14 +54,11 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
 
   case class Entry[T](propertyName: String, value: T, linktimeValue: Val)
 
-  val ignoredNames = {
+  val ignoredPropertiesNames = {
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     Set(
       s"$linktimeInfo.asanEnabled",
       s"$linktimeInfo.is32BitPlatform",
-      "M36scala.scalanative.meta.LinktimeInfo$D9isFreeBSDzEO",
-      "M36scala.scalanative.meta.LinktimeInfo$D5isMaczEO",
-      "M36scala.scalanative.meta.LinktimeInfo$D9isWindowszEO",
       s"$linktimeInfo.isMultithreadingEnabled",
       s"$linktimeInfo.isWeakReferenceSupported",
       s"$linktimeInfo.target.arch",
@@ -69,6 +67,18 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       s"$linktimeInfo.target.env"
     )
   }
+
+  private def isMangledMethod(name: String) = Try(
+    Unmangle.unmangleGlobal(name)
+  ) match {
+    case Success(Global.Member(_, sig)) => sig.isMethod
+    case _                              => false
+  }
+
+  // Ignore blacklisted linktime properties which are enfored by list of default properties and
+  // ignore all evaluated functions using linktime condtions
+  def isIgnoredLinktimeProperty(name: String) =
+    ignoredPropertiesNames.contains(name) || isMangledMethod(name)
 
   val defaultEntries = {
     Seq(
@@ -89,7 +99,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       "main.scala" -> allPropsUsage
     )(defaultProperties: _*) { (_, result) =>
       def normalized(seq: Iterable[String]): Set[String] =
-        seq.toSet.diff(ignoredNames)
+        seq.toSet.filterNot(isIgnoredLinktimeProperty)
       shouldContainAll(
         normalized(defaultEntries.map(_.propertyName)),
         normalized(result.resolvedVals.keys)
@@ -103,7 +113,7 @@ class LinktimeConditionsSpec extends OptimizerSpec with Matchers {
       "main.scala" -> allPropsUsage
     )(defaultProperties: _*) { (_, result) =>
       def normalized(elems: Map[String, Val]): Map[String, Val] =
-        elems.filter { case (key, _) => !ignoredNames.contains(key) }
+        elems.filter { case (key, _) => !isIgnoredLinktimeProperty(key) }
       val expected =
         defaultEntries.map { e => e.propertyName -> e.linktimeValue }
       shouldContainAll(
