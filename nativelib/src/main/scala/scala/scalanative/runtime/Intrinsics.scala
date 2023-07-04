@@ -188,6 +188,8 @@ object Intrinsics {
    */
   def alignmentOf(cls: Class[_]): RawSize = intrinsic
 
+  // Efficient intrinsic boxing of Scala primitives into unsigned type
+  // Allows to skip unnecesary module and conversion methods, emits Op.Box(prim) instead
   def unsignedOf(value: Byte): UByte = intrinsic
   def unsignedOf(value: Short): UShort = intrinsic
   def unsignedOf(value: Int): UInt = intrinsic
