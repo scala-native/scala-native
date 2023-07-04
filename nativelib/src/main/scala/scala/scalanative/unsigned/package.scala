@@ -4,6 +4,8 @@ import scala.scalanative.runtime.Intrinsics._
 
 package object unsigned {
 
+  // Scala 3 inlined extensions have higher priority
+
   /** Scala Native unsigned extensions to the standard Byte. */
   implicit class UnsignedRichByte(val value: Byte) extends AnyVal {
     @inline def toUByte: UByte = unsignedOf(value)
