@@ -117,7 +117,7 @@ private[stream] class ObjectStreamImpl[T](
     exceptionBuffer.reportExceptions()
   }
 
-  def isParallel(): Boolean = false
+  def isParallel(): Boolean = _parallel
 
   def iterator(): ju.Iterator[T] = {
     commenceOperation()
@@ -139,9 +139,17 @@ private[stream] class ObjectStreamImpl[T](
     this
   }
 
-  def parallel(): Stream[T] = this // parallel is not yet implemented.
+  def parallel(): Stream[T] = {
+    if (!_parallel)
+      _parallel = true
+    this
+  }
 
-  def sequential(): Stream[T] = this
+  def sequential(): Stream[T] = {
+    if (_parallel)
+      _parallel = false
+    this
+  }
 
   def spliterator(): Spliterator[_ <: T] = {
     commenceOperation()

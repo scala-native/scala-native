@@ -15,6 +15,7 @@ import java.{util => ju}
 import java.util.Arrays
 import java.util.{OptionalDouble, DoubleSummaryStatistics}
 import java.util.Spliterator
+import java.util.Spliterators
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._
@@ -85,6 +86,134 @@ class DoubleStreamTest {
       "ORDERED stream after unordered()",
       suSpliter.hasCharacteristics(Spliterator.ORDERED)
     )
+  }
+
+  @Test def streamParallel(): Unit = {
+    val nElements = 5
+
+    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
+    wild(0) = 132.45
+    wild(1) = 4.21
+    wild(2) = 2.11
+    wild(3) = 55.31
+    wild(4) = 16.68
+
+    val sPar0 =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), true)
+
+    assertTrue(
+      "Expected parallel stream",
+      sPar0.isParallel()
+    )
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED // 0x4040
+
+    val sPar0Spliterator = sPar0.spliterator()
+    assertEquals(
+      "parallel characteristics",
+      expectedCharacteristics,
+      sPar0Spliterator.characteristics()
+    )
+
+    val sPar =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), true)
+
+    val sSeq = sPar.sequential()
+    assertFalse(
+      "Expected sequential stream",
+      sSeq.isParallel()
+    )
+
+    val sSeqSpliterator = sSeq.spliterator()
+
+    assertEquals(
+      "sequential characteristics",
+      expectedCharacteristics,
+      sSeqSpliterator.characteristics()
+    )
+
+    assertEquals(
+      "Unexpected sequential stream size",
+      nElements,
+      sSeqSpliterator.estimateSize()
+    )
+
+    // sequential stream has expected contents
+    var count = 0
+    sSeqSpliterator.forEachRemaining((e: Double) => {
+      assertEquals(
+        s"sequential stream contents(${count})",
+        wild(count),
+        e,
+        epsilon
+      )
+      count += 1
+    })
+  }
+
+  @Test def streamSequential(): Unit = {
+    val nElements = 5
+
+    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
+    wild(0) = 132.45
+    wild(1) = 4.21
+    wild(2) = 2.11
+    wild(3) = 55.31
+    wild(4) = 16.68
+
+    val sSeq0 =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), false)
+
+    assertFalse(
+      "Expected sequential stream",
+      sSeq0.isParallel()
+    )
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED // 0x4040
+
+    val sSeq0Spliterator = sSeq0.spliterator()
+    assertEquals(
+      "sequential characteristics",
+      expectedCharacteristics,
+      sSeq0Spliterator.characteristics()
+    )
+
+    val sSeq =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), false)
+
+    val sPar = sSeq.parallel()
+    assertTrue(
+      "Expected parallel stream",
+      sSeq.isParallel()
+    )
+
+    val sParSpliterator = sPar.spliterator()
+
+    assertEquals(
+      "parallel characteristics",
+      expectedCharacteristics,
+      sParSpliterator.characteristics()
+    )
+
+    assertEquals(
+      "Unexpected parallel stream size",
+      nElements,
+      sParSpliterator.estimateSize()
+    )
+
+    // parallel stream has expected contents
+    var count = 0
+    sParSpliterator.forEachRemaining((e: Double) => {
+      assertEquals(
+        s"parallel stream contents(${count})",
+        wild(count),
+        e,
+        epsilon
+      )
+      count += 1
+    })
   }
 
 // Methods specified in interface Stream --------------------------------
