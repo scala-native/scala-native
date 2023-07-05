@@ -29,7 +29,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toUShort: UShort = toUSize.toUShort
   @inline def toUInt: UInt     = toUSize.toUInt
   @inline def toULong: ULong   = toUSize.toULong
-  @inline def toUSize: USize   = new USize(rawSize)
+  @inline def toUSize: USize   = unsignedOf(rawSize)
 
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
@@ -182,8 +182,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) ${op} castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) ${op} castRawSizeToLong(other.rawSize)))
 
   % end
 
@@ -196,10 +196,31 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 }
 
 object Size {
-  @inline implicit def byteToSize(x: Byte): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def shortToSize(x: Short): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def intToSize(x: Int): Size =
-    new Size(castIntToRawSize(x))
+  @inline implicit def byteToSize(x: Byte): Size = 
+    Size.valueOf(castIntToRawSize(x))
+  @inline implicit def shortToSize(x: Short): Size = 
+    Size.valueOf(castIntToRawSize(x))
+  @inline implicit def intToSize(x: Int): Size = 
+    Size.valueOf(castIntToRawSize(x))
+
+  @inline def valueOf(rawSize: RawSize): Size = {
+    import SizeCache.cache
+    val intValue = castRawSizeToInt(rawSize)
+    val byteValue = intValue.toByte
+    if(castIntToRawSize(byteValue) != rawSize) new Size(rawSize)
+    else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new Size(rawSize)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsafe] object SizeCache{
+  private[unsafe] val cache: scala.Array[Size] = new scala.Array[Size](256)
 }

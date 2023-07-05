@@ -157,6 +157,13 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_alignmentOf = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
   @tu lazy val Intrinsics_alignmentOfType = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
 
+  @tu lazy val Intrinsics_unsignedOfAlts =
+    IntrinsicsModule.info
+      .member(termName("unsignedOf"))
+      .alternatives
+      .map(_.symbol)
+      .ensuring(_.size == 5)
+
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
     'B' -> requiredClass("scala.scalanative.runtime.PrimitiveBoolean"),

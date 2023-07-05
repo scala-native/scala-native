@@ -1,7 +1,7 @@
 package scala.scalanative.unsafe
 
 import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt}
+import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt, *}
 
 private[scalanative] trait UnsafePackageCompat {
   private[scalanative] given reflect.ClassTag[Array[?]] =
@@ -57,4 +57,27 @@ private[scalanative] trait UnsafePackageCompat {
     libc.memset(ptr, 0, size)
     ptr
   }
+
+  /** Scala Native unsafe extensions to the standard Byte. */
+  extension (inline value: Byte) {
+    inline def toSize: Size = Size.valueOf(castIntToRawSize(value))
+  }
+
+  /** Scala Native unsafe extensions to the standard Short. */
+  extension (inline value: Short) {
+    inline def toSize: Size = Size.valueOf(castIntToRawSize(value))
+  }
+
+  /** Scala Native unsafe extensions to the standard Int. */
+  extension (inline value: Int) {
+    inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
+    inline def toSize: Size = Size.valueOf(castIntToRawSize(value))
+  }
+
+  /** Scala Native unsafe extensions to the standard Long. */
+  extension (inline value: Long) {
+    inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
+    inline def toSize: Size = Size.valueOf(castLongToRawSize(value))
+  }
+
 }
