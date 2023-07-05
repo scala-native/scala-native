@@ -8,10 +8,14 @@ import scala.scalanative.util.unsupported
 trait LinktimeValueResolver { self: Reach =>
   import LinktimeValueResolver._
 
+  private final val linktimeInfo =
+    "scala.scalanative.meta.linktimeinfo"
+  private final val contendedPaddingWidth =
+    s"$linktimeInfo.contendedPaddingWidth"
+
   private lazy val linktimeProperties = {
     val conf = config.compilerConfig
     val triple = conf.configuredOrDetectedTriple
-    val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     val predefined: NativeConfig.LinktimeProperites = Map(
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
@@ -27,13 +31,18 @@ trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.target.arch" -> triple.arch,
       s"$linktimeInfo.target.vendor" -> triple.vendor,
       s"$linktimeInfo.target.os" -> triple.os,
-      s"$linktimeInfo.target.env" -> triple.env
+      s"$linktimeInfo.target.env" -> triple.env,
+      contendedPaddingWidth -> 64 // bytes; can be overriten
     )
     NativeConfig.checkLinktimeProperties(predefined)
     predefined ++ conf.linktimeProperties
   }
 
   private val resolvedValues = mutable.Map.empty[String, LinktimeValue]
+
+  // required for @scala.scalanative.annotation.align(), always resolve
+  resolveLinktimeProperty(contendedPaddingWidth)(Position.NoPosition)
+
   // For compat with 2.13 where mapValues is deprecated
   def resolvedNirValues: mutable.Map[String, Val] = resolvedValues.map {
     case (k, v) => k -> v.nirValue
