@@ -224,6 +224,26 @@ class DoubleStreamTest {
     assertFalse(it.hasNext())
   }
 
+  @Test def doubleStreamBuilderCharacteristics(): Unit = {
+    val bldr = Stream.builder[Double]()
+    bldr
+      .add(1.1)
+      .add(-1.1)
+      .add(9.9)
+
+    val s = bldr.build()
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
+  }
+
   @Test def doubleStreamEmptyIsEmpty(): Unit = {
     val s = DoubleStream.empty()
     val it = s.iterator()

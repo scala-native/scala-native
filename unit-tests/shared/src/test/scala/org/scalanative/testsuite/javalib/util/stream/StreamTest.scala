@@ -221,6 +221,26 @@ class StreamTest {
     assertFalse(it.hasNext())
   }
 
+  @Test def streamBuilderCharacteristics(): Unit = {
+    val bldr = Stream.builder[String]()
+    bldr
+      .add("A")
+      .add("B")
+      .add("C")
+
+    val s = bldr.build()
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
+  }
+
   @Test def streamEmptyIsEmpty(): Unit = {
     val s = Stream.empty[Int]()
     val it = s.iterator()
