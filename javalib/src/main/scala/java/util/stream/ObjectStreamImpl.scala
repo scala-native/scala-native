@@ -730,21 +730,6 @@ object ObjectStreamImpl {
     def add(e: Exception): Unit = buffer.addLast(e)
 
     def reportExceptions(): Unit = {
-      /*
-      val it = buffer.iterator()
-
-      if (it.hasNext()) {
-        val firstException = it.next()
-
-        while (it.hasNext()) {
-          val e = it.next()
-          if (e != firstException)
-            firstException.addSuppressed(e)
-        }
-
-        throw (firstException)
-      }
-       */
       if (!buffer.isEmpty()) {
         val firstException = buffer.removeFirst()
 
