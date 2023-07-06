@@ -135,7 +135,45 @@ object DWARF {
     }
   }
 
-  case class CompileUnit(abbrev: Option[Abbrev], values: Map[Attr, Any])
+  case class CompileUnit(abbrev: Option[Abbrev], values: Map[Attr, Any]) {
+    def is(tag: DWARF.Tag): Boolean =
+      abbrev.exists(_.tag == tag)
+
+    def getName: Option[UInt] = values.collectFirst {
+      case v if v._1.at == DWARF.Attribute.DW_AT_name =>
+        v._2.asInstanceOf[UInt]
+    }
+
+    def getLine: Option[Int] = values.collectFirst {
+      case v if v._1.at == DWARF.Attribute.DW_AT_decl_line =>
+        v._2 match {
+          case x: UShort => x.toInt
+          case x: UByte => x.toInt
+          case _ => 0
+        }
+    }
+
+    def getLowPC: Option[Long] = values.collectFirst {
+      case v if v._1.at == DWARF.Attribute.DW_AT_low_pc =>
+        v._2.asInstanceOf[Long]
+    }
+
+    def getHighPC(lowPC: Long): Option[Long] =
+      values.collectFirst {
+        case v if v._1.at == DWARF.Attribute.DW_AT_high_pc =>
+          if (DWARF.Form.isConstantClass(v._1.form)) {
+            val value = v._2.asInstanceOf[UInt]
+            lowPC + value.toLong
+          } else if (DWARF.Form.isAddressClass(v._1.form)) {
+            val value = v._2.asInstanceOf[Long]
+            value
+          } else {
+            println(s"Invalid DW_AT_high_pc class: ${v._1.form}")
+            0L
+          }
+      }
+  }
+
   case class Section(offset: UInt, size: Long)
   case class Strings(buf: Array[Byte]) {
     def read(at: UInt): String = {
