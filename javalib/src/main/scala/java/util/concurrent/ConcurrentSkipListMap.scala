@@ -390,9 +390,9 @@ object ConcurrentSkipListMap {
     val cmp: Comparator[_ >: K] = m.comparator()
     if (lo != null && hi != null && ConcurrentSkipListMap.cpr(cmp, lo, hi) > 0)
       throw new IllegalArgumentException("inconsistent range")
-    private var keySetView = null
-    private var valuesView = null
-    private var entrySetView = null
+    @transient private var keySetView: KeySet[K, V] = null
+    @transient private var valuesView = null
+    @transient private var entrySetView = null
 
     private[concurrent] def tooLow(key: Any, cmp: Comparator[_ >: K]) = {
       var c = 0
@@ -789,12 +789,14 @@ object ConcurrentSkipListMap {
       removeLowest
     else removeHighest
 
-    override def keySet(): NavigableSet[K] = ???
-//     override def keySet: NavigableSet[K] = {
-//       var ks = null
-//       if ((ks = keySetView) != null) return ks
-//       keySetView = new ConcurrentSkipListMap.KeySet[K, V](this)
-//     }
+    override def keySet(): NavigableSet[K] = {
+      var ks: KeySet[K, V] = null
+      if ({ ks = keySetView; ks != null }) return ks
+      else {
+        keySetView = new ConcurrentSkipListMap.KeySet[K, V](this)
+        keySetView
+      }
+    }
 
     override def navigableKeySet(): NavigableSet[K] = ???
 //     override def navigableKeySet: NavigableSet[K] = {
@@ -819,138 +821,147 @@ object ConcurrentSkipListMap {
     override def descendingKeySet(): NavigableSet[K] =
       descendingMap().navigableKeySet()
 
-//     /**
-//      * Variant of main Iter class to traverse through submaps.
-//      * Also serves as back-up Spliterator for views.
-//      */
-//     abstract private[concurrent] class SubMapIter[T] private[concurrent]() extends Iterator[T] with Spliterator[T] {
-//       VarHandle.acquireFence()
-//       val cmp: Comparator[_ >: K] = m.comparator
+    /** Variant of main Iter class to traverse through submaps. Also serves as
+     *  back-up Spliterator for views.
+     */
+    abstract private[concurrent] class SubMapIter[T] private[concurrent] ()
+        extends Iterator[T]
+        with Spliterator[T] {
 
-//       while ( {
-//         true
-//       }) {
-//         next = if (isDescending) hiNode(cmp)
-//         else loNode(cmp)
-//         if (next == null) break //todo: break is not supported
-//         val x = next.`val`
-//         if (x != null) {
-//           if (!inBounds(next.key, cmp)) next = null
-//           else nextValue = x
-//           break //todo: break is not supported
+      /** the last node returned by next() */
+      private[concurrent] var lastReturned: Node[K, V] = null
 
-//         }
-//       }
-//       /** the last node returned by next() */
-//       private[concurrent] var lastReturned = null
-//       /** the next node to return from next(); */
-//       private[concurrent] var next = null
-//       /** Cache of next value field to maintain weak consistency */
-//       private[concurrent] var nextValue = null
+      /** the next node to return from next(); */
+      private[concurrent] var nextNode: Node[K, V] = null
 
-//       override final def hasNext: Boolean = next != null
+      /** Cache of next value field to maintain weak consistency */
+      private[concurrent] var nextValue: V = null.asInstanceOf[V]
 
-//       final private[concurrent] def advance(): Unit = {
-//         if (next == null) throw new NoSuchElementException
-//         lastReturned = next
-//         if (isDescending) descend()
-//         else ascend()
-//       }
+      VarHandle.acquireFence()
+      val cmp: Comparator[_ >: K] = m.comparator()
 
-//       private def ascend(): Unit = {
-//         val cmp = m.comparator
+      var continue = true
+      while (continue) {
+        nextNode =
+          if (isDescending) hiNode(cmp)
+          else loNode(cmp)
+        if (nextNode == null) continue = false
+        else {
+          val x = nextNode.`val`
+          if (x != null) {
+            if (!inBounds(nextNode.key, cmp)) nextNode = null
+            else nextValue = x
+            continue = false
+          }
+        }
+      }
 
-//         while ( {
-//           true
-//         }) {
-//           next = next.next
-//           if (next == null) break //todo: break is not supported
-//           val x = next.`val`
-//           if (x != null) {
-//             if (tooHigh(next.key, cmp)) next = null
-//             else nextValue = x
-//             break //todo: break is not supported
+      /** used to access from subclasses */
+      protected[concurrent] def getNextNode(): Node[K, V] = nextNode
 
-//           }
-//         }
-//       }
+      override final def hasNext(): Boolean = nextNode != null
 
-//       private def descend(): Unit = {
-//         val cmp = m.comparator
+      final private[concurrent] def advance(): Unit = {
+        if (nextNode == null) throw new NoSuchElementException
+        lastReturned = nextNode
+        if (isDescending) descend()
+        else ascend()
+      }
 
-//         while ( {
-//           true
-//         }) {
-//           next = m.findNear(lastReturned.key, LT, cmp)
-//           if (next == null) break //todo: break is not supported
-//           val x = next.`val`
-//           if (x != null) {
-//             if (tooLow(next.key, cmp)) next = null
-//             else nextValue = x
-//             break //todo: break is not supported
+      private def ascend(): Unit = {
+        val cmp = m.comparator()
+        var continue = true
+        while (continue) {
+          nextNode = nextNode.next
+          if (nextNode == null) {
+            continue = false
+          } else {
+            val x = nextNode.`val`
+            if (x != null) {
+              if (tooHigh(nextNode.key, cmp)) nextNode = null
+              else nextValue = x
+              continue = false
+            }
+          }
+        }
+      }
 
-//           }
-//         }
-//       }
+      private def descend(): Unit = {
+        val cmp = m.comparator()
+        var continue = true
+        while (continue) {
+          nextNode = m.findNear(lastReturned.key, LT, cmp)
+          if (nextNode == null) continue = false
+          else {
+            val x = nextNode.`val`
+            if (x != null) {
+              if (tooLow(nextNode.key, cmp)) nextNode = null
+              else nextValue = x
+              continue = false
+            }
+          }
+        }
+      }
 
-//       override def remove(): Unit = {
-//         val l = lastReturned
-//         if (l == null) throw new IllegalStateException
-//         m.remove(l.key)
-//         lastReturned = null
-//       }
+      override def remove(): Unit = {
+        val l = lastReturned
+        if (l == null) throw new IllegalStateException
+        m.remove(l.key)
+        lastReturned = null
+      }
 
-//       override def trySplit: Spliterator[T] = null
+      override def trySplit(): Spliterator[T] = null
 
-//       override def tryAdvance(action: Consumer[_ >: T]): Boolean = {
-//         if (hasNext) {
-//           action.accept(next)
-//           return true
-//         }
-//         false
-//       }
+      override def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+        if (hasNext()) {
+          action.accept(next())
+          return true
+        }
+        false
+      }
 
-//       override def forEachRemaining(action: Consumer[_ >: T]): Unit = {
-//         while ( {
-//           hasNext
-//         }) action.accept(next)
-//       }
+      override def forEachRemaining(action: Consumer[_ >: T]): Unit = {
+        while (hasNext()) action.accept(next())
+      }
 
-//       override def estimateSize: Long = Long.MAX_VALUE
-//     }
+      override def estimateSize(): Long = Long.MaxValue
+    }
 
-//     final private[concurrent] class SubMapValueIterator extends ConcurrentSkipListMap.SubMap[K, V]#SubMapIter[V] {
-//       override def next: V = {
-//         val v = nextValue
-//         advance()
-//         v
-//       }
+    final private[concurrent] class SubMapValueIterator extends SubMapIter[V] {
+      def next(): V = {
+        val v: V = nextValue
+        advance()
+        v
+      }
 
-//       override def characteristics = 0
-//     }
+      override def characteristics() = 0
+    }
 
-//     final private[concurrent] class SubMapKeyIterator extends ConcurrentSkipListMap.SubMap[K, V]#SubMapIter[K] {
-//       override def next: K = {
-//         val n = next
-//         advance()
-//         n.key
-//       }
+    final private[concurrent] class SubMapKeyIterator extends SubMapIter[K] {
+      override def next(): K = {
+        val n: Node[K, V] = getNextNode()
+        advance()
+        n.key
+      }
 
-//       override def characteristics: Int = Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.SORTED
+      override def characteristics(): Int =
+        Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.SORTED
 
-//       override final def getComparator: Comparator[_ >: K] = thisSubMap.comparator
-//     }
+      override final def getComparator(): Comparator[_ >: K] =
+        SubMap.this.comparator()
+    }
 
-//     final private[concurrent] class SubMapEntryIterator extends ConcurrentSkipListMap.SubMap[K, V]#SubMapIter[Map.Entry[K, V]] {
-//       override def next: Map.Entry[K, V] = {
-//         val n = next
-//         val v = nextValue
-//         advance()
-//         new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
-//       }
+    final private[concurrent] class SubMapEntryIterator
+        extends SubMapIter[Map.Entry[K, V]] {
+      override def next(): Map.Entry[K, V] = {
+        val n: Node[K, V] = getNextNode()
+        val v: V = nextValue
+        advance()
+        new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
+      }
 
-//       override def characteristics: Int = Spliterator.DISTINCT
-//     }
+      override def characteristics(): Int = Spliterator.DISTINCT
+    }
   }
 
 //   /**
