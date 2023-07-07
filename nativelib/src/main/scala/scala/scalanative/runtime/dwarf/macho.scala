@@ -2,7 +2,6 @@ package scala.scalanative.runtime.dwarf
 
 import Endianness.LITTLE
 import Endianness.BIG
-import java.io.RandomAccessFile
 import java.nio.channels.Channels
 import scalanative.unsigned._
 

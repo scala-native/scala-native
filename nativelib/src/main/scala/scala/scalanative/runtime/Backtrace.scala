@@ -161,7 +161,7 @@ object Backtrace {
       matchUUID: Option[List[UInt]]
   ): Option[DwarfInfo] = {
     implicit val bf: BinaryFile = new BinaryFile(
-      new RandomAccessFile(filename, "r")
+      new File(filename)
     )
 
     val head = bf.position()
@@ -176,7 +176,7 @@ object Backtrace {
             s"$filename.dSYM/Contents/Resources/DWARF/${basename}"
           if (new File(dSymPath).exists()) {
             val dSYMBin: BinaryFile = new BinaryFile(
-              new RandomAccessFile(dSymPath, "r")
+              new File(dSymPath)
             )
             val dSYMMacho = MachO.parse(dSYMBin)
             if (dSYMMacho.uuid == macho.uuid)
@@ -214,12 +214,16 @@ object Backtrace {
       debug_abbrev: DWARF.Section,
       debug_str: DWARF.Section
   )(implicit bf: BinaryFile) = {
-    DWARF.parse(
+    val start = System.currentTimeMillis()
+    val res = DWARF.parse(
       debug_info = DWARF.Section(debug_info.offset, debug_info.size),
       debug_abbrev = DWARF.Section(debug_abbrev.offset, debug_abbrev.size)
     ) ->
       DWARF.Strings.parse(
         DWARF.Section(debug_str.offset, debug_str.size)
       )
+    val end = System.currentTimeMillis()
+    println(s"elapsed: ${end - start} ms")
+    res
   }
 }
