@@ -91,8 +91,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     size_t memoryLimit = Heap_getMemoryLimit();
 
     if (maxHeapSize < MIN_HEAP_SIZE) {
-        fprintf(stderr,
-                "GC_MAXIMUM_HEAP_SIZE too small to initialize heap.\n");
+        fprintf(stderr, "GC_MAXIMUM_HEAP_SIZE too small to initialize heap.\n");
         fprintf(stderr, "Minimum required: %zum \n",
                 (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
         fflush(stderr);
