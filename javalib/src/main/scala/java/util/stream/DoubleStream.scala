@@ -329,9 +329,6 @@ object DoubleStream {
     new DoubleStreamImpl(spliter, parallel = false)
   }
 
-  def of(t: scala.Double): DoubleStream =
-    DoubleStream.builder().add(t).build()
-
   def of(values: Array[scala.Double]): DoubleStream = {
     /* One would expect variables arguments to be declared as
      * "values: Objects*" here.
@@ -339,11 +336,13 @@ object DoubleStream {
      * An implicit conversion must be missing in the javalib environment.
      */
 
-    val bldr = DoubleStream.builder()
-    for (j <- values)
-      bldr.add(j)
+    Arrays.stream(values)
+  }
 
-    bldr.build()
+  def of(t: scala.Double): DoubleStream = {
+    val values = new Array[Double](1)
+    values(0) = t
+    DoubleStream.of(values)
   }
 
 }
