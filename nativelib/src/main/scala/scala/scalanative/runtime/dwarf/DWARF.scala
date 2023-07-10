@@ -4,6 +4,7 @@ import java.nio.channels.Channels
 import scala.collection.immutable.IntMap
 import DWARF.Form.DW_FORM_strp
 import java.nio.channels.FileChannel
+import scala.collection.mutable
 
 import scalanative.unsigned._
 
@@ -203,6 +204,7 @@ object DWARF {
       debug_info: Section,
       debug_abbrev: Section
   )(implicit bf: BinaryFile): Vector[DIE] = {
+    val start = System.currentTimeMillis()
     bf.seek(debug_info.offset.toLong)
     val end_offset = debug_info.offset.toLong + debug_info.size
     def stop = bf.position() >= end_offset
@@ -214,25 +216,42 @@ object DWARF {
 
     }
 
+    val end = System.currentTimeMillis()
+    println(s"DWARF.parse elapsed: ${end - start} ms")
+    println(s"readUnits: ${DIE.acc} ms")
     dies.result()
   }
 
   object DIE {
+    var acc = 0L
+    private val abbrevCache = mutable.Map.empty[Long, Vector[Abbrev]]
     def parse(
         debug_info: Section,
         debug_abbrev: Section
     )(implicit bf: BinaryFile) = {
 
       val header = Header.parse(bf)
-      val pos = bf.position()
 
-      bf.seek(debug_abbrev.offset.toLong + header.debug_abbrev_offset)
-      val abbrev = Abbrev.parse(bf)
+      // println(s"DIE.parse, about to seek ${debug_abbrev.offset.toLong + header.debug_abbrev_offset}")
+
+      val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
+      val abbrev = abbrevCache.get(abbrevOffset)  match {
+        case Some(abbrev) => abbrev
+        case None =>
+          val pos = bf.position()
+          bf.seek(abbrevOffset)
+          val abbrev = Abbrev.parse(bf)
+          abbrevCache.put(abbrevOffset, abbrev)
+          bf.seek(pos)
+          abbrev
+      }
+
+      val start = System.currentTimeMillis()
       val idx = IntMap(abbrev.map(a => a.code -> a): _*)
-
-      bf.seek(pos)
-
       val units = readUnits(header.unit_offset, header, idx)
+      val end = System.currentTimeMillis()
+      acc += end - start
+
 
       DIE(header, abbrev, units)
     }
@@ -259,7 +278,7 @@ object DWARF {
         case s @ Some(abbrev) =>
           abbrev.attributes.foreach { attr =>
             val value = AttributeValue.parse(header, attr.form)
-            val pos = ds.position()
+            // val pos = ds.position()
             attrs += (attr -> value)
           }
 
