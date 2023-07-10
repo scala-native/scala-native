@@ -16,6 +16,9 @@ import scala.io.Source
 import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
 import scala.annotation.tailrec
 import scala.scalanative.runtime.dwarf.DWARF.DIE
+import scala.util.Using
+import scala.util.Failure
+import scala.util.Success
 
 object Backtrace {
   private sealed trait Format
@@ -24,6 +27,7 @@ object Backtrace {
   private case class DwarfInfo(
       subprograms: IndexedSeq[SubprogramDIE],
       strings: DWARF.Strings,
+      /** ASLR offset (minus __PAGEZERO size for macho) */
       offset: Long,
       format: Format
   )
@@ -50,11 +54,9 @@ object Backtrace {
         processFile(filename, None) match {
           case None =>
             // there's no debug section, cache it so we don't parse the exec file any longer
-            println("DIE not found, cache")
             cache.put(filename, None)
             None
           case file @ Some(info) =>
-            println("DIE found ")
             cache.put(filename, file)
             impl(pc, info)
         }
@@ -65,13 +67,18 @@ object Backtrace {
       pc: Long,
       info: DwarfInfo
   ): Option[(String, Int)] = {
+    // The address (DW_AT_(low|high)_address) in debug information has the file offset (the offset in the executable + __PAGEZERO in macho).
+    // While the pc address retrieved from libunwind at runtime has the location of the memory into the virtual memory
+    // at runtime. which has a random offset (called ASLR offset or slide) that is different for every run because of
+    // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
+    // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
     val address = pc - info.offset
     for {
       subprogram <- search(info.subprograms, address)
       at <- subprogram.filenameAt
     } yield {
       val filename = info.strings.read(at)
-      (filename, subprogram.line + 1)
+      (filename, subprogram.line + 1) // line number in DWARF is 0-based
     }
   }
 
@@ -106,7 +113,6 @@ object Backtrace {
       debug_abbrev <- sections.find(_.sectname == "__debug_abbrev")
       debug_str <- sections.find(_.sectname == "__debug_str")
       debug_line <- sections.find(_.sectname == "__debug_line")
-
     } yield {
       readDWARF(
         debug_info = DWARF.Section(debug_info.offset, debug_info.size),
@@ -117,27 +123,32 @@ object Backtrace {
   }
 
   private def offsetOSX(macho: MachO): Long = {
-    // calculate offset
+    // calculate ASLR offset for macho using vmmap
+    // TODO: retrieve the load address using `mach_vm_region`.
+    // see: https://jvns.ca/blog/2018/01/26/mac-memory-maps/
     val pid = libc.getpid().intValue()
     val proc = new ProcessBuilder("vmmap", "-summary", s"$pid").start()
-    // TODO: close input stream
-    val vmmap = Source.fromInputStream(proc.getInputStream())
-    val offset = (for {
-      loadAddress <- vmmap
-        .getLines()
-        .find(_.startsWith("Load Address"))
-        .map { line =>
-          val addressStr = line.split(":").last.trim.drop(2)
-          java.lang.Long.parseLong(addressStr, 16)
-        }
-      pageZeroSize <- macho.segments
-        .find(_.segname == "__PAGEZERO")
-        .map(_.vmsize)
-    } yield loadAddress - pageZeroSize).getOrElse(0L)
-    offset
+    Using(Source.fromInputStream(proc.getInputStream())) { vmmap =>
+      val offset = (for {
+        loadAddress <- vmmap
+          .getLines()
+          // "Load Address:    0x0123456789abcdef"
+          .find(_.startsWith("Load Address"))
+          .map { line =>
+            val addressStr = line.split(":").last.trim.drop(2) // drop the prefix 0x
+            java.lang.Long.parseLong(addressStr, 16)
+          }
+        pageZeroSize <- macho.segments
+          .find(_.segname == "__PAGEZERO")
+          .map(_.vmsize)
+      } yield loadAddress - pageZeroSize).getOrElse(0L)
+      offset
+    } match
+      case Failure(_) => 0L
+      case Success(value) => value
   }
 
-  private def filterSubprograms(dies: Vector[CompileUnit], strings: DWARF.Strings) = {
+  private def filterSubprograms(dies: Vector[CompileUnit]) = {
     var filenameAt: Option[UInt] = None
     dies
       .flatMap { die =>
@@ -148,6 +159,10 @@ object Backtrace {
             high <- die.getHighPC(low)
           } yield SubprogramDIE(low, high, line, filenameAt)
         } else if (die.is(DWARF.Tag.DW_TAG_compile_unit)) {
+          // Debug Information Entries (DIE) in DWARF has a tree structure, and
+          // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
+          // TODO: Parse `.debug_line` section, and decode the filename using
+          // `DW_AT_decl_file` attribute of the `subprogram` DIE.
           filenameAt = die.getName
           None
         } else None
@@ -160,10 +175,7 @@ object Backtrace {
       filename: String,
       matchUUID: Option[List[UInt]]
   ): Option[DwarfInfo] = {
-    implicit val bf: BinaryFile = new BinaryFile(
-      new File(filename)
-    )
-
+    implicit val bf: BinaryFile = new BinaryFile(new File(filename))
     val head = bf.position()
     val magic = bf.readInt().toUInt.toHexString
     bf.seek(head)
@@ -172,6 +184,9 @@ object Backtrace {
       val dwarfOpt: Option[(Vector[DIE], DWARF.Strings)] =
         processMacho(macho).orElse {
           val basename = new File(filename).getName()
+          // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
+          // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
+          // https://github.com/ianlancetaylor/libbacktrace/blob/cdb64b688dda93bbbacbc2b1ccf50ce9329d4748/macho.c#L908
           val dSymPath =
             s"$filename.dSYM/Contents/Resources/DWARF/${basename}"
           if (new File(dSymPath).exists()) {
@@ -179,7 +194,7 @@ object Backtrace {
               new File(dSymPath)
             )
             val dSYMMacho = MachO.parse(dSYMBin)
-            if (dSYMMacho.uuid == macho.uuid)
+            if (dSYMMacho.uuid == macho.uuid) // Validate the macho in dSYM has the same build uuid.
               processMacho(dSYMMacho)(dSYMBin)
             else None
           } else None
@@ -188,7 +203,7 @@ object Backtrace {
       for {
         dwarf <- dwarfOpt
         dies = dwarf._1.flatMap(_.units)
-        subprograms = filterSubprograms(dies, dwarf._2)
+        subprograms = filterSubprograms(dies)
         offset = offsetOSX(macho)
       } yield {
         DwarfInfo(
@@ -199,13 +214,9 @@ object Backtrace {
         )
       }
     } else if (magic == ELF_MAGIC) {
-      sys.error(
-        "ELF is not supported yet, will someone please write an ELF parser"
-      )
+      None
     } else { // COFF has various magic numbers
-      sys.error(
-        "Windows is not supported yet, will someone please write a COFF parser, or whatever windows uses"
-      )
+      None
     }
 
   }
@@ -214,16 +225,12 @@ object Backtrace {
       debug_abbrev: DWARF.Section,
       debug_str: DWARF.Section
   )(implicit bf: BinaryFile) = {
-    val start = System.currentTimeMillis()
-    val res = DWARF.parse(
+    DWARF.parse(
       debug_info = DWARF.Section(debug_info.offset, debug_info.size),
       debug_abbrev = DWARF.Section(debug_abbrev.offset, debug_abbrev.size)
     ) ->
       DWARF.Strings.parse(
         DWARF.Section(debug_str.offset, debug_str.size)
       )
-    val end = System.currentTimeMillis()
-    println(s"elapsed: ${end - start} ms")
-    res
   }
 }

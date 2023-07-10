@@ -15,7 +15,6 @@ private[lang] object StackTrace {
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong,
-      addFileline: Boolean
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
     val name = alloc[CChar](nameMax.toUSize)
@@ -23,10 +22,7 @@ private[lang] object StackTrace {
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
-    val fileline =
-      if (addFileline)
-        Backtrace.decodeFileline(ip.toLong)
-      else None
+    val fileline = Backtrace.decodeFileline(ip.toLong)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
@@ -44,14 +40,10 @@ private[lang] object StackTrace {
   private def cachedStackTraceElement(
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong,
-      addFileline: Boolean
   )(implicit zone: Zone): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip, addFileline))
+    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
 
-  @noinline private[lang] def currentStackTrace(
-      addFileline: Boolean
-  ): Array[StackTraceElement] = {
-
+  @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
     if (!LinktimeInfo.asanEnabled) {
       Zone { implicit z =>
@@ -63,7 +55,7 @@ private[lang] object StackTrace {
         unwind.init_local(cursor, context)
         while (unwind.step(cursor) > 0) {
           unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          buffer += cachedStackTraceElement(cursor, !ip, addFileline)
+          buffer += cachedStackTraceElement(cursor, !ip)
         }
       }
     }
@@ -128,7 +120,7 @@ class Throwable protected (
     // currentStackTrace should be handling exclusion in its own
     // critical section, but does not. So do
     if (writableStackTrace) this.synchronized {
-      this.stackTrace = StackTrace.currentStackTrace(s == "test")
+      this.stackTrace = StackTrace.currentStackTrace()
     }
     this
   }

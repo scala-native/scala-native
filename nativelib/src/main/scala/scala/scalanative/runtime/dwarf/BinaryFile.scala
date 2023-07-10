@@ -12,11 +12,10 @@ import java.io.File
 import java.io.BufferedInputStream
 import java.io.InputStream
 
-class PosBufferedInputStream(in: InputStream, size: Int)
+class SeekableBufferedInputStream(in: InputStream, size: Int)
     extends BufferedInputStream(in, size) {
   def position(_pos: Long) =  _pos - count + this.pos
   def getCount() = count
-  def getSize() = size
   def seek(pos: Int) = this.pos = pos
 }
 
@@ -24,10 +23,8 @@ class BinaryFile(file: File) {
   private val raf = new RandomAccessFile(file, "r")
   private val ch = raf.getChannel()
   private var buf =
-    new PosBufferedInputStream(Channels.newInputStream(ch), 8192)
+    new SeekableBufferedInputStream(Channels.newInputStream(ch), 8192)
   private var ds = new DataInputStream(buf)
-
-  // implicit val implicitDS: DataInputStream = ds
 
   def seek(pos: Long): Unit = {
     val origin = ch.position() - buf.getCount()
@@ -37,7 +34,7 @@ class BinaryFile(file: File) {
       buf.seek(diff.toInt)
     } else {
       raf.seek(pos)
-      buf = new PosBufferedInputStream(Channels.newInputStream(ch), 8192)
+      buf = new SeekableBufferedInputStream(Channels.newInputStream(ch), 8192)
       ds = new DataInputStream(buf)
     }
   }

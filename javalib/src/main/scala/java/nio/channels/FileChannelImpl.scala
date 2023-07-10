@@ -75,7 +75,7 @@ private[java] final class FileChannelImpl(
   private def throwPosixException(functionName: String): Unit = {
     if (!isWindows) {
       val errnoString = fromCString(string.strerror(errno))
-      throw new IOException("${functionName} failed: ${errnoString}")
+      throw new IOException(s"${functionName} failed: ${errnoString}")
     }
   }
 

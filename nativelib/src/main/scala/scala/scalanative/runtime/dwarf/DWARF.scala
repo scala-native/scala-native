@@ -169,7 +169,6 @@ object DWARF {
             val value = v._2.asInstanceOf[Long]
             value
           } else {
-            println(s"Invalid DW_AT_high_pc class: ${v._1.form}")
             0L
           }
       }
@@ -204,26 +203,18 @@ object DWARF {
       debug_info: Section,
       debug_abbrev: Section
   )(implicit bf: BinaryFile): Vector[DIE] = {
-    val start = System.currentTimeMillis()
     bf.seek(debug_info.offset.toLong)
     val end_offset = debug_info.offset.toLong + debug_info.size
     def stop = bf.position() >= end_offset
     val dies = Vector.newBuilder[DIE]
     while (!stop) {
       val die = DIE.parse(debug_info, debug_abbrev)
-
       dies += die
-
     }
-
-    val end = System.currentTimeMillis()
-    println(s"DWARF.parse elapsed: ${end - start} ms")
-    println(s"readUnits: ${DIE.acc} ms")
     dies.result()
   }
 
   object DIE {
-    var acc = 0L
     private val abbrevCache = mutable.Map.empty[Long, Vector[Abbrev]]
     def parse(
         debug_info: Section,
@@ -232,10 +223,8 @@ object DWARF {
 
       val header = Header.parse(bf)
 
-      // println(s"DIE.parse, about to seek ${debug_abbrev.offset.toLong + header.debug_abbrev_offset}")
-
       val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
-      val abbrev = abbrevCache.get(abbrevOffset)  match {
+      val abbrev = abbrevCache.get(abbrevOffset) match {
         case Some(abbrev) => abbrev
         case None =>
           val pos = bf.position()
@@ -245,14 +234,8 @@ object DWARF {
           bf.seek(pos)
           abbrev
       }
-
-      val start = System.currentTimeMillis()
       val idx = IntMap(abbrev.map(a => a.code -> a): _*)
       val units = readUnits(header.unit_offset, header, idx)
-      val end = System.currentTimeMillis()
-      acc += end - start
-
-
       DIE(header, abbrev, units)
     }
   }
@@ -278,7 +261,6 @@ object DWARF {
         case s @ Some(abbrev) =>
           abbrev.attributes.foreach { attr =>
             val value = AttributeValue.parse(header, attr.form)
-            // val pos = ds.position()
             attrs += (attr -> value)
           }
 
@@ -674,7 +656,6 @@ object DWARF {
     def parse(section: Section)(implicit bf: BinaryFile) = {
       bf.seek(section.offset.toLong)
       val header = Header.parse()
-      println(header)
     }
     case class Header(
         unit_length: Int,
@@ -701,13 +682,6 @@ object DWARF {
         val line_base = uint8()
         val line_range = uint8()
         val opcode_base = uint8()
-
-        // pprint.log(
-        //   s"$unit_length, $version, $header_length, " +
-        //     s"$minimum_instruction_length, $maximum_operations_per_instruction, " +
-        //     s"$default_is_stmt, $line_base, $line_range,$opcode_base"
-        // )
-
       }
     }
     class Registers private (
