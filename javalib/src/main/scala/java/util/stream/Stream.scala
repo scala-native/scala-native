@@ -406,14 +406,14 @@ object Stream {
      * An implicit conversion must be missing in the javalib environment.
      */
 
-    val bldr = Stream.builder[T]()
-    for (j <- values)
-      bldr.add(j.asInstanceOf[T])
-    bldr.build()
+    Arrays.stream(values).asInstanceOf[Stream[T]]
   }
 
-  def of[T](t: Object): Stream[T] =
-    Stream.builder[T]().add(t.asInstanceOf[T]).build()
+  def of[T](t: Object): Stream[T] = {
+    val values = new Array[Object](1)
+    values(0) = t
+    Stream.of(values)
+  }
 
   // Since: Java 9
   def ofNullable[T <: Object](t: T): Stream[T] = {

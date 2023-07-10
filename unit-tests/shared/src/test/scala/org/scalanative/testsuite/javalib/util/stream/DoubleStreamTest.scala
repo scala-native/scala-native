@@ -87,12 +87,32 @@ class DoubleStreamTest {
     )
   }
 
-// Methods specified in interface Stream --------------------------------
+// Methods specified in interface Double Stream -------------------------
 
   @Test def doubleStreamBuilderCanBuildAnEmptyStream(): Unit = {
     val s = DoubleStream.builder().build()
     val it = s.iterator()
     assertFalse(it.hasNext())
+  }
+
+  @Test def doubleStreamBuilderCharacteristics(): Unit = {
+    val bldr = Stream.builder[Double]()
+    bldr
+      .add(1.1)
+      .add(-1.1)
+      .add(9.9)
+
+    val s = bldr.build()
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
   }
 
   @Test def doubleStreamEmptyIsEmpty(): Unit = {
@@ -110,6 +130,23 @@ class DoubleStreamTest {
     assertFalse("DoubleStream should be empty and is not.", it.hasNext())
   }
 
+  @Test def streamOf_SingleElementCharacteristics(): Unit = {
+    val expected = 7.7
+
+    val s = DoubleStream.of(expected)
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
+  }
+
   @Test def doubleStreamOf_MultipleElements(): Unit = {
     val s = DoubleStream.of(1.1, 2.2, 3.3)
     val it = s.iterator()
@@ -117,6 +154,21 @@ class DoubleStreamTest {
     assertEquals("element_2", 2.2, it.nextDouble(), epsilon)
     assertEquals("element_3", 3.3, it.nextDouble(), epsilon)
     assertFalse(it.hasNext())
+  }
+
+  @Test def streamOf_MultipleElementsCharacteristics(): Unit = {
+    val s = DoubleStream.of(1.1, 2.2, 3.3)
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
   }
 
   @Test def doubleStreamFlatMapWorks(): Unit = {

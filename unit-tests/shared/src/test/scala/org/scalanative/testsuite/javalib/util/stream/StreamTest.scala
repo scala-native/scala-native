@@ -32,7 +32,7 @@ class StreamTest {
    *   streams.
    */
 
-  private def streamOfSingleton[T](single: T): Stream[T] = {
+  private def streamOfSingleton[T](single: Object): Stream[T] = {
     /* Scala Native Tests must support a range of Scala Versions, currently:
      * 2.12.13 to 3.2.2 (soon to be 3.3.0).
      * Scala 2.13.* and 3.* can distinguish between singleton and varargs
@@ -42,9 +42,10 @@ class StreamTest {
      * This tour of Robin Hood's barn allows Scala 2.12 Tests to run
      * without even more complication.
      */
-    val al = new ArrayList[T](1)
-    al.add(single)
-    al.stream()
+
+    val arr = new Array[Object](1)
+    arr(0) = single
+    Arrays.stream(arr).asInstanceOf[Stream[T]]
   }
 
 // Methods specified in interface BaseStream ----------------------------
@@ -100,6 +101,26 @@ class StreamTest {
     assertFalse(it.hasNext())
   }
 
+  @Test def streamBuilderCharacteristics(): Unit = {
+    val bldr = Stream.builder[String]()
+    bldr
+      .add("A")
+      .add("B")
+      .add("C")
+
+    val s = bldr.build()
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
+  }
+
   @Test def streamEmptyIsEmpty(): Unit = {
     val s = Stream.empty[Int]()
     val it = s.iterator()
@@ -107,13 +128,31 @@ class StreamTest {
   }
 
   @Test def streamOf_SingleElement(): Unit = {
-    val expected = 7
+    val expected = 7.toString()
 
-    val s = streamOfSingleton[Int](expected)
+    val s = streamOfSingleton[String](expected)
     val it = s.iterator()
     assertTrue("stream should not be empty", it.hasNext())
     assertEquals("unexpected element", it.next(), expected)
     assertFalse("stream should be empty and is not.", it.hasNext())
+    assertFalse("stream should be empty and is not.", it.hasNext())
+  }
+
+  @Test def streamOf_SingleElementCharacteristics(): Unit = {
+    val expected = 7.toString()
+
+    val s = streamOfSingleton[String](expected)
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
   }
 
   @Test def streamOf_MultipleIntElements(): Unit = {
@@ -123,6 +162,21 @@ class StreamTest {
     assertEquals("element_2", 2, it.next())
     assertEquals("element_3", 3, it.next())
     assertFalse(it.hasNext())
+  }
+
+  @Test def streamOf_MultipleElementsCharacteristics(): Unit = {
+    val s = Stream.of(1, 2, 3)
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
   }
 
   @Test def streamFlatMapWorks(): Unit = {
@@ -349,9 +403,9 @@ class StreamTest {
   @Test def streamAllMatch_True(): Unit = {
 
     /* stream.allMatch() will return "true" on an empty stream.
-     *  Try to distinguish that "true" from an actual all-elements-match "true"
-     *  Since streams can not be re-used, count s0. If it is non-empty, assume
-     *  its sibling s is also non-empty, distingishing the two "true"s.
+     * Try to distinguish that "true" from an actual all-elements-match "true"
+     * Since streams can not be re-used, count s0. If it is non-empty, assume
+     * its sibling s is also non-empty, distingishing the two "true"s.
      */
     val s0 = Stream.of("Air", "Earth", "Fire", "Water")
     assertTrue("unexpected empty stream", s0.count > 0)
