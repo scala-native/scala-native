@@ -18,6 +18,8 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
+import scala.concurrent._
+import scala.concurrent.duration.Duration
 import scala.scalanative.build.Platform
 import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
@@ -121,6 +123,15 @@ object ScalaNativePluginInternal {
     }
   )
 
+  private def await[T](
+      log: sbt.Logger
+  )(body: ExecutionContext => Future[T]): T = {
+    val ec =
+      ExecutionContext.fromExecutor(ExecutionContext.global, t => log.trace(t))
+
+    Await.result(body(ec), Duration.Inf)
+  }
+
   /** Config settings are called for each project, for each Scala version, and
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
@@ -133,11 +144,12 @@ object ScalaNativePluginInternal {
     nativeLink := Def
       .task {
         val classpath = fullClasspath.value.map(_.data.toPath)
-        val logger = streams.value.log.toLogger
+        val sbtLogger = streams.value.log
+        val nativeLogger = sbtLogger.toLogger
 
         val config =
           build.Config.empty
-            .withLogger(logger)
+            .withLogger(nativeLogger)
             .withClassPath(classpath)
             .withBaseDir(crossTarget.value.toPath())
             .withModuleName(moduleName.value)
@@ -146,8 +158,12 @@ object ScalaNativePluginInternal {
             .withCompilerConfig(nativeConfig.value)
 
         interceptBuildException {
-          // returns config.artifactPath
-          Build.buildCached(config)(sharedScope).toFile()
+          await(sbtLogger) { implicit ec: ExecutionContext =>
+            implicit def scope: Scope = sharedScope
+            Build
+              .buildCached(config)
+              .map(_.toFile())
+          }
         }
       }
       .tag(NativeTags.Link)

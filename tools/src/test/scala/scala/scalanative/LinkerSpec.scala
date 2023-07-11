@@ -7,6 +7,9 @@ import scalanative.build.{Config, NativeConfig}
 import scalanative.build.ScalaNative
 import scalanative.util.Scope
 import org.scalatest.flatspec.AnyFlatSpec
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /** Base class to test the linker. */
 abstract class LinkerSpec extends AnyFlatSpec {
@@ -36,8 +39,8 @@ abstract class LinkerSpec extends AnyFlatSpec {
       val files = compiler.compile(sourcesDir)
       val config = makeConfig(outDir, entry, setupConfig)
       val entries = ScalaNative.entries(config)
-      val result = ScalaNative.link(config, entries)
-
+      val link = ScalaNative.link(config, entries)
+      val result = Await.result(link, 1.minute)
       fn(config, result)
     }
 

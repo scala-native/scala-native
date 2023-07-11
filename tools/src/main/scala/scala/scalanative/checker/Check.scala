@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.util.partitionBy
-import scalanative.compat.CompatParColls.Converters._
+import scala.concurrent._
 
 sealed abstract class NIRCheck(implicit linked: linker.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]
@@ -25,11 +25,15 @@ sealed abstract class NIRCheck(implicit linked: linker.Result) {
       error(s"expected ${expected.show}, but got ${got.show}")
     }
 
-  def run(infos: Seq[Info]): Unit =
+  def run(
+      infos: Seq[Info]
+  )(implicit ec: ExecutionContext): Future[Seq[Check.Error]] = Future {
     infos.foreach { info =>
       name = info.name
       checkInfo(info)
     }
+    errors.toSeq
+  }
 
   def checkInfo(info: Info): Unit = info match {
     case meth: Method => checkMethod(meth)
@@ -744,20 +748,23 @@ object Check {
 
   private def run(
       checkImpl: linker.Result => NIRCheck
-  )(linked: linker.Result): Seq[Error] =
-    partitionBy(linked.infos.values.toSeq)(_.name).par
+  )(
+      linked: linker.Result
+  )(implicit ec: ExecutionContext): Future[Seq[Error]] = {
+    val partitions = partitionBy(linked.infos.values.toSeq)(_.name)
       .map {
         case (_, infos) =>
-          val check = checkImpl(linked)
-          check.run(infos)
-          check.errors
+          checkImpl(linked).run(infos)
       }
-      .seq
-      .flatten
-      .toSeq
+    Future.reduceLeft(partitions)(_ ++ _)
+  }
 
-  def apply(linked: linker.Result): Seq[Error] =
+  def apply(linked: linker.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Error]] =
     run(new Check()(_))(linked)
-  def quick(linked: linker.Result): Seq[Error] =
+  def quick(linked: linker.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Error]] =
     run(new QuickCheck()(_))(linked)
 }

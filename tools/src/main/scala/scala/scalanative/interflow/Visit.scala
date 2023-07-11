@@ -3,7 +3,7 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
-import scalanative.compat.CompatParColls.Converters._
+import scala.concurrent._
 
 trait Visit { self: Interflow =>
   def shallVisit(name: Global): Boolean = {
@@ -91,7 +91,7 @@ trait Visit { self: Interflow =>
     }
   }
 
-  def visitLoop(): Unit = {
+  def visitLoop()(implicit ec: ExecutionContext): Future[Unit] = {
     def visit(name: Global): Unit = {
       if (!isDone(name)) {
         visitMethod(name)
@@ -108,9 +108,11 @@ trait Visit { self: Interflow =>
 
     mode match {
       case build.Mode.Debug =>
-        allTodo().par.foreach(visit)
+        Future
+          .traverse(allTodo()) { defn => Future(visit(defn)) }
+          .map(_ => ())
       case _: build.Mode.Release =>
-        loop()
+        Future(loop())
     }
   }
 

@@ -5,6 +5,9 @@ import scala.scalanative.LinkerSpec
 
 import org.scalatest.matchers.should._
 import scala.scalanative.nir._
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class IssuesSpec extends LinkerSpec with Matchers {
   private val mainClass = "Test"
@@ -22,7 +25,7 @@ class IssuesSpec extends LinkerSpec with Matchers {
       mainClass: String = mainClass
   ) =
     testLinked(source.stripMargin, mainClass) { result =>
-      val erros = Check(result)
+      val erros = Await.result(Check(result), 1.minute)
       erros shouldBe empty
     }
 
