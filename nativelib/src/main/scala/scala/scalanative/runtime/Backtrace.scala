@@ -44,7 +44,7 @@ object Backtrace {
 
   private val cache = TrieMap.empty[String, Option[DwarfInfo]]
 
-  def decodeFileline(pc: Long)(implicit zone: Zone): Option[(String, Int)] = {
+  def decodeFileline(pc: Long): Option[(String, Int)] = {
     cache.get(filename) match {
       case Some(None) =>
         None // cached, there's no debug section
@@ -128,8 +128,8 @@ object Backtrace {
     // see: https://jvns.ca/blog/2018/01/26/mac-memory-maps/
     val pid = libc.getpid().intValue()
     val proc = new ProcessBuilder("vmmap", "-summary", s"$pid").start()
-    Using(Source.fromInputStream(proc.getInputStream())) { vmmap =>
-      val offset = (for {
+    val offset = Using(Source.fromInputStream(proc.getInputStream())) { vmmap =>
+      (for {
         loadAddress <- vmmap
           .getLines()
           // "Load Address:    0x0123456789abcdef"
@@ -143,11 +143,9 @@ object Backtrace {
           .find(_.segname == "__PAGEZERO")
           .map(_.vmsize)
       } yield loadAddress - pageZeroSize).getOrElse(0L)
-      offset
-    } match {
-      case Failure(_)     => 0L
-      case Success(value) => value
     }
+    proc.destroy()
+    offset.getOrElse(0L)
   }
 
   private def filterSubprograms(dies: Vector[CompileUnit]) = {

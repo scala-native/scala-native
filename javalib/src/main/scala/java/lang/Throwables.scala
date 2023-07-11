@@ -22,7 +22,8 @@ private[lang] object StackTrace {
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
-    val fileline = Backtrace.decodeFileline(ip.toLong)
+    val fileline: Option[(String, Int)] =
+      Backtrace.decodeFileline(ip.toLong)
 
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's

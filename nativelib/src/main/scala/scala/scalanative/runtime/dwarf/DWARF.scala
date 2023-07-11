@@ -160,17 +160,23 @@ object DWARF {
     }
 
     def getHighPC(lowPC: Long): Option[Long] =
+      // As of DWARF v4, DW_AT_high_pc can be a constant that represents the offset from low_pc
+      // > If the value of the DW_AT_high_pc is of class address, it
+      // > is the relocated address of the first location past the last instruction associated with the entity; if
+      // > it is of class constant, the value is an unsigned integer offset which when added to the low PC
+      // > gives the address of the first location past the last instruction associated with the entity.
+      // "DWARF Debugging Information Format Version 4" - 2.17.2 Contiguous Address Range
+      // https://dwarfstd.org/doc/DWARF4.pdf
       values.collectFirst {
-        case v if v._1.at == DWARF.Attribute.DW_AT_high_pc =>
-          if (DWARF.Form.isConstantClass(v._1.form)) {
-            val value = v._2.asInstanceOf[UInt]
-            lowPC + value.toLong
-          } else if (DWARF.Form.isAddressClass(v._1.form)) {
-            val value = v._2.asInstanceOf[Long]
-            value
-          } else {
-            0L
-          }
+        case v
+            if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
+              DWARF.Form.isConstantClass(v._1.form) =>
+          val value = v._2.asInstanceOf[UInt]
+          lowPC + value.toLong
+        case v
+            if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
+              DWARF.Form.isAddressClass(v._1.form) =>
+          v._2.asInstanceOf[Long]
       }
   }
 
