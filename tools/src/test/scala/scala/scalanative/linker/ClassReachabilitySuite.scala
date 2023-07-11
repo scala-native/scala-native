@@ -118,8 +118,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
       (source, entry, commonReachable ++ reachable)
     }
 
-    @Test def allocatingClass(): Unit = testReachable() {
-      val source = """
+  @Test def allocatingClass(): Unit = testReachable() {
+    val source = """
       class Parent
       class Child extends Parent
 
@@ -127,17 +127,17 @@ class ClassReachabilitySuite extends ReachabilitySuite {
         def main(args: Array[String]): Unit = new Child
       }
     """
-      val entry = TestMain
-      val reachable = Seq(
-        Child,
-        ChildInit,
-        Parent,
-        ParentInit,
-        Object,
-        ObjectInit
-      )
-      (source, entry, commonReachable ++ reachable)
-    }
+    val entry = TestMain
+    val reachable = Seq(
+      Child,
+      ChildInit,
+      Parent,
+      ParentInit,
+      Object,
+      ObjectInit
+    )
+    (source, entry, commonReachable ++ reachable)
+  }
 
   @Test def callParentMethodUnallocated(): Unit = testReachable() {
     val source = """

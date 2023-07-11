@@ -8,7 +8,7 @@ import org.junit.Assert._
 import scala.scalanative.NIRCompiler
 import scala.scalanative.api.CompilationFailedException
 
-class SafeZoneTest extends AnyFlatSpec with Matchers {
+class SafeZoneTest {
   def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
@@ -37,7 +37,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
   )
 
   @Test def referenceEscapedObject(): Unit = {
-    intercept[CompilationFailedException] {
+    val err = assertThrows(classOf[CompilationFailedException], () => 
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
@@ -53,7 +53,8 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |  }
         |}
         |""".stripMargin))
-    }.getMessage should include("Sealed type variable T cannot  be instantiated to box A^")
+    )
+    assertTrue(err.getMessage.contains("Sealed type variable T cannot  be instantiated to box A^"))
   }
 
   @Test def typeCheckCapturedZone(): Unit = nativeCompilation(
@@ -82,7 +83,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
   )
 
   @Test def typeCheckNotCaptured(): Unit = {
-    intercept[CompilationFailedException] {
+    val err = assertThrows(classOf[CompilationFailedException], () => 
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
@@ -102,6 +103,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |}
         |
         |""".stripMargin))
-    }.getMessage should include("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}")
+    )
+    assertTrue(err.getMessage().contains("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}"))
   }
 }
