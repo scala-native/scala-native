@@ -13,7 +13,7 @@ class SafeZoneTest {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
-        fail(s"Failed to compile source: ${ex.getMessage}", ex)
+        fail(s"Failed to compile source: $ex")
     }
   }
 
