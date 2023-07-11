@@ -14,7 +14,7 @@ class NativeCompilerTest:
     try scalanative.NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
-        fail(s"Failed to compile source: ${ex.getMessage}", ex)
+        fail(s"Failed to compile source: ${ex}")
     }
   }
 
@@ -28,7 +28,7 @@ class NativeCompilerTest:
       try scalanative.NIRCompiler(_.compile(sourcesDir))
       catch {
         case ex: CompilationFailedException =>
-          fail(s"Failed to compile source: ${ex.getMessage}", ex)
+          fail(s"Failed to compile source: $ex")
       }
     }
   }

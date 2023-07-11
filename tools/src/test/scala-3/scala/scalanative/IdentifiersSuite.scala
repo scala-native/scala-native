@@ -1,5 +1,7 @@
 package scala.scalanative.linker
 
+import org.junit._
+
 import scala.scalanative.nir.{Global, Rt, Sig, Type}
 
 class IdentifiersSuite extends ReachabilitySuite {
