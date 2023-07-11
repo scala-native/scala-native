@@ -135,7 +135,8 @@ object Backtrace {
           // "Load Address:    0x0123456789abcdef"
           .find(_.startsWith("Load Address"))
           .map { line =>
-            val addressStr = line.split(":").last.trim.drop(2) // drop the prefix 0x
+            val addressStr =
+              line.split(":").last.trim.drop(2) // drop the prefix 0x
             java.lang.Long.parseLong(addressStr, 16)
           }
         pageZeroSize <- macho.segments
@@ -143,9 +144,10 @@ object Backtrace {
           .map(_.vmsize)
       } yield loadAddress - pageZeroSize).getOrElse(0L)
       offset
-    } match
-      case Failure(_) => 0L
+    } match {
+      case Failure(_)     => 0L
       case Success(value) => value
+    }
   }
 
   private def filterSubprograms(dies: Vector[CompileUnit]) = {

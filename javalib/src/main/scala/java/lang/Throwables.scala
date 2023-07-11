@@ -14,7 +14,7 @@ private[lang] object StackTrace {
 
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte],
-      ip: CUnsignedLong,
+      ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
     val name = alloc[CChar](nameMax.toUSize)
@@ -39,7 +39,7 @@ private[lang] object StackTrace {
    */
   private def cachedStackTraceElement(
       cursor: Ptr[scala.Byte],
-      ip: CUnsignedLong,
+      ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
 

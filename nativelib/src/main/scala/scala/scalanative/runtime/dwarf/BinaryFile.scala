@@ -14,7 +14,7 @@ import java.io.InputStream
 
 class SeekableBufferedInputStream(in: InputStream, size: Int)
     extends BufferedInputStream(in, size) {
-  def position(_pos: Long) =  _pos - count + this.pos
+  def position(_pos: Long) = _pos - count + this.pos
   def getCount() = count
   def seek(pos: Int) = this.pos = pos
 }

@@ -16,7 +16,7 @@ object Hello {
       "Hello$.g(Hello.scala:6)",
       "Hello$.f(Hello.scala:4)",
       "Hello$.main(Hello.scala:2)",
-      "Hello.main(Hello.scala:2)",
+      "Hello.main(Hello.scala:2)"
     )
     val actual = stacktraceHello.map(print)
     assert(actual == expectedHello, s"actual:\n${actual.mkString("\n")}")

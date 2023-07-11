@@ -149,8 +149,8 @@ object DWARF {
       case v if v._1.at == DWARF.Attribute.DW_AT_decl_line =>
         v._2 match {
           case x: UShort => x.toInt
-          case x: UByte => x.toInt
-          case _ => 0
+          case x: UByte  => x.toInt
+          case _         => 0
         }
     }
 
