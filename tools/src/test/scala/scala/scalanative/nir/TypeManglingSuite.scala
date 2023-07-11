@@ -1,11 +1,12 @@
 package scala.scalanative
 package nir
 
-import org.scalatest._
-import org.scalatest.funsuite.AnyFunSuite
+import org.junit.Test
+import org.junit.Assert._
 
-class TypeManglingSuite extends AnyFunSuite {
-  Seq(
+class TypeManglingSuite {
+
+  @Test def mangling(): Unit = Seq(
     Type.Vararg,
     Type.Ptr,
     Type.Byte,
@@ -31,13 +32,14 @@ class TypeManglingSuite extends AnyFunSuite {
     Type.Ref(Rt.Object.name, exact = false, nullable = true),
     Type.Ref(Rt.Object.name, exact = false, nullable = false)
   ).foreach { ty =>
-    test(s"mangle/unmangle type `${ty.toString}`") {
-      val mangled = ty.mangle
-      assert(mangled.nonEmpty, "empty mangle")
-      val unmangled = Unmangle.unmangleType(mangled)
-      assert(unmangled == ty, "different unmangle")
-      val remangled = unmangled.mangle
-      assert(mangled == remangled, "different remangle")
-    }
+    val clue = s"`${ty.toString}`"
+    val mangled = ty.mangle
+    assertTrue(s"$clue - empty mangle", mangled.nonEmpty)
+
+    val unmangled = Unmangle.unmangleType(mangled)
+    assertEquals(s"$clue - different unmangle", ty, unmangled)
+
+    val remangled = unmangled.mangle
+    assertEquals(s"$clue - different remangle", mangled, remangled)
   }
 }

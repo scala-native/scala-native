@@ -1,12 +1,14 @@
 package scala.scalanative
 package nir
 
-import org.scalatest._
-import org.scalatest.funsuite.AnyFunSuite
+import org.junit.Test
+import org.junit.Assert._
+
 import Sig.Scope.Private
 
-class GlobalManglingSuite extends AnyFunSuite {
-  Seq(
+class GlobalManglingSuite {
+
+  @Test def mangling(): Unit = Seq(
     Global.Top("foo"),
     Global.Top("foo.bar.Baz"),
     Global.Top("1"),
@@ -38,13 +40,15 @@ class GlobalManglingSuite extends AnyFunSuite {
     Global.Member(Global.Top("foo"), Sig.Extern("malloc")),
     Global.Member(Global.Top("foo"), Sig.Generated("type"))
   ).foreach { g =>
-    test(s"mangle/unmangle global `${g.toString}`") {
-      val mangled = g.mangle
-      assert(mangled.nonEmpty, "empty mangle")
-      val unmangled = Unmangle.unmangleGlobal(mangled)
-      assert(unmangled == g, "different unmangle")
-      val remangled = unmangled.mangle
-      assert(mangled == remangled, "different remangle")
-    }
+    val clue = "`${g.toString}` "
+    val mangled = g.mangle
+    assertTrue(s"$clue empty mangle", mangled.nonEmpty)
+
+    val unmangled = Unmangle.unmangleGlobal(mangled)
+    assertEquals(s"$clue different unmangle", g, unmangled)
+
+    val remangled = unmangled.mangle
+    assertEquals(s"$clue different remangle", mangled, remangled)
   }
+
 }

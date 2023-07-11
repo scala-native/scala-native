@@ -1,10 +1,11 @@
 package scala.scalanative
 package nir
 
-import org.scalatest._
-import org.scalatest.funsuite.AnyFunSuite
+import org.junit.Test
+import org.junit.Assert._
+
 import Sig.Scope._
-class SigManglingSuite extends AnyFunSuite {
+class SigManglingSuite {
   val fieldNames =
     Seq("f", "len", "field", "-field", "2", "-", "-2field", "2-field")
   val scopes = Seq(
@@ -30,7 +31,7 @@ class SigManglingSuite extends AnyFunSuite {
 
   val proxies = methodArgs.map(Sig.Proxy("bar", _))
 
-  {
+  @Test def sigMangling(): Unit = {
     fields ++
       methods ++
       proxies ++
@@ -46,13 +47,15 @@ class SigManglingSuite extends AnyFunSuite {
         Sig.Duplicate(Sig.Method("bar", Seq(Type.Unit)), Seq(Type.Unit))
       )
   }.foreach { sig =>
-    test(s"mangle/unmangle sig `${sig.toString}`") {
-      val mangled = sig.mangle
-      assert(mangled.nonEmpty, "empty mangle")
-      val unmangled = Unmangle.unmangleSig(mangled)
-      assert(unmangled == sig, "different unmangle")
-      val remangled = unmangled.mangle
-      assert(mangled == remangled, "different remangle")
-    }
+    val clue = "`${sig.toString}`"
+    val mangled = sig.mangle
+    assertTrue(s"$clue empty mangle ", mangled.nonEmpty)
+
+    val unmangled = Unmangle.unmangleSig(mangled)
+    assertEquals(s"$clue - different unmangle", sig, unmangled)
+
+    val remangled = unmangled.mangle
+    assertEquals(s"$clue different remangle", mangled, remangled)
   }
+
 }

@@ -1,22 +1,22 @@
 package scala.scalanative.nir
 
-import org.scalatest.funsuite.AnyFunSuite
+import org.junit.Test
+import org.junit.Assert._
 
-class TypesSuite extends AnyFunSuite {
-
-  test("Determinate if type boxes pointer for known types") {
+class TypesSuite {
+  @Test def pointerBoxTypes(): Unit = {
     Type.boxesTo.foreach {
       case (boxed: Type.Ref, Type.Ptr) =>
-        assert(Type.isPtrBox(boxed), s"$boxed should be Type.Ptr")
+        assertTrue(s"$boxed should be Type.Ptr", Type.isPtrBox(boxed))
       case (boxed: Type.Ref, _) =>
-        assert(!Type.isPtrBox(boxed), s"$boxed should be primitive type")
+        assertTrue(s"$boxed should be primitive type", !Type.isPtrBox(boxed))
       case (ty, _) =>
         fail(s"Expected reference boxed type, but got ${ty}")
     }
   }
 
-  test("Unknown reference types are not PtrBox") {
-    assert(!Type.isPtrBox(Type.Ref(Global.Top("foo.bar"))))
+  @Test def nonPointerBoxType(): Unit = {
+    assertFalse(Type.isPtrBox(Type.Ref(Global.Top("foo.bar"))))
   }
 
 }

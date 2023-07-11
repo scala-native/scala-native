@@ -2,8 +2,9 @@ package scala.scalanative.memory
 
 import java.nio.file.Files
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.NIRCompiler
 import scala.scalanative.api.CompilationFailedException
 
@@ -16,7 +17,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
     }
   }
 
-  "The compiler" should "allow returning a reference to object in zone if it doesn't escape the zone" in nativeCompilation(
+  @Test def referenceNonEscapedObject(): Unit =  nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.memory.SafeZone
@@ -35,7 +36,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |""".stripMargin
   )
 
-  it should "forbid any reference to object in zone from escaping the zone" in {
+  @Test def referenceEscapedObject(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
@@ -55,7 +56,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
     }.getMessage should include("Sealed type variable T cannot  be instantiated to box A^")
   }
 
-  it should "type check when the types capture zones correctly" in nativeCompilation(
+  @Test def typeCheckCapturedZone(): Unit = nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.memory.SafeZone
@@ -80,7 +81,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |""".stripMargin
   )
 
-  it should "not type check when the types don't capture zones correctly" in {
+  @Test def typeCheckNotCaptured(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking

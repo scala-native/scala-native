@@ -2,15 +2,14 @@ package scala.scalanative
 
 import java.nio.file.Files
 
-import org.scalatest.*
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
+import org.junit.Test
+import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 import scala.scalanative.nir.*
 
-class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
+class NIRCompilerTest3 {
   inline def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
@@ -19,7 +18,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }
   }
 
-  "The compiler" should "allow to define top level extern methods" in nativeCompilation(
+  @Test def topLevelExternMethods(): Unit = nativeCompilation(
     """
       |import scala.scalanative.unsafe.extern
       |
@@ -27,7 +26,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
       |""".stripMargin
   )
 
-  it should "report error for top-level extern method without result type" in {
+  @Test def topLevelExternMethodNoResultType(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.scalanative.unsafe.extern
@@ -36,7 +35,8 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
         |""".stripMargin))
     }.getMessage should include("extern method foo needs result type")
   }
-  it should "report error for extern in top-level val definition" in {
+
+  @Test def externInNonExternTopLevelDefn(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.scalanative.unsafe.extern
@@ -46,14 +46,15 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("extern` cannot be used in val definition")
   }
 
-  it should "compile top-level extern var definition" in nativeCompilation(
+  @Test def topLevelExternVar(): Unit = nativeCompilation(
     """
       |import scala.scalanative.unsafe.extern
       |
       |var foo: Int = extern
       |""".stripMargin
   )
-  it should "report error for top-level extern variable without result type" in {
+
+  @Test def topLevelExternVarNoResultType(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.scalanative.unsafe.extern
@@ -66,7 +67,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
   val ErrorBothExternAndExported =
     "Member cannot be defined both exported and extern"
 
-  it should "report error for top-level exported extern" in {
+  @Test def topLevelExportedExtern(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
         |import scala.scalanative.unsafe.{extern, exported}
@@ -77,7 +78,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should startWith(ErrorBothExternAndExported)
   }
 
-  it should "report error for top-level exported accessor extern" in {
+  @Test def topLevelExportedAccessorExtern(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
          |import scala.scalanative.unsafe.*
@@ -88,7 +89,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should startWith(ErrorBothExternAndExported)
   }
 
-  it should "all to define top level exports" in {
+  @Test def topLevelExports(): Unit = {
     compileAndLoad("source.scala" -> """
       |import scala.scalanative.unsafe.*
       |
@@ -116,11 +117,11 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
       ).map(Owner.member(_))
 
       val loaded = defns.map(_.name)
-      assert(expected.diff(loaded).isEmpty)
+      assertTrue(expected.diff(loaded).isEmpty)
     }
   }
 
-  it should "allow to inline function passed to CFuncPtr.fromScalaFunction" in nativeCompilation(
+  @Test def inlineCFuncPtrFromScalaFunction(): Unit = nativeCompilation(
     """
         |import scala.scalanative.unsafe.*
         |
@@ -140,7 +141,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
         |""".stripMargin
   )
 
-  it should "report error when inlining extern function" in {
+  @Test def inlineExternFunction(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
            |import scala.scalanative.unsafe.*
@@ -152,7 +153,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("Extern method cannot be inlined")
   }
 
-  it should "report error when inlining extern function in extern trait" in {
+  @Test def inlineExternFunctionInTrait(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
            |import scala.scalanative.unsafe.*
@@ -164,7 +165,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("Extern method cannot be inlined")
   }
 
-  it should "report error when inlining extern function in top-level" in {
+  @Test def inlineTopLevelExternFunction(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
            |import scala.scalanative.unsafe.*
@@ -174,7 +175,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("Extern method cannot be inlined")
   }
 
-  it should "report error when inlining exported function" in {
+  @Test def inlineExportedFunction(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
            |import scala.scalanative.unsafe.*
@@ -184,7 +185,7 @@ class NIRCompilerTest3 extends AnyFlatSpec with Matchers with Inspectors {
     }.getMessage should include("Exported method cannot be inlined")
   }
 
-  it should "report error when inlining exported field" in {
+  @Test def inlineExportedField(): Unit = {
     intercept[CompilationFailedException] {
       NIRCompiler(_.compile("""
            |import scala.scalanative.unsafe.*

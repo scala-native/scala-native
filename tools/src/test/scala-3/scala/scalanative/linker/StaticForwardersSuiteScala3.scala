@@ -1,12 +1,15 @@
 package scala.scalanative.linker
 
-import org.scalatest._
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.LinkerSpec
 import scala.scalanative.nir._
 import scala.scalanative.linker.StaticForwardersSuite._
 
 class StaticForwardersSuiteScala3 extends LinkerSpec {
-  "Static forwarder methods" should "be generated for @main annotated method" in {
+
+  @Test def mainAnnotation(): Unit = {
     val MainClass = Global.Top("myMainFunction")
     val Package = Global.Top("Main$package")
     val PackageModule = Global.Top("Main$package$")
@@ -25,7 +28,7 @@ class StaticForwardersSuiteScala3 extends LinkerSpec {
         PackageModule.member(Sig.Method("myMainFunction", Seq(Type.Unit)))
       )
       val names = defns.map(_.name)
-      assert(expected.diff(names).isEmpty)
+      assertTrue(expected.diff(names).isEmpty)
     }
   }
 }

@@ -10,6 +10,8 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
+import org.junit.Assert._
+
 /** Base class to test code generation */
 abstract class CodeGenSpec extends OptimizerSpec {
 
@@ -35,7 +37,7 @@ abstract class CodeGenSpec extends OptimizerSpec {
           val workDir = VirtualDirectory.real(config.workDir)
           val outfile = Paths.get("out.ll")
 
-          assert(workDir.contains(outfile), "out.ll not found.")
+          assertTrue("out.ll not found.", workDir.contains(outfile))
 
           f(config, optimized, outfile)
         }

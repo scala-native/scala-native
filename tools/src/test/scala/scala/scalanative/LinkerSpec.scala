@@ -6,13 +6,12 @@ import java.nio.file.{Files, Path, Paths}
 import scalanative.build.{Config, NativeConfig}
 import scalanative.build.ScalaNative
 import scalanative.util.Scope
-import org.scalatest.flatspec.AnyFlatSpec
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 /** Base class to test the linker. */
-abstract class LinkerSpec extends AnyFlatSpec {
+abstract class LinkerSpec {
 
   /** Runs the linker using `driver` with `entry` as entry point on `sources`,
    *  and applies `fn` to the definitions.
