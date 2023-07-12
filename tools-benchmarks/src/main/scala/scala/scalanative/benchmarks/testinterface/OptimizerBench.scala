@@ -9,13 +9,16 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.annotations.Mode._
 
 import scala.scalanative.build._
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 @Fork(1)
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 5)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 10, time = 2, timeUnit = TimeUnit.SECONDS)
 abstract class OptimizerBench(mode: build.Mode) {
   var config: Config = _
   var linked: linker.Result = _
@@ -30,7 +33,10 @@ abstract class OptimizerBench(mode: build.Mode) {
 
     val entries = build.ScalaNative.entries(config)
     util.Scope { implicit scope =>
-      linked = ScalaNative.link(config, entries)
+      linked = Await.result(
+        ScalaNative.link(config, entries),
+        Duration.Inf
+      )
     }
   }
 
@@ -47,7 +53,8 @@ abstract class OptimizerBench(mode: build.Mode) {
 
   @Benchmark
   def optimize(): Unit = {
-    val optimized = ScalaNative.optimize(config, linked)
+    val optimize = ScalaNative.optimize(config, linked)
+    val optimized = Await.result(optimize, Duration.Inf)
     assert(optimized.unavailable.size == 0)
   }
 }

@@ -10,6 +10,8 @@ import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.Link
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
+import scala.concurrent._
+import scala.util.Success
 
 /** Internal utilities to instrument Scala Native linker, optimizer and codegen.
  */
@@ -28,14 +30,19 @@ private[scalanative] object ScalaNative {
    *  assumption.
    */
   def link(config: Config, entries: Seq[Global])(implicit
-      scope: Scope
-  ): linker.Result =
-    dump(config, "linked") {
-      check(config, forceQuickCheck = true) {
-        val mtSupport = config.compilerConfig.multithreadingSupport.toString()
-        val linkingMsg = s"Linking (multithreading ${mtSupport})"
-        config.logger.time(linkingMsg)(Link(config, entries))
+      scope: Scope,
+      ec: ExecutionContext
+  ): Future[linker.Result] =
+    check(config, forceQuickCheck = true) {
+      val mtSupport = config.compilerConfig.multithreadingSupport.toString()
+      val linkingMsg = s"Linking (multithreading ${mtSupport})"
+      config.logger.time(linkingMsg) {
+        Link(config, entries)
       }
+    }.andThen {
+      case Success(result) =>
+        dumpDefns(config, "linked", result.defns)
+        logLinked(config, result)
     }
 
   /** Show linked universe stats or fail with missing symbols. */
@@ -73,71 +80,80 @@ private[scalanative] object ScalaNative {
   }
 
   /** Optimizer high-level NIR under closed-world assumption. */
-  def optimize(config: Config, linked: linker.Result): linker.Result =
-    dump(config, "optimized") {
-      check(config) {
-        if (config.compilerConfig.optimize) {
-          config.logger.time(s"Optimizing (${config.mode} mode)") {
-            val optimized =
-              interflow.Interflow(config, linked)
-
-            linker.Link(config, linked.entries, optimized)
+  def optimize(config: Config, linked: linker.Result)(implicit
+      ec: ExecutionContext
+  ): Future[linker.Result] = {
+    import config.logger
+    if (config.compilerConfig.optimize)
+      logger.timeAsync(s"Optimizing (${config.mode} mode)") {
+        Interflow
+          .optimize(config, linked)
+          .map(Link(config, linked.entries, _))
+          .andThen {
+            case Success(result) => dumpDefns(config, "optimized", result.defns)
           }
-        } else {
-          config.logger.time("Optimizing (skipped)") {
-            linked
-          }
-        }
+          .flatMap(check(config)(_))
       }
+    else {
+      logger.info("Optimizing skipped")
+      Future.successful(linked)
     }
+  }
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
-  def codegen(config: Config, linked: linker.Result): Seq[Path] = {
+  def codegen(config: Config, linked: linker.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Path]] = {
     val withMetadata =
-      if (config.compilerConfig.debugMetadata) " (with debug metadata)" else ""
+      if (config.compilerConfig.debugMetadata) " (with debug metadata)"
+      else ""
 
-    val llPaths =
-      config.logger.time(s"Generating intermediate code$withMetadata") {
-        CodeGen(config, linked)
-      }
-    config.logger.info(s"Produced ${llPaths.length} files")
-    llPaths
+    config.logger.timeAsync(s"Generating intermediate code$withMetadata") {
+      CodeGen(config, linked)
+        .andThen {
+          case Success(paths) =>
+            config.logger.info(s"Produced ${paths.length} files")
+        }
+    }
   }
 
   /** Run NIR checker on the linker result. */
-  def check(
-      config: Config
-  )(linked: scalanative.linker.Result): scalanative.linker.Result =
+  def check(config: Config)(
+      linked: scalanative.linker.Result
+  )(implicit ec: ExecutionContext): Future[scalanative.linker.Result] = {
     check(config, forceQuickCheck = false)(linked)
+  }
 
-  private def check(
-      config: Config,
-      forceQuickCheck: Boolean
-  )(linked: scalanative.linker.Result): scalanative.linker.Result = {
+  private def check(config: Config, forceQuickCheck: Boolean)(
+      linked: scalanative.linker.Result
+  )(implicit ec: ExecutionContext): Future[scalanative.linker.Result] = {
     val performFullCheck = config.check
     val checkMode = if (performFullCheck) "full" else "quick"
+    val fatalWarnings = config.compilerConfig.checkFatalWarnings
+
     if (config.check || forceQuickCheck) {
-      config.logger.time(s"Checking intermediate code ($checkMode)") {
-        val fatalWarnings = config.compilerConfig.checkFatalWarnings
-        val errors =
+      config.logger
+        .timeAsync(s"Checking intermediate code ($checkMode)") {
           if (performFullCheck) Check(linked)
           else Check.quick(linked)
-        if (errors.nonEmpty) {
-          showErrors(
-            log =
-              if (fatalWarnings) config.logger.error(_)
-              else config.logger.warn(_),
-            showContext = performFullCheck
-          )(errors, linked)
-          if (fatalWarnings)
-            throw new BuildException(
-              "Fatal warning(s) found; see the error output for details."
-            )
         }
-      }
-    }
+        .map {
+          case Nil => linked
+          case errors =>
+            showErrors(
+              log =
+                if (fatalWarnings) config.logger.error(_)
+                else config.logger.warn(_),
+              showContext = performFullCheck
+            )(errors, linked)
 
-    linked
+            if (fatalWarnings)
+              throw new BuildException(
+                "Fatal warning(s) found; see the error output for details."
+              )
+            linked
+        }
+    } else Future.successful(linked)
   }
 
   private def showErrors(
@@ -173,13 +189,6 @@ private[scalanative] object ScalaNative {
     log(s"\n${errors.size} errors found")
   }
 
-  def dump(config: Config, phase: String)(
-      linked: scalanative.linker.Result
-  ): scalanative.linker.Result = {
-    dumpDefns(config, phase, linked.defns)
-    linked
-  }
-
   def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
     if (config.dump) {
       config.logger.time(s"Dumping intermediate code ($phase)") {
@@ -198,7 +207,10 @@ private[scalanative] object ScalaNative {
       Global.Top(encoded)
     }
 
-  def genBuildInfo(config: Config): Seq[java.nio.file.Path] =
+  def genBuildInfo(
+      config: Config
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] = Future {
     LLVM.generateLLVMIdent(config)
+  }
 
 }

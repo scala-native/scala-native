@@ -16,6 +16,9 @@ import java.net.URLClassLoader
 import java.io.File
 import scala.scalanative.build.Build
 import scala.scalanative.linker.Result
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /** Run partest in this VM. Assumes we're running in a forked VM! */
 case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
@@ -159,6 +162,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       resolvedVals = mutable.Map.empty
     )
 
-    Build.findAndCompileNativeLibs(config, linkerResult)
+    val build = Build.findAndCompileNativeLibs(config, linkerResult)
+    Await.result(build, Duration.Inf)
   }
 }

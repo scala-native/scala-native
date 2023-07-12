@@ -6,6 +6,9 @@ import scalanative.io.VirtualDirectory
 import scalanative.build.Config
 import scalanative.build.ScalaNative
 import scalanative.util.Scope
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /** Base class to test code generation */
 abstract class CodeGenSpec extends OptimizerSpec {
@@ -27,7 +30,8 @@ abstract class CodeGenSpec extends OptimizerSpec {
     optimize(entry, sources) {
       case (config, optimized) =>
         Scope { implicit in =>
-          ScalaNative.codegen(config, optimized)
+          val codeGen = ScalaNative.codegen(config, optimized)
+          Await.ready(codeGen, 1.minute)
           val workDir = VirtualDirectory.real(config.workDir)
           val outfile = Paths.get("out.ll")
 

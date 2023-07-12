@@ -12,6 +12,9 @@ import scala.scalanative.util.Scope
 import scala.tools.nsc.GenericRunnerCommand._
 import scala.tools.partest.scalanative.Defaults
 import scala.tools.nsc.Properties.{copyrightString, versionString}
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class MainGenericRunner {
   private def errorFn(str: String) = Defaults.errorFn(str)
@@ -73,7 +76,10 @@ class MainGenericRunner {
         .withMainClass(Some(command.thingToRun))
         .withBaseDir(dir)
 
-      Scope { implicit s => Build.build(config) }
+      Scope { implicit s =>
+        val build = Build.build(config)
+        Await.result(build, Duration.Inf)
+      }
     }
 
     val res = {

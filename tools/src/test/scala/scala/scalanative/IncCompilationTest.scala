@@ -6,10 +6,15 @@ import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.build.{Config, NativeConfig, _}
 import scala.scalanative.util.Scope
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, duration}
 
 // The test is used for incremental compilation
 
 class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
+  private def buildAwait(config: Config)(implicit scope: Scope) =
+    Await.result(Build.build(config), duration.Duration.Inf)
+
   "The test framework" should "generate the llvm IR of object A" in {
     Scope { implicit in =>
       val source = """
@@ -42,7 +47,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       val nativeConfig = defaultNativeConfig
         .withOptimizerConfig(optimizerConfig)
       val config = makeConfig(outDir, "out", entry, nativeConfig)
-      Build.build(config)
+      buildAwait(config)
     }
   }
 
@@ -84,7 +89,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       makeChanged(outDir, changedTop)
       val config = makeConfig(outDir, "out1", entry, defaultNativeConfig)
 
-      Build.build(config)
+      buildAwait(config)
     }
   }
 

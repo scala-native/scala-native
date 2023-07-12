@@ -8,6 +8,9 @@ import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.{Sig, Global}
 import scalanative.build.ScalaNative
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 trait ReachabilitySuite extends AnyFunSuite {
 
@@ -85,8 +88,8 @@ trait ReachabilitySuite extends AnyFunSuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files = compiler.compile(sourcesDir)
       val config = makeConfig(outDir, mainClass)
-      val result = ScalaNative.link(config, entries)
-
+      val link = ScalaNative.link(config, entries)
+      val result = Await.result(link, 1.minute)
       f(result)
     }
 

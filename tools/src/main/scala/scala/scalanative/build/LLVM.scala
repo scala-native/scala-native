@@ -5,8 +5,9 @@ import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.sys.process._
 import scala.scalanative.build.IO.RichPath
-import scala.scalanative.compat.CompatParColls.Converters._
 import scala.scalanative.nir.Attr.Link
+
+import scala.concurrent._
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -32,37 +33,27 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path]): Seq[Path] = {
+  def compile(config: Config, paths: Seq[Path])(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Path]] = {
     implicit val _config: Config = config
 
-    def compileIfNeeded(srcPath: Path): Path = {
+    def compileIfNeeded(srcPath: Path): Future[Path] = {
       val inpath = srcPath.abs
       val outpath = inpath + oExt
       val objPath = Paths.get(outpath)
       // compile if out of date or no object file
-      if (needsCompiling(srcPath, objPath)) {
-        compileFile(srcPath, objPath)
-      } else objPath
+      if (needsCompiling(srcPath, objPath)) compileFile(srcPath, objPath)
+      else Future.successful(objPath)
     }
     // generate .o files for included source files
-    if (config.targetsMsys || config.targetsCygwin) {
-      // TODO: should this be configurable in build.sbt?
-      // sequentially; produces correct clang command lines in sbt -debug mode
-      // clang command lines needed for quickly diagnosing failed compiles.
-      paths.map { srcPath =>
-        compileIfNeeded(srcPath)
-      }
-    } else {
-      // generate .o files for all included source files in parallel
-      paths.par.map { srcPath =>
-        compileIfNeeded(srcPath)
-      }.seq
-    }
+    Future.traverse(paths)(compileIfNeeded)
   }
 
   private def compileFile(srcPath: Path, objPath: Path)(implicit
-      config: Config
-  ): Path = {
+      config: Config,
+      ec: ExecutionContext
+  ): Future[Path] = Future {
     val inpath = srcPath.abs
     val outpath = objPath.abs
     val isCpp = inpath.endsWith(cppExt)
