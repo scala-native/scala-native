@@ -33,12 +33,11 @@ trait Transform {
     inst match {
       case Inst.Label(n, params) =>
         val newparams = params.map { param =>
-          Val.Local(param.name, onType(param.ty))
+          param.copy(valty = onType(param.ty))
         }
         Inst.Label(n, newparams)
-      case Inst.Let(n, op, unwind) =>
-        Inst.Let(n, onOp(op), onNext(unwind))
-
+      case i @ Inst.Let(_, _, op, unwind) =>
+        i.copy(op = onOp(op), unwind = onNext(unwind))
       case Inst.Ret(v) =>
         Inst.Ret(onVal(v))
       case Inst.Jump(next) =>
@@ -125,10 +124,10 @@ trait Transform {
     case Val.StructValue(values) => Val.StructValue(values.map(onVal))
     case Val.ArrayValue(ty, values) =>
       Val.ArrayValue(onType(ty), values.map(onVal))
-    case Val.Local(n, ty)  => Val.Local(n, onType(ty))
-    case Val.Global(n, ty) => Val.Global(n, onType(ty))
-    case Val.Const(v)      => Val.Const(onVal(v))
-    case _                 => value
+    case v @ Val.Local(_, ty, _) => v.copy(valty = onType(ty))
+    case Val.Global(n, ty)       => Val.Global(n, onType(ty))
+    case Val.Const(v)            => Val.Const(onVal(v))
+    case _                       => value
   }
 
   def onType(ty: Type): Type = ty match {

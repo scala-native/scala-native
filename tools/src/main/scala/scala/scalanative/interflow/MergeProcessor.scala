@@ -65,7 +65,7 @@ final class MergeProcessor(
         val newstate = state.fullClone(merge)
         params.zip(values).foreach {
           case (param, value) =>
-            newstate.storeLocal(param.name, value)
+            newstate.storeLocal(param.id, value)
         }
         val phis =
           if (id == -1 && !doInline) {
@@ -189,7 +189,7 @@ final class MergeProcessor(
                 case (_, (values, _)) =>
                   values(idx)
               }
-              mergeLocals(param.name) = mergePhi(values, Some(param.ty))
+              mergeLocals(param.id) = mergePhi(values, Some(param.ty))
           }
 
           // 4. Merge delayed ops

@@ -9,6 +9,13 @@ class Buffer(implicit fresh: Fresh) {
   def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
   def ++=(other: Buffer): Unit = buffer ++= other.buffer
 
+  def patchLast(fn: Inst => Inst): Unit = {
+    val last = buffer.last
+    val lastIdx = buffer.size - 1
+    assert(buffer(lastIdx) eq last)
+    buffer.update(lastIdx, fn(last))
+  }
+
   def toSeq: Seq[Inst] = buffer.toSeq
   def size: Int = buffer.size
   def foreach(fn: Inst => Unit) = buffer.foreach(fn)
@@ -43,12 +50,23 @@ class Buffer(implicit fresh: Fresh) {
     this += Inst.Throw(value, unwind)
 
   // Compute ops
-  def let(name: Local, op: Op, unwind: Next)(implicit pos: Position): Val = {
-    this += Inst.Let(name, op, unwind)
-    Val.Local(name, op.resty)
+  def let(id: Local, op: Op, unwind: Next)(implicit pos: Position): Val = {
+    this += Inst.Let(id, op, unwind)
+    Val.Local(id, op.resty)
+  }
+  def let(id: Local, name: Option[String], op: Op, unwind: Next)(implicit
+      pos: Position
+  ): Val = {
+    this += Inst.Let(id, name, op, unwind)
+    Val.Local(id, op.resty, name)
   }
   def let(op: Op, unwind: Next)(implicit pos: Position): Val =
     let(fresh(), op, unwind)
+  def let(name: Option[String], op: Op, unwind: Next)(implicit
+      pos: Position
+  ): Val =
+    let(fresh(), name, op, unwind)
+
   def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next)(implicit
       pos: Position
   ): Val =
@@ -132,8 +150,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Box(ty, obj), unwind)
   def unbox(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Unbox(ty, obj), unwind)
-  def var_(ty: Type, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Var(ty), unwind)
+  def var_(ty: Type, name: Option[String], unwind: Next)(implicit
+      pos: Position
+  ): Val =
+    let(name, Op.Var(ty), unwind)
   def varload(slot: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Varload(slot), unwind)
   def varstore(slot: Val, value: Val, unwind: Next)(implicit

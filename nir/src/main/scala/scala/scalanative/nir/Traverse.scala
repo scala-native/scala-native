@@ -30,7 +30,7 @@ trait Traverse {
         params.foreach { param =>
           onType(param.ty)
         }
-      case Inst.Let(n, op, unwind) =>
+      case Inst.Let(n, _, op, unwind) =>
         onOp(op)
         onNext(unwind)
       case Inst.Ret(v)     => onVal(v)
@@ -151,10 +151,10 @@ trait Traverse {
     case Val.ArrayValue(ty, values) =>
       onType(ty)
       values.foreach(onVal)
-    case Val.Local(n, ty)  => onType(ty)
-    case Val.Global(n, ty) => onType(ty)
-    case Val.Const(v)      => onVal(v)
-    case _                 => ()
+    case Val.Local(_, ty, _) => onType(ty)
+    case Val.Global(n, ty)   => onType(ty)
+    case Val.Const(v)        => onVal(v)
+    case _                   => ()
   }
 
   def onType(ty: Type): Unit = ty match {

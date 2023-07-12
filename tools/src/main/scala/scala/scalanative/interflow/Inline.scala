@@ -62,10 +62,10 @@ trait Inline { self: Interflow =>
           maxInlineDepth.exists(_ > state.inlineDepth)
 
         def hasUnwind = defn.insts.exists {
-          case Inst.Let(_, _, unwind)   => unwind ne Next.None
-          case Inst.Throw(_, unwind)    => unwind ne Next.None
-          case Inst.Unreachable(unwind) => unwind ne Next.None
-          case _                        => false
+          case Inst.Let(_, _, _, unwind) => unwind ne Next.None
+          case Inst.Throw(_, unwind)     => unwind ne Next.None
+          case Inst.Unreachable(unwind)  => unwind ne Next.None
+          case _                         => false
         }
 
         val shall = mode match {

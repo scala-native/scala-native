@@ -26,7 +26,7 @@ object ControlFlow {
     lazy val splitCount: Int = {
       var count = 0
       insts.foreach {
-        case Inst.Let(_, _: Op.Call, unwind) if unwind ne Next.None =>
+        case Inst.Let(_, _, _: Op.Call, unwind) if unwind ne Next.None =>
           count += 1
         case _ =>
           ()
@@ -102,7 +102,7 @@ object ControlFlow {
       def visit(node: Block): Unit = {
         val insts :+ cf = node.insts: @unchecked
         insts.foreach {
-          case inst @ Inst.Let(_, op, unwind) if unwind ne Next.None =>
+          case inst @ Inst.Let(_, _, op, unwind) if unwind ne Next.None =>
             edge(node, block(unwind.name)(inst.pos), unwind)
           case _ =>
             ()

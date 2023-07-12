@@ -185,7 +185,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
     def resolve(sym: Symbol): Val = env(sym)
     def resolveLabel(ld: Labeled): Local = {
-      val Val.Local(n, Type.Ptr) = resolve(ld.bind.symbol): @unchecked
+      val Val.Local(n, Type.Ptr, _) = resolve(ld.bind.symbol): @unchecked
       n
     }
   }

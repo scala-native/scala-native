@@ -20,10 +20,11 @@ trait Eval { self: Interflow =>
       implicit val pos: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
+      state.originalInst = Some(inst)
       inst match {
         case _: Inst.Label =>
           unreachable
-        case Inst.Let(local, op, unwind) =>
+        case Inst.Let(local, name, op, unwind) =>
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
@@ -465,10 +466,10 @@ trait Eval { self: Interflow =>
       case Op.Var(ty) =>
         Val.Local(state.newVar(ty), Type.Var(ty))
       case Op.Varload(slot) =>
-        val Val.Local(local, _) = eval(slot): @unchecked
+        val Val.Local(local, _, _) = eval(slot): @unchecked
         state.loadVar(local)
       case Op.Varstore(slot, value) =>
-        val Val.Local(local, _) = eval(slot): @unchecked
+        val Val.Local(local, _, _) = eval(slot): @unchecked
         state.storeVar(local, eval(value))
         Val.Unit
       case _ => util.unreachable
@@ -927,12 +928,10 @@ trait Eval { self: Interflow =>
 
   def eval(value: Val)(implicit state: State, origPos: Position): Val = {
     value match {
-      case Val.Local(local, _) if local.id >= 0 =>
+      case Val.Local(local, _, name) if local.id >= 0 =>
         state.loadLocal(local) match {
-          case value: Val.Virtual =>
-            eval(value)
-          case value =>
-            value
+          case value: Val.Virtual => eval(value)
+          case value              => value
         }
       case Val.Virtual(addr) if state.hasEscaped(addr) =>
         state.derefEscaped(addr).escapedValue
@@ -983,13 +982,14 @@ trait Eval { self: Interflow =>
     }
 
     def isPureModuleCtor(defn: Defn.Define): Boolean = {
-      val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head: @unchecked
+      val Inst.Label(_, Val.Local(self, _, _) +: _) =
+        defn.insts.head: @unchecked
 
       val canStoreTo = mutable.Set(self)
       val arrayLength = mutable.Map.empty[Local, Int]
 
       defn.insts.foreach {
-        case Inst.Let(n, Op.Arrayalloc(_, init, _), _) =>
+        case Inst.Let(n, _, Op.Arrayalloc(_, init, _), _) =>
           canStoreTo += n
           init match {
             case Val.Int(size) =>
@@ -999,7 +999,7 @@ trait Eval { self: Interflow =>
             case _ =>
               ()
           }
-        case Inst.Let(n, _: Op.Classalloc | _: Op.Box | _: Op.Module, _) =>
+        case Inst.Let(n, _, _: Op.Classalloc | _: Op.Box | _: Op.Module, _) =>
           canStoreTo += n
         case _ =>
           ()
@@ -1007,7 +1007,7 @@ trait Eval { self: Interflow =>
 
       def canStoreValue(v: Val): Boolean = v match {
         case _ if v.isCanonical => true
-        case Val.Local(n, _)    => canStoreTo.contains(n)
+        case Val.Local(n, _, _) => canStoreTo.contains(n)
         case _: Val.String      => true
         case _                  => false
       }
@@ -1019,35 +1019,50 @@ trait Eval { self: Interflow =>
           true
         case _: Inst.Cf =>
           true
-        case Inst.Let(_, op, _) if op.isPure =>
+        case Inst.Let(_, _, op, _) if op.isPure =>
           true
-        case Inst.Let(_, _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box, _) =>
+        case Inst.Let(
+              _,
+              _,
+              _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box,
+              _
+            ) =>
           true
-        case inst @ Inst.Let(_, Op.Module(name), _) =>
+        case inst @ Inst.Let(_, _, Op.Module(name), _) =>
           if (!visiting.contains(name)) {
             isPureModule(name)
           } else {
             false
           }
-        case Inst.Let(_, Op.Fieldload(_, Val.Local(to, _), _), _)
+        case Inst.Let(_, _, Op.Fieldload(_, Val.Local(to, _, _), _), _)
             if canStoreTo.contains(to) =>
           true
-        case inst @ Inst.Let(_, Op.Fieldstore(_, Val.Local(to, _), _, value), _)
-            if canStoreTo.contains(to) =>
+        case inst @ Inst.Let(
+              _,
+              _,
+              Op.Fieldstore(_, Val.Local(to, _, _), _, value),
+              _
+            ) if canStoreTo.contains(to) =>
           canStoreValue(value)
-        case Inst.Let(_, Op.Arrayload(_, Val.Local(to, _), Val.Int(idx)), _)
+        case Inst.Let(
+              _,
+              _,
+              Op.Arrayload(_, Val.Local(to, _, _), Val.Int(idx)),
+              _
+            )
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           true
         case Inst.Let(
               _,
-              Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value),
+              _,
+              Op.Arraystore(_, Val.Local(to, _, _), Val.Int(idx), value),
               _
             )
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           canStoreValue(value)
-        case Inst.Let(_, Op.Arraylength(Val.Local(to, _)), _)
+        case Inst.Let(_, _, Op.Arraylength(Val.Local(to, _, _)), _)
             if canStoreTo.contains(to) =>
           true
         case inst =>

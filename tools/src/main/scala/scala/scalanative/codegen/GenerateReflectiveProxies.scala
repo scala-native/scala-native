@@ -21,7 +21,7 @@ object GenerateReflectiveProxies {
     val unboxInsts = genArgUnboxes(label, defnType.args)
     val method = Inst.Let(Op.Method(label.params.head, sig), Next.None)
     val call = genCall(defnType, method, label.params, unboxInsts)
-    val retInsts = genRet(call.name, defnType.ret, proxyTy.ret)
+    val retInsts = genRet(call.id, defnType.ret, proxyTy.ret)
 
     Defn.Define(
       Attrs.fromSeq(Seq(Attr.Dyn)),
@@ -91,12 +91,12 @@ object GenerateReflectiveProxies {
                   Type.unbox.getOrElse(local.ty, local.ty)
                 case ty => ty
               }
-              Val.Local(let.name, resTy)
+              Val.Local(let.id, resTy)
           }
           .toList
 
     Inst.Let(
-      Op.Call(defnTy, Val.Local(method.name, Type.Ptr), callParams),
+      Op.Call(defnTy, Val.Local(method.id, Type.Ptr), callParams),
       Next.None
     )
   }
@@ -123,7 +123,7 @@ object GenerateReflectiveProxies {
         Inst.Ret(Val.Unit) :: Nil
       case _ =>
         val box = genRetValBox(callName, defnRetTy, proxyRetTy)
-        val ret = Inst.Ret(Val.Local(box.name, proxyRetTy))
+        val ret = Inst.Ret(Val.Local(box.id, proxyRetTy))
         Seq(box, ret)
     }
   }

@@ -14,7 +14,7 @@ trait NoOpt { self: Interflow =>
   def noOptInst(inst: Inst): Unit = inst match {
     case _: Inst.Label =>
       ()
-    case Inst.Let(n, op, unwind) =>
+    case Inst.Let(n, _, op, unwind) =>
       noOptOp(op)
       noOptNext(unwind)
     case Inst.Ret(v) =>

@@ -10,10 +10,12 @@ object Inst {
   final case class Label(name: Local, params: Seq[Val.Local])(implicit
       val pos: Position
   ) extends Inst
-  final case class Let(name: Local, op: Op, unwind: Next)(implicit
-      val pos: Position
+  final case class Let(id: Local, name: Option[String], op: Op, unwind: Next)(
+      implicit val pos: Position
   ) extends Inst
   object Let {
+    def apply(id: Local, op: Op, unwind: Next)(implicit pos: Position): Let =
+      Let(id, None, op, unwind)
     def apply(op: Op, unwind: Next)(implicit fresh: Fresh, pos: Position): Let =
       Let(fresh(), op, unwind)
   }

@@ -325,15 +325,14 @@ trait NirGenStat(using Context) {
     val argParams = argParamSyms.map { sym =>
       val tpe = sym.info.resultType
       val ty = genType(tpe)
-      val param = Val.Local(fresh(), ty)
+      val name = genLocalName(sym)
+      val param = Val.Local(fresh(), ty, Some(name))
       curMethodEnv.enter(sym, param)
       param
     }
     val thisParam = Option.unless(isStatic) {
-      Val.Local(fresh(), genType(curClassSym.get))
+      Val.Local(fresh(), genType(curClassSym.get), Some("this"))
     }
-    val outerParam = argParamSyms
-      .find(_.name == nme.OUTER)
     val params = thisParam.toList ::: argParams
 
     def genEntry(): Unit = {
@@ -344,7 +343,8 @@ trait NirGenStat(using Context) {
       val vars = curMethodInfo.mutableVars
         .foreach { sym =>
           val ty = genType(sym.info)
-          val slot = buf.var_(ty, unwind(fresh))
+          val name = genLocalName(sym)
+          val slot = buf.var_(ty, Some(name), unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
     }

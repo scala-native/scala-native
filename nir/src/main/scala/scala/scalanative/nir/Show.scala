@@ -148,17 +148,13 @@ object Show {
           ()
         } else {
           str("(")
-          rep(params, sep = ", ") {
-            case Val.Local(n, ty) =>
-              local_(n)
-              str(" : ")
-              type_(ty)
-          }
+          rep(params, sep = ", ")(val_)
           str(")")
         }
         str(":")
-      case Inst.Let(name, op, unwind) =>
-        local_(name)
+      case Inst.Let(id, name, op, unwind) =>
+        local_(id)
+        name.foreach { v => str(s" <$v>") }
         str(" = ")
         op_(op)
         if (unwind ne Next.None) {
@@ -527,8 +523,9 @@ object Show {
         val stringValue = new String(v.bytes, StandardCharsets.ISO_8859_1)
         str(escapeNewLine(escapeQuotes(stringValue)))
         str("\"")
-      case Val.Local(name, ty) =>
-        local_(name)
+      case Val.Local(id, ty, name) =>
+        local_(id)
+        name.foreach(v => str(s" <$v>"))
         str(" : ")
         type_(ty)
       case Val.Global(name, ty) =>

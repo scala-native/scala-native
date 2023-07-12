@@ -16,6 +16,7 @@ final class State(block: Local) {
   var delayed = mutable.AnyRefMap.empty[Op, Val]
   var emitted = mutable.AnyRefMap.empty[Op, Val]
   var emit = new nir.Buffer()(fresh)
+  var originalInst = Option.empty[Inst]
   var inlineDepth = 0
 
   private def alloc(
@@ -76,16 +77,21 @@ final class State(block: Local) {
   def emit(op: Op, idempotent: Boolean = false)(implicit
       position: Position
   ): Val = {
+    def name = originalInst.flatMap {
+      case i: Inst.Let => i.name
+      case _           => None
+    }
+    name.foreach(println)
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
-        val value = emit.let(op, Next.None)
+        val value = emit.let(name, op, Next.None)
         emitted(op) = value
         value
       }
     } else {
-      emit.let(op, Next.None)
+      emit.let(name, op, Next.None)
     }
   }
   def deref(addr: Addr): Instance = {
@@ -280,10 +286,8 @@ final class State(block: Local) {
         ): @unchecked
         val chars = derefVirtual(charsAddr).values
           .map {
-            case Val.Char(v) =>
-              v
-            case _ =>
-              unreachable
+            case Val.Char(v) => v
+            case _           => unreachable
           }
           .toArray[Char]
         Val.String(new java.lang.String(chars))

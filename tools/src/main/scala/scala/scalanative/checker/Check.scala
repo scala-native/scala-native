@@ -118,7 +118,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
 
   def enterInst(inst: Inst): Unit = {
     def enterParam(value: Val.Local) = {
-      val Val.Local(local, ty) = value
+      val Val.Local(local, ty, _) = value
       env(local) = ty
     }
 
@@ -130,7 +130,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
     }
 
     inst match {
-      case Inst.Let(n, op, unwind) =>
+      case Inst.Let(n, _, op, unwind) =>
         env(n) = op.resty
         enterUnwind(unwind)
       case Inst.Label(name, params) =>
@@ -149,7 +149,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
   def checkInst(inst: Inst): Unit = inst match {
     case _: Inst.Label =>
       ok
-    case Inst.Let(name, op, unwind) =>
+    case Inst.Let(name, _, op, unwind) =>
       checkOp(op)
       in("unwind")(checkUnwind(unwind))
     case Inst.Ret(v) =>
@@ -731,8 +731,8 @@ final class QuickCheck(implicit linked: linker.Result) extends NIRCheck {
   }
 
   def checkInst(inst: Inst): Unit = inst match {
-    case Inst.Let(_, op, _) => checkOp(op)
-    case _                  => ok
+    case Inst.Let(_, _, op, _) => checkOp(op)
+    case _                     => ok
   }
 
   def checkOp(op: Op): Unit = op match {

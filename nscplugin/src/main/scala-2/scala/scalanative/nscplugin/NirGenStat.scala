@@ -49,7 +49,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def resolveLabel(ld: LabelDef): Local = {
-      val Val.Local(n, Type.Ptr) = resolve(ld.symbol)
+      val Val.Local(n, Type.Ptr, _) = resolve(ld.symbol)
       n
     }
   }
@@ -943,10 +943,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val params = paramSyms.map {
         case None =>
           val ty = genType(curClassSym.tpe)
-          Val.Local(fresh(), ty)
+          Val.Local(fresh(), ty, Some("this"))
         case Some(sym) =>
           val ty = genType(sym.tpe)
-          val param = Val.Local(fresh(), ty)
+          val name = genLocalName(sym)
+          val param = Val.Local(fresh(), ty, Some(name))
           curMethodEnv.enter(sym, param)
           param
       }
@@ -959,7 +960,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val vars = curMethodInfo.mutableVars.toSeq
         vars.foreach { sym =>
           val ty = genType(sym.info)
-          val slot = buf.var_(ty, unwind(fresh))
+          val name = genLocalName(sym)
+          val slot = buf.var_(ty, Some(name), unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
       }
@@ -990,7 +992,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           scoped(
             curMethodThis := {
               if (isStatic) None
-              else Some(Val.Local(params.head.name, params.head.ty))
+              else Some(params.head)
             },
             curMethodIsExtern := isExtern
           ) {
@@ -1010,7 +1012,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           scoped(
             curMethodThis := {
               if (isStatic) None
-              else Some(Val.Local(params.head.name, params.head.ty))
+              else Some(params.head)
             },
             curMethodIsExtern := isExtern
           ) {

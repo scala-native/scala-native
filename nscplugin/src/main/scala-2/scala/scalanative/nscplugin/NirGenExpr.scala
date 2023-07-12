@@ -39,7 +39,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
       super.+=(inst)
       inst match {
-        case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
+        case Inst.Let(_, _, op, _) if op.resty == Type.Nothing =>
           unreachable(unwind)
           label(fresh())
         case _ =>
@@ -174,12 +174,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genValDef(vd: ValDef): Val = {
       val rhs = genExpr(vd.rhs)
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
-      if (!isMutable) {
-        curMethodEnv.enter(vd.symbol, rhs)
-        Val.Unit
-      } else {
+      if (isMutable) {
         val slot = curMethodEnv.resolve(vd.symbol)
         buf.varstore(slot, rhs, unwind)(vd.pos)
+      } else {
+        implicit val pos: nir.Position = vd.pos
+        val name = genLocalName(vd.symbol)
+        val const = buf.let(Some(name), Op.Copy(rhs), unwind)
+        curMethodEnv.enter(vd.symbol, const)
+        Val.Unit
       }
     }
 
@@ -1126,7 +1129,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genApplyLabel(tree: Tree): Val = {
       val Apply(fun, argsp) = tree
-      val Val.Local(label, _) = curMethodEnv.resolve(fun.symbol)
+      val Val.Local(label, _, _) = curMethodEnv.resolve(fun.symbol)
       val args = genSimpleArgs(argsp)
       buf.jump(label, args)(tree.pos)
       Val.Unit

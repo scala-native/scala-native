@@ -140,7 +140,8 @@ final class BinarySerializer(channel: WritableByteChannel) {
     }
 
     override def put(value: Val): Unit = value match {
-      case Val.Local(n, ty)       => putTag(T.LocalVal); putLocal(n); putType(ty)
+      // TODO: decicated unnamed local tag
+      case Val.Local(n, ty, name) => putTag(T.LocalVal); putLocal(n); putType(ty); putOpt(name)(putString)
       case Val.Global(n, ty)      => putTag(T.GlobalVal); putGlobal(n); putType(ty)
       case Val.Unit               => putTag(T.UnitVal)
       case Val.Null               => putTag(T.NullVal)
@@ -542,8 +543,9 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
     private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
     private def putParam(param: Val.Local) = {
-      putLebUnsignedLong(param.name.id)
+      putLebUnsignedLong(param.id.id)
       putType(param.ty)
+      putOpt(param.name)(putString)
     }
 
     private def putInst(cf: Inst) = {
@@ -557,14 +559,15 @@ final class BinarySerializer(channel: WritableByteChannel) {
           putLocal(name)
           putParams(params)
 
-        case Inst.Let(name, op, Next.None) =>
+        case Inst.Let(id, None, op, Next.None) =>
           putTagAndPosition(T.LetInst)
-          putLocal(name)
+          putLocal(id)
           putOp(op)
 
-        case Inst.Let(name, op, unwind) =>
+        case Inst.Let(id, name, op, unwind) =>
           putTagAndPosition(T.LetUnwindInst)
-          putLocal(name)
+          putLocal(id)
+          putOpt(name)(putString)
           putOp(op)
           putNext(unwind)
 

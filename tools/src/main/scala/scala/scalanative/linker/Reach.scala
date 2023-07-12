@@ -202,11 +202,8 @@ class Reach(
         reachUnavailable(name)
       } else {
         val maybeFixedDefn = defn match {
-          case defn: Defn.Define =>
-            (resolveLinktimeDefine _)
-              .andThen(mitigateStaticCalls _)
-              .apply(defn)
-          case _ => defn
+          case defn: Defn.Define => resolveLinktimeDefine(defn)
+          case _                 => defn
         }
         reachDefn(maybeFixedDefn)
       }
@@ -572,83 +569,6 @@ class Reach(
     reachType(ty)
   }
 
-  // Mitigate static calls to methods compiled with Scala Native older then 0.4.3
-  // If given static method in not rechable replace it with call to method with the same
-  // name in the companion module
-  private def mitigateStaticCalls(defn: Defn.Define): Defn.Define = {
-    lazy val fresh = Fresh(defn.insts)
-    val newInsts = defn.insts.flatMap {
-      case inst @ Inst.Let(
-            n,
-            Op.Call(
-              ty: Type.Function,
-              Val.Global(
-                methodName @ Global.Member(Global.Top(methodOwner), sig),
-                _
-              ),
-              args
-            ),
-            unwind
-          )
-          if sig.isStatic && lookup(
-            methodName,
-            ignoreIfUnavailable = true
-          ).isEmpty =>
-        def findRewriteCandidate(inModule: Boolean): Option[List[Inst]] = {
-          val owner =
-            if (inModule) Global.Top(methodOwner + "$")
-            else Global.Top(methodOwner)
-          val newMethod = {
-            val Sig.Method(id, tps, scope) = sig.unmangled: @unchecked
-            val newScope = scope match {
-              case Sig.Scope.PublicStatic      => Sig.Scope.Public
-              case Sig.Scope.PrivateStatic(in) => Sig.Scope.Private(in)
-              case scope                       => scope
-            }
-            val newSig = Sig.Method(id, tps, newScope)
-            Val.Global(owner.member(newSig), Type.Ptr)
-          }
-          // Make sure that candidate exists
-          lookup(newMethod.name, ignoreIfUnavailable = true)
-            .map { _ =>
-              implicit val pos: nir.Position = defn.pos
-              val newType = {
-                val newArgsTpe = Type.Ref(owner) +: ty.args
-                Type.Function(newArgsTpe, ty.ret)
-              }
-
-              if (inModule) {
-                val moduleV = Val.Local(fresh(), Type.Ref(owner))
-                val newArgs = moduleV +: args
-                Inst.Let(moduleV.name, Op.Module(owner), Next.None) ::
-                  Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind) ::
-                  Nil
-              } else {
-                Inst.Let(n, Op.Call(newType, newMethod, args), unwind) :: Nil
-              }
-            }
-        }
-
-        findRewriteCandidate(inModule = true)
-          //  special case for lifted methods
-          .orElse(findRewriteCandidate(inModule = false))
-          .getOrElse {
-            config.logger.warn(
-              s"Found a call to not defined static method ${methodName}. " +
-                "Static methods are generated since Scala Native 0.4.3, " +
-                "report this bug in the Scala Native issues. " +
-                s"Call defined at ${inst.pos.show}"
-            )
-            addMissing(methodName, inst.pos)
-            inst :: Nil
-          }
-
-      case inst =>
-        inst :: Nil
-    }
-    defn.copy(insts = newInsts)(defn.pos)
-  }
-
   def reachDefine(defn: Defn.Define): Unit = {
     val Defn.Define(attrs, name, ty, insts) = defn
     implicit val pos: nir.Position = defn.pos
@@ -732,7 +652,7 @@ class Reach(
     case Val.ArrayValue(ty, values) =>
       reachType(ty)
       values.foreach(reachVal)
-    case Val.Local(n, ty) =>
+    case Val.Local(_, ty, _) =>
       reachType(ty)
     case Val.Global(n, ty) =>
       reachGlobal(n); reachType(ty)
@@ -750,7 +670,7 @@ class Reach(
   def reachInst(inst: Inst): Unit = inst match {
     case Inst.Label(n, params) =>
       params.foreach(p => reachType(p.ty))
-    case Inst.Let(n, op, unwind) =>
+    case Inst.Let(_, _, op, unwind) =>
       reachOp(op)(inst.pos)
       reachNext(unwind)
     case Inst.Ret(v) =>

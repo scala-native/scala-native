@@ -142,8 +142,8 @@ object Lower {
         }
 
       insts.foreach {
-        case inst @ Inst.Let(n, Op.Var(ty), unwind) =>
-          buf.let(n, Op.Stackalloc(ty, one), unwind)(inst.pos)
+        case inst @ Inst.Let(n, name, Op.Var(ty), unwind) =>
+          buf.let(n, name, Op.Stackalloc(ty, one), unwind)(inst.pos)
         case _ =>
           ()
       }
@@ -162,7 +162,7 @@ object Lower {
       )
 
       insts.tail.foreach {
-        case inst @ Inst.Let(n, op, unwind) =>
+        case inst @ Inst.Let(n, _, op, unwind) =>
           ScopedVar.scoped(
             unwindHandler := newUnwindHandler(unwind)(inst.pos)
           ) {
@@ -441,9 +441,9 @@ object Lower {
         case op: Op.Module =>
           genModuleOp(buf, n, op)
         case Op.Var(_) => () // Already emmited
-        case Op.Varload(Val.Local(slot, Type.Var(ty))) =>
+        case Op.Varload(Val.Local(slot, Type.Var(ty), _)) =>
           buf.let(n, Op.Load(ty, Val.Local(slot, Type.Ptr)), unwind)
-        case Op.Varstore(Val.Local(slot, Type.Var(ty)), value) =>
+        case Op.Varstore(Val.Local(slot, Type.Var(ty), _), value) =>
           buf.let(
             n,
             Op.Store(ty, Val.Local(slot, Type.Ptr), genVal(buf, value)),
@@ -1040,7 +1040,7 @@ object Lower {
           val safeZoneAllocImplMethod = Val.Local(fresh(), Type.Ptr)
           genMethodOp(
             buf,
-            safeZoneAllocImplMethod.name,
+            safeZoneAllocImplMethod.id,
             Op.Method(zone, safeZoneAllocImpl.sig)
           )
           buf.let(

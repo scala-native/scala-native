@@ -57,7 +57,7 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
   ): Unit = {
     import codegen._
     import sb._
-    val Next.Unwind(Val.Local(excname, _), next) = unwind
+    val Next.Unwind(Val.Local(excname, _, _), next) = unwind
 
     val excpad = s"_${excname.id}.landingpad"
     val excsucc = excpad + ".succ"

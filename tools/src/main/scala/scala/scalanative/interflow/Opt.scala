@@ -12,10 +12,10 @@ trait Opt { self: Interflow =>
     val defn =
       getOriginal(originalName(name))
     val noUnwind = defn.insts.forall {
-      case Inst.Let(_, _, unwind)   => unwind == Next.None
-      case Inst.Throw(_, unwind)    => unwind == Next.None
-      case Inst.Unreachable(unwind) => unwind == Next.None
-      case _                        => true
+      case Inst.Let(_, _, _, unwind) => unwind == Next.None
+      case Inst.Throw(_, unwind)     => unwind == Next.None
+      case Inst.Unreachable(unwind)  => unwind == Next.None
+      case _                         => true
     }
 
     defn.attrs.opt != Attr.NoOpt && noUnwind

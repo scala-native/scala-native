@@ -35,7 +35,7 @@ private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
-    val Next.Unwind(Val.Local(excname, _), next) = unwind
+    val Next.Unwind(Val.Local(excname, _, _), next) = unwind
 
     val excpad = "_" + excname.id + ".landingpad"
     val excsucc = excpad + ".succ"

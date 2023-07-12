@@ -959,7 +959,15 @@ trait NirGenExpr(using Context) {
 
     def genValDef(vd: ValDef): Val = {
       given nir.Position = vd.span
-      val rhs = genExpr(vd.rhs)
+      val name = genLocalName(vd.symbol)
+      val rhs = genExpr(vd.rhs) match {
+        case v: Val.Local => v.copy(name = Some(name))
+        case v => v
+      }
+      buf.patchLast{
+        case v: Inst.Let => v.copy(name = Some(name))
+        case v => v
+      }
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
       if (vd.symbol.isExtern)
         checkExplicitReturnTypeAnnotation(vd, "extern field")
@@ -967,6 +975,7 @@ trait NirGenExpr(using Context) {
         val slot = curMethodEnv.resolve(vd.symbol)
         buf.varstore(slot, rhs, unwind)
       else
+        // val const = buf.let(Some(name), Op.Copy(rhs), unwind)
         curMethodEnv.enter(vd.symbol, rhs)
         Val.Unit
     }
@@ -2804,7 +2813,7 @@ trait NirGenExpr(using Context) {
       }
       super.+=(inst)
       inst match {
-        case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
+        case Inst.Let(_, _, op, _) if op.resty == Type.Nothing =>
           unreachable(unwind)
           label(fresh())
         case _ =>
