@@ -342,7 +342,7 @@ object Build {
             }
           )
       }
-      .dependsOn(nir, util, testingCompilerInterface % "test")
+      .dependsOn(nir, util, testingCompiler % "test")
 
   lazy val toolsBenchmarks =
     MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
@@ -657,17 +657,6 @@ object Build {
       .dependsOn(scalalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
-  lazy val testingCompilerInterface =
-    MultiScalaProject(
-      "testingCompilerInterface",
-      file("testing-compiler-interface")
-    ).settings(
-      noPublishSettings,
-      crossPaths := false,
-      crossVersion := CrossVersion.disabled,
-      autoScalaLibrary := false
-    )
-
   lazy val testingCompiler =
     MultiScalaProject("testingCompiler", file("testing-compiler"))
       .settings(
@@ -696,7 +685,6 @@ object Build {
         },
         exportJars := true
       )
-      .dependsOn(testingCompilerInterface)
 
   lazy val testInterface =
     MultiScalaProject("testInterface", file("test-interface"))
