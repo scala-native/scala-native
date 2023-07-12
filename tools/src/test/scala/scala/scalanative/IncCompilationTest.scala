@@ -1,6 +1,7 @@
 package scala.scalanative
 
-import org.scalatest.matchers.should.Matchers
+import org.junit.Test
+import org.junit.Assert._
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
@@ -11,11 +12,11 @@ import scala.concurrent.{Await, duration}
 
 // The test is used for incremental compilation
 
-class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
+class IncCompilationTest extends codegen.CodeGenSpec {
   private def buildAwait(config: Config)(implicit scope: Scope) =
     Await.result(Build.build(config), duration.Duration.Inf)
 
-  "The test framework" should "generate the llvm IR of object A" in {
+  @Test def generateIRForSingleType(): Unit = {
     Scope { implicit in =>
       val source = """
         |object A {
@@ -51,7 +52,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
     }
   }
 
-  "The test framework" should "generate the llvm IR of object A and B" in {
+  @Test def generateIRForMultipleTypes(): Unit = {
     Scope { implicit in =>
       val sources = Map(
         "A.scala" -> """

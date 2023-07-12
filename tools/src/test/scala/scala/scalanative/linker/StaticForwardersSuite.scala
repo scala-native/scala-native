@@ -1,17 +1,19 @@
 package scala.scalanative.linker
 
-import org.scalatest._
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.LinkerSpec
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
 import scala.scalanative.io._
 import scala.scalanative.NIRCompiler
-import org.scalatest.flatspec.AnyFlatSpec
 import java.nio.file.{Files, Path, Paths}
 
 class StaticForwardersSuite extends LinkerSpec {
   import StaticForwardersSuite._
-  "Static forwarder methods" should "generate static forwarders for methods defined in companion object" in {
+
+  @Test def generateStaticForwarders(): Unit = {
     compileAndLoad(
       "Test.scala" ->
         """ 
@@ -46,10 +48,11 @@ class StaticForwardersSuite extends LinkerSpec {
           Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
         )
       )
-      assert(expected.diff(defns.map(_.name)).isEmpty)
+      assertTrue(expected.diff(defns.map(_.name)).isEmpty)
     }
   }
-  it should "generate static accessors to fields defined in compation object" in {
+
+  @Test def generateStaticAccessor(): Unit = {
     compileAndLoad(
       "Test.scala" ->
         """ 
@@ -70,7 +73,7 @@ class StaticForwardersSuite extends LinkerSpec {
         Module.member(Sig.Field("bar", Sig.Scope.Private(Module))),
         Module.member(Sig.Method("bar", Seq(Rt.String)))
       )
-      assert(expected.diff(defns.map(_.name)).isEmpty)
+      assertTrue(expected.diff(defns.map(_.name)).isEmpty)
     }
   }
 }

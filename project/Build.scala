@@ -152,7 +152,7 @@ object Build {
     .enablePlugins(BuildInfoPlugin)
     .settings(toolSettings, mavenPublishSettings, buildInfoSettings)
     .settings(
-      libraryDependencies ++= Deps.Tools(scalaVersion.value),
+      libraryDependencies ++= Deps.JUnitJvm,
       Test / fork := true,
       scalacOptions ++= {
         val scala213StdLibDeprecations = Seq(

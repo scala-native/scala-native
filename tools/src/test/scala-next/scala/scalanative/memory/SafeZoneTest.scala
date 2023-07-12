@@ -2,21 +2,22 @@ package scala.scalanative.memory
 
 import java.nio.file.Files
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.NIRCompiler
 import scala.scalanative.api.CompilationFailedException
 
-class SafeZoneTest extends AnyFlatSpec with Matchers {
+class SafeZoneTest {
   def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
-        fail(s"Failed to compile source: ${ex.getMessage}", ex)
+        fail(s"Failed to compile source: $ex")
     }
   }
 
-  "The compiler" should "allow returning a reference to object in zone if it doesn't escape the zone" in nativeCompilation(
+  @Test def referenceNonEscapedObject(): Unit =  nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.memory.SafeZone
@@ -35,8 +36,8 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |""".stripMargin
   )
 
-  it should "forbid any reference to object in zone from escaping the zone" in {
-    intercept[CompilationFailedException] {
+  @Test def referenceEscapedObject(): Unit = {
+    val err = assertThrows(classOf[CompilationFailedException], () => 
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
@@ -52,10 +53,11 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |  }
         |}
         |""".stripMargin))
-    }.getMessage should include("Sealed type variable T cannot  be instantiated to box A^")
+    )
+    assertTrue(err.getMessage.contains("Sealed type variable T cannot  be instantiated to box A^"))
   }
 
-  it should "type check when the types capture zones correctly" in nativeCompilation(
+  @Test def typeCheckCapturedZone(): Unit = nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.memory.SafeZone
@@ -80,8 +82,8 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
       |""".stripMargin
   )
 
-  it should "not type check when the types don't capture zones correctly" in {
-    intercept[CompilationFailedException] {
+  @Test def typeCheckNotCaptured(): Unit = {
+    val err = assertThrows(classOf[CompilationFailedException], () => 
       NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
@@ -101,6 +103,7 @@ class SafeZoneTest extends AnyFlatSpec with Matchers {
         |}
         |
         |""".stripMargin))
-    }.getMessage should include("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}")
+    )
+    assertTrue(err.getMessage().contains("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}"))
   }
 }

@@ -2,26 +2,25 @@ package scala.scalanative
 
 import java.nio.file.Files
 
-import org.scalatest._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
+import org.junit.Test
+import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 
-class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
+class NIRCompilerTest {
 
-  "The compiler" should "return products of compilation" in {
+  @Test def returnCompilationProducts(): Unit = {
     val files =
       NIRCompiler { _ compile "class A" }
         .filter(Files.isRegularFile(_))
         .map(_.getFileName.toString)
     val expectedNames = Seq("A.class", "A.nir")
-    files should contain theSameElementsAs expectedNames
+    assertTrue(files.diff(expectedNames).isEmpty)
   }
 
-  it should "compile whole directories" in {
+  @Test def compileDirectory(): Unit = {
     val sources = Map(
       "A.scala" -> "class A",
       "B.scala" -> "class B extends A",
@@ -37,25 +36,28 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
             .isRegularFile(_)) map (_.getFileName.toString)
         val expectedNames = Seq("A", "B", "C", "D", "E", "E$")
           .flatMap(name => Seq(s"$name.class", s"$name.nir"))
-        nirFiles should contain theSameElementsAs expectedNames
+        assertTrue(nirFiles.diff(expectedNames).isEmpty)
     }
   }
 
-  it should "report compilation errors" in {
-    assertThrows[api.CompilationFailedException] {
-      NIRCompiler { _ compile "invalid" }
-    }
+  @Test def reportCompilationErrors(): Unit = {
+    assertThrows(
+      classOf[api.CompilationFailedException],
+      () => NIRCompiler { _ compile "invalid" }
+    )
   }
 
-  it should "compile to a specified directory" in {
+  @Test def compileSpecifiedDirectory(): Unit = {
     val temporaryDir = Files.createTempDirectory("my-target")
     val nirFiles =
       NIRCompiler(outDir = temporaryDir) { _ compile "class A" }
         .filter(Files.isRegularFile(_))
-    forAll(nirFiles) { _.getParent should be(temporaryDir) }
+    nirFiles.foreach { file =>
+      assertEquals(temporaryDir, file.getParent())
+    }
   }
 
-  it should "report error for extern method without result type" in {
+  @Test def externMethodWithoutResultType(): Unit = {
     // given
     val code =
       """import scala.scalanative.unsafe.extern
@@ -66,11 +68,13 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         |}""".stripMargin
 
     // when
-    val caught = intercept[CompilationFailedException] {
-      NIRCompiler(_.compile(code))
-    }
+    assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
   }
-  it should "report error for extern in val definition" in {
+
+  @Test def externInValDefinition(): Unit = {
     // given
     val code =
       """import scala.scalanative.unsafe.extern
@@ -80,15 +84,20 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         |  val foo: Int = extern
         |}""".stripMargin
     // when
-    val caught = intercept[CompilationFailedException] {
-      NIRCompiler(_.compile(code))
-    }
-    caught.getMessage() should include(
-      "`extern` cannot be used in val definition"
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "`extern` cannot be used in val definition"
+        )
     )
   }
 
-  it should "compile extern var definition" in {
+  @Test def externVarDefiniton(): Unit = {
     // given
     val code =
       """import scala.scalanative.unsafe.extern
@@ -101,7 +110,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     NIRCompiler(_.compile(code))
   }
 
-  it should "not allow members of extern object to reference other externs" in {
+  @Test def externMemberReferencingExtern(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
           |
@@ -110,14 +119,19 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |  def bar(): Int = foo()
           |}
           |""".stripMargin
-    intercept[CompilationFailedException] {
-      NIRCompiler(_.compile(code))
-    }.getMessage() should include(
-      "Referencing other extern symbols in not supported"
+
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains("Referencing other extern symbols in not supported")
     )
   }
 
-  it should "allow to extend extern traits" in {
+  @Test def externExternTrait(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
           |
@@ -137,7 +151,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     NIRCompiler(_.compile(code))
   }
 
-  it should "not allow to mix extern object with regular traits" in {
+  @Test def mixExternObjectWithNonExternTrait(): Unit = {
     val code =
       """
       |import scala.scalanative.unsafe.extern
@@ -148,13 +162,21 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       |
       |@extern object Dummy extends Dummy
       |""".stripMargin
-    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
-      .getMessage() should include(
-      "Extern object can only extend extern traits"
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Extern object can only extend extern traits"
+        )
     )
   }
 
-  it should "not allow to mix extern object with class" in {
+  @Test def mixExternObjectWithNonExternClass(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
         |
@@ -164,13 +186,21 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
         |
         |@extern object Dummy extends Dummy
         |""".stripMargin
-    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
-      .getMessage() should include(
-      "Extern object can only extend extern traits"
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Extern object can only extend extern traits"
+        )
     )
   }
 
-  it should "not allow to mix extern traits with regular object" in {
+  @Test def mixExternTraitWithNonExternObject(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
           |
@@ -180,13 +210,21 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |
           |object Dummy extends Dummy
           |""".stripMargin
-    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
-      .getMessage() should include(
-      "Extern traits can be only mixed with extern traits or objects"
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Extern traits can be only mixed with extern traits or objects"
+        )
     )
   }
 
-  it should "not allow to mix extern traits with class" in {
+  @Test def mixExternTraitsWithNonExternClass(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
           |
@@ -196,75 +234,109 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |
           |class DummyImpl extends Dummy
           |""".stripMargin
-    intercept[CompilationFailedException](NIRCompiler(_.compile(code)))
-      .getMessage() should include(
-      "Extern traits can be only mixed with extern traits or objects"
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Extern traits can be only mixed with extern traits or objects"
+        )
     )
   }
 
-  it should "report error for intrinsic resolving of not existing field" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.runtime.Intrinsics
+  @Test def nonExistingClassFieldPointer(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.runtime.Intrinsics
           |class Foo {
           | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
           |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include("class Foo does not contain field myField")
+    )
+    assertTrue(
+      err.getMessage().contains("class Foo does not contain field myField")
+    )
   }
 
-  it should "report error for intrinsic resolving of immutable field" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.runtime.Intrinsics
+  @Test def immutableClassFieldPointer(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.runtime.Intrinsics
            |class Foo {
            | val myField = 42
            | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
            |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(
-      "Resolving pointer of immutable field myField in class Foo is not allowed"
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Resolving pointer of immutable field myField in class Foo is not allowed"
+        )
     )
   }
 
-  it should "report error for intrinsic resolving of immutable field introduced by trait" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.runtime.Intrinsics
+  @Test def traitImmutableFieldPointer(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.runtime.Intrinsics
             |trait Foo { val myField = 42}
             |class Bar extends Foo {
             | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
             |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(
-      // In Scala 3 trait would be inlined into class
-      "Resolving pointer of immutable field myField in "
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          // In Scala 3 trait would be inlined into class
+          "Resolving pointer of immutable field myField in "
+        )
     ) // trait Foo is not allowed")
   }
 
-  it should "report error for intrinsic resolving of immutable field introduced by inheritence" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.runtime.Intrinsics
+  @Test def classImmutableFieldPointer(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.runtime.Intrinsics
              |abstract class Foo { val myField = 42}
              |class Bar extends Foo {
              | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
              |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(
-      "Resolving pointer of immutable field myField in class Foo is not allowed"
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Resolving pointer of immutable field myField in class Foo is not allowed"
+        )
     )
   }
 
-  it should "handle extern methods with generic types" in {
+  @Test def genericExternMethod(): Unit = {
     // issue #2727
     NIRCompiler(_.compile("""
       |import scala.scalanative.unsafe._
@@ -279,51 +351,72 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       |""".stripMargin))
   }
 
-  it should "report error on default argument in extern method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(_.compile("""
+  @Test def externMethodDefaultArgument(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
       |import scala.scalanative.unsafe._
       |@extern
       |object foo {
       |  def baz(a:Int = 1): Unit = extern
       |}
       |""".stripMargin))
-    }.getMessage should include(
-      "extern method cannot have default argument"
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "extern method cannot have default argument"
+        )
     )
   }
-  it should "report error on default argument mixed with general argument in extern method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(_.compile("""
+
+  @Test def externMethodWithMixedDefaultArguments(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
       |import scala.scalanative.unsafe._
       |@extern
       |object foo {
       |  def baz(a: Double, b:Int = 1): Unit = extern
       |}
       |""".stripMargin))
-    }.getMessage should include(
-      "extern method cannot have default argument"
+    )
+
+    assertTrue(
+      err.getMessage.contains(
+        "extern method cannot have default argument"
+      )
     )
   }
-  it should "report error on default arguments in extern method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(_.compile("""
+
+  @Test def externMethodDefaultArguments(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
       |import scala.scalanative.unsafe._
       |@extern
       |object foo {
       |  def baz(a: Double=1.0, b:Int = 1): Unit = extern
       |}
       |""".stripMargin))
-    }.getMessage should include(
-      "extern method cannot have default argument"
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "extern method cannot have default argument"
+        )
     )
   }
 
-  it should "report error when closing over local statein CFuncPtr" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """
+  @Test def cFuncPtrWithLocalState(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """
           |import scala.scalanative.unsafe._
           |object Main {
           |  val z = 12
@@ -337,14 +430,19 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
           |  def main(args: Array[String]): Unit = test()
           |}
           |""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(
-      "Closing over local state of value x in function transformed to CFuncPtr results in undefined behaviour"
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "Closing over local state of value x in function transformed to CFuncPtr results in undefined behaviour"
+        )
     )
   }
 
-  it should "allow to export module method" in {
+  @Test def exportModuleMethod(): Unit = {
     try
       NIRCompiler(
         _.compile(
@@ -359,72 +457,84 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
       )
     catch {
       case ex: CompilationFailedException =>
-        fail(s"Unexpected compilation failure: ${ex.getMessage()}", ex)
+        fail(s"Unexpected compilation failure: ${ex}")
     }
   }
   val MustBeStatic =
     "Exported members must be statically reachable, definition within class or trait is currently unsupported"
 
-  it should "report error when exporting class method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
+  @Test def exportClassMethod(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.unsafe._
             |class ExportInClass() {
             |  @exported
             |  def foo(l: Int): Int = l
             |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(MustBeStatic)
+    )
+    assertTrue(err.getMessage().contains(MustBeStatic))
   }
 
-  it should "report error when exporting non static module method" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
+  @Test def exportNonStaticModuleMethod(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.unsafe._
           |class Wrapper() {
           | object inner {
           |   @exported
           |   def foo(l: Int): Int = l
           | }
           |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(MustBeStatic)
+    )
+    assertTrue(err.getMessage().contains(MustBeStatic))
   }
 
   val CannotExportField =
     "Cannot export field, use `@exportAccessors()` annotation to generate external accessors"
-  it should "report error when exporting module field" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
+  @Test def exportModuleField(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.unsafe._
           |object valuesNotAllowed {
           |  @exported val foo: Int = 0
           |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(CannotExportField)
+    )
+    assertTrue(err.getMessage().contains(CannotExportField))
   }
 
-  it should "report error when exporting module variable" in {
-    intercept[CompilationFailedException] {
-      NIRCompiler(
-        _.compile(
-          """import scala.scalanative.unsafe._
+  @Test def exportModuleVariable(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.unsafe._
           |object variableNotAllowed {
           |  @exported var foo: Int = 0
           |}""".stripMargin
+          )
         )
-      )
-    }.getMessage should include(CannotExportField)
+    )
+    assertTrue(err.getMessage().contains(CannotExportField))
   }
 
   // https://github.com/scala-native/scala-native/issues/3228
-  it should "allow to define fields in extern object" in NIRCompiler(_.compile {
+  @Test def externObjectFields(): Unit = NIRCompiler(_.compile {
     """
     |import scala.scalanative.unsafe._
     |
@@ -434,7 +544,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     |}""".stripMargin
   })
 
-  it should "define a valid source positions" in compileAndLoad(
+  @Test def sourcePositions(): Unit = compileAndLoad(
     "Test.scala" -> """class TopLevel()
     |object Foo {
     |  var field: Int = 42
@@ -474,25 +584,23 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     def isScala3 = scalaVersion.startsWith("3.")
 
     for (defn <- loaded) {
-      def checkPos(line: Int, column: Int)(pos: nir.Position) =
-        withClue(
+      def checkPos(line: Int, column: Int)(pos: nir.Position) = {
+        val clue =
           s"${defn.name} - expected=$line:$column, actual=${pos.line}:${pos.column}"
-        ) {
-          assert(pos.source.getPath().endsWith(sourceFile))
-          pos.line shouldEqual line
-          pos.column shouldEqual column
-        }
+        assertTrue(clue, pos.source.getPath().endsWith(sourceFile))
+        assertEquals(clue, line, pos.line)
+        assertEquals(clue, column, pos.column)
+      }
       def checkLinesRange(range: Range)(
           positions: Iterable[nir.Position]
-      ): Unit = withClue(s"${defn.name}") {
+      ): Unit = {
         positions.foreach { pos =>
-          println(pos)
-          assert(pos.source.getPath().endsWith(sourceFile))
-          assert(range.contains(pos.line))
+          assertTrue(s"${defn.name}", pos.source.getPath().endsWith(sourceFile))
+          assertTrue(s"${defn.name}", range.contains(pos.line))
         }
       }
       val pos = defn.pos
-      assert(pos.source.getPath().endsWith(sourceFile))
+      assertTrue(pos.source.getPath().endsWith(sourceFile))
       defn match {
         case Defn.Class(_, TopLevel, _, _) =>
           checkPos(0, 6)(pos)

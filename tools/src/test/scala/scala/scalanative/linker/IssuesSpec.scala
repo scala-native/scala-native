@@ -3,13 +3,15 @@ package scala.scalanative.linker
 import scala.scalanative.checker.Check
 import scala.scalanative.LinkerSpec
 
-import org.scalatest.matchers.should._
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.nir._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class IssuesSpec extends LinkerSpec with Matchers {
+class IssuesSpec extends LinkerSpec {
   private val mainClass = "Test"
   private val sourceFile = "Test.scala"
 
@@ -25,11 +27,12 @@ class IssuesSpec extends LinkerSpec with Matchers {
       mainClass: String = mainClass
   ) =
     testLinked(source.stripMargin, mainClass) { result =>
-      val erros = Await.result(Check(result), 1.minute)
-      erros shouldBe empty
+      val check = Check(result)
+      val errors = Await.result(check, 1.minute)
+      assertTrue(errors.isEmpty)
     }
 
-  "Issue #2790" should "link main classes using encoded characters" in {
+  @Test def mainClassWithEncodedChars(): Unit = {
     // All encoded character and an example of unciode encode character ';'
     val packageName = "foo.`b~a-r`.`b;a;z`"
     val mainClass = raw"Test-native~=<>!#%^&|*/+-:'?@;sc"
@@ -44,7 +47,7 @@ class IssuesSpec extends LinkerSpec with Matchers {
     )
   }
 
-  "Issue #2880" should "handle lambas correctly" in checkNoLinkageErrors {
+  @Test def issue2880LambadHandling(): Unit = checkNoLinkageErrors {
     """
     |object Test {
     |  trait ContextCodec[In, Out] {
@@ -61,7 +64,7 @@ class IssuesSpec extends LinkerSpec with Matchers {
     |"""
   }
 
-  "Extern traits" should "have only primitive type in type signature" in {
+  @Test def externTraitsPrimitveTypesSignatures(): Unit = {
     testLinked(s"""
       |import scala.scalanative.unsafe._
       |import scala.scalanative.unsigned._
@@ -89,19 +92,23 @@ class IssuesSpec extends LinkerSpec with Matchers {
       val decls = result.defns
         .collectFirst {
           case Defn.Declare(attrs, StringMemset, tpe) =>
-            assert(attrs.isExtern)
-            tpe shouldEqual Type.Function(
-              Seq(Type.Ptr, Type.Int, Type.Size),
-              Type.Ptr
+            assertTrue(attrs.isExtern)
+            assertEquals(
+              Type.Function(
+                Seq(Type.Ptr, Type.Int, Type.Size),
+                Type.Ptr
+              ),
+              tpe
             )
         }
         .orElse {
           fail("Not found extern declaration")
+          ???
         }
     }
   }
 
-  it should "define extern fields with correct attributes" in {
+  @Test def externTraitExternFieldAttributes(): Unit = {
     testLinked(s"""
          |import scala.scalanative.unsafe._
          |
@@ -121,13 +128,13 @@ class IssuesSpec extends LinkerSpec with Matchers {
       val decls = result.defns
         .collect {
           case defn @ Defn.Declare(attrs, LibField, tpe) =>
-            assert(attrs.isExtern)
+            assertTrue(attrs.isExtern)
         }
       if (decls.isEmpty) fail("Not found extern declaration")
     }
   }
 
-  it should "blocking extern methods should have correct attributes" in {
+  @Test def externTraitBlockingMethodAttributes(): Unit = {
     testLinked(s"""
       |import scala.scalanative.unsafe._
       |
@@ -156,13 +163,13 @@ class IssuesSpec extends LinkerSpec with Matchers {
       val found = result.defns
         .collect {
           case Defn.Declare(attrs, LibSync, _) =>
-            assert(attrs.isExtern && attrs.isBlocking)
+            assertTrue(attrs.isExtern && attrs.isBlocking)
           case Defn.Declare(attrs, LibAsync, _) =>
-            assert(attrs.isExtern && !attrs.isBlocking)
+            assertTrue(attrs.isExtern && !attrs.isBlocking)
           case Defn.Declare(attrs, SyncLibFoo, _) =>
-            assert(attrs.isExtern && attrs.isBlocking)
+            assertTrue(attrs.isExtern && attrs.isBlocking)
         }
-      found.size shouldEqual 3
+      assertEquals(3, found.size)
     }
   }
 

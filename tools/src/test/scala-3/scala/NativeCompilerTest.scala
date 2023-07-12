@@ -1,20 +1,20 @@
 package org.scalanative
 
-import org.scalatest._
-import org.scalatest.flatspec.AnyFlatSpec
+import org.junit.Test
+import org.junit.Assert._
 
 import scala.scalanative.api._
 import scala.scalanative.util.Scope
 import scala.scalanative.io.VirtualDirectory
 import java.nio.file.Files
 
-class NativeCompilerTest extends AnyFlatSpec:
+class NativeCompilerTest:
 
   def nativeCompilation(source: String): Unit = {
     try scalanative.NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
-        fail(s"Failed to compile source: ${ex.getMessage}", ex)
+        fail(s"Failed to compile source: ${ex}")
     }
   }
 
@@ -28,12 +28,12 @@ class NativeCompilerTest extends AnyFlatSpec:
       try scalanative.NIRCompiler(_.compile(sourcesDir))
       catch {
         case ex: CompilationFailedException =>
-          fail(s"Failed to compile source: ${ex.getMessage}", ex)
+          fail(s"Failed to compile source: $ex")
       }
     }
   }
 
-  "The Scala Native compiler plugin" should "compile t8612" in nativeCompilation(
+  @Test def issue8612(): Unit = nativeCompilation(
     """
     |object Foo1:
     |  def assert1(x: Boolean) = if !x then ???
@@ -55,7 +55,7 @@ class NativeCompilerTest extends AnyFlatSpec:
     |""".stripMargin
   )
 
-  it should "compile i505" in nativeCompilation("""
+  @Test def issue505(): Unit = nativeCompilation("""
   |object Test {
   |  def main(args: Array[String]): Unit = {
   |    val a: Int = synchronized(1)
@@ -74,7 +74,7 @@ class NativeCompilerTest extends AnyFlatSpec:
   """.stripMargin)
 
   // Reproducer for https://github.com/typelevel/shapeless-3/pull/61#discussion_r779376350
-  it should "allow to compile inlined macros with lazy vals" in {
+  @Test def inlineMacroWithLazyVals(): Unit = {
     compileAll(
       "Test.scala" -> "@main def run(): Unit = Macros.foo()",
       "Macros.scala" -> """

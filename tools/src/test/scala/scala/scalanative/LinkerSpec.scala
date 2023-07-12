@@ -3,16 +3,14 @@ package scala.scalanative
 import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import scalanative.build.{Config, NativeConfig}
-import scalanative.build.ScalaNative
+import scalanative.build.{Config, NativeConfig, Logger, ScalaNative, Discover}
 import scalanative.util.Scope
-import org.scalatest.flatspec.AnyFlatSpec
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 /** Base class to test the linker. */
-abstract class LinkerSpec extends AnyFlatSpec {
+abstract class LinkerSpec {
 
   /** Runs the linker using `driver` with `entry` as entry point on `sources`,
    *  and applies `fn` to the definitions.
@@ -65,11 +63,15 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
+      .withLogger(Logger.nullLogger)
   }
 
   private def withDefaults(config: NativeConfig): NativeConfig = {
     config
       .withTargetTriple("x86_64-unknown-unknown")
+      .withClang(Discover.clang())
+      .withClangPP(Discover.clangpp())
+
   }
 
   protected implicit def String2MapStringString(
