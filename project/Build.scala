@@ -37,7 +37,7 @@ object Build {
   )
   lazy val testMultiScalaProjects = List(
       javalibExtDummies,
-      testingCompiler, testingCompilerInterface,
+      testingCompiler,
       junitAsyncNative, junitAsyncJVM,
       junitTestOutputsJVM, junitTestOutputsNative,
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
@@ -201,11 +201,13 @@ object Build {
   // NIR compiler
   lazy val util = MultiScalaProject("util", file("util/native"))
     .enablePlugins(MyScalaNativePlugin)
+    .withNativeCompilerPlugin
     .settings(
       toolSettings,
       mavenPublishSettings,
       withSharedCrossPlatformSources
     )
+    .dependsOn(scalalib)
 
   lazy val utilJVM =
     MultiScalaProject(id = "utilJVM", name = "util", file("util/jvm"))
@@ -215,19 +217,20 @@ object Build {
         withSharedCrossPlatformSources
       )
 
-  lazy val nir = MultiScalaProject("nir", file("nir/native"))
-    .settings(
-      toolSettings,
-      mavenPublishSettings,
-      withSharedCrossPlatformSources
-    )
-    .mapBinaryVersions {
-      // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
-      case "2.12" => _.settings(disabledDocsSettings)
-      case _      => identity
-    }
-    .enablePlugins(MyScalaNativePlugin)
-    .dependsOn(util)
+  lazy val nir =
+    MultiScalaProject("nir", file("nir/native")).withNativeCompilerPlugin
+      .settings(
+        toolSettings,
+        mavenPublishSettings,
+        withSharedCrossPlatformSources
+      )
+      .mapBinaryVersions {
+        // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
+        case "2.12" => _.settings(disabledDocsSettings)
+        case _      => identity
+      }
+      .enablePlugins(MyScalaNativePlugin)
+      .dependsOn(util)
 
   lazy val nirJVM =
     MultiScalaProject(id = "nirJVM", name = "nir", file("nir/jvm"))
@@ -291,24 +294,21 @@ object Build {
     .enablePlugins(BuildInfoPlugin, MyScalaNativePlugin)
     .withJUnitPlugin
     .withNativeCompilerPlugin
-    .settings(commonToolsSettings)
     .settings(
-      Compile / unmanagedSourceDirectories ++= CrossVersion
-        .partialVersion(scalaVersion.value)
-        .collect {
-          case (3, _) | (2, 13) =>
-            (Compile / sourceDirectory).value / "scala-2.13+"
-        }
-        .toList,
-      Test / sources := Nil,
+      commonToolsSettings,
       Test / test := {
         val log = streams.value.log
         log.warn(
-          "Unable to test tools using Scala Native - it does not use JUnit"
+          "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
         )
       }
     )
     .dependsOn(nir, util)
+    .dependsOn(
+      testInterface % "test",
+      junitRuntime % "test",
+      testingCompiler % "test"
+    )
 
   lazy val toolsJVM =
     MultiScalaProject(id = "toolsJVM", name = "tools", file("tools/jvm"))
@@ -342,7 +342,7 @@ object Build {
             }
           )
       }
-      .dependsOn(nir, util, testingCompiler % "test")
+      .dependsOn(nir, util, testingCompilerJVM % "test")
 
   lazy val toolsBenchmarks =
     MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
@@ -658,9 +658,20 @@ object Build {
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompiler =
-    MultiScalaProject("testingCompiler", file("testing-compiler"))
+    MultiScalaProject("testingCompiler", file("testing-compiler/native"))
+      .enablePlugins(MyScalaNativePlugin)
+      .withNativeCompilerPlugin
       .settings(
         noPublishSettings,
+        withSharedCrossPlatformSources
+      )
+      .dependsOn(scalalib)
+
+  lazy val testingCompilerJVM =
+    MultiScalaProject("testingCompilerJVM", file("testing-compiler/jvm"))
+      .settings(
+        noPublishSettings,
+        withSharedCrossPlatformSources,
         libraryDependencies ++= Deps.compilerPluginDependencies(
           scalaVersion.value
         ),

@@ -2,30 +2,30 @@ package scala.scalanative.api
 
 import java.nio.file.Path
 
-/**
- * NIR compiler API.
+/** NIR compiler API.
  *
- * This API is used for testing the NIR compiler (the component that compiles
- * Scala trees to NIR.)
+ *  This API is used for testing the NIR compiler (the component that compiles
+ *  Scala trees to NIR.)
  */
 trait NIRCompiler {
-	/**
-	 * Compiles the source code given and returns all the files produced during
-	 * compilation.
-	 *
-	 * @param source The source code to compile.
-	 * @return All the files produced during compilation (classfiles, nir, hnir,
-	 *         etc.)
-	 */
-    def compile(source: String): Array[Path]
 
-    /**
-     * Compiles all the source files in `base` and returns all the files
-     * produced during compilation.
-     *
-     * @param base The base directory containing the source files.
-     * @return All the files produced during compilation (classfiles, nir, hnir,
-     *         etc.)
-     */
-    def compile(base: Path): Array[Path]
+  /** Compiles the source code given and returns all the files produced during
+   *  compilation.
+   *
+   *  @param source
+   *    The source code to compile.
+   *  @return
+   *    All the files produced during compilation (classfiles, nir, hnir, etc.)
+   */
+  def compile(source: String): Array[Path]
+
+  /** Compiles all the source files in `base` and returns all the files produced
+   *  during compilation.
+   *
+   *  @param base
+   *    The base directory containing the source files.
+   *  @return
+   *    All the files produced during compilation (classfiles, nir, hnir, etc.)
+   */
+  def compile(base: Path): Array[Path]
 }
