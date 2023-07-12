@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Try
 import scala.sys.process._
+import scala.reflect.ClassTag
 import scala.scalanative.build.IO.RichPath
 
 /** Utilities for discovery of command-line tools and settings required to build
@@ -254,15 +255,14 @@ object Discover {
   class ContextBasedCache[Ctx, Key, Value <: AnyRef] {
     private val cachedValues = scala.collection.mutable.Map.empty[Key, Value]
     private var lastContext: Ctx = _
-
-    def apply[T <: Value: reflect.ClassTag](
+    def apply[T <: Value: ClassTag](
         key: Key
     )(resolve: Ctx => T)(implicit context: Ctx): T = {
       lastContext match {
         case `context` =>
           val result = cachedValues.getOrElseUpdate(key, resolve(context))
           // Make sure stored value has correct type in case of duplicate keys
-          val expectedType = implicitly[reflect.ClassTag[T]].runtimeClass
+          val expectedType = implicitly[ClassTag[T]].runtimeClass
           assert(
             expectedType.isAssignableFrom(result.getClass),
             s"unexpected type of result for entry: `$key`, got ${result
