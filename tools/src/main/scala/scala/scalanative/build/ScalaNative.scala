@@ -145,7 +145,6 @@ private[scalanative] object ScalaNative {
                 else config.logger.warn(_),
               showContext = performFullCheck
             )(errors, linked)
-
             if (fatalWarnings)
               throw new BuildException(
                 "Fatal warning(s) found; see the error output for details."
