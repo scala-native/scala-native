@@ -10,20 +10,26 @@ on:
 
 jobs:
   test-linux:
+    if: github.event_name != 'schedule' && github.repository == 'scala-native/scala-native'
     uses: ./.github/workflows/run-tests-linux.yml
   test-windows:
+    if: github.event_name != 'schedule' && github.repository == 'scala-native/scala-native'
     uses: ./.github/workflows/run-tests-windows.yml
   test-macos:
+    if: github.event_name != 'schedule' && github.repository == 'scala-native/scala-native'
     uses: ./.github/workflows/run-tests-macos.yml
   test-jdk-compliance:
+    if: github.event_name != 'schedule' && github.repository == 'scala-native/scala-native'
     uses: ./.github/workflows/run-jdk-compliance-tests.yml
   test-multiarch:
+    if: github.event_name != 'schedule' && github.repository == 'scala-native/scala-native'
     uses: ./.github/workflows/run-tests-linux-multiarch.yml
 
   publish:
     name: Publish
     runs-on: ubuntu-22.04
     needs: [test-linux, test-windows, test-macos, test-jdk-compliance, test-multiarch]
+    if: github.repository == 'scala-native/scala-native'
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
