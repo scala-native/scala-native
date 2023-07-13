@@ -3,6 +3,10 @@ on:
   push:
     tags:
     - 'v0.5.*'
+  workflow_dispatch
+  schedule:
+  # Snapshot release every second work day
+  - cron: '0 0 * * 1,3,5'
 
 jobs:
   test-linux:
