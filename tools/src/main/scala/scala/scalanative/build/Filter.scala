@@ -1,7 +1,12 @@
 package scala.scalanative
 package build
 
+import java.io.FileReader
 import java.nio.file.{Files, Path, Paths}
+import java.util.Properties
+
+import scala.util.Failure
+import scala.util.Success
 
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
@@ -24,7 +29,7 @@ private[scalanative] object Filter {
    *  @param allPaths
    *    The native paths found for this library
    *  @return
-   *    The paths filtered to be included in the compile.
+   *    The (paths, config) for this native library.
    */
   def filterNativelib(
       config: Config,
@@ -34,43 +39,68 @@ private[scalanative] object Filter {
   ): (Seq[Path], Config) = {
     val nativeCodePath = destPath.resolve(nativeCodeDir)
     // check if filtering is needed, o.w. return all paths
-    findFilterProperties(nativeCodePath).fold((allPaths, config)) { file =>
-      // predicate to check if given file path shall be compiled
-      // we only include sources to the base of the gc code and exclude
-      // all optional dependencies if they are not necessary
-      val optPath = nativeCodePath.resolve("optional").abs
-      val gcPath = nativeCodePath.resolve("gc").abs
+    findFilterProperties(nativeCodePath).fold((allPaths, config)) { filepath =>
 
-      def include(path: String) = {
-        if (path.contains(optPath)) {
-          val name = Paths.get(path).toFile.getName.split("\\.").head
-          analysis.links.exists(_.name == name)
-        } else {
-          true
+      val desc =
+        Descriptor.load(filepath) match {
+          case Success(v) => v
+          case Failure(e) =>
+            throw new BuildException(
+              s"Problem reading $nativeProjectProps: ${e.getMessage}"
+            )
         }
+
+      config.logger.debug(desc.toString())
+
+      val projectConfig = desc match {
+        case Descriptor(Some(groupId), Some(artifactId), _)
+            if (groupId == "org.scala-native" && artifactId == "nativelib") =>
+          createGcConfig(nativeCodePath, config)
+        case Descriptor(_, _, _) =>
+          createLinkConfig(desc, analysis, config)
       }
 
-      // All the .o files are kept but we pass on the
-      // included files to the link phase
-      val includePaths = allPaths.map(_.abs).filter(include)
-
-      /* A conditional compilation define is used to compile the
-       * correct garbage collector code as code is shared.
-       * Note: The zone directory is also part of the garbage collection
-       * system and shares code from the gc directory.
-       */
-      val gcFlag = {
-        val gc = config.compilerConfig.gc.toString
-        s"-DSCALANATIVE_GC_${gc.toUpperCase}"
-      }
-
-      val projectConfig = config.withCompilerConfig(
-        _.withCompileOptions(_ :+ ("-I" + gcPath) :+ gcFlag)
-      )
-
-      val projectPaths = includePaths.map(Paths.get(_))
-      (projectPaths, projectConfig)
+      (allPaths, projectConfig)
     }
+  }
+
+  private def createLinkConfig(
+      desc: Descriptor,
+      analysis: ReachabilityAnalysis.Result,
+      config: Config
+  ): Config = {
+    val linkDefines =
+      desc.link
+        .filter(name => analysis.links.exists(_.name == name))
+        .map(name => s"-DSCALANATIVE_LINK_${name.toUpperCase}")
+
+    config.withCompilerConfig(
+      _.withCompileOptions(_ ++ linkDefines)
+    )
+  }
+
+  private def createGcConfig(
+      nativeCodePath: Path,
+      config: Config
+  ): Config = {
+    /* A conditional compilation define is used to compile the
+     * correct garbage collector code because code is shared.
+     * This avoids handling all the paths needed and compiling
+     * all the GC code for a given platform.
+     *
+     * Note: The zone directory is also part of the garbage collection
+     * system and shares code from the gc directory.
+     */
+    val gcFlag = {
+      val gc = config.compilerConfig.gc.toString
+      s"-DSCALANATIVE_GC_${gc.toUpperCase}"
+    }
+
+    val gcPath = nativeCodePath.resolve("gc").abs
+
+    config.withCompilerConfig(
+      _.withCompileOptions(_ :+ ("-I" + gcPath) :+ gcFlag)
+    )
   }
 
   /** Check for a filtering properties file in destination native code

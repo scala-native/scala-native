@@ -1,3 +1,5 @@
+#ifdef SCALANATIVE_LINK_Z
+
 #include <zlib.h>
 
 int scalanative_z_no_flush() { return Z_NO_FLUSH; }
@@ -252,3 +254,4 @@ uLong scalanative_crc32(uLong crc, Bytef *buf, uInt len) {
 uLong scalanative_crc32_combine(uLong crc1, uLong crc2, z_off_t len2) {
     return crc32_combine(crc1, crc2, len2);
 }
+#endif
