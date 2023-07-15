@@ -844,7 +844,7 @@ class StreamTest {
     val srcSize = 10
 
     val spliter = Stream
-      .iterate(0, n => n + 1)
+      .iterate(0, (n: Int) => n + 1)
       .limit(srcSize)
       .spliterator()
 
@@ -950,7 +950,7 @@ class StreamTest {
     val srcSize = 20
 
     val unsizedSpliter = Stream
-      .iterate(0, n => n + 1)
+      .iterate(0, (n: Int) => n + 1)
       .limit(srcSize)
       .spliterator()
 
