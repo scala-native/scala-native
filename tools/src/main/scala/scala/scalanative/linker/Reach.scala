@@ -202,8 +202,11 @@ class Reach(
         reachUnavailable(name)
       } else {
         val maybeFixedDefn = defn match {
-          case defn: Defn.Define => resolveLinktimeDefine(defn)
-          case _                 => defn
+          case defn: Defn.Define =>
+            (resolveLinktimeDefine _)
+              .andThen(mitigateStaticCalls _)
+              .apply(defn)
+          case _ => defn
         }
         reachDefn(maybeFixedDefn)
       }
@@ -567,6 +570,84 @@ class Reach(
     )
     reachAttrs(attrs)
     reachType(ty)
+  }
+
+  // Mitigate static calls to methods compiled with Scala Native older then 0.4.3
+  // If given static method in not rechable replace it with call to method with the same
+  // name in the companion module
+  private def mitigateStaticCalls(defn: Defn.Define): Defn.Define = {
+    lazy val fresh = Fresh(defn.insts)
+    val newInsts = defn.insts.flatMap {
+      case inst @ Inst.Let(
+            n,
+            _,
+            Op.Call(
+              ty: Type.Function,
+              Val.Global(
+                methodName @ Global.Member(Global.Top(methodOwner), sig),
+                _
+              ),
+              args
+            ),
+            unwind
+          )
+          if sig.isStatic && lookup(
+            methodName,
+            ignoreIfUnavailable = true
+          ).isEmpty =>
+        def findRewriteCandidate(inModule: Boolean): Option[List[Inst]] = {
+          val owner =
+            if (inModule) Global.Top(methodOwner + "$")
+            else Global.Top(methodOwner)
+          val newMethod = {
+            val Sig.Method(id, tps, scope) = sig.unmangled: @unchecked
+            val newScope = scope match {
+              case Sig.Scope.PublicStatic      => Sig.Scope.Public
+              case Sig.Scope.PrivateStatic(in) => Sig.Scope.Private(in)
+              case scope                       => scope
+            }
+            val newSig = Sig.Method(id, tps, newScope)
+            Val.Global(owner.member(newSig), Type.Ptr)
+          }
+          // Make sure that candidate exists
+          lookup(newMethod.name, ignoreIfUnavailable = true)
+            .map { _ =>
+              implicit val pos: nir.Position = defn.pos
+              val newType = {
+                val newArgsTpe = Type.Ref(owner) +: ty.args
+                Type.Function(newArgsTpe, ty.ret)
+              }
+
+              if (inModule) {
+                val moduleV = Val.Local(fresh(), Type.Ref(owner))
+                val newArgs = moduleV +: args
+                Inst.Let(moduleV.id, None, Op.Module(owner), Next.None) ::
+                  Inst.Let(n,None, Op.Call(newType, newMethod, newArgs), unwind) ::
+                  Nil
+              } else {
+                Inst.Let(n,None, Op.Call(newType, newMethod, args), unwind) :: Nil
+              }
+            }
+        }
+
+        findRewriteCandidate(inModule = true)
+          //  special case for lifted methods
+          .orElse(findRewriteCandidate(inModule = false))
+          .getOrElse {
+            config.logger.warn(
+              s"Found a call to not defined static method ${methodName}. " +
+                "Static methods are generated since Scala Native 0.4.3, " +
+                "report this bug in the Scala Native issues. " +
+                s"Call defined at ${inst.pos.show}"
+            )
+            addMissing(methodName, inst.pos)
+            inst :: Nil
+          }
+
+      case inst =>
+        inst :: Nil
+    }
+    defn.copy(insts = newInsts)(defn.pos)
   }
 
   def reachDefine(defn: Defn.Define): Unit = {

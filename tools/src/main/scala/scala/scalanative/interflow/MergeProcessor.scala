@@ -101,9 +101,16 @@ final class MergeProcessor(
               case (s, v) =>
                 s.materialize(v)
             }
-            val name = mergeFresh()
+            val id = mergeFresh()
             val paramty = Sub.lub(materialized.map(_.ty), bound)
-            val param = Val.Local(name, paramty)
+            val name = materialized
+              .collect { case Val.Local(_, _, Some(name)) => name }
+              // .take(0)
+              .toSet
+              .ensuring(_.size <= 1, "More then 1 name found")
+              .headOption
+            name.map("merge name: " + _).foreach(println)
+            val param = Val.Local(id, paramty, name)
             mergePhis += MergePhi(param, names.zip(materialized))
             param
           }
@@ -142,34 +149,22 @@ final class MergeProcessor(
                     }
                   }
                   mergeHeap(addr) = EscapedInstance(mergePhi(values, None))
-                case VirtualInstance(
-                      headKind,
-                      headCls,
-                      headValues,
-                      headZoneHandle
-                    ) =>
-                  val mergeValues = headValues.zipWithIndex.map {
+                case head: VirtualInstance =>
+                  val mergeValues = head.values.zipWithIndex.map {
                     case (_, idx) =>
                       val values = states.map { state =>
                         if (state.hasEscaped(addr)) restart()
                         state.derefVirtual(addr).values(idx)
                       }
-                      val bound = headKind match {
-                        case ClassKind =>
-                          Some(headCls.fields(idx).ty)
-                        case _ =>
-                          // No need for bound type since each would be either primitive type or j.l.Object
-                          None
+                      val bound = head.kind match {
+                        case ClassKind => Some(head.cls.fields(idx).ty)
+                        case _         => None
+                        // No need for bound type since each would be either primitive type or j.l.Object
                       }
 
                       mergePhi(values, bound)
                   }
-                  mergeHeap(addr) = VirtualInstance(
-                    headKind,
-                    headCls,
-                    mergeValues,
-                    headZoneHandle
-                  )
+                  mergeHeap(addr) = head.copy(values = mergeValues)
                 case DelayedInstance(op) =>
                   assert(
                     states.forall(s => s.derefDelayed(addr).delayedOp == op)

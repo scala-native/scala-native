@@ -23,9 +23,9 @@ trait Opt { self: Interflow =>
 
   def opt(name: Global): Defn.Define = in(s"visit ${name.show}") {
     val orig = originalName(name)
-    val origtys = argumentTypes(orig)
     val origdefn = getOriginal(orig)
     val argtys = argumentTypes(name)
+    val Inst.Label(_, origargs) = origdefn.insts.head
     implicit val pos = origdefn.pos
     // Wrap up the result.
     def result(retty: Type, rawInsts: Seq[Inst]) =
@@ -49,8 +49,9 @@ trait Opt { self: Interflow =>
     // are always a subtype of the original declared type, but in
     // some cases they might not be obviously related, despite
     // having the same concrete allocated class inhabitants.
-    val args = argtys.zip(origtys).map {
-      case (argty, origty) =>
+    val args = argtys.zip(origargs).map {
+      case (argty, origArg) =>
+        val origty = origArg.ty
         val ty = if (!Sub.is(argty, origty)) {
           log(
             s"using original argument type ${origty.show} instead of ${argty.show}"
@@ -59,7 +60,7 @@ trait Opt { self: Interflow =>
         } else {
           argty
         }
-        Val.Local(fresh(), ty)
+        origArg.copy(id = fresh(), valty = ty)
     }
 
     // If any of the argument types is nothing, this method

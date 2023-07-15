@@ -16,7 +16,8 @@ final class State(block: Local) {
   var delayed = mutable.AnyRefMap.empty[Op, Val]
   var emitted = mutable.AnyRefMap.empty[Op, Val]
   var emit = new nir.Buffer()(fresh)
-  var originalInst = Option.empty[Inst]
+  var debugNames = mutable.LongMap.empty[String]
+  // var originalInst = Option.empty[Inst]
   var inlineDepth = 0
 
   private def alloc(
@@ -74,14 +75,15 @@ final class State(block: Local) {
       value
     }
   }
-  def emit(op: Op, idempotent: Boolean = false)(implicit
+   def emit(op: Op, idempotent: Boolean = false)(implicit
+      position: Position
+  ): Val = emit(op, None, idempotent)
+
+  def emit(op: Op, name: Option[String], idempotent: Boolean)(implicit
       position: Position
   ): Val = {
-    def name = originalInst.flatMap {
-      case i: Inst.Let => i.name
-      case _           => None
-    }
-    name.foreach(println)
+    // def name = Option.empty[String]//  Some("inEmit")// originalName
+
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
@@ -239,6 +241,7 @@ final class State(block: Local) {
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
     newstate.inlineDepth = inlineDepth
+    newstate.debugNames = debugNames.mapValuesNow(identity)
     newstate
   }
   override def equals(other: Any): Boolean = other match {
@@ -295,7 +298,8 @@ final class State(block: Local) {
         emit.classalloc(cls.name, Next.None, zone.map(escapedVal))
       case DelayedInstance(op) =>
         reachOp(op)
-        emit(escapedOp(op), idempotent = true)
+        // log(s"delayed: ${addr} - ${debugNames.get(addr)} - ${op.show}")
+        emit(escapedOp(op), name = debugNames.get(addr), idempotent = true)
       case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)
@@ -354,6 +358,7 @@ final class State(block: Local) {
       case Val.Virtual(addr)       => reachAddr(addr)
       case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
       case Val.StructValue(vals)   => vals.foreach(reachVal)
+      // case Val.Local(_, _, name) =>  println(name)
       case _                       => ()
     }
 

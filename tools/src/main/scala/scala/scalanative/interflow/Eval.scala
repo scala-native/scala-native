@@ -20,7 +20,6 @@ trait Eval { self: Interflow =>
       implicit val pos: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
-      state.originalInst = Some(inst)
       inst match {
         case _: Inst.Label =>
           unreachable
@@ -28,7 +27,16 @@ trait Eval { self: Interflow =>
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
-          val value = eval(op)
+
+          // println()
+          this.log(s"eval: ${inst.show}")
+          val value = name
+            .map(_ => eval(op, name))
+            .getOrElse(eval(op))
+          log(
+            s"evaluated to: ${value.show}, last inst: ${state.emit.toSeq.lastOption
+                .fold("none")(_.show)}\n"
+          )
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)(inst.pos)
           } else {
@@ -105,6 +113,26 @@ trait Eval { self: Interflow =>
   }
 
   def eval(
+      op: Op,
+      originalName: Option[String]
+  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
+    val out = eval(op)
+    state.emit
+      .patch(out)(_.copy(name = originalName))
+      .getOrElse {
+        out match {
+          case v: Val.Virtual =>
+            originalName.foreach(state.debugNames.update(v.key, _))
+            out
+          case v @ Val.Local(id,_, None) => 
+            originalName.foreach(state.debugNames.update(id.id, _))
+            v.copy(name = originalName)
+          case _ => out
+        }
+      }
+      .ensuring(_.ty == out.ty)
+  }
+  def eval(
       op: Op
   )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
     import state.{emit, materialize, delay}
@@ -117,12 +145,9 @@ trait Eval { self: Interflow =>
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
-            case VirtualRef(_, cls, _, _) =>
-              cls.ty
-            case DelayedRef(op) =>
-              op.resty
-            case value =>
-              value.ty
+            case VirtualRef(_, cls, _) => cls.ty
+            case DelayedRef(op)        => op.resty
+            case value                 => value.ty
           }
 
           val (dsig, dtarget) = emeth match {
@@ -215,8 +240,7 @@ trait Eval { self: Interflow =>
         Val.Virtual(state.allocClass(cls, zonePtr))
       case Op.Fieldload(ty, rawObj, name @ FieldRef(cls, fld)) =>
         eval(rawObj) match {
-          case VirtualRef(_, _, values, _) =>
-            values(fld.index)
+          case VirtualRef(_, _, values) => values(fld.index)
           case DelayedRef(op: Op.Box) =>
             val name = op.ty.asInstanceOf[Type.RefKind].className
             eval(Op.Unbox(Type.Ref(name), rawObj))
@@ -236,7 +260,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
         eval(obj) match {
-          case VirtualRef(_, _, values, _) =>
+          case VirtualRef(_, _, values) =>
             values(fld.index) = eval(value)
             Val.Unit
           case obj =>
@@ -392,7 +416,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Unbox(boxty @ Type.Ref(boxname, _, _), value) =>
         eval(value) match {
-          case VirtualRef(_, cls, Array(value), _) if boxname == cls.name =>
+          case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
             value
           case DelayedRef(Op.Box(Type.Ref(innername, _, _), innervalue))
               if innername == boxname =>
@@ -434,7 +458,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (VirtualRef(_, _, values, _), Val.Int(offset))
+          case (VirtualRef(_, _, values), Val.Int(offset))
               if inBounds(values, offset) =>
             values(offset)
           case (arr, idx) =>
@@ -442,7 +466,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (VirtualRef(_, _, values, _), Val.Int(offset))
+          case (VirtualRef(_, _, values), Val.Int(offset))
               if inBounds(values, offset) =>
             values(offset) = eval(value)
             Val.Unit
@@ -458,18 +482,18 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
-          case VirtualRef(_, _, values, _) =>
-            Val.Int(values.length)
-          case arr =>
-            emit(Op.Arraylength(materialize(arr)))
+          case VirtualRef(_, _, values) => Val.Int(values.length)
+          case arr => emit(Op.Arraylength(materialize(arr)))
         }
       case Op.Var(ty) =>
         Val.Local(state.newVar(ty), Type.Var(ty))
       case Op.Varload(slot) =>
-        val Val.Local(local, _, _) = eval(slot): @unchecked
+        val Val.Local(local, _, name) = eval(slot): @unchecked
+        // name.foreach(v => println("load: " + v))
         state.loadVar(local)
       case Op.Varstore(slot, value) =>
-        val Val.Local(local, _, _) = eval(slot): @unchecked
+        val Val.Local(local, _, name) = eval(slot): @unchecked
+        // name.foreach(v => println("store: " + v))
         state.storeVar(local, eval(value))
         Val.Unit
       case _ => util.unreachable

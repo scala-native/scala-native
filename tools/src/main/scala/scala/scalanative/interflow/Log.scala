@@ -3,7 +3,7 @@ package interflow
 
 trait Log { self: Interflow =>
   private def show: Boolean =
-    false
+    self.context().exists(_.contains("Test$"))
 
   def in[T](msg: String)(f: => T): T = {
     log(msg)

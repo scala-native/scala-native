@@ -960,14 +960,16 @@ trait NirGenExpr(using Context) {
     def genValDef(vd: ValDef): Val = {
       given nir.Position = vd.span
       val name = genLocalName(vd.symbol)
-      val rhs = genExpr(vd.rhs) match {
-        case v: Val.Local => v.copy(name = Some(name))
-        case v => v
+      val rhs = {
+        val rhs0 = genExpr(vd.rhs)
+        // println(rhs0 -> buf.toSeq.last)
+        // println(vd.show -> rhs0)
+        buf
+          .patch(rhs0)(_.copy(name = Some(name)))
+          .getOrElse(rhs0)
+        // rhs0
       }
-      buf.patchLast{
-        case v: Inst.Let => v.copy(name = Some(name))
-        case v => v
-      }
+
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
       if (vd.symbol.isExtern)
         checkExplicitReturnTypeAnnotation(vd, "extern field")

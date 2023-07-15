@@ -40,10 +40,10 @@ final case class EscapedInstance(val escapedValue: Val) extends Instance
 final case class DelayedInstance(val delayedOp: Op) extends Instance
 
 final case class VirtualInstance(
-    val kind: Kind,
-    val cls: Class,
-    var values: Array[Val],
-    val zone: Option[Val]
+    kind: Kind,
+    cls: Class,
+    values: Array[Val],
+    zone: Option[Val]
 ) extends Instance {
 
   // We can't use case class generated equals, due to the fact

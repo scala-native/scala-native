@@ -1,15 +1,22 @@
+import scala.scalanative.libc.stdio._
+import scala.scalanative.unsafe._
 object Test {
-  var z = 0
-
+  
   def main(args: Array[String]): Unit = {
     val x = 42
     val y = x
-    z = args.size
+    var z =  args.size
+    // z = 0
+    while (z > 10){
+      z -= 1
+    }
     val z2 = z + 1
-    println(z2)
+    printf(c"%d %d %d\n", x, y, z2)
+    
+    // println(z2)
 
-    val a = "Foo".toLowerCase()
-    println(a)
-    println(z)
+    // val a = "Foo".toLowerCase()
+    // println(a)
+    // println(z)
   }
 }

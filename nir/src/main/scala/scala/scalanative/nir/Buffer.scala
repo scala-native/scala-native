@@ -2,6 +2,7 @@ package scala.scalanative
 package nir
 
 import scala.collection.mutable
+import scala.scalanative.nir.Val.ArrayValue
 
 class Buffer(implicit fresh: Fresh) {
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
@@ -9,11 +10,29 @@ class Buffer(implicit fresh: Fresh) {
   def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
   def ++=(other: Buffer): Unit = buffer ++= other.buffer
 
-  def patchLast(fn: Inst => Inst): Unit = {
-    val last = buffer.last
-    val lastIdx = buffer.size - 1
-    assert(buffer(lastIdx) eq last)
-    buffer.update(lastIdx, fn(last))
+  def patch(lastVal: Val)(fn: Inst.Let => Inst.Let): Option[Val.Local] = {
+    buffer.lastOption.flatMap { last =>
+      val lastIdx = buffer.size - 1
+      assert(buffer(lastIdx) eq last)
+
+      last match {
+        case v: Inst.Let =>
+          lastVal match {
+            case Val.Local(lastId, _, _) if v.id == lastId => 
+              val mapped = fn(v)
+              buffer.update(lastIdx, mapped)
+              val Inst.Let(id, name, op, _) = mapped
+              val v2 = Val.Local(id, lastVal.ty, name)
+              // §(lastVal -> v2)
+              Some(v2)
+
+            case _ => None
+          }
+
+        case v => 
+          None
+      }
+    }
   }
 
   def toSeq: Seq[Inst] = buffer.toSeq

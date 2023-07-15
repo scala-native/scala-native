@@ -124,6 +124,7 @@ class Interflow(val config: build.Config)(implicit
 
   def contextDepth(): Int =
     contextTl.get.size
+  def context(): List[String] = contextTl.get()
   def hasContext(value: String): Boolean =
     contextTl.get.contains(value)
   def pushContext(value: String): Unit =
