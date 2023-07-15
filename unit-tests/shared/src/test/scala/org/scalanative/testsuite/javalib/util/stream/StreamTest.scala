@@ -970,8 +970,8 @@ class StreamTest {
     val proofSpliter = Stream.of("Air", "Earth", "Fire", "Water").spliterator()
 
     val expectedProofCharacteristics =
-      Spliterator.SIZED | Spliterator.SUBSIZED
-        | Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
 
     assertEquals(
       "Unexpected origin stream characteristics",

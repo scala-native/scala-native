@@ -1021,8 +1021,8 @@ class DoubleStreamTest {
     val proofSpliter = DoubleStream.of(1.12, 2.23, 3.34, -1.12).spliterator()
 
     val expectedProofCharacteristics =
-      Spliterator.SIZED | Spliterator.SUBSIZED
-        | Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
 
     assertEquals(
       "Unexpected origin stream characteristics",
