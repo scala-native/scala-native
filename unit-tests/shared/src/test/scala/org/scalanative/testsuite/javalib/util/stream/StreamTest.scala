@@ -843,10 +843,11 @@ class StreamTest {
 
     val srcSize = 10
 
-    val spliter = Stream
-      .iterate(0, (n: Int) => n + 1)
-      .limit(srcSize)
-      .spliterator()
+    val spliter =
+      Stream
+        .iterate[jl.Integer](0, (n: jl.Integer) => n + 1)
+        .limit(srcSize)
+        .spliterator()
 
     val expectedExactSize = -1
     assertEquals(
@@ -949,10 +950,11 @@ class StreamTest {
 
     val srcSize = 20
 
-    val unsizedSpliter = Stream
-      .iterate(0, (n: Int) => n + 1)
-      .limit(srcSize)
-      .spliterator()
+    val unsizedSpliter =
+      Stream
+        .iterate[jl.Integer](0, (n: jl.Integer) => n + 1)
+        .limit(srcSize)
+        .spliterator()
 
     val expectedUnsizedCharacteristics = Spliterator.ORDERED // 0x10
 
