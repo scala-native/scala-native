@@ -406,6 +406,16 @@ private[stream] class ObjectStreamImpl[T](
   }
 
   def limit(maxSize: Long): Stream[T] = {
+
+    /* Important:
+     * See Issue #3309 for discussion of size & characteristics
+     * in JVM 17 (and possibly as early as JVM 12) for parallel ORDERED
+     * streams.  The behavior implemented here is Java 8 and at least Java 11.
+     *
+     * If you are reading this block with more than a passing interest,
+     * prepare yourself for not having a good day, the muck is deep.
+     */
+
     if (maxSize < 0)
       throw new IllegalArgumentException(maxSize.toString())
 
@@ -413,9 +423,17 @@ private[stream] class ObjectStreamImpl[T](
 
     var nSeen = 0L
 
+    val startingBits = _spliter.characteristics()
+
+    val alwaysClearedBits =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.CONCURRENT
+
+    val newStreamCharacteristics = startingBits & ~alwaysClearedBits
+
     val spl = new Spliterators.AbstractSpliterator[T](
-      maxSize,
-      _spliter.characteristics()
+      Long.MaxValue,
+      newStreamCharacteristics
     ) {
       def tryAdvance(action: Consumer[_ >: T]): Boolean =
         if (nSeen >= maxSize) false
@@ -659,11 +677,24 @@ private[stream] class ObjectStreamImpl[T](
     Arrays
       .sort[Object](buffer, comparator.asInstanceOf[Comparator[_ >: Object]])
 
-    val spl = Spliterators.spliterator[T](
-      buffer,
+    /* // FIXME
+    val newCharacteristics = _spliter.characteristics() |
+      Spliterator.SORTED | Spliterator.ORDERED |
+      Spliterator.SIZED | Spliterator.SUBSIZED
+     */ // FIXME
+
+    val startingBits = _spliter.characteristics()
+    val alwaysSetBits =
       Spliterator.SORTED | Spliterator.ORDERED |
         Spliterator.SIZED | Spliterator.SUBSIZED
-    )
+
+    // Time & experience may show that additional bits need to be cleared here.
+    val alwaysClearedBits = Spliterator.IMMUTABLE
+
+    val newCharacteristics =
+      (startingBits | alwaysSetBits) & ~alwaysClearedBits
+
+    val spl = Spliterators.spliterator[T](buffer, newCharacteristics)
 
     new ObjectStreamImpl[T](spl, _parallel, pipeline)
   }
