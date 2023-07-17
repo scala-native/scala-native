@@ -38,6 +38,16 @@ object ScalaNativePlugin extends AutoPlugin {
     val nativeLink =
       taskKey[File]("Generates native binary without running it.")
 
+    val nativeLinkReleaseFast =
+      taskKey[File](
+        "Generates native binary in release-fast configuration without running it."
+      )
+
+    val nativeLinkReleaseFull =
+      taskKey[File](
+        "Generates native binary in release-full configuration without running it."
+      )
+
   }
 
   override def globalSettings: Seq[Setting[_]] =

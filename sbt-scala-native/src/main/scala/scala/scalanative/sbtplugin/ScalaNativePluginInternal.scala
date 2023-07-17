@@ -132,6 +132,37 @@ object ScalaNativePluginInternal {
     Await.result(body(ec), Duration.Inf)
   }
 
+  private def nativeLinkImpl(
+      nativeConfig: NativeConfig,
+      sbtLogger: sbt.Logger,
+      baseDir: Path,
+      moduleName: String,
+      mainClass: Option[String],
+      testConfig: Boolean,
+      classpath: Seq[Path],
+      nativeLogger: build.Logger
+  ) = {
+
+    val config =
+      build.Config.empty
+        .withLogger(nativeLogger)
+        .withClassPath(classpath)
+        .withBaseDir(baseDir)
+        .withModuleName(moduleName)
+        .withMainClass(mainClass)
+        .withTestConfig(testConfig)
+        .withCompilerConfig(nativeConfig)
+
+    interceptBuildException {
+      await(sbtLogger) { implicit ec: ExecutionContext =>
+        implicit def scope: Scope = sharedScope
+        Build
+          .buildCached(config)
+          .map(_.toFile())
+      }
+    }
+  }
+
   /** Config settings are called for each project, for each Scala version, and
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
@@ -141,30 +172,60 @@ object ScalaNativePluginInternal {
       val config = nativeConfig.value
       config
     },
+    nativeLinkReleaseFull := Def
+      .task {
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val sbtLogger = streams.value.log
+        val nativeLogger = sbtLogger.toLogger
+
+        nativeLinkImpl(
+          nativeConfig = nativeConfig.value.withMode(Mode.releaseFull),
+          classpath = classpath,
+          sbtLogger = sbtLogger,
+          nativeLogger = nativeLogger,
+          mainClass = selectMainClass.value,
+          baseDir = crossTarget.value.toPath(),
+          testConfig = testConfig,
+          moduleName = moduleName.value + "-release-full"
+        )
+      }
+      .tag(NativeTags.Link)
+      .value,
+    nativeLinkReleaseFast := Def
+      .task {
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val sbtLogger = streams.value.log
+        val nativeLogger = sbtLogger.toLogger
+
+        nativeLinkImpl(
+          nativeConfig = nativeConfig.value.withMode(Mode.releaseFast),
+          classpath = classpath,
+          sbtLogger = sbtLogger,
+          nativeLogger = nativeLogger,
+          mainClass = selectMainClass.value,
+          baseDir = crossTarget.value.toPath(),
+          testConfig = testConfig,
+          moduleName = moduleName.value + "-release-fast"
+        )
+      }
+      .tag(NativeTags.Link)
+      .value,
     nativeLink := Def
       .task {
         val classpath = fullClasspath.value.map(_.data.toPath)
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
 
-        val config =
-          build.Config.empty
-            .withLogger(nativeLogger)
-            .withClassPath(classpath)
-            .withBaseDir(crossTarget.value.toPath())
-            .withModuleName(moduleName.value)
-            .withMainClass(selectMainClass.value)
-            .withTestConfig(testConfig)
-            .withCompilerConfig(nativeConfig.value)
-
-        interceptBuildException {
-          await(sbtLogger) { implicit ec: ExecutionContext =>
-            implicit def scope: Scope = sharedScope
-            Build
-              .buildCached(config)
-              .map(_.toFile())
-          }
-        }
+        nativeLinkImpl(
+          nativeConfig = nativeConfig.value,
+          classpath = classpath,
+          sbtLogger = sbtLogger,
+          nativeLogger = nativeLogger,
+          mainClass = selectMainClass.value,
+          baseDir = crossTarget.value.toPath(),
+          testConfig = testConfig,
+          moduleName = moduleName.value
+        )
       }
       .tag(NativeTags.Link)
       .value,
