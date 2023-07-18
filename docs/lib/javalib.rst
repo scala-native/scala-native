@@ -447,6 +447,7 @@ java.util
 * ``SortedSet``
 * ``Spliterator``
 * ``Spliterators``
+* ``StringJoiner``
 * ``StringTokenizer``
 * ``TooManyListenersException``
 * ``TreeSet``
