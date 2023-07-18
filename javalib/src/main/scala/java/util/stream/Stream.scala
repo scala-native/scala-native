@@ -65,7 +65,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       }
     }
 
-    new ObjectStreamImpl[T](spl, parallel = false, parent = this)
+    new StreamImpl[T](spl, parallel = false, parent = this)
   }
 
   def filter(pred: Predicate[_ >: T]): Stream[T]
@@ -146,7 +146,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       }
     }
 
-    (new ObjectStreamImpl[R](
+    (new StreamImpl[R](
       spl,
       parallel = false,
       parent = this.asInstanceOf[Stream[R]]
@@ -193,7 +193,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       }
 
     val coercedPriorStages = this
-      .asInstanceOf[ObjectStreamImpl[T]]
+      .asInstanceOf[StreamImpl[T]]
       .pipeline
       .asInstanceOf[ArrayDeque[DoubleStreamImpl]]
 
@@ -279,7 +279,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       }
     }
 
-    new ObjectStreamImpl[T](spl, parallel = false, parent = this)
+    new StreamImpl[T](spl, parallel = false, parent = this)
   }
 
   def toArray(): Array[Object]
@@ -318,13 +318,13 @@ object Stream {
     def build(): Stream[T]
   }
 
-  def builder[T](): Builder[T] = new ObjectStreamImpl.Builder[T]
+  def builder[T](): Builder[T] = new StreamImpl.Builder[T]
 
   def concat[T](a: Stream[_ <: T], b: Stream[_ <: T]): Stream[T] =
-    ObjectStreamImpl.concat(a, b)
+    StreamImpl.concat(a, b)
 
   def empty[T](): Stream[T] =
-    new ObjectStreamImpl(Spliterators.emptySpliterator[T](), parallel = false)
+    new StreamImpl(Spliterators.emptySpliterator[T](), parallel = false)
 
   def generate[T](s: Supplier[T]): Stream[T] = {
     val spliter =
@@ -335,7 +335,7 @@ object Stream {
         }
       }
 
-    new ObjectStreamImpl(spliter, parallel = false)
+    new StreamImpl(spliter, parallel = false)
   }
 
   // Since: Java 9
@@ -370,7 +370,7 @@ object Stream {
         }
       }
 
-    new ObjectStreamImpl(spliter, parallel = false)
+    new StreamImpl(spliter, parallel = false)
   }
 
   def iterate[T](seed: T, f: UnaryOperator[T]): Stream[T] = {
@@ -396,7 +396,7 @@ object Stream {
         }
       }
 
-    new ObjectStreamImpl(spliter, parallel = false)
+    new StreamImpl(spliter, parallel = false)
   }
 
   def of[T](values: Array[Object]): Stream[T] = {
