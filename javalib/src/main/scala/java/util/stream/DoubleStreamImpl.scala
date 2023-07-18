@@ -80,7 +80,7 @@ private[stream] class DoubleStreamImpl(
 
   protected def commenceOperation(): Unit = {
     if (_operatedUpon || _closed)
-      ObjectStreamImpl.throwIllegalStateException()
+      StreamImpl.throwIllegalStateException()
 
     _operatedUpon = true
   }
@@ -132,7 +132,7 @@ private[stream] class DoubleStreamImpl(
     // JVM appears to not set "operated upon" here.
 
     if (_closed)
-      ObjectStreamImpl.throwIllegalStateException()
+      StreamImpl.throwIllegalStateException()
 
     // detects & throws on closeHandler == null
     onCloseQueue.addLast(closeHandler)
@@ -368,7 +368,7 @@ private[stream] class DoubleStreamImpl(
   def limit(maxSize: Long): DoubleStream = {
 
     /* Important:
-     * See Issue #3309 & ObjectStreamImpl#limit for discussion of size
+     * See Issue #3309 & StreamImpl#limit for discussion of size
      * & characteristics in JVM 17 (and possibly as early as JVM 12)
      * for parallel ORDERED streams.
      * The behavior implemented here is Java 8 and at least Java 11.
@@ -443,11 +443,11 @@ private[stream] class DoubleStreamImpl(
         _spliter.tryAdvance((e: scala.Double) => action.accept(mapper(e)))
     }
 
-    new ObjectStreamImpl[U](
+    new StreamImpl[U](
       spl,
       _parallel,
       pipeline
-        .asInstanceOf[ArrayDeque[ObjectStreamImpl[U]]]
+        .asInstanceOf[ArrayDeque[StreamImpl[U]]]
     )
   }
 
@@ -664,7 +664,7 @@ object DoubleStreamImpl {
     private var built = false
 
     override def accept(t: scala.Double): Unit =
-      if (built) ObjectStreamImpl.throwIllegalStateException()
+      if (built) StreamImpl.throwIllegalStateException()
       else buffer.add(t)
 
     override def build(): DoubleStream = {
@@ -836,7 +836,7 @@ object DoubleStreamImpl {
   }
 
   def concat(a: DoubleStream, b: DoubleStream): DoubleStream = {
-    /* See ""Design Note" at corresponding place in ObjectStreamImpl.
+    /* See ""Design Note" at corresponding place in StreamImpl.
      * This implementaton shares the same noted "features".
      */
     val aImpl = a.asInstanceOf[DoubleStreamImpl]
