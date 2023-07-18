@@ -1,15 +1,31 @@
-// Ported from Apache Harmony
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package java.io
 
 object PipedInputStream {
-  final val PipeSize = 1024
+  final val PIPE_SIZE = 1024
 }
 
 /** Constructs a new unconnected {@code PipedInputStream}. The resulting stream
  *  must be connected to a {@link PipedOutputStream} before data may be read
  *  from it.
  */
-class PipedInputStream(private[io] val pipeSize: Int) extends InputStream {
+class PipedInputStream() extends InputStream {
   private var lastReader: Thread = _
   private var lastWriter: Thread = _
   private var isClosed = false
@@ -30,15 +46,8 @@ class PipedInputStream(private[io] val pipeSize: Int) extends InputStream {
    */
   protected var out: Int = 0
 
-  def this() = this(pipeSize = PipedInputStream.PipeSize)
-
-  def this(out: PipedOutputStream, pipeSize: Int) = {
-    this(pipeSize)
-    connect(out)
-  }
-
   def this(out: PipedOutputStream) = {
-    this(PipedInputStream.PipeSize)
+    this()
     connect(out)
   }
 
@@ -118,13 +127,14 @@ class PipedInputStream(private[io] val pipeSize: Int) extends InputStream {
         // Are we at end of stream?
         if (isClosed) return -1
 
-        if (attempts <= 0 && lastWriter != null && !lastWriter.isAlive()) {
+        if ({
+          val a = attempts; attempts -= 1; a <= 0
+        } && lastWriter != null && !lastWriter.isAlive()) {
           throw new IOException("Pipe broken")
         }
         // Notify callers of receive()
         notifyAll()
         wait(1000)
-        attempts -= 1
       }
     } catch {
       case e: InterruptedException => throw new InterruptedIOException
@@ -185,12 +195,12 @@ class PipedInputStream(private[io] val pipeSize: Int) extends InputStream {
       var attempts = 3
       while (in == -1) {
         if (isClosed) return -1
-        val attemp = attempts
-        if (attempts <= 0 && lastWriter != null && !lastWriter.isAlive())
+        val attempt = attempts
+        attempts -= 1
+        if (attempt <= 0 && lastWriter != null && !lastWriter.isAlive())
           throw new IOException("Pipe broken")
         notifyAll()
         wait(1000)
-        attempts -= 1
       }
     } catch {
       case e: InterruptedException => throw new InterruptedIOException

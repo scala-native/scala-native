@@ -1,4 +1,19 @@
-// Ported from Apache Harmony
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package java.io
 
 object PipedReader {
@@ -145,20 +160,24 @@ class PipedReader() extends Reader {
        *  will be thrown in receive()
        */
       lastReader = Thread.currentThread()
+      var wasClosed = false
       try {
         var first = true
-        while ({ in == -1 }) { // Are we at end of stream?
-          if (isClosed) return -1
-          if (!first && lastWriter != null && !lastWriter.isAlive())
-            throw new IOException("Broken pipe")
-          first = false
-          // Notify callers of receive()
-          lock.notifyAll()
-          lock.wait(1000)
+        while (!wasClosed && in == -1) { // Are we at end of stream?
+          if (isClosed) wasClosed = true
+          else {
+            if (!first && lastWriter != null && !lastWriter.isAlive())
+              throw new IOException("Broken pipe")
+            first = false
+            // Notify callers of receive()
+            lock.notifyAll()
+            lock.wait(1000)
+          }
         }
       } catch {
         case e: InterruptedException => throw new InterruptedIOException
       }
+      if (wasClosed) return -1
       /* Copy chars from out to end of buffer first */
       val copyLength =
         if (out < in) 0

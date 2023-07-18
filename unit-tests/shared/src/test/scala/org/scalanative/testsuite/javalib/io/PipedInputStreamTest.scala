@@ -1,64 +1,91 @@
-// Ported from Apache Harmony
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
-import org.junit.Test
+import java.io.{IOException, PipedInputStream, PipedOutputStream}
+import org.junit._
 import org.junit.Assert._
-import org.junit.After
 
 object PipedInputStreamTest {
-  private[io] class PWriter(var pos: PipedOutputStream, val nbytes: Int)
+  @BeforeClass def checkRuntime(): Unit =
+    scala.scalanative.junit.utils.AssumesHelper.assumeMultithreadingIsEnabled()
+}
+class PipedInputStreamTest {
+
+  /** Tears down the fixture, for example, close a network connection. This
+   *  method is called after a test is executed.
+   */
+  @After def tearDown(): Unit = {
+    try
+      if (t != null) {
+        t.interrupt()
+      }
+    catch { case _: Exception => }
+  }
+
+  private class PWriter(var pos: PipedOutputStream, var bytes: Array[Byte])
       extends Runnable {
-    bytes = new Array[Byte](nbytes)
-    for (i <- 0 until bytes.length) {
-      bytes(i) = (System.currentTimeMillis % 9).toByte
-    }
-    var bytes: Array[Byte] = null
     override def run(): Unit = {
       try {
         pos.write(bytes)
-        this synchronized notify()
+        synchronized {
+          notify()
+        }
       } catch {
         case e: IOException =>
           e.printStackTrace(System.out)
-          System.out.println("Could not write bytes")
+          println("Could not write bytes")
       }
     }
   }
-  private[io] class Worker private[io] (var out: PipedOutputStream)
-      extends Thread {
-    override def run(): Unit = {
-      try {
-        out.write(20)
-        out.close()
-        Thread.sleep(5000)
-      } catch {
-        case e: Exception =>
-
-      }
-    }
-  }
-}
-
-class PipedInputStreamTest {
-  import PipedInputStreamTest._
 
   private var t: Thread = _
+  private var pw: PWriter = _
+  private var pis: PipedInputStream = _
+  private var pos: PipedOutputStream = _
 
-  @throws[IOException]
-  @Test def testConstructorPipedOutputStream(): Unit = {
-    new PipedInputStream(new PipedOutputStream()).available()
+  /** @tests
+   *    java.io.PipedInputStream#PipedInputStream()
+   */
+  @Test def test_Constructor(): Unit = {
+    // Used in tests
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#PipedInputStream(java.io.PipedOutputStream)
+   */
   @throws[IOException]
-  @Test def testReadException(): Unit = {
-    val pis = new PipedInputStream()
-    val pos = new PipedOutputStream()
+  @Test def test_Constructor_PipedOutputStream(): Unit = {
+    pis = new PipedInputStream(new PipedOutputStream)
+    pis.available()
+  }
+
+  /** @test
+   *    java.io.PipedInputStream#read()
+   */
+  @throws[IOException]
+  @Test def test_readException(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
+
     try {
       pis.connect(pos)
-      t = new Thread {
-        val pw = new PipedInputStreamTest.PWriter(pos, 1000)
-      }
+      pw = new PWriter(pos, new Array[Byte](1000))
+      t = new Thread(pw)
       t.start()
       assertTrue(t.isAlive)
       while (true) {
@@ -67,53 +94,65 @@ class PipedInputStreamTest {
       }
     } catch {
       case e: IOException =>
-        if (!e.getMessage.contains("Write end dead")) throw e
-    } finally
+        if (!e.getMessage.contains("Write end dead")) {
+          throw e
+        }
+    } finally {
       try {
         pis.close()
         pos.close()
       } catch {
-        case ee: IOException => ()
+        case _: IOException =>
       }
+    }
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#available()
+   */
   @throws[Exception]
-  @Test def testAvailable(): Unit = {
-    val pis = new PipedInputStream
-    val pos = new PipedOutputStream
-    pis.connect(pos)
-    var pw: PWriter = null
-    t = new Thread {
-      pw = new PipedInputStreamTest.PWriter(pos, 1000)
-    }
-    t.start()
-    pw.synchronized { pw.wait(10000) }
+  @Test def test_available(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
 
+    pis.connect(pos)
+    pw = new PWriter(pos, new Array[Byte](1000))
+    t = new Thread(pw)
+    t.start()
+
+    pw.synchronized {
+      pw.wait(10000)
+    }
     assertTrue(
       "Available returned incorrect number of bytes: " + pis.available(),
-      pis.available() == 1000
+      pis.available == 1000
     )
-    val pin = new PipedInputStream()
+
+    val pin = new PipedInputStream
     val pout = new PipedOutputStream(pin)
     // We know the PipedInputStream buffer size is 1024.
     // Writing another byte would cause the write to wait
     // for a read before returning
-    for (i <- 0 until 1024) { pout.write(i) }
-    assertEquals("Incorrect available count", 1024, pin.available())
+    for (i <- 0 until 1024) {
+      pout.write(i)
+    }
+    assertEquals("Incorrect available count", 1024, pin.available)
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#close()
+   */
   @throws[IOException]
-  @Test def testClose(): Unit = {
-    val pis = new PipedInputStream()
-    val pos = new PipedOutputStream()
+  @Test def test_close(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
     pis.connect(pos)
     pis.close()
     try {
-      pos.write(127.toByte)
+      pos.write(127.asInstanceOf[Byte])
       fail("Failed to throw expected exception")
     } catch {
-      case e: IOException =>
-
+      case _: IOException =>
       // The spec for PipedInput saya an exception should be thrown if
       // a write is attempted to a closed input. The PipedOuput spec
       // indicates that an exception should be thrown only when the
@@ -121,67 +160,82 @@ class PipedInputStreamTest {
     }
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#connect(java.io.PipedOutputStream)
+   */
   @throws[Exception]
-  @Test def testConnectPipedOutputStream(): Unit = {
-    val pis = new PipedInputStream()
-    val pos = new PipedOutputStream()
+  @Test def test_connect_PipedOutputStream(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
     assertEquals(
       "Non-conected pipe returned non-zero available bytes",
       0,
-      pis.available()
+      pis.available
     )
-    pis.connect(pos)
-    var pw: PWriter = null
-    t = new Thread {
-      pw = new PipedInputStreamTest.PWriter(pos, 1000)
-    }
-    t.start()
-    pw.synchronized { pw.wait(10000) }
 
+    pis.connect(pos)
+    pw = new PWriter(pos, new Array[Byte](1000))
+    t = new Thread(pw)
+    t.start()
+
+    pw.synchronized {
+      pw.wait(10000)
+    }
     assertEquals(
       "Available returned incorrect number of bytes",
       1000,
-      pis.available()
+      pis.available
     )
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#read()
+   */
   @throws[Exception]
-  @Test def testRead(): Unit = {
-    val pis = new PipedInputStream()
-    val pos = new PipedOutputStream()
-    pis.connect(pos)
-    var pw: PWriter = null
-    t = new Thread {
-      pw = new PipedInputStreamTest.PWriter(pos, 1000)
-    }
-    t.start()
-    pw.synchronized { pw.wait(10000) }
+  @Test def test_read(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
 
+    pis.connect(pos)
+    pw = new PWriter(pos, new Array[Byte](1000))
+    t = new Thread(pw)
+    t.start()
+
+    pw.synchronized {
+      pw.wait(10000)
+    }
     assertEquals(
       "Available returned incorrect number of bytes",
       1000,
-      pis.available()
+      pis.available
     )
-    assertEquals("read returned incorrect byte", pw.bytes(0), pis.read.toByte)
+    assertEquals(
+      "read returned incorrect byte",
+      pw.bytes(0),
+      pis.read.asInstanceOf[Byte]
+    )
   }
 
   /** @tests
    *    java.io.PipedInputStream#read(byte[], int, int)
    */
   @throws[Exception]
-  @Test def testReadArrayByte(): Unit = {
-    val pis = new PipedInputStream
-    val pos = new PipedOutputStream
-    pis.connect(pos)
-    var pw: PWriter = null
-    t = new Thread { pw = new PipedInputStreamTest.PWriter(pos, 1000) }
-    t.start()
-    val buf = new Array[Byte](400)
-    pw.synchronized { pw.wait(10000) }
+  @Test def test_read_BII(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
 
+    pis.connect(pos)
+    pw = new PWriter(pos, new Array[Byte](1000))
+    t = new Thread(pw)
+    t.start()
+
+    val buf = new Array[Byte](400)
+    pw.synchronized {
+      pw.wait(10000)
+    }
     assertTrue(
-      "Available returned incorrect number of bytes: " + pis.available(),
-      pis.available() == 1000
+      "Available returned incorrect number of bytes: " + pis.available,
+      pis.available == 1000
     )
     pis.read(buf, 0, 400)
     for (i <- 0 until 400) {
@@ -189,9 +243,13 @@ class PipedInputStreamTest {
     }
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#read(byte[], int, int) Regression for
+   *    HARMONY-387
+   */
   @throws[IOException]
-  @Test def testReadArrayByte2(): Unit = {
-    val obj = new PipedInputStream()
+  @Test def test_read_BII_2(): Unit = {
+    val obj = new PipedInputStream
     try {
       obj.read(new Array[Byte](0), 0, -1)
       fail("IndexOutOfBoundsException expected")
@@ -204,131 +262,163 @@ class PipedInputStreamTest {
         )
     }
   }
+
+  /** @tests
+   *    java.io.PipedInputStream#read(byte[], int, int)
+   */
   @throws[IOException]
-  @Test def testReadArrayByte3(): Unit = {
+  @Test def test_read_BII_3(): Unit = {
     val obj = new PipedInputStream
     try {
       obj.read(new Array[Byte](0), -1, 0)
       fail("IndexOutOfBoundsException expected")
     } catch {
-      case t: ArrayIndexOutOfBoundsException =>
+      case _: ArrayIndexOutOfBoundsException =>
         fail("IndexOutOfBoundsException expected")
-      case t: IndexOutOfBoundsException =>
-
+      case _: IndexOutOfBoundsException =>
     }
   }
+
+  /** @tests
+   *    java.io.PipedInputStream#read(byte[], int, int)
+   */
   @throws[IOException]
-  @Test def testReadArrayByte4(): Unit = {
+  @Test def test_read_BII_4(): Unit = {
     val obj = new PipedInputStream
     try {
       obj.read(new Array[Byte](0), -1, -1)
       fail("IndexOutOfBoundsException expected")
     } catch {
-      case t: ArrayIndexOutOfBoundsException =>
+      case _: ArrayIndexOutOfBoundsException =>
         fail("IndexOutOfBoundsException expected")
-      case t: IndexOutOfBoundsException =>
+      case _: IndexOutOfBoundsException =>
     }
   }
 
+  /** @tests
+   *    java.io.PipedInputStream#receive(int)
+   */
   @throws[IOException]
-  @Test def testReceive(): Unit = {
-    locally {
-      val pis = new PipedInputStream
-      val pos = new PipedOutputStream
-      // test if writer recognizes dead reader
-      pis.connect(pos)
-      class WriteRunnable extends Runnable {
-        private[io] var pass = false
-        private[io] var readerAlive = true
-        override def run(): Unit = {
+  @Test def test_receive(): Unit = {
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
+
+    // test if writer recognizes dead reader
+    pis.connect(pos)
+    object writeRunnable extends Runnable {
+      var pass = false
+      @volatile var readerAlive = true
+
+      override def run(): Unit = {
+        try {
+          pos.write(1)
+          while (readerAlive) {
+            // do nothing
+          }
           try {
+            // should throw exception since reader thread
+            // is now dead
             pos.write(1)
-            while (readerAlive) {}
-            // should throw exception since reader thread is now dead
-            try pos.write(1)
-            catch {
-              case e: IOException =>
-                pass = true
-            }
           } catch {
-            case e: IOException => ()
-          }
-        }
-      }
-      val writeRunnable = new WriteRunnable
-      val writeThread = new Thread(writeRunnable)
-      class ReadRunnable extends Runnable {
-        private[io] var pass = false
-        override def run(): Unit = {
-          try {
-            pis.read
-            pass = true
-          } catch {
-            case e: IOException =>
-
-          }
-        }
-      }
-
-      val readRunnable = new ReadRunnable
-      val readThread = new Thread(readRunnable)
-      writeThread.start()
-      readThread.start()
-      while (readThread.isAlive) {}
-      writeRunnable.readerAlive = false
-      assertTrue("reader thread failed to read", readRunnable.pass)
-      while (writeThread.isAlive) {}
-      assertTrue(
-        "writer thread failed to recognize dead reader",
-        writeRunnable.pass
-      )
-    }
-    // attempt to write to stream after writer closed
-    locally {
-      val pis = new PipedInputStream()
-      val pos = new PipedOutputStream()
-      pis.connect(pos)
-      class MyRunnable extends Runnable {
-        private[io] var pass = false
-        override def run(): Unit = {
-          try pos.write(1)
-          catch {
-            case e: IOException =>
+            case _: IOException =>
               pass = true
           }
+        } catch {
+          case _: IOException =>
         }
       }
-      val myRun = new MyRunnable
-      t = pis.synchronized { new Thread(myRun) }
+    }
+    val writeThread = new Thread(writeRunnable)
+    object readRunnable extends Runnable {
+      var pass = false
+
+      override def run(): Unit = {
+        try {
+          pis.read()
+          pass = true
+        } catch {
+          case _: IOException =>
+        }
+      }
+    }
+    val readThread = new Thread(readRunnable)
+    writeThread.start()
+    readThread.start()
+    while (readThread.isAlive) {
+      // do nothing
+    }
+    writeRunnable.readerAlive = false
+    assertTrue("reader thread failed to read", readRunnable.pass)
+    while (writeThread.isAlive) {
+      // do nothing
+    }
+    assertTrue(
+      "writer thread failed to recognize dead reader",
+      writeRunnable.pass
+    )
+
+    // attempt to write to stream after writer closed
+    pis = new PipedInputStream
+    pos = new PipedOutputStream
+
+    pis.connect(pos)
+    object myRun extends Runnable {
+      var pass = false
+
+      override def run(): Unit = {
+        try {
+          pos.write(1)
+        } catch {
+          case _: IOException =>
+            pass = true
+        }
+      }
+    }
+    pis.synchronized {
+      t = new Thread(myRun)
       // thread t will be blocked inside pos.write(1)
       // when it tries to call the synchronized method pis.receive
       // because we hold the monitor for object pis
       t.start()
-      try // wait for thread t to get to the call to pis.receive
+      try {
+        // wait for thread t to get to the call to pis.receive
         Thread.sleep(100)
-      catch {
-        case e: InterruptedException =>
-
+      } catch {
+        case _: InterruptedException =>
       }
       // now we close
       pos.close()
+    }
+    // we have exited the synchronized block, so now thread t will make
+    // a call to pis.receive AFTER the output stream was closed,
+    // in which case an IOException should be thrown
+    while (t.isAlive) {
+      // do nothing
+    }
+    assertTrue(
+      "write failed to throw IOException on closed PipedOutputStream",
+      myRun.pass
+    )
+  }
 
-      // we have exited the synchronized block, so now thread t will make
-      // a call to pis.receive AFTER the output stream was closed,
-      // in which case an IOException should be thrown
-      while (t.isAlive()) {}
-      assertTrue(
-        "write failed to throw IOException on closed PipedOutputStream",
-        myRun.pass
-      )
+  private class Worker(private val out: PipedOutputStream) extends Thread {
+    override def run(): Unit = {
+      try {
+        out.write(20)
+        out.close()
+        Thread.sleep(5000)
+      } catch {
+        case _: Exception =>
+      }
     }
   }
+
   @throws[Exception]
-  @Test def testReadAfterWriteClose(): Unit = {
+  @Test def test_read_after_write_close(): Unit = {
     val in = new PipedInputStream
     val out = new PipedOutputStream
     in.connect(out)
-    val worker = new PipedInputStreamTest.Worker(out)
+    val worker = new Worker(out)
     worker.start()
     Thread.sleep(2000)
     assertEquals("Should read 20.", 20, in.read)
@@ -345,13 +435,4 @@ class PipedInputStreamTest {
     out.close()
   }
 
-  /** Tears down the fixture, for example, close a network connection. This
-   *  method is called after a test is executed.
-   */
-  @After def tearDown(): Unit = {
-    try if (t != null) t.interrupt()
-    catch {
-      case ignore: Exception => ()
-    }
-  }
 }

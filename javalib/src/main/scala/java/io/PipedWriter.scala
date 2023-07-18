@@ -1,22 +1,40 @@
-// Ported from Apache Harmony
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package java.io
 
-class PipedWriter(private var dest: PipedReader) extends Writer(dest) {
-
-  if (dest != null) connect(dest)
+class PipedWriter() extends Writer() {
+  private var dest: PipedReader = _
 
   private var closed = false
 
-  /** Constructs a new {@code PipedWriter} connected to the {@link PipedReader}
-   *  {@code dest}. Any data written to this writer can be read from {@code
-   *  dest}.
+  /** Connects this {@code PipedWriter} to a {@link PipedReader}. Any data
+   *  written to this writer becomes readable in the reader.
    *
-   *  @param dest
-   *    the {@code PipedReader} to connect to.
+   *  @param stream
+   *    the reader to connect to.
    *  @throws IOException
-   *    if {@code dest} is already connected.
+   *    if this writer is closed or already connected, or if {@code stream} is
+   *    already connected.
    */
-  def this() = this(null: PipedReader)
+  def this(dest: PipedReader) = {
+    this()
+    this.lock = dest
+    connect(dest)
+  }
 
   /** Closes this writer. If a {@link PipedReader} is connected to this writer,
    *  it is closed as well and the pipe is disconnected. Any data buffered in
