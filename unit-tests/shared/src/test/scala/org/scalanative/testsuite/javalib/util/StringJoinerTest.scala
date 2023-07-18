@@ -1,4 +1,6 @@
 // Ported from Scala.js commit: 57d71da dated: 2023-05-31
+// Note: this file has one difference,
+// see change to hasCompliantNullPointer assumeTrue() below
 
 package org.scalanative.testsuite.javalib.util
 
@@ -10,7 +12,6 @@ import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform
 
 class StringJoinerTest {
   import StringJoinerTest._
@@ -19,7 +20,9 @@ class StringJoinerTest {
     assertJoinerResult("")(new StringJoiner(","))
     assertJoinerResult("[]")(new StringJoiner(";", "[", "]"))
     assertJoinerResult("--")(new StringJoiner(";").setEmptyValue("--"))
-    assertJoinerResult("--")(new StringJoiner(";", "[", "]").setEmptyValue("--"))
+    assertJoinerResult("--")(
+      new StringJoiner(";", "[", "]").setEmptyValue("--")
+    )
   }
 
   @Test def testNonEmpty(): Unit = {
@@ -36,7 +39,10 @@ class StringJoinerTest {
       new StringJoiner(", ", "[", "]").add("one").add(null).add("three")
     }
     assertJoinerResult("[one, two, three]") {
-      new StringJoiner(", ", "[", "]").add("one").add(CharBuffer.wrap("two")).add("three")
+      new StringJoiner(", ", "[", "]")
+        .add("one")
+        .add(CharBuffer.wrap("two"))
+        .add("three")
     }
     assertJoinerResult("") {
       new StringJoiner(",").add("")
@@ -55,13 +61,25 @@ class StringJoinerTest {
       new StringJoiner(",").setEmptyValue("--").add("one")
     }
     assertJoinerResult("one,two,three") {
-      new StringJoiner(",").setEmptyValue("--").add("one").add("two").add("three")
+      new StringJoiner(",")
+        .setEmptyValue("--")
+        .add("one")
+        .add("two")
+        .add("three")
     }
     assertJoinerResult("[one, two, three]") {
-      new StringJoiner(", ", "[", "]").add("one").add("two").setEmptyValue("--").add("three")
+      new StringJoiner(", ", "[", "]")
+        .add("one")
+        .add("two")
+        .setEmptyValue("--")
+        .add("three")
     }
     assertJoinerResult("[one, two, three]") {
-      new StringJoiner(", ", "[", "]").add("one").add("two").add("three").setEmptyValue("--")
+      new StringJoiner(", ", "[", "]")
+        .add("one")
+        .add("two")
+        .add("three")
+        .setEmptyValue("--")
     }
     assertJoinerResult("") {
       new StringJoiner(",").setEmptyValue("--").add("")
@@ -73,9 +91,15 @@ class StringJoinerTest {
 
   @Test def testMerge(): Unit = {
     val empty = new StringJoiner(";", "[", "]").setEmptyValue("--")
-    val single = new StringJoiner(";", "[", "]").setEmptyValue("--").add("single")
-    val multiple = new StringJoiner(";", "[", "]").setEmptyValue("--").add("a").add("b").add("c")
-    val singleBlank = new StringJoiner(";", "[", "]").setEmptyValue("--").add("")
+    val single =
+      new StringJoiner(";", "[", "]").setEmptyValue("--").add("single")
+    val multiple = new StringJoiner(";", "[", "]")
+      .setEmptyValue("--")
+      .add("a")
+      .add("b")
+      .add("c")
+    val singleBlank =
+      new StringJoiner(";", "[", "]").setEmptyValue("--").add("")
 
     assertJoinerResult("+++") {
       new StringJoiner(", ", "{", "}").merge(empty).setEmptyValue("+++")
@@ -115,25 +139,36 @@ class StringJoinerTest {
   @Test def testState(): Unit = {
     val mutableCharSeq = CharBuffer.allocate(2).put(0, '?').put(1, '!')
 
-    val joiner = new StringJoiner(mutableCharSeq, mutableCharSeq, mutableCharSeq)
+    val joiner =
+      new StringJoiner(mutableCharSeq, mutableCharSeq, mutableCharSeq)
     assertJoinerResult("?!?!")(joiner)
     joiner.setEmptyValue(mutableCharSeq)
     assertJoinerResult("?!")(joiner)
 
     mutableCharSeq.put(0, '-')
-    assertJoinerResult("?!")(joiner) // the previously set emptyValue is not affected
+    assertJoinerResult("?!")(
+      joiner
+    ) // the previously set emptyValue is not affected
     joiner.setEmptyValue(mutableCharSeq)
     assertJoinerResult("-!")(joiner)
 
     joiner.add("one")
-    assertJoinerResult("?!one?!")(joiner) // the previously set prefix and suffix are not affected
+    assertJoinerResult("?!one?!")(
+      joiner
+    ) // the previously set prefix and suffix are not affected
 
     joiner.add("two")
-    assertJoinerResult("?!one?!two?!")(joiner) // the previously set delimiter is not affected
+    assertJoinerResult("?!one?!two?!")(
+      joiner
+    ) // the previously set delimiter is not affected
   }
 
   @Test def testNPE(): Unit = {
-    assumeTrue("requires compliant null pointers", Platform.hasCompliantNullPointers)
+
+    /** Both Scala Native and Scala JVM has compliant null pointers. The
+     *  commented line below is left as a reference to the Scala.js original.
+     */
+    // assumeTrue("requires compliant null pointers", Platform.hasCompliantNullPointers)
 
     @noinline
     def assertNPE[U](code: => U): Unit =
