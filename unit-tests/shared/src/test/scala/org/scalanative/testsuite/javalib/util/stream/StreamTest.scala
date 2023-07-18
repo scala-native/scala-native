@@ -845,7 +845,10 @@ class StreamTest {
 
     val spliter =
       Stream
-        .iterate[jl.Integer](0, ((n: jl.Integer) => n + 1): UnaryOperator[jl.Integer])
+        .iterate[jl.Integer](
+          0,
+          ((n: jl.Integer) => n + 1): UnaryOperator[jl.Integer]
+        )
         .limit(srcSize)
         .spliterator()
 
