@@ -5,8 +5,8 @@ import java.util._
 import java.util.function._
 import java.util.stream.Collector._
 
-private[stream] class ObjectStreamImpl[T](
-    val pipeline: ArrayDeque[ObjectStreamImpl[T]]
+private[stream] class StreamImpl[T](
+    val pipeline: ArrayDeque[StreamImpl[T]]
 ) extends Stream[T] {
   var _spliterArg: Spliterator[T] = _
   var _supplier: Supplier[Spliterator[T]] = _
@@ -30,7 +30,7 @@ private[stream] class ObjectStreamImpl[T](
       spliterator: Spliterator[T],
       parallel: Boolean
   ) = {
-    this(new ArrayDeque[ObjectStreamImpl[T]])
+    this(new ArrayDeque[StreamImpl[T]])
     _spliterArg = spliterator
     _parallel = parallel
   }
@@ -40,7 +40,7 @@ private[stream] class ObjectStreamImpl[T](
       parallel: Boolean,
       parent: Stream[_ <: T]
   ) = {
-    this(parent.asInstanceOf[ObjectStreamImpl[T]].pipeline)
+    this(parent.asInstanceOf[StreamImpl[T]].pipeline)
     _spliterArg = spliterator
     _parallel = parallel
   }
@@ -48,7 +48,7 @@ private[stream] class ObjectStreamImpl[T](
   def this(
       spliterator: Spliterator[T],
       parallel: Boolean,
-      pipeline: ArrayDeque[ObjectStreamImpl[T]]
+      pipeline: ArrayDeque[StreamImpl[T]]
   ) = {
     this(pipeline)
     _spliterArg = spliterator
@@ -60,7 +60,7 @@ private[stream] class ObjectStreamImpl[T](
       characteristics: Int,
       parallel: Boolean
   ) = {
-    this(new ArrayDeque[ObjectStreamImpl[T]])
+    this(new ArrayDeque[StreamImpl[T]])
     _supplier = supplier
     _parallel = parallel
     _characteristics = characteristics
@@ -76,14 +76,14 @@ private[stream] class ObjectStreamImpl[T](
 
   protected def commenceOperation(): Unit = {
     if (_operatedUpon || _closed)
-      ObjectStreamImpl.throwIllegalStateException()
+      StreamImpl.throwIllegalStateException()
 
     _operatedUpon = true
   }
 
   def close(): Unit = {
     if (!_closed) {
-      val exceptionBuffer = new ObjectStreamImpl.CloseExceptionBuffer()
+      val exceptionBuffer = new StreamImpl.CloseExceptionBuffer()
       val it = pipeline.iterator()
 
       while (it.hasNext()) {
@@ -101,7 +101,7 @@ private[stream] class ObjectStreamImpl[T](
   private def closeStage(): Unit = {
     _closed = true
 
-    val exceptionBuffer = new ObjectStreamImpl.CloseExceptionBuffer()
+    val exceptionBuffer = new StreamImpl.CloseExceptionBuffer()
 
     if (onCloseQueueActive) {
       val it = onCloseQueue.iterator()
@@ -128,7 +128,7 @@ private[stream] class ObjectStreamImpl[T](
     // JVM appears to not set "operated upon" here.
 
     if (_closed)
-      ObjectStreamImpl.throwIllegalStateException()
+      StreamImpl.throwIllegalStateException()
 
     // detects & throws on closeHandler == null
     onCloseQueue.addLast(closeHandler)
@@ -173,7 +173,7 @@ private[stream] class ObjectStreamImpl[T](
           _spliter.tryAdvance((e) => action.accept(e))
       }
 
-      new ObjectStreamImpl[T](spl, _parallel, pipeline)
+      new StreamImpl[T](spl, _parallel, pipeline)
     }
   }
 
@@ -286,7 +286,7 @@ private[stream] class ObjectStreamImpl[T](
         }
       }
 
-    new ObjectStreamImpl[T](spl, _parallel, pipeline)
+    new StreamImpl[T](spl, _parallel, pipeline)
   }
 
   def filter(pred: Predicate[_ >: T]): Stream[T] = {
@@ -318,7 +318,7 @@ private[stream] class ObjectStreamImpl[T](
         success
       }
     }
-    new ObjectStreamImpl[T](spl, _parallel, pipeline)
+    new StreamImpl[T](spl, _parallel, pipeline)
   }
 
   /* delegating to findFirst() is an implementation ~~hack~~ expediency.
@@ -342,16 +342,16 @@ private[stream] class ObjectStreamImpl[T](
   ): Stream[R] = {
     commenceOperation()
 
-    val csf = new ObjectStreamImpl.CompoundSpliteratorFactory[T, R](
+    val csf = new StreamImpl.CompoundSpliteratorFactory[T, R](
       _spliter,
       mapper,
       closeOnFirstTouch = true
     )
 
     val coercedPriorStages = pipeline
-      .asInstanceOf[ArrayDeque[ObjectStreamImpl[R]]]
+      .asInstanceOf[ArrayDeque[StreamImpl[R]]]
 
-    new ObjectStreamImpl[R](csf.get(), _parallel, coercedPriorStages)
+    new StreamImpl[R](csf.get(), _parallel, coercedPriorStages)
   }
 
   def flatMapToDouble(
@@ -360,7 +360,7 @@ private[stream] class ObjectStreamImpl[T](
     commenceOperation()
 
     val supplier =
-      new ObjectStreamImpl.DoublePrimitiveCompoundSpliteratorFactory[T](
+      new StreamImpl.DoublePrimitiveCompoundSpliteratorFactory[T](
         _spliter,
         mapper,
         closeOnFirstTouch = true
@@ -440,7 +440,7 @@ private[stream] class ObjectStreamImpl[T](
         }
     }
 
-    new ObjectStreamImpl[T](spl, _parallel, pipeline)
+    new StreamImpl[T](spl, _parallel, pipeline)
   }
 
   def map[R](
@@ -460,7 +460,7 @@ private[stream] class ObjectStreamImpl[T](
      * Type erasure is what makes this work, once one lies to the compiler
      * about the types involved.
      */
-    new ObjectStreamImpl[T](
+    new StreamImpl[T](
       spl.asInstanceOf[Spliterator[T]],
       _parallel,
       pipeline
@@ -557,7 +557,7 @@ private[stream] class ObjectStreamImpl[T](
         })
     }
 
-    new ObjectStreamImpl[T](spl, _parallel, pipeline)
+    new StreamImpl[T](spl, _parallel, pipeline)
   }
 
   def reduce(accumulator: BinaryOperator[T]): Optional[T] = {
@@ -615,7 +615,7 @@ private[stream] class ObjectStreamImpl[T](
         && (_spliter.tryAdvance((e) => nSkipped += 1L))) { /* skip */ }
 
     // Follow JVM practice; return new stream, not remainder of "this" stream.
-    new ObjectStreamImpl[T](_spliter, _parallel, pipeline)
+    new StreamImpl[T](_spliter, _parallel, pipeline)
   }
 
   def sorted(): Stream[T] = {
@@ -688,7 +688,7 @@ private[stream] class ObjectStreamImpl[T](
 
     val spl = Spliterators.spliterator[T](buffer, newCharacteristics)
 
-    new ObjectStreamImpl[T](spl, _parallel, pipeline)
+    new StreamImpl[T](spl, _parallel, pipeline)
   }
 
   def toArray(): Array[Object] = {
@@ -730,20 +730,20 @@ private[stream] class ObjectStreamImpl[T](
 
 }
 
-object ObjectStreamImpl {
+object StreamImpl {
 
   class Builder[T] extends Stream.Builder[T] {
     private var built = false
     private val buffer = new ArrayList[T]()
 
     override def accept(t: T): Unit =
-      if (built) ObjectStreamImpl.throwIllegalStateException()
+      if (built) StreamImpl.throwIllegalStateException()
       else buffer.add(t)
 
     override def build(): Stream[T] = {
       built = true
       val spliter = buffer.spliterator()
-      new ObjectStreamImpl(spliter, parallel = false)
+      new StreamImpl(spliter, parallel = false)
     }
   }
 
@@ -804,7 +804,7 @@ object ObjectStreamImpl {
         private var currentSpliter: ju.Spliterator[_ <: R] =
           Spliterators.emptySpliterator[R]()
 
-        var currentStream = Optional.empty[ObjectStreamImpl[R]]()
+        var currentStream = Optional.empty[StreamImpl[R]]()
 
         def tryAdvance(action: Consumer[_ >: R]): Boolean = {
           var advanced = false
@@ -825,7 +825,7 @@ object ObjectStreamImpl {
               done = !substreams
                 .tryAdvance((e) =>
                   currentSpliter = {
-                    val eOfR = e.asInstanceOf[ObjectStreamImpl[R]]
+                    val eOfR = e.asInstanceOf[StreamImpl[R]]
                     currentStream = Optional.of(eOfR)
 
                     /* Tricky bit here!
@@ -949,8 +949,8 @@ object ObjectStreamImpl {
      *   until the bug reports start pouring in.
      */
 
-    val aImpl = a.asInstanceOf[ObjectStreamImpl[T]]
-    val bImpl = b.asInstanceOf[ObjectStreamImpl[T]]
+    val aImpl = a.asInstanceOf[StreamImpl[T]]
+    val bImpl = b.asInstanceOf[StreamImpl[T]]
 
     aImpl.commenceOperation()
     bImpl.commenceOperation()
@@ -967,10 +967,10 @@ object ObjectStreamImpl {
 
     val pipelineA = aImpl.pipeline
     val pipelineB = bImpl.pipeline
-    val pipelines = new ArrayDeque[ObjectStreamImpl[T]](pipelineA)
+    val pipelines = new ArrayDeque[StreamImpl[T]](pipelineA)
     pipelines.addAll(pipelineB)
 
-    new ObjectStreamImpl[T](csf.get(), parallel = false, pipelines)
+    new StreamImpl[T](csf.get(), parallel = false, pipelines)
   }
 
   def throwIllegalStateException(): Unit = {
