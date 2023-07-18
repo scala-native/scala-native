@@ -20,10 +20,14 @@ jobs:
       matrix:
         os: [ubuntu-20.04, macos-11]
         scala: [3]
-        java: [11, 17, 20]
+        java: [11, 17]
         include:
           - java: 20
             java-options: "--enable-preview"
+          - java: 17
+            scala: 2.13
+          - java: 17
+            scala: 2.12
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
