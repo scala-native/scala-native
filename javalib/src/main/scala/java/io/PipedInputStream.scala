@@ -65,24 +65,28 @@ class PipedInputStream() extends InputStream {
      * "Pipe broken" will be thrown in receive()
      */
     lastReader = Thread.currentThread()
+
+    var wasClosed = false
     try {
       var attempts = 3
-      while (in == -1) {
+      while (!wasClosed && in == -1) {
         // Are we at end of stream?
-        if (isClosed) return -1
-
-        if ({
-          val a = attempts; attempts -= 1; a <= 0
-        } && lastWriter != null && !lastWriter.isAlive()) {
-          throw new IOException("Pipe broken")
+        if (isClosed) wasClosed = false
+        else {
+          val attempt = attempts
+          attempts -= 1
+          if (attempt <= 0 && lastWriter != null && !lastWriter.isAlive()) {
+            throw new IOException("Pipe broken")
+          }
+          // Notify callers of receive()
+          notifyAll()
+          wait(1000)
         }
-        // Notify callers of receive()
-        notifyAll()
-        wait(1000)
       }
     } catch {
       case e: InterruptedException => throw new InterruptedIOException
     }
+    if (wasClosed) return -1
 
     val result = buffer(out)
     out += 1
@@ -106,21 +110,26 @@ class PipedInputStream() extends InputStream {
       if (buffer == null) throw new IOException("InputStream is closed")
       if (lastWriter != null && !lastWriter.isAlive() && (in < 0))
         throw new IOException("Write end dead")
+
       lastReader = Thread.currentThread()
+      var wasClosed = false
       try {
         var attempts = 3
-        while (in == -1) {
-          if (isClosed) return -1
-          val attempt = attempts
-          attempts -= 1
-          if (attempt <= 0 && lastWriter != null && !lastWriter.isAlive())
-            throw new IOException("Pipe broken")
-          notifyAll()
-          wait(1000)
+        while (!wasClosed && in == -1) {
+          if (isClosed) wasClosed = true
+          else {
+            val attempt = attempts
+            attempts -= 1
+            if (attempt <= 0 && lastWriter != null && !lastWriter.isAlive())
+              throw new IOException("Pipe broken")
+            notifyAll()
+            wait(1000)
+          }
         }
       } catch {
         case e: InterruptedException => throw new InterruptedIOException
       }
+      if (wasClosed) return -1
       /* Copy bytes from out to end of buffer first */
       val copyLength =
         if (out < in) 0
