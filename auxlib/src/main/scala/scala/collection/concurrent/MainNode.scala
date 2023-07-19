@@ -10,7 +10,9 @@ object MainNode {
   final val updater
       : AtomicReferenceFieldUpdater[MainNode[_, _], MainNode[_, _]] =
     new IntrinsicAtomicReferenceFieldUpdater(obj =>
-      fromRawPtr(classFieldRawPtr(obj, "prev"))
+      fromRawPtr(
+        classFieldRawPtr(obj.asInstanceOf[MainNode[AnyRef, AnyRef]], "prev")
+      )
     )
 }
 

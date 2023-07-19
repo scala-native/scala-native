@@ -24,6 +24,12 @@ jobs:
         include:
           - java: 20
             java-options: "--enable-preview"
+          - java: 17
+            scala: 2.13
+            os: ubuntu-20.04
+          - java: 17
+            scala: 2.12
+            os: macos-11
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env

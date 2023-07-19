@@ -11,7 +11,12 @@ object INodeBase {
   final val updater
       : AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] =
     new IntrinsicAtomicReferenceFieldUpdater(obj =>
-      fromRawPtr(classFieldRawPtr(obj, "mainnode"))
+      fromRawPtr(
+        classFieldRawPtr(
+          obj.asInstanceOf[INodeBase[AnyRef, AnyRef]],
+          "mainnode"
+        )
+      )
     )
 
   final val RESTART = new Object {}
