@@ -7,10 +7,10 @@ import java.net.URLClassLoader
 object NIRCompiler {
 
   private val allow: String => Boolean = {
-    case s"scala.scalanative.api.${_}" => true
-    case s"scala.${_}"                 => false
-    case s"dotty.${_}"                 => false
-    case _                             => true
+    case s if s.startsWith("scala.scalanative.api.") => true
+    case s if s.startsWith("scala.")                 => false
+    case s if s.startsWith("dotty.")                 => false
+    case _                                           => true
   }
 
   private val classLoader = {
