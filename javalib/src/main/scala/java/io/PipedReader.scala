@@ -17,50 +17,22 @@
 package java.io
 
 object PipedReader {
-
-  /** The size of the default pipe in characters
-   */
   private val PIPE_SIZE = 1024
 }
 class PipedReader() extends Reader {
   private var data = new Array[Char](PipedReader.PIPE_SIZE)
-  private var lastReader: Thread = null
-  private var lastWriter: Thread = null
+  private var lastReader: Thread = _
+  private var lastWriter: Thread = _
   private var isClosed = false
-
-  /** The index in {@code buffer} where the next character will be written.
-   */
+  private var isConnected = false
   private var in = -1
-
-  /** The index in {@code buffer} where the next character will be read.
-   */
   private var out = 0
 
-  /** Indicates if this pipe is connected
-   */
-  private var isConnected = false
-
-  /** Constructs a new {@code PipedReader} connected to the {@link PipedWriter}
-   *  {@code out}. Any data written to the writer can be read from the this
-   *  reader.
-   *
-   *  @param out
-   *    the {@code PipedWriter} to connect to.
-   *  @throws IOException
-   *    if {@code out} is already connected.
-   */
   def this(out: PipedWriter) = {
     this()
     connect(out)
   }
 
-  /** Closes this reader. This implementation releases the buffer used for the
-   *  pipe and notifies all threads waiting to read or write.
-   *
-   *  @throws IOException
-   *    if an error occurs while closing this reader.
-   */
-  @throws[IOException]
   override def close() =
     lock.synchronized {
       // No exception thrown if already closed
@@ -71,46 +43,16 @@ class PipedReader() extends Reader {
 
     }
 
-  /** Connects this {@code PipedReader} to a {@link PipedWriter}. Any data
-   *  written to the writer becomes readable in this reader.
-   *
-   *  @param src
-   *    the writer to connect to.
-   *  @throws IOException
-   *    if this reader is closed or already connected, or if {@code src} is
-   *    already connected.
-   */
-  @throws[IOException]
   def connect(src: PipedWriter) = lock.synchronized {
     src.connect(this)
   }
 
-  /** Establishes the connection to the PipedWriter.
-   *
-   *  @throws IOException
-   *    If this Reader is already connected.
-   */
-  @throws[IOException]
   private[io] def establishConnection() = lock.synchronized {
     if (data == null) throw new IOException("Reader closed")
     if (isConnected) throw new IOException("Reader already connected")
     isConnected = true
   }
 
-  /** Reads a single character from this reader and returns it as an integer
-   *  with the two higher-order bytes set to 0. Returns -1 if the end of the
-   *  reader has been reached. If there is no data in the pipe, this method
-   *  blocks until data is available, the end of the reader is detected or an
-   *  exception is thrown. <p> Separate threads should be used to read from a
-   *  {@code PipedReader} and to write to the connected {@link PipedWriter}. If
-   *  the same thread is used, a deadlock may occur.
-   *
-   *  @return
-   *    the character read or -1 if the end of the reader has been reached.
-   *  @throws IOException
-   *    if this reader is closed or some other I/O error occurs.
-   */
-  @throws[IOException]
   override def read(): Int = {
     val carray = new Array[Char](1)
     val result = read(carray, 0, 1)
@@ -118,34 +60,6 @@ class PipedReader() extends Reader {
     else result
   }
 
-  /** Reads at most {@code count} characters from this reader and stores them in
-   *  the character array {@code buffer} starting at {@code offset}. If there is
-   *  no data in the pipe, this method blocks until at least one byte has been
-   *  read, the end of the reader is detected or an exception is thrown. <p>
-   *  Separate threads should be used to read from a {@code PipedReader} and to
-   *  write to the connected {@link PipedWriter}. If the same thread is used, a
-   *  deadlock may occur.
-   *
-   *  @param buffer
-   *    the character array in which to store the characters read.
-   *  @param offset
-   *    the initial position in {@code bytes} to store the characters read from
-   *    this reader.
-   *  @param count
-   *    the maximum number of characters to store in {@code buffer}.
-   *  @return
-   *    the number of characters read or -1 if the end of the reader has been
-   *    reached.
-   *  @throws IndexOutOfBoundsException
-   *    if {@code offset < 0} or {@code count < 0}, or if {@code offset + count}
-   *    is greater than the size of {@code buffer}.
-   *  @throws InterruptedIOException
-   *    if the thread reading from this reader is interrupted.
-   *  @throws IOException
-   *    if this reader is closed or not connected to a writer, or if the thread
-   *    writing to the connected writer is no longer alive.
-   */
-  @throws[IOException]
   override def read(buffer: Array[Char], offset: Int, count: Int): Int =
     lock.synchronized {
       if (!isConnected) throw new IOException("Reader not connected")
@@ -155,7 +69,7 @@ class PipedReader() extends Reader {
         throw new IndexOutOfBoundsException
       if (count == 0) return 0
 
-      /** Set the last thread to be reading on this PipedReader. If lastReader
+      /* Set the last thread to be reading on this PipedReader. If lastReader
        *  dies while someone is waiting to write an IOException of "Pipe broken"
        *  will be thrown in receive()
        */
@@ -216,41 +130,12 @@ class PipedReader() extends Reader {
 
     }
 
-  /** Indicates whether this reader is ready to be read without blocking.
-   *  Returns {@code true} if this reader will not block when {@code read} is
-   *  called, {@code false} if unknown or blocking will occur. This
-   *  implementation returns {@code true} if the internal buffer contains
-   *  characters that can be read.
-   *
-   *  @return
-   *    always {@code false}.
-   *  @throws IOException
-   *    if this reader is closed or not connected, or if some other I/O error
-   *    occurs.
-   *  @see
-   *    #read()
-   *  @see
-   *    #read(char[], int, int)
-   */
-  @throws[IOException]
   override def ready(): Boolean = lock.synchronized {
     if (!isConnected) throw new IOException("Not connected")
     if (data == null) throw new IOException("Reader closed")
     in != -1
   }
 
-  /** Receives a char and stores it into the PipedReader. This called by
-   *  PipedWriter.write() when writes occur. <P> If the buffer is full and the
-   *  thread sending #receive is interrupted, the InterruptedIOException will be
-   *  thrown.
-   *
-   *  @param oneChar
-   *    the char to store into the pipe.
-   *
-   *  @throws IOException
-   *    If the stream is already closed or another IOException occurs.
-   */
-  @throws[IOException]
   private[io] def receive(oneChar: Char): Unit = lock.synchronized {
     if (data == null) throw new IOException("Closed stream")
     if (lastReader != null && !lastReader.isAlive())
@@ -280,22 +165,6 @@ class PipedReader() extends Reader {
 
   }
 
-  /** Receives a char array and stores it into the PipedReader. This called by
-   *  PipedWriter.write() when writes occur. <P> If the buffer is full and the
-   *  thread sending #receive is interrupted, the InterruptedIOException will be
-   *  thrown.
-   *
-   *  @param chars
-   *    the char array to store into the pipe.
-   *  @param offset
-   *    offset to start reading from
-   *  @param count
-   *    total characters to read
-   *
-   *  @throws IOException
-   *    If the stream is already closed or another IOException occurs.
-   */
-  @throws[IOException]
   private[io] def receive(chars: Array[Char], _offset: Int, _count: Int): Unit =
     lock.synchronized {
       var offset = _offset
@@ -304,7 +173,7 @@ class PipedReader() extends Reader {
       if (lastReader != null && !lastReader.isAlive())
         throw new IOException("Broken pipe")
 
-      /** Set the last thread to be writing on this PipedWriter. If lastWriter
+      /* Set the last thread to be writing on this PipedWriter. If lastWriter
        *  dies while someone is waiting to read an IOException of "Pipe broken"
        *  will be thrown in read()
        */
@@ -346,5 +215,8 @@ class PipedReader() extends Reader {
     isClosed = true
     lock.notifyAll()
   }
-  private[io] def flush() = lock.synchronized { lock.notifyAll() }
+
+  private[io] def flush() = lock.synchronized {
+    lock.notifyAll()
+  }
 }
