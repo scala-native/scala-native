@@ -22,6 +22,13 @@ jobs:
         os: [ubuntu-20.04, macos-11]
         scala: [3.3.0]
         java: [11, 17]
+        include:
+          - java: 17
+            scala: 2.13.11
+            os: ubuntu-20.04
+          - java: 17
+            scala: 2.12.17
+            os: macos-11
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
