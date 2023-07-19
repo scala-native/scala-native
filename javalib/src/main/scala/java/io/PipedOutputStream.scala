@@ -18,7 +18,7 @@
 package java.io
 
 class PipedOutputStream() extends OutputStream {
-  private var dest: PipedInputStream = _ś
+  private var dest: PipedInputStream = _
 
   def this(dest: PipedInputStream) = {
     this()
