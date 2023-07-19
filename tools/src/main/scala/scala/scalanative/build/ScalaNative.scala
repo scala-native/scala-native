@@ -42,7 +42,6 @@ private[scalanative] object ScalaNative {
     }.andThen {
       case Success(result) =>
         dumpDefns(config, "linked", result.defns)
-        logLinked(config, result)
     }
 
   /** Show linked universe stats or fail with missing symbols. */
