@@ -9,7 +9,6 @@ import scala.scalanative.io._
 import scala.scalanative.NIRCompiler
 import java.nio.file.{Files, Path, Paths}
 
-
 class StaticForwardersSuite {
   import StaticForwardersSuite._
 

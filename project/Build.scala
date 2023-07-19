@@ -125,7 +125,7 @@ object Build {
         case (2, _) => Seq("-Xno-patmat-analysis")
       },
       libraryDependencies ++= Deps.JUnitJvm,
-      Test / fork := true,
+      Test / fork := true
     )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 does not handle literal constants correctly
@@ -167,7 +167,7 @@ object Build {
     .settings(
       toolSettings,
       mavenPublishSettings,
-      libraryDependencies ++= Deps.JUnitJvm,
+      libraryDependencies ++= Deps.JUnitJvm
     )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
@@ -596,7 +596,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .settings(mavenPublishSettings)
       .settings(docsSettings)
-      // .withNativeCompilerPlugin
+      .withNativeCompilerPlugin
       .dependsOn(scalalib)
 
   lazy val testRunner =

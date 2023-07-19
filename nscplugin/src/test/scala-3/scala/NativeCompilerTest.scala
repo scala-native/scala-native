@@ -1,4 +1,4 @@
-package scala.scalanative
+package org.scalanative
 
 import org.junit.Test
 import org.junit.Assert._
