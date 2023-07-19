@@ -65,7 +65,7 @@ object Commands {
 
   lazy val testTools = projectVersionCommand("test-tools") {
     case (version, state) =>
-      val tests = List(tools, testRunner, testInterface)
+      val tests = List(tools, testRunner, testInterface, nscPlugin, nir)
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/test")
       tests :::
