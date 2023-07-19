@@ -10,7 +10,7 @@ import scala.scalanative.io._
 import scala.scalanative.NIRCompiler
 import java.nio.file.{Files, Path, Paths}
 
-class StaticForwardersSuite extends LinkerSpec {
+class StaticForwardersSuite {
   import StaticForwardersSuite._
 
   @Test def generateStaticForwarders(): Unit = {

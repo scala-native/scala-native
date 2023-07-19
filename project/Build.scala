@@ -140,7 +140,11 @@ object Build {
     .settings(toolSettings, mavenPublishSettings)
 
   lazy val nir = MultiScalaProject("nir")
-    .settings(toolSettings, mavenPublishSettings)
+    .settings(
+      toolSettings,
+      mavenPublishSettings,
+      libraryDependencies ++= Deps.JUnitJvm,
+    )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
       case "2.12" => _.settings(disabledDocsSettings)
@@ -568,7 +572,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .settings(mavenPublishSettings)
       .settings(docsSettings)
-      .withNativeCompilerPlugin
+      // .withNativeCompilerPlugin
       .dependsOn(scalalib)
 
   lazy val testRunner =
