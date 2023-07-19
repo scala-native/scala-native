@@ -124,7 +124,10 @@ class Throwable protected (
 
   def getLocalizedMessage(): String = getMessage()
 
-  def getMessage(): String = s
+  def getMessage(): String =
+    if (s != null) s
+    else if (e != null) e.toString()
+    else null
 
   def getStackTrace(): Array[StackTraceElement] = {
     // Be robust! Test this.stackTrace against null rather than relying upon

@@ -151,6 +151,15 @@ class ThrowablesTest {
     checkConstructed(throwable, expectedMessage, expectedCause, 0)
   }
 
+  @Test def throwableMessageFromCouse(): Unit = {
+    val causeMessage = "Throwable to Message"
+    val expectedCause = new Throwable(causeMessage)
+    val expectedMessage = s"java.lang.Throwable: ${causeMessage}"
+    val throwable = new Throwable(null, expectedCause)
+
+    checkConstructed(throwable, expectedMessage, expectedCause, 0)
+  }
+
   @Test def throwable(): Unit = {
     val expectedMessage = null
     val expectedCause = null
