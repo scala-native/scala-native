@@ -6,8 +6,12 @@ import java.net.URLClassLoader
 
 object NIRCompiler {
 
-  private val allow: String => Boolean =
-    n => n.startsWith("scala.scalanative.api.") || !n.startsWith("scala.")
+  private val allow: String => Boolean = {
+    case s"scala.scalanative.api.${_}" => true
+    case s"scala.${_}"                 => false
+    case s"dotty.${_}"                 => false
+    case _                             => true
+  }
 
   private val classLoader = {
     val parts = sys
