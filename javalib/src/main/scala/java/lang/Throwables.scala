@@ -67,8 +67,16 @@ class Throwable protected (
 ) extends Object
     with java.io.Serializable {
 
+  // All subclasses of Exception in Scala need to reference the main constructor
+  // Becouse of that we all cosntructors this(Throwable) are effectively calling this(String, Throwable).
+  // At this point we cannot distinguish if message was explicitly as null, or should we generate message based on Throwable
   def this(message: String, cause: Throwable) =
-    this(message, cause, true, true)
+    this(
+      if (message == null && cause != null) cause.toString() else message,
+      cause,
+      true,
+      true
+    )
 
   def this() = this(null, null)
 
@@ -124,10 +132,7 @@ class Throwable protected (
 
   def getLocalizedMessage(): String = getMessage()
 
-  def getMessage(): String =
-    if (s != null) s
-    else if (e != null) e.toString()
-    else null
+  def getMessage(): String = s
 
   def getStackTrace(): Array[StackTraceElement] = {
     // Be robust! Test this.stackTrace against null rather than relying upon

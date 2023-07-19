@@ -151,7 +151,11 @@ class ThrowablesTest {
     checkConstructed(throwable, expectedMessage, expectedCause, 0)
   }
 
-  @Test def throwableMessageFromCouse(): Unit = {
+  @Test def throwableMessageFromCause(): Unit = {
+     // All subclasses of Exception in Scala need to reference the main constructor
+     // Becouse of that we all cosntructors this(Throwable) are effectively calling this(String, Throwable).
+     // At this point we cannot distinguish if message was explicitly as null, or should we generate message based on Throwable
+    assumeNotJVMCompliant()
     val causeMessage = "Throwable to Message"
     val expectedCause = new Throwable(causeMessage)
     val expectedMessage = s"java.lang.Throwable: ${causeMessage}"
