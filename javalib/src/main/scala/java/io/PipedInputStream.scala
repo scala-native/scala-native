@@ -50,7 +50,7 @@ class PipedInputStream() extends InputStream {
 
   def connect(src: PipedOutputStream) = src.connect(this)
 
-  override def read(): Int = {
+  override def read(): Int = synchronized {
     if (!isConnected) throw new IOException("Not connected")
     if (buffer == null) throw new IOException("InputStream is closed")
     if (isClosed && in == -1) {
@@ -95,68 +95,75 @@ class PipedInputStream() extends InputStream {
     result & 0xff
   }
 
-  override def read(bytes: Array[Byte], offset: Int, count: Int): Int = {
-    if (bytes == null) throw new NullPointerException
-    if (offset < 0 || offset > bytes.length || count < 0 || count > bytes.length - offset)
-      throw new IndexOutOfBoundsException
-    if (count == 0) return 0
-    if (isClosed && in == -1) return -1
-    if (!isConnected) throw new IOException("Not connected")
-    if (buffer == null) throw new IOException("InputStream is closed")
-    if (lastWriter != null && !lastWriter.isAlive() && (in < 0))
-      throw new IOException("Write end dead")
-    lastReader = Thread.currentThread()
-    try {
-      var attempts = 3
-      while (in == -1) {
-        if (isClosed) return -1
-        val attempt = attempts
-        attempts -= 1
-        if (attempt <= 0 && lastWriter != null && !lastWriter.isAlive())
-          throw new IOException("Pipe broken")
-        notifyAll()
-        wait(1000)
+  override def read(bytes: Array[Byte], offset: Int, count: Int): Int =
+    synchronized {
+      if (bytes == null) throw new NullPointerException
+      if (offset < 0 || offset > bytes.length || count < 0 || count > bytes.length - offset)
+        throw new IndexOutOfBoundsException
+      if (count == 0) return 0
+      if (isClosed && in == -1) return -1
+      if (!isConnected) throw new IOException("Not connected")
+      if (buffer == null) throw new IOException("InputStream is closed")
+      if (lastWriter != null && !lastWriter.isAlive() && (in < 0))
+        throw new IOException("Write end dead")
+      lastReader = Thread.currentThread()
+      try {
+        var attempts = 3
+        while (in == -1) {
+          if (isClosed) return -1
+          val attempt = attempts
+          attempts -= 1
+          if (attempt <= 0 && lastWriter != null && !lastWriter.isAlive())
+            throw new IOException("Pipe broken")
+          notifyAll()
+          wait(1000)
+        }
+      } catch {
+        case e: InterruptedException => throw new InterruptedIOException
       }
-    } catch {
-      case e: InterruptedException => throw new InterruptedIOException
-    }
-    /* Copy bytes from out to end of buffer first */
-    val copyLength =
-      if (out < in) 0
+      /* Copy bytes from out to end of buffer first */
+      val copyLength =
+        if (out < in) 0
+        else {
+          val copyLength =
+            if (count > (buffer.length - out)) buffer.length - out
+            else count
+          System.arraycopy(buffer, out, bytes, offset, copyLength)
+          out += copyLength
+          if (out == buffer.length) out = 0
+          if (out == in) {
+            in = -1
+            out = 0
+          }
+          copyLength
+        }
+      /*
+       * Did the read fully succeed in the previous copy or is the buffer
+       * empty?
+       */
+      if (copyLength == count || in == -1) copyLength
       else {
-        val copyLength =
-          if (count > (buffer.length - out)) buffer.length - out
-          else count
-        System.arraycopy(buffer, out, bytes, offset, copyLength)
-        out += copyLength
-        if (out == buffer.length) out = 0
+        val bytesCopied = copyLength
+        /* Copy bytes from 0 to the number of available bytes */
+        val newCopyLength = {
+          if (in - out > (count - bytesCopied)) count - bytesCopied
+          else in - out
+        }
+        System.arraycopy(
+          buffer,
+          out,
+          bytes,
+          offset + bytesCopied,
+          newCopyLength
+        )
+        out += newCopyLength
         if (out == in) {
           in = -1
           out = 0
         }
-        copyLength
+        bytesCopied + newCopyLength
       }
-    /*
-     * Did the read fully succeed in the previous copy or is the buffer
-     * empty?
-     */
-    if (copyLength == count || in == -1) copyLength
-    else {
-      val bytesCopied = copyLength
-      /* Copy bytes from 0 to the number of available bytes */
-      val newCopyLength = {
-        if (in - out > (count - bytesCopied)) count - bytesCopied
-        else in - out
-      }
-      System.arraycopy(buffer, out, bytes, offset + bytesCopied, newCopyLength)
-      out += newCopyLength
-      if (out == in) {
-        in = -1
-        out = 0
-      }
-      bytesCopied + newCopyLength
     }
-  }
 
   private[io] def receive(oneByte: Int): Unit = synchronized {
     if (buffer == null || isClosed)

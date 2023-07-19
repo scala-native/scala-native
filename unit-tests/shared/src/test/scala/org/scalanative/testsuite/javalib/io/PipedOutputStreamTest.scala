@@ -174,7 +174,6 @@ class PipedOutputStreamTest {
   @Test def test_write_BII_2(): Unit = {
     var pis: PipedInputStream = new PipedInputStream()
     var pos: PipedOutputStream = null
-    println(0)
     try {
       pos = new PipedOutputStream(pis)
       pos.write(new Array[Byte](0), -1, -1)
@@ -187,7 +186,6 @@ class PipedOutputStreamTest {
           t.getClass
         )
     }
-    println(1)
 
     // Regression for HARMONY-4311
     try {
@@ -198,7 +196,6 @@ class PipedOutputStreamTest {
     } catch {
       case _: NullPointerException => // expected
     }
-    println(2)
 
     pis = new PipedInputStream()
     pos = new PipedOutputStream(pis)
@@ -213,7 +210,6 @@ class PipedOutputStreamTest {
     } catch {
       case _: IndexOutOfBoundsException => // expected
     }
-    println(3)
     try {
       pis = new PipedInputStream()
       pos = new PipedOutputStream(pis)

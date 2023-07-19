@@ -32,7 +32,7 @@ class PipedOutputStream() extends OutputStream {
     }
   }
 
-  def connect(stream: PipedInputStream) = {
+  def connect(stream: PipedInputStream) = synchronized {
     if (null == stream) throw new NullPointerException
     if (this.dest != null) throw new IOException("Already connected")
     stream.synchronized {
@@ -44,10 +44,11 @@ class PipedOutputStream() extends OutputStream {
     }
   }
 
-  override def flush() =
+  override def flush() = synchronized {
     if (dest != null) {
       dest.synchronized { dest.notifyAll() }
     }
+  }
 
   override def write(buffer: Array[Byte], offset: Int, count: Int) =
     super.write(buffer, offset, count)
