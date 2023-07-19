@@ -1,4 +1,5 @@
 // Ported from Scala.js commit: 57d71da dated: 2023-05-31
+// Two methods are different, see below.
 
 package java.util
 
@@ -38,14 +39,28 @@ final class StringJoiner private (
 
   override def toString(): String =
     if (isEmpty && emptyValue != null) emptyValue
-    else prefix + value + suffix
+    else
+      // `+` is expensive on JVM/Native, use StringBuilder instead.
+      (new java.lang.StringBuilder(prefix))
+        .append(value)
+        .append(suffix)
+        .toString()
 
   def add(newElement: CharSequence): StringJoiner = {
+    // `+` is expensive on JVM/Native, use StringBuilder instead.
+    val builder = new java.lang.StringBuilder(value)
+
     if (isEmpty)
       isEmpty = false
     else
-      value += delimiter
-    value += newElement // if newElement is null, adds "null"
+      builder.append(delimiter)
+
+    if (newElement == null)
+      builder.append("null")
+    else
+      builder.append(newElement)
+
+    value = builder.toString()
     this
   }
 

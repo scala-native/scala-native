@@ -165,7 +165,7 @@ class StringJoinerTest {
 
   @Test def testNPE(): Unit = {
 
-    /** Both Scala Native and Scala JVM has compliant null pointers. The
+    /** Both Scala Native and Scala JVM have compliant null pointers. The
      *  commented line below is left as a reference to the Scala.js original.
      */
     // assumeTrue("requires compliant null pointers", Platform.hasCompliantNullPointers)
