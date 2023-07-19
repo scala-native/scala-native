@@ -5,7 +5,6 @@ import java.nio.file.Files
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.NIRCompiler
 import scala.scalanative.api.CompilationFailedException
 
 class SafeZoneTest {

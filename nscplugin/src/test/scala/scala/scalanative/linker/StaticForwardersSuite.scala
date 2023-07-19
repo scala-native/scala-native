@@ -3,12 +3,12 @@ package scala.scalanative.linker
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.LinkerSpec
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
 import scala.scalanative.io._
 import scala.scalanative.NIRCompiler
 import java.nio.file.{Files, Path, Paths}
+
 
 class StaticForwardersSuite {
   import StaticForwardersSuite._

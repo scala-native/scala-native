@@ -3,11 +3,10 @@ package scala.scalanative.linker
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.LinkerSpec
 import scala.scalanative.nir._
 import scala.scalanative.linker.StaticForwardersSuite._
 
-class StaticForwardersSuiteScala3 extends LinkerSpec {
+class StaticForwardersSuiteScala3 {
 
   @Test def mainAnnotation(): Unit = {
     val MainClass = Global.Top("myMainFunction")

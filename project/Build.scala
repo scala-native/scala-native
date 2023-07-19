@@ -115,13 +115,17 @@ object Build {
 
   // Compiler plugins
   lazy val nscPlugin = MultiScalaProject("nscplugin", file("nscplugin"))
+    .enablePlugins(BuildInfoPlugin) // for testing
     .settings(
+      buildInfoSettings,
       compilerPluginSettings,
       scalacOptions ++= scalaVersionsDependendent(scalaVersion.value)(
         Seq.empty[String]
       ) {
         case (2, _) => Seq("-Xno-patmat-analysis")
-      }
+      },
+      libraryDependencies ++= Deps.JUnitJvm,
+      Test / fork := true,
     )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 does not handle literal constants correctly
@@ -131,6 +135,26 @@ object Build {
     }
     .dependsOnSource(nir)
     .dependsOnSource(util)
+    .dependsOn(testingCompilerInterface % "test")
+    .zippedSettings(Seq("testingCompiler", "scalalib")) {
+      case Seq(testingCompiler, scalalib) =>
+        Test / javaOptions ++= {
+          val nscCompilerJar =
+            (Compile / Keys.`package`).value.getAbsolutePath()
+          val testingCompilerCp =
+            (testingCompiler / Compile / fullClasspath).value.files
+              .map(_.getAbsolutePath)
+              .mkString(pathSeparator)
+          val scalalibCp = (scalalib / Compile / fullClasspath).value.files
+            .map(_.getAbsolutePath)
+            .mkString(pathSeparator)
+          Seq(
+            "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
+            "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
+            "-Dscalanative.nativeruntime.cp=" + scalalibCp
+          )
+        },
+    }
 
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
     .settings(compilerPluginSettings)
