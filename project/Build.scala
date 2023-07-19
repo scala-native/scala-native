@@ -136,8 +136,8 @@ object Build {
     .dependsOnSource(nir)
     .dependsOnSource(util)
     .dependsOn(testingCompilerInterface % "test")
-    .zippedSettings(Seq("testingCompiler", "scalalib")) {
-      case Seq(testingCompiler, scalalib) =>
+    .zippedSettings(Seq("testingCompiler", "nativelib")) {
+      case Seq(testingCompiler, nativelib) =>
         Test / javaOptions ++= {
           val nscCompilerJar =
             (Compile / Keys.`package`).value.getAbsolutePath()
@@ -145,13 +145,13 @@ object Build {
             (testingCompiler / Compile / fullClasspath).value.files
               .map(_.getAbsolutePath)
               .mkString(pathSeparator)
-          val scalalibCp = (scalalib / Compile / fullClasspath).value.files
+          val nativelibCp = (nativelib / Compile / fullClasspath).value.files
             .map(_.getAbsolutePath)
             .mkString(pathSeparator)
           Seq(
             "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
             "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
-            "-Dscalanative.nativeruntime.cp=" + scalalibCp
+            "-Dscalanative.nativeruntime.cp=" + nativelibCp
           )
         },
     }
