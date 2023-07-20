@@ -575,7 +575,7 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def doubles(streamSize: Long): DoubleStream = {
+  override def doubles(streamSize: Long): DoubleStream = {
     if (streamSize < 0L)
       throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
     StreamSupport.doubleStream(
@@ -589,7 +589,7 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def doubles(): DoubleStream =
+  override def doubles(): DoubleStream =
     StreamSupport.doubleStream(
       new ThreadLocalRandom.RandomDoublesSpliterator(
         0L,
@@ -600,7 +600,7 @@ class ThreadLocalRandom private () extends Random {
       false
     )
 
-  def doubles(
+  override def doubles(
       streamSize: Long,
       randomNumberOrigin: Double,
       randomNumberBound: Double
@@ -622,7 +622,7 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def doubles(
+  override def doubles(
       randomNumberOrigin: Double,
       randomNumberBound: Double
   ): DoubleStream = {
