@@ -115,13 +115,17 @@ object Build {
 
   // Compiler plugins
   lazy val nscPlugin = MultiScalaProject("nscplugin", file("nscplugin"))
+    .enablePlugins(BuildInfoPlugin) // for testing
     .settings(
+      buildInfoSettings,
       compilerPluginSettings,
       scalacOptions ++= scalaVersionsDependendent(scalaVersion.value)(
         Seq.empty[String]
       ) {
         case (2, _) => Seq("-Xno-patmat-analysis")
-      }
+      },
+      libraryDependencies ++= Deps.JUnitJvm,
+      Test / fork := true
     )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 does not handle literal constants correctly
@@ -131,6 +135,26 @@ object Build {
     }
     .dependsOnSource(nir)
     .dependsOnSource(util)
+    .dependsOn(testingCompilerInterface % "test")
+    .zippedSettings(Seq("testingCompiler", "nativelib")) {
+      case Seq(testingCompiler, nativelib) =>
+        Test / javaOptions ++= {
+          val nscCompilerJar =
+            (Compile / Keys.`package`).value.getAbsolutePath()
+          val testingCompilerCp =
+            (testingCompiler / Compile / fullClasspath).value.files
+              .map(_.getAbsolutePath)
+              .mkString(pathSeparator)
+          val nativelibCp = (nativelib / Compile / fullClasspath).value.files
+            .map(_.getAbsolutePath)
+            .mkString(pathSeparator)
+          Seq(
+            "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
+            "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
+            "-Dscalanative.nativeruntime.cp=" + nativelibCp
+          )
+        },
+    }
 
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
     .settings(compilerPluginSettings)
@@ -140,7 +164,11 @@ object Build {
     .settings(toolSettings, mavenPublishSettings)
 
   lazy val nir = MultiScalaProject("nir")
-    .settings(toolSettings, mavenPublishSettings)
+    .settings(
+      toolSettings,
+      mavenPublishSettings,
+      libraryDependencies ++= Deps.JUnitJvm
+    )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
       case "2.12" => _.settings(disabledDocsSettings)

@@ -6,7 +6,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.linker.ReachabilitySuite
 import scala.scalanative.nir._
 import scala.scalanative.NIRCompiler
 

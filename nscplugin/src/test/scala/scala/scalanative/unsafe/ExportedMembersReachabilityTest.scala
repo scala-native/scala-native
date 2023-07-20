@@ -6,11 +6,10 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.LinkerSpec
 import scala.scalanative.nir._
 import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 
-class ExportedMembersReachabilityTest extends LinkerSpec {
+class ExportedMembersReachabilityTest {
   val Lib = Global.Top("lib$")
 
   @Test def generateModuleExportedMethods(): Unit = {
