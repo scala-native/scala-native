@@ -107,6 +107,11 @@ object Build {
       config.logger.debug(config.toString())
 
       link(config, entries(config))
+        .map { linked =>
+          // Can throw, execute in the main flow
+          logLinked(config, linked)
+          linked
+        }
         .flatMap(optimize(config, _))
         .flatMap { linkerResult =>
           val backend = new BackendPipeline(config, linkerResult)
