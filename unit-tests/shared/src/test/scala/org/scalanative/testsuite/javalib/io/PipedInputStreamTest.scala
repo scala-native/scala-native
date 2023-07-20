@@ -37,8 +37,10 @@ class PipedInputStreamTest {
     catch { case _: Exception => }
   }
 
-  private class PWriter(var pos: PipedOutputStream, var bytes: Array[Byte])
+  private class PWriter(var pos: PipedOutputStream, nbytes: Int)
       extends Runnable {
+    val bytes =
+      Array.fill[Byte](nbytes)((System.currentTimeMillis() % 9).toByte)
     override def run(): Unit = {
       try {
         pos.write(bytes)
@@ -84,7 +86,7 @@ class PipedInputStreamTest {
 
     try {
       pis.connect(pos)
-      pw = new PWriter(pos, new Array[Byte](1000))
+      pw = new PWriter(pos, 1000)
       t = new Thread(pw)
       t.start()
       assertTrue(t.isAlive)
@@ -101,9 +103,7 @@ class PipedInputStreamTest {
       try {
         pis.close()
         pos.close()
-      } catch {
-        case _: IOException =>
-      }
+      } catch { case _: IOException => }
     }
   }
 
@@ -116,7 +116,7 @@ class PipedInputStreamTest {
     pos = new PipedOutputStream
 
     pis.connect(pos)
-    pw = new PWriter(pos, new Array[Byte](1000))
+    pw = new PWriter(pos, 1000)
     t = new Thread(pw)
     t.start()
 
@@ -174,7 +174,7 @@ class PipedInputStreamTest {
     )
 
     pis.connect(pos)
-    pw = new PWriter(pos, new Array[Byte](1000))
+    pw = new PWriter(pos, 1000)
     t = new Thread(pw)
     t.start()
 
@@ -197,7 +197,7 @@ class PipedInputStreamTest {
     pos = new PipedOutputStream
 
     pis.connect(pos)
-    pw = new PWriter(pos, new Array[Byte](1000))
+    pw = new PWriter(pos, 1000)
     t = new Thread(pw)
     t.start()
 
@@ -225,7 +225,7 @@ class PipedInputStreamTest {
     pos = new PipedOutputStream
 
     pis.connect(pos)
-    pw = new PWriter(pos, new Array[Byte](1000))
+    pw = new PWriter(pos, 1000)
     t = new Thread(pw)
     t.start()
 
