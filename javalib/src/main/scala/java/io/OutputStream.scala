@@ -8,7 +8,7 @@ abstract class OutputStream extends Object with Closeable with Flushable {
     write(b, 0, b.length)
 
   def write(b: Array[Byte], off: Int, len: Int): Unit = {
-    if (off < 0 || len < 0 || len > b.length - off)
+    if (off > b.length || off < 0 || len < 0 || len > b.length - off)
       throw new IndexOutOfBoundsException()
 
     var n = off
