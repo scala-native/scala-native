@@ -1,11 +1,16 @@
 package org.scalanative.testsuite.javalib.util
 
+import java.{lang => jl}
+
 import java.util._
+import java.util.function.DoubleConsumer
 
 import org.junit.Test
 import org.junit.Assert._
 
 class RandomTest {
+
+  final val epsilon = 0.00000000 // tolerance for Floating point comparisons.
 
   /** Helper class to access next */
   class HackRandom(seed: Long) extends Random(seed) {
@@ -237,4 +242,220 @@ class RandomTest {
     assertTrue(random1.hashCode != random2.hashCode)
     assertTrue(random1.nextInt != random2.nextInt)
   }
+
+  final val expectedCharacteristics =
+    Spliterator.SIZED | Spliterator.IMMUTABLE |
+      Spliterator.NONNULL | Spliterator.SUBSIZED //  0x4540, decimal 17728
+
+  @Test def doublesZeroArg(): Unit = {
+    // doubles()
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.doubles()
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", jl.Long.MAX_VALUE, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      jl.Long.MAX_VALUE,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.doubles()
+
+    val expectedContent = 0.10435154059121454
+
+    // for the skipTo element to be right, everything before it should be OK.
+    val actualContent = ds2
+      .skip(10)
+      .findFirst()
+      .orElse(0.0)
+
+    assertEquals("content", expectedContent, actualContent, epsilon)
+  }
+
+  @Test def doublesOneArg(): Unit = {
+    // doubles(long streamSize)
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 7
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.doubles(streamSize)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", streamSize, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      streamSize,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.doubles(streamSize)
+
+    assertEquals("count", streamSize, ds2.count())
+
+    val rng3 = new Random(seed)
+    val ds3 = rng3.doubles(streamSize)
+
+    val expectedContent = 0.6915186905201246
+
+    // for the skipTo element to be right, everything before it should be OK.
+    val actualContent = ds3
+      .skip(5)
+      .findFirst()
+      .orElse(0.0)
+
+    assertEquals("content", expectedContent, actualContent, epsilon)
+  }
+
+  @Test def doublesTwoArg(): Unit = {
+    // doubles(double randomNumberOrigin, double randomNumberBound)
+
+    // This test is not guaranteed. It samples to build correctness confidence.
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 100
+
+    val rnOrigin = 2.0
+    val rnBound = 80.0
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.doubles(rnOrigin, rnBound)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", jl.Long.MAX_VALUE, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      jl.Long.MAX_VALUE,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2
+      .doubles(rnOrigin, rnBound)
+      .limit(streamSize)
+
+    // Keep Scala 2 happy. Can use lambda when only Scala > 2 is supported.
+    val doubleConsumer = new DoubleConsumer {
+      def accept(d: Double): Unit = {
+        assertTrue(
+          s"Found value ${d} < low bound ${rnOrigin}",
+          d >= rnOrigin
+        )
+
+        assertTrue(
+          s"Found value ${d} >= high bound ${rnBound}",
+          d < rnBound
+        )
+      }
+    }
+
+    ds2.forEach(doubleConsumer)
+  }
+
+  @Test def doublesThreeArg(): Unit = {
+    // doubles(long streamSize, double randomNumberOrigin,
+    //         double randomNumberBound)
+
+    // This test is not guaranteed. It samples to build correctness confidence.
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 100
+
+    val rnOrigin = 1.0
+    val rnBound = 90.0
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.doubles(streamSize, rnOrigin, rnBound)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", streamSize, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      streamSize,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.doubles(streamSize, rnOrigin, rnBound)
+
+    assertEquals("count", streamSize, ds2.count())
+
+    val rng3 = new Random(seed)
+    val ds3 = rng3.doubles(streamSize, rnOrigin, rnBound)
+
+    // Keep Scala 2 happy. Can use lambda when only Scala > 2 is supported.
+    val doubleConsumer = new DoubleConsumer {
+      def accept(d: Double): Unit = {
+        assertTrue(
+          s"Found value ${d} < low bound ${rnOrigin}",
+          d >= rnOrigin
+        )
+
+        assertTrue(
+          s"Found value ${d} >= high bound ${rnBound}",
+          d < rnBound
+        )
+      }
+    }
+
+    ds3.forEach(doubleConsumer)
+  }
+
 }
