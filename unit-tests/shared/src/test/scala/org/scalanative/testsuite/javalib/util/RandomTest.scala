@@ -20,7 +20,6 @@ class RandomTest {
     override def next(bits: Int): Int = super.next(bits)
   }
 
-  /* // FIXME
   @Test def seed10(): Unit = {
     val random = new HackRandom(10)
 
@@ -248,7 +247,6 @@ class RandomTest {
     assertTrue(random1.hashCode != random2.hashCode)
     assertTrue(random1.nextInt != random2.nextInt)
   }
-   */ // FIXME
 
   final val expectedCharacteristics =
     Spliterator.SIZED | Spliterator.IMMUTABLE |
