@@ -4,7 +4,7 @@
 
 package java.util
 
-import java.lang.StringBuilder
+import ScalaOps._
 
 @inline
 final class StringJoiner private (
@@ -26,8 +26,8 @@ final class StringJoiner private (
   /** The custom value to return if empty, set by `setEmptyValue` (nullable). */
   private var emptyValue: String = null
 
-  /** A list that holds (in reverse) strings that have been added so far. */
-  private var contents: scala.collection.immutable.List[CharSequence] = Nil
+  /** A list that holds the strings that have been added so far. */
+  private val contents: List[CharSequence] = new ArrayList()
 
   /** Whether the string joiner is currently empty. */
   private var isEmpty: Boolean = true
@@ -40,76 +40,23 @@ final class StringJoiner private (
     this
   }
 
-  /** Utility function used in build and length. Calculates the length of
-   *  strings in the list, plus the delimiters in between them.
-   */
-  private def lengthOf(
-      parts: scala.collection.immutable.List[CharSequence],
-      delim: CharSequence
-  ): Int = {
-    val delimLength = delim.length()
-    parts match {
-      case Nil => 0
-      case head :: tail =>
-        tail.foldLeft(head.length())((acc, part) =>
-          acc + delimLength + part.length()
-        )
-    }
-  }
-
-  /** Utility function used in toString and merge. Builds up the "middle" part
-   *  of a join, without prefix, suffix, emptyValue. We assume the parts are
-   *  given in reverse order.
-   */
-  private def build(
-      parts: scala.collection.immutable.List[CharSequence],
-      delim: CharSequence
-  ): CharSequence = {
-    // allocate exactly as much as required to skip internal buffer resize
-    val size = lengthOf(parts, delim)
-    val builder = new StringBuilder(size)
-
-    parts.reverse match {
-      case Nil =>
-      case head :: tail => {
-        builder.append(head)
-        tail.foreach(part => builder.append(delim).append(part))
-      }
-    }
-    builder
-  }
-
   override def toString(): String =
     if (isEmpty && emptyValue != null) emptyValue
-    else {
-      // allocate exactly as much as required to skip internal buffer resize
-      val builder = new StringBuilder(length())
-
-      builder.append(prefixStr)
-      builder.append(build(contents, delimStr))
-      builder.append(suffixStr)
-
-      builder.toString()
-    }
+    else contents.scalaOps.mkString(prefixStr, delimStr, suffixStr)
 
   def add(newElement: CharSequence): StringJoiner = {
-    contents ::= (if (newElement == null) "null" else newElement)
+    contents.add(if (newElement == null) "null" else newElement)
     isEmpty = false
     this
   }
 
   def merge(other: StringJoiner): StringJoiner = {
     if (!other.isEmpty) { // if `other` is empty, `merge` has no effect
-      contents ::= build(other.contents, other.delimStr)
+      contents.add(other.contents.scalaOps.mkString("", other.delimStr, ""))
       isEmpty = false
     }
     this
   }
 
-  def length(): Int = {
-    val baseLength =
-      if (isEmpty && emptyValue != null) emptyValue.length()
-      else prefixStr.length() + suffixStr.length()
-    baseLength + lengthOf(contents, delimStr)
-  }
+  def length(): Int = toString().length()
 }
