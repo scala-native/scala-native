@@ -209,7 +209,7 @@ object ThreadLocalRandom {
         var i = index
         index = fence
         while ({
-          rng.internalNextDouble()(origin, bound)
+          consumer.accept(rng.internalNextDouble()(origin, bound))
           i += 1
           i < fence
         }) ()
