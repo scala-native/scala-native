@@ -115,23 +115,79 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
     x * c
   }
 
+  private val invalidStreamSizeMsg = "size must be non-negative"
+
   // The elements of the stream are random, not the Characteristics themselves.
   final val randomStreamCharacteristics =
     Spliterator.SIZED | Spliterator.SUBSIZED |
       Spliterator.NONNULL | Spliterator.IMMUTABLE //  0x4540, decimal 17728
 
-  def doubles(): DoubleStream = {
+  // Algorithm from JDK 17 Random Class documentation.
+  private def nextDouble(origin: Double, bound: Double): Double = {
+    val r = nextDouble() * (bound - origin) + origin
 
-    val spliter =
-      new Spliterators.AbstractDoubleSpliterator(
-        jl.Long.MAX_VALUE,
-        randomStreamCharacteristics
-      ) {
-        def tryAdvance(action: DoubleConsumer): Boolean = {
-          action.accept(nextDouble())
-          true
-        }
+    if (r >= bound) Math.nextDown(bound) // correct for rounding
+    else r
+  }
+
+  /* The same algorithm is used in the three Random*Spliterator methods,
+   * specialized by type.  This algorithm is heavily influenced by the
+   * public domain JSR-166 code in
+   * java.util.concurrent.ThreadLocalRandom.scala and bears a debt of
+   * gratitude to Doug Lea & Co.
+   */
+
+  final private class RandomDoublesSpliterator(
+      var index: Long,
+      fence: Long,
+      origin: Double,
+      bound: Double
+  ) extends Spliterator.OfDouble {
+
+    override def trySplit(): RandomDoublesSpliterator = {
+      val m = (index + fence) >>> 1
+      if (m <= index) null
+      else {
+        val i = index
+        index = m
+        new RandomDoublesSpliterator(i, m, origin, bound)
       }
+    }
+
+    override def estimateSize(): Long = fence - index
+    override def characteristics(): Int = randomStreamCharacteristics
+
+    override def tryAdvance(consumer: DoubleConsumer): Boolean = {
+      if (consumer == null)
+        throw new NullPointerException
+
+      if (index >= fence) false
+      else {
+        consumer.accept(nextDouble(origin, bound))
+        index += 1
+        true
+      }
+    }
+
+    override def forEachRemaining(consumer: DoubleConsumer): Unit = {
+      if (consumer == null)
+        throw new NullPointerException
+
+      if (index < fence) {
+        var i = index
+        index = fence
+        while ({
+          consumer.accept(nextDouble(origin, bound))
+          i += 1
+          i < fence
+        }) ()
+      }
+    }
+  }
+
+  def doubles(): DoubleStream = {
+    val spliter =
+      new RandomDoublesSpliterator(0L, jl.Long.MAX_VALUE, 0.0, 1.0)
 
     StreamSupport.doubleStream(spliter, parallel = false)
   }
@@ -143,39 +199,14 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
     doubles(jl.Long.MAX_VALUE, randomNumberOrigin, randomNumberBound)
   }
 
-  private val invalidStreamSizeMsg = "size must be non-negative"
-
   def doubles(streamSize: Long): DoubleStream = {
     if (streamSize < 0L)
       throw new IllegalArgumentException(invalidStreamSizeMsg)
 
     val spliter =
-      new Spliterators.AbstractDoubleSpliterator(
-        streamSize,
-        randomStreamCharacteristics
-      ) {
-        var nSeen = 0L
-
-        def tryAdvance(action: DoubleConsumer): Boolean = {
-          if (nSeen >= streamSize) false
-          else {
-            action.accept(nextDouble())
-            nSeen += 1
-            true
-          }
-        }
-      }
+      new RandomDoublesSpliterator(0L, streamSize, 0.0, 1.0)
 
     StreamSupport.doubleStream(spliter, parallel = false)
-
-  }
-
-  // Algorithm from JDK 17 Random Class documentation.
-  private def nextDouble(origin: Double, bound: Double): Double = {
-    val r = nextDouble() * (bound - origin) + origin
-
-    if (r >= bound) Math.nextDown(bound) // correct for rounding
-    else r
   }
 
   def doubles(
@@ -190,21 +221,12 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
       throw new IllegalArgumentException("bound must be greater than origin")
 
     val spliter =
-      new Spliterators.AbstractDoubleSpliterator(
+      new RandomDoublesSpliterator(
+        0L,
         streamSize,
-        randomStreamCharacteristics
-      ) {
-        var nSeen = 0L
-
-        def tryAdvance(action: DoubleConsumer): Boolean = {
-          if (nSeen >= streamSize) false
-          else {
-            action.accept(nextDouble(randomNumberOrigin, randomNumberBound))
-            nSeen += 1
-            true
-          }
-        }
-      }
+        randomNumberOrigin,
+        randomNumberBound
+      )
 
     StreamSupport.doubleStream(spliter, parallel = false)
   }
