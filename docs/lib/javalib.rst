@@ -46,6 +46,10 @@ java.io
 * ``ObjectStreamException``
 * ``OutputStream``
 * ``OutputStreamWriter``
+* ``PipedInputStream``
+* ``PipedOutputStream``
+* ``PipedReader``
+* ``PipedWriter``
 * ``PrintStream``
 * ``PrintWriter``
 * ``PushbackInputStream``
