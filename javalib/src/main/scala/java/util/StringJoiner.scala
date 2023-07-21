@@ -47,12 +47,12 @@ final class StringJoiner private (
       parts: scala.collection.immutable.List[CharSequence],
       delim: CharSequence
   ): Int = {
-    val delimLength = delim.length
+    val delimLength = delim.length()
     parts match {
       case Nil => 0
       case head :: tail =>
-        tail.foldLeft(head.length)((acc, part) =>
-          acc + delimLength + part.length
+        tail.foldLeft(head.length())((acc, part) =>
+          acc + delimLength + part.length()
         )
     }
   }
@@ -108,8 +108,8 @@ final class StringJoiner private (
 
   def length(): Int = {
     val baseLength =
-      if (isEmpty && emptyValue != null) emptyValue.length
-      else prefixStr.length + suffixStr.length
+      if (isEmpty && emptyValue != null) emptyValue.length()
+      else prefixStr.length() + suffixStr.length()
     baseLength + lengthOf(contents, delimStr)
   }
 }
