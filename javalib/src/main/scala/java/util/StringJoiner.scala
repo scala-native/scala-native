@@ -30,7 +30,7 @@ final class StringJoiner private (
   private val contents: List[CharSequence] = new ArrayList()
 
   /** Whether the string joiner is currently empty. */
-  private var isEmpty: Boolean = true
+  private def isEmpty: Boolean = contents.isEmpty()
 
   /** Alternate constructor with no prefix or suffix */
   def this(delimiter: CharSequence) = this(delimiter, "", "")
@@ -46,17 +46,21 @@ final class StringJoiner private (
 
   def add(newElement: CharSequence): StringJoiner = {
     contents.add(if (newElement == null) "null" else newElement)
-    isEmpty = false
     this
   }
 
   def merge(other: StringJoiner): StringJoiner = {
     if (!other.isEmpty) { // if `other` is empty, `merge` has no effect
       contents.add(other.contents.scalaOps.mkString("", other.delimStr, ""))
-      isEmpty = false
     }
     this
   }
 
-  def length(): Int = toString().length()
+  def length(): Int =
+    if (isEmpty && emptyValue != null) emptyValue.length()
+    else if (isEmpty) prefixStr.length() + suffixStr.length()
+    else
+      prefixStr.length() + suffixStr.length() +
+        delimStr.length() * (contents.size - 1) +
+        contents.scalaOps.foldLeft(0)((acc, part) => acc + part.length())
 }
