@@ -61,6 +61,6 @@ final class StringJoiner private (
     else if (isEmpty) prefixStr.length() + suffixStr.length()
     else
       prefixStr.length() + suffixStr.length() +
-        delimStr.length() * (contents.size - 1) +
+        delimStr.length() * (contents.size() - 1) +
         contents.scalaOps.foldLeft(0)((acc, part) => acc + part.length())
 }
