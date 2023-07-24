@@ -1,6 +1,5 @@
 // Ported from Scala.js commit: 57d71da dated: 2023-05-31
-// This file has many differences, using CharSequence instead of String,
-// and different implementations of add, merge, toString and length.
+// This file has different implementations of add, merge, toString and length.
 
 package java.util
 
@@ -8,20 +7,21 @@ import ScalaOps._
 
 @inline
 final class StringJoiner private (
-    delimiter: CharSequence,
-    prefix: CharSequence,
-    suffix: CharSequence
+    delimiter: String,
+    prefix: String,
+    suffix: String
 ) extends AnyRef {
 
-  /** None of the arguments should be null. */
-  Objects.requireNonNull(delimiter, "The delimiter must not be null")
-  Objects.requireNonNull(prefix, "The prefix must not be null")
-  Objects.requireNonNull(suffix, "The suffix must not be null")
+  /** We need the delimiter of `other` for `merge`. */
+  private val delimStr: String = delimiter
 
-  /** We need the fields to be immutable. */
-  private val delimStr: String = delimiter.toString()
-  private val prefixStr: String = prefix.toString()
-  private val suffixStr: String = suffix.toString()
+  /** The public constructor to be used from outside. */
+  def this(
+      delimiter: CharSequence,
+      prefix: CharSequence,
+      suffix: CharSequence
+  ) =
+    this(delimiter.toString(), prefix.toString(), suffix.toString())
 
   /** The custom value to return if empty, set by `setEmptyValue` (nullable). */
   private var emptyValue: String = null
@@ -33,7 +33,7 @@ final class StringJoiner private (
   private def isEmpty: Boolean = contents.isEmpty()
 
   /** Alternate constructor with no prefix or suffix */
-  def this(delimiter: CharSequence) = this(delimiter, "", "")
+  def this(delimiter: CharSequence) = this(delimiter.toString(), "", "")
 
   def setEmptyValue(emptyValue: CharSequence): StringJoiner = {
     this.emptyValue = emptyValue.toString()
@@ -42,7 +42,7 @@ final class StringJoiner private (
 
   override def toString(): String =
     if (isEmpty && emptyValue != null) emptyValue
-    else contents.scalaOps.mkString(prefixStr, delimStr, suffixStr)
+    else contents.scalaOps.mkString(prefix, delimiter, suffix)
 
   def add(newElement: CharSequence): StringJoiner = {
     contents.add(if (newElement == null) "null" else newElement)
@@ -58,9 +58,9 @@ final class StringJoiner private (
 
   def length(): Int =
     if (isEmpty && emptyValue != null) emptyValue.length()
-    else if (isEmpty) prefixStr.length() + suffixStr.length()
+    else if (isEmpty) prefix.length() + suffix.length()
     else
-      prefixStr.length() + suffixStr.length() +
-        delimStr.length() * (contents.size() - 1) +
+      prefix.length() + suffix.length() +
+        delimiter.length() * (contents.size() - 1) +
         contents.scalaOps.foldLeft(0)((acc, part) => acc + part.length())
 }
