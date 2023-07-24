@@ -200,27 +200,44 @@ object Build {
             case (3, _)  => scala213StdLibDeprecations
           }
       },
+      buildInfoKeys ++= Seq(
+        BuildInfoKey.map(scalaInstance) {
+          case (_, v) =>
+            "scalacJars" -> v.allJars
+              .map(_.getAbsolutePath())
+              .mkString(pathSeparator)
+        },
+        BuildInfoKey.map(Compile / managedClasspath) {
+          case (_, v) =>
+            "compileClasspath" -> v.files
+              .map(_.getAbsolutePath())
+              .mkString(pathSeparator)
+        }
+      ),
       // Running tests in parallel results in `FileSystemAlreadyExistsException`
       Test / parallelExecution := false
     )
-    .zippedSettings(Seq("nscplugin", "testingCompiler", "scalalib")) {
-      case Seq(nscPlugin, testingCompiler, scalalib) =>
-        Test / javaOptions ++= {
-          val nscCompilerJar =
-            (nscPlugin / Compile / Keys.`package`).value.getAbsolutePath()
-          val testingCompilerCp =
-            (testingCompiler / Compile / fullClasspath).value.files
-              .map(_.getAbsolutePath)
-              .mkString(pathSeparator)
-          val scalalibCp = (scalalib / Compile / fullClasspath).value.files
-            .map(_.getAbsolutePath)
-            .mkString(pathSeparator)
-          Seq(
-            "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
-            "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
-            "-Dscalanative.nativeruntime.cp=" + scalalibCp
-          )
-        },
+    .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
+      case Seq(nscPlugin, nativelib, scalalib) =>
+        buildInfoKeys ++= Seq[BuildInfoKey](
+          BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
+            case (_, v) => "pluginJar" -> v.getAbsolutePath()
+          },
+          BuildInfoKey.map(nativelib / Compile / fullClasspath) {
+            case (_, v) =>
+              "nativelibCp" ->
+                v.files
+                  .map(_.getAbsolutePath)
+                  .mkString(pathSeparator)
+          },
+          BuildInfoKey.map(scalalib / Compile / fullClasspath) {
+            case (_, v) =>
+              "scalalibCp" ->
+                v.files
+                  .map(_.getAbsolutePath)
+                  .mkString(pathSeparator)
+          }
+        )
     }
     .dependsOn(nir, util, testingCompilerInterface % "test")
 
