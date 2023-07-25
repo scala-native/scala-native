@@ -132,6 +132,8 @@ trait NirDefinitions {
     lazy val IntrinsicsModule = getRequiredModule(
       "scala.scalanative.runtime.Intrinsics"
     )
+    lazy val IntrinsicsInternalModule =
+      getMember(IntrinsicsModule, TermName("internal"))
     lazy val DivUIntMethod = getMember(IntrinsicsModule, TermName("divUInt"))
     lazy val DivULongMethod = getMember(IntrinsicsModule, TermName("divULong"))
     lazy val RemUIntMethod = getMember(IntrinsicsModule, TermName("remUInt"))
@@ -220,22 +222,18 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethods =
       getMember(IntrinsicsModule, TermName("stackalloc")).alternatives
-    lazy val StackallocRawMethod =
-      StackallocMethods.find(_.paramss.flatten.size == 2).get
+    lazy val StackallocInternalMethod =
+      getMember(IntrinsicsInternalModule, TermName("stackalloc"))
     lazy val ClassFieldRawPtrMethod =
       getMember(IntrinsicsModule, TermName("classFieldRawPtr"))
-    lazy val SizeOfMethods =
-      getMember(IntrinsicsModule, TermName("sizeOf")).alternatives
     lazy val SizeOfMethod =
-      SizeOfMethods.find(_.paramss.flatten.nonEmpty).get
-    lazy val SizeOfTypeMethod =
-      SizeOfMethods.find(_.paramss.flatten.isEmpty).get
-    lazy val AlignmentOfMethods =
-      getMember(IntrinsicsModule, TermName("alignmentOf")).alternatives
+      getMember(IntrinsicsModule, TermName("sizeOf"))
+    lazy val SizeOfInternalMethod =
+      getMember(IntrinsicsInternalModule, TermName("sizeOf"))
     lazy val AlignmentOfMethod =
-      AlignmentOfMethods.find(_.paramss.flatten.nonEmpty).get
-    lazy val AlignmentOfTypeMethod =
-      AlignmentOfMethods.find(_.paramss.flatten.isEmpty).get
+      getMember(IntrinsicsModule, TermName("alignmentOf"))
+    lazy val AlignmentOfInternalMethod =
+      getMember(IntrinsicsInternalModule, TermName("alignmentOf"))
 
     lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
       getMember(_, TermName("apply"))

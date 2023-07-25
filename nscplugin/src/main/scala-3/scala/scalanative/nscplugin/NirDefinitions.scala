@@ -88,7 +88,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimePackage_exitMonitor = RuntimePackageClass.requiredMethod("exitMonitor")
   @tu lazy val RuntimePackage_fromRawSize = RuntimePackageClass.requiredMethod("fromRawSize")
   @tu lazy val RuntimePackage_fromRawUSize = RuntimePackageClass.requiredMethod("fromRawUSize")
-  
+
   @tu lazy val RuntimePackage_toRawSizeAlts = RuntimePackageClass.info
     .member(termName("toRawSize"))
     .alternatives
@@ -103,6 +103,7 @@ final class NirDefinitions()(using ctx: Context) {
 
   // Runtime intriniscs
   @tu lazy val IntrinsicsModule = requiredModule("scala.scalanative.runtime.Intrinsics")
+  @tu lazy val IntrinsicsInternalModule = requiredModule("scala.scalanative.runtime.Intrinsics.internal")
   @tu lazy val Intrinsics_divUInt = IntrinsicsModule.requiredMethod("divUInt")
   @tu lazy val Intrinsics_divULong = IntrinsicsModule.requiredMethod("divULong")
   @tu lazy val Intrinsics_remUInt = IntrinsicsModule.requiredMethod("remUInt")
@@ -159,23 +160,13 @@ final class NirDefinitions()(using ctx: Context) {
     .member(termName("stackalloc"))
     .alternatives
     .map(_.symbol)
-    .ensuring(_.size == 3)
+    .ensuring(_.size == 2)
+  @tu lazy val IntrinsicsInternal_stackalloc = IntrinsicsInternalModule.requiredMethod("stackalloc")
   @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
-  @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info
-    .member(termName("sizeOf"))
-    .alternatives
-    .map(_.symbol)
-    .ensuring(_.size == 2)
-  @tu lazy val Intrinsics_sizeOf = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
-  @tu lazy val Intrinsics_sizeOfType = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
-  @tu lazy val Intrinsics_alignmentOfAlts = IntrinsicsModule.info
-    .member(termName("alignmentOf"))
-    .alternatives
-    .map(_.symbol)
-    .ensuring(_.size == 2)
-  @tu lazy val Intrinsics_alignmentOf = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
-  @tu lazy val Intrinsics_alignmentOfType = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
-
+  @tu lazy val Intrinsics_sizeOf = IntrinsicsModule.requiredMethod("sizeOf")
+  @tu lazy val IntrinsicsInternal_sizeOf = IntrinsicsInternalModule.requiredMethod("sizeOf")
+  @tu lazy val Intrinsics_alignmentOf = IntrinsicsModule.requiredMethod("alignmentOf")
+  @tu lazy val IntrinsicsInternal_alignmentOf = IntrinsicsInternalModule.requiredMethod("alignmentOf")
   @tu lazy val Intrinsics_unsignedOfAlts =
     IntrinsicsModule.info
       .member(termName("unsignedOf"))

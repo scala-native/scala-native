@@ -134,6 +134,7 @@ abstract class NirPrimitives {
     addPrimitive(Array_clone, ARRAY_CLONE)
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitives(StackallocMethods, STACKALLOC)
+    addPrimitive(StackallocInternalMethod, STACKALLOC)
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
@@ -194,7 +195,7 @@ abstract class NirPrimitives {
     addPrimitives(CFuncPtrApplyMethods, CFUNCPTR_APPLY)
     addPrimitives(CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
-    addPrimitives(SizeOfMethods, SIZE_OF)
-    addPrimitives(AlignmentOfMethods, ALIGNMENT_OF)
+    addPrimitive(SizeOfInternalMethod, SIZE_OF)
+    addPrimitive(AlignmentOfInternalMethod, ALIGNMENT_OF)
   }
 }

@@ -84,21 +84,21 @@ class PostInlineNativeInterop extends PluginPhase {
 
     // sizeOf[T] -> sizeOf(classOf[T])
     fun.symbol match
-      case defnNir.Intrinsics_sizeOfType =>
+      case defnNir.Intrinsics_sizeOf =>
         val tpe = dealiasTypeMapper(tArgs.head.tpe)
         cpy
           .Apply(tree)(
-            ref(defnNir.Intrinsics_sizeOf),
+            ref(defnNir.IntrinsicsInternal_sizeOf),
             List(Literal(Constant(tpe)))
           )
           .withAttachment(NirDefinitions.NonErasedType, tpe)
 
       // alignmentOf[T] -> alignmentOf(classOf[T])
-      case defnNir.Intrinsics_alignmentOfType =>
+      case defnNir.Intrinsics_alignmentOf =>
         val tpe = dealiasTypeMapper(tArgs.head.tpe)
         cpy
           .Apply(tree)(
-            ref(defnNir.Intrinsics_alignmentOf),
+            ref(defnNir.IntrinsicsInternal_alignmentOf),
             List(Literal(Constant(tpe)))
           )
           .withAttachment(NirDefinitions.NonErasedType, tpe)
