@@ -71,6 +71,11 @@ class PostInlineNativeInterop extends PluginPhase {
         val tpe = fun match {
           case TypeApply(_, Seq(argTpe)) => dealiasTypeMapper(argTpe.tpe)
         }
+        if (tpe.isAny || tpe.isNothingType || tpe.isNullType || tpe.typeSymbol.isAbstractOrAliasType)
+          report.error(
+            s"Stackalloc requires concreate type but ${tpe.show} found",
+            tree.srcPos
+          )
         tree.withAttachment(NirDefinitions.NonErasedType, tpe)
 
       case _ => tree

@@ -135,6 +135,11 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           val tpe = fun match {
             case TypeApply(_, Seq(argTpe)) => widenDealiasType(argTpe.tpe)
           }
+          if (tpe.isAny || tpe.isNothing)
+            reporter.error(
+              tree.pos,
+              s"Stackalloc requires concreate type, but ${show(tpe)} found"
+            )
           tree.updateAttachment(NonErasedType(tpe))
 
         // Catch the definition of scala.Enumeration itself
