@@ -132,6 +132,12 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             .updateAttachment(NonErasedType(tpe))
             .setPos(tree.pos)
 
+        case Apply(fun, args) if StackallocMethods.contains(fun.symbol) =>
+          val tpe = fun match {
+            case TypeApply(_, Seq(argTpe)) => widenDealiasType(argTpe.tpe)
+          }
+          tree.updateAttachment(NonErasedType(tpe))
+
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>
           enterOwner(OwnerKind.EnumImpl) { super.transform(cldef) }

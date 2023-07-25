@@ -6,6 +6,7 @@ import scala.scalanative.unsigned._
 
 object Intrinsics {
 
+  def stackalloc(cls: Class[_], size: Any): RawPtr = intrinsic
   // /** Intrinsified stack allocation of n bytes. */
   // def stackalloc(ofSize: RawSize): RawPtr = intrinsic
 
@@ -13,12 +14,10 @@ object Intrinsics {
   // def stackalloc(ofSize: RawSize, elements: RawSize): RawPtr = intrinsic
 
   /** Intrinsified stack allocation of n bytes. */
-  def stackalloc[T]: RawPtr = intrinsic
-  def stackalloc(cls: Class[_]): RawPtr = intrinsic
+  def stackalloc[T](): RawPtr = intrinsic
 
   /** Intrinsified stack allocation of ofSize * elements bytes. */
   def stackalloc[T](size: RawSize): RawPtr = intrinsic
-  def stackalloc(cls: Class[_], size: RawSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic

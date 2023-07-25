@@ -20,8 +20,8 @@ object SymbolFormatter {
     var pos = 0
     val ident =
       fromRawPtr[CChar](
-        Intrinsics.stackalloc(
-          fromRawUSize(Intrinsics.sizeOf[CChar]) * 1024.toUSize
+        Intrinsics.stackalloc[CChar](
+          Intrinsics.castIntToRawSizeUnsigned(1024)
         )
       )
     classNameOut(0) = 0.toByte

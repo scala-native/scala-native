@@ -66,6 +66,13 @@ class PostInlineNativeInterop extends PluginPhase {
             dealiasTypeMapper(tree.tpe.finalResultType)
         tree.withAttachment(NirDefinitions.NonErasedTypes, paramTypes)
 
+      case Apply(fun, args)
+          if defnNir.Intrinsics_stackallocAlts.contains(fun.symbol) =>
+        val tpe = fun match {
+          case TypeApply(_, Seq(argTpe)) => dealiasTypeMapper(argTpe.tpe)
+        }
+        tree.withAttachment(NirDefinitions.NonErasedType, tpe)
+
       case _ => tree
 
   }

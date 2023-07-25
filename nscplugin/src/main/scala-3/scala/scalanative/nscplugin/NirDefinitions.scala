@@ -45,6 +45,16 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val USizeClass = requiredClass("scala.scalanative.unsigned.USize")
   @tu lazy val RawSizeClass = requiredClass("scala.scalanative.runtime.RawSize")
 
+  @tu lazy val USizeModule = requiredModule("scala.scalanative.unsigned.USize")
+  @tu lazy val USize_fromUByte = USizeModule.requiredMethod("fromUByte")
+  @tu lazy val USize_fromUShort = USizeModule.requiredMethod("fromUShort")
+  @tu lazy val USize_fromUInt = USizeModule.requiredMethod("fromUInt")
+
+  @tu lazy val SizeModule = requiredModule("scala.scalanative.unsafe.Size")
+  @tu lazy val Size_fromByte = SizeModule.requiredMethod("fromByte")
+  @tu lazy val Size_fromShort = SizeModule.requiredMethod("fromShort")
+  @tu lazy val Size_fromInt = SizeModule.requiredMethod("fromInt")
+
   // Pointers
   @tu lazy val PtrClass = requiredClass("scala.scalanative.unsafe.Ptr")
   @tu lazy val RawPtrClass = requiredClass("scala.scalanative.runtime.RawPtr")
@@ -76,6 +86,14 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimePackageClass = requiredModule("scala.scalanative.runtime.package")
   @tu lazy val RuntimePackage_enterMonitor = RuntimePackageClass.requiredMethod("enterMonitor")
   @tu lazy val RuntimePackage_exitMonitor = RuntimePackageClass.requiredMethod("exitMonitor")
+  @tu lazy val RuntimePackage_fromRawSize = RuntimePackageClass.requiredMethod("fromRawSize")
+  @tu lazy val RuntimePackage_fromRawUSize = RuntimePackageClass.requiredMethod("fromRawUSize")
+  
+  @tu lazy val RuntimePackage_toRawSizeAlts = RuntimePackageClass.info
+    .member(termName("toRawSize"))
+    .alternatives
+    .map(_.symbol)
+    .ensuring(_.size == 2)
 
   @tu lazy val RuntimeSafeZoneAllocatorModuleRef = requiredModuleRef("scala.scalanative.runtime.SafeZoneAllocator")
   @tu lazy val RuntimeSafeZoneAllocatorModule = RuntimeSafeZoneAllocatorModuleRef.symbol

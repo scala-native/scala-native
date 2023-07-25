@@ -24,6 +24,17 @@ trait NirDefinitions {
     lazy val RawSizeClass = getRequiredClass(
       "scala.scalanative.runtime.RawSize"
     )
+
+    lazy val USizeModule = getRequiredModule("scala.scalanative.unsigned.USize")
+    lazy val USize_fromUByte = getDecl(USizeModule, TermName("fromUByte"))
+    lazy val USize_fromUShort = getDecl(USizeModule, TermName("fromUShort"))
+    lazy val USize_fromUInt = getDecl(USizeModule, TermName("fromUInt"))
+
+    lazy val SizeModule = getRequiredModule("scala.scalanative.unsafe.Size")
+    lazy val Size_fromByte = getDecl(SizeModule, TermName("fromByte"))
+    lazy val Size_fromShort = getDecl(SizeModule, TermName("fromShort"))
+    lazy val Size_fromInt = getDecl(SizeModule, TermName("fromInt"))
+
     lazy val PtrClass = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
@@ -103,6 +114,13 @@ trait NirDefinitions {
       getDecl(RuntimePackage, TermName("enterMonitor"))
     lazy val RuntimeExitMonitorMethod =
       getDecl(RuntimePackage, TermName("exitMonitor"))
+    lazy val RuntimePackage_fromRawSize =
+      getDecl(RuntimePackage, TermName("fromRawSize"))
+    lazy val RuntimePackage_fromRawUSize =
+      getDecl(RuntimePackage, TermName("fromRawUSize"))
+    lazy val RuntimePackage_toRawSizeAlts =
+      getDecl(RuntimePackage, TermName("toRawSize")).alternatives
+        .ensuring(_.size == 2)
 
     lazy val RuntimeTypeClass = getRequiredClass(
       "scala.scalanative.runtime.Type"
@@ -202,6 +220,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethods =
       getMember(IntrinsicsModule, TermName("stackalloc")).alternatives
+    lazy val StackallocRawMethod =
+      StackallocMethods.find(_.paramss.flatten.size == 2).get
     lazy val ClassFieldRawPtrMethod =
       getMember(IntrinsicsModule, TermName("classFieldRawPtr"))
     lazy val SizeOfMethods =
