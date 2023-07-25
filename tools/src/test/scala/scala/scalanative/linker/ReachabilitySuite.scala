@@ -12,6 +12,7 @@ import scalanative.build.{ScalaNative, Logger, Discover}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 trait ReachabilitySuite {
 
@@ -95,8 +96,7 @@ trait ReachabilitySuite {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      sys
-        .props("scalanative.nativeruntime.cp")
+      ScalaNativeBuildInfo.scalalibCp
         .split(File.pathSeparator)
         .map(Paths.get(_))
 

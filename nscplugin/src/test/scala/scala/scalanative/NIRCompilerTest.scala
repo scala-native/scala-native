@@ -11,6 +11,15 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 
 class NIRCompilerTest {
 
+  private def linkWithProps(
+      sources: (String, String)*
+  ): Unit = {
+    val outDir = Files.createTempDirectory("native-test-out")
+    val compiler = NIRCompiler.getCompiler(outDir)
+    val sourcesDir = NIRCompiler.writeSources(sources.toMap)
+    compiler.compile(sourcesDir)
+  }
+
   @Test def returnCompilationProducts(): Unit = {
     val files =
       NIRCompiler { _ compile "class A" }
@@ -669,6 +678,170 @@ class NIRCompilerTest {
         case other => fail(s"Unexpected defn: ${nir.Show(other)}")
       }
     }
+  }
+
+  @Test def linktimeResolvedValsInBlocks(): Unit = {
+    val caught = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        linkWithProps(
+          "props.scala" ->
+            """package scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime
+            |   def linktimeProperty = {
+            |     val foo = 42
+            |     foo
+            |  }
+            |}""".stripMargin,
+          "main.scala" ->
+            """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty != 42) ???
+            |  }
+            |}""".stripMargin
+        )
+    )
+    // Multiple errors
+    // caught.assertTrue(getMessage.contains("Linktime resolved block can only contain other linktime resolved def defintions"))
+  }
+
+  @Test def propertyWithoutResolvedRhs(): Unit = {
+    val caught = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        linkWithProps(
+          "props.scala" ->
+            """package scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime("foo")
+            |   def linktimeProperty: Boolean = true
+            |}""".stripMargin,
+          "main.scala" ->
+            """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+        )
+    )
+    assertTrue(
+      caught.getMessage.matches(
+        "Link-time resolved property must have scala.scalanative.*resolved as body"
+      )
+    )
+  }
+
+  @Test def propertyWithNullRhs(): Unit = {
+    val caught = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        linkWithProps(
+          "props.scala" -> """
+             |package scala.scalanative
+             |object props{
+             |   @scalanative.unsafe.resolvedAtLinktime("prop")
+             |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
+             |}
+             |""".stripMargin,
+          "main.scala" -> """
+            |import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+        )
+    )
+    assertTrue(
+      caught.getMessage.matches(
+        "Link-time resolved property must have scala.scalanative.*resolved as body"
+      )
+    )
+  }
+
+  @Test def propertyWithNullName(): Unit = {
+    val caught = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        linkWithProps(
+          "props.scala" ->
+            """package scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime(withName = null.asInstanceOf[String])
+            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+            |}""".stripMargin,
+          "main.scala" ->
+            """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+        )
+    )
+    assertEquals(
+      "Name used to resolve link-time property needs to be non-null literal constant",
+      caught.getMessage()
+    )
+  }
+
+  @Test def propertyNoResultType(): Unit = {
+    val caught = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        linkWithProps(
+          "props.scala" ->
+            """package scala.scalanative
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime("foo")
+            |   def linktimeProperty = scala.scalanative.unsafe.resolved
+            |}""".stripMargin,
+          "main.scala" ->
+            """import scala.scalanative.props._
+            |object Main {
+            |  def main(args: Array[String]): Unit = {
+            |    if(linktimeProperty) ???
+            |  }
+            |}""".stripMargin
+        )
+    )
+    assertEquals(
+      "value resolved at link-time linktimeProperty needs result type",
+      caught.getMessage()
+    )
+  }
+
+  @Test def mixLinktimeAndRuntimeConditions(): Unit = {
+    val caught = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        linkWithProps(
+          "props.scala" ->
+            """package scala.scalanative
+            |
+            |object props{
+            |   @scalanative.unsafe.resolvedAtLinktime("prop")
+            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+            |
+            |   def runtimeProperty = true
+            |}
+            |""".stripMargin,
+          "main.scala" -> """
+           |import scala.scalanative.props._
+           |object Main {
+           |  def main(args: Array[String]): Unit = {
+           |    if(linktimeProperty || runtimeProperty) ??? 
+           |  }
+           |}""".stripMargin
+        )
+    )
+    assertEquals(
+      "Mixing link-time and runtime conditions is not allowed",
+      caught.getMessage()
+    )
   }
 
 }
