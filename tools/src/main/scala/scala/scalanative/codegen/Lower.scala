@@ -1804,7 +1804,7 @@ object Lower {
   )
 
   val memsetSig =
-    Type.Function(Seq(Type.Ptr, Type.Int, Type.Size), Type.Unit)
+    Type.Function(Seq(Type.Ptr, Type.Int, Type.Size), Type.Ptr)
   val memset = Val.Global(extern("memset"), Type.Ptr)
 
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
