@@ -11,10 +11,10 @@ object Intrinsics {
     def sizeOf(cls: Class[_]): RawSize = intrinsic
   }
 
-  /** Intrinsified stack allocation of n bytes. */
+  /** Intrinsified stack allocation of sizeOf[T] bytes. */
   def stackalloc[T](): RawPtr = intrinsic
 
-  /** Intrinsified stack allocation of ofSize * elements bytes. */
+  /** Intrinsified stack allocation of sizeOf[T] * size bytes. */
   def stackalloc[T](size: RawSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
