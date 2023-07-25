@@ -248,7 +248,7 @@ private[lang] class UnixProcessGen2 private (
       throw new IOException(msg)
     }
 
-    val fds = stackalloc[struct_pollfd](1.toUInt)
+    val fds = stackalloc[struct_pollfd](1)
     (fds + 0).fd = pidFd
     (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
 
@@ -373,11 +373,11 @@ object UnixProcessGen2 {
   }
 
   private def forkChild(builder: ProcessBuilder)(implicit z: Zone): Process = {
-    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
-    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val infds: Ptr[CInt] = stackalloc[CInt](2)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
       if (builder.redirectErrorStream()) outfds
-      else stackalloc[CInt](2.toUInt)
+      else stackalloc[CInt](2)
 
     throwOnError(unistd.pipe(infds), s"Couldn't create infds pipe.")
     throwOnError(unistd.pipe(outfds), s"Couldn't create outfds pipe.")
@@ -476,11 +476,11 @@ object UnixProcessGen2 {
   )(implicit z: Zone): Process = {
     val pidPtr = stackalloc[pid_t]()
 
-    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
-    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val infds: Ptr[CInt] = stackalloc[CInt](2)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
       if (builder.redirectErrorStream()) outfds
-      else stackalloc[CInt](2.toUInt)
+      else stackalloc[CInt](2)
 
     throwOnError(unistd.pipe(infds), s"Couldn't create infds pipe.")
     throwOnError(unistd.pipe(outfds), s"Couldn't create outfds pipe.")
@@ -661,7 +661,7 @@ object UnixProcessGen2 {
   private def nullTerminate(
       list: java.util.List[String]
   )(implicit z: Zone) = {
-    val res: Ptr[CString] = alloc[CString]((list.size() + 1).toUInt)
+    val res: Ptr[CString] = alloc[CString]((list.size() + 1))
     val li = list.listIterator()
     while (li.hasNext()) {
       !(res + li.nextIndex()) = toCString(li.next())

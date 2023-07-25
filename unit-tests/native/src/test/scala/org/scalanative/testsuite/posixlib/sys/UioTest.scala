@@ -133,7 +133,7 @@ class UioTest {
 
         // Design Note: Gather write more than 2 buffers
         val nOutIovs = 3
-        val outVec = alloc[iovec](nOutIovs.toUSize)
+        val outVec = alloc[iovec](nOutIovs)
 
         outVec(0).iov_base = toCString(outData0)
         outVec(0).iov_len = outData0.length.toUSize
@@ -175,19 +175,19 @@ class UioTest {
          */
 
         val inData0Size = outData0.size + outData1.size
-        val inData0: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1).toUSize)
+        val inData0: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1))
 
         val inData1Size = 1.toSize // odd read, just to throw things off.
-        val inData1: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1).toUSize)
+        val inData1: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1))
 
         val inData2Size = (verse4.length - 1).toSize
-        val inData2: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1).toUSize)
+        val inData2: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1))
 
         val inData3Size = verse5.length.toSize
-        val inData3: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1).toUSize)
+        val inData3: Ptr[Byte] = alloc[Byte]((inData0Size.toInt + 1))
 
         val nInIovs = 4
-        val inVec = alloc[iovec](nInIovs.toUSize)
+        val inVec = alloc[iovec](nInIovs)
 
         inVec(0).iov_base = inData0
         inVec(0).iov_len = inData0Size.toUInt

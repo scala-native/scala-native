@@ -24,7 +24,7 @@ class UnixFileSystemProvider extends GenericFileSystemProvider {
   }
 
   private def getUserDir(): String = {
-    val buff: Ptr[CChar] = stackalloc[CChar](4096.toUInt)
+    val buff: Ptr[CChar] = stackalloc[CChar](4096)
     val res = unistd.getcwd(buff, 4095.toUInt)
     if (res == null)
       throw UnixException(

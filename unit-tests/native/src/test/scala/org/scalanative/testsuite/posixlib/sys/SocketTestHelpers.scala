@@ -297,7 +297,7 @@ object SocketTestHelpers {
     // timeout is in milliseconds.
 
     if (isWindows) {
-      val fds = stackalloc[WSAPollFd](1.toUInt)
+      val fds = stackalloc[WSAPollFd](1)
       fds.socket = fd.toPtr[Byte]
       fds.events = WinSocketApiExt.POLLIN
 
@@ -310,7 +310,7 @@ object SocketTestHelpers {
         fail(s"poll for input failed - $reason")
       }
     } else {
-      val fds = stackalloc[struct_pollfd](1.toUInt)
+      val fds = stackalloc[struct_pollfd](1)
       (fds + 0).fd = fd
       (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
 

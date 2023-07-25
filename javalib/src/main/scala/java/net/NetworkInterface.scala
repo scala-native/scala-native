@@ -303,7 +303,7 @@ object NetworkInterface {
   }
 
   private def unixGetByIndex(index: Int): NetworkInterface = {
-    val buf = stackalloc[Byte](IF_NAMESIZE.toUInt)
+    val buf = stackalloc[Byte](IF_NAMESIZE)
 
     val ret = if_indextoname(index.toUInt, buf)
 

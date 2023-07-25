@@ -273,7 +273,7 @@ object InetAddress {
   private def formatIn4Addr(pb: Ptr[Byte]): String = {
     // By contract, pb isInstanceOf[Ptr[in_addr]]
     val dstSize = INET_ADDRSTRLEN
-    val dst = stackalloc[Byte](dstSize.toUSize)
+    val dst = stackalloc[Byte](dstSize)
 
     val result = inet_ntop(AF_INET, pb, dst, dstSize.toUInt)
 
