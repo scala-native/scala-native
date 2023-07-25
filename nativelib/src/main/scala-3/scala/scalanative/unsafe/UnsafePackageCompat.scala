@@ -2,6 +2,7 @@ package scala.scalanative.unsafe
 
 import scala.scalanative.runtime._
 import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt, *}
+import scala.compiletime.*
 
 private[scalanative] trait UnsafePackageCompat {
   private[scalanative] given reflect.ClassTag[Array[?]] =
@@ -35,10 +36,23 @@ private[scalanative] trait UnsafePackageCompat {
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
-  inline def alloc[T](inline n: CSize)(using zone: Zone): Ptr[T] = {
-    val size = sizeof[T] * n
+  inline def alloc[T](inline n: CSize)(using zone: Zone): Ptr[T] =
+    alloc[T](toRawSize(n))
+
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
+   */
+  inline def alloc[T](inline n: Int)(using zone: Zone): Ptr[T] =
+    alloc[T](validateSize(n))
+
+  private inline def alloc[T](
+      inline elements: RawSize
+  )(using zone: Zone): Ptr[T] = {
+    val elemSize = Intrinsics.sizeOf[T]
+    val rawSize = castIntToRawSizeUnsigned(toInt(elemSize) * toInt(elements))
+    val size = unsignedOf(rawSize)
     val ptr = zone.alloc(size)
-    libc.memset(ptr, 0, size)
+    libc.memset(ptr.rawptr, 0, rawSize)
     ptr.asInstanceOf[Ptr[T]]
   }
 
@@ -51,11 +65,21 @@ private[scalanative] trait UnsafePackageCompat {
   }
 
   /** Stack allocate and zero-initialize n values of given type */
-  inline def stackalloc[T](inline n: CSize): Ptr[T] = {
-    val size = sizeof[T] * n
-    val ptr = fromRawPtr[T](Intrinsics.stackalloc(size))
+  inline def stackalloc[T](n: CSize): Ptr[T] =
+    stackalloc[T](toRawSize(n))
+
+  /** Stack allocate and zero-initialize n values of given type */
+  inline def stackalloc[T](n: Int): Ptr[T] =
+    stackalloc[T](validateSize(n))
+
+  private[UnsafePackageCompat] inline def stackalloc[T](
+      elements: RawSize
+  ): Ptr[T] = {
+    val elemSize = Intrinsics.sizeOf[T]
+    val ptr = Intrinsics.stackalloc(elemSize, elements)
+    val size = castIntToRawSizeUnsigned(toInt(elemSize) * toInt(elements))
     libc.memset(ptr, 0, size)
-    ptr
+    fromRawPtr[T](ptr)
   }
 
   /** Scala Native unsafe extensions to the standard Byte. */
@@ -80,4 +104,45 @@ private[scalanative] trait UnsafePackageCompat {
     inline def toSize: Size = Size.valueOf(castLongToRawSize(value))
   }
 
+  // private[UnsafePackageCompat] inline def validatedRawSize(size: Int): RawSize =
+  //   inline constValueOpt[size.type] match {
+  //     case None =>
+  //       // Runtime check
+  //       require(size > 0, "Cannot allocate memory of negative size")
+  //       castIntToRawSizeUnsigned(size)
+  //     case Some(0) => error("Allocatation of size 0 is fruitless")
+  //     case _ =>
+  //       inline if size < 0 then error("Cannot allocate memory of negative size")
+  //       else castIntToRawSizeUnsigned(size)
+  //   }
+
+  private[UnsafePackageCompat] inline def validateSize(size: Int): RawSize = ${
+    UnsafePackageCompat.validatedSize('size)
+  }
+
+}
+
+private object UnsafePackageCompat {
+  import scala.quoted.*
+  def validatedSize(size: Expr[Int])(using Quotes): Expr[RawSize] = {
+    import quotes.*
+    import quotes.reflect.*
+    val validatedSize = size.asTerm match {
+      case lit @ Literal(IntConstant(n)) =>
+        if n == 0 then
+          report.errorAndAbort("Allocatation of size 0 is fruitless", size)
+        else if n < 0 then
+          report.errorAndAbort("Cannot allocate memory of negative size", size)
+        size
+      case _ =>
+        '{
+          if ($size < 0)
+            throw new IllegalArgumentException(
+              "Cannot allocate memory of negative size"
+            )
+          $size
+        }
+    }
+    '{ Intrinsics.castIntToRawSizeUnsigned($validatedSize) }
+  }
 }
