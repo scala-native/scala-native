@@ -122,8 +122,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             .setPos(tree.pos)
 
         // alignmentOf[T] -> alignmentOf(classOf[T]) + attachment
-        case TypeApply(fun, List(tpeArg))
-            if fun.symbol == AlignmentOfMethod =>
+        case TypeApply(fun, List(tpeArg)) if fun.symbol == AlignmentOfMethod =>
           val tpe = widenDealiasType(tpeArg.tpe)
           typer
             .typed {
