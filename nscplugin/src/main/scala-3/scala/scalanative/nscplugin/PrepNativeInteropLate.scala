@@ -75,7 +75,7 @@ class PostInlineNativeInterop extends PluginPhase {
         if (tpe.isAny || tpe.isNothingType || tpe.isNullType ||
             tpeSym.isAbstractType && !tpeSym.isAllOf(DeferredType | TypeParam))
           report.error(
-            s"Stackalloc requires concreate type but ${tpe.show} found",
+            s"Stackalloc requires concrete type but ${tpe.show} found",
             tree.srcPos
           )
         tree.withAttachment(NirDefinitions.NonErasedType, tpe)

@@ -17,7 +17,7 @@ class StackallocTest {
     scalaVersion.startsWith("3.")
   )
 
-  val StackallocConcreateType = "Stackalloc requires concreate type"
+  val StackallocConcreteType = "Stackalloc requires concrete type"
   @Test def noType(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
@@ -31,10 +31,10 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreateType))
+    assertTrue(err.getMessage().contains(StackallocConcreteType))
   }
 
-  @Test def inferedType(): Unit = NIRCompiler(
+  @Test def inferredType(): Unit = NIRCompiler(
     _.compile(
       """import scala.scalanative.unsafe._
           |object Test {
@@ -60,7 +60,7 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreateType))
+    assertTrue(err.getMessage().contains(StackallocConcreteType))
   }
 
   @Test def inlineGenericParamType(): Unit = {
@@ -90,7 +90,7 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreateType))
+    assertTrue(err.getMessage().contains(StackallocConcreteType))
   }
 
   @Test def nothing(): Unit = {
@@ -106,7 +106,7 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreateType))
+    assertTrue(err.getMessage().contains(StackallocConcreteType))
   }
 
   @Test def anyAlias(): Unit = {
@@ -124,7 +124,7 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreateType))
+    assertTrue(err.getMessage().contains(StackallocConcreteType))
   }
 
   @Test def abstractType(): Unit = {
@@ -142,7 +142,7 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreateType))
+    assertTrue(err.getMessage().contains(StackallocConcreteType))
   }
 
 }

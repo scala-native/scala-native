@@ -138,7 +138,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           if (tpe.isAny || tpe.isNothing)
             reporter.error(
               tree.pos,
-              s"Stackalloc requires concreate type, but ${show(tpe)} found"
+              s"Stackalloc requires concrete type, but ${show(tpe)} found"
             )
           tree.updateAttachment(NonErasedType(tpe))
 

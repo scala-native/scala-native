@@ -116,7 +116,7 @@ private object UnsafePackageCompat {
     val validatedSize = size.asTerm match {
       case lit @ Literal(IntConstant(n)) =>
         if n == 0 then
-          report.errorAndAbort("Allocatation of size 0 is fruitless", size)
+          report.errorAndAbort("Allocation of size 0 is fruitless", size)
         else if n < 0 then
           report.errorAndAbort("Cannot allocate memory of negative size", size)
         else size

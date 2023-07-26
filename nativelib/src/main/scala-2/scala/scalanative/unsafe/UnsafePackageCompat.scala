@@ -161,7 +161,7 @@ private object MacroImpl {
     size match {
       case lit @ Literal(Constant(size: Int)) =>
         if (size == 0)
-          c.error(c.enclosingPosition, "Allocatation of size 0 is fruitless")
+          c.error(c.enclosingPosition, "Allocation of size 0 is fruitless")
         else if (size < 0)
           c.error(
             c.enclosingPosition,
