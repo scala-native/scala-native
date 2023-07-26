@@ -2,7 +2,7 @@ package scala.scalanative.unsafe
 
 import java.nio.file.Files
 
-import org.junit.Test
+import org.junit._
 import org.junit.Assert._
 import org.junit.Assume._
 
@@ -12,8 +12,13 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.scalanative.NIRCompiler
 
 class StackallocTest {
+  def assumeIsScala3() = assumeTrue(
+    "Not possible to express in Scala 2",
+    scalaVersion.startsWith("3.")
+  )
+
   val StackallocConcreateType = "Stackalloc requires concreate type"
-  @Test def stackallocNoType(): Unit = {
+  @Test def noType(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
       () =>
@@ -29,7 +34,7 @@ class StackallocTest {
     assertTrue(err.getMessage().contains(StackallocConcreateType))
   }
 
-  @Test def stackallocInferedType(): Unit = NIRCompiler(
+  @Test def inferedType(): Unit = NIRCompiler(
     _.compile(
       """import scala.scalanative.unsafe._
           |object Test {
@@ -39,7 +44,40 @@ class StackallocTest {
     )
   )
 
-  @Test def stackallocAny(): Unit = {
+  @Ignore("Unable to distinguish inlined generic param from non-inlined")
+  @Test def genericParamType(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.unsafe._
+            |object Test {
+            |  def create[T]() = stackalloc[T]()
+            |  val x = create[Int]()
+            |  val y = create[String]()
+            |}""".stripMargin
+          )
+        )
+    )
+    assertTrue(err.getMessage().contains(StackallocConcreateType))
+  }
+
+  @Test def inlineGenericParamType(): Unit = {
+    assumeIsScala3()
+    NIRCompiler(
+      _.compile(
+        """import scala.scalanative.unsafe._
+          |object Test {
+          |  inline def create[T]() = stackalloc[T]()
+          |  val x = create[Int]()
+          |  val y = create[String]()
+          |}""".stripMargin
+      )
+    )
+  }
+
+  @Test def any(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
       () =>
@@ -55,7 +93,7 @@ class StackallocTest {
     assertTrue(err.getMessage().contains(StackallocConcreateType))
   }
 
-  @Test def stackallocNothing(): Unit = {
+  @Test def nothing(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
       () =>
@@ -71,7 +109,7 @@ class StackallocTest {
     assertTrue(err.getMessage().contains(StackallocConcreateType))
   }
 
-  @Test def stackallocAnyAlias(): Unit = {
+  @Test def anyAlias(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
       () =>
@@ -89,11 +127,8 @@ class StackallocTest {
     assertTrue(err.getMessage().contains(StackallocConcreateType))
   }
 
-  @Test def stackallocAbstractType(): Unit = {
-    assumeTrue(
-      "Not possible to express in Scala 2",
-      scalaVersion.startsWith("3.")
-    )
+  @Test def abstractType(): Unit = {
+    assumeIsScala3()
     val err = assertThrows(
       classOf[CompilationFailedException],
       () =>

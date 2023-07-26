@@ -1457,12 +1457,7 @@ object Lower {
                 unwind
               )
           }
-          buf.call(
-            memsetSig,
-            memset,
-            Seq(pointee, Val.Int(0), size, nir.Val.False),
-            unwind
-          )
+          buf.call(memsetSig, memset, Seq(pointee, Val.Int(0), size), unwind)
       }
     }
 

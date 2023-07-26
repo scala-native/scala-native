@@ -10,10 +10,10 @@ import core.Definitions
 import core.Names._
 import core.Symbols._
 import core.Types._
+import core.Flags._
 import core.StdNames._
 import core.Constants.Constant
 import NirGenUtil.ContextCached
-import dotty.tools.dotc.core.Flags
 
 /** This phase does:
  *    - handle TypeApply -> Apply conversion for intrinsic methods
@@ -71,7 +71,9 @@ class PostInlineNativeInterop extends PluginPhase {
         val tpe = fun match {
           case TypeApply(_, Seq(argTpe)) => dealiasTypeMapper(argTpe.tpe)
         }
-        if (tpe.isAny || tpe.isNothingType || tpe.isNullType || tpe.typeSymbol.isAbstractOrAliasType)
+        val tpeSym = tpe.typeSymbol
+        if (tpe.isAny || tpe.isNothingType || tpe.isNullType ||
+            tpeSym.isAbstractType && !tpeSym.isAllOf(DeferredType | TypeParam))
           report.error(
             s"Stackalloc requires concreate type but ${tpe.show} found",
             tree.srcPos
