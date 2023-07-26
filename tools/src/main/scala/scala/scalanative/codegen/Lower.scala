@@ -1449,13 +1449,24 @@ object Lower {
         case sizeV =>
           val elemSize = MemoryLayout.sizeOf(ty)
           val size = sizeV match {
-            case Val.Size(v)        => Val.Size(v * elemSize)
-            case _ if elemSize == 1 => sizeV
+            case Val.Size(v) => Val.Size(v * elemSize)
             case _ =>
-              buf.let(
-                Op.Bin(Bin.Imul, Type.Size, sizeV, Val.Size(elemSize)),
-                unwind
-              )
+              val asSize = sizeV.ty match {
+                case Type.FixedSizeI(width, _) =>
+                  if (width == platform.sizeOfPtrBits) sizeV
+                  else if (width > platform.sizeOfPtrBits)
+                    buf.conv(Conv.Trunc, Type.Size, sizeV, unwind)
+                  else
+                    buf.conv(Conv.Zext, Type.Size, sizeV, unwind)
+
+                case _ => sizeV
+              }
+              if (elemSize == 1) asSize
+              else
+                buf.let(
+                  Op.Bin(Bin.Imul, Type.Size, asSize, Val.Size(elemSize)),
+                  unwind
+                )
           }
           buf.call(memsetSig, memset, Seq(pointee, Val.Int(0), size), unwind)
       }
