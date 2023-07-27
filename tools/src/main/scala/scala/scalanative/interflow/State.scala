@@ -75,7 +75,7 @@ final class State(block: Local) {
       value
     }
   }
-   def emit(op: Op, idempotent: Boolean = false)(implicit
+  def emit(op: Op, idempotent: Boolean = false)(implicit
       position: Position
   ): Val = emit(op, None, idempotent)
 
@@ -295,7 +295,12 @@ final class State(block: Local) {
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values, zone) =>
-        emit.classalloc(cls.name, Next.None, zone.map(escapedVal))
+        emit.classalloc(
+          cls.name,
+          Next.None,
+          zone.map(escapedVal),
+          localName = debugNames.get(addr)
+        )
       case DelayedInstance(op) =>
         reachOp(op)
         // log(s"delayed: ${addr} - ${debugNames.get(addr)} - ${op.show}")
@@ -358,8 +363,7 @@ final class State(block: Local) {
       case Val.Virtual(addr)       => reachAddr(addr)
       case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
       case Val.StructValue(vals)   => vals.foreach(reachVal)
-      // case Val.Local(_, _, name) =>  println(name)
-      case _                       => ()
+      case _ => ()
     }
 
     def reachOp(op: Op): Unit = op match {

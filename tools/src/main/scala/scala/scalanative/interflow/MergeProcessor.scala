@@ -103,13 +103,15 @@ final class MergeProcessor(
             }
             val id = mergeFresh()
             val paramty = Sub.lub(materialized.map(_.ty), bound)
-            val name = materialized
+            val _names = materialized
               .collect { case Val.Local(_, _, Some(name)) => name }
               // .take(0)
               .toSet
-              .ensuring(_.size <= 1, "More then 1 name found")
-              .headOption
-            name.map("merge name: " + _).foreach(println)
+
+
+            if(_names.size > 1) println(s"More then 1 name found: ${_names}")
+            val name = _names.headOption
+            // name.map("merge name: " + _).foreach(println)
             val param = Val.Local(id, paramty, name)
             mergePhis += MergePhi(param, names.zip(materialized))
             param

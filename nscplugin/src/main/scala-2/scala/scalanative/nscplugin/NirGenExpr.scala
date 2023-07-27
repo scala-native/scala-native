@@ -1,7 +1,7 @@
 package scala.scalanative
 package nscplugin
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, switch}
 import scala.collection.mutable
 import scala.tools.nsc
 import scalanative.nir._
@@ -1163,35 +1163,38 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val sym = app.symbol
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
-      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code)) {
-        genSimpleOp(app, receiver :: args, code)
-      } else if (code == CONCAT)
-        genStringConcat(receiver, args.head)
-      else if (code == HASH) genHashCode(args.head)
-      else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
-      else if (nirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
-      else if (nirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app, code)
-      else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app, code)
-      else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
-      else if (nirPrimitives.isRawSizeCastOp(code))
-        genRawSizeCastOp(app, args.head, code)
-      else if (isCoercion(code)) genCoercion(app, receiver, code)
-      else if (code == SYNCHRONIZED) {
-        val Apply(Select(receiverp, _), List(argp)) = app
-        genSynchronized(receiverp, argp)(app.pos)
-      } else if (code == STACKALLOC) genStackalloc(app)
-      else if (code == CQUOTE) genCQuoteOp(app)
-      else if (code == BOXED_UNIT) Val.Unit
-      else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE)
-        genUnsignedOp(app, code)
-      else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
-      else if (code == SIZE_OF) genSizeOf(app)
-      else if (code == ALIGNMENT_OF) genAlignmentOf(app)
-      else {
-        abort(
-          "Unknown primitive operation: " + sym.fullName + "(" +
-            fun.symbol.simpleName + ") " + " at: " + (app.pos)
-        )
+      (code: @switch) match {
+        case CONCAT                 => genStringConcat(receiver, args.head)
+        case HASH                   => genHashCode(args.head)
+        case CFUNCPTR_APPLY         => genCFuncPtrApply(app, code)
+        case CFUNCPTR_FROM_FUNCTION => genCFuncFromScalaFunction(app)
+        case SYNCHRONIZED =>
+          val Apply(Select(receiverp, _), List(argp)) = app
+          genSynchronized(receiverp, argp)(app.pos)
+        case STACKALLOC         => genStackalloc(app)
+        case CLASS_FIELD_RAWPTR => genClassFieldRawPtr(app)
+        case SIZE_OF            => genSizeOf(app)
+        case ALIGNMENT_OF       => genAlignmentOf(app)
+        case CQUOTE             => genCQuoteOp(app)
+        case BOXED_UNIT         => Val.Unit
+        case code =>
+          if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
+            genSimpleOp(app, receiver :: args, code)
+          else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
+          else if (nirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
+          else if (nirPrimitives.isRawPtrCastOp(code))
+            genRawPtrCastOp(app, code)
+          else if (nirPrimitives.isRawSizeCastOp(code))
+            genRawSizeCastOp(app, args.head, code)
+          else if (isCoercion(code)) genCoercion(app, receiver, code)
+          else if (code >= DIV_UINT && code <= ULONG_TO_DOUBLE)
+            genUnsignedOp(app, code)
+          else {
+            abort(
+              "Unknown primitive operation: " + sym.fullName + "(" +
+                fun.symbol.simpleName + ") " + " at: " + (app.pos)
+            )
+          }
       }
     }
 

@@ -1044,39 +1044,43 @@ trait NirGenExpr(using Context) {
 
       val sym = app.symbol
       val code = nirPrimitives.getPrimitive(app, receiver.tpe)
-      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
-        genSimpleOp(app, receiver :: args, code)
-      else if (code == THROW) genThrow(app, args)
-      else if (code == CONCAT) genStringConcat(receiver, args.head)
-      else if (code == HASH) genHashCode(args.head)
-      else if (code == BOXED_UNIT) Val.Unit
-      else if (code == SYNCHRONIZED) genSynchronized(receiver, args.head)
-      else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
-      else if (isCoercion(code)) genCoercion(app, receiver, code)
-      else if (NirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
-      else if (NirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app)
-      else if (NirPrimitives.isRawSizeCastOp(code)) genRawSizeCastOp(app, code)
-      else if (NirPrimitives.isUnsignedOp(code)) genUnsignedOp(app, code)
-      else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
-      else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
-      else if (code == STACKALLOC) genStackalloc(app)
-      else if (code == SAFEZONE_ALLOC) genSafeZoneAlloc(app)
-      else if (code == CQUOTE) genCQuoteOp(app)
-      else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
-      else if (code == SIZE_OF) genSizeOf(app)
-      else if (code == ALIGNMENT_OF) genAlignmentOf(app)
-      else if (code == REFLECT_SELECTABLE_SELECTDYN)
-        // scala.reflect.Selectable.selectDynamic
-        genReflectiveCall(app, isSelectDynamic = true)
-      else if (code == REFLECT_SELECTABLE_APPLYDYN)
-        // scala.reflect.Selectable.applyDynamic
-        genReflectiveCall(app, isSelectDynamic = false)
-      else {
-        report.error(
-          s"Unknown primitive operation: ${sym.fullName}(${fun.symbol.showName})",
-          app.sourcePos
-        )
-        Val.Null
+      def arg = args.head
+
+      (code: @switch) match {
+        case THROW                  => genThrow(app, args)
+        case CONCAT                 => genStringConcat(receiver, arg)
+        case HASH                   => genHashCode(arg)
+        case BOXED_UNIT             => Val.Unit
+        case SYNCHRONIZED           => genSynchronized(receiver, arg)
+        case CFUNCPTR_APPLY         => genCFuncPtrApply(app)
+        case CFUNCPTR_FROM_FUNCTION => genCFuncFromScalaFunction(app)
+        case STACKALLOC             => genStackalloc(app)
+        case SAFEZONE_ALLOC         => genSafeZoneAlloc(app)
+        case CQUOTE                 => genCQuoteOp(app)
+        case CLASS_FIELD_RAWPTR     => genClassFieldRawPtr(app)
+        case SIZE_OF                => genSizeOf(app)
+        case ALIGNMENT_OF           => genAlignmentOf(app)
+        case REFLECT_SELECTABLE_SELECTDYN =>
+          genReflectiveCall(app, isSelectDynamic = true)
+        case REFLECT_SELECTABLE_APPLYDYN =>
+          genReflectiveCall(app, isSelectDynamic = false)
+        case _ =>
+          if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
+            genSimpleOp(app, receiver :: args, code)
+          else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
+          else if (isCoercion(code)) genCoercion(app, receiver, code)
+          else if (NirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
+          else if (NirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app)
+          else if (NirPrimitives.isRawSizeCastOp(code))
+            genRawSizeCastOp(app, code)
+          else if (NirPrimitives.isUnsignedOp(code)) genUnsignedOp(app, code)
+          else {
+            report.error(
+              s"Unknown primitive operation: ${sym.fullName}(${fun.symbol.showName})",
+              app.sourcePos
+            )
+            Val.Null
+          }
       }
     }
 
