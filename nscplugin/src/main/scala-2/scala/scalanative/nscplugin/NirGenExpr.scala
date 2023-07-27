@@ -2377,7 +2377,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val toty = genType(targs.head.tpe)
       def boxty = genBoxType(targs.head.tpe)
       val value = genExpr(receiverp)
-      def boxed = boxValue(receiverp.tpe, value)(receiverp.pos)
+      lazy val boxed = boxValue(receiverp.tpe, value)(receiverp.pos)
 
       implicit val pos: nir.Position = fun.pos
 
@@ -2387,10 +2387,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         case Object_asInstanceOf =>
           (fromty, toty) match {
-            case _ if boxed.ty == boxty =>
-              boxed
             case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
               genCoercion(value, fromty, toty)
+            case _ if boxed.ty =?= boxty => boxed
             case (_, Type.Nothing) =>
               val runtimeNothing = genType(RuntimeNothingClass)
               val isNullL, notNullL = fresh()

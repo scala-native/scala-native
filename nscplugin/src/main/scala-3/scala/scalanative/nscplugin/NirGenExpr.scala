@@ -1,7 +1,7 @@
 package scala.scalanative.nscplugin
 
 import scala.language.implicitConversions
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, switch}
 
 import dotty.tools.dotc.ast
 import ast.tpd._
@@ -89,6 +89,7 @@ trait NirGenExpr(using Context) {
       def isStatic = sym.owner.isStaticOwner
       def qualifier0 = qualifierOf(fun)
       def qualifier = qualifier0.withSpan(qualifier0.span.orElse(fun.span))
+      def arg = args.head
 
       fun match {
         case _: TypeApply => genApplyTypeApply(app)
@@ -118,11 +119,8 @@ trait NirGenExpr(using Context) {
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
-          else if (Erasure.Boxing.isBox(sym))
-            val arg = args.head
-            genApplyBox(arg.tpe, arg)
-          else if (Erasure.Boxing.isUnbox(sym))
-            genApplyUnbox(app.tpe, args.head)
+          else if (Erasure.Boxing.isBox(sym)) genApplyBox(arg.tpe, arg)
+          else if (Erasure.Boxing.isUnbox(sym)) genApplyUnbox(app.tpe, arg)
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
       }
     }
@@ -927,15 +925,14 @@ trait NirGenExpr(using Context) {
       val toty = genType(targs.head.tpe)
       def boxty = genBoxType(targs.head.tpe)
       val value = genExpr(receiverp)
-      def boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
+      lazy val boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
 
       if (funSym == defn.Any_isInstanceOf) buf.is(boxty, boxed, unwind)
       else if (funSym == defn.Any_asInstanceOf)
         (fromty, toty) match {
-          case _ if boxed.ty == boxty =>
-            boxed
           case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
+          case _ if boxed.ty =?= boxty => boxed
           case (_, Type.Nothing) =>
             val isNullL, notNullL = fresh()
             val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
