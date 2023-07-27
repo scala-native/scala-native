@@ -39,7 +39,7 @@ object CodeGen {
       .flatMap(emit(config, _))
   }
 
-  private def lower(
+  private[scalanative] def lower(
       defns: Seq[Defn]
   )(implicit
       meta: CodeGenMetadata,
