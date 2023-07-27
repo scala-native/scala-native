@@ -11,27 +11,21 @@ class Buffer(implicit fresh: Fresh) {
   def ++=(other: Buffer): Unit = buffer ++= other.buffer
 
   def patch(lastVal: Val)(fn: Inst.Let => Inst.Let): Option[Val.Local] = {
-    buffer.lastOption.flatMap { last =>
-      val lastIdx = buffer.size - 1
-      assert(buffer(lastIdx) eq last)
-
-      last match {
-        case v: Inst.Let =>
-          lastVal match {
-            case Val.Local(lastId, _, _) if v.id == lastId => 
-              val mapped = fn(v)
-              buffer.update(lastIdx, mapped)
-              val Inst.Let(id, name, op, _) = mapped
-              val v2 = Val.Local(id, lastVal.ty, name)
-              // §(lastVal -> v2)
-              Some(v2)
-
-            case _ => None
+    lastVal match {
+      case vLocal @ Val.Local(lastId, _, _) =>
+        val idx = buffer.lastIndexWhere {
+          case v: Inst.Let => v.id == lastId
+          case _           => false
+        }
+        if (idx < 0) None
+        else
+          Some {
+            val v = buffer(idx).asInstanceOf[Inst.Let]
+            val mapped = fn(v)
+            buffer.update(idx, mapped)
+            vLocal.copy(localName = mapped.localName)
           }
-
-        case v => 
-          None
-      }
+      case _ => None
     }
   }
 
@@ -73,18 +67,18 @@ class Buffer(implicit fresh: Fresh) {
     this += Inst.Let(id, op, unwind)
     Val.Local(id, op.resty)
   }
-  def let(id: Local, name: Option[String], op: Op, unwind: Next)(implicit
+  def let(id: Local, localName: LocalName, op: Op, unwind: Next)(implicit
       pos: Position
   ): Val = {
-    this += Inst.Let(id, name, op, unwind)
-    Val.Local(id, op.resty, name)
+    this += Inst.Let(id, localName, op, unwind)
+    Val.Local(id, op.resty, localName)
   }
   def let(op: Op, unwind: Next)(implicit pos: Position): Val =
     let(fresh(), op, unwind)
-  def let(name: Option[String], op: Op, unwind: Next)(implicit
+  def let(localName: LocalName, op: Op, unwind: Next)(implicit
       pos: Position
   ): Val =
-    let(fresh(), name, op, unwind)
+    let(fresh(), localName, op, unwind)
 
   def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next)(implicit
       pos: Position
@@ -135,10 +129,15 @@ class Buffer(implicit fresh: Fresh) {
       pos: Position
   ): Val =
     let(Op.Conv(conv, ty, value), unwind)
-  def classalloc(name: Global, unwind: Next, zone: Option[Val] = None)(implicit
+  def classalloc(
+      name: Global,
+      unwind: Next,
+      zone: Option[Val] = None,
+      localName: LocalName = None
+  )(implicit
       pos: Position
   ): Val =
-    let(Op.Classalloc(name, zone), unwind)
+    let(localName, Op.Classalloc(name, zone), unwind)
   def fieldload(ty: Type, obj: Val, name: Global, unwind: Next)(implicit
       pos: Position
   ): Val =
@@ -169,10 +168,10 @@ class Buffer(implicit fresh: Fresh) {
     let(Op.Box(ty, obj), unwind)
   def unbox(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Unbox(ty, obj), unwind)
-  def var_(ty: Type, name: Option[String], unwind: Next)(implicit
+  def var_(ty: Type, localName: LocalName, unwind: Next)(implicit
       pos: Position
   ): Val =
-    let(name, Op.Var(ty), unwind)
+    let(localName, Op.Var(ty), unwind)
   def varload(slot: Val, unwind: Next)(implicit pos: Position): Val =
     let(Op.Varload(slot), unwind)
   def varstore(slot: Val, value: Val, unwind: Next)(implicit

@@ -79,21 +79,19 @@ final class State(block: Local) {
       position: Position
   ): Val = emit(op, None, idempotent)
 
-  def emit(op: Op, name: Option[String], idempotent: Boolean)(implicit
+  def emit(op: Op, localName: LocalName, idempotent: Boolean)(implicit
       position: Position
   ): Val = {
-    // def name = Option.empty[String]//  Some("inEmit")// originalName
-
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
-        val value = emit.let(name, op, Next.None)
+        val value = emit.let(localName, op, Next.None)
         emitted(op) = value
         value
       }
     } else {
-      emit.let(name, op, Next.None)
+      emit.let(localName, op, Next.None)
     }
   }
   def deref(addr: Addr): Instance = {
@@ -304,7 +302,7 @@ final class State(block: Local) {
       case DelayedInstance(op) =>
         reachOp(op)
         // log(s"delayed: ${addr} - ${debugNames.get(addr)} - ${op.show}")
-        emit(escapedOp(op), name = debugNames.get(addr), idempotent = true)
+        emit(escapedOp(op), localName = debugNames.get(addr), idempotent = true)
       case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)
@@ -363,7 +361,7 @@ final class State(block: Local) {
       case Val.Virtual(addr)       => reachAddr(addr)
       case Val.ArrayValue(_, vals) => vals.foreach(reachVal)
       case Val.StructValue(vals)   => vals.foreach(reachVal)
-      case _ => ()
+      case _                       => ()
     }
 
     def reachOp(op: Op): Unit = op match {

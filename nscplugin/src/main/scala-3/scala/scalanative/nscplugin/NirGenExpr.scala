@@ -956,15 +956,12 @@ trait NirGenExpr(using Context) {
 
     def genValDef(vd: ValDef): Val = {
       given nir.Position = vd.span
-      val name = genLocalName(vd.symbol)
+      val localName = genLocalName(vd.symbol)
       val rhs = {
         val rhs0 = genExpr(vd.rhs)
-        // println(rhs0 -> buf.toSeq.last)
-        // println(vd.show -> rhs0)
         buf
-          .patch(rhs0)(_.copy(name = Some(name)))
+          .patch(rhs0)(_.copy(localName = Some(localName)))
           .getOrElse(rhs0)
-        // rhs0
       }
 
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
@@ -974,7 +971,6 @@ trait NirGenExpr(using Context) {
         val slot = curMethodEnv.resolve(vd.symbol)
         buf.varstore(slot, rhs, unwind)
       else
-        // val const = buf.let(Some(name), Op.Copy(rhs), unwind)
         curMethodEnv.enter(vd.symbol, rhs)
         Val.Unit
     }

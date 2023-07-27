@@ -114,19 +114,19 @@ trait Eval { self: Interflow =>
 
   def eval(
       op: Op,
-      originalName: Option[String]
+      localName: LocalName
   )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
     val out = eval(op)
     state.emit
-      .patch(out)(_.copy(name = originalName))
+      .patch(out)(_.copy(localName = localName))
       .getOrElse {
         out match {
           case v: Val.Virtual =>
-            originalName.foreach(state.debugNames.update(v.key, _))
+            localName.foreach(state.debugNames.update(v.key, _))
             out
-          case v @ Val.Local(id,_, None) => 
-            originalName.foreach(state.debugNames.update(id.id, _))
-            v.copy(name = originalName)
+          case v @ Val.Local(id, _, None) =>
+            localName.foreach(state.debugNames.update(id.id, _))
+            v.copy(localName = localName)
           case _ => out
         }
       }
@@ -489,11 +489,9 @@ trait Eval { self: Interflow =>
         Val.Local(state.newVar(ty), Type.Var(ty))
       case Op.Varload(slot) =>
         val Val.Local(local, _, name) = eval(slot): @unchecked
-        // name.foreach(v => println("load: " + v))
         state.loadVar(local)
       case Op.Varstore(slot, value) =>
         val Val.Local(local, _, name) = eval(slot): @unchecked
-        // name.foreach(v => println("store: " + v))
         state.storeVar(local, eval(value))
         Val.Unit
       case _ => util.unreachable

@@ -191,7 +191,7 @@ object Val {
   final case class Local(
       id: nir.Local,
       valty: nir.Type,
-      name: Option[java.lang.String] = None // TODO: audit default usages
+      localName: nir.LocalName = None // TODO: audit default usages
   ) extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 

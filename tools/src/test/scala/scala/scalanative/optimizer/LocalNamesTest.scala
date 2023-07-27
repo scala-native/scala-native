@@ -170,7 +170,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    assert(conv == 4.0f)
     |    assert(module != null)
     |    assert(sizeOf == alignmentOf)
-    |  }  
+    |  }
     |}""".stripMargin),
     setupConfig = _.withMode(build.Mode.ReleaseFull)
   ) {
@@ -229,7 +229,7 @@ class LocalNamesTest extends OptimizerSpec {
               checkHasLetEither[Op.Module, Op.Call]("module")
               checkHasLetEither[Op.As, Op.Copy]("as")
               if (beforeLowering) checkHasLet[Op.Is]("is")
-              else checkHasVal("is") // lowered to if-else branch, is is a param
+              else checkHasVal("is") // lowered to if-else branch, `is` should be param
               // checkHasLet[Op.Copy]("copy")
               checkHasLetEither[Op.SizeOf, Op.Copy]("sizeOf")
               checkHasLetEither[Op.AlignmentOf, Op.Copy]("alignmentOf")
@@ -250,6 +250,122 @@ class LocalNamesTest extends OptimizerSpec {
       afterLowering(config, result) {
         checkLocalNames(_, beforeLowering = false)
       }
+  }
+
+  @Test def inlinedNames(): Unit = optimize(
+    entry = "Test",
+    sources = Map("Test.scala" -> """
+    |import scala.scalanative.annotation._
+    |object Hack {
+    |  @nooptimize def run(): Any = Test.main(Array.empty[String])
+    |}
+    |
+    |object Test {
+    |  assert(Hack.run() != null)
+    |
+    |  @alwaysinline def fn1(n: Int, m: Int, p: Int): Int = {
+    |    val temp = n * m
+    |    val temp2 = (temp % 3) match {
+    |      case 0 => n
+    |      case 1 => val a = n * m; a
+    |      case 2 => val b = n * m; val c = b + n; c
+    |      case _ => 42
+    |    }
+    |    temp2 * n
+    |  }
+    |
+    |  def main(args: Array[String]): Unit = {
+    |    val argInt = args.size
+    |    val result = fn1(argInt, argInt * 2, 42)
+    |    val result2 =  fn1(argInt, argInt * 21, 37)
+    |    assert(result == result2)
+    |  }
+    |}""".stripMargin),
+    setupConfig = _.withMode(build.Mode.ReleaseFull)
+  ) {
+    // TODO: How to effectively distinguish inlined `temp2` in `result` and `result2`? Maybe concatation of owner strings, eg. `result.temp2`
+    // %3000007 <result> = imul[int] %17000001 <temp2> : int, %7000001 <argInt> : int
+    // %3000008 <result2> = imul[int] %24000001 <temp2> : int, %7000001 <argInt> : int
+
+    case (config, result) =>
+      def checkLocalNames(defns: Seq[Defn]) =
+        findDefinition(defns)
+          .ensuring(_.isDefined, "Not found tested method in linked result")
+          .map(defn => localNamesTraversal(defn) -> defn)
+          .foreach {
+            case (LocalNames(vals, lets), defn: Defn.Define) =>
+              val expectedLets =
+                Seq(
+                  "argInt",
+                  "result",
+                  "result2",
+                  "temp",
+                  "c"
+                ) // a,b are optimized out
+              val expectedVals =
+                expectedLets ++ Seq("temp2") // match merge block param
+              assertContainsAll("lets", expectedLets, lets)
+              assertContainsAll("vals", expectedVals, vals)
+              assertContainsAll("no lets duplicates", lets.distinct, lets)
+            case _ => fail()
+          }
+      checkLocalNames(result.defns)
+  }
+
+  @Test def delayedVars(): Unit = optimize(
+    entry = "Test",
+    sources = Map("Test.scala" -> """
+    | import scala.scalanative.annotation._
+    | object Hack {
+    |   @nooptimize def run(): Any = Test.main(Array.empty[String])
+    | }
+    |
+    |object Test {
+    |  @noinline @nooptimize def parse(v: String): Int = v.toInt
+    |  assert(Hack.run() != null)
+    |  def main(args: Array[String]): Unit = {
+    |    val bits = parse(args(0))
+    |    val a = parse(args(1))
+    |    val b = bits & 0xFF
+    |    var x = 0
+    |    var y = 0L
+    |    if (a == 0) {
+    |      x = bits
+    |      y = b
+    |    } else {
+    |      x = a
+    |      y = b | (1L << 0xFF)
+    |    }
+    |    assert(x != y)
+    |  }  
+    |}""".stripMargin),
+    setupConfig = _.withMode(build.Mode.ReleaseFull)
+  ) {
+    case (config, result) =>
+      def checkLocalNames(defns: Seq[Defn]) =
+        findDefinition(defns)
+          .ensuring(_.isDefined, "Not found tested method in linked result")
+          .map(defn => localNamesTraversal(defn) -> defn)
+          .foreach {
+            case (LocalNames(vals, lets), defn: Defn.Define) =>
+              val expectedLets = Seq("bits", "a", "b")
+              //  x,y vars are replsaced with params after if-else expr
+              val asParams = Seq("x", "y")
+              val expectedVals = expectedLets ++ asParams
+              assertContainsAll("lets", expectedLets, lets)
+              assertEquals("asParams", asParams, asParams.diff(lets))
+              assertContainsAll("vals", expectedVals, vals)
+              assertContainsAll("no lets duplicates", lets.distinct, lets)
+              defn.insts
+                .collectFirst {
+                  case Inst.Label(_, params)
+                      if asParams.diff(params.flatMap(_.localName)).isEmpty =>
+                    ()
+                }
+                .getOrElse(fail("not found label with expected params"))
+            case _ => fail()
+          }
+      checkLocalNames(result.defns)
   }
 
 }

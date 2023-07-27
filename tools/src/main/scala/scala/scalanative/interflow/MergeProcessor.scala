@@ -40,14 +40,14 @@ final class MergeProcessor(
   private def newMergeBlock(label: Inst.Label): MergeBlock =
     new MergeBlock(label, Local(blockFresh().id * MergeBlockOffset))
 
-  def merge(
+  private def merge(
       block: MergeBlock
   )(implicit linked: linker.Result): (Seq[MergePhi], State) = {
     import block.cfPos
     merge(block.name, block.label.params, block.incoming.toSeq.sortBy(_._1.id))
   }
 
-  def merge(
+  private def merge(
       merge: Local,
       params: Seq[Val.Local],
       incoming: Seq[(Local, (Seq[Val], State))]
@@ -72,12 +72,10 @@ final class MergeProcessor(
             values.zipWithIndex.map {
               case (param: Val.Local, i) =>
                 MergePhi(param, Seq.empty[(Local, Val)])
-              case _ =>
-                unreachable
+              case _ => unreachable
             }
-          } else {
-            Seq.empty
-          }
+          } else Seq.empty
+
         (phis, newstate)
       case _ =>
         val headState = states.head
@@ -90,7 +88,12 @@ final class MergeProcessor(
         val mergeEmitted = mutable.AnyRefMap.empty[Op, Val]
         val newEscapes = mutable.Set.empty[Addr]
 
-        def mergePhi(values: Seq[Val], bound: Option[Type]): Val = {
+        def localName(local: Addr) = headState.debugNames.get(local)
+        def mergePhi(
+            values: Seq[Val],
+            bound: Option[Type],
+            localName: Option[String] = None
+        ): Val = {
           if (values.distinct.size == 1) {
             values.head
           } else {
@@ -103,36 +106,25 @@ final class MergeProcessor(
             }
             val id = mergeFresh()
             val paramty = Sub.lub(materialized.map(_.ty), bound)
-            val _names = materialized
-              .collect { case Val.Local(_, _, Some(name)) => name }
-              // .take(0)
-              .toSet
-
-
-            if(_names.size > 1) println(s"More then 1 name found: ${_names}")
-            val name = _names.headOption
-            // name.map("merge name: " + _).foreach(println)
-            val param = Val.Local(id, paramty, name)
+            val param = Val.Local(id, paramty, localName)
             mergePhis += MergePhi(param, names.zip(materialized))
             param
           }
         }
 
         def computeMerge(): Unit = {
-
           // 1. Merge locals
-
           def mergeLocal(local: Local, value: Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[Val]
-            states.foreach { s => s.locals.get(local).foreach(values += _) }
+            states.foreach(_.locals.get(local).foreach(values += _))
             if (states.size == values.size) {
-              mergeLocals(local) = mergePhi(values.toSeq, Some(value.ty))
+              mergeLocals(local) =
+                mergePhi(values.toSeq, Some(value.ty), localName(local.id))
             }
           }
           headState.locals.foreach((mergeLocal _).tupled)
 
           // 2. Merge heap
-
           def includeAddr(addr: Addr): Boolean =
             states.forall { state => state.heap.contains(addr) }
           def escapes(addr: Addr): Boolean =
@@ -150,7 +142,8 @@ final class MergeProcessor(
                       case _                      => Val.Virtual(addr)
                     }
                   }
-                  mergeHeap(addr) = EscapedInstance(mergePhi(values, None))
+                  mergeHeap(addr) =
+                    EscapedInstance(mergePhi(values, None, localName(addr)))
                 case head: VirtualInstance =>
                   val mergeValues = head.values.zipWithIndex.map {
                     case (_, idx) =>
@@ -163,8 +156,7 @@ final class MergeProcessor(
                         case _         => None
                         // No need for bound type since each would be either primitive type or j.l.Object
                       }
-
-                      mergePhi(values, bound)
+                      mergePhi(values, bound, localName(addr))
                   }
                   mergeHeap(addr) = head.copy(values = mergeValues)
                 case DelayedInstance(op) =>
@@ -179,18 +171,19 @@ final class MergeProcessor(
           }
 
           // 3. Merge params
-
           params.zipWithIndex.foreach {
             case (param, idx) =>
               val values = incoming.map {
-                case (_, (values, _)) =>
-                  values(idx)
+                case (_, (values, _)) => values(idx)
               }
-              mergeLocals(param.id) = mergePhi(values, Some(param.ty))
+              mergeLocals(param.id) = mergePhi(
+                values,
+                Some(param.ty),
+                param.localName.orElse(localName(param.id.id))
+              )
           }
 
           // 4. Merge delayed ops
-
           def includeDelayedOp(op: Op, v: Val): Boolean = {
             states.forall { s => s.delayed.contains(op) && s.delayed(op) == v }
           }
@@ -202,7 +195,6 @@ final class MergeProcessor(
           }
 
           // 4. Merge emitted ops
-
           def includeEmittedOp(op: Op, v: Val): Boolean = {
             states.forall { s => s.emitted.contains(op) && s.emitted(op) == v }
           }
@@ -218,7 +210,6 @@ final class MergeProcessor(
           throw MergeProcessor.Restart
 
         // Retry until no new escapes are found
-
         var retries = 0
         while ({
           retries += 1
@@ -229,12 +220,8 @@ final class MergeProcessor(
           mergeDelayed.clear()
           mergeEmitted.clear()
           newEscapes.clear()
-          try {
-            computeMerge()
-          } catch {
-            case MergeProcessor.Restart =>
-              ()
-          }
+          try computeMerge()
+          catch { case MergeProcessor.Restart => () }
           if (retries > 128) {
             throw BailOut("too many state merge retries")
           }

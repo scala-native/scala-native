@@ -545,7 +545,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
     private def putParam(param: Val.Local) = {
       putLebUnsignedLong(param.id.id)
       putType(param.ty)
-      putOpt(param.name)(putString)
+      putOpt(param.localName)(putString)
     }
 
     private def putInst(cf: Inst) = {

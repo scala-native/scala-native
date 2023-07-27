@@ -2,8 +2,7 @@ package scala.scalanative
 package interflow
 
 trait Log { self: Interflow =>
-  private def show: Boolean =
-    self.context().exists(_.contains("Test$"))
+  private def show: Boolean = false
 
   def in[T](msg: String)(f: => T): T = {
     log(msg)
