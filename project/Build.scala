@@ -30,7 +30,7 @@ object Build {
   lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
-    nativelib, clib, posixlib, windowslib,
+    nativelib, clib, gc, posixlib, windowslib,
     auxlib, javalib, scalalib,
     testInterface, testInterfaceSbtDefs, testRunner,
     junitRuntime
@@ -450,6 +450,7 @@ object Build {
                     // Native libraries
                     nativelib.forBinaryVersion(ver) / publishLocal,
                     clib.forBinaryVersion(ver) / publishLocal,
+                    gc.forBinaryVersion(ver) / publishLocal,
                     posixlib.forBinaryVersion(ver) / publishLocal,
                     windowslib.forBinaryVersion(ver) / publishLocal,
                     // Standard language libraries
@@ -481,17 +482,22 @@ object Build {
       .dependsOn(toolsJVM.v2_12, testRunner.v2_12)
 
 // Native moduels ------------------------------------------------
-  lazy val nativelib =
-    MultiScalaProject("nativelib")
-      .enablePlugins(MyScalaNativePlugin)
-      .settings(
-        mavenPublishSettings,
-        docsSettings,
-        libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
-      )
-      .withNativeCompilerPlugin
+  lazy val nativelib: MultiScalaProject = MultiScalaProject("nativelib")
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(
+      mavenPublishSettings,
+      docsSettings,
+      libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
+    )
+    .withNativeCompilerPlugin
 
   lazy val clib = MultiScalaProject("clib")
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .dependsOn(nativelib)
+    .withNativeCompilerPlugin
+
+  lazy val gc = MultiScalaProject("gc")
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .dependsOn(nativelib)
@@ -503,12 +509,11 @@ object Build {
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
-  lazy val windowslib =
-    MultiScalaProject("windowslib")
-      .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings)
-      .dependsOn(nativelib, clib)
-      .withNativeCompilerPlugin
+  lazy val windowslib = MultiScalaProject("windowslib")
+    .enablePlugins(MyScalaNativePlugin)
+    .settings(mavenPublishSettings)
+    .dependsOn(nativelib, clib)
+    .withNativeCompilerPlugin
 
 // Language standard libraries ------------------------------------------------
   lazy val javalib = MultiScalaProject("javalib")
@@ -590,7 +595,7 @@ object Build {
             }
           )
       }
-      .dependsOn(auxlib, javalib)
+      .dependsOn(auxlib, javalib, gc)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")

@@ -45,7 +45,15 @@ object ScalaNativePluginInternal {
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
   private val nativeStandardLibraries =
-    Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
+    Seq(
+      "nativelib",
+      "clib",
+      "gc",
+      "posixlib",
+      "windowslib",
+      "javalib",
+      "auxlib"
+    )
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = Seq(
     libraryDependencies ++= Seq(
