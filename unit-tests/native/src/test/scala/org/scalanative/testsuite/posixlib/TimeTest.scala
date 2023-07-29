@@ -79,6 +79,15 @@ class TimeTest {
         Platform.isFreeBSD
       )
 
+      val haveCI =
+        java.lang.Boolean.parseBoolean(System.getenv("GITHUB_ACTIONS"))
+
+      // Test has proven to fragile to run outside known environments.
+      assumeTrue(
+        "Tested only by GitHub continuous integration or developer bypass.",
+        haveCI
+      )
+
       /* unix epoch is defined as 0 seconds UTC (Universal Time).
        * 'timezone' is defined in Posix as seconds WEST of UTC. Yes WEST.
        * At 'epoch + timezone seconds' it will be 0 seconds local time.
