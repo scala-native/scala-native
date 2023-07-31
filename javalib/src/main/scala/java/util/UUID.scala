@@ -1,3 +1,5 @@
+// Ported from Scala.js commit: e20d6d6 dated: 2023-07-19
+
 package java.util
 
 import java.security.SecureRandom
