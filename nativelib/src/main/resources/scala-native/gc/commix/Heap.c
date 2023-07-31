@@ -1,16 +1,18 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
 #include "State.h"
-#include "utils/MathUtils.h"
-#include "StackTrace.h"
+#include "immix_commix/utils/MathUtils.h"
+#include "immix_commix/StackTrace.h"
 #include "Settings.h"
-#include "MemoryInfo.h"
-#include "MemoryMap.h"
+#include "shared/MemoryInfo.h"
+#include "shared/MemoryMap.h"
 #include "GCThread.h"
 #include "Sweeper.h"
 #include "Phase.h"
@@ -89,8 +91,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     size_t memoryLimit = Heap_getMemoryLimit();
 
     if (maxHeapSize < MIN_HEAP_SIZE) {
-        fprintf(stderr,
-                "SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.\n");
+        fprintf(stderr, "GC_MAXIMUM_HEAP_SIZE too small to initialize heap.\n");
         fprintf(stderr, "Minimum required: %zum \n",
                 (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
         fflush(stderr);
@@ -98,7 +99,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     }
 
     if (minHeapSize > memoryLimit) {
-        fprintf(stderr, "SCALANATIVE_MIN_HEAP_SIZE is too large.\n");
+        fprintf(stderr, "GC_INITIAL_HEAP_SIZE is too large.\n");
         fprintf(stderr, "Maximum possible: %zug \n",
                 memoryLimit / 1024 / 1024 / 1024);
         fflush(stderr);
@@ -106,8 +107,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     }
 
     if (maxHeapSize < minHeapSize) {
-        fprintf(stderr, "SCALANATIVE_MAX_HEAP_SIZE should be at least "
-                        "SCALANATIVE_MIN_HEAP_SIZE\n");
+        fprintf(stderr, "GC_MAXIMUM_HEAP_SIZE should be at least "
+                        "GC_INITIAL_HEAP_SIZE\n");
         fflush(stderr);
         exit(1);
     }
@@ -335,3 +336,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     heap->blockCount += incrementInBlocks;
     mutex_unlock(&heap->sweep.growMutex);
 }
+
+#endif

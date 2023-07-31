@@ -118,6 +118,47 @@ trait NirGenStat(using Context) {
     yield genTypeName(clsSym)
   }
 
+  private def getAlignmentAttr(sym: Symbol): Option[nir.Attr.Alignment] =
+    sym.getAnnotation(defnNir.AlignClass).map { annot =>
+      val groupName = annot
+        .argumentConstantString(1)
+        .orElse(annot.argumentConstantString(0))
+
+      def getFixedAlignment() = annot
+        .argumentConstant(0)
+        .filter(_.isIntRange)
+        .map(_.intValue)
+        .map { value =>
+          if value % 8 != 0 || value <= 0 || value > 8192
+          then
+            report.error(
+              "Alignment must be positive integer literal, multiple of 8, and less then 8192 (inclusive)",
+              annot.tree.srcPos
+            )
+          value
+        }
+      def linktimeResolvedAlignment = annot
+        .argument(0)
+        .collectFirst {
+          // explicitly @align(contendedPaddingWidth)
+          case LinktimeProperty(
+                "scala.scalanative.meta.linktimeinfo.contendedPaddingWidth",
+                _,
+                _
+              ) =>
+            nir.Attr.Alignment.linktimeResolved
+        }
+        .getOrElse(
+          // implicitly, @align() or @align(group)
+          nir.Attr.Alignment.linktimeResolved
+        )
+
+      nir.Attr.Alignment(
+        size = getFixedAlignment().getOrElse(linktimeResolvedAlignment),
+        group = groupName.filterNot(_.isEmpty())
+      )
+    }
+
   private def genClassFields(td: TypeDef): Unit = {
     val classSym = td.symbol.asClass
     assert(
@@ -125,6 +166,7 @@ trait NirGenStat(using Context) {
       "genClassFields called with a ClassDef other than the current one"
     )
 
+    val classAlignment = getAlignmentAttr(td.symbol)
     // Term members that are neither methods nor modules are fields
     for
       f <- classSym.info.decls.toList
@@ -142,7 +184,8 @@ trait NirGenStat(using Context) {
       val attrs = nir.Attrs(
         isExtern = isExtern,
         isVolatile = f.isVolatile,
-        isFinal = !f.is(Mutable)
+        isFinal = !f.is(Mutable),
+        align = getAlignmentAttr(f).orElse(classAlignment)
       )
       val ty = genType(f.info.resultType)
       val fieldName @ Global.Member(owner, sig) = genFieldName(f): @unchecked

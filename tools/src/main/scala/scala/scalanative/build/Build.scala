@@ -7,6 +7,10 @@ import scala.util.Try
 import java.nio.file.FileVisitOption
 import java.util.Optional
 import java.nio.file.attribute.FileTime
+import scala.concurrent._
+import scala.util.{Success, Properties}
+import scala.collection.immutable
+import ScalaNative._
 
 /** Utility methods for building code using Scala Native. */
 object Build {
@@ -25,19 +29,22 @@ object Build {
    *  @return
    *    [[Config#artifactPath]], the path to the resulting native binary.
    */
-  def buildCached(config: Config)(implicit scope: Scope): Path = {
+  def buildCached(
+      config: Config
+  )(implicit scope: Scope, ec: ExecutionContext): Future[Path] = {
     val inputHash = checkSum(config)
     if (Files.exists(config.artifactPath) &&
         prevBuildInputCheckSum == inputHash) {
       config.logger.info(
         "Build skipped: No changes detected in build configuration and class path contents since last build."
       )
-      config.artifactPath
+      Future.successful(config.artifactPath)
     } else {
-      val output = build(config)
-      // Need to re-calculate the checksum because the content of `output` have changed.
-      prevBuildInputCheckSum = checkSum(config)
-      output
+      build(config).andThen {
+        case Success(_) =>
+          // Need to re-calculate the checksum because the content of `output` have changed.
+          prevBuildInputCheckSum = checkSum(config)
+      }
     }
   }
 
@@ -86,62 +93,86 @@ object Build {
    *  @return
    *    [[Config#artifactPath]], the path to the resulting native binary.
    */
-  def build(config: Config)(implicit scope: Scope): Path =
-    config.logger.time("Total") {
+  def build(
+      config: Config
+  )(implicit scope: Scope, ec: ExecutionContext): Future[Path] = {
+    val initialConfig = config
+    import config.logger
+    logger.timeAsync("Total") {
       // called each time for clean or directory removal
-      checkWorkdirExists(config)
+      checkWorkdirExists(initialConfig)
 
       // validate Config
-      val fconfig = Validator.validate(config)
-
+      val config = Validator.validate(initialConfig)
       config.logger.debug(config.toString())
 
-      // find and link
-      val linked = {
-        val entries = ScalaNative.entries(fconfig)
-        val linked = ScalaNative.link(fconfig, entries)
-        ScalaNative.logLinked(fconfig, linked)
-        linked
-      }
+      link(config, entries(config))
+        .map { linked =>
+          // Can throw, execute in the main flow
+          logLinked(config, linked)
+          linked
+        }
+        .flatMap(optimize(config, _))
+        .flatMap { linkerResult =>
+          val backend = new BackendPipeline(config, linkerResult)
+          backend
+            .codegen()
+            .flatMap(backend.compile)
+            .map(backend.link)
+        }
+    }
+  }
 
-      // optimize and generate ll
-      val generated = {
-        val optimized = ScalaNative.optimize(fconfig, linked)
-        ScalaNative.codegen(fconfig, optimized) ++:
-          ScalaNative.genBuildInfo(fconfig) // ident list may be empty
-      }
+  private class BackendPipeline(config: Config, linkerResult: linker.Result) {
+    private val logger = config.logger
+    import logger._
 
-      val objectPaths = fconfig.logger.time("Compiling to native code") {
+    def codegen()(implicit ec: ExecutionContext): Future[Seq[Path]] = {
+      val tasks = immutable.Seq(
+        ScalaNative.codegen(config, linkerResult),
+        genBuildInfo(config)
+      )
+      Future.reduceLeft(tasks)(_ ++ _)
+    }
+
+    def compile(
+        generatedIR: Seq[Path]
+    )(implicit ec: ExecutionContext): Future[Seq[Path]] =
+      timeAsync("Compiling to native code") {
         // compile generated LLVM IR
-        val llObjectPaths = LLVM.compile(fconfig, generated)
+        val compileGeneratedIR = LLVM.compile(config, generatedIR)
 
         /* Used to pass alternative paths of compiled native (lib) sources,
          * eg: reused native sources used in partests.
          */
-        val libObjectPaths = scala.util.Properties
-          .propOrNone("scalanative.build.paths.libobj") match {
-          case None =>
-            /* Finds all the libraries on the classpath that contain native
-             * code and then compiles them.
-             */
-            findAndCompileNativeLibs(fconfig, linked)
-          case Some(libObjectPaths) =>
-            libObjectPaths
-              .split(java.io.File.pathSeparatorChar)
-              .toSeq
-              .map(Paths.get(_))
+        val compileNativeLibs = {
+          Properties.propOrNone("scalanative.build.paths.libobj") match {
+            case None =>
+              /* Finds all the libraries on the classpath that contain native
+               * code and then compiles them.
+               */
+              findAndCompileNativeLibs(config, linkerResult)
+            case Some(libObjectPaths) =>
+              Future.successful {
+                libObjectPaths
+                  .split(java.io.File.pathSeparatorChar)
+                  .toSeq
+                  .map(Paths.get(_))
+              }
+          }
         }
 
-        libObjectPaths ++ llObjectPaths
+        Future.reduceLeft(
+          immutable.Seq(compileGeneratedIR, compileNativeLibs)
+        )(_ ++ _)
       }
 
-      // finally link
-      fconfig.logger.time(
-        s"Linking native code (${fconfig.gc.name} gc, ${fconfig.LTO.name} lto)"
-      ) {
-        LLVM.link(fconfig, linked, objectPaths)
-      }
+    def link(compiled: Seq[Path]): Path = time(
+      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
+    ) {
+      LLVM.link(config, linkerResult, compiled)
     }
+  }
 
   private def checkSum(config: Config): Int = {
     // skip the whole nativeLink process if the followings are unchanged since the previous build
@@ -169,12 +200,13 @@ object Build {
   def findAndCompileNativeLibs(
       config: Config,
       linkerResult: linker.Result
-  ): Seq[Path] = {
-    NativeLib
-      .findNativeLibs(config)
-      .flatMap(nativeLib =>
-        NativeLib.compileNativeLibrary(config, linkerResult, nativeLib)
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
+    import NativeLib.{findNativeLibs, compileNativeLibrary}
+    Future
+      .traverse(findNativeLibs(config))(
+        compileNativeLibrary(config, linkerResult, _)
       )
+      .map(_.flatten)
   }
 
   // create workDir if it doesn't exist

@@ -1,8 +1,11 @@
-#include "Safepoint.h"
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
+    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
+
+#include "shared/Safepoint.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "MemoryMap.h"
+#include "shared/MemoryMap.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -80,3 +83,5 @@ void Safepoint_disarm(safepoint_t ref) {
         exit(errno);
     }
 }
+
+#endif

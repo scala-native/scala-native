@@ -7,13 +7,16 @@ import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.annotations.Mode._
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 @Fork(1)
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 10, time = 2, timeUnit = TimeUnit.SECONDS)
 class LinkerBench {
   var workdir: Path = _
 
@@ -38,7 +41,8 @@ class LinkerBench {
       .withMainClass(Some(TestMain))
 
     val entries = build.ScalaNative.entries(config)
-    val linked = build.ScalaNative.link(config, entries)
+    val link = build.ScalaNative.link(config, entries)
+    val linked = Await.result(link, Duration.Inf)
     assert(linked.unavailable.size == 0)
   }
 }

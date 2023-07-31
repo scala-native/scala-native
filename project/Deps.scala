@@ -17,21 +17,11 @@ object Deps {
   }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
   def ScalaReflect(version: String) = "org.scala-lang" % "scala-reflect" % version
 
-  lazy val ScalaCheck          = "org.scalacheck"         %% "scalacheck"                 % "1.15.4"
-  lazy val ScalaTest           = "org.scalatest"          %% "scalatest"                  % "3.2.9"
-  lazy val ScalaParCollections = "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.3"
-  lazy val SbtPlatformDeps     = "org.portable-scala"      % "sbt-platform-deps"          % "1.0.1"
-  lazy val SbtTestInterface    = "org.scala-sbt"           % "test-interface"             % "1.0"
-  lazy val JUnitInterface      = "com.novocode"            % "junit-interface"            % "0.11"
-  lazy val JUnit               = "junit"                   % "junit"                      % "4.13.2"
+  lazy val SbtPlatformDeps  = "org.portable-scala" % "sbt-platform-deps" % "1.0.1"
+  lazy val SbtTestInterface = "org.scala-sbt"      % "test-interface"    % "1.0"
+  lazy val JUnitInterface   = "com.novocode"       % "junit-interface"   % "0.11"
+  lazy val JUnit            = "junit"              % "junit"             % "4.13.2"
 
-  def Tools(scalaVersion: String) = {
-    List(ScalaCheck % "test", ScalaTest % "test") ++
-      scalaVersionsDependendent(scalaVersion) {
-        case (2, 12) => Nil
-        case _       => ScalaParCollections :: Nil
-      }
-  }
   def NativeLib(scalaVersion: String) = scalaVersionsDependendent(scalaVersion) {
     case (2, _) => ScalaReflect(scalaVersion) :: Nil
     case _      => Nil

@@ -1,11 +1,13 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "LargeAllocator.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/utils/MathUtils.h"
 #include "Object.h"
-#include "Log.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/headers/ObjectHeader.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
@@ -205,3 +207,5 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
         LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart, currentSize);
     }
 }
+
+#endif

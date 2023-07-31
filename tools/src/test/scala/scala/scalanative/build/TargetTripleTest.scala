@@ -1,10 +1,9 @@
 package scala.scalanative.build
 
-import org.scalatest._
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import org.junit.Test
+import org.junit.Assert._
 
-class TargetTripleTest extends AnyFlatSpec with Matchers {
+class TargetTripleTest {
 
   val cases = List(
     "aarch64-unknown-linux-gnu" ->
@@ -27,11 +26,9 @@ class TargetTripleTest extends AnyFlatSpec with Matchers {
       TargetTriple("x86_64", "unknown", "freebsd", "unknown")
   )
 
-  "TargetTriple.parse" should "parse test cases" in {
-    cases.foreach {
-      case (triple, expected) =>
-        TargetTriple.parse(triple) should equal(expected)
-    }
+  @Test
+  def testParser(): Unit = cases.foreach {
+    case (triple, expected) =>
+      assertEquals(triple, expected, TargetTriple.parse(triple))
   }
-
 }

@@ -1,7 +1,8 @@
 #ifndef IMMIX_STACKTRACE_H
 #define IMMIX_STACKTRACE_H
 
-#include "../../platform/unwind.h"
+// relative to gc include path
+#include "../platform/unwind.h"
 
 void StackTrace_PrintStackTrace();
 

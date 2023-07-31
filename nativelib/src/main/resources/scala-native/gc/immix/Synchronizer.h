@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 
 void Synchronizer_init();
 bool Synchronizer_acquire();

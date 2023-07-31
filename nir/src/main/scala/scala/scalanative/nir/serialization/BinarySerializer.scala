@@ -192,6 +192,10 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Attr.Final              => putTag(T.FinalAttr)
 
       case Attr.LinktimeResolved => putTag(T.LinktimeResolvedAttr)
+      case Attr.Alignment(size, group) =>
+        putTag(T.AlignAttr)
+        putLebSignedInt(size)
+        putOpt(group)(putString)
     }
 
     private def putInsts(insts: Seq[Inst]): Unit = {

@@ -38,9 +38,12 @@ class ForkJoinPool private (
   @volatile var runState: Int = 0 // SHUTDOWN, STOP, TERMINATED bits
   @volatile var stealCount: Long = 0
   @volatile var threadIds: Long = 0
-  @volatile var ctl: Long = _ // main pool control
 
-  final var parallelism: Int = _ // target number of workers
+  // main pool control; segregate
+  @Contended("fjpctl") @volatile var ctl: Long = _
+  // target number of workers
+  @Contended("fjpctl") final var parallelism: Int = _
+
   final val registrationLock = new ReentrantLock()
 
   private[concurrent] var queues: Array[WorkQueue] = _ // main registry
@@ -1458,6 +1461,8 @@ class ForkJoinPool private (
 }
 
 object ForkJoinPool {
+  // align has the same characteristics as JVM Contended
+  private type Contended = scala.scalanative.annotation.align
 
   trait ForkJoinWorkerThreadFactory {
 
@@ -1560,11 +1565,14 @@ object ForkJoinPool {
     var array: Array[ForkJoinTask[_]] = _ // the queued tasks power of 2 size
     var stackPred: Int = 0 // pool stack (ctl) predecessor link
     var base: Int = _ // index of next slot for poll
-    var top: Int = _ // index of next slot for push
-    @volatile var access: Int = 0 // values 0, 1 (locked), PARKED, STOP
-    @volatile var phase: Int = 0 // versioned, negative if inactive
-    @volatile var source: Int = 0 // source queue id, lock, or sentinel
-    var nsteals: Int = 0 // steals from other queues
+    @Contended("w") var top: Int = _ // index of next slot for push
+    @Contended("w") @volatile var access: Int =
+      0 // values 0, 1 (locked), PARKED, STOP
+    @Contended("w") @volatile var phase: Int =
+      0 // versioned, negative if inactive
+    @Contended("w") @volatile var source: Int =
+      0 // source queue id, lock, or sentinel
+    @Contended("w") var nsteals: Int = 0 // steals from other queues
 
     private[concurrent] def this(owner: ForkJoinWorkerThread, config: Int) = {
       this(owner)

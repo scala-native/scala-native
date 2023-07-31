@@ -3,6 +3,9 @@ package linker
 
 import nir.{Sig, Type, Global}
 
+import org.junit.Test
+import org.junit.Assert._
+
 class StubSpec extends LinkerSpec {
 
   val entry = "Main"
@@ -24,19 +27,20 @@ class StubSpec extends LinkerSpec {
                            |  }
                            |}""".stripMargin
 
-  "Stub methods" should "be ignored by the linker when `linkStubs = false`" in {
+  @Test def ignoreMethods(): Unit = {
     link(entry, stubMethodSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assert(!cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(
-        result.unavailable.head == Global
+      assertTrue(!cfg.linkStubs)
+      assertTrue(result.unavailable.length == 1)
+      assertEquals(
+        Global
           .Top("Main$")
-          .member(Sig.Method("stubMethod", Seq(Type.Int)))
+          .member(Sig.Method("stubMethod", Seq(Type.Int))),
+        result.unavailable.head
       )
     }
   }
 
-  it should "`linkStubs = true` is no-op now" in {
+  @Test def includeMethods(): Unit = {
     link(entry, stubMethodSource, _.withLinkStubs(true)) { (cfg, result) =>
       assert(cfg.linkStubs)
       assert(result.unavailable.length == 1)
@@ -48,15 +52,15 @@ class StubSpec extends LinkerSpec {
     }
   }
 
-  "Stub classes" should "be ignored by the linker when `linkStubs = false`" in {
+  @Test def ignoreClasses(): Unit = {
     link(entry, stubClassSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assert(!cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Global.Top("StubClass"))
+      assertTrue(!cfg.linkStubs)
+      assertTrue(result.unavailable.length == 1)
+      assertTrue(result.unavailable.head == Global.Top("StubClass"))
     }
   }
 
-  it should "be included when `linkStubs = true`" in {
+  @Test def includeClasses(): Unit = {
     link(entry, stubClassSource, _.withLinkStubs(true)) { (cfg, result) =>
       assert(cfg.linkStubs)
       assert(result.unavailable.length == 1)
@@ -64,15 +68,15 @@ class StubSpec extends LinkerSpec {
     }
   }
 
-  "Stub modules" should "be ignored by the linker when `linkStubs = false`" in {
+  @Test def ignoreModules(): Unit = {
     link(entry, stubModuleSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assert(!cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Global.Top("StubModule$"))
+      assertTrue(!cfg.linkStubs)
+      assertTrue(result.unavailable.length == 1)
+      assertTrue(result.unavailable.head == Global.Top("StubModule$"))
     }
   }
 
-  it should "be included when `linkStubs = true`" in {
+  @Test def includeModules(): Unit = {
     link(entry, stubModuleSource, _.withLinkStubs(true)) { (cfg, result) =>
       assert(cfg.linkStubs)
       assert(result.unavailable.length == 1)

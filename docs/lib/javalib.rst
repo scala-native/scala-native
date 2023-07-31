@@ -46,6 +46,10 @@ java.io
 * ``ObjectStreamException``
 * ``OutputStream``
 * ``OutputStreamWriter``
+* ``PipedInputStream``
+* ``PipedOutputStream``
+* ``PipedReader``
+* ``PipedWriter``
 * ``PrintStream``
 * ``PrintWriter``
 * ``PushbackInputStream``
@@ -453,25 +457,77 @@ java.util
 * ``UUID``
 * ``UnknownFormatConversionException``
 * ``UnknownFormatFlagsException``
+* ``Vector``
 * ``WeakHashMap``
+
+..
+    util.concurrent classes are listed as in JVM documentation.
+    This varies in some cases from strictly alphabetical order.
+    Yes, mind bending, but that is how JVM does it.
+    Classes in sub-directories are at the end of the list.
+..
 
 java.util.concurrent
 """"""""""""""""""""
+* ``AbstractExecutorService``
+* ``ArrayBlockingQueue``
+* ``BlockingDeque``
+* ``BlockingQueue``
+* ``BrokenBarrierException``
 * ``Callable``
 * ``CancellationException``
+* ``CompletionService``
 * ``ConcurrentHashMap``
 * ``ConcurrentHashMap.KeySetView``
 * ``ConcurrentLinkedQueue``
 * ``ConcurrentMap``
+* ``ConcurrentNavigableMap``
+* ``CopyOnWriteArrayList``
 * ``ConcurrentSkipListSet``
+* ``CountDownLatch``
+* ``CountedCompleter``
+* ``CyclicBarrier``
+* ``Delayed``
 * ``ExecutionException``
 * ``Executor``
+* ``ExecutorCompletionService``
+* ``Executors``
+* ``ExecutorService``
+* ``Flow``
+* ``Flow.Processor``
+* ``Flow.Publisher``
+* ``Flow.Subscriber``
+* ``Flow.Subscripton``
+* ``ForkJoinPool``
+* ``ForkJoinPoo.ForkJoinWorkerThreadFactory``
+* ``ForkJoinPoo.ManagedBlocker``
+* ``ForkJoinTask``
+* ``ForkJoinWorkerThread``
+* ``Future``
+* ``FutureTask``
+* ``LinkedBlockingQueue``
+* ``PriorityBlockingQueue``
+* ``RecursiveAction``
+* ``RecursiveTask``
 * ``RejectedExecutionException``
+* ``RejectedExecutionHandler``
+* ``RunnableFuture``
+* ``RunnableScheduledFuture``
+* ``ScheduledExecutorService``
+* ``ScheduledFuture``
+* ``ScheduledThreadPoolExecutor``
 * ``Semaphore``
+* ``SynchronousQueue``
 * ``ThreadFactory``
 * ``ThreadLocalRandom``
-* ``TimeUnit``
+* ``ThreadPoolExecutor``
+* ``ThreadPoolExecutor.AbortPolicy``
+* ``ThreadPoolExecutor.CallerRunsPolicy``
+* ``ThreadPoolExecutor.DiscardOldestPolicy``
+* ``ThreadPoolExecutor.DiscardPolicy``
 * ``TimeoutException``
+* ``TimeUnit``
+* ``TransferQueue``
 * ``atomic.AtomicBoolean``
 * ``atomic.AtomicInteger``
 * ``atomic.AtomicLong``

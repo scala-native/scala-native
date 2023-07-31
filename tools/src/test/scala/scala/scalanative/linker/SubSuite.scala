@@ -3,7 +3,8 @@ package linker
 
 import scalanative.nir._
 
-import org.scalatest._
+import org.junit.Test
+import org.junit.Assert._
 
 class SubSuite extends ReachabilitySuite {
 
@@ -70,79 +71,84 @@ class SubSuite extends ReachabilitySuite {
     valueTypes ++ referenceTypes
 
   def testIs(l: Type, r: Type) =
-    test(s"${l.show} is ${r.show}") {
-      assert(Sub.is(l, r))
-    }
+    assertTrue(s"${l.show} is ${r.show}", Sub.is(l, r))
 
   def testIsNot(l: Type, r: Type) =
-    test(s"${l.show} is not ${r.show}") {
-      assert(!Sub.is(l, r))
-    }
+    assertTrue(s"${l.show} is not ${r.show}", !Sub.is(l, r))
 
-  valueTypes.foreach { v1 =>
-    valueTypes.foreach { v2 =>
-      if (v1 == v2) {
-        testIs(v1, v2)
-      } else {
-        testIsNot(v1, v2)
+  @Test def valueTypeWithvalueTypes(): Unit = {
+    valueTypes.foreach { v1 =>
+      valueTypes.foreach { v2 =>
+        if (v1 == v2) {
+          testIs(v1, v2)
+        } else {
+          testIsNot(v1, v2)
+        }
       }
     }
   }
 
-  valueTypes.foreach { vty =>
-    referenceTypes.filter(_ != Type.Null).foreach { rty =>
-      testIsNot(vty, rty)
-      testIsNot(rty, vty)
+  @Test def valueTypeWitRefTypes(): Unit = {
+    valueTypes.foreach { vty =>
+      referenceTypes.filter(_ != Type.Null).foreach { rty =>
+        testIsNot(vty, rty)
+        testIsNot(rty, vty)
+      }
     }
   }
 
-  referenceTypes.foreach { rty => testIs(Type.Null, rty) }
+  @Test def nullTypes(): Unit =
+    referenceTypes.foreach { rty => testIs(Type.Null, rty) }
 
-  types.foreach { ty => testIs(Type.Nothing, ty) }
+  @Test def nothingType(): Unit =
+    types.foreach { ty => testIs(Type.Nothing, ty) }
 
-  referenceTypes.foreach { rty =>
-    testIs(rty, Type.Ref(Global.Top("java.lang.Object")))
+  @Test def referenceObjectTypes(): Unit =
+    referenceTypes.foreach { rty =>
+      testIs(rty, Type.Ref(Global.Top("java.lang.Object")))
+    }
+
+  @Test def inheritence(): Unit = {
+    testIs(A, A)
+    testIsNot(A, B)
+    testIsNot(A, C)
+    testIs(A, T1)
+    testIsNot(A, T2)
+    testIsNot(A, T3)
+
+    testIs(B, A)
+    testIs(B, B)
+    testIsNot(B, C)
+    testIs(B, T1)
+    testIsNot(B, T2)
+    testIs(B, T3)
+
+    testIsNot(C, A)
+    testIsNot(C, B)
+    testIs(C, C)
+    testIs(C, T1)
+    testIs(C, T2)
+    testIsNot(C, T3)
+
+    testIsNot(T1, A)
+    testIsNot(T1, B)
+    testIsNot(T1, C)
+    testIs(T1, T1)
+    testIsNot(T1, T2)
+    testIsNot(T1, T3)
+
+    testIsNot(T2, A)
+    testIsNot(T2, B)
+    testIsNot(T2, C)
+    testIs(T2, T1)
+    testIs(T2, T2)
+    testIsNot(T2, T3)
+
+    testIsNot(T3, A)
+    testIsNot(T3, B)
+    testIsNot(T3, C)
+    testIsNot(T3, T1)
+    testIsNot(T3, T2)
+    testIs(T3, T3)
   }
-
-  testIs(A, A)
-  testIsNot(A, B)
-  testIsNot(A, C)
-  testIs(A, T1)
-  testIsNot(A, T2)
-  testIsNot(A, T3)
-
-  testIs(B, A)
-  testIs(B, B)
-  testIsNot(B, C)
-  testIs(B, T1)
-  testIsNot(B, T2)
-  testIs(B, T3)
-
-  testIsNot(C, A)
-  testIsNot(C, B)
-  testIs(C, C)
-  testIs(C, T1)
-  testIs(C, T2)
-  testIsNot(C, T3)
-
-  testIsNot(T1, A)
-  testIsNot(T1, B)
-  testIsNot(T1, C)
-  testIs(T1, T1)
-  testIsNot(T1, T2)
-  testIsNot(T1, T3)
-
-  testIsNot(T2, A)
-  testIsNot(T2, B)
-  testIsNot(T2, C)
-  testIs(T2, T1)
-  testIs(T2, T2)
-  testIsNot(T2, T3)
-
-  testIsNot(T3, A)
-  testIsNot(T3, B)
-  testIsNot(T3, C)
-  testIsNot(T3, T1)
-  testIsNot(T3, T2)
-  testIs(T3, T3)
 }

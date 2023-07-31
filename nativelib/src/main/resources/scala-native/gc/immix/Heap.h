@@ -1,7 +1,7 @@
 #ifndef IMMIX_HEAP_H
 #define IMMIX_HEAP_H
 
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "datastructures/Stack.h"
@@ -9,7 +9,7 @@
 #include "metadata/LineMeta.h"
 #include "Stats.h"
 #include <stdio.h>
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 
 typedef struct {
     word_t *blockMetaStart;

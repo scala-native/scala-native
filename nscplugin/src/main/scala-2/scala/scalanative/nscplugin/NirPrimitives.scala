@@ -16,7 +16,8 @@ object NirPrimitives {
   final val REM_UINT = 1 + DIV_ULONG
   final val REM_ULONG = 1 + REM_UINT
 
-  final val BYTE_TO_UINT = 1 + REM_ULONG
+  final val UNSIGNED_OF = 1 + REM_ULONG
+  final val BYTE_TO_UINT = 1 + UNSIGNED_OF
   final val BYTE_TO_ULONG = 1 + BYTE_TO_UINT
   final val SHORT_TO_UINT = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
@@ -137,6 +138,7 @@ abstract class NirPrimitives {
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
     addPrimitive(RemULongMethod, REM_ULONG)
+    addPrimitives(UnsignedOfMethods, UNSIGNED_OF)
     addPrimitive(ByteToUIntMethod, BYTE_TO_UINT)
     addPrimitive(ByteToULongMethod, BYTE_TO_ULONG)
     addPrimitive(ShortToUIntMethod, SHORT_TO_UINT)

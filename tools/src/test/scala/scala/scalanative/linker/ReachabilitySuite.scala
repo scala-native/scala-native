@@ -1,15 +1,20 @@
 package scala.scalanative
 package linker
 
-import org.scalatest._
-import org.scalatest.funsuite.AnyFunSuite
+import org.junit.Test
+import org.junit.Assert._
+
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
 import scalanative.nir.{Sig, Global}
-import scalanative.build.ScalaNative
+import scalanative.build.{ScalaNative, Logger, Discover}
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
-trait ReachabilitySuite extends AnyFunSuite {
+trait ReachabilitySuite {
 
   def g(top: String): Global =
     Global.Top(top)
@@ -26,33 +31,32 @@ trait ReachabilitySuite extends AnyFunSuite {
     Global.Top("java.lang.constant.ConstantDesc")
   )
 
-  def testReachable(label: String, includeMainDeps: Boolean = true)(
+  def testReachable(includeMainDeps: Boolean = true)(
       f: => (String, Global, Seq[Global])
-  ) =
-    test(label) {
-      val (source, entry, expected) = f
-      // When running reachability tests disable loading static constructors
-      // ReachabilitySuite tests are designed to check that exactly given group
-      // of symbols is reachable. By default we always try to load all static
-      // constructrs - this mechanism is used by junit-plugin to mitigate lack
-      // of reflection. We need to disable it, otherwise we would be swarmed
-      // with definitions introduced by static constructors
-      val reachStaticConstructorsKey =
-        "scala.scalanative.linker.reachStaticConstructors"
-      sys.props += reachStaticConstructorsKey -> false.toString()
-      try {
-        link(Seq(entry), Seq(source), entry.top.id) { res =>
-          val left = res.defns.map(_.name).toSet
-          val extraDeps = if (includeMainDeps) MainMethodDependencies else Nil
-          val right = expected.toSet ++ extraDeps
-          assert(res.unavailable.isEmpty, "unavailable")
-          assert((left -- right).isEmpty, "underapproximation")
-          assert((right -- left).isEmpty, "overapproximation")
-        }
-      } finally {
-        sys.props -= reachStaticConstructorsKey
+  ) = {
+    val (source, entry, expected) = f
+    // When running reachability tests disable loading static constructors
+    // ReachabilitySuite tests are designed to check that exactly given group
+    // of symbols is reachable. By default we always try to load all static
+    // constructrs - this mechanism is used by junit-plugin to mitigate lack
+    // of reflection. We need to disable it, otherwise we would be swarmed
+    // with definitions introduced by static constructors
+    val reachStaticConstructorsKey =
+      "scala.scalanative.linker.reachStaticConstructors"
+    sys.props += reachStaticConstructorsKey -> false.toString()
+    try {
+      link(Seq(entry), Seq(source), entry.top.id) { res =>
+        val left = res.defns.map(_.name).toSet
+        val extraDeps = if (includeMainDeps) MainMethodDependencies else Nil
+        val right = expected.toSet ++ extraDeps
+        assertTrue("unavailable", res.unavailable.isEmpty)
+        assertTrue("underapproximation", (left -- right).isEmpty)
+        assertTrue("overapproximation", (right -- left).isEmpty)
       }
+    } finally {
+      sys.props -= reachStaticConstructorsKey
     }
+  }
 
   /** Runs the linker using `driver` with `entry` as entry point on `sources`,
    *  and applies `fn` to the definitions.
@@ -85,15 +89,14 @@ trait ReachabilitySuite extends AnyFunSuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files = compiler.compile(sourcesDir)
       val config = makeConfig(outDir, mainClass)
-      val result = ScalaNative.link(config, entries)
-
+      val link = ScalaNative.link(config, entries)
+      val result = Await.result(link, 1.minute)
       f(result)
     }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      sys
-        .props("scalanative.nativeruntime.cp")
+      ScalaNativeBuildInfo.scalalibCp
         .split(File.pathSeparator)
         .map(Paths.get(_))
 
@@ -109,8 +112,11 @@ trait ReachabilitySuite extends AnyFunSuite {
       .withBaseDir(outDir)
       .withClassPath(paths.toSeq)
       .withCompilerConfig {
-        _.withTargetTriple("x86_64-unknown-unknown")
+        _.withClang(Discover.clang())
+          .withClangPP(Discover.clangpp())
+          .withTargetTriple("x86_64-unknown-unknown")
       }
       .withMainClass(Some(mainClass))
+      .withLogger(Logger.nullLogger)
   }
 }

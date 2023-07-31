@@ -1,6 +1,9 @@
-#include "../Object.h"
+
+#if defined(SCALANATIVE_GC_COMMIX)
+
+#include "commix/Object.h"
 #include "GreyPacket.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include <string.h>
 
 bool GreyPacket_Push(GreyPacket *packet, Stack_Type value) {
@@ -113,3 +116,5 @@ GreyPacket *GreyList_Pop(GreyList *list, word_t *greyPacketsStart) {
     res->timesPoped += 1;
     return res;
 }
+
+#endif

@@ -2,6 +2,7 @@ package scala.scalanative
 package runtime
 
 import scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 object Intrinsics {
 
@@ -186,4 +187,12 @@ object Intrinsics {
    *  Accepts only class literals. Whenever possible use `alignment[T]` instead
    */
   def alignmentOf(cls: Class[_]): RawSize = intrinsic
+
+  // Efficient intrinsic boxing of Scala primitives into unsigned type
+  // Allows to skip unnecesary module and conversion methods, emits Op.Box(prim) instead
+  def unsignedOf(value: Byte): UByte = intrinsic
+  def unsignedOf(value: Short): UShort = intrinsic
+  def unsignedOf(value: Int): UInt = intrinsic
+  def unsignedOf(value: Long): ULong = intrinsic
+  def unsignedOf(value: RawSize): USize = intrinsic
 }

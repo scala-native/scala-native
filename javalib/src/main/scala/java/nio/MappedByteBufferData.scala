@@ -45,14 +45,44 @@ private[nio] class MappedByteBufferData(
     private[nio] val windowsMappingHandle: Option[Handle]
 ) {
 
+  /* Create an "empty" instance for the special case of size == 0.
+   * This removes that complexity from the execution paths of the
+   * more frequently used size > 0 case.
+   *
+   * Keep the nasty null confined to this file, so caller does not
+   * need to know about it.
+   *
+   * Execution should never reach update() or apply() (bb.get()).
+   * Code earlier in the execution chain should have detected and rejected
+   * an attempt to access an empty MappedByteBufferData instance.
+   * Have those two methods return "reasonable" values just in case.
+   * Could have thrown an Exception.  Fielder's choice.
+   *
+   * Since it is never called, the return value for apply() is just to
+   * keep the compiler happy; it can be any Byte, zero seemed to make the
+   * most sense. Fielder's choice redux.
+   */
+  def this() = {
+    this(MapMode.READ_ONLY, null, 0, None)
+    def force(): Unit = () // do nothing
+    def update(index: Int, value: Byte): Unit = () // do nothing
+    def apply(index: Int): Byte = 0 // Should never reach here
+  }
+
   // Finalization. Unmapping is done on garbage collection, like on JVM.
-  private val selfWeakReference = new WeakReference(this)
-  new MappedByteBufferFinalizer(
-    selfWeakReference,
-    ptr,
-    length,
-    windowsMappingHandle
-  )
+//  private val selfWeakReference = new WeakReference(this)
+
+  if (ptr != null) {
+    // Finalization. Unmapping is done on garbage collection, like on JVM.
+    val selfWeakReference = new WeakReference(this)
+
+    new MappedByteBufferFinalizer(
+      selfWeakReference,
+      ptr,
+      length,
+      windowsMappingHandle
+    )
+  }
 
   def force(): Unit = {
     if (mode eq MapMode.READ_WRITE) {

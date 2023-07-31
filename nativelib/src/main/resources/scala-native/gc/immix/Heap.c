@@ -1,16 +1,18 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
 #include "Block.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Allocator.h"
 #include "Marker.h"
 #include "State.h"
-#include "utils/MathUtils.h"
-#include "StackTrace.h"
+#include "immix_commix/utils/MathUtils.h"
+#include "immix_commix/StackTrace.h"
 #include "Settings.h"
-#include "MemoryInfo.h"
-#include "MemoryMap.h"
+#include "shared/MemoryInfo.h"
+#include "shared/MemoryMap.h"
 #include <time.h>
 #include "WeakRefStack.h"
 #include "Synchronizer.h"
@@ -443,3 +445,5 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     BlockAllocator_SweepDone(&blockAllocator);
     BlockAllocator_Release(&blockAllocator);
 }
+
+#endif
