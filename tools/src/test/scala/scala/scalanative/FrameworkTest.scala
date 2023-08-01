@@ -2,12 +2,12 @@ package scala.scalanative
 
 import nir.Global
 
-import org.scalatest._
-import org.scalatest.matchers.should.Matchers
+import org.junit.Test
+import org.junit.Assert._
 
-class FrameworkTest extends codegen.CodeGenSpec with Matchers {
+class FrameworkTest extends codegen.CodeGenSpec {
 
-  "The test framework" should "return the definitions for a single class" in {
+  @Test def singleClassDefinitions(): Unit = {
     link(
       "A",
       """object A {
@@ -17,11 +17,11 @@ class FrameworkTest extends codegen.CodeGenSpec with Matchers {
     ) {
       case (_, res) =>
         val defNames = res.defns map (_.name)
-        defNames should contain(Global.Top("A$"))
+        assertTrue(defNames.contains(Global.Top("A$")))
     }
   }
 
-  it should "return the definitions for classes in multiple files" in {
+  @Test def multipleFilesClassDefintions(): Unit = {
     val sources = Map(
       "A.scala" -> "class A",
       "B.scala" -> """object B extends A {
@@ -32,8 +32,8 @@ class FrameworkTest extends codegen.CodeGenSpec with Matchers {
     link("B", sources) {
       case (_, res) =>
         val defNames = res.defns map (_.name)
-        defNames should contain(Global.Top("A"))
-        defNames should contain(Global.Top("B$"))
+        assertTrue(defNames.contains(Global.Top("A")))
+        assertTrue(defNames.contains(Global.Top("B$")))
     }
   }
 }

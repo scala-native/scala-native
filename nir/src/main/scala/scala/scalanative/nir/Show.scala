@@ -111,6 +111,13 @@ object Show {
         str("final")
       case Attr.LinktimeResolved =>
         str("linktime")
+      case Attr.Alignment(size, group) =>
+        str("align(")
+        str(size)
+        group.foreach { v =>
+          str(", "); str(escapeQuotes(v))
+        }
+        str(")")
     }
 
     def next_(next: Next): Unit = next match {

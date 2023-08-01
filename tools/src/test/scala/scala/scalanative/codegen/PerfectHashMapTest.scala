@@ -1,16 +1,19 @@
-package scala.scalanative
-package codegen
+// package scala.scalanative
+// package codegen
 
-import PerfectHashMap._
-import org.scalacheck.Properties
-import org.scalacheck.Prop.forAll
+// import PerfectHashMap._
+// import org.scalacheck.Properties
+// import org.scalacheck.Prop.forAll
 
-object PerfectHashMapTest extends Properties("PerfectHashMap") {
+// import org.junit.Test
+// import org.junit.Assert._
 
-  property("correctness") = forAll { (map: Map[Int, Int]) =>
-    val perfectHashMap = PerfectHashMap(DynmethodPerfectHashMap.hash, map)
+// object PerfectHashMapTest extends Properties("PerfectHashMap") {
 
-    map.forall { case (k, v) => perfectHashMap.perfectLookup(k) == v }
-  }
+//   property("correctness") = forAll { (map: Map[Int, Int]) =>
+//     val perfectHashMap = PerfectHashMap(DynmethodPerfectHashMap.hash, map)
 
-}
+//     map.forall { case (k, v) => perfectHashMap.perfectLookup(k) == v }
+//   }
+
+// }

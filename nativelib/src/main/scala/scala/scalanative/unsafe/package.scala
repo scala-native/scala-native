@@ -119,26 +119,27 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     def c(): CString = intrinsic
   }
 
+  // UnsafeRich* have lower priority then extension methods defined in scala-3 UnsafePackageCompat
   /** Scala Native unsafe extensions to the standard Byte. */
   implicit class UnsafeRichByte(val value: Byte) extends AnyVal {
-    @inline def toSize: Size = new Size(castIntToRawSize(value))
+    @inline def toSize: Size = Size.valueOf(castIntToRawSize(value.toInt))
   }
 
   /** Scala Native unsafe extensions to the standard Short. */
   implicit class UnsafeRichShort(val value: Short) extends AnyVal {
-    @inline def toSize: Size = new Size(castIntToRawSize(value))
+    @inline def toSize: Size = Size.valueOf(castIntToRawSize(value.toInt))
   }
 
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
-    @inline def toSize: Size = new Size(castIntToRawSize(value))
+    @inline def toSize: Size = Size.valueOf(castIntToRawSize(value))
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
-    @inline def toSize: Size = new Size(castLongToRawSize(value))
+    @inline def toSize: Size = Size.valueOf(castLongToRawSize(value))
   }
 
   /** Scala Native unsafe extensions to Arrays */

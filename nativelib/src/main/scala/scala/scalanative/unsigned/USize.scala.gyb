@@ -29,8 +29,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   @inline def toUByte: UByte   = toByte.toUByte
   @inline def toUShort: UShort = toShort.toUShort
-  @inline def toUInt: UInt     = new UInt(castRawSizeToInt(rawSize))
-  @inline def toULong: ULong   = new ULong(castRawSizeToLongUnsigned(rawSize))
+  @inline def toUInt: UInt     = unsignedOf(castRawSizeToInt(rawSize))
+  @inline def toULong: ULong   = unsignedOf(castRawSizeToLongUnsigned(rawSize))
 
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
@@ -178,8 +178,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): USize =
-    if (is32BitPlatform) new USize(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
-    else new USize(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) ${op} castRawSizeToLongUnsigned(other.rawSize)))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(castRawSizeToInt(rawSize) ${op} castRawSizeToInt(other.rawSize)))
+    else unsignedOf(castLongToRawSize(castRawSizeToLongUnsigned(rawSize) ${op} castRawSizeToLongUnsigned(other.rawSize)))
 
   % end
 
@@ -200,8 +200,8 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 
   /** ${doc} */
   @inline def ${op}(other: USize): USize =
-    if (is32BitPlatform) new USize(castIntToRawSizeUnsigned(${int}(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
-    else new USize(castLongToRawSize(${long}(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
+    if (is32BitPlatform) unsignedOf(castIntToRawSizeUnsigned(${int}(castRawSizeToInt(rawSize), castRawSizeToInt(other.rawSize))))
+    else unsignedOf(castLongToRawSize(${long}(castRawSizeToLongUnsigned(rawSize), castRawSizeToLongUnsigned(other.rawSize))))
 
   % end
 
@@ -217,4 +217,25 @@ object USize {
   @inline implicit def ubyteToUSize(x: UByte): USize = x.toUSize
   @inline implicit def ushortToUSize(x: UShort): USize = x.toUSize
   @inline implicit def uintToUSize(x: UInt): USize = x.toUSize
+
+  @inline def valueOf(rawSize: RawSize): USize = {
+    import USizeCache.cache
+    val intValue = castRawSizeToInt(rawSize)
+    val byteValue = intValue.toByte
+    if(castIntToRawSizeUnsigned(byteValue) != rawSize) new USize(rawSize)
+    else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new USize(rawSize)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsigned] object USizeCache{
+  private[unsigned] val cache: scala.Array[USize] = new scala.Array[USize](256)
 }

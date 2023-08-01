@@ -1,103 +1,163 @@
 /*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Written by Doug Lea with assistance from members of JCP JSR-166
+ * Expert Group and released to the public domain, as explained at
+ * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
 package org.scalanative.testsuite.javalib.util.concurrent.atomic
 
 import org.junit.Test
 import org.junit.Assert._
+import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
+import JSR166Test._
 
-class LongAdderTest {
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.LongAdder
 
-  @Test def longAdderIncrementTest(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    assertEquals(0L, value.sum())
-    value.increment()
-    assertEquals(1L, value.sum())
-    value.increment()
-    assertEquals(2L, value.sum())
+class LongAdderTest extends JSR166Test {
+  import JSR166Test._
+
+  @Test def testConstructor(): Unit = {
+    val ai = new LongAdder
+    assertEquals(0, ai.sum)
   }
 
-  @Test def longAdderDecrementTest(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    assertEquals(0L, value.sum())
-    value.increment()
-    value.increment()
-    value.increment()
-    assertEquals(3L, value.sum())
-    value.decrement()
-    assertEquals(2L, value.sum())
-    value.decrement()
-    assertEquals(1L, value.sum())
+  /** add adds given value to current, and sum returns current value
+   */
+  @Test def testAddAndSum(): Unit = {
+    val ai = new LongAdder
+    ai.add(2)
+    assertEquals(2, ai.sum)
+    ai.add(-4)
+    assertEquals(-2, ai.sum)
   }
 
-  @Test def longAdderLongValue(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(100L)
-    assertEquals(100L, value.longValue())
-    value.add(100L)
-    assertEquals(200L, value.longValue())
+  /** decrement decrements and sum returns current value
+   */
+  @Test def testDecrementAndSum(): Unit = {
+    val ai = new LongAdder
+    ai.decrement()
+    assertEquals(-1, ai.sum)
+    ai.decrement()
+    assertEquals(-2, ai.sum)
   }
 
-  @Test def longAdderIntValue(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    assertEquals(10, value.intValue())
-    value.add(10)
-    assertEquals(20, value.intValue())
+  /** incrementAndGet increments and returns current value
+   */
+  @Test def testIncrementAndSum(): Unit = {
+    val ai = new LongAdder
+    ai.increment()
+    assertEquals(1, ai.sum)
+    ai.increment()
+    assertEquals(2, ai.sum)
   }
 
-  @Test def longAdderFloatValue(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    assertEquals(10f, value.floatValue(), 0)
-    value.add(10)
-    assertEquals(20f, value.floatValue(), 0)
+  /** reset() causes subsequent sum() to return zero
+   */
+  @Test def testReset(): Unit = {
+    val ai = new LongAdder
+    ai.add(2)
+    assertEquals(2, ai.sum)
+    ai.reset()
+    assertEquals(0, ai.sum)
   }
 
-  @Test def longAdderDoubleValue(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    assertEquals(10d, value.doubleValue(), 0)
-    value.add(10)
-    assertEquals(20d, value.doubleValue(), 0)
+  /** sumThenReset() returns sum; subsequent sum() returns zero
+   */
+  @Test def testSumThenReset(): Unit = {
+    val ai = new LongAdder
+    ai.add(2)
+    assertEquals(2, ai.sum)
+    assertEquals(2, ai.sumThenReset)
+    assertEquals(0, ai.sum)
   }
 
-  @Test def longAdderReset(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    assertEquals(10, value.sum())
-    value.reset()
-    assertEquals(0, value.sum())
+  /** toString returns current value.
+   */
+  @Test def testToString(): Unit = {
+    val ai = new LongAdder
+    assertEquals("0", ai.toString)
+    ai.increment()
+    assertEquals(1L.toString(), ai.toString)
   }
 
-  @Test def longAdderAdd(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    assertEquals(10, value.sum())
-    value.add(0)
-    assertEquals(10, value.sum())
+  /** intValue returns current value.
+   */
+  @Test def testIntValue(): Unit = {
+    val ai = new LongAdder
+    assertEquals(0, ai.intValue)
+    ai.increment()
+    assertEquals(1, ai.intValue)
   }
 
-  @Test def longAdderSumThenReset(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    val res = value.sumThenReset()
-    assertEquals(0, value.sum())
-    assertEquals(10, res)
+  /** longValue returns current value.
+   */
+  @Test def testLongValue(): Unit = {
+    val ai = new LongAdder
+    assertEquals(0, ai.longValue)
+    ai.increment()
+    assertEquals(1, ai.longValue)
   }
 
-  @Test def longAdderToString(): Unit = {
-    val value = new java.util.concurrent.atomic.LongAdder
-    value.add(10)
-    assertEquals("10", value.toString())
+  /** floatValue returns current value.
+   */
+  @Test def testFloatValue(): Unit = {
+    val ai = new LongAdder
+    assertEquals(0.0f, ai.floatValue, 0.0f)
+    ai.increment()
+    assertEquals(1.0f, ai.floatValue, 0.0f)
+  }
+
+  /** doubleValue returns current value.
+   */
+  @Test def testDoubleValue(): Unit = {
+    val ai = new LongAdder
+    assertEquals(0.0, ai.doubleValue, 0.0)
+    ai.increment()
+    assertEquals(1.0, ai.doubleValue, 0.0)
+  }
+
+  /** adds by multiple threads produce correct sum
+   */
+  @throws[Throwable]
+  def testAddAndSumMT(): Unit = {
+    val incs = 1000000
+    val nthreads = 4
+    val pool = Executors.newCachedThreadPool()
+    val a = new LongAdder
+    val barrier = new CyclicBarrier(nthreads + 1)
+    for (i <- 0 until nthreads) {
+      pool.execute(new AdderTask(a, barrier, incs))
+    }
+    barrier.await
+    barrier.await
+    val total = nthreads.toLong * incs
+    val sum = a.sum
+    assertEquals(sum, total)
+    pool.shutdown()
+  }
+  final class AdderTask(
+      val adder: LongAdder,
+      val barrier: CyclicBarrier,
+      val incs: Int
+  ) extends Runnable {
+    var result = 0L
+
+    override def run(): Unit = {
+      try {
+        barrier.await
+        val a = adder
+        for (i <- 0 until incs) {
+          a.add(1L)
+        }
+        result = a.sum
+        barrier.await
+      } catch {
+        case t: Throwable =>
+          throw new Error(t)
+      }
+    }
   }
 }

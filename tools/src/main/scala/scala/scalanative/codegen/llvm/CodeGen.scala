@@ -10,15 +10,19 @@ import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
 import scala.scalanative.{build, linker}
 import scala.scalanative.util.{Scope, partitionBy, procs}
-import scala.scalanative.compat.CompatParColls.Converters._
 import java.nio.file.StandardCopyOption
 
 import scala.scalanative.build.ScalaNative
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
+import scala.concurrent._
+import scala.util.Success
+
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result): Seq[Path] = {
+  def apply(config: build.Config, linked: linker.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Path]] = {
     val defns = linked.defns
     val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
 
@@ -30,30 +34,35 @@ object CodeGen {
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)
     val lowered = lower(generated ++ embedded)
-    dumpDefns(config, "lowered", lowered)
-    emit(config, lowered)
+    lowered
+      .andThen { case Success(defns) => dumpDefns(config, "lowered", defns) }
+      .flatMap(emit(config, _))
   }
 
   private def lower(
       defns: Seq[Defn]
-  )(implicit meta: CodeGenMetadata, logger: build.Logger): Seq[Defn] = {
-    val buf = mutable.UnrolledBuffer.empty[Defn]
+  )(implicit
+      meta: CodeGenMetadata,
+      logger: build.Logger,
+      ec: ExecutionContext
+  ): Future[Seq[Defn]] = {
 
-    partitionBy(defns)(_.name).par
-      .map {
-        case (_, defns) =>
-          Lower(defns)
+    val loweringJobs = partitionBy(defns)(_.name).map {
+      case (_, defns) => Future(Lower(defns))
+    }
+
+    Future
+      .foldLeft(loweringJobs)(mutable.UnrolledBuffer.empty[Defn]) {
+        case (buffer, defns) => buffer ++= defns
       }
-      .seq
-      .foreach { defns => buf ++= defns }
-
-    buf.toSeq
+      .map(_.toSeq)
   }
 
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
-      meta: CodeGenMetadata
-  ): Seq[Path] =
+      meta: CodeGenMetadata,
+      ec: ExecutionContext
+  ): Future[Seq[Path]] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
       val workDir = VirtualDirectory.real(config.workDir)
@@ -61,18 +70,18 @@ object CodeGen {
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
-      def separate(): Seq[Path] =
-        partitionBy(assembly, procs)(_.name.top.mangle).par
-          .map {
+      def separate(): Future[Seq[Path]] =
+        Future
+          .traverse(partitionBy(assembly, procs)(_.name.top).toSeq) {
             case (id, defns) =>
-              val sorted = defns.sortBy(_.name.show)
-              Impl(env, sorted).gen(id.toString, workDir)
+              Future {
+                val sorted = defns.sortBy(_.name)
+                Impl(env, sorted).gen(id.toString, workDir)
+              }
           }
-          .toSeq
-          .seq
 
       // Incremental compilation code generation
-      def seperateIncrementally(): Seq[Path] = {
+      def seperateIncrementally(): Future[Seq[Path]] = {
         def packageName(defn: Defn): String = {
           val name = defn.name.top.id
             .split('.')
@@ -84,19 +93,17 @@ object CodeGen {
 
         val ctx = new IncrementalCodeGenContext(config.workDir)
         ctx.collectFromPreviousState()
-        try
-          assembly
-            .groupBy(packageName)
-            .par
-            .map {
-              case (packageName, defns) =>
+        Future
+          .traverse(assembly.groupBy(packageName).toSeq) {
+            case (packageName, defns) =>
+              Future {
                 val packagePath = packageName.replace(".", File.separator)
                 val outFile = config.workDir.resolve(s"$packagePath.ll")
                 val ownerDirectory = outFile.getParent()
 
                 ctx.addEntry(packageName, defns)
                 if (ctx.shouldCompile(packageName)) {
-                  val sorted = defns.sortBy(_.name.show)
+                  val sorted = defns.sortBy(_.name)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
                   Impl(env, sorted).gen(packagePath, workDir)
@@ -107,21 +114,21 @@ object CodeGen {
                   )
                   config.workDir.resolve(s"$packagePath.ll")
                 }
-            }
-            .seq
-            .toSeq
-        finally {
-          // Save current state for next compilation run
-          ctx.dump()
-          ctx.clear()
-        }
+              }
+          }
+          .andThen {
+            case _ =>
+              // Save current state for next compilation run
+              ctx.dump()
+              ctx.clear()
+          }
       }
 
       // Generate a single LLVM IR file for the whole application.
       // This is an adhoc form of LTO. We use it in release mode if
       // Clang's LTO is not available.
-      def single(): Seq[Path] = {
-        val sorted = assembly.sortBy(_.name.show)
+      def single(): Future[Seq[Path]] = Future {
+        val sorted = assembly.sortBy(_.name)
         Impl(env, sorted).gen(id = "out", workDir) :: Nil
       }
 

@@ -15,6 +15,7 @@ import java.{util => ju}
 import java.util.Arrays
 import java.util.{OptionalDouble, DoubleSummaryStatistics}
 import java.util.Spliterator
+import java.util.Spliterators
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._
@@ -26,6 +27,7 @@ import java.util.stream._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.BeforeClass
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -36,6 +38,11 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
  *     - doubleStreamMapToInt, required IntStream
  *     - doubleStreamMapToLong, requires LongStream
  */
+
+object DoubleStreamTest {
+  @BeforeClass def checkLimitMethodCharacteristics(): Unit =
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+}
 
 class DoubleStreamTest {
 
@@ -87,12 +94,160 @@ class DoubleStreamTest {
     )
   }
 
-// Methods specified in interface Stream --------------------------------
+  @Test def streamParallel(): Unit = {
+    val nElements = 5
+
+    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
+    wild(0) = 132.45
+    wild(1) = 4.21
+    wild(2) = 2.11
+    wild(3) = 55.31
+    wild(4) = 16.68
+
+    val sPar0 =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), true)
+
+    assertTrue(
+      "Expected parallel stream",
+      sPar0.isParallel()
+    )
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED // 0x4040
+
+    val sPar0Spliterator = sPar0.spliterator()
+    assertEquals(
+      "parallel characteristics",
+      expectedCharacteristics,
+      sPar0Spliterator.characteristics()
+    )
+
+    val sPar =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), true)
+
+    val sSeq = sPar.sequential()
+    assertFalse(
+      "Expected sequential stream",
+      sSeq.isParallel()
+    )
+
+    val sSeqSpliterator = sSeq.spliterator()
+
+    assertEquals(
+      "sequential characteristics",
+      expectedCharacteristics,
+      sSeqSpliterator.characteristics()
+    )
+
+    assertEquals(
+      "Unexpected sequential stream size",
+      nElements,
+      sSeqSpliterator.estimateSize()
+    )
+
+    // sequential stream has expected contents
+    var count = 0
+    sSeqSpliterator.forEachRemaining((e: Double) => {
+      assertEquals(
+        s"sequential stream contents(${count})",
+        wild(count),
+        e,
+        epsilon
+      )
+      count += 1
+    })
+  }
+
+  @Test def streamSequential(): Unit = {
+    val nElements = 5
+
+    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
+    wild(0) = 132.45
+    wild(1) = 4.21
+    wild(2) = 2.11
+    wild(3) = 55.31
+    wild(4) = 16.68
+
+    val sSeq0 =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), false)
+
+    assertFalse(
+      "Expected sequential stream",
+      sSeq0.isParallel()
+    )
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED // 0x4040
+
+    val sSeq0Spliterator = sSeq0.spliterator()
+    assertEquals(
+      "sequential characteristics",
+      expectedCharacteristics,
+      sSeq0Spliterator.characteristics()
+    )
+
+    val sSeq =
+      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), false)
+
+    val sPar = sSeq.parallel()
+    assertTrue(
+      "Expected parallel stream",
+      sSeq.isParallel()
+    )
+
+    val sParSpliterator = sPar.spliterator()
+
+    assertEquals(
+      "parallel characteristics",
+      expectedCharacteristics,
+      sParSpliterator.characteristics()
+    )
+
+    assertEquals(
+      "Unexpected parallel stream size",
+      nElements,
+      sParSpliterator.estimateSize()
+    )
+
+    // parallel stream has expected contents
+    var count = 0
+    sParSpliterator.forEachRemaining((e: Double) => {
+      assertEquals(
+        s"parallel stream contents(${count})",
+        wild(count),
+        e,
+        epsilon
+      )
+      count += 1
+    })
+  }
+
+// Methods specified in interface Double Stream -------------------------
 
   @Test def doubleStreamBuilderCanBuildAnEmptyStream(): Unit = {
     val s = DoubleStream.builder().build()
     val it = s.iterator()
     assertFalse(it.hasNext())
+  }
+
+  @Test def doubleStreamBuilderCharacteristics(): Unit = {
+    val bldr = Stream.builder[Double]()
+    bldr
+      .add(1.1)
+      .add(-1.1)
+      .add(9.9)
+
+    val s = bldr.build()
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
   }
 
   @Test def doubleStreamEmptyIsEmpty(): Unit = {
@@ -110,6 +265,23 @@ class DoubleStreamTest {
     assertFalse("DoubleStream should be empty and is not.", it.hasNext())
   }
 
+  @Test def streamOf_SingleElementCharacteristics(): Unit = {
+    val expected = 7.7
+
+    val s = DoubleStream.of(expected)
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
+  }
+
   @Test def doubleStreamOf_MultipleElements(): Unit = {
     val s = DoubleStream.of(1.1, 2.2, 3.3)
     val it = s.iterator()
@@ -117,6 +289,21 @@ class DoubleStreamTest {
     assertEquals("element_2", 2.2, it.nextDouble(), epsilon)
     assertEquals("element_3", 3.3, it.nextDouble(), epsilon)
     assertFalse(it.hasNext())
+  }
+
+  @Test def streamOf_MultipleElementsCharacteristics(): Unit = {
+    val s = DoubleStream.of(1.1, 2.2, 3.3)
+    val spliter = s.spliterator()
+
+    val expectedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      spliter.characteristics()
+    )
   }
 
   @Test def doubleStreamFlatMapWorks(): Unit = {
@@ -682,6 +869,8 @@ class DoubleStreamTest {
   }
 
   @Test def doubleStreamLimit(): Unit = {
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+
     val expectedCount = 10
     var data = -1
 
@@ -693,6 +882,167 @@ class DoubleStreamTest {
     val s1 = s0.limit(expectedCount)
 
     assertEquals(s"unexpected element count", expectedCount, s1.count())
+  }
+
+  /*  Note Well: See Issue #3309 comments in StreamTest.scala and
+   *             in original issue.
+   */
+
+  // Issue #3309 - 1 of 5
+  @Test def doubleSstreamLimit_Size(): Unit = {
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+
+    val srcSize = 10
+
+    val spliter = DoubleStream
+      .iterate(2.71828, e => e + 1.0)
+      .limit(srcSize)
+      .spliterator()
+
+    val expectedExactSize = -1
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    val expectedEstimatedSize = Long.MaxValue
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
+  // Issue #3309 - 2 of 5
+  @Test def doubleStreamLimit_Characteristics(): Unit = {
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+
+    val zeroCharacteristicsSpliter =
+      new Spliterators.AbstractDoubleSpliterator(Long.MaxValue, 0x0) {
+        def tryAdvance(action: DoubleConsumer): Boolean = true
+      }
+
+    val sZero = StreamSupport.doubleStream(zeroCharacteristicsSpliter, false)
+    val sZeroLimited = sZero.limit(9)
+
+    val sZeroLimitedSpliter = sZeroLimited.spliterator()
+
+    val expectedSZeroLimitedCharacteristics = 0x0
+
+    assertEquals(
+      "Unexpected characteristics for zero characteristics stream",
+      expectedSZeroLimitedCharacteristics,
+      sZeroLimitedSpliter.characteristics()
+    )
+
+    /* JVM fails the StreamSupport.stream() call with IllegalStateException
+     * when SORTED is specified. Top of stack traceback is:
+     *    at java.util.Spliterator.getComparator(Spliterator.java:471)
+     *
+     * Test the bits we can here and let Test
+     * streamLimit_SortedCharacteristics() handle SORTED.
+     */
+    val allCharacteristicsSpliter =
+      new Spliterators.AbstractDoubleSpliterator(Long.MaxValue, 0x5551) {
+        def tryAdvance(action: DoubleConsumer): Boolean = true
+      }
+
+    val sAll = StreamSupport.doubleStream(allCharacteristicsSpliter, false)
+
+    val sAllLimited = sAll.limit(9)
+    val sAllLimitedSpliter = sAllLimited.spliterator()
+
+    // JVM 8 expects 0x11 (decimal 17), JVM >= 17 expects 0x4051 (Dec 16465)
+    val expectedSAllLimitedCharacteristics =
+      Spliterator.ORDERED | Spliterator.DISTINCT // 0x11
+      // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
+      // SORTED was not there to drop.
+
+    assertEquals(
+      "Unexpected characteristics for all characteristics stream",
+      expectedSAllLimitedCharacteristics,
+      sAllLimitedSpliter.characteristics()
+    )
+  }
+
+  // Issue #3309 - 3 of 5
+  @Test def streamLimit_SortedCharacteristics(): Unit = {
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+
+    /* Address issues with SORTED described in Test
+     * streamLimit_sequentialAlwaysCharacteristics
+     */
+    val allCharacteristicsSpliter =
+      new Spliterators.AbstractDoubleSpliterator(0, 0x5551) {
+        def tryAdvance(action: DoubleConsumer): Boolean = false
+      }
+
+    val sAll = StreamSupport.doubleStream(allCharacteristicsSpliter, false)
+
+    val sAllLimited = sAll.sorted().limit(9)
+    val sAllLimitedSpliter = sAllLimited.spliterator()
+
+    // JVM 8 expects 0x15 (decimal 21), JVM >= 17 expects 0x4055 (Dec 16469)
+    val expectedSAllLimitedCharacteristics =
+      Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED // 0x15        // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
+
+    assertEquals(
+      "Unexpected characteristics for all characteristics sorted stream",
+      expectedSAllLimitedCharacteristics,
+      sAllLimitedSpliter.characteristics()
+    )
+  }
+
+  // Issue #3309 - 4 of 5
+  @Test def streamLimit_UnsizedCharacteristics(): Unit = {
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+
+    val srcSize = 20
+
+    val unsizedSpliter = DoubleStream
+      .iterate(1.2, n => n + 1.1)
+      .limit(srcSize)
+      .spliterator()
+
+    val expectedUnsizedCharacteristics = Spliterator.ORDERED // 0x10
+
+    assertEquals(
+      "Unexpected unsized characteristics",
+      expectedUnsizedCharacteristics,
+      unsizedSpliter.characteristics()
+    )
+  }
+
+  // Issue #3309 - 5 of 5
+  @Test def streamLimit_SizedCharacteristics(): Unit = {
+    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+
+    val proofSpliter = DoubleStream.of(1.12, 2.23, 3.34, -1.12).spliterator()
+
+    val expectedProofCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+
+    assertEquals(
+      "Unexpected origin stream characteristics",
+      expectedProofCharacteristics,
+      proofSpliter.characteristics()
+    )
+
+    val sizedSpliter = DoubleStream
+      .of(1.12, 2.23, 3.34, -1.12)
+      .limit(3)
+      .spliterator()
+
+    // JVM 8 expects 0x10 (decimal 16), JVM >= 17 expects 0x4050 (Dec 16464)
+    val expectedSizedLimitCharacteristics = Spliterator.ORDERED
+
+    assertEquals(
+      "Unexpected characteristics for SIZED stream",
+      expectedSizedLimitCharacteristics,
+      sizedSpliter.characteristics()
+    )
   }
 
   @Test def doubleStreamMap(): Unit = {

@@ -1,6 +1,9 @@
 package scala.scalanative
 
 import scala.scalanative.build.{Config, NativeConfig, Mode, ScalaNative}
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {
@@ -28,7 +31,8 @@ abstract class OptimizerSpec extends LinkerSpec {
     link(entry, sources, setupConfig) {
       case (config, linked) =>
         val optimized = ScalaNative.optimize(config, linked)
-        fn(config, optimized)
+        val result = Await.result(optimized, 1.minute)
+        fn(config, result)
     }
 
 }

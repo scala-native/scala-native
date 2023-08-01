@@ -349,6 +349,32 @@ class FileChannelTest {
     }
   }
 
+  @Test def writeOfMultipleBuffersReturnsTotalBytesWritten(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+
+      val data = Array("Parsley", "sage", "rosemary", "thyme")
+
+      val nbytes = new Array[Int](data.size)
+      for (j <- 0 until data.size)
+        nbytes(j) = data(j).size
+
+      val srcs = new Array[ByteBuffer](data.size)
+      for (j <- 0 until data.size)
+        srcs(j) = ByteBuffer.wrap(data(j).getBytes("UTF-8"))
+
+      val expectedTotalWritten = nbytes.sum
+
+      val channel =
+        FileChannel.open(f, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+
+      try {
+        val nWritten = channel.write(srcs, 0, srcs.size)
+        assertEquals("total bytes written", expectedTotalWritten, nWritten)
+      } finally channel.close()
+    }
+  }
+
   @Test def canMoveFilePointer(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")

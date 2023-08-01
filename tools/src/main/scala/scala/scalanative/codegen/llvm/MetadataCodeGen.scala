@@ -9,6 +9,9 @@ import scala.scalanative.util.unsupported
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
+import scala.scalanative.nir.Unmangle
+import scala.scalanative.nir.Global.Member
+import scala.scalanative.nir.Sig.Method
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -68,9 +71,24 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       producer = Constants.PRODUCER,
       isOptimized = attrs.opt == nir.Attr.DidOpt
     )
+    // unmangle method name
+    // see: https://scala-native.org/en/stable/contrib/mangling.html
+    val linkageName = mangled(name)
+    val defnName = if (linkageName.startsWith("_S")) linkageName.drop(2) else linkageName
+    val unmangledName = if (defnName.startsWith("M")) { // subprogram should be a member
+      Unmangle.unmangleGlobal(defnName) match {
+        case Member(owner, sig) =>
+          Unmangle.unmangleSig(sig.mangle) match {
+            case Method(id, _, _) => Some(id)
+            case _                => None
+          }
+        case _ => None
+      }
+    } else None
+
     DISubprogram(
-      name = name.top.id,
-      linkageName = mangled(name),
+      name = unmangledName.getOrElse(linkageName),
+      linkageName = linkageName,
       scope = unit,
       file = file,
       unit = unit,

@@ -26,6 +26,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val NoSpecializeClass = requiredClass("scala.scalanative.annotation.nospecialize")
 
   @tu lazy val StubClass = requiredClass("scala.scalanative.annotation.stub")
+  @tu lazy val AlignClass = requiredClass("scala.scalanative.annotation.align")
   @tu lazy val NameClass = requiredClass("scala.scalanative.unsafe.name")
   @tu lazy val LinkClass = requiredClass("scala.scalanative.unsafe.link")
   @tu lazy val ExternClass = requiredClass("scala.scalanative.unsafe.extern")
@@ -156,6 +157,13 @@ final class NirDefinitions()(using ctx: Context) {
     .ensuring(_.size == 2)
   @tu lazy val Intrinsics_alignmentOf = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
   @tu lazy val Intrinsics_alignmentOfType = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
+
+  @tu lazy val Intrinsics_unsignedOfAlts =
+    IntrinsicsModule.info
+      .member(termName("unsignedOf"))
+      .alternatives
+      .map(_.symbol)
+      .ensuring(_.size == 5)
 
   // Runtime types
   @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(

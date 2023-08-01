@@ -7,6 +7,7 @@ import scala.scalanative.nir._
 import scala.scalanative.linker._
 import scala.scalanative.util.ScopedVar
 import java.util.function.Supplier
+import scala.concurrent._
 
 class Interflow(val config: build.Config)(implicit
     val linked: linker.Result
@@ -154,11 +155,14 @@ class Interflow(val config: build.Config)(implicit
 }
 
 object Interflow {
-  def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
+  def optimize(config: build.Config, linked: linker.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Defn]] = {
     val interflow = new Interflow(config)(linked)
     interflow.visitEntries()
-    interflow.visitLoop()
-    interflow.result()
+    interflow
+      .visitLoop()
+      .map(_ => interflow.result())
   }
 
   object LLVMIntrinsics {

@@ -1108,7 +1108,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genApplyNew(app)
         case _ =>
           val sym = fun.symbol
-
           if (sym.isLabel) {
             genApplyLabel(app)
           } else if (scalaPrimitives.isPrimitive(sym)) {
@@ -1161,7 +1160,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val sym = app.symbol
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
-
       if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code)) {
         genSimpleOp(app, receiver :: args, code)
       } else if (code == CONCAT)
@@ -2029,6 +2027,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genUnsignedOp(app: Tree, code: Int): Val = {
       implicit val pos: nir.Position = app.pos
       app match {
+        case Apply(_, Seq(argp)) if code == UNSIGNED_OF =>
+          val ty = genType(app.tpe.resultType)
+          val arg = genExpr(argp)
+
+          buf.box(ty, arg, unwind)
+
         case Apply(_, Seq(argp))
             if code >= BYTE_TO_UINT && code <= INT_TO_ULONG =>
           val ty = genType(app.tpe)

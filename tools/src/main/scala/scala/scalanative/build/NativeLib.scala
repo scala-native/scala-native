@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
+import scala.concurrent._
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
@@ -31,7 +32,7 @@ private[scalanative] object NativeLib {
       config: Config,
       linkerResult: linker.Result,
       nativeLib: NativeLib
-  ): Seq[Path] = {
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     val destPath = NativeLib.unpackNativeCode(nativeLib)
     val paths = NativeLib.findNativePaths(config.workDir, destPath)
     val (projPaths, projConfig) =

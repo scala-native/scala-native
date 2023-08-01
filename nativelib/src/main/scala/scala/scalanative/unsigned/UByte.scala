@@ -1,7 +1,7 @@
 package scala.scalanative
 package unsigned
 
-import scalanative.runtime.Intrinsics.castIntToRawSizeUnsigned
+import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned, unsignedOf}
 
 /** `UByte`, a 8-bit unsigned integer. */
 final class UByte private[scalanative] (
@@ -18,10 +18,10 @@ final class UByte private[scalanative] (
   @inline final def toDouble: Double = toInt.toDouble
 
   @inline final def toUByte: UByte = this
-  @inline final def toUShort: UShort = new UShort(toShort)
-  @inline final def toUInt: UInt = new UInt(toInt)
-  @inline final def toULong: ULong = new ULong(toLong)
-  @inline final def toUSize: USize = new USize(castIntToRawSizeUnsigned(toInt))
+  @inline final def toUShort: UShort = unsignedOf(toShort)
+  @inline final def toUInt: UInt = unsignedOf(toInt)
+  @inline final def toULong: ULong = unsignedOf(toLong)
+  @inline final def toUSize: USize = unsignedOf(castIntToRawSizeUnsigned(toInt))
 
   /** Returns the bitwise negation of this value.
    *  @example
@@ -292,10 +292,10 @@ final class UByte private[scalanative] (
 object UByte {
 
   /** The smallest value representable as a UByte. */
-  final val MinValue = new UByte(0.toByte)
+  final val MinValue = unsignedOf(0.toByte)
 
   /** The largest value representable as a UByte. */
-  final val MaxValue = new UByte((-1).toByte)
+  final val MaxValue = unsignedOf((-1).toByte)
 
   /** The String representation of the scala.UByte companion object. */
   override def toString(): String = "object scala.UByte"
@@ -305,4 +305,20 @@ object UByte {
   implicit def ubyte2ushort(x: UByte): UShort = x.toUShort
   implicit def ubyte2uint(x: UByte): UInt = x.toUInt
   implicit def ubyte2ulong(x: UByte): ULong = x.toULong
+
+  @inline def valueOf(byteValue: scala.Byte): UByte = {
+    import UByteCache.cache
+    val idx = byteValue - scala.Byte.MinValue
+    val cached = cache(idx)
+    if (cached ne null) cached
+    else {
+      val newBox = new UByte(byteValue)
+      cache(idx) = newBox
+      newBox
+    }
+  }
+}
+
+private[unsigned] object UByteCache {
+  private[unsigned] val cache = new Array[UByte](256)
 }

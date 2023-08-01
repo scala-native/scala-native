@@ -1,7 +1,7 @@
 package scala.scalanative
 package unsigned
 
-import scalanative.runtime.Intrinsics.castIntToRawSize
+import scalanative.runtime.Intrinsics.{castIntToRawSize, unsignedOf}
 
 /** `UShort`, a 16-bit unsigned integer. */
 final class UShort private[scalanative] (
@@ -17,11 +17,11 @@ final class UShort private[scalanative] (
   @inline final def toFloat: Float = toInt.toFloat
   @inline final def toDouble: Double = toInt.toDouble
 
-  @inline final def toUByte: UByte = new UByte(toByte)
+  @inline final def toUByte: UByte = unsignedOf(toByte)
   @inline final def toUShort: UShort = this
-  @inline final def toUInt: UInt = new UInt(toInt)
-  @inline final def toULong: ULong = new ULong(toLong)
-  @inline final def toUSize: USize = new USize(castIntToRawSize(toInt))
+  @inline final def toUInt: UInt = unsignedOf(toInt)
+  @inline final def toULong: ULong = unsignedOf(toLong)
+  @inline final def toUSize: USize = unsignedOf(castIntToRawSize(toInt))
 
   /** Returns the bitwise negation of this value.
    *  @example
@@ -292,10 +292,10 @@ final class UShort private[scalanative] (
 object UShort {
 
   /** The smallest value representable as a UShort. */
-  final val MinValue = new UShort(0.toShort)
+  final val MinValue = unsignedOf(0.toShort)
 
   /** The largest value representable as a UShort. */
-  final val MaxValue = new UShort((-1).toShort)
+  final val MaxValue = unsignedOf((-1).toShort)
 
   /** The String representation of the scala.UShort companion object. */
   override def toString(): String = "object scala.UShort"
@@ -304,4 +304,25 @@ object UShort {
   import scala.language.implicitConversions
   implicit def ubyte2uint(x: UShort): UInt = x.toUInt
   implicit def ubyte2ulong(x: UShort): ULong = x.toULong
+
+  @inline def valueOf(shortValue: scala.Short): UShort = {
+    import UShortCache.cache
+    val byteValue = shortValue.toByte
+    if (byteValue.toLong != shortValue) {
+      new UShort(shortValue)
+    } else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new UShort(shortValue)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsigned] object UShortCache {
+  private[unsigned] val cache = new Array[UShort](256)
 }

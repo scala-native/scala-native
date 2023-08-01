@@ -1,6 +1,8 @@
 package scala.scalanative.linker
 
-import org.scalatest._
+import org.junit.Test
+import org.junit.Assert._
+
 import scalanative.nir.{Sig, Type, Global, Rt}
 
 class ModuleReachabilitySuite extends ReachabilitySuite {
@@ -40,7 +42,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   val commonReachable =
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
 
-  testReachable("unused modules are discarded") {
+  @Test def unusedModules(): Unit = testReachable() {
     val source = """
       object Module
 
@@ -56,7 +58,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("unused module vars are discarded") {
+  @Test def unusedModuleVars(): Unit = testReachable() {
     val source = """
       object Module {
         var bar: Int = _
@@ -76,7 +78,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("unused module defs are discarded") {
+  @Test def unusedModuleDefs(): Unit = testReachable() {
     val source = """
       object Module {
         def foo: Unit = ()
@@ -98,7 +100,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("used modules are included") {
+  @Test def usedModules(): Unit = testReachable() {
     val source = """
       object Module
 
@@ -118,7 +120,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("used module parents are included") {
+  @Test def usedModuleParents(): Unit = testReachable() {
     val source = """
       class Parent
 
@@ -144,7 +146,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("used module traits are included") {
+  @Test def usedModuleTraits(): Unit = testReachable() {
     val source = """
       trait Trait
 
@@ -169,7 +171,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("module vars are included if written to") {
+  @Test def moduleVarsWrite(): Unit = testReachable() {
     val source = """
       object Module {
         var bar: Int = _
@@ -191,7 +193,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("module vars are included if read from") {
+  @Test def moduleVarsRead(): Unit = testReachable() {
     val source = """
       object Module {
         var bar: Int = _
@@ -213,7 +215,7 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("module methods are included if called") {
+  @Test def moduleMethodsCall(): Unit = testReachable() {
     val source = """
       object Module {
         def foo: Unit = ()
