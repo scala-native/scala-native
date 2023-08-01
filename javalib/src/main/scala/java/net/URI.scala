@@ -924,6 +924,11 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   def isOpaque(): Boolean = opaque
 
+  def toURL(): URL = {
+    if (!absolute) throw new IllegalArgumentException("URI is not absolute")
+    else new URL(toString)
+  }
+
   private def normalize(path: String): String = {
     // count the number of '/'s, to determine number of segments
     var index = -1

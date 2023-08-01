@@ -603,7 +603,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   def deleteOnExit(): Unit = DeleteOnExit.addFile(this.getAbsolutePath())
 
-  // def toURL(): java.net.URL = ???
+  def toURL(): java.net.URL = toURI().toURL()
 
   // Ported from Apache Harmony
   def toURI(): URI = {
