@@ -144,7 +144,7 @@ object Backtrace {
           .map(_.vmsize)
       } yield loadAddress - pageZeroSize).getOrElse(0L)
     }
-    proc.destroy()
+    proc.waitFor()
     offset.getOrElse(0L)
   }
 

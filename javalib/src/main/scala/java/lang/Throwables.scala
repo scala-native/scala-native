@@ -8,13 +8,15 @@ import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
+import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
 
   private def makeStackTraceElement(
-      cursor: Ptr[scala.Byte],
-      ip: CUnsignedLong
+      cursor: Ptr[scala.Byte]
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
     val name = alloc[CChar](nameMax.toUSize)
@@ -22,16 +24,12 @@ private[lang] object StackTrace {
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
 
-    val fileline: Option[(String, Int)] =
-      Backtrace.decodeFileline(ip.toLong)
-
     // Make sure the name is definitely 0-terminated.
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
 
-    // StackTraceElement.fromSymbol(name)
-    StackTraceElement.fromSymbol(name, fileline.getOrElse((null, 0)))
+    StackTraceElement.fromSymbol(name)
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
@@ -42,26 +40,64 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
+    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+    var buffer = mutable.ArrayBuffer.empty[(StackTraceElement, CUnsignedLong)]
     if (!LinktimeInfo.asanEnabled) {
       Zone { implicit z =>
         val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
         val context = alloc[scala.Byte](unwind.sizeOfContext)
         val ip = stackalloc[CSize]()
-
         unwind.get_context(context)
         unwind.init_local(cursor, context)
         while (unwind.step(cursor) > 0) {
           unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          buffer += cachedStackTraceElement(cursor, !ip)
+          val elem = (cachedStackTraceElement(cursor, !ip), !ip)
+          buffer += elem
         }
       }
     }
+    // Add filename and line number informatiion
+    // When analyzing the stack trace, if the entry "currentStackTrace" appears more than once, it indicates that a Throwable object
+    // was generated within the same "currentStackTrace" method, causing recursive calls. This recursive behavior can lead to an
+    // infinite loop, ultimately resulting in a stack overflow exception.
+    //
+    // To prevent excessive recursion, it's preferable to minimize multiple consecutive calls to the "currentStackTrace" method.
+    //
+    // The "currentStackTrace" process is straightforward and typically doesn't trigger exceptions.
+    // On the other hand, the "BackTrace.decodeFileline" is intricate, and if an exception thrown, it's likely to originate from that method.
+    //
+    // Consequently, to mitigate the risk of cascading recursive exceptions,
+    // skip executing "BackTrace.decodeFileline" if "currentStackTrace" is already being invoked recursively.
+    val recur = buffer.count(e => e._1.getMethodName == "currentStackTrace") > 1
+    buffer.map { e =>
+      val elem = e._1
+      val ip = e._2
+      val maybeFileline =
+        if (recur) None
+        else
+          Try(Backtrace.decodeFileline(ip.toLong)) match {
+            // Ignore the exception, should we expose the internal error somehow?
+            case Failure(exception) => None
+            case Success(value)     => value
+          }
 
-    buffer.toArray
+      val updated =
+        maybeFileline match {
+          case None => elem
+          case Some(v) =>
+            new StackTraceElement(
+              elem.getClassName,
+              elem.getMethodName,
+              v._1,
+              v._2
+            )
+        }
+      // Update cache with the updated stacktrace element
+      cache.update(ip, updated)
+      updated
+    }.toArray
   }
 }
 
