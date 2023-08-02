@@ -235,7 +235,8 @@ object Generate {
         unwind: () => Next
     )(implicit fresh: Fresh): Seq[Inst] = {
       defns.collect {
-        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+        case Defn.Define(_, name: Global.Member, _, _, _)
+            if name.sig.isClinit =>
           Inst.Let(
             Op.Call(
               Type.Function(Seq.empty, Type.Unit),

@@ -195,7 +195,7 @@ trait NirGenStat(using Context) {
         // Here we are generating a public static getter for the static field,
         // this is its API for other units. This is necessary for singleton
         // enum values, which are backed by static fields.
-        generatedDefns += Defn.Define(
+        generatedDefns += new Defn.Define(
           attrs = Attrs(inlineHint = nir.Attr.InlineHint),
           name = genStaticMemberName(f, classSym),
           ty = Type.Function(Nil, ty),
@@ -242,7 +242,8 @@ trait NirGenStat(using Context) {
       curMethodLabels := new MethodLabelsEnv(fresh),
       curMethodInfo := CollectMethodInfo().collect(dd.rhs),
       curFresh := fresh,
-      curUnwindHandler := None
+      curUnwindHandler := None,
+      curMethodLocalNames := localNamesBuilder()
     ) {
       val sym = dd.symbol
       val owner = curClassSym.get
@@ -277,7 +278,13 @@ trait NirGenStat(using Context) {
               if (curMethodUsesLinktimeResolvedValues)
                 attrs.copy(isLinktimeResolved = true)
               else attrs
-            val defn = Defn.Define(methodAttrs, name, sig, body)
+            val defn = Defn.Define(
+              methodAttrs,
+              name,
+              sig,
+              insts = body,
+              localNames = curMethodLocalNames.get.toMap
+            )
             Some(defn)
           }
       }
@@ -326,12 +333,15 @@ trait NirGenStat(using Context) {
       val tpe = sym.info.resultType
       val ty = genType(tpe)
       val name = genLocalName(sym)
-      val param = Val.Local(fresh(), ty, Some(name))
+      val param = Val.Local(fresh.namedId(genLocalName(sym)), ty)
       curMethodEnv.enter(sym, param)
       param
     }
     val thisParam = Option.unless(isStatic) {
-      Val.Local(fresh(), genType(curClassSym.get), Some("this"))
+      Val.Local(
+        fresh.namedId("this"),
+        genType(curClassSym.get)
+      )
     }
     val params = thisParam.toList ::: argParams
 
@@ -344,7 +354,7 @@ trait NirGenStat(using Context) {
         .foreach { sym =>
           val ty = genType(sym.info)
           val name = genLocalName(sym)
-          val slot = buf.var_(ty, Some(name), unwind(fresh))
+          val slot = buf.let(fresh.namedId(name), Op.Var(ty), unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
     }
@@ -368,10 +378,7 @@ trait NirGenStat(using Context) {
           buf.genReturn(Val.Unit)
         }
       else
-        scoped(
-          curMethodThis := thisParam,
-          curMethodIsExtern := isExtern
-        ) {
+        scoped(curMethodThis := thisParam, curMethodIsExtern := isExtern) {
           buf.genReturn(withOptSynchronized(_.genExpr(bodyp)) match {
             case Val.Zero(_) =>
               Val.Zero(genType(curMethodSym.get.info.resultType))
@@ -509,7 +516,7 @@ trait NirGenStat(using Context) {
       buf.ret(value)
     }
 
-    Defn.Define(
+    new Defn.Define(
       Attrs(inlineHint = Attr.AlwaysInline, isLinktimeResolved = true),
       methodName,
       Type.Function(Seq.empty, retty),
@@ -692,7 +699,8 @@ trait NirGenStat(using Context) {
     assert(moduleClass.is(ModuleClass), moduleClass)
 
     val existingStaticMethodNames: Set[Global] = existingMembers.collect {
-      case Defn.Define(_, name @ Global.Member(_, sig), _, _) if sig.isStatic =>
+      case Defn.Define(_, name @ Global.Member(_, sig), _, _, _)
+          if sig.isStatic =>
         name
     }.toSet
     val members = {
@@ -734,7 +742,7 @@ trait NirGenStat(using Context) {
         )
       }
 
-      Defn.Define(
+      new Defn.Define(
         attrs = Attrs(inlineHint = nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,

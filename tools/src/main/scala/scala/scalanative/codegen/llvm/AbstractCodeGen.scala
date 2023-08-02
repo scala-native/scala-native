@@ -95,7 +95,7 @@ private[codegen] abstract class AbstractCodeGen(
             defn.copy(attrs.copy(isExtern = true))
           case defn @ Defn.Declare(attrs, _, _) =>
             defn.copy(attrs.copy(isExtern = true))
-          case defn @ Defn.Define(attrs, name, ty, _) =>
+          case defn @ Defn.Define(attrs, name, ty, _, _) =>
             Defn.Declare(attrs, name, ty)
           case _ =>
             unreachable
@@ -137,11 +137,11 @@ private[codegen] abstract class AbstractCodeGen(
     case _ =>
       touch(n)
       env(n) match {
-        case Defn.Var(_, _, ty, _)     => ty
-        case Defn.Const(_, _, ty, _)   => ty
-        case Defn.Declare(_, _, sig)   => sig
-        case Defn.Define(_, _, sig, _) => sig
-        case _                         => unreachable
+        case Defn.Var(_, _, ty, _)        => ty
+        case Defn.Const(_, _, ty, _)      => ty
+        case Defn.Declare(_, _, sig)      => sig
+        case Defn.Define(_, _, sig, _, _) => sig
+        case _                            => unreachable
       }
   }
 
@@ -178,7 +178,7 @@ private[codegen] abstract class AbstractCodeGen(
       genGlobalDefn(attrs, name, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
       genFunctionDefn(attrs, name, sig, Seq.empty, Fresh(), defn.pos)
-    case Defn.Define(attrs, name, sig, insts) =>
+    case Defn.Define(attrs, name, sig, insts, localNames) =>
       genFunctionDefn(attrs, name, sig, insts, Fresh(insts), defn.pos)
     case defn =>
       unsupported(defn)
@@ -265,10 +265,8 @@ private[codegen] abstract class AbstractCodeGen(
       str(" {")
 
       insts.foreach {
-        case Inst.Let(n, _, Op.Copy(v), _) =>
-          copies(n) = v
-        case _ =>
-          ()
+        case Inst.Let(n, Op.Copy(v), _) => copies(n) = v
+        case _                          => ()
       }
 
       locally {
@@ -372,11 +370,11 @@ private[codegen] abstract class AbstractCodeGen(
     if (!block.isEntry) {
       val params = block.params
       params.zipWithIndex.foreach {
-        case (Val.Local(name, Type.Unit, _), n) => () // skip
-        case (Val.Local(name, ty, _), n) =>
+        case (Val.Local(_, Type.Unit), n) => () // skip
+        case (Val.Local(id, ty), n) =>
           newline()
           str("%")
-          genLocal(name)
+          genLocal(id)
           str(" = phi ")
           genType(ty)
           str(" ")
@@ -390,7 +388,7 @@ private[codegen] abstract class AbstractCodeGen(
               str(edge.from.splitCount)
             }
             def genUnwindEdge(unwind: Next.Unwind): Unit = {
-              val Next.Unwind(Val.Local(exc, _, _), Next.Label(_, vals)) =
+              val Next.Unwind(Val.Local(exc, _), Next.Label(_, vals)) =
                 unwind: @unchecked
               genJustVal(vals(n))
               str(", %")
@@ -424,7 +422,7 @@ private[codegen] abstract class AbstractCodeGen(
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
     block.insts.foreach {
-      case inst @ Inst.Let(_, _, _, unwind: Next.Unwind) =>
+      case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
         import inst.pos
         os.genLandingPad(unwind)
       case _ => ()
@@ -479,7 +477,7 @@ private[codegen] abstract class AbstractCodeGen(
       name
     }
   private[codegen] def deconstify(v: Val): Val = v match {
-    case Val.Local(local, _, _) if copies.contains(local) =>
+    case Val.Local(local, _) if copies.contains(local) =>
       deconstify(copies(local))
     case Val.StructValue(vals) =>
       Val.StructValue(vals.map(deconstify))
@@ -521,7 +519,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(" ]")
       case Val.ByteString(v) =>
         genByteString(v)
-      case Val.Local(n, ty, _) =>
+      case Val.Local(n, ty) =>
         str("%")
         genLocal(n)
       case Val.Global(n, ty) =>
@@ -1038,7 +1036,7 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
     v match {
-      case Val.Local(_, refty: Type.RefKind, _) =>
+      case Val.Local(_, refty: Type.RefKind) =>
         val (nonnull, deref, size) = toDereferenceable(refty)
         // Primitive unit value cannot be passed as argument, probably BoxedUnit is expected
         if (refty == Type.Unit) genType(Type.Ptr)
@@ -1147,7 +1145,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(", label %")
         genLocal(next.name)
         str(".0")
-      case Next.Unwind(Val.Local(exc, _, _), _) =>
+      case Next.Unwind(Val.Local(exc, _), _) =>
         str("label %_")
         str(exc.id)
         str(".landingpad")

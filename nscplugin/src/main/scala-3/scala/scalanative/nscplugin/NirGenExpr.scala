@@ -44,6 +44,7 @@ trait NirGenExpr(using Context) {
 
   class ExprBuffer(using fresh: Fresh) extends FixupBuffer {
     buf =>
+
     def genExpr(tree: Tree): Val = {
       tree match {
         case EmptyTree      => Val.Unit
@@ -297,7 +298,7 @@ trait NirGenExpr(using Context) {
           buf.toSeq
         }
 
-        nir.Defn.Define(Attrs.None, ctorName, ctorTy, body)
+        new nir.Defn.Define(Attrs.None, ctorName, ctorTy, body)
       }
 
       def resolveAnonClassMethods: List[Symbol] = {
@@ -380,7 +381,7 @@ trait NirGenExpr(using Context) {
           }
         }
 
-        nir.Defn.Define(
+        new nir.Defn.Define(
           Attrs.None,
           methodName,
           Type.Function(paramTypes, retType),
@@ -956,15 +957,18 @@ trait NirGenExpr(using Context) {
 
     def genValDef(vd: ValDef): Val = {
       given nir.Position = vd.span
-      val localName = genLocalName(vd.symbol)
-      val rhs = {
-        val rhs0 = genExpr(vd.rhs)
-        buf
-          .patch(rhs0)(_.copy(localName = Some(localName)))
-          .getOrElse(rhs0)
+      val localNames = curMethodLocalNames.get
+      val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
+      def name = genLocalName(vd.symbol)
+      val rhs = genExpr(vd.rhs) match {
+        case v @ Val.Local(id, _) =>
+          if !(localNames.contains(id) || isMutable)
+          then localNames.update(id, name)
+          v
+        case Val.Unit => Val.Unit
+        case v        => buf.let(fresh.namedId(name), Op.Copy(v), unwind)
       }
 
-      val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
       if (vd.symbol.isExtern)
         checkExplicitReturnTypeAnnotation(vd, "extern field")
       if (isMutable)
@@ -2645,7 +2649,7 @@ trait NirGenExpr(using Context) {
 
         buf.toSeq
       }
-      Defn.Define(attrs, forwarderName, forwarderSig, forwarderBody)
+      new Defn.Define(attrs, forwarderName, forwarderSig, forwarderBody)
     }
 
     private object WrapArray {
@@ -2812,11 +2816,10 @@ trait NirGenExpr(using Context) {
       }
       super.+=(inst)
       inst match {
-        case Inst.Let(_, _, op, _) if op.resty == Type.Nothing =>
+        case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
           unreachable(unwind)
           label(fresh())
-        case _ =>
-          ()
+        case _ => ()
       }
     }
 

@@ -39,7 +39,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
       super.+=(inst)
       inst match {
-        case Inst.Let(_, _, op, _) if op.resty == Type.Nothing =>
+        case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
           unreachable(unwind)
           label(fresh())
         case _ =>
@@ -172,16 +172,26 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genValDef(vd: ValDef): Val = {
-      val rhs = genExpr(vd.rhs)
+      implicit val pos: nir.Position = vd.pos
+      val localNames = curMethodLocalNames.get
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
+      def name = genLocalName(vd.symbol)
+
+      val rhs = genExpr(vd.rhs) match {
+        case v @ Val.Local(id, _) =>
+          if (localNames.contains(id) || isMutable) ()
+          else localNames.update(id, name)
+          v
+        case Val.Unit => Val.Unit
+        case v =>
+          if (isMutable) v
+          else buf.let(namedId(fresh)(name), Op.Copy(v), unwind)
+      }
       if (isMutable) {
         val slot = curMethodEnv.resolve(vd.symbol)
         buf.varstore(slot, rhs, unwind)(vd.pos)
       } else {
-        implicit val pos: nir.Position = vd.pos
-        val name = genLocalName(vd.symbol)
-        val const = buf.let(Some(name), Op.Copy(rhs), unwind)
-        curMethodEnv.enter(vd.symbol, const)
+        curMethodEnv.enter(vd.symbol, rhs)
         Val.Unit
       }
     }
@@ -798,7 +808,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         buf.toSeq
       }
 
-      statBuf += Defn.Define(Attrs.None, ctorName, ctorTy, ctorBody)
+      statBuf += new Defn.Define(Attrs.None, ctorName, ctorTy, ctorBody)
 
       // Generate methods that implement SAM interface each of the required signatures.
 
@@ -901,7 +911,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           buf.toSeq
         }
 
-        statBuf += Defn.Define(
+        statBuf += new Defn.Define(
           Attrs.None,
           funName,
           Type.Function(paramTypes, retType),
@@ -1129,7 +1139,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genApplyLabel(tree: Tree): Val = {
       val Apply(fun, argsp) = tree
-      val Val.Local(label, _, _) = curMethodEnv.resolve(fun.symbol)
+      val Val.Local(label, _) = curMethodEnv.resolve(fun.symbol)
       val args = genSimpleArgs(argsp)
       buf.jump(label, args)(tree.pos)
       Val.Unit
@@ -1319,7 +1329,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         buf.toSeq
       }
-      Defn.Define(attrs, forwarderName, externSig, forwarderBody)
+      new Defn.Define(attrs, forwarderName, externSig, forwarderBody)
     }
 
     def genCFuncFromScalaFunction(app: Apply): Val = {

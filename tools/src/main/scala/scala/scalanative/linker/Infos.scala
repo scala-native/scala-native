@@ -190,7 +190,8 @@ final class Method(
     val owner: Info,
     val name: Global,
     val ty: Type,
-    val insts: Array[Inst]
+    val insts: Array[Inst],
+    val localNames: LocalNames
 )(implicit val position: Position)
     extends MemberInfo {
   val value: Val =

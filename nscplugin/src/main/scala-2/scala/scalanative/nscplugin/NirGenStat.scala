@@ -49,7 +49,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def resolveLabel(ld: LabelDef): Local = {
-      val Val.Local(n, Type.Ptr, _) = resolve(ld.symbol)
+      val Val.Local(n, Type.Ptr) = resolve(ld.symbol)
       n
     }
   }
@@ -298,7 +298,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       staticInitBody.foreach {
         case body if body.nonEmpty =>
-          buf += Defn.Define(
+          buf += new Defn.Define(
             Attrs(),
             name,
             nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
@@ -332,7 +332,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           exprBuf.toSeq
         }
 
-        reflInstBuffer += Defn.Define(
+        reflInstBuffer += new Defn.Define(
           Attrs(),
           reflInstBuffer.name.member(Sig.Ctor(Seq.empty)),
           nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
@@ -390,7 +390,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             exprBuf.toSeq
           }
 
-          reflInstBuffer += Defn.Define(
+          reflInstBuffer += new Defn.Define(
             Attrs(),
             reflInstBuffer.name.member(applyMethodSig),
             nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), jlObjectRef),
@@ -526,7 +526,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               exprBuf.toSeq
             }
 
-            reflInstBuffer += Defn.Define(
+            reflInstBuffer += new Defn.Define(
               Attrs(),
               reflInstBuffer.name.member(applyMethodSig),
               nir.Type.Function(
@@ -649,7 +649,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curMethodEnv := env,
         curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
         curFresh := fresh,
-        curUnwindHandler := None
+        curUnwindHandler := None,
+        curMethodLocalNames := localNamesBuilder()
       ) {
         val sym = dd.symbol
         val owner = curClassSym.get
@@ -691,7 +692,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 if (curMethodUsesLinktimeResolvedValues)
                   attrs.copy(isLinktimeResolved = true)
                 else attrs
-              Some(Defn.Define(methodAttrs, name, sig, body))
+              Some(
+                new Defn.Define(
+                  methodAttrs,
+                  name,
+                  sig,
+                  insts = body,
+                  localNames = curMethodLocalNames.get.toMap
+                )
+              )
             }
         }
       }
@@ -787,7 +796,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         buf.ret(value)
       }
 
-      Defn.Define(
+      new Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline, isLinktimeResolved = true),
         methodName,
         Type.Function(Seq.empty, retty),
@@ -943,11 +952,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val params = paramSyms.map {
         case None =>
           val ty = genType(curClassSym.tpe)
-          Val.Local(fresh(), ty, Some("this"))
+          Val.Local(namedId(fresh)("this"), ty)
         case Some(sym) =>
           val ty = genType(sym.tpe)
           val name = genLocalName(sym)
-          val param = Val.Local(fresh(), ty, Some(name))
+          val param = Val.Local(namedId(fresh)(name), ty)
           curMethodEnv.enter(sym, param)
           param
       }
@@ -961,7 +970,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         vars.foreach { sym =>
           val ty = genType(sym.info)
           val name = genLocalName(sym)
-          val slot = buf.var_(ty, Some(name), unwind(fresh))
+          val slot = buf.let(namedId(fresh)(name), Op.Var(ty), unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
       }
@@ -1102,7 +1111,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     assert(moduleClass.isModuleClass, moduleClass)
 
     lazy val existingStaticMethodNames = existingMembers.collect {
-      case nir.Defn.Define(_, name @ Global.Member(_, sig), _, _)
+      case nir.Defn.Define(_, name @ Global.Member(_, sig), _, _, _)
           if sig.isStatic =>
         name
     }
@@ -1159,7 +1168,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         )
       }
 
-      Defn.Define(
+      new Defn.Define(
         attrs = Attrs(inlineHint = nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,

@@ -9,51 +9,72 @@ import scala.collection.mutable
 import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.reflect.ClassTag
+import scala.scalanative.nir.Global.Member
 
 class LocalNamesTest extends OptimizerSpec {
   import nir._
 
-  case class LocalNames(vals: Seq[String], lets: Seq[String])
-  object localNamesTraversal extends nir.Traverse {
-    private val vals = mutable.UnrolledBuffer.empty[String]
-    private val lets = mutable.UnrolledBuffer.empty[String]
-
-    def apply(defn: Defn): LocalNames = synchronized {
-      this.onDefn(defn)
-      // UnrolledBuffer.toSeq does not create a copy in Scala 2.12!
-      try LocalNames(vals = vals.toList, lets = lets.toList)
-      finally { vals.clear(); lets.clear() }
-    }
-
-    override def onVal(value: Val): Unit = {
-      value match {
-        case Val.Local(_, _, name) => vals ++= name
-        case _                     => ()
-      }
-      super.onVal(value)
-    }
-
-    override def onInst(inst: Inst): Unit = {
-      inst match {
-        case Inst.Let(_, name, _, _) => lets ++= name
-        case _                       => ()
-      }
-      super.onInst(inst)
-    }
+  def assertContainsAll[T](
+      msg: String,
+      expected: Iterable[T],
+      actual: Iterable[T]
+  ) = {
+    val left = expected.toSeq
+    val right = actual.toSeq
+    val diff = left.diff(right)
+    assertTrue(s"$msg - not found ${diff} in $right", diff.isEmpty)
   }
-
-  def assertContainsAll[T](msg: String, expected: Seq[T], actual: Seq[T]) = {
-    val diff = expected.diff(actual)
-    assertTrue(s"$msg - not found ${diff} in $actual", diff.isEmpty)
-  }
-
-  private def findDefinition(linked: Seq[Defn]) = linked
-    .find(
-      _.name == Global
-        .Top("Test$")
-        .member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+  def assertContains[T](msg: String, expected: T, actual: Iterable[T]) = {
+    assertTrue(
+      s"$msg - not found ${expected} in ${actual.toSeq}",
+      actual.find(_ == expected).isDefined
     )
-    .ensuring(_.isDefined, "Not found linked method")
+  }
+
+  def assertDistinct(localNames: Iterable[LocalName]) = {
+    val duplicated =
+      localNames.groupBy(identity).filter(_._2.size > 1).map(_._1)
+    assertTrue(s"Found duplicated names of ${duplicated}", duplicated.isEmpty)
+  }
+
+  def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
+    defn.insts.collect {
+      case inst: Inst.Let if defn.localNames.contains(inst.id) =>
+        inst -> defn.localNames(inst.id)
+    }.toMap
+
+  private object TestMain {
+    val TestModule = Global.Top("Test$")
+    val CompanionMain =
+      TestModule.member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+
+    def unapply(name: Global): Boolean = name match {
+      case CompanionMain => true
+      case Global.Member(TestModule, sig) =>
+        sig.unmangled match {
+          case Sig.Duplicate(of, _) => of == CompanionMain.sig
+          case _                    => false
+        }
+      case _ => false
+    }
+  }
+  private object TestMainForwarder {
+    val staticForwarder = Global.Top("Test").member(Rt.ScalaMainSig)
+    def unapply(name: Global): Boolean = name == staticForwarder
+  }
+
+  private def findDefinition(linked: Seq[Defn]) = {
+    val companionMethod = linked
+      .collectFirst { case defn @ Defn.Define(_, TestMain(), _, _, _) => defn }
+    def staticForwarder = linked
+      .collectFirst {
+        case defn @ Defn.Define(_, TestMainForwarder(), _, _, _) => defn
+      }
+    companionMethod
+      .orElse(staticForwarder)
+      .ensuring(_.isDefined, "Not found linked method")
+
+  }
 
   def afterLowering(config: build.Config, optimized: => linker.Result)(
       fn: Seq[Defn] => Unit
@@ -90,18 +111,32 @@ class LocalNamesTest extends OptimizerSpec {
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
-        findDefinition(defns)
-          .ensuring(_.isDefined, "Not found tested method in linked result")
-          .map(localNamesTraversal(_))
-          .foreach {
-            case LocalNames(vals, lets) =>
-              val expectedLets =
-                Seq("localVal", "localVar", "innerVal", "innerVar", "scoped")
-              val expectedVals = Seq("args", "this") ++ expectedLets
-              assertContainsAll("lets defined", expectedLets, lets)
-              assertContainsAll("vals defined", expectedVals, vals)
-              assertContainsAll("no lets duplicates", lets.distinct, lets)
+        findDefinition(defns).foreach { defn =>
+          val localNames = defn.localNames
+          val lets = namedLets(defn).values
+          val expectedLetNames =
+            Seq("localVal", "localVar", "innerVal", "innerVar", "scoped")
+          defn.insts.head match {
+            case Inst.Label(
+                  _,
+                  Seq(
+                    Val.Local(thisId, Type.Ref(Global.Top("Test$"), _, _)),
+                    Val.Local(argsId, Type.Array(Rt.String, _))
+                  )
+                ) =>
+              assertTrue("thisArg", localNames.get(thisId).contains("this"))
+              assertTrue("argsArg", localNames.get(argsId).contains("args"))
+            case _ => fail("Invalid input label")
           }
+          val expectedNames = Seq("args", "this") ++ expectedLetNames
+          assertContainsAll("lets defined", expectedLetNames, lets)
+          assertContainsAll(
+            "vals defined",
+            expectedNames,
+            defn.localNames.values
+          )
+          assertDistinct(lets)
+        }
       checkLocalNames(result.defns)
       afterLowering(config, result)(checkLocalNames)
   }
@@ -116,24 +151,21 @@ class LocalNamesTest extends OptimizerSpec {
     |import scala.scalanative.runtime.toRawPtr
     |import scala.scalanative.unsigned._
     |
-    |object Hack {
-    |  @nooptimize def run(): Any = Test.main(Array.empty[String])
-    |}
-    |
     |object Test {
     |  class Foo()
-    |  assert(Hack.run() != null)
     |
     |  @noinline def method(n: Int): String = n.toString
+    |  @noinline def getInteger: Integer = 42
+    |  @noinline def getArray: Array[Int] = Array(42)
     |  private var field: Int = _
     |
     |  def main(args: Array[String]): Unit = {
     |    val call = Test.method(0)
-    |    val sizeOf = Intrinsics.sizeOf[Long]
-    |    val alignmentOf = Intrinsics.alignmentOf[Long]
+    |    val sizeOf = Intrinsics.sizeOf[String]
+    |    val alignmentOf = Intrinsics.alignmentOf[String]
     |    val stackalloc = Intrinsics.stackalloc(sizeOf)
     |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
-    |    val store = Intrinsics.storeInt(elem, 42)
+    |    val store = Intrinsics.storeInt(elem, Intrinsics.castRawSizeToInt(sizeOf))
     |    val load = Intrinsics.loadInt(elem)
     |    // val extract = ???
     |    // val insert = ???
@@ -145,31 +177,36 @@ class LocalNamesTest extends OptimizerSpec {
     |    val fieldStore = this.field = bin + classalloc.##
     |    val fieldLoad = this.field
     |    val field = Intrinsics.classFieldRawPtr[Test.type](this, "field")
-    |    val method: Int => String = Test.method _
+    |    // val method: Int => String = Test.method _
     |    // val dynMethod = ???
     |    val module = scala.Predef
     |    val as = Test.asInstanceOf[Option[_]]
     |    val is = as.isInstanceOf[Some[_]]
-    |    // val copy = ???
-    |    val box: Any = 1.asInstanceOf[Integer]
-    |    val unbox: Int = box.asInstanceOf[Int]
+    |    val copy = 42
+    |    val intArg: Int = Intrinsics.castRawSizeToInt(sizeOf) + copy
+    |    val box: Any = intArg.asInstanceOf[Integer]
+    |    val unbox: Int = getInteger.asInstanceOf[Int]
     |    var `var` = unbox + 1
-    |    val varStore = `var` = args.size
+    |    while(`var` < 2) {
+    |       val varStore = `var` = `var` + getInteger
+    |    }
     |    val varLoad = `var`
     |    val arrayAlloc = new Array[Int](4)
     |    val arrayStore = arrayAlloc(0) = varLoad
-    |    val arrayLoad = arrayAlloc(0)
-    |    val arrayLength = arrayAlloc.length
+    |    val arrayLoad = getArray(1)
+    |    val arrayLength = getArray.length
     |
     |    // forced materialization
-    |    assert(arrayLength != varLoad )
-    |    assert(arrayLoad != `var`)
-    |    assert(classalloc != null)
-    |    assert(fieldLoad == Intrinsics.loadInt(field))
-    |    assert(comp == is)
-    |    assert(conv == 4.0f)
-    |    assert(module != null)
-    |    assert(sizeOf == alignmentOf)
+    |    println(sizeOf == alignmentOf)
+    |    println(classalloc != null)
+    |    println(fieldLoad == Intrinsics.loadInt(field))
+    |    println(comp == is)
+    |    println(conv == Intrinsics.loadFloat(field))
+    |    println(box != getInteger)
+    |    println(module != null)
+    |    println(arrayLoad != `var`)
+    |    println(arrayLength != varLoad )
+    |    println(arrayAlloc)
     |  }
     |}""".stripMargin),
     setupConfig = _.withMode(build.Mode.ReleaseFull)
@@ -177,21 +214,20 @@ class LocalNamesTest extends OptimizerSpec {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn], beforeLowering: Boolean) =
         findDefinition(defns)
-          .ensuring(_.isDefined, "Not found tested method in linked result")
-          .map(defn => localNamesTraversal(defn) -> defn)
-          .foreach {
-            case (LocalNames(vals, lets), defn: Defn.Define) =>
-              val stage = if (beforeLowering) "optimized" else "lowered"
-              def checkHasLetEither[Optimized: ClassTag, Lowered: ClassTag](
-                  localName: String
-              ): Unit = {
-                if (beforeLowering) checkHasLet[Optimized](localName)
-                else checkHasLet[Lowered](localName)
-              }
-              def checkHasLet[T: ClassTag](localName: String): Unit = {
-                assertContainsAll(s"hasLet in $stage)", Seq(localName), lets)
-                defn.insts.collectFirst {
-                  case i @ Inst.Let(_, Some(`localName`), op, _) =>
+          .foreach { defn =>
+            val lets = namedLets(defn)
+            val stage = if (beforeLowering) "optimized" else "lowered"
+            def checkHasLetEither[Optimized: ClassTag, Lowered: ClassTag](
+                localName: String
+            ): Unit = {
+              if (beforeLowering) checkHasLet[Optimized](localName)
+              else checkHasLet[Lowered](localName)
+            }
+            def checkHasLet[T: ClassTag](localName: String): Unit = {
+              assertContains(s"hasLet in $stage", localName, lets.values)
+              lets
+                .collectFirst {
+                  case (Inst.Let(_, op, _), `localName`) =>
                     val expectedTpe = implicitly[ClassTag[T]].runtimeClass
                     assertTrue(
                       s"$localName: ${op.getClass()} is not ${expectedTpe
@@ -199,52 +235,58 @@ class LocalNamesTest extends OptimizerSpec {
                       op.getClass() == expectedTpe
                     )
                 }
-              }
-              def checkNotHasLet[T: ClassTag](localName: String): Unit = {
-                assertFalse(
-                  s"should not contains $localName in $lets - $stage",
-                  lets.contains(localName)
-                )
-              }
-              def checkHasVal(localName: String): Unit = {
-                assertContainsAll(s"hasVal in $stage", Seq(localName), vals)
-              }
-              checkHasLet[Op.Call]("call")
-              checkHasLet[Op.Stackalloc]("stackalloc")
-              checkHasLet[Op.Elem]("elem")
-              // checkHasLet[Op.Extract]("extract")
-              // checkHasLet[Op.Insert]("insert")
-              checkNotHasLet[Op.Store]("store")
-              checkHasLet[Op.Load]("load")
-              // checkHasLet[Op.Fence]("fence")
-              checkHasLet[Op.Bin]("bin")
-              checkHasLet[Op.Comp]("comp")
-              checkHasLet[Op.Conv]("conv")
-              checkHasLetEither[Op.Classalloc, Op.Call]("classalloc")
-              checkNotHasLet[Op.Fieldstore]("fieldStore")
-              checkHasLetEither[Op.Fieldload, Op.Load]("fieldLoad")
-              checkHasLetEither[Op.Field, Op.Copy]("field")
-              // checkHasLet[Op.Method]("method")
-              // checkHasLet[Op.Dynmethod]("dynMethod")
-              checkHasLetEither[Op.Module, Op.Call]("module")
-              checkHasLetEither[Op.As, Op.Copy]("as")
-              if (beforeLowering) checkHasLet[Op.Is]("is")
-              else checkHasVal("is") // lowered to if-else branch, `is` should be param
-              // checkHasLet[Op.Copy]("copy")
-              checkHasLetEither[Op.SizeOf, Op.Copy]("sizeOf")
-              checkHasLetEither[Op.AlignmentOf, Op.Copy]("alignmentOf")
-              checkHasLetEither[Op.Box, Op.Call]("box")
-              checkHasLetEither[Op.Unbox, Op.Call]("unbox")
-              checkHasLetEither[Op.Var, Op.Stackalloc]("var")
-              checkNotHasLet[Op.Varstore]("varStore")
-              checkHasLetEither[Op.Varload, Op.Load]("varLoad")
-              checkHasLetEither[Op.Arrayalloc, Op.Call]("arrayAlloc")
-              checkNotHasLet[Op.Arraystore]("arrayStore")
-              checkHasLetEither[Op.Arrayload, Op.Load]("arrayLoad")
-              checkHasLetEither[Op.Arraylength, Op.Load]("arrayLength")
-
-              assertContainsAll("no lets duplicates", lets.distinct, lets)
-            case _ => fail()
+                .getOrElse(fail(s"not found let $localName"))
+            }
+            def checkNotHasLet[T: ClassTag](localName: String): Unit = {
+              assertFalse(
+                s"should not contains $localName in ${lets.values.toSet} - $stage",
+                lets.values.find(_ == localName).isDefined
+              )
+            }
+            def checkHasVal(localName: String): Unit = {
+              assertContainsAll(
+                s"hasVal in $stage",
+                Seq(localName),
+                defn.localNames.values
+              )
+            }
+            checkHasLet[Op.Call]("call")
+            checkHasLet[Op.Stackalloc]("stackalloc")
+            checkHasLet[Op.Elem]("elem")
+            // checkHasLet[Op.Extract]("extract")
+            // checkHasLet[Op.Insert]("insert")
+            checkNotHasLet[Op.Store]("store")
+            checkHasLet[Op.Load]("load")
+            // checkHasLet[Op.Fence]("fence")
+            checkHasLet[Op.Bin]("bin")
+            checkHasLet[Op.Comp]("comp")
+            checkHasLet[Op.Conv]("conv")
+            checkHasLetEither[Op.Classalloc, Op.Call]("classalloc")
+            checkNotHasLet[Op.Fieldstore]("fieldStore")
+            checkHasLetEither[Op.Fieldload, Op.Load]("fieldLoad")
+            checkHasLetEither[Op.Field, Op.Copy]("field")
+            // checkHasLet[Op.Method]("method")
+            // checkHasLet[Op.Dynmethod]("dynMethod")
+            checkHasLetEither[Op.Module, Op.Call]("module")
+            checkHasLetEither[Op.As, Op.Copy]("as")
+            // lowered to if-else branch, `is` should be param
+            if (beforeLowering) checkHasLet[Op.Is]("is")
+            else checkHasVal("is")
+            checkNotHasLet[Op.Copy]("copy") // optimized out
+            checkHasLetEither[Op.SizeOf, Op.Copy]("sizeOf")
+            checkNotHasLet[Op.AlignmentOf]("alignmentOf") // optimized out
+            checkHasLetEither[Op.Box, Op.Call]("box") // optimized out
+            checkHasLetEither[Op.Unbox, Op.Call]("unbox")
+            checkNotHasLet[Op.Var]("var") // optimized out
+            checkHasVal("var")
+            checkNotHasLet[Op.Varstore]("varStore")
+            checkNotHasLet[Op.Varload]("varLoad")
+            checkHasLetEither[Op.Arrayalloc, Op.Call]("arrayAlloc")
+            checkNotHasLet[Op.Arraystore]("arrayStore")
+            checkHasLetEither[Op.Arrayload, Op.Load]("arrayLoad")
+            checkHasLetEither[Op.Arraylength, Op.Load]("arrayLength")
+            // Filter out inlined names
+            assertDistinct(lets.values.toSeq.diff(Seq("buffer", "addr")))
           }
       checkLocalNames(result.defns, beforeLowering = true)
       afterLowering(config, result) {
@@ -252,23 +294,70 @@ class LocalNamesTest extends OptimizerSpec {
       }
   }
 
+  @Test def delayedVars(): Unit = optimize(
+    entry = "Test",
+    sources = Map("Test.scala" -> """
+    |import scala.scalanative.annotation.nooptimize
+    |
+    |object Test {
+    |  @noinline @nooptimize def parse(v: String): Int = v.toInt
+    |  def main(args: Array[String]): Unit = {
+    |    val bits = parse(args(0))
+    |    val a = parse(args(1))
+    |    val b = bits & 0xFF
+    |    var x = 0
+    |    var y = 0L
+    |    if (a == 0) {
+    |      x = bits
+    |      y = b
+    |    } else {
+    |      x = a
+    |      y = b | (1L << 0xFF)
+    |    }
+    |    assert(x != y)
+    |  }
+    |}""".stripMargin),
+    setupConfig = _.withMode(build.Mode.ReleaseFull)
+  ) {
+    case (config, result) =>
+      def checkLocalNames(defns: Seq[Defn]) =
+        findDefinition(defns)
+          .foreach { defn =>
+            val lets = namedLets(defn)
+            val letsNames = lets.values.toSeq
+            val expectedLets = Seq("bits", "a", "b")
+            //  x,y vars are replsaced with params after if-else expr
+            val asParams = Seq("x", "y")
+            val expectedNames = expectedLets ++ asParams
+            assertContainsAll("lets", expectedLets, letsNames)
+            assertEquals("asParams", asParams, asParams.diff(letsNames))
+            assertContainsAll("vals", expectedNames, defn.localNames.values)
+            // allowed, delayed and duplicated in each if-else branch
+            assertDistinct(letsNames.diff(Seq("b")))
+            defn.insts
+              .find {
+                case Inst.Label(_, params) =>
+                  asParams
+                    .diff(params.map(_.id).flatMap(defn.localNames.get))
+                    .isEmpty
+                case _ => false
+              }
+              .getOrElse(fail("not found label with expected params"))
+          }
+      checkLocalNames(result.defns)
+  }
+
   @Test def inlinedNames(): Unit = optimize(
     entry = "Test",
     sources = Map("Test.scala" -> """
-    |import scala.scalanative.annotation._
-    |object Hack {
-    |  @nooptimize def run(): Any = Test.main(Array.empty[String])
-    |}
-    |
+    |import scala.scalanative.annotation.alwaysinline
     |object Test {
-    |  assert(Hack.run() != null)
-    |
     |  @alwaysinline def fn1(n: Int, m: Int, p: Int): Int = {
     |    val temp = n * m
     |    val temp2 = (temp % 3) match {
     |      case 0 => n
-    |      case 1 => val a = n * m; a
-    |      case 2 => val b = n * m; val c = b + n; c
+    |      case 1 => val a = n * p; a + 1
+    |      case 2 => val b = n * p; val c = b + n; c + 1
     |      case _ => 42
     |    }
     |    temp2 * n
@@ -290,80 +379,99 @@ class LocalNamesTest extends OptimizerSpec {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
         findDefinition(defns)
-          .ensuring(_.isDefined, "Not found tested method in linked result")
-          .map(defn => localNamesTraversal(defn) -> defn)
-          .foreach {
-            case (LocalNames(vals, lets), defn: Defn.Define) =>
-              val expectedLets =
-                Seq(
-                  "argInt",
-                  "result",
-                  "result2",
-                  "temp",
-                  "c"
-                ) // a,b are optimized out
-              val expectedVals =
-                expectedLets ++ Seq("temp2") // match merge block param
-              assertContainsAll("lets", expectedLets, lets)
-              assertContainsAll("vals", expectedVals, vals)
-              assertContainsAll("no lets duplicates", lets.distinct, lets)
-            case _ => fail()
+          .foreach { defn =>
+            val lets = namedLets(defn).values
+            val expectedLets =
+              Seq("argInt", "result", "result2", "temp", "a", "b", "c")
+            // match merge block param
+            val expectedNames = expectedLets ++ Seq("temp2")
+            assertContainsAll("lets", expectedLets, lets)
+            assertContainsAll("vals", expectedNames, defn.localNames.values)
           }
       checkLocalNames(result.defns)
   }
 
-  @Test def delayedVars(): Unit = optimize(
+  @Test def inlinedNames2(): Unit = optimize(
     entry = "Test",
     sources = Map("Test.scala" -> """
-    | import scala.scalanative.annotation._
-    | object Hack {
-    |   @nooptimize def run(): Any = Test.main(Array.empty[String])
-    | }
+    |import scala.scalanative.annotation._
+    |
+    |sealed trait Interface {
+    |  def execute(arg: Int): Int = { val temp = arg * arg; temp % arg}
+    |}
+    |class Impl1 extends Interface {
+    |  override def execute(arg: Int): Int = {val temp1 = arg * arg; temp1 + arg }
+    |}
+    |class Impl2 extends Interface {
+    |  override def execute(arg: Int): Int = {val temp2 = super.execute(arg); temp2 * arg }
+    |}
+    |class Impl3 extends Impl2 {
+    |  override def execute(arg: Int): Int = {val temp3 = super.execute(arg); temp3 * arg }
+    |}
     |
     |object Test {
-    |  @noinline @nooptimize def parse(v: String): Int = v.toInt
-    |  assert(Hack.run() != null)
+    |  @noinline def impls = Array(new Interface{}, new Impl1(), new Impl2(), new Impl3())
+    |
     |  def main(args: Array[String]): Unit = {
-    |    val bits = parse(args(0))
-    |    val a = parse(args(1))
-    |    val b = bits & 0xFF
-    |    var x = 0
-    |    var y = 0L
-    |    if (a == 0) {
-    |      x = bits
-    |      y = b
-    |    } else {
-    |      x = a
-    |      y = b | (1L << 0xFF)
-    |    }
-    |    assert(x != y)
-    |  }  
+    |    val argInt = args.size
+    |    val impl: Interface = impls(argInt)
+    |    val result = impl.execute(argInt)
+    |    assert(result > 0)
+    |  }
     |}""".stripMargin),
     setupConfig = _.withMode(build.Mode.ReleaseFull)
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
         findDefinition(defns)
-          .ensuring(_.isDefined, "Not found tested method in linked result")
-          .map(defn => localNamesTraversal(defn) -> defn)
-          .foreach {
-            case (LocalNames(vals, lets), defn: Defn.Define) =>
-              val expectedLets = Seq("bits", "a", "b")
-              //  x,y vars are replsaced with params after if-else expr
-              val asParams = Seq("x", "y")
-              val expectedVals = expectedLets ++ asParams
-              assertContainsAll("lets", expectedLets, lets)
-              assertEquals("asParams", asParams, asParams.diff(lets))
-              assertContainsAll("vals", expectedVals, vals)
-              assertContainsAll("no lets duplicates", lets.distinct, lets)
-              defn.insts
-                .collectFirst {
-                  case Inst.Label(_, params)
-                      if asParams.diff(params.flatMap(_.localName)).isEmpty =>
-                    ()
-                }
-                .getOrElse(fail("not found label with expected params"))
-            case _ => fail()
+          .foreach { defn =>
+            val lets = namedLets(defn).values
+            val expectedLets =
+              Seq("argInt", "impl", "temp", "temp1", "temp2", "temp3")
+            val expectedNames = expectedLets ++ Seq("result", "args")
+            assertContainsAll("lets", expectedLets, lets)
+            assertContainsAll("vals", expectedNames, defn.localNames.values)
+          }
+      checkLocalNames(result.defns)
+  }
+
+  @Test def polyInlinedNames(): Unit = optimize(
+    entry = "Test",
+    sources = Map("Test.scala" -> """
+    |import scala.scalanative.annotation._
+    |
+    |sealed trait Interface {
+    |  @noinline def execute(arg: Int): Int = { val temp = arg * arg; temp % arg}
+    |}
+    |class Impl1 extends Interface {
+    |  @noinline override def execute(arg: Int): Int = {val temp1 = arg * arg; temp1 + arg }
+    |}
+    |class Impl2 extends Interface {
+    |  @noinline override def execute(arg: Int): Int = {val temp2 = super.execute(arg); temp2 * arg }
+    |}
+    |
+    |object Test {
+    |  @noinline def impls = Array(new Interface{}, new Impl1(), new Impl2())
+    |
+    |  def main(args: Array[String]): Unit = {
+    |    val argInt = args.size
+    |    val impl: Interface = impls(argInt)
+    |    val result = impl.execute(argInt)
+    |    assert(result > 0)
+    |  }
+    |}""".stripMargin),
+    setupConfig = _.withMode(build.Mode.ReleaseFull)
+  ) {
+    case (config, result) =>
+      def checkLocalNames(defns: Seq[Defn]) =
+        findDefinition(defns)
+          .foreach { defn =>
+            val lets = namedLets(defn).values
+            val expectedLets =
+              Seq("argInt", "impl")
+            val expectedNames = expectedLets ++ Seq("result")
+            assertContainsAll("lets", expectedLets, lets)
+            assertContainsAll("vals", expectedNames, defn.localNames.values)
           }
       checkLocalNames(result.defns)
   }

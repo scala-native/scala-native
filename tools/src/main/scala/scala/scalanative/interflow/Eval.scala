@@ -8,12 +8,29 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(implicit
+  def run(
+      insts: Array[Inst],
+      offsets: Map[Local, Int],
+      from: Local,
+      localNames: LocalNames
+  )(implicit
       state: State
   ): Inst.Cf = {
     import state.{materialize, delay}
 
-    var pc = offsets(from) + 1
+    var pc = offsets(from)
+
+    if (pc == 0) {
+      val Inst.Label(_, params) = insts.head: @unchecked
+      for {
+        param <- params
+        name <- localNames.get(param.id)
+      } {
+        state.localNames.getOrElseUpdate(param.id, name)
+      }
+    }
+
+    pc += 1
 
     while (true) {
       val inst = insts(pc)
@@ -23,20 +40,20 @@ trait Eval { self: Interflow =>
       inst match {
         case _: Inst.Label =>
           unreachable
-        case Inst.Let(local, name, op, unwind) =>
+        case Inst.Let(local, op, unwind) =>
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
-
-          // println()
-          this.log(s"eval: ${inst.show}")
-          val value = name
-            .map(_ => eval(op, name))
-            .getOrElse(eval(op))
-          log(
-            s"evaluated to: ${value.show}, last inst: ${state.emit.toSeq.lastOption
-                .fold("none")(_.show)}\n"
-          )
+          val value = eval(op)
+          localNames.get(local).foreach { localName =>
+            value match {
+              case Val.Local(id, _) =>
+                state.localNames.getOrElseUpdate(id, localName)
+              case Val.Virtual(addr) =>
+                state.virtualNames.getOrElseUpdate(addr, localName)
+              case _ => ()
+            }
+          }
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)(inst.pos)
           } else {
@@ -112,26 +129,6 @@ trait Eval { self: Interflow =>
     unreachable
   }
 
-  def eval(
-      op: Op,
-      localName: LocalName
-  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
-    val out = eval(op)
-    state.emit
-      .patch(out)(_.copy(localName = localName))
-      .getOrElse {
-        out match {
-          case v: Val.Virtual =>
-            localName.foreach(state.debugNames.update(v.key, _))
-            out
-          case v @ Val.Local(id, _, None) =>
-            localName.foreach(state.debugNames.update(id.id, _))
-            v.copy(localName = localName)
-          case _ => out
-        }
-      }
-      .ensuring(_.ty == out.ty)
-  }
   def eval(
       op: Op
   )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
@@ -330,18 +327,13 @@ trait Eval { self: Interflow =>
         }
         emit(Op.Dynmethod(materialize(eval(obj)), dynsig))
       case Op.Module(clsName) =>
-        val isPure =
-          isPureModule(clsName)
-        val isWhitelisted =
-          Whitelist.pure.contains(clsName)
-        val canDelay =
-          isPure || isWhitelisted
+        val isPure = isPureModule(clsName)
+        val isWhitelisted = Whitelist.pure.contains(clsName)
+        val canDelay = isPure || isWhitelisted
 
-        if (canDelay) {
-          delay(Op.Module(clsName))
-        } else {
-          emit(Op.Module(clsName))
-        }
+        if (canDelay) delay(Op.Module(clsName))
+        else emit(Op.Module(clsName))
+
       case Op.As(ty, rawObj) =>
         val refty = ty match {
           case ty: Type.RefKind => ty
@@ -488,10 +480,10 @@ trait Eval { self: Interflow =>
       case Op.Var(ty) =>
         Val.Local(state.newVar(ty), Type.Var(ty))
       case Op.Varload(slot) =>
-        val Val.Local(local, _, name) = eval(slot): @unchecked
+        val Val.Local(local, _) = eval(slot): @unchecked
         state.loadVar(local)
       case Op.Varstore(slot, value) =>
-        val Val.Local(local, _, name) = eval(slot): @unchecked
+        val Val.Local(local, _) = eval(slot): @unchecked
         state.storeVar(local, eval(value))
         Val.Unit
       case _ => util.unreachable
@@ -677,6 +669,7 @@ trait Eval { self: Interflow =>
           case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l == r)
           case (Val.Int(l), Val.Int(r))             => Val.Bool(l == r)
           case (Val.Long(l), Val.Long(r))           => Val.Bool(l == r)
+          case (Val.Size(l), Val.Size(r))           => Val.Bool(l == r)
           case (Val.Null, Val.Null)                 => Val.True
           case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l == r)
           case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.False
@@ -687,6 +680,7 @@ trait Eval { self: Interflow =>
           case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l != r)
           case (Val.Int(l), Val.Int(r))             => Val.Bool(l != r)
           case (Val.Long(l), Val.Long(r))           => Val.Bool(l != r)
+          case (Val.Size(l), Val.Size(r))           => Val.Bool(l != r)
           case (Val.Null, Val.Null)                 => Val.False
           case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l != r)
           case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.True
@@ -698,6 +692,8 @@ trait Eval { self: Interflow =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) > 0)
           case (Val.Long(l), Val.Long(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) > 0)
+          case (Val.Size(l), Val.Size(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) > 0)
           case _ =>
             bailOut
         }
@@ -706,6 +702,8 @@ trait Eval { self: Interflow =>
           case (Val.Int(l), Val.Int(r)) =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) >= 0)
           case (Val.Long(l), Val.Long(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) >= 0)
+          case (Val.Size(l), Val.Size(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) >= 0)
           case _ =>
             bailOut
@@ -716,6 +714,8 @@ trait Eval { self: Interflow =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) < 0)
           case (Val.Long(l), Val.Long(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) < 0)
+          case (Val.Size(l), Val.Size(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) < 0)
           case _ =>
             bailOut
         }
@@ -725,6 +725,8 @@ trait Eval { self: Interflow =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) <= 0)
           case (Val.Long(l), Val.Long(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) <= 0)
+          case (Val.Size(l), Val.Size(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) <= 0)
           case _ =>
             bailOut
         }
@@ -732,24 +734,28 @@ trait Eval { self: Interflow =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l > r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l > r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l > r)
           case _                          => bailOut
         }
       case Comp.Sge =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l >= r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l >= r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l >= r)
           case _                          => bailOut
         }
       case Comp.Slt =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l < r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l < r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l < r)
           case _                          => bailOut
         }
       case Comp.Sle =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l <= r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l <= r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l <= r)
           case _                          => bailOut
         }
       case Comp.Feq =>
@@ -902,18 +908,22 @@ trait Eval { self: Interflow =>
           case (Val.Int(v), Type.Double)   => Val.Double(v.toDouble)
           case (Val.Long(v), Type.Float)   => Val.Float(v.toFloat)
           case (Val.Long(v), Type.Double)  => Val.Double(v.toDouble)
+          case (Val.Size(v), Type.Float)   => Val.Float(v.toFloat)
+          case (Val.Size(v), Type.Double)  => Val.Double(v.toDouble)
           case _                           => bailOut
         }
       case Conv.Ptrtoint =>
         (value, ty) match {
           case (Val.Null, Type.Long) => Val.Long(0L)
           case (Val.Null, Type.Int)  => Val.Int(0)
+          case (Val.Null, Type.Size) => Val.Size(0)
           case _                     => bailOut
         }
       case Conv.Inttoptr =>
         (value, ty) match {
           case (Val.Long(0L), Type.Ptr) => Val.Null
           case (Val.Int(0L), Type.Ptr)  => Val.Null
+          case (Val.Size(0L), Type.Ptr) => Val.Null
           case _                        => bailOut
         }
       case Conv.Bitcast =>
@@ -950,7 +960,7 @@ trait Eval { self: Interflow =>
 
   def eval(value: Val)(implicit state: State, origPos: Position): Val = {
     value match {
-      case Val.Local(local, _, name) if local.id >= 0 =>
+      case Val.Local(local, _) if local.id >= 0 =>
         state.loadLocal(local) match {
           case value: Val.Virtual => eval(value)
           case value              => value
@@ -991,27 +1001,24 @@ trait Eval { self: Interflow =>
 
         val init = clsName member Sig.Ctor(Seq.empty)
         val isPure =
-          if (!shallVisit(init)) {
-            true
-          } else {
-            visitDuplicate(init, argumentTypes(init)).fold {
-              false
-            } { defn => isPureModuleCtor(defn) }
-          }
+          !shallVisit(init) ||
+            visitDuplicate(init, argumentTypes(init)).fold(false)(
+              isPureModuleCtor
+            )
+
         setModulePurity(clsName, isPure)
         isPure
       }
     }
 
     def isPureModuleCtor(defn: Defn.Define): Boolean = {
-      val Inst.Label(_, Val.Local(self, _, _) +: _) =
-        defn.insts.head: @unchecked
+      val Inst.Label(_, Val.Local(self, _) +: _) = defn.insts.head: @unchecked
 
       val canStoreTo = mutable.Set(self)
       val arrayLength = mutable.Map.empty[Local, Int]
 
       defn.insts.foreach {
-        case Inst.Let(n, _, Op.Arrayalloc(_, init, _), _) =>
+        case Inst.Let(n, Op.Arrayalloc(_, init, _), _) =>
           canStoreTo += n
           init match {
             case Val.Int(size) =>
@@ -1021,7 +1028,7 @@ trait Eval { self: Interflow =>
             case _ =>
               ()
           }
-        case Inst.Let(n, _, _: Op.Classalloc | _: Op.Box | _: Op.Module, _) =>
+        case Inst.Let(n, _: Op.Classalloc | _: Op.Box | _: Op.Module, _) =>
           canStoreTo += n
         case _ =>
           ()
@@ -1029,7 +1036,7 @@ trait Eval { self: Interflow =>
 
       def canStoreValue(v: Val): Boolean = v match {
         case _ if v.isCanonical => true
-        case Val.Local(n, _, _) => canStoreTo.contains(n)
+        case Val.Local(n, _)    => canStoreTo.contains(n)
         case _: Val.String      => true
         case _                  => false
       }
@@ -1041,50 +1048,35 @@ trait Eval { self: Interflow =>
           true
         case _: Inst.Cf =>
           true
-        case Inst.Let(_, _, op, _) if op.isPure =>
+        case Inst.Let(_, op, _) if op.isPure =>
           true
-        case Inst.Let(
-              _,
-              _,
-              _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box,
-              _
-            ) =>
+        case Inst.Let(_, _: Op.Classalloc | _: Op.Arrayalloc | _: Op.Box, _) =>
           true
-        case inst @ Inst.Let(_, _, Op.Module(name), _) =>
+        case inst @ Inst.Let(_, Op.Module(name), _) =>
           if (!visiting.contains(name)) {
             isPureModule(name)
           } else {
             false
           }
-        case Inst.Let(_, _, Op.Fieldload(_, Val.Local(to, _, _), _), _)
+        case Inst.Let(_, Op.Fieldload(_, Val.Local(to, _), _), _)
             if canStoreTo.contains(to) =>
           true
-        case inst @ Inst.Let(
-              _,
-              _,
-              Op.Fieldstore(_, Val.Local(to, _, _), _, value),
-              _
-            ) if canStoreTo.contains(to) =>
+        case inst @ Inst.Let(_, Op.Fieldstore(_, Val.Local(to, _), _, value), _)
+            if canStoreTo.contains(to) =>
           canStoreValue(value)
-        case Inst.Let(
-              _,
-              _,
-              Op.Arrayload(_, Val.Local(to, _, _), Val.Int(idx)),
-              _
-            )
+        case Inst.Let(_, Op.Arrayload(_, Val.Local(to, _), Val.Int(idx)), _)
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           true
         case Inst.Let(
               _,
-              _,
-              Op.Arraystore(_, Val.Local(to, _, _), Val.Int(idx), value),
+              Op.Arraystore(_, Val.Local(to, _), Val.Int(idx), value),
               _
             )
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           canStoreValue(value)
-        case Inst.Let(_, _, Op.Arraylength(Val.Local(to, _, _)), _)
+        case Inst.Let(_, Op.Arraylength(Val.Local(to, _)), _)
             if canStoreTo.contains(to) =>
           true
         case inst =>

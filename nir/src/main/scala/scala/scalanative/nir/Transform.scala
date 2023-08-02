@@ -14,7 +14,8 @@ trait Transform {
         defn.copy(ty = onType(ty), rhs = onVal(value))
       case defn @ Defn.Declare(_, _, ty) =>
         defn.copy(ty = onType(ty))
-      case defn @ Defn.Define(_, _, ty, insts) =>
+      case defn @ Defn.Define(_, _, ty, insts, _) =>
+        // TODO: // new localNames from onInsts?
         defn.copy(ty = onType(ty), insts = onInsts(insts))
       case defn @ Defn.Trait(_, _, _) =>
         defn
@@ -36,8 +37,8 @@ trait Transform {
           param.copy(valty = onType(param.ty))
         }
         Inst.Label(n, newparams)
-      case i @ Inst.Let(_, _, op, unwind) =>
-        i.copy(op = onOp(op), unwind = onNext(unwind))
+      case inst @ Inst.Let(_, op, unwind) =>
+        inst.copy(op = onOp(op), unwind = onNext(unwind))
       case Inst.Ret(v) =>
         Inst.Ret(onVal(v))
       case Inst.Jump(next) =>
@@ -124,10 +125,10 @@ trait Transform {
     case Val.StructValue(values) => Val.StructValue(values.map(onVal))
     case Val.ArrayValue(ty, values) =>
       Val.ArrayValue(onType(ty), values.map(onVal))
-    case v @ Val.Local(_, ty, _) => v.copy(valty = onType(ty))
-    case Val.Global(n, ty)       => Val.Global(n, onType(ty))
-    case Val.Const(v)            => Val.Const(onVal(v))
-    case _                       => value
+    case v @ Val.Local(_, ty) => v.copy(valty = onType(ty))
+    case Val.Global(n, ty)    => Val.Global(n, onType(ty))
+    case Val.Const(v)         => Val.Const(onVal(v))
+    case _                    => value
   }
 
   def onType(ty: Type): Type = ty match {

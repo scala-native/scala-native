@@ -2,32 +2,12 @@ package scala.scalanative
 package nir
 
 import scala.collection.mutable
-import scala.scalanative.nir.Val.ArrayValue
 
 class Buffer(implicit fresh: Fresh) {
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
   def +=(inst: Inst): Unit = buffer += inst
   def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
   def ++=(other: Buffer): Unit = buffer ++= other.buffer
-
-  def patch(lastVal: Val)(fn: Inst.Let => Inst.Let): Option[Val.Local] = {
-    lastVal match {
-      case vLocal @ Val.Local(lastId, _, _) =>
-        val idx = buffer.lastIndexWhere {
-          case v: Inst.Let => v.id == lastId
-          case _           => false
-        }
-        if (idx < 0) None
-        else
-          Some {
-            val v = buffer(idx).asInstanceOf[Inst.Let]
-            val mapped = fn(v)
-            buffer.update(idx, mapped)
-            vLocal.copy(localName = mapped.localName)
-          }
-      case _ => None
-    }
-  }
 
   def toSeq: Seq[Inst] = buffer.toSeq
   def size: Int = buffer.size
@@ -63,26 +43,17 @@ class Buffer(implicit fresh: Fresh) {
     this += Inst.Throw(value, unwind)
 
   // Compute ops
-  def let(id: Local, op: Op, unwind: Next)(implicit pos: Position): Val = {
+  def let(id: Local, op: Op, unwind: Next)(implicit
+      pos: Position
+  ): Val.Local = {
     this += Inst.Let(id, op, unwind)
     Val.Local(id, op.resty)
   }
-  def let(id: Local, localName: LocalName, op: Op, unwind: Next)(implicit
-      pos: Position
-  ): Val = {
-    this += Inst.Let(id, localName, op, unwind)
-    Val.Local(id, op.resty, localName)
-  }
-  def let(op: Op, unwind: Next)(implicit pos: Position): Val =
+  def let(op: Op, unwind: Next)(implicit pos: Position): Val.Local =
     let(fresh(), op, unwind)
-  def let(localName: LocalName, op: Op, unwind: Next)(implicit
-      pos: Position
-  ): Val =
-    let(fresh(), localName, op, unwind)
-
   def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Call(ty, ptr, args), unwind)
   def load(
       ty: Type,
@@ -91,7 +62,7 @@ class Buffer(implicit fresh: Fresh) {
       syncAttrs: Option[SyncAttrs] = None
   )(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Load(ty, ptr, syncAttrs), unwind)
   def store(
       ty: Type,
@@ -101,82 +72,83 @@ class Buffer(implicit fresh: Fresh) {
       syncAttrs: Option[SyncAttrs] = None
   )(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Store(ty, ptr, value, syncAttrs), unwind)
   def elem(ty: Type, ptr: Val, indexes: Seq[Val], unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Elem(ty, ptr, indexes), unwind)
   def extract(aggr: Val, indexes: Seq[Int], unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Extract(aggr, indexes), unwind)
   def insert(aggr: Val, value: Val, indexes: Seq[Int], unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Insert(aggr, value, indexes), unwind)
-  def stackalloc(ty: Type, n: Val, unwind: Next)(implicit pos: Position): Val =
+  def stackalloc(ty: Type, n: Val, unwind: Next)(implicit
+      pos: Position
+  ): Val.Local =
     let(Op.Stackalloc(ty, n), unwind)
   def bin(bin: nir.Bin, ty: Type, l: Val, r: Val, unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Bin(bin, ty, l, r), unwind)
   def comp(comp: nir.Comp, ty: Type, l: Val, r: Val, unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Comp(comp, ty, l, r), unwind)
   def conv(conv: nir.Conv, ty: Type, value: Val, unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Conv(conv, ty, value), unwind)
-  def classalloc(
-      name: Global,
-      unwind: Next,
-      zone: Option[Val] = None,
-      localName: LocalName = None
-  )(implicit
+  def classalloc(name: Global, unwind: Next, zone: Option[Val] = None)(implicit
       pos: Position
-  ): Val =
-    let(localName, Op.Classalloc(name, zone), unwind)
+  ): Val.Local =
+    let(Op.Classalloc(name, zone), unwind)
   def fieldload(ty: Type, obj: Val, name: Global, unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Fieldload(ty, obj, name), unwind)
   def fieldstore(ty: Type, obj: Val, name: Global, value: Val, unwind: Next)(
       implicit pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Fieldstore(ty, obj, name, value), unwind)
   def field(obj: Val, name: Global, unwind: Next)(implicit pos: Position) =
     let(Op.Field(obj, name), unwind)
-  def method(obj: Val, sig: Sig, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Method(obj, sig), unwind)
-  def dynmethod(obj: Val, sig: Sig, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Dynmethod(obj, sig), unwind)
-  def module(name: Global, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Module(name), unwind)
-  def as(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
-    let(Op.As(ty, obj), unwind)
-  def is(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Is(ty, obj), unwind)
-  def copy(value: Val, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Copy(value), unwind)
-  def sizeOf(ty: Type, unwind: Next)(implicit pos: Position): Val =
-    let(Op.SizeOf(ty), unwind)
-  def alignmentOf(ty: Type, unwind: Next)(implicit pos: Position): Val =
-    let(Op.AlignmentOf(ty), unwind)
-  def box(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Box(ty, obj), unwind)
-  def unbox(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val =
-    let(Op.Unbox(ty, obj), unwind)
-  def var_(ty: Type, localName: LocalName, unwind: Next)(implicit
+  def method(obj: Val, sig: Sig, unwind: Next)(implicit
       pos: Position
-  ): Val =
-    let(localName, Op.Var(ty), unwind)
-  def varload(slot: Val, unwind: Next)(implicit pos: Position): Val =
+  ): Val.Local =
+    let(Op.Method(obj, sig), unwind)
+  def dynmethod(obj: Val, sig: Sig, unwind: Next)(implicit
+      pos: Position
+  ): Val.Local =
+    let(Op.Dynmethod(obj, sig), unwind)
+  def module(name: Global, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.Module(name), unwind)
+  def as(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.As(ty, obj), unwind)
+  def is(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.Is(ty, obj), unwind)
+  def copy(value: Val, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.Copy(value), unwind)
+  def sizeOf(ty: Type, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.SizeOf(ty), unwind)
+  def alignmentOf(ty: Type, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.AlignmentOf(ty), unwind)
+  def box(ty: Type, obj: Val, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.Box(ty, obj), unwind)
+  def unbox(ty: Type, obj: Val, unwind: Next)(implicit
+      pos: Position
+  ): Val.Local =
+    let(Op.Unbox(ty, obj), unwind)
+  def var_(ty: Type, unwind: Next)(implicit pos: Position): Val.Local =
+    let(Op.Var(ty), unwind)
+  def varload(slot: Val, unwind: Next)(implicit pos: Position): Val.Local =
     let(Op.Varload(slot), unwind)
   def varstore(slot: Val, value: Val, unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Varstore(slot, value), unwind)
   def arrayalloc(
       ty: Type,
@@ -185,20 +157,20 @@ class Buffer(implicit fresh: Fresh) {
       zone: Option[Val] = None
   )(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Arrayalloc(ty, init, zone), unwind)
   def arrayload(ty: Type, arr: Val, idx: Val, unwind: Next)(implicit
       pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Arrayload(ty, arr, idx), unwind)
   def arraystore(ty: Type, arr: Val, idx: Val, value: Val, unwind: Next)(
       implicit pos: Position
-  ): Val =
+  ): Val.Local =
     let(Op.Arraystore(ty, arr, idx, value), unwind)
-  def arraylength(arr: Val, unwind: Next)(implicit pos: Position): Val =
+  def arraylength(arr: Val, unwind: Next)(implicit pos: Position): Val.Local =
     let(Op.Arraylength(arr), unwind)
 
-  def fence(memoryOrder: MemoryOrder)(implicit pos: Position): Val =
+  def fence(memoryOrder: MemoryOrder)(implicit pos: Position): Val.Local =
     let(
       Op.Fence(SyncAttrs(memoryOrder = memoryOrder, isVolatile = false)),
       Next.None

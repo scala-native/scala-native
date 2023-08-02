@@ -37,7 +37,13 @@ class PositionsTest {
           defn: Defn
       ): Option[(Global.Top, Sig.Unmangled, nir.Position, Seq[nir.Inst])] =
         defn match {
-          case Defn.Define(_, Global.Member(top: Global.Top, sig), _, insts) =>
+          case Defn.Define(
+                _,
+                Global.Member(top: Global.Top, sig),
+                _,
+                insts,
+                _
+              ) =>
             Some((top, sig.unmangled, defn.pos, insts))
           case Defn.Var(_, Global.Member(top: Global.Top, sig), _, _) =>
             Some((top, sig.unmangled, defn.pos, Nil))

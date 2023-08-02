@@ -20,7 +20,7 @@ sealed abstract class Val {
     case Val.StructValue(vals)    => Type.StructValue(vals.map(_.ty))
     case Val.ArrayValue(ty, vals) => Type.ArrayValue(ty, vals.length)
     case v: Val.ByteString        => Type.ArrayValue(Type.Byte, v.byteCount)
-    case Val.Local(_, ty, _)      => ty
+    case Val.Local(_, ty)         => ty
     case Val.Global(_, ty)        => ty
 
     case Val.Unit     => Type.Unit
@@ -188,11 +188,7 @@ object Val {
   final case class ByteString(bytes: Array[scala.Byte]) extends Val {
     def byteCount: scala.Int = bytes.length + 1
   }
-  final case class Local(
-      id: nir.Local,
-      valty: nir.Type,
-      localName: nir.LocalName = None // TODO: audit default usages
-  ) extends Val
+  final case class Local(id: nir.Local, valty: nir.Type) extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level

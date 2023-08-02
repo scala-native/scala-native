@@ -64,7 +64,7 @@ trait LinktimeValueResolver { self: Reach =>
 
         case Seq(
               _,
-              Inst.Let(_, _, ReferencedPropertyOp(propertyName), _),
+              Inst.Let(_, ReferencedPropertyOp(propertyName), _),
               Inst.Ret(_)
             ) =>
           val value = resolveLinktimeProperty(propertyName)
@@ -86,7 +86,7 @@ trait LinktimeValueResolver { self: Reach =>
       val resolvedInsts = ControlFlow.removeDeadBlocks {
         defn.insts.map {
           case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
-          case inst @ Inst.Let(_, _, ReferencedPropertyOp(propertyName), _) =>
+          case inst @ Inst.Let(_, ReferencedPropertyOp(propertyName), _) =>
             val resolvedVal = resolveLinktimeProperty(propertyName).nirValue
             inst.copy(op = Op.Copy(resolvedVal))
           case inst => inst
@@ -101,7 +101,7 @@ trait LinktimeValueResolver { self: Reach =>
       case Inst.LinktimeIf(_, _, _) => false
       case Inst.Jump(_: Next.Label) => false
       case Inst.Ret(_)              => false
-      case Inst.Let(_, _, op, Next.None) =>
+      case Inst.Let(_, op, Next.None) =>
         op match {
           case Op.Call(_, Val.Global(name, _), _) =>
             name != Linktime.PropertyResolveFunctionName &&

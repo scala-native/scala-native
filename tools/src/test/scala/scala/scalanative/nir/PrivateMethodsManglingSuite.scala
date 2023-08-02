@@ -73,7 +73,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec {
       case (_, result) =>
         val testedDefns = result.defns
           .collect {
-            case Defn.Define(_, Global.Member(owner, sig), _, _)
+            case Defn.Define(_, Global.Member(owner, sig), _, _, _)
                 if tops.contains(owner) =>
               sig.unmangled
           }

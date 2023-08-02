@@ -32,10 +32,8 @@ object UseDef {
 
     override def onVal(value: Val) = {
       value match {
-        case v @ Val.Local(n, _, _) =>
-          deps += n
-        case _ =>
-          ()
+        case v @ Val.Local(n, _) => deps += n
+        case _                   => ()
       }
       super.onVal(value)
     }
@@ -61,14 +59,12 @@ object UseDef {
   }
 
   private def isPure(inst: Inst) = inst match {
-    case Inst.Let(_, _, Op.Call(_, Val.Global(name, _), _), _) =>
+    case Inst.Let(_, Op.Call(_, Val.Global(name, _), _), _) =>
       Whitelist.pure.contains(name)
-    case Inst.Let(_, _, Op.Module(name), _) =>
+    case Inst.Let(_, Op.Module(name), _) =>
       Whitelist.pure.contains(name)
-    case Inst.Let(_, _, op, _) if op.isPure =>
-      true
-    case _ =>
-      false
+    case Inst.Let(_, op, _) if op.isPure => true
+    case _                               => false
   }
 
   def apply(cfg: ControlFlow.Graph): Map[Local, Def] = {
@@ -112,22 +108,18 @@ object UseDef {
     blocks.foreach { block =>
       enterBlock(block.name, block.params.map(_.id))
       block.insts.foreach {
-        case Inst.Let(n, _, _, unwind) =>
+        case Inst.Let(n, _, unwind) =>
           enterInst(n)
           unwind match {
-            case Next.None =>
-              ()
-            case Next.Unwind(Val.Local(exc, _, _), _) =>
-              enterInst(exc)
-            case _ =>
-              util.unreachable
+            case Next.None                         => ()
+            case Next.Unwind(Val.Local(exc, _), _) => enterInst(exc)
+            case _                                 => util.unreachable
           }
-        case Inst.Throw(_, Next.Unwind(Val.Local(exc, _, _), _)) =>
+        case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
           enterInst(exc)
-        case Inst.Unreachable(Next.Unwind(Val.Local(exc, _, _), _)) =>
+        case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>
           enterInst(exc)
-        case _ =>
-          ()
+        case _ => ()
       }
     }
 
@@ -159,7 +151,7 @@ object UseDef {
       if (usedef(block.name).alive) {
         buf += block.label
         block.insts.foreach {
-          case inst @ Inst.Let(n, _, _, _) =>
+          case inst @ Inst.Let(n, _, _) =>
             if (usedef(n).alive) buf += inst
           case inst: Inst.Cf =>
             buf += inst

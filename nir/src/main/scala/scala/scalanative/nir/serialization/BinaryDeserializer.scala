@@ -232,10 +232,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     val tag = getTag()
     implicit val pos: nir.Position = getPosition()
     (tag: @switch) match {
-      case T.LabelInst => Inst.Label(getLocal(), getParams())
-      case T.LetInst   => Inst.Let(getLocal(), getOp(), Next.None)
-      // TODO: dedicated unwind for named let?
-      case T.LetUnwindInst   => Inst.Let(getLocal(), getOpt(getString()), getOp(), getNext())
+      case T.LabelInst       => Inst.Label(getLocal(), getParams())
+      case T.LetInst         => Inst.Let(getLocal(), getOp(), Next.None)
+      case T.LetUnwindInst   => Inst.Let(getLocal(), getOp(), getNext())
       case T.RetInst         => Inst.Ret(getVal())
       case T.JumpInst        => Inst.Jump(getNext())
       case T.IfInst          => Inst.If(getVal(), getNext(), getNext())
@@ -293,7 +292,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.VarDefn     => Defn.Var(attrs, name, getType(), getVal())
       case T.ConstDefn   => Defn.Const(attrs, name, getType(), getVal())
       case T.DeclareDefn => Defn.Declare(attrs, name, getType())
-      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts())
+      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts(), getLocalNames())
       case T.TraitDefn   => Defn.Trait(attrs, name, getGlobals())
       case T.ClassDefn   => Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
       case T.ModuleDefn  => Defn.Module(attrs, name, getGlobalOpt(), getGlobals())
@@ -365,7 +364,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
   }
 
   private def getParams(): Seq[Val.Local] = getSeq(getParam())
-  private def getParam(): Val.Local = Val.Local(getLocal(), getType(), getOpt(getString()))
+  private def getParam(): Val.Local = Val.Local(getLocal(), getType())
 
   private def getTypes(): Seq[Type] = getSeq(getType())
   private def getType(): Type = in(prelude.sections.types) {
@@ -412,9 +411,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.StructValueVal => Val.StructValue(getVals())
       case T.ArrayValueVal  => Val.ArrayValue(getType(), getVals())
       case T.ByteStringVal  => Val.ByteString(getBytes())
-      // TODO: dedicated unnamed local tag
-      case T.LocalVal  => Val.Local(getLocal(), getType(), getOpt(getString()))
-      case T.GlobalVal => Val.Global(getGlobal(), getType())
+      case T.LocalVal       => Val.Local(getLocal(), getType())
+      case T.GlobalVal      => Val.Global(getGlobal(), getType())
 
       case T.UnitVal    => Val.Unit
       case T.ConstVal   => Val.Const(getVal())
@@ -465,4 +463,18 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     val column = getLebUnsignedInt()
     Position(file, line, column)
   }
+
+  def getLocalNames(): LocalNames = {
+    val size = getLebUnsignedInt()
+    if (size == 0) Map.empty
+    else {
+      val b = Map.newBuilder[Local, String]
+      b.sizeHint(size)
+      for (_ <- 0 until size) {
+        b += getLocal() -> getString()
+      }
+      b.result()
+    }
+  }
+
 }

@@ -39,8 +39,7 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
       val mergeValues = nextBlock.phis.flatMap {
         case MergePhi(_, incoming) =>
           incoming.collect {
-            case (name, value) if name == block.label.name =>
-              value
+            case (name, value) if name == block.label.name => value
           }
       }
       Next.Label(nextBlock.name, mergeValues)

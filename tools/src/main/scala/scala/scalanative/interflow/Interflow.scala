@@ -149,7 +149,7 @@ class Interflow(val config: build.Config)(implicit
   def result(): Seq[Defn] = {
     val optimized = originals.clone()
     optimized ++= done
-    optimized.values.toSeq.sortBy(_.name)
+    optimized.values.toSeq
   }
 
   protected def mode: build.Mode = config.compilerConfig.mode

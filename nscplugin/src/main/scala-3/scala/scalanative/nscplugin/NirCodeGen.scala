@@ -41,6 +41,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
   protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
+  protected val curMethodLocalNames =
+    new util.ScopedVar[mutable.Map[Local, LocalName]]
   protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
   protected var curMethodUsesLinktimeResolvedValues = false
@@ -185,7 +187,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
     def resolve(sym: Symbol): Val = env(sym)
     def resolveLabel(ld: Labeled): Local = {
-      val Val.Local(n, Type.Ptr, _) = resolve(ld.bind.symbol): @unchecked
+      val Val.Local(n, Type.Ptr) = resolve(ld.bind.symbol): @unchecked
       n
     }
   }
