@@ -1,3 +1,5 @@
+import scala.scalanative.meta.LinktimeInfo.isMac
+
 object Hello {
   def main(args: Array[String]): Unit = f()
 
@@ -11,13 +13,24 @@ object Hello {
     val stacktraceHello = stacktrace.filter { elem =>
       elem.getFileName() == "Hello.scala"
     }
-    val expectedHello = List(
-      "Hello$.error(Hello.scala:8)",
-      "Hello$.g(Hello.scala:6)",
-      "Hello$.f(Hello.scala:4)",
-      "Hello$.main(Hello.scala:2)",
-      "Hello.main(Hello.scala:2)"
-    )
+    val expectedHello =
+      if (isMac) {
+        List(
+          "Hello$.error(Hello.scala:10)",
+          "Hello$.g(Hello.scala:8)",
+          "Hello$.f(Hello.scala:6)",
+          "Hello$.main(Hello.scala:4)",
+          "Hello.main(Hello.scala:4)"
+        )
+      } else {
+        List(
+          "Hello$.error(Unknown Source)",
+          "Hello$.g(Unknown Source)",
+          "Hello$.f(Unknown Source)",
+          "Hello$.main(Unknown Source)",
+          "Hello.main(Unknown Source)"
+        )
+      }
     val actual = stacktraceHello.map(print)
     assert(actual == expectedHello, s"actual:\n${actual.mkString("\n")}")
   }
@@ -27,6 +40,7 @@ object Hello {
     val line = elem.getLineNumber()
     val method = elem.getMethodName()
     val module = elem.getClassName()
+    val fileline = if (filename != null) s"($filename:$line)" else "Unknown Source"
     s"$module.$method($filename:$line)"
   }
 }
