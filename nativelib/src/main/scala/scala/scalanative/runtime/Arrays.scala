@@ -12,7 +12,7 @@
 //   scripts/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
 //     --line-directive '' \
-//     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
+//     -o nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
 //
 //  After executing the script, you may want to edit this file to remove
 //  personally or build-system specific identifiable information.
@@ -48,8 +48,14 @@ sealed abstract class Array[T]
   /** Pointer to the element. */
   @inline def at(i: Int): Ptr[T] = fromRawPtr[T](atRaw(i))
 
+  /** Pointer to the element without a bounds check. */
+  @inline def atUnsafe(i: Int): Ptr[T] = fromRawPtr[T](atRawUnsafe(i))
+
   /** Raw pointer to the element. */
   def atRaw(i: Int): RawPtr
+
+  /** Raw pointer to the element without a bounds check. */
+  def atRawUnsafe(i: Int): RawPtr
 
   /** Loads element at i, throws ArrayIndexOutOfBoundsException. */
   def apply(i: Int): T
@@ -162,9 +168,13 @@ final class BooleanArray private () extends Array[Boolean] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 1 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 1 * i))
+  }
 
   @inline def apply(i: Int): Boolean = loadBoolean(atRaw(i))
 
@@ -214,9 +224,13 @@ final class CharArray private () extends Array[Char] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 2 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 2 * i))
+  }
 
   @inline def apply(i: Int): Char = loadChar(atRaw(i))
 
@@ -266,9 +280,13 @@ final class ByteArray private () extends Array[Byte] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 1 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 1 * i))
+  }
 
   @inline def apply(i: Int): Byte = loadByte(atRaw(i))
 
@@ -318,9 +336,13 @@ final class ShortArray private () extends Array[Short] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 2 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 2 * i))
+  }
 
   @inline def apply(i: Int): Short = loadShort(atRaw(i))
 
@@ -370,9 +392,13 @@ final class IntArray private () extends Array[Int] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 4 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 4 * i))
+  }
 
   @inline def apply(i: Int): Int = loadInt(atRaw(i))
 
@@ -422,9 +448,13 @@ final class LongArray private () extends Array[Long] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 8 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 8 * i))
+  }
 
   @inline def apply(i: Int): Long = loadLong(atRaw(i))
 
@@ -474,9 +504,13 @@ final class FloatArray private () extends Array[Float] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 4 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 4 * i))
+  }
 
   @inline def apply(i: Int): Float = loadFloat(atRaw(i))
 
@@ -526,9 +560,13 @@ final class DoubleArray private () extends Array[Double] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 8 * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + 8 * i))
+  }
 
   @inline def apply(i: Int): Double = loadDouble(atRaw(i))
 
@@ -578,9 +616,13 @@ final class ObjectArray private () extends Array[Object] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * i))
+  }
 
   @inline def apply(i: Int): Object = loadObject(atRaw(i))
 
