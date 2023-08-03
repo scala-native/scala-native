@@ -40,7 +40,8 @@ object Hello {
     val line = elem.getLineNumber()
     val method = elem.getMethodName()
     val module = elem.getClassName()
-    val fileline = if (filename != null) s"($filename:$line)" else "Unknown Source"
+    val fileline =
+      if (filename != null) s"($filename:$line)" else "Unknown Source"
     s"$module.$method($filename:$line)"
   }
 }
