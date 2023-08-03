@@ -12,7 +12,7 @@
 //   scripts/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
 //     --line-directive '' \
-//     -o nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
+//     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
 //
 //  After executing the script, you may want to edit this file to remove
 //  personally or build-system specific identifiable information.
@@ -159,7 +159,7 @@ final class BooleanArray private () extends Array[Boolean] {
     1.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -211,7 +211,7 @@ final class CharArray private () extends Array[Char] {
     2.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -263,7 +263,7 @@ final class ByteArray private () extends Array[Byte] {
     1.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -315,7 +315,7 @@ final class ShortArray private () extends Array[Short] {
     2.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -367,7 +367,7 @@ final class IntArray private () extends Array[Int] {
     4.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -419,7 +419,7 @@ final class LongArray private () extends Array[Long] {
     8.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -471,7 +471,7 @@ final class FloatArray private () extends Array[Float] {
     4.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -523,7 +523,7 @@ final class DoubleArray private () extends Array[Double] {
     8.toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
@@ -575,7 +575,7 @@ final class ObjectArray private () extends Array[Object] {
     castRawSizeToInt(sizeOfPtr).toUSize
 
   @inline def atRaw(i: Int): RawPtr =
-    if (i < 0 || i > length) {
+    if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
       val rawptr = castObjectToRawPtr(this)
