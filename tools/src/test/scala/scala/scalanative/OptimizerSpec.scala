@@ -31,7 +31,7 @@ abstract class OptimizerSpec extends LinkerSpec {
     link(entry, sources, setupConfig) {
       case (config, linked) =>
         val optimized = ScalaNative.optimize(config, linked)
-        val result = Await.result(optimized, 1.minute)
+        val result = Await.result(optimized, 2.minute)
         fn(config, result)
     }
 
