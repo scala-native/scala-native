@@ -1,24 +1,22 @@
 package scala.scalanative.runtime
 
-import java.io.File
 import scala.scalanative.runtime.dwarf.BinaryFile
-import java.io.RandomAccessFile
 import scala.scalanative.runtime.dwarf.MachO
 import scala.scalanative.runtime.dwarf.DWARF
-import scala.collection.mutable
+import scala.scalanative.runtime.dwarf.DWARF.DIE
+import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
+
 import scala.scalanative.unsafe.CSize
 import scala.scalanative.unsafe.Tag
-import scala.scalanative.unsigned.UInt
-import scala.collection.concurrent.TrieMap
 import scala.scalanative.unsafe.Zone
+import scala.scalanative.unsigned.UInt
 import scalanative.unsigned._
-import scala.io.Source
-import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
+
+import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 import scala.annotation.tailrec
-import scala.scalanative.runtime.dwarf.DWARF.DIE
-import scala.util.Using
-import scala.util.Failure
-import scala.util.Success
+
+import java.io.File
 
 object Backtrace {
   private sealed trait Format
@@ -122,32 +120,6 @@ object Backtrace {
     }
   }
 
-  private def offsetOSX(macho: MachO): Long = {
-    // calculate ASLR offset for macho using vmmap
-    // TODO: retrieve the load address using `mach_vm_region`.
-    // see: https://jvns.ca/blog/2018/01/26/mac-memory-maps/
-    val pid = libc.getpid().intValue()
-    val proc = new ProcessBuilder("vmmap", "-summary", s"$pid").start()
-    val offset = Using(Source.fromInputStream(proc.getInputStream())) { vmmap =>
-      (for {
-        loadAddress <- vmmap
-          .getLines()
-          // "Load Address:    0x0123456789abcdef"
-          .find(_.startsWith("Load Address"))
-          .map { line =>
-            val addressStr =
-              line.split(":").last.trim.drop(2) // drop the prefix 0x
-            java.lang.Long.parseLong(addressStr, 16)
-          }
-        pageZeroSize <- macho.segments
-          .find(_.segname == "__PAGEZERO")
-          .map(_.vmsize)
-      } yield loadAddress - pageZeroSize).getOrElse(0L)
-    }
-    proc.waitFor()
-    offset.getOrElse(0L)
-  }
-
   private def filterSubprograms(dies: Vector[CompileUnit]) = {
     var filenameAt: Option[UInt] = None
     dies
@@ -204,7 +176,7 @@ object Backtrace {
         dwarf <- dwarfOpt
         dies = dwarf._1.flatMap(_.units)
         subprograms = filterSubprograms(dies)
-        offset = offsetOSX(macho)
+        offset = vmoffset.get_vmoffset()
       } yield {
         DwarfInfo(
           subprograms = subprograms,
