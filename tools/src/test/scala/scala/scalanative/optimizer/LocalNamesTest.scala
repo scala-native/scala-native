@@ -212,6 +212,8 @@ class LocalNamesTest extends OptimizerSpec {
     setupConfig = _.withMode(build.Mode.ReleaseFull)
   ) {
     case (config, result) =>
+      val platformInfo = codegen.PlatformInfo(config)
+      val usesOpaquePointers = platformInfo.useOpaquePointers
       def checkLocalNames(defns: Seq[Defn], beforeLowering: Boolean) =
         findDefinition(defns)
           .foreach { defn =>
@@ -268,7 +270,10 @@ class LocalNamesTest extends OptimizerSpec {
             // checkHasLet[Op.Method]("method")
             // checkHasLet[Op.Dynmethod]("dynMethod")
             checkHasLetEither[Op.Module, Op.Call]("module")
-            checkHasLetEither[Op.As, Op.Copy]("as")
+            if (usesOpaquePointers)
+              checkHasLetEither[Op.As, Op.Copy]("as")
+            else
+              checkHasLetEither[Op.As, Op.Conv]("as")
             // lowered to if-else branch, `is` should be param
             if (beforeLowering) checkHasLet[Op.Is]("is")
             else checkHasVal("is")
