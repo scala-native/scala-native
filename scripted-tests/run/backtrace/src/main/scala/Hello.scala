@@ -10,7 +10,7 @@ object Hello {
   def error() = {
     val stacktrace = new Error("test").getStackTrace().toList
 
-    val actual = stacktrace.map(print).filter { elem =>
+    val actual = stacktrace.map(_.toString).filter { elem =>
       elem.startsWith("Hello")
     }
     val expectedHello =
@@ -32,15 +32,5 @@ object Hello {
         )
       }
     assert(actual == expectedHello, s"actual:\n${actual.mkString("\n")}")
-  }
-
-  def print(elem: StackTraceElement) = {
-    val filename = elem.getFileName()
-    val line = elem.getLineNumber()
-    val method = elem.getMethodName()
-    val module = elem.getClassName()
-    val fileline =
-      if (filename != null) s"($filename:$line)" else "Unknown Source"
-    s"$module.$method($filename:$line)"
   }
 }
