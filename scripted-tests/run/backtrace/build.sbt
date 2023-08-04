@@ -1,3 +1,6 @@
+import scala.sys.process.Process
+import java.util.Locale
+
 enablePlugins(ScalaNativePlugin)
 
 scalaVersion := {
@@ -10,15 +13,17 @@ scalaVersion := {
   else scalaVersion
 }
 
-import scala.sys.process._
-
 nativeConfig ~= { c =>
   c.withDebugMetadata(true)
 }
 
-import scala.sys.process._
 lazy val debugBuild = taskKey[Unit]("Compile and run dsymutil if exists")
 debugBuild := {
   val path = (Compile / nativeLink).value
-  s"./dsymutil.sh $path" !
+  if (System
+        .getProperty("os.name")
+        .toLowerCase(Locale.ROOT)
+        .startsWith("mac")) {
+    Process(s"dsymutil ${path.getAbsolutePath()}") !
+  }
 }
