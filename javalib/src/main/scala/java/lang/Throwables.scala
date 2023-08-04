@@ -15,7 +15,7 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte]
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
-    val name = alloc[CChar](nameMax.toUSize)
+    val name = alloc[CChar](nameMax)
     val offset = stackalloc[scala.Long]()
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)

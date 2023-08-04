@@ -32,6 +32,8 @@ import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
 import dotty.tools.dotc.ast.desugar
 import dotty.tools.dotc.util.Property
+import scala.scalanative.nscplugin.NirDefinitions.NonErasedType
+import scala.scalanative.util.unreachable
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -2179,19 +2181,76 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genStackalloc(app: Apply): Val = {
-      val Apply(_, Seq(sizep)) = app
+    private lazy val optimizedFunctions = {
+      // Included functions should be pure, and should not not narrow the result type
+      Set[Symbol](
+        defnNir.Intrinsics_castIntToRawSize,
+        defnNir.Intrinsics_castIntToRawSizeUnsigned,
+        defnNir.Intrinsics_castLongToRawSize,
+        defnNir.Intrinsics_castRawSizeToInt,
+        defnNir.Intrinsics_castRawSizeToLong,
+        defnNir.Intrinsics_castRawSizeToLongUnsigned,
+        defnNir.Size_fromByte,
+        defnNir.Size_fromShort,
+        defnNir.Size_fromInt,
+        defnNir.USize_fromUByte,
+        defnNir.USize_fromUShort,
+        defnNir.USize_fromUInt,
+        defnNir.RuntimePackage_fromRawSize,
+        defnNir.RuntimePackage_fromRawUSize
+      ) ++ defnNir.Intrinsics_unsignedOfAlts ++ defnNir.RuntimePackage_toRawSizeAlts
+    }
 
-      val size = genExpr(sizep)
-      val sizeTy = Type.normalize(size.ty)
-      val unboxed =
-        if Type.isSizeBox(sizeTy) then
-          buf.unbox(sizeTy, size, unwind)(using sizep.span)
-        else
-          assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
-          size
+    private def getUnboxedSize(sizep: Tree)(using Position): Val =
+      sizep match {
+        // Optimize call, strip numeric conversions
+        case Literal(Constant(size: Int)) => Val.Size(size)
+        case Block(Nil, expr)             => getUnboxedSize(expr)
+        case Apply(fun, List(arg))
+            if optimizedFunctions.contains(fun.symbol) ||
+              arg.symbol.exists && optimizedFunctions.contains(arg.symbol) =>
+          getUnboxedSize(arg)
+        case Typed(expr, _) => getUnboxedSize(expr)
+        case _              =>
+          // actual unboxing
+          val size = genExpr(sizep)
+          val sizeTy = Type.normalize(size.ty)
+          val unboxed =
+            if Type.unbox.contains(sizeTy) then buf.unbox(sizeTy, size, unwind)
+            else if Type.box.contains(sizeTy) then size
+            else {
+              report.error(
+                s"Invalid usage of Intrinsic.stackalloc, argument is not an integer type: ${sizeTy}",
+                sizep.srcPos
+              )
+              Val.Size(0)
+            }
 
-      buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
+          if (unboxed.ty == nir.Type.Size) unboxed
+          else buf.conv(Conv.SSizeCast, nir.Type.Size, unboxed, unwind)
+      }
+
+    def genStackalloc(app: Apply): Val = {
+      given nir.Position = app.span
+      val Apply(_, args) = app
+      val tpe = app
+        .getAttachment(NonErasedType)
+        .map(genType(_, deconstructValueTypes = true))
+        .getOrElse {
+          report.error(
+            "Not found type attachment for stackalloc operation, report it as a bug.",
+            app.srcPos
+          )
+          Type.Nothing
+        }
+
+      val size = args match {
+        case Seq()         => Val.Size(1)
+        case Seq(sizep)    => getUnboxedSize(sizep)
+        case Seq(_, sizep) => getUnboxedSize(sizep)
+        case _             => scalanative.util.unreachable
+      }
+      buf.stackalloc(tpe, size, unwind)
     }
 
     def genSafeZoneAlloc(app: Apply): Val = {

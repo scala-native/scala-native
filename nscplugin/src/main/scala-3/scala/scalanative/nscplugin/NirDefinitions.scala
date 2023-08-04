@@ -45,6 +45,16 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val USizeClass = requiredClass("scala.scalanative.unsigned.USize")
   @tu lazy val RawSizeClass = requiredClass("scala.scalanative.runtime.RawSize")
 
+  @tu lazy val USizeModule = requiredModule("scala.scalanative.unsigned.USize")
+  @tu lazy val USize_fromUByte = USizeModule.requiredMethod("fromUByte")
+  @tu lazy val USize_fromUShort = USizeModule.requiredMethod("fromUShort")
+  @tu lazy val USize_fromUInt = USizeModule.requiredMethod("fromUInt")
+
+  @tu lazy val SizeModule = requiredModule("scala.scalanative.unsafe.Size")
+  @tu lazy val Size_fromByte = SizeModule.requiredMethod("fromByte")
+  @tu lazy val Size_fromShort = SizeModule.requiredMethod("fromShort")
+  @tu lazy val Size_fromInt = SizeModule.requiredMethod("fromInt")
+
   // Pointers
   @tu lazy val PtrClass = requiredClass("scala.scalanative.unsafe.Ptr")
   @tu lazy val RawPtrClass = requiredClass("scala.scalanative.runtime.RawPtr")
@@ -76,6 +86,14 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimePackageClass = requiredModule("scala.scalanative.runtime.package")
   @tu lazy val RuntimePackage_enterMonitor = RuntimePackageClass.requiredMethod("enterMonitor")
   @tu lazy val RuntimePackage_exitMonitor = RuntimePackageClass.requiredMethod("exitMonitor")
+  @tu lazy val RuntimePackage_fromRawSize = RuntimePackageClass.requiredMethod("fromRawSize")
+  @tu lazy val RuntimePackage_fromRawUSize = RuntimePackageClass.requiredMethod("fromRawUSize")
+
+  @tu lazy val RuntimePackage_toRawSizeAlts = RuntimePackageClass.info
+    .member(termName("toRawSize"))
+    .alternatives
+    .map(_.symbol)
+    .ensuring(_.size == 2)
 
   @tu lazy val RuntimeSafeZoneAllocatorModuleRef = requiredModuleRef("scala.scalanative.runtime.SafeZoneAllocator")
   @tu lazy val RuntimeSafeZoneAllocatorModule = RuntimeSafeZoneAllocatorModuleRef.symbol
@@ -85,6 +103,7 @@ final class NirDefinitions()(using ctx: Context) {
 
   // Runtime intriniscs
   @tu lazy val IntrinsicsModule = requiredModule("scala.scalanative.runtime.Intrinsics")
+  @tu lazy val IntrinsicsInternalModule = requiredModule("scala.scalanative.runtime.Intrinsics.internal")
   @tu lazy val Intrinsics_divUInt = IntrinsicsModule.requiredMethod("divUInt")
   @tu lazy val Intrinsics_divULong = IntrinsicsModule.requiredMethod("divULong")
   @tu lazy val Intrinsics_remUInt = IntrinsicsModule.requiredMethod("remUInt")
@@ -142,22 +161,12 @@ final class NirDefinitions()(using ctx: Context) {
     .alternatives
     .map(_.symbol)
     .ensuring(_.size == 2)
+  @tu lazy val IntrinsicsInternal_stackalloc = IntrinsicsInternalModule.requiredMethod("stackalloc")
   @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
-  @tu lazy val Intrinsics_sizeOfAlts = IntrinsicsModule.info
-    .member(termName("sizeOf"))
-    .alternatives
-    .map(_.symbol)
-    .ensuring(_.size == 2)
-  @tu lazy val Intrinsics_sizeOf = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
-  @tu lazy val Intrinsics_sizeOfType = Intrinsics_sizeOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
-  @tu lazy val Intrinsics_alignmentOfAlts = IntrinsicsModule.info
-    .member(termName("alignmentOf"))
-    .alternatives
-    .map(_.symbol)
-    .ensuring(_.size == 2)
-  @tu lazy val Intrinsics_alignmentOf = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.nonEmpty).get
-  @tu lazy val Intrinsics_alignmentOfType = Intrinsics_alignmentOfAlts.find(_.info.paramInfoss.flatten.isEmpty).get
-
+  @tu lazy val Intrinsics_sizeOf = IntrinsicsModule.requiredMethod("sizeOf")
+  @tu lazy val IntrinsicsInternal_sizeOf = IntrinsicsInternalModule.requiredMethod("sizeOf")
+  @tu lazy val Intrinsics_alignmentOf = IntrinsicsModule.requiredMethod("alignmentOf")
+  @tu lazy val IntrinsicsInternal_alignmentOf = IntrinsicsInternalModule.requiredMethod("alignmentOf")
   @tu lazy val Intrinsics_unsignedOfAlts =
     IntrinsicsModule.info
       .member(termName("unsignedOf"))

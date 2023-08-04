@@ -381,9 +381,9 @@ final class USize(private[scalanative] val rawSize: RawSize) {
 }
 
 object USize {
-  @inline implicit def ubyteToUSize(x: UByte): USize = x.toUSize
-  @inline implicit def ushortToUSize(x: UShort): USize = x.toUSize
-  @inline implicit def uintToUSize(x: UInt): USize = x.toUSize
+  @inline implicit def fromUByte(x: UByte): USize = x.toUSize
+  @inline implicit def fromUShort(x: UShort): USize = x.toUSize
+  @inline implicit def fromUInt(x: UInt): USize = x.toUSize
 
   @inline def valueOf(rawSize: RawSize): USize = {
     import USizeCache.cache

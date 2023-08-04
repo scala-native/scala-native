@@ -67,7 +67,7 @@ private[java] object IEEE754Helpers {
     if (nChars == 0)
       throw new NumberFormatException(exceptionMsg(s))
 
-    val cStr: CString = stackalloc[scala.Byte]((nChars + 1).toUInt)
+    val cStr: CString = stackalloc[scala.Byte](nChars + 1)
 
     if (_numericCharSeqToCString(s, nChars, cStr) == false) {
       throw new NumberFormatException(exceptionMsg(s))

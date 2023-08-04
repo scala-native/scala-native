@@ -457,6 +457,8 @@ object Lower {
           genArraystoreOp(buf, n, op)
         case op: Op.Arraylength =>
           genArraylengthOp(buf, n, op)
+        case op: Op.Stackalloc =>
+          genStackallocOp(buf, n, op)
         case _ =>
           buf.let(n, op, unwind)
       }
@@ -1432,6 +1434,44 @@ object Lower {
       buf.let(n, Op.Load(Type.Int, lenPtr), unwind)
     }
 
+    def genStackallocOp(buf: Buffer, n: Local, op: Op.Stackalloc)(implicit
+        pos: Position
+    ): Unit = {
+      val Op.Stackalloc(ty, size) = op
+      val initValue = Val.Zero(ty).canonicalize
+      val pointee = buf.let(n, op, unwind)
+      size match {
+        case Val.Size(1) if initValue.isCanonical =>
+          buf.let(
+            Op.Store(ty, pointee, initValue, None),
+            unwind
+          )
+        case sizeV =>
+          val elemSize = MemoryLayout.sizeOf(ty)
+          val size = sizeV match {
+            case Val.Size(v) => Val.Size(v * elemSize)
+            case _ =>
+              val asSize = sizeV.ty match {
+                case Type.FixedSizeI(width, _) =>
+                  if (width == platform.sizeOfPtrBits) sizeV
+                  else if (width > platform.sizeOfPtrBits)
+                    buf.conv(Conv.Trunc, Type.Size, sizeV, unwind)
+                  else
+                    buf.conv(Conv.Zext, Type.Size, sizeV, unwind)
+
+                case _ => sizeV
+              }
+              if (elemSize == 1) asSize
+              else
+                buf.let(
+                  Op.Bin(Bin.Imul, Type.Size, asSize, Val.Size(elemSize)),
+                  unwind
+                )
+          }
+          buf.call(memsetSig, memset, Seq(pointee, Val.Int(0), size), unwind)
+      }
+    }
+
     def genStringVal(value: String): Val = {
       val StringCls = ClassRef.unapply(Rt.StringName).get
       val CharArrayCls = ClassRef.unapply(CharArrayName).get
@@ -1769,6 +1809,10 @@ object Lower {
     Type.Ptr
   )
 
+  val memsetSig =
+    Type.Function(Seq(Type.Ptr, Type.Int, Type.Size), Type.Ptr)
+  val memset = Val.Global(extern("memset"), Type.Ptr)
+
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
 
@@ -1779,6 +1823,7 @@ object Lower {
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
+    buf += Defn.Declare(Attrs(isExtern = true), memset.name, memsetSig)
     buf.toSeq
   }
 

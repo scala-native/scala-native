@@ -109,7 +109,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
 
   @inline
   private def tryLock(threadId: ThreadId) = {
-    val expected = stackalloc(new CSize(sizeOfPtr))
+    val expected = stackalloc[RawPtr]()
     // ThreadId set to 0, recursion set to 0
     storeRawSize(expected, castIntToRawSize(0))
     atomic_compare_exchange_intptr(

@@ -5,12 +5,17 @@ import scalanative.unsafe._
 import scala.scalanative.unsigned._
 
 object Intrinsics {
+  object internal {
+    def stackalloc(cls: Class[_], size: Any): RawPtr = intrinsic
+    def alignmentOf(cls: Class[_]): RawSize = intrinsic
+    def sizeOf(cls: Class[_]): RawSize = intrinsic
+  }
 
-  /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: RawSize): RawPtr = intrinsic
+  /** Intrinsified stack allocation of sizeOf[T] bytes. */
+  def stackalloc[T](): RawPtr = intrinsic
 
-  /** Intrinsified stack allocation of n bytes. */
-  def stackalloc(size: CSize): RawPtr = intrinsic
+  /** Intrinsified stack allocation of sizeOf[T] * size bytes. */
+  def stackalloc[T](size: RawSize): RawPtr = intrinsic
 
   /** Intrinsified unsigned devision on ints. */
   def divUInt(l: Int, r: Int): Int = intrinsic
@@ -175,18 +180,8 @@ object Intrinsics {
   /** Intrinsified resolving of memory layout size of given type */
   def sizeOf[T]: RawSize = intrinsic
 
-  /** Internal intrinsified resolving of memory layout size of given type
-   *  Accepts only class literals. Whenever possible use `sizeOf[T]` instead
-   */
-  def sizeOf(cls: Class[_]): RawSize = intrinsic
-
   /** Intrinsified resolving of memory layout alignment of given type */
   def alignmentOf[T]: RawSize = intrinsic
-
-  /** Internal intrinsified resolving of memory layout alignment of given type
-   *  Accepts only class literals. Whenever possible use `alignment[T]` instead
-   */
-  def alignmentOf(cls: Class[_]): RawSize = intrinsic
 
   // Efficient intrinsic boxing of Scala primitives into unsigned type
   // Allows to skip unnecesary module and conversion methods, emits Op.Box(prim) instead
