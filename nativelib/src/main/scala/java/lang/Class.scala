@@ -125,10 +125,13 @@ final class _Class[A] {
 
   // def getInterfaces(): Array[_Class[_]] =
   //   ???
+
+  // In theory the following 2 methods could be implemented, based on idRangeUntil from RTTI if we would have some kind of mapping between class/trait id -> Class[_] or by modifing the CodeGen
   // def getSuperclass(): Class[_ >: A] =
   //   ???
   // def getField(name: String): Field =
   //   ???
+
   // def getClassLoader(): java.lang.ClassLoader = ???
   // def getConstructor(args: Array[_Class[_]]): java.lang.reflect.Constructor[_] =
   //   ???
@@ -182,6 +185,7 @@ object _Class {
   ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
+  // Could be implemented via intrinsic method resolved at compile time and generating nir.Val.ClassOf(name: String)
   // def forName(name: String): Class[_] = ???
   // def forName(
   //     name: String,
