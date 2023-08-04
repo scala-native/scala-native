@@ -10,8 +10,8 @@ object Hello {
   def error() = {
     val stacktrace = new Error("test").getStackTrace().toList
 
-    val stacktraceHello = stacktrace.filter { elem =>
-      elem.getFileName() == "Hello.scala"
+    val actual = stacktrace.map(print).filter { elem =>
+      elem.startsWith("Hello")
     }
     val expectedHello =
       if (isMac) {
@@ -31,7 +31,6 @@ object Hello {
           "Hello.main(Unknown Source)"
         )
       }
-    val actual = stacktraceHello.map(print)
     assert(actual == expectedHello, s"actual:\n${actual.mkString("\n")}")
   }
 
