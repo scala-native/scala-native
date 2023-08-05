@@ -4,6 +4,8 @@ package interflow
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.util.unreachable
+import scala.annotation.tailrec
+import scala.collection.mutable
 
 trait Inline { self: Interflow =>
   private val maxInlineSize =
@@ -164,6 +166,18 @@ trait Inline { self: Interflow =>
       val blocks =
         process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
 
+        // Mark blocks taking part in cycle involving stackalloc
+        // Such blocks should emit stackSave/Restore ops to prevent StackOverflow
+      blocks
+        .find(b => b.allocatesOnStack && b.isPartOfCycle)
+        .flatMap(findStartOfCycle(blocks, _))
+        .foreach { b =>
+          // b.toInsts().map(_.show).foreach(println)
+          val stackSavePtrId = b.end.fresh()
+          b.emitStackSaveOp = Some(stackSavePtrId)
+          b.stackStatePtr = Val.Local(stackSavePtrId, Type.Ptr)
+        }
+
       val emit = new nir.Buffer()(state.fresh)
 
       def nothing = {
@@ -221,24 +235,45 @@ trait Inline { self: Interflow =>
             }
       }
 
-      // Check if inlined function performed stack allocation, if so add
-      // insert stacksave/stackrestore LLVM Intrinsics to prevent affecting.
-      // By definition every stack allocation of inlined function is only needed within it's body
-      val allocatesOnStack = emit.exists {
-        case Inst.Let(_, _: Op.Stackalloc, _) => true
-        case _                                => false
-      }
-      if (allocatesOnStack) {
-        import Interflow.LLVMIntrinsics._
-        val stackState = state.emit
-          .call(StackSaveSig, StackSave, Nil, Next.None)
-        state.emit ++= emit
-        state.emit
-          .call(StackRestoreSig, StackRestore, Seq(stackState), Next.None)
-      } else state.emit ++= emit
+      state.emit ++= emit
       state.inherit(endState, res +: args)
 
       val Type.Function(_, retty) = defn.ty: @unchecked
       adapt(res, retty)
     }
+
+  private def findStartOfCycle(
+      blocks: Iterable[MergeBlock],
+      expected: MergeBlock
+  ): Option[MergeBlock] = {
+    val visited = mutable.Set.empty[MergeBlock]
+    def visit(
+        current: MergeBlock,
+        path: List[MergeBlock]
+    ): Option[MergeBlock] = {
+      if (path.contains(current) && path.contains(expected)) Some(current)
+      else {
+        visited += current
+        current.outgoing.values.foldLeft(None: Option[MergeBlock]) {
+          case (done @ Some(_), _) => done
+          case (None, next)        => visit(next, current :: path)
+        }
+      }
+    }
+
+    @tailrec def loop(
+        remaining: List[MergeBlock]
+    ): Option[MergeBlock] = {
+      remaining match {
+        case Nil => None
+        case head :: tail =>
+          visit(head, Nil) match {
+            case None  => loop(tail)
+            case start => start
+          }
+      }
+    }
+    loop(blocks.toList)
+  }
+
 }

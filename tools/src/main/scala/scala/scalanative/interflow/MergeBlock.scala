@@ -3,6 +3,7 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.nir._
+import scala.annotation.tailrec
 
 final class MergeBlock(val label: Inst.Label, val name: Local) {
   var incoming = mutable.Map.empty[Local, (Seq[Val], State)]
@@ -12,16 +13,56 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
   var end: State = _
   var cf: Inst.Cf = _
   var invalidations: Int = 0
+
+  // Check if inlined function performed stack allocation, if so add
+  // insert stacksave/stackrestore LLVM Intrinsics to prevent affecting.
+  // By definition every stack allocation of inlined function is only needed within it's body
+  lazy val allocatesOnStack = end.emit.exists {
+    case Inst.Let(_, _: Op.Stackalloc, _) => true
+    case _                                => false
+  }
+  var stackStatePtr: Val = Val.Null
+  var emitStackSaveOp: Option[Local] = None
+
   implicit def cfPos: Position = {
     if (cf != null) cf.pos
     else label.pos
   }
 
+  lazy val isPartOfCycle: Boolean = {
+    val visited = mutable.Set.empty[MergeBlock]
+    def outgoingList(block: MergeBlock): List[MergeBlock] =
+      block.outgoing.foldRight[List[MergeBlock]](Nil) {
+        case ((_, outgoing), acc) =>
+          if (visited.contains(outgoing)) acc
+          else outgoing :: acc
+      }
+    @tailrec def loop(todo: List[MergeBlock]): Boolean = todo match {
+      case Nil => false
+      case head :: tail =>
+        if (head eq this) true
+        else if (visited.add(head)) {
+          visited += head
+          loop(outgoingList(head) ::: tail)
+        } else loop(tail)
+    }
+    loop(todo = outgoingList(this))
+  }
+
   def toInsts(): Seq[Inst] = {
+    import Interflow.LLVMIntrinsics._
     val block = this
     val result = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.name)
+      if (nextBlock.stackStatePtr != Val.Null && this.isPartOfCycle) {
+        result.call(
+          StackRestoreSig,
+          StackRestore,
+          Seq(nextBlock.stackStatePtr),
+          Next.None
+        )
+      }
       val mergeValues = nextBlock.phis.flatMap {
         case MergePhi(_, incoming) =>
           incoming.collect {
@@ -41,6 +82,21 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
     }
     val params = block.phis.map(_.param)
     result.label(block.name, params)
+    // Ooptionally emit StackSave op
+    // It is required when block is a start of cycle involving stackalloc op
+    emitStackSaveOp.foreach { n =>
+      val alreadyEmmited = block.end.emit.exists {
+        case Inst.Let(_, Op.Call(_, StackSave, _), _) => true
+        case _                                        => false
+      }
+      if (!alreadyEmmited) {
+        stackStatePtr = result.let(
+          name = n,
+          op = Op.Call(StackSaveSig, StackSave, Nil),
+          unwind = Next.None
+        )
+      }
+    }
     result ++= block.end.emit
     block.cf match {
       case ret: Inst.Ret =>
