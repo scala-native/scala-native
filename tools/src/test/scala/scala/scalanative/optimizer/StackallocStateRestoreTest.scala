@@ -7,7 +7,7 @@ import scala.scalanative.nir._
 import org.junit._
 import org.junit.Assert._
 
-class InlineStackallocTest extends OptimizerSpec {
+class StackallocStateRestoreTest extends OptimizerSpec {
 
   @Test def noLoop(): Unit = {
     optimize(
@@ -273,4 +273,184 @@ class InlineStackallocTest extends OptimizerSpec {
         }
     }
   }
+
+  @Test def whileLoopEscapingStackalloc(): Unit = {
+    optimize(
+      entry = "Test",
+      sources = Map(
+        "Test.scala" -> """
+          |import scala.scalanative.unsafe._
+          |object Test {
+          |  def main(args: Array[String]): Unit = {
+          |    println("Hello, World!")
+          |
+          |    import CList._
+          |    var i = 0
+          |    var head: Ptr[Node] = null
+          |    while (i < 4) {
+          |      head = stackalloc[Node]().init(i, head)
+          |      println(head)
+          |      i += 1
+          |    }
+          |    println(head)
+          |  }
+          |}
+          |
+          |object CList {
+          |  type Node = CStruct2[Int, Ptr[_]]
+          |
+          |  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
+          |    def init(value: Int, next: Ptr[Node]) = {
+          |      self._1 = value
+          |      self._2 = next
+          |      self
+          |    }
+          |  }
+          |}
+          |
+          |""".stripMargin
+      )
+    ) {
+      case (_, result) =>
+        findEntry(result.defns).foreach { defn =>
+
+          val stackallocId = defn.insts.collectFirst {
+            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+          }
+          assertTrue("No stackalloc op", stackallocId.nonEmpty)
+
+          val saveIds = defn.insts.collect {
+            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+          }
+          assertTrue("No StackSave ops", saveIds.isEmpty)
+        }
+    }
+  }
+
+  @Test def whileLoopEscapingStackalloc2(): Unit = {
+    optimize(
+      entry = "Test",
+      sources = Map(
+        "Test.scala" -> """
+          |import scala.scalanative.unsafe._
+          |object Test {
+          |  def main(args: Array[String]): Unit = {
+          |    println("Hello, World!")
+          |
+          |    import CList._
+          |    var i, j = 0
+          |    i = args.headOption.map(_.toInt).getOrElse(0)
+          |    while (i < 4) {
+          |      j = 0
+          |      var head: Ptr[Node] = null
+          |      head = stackalloc[Node]().init(-1, head)
+          |      while (j < 4) {
+          |        head = stackalloc[Node]().init(j, head)
+          |        println(head)
+          |        j += 1
+          |      }
+          |      i += 1
+          |    }
+          |  }
+          |}
+          |
+          |object CList {
+          |  type Node = CStruct2[Int, Ptr[_]]
+          |
+          |  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
+          |    def init(value: Int, next: Ptr[Node]) = {
+          |      self._1 = value
+          |      self._2 = next
+          |      self
+          |    }
+          |  }
+          |}
+          |""".stripMargin
+      )
+    ) {
+      case (_, result) =>
+        findEntry(result.defns).foreach { defn =>
+          val stackallocId = defn.insts.collectFirst {
+            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+          }
+          assertTrue("No stackalloc op", stackallocId.isDefined)
+
+          val saveIds = defn.insts.collect {
+            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+          }
+          assertTrue("No StackSave ops", saveIds.nonEmpty)
+          assertEquals("StackSave ammount", 1, saveIds.size)
+
+          val restoreIds = defn.insts.collect {
+            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+          }
+          assertTrue("No StackRestore ops", restoreIds.nonEmpty)
+          assertEquals("StackRestore ammount", 1, restoreIds.size)
+        }
+    }
+  }
+
+    @Test def whileLoopEscapingStackalloc3(): Unit = {
+    optimize(
+      entry = "Test",
+      sources = Map(
+        "Test.scala" -> """
+          |import scala.scalanative.unsafe._
+          |object Test {
+          |  def main(args: Array[String]): Unit = {
+          |    println("Hello, World!")
+          |
+          |    import CList._
+          |    var i, j = 0
+          |    i = args.headOption.map(_.toInt).getOrElse(0)
+          |    while (i < 4) {
+          |      j = 0
+          |      var head: Ptr[Node] = null
+          |      // No outer stackalloc // head = stackalloc[Node]().init(-1, head)
+          |      while (j < 4) {
+          |        head = stackalloc[Node]().init(j, head)
+          |        println(head)
+          |        j += 1
+          |      }
+          |      i += 1
+          |    }
+          |  }
+          |}
+          |
+          |object CList {
+          |  type Node = CStruct2[Int, Ptr[_]]
+          |
+          |  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
+          |    def init(value: Int, next: Ptr[Node]) = {
+          |      self._1 = value
+          |      self._2 = next
+          |      self
+          |    }
+          |  }
+          |}
+          |""".stripMargin
+      )
+    ) {
+      case (_, result) =>
+        findEntry(result.defns).foreach { defn =>
+          val stackallocId = defn.insts.collectFirst {
+            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+          }
+          assertTrue("No stackalloc op", stackallocId.isDefined)
+
+          val saveIds = defn.insts.collect {
+            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+          }
+          assertTrue("No StackSave ops", saveIds.nonEmpty)
+          assertEquals("StackSave ammount", 1, saveIds.size)
+
+          val restoreIds = defn.insts.collect {
+            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+          }
+          assertTrue("No StackRestore ops", restoreIds.nonEmpty)
+          assertEquals("StackRestore ammount", 1, restoreIds.size)
+        }
+    }
+  }
+
 }

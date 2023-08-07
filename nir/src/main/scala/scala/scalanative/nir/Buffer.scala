@@ -11,6 +11,7 @@ class Buffer(implicit fresh: Fresh) {
 
   def toSeq: Seq[Inst] = buffer.toSeq
   def size: Int = buffer.size
+  def foreach(fn: Inst => Unit) = buffer.foreach(fn)
   def exists(pred: Inst => Boolean) = buffer.exists(pred)
 
   // Control-flow ops

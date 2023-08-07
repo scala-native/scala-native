@@ -142,31 +142,74 @@ trait Opt { self: Interflow =>
 
   def postProcess(blocks: Seq[MergeBlock]): Seq[MergeBlock] = {
     lazy val blockIndices = blocks.zipWithIndex.toMap
-    blocks.foreach { b =>
-      // Detect cycles involving stackalloc memory
-      // Insert StackSave/StackRestore instructions at its first/last block
-      val allocatesOnStack = b.end.emit.exists {
-        case Inst.Let(_, _: Op.Stackalloc, _) => true
-        case _                                => false
-      }
-      if (allocatesOnStack) {
-        findCycles(b)
-          .foreach { cycle =>
-            val startIdx = cycle.map(blockIndices(_)).min
-            val start = blocks(startIdx)
-            val endIdx = (cycle.indexOf(start) + 1) % cycle.size
-            val end = cycle(endIdx)
-            // Adjust internal state, affecting block materialization in MergeBlock.toInsts
-            val startName = start.label.name
-            if (!end.emitStackRestoreFor.contains(startName)) {
-              start.emitStackSaveOp = true
-              end.emitStackRestoreFor ::= startName
-            }
-          }
-      }
+
+    blocks.foreach { block =>
+      emitStackStateResetForCycles(block, blocks, blockIndices)
     }
 
     blocks
+  }
+
+  private def emitStackStateResetForCycles(
+      block: MergeBlock,
+      blocks: Seq[MergeBlock],
+      blockIndices: => Map[MergeBlock, Int]
+  ): Unit = {
+    // Detect cycles involving stackalloc memory
+    // Insert StackSave/StackRestore instructions at its first/last block
+    def allocatesOnStack(block: MergeBlock) = block.end.emit.exists {
+      case Inst.Let(_, _: Op.Stackalloc, _) => true
+      case _                                => false
+    }
+
+    if (allocatesOnStack(block)) {
+      val allocationEscapeCheck = new TrackStackallocEscape()
+      def tryEmit(
+          block: MergeBlock,
+          innerCycle: BlocksCycle,
+          innerCycleStart: Option[MergeBlock]
+      ): Unit = {
+        findCycles(block)
+          .filter { cycle =>
+            val isDirectLoop = innerCycle.isEmpty
+            def isEnclosingLoop = innerCycle.toSet != cycle.toSet
+            isDirectLoop || // 1st run
+              (isEnclosingLoop && !cycle.exists(allocatesOnStack)) // 2nd run
+          }
+          .foreach { cycle =>
+            val startIdx = cycle.map(blockIndices(_)).min
+            val start = blocks(startIdx)
+            val startName = start.label.name
+            val endIdx = (cycle.indexOf(start) + 1) % cycle.size
+            val end = cycle(endIdx)
+
+            val isNewCycle = !end.emitStackRestoreFor.contains(startName)
+            def canEscapeAlloc = allocationEscapeCheck(
+              allocatingBlock = block,
+              entryBlock = start,
+              cycle = cycle
+            )
+            if (isNewCycle) { // ensure unique
+              // If memory escapes current loop we cannot create stack stage guards
+              // Instead try to insert guard in outer loop
+              if (!canEscapeAlloc || innerCycleStart.exists(cycle.contains)) {
+                start.emitStackSaveOp = true
+                end.emitStackRestoreFor ::= startName
+              } else if (innerCycleStart.isEmpty) {
+                // If allocation escapes direct loop try to create state restore in outer loop
+                // Outer loop is a while loop which does not perform stack allocation, but is a cycle
+                // containing entry to inner loop
+                tryEmit(
+                  start,
+                  innerCycle = cycle,
+                  innerCycleStart = Some(start)
+                )
+              }
+            }
+          }
+      }
+      tryEmit(block, innerCycle = Nil, innerCycleStart = None)
+    }
   }
 
   private type BlocksCycle = List[MergeBlock]
@@ -192,5 +235,59 @@ trait Opt { self: Interflow =>
     }
 
     dfs(targetNode, Set.empty, Nil)
+  }
+
+  // NIR traversal used to check if stackallocated memory might escape the cycle
+  // meaning it might be referenced in next loop runs
+  private class TrackStackallocEscape() extends nir.Traverse {
+    private var tracked = mutable.Set.empty[Local]
+    private var curInst: Inst = _
+
+    // thread-unsafe
+    def apply(
+        allocatingBlock: MergeBlock,
+        entryBlock: MergeBlock,
+        cycle: Seq[MergeBlock]
+    ): Boolean = {
+      val loopStateVals = mutable.Set.empty[Local]
+      entryBlock.phis.foreach {
+        case MergePhi(_, values) =>
+          values.foreach {
+            case (_, v: Val.Local) =>
+              if (Type.isPtrType(v.ty)) loopStateVals += v.name
+            case _ => ()
+          }
+      }
+      if (loopStateVals.isEmpty) false
+      else {
+        tracked.clear()
+        def visit(blocks: Seq[MergeBlock]) =
+          blocks.foreach(_.end.emit.foreach(onInst))
+        cycle.view
+          .dropWhile(_ ne allocatingBlock)
+          .takeWhile(_ ne entryBlock)
+          .foreach(_.end.emit.foreach(onInst))
+        tracked.intersect(loopStateVals).nonEmpty
+      }
+    }
+
+    override def onInst(inst: Inst): Unit = {
+      curInst = inst
+      inst match {
+        case Inst.Let(name, _: Op.Stackalloc, _) => tracked += name
+        case _                                   => ()
+      }
+      super.onInst(inst)
+    }
+
+    override def onVal(value: Val): Unit = value match {
+      case Val.Local(valName, _) =>
+        curInst match {
+          case Inst.Let(instName, op, _) if Type.isPtrType(op.resty) =>
+            if (tracked.contains(valName)) tracked += instName
+          case _ => ()
+        }
+      case _ => ()
+    }
   }
 }
