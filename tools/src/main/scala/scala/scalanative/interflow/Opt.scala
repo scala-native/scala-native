@@ -3,6 +3,8 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
+import scala.collection.mutable
+import scala.annotation.tailrec
 
 trait Opt { self: Interflow =>
 
@@ -134,6 +136,62 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq(retTy)
+    val blocks = processor.toSeq(retTy)
+    postProcess(blocks)
+  }
+
+  def postProcess(blocks: Seq[MergeBlock]): Seq[MergeBlock] = {
+    blocks.foreach { b =>
+      // Detect cycles involving stackalloc memory
+      // Insert StackSave/StackRestore instructions at its first/last block
+      val allocatesOnStack = b.end.emit.exists {
+        case Inst.Let(_, _: Op.Stackalloc, _) => true
+        case _                                => false
+      }
+      if (allocatesOnStack) {
+        findCycles(b)
+          .map { cycle =>
+            val blockIndices = blocks.zipWithIndex.toMap
+
+            val startIdx = cycle.map(blockIndices(_)).min
+            val start = blocks(startIdx)
+            val end =
+              if (startIdx == 0) cycle.last
+              else blocks(startIdx - 1)
+
+            // Adjust internal state, affecting block materialization in MergeBlock.toInsts
+            start.emitStackSaveOp = true
+            end.emitStackRestoreFor ::= start.label.name
+          }
+      }
+    }
+
+    blocks
+  }
+
+  private type BlocksCycle = List[MergeBlock]
+  private def findCycles(targetNode: MergeBlock): List[BlocksCycle] = {
+    def dfs(
+        current: MergeBlock,
+        visited: Set[MergeBlock],
+        stack: List[MergeBlock]
+    ): List[List[MergeBlock]] = {
+      if (visited(current)) {
+        // ignore cycle if backward edge does not point to targetNode
+        if (stack.nonEmpty && stack.last == current)
+          stack.reverse :: Nil
+        else Nil
+      } else {
+        val newStack = current :: stack
+        current.outgoing
+          .flatMap {
+            case (_, next) => dfs(next, visited + current, newStack)
+          }
+          .filter(_.nonEmpty)
+          .toList
+      }
+    }
+
+    dfs(targetNode, Set.empty, Nil)
   }
 }
