@@ -141,6 +141,7 @@ trait Opt { self: Interflow =>
   }
 
   def postProcess(blocks: Seq[MergeBlock]): Seq[MergeBlock] = {
+    lazy val blockIndices = blocks.zipWithIndex.toMap
     blocks.foreach { b =>
       // Detect cycles involving stackalloc memory
       // Insert StackSave/StackRestore instructions at its first/last block
@@ -150,18 +151,17 @@ trait Opt { self: Interflow =>
       }
       if (allocatesOnStack) {
         findCycles(b)
-          .map { cycle =>
-            val blockIndices = blocks.zipWithIndex.toMap
-
+          .foreach { cycle =>
             val startIdx = cycle.map(blockIndices(_)).min
             val start = blocks(startIdx)
-            val end =
-              if (startIdx == 0) cycle.last
-              else blocks(startIdx - 1)
-
+            val endIdx = (cycle.indexOf(start) + 1) % cycle.size
+            val end = cycle(endIdx)
             // Adjust internal state, affecting block materialization in MergeBlock.toInsts
-            start.emitStackSaveOp = true
-            end.emitStackRestoreFor ::= start.label.name
+            val startName = start.label.name
+            if (!end.emitStackRestoreFor.contains(startName)) {
+              start.emitStackSaveOp = true
+              end.emitStackRestoreFor ::= startName
+            }
           }
       }
     }
@@ -178,8 +178,7 @@ trait Opt { self: Interflow =>
     ): List[List[MergeBlock]] = {
       if (visited(current)) {
         // ignore cycle if backward edge does not point to targetNode
-        if (stack.nonEmpty && stack.last == current)
-          stack.reverse :: Nil
+        if (stack.nonEmpty && stack.last == current) stack :: Nil
         else Nil
       } else {
         val newStack = current :: stack
