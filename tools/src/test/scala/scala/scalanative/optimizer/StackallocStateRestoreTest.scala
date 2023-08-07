@@ -274,7 +274,7 @@ class StackallocStateRestoreTest extends OptimizerSpec {
     }
   }
 
-  @Test def whileLoopEscapingStackalloc(): Unit = {
+  @Test def escapingStackalloc(): Unit = {
     optimize(
       entry = "Test",
       sources = Map(
@@ -327,7 +327,7 @@ class StackallocStateRestoreTest extends OptimizerSpec {
     }
   }
 
-  @Test def whileLoopEscapingStackalloc2(): Unit = {
+  @Test def escapingStackalloc2(): Unit = {
     optimize(
       entry = "Test",
       sources = Map(
@@ -390,7 +390,7 @@ class StackallocStateRestoreTest extends OptimizerSpec {
     }
   }
 
-    @Test def whileLoopEscapingStackalloc3(): Unit = {
+  @Test def escapingStackalloc3(): Unit = {
     optimize(
       entry = "Test",
       sources = Map(
