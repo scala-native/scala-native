@@ -114,14 +114,19 @@ final class MergeProcessor(
           }
         }
 
-        def localNameOf(local: Local) = localNames
-          .get(local)
-          .orElse(mergeLocalNames.get(local))
-          .orElse(
-            MergeProcessor.findNameOf(_.localNames.get(local))(states)
-          )
+        def localNameOf(local: Local) = if (eval.preserveLocalNames) {
+          localNames
+            .get(local)
+            .orElse(mergeLocalNames.get(local))
+            .orElse(
+              MergeProcessor.findNameOf(_.localNames.get(local))(states)
+            )
+        } else None
+
         def virtualNameOf(addr: Addr): Option[LocalName] =
-          MergeProcessor.findNameOf(_.virtualNames.get(addr))(states)
+          if (eval.preserveLocalNames) {
+            MergeProcessor.findNameOf(_.virtualNames.get(addr))(states)
+          } else None
 
         def computeMerge(): Unit = {
           // 1. Merge locals
@@ -247,10 +252,12 @@ final class MergeProcessor(
         mergeState.emit = new nir.Buffer()(mergeFresh)
         mergeState.fresh = mergeFresh
         mergeState.locals = mergeLocals
-        mergeState.localNames = mergeLocalNames
-        states.foreach { s =>
-          mergeState.localNames.addMissing(s.localNames)
-          mergeState.virtualNames.addMissing(s.virtualNames)
+        if (eval.preserveLocalNames) {
+          mergeState.localNames = mergeLocalNames
+          states.foreach { s =>
+            mergeState.localNames.addMissing(s.localNames)
+            mergeState.virtualNames.addMissing(s.virtualNames)
+          }
         }
         mergeState.heap = mergeHeap
         mergeState.delayed = mergeDelayed

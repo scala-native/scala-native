@@ -227,9 +227,11 @@ trait Inline { self: Interflow =>
               (nothing, state)
             }
       }
-      blocks.foreach { block =>
-        endState.localNames.addMissing(block.end.localNames)
-        endState.virtualNames.addMissing(block.end.virtualNames)
+      if (self.preserveLocalNames) {
+        blocks.foreach { block =>
+          endState.localNames.addMissing(block.end.localNames)
+          endState.virtualNames.addMissing(block.end.virtualNames)
+        }
       }
 
       state.emit ++= emit

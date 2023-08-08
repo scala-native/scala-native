@@ -8,6 +8,9 @@ import scalanative.codegen.MemoryLayout
 import scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
+  final val preserveLocalNames: Boolean =
+    self.config.compilerConfig.debugMetadata
+
   def run(
       insts: Array[Inst],
       offsets: Map[Local, Int],
@@ -20,7 +23,7 @@ trait Eval { self: Interflow =>
 
     var pc = offsets(from)
 
-    if (pc == 0) {
+    if (preserveLocalNames && pc == 0) {
       val Inst.Label(_, params) = insts.head: @unchecked
       for {
         param <- params
@@ -45,13 +48,15 @@ trait Eval { self: Interflow =>
             throw BailOut("try-catch")
           }
           val value = eval(op)
-          localNames.get(local).foreach { localName =>
-            value match {
-              case Val.Local(id, _) =>
-                state.localNames.getOrElseUpdate(id, localName)
-              case Val.Virtual(addr) =>
-                state.virtualNames.getOrElseUpdate(addr, localName)
-              case _ => ()
+          if (preserveLocalNames) {
+            localNames.get(local).foreach { localName =>
+              value match {
+                case Val.Local(id, _) =>
+                  state.localNames.getOrElseUpdate(id, localName)
+                case Val.Virtual(addr) =>
+                  state.virtualNames.getOrElseUpdate(addr, localName)
+                case _ => ()
+              }
             }
           }
           if (value.ty == Type.Nothing) {

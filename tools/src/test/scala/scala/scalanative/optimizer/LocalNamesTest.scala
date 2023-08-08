@@ -14,6 +14,20 @@ import scala.scalanative.nir.Global.Member
 class LocalNamesTest extends OptimizerSpec {
   import nir._
 
+  override def optimize[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: build.NativeConfig => build.NativeConfig = identity
+  )(fn: (build.Config, linker.Result) => T) =
+    super.optimize(
+      entry,
+      sources,
+      setupConfig.andThen(
+        _.withDebugMetadata(true)
+          .withMode(build.Mode.releaseFull)
+      )
+    )(fn)
+
   def assertContainsAll[T](
       msg: String,
       expected: Iterable[T],
@@ -92,7 +106,7 @@ class LocalNamesTest extends OptimizerSpec {
   }
 
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
-  @Test def localNamesExistence(): Unit = optimize(
+  @Test def localNamesExistence(): Unit = super.optimize(
     entry = "Test",
     sources = Map("Test.scala" -> """
     |object Test {
@@ -107,7 +121,8 @@ class LocalNamesTest extends OptimizerSpec {
     |    assert(scoped != 0)
     |  }
     |}
-    """.stripMargin)
+    """.stripMargin),
+    setupConfig = _.withDebugMetadata(true)
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
@@ -163,7 +178,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    val call = Test.method(0)
     |    val sizeOf = Intrinsics.sizeOf[String]
     |    val alignmentOf = Intrinsics.alignmentOf[String]
-    |    val stackalloc = Intrinsics.stackalloc(sizeOf)
+    |    val stackalloc = Intrinsics.stackalloc[Byte](sizeOf)
     |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
     |    val store = Intrinsics.storeInt(elem, Intrinsics.castRawSizeToInt(sizeOf))
     |    val load = Intrinsics.loadInt(elem)
@@ -208,8 +223,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    println(arrayLength != varLoad )
     |    println(arrayAlloc)
     |  }
-    |}""".stripMargin),
-    setupConfig = _.withMode(build.Mode.ReleaseFull)
+    |}""".stripMargin)
   ) {
     case (config, result) =>
       val platformInfo = codegen.PlatformInfo(config)
@@ -321,8 +335,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    }
     |    assert(x != y)
     |  }
-    |}""".stripMargin),
-    setupConfig = _.withMode(build.Mode.ReleaseFull)
+    |}""".stripMargin)
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
@@ -374,8 +387,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    val result2 =  fn1(argInt, argInt * 21, 37)
     |    assert(result == result2)
     |  }
-    |}""".stripMargin),
-    setupConfig = _.withMode(build.Mode.ReleaseFull)
+    |}""".stripMargin)
   ) {
     // TODO: How to effectively distinguish inlined `temp2` in `result` and `result2`? Maybe concatation of owner strings, eg. `result.temp2`
     // %3000007 <result> = imul[int] %17000001 <temp2> : int, %7000001 <argInt> : int
@@ -423,8 +435,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    val result = impl.execute(argInt)
     |    assert(result > 0)
     |  }
-    |}""".stripMargin),
-    setupConfig = _.withMode(build.Mode.ReleaseFull)
+    |}""".stripMargin)
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
@@ -464,8 +475,7 @@ class LocalNamesTest extends OptimizerSpec {
     |    val result = impl.execute(argInt)
     |    assert(result > 0)
     |  }
-    |}""".stripMargin),
-    setupConfig = _.withMode(build.Mode.ReleaseFull)
+    |}""".stripMargin)
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
