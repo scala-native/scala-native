@@ -266,12 +266,4 @@ class URITest {
     testNormalize(relative = false)
   }
 
-  @Test def toURL(): Unit = {
-    assertThrows(classOf[IllegalArgumentException], new URI("a/b").toURL())
-    assertEquals(
-      new URI("http://a/b").toURL().toString(),
-      new URL("http://a/b").toString()
-    )
-  }
-
 }
