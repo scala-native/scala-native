@@ -354,7 +354,7 @@ object Thread {
   trait UncaughtExceptionHandler {
     def uncaughtException(t: Thread, e: Throwable): Unit
 
-    // ScalaNativeSpecific exception handler, used when executing user-provied handlers, in main 
+    // ScalaNativeSpecific exception handler, used when executing user-provied handlers, in main
     // Duplicate in NativeThread.threadEntryPoint
     private[java] final def uncaughtExceptionInternal(
         t: Thread,
