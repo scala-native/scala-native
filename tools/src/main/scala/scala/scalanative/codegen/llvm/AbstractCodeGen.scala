@@ -383,7 +383,7 @@ private[codegen] abstract class AbstractCodeGen(
               val Next.Label(_, vals) = next
               genJustVal(vals(n))
               str(", %")
-              genLocal(edge.from.name)
+              genLocal(edge.from.id)
               str(".")
               str(edge.from.splitCount)
             }
@@ -644,27 +644,27 @@ private[codegen] abstract class AbstractCodeGen(
       // select instruction.
       case Inst.If(
             cond,
-            thenNext @ Next.Label(thenName, thenArgs),
-            elseNext @ Next.Label(elseName, elseArgs)
-          ) if thenName == elseName =>
+            thenNext @ Next.Label(thenId, thenArgs),
+            elseNext @ Next.Label(elseId, elseArgs)
+          ) if thenId == elseId =>
         if (thenArgs == elseArgs) {
           genInst(Inst.Jump(thenNext)(inst.pos))
         } else {
           val args = thenArgs.zip(elseArgs).map {
             case (thenV, elseV) =>
-              val name = fresh()
+              val id = fresh()
               newline()
               str("%")
-              genLocal(name)
+              genLocal(id)
               str(" = select ")
               genVal(cond)
               str(", ")
               genVal(thenV)
               str(", ")
               genVal(elseV)
-              Val.Local(name, thenV.ty)
+              Val.Local(id, thenV.ty)
           }
-          genInst(Inst.Jump(Next.Label(thenName, args))(inst.pos))
+          genInst(Inst.Jump(Next.Label(thenId, args))(inst.pos))
         }
 
       case Inst.If(cond, thenp, elsep) =>
@@ -1143,7 +1143,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Next.Case(v, next) =>
         genVal(v)
         str(", label %")
-        genLocal(next.name)
+        genLocal(next.id)
         str(".0")
       case Next.Unwind(Val.Local(exc, _), _) =>
         str("label %_")
@@ -1151,7 +1151,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(".landingpad")
       case next =>
         str("label %")
-        genLocal(next.name)
+        genLocal(next.id)
         str(".0")
     }
   }

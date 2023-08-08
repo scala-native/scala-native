@@ -15,10 +15,10 @@ class Buffer(implicit fresh: Fresh) {
   def exists(pred: Inst => Boolean) = buffer.exists(pred)
 
   // Control-flow ops
-  def label(name: Local)(implicit pos: Position): Unit =
-    this += Inst.Label(name, Seq.empty)
-  def label(name: Local, params: Seq[Val.Local])(implicit pos: Position): Unit =
-    this += Inst.Label(name, params)
+  def label(id: Local)(implicit pos: Position): Unit =
+    this += Inst.Label(id, Seq.empty)
+  def label(id: Local, params: Seq[Val.Local])(implicit pos: Position): Unit =
+    this += Inst.Label(id, params)
   def unreachable(unwind: Next)(implicit pos: Position): Unit =
     this += Inst.Unreachable(unwind)
   def ret(value: Val)(implicit pos: Position): Unit =

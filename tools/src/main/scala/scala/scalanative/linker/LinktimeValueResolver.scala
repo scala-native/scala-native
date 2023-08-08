@@ -244,7 +244,7 @@ trait LinktimeValueResolver { self: Reach =>
           }
 
         case Inst.Jump(next) =>
-          val nextBlock = cf.find(next.name)
+          val nextBlock = cf.find(next.id)
           next match {
             case Next.Label(_, values) =>
               locals ++= nextBlock.params.zip(values).toMap

@@ -283,7 +283,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // Generate code for the switch and its cases.
         val scrut = genExpr(scrutp)
         buf.switch(scrut, defaultnext, casenexts)
-        buf.label(defaultnext.name)(defaultp.pos)
+        buf.label(defaultnext.id)(defaultp.pos)
         buf.jumpExcludeUnitValue(retty)(merge, genExpr(defaultp))(
           defaultp.pos
         )
@@ -478,15 +478,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }.toSet
       def internal(cf: Inst.Cf) = cf match {
         case inst @ Inst.Jump(n) =>
-          labels.contains(n.name)
+          labels.contains(n.id)
         case inst @ Inst.If(_, n1, n2) =>
-          labels.contains(n1.name) && labels.contains(n2.name)
+          labels.contains(n1.id) && labels.contains(n2.id)
         case inst @ Inst.LinktimeIf(_, n1, n2) =>
-          labels.contains(n1.name) && labels.contains(n2.name)
+          labels.contains(n1.id) && labels.contains(n2.id)
         case inst @ Inst.Switch(_, n, ns) =>
-          labels.contains(n.name) && ns.forall(n => labels.contains(n.name))
+          labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
         case inst @ Inst.Throw(_, n) =>
-          (n ne Next.None) && labels.contains(n.name)
+          (n ne Next.None) && labels.contains(n.id)
         case _ =>
           false
       }

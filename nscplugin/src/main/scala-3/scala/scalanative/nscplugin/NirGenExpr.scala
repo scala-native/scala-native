@@ -549,7 +549,7 @@ trait NirGenExpr(using Context) {
       given nir.Position = m.span
       val Match(scrutp, allcaseps) = m
       case class Case(
-          name: Local,
+          id: Local,
           value: Val,
           tree: Tree,
           position: nir.Position
@@ -595,7 +595,7 @@ trait NirGenExpr(using Context) {
         // Generate code for the switch and its cases.
         val scrut = genExpr(scrutp)
         buf.switch(scrut, defaultnext, casenexts)
-        buf.label(defaultnext.name)(using defaultCasePos)
+        buf.label(defaultnext.id)(using defaultCasePos)
         buf.jumpExcludeUnitValue(retty)(merge, genExpr(defaultp))(using
           defaultCasePos
         )
@@ -878,15 +878,15 @@ trait NirGenExpr(using Context) {
         }.toSet
       def internal(cf: Inst.Cf) = cf match {
         case inst @ Inst.Jump(n) =>
-          labels.contains(n.name)
+          labels.contains(n.id)
         case inst @ Inst.If(_, n1, n2) =>
-          labels.contains(n1.name) && labels.contains(n2.name)
+          labels.contains(n1.id) && labels.contains(n2.id)
         case inst @ Inst.LinktimeIf(_, n, n2) =>
-          labels.contains(n.name) && labels.contains(n2.name)
+          labels.contains(n.id) && labels.contains(n2.id)
         case inst @ Inst.Switch(_, n, ns) =>
-          labels.contains(n.name) && ns.forall(n => labels.contains(n.name))
+          labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
         case inst @ Inst.Throw(_, n) =>
-          (n ne Next.None) && labels.contains(n.name)
+          (n ne Next.None) && labels.contains(n.id)
         case _ =>
           false
       }

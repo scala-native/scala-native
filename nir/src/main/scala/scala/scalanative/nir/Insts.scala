@@ -7,7 +7,7 @@ sealed abstract class Inst {
 }
 
 object Inst {
-  final case class Label(name: Local, params: Seq[Val.Local])(implicit
+  final case class Label(id: Local, params: Seq[Val.Local])(implicit
       val pos: Position
   ) extends Inst
   final case class Let(id: Local, op: Op, unwind: Next)(implicit

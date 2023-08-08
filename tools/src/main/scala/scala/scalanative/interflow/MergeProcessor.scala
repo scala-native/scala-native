@@ -31,12 +31,12 @@ final class MergeProcessor(
   def currentSize(): Int =
     blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
 
-  def findMergeBlock(name: Local): MergeBlock = {
+  def findMergeBlock(id: Local): MergeBlock = {
     def newMergeBlock = {
-      val label = insts(offsets(name)).asInstanceOf[Inst.Label]
+      val label = insts(offsets(id)).asInstanceOf[Inst.Label]
       this.newMergeBlock(label)
     }
-    blocks.getOrElseUpdate(name, newMergeBlock)
+    blocks.getOrElseUpdate(id, newMergeBlock)
   }
 
   private def newMergeBlock(label: Inst.Label): MergeBlock =
@@ -46,7 +46,7 @@ final class MergeProcessor(
       block: MergeBlock
   )(implicit linked: linker.Result): (Seq[MergePhi], State) = {
     import block.cfPos
-    merge(block.name, block.label.params, block.incoming.toSeq.sortBy(_._1.id))
+    merge(block.id, block.label.params, block.incoming.toSeq.sortBy(_._1.id))
   }
 
   private def merge(
@@ -280,8 +280,8 @@ final class MergeProcessor(
     val invalid = mutable.Map.empty[Local, MergeBlock]
 
     def visitBlock(from: MergeBlock, block: MergeBlock): Unit = {
-      val fromName = from.label.name
-      val name = block.label.name
+      val fromName = from.label.id
+      val name = block.label.id
       if (!invalid.contains(name)) {
         if (offsets(name) > offsets(fromName)) {
           invalid(name) = block
@@ -293,7 +293,7 @@ final class MergeProcessor(
     }
 
     def visitLabel(from: MergeBlock, next: Next.Label): Unit =
-      visitBlock(from, findMergeBlock(next.name))
+      visitBlock(from, findMergeBlock(next.id))
 
     def visitUnwind(from: MergeBlock, next: Next): Unit = next match {
       case Next.None =>
@@ -351,10 +351,10 @@ final class MergeProcessor(
 
   def updateDirectSuccessors(block: MergeBlock): Unit = {
     def nextLabel(next: Next.Label): Unit = {
-      val nextMergeBlock = findMergeBlock(next.name)
-      block.outgoing(next.name) = nextMergeBlock
-      nextMergeBlock.incoming(block.label.name) = (next.args, block.end)
-      todo += next.name
+      val nextMergeBlock = findMergeBlock(next.id)
+      block.outgoing(next.id) = nextMergeBlock
+      nextMergeBlock.incoming(block.label.id) = (next.args, block.end)
+      todo += next.id
     }
     def nextUnwind(next: Next): Unit = next match {
       case Next.None =>
@@ -404,9 +404,9 @@ final class MergeProcessor(
       block.invalidations += 1
     }
 
-    block.start = newState.fullClone(block.name)
+    block.start = newState.fullClone(block.id)
     block.end = newState
-    block.cf = eval.run(insts, offsets, block.label.name, localNames)(block.end)
+    block.cf = eval.run(insts, offsets, block.label.id, localNames)(block.end)
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
@@ -430,7 +430,7 @@ final class MergeProcessor(
   )(implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
       .filter(_.cf != null)
-      .sortBy { block => offsets(block.label.name) }
+      .sortBy { block => offsets(block.label.id) }
 
     val retMergeBlocks = sortedBlocks.collect {
       case block if block.cf.isInstanceOf[Inst.Ret] =>
@@ -467,16 +467,16 @@ final class MergeProcessor(
       val syntheticLabel =
         Inst.Label(syntheticFresh(), Seq(syntheticParam))
       val resultMergeBlock = newMergeBlock(syntheticLabel)
-      blocks(syntheticLabel.name) = resultMergeBlock
+      blocks(syntheticLabel.id) = resultMergeBlock
       orderedBlocks += resultMergeBlock
 
       // Update all returning blocks to jump to result block,
       // and update incoming/outgoing edges to include result block.
       retMergeBlocks.foreach { block =>
         val Inst.Ret(v) = block.cf: @unchecked
-        block.cf = Inst.Jump(Next.Label(syntheticLabel.name, Seq(v)))
-        block.outgoing(syntheticLabel.name) = resultMergeBlock
-        resultMergeBlock.incoming(block.label.name) = (Seq(v), block.end)
+        block.cf = Inst.Jump(Next.Label(syntheticLabel.id, Seq(v)))
+        block.outgoing(syntheticLabel.id) = resultMergeBlock
+        resultMergeBlock.incoming(block.label.id) = (Seq(v), block.end)
       }
 
       // Perform merge of all incoming edges to compute
@@ -517,9 +517,9 @@ object MergeProcessor {
   )(implicit linked: linker.Result): MergeProcessor = {
     val builder =
       new MergeProcessor(insts, localNames, blockFresh, doInline, eval)
-    val entryName = insts.head.asInstanceOf[Inst.Label].name
+    val entryName = insts.head.asInstanceOf[Inst.Label].id
     val entryMergeBlock = builder.findMergeBlock(entryName)
-    val entryState = new State(entryMergeBlock.name)
+    val entryState = new State(entryMergeBlock.id)
     entryState.inherit(state, args)
     entryState.inlineDepth = state.inlineDepth
     if (doInline) entryState.inlineDepth += 1

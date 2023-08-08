@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scala.annotation.tailrec
 
-final class MergeBlock(val label: Inst.Label, val name: Local) {
+final class MergeBlock(val label: Inst.Label, val id: Local) {
   var incoming = mutable.Map.empty[Local, (Seq[Val], State)]
   var outgoing = mutable.Map.empty[Local, MergeBlock]
   var phis: Seq[MergePhi] = _
@@ -39,10 +39,10 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
       val mergeValues = nextBlock.phis.flatMap {
         case MergePhi(_, incoming) =>
           incoming.collect {
-            case (name, value) if name == block.label.name => value
+            case (id, value) if id == block.label.id => value
           }
       }
-      Next.Label(nextBlock.name, mergeValues)
+      Next.Label(nextBlock.id, mergeValues)
     }
     def mergeUnwind(next: Next): Next = next match {
       case Next.None =>
