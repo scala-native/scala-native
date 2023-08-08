@@ -220,7 +220,7 @@ class ThreadGroup(
       case null =>
         Thread.getDefaultUncaughtExceptionHandler() match {
           case null =>
-            System.err.print(s"Exception in thread '${thread.getName()}'")
+            System.err.print(s"""Exception in thread "${thread.getName()}" """)
             throwable.printStackTrace(System.err)
           case handler => handler.uncaughtException(thread, throwable)
         }
