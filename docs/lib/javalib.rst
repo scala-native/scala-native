@@ -447,6 +447,7 @@ java.util
 * ``SortedSet``
 * ``Spliterator``
 * ``Spliterators``
+* ``StringJoiner``
 * ``StringTokenizer``
 * ``TooManyListenersException``
 * ``TreeSet``
@@ -549,7 +550,7 @@ java.util.zip
 * ``ZipInputStream``
 * ``ZipOutputStream``
 
-  
+
 **Note:** This is an ongoing effort, some of the classes listed here might
 be partially implemented. Please consult `javalib sources
 <https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java>`_
@@ -568,7 +569,7 @@ Some notes on the implementation:
 1. The included RE2 implements a Unicode version lower than
    the version used in the Scala Native Character class (>= 7.0.0).
    The RE2 Unicode version is in the 6.n range. For reference, Java 8
-   released with Unicode 6.2.0. 
+   released with Unicode 6.2.0.
 
    The RE2 implemented may not match codepoints added or changed
    in later Unicode versions. Similarly, there may be slight differences
