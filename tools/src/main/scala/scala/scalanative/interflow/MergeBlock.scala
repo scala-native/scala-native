@@ -18,8 +18,7 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
     else label.pos
   }
 
-  private lazy val stackSavePtrId = this.end.fresh()
-  private def stackSavePtr = Val.Local(stackSavePtrId, Type.Ptr)
+  private var stackSavePtr: Val.Local = _
   private[interflow] var emitStackSaveOp = false
   private[interflow] var emitStackRestoreFor: List[Local] = Nil
 
@@ -29,8 +28,8 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
     val result = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.name)
-
-      if (emitStackRestoreFor.contains(next.name)) {
+      if (nextBlock.stackSavePtr != null &&
+          emitStackRestoreFor.contains(next.name)) {
         emitIfMissing(
           end.fresh(),
           Op.Call(StackRestoreSig, StackRestore, Seq(nextBlock.stackSavePtr))
@@ -53,13 +52,16 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
       case _ =>
         util.unreachable
     }
+
     val params = block.phis.map(_.param)
     result.label(block.name, params)
     if (emitStackSaveOp) {
-      emitIfMissing(
-        id = stackSavePtrId,
+      val id = block.end.fresh()
+      val emmited = emitIfMissing(
+        id = id,
         op = Op.Call(StackSaveSig, StackSave, Nil)
       )(result, block)
+      if (emmited) block.stackSavePtr = Val.Local(id, Type.Ptr)
     }
     result ++= block.end.emit
     block.cf match {
@@ -90,13 +92,16 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
   private def emitIfMissing(
       id: => Local,
       op: Op.Call
-  )(result: nir.Buffer, block: MergeBlock): Unit = {
+  )(result: nir.Buffer, block: MergeBlock): Boolean = {
+    // Check if original defn already contains this op
     val alreadyEmmited = block.end.emit.exists {
       case Inst.Let(_, `op`, _) => true
       case _                    => false
     }
-    if (!alreadyEmmited) {
+    if (alreadyEmmited) false
+    else {
       result.let(id, op, Next.None)
+      true
     }
   }
 }

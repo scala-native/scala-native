@@ -94,7 +94,9 @@ class StackallocStateRestoreTest extends OptimizerSpec {
           |  }
           |}
           |""".stripMargin
-      )
+      ),
+      // Test is releaseMode to make it inline more
+      setupConfig = _.withMode(scala.scalanative.build.Mode.releaseFast)
     ) {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
