@@ -7,11 +7,12 @@ import java.net._
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class URITest {
 
-  @Test def toURL(): Unit = {
+  @Test @nowarn def toURL(): Unit = {
     assertThrows(classOf[IllegalArgumentException], new URI("a/b").toURL())
     assertEquals(
       new URI("http://a/b").toURL().toString(),
