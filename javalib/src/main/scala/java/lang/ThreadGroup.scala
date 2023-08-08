@@ -220,8 +220,15 @@ class ThreadGroup(
       case null =>
         Thread.getDefaultUncaughtExceptionHandler() match {
           case null =>
-            System.err.print(s"""Exception in thread "${thread.getName()}" """)
-            throwable.printStackTrace(System.err)
+            val threadName = s""""${thread.getName()}""""
+            System.err.print(s"Exception in thread $threadName")
+            try throwable.printStackTrace(System.err)
+            catch {
+              case ex: Throwable =>
+                System.err.println(
+                  s"\nException: ${ex.getClass().getName()} thrown from the UncaughtExceptionHandler in thread ${threadName}"
+                )
+            }
           case handler => handler.uncaughtException(thread, throwable)
         }
       case parent => parent.uncaughtException(thread, throwable)
