@@ -21,6 +21,7 @@ import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.core.NameKinds
+import scala.scalanative.nir.Defn.Define.LexicalScope
 
 trait NirGenStat(using Context) {
   self: NirCodeGen =>
@@ -234,7 +235,8 @@ trait NirGenStat(using Context) {
 
   private def genMethod(dd: DefDef): Option[Defn] = {
     implicit val pos: nir.Position = dd.span
-    val fresh = Fresh()
+    val fresh, scopeFresh = Fresh()
+    val scopes = mutable.UnrolledBuffer.empty[LexicalScope]
 
     scoped(
       curMethodSym := dd.symbol,
@@ -242,6 +244,9 @@ trait NirGenStat(using Context) {
       curMethodLabels := new MethodLabelsEnv(fresh),
       curMethodInfo := CollectMethodInfo().collect(dd.rhs),
       curFresh := fresh,
+      curScopeFresh := scopeFresh,
+      curScopeId := scopeFresh.last,
+      curScopes := scopes,
       curUnwindHandler := None,
       curMethodLocalNames := localNamesBuilder()
     ) {
@@ -283,7 +288,8 @@ trait NirGenStat(using Context) {
               name,
               sig,
               insts = body,
-              localNames = curMethodLocalNames.get.toMap
+              localNames = curMethodLocalNames.get.toMap,
+              lexicalScopes = scopes.toList
             )
             Some(defn)
           }
@@ -699,7 +705,7 @@ trait NirGenStat(using Context) {
     assert(moduleClass.is(ModuleClass), moduleClass)
 
     val existingStaticMethodNames: Set[Global] = existingMembers.collect {
-      case Defn.Define(_, name @ Global.Member(_, sig), _, _, _)
+      case Defn.Define(_, name @ Global.Member(_, sig), _, _, _, _)
           if sig.isStatic =>
         name
     }.toSet

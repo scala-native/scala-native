@@ -53,7 +53,7 @@ class LocalNamesTest {
   }
   private def findDefinition(linked: Seq[Defn]) = linked
     .collectFirst {
-      case defn @ Defn.Define(_, TestMain(), _, _, _) =>
+      case defn @ Defn.Define(_, TestMain(), _, _,_, _) =>
         defn
     }
     .ensuring(_.isDefined, "Not found linked method")

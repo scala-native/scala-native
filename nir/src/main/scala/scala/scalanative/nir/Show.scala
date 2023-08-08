@@ -580,7 +580,7 @@ object Show {
         onGlobal(name)
         str(" : ")
         onType(ty)
-      case Defn.Define(attrs, name, ty, insts, localNames) =>
+      case Defn.Define(attrs, name, ty, insts, localNames, _) =>
         implicit val _localNames: LocalNames = localNames
         onAttrs(attrs)
         str("def ")

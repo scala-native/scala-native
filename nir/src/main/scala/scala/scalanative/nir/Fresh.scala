@@ -7,6 +7,7 @@ final class Fresh private (private var start: Long) {
     val value = start
     Local(value)
   }
+  def last = Local(start)
 }
 
 object Fresh {

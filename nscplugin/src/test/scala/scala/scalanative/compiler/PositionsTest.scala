@@ -42,6 +42,7 @@ class PositionsTest {
                 Global.Member(top: Global.Top, sig),
                 _,
                 insts,
+                _,
                 _
               ) =>
             Some((top, sig.unmangled, defn.pos, insts))

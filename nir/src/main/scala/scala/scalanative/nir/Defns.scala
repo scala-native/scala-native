@@ -1,6 +1,7 @@
 package scala.scalanative
 package nir
 import scala.scalanative.nir.Defn.Define
+import scala.collection.immutable.NumericRange
 
 sealed abstract class Defn {
   def name: Global
@@ -8,7 +9,7 @@ sealed abstract class Defn {
   def pos: Position
   final def show: String = nir.Show(this)
   final def isEntryPoint = this match {
-    case Define(attrs, Global.Member(_, sig), _, _, _) =>
+    case Define(attrs, Global.Member(_, sig), _, _, _, _) =>
       sig.isClinit || attrs.isExtern
     case _ => false
   }
@@ -30,9 +31,15 @@ object Defn {
       name: Global,
       ty: Type,
       insts: Seq[Inst],
-      localNames: LocalNames = Map.empty
+      // debug metadata
+      localNames: LocalNames = Map.empty,
+      lexicalScopes: List[Define.LexicalScope] = Nil
   )(implicit val pos: Position)
       extends Defn
+  object Define {
+    case class LocalRange(start: Local, end: Local)
+    case class LexicalScope(id: Local, parent: Local, range: LocalRange)
+  }
 
   // high-level
   final case class Trait(attrs: Attrs, name: Global, traits: Seq[Global])(
