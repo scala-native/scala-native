@@ -8,9 +8,6 @@ import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
-import scala.util.Try
-import scala.util.Failure
-import scala.util.Success
 import scala.scalanative.runtime.Platform
 
 private[lang] object StackTrace {
@@ -75,30 +72,28 @@ private[lang] object StackTrace {
     buffer.map { e =>
       val elem = e._1
       val ip = e._2
-      val maybeFileline =
-        if (recur) None
-        else if (Platform.isMac()) { // currently we support Mac only
-          Try(Backtrace.decodeFileline(ip.toLong)) match {
-            // Ignore the exception, should we expose the internal error somehow?
-            case Failure(exception) => None
-            case Success(value)     => value
+      if (recur || // Skip decoding if we're calling currentStackTrace in recursively
+          elem.getFileName != null || // Skip decoding if we already have filename information
+          !Platform.isMac() // Skip decoding if it's not on Mac, currently we support only Mac
+      ) elem
+      else {
+        try {
+          Backtrace.decodeFileline(ip.toLong) match {
+            case None =>
+              elem
+            case Some(v) =>
+              val updated = new StackTraceElement(
+                elem.getClassName,
+                elem.getMethodName,
+                v._1,
+                v._2
+              )
+              // Update cache with the updated stacktrace element
+              cache.update(ip, updated)
+              updated
           }
-        } else None
-
-      val updated =
-        maybeFileline match {
-          case None => elem
-          case Some(v) =>
-            new StackTraceElement(
-              elem.getClassName,
-              elem.getMethodName,
-              v._1,
-              v._2
-            )
-        }
-      // Update cache with the updated stacktrace element
-      cache.update(ip, updated)
-      updated
+        } catch { case ex: Throwable => elem }
+      }
     }.toArray
   }
 }
