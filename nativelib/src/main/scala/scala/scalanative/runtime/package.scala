@@ -10,23 +10,26 @@ import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 package object runtime {
 
   /** Used as a stub right hand of intrinsified methods. */
-  def intrinsic: Nothing = throwUndefined()
+  private[scalanative] def intrinsic: Nothing = throwUndefined()
 
   /** Enter monitor of given object. */
-  @alwaysinline def enterMonitor(obj: Object): Unit =
+  @alwaysinline
+  def enterMonitor(obj: Object): Unit =
     if (isMultithreadingEnabled) {
       getMonitor(obj).enter(obj)
     }
 
   /** Enter monitor of given object. */
 
-  @alwaysinline def exitMonitor(obj: Object): Unit =
+  @alwaysinline
+  def exitMonitor(obj: Object): Unit =
     if (isMultithreadingEnabled) {
       getMonitor(obj).exit(obj)
     }
 
   /** Get monitor for given object. */
-  @alwaysinline def getMonitor(obj: Object) = {
+  @alwaysinline
+  def getMonitor(obj: Object) = {
     if (isMultithreadingEnabled)
       new BasicMonitor(
         elemRawPtr(
@@ -43,7 +46,10 @@ package object runtime {
   /** Initialize runtime with given arguments and return the rest as Java-style
    *  array.
    */
-  def init(argc: Int, rawargv: RawPtr): scala.Array[String] = {
+  private[scalanative] def init(
+      argc: Int,
+      rawargv: RawPtr
+  ): scala.Array[String] = {
     if (isMultithreadingEnabled) {
       assert(
         Thread.currentThread() != null,
@@ -88,15 +94,17 @@ package object runtime {
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.
    */
-  @noinline def loop(): Unit =
-    ExecutionContext.loop()
+  @noinline
+  private[scalanative] def loop(): Unit = ExecutionContext.loop()
 
   /** Called by the generated code in case of division by zero. */
-  @noinline def throwDivisionByZero(): Nothing =
+  @noinline
+  private[scalanative] def throwDivisionByZero(): Nothing =
     throw new java.lang.ArithmeticException("/ by zero")
 
   /** Called by the generated code in case of incorrect class cast. */
-  @noinline def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
+  @noinline
+  private[scalanative] def throwClassCast(from: RawPtr, to: RawPtr): Nothing = {
     val fromName = loadObject(
       elemRawPtr(from, castIntToRawSizeUnsigned(MemoryLayout.Rtti.NameOffset))
     )
@@ -109,19 +117,23 @@ package object runtime {
   }
 
   /** Called by the generated code in case of operations on null. */
-  @noinline def throwNullPointer(): Nothing =
+  @noinline
+  private[scalanative] def throwNullPointer(): Nothing =
     throw new NullPointerException()
 
   /** Called by the generated code in case of unexpected condition. */
-  @noinline def throwUndefined(): Nothing =
+  @noinline
+  private[scalanative] def throwUndefined(): Nothing =
     throw new UndefinedBehaviorError
 
   /** Called by the generated code in case of out of bounds on array access. */
-  @noinline def throwOutOfBounds(i: Int): Nothing =
+  @noinline
+  private[scalanative] def throwOutOfBounds(i: Int): Nothing =
     throw new ArrayIndexOutOfBoundsException(i.toString)
 
   /** Called by the generated code in case of missing method on reflective call.
    */
-  @noinline def throwNoSuchMethod(sig: String): Nothing =
+  @noinline
+  private[scalanative] def throwNoSuchMethod(sig: String): Nothing =
     throw new NoSuchMethodException(sig)
 }
