@@ -11,6 +11,7 @@ import scala.scalanative.runtime.Backtrace
 import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
+import scala.scalanative.runtime.Platform
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
@@ -76,12 +77,13 @@ private[lang] object StackTrace {
       val ip = e._2
       val maybeFileline =
         if (recur) None
-        else
+        else if (Platform.isMac()) { // currently we support Mac only
           Try(Backtrace.decodeFileline(ip.toLong)) match {
             // Ignore the exception, should we expose the internal error somehow?
             case Failure(exception) => None
             case Success(value)     => value
           }
+        } else None
 
       val updated =
         maybeFileline match {
