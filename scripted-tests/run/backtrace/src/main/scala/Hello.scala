@@ -13,6 +13,7 @@ object Hello {
     val actual = stacktrace.map(_.toString).filter { elem =>
       elem.startsWith("Hello")
     }
+    println(stacktrace.map(_.toString).mkString("\n"))
     val expectedHello =
       if (isMac) {
         List(
