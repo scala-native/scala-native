@@ -222,16 +222,10 @@ class ThreadGroup(
           case null =>
             val threadName = s""""${thread.getName()}""""
             System.err.print(s"Exception in thread $threadName")
-            try throwable.printStackTrace(System.err)
-            catch {
-              case ex: Throwable =>
-                System.err.println(
-                  s"\nException: ${ex.getClass().getName()} thrown from the UncaughtExceptionHandler in thread ${threadName}"
-                )
-            }
-          case handler => handler.uncaughtException(thread, throwable)
+            throwable.printStackTrace(System.err)
+          case handler => handler.uncaughtExceptionInternal(thread, throwable)
         }
-      case parent => parent.uncaughtException(thread, throwable)
+      case parent => parent.uncaughtExceptionInternal(thread, throwable)
     }
 
   private def add(group: ThreadGroup): Unit = synchronized {

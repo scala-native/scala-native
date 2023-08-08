@@ -638,7 +638,7 @@ object Generate {
 
     val JavaThreadUEHUncoughtExceptionSig = Type.Function(Seq(JavaThreadUEHRef, JavaThreadRef, Throwable), Type.Unit)
     val JavaThreadUEHUncoughtException = JavaThreadUEH.member(
-      Sig.Method("uncaughtException", Seq(JavaThreadRef, Throwable, Type.Unit))
+      Sig.Method("uncaughtExceptionInternal", Seq(JavaThreadRef, Throwable, Type.Unit))
     )
 
     val InitSig = Type.Function(Seq.empty, Type.Unit)
