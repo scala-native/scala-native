@@ -1,3 +1,4 @@
 -> nativeLink
 > set Compile / nativeConfig ~= { _.withLinkStubs(true) }
-> nativeLink
+# withLinkStubs no longer have effect
+-> nativeLink
