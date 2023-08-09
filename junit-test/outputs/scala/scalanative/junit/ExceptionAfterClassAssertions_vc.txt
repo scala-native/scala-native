@@ -1,4 +1,4 @@
-li[34mTest run started[0m
+li[34mTest run [0mscala.scalanative.junit.[33mExceptionAfterClass[0m[34m started[0m
 liTest scala.scalanative.junit.[33mExceptionAfterClass[0m.[36mtest1[0m started
 ldTest scala.scalanative.junit.[33mExceptionAfterClass[0m.[36mtest1[0m finished, took <TIME>
 e0scala.scalanative.junit.ExceptionAfterClass.test1
@@ -7,5 +7,5 @@ ldTest scala.scalanative.junit.[33mExceptionAfterClass[0m.[36mtest2[0m finis
 e0scala.scalanative.junit.ExceptionAfterClass.test2
 leTest scala.scalanative.junit.[33mExceptionAfterClass[0m failed: foo, took <TIME>
 e2scala.scalanative.junit.ExceptionAfterClass
-li[34mTest run finished: [0m[31m1 failed[0m[34m, [0m[34m0 ignored[0m[34m, 2 total, <TIME>[0m
+li[34mTest run [0mscala.scalanative.junit.[33mExceptionAfterClass[0m[34m finished: [0m[31m1 failed[0m[34m, [0m[34m0 ignored[0m[34m, 2 total, <TIME>[0m
 d

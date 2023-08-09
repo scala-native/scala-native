@@ -1,9 +1,9 @@
-ldTest run started
+ldTest run scala.scalanative.junit.AssumeAfterException started
 ldTest scala.scalanative.junit.AssumeAfterException.test started
 leTest scala.scalanative.junit.AssumeAfterException.test failed: java.lang.IllegalArgumentException: test throws, took <TIME>
 e2scala.scalanative.junit.AssumeAfterException.test
 leTest scala.scalanative.junit.AssumeAfterException.test failed: org.junit.TestCouldNotBeSkippedException: Test could not be skipped due to other failures, took <TIME>
 leCaused by: org.junit.AssumptionViolatedException: This assume should not pass
 ldTest scala.scalanative.junit.AssumeAfterException.test finished, took <TIME>
-ldTest run finished: 2 failed, 0 ignored, 1 total, <TIME>
+ldTest run scala.scalanative.junit.AssumeAfterException finished: 2 failed, 0 ignored, 1 total, <TIME>
 d

@@ -46,7 +46,8 @@ final class JUnitFramework extends Framework {
     def unsupported(name: String) =
       throw new UnsupportedOperationException(name)
 
-      for (str <- args) str match {
+    for (str <- args) {
+      str match {
         case "-v" => verbosity = RunSettings.Verbosity.Started
         case "+v" => verbosity = RunSettings.Verbosity.Terse
         case s"--verbosity=$id" =>
@@ -67,6 +68,7 @@ final class JUnitFramework extends Framework {
         case s if !s.startsWith("-") && !s.startsWith("+") => unsupported(s)
         case _                                             => ()
       }
+    }
     for (s <- args) {
       s match {
         case "+q" => unsupported("+q")

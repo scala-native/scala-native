@@ -1,5 +1,5 @@
-ldTest run started
+ldTest run scala.scalanative.junit.ExceptionBeforeClass started
 leTest scala.scalanative.junit.ExceptionBeforeClass failed: java.lang.IllegalArgumentException: foo, took <TIME>
 e2scala.scalanative.junit.ExceptionBeforeClass
-ldTest run finished: 1 failed, 0 ignored, 0 total, <TIME>
+ldTest run scala.scalanative.junit.ExceptionBeforeClass finished: 1 failed, 0 ignored, 0 total, <TIME>
 d

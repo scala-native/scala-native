@@ -1,6 +1,6 @@
-liTest run started
+liTest run scala.scalanative.junit.MultiIgnore1Test started
 liTest scala.scalanative.junit.MultiIgnore1Test.multiTest1 ignored
-e3scala.scalanative.junit.MultiIgnore1Test.multiTest1
+e4scala.scalanative.junit.MultiIgnore1Test.multiTest1
 liTest scala.scalanative.junit.MultiIgnore1Test.multiTest2 started
 ldTest scala.scalanative.junit.MultiIgnore1Test.multiTest2 finished, took <TIME>
 e0scala.scalanative.junit.MultiIgnore1Test.multiTest2
@@ -13,5 +13,5 @@ e0scala.scalanative.junit.MultiIgnore1Test.multiTest4
 liTest scala.scalanative.junit.MultiIgnore1Test.multiTest5 started
 ldTest scala.scalanative.junit.MultiIgnore1Test.multiTest5 finished, took <TIME>
 e0scala.scalanative.junit.MultiIgnore1Test.multiTest5
-liTest run finished: 0 failed, 1 ignored, 4 total, <TIME>
+liTest run scala.scalanative.junit.MultiIgnore1Test finished: 0 failed, 1 ignored, 4 total, <TIME>
 d

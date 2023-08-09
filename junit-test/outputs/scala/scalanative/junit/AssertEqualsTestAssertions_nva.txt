@@ -1,7 +1,7 @@
-liTest run started
+liTest run scala.scalanative.junit.AssertEqualsTest started
 liTest scala.scalanative.junit.AssertEqualsTest.test started
 leTest scala.scalanative.junit.AssertEqualsTest.test failed: java.lang.AssertionError: expected:<false> but was:<true>, took <TIME>
 e2scala.scalanative.junit.AssertEqualsTest.test
 ldTest scala.scalanative.junit.AssertEqualsTest.test finished, took <TIME>
-liTest run finished: 1 failed, 0 ignored, 1 total, <TIME>
+liTest run scala.scalanative.junit.AssertEqualsTest finished: 1 failed, 0 ignored, 1 total, <TIME>
 d
