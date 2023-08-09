@@ -9,6 +9,7 @@ import java.util.regex._
 import java.nio._
 import java.nio.charset._
 import java.util.Objects
+import java.util.ScalaOps._
 import java.lang.constant.{Constable, ConstantDesc}
 import scala.annotation.{switch, tailrec}
 import _String.{string2_string, _string2string}
@@ -1553,6 +1554,30 @@ object _String {
   def copyValueOf(data: Array[Char]): _String =
     new _String(data, 0, data.length)
 
+  def format(fmt: _String, args: Array[AnyRef]): _String =
+    new Formatter().format(fmt, args).toString
+
+  def format(loc: Locale, fmt: _String, args: Array[AnyRef]): _String =
+    new Formatter(loc).format(fmt, args).toString()
+
+  def join(delimiter: CharSequence, elements: Array[CharSequence]): String = {
+    val sj = new StringJoiner(delimiter)
+
+    for (j <- 0 until elements.length)
+      sj.add(elements(j))
+
+    sj.toString()
+  }
+
+  def join(
+      delimiter: CharSequence,
+      elements: Iterable[CharSequence]
+  ): String = {
+    elements.scalaOps
+      .foldLeft(new StringJoiner(delimiter))((j, e) => j.add(e))
+      .toString()
+  }
+
   def valueOf(data: Array[Char]): _String = new _String(data)
 
   def valueOf(data: Array[Char], start: Int, length: Int): _String =
@@ -1578,12 +1603,6 @@ object _String {
 
   def valueOf(value: AnyRef): _String =
     if (value != null) value.toString else "null"
-
-  def format(fmt: _String, args: Array[AnyRef]): _String =
-    new Formatter().format(fmt, args).toString
-
-  def format(loc: Locale, fmt: _String, args: Array[AnyRef]): _String =
-    new Formatter(loc).format(fmt, args).toString()
 
   import scala.language.implicitConversions
   @inline private[lang] implicit def _string2string(s: _String): String =
