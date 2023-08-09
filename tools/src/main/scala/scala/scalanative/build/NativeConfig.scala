@@ -155,7 +155,7 @@ sealed trait NativeConfig {
 
   /** Create a new config with given behavior for stubs. */
   @deprecated(
-    "This option has been deprecated and will no longer have any effect on the build"
+    "This option has been deprecated and no longer have effects on the build"
   ) def withLinkStubs(value: Boolean): NativeConfig
 
   /** Create a new config with given optimize value */
