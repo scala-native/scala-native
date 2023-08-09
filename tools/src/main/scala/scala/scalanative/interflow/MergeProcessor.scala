@@ -474,7 +474,7 @@ final class MergeProcessor(
     }
 
     orderedBlocks ++= sortedBlocks.filter(isExceptional)
-    orderedBlocks.toSeq
+    orderedBlocks.toList
   }
 }
 

@@ -86,7 +86,7 @@ object UseDef {
     def enterInst(n: Local) = {
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
-      assert(!defs.contains(n))
+      assert(!defs.contains(n), s"duplicate local ids: $n")
       defs += ((n, InstDef(n, deps, uses)))
     }
     def deps(n: Local, deps: Seq[Local]) = {
