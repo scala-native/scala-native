@@ -1,5 +1,6 @@
 package org.scalanative.testsuite.javalib.util.stream
 
+import java.{lang => jl}
 import java.{util => ju}
 import java.util._
 
@@ -717,6 +718,52 @@ class CollectorsTest {
     val joined = s.collect(collector)
 
     assertEquals("unexpected joined", expected, joined)
+  }
+
+  // Issue #3409
+  @Test def collectorsJoining_Merge(): Unit = {
+    /* The idea is to test that a delimiter is added between the
+     * two arguments when Collectors.joining() merge() method is called.
+     *
+     * One would not normally call merge() directory, but writers of
+     * parallel library methods might. So the method should match its
+     * JVM description.
+     *
+     * The complexity comes from not wanting to know the actual implementation
+     * type of the accumulator A in <T, ?, R>. combiner() takes two arguments
+     * of that exact type. To get the unknown type right, each of the
+     * arguments passed to combiner() should come from the same supplier of
+     * the same Collector.joining().
+     *
+     * So far, this type fun & games is true with both JVM and Scala Native.
+     *
+     * This gets the interior implementation type correct, but also means
+     * that both arguments use the same prefix, suffix, & delimiter.
+     * Experience with parallel Collectors may show a way around this
+     * restriction/feature.
+     */
+
+    val left = "Left"
+    val right = "Right"
+    val delim = "|"
+
+    val expected = s"${left}${delim}${right}"
+
+    val collector = Collectors.joining(delim)
+
+    val supplier = collector.supplier
+    val accumulator = collector.accumulator
+    val combiner = collector.combiner
+
+    val accLeft = supplier.get()
+    accumulator.accept(accLeft, left)
+
+    val accRight = supplier.get()
+    accumulator.accept(accRight, right)
+
+    val combined = combiner.apply(accLeft, accRight).toString()
+
+    assertEquals("unexpected combined", expected, combined)
   }
 
   @Test def collectorsMapping(): Unit = {
