@@ -1,19 +1,18 @@
 import scala.scalanative.meta.LinktimeInfo.isMac
 
 object Hello {
-  def main(args: Array[String]): Unit = f()
+  @noinline def main(args: Array[String]): Unit = f()
 
-  def f() = g()
+  @noinline def f() = g()
 
-  def g() = error()
+  @noinline def g() = error()
 
-  def error() = {
+  @noinline def error() = {
     val stacktrace = new Error("test").getStackTrace().toList
 
     val actual = stacktrace.map(_.toString).filter { elem =>
       elem.startsWith("Hello")
     }
-    println(stacktrace.map(_.toString).mkString("\n"))
     val expectedHello =
       if (isMac) {
         List(
