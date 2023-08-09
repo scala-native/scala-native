@@ -579,59 +579,33 @@ object Collectors {
       prefix: CharSequence,
       suffix: CharSequence
   ): Collector[CharSequence, AnyRef, String] = {
-    val delimiterLength = delimiter.length()
 
-    val supplier = new Supplier[StringBuilder] {
-      def get(): StringBuilder = {
-        val sb = new StringBuilder()
-        if (prefix != "")
-          sb.append(prefix)
-        sb
+    val supplier = new Supplier[StringJoiner] {
+      def get(): StringJoiner = {
+        new StringJoiner(delimiter, prefix, suffix)
       }
     }
 
-    val accumulator = new BiConsumer[StringBuilder, CharSequence] {
-      def accept(accum: StringBuilder, element: CharSequence): Unit = {
-        val acc = accum.append(element)
-        if (delimiter != "")
-          accum.append(delimiter)
+    val accumulator = new BiConsumer[StringJoiner, CharSequence] {
+      def accept(accum: StringJoiner, element: CharSequence): Unit = {
+        accum.add(element)
       }
     }
 
-    val combiner = new BinaryOperator[StringBuilder] {
-      def apply(
-          sb1: StringBuilder,
-          sb2: StringBuilder
-      ): StringBuilder = {
-        sb1.append(sb2)
+    val combiner = new BinaryOperator[StringJoiner] {
+      def apply(sj1: StringJoiner, sj2: StringJoiner): StringJoiner = {
+        sj1.merge(sj2)
       }
     }
 
-    val finisher =
-      new Function[StringBuilder, String] {
-        def apply(accum: StringBuilder): String = {
-
-          if ((accum.length() > prefix.length()) && (delimiterLength > 0)) {
-            /* This branch means accum has contents beyond a possible prefix.
-             * If a delimiter arg was is specified, accumlator() will have
-             * appended that delimiter. A delimiter is unwanted after what is
-             * now known to be the last item, so trim it off before possibly
-             * adding a suffix.
-             */
-            val lastIndex = accum.length() - delimiterLength
-            accum.setLength(lastIndex) // trim off last delimiter sequence.
-          }
-          // Else empty stream; no token accepted, hence no delimiter to trim.
-
-          if (suffix != "")
-            accum.append(suffix)
-
-          accum.toString()
-        }
+    val finisher = new Function[StringJoiner, String] {
+      def apply(accum: StringJoiner): String = {
+        accum.toString()
       }
+    }
 
     Collector
-      .of[CharSequence, StringBuilder, String](
+      .of[CharSequence, StringJoiner, String](
         supplier,
         accumulator,
         combiner,
