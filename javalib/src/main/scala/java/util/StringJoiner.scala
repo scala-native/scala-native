@@ -27,7 +27,7 @@ final class StringJoiner private (
    * Add an arbitrary guestimate > default 16 excess capacity.
    */
   private val builder =
-    new StringBuilder(prefixLength + 40 + suffix.length())
+    new java.lang.StringBuilder(prefixLength + 40 + suffix.length())
 
   /* The custom value to return if empty, set by `setEmptyValue` (nullable).
    */
