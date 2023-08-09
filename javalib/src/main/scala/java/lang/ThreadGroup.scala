@@ -6,8 +6,7 @@ import java.lang.Thread.UncaughtExceptionHandler
 import java.lang.ref.WeakReference
 
 import scala.annotation.tailrec
-import scala.scalanative.runtime.NativeThread
-
+import scala.scalanative.runtime.{NativeThread, Proxy}
 class ThreadGroup(
     final val parent: ThreadGroup,
     final val name: String,
@@ -220,11 +219,14 @@ class ThreadGroup(
       case null =>
         Thread.getDefaultUncaughtExceptionHandler() match {
           case null =>
-            System.err.print(s"Exception in thread '${thread.getName()}'")
+            val threadName = "\"" + thread.getName() + "\""
+            System.err.print(s"Exception in thread $threadName")
             throwable.printStackTrace(System.err)
-          case handler => handler.uncaughtException(thread, throwable)
+          case handler =>
+            Proxy.executeUncaughtExceptionHandler(handler, thread, throwable)
         }
-      case parent => parent.uncaughtException(thread, throwable)
+      case parent =>
+        Proxy.executeUncaughtExceptionHandler(parent, thread, throwable)
     }
 
   private def add(group: ThreadGroup): Unit = synchronized {

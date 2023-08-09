@@ -135,7 +135,8 @@ object NativeThread {
           case null    => Thread.getDefaultUncaughtExceptionHandler()
           case handler => handler
         }
-        if (handler != null) handler.uncaughtException(thread, ex)
+        if (handler != null)
+          executeUncaughtExceptionHandler(handler, thread, ex)
     } finally
       thread.synchronized {
         try nativeThread.onTermination()
