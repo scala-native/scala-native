@@ -15,8 +15,7 @@ abstract class JUnitTest {
   import JUnitTest._
 
   // appropriate class loader for platform, needs platform extension
-  private val classLoader: ClassLoader =
-    JUnitTestPlatformImpl.getClassLoader
+  private val classLoader: ClassLoader = JUnitTestPlatformImpl.getClassLoader
 
   private val recordOutput =
     sys.props.contains("org.scalajs.junit.utils.record")
@@ -28,26 +27,31 @@ abstract class JUnitTest {
     myName.stripSuffix("Assertions")
   }
 
-  private val frameworkArgss: List[List[Char]] = List(
+  def simple(args: Char*): List[String] = args.map("-" + _).toList
+  private val frameworkArgss: List[List[String]] = List(
     List.empty,
-    List('a'),
-    List('v'),
-    List('n'),
-    List('n', 'a'),
-    List('n', 'v'),
-    List('n', 'v', 'a'),
-    List('n', 'v', 'c'),
-    List('n', 'v', 'c', 'a'),
-    List('v', 'a'),
-    List('v', 'c'),
-    List('v', 's'),
-    List('v', 's', 'n')
+    simple('a'),
+    simple('v'),
+    simple('n'),
+    simple('n', 'a'),
+    simple('n', 'v'),
+    simple('n', 'v', 'a'),
+    simple('n', 'v', 'c'),
+    simple('n', 'v', 'c', 'a'),
+    simple('v', 'a'),
+    simple('v', 'c'),
+    simple('v', 's'),
+    simple('v', 's', 'n'),
+    List("--verbosity=0"),
+    List("--verbosity=1"),
+    List("--verbosity=2"),
+    List("--verbosity=3")
   )
 
   @Test def testJUnitOutput(): Unit = await {
     val futs = for (args <- frameworkArgss) yield {
       for {
-        rawOut <- runTests(args.map("-" + _))
+        rawOut <- runTests(args)
       } yield {
         val out = postprocessOutput(rawOut)
 
@@ -153,9 +157,11 @@ abstract class JUnitTest {
     prefix ++ chunks.toSeq.sortBy(_._1).flatMap(_._2) ++ suffix
   }
 
-  private def recordPath(args: List[Char]): String = {
+  private def recordPath(args: List[String]): String = {
     val fname =
-      getClass.getName.replace('.', '/') + "_" + args.mkString("") + ".txt"
+      getClass.getName.replace('.', '/') + "_" + args
+        .map(_.dropWhile(_ == '-'))
+        .mkString("") + ".txt"
     recordDir + "/" + fname
   }
 
