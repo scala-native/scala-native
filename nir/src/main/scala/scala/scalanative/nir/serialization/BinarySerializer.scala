@@ -212,6 +212,20 @@ final class BinarySerializer(channel: WritableByteChannel) {
       }
     }
 
+    private def putLexicalScope(scope: nir.Defn.Define.LexicalScope): Unit = {
+      val nir.Defn.Define.LexicalScope(id, parent, range) = scope
+      putLocal(id)
+      putLocal(parent)
+      putLocal(range.start)
+      putLocal(range.end)
+    }
+
+    private def putDebugInfo(debugInfo: nir.Defn.Define.DebugInfo): Unit = {
+      val nir.Defn.Define.DebugInfo(localNames, lexicalScopes) = debugInfo
+      putLocalNames(localNames)
+      putSeq(lexicalScopes)(putLexicalScope)
+    }
+
     def put(defn: Defn): Unit = {
       def putHeader(tag: Byte): Unit = {
         putTag(tag)
@@ -222,11 +236,11 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
       hasEntryPoints ||= defn.isEntryPoint
       defn match {
-        case defn: Defn.Define =>
+        case Defn.Define(_, _, ty, insts, debugInfo) =>
           putHeader(T.DefineDefn)
-          putType(defn.ty)
-          putInsts(defn.insts)
-          putLocalNames(defn.localNames)
+          putType(ty)
+          putInsts(insts)
+          putDebugInfo(debugInfo)
 
         case defn: Defn.Var =>
           putHeader(T.VarDefn)

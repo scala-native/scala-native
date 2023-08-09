@@ -40,8 +40,8 @@ class LocalNamesTest {
 
   def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
     defn.insts.collect {
-      case inst: Inst.Let if defn.localNames.contains(inst.id) =>
-        inst -> defn.localNames(inst.id)
+      case inst: Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
+        inst -> defn.debugInfo.localNames(inst.id)
     }.toMap
 
   private object TestMain {
@@ -53,8 +53,7 @@ class LocalNamesTest {
   }
   private def findDefinition(linked: Seq[Defn]) = linked
     .collectFirst {
-      case defn @ Defn.Define(_, TestMain(), _, _,_, _) =>
-        defn
+      case defn @ Defn.Define(_, TestMain(), _, _, _) => defn
     }
     .ensuring(_.isDefined, "Not found linked method")
 
@@ -82,7 +81,11 @@ class LocalNamesTest {
           Seq("localVal", "localVar", "innerVal", "innerVar", "scoped")
         val expectedNames = Seq("args", "this") ++ expectedLetNames
         assertContainsAll("lets defined", expectedLetNames, lets)
-        assertContainsAll("vals defined", expectedNames, defn.localNames.values)
+        assertContainsAll(
+          "vals defined",
+          expectedNames,
+          defn.debugInfo.localNames.values
+        )
         assertDistinct(lets)
         defn.insts.head match {
           case Inst.Label(
@@ -92,8 +95,14 @@ class LocalNamesTest {
                   Val.Local(argsId, Type.Array(Rt.String, _))
                 )
               ) =>
-            assertTrue("thisArg", defn.localNames.get(thisId).contains("this"))
-            assertTrue("argsArg", defn.localNames.get(argsId).contains("args"))
+            assertTrue(
+              "thisArg",
+              defn.debugInfo.localNames.get(thisId).contains("this")
+            )
+            assertTrue(
+              "argsArg",
+              defn.debugInfo.localNames.get(argsId).contains("args")
+            )
           case _ => fail("Invalid input label")
         }
       }
@@ -154,7 +163,11 @@ class LocalNamesTest {
       findDefinition(defns)
         .foreach { defn =>
           def checkHasLet[T: ClassTag](localName: String): Unit = {
-            assertContains("localName", localName, defn.localNames.values)
+            assertContains(
+              "localName",
+              localName,
+              defn.debugInfo.localNames.values
+            )
             namedLets(defn)
               .collectFirst { case (inst, `localName`) => inst }
               .map {
@@ -169,8 +182,8 @@ class LocalNamesTest {
           }
           def checkNotHasLet[T: ClassTag](localName: String): Unit = {
             assertFalse(
-              s"should not contains $localName in ${defn.localNames.values.toSeq}",
-              defn.localNames.values.find(_ == localName).isDefined
+              s"should not contains $localName in ${defn.debugInfo.localNames.values.toSeq}",
+              defn.debugInfo.localNames.values.find(_ == localName).isDefined
             )
           }
           checkHasLet[Op.Call]("call")
@@ -241,13 +254,15 @@ class LocalNamesTest {
           assertContainsAll(
             "vals defined",
             expectedVals,
-            defn.localNames.values
+            defn.debugInfo.localNames.values
           )
 
           defn.insts
             .collect {
               case label @ Inst.Label(_, Seq(param))
-                  if defn.localNames.get(param.id).contains("switchResult") =>
+                  if defn.debugInfo.localNames
+                    .get(param.id)
+                    .contains("switchResult") =>
                 label
             }
             .ensuring(_.size == 1, "switchResult is not a merge label argument")
@@ -281,7 +296,7 @@ class LocalNamesTest {
           assertContainsAll(
             "vals defined",
             expectedVals,
-            defn.localNames.values
+            defn.debugInfo.localNames.values
           )
           // exclude synthetic names introduced in Scala 2
           assertDistinct(lets.toSeq.diff(Seq("x3")))
@@ -289,7 +304,7 @@ class LocalNamesTest {
           defn.insts
             .filter {
               case Inst.Label(_, Seq(param)) =>
-                defn.localNames.get(param.id).contains("matchResult")
+                defn.debugInfo.localNames.get(param.id).contains("matchResult")
               case _ => false
             }
             .ensuring(_.size == 1, "matchResult is not a merge label argument")

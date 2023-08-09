@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import scala.collection.mutable
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
+import nir.Defn.Define.DebugInfo
 
 object Show {
   def newBuilder: NirShowBuilder = new NirShowBuilder(new InMemoryShowBuilder)
@@ -119,8 +120,8 @@ object Show {
         }
         str(")")
     }
-    def show(next: Next): Unit = onNext(next)(Map.empty)
-    def onNext(next: Next)(implicit localNames: LocalNames): Unit = next match {
+    def show(next: Next): Unit = onNext(next)(DebugInfo.empty)
+    def onNext(next: Next)(implicit debugInfo: DebugInfo): Unit = next match {
       case Next.Label(name, Seq()) =>
         onLocal(name)
       case Next.Unwind(exc, next) =>
@@ -141,8 +142,8 @@ object Show {
       case Next.None => ()
     }
 
-    def show(inst: Inst): Unit = this.onInst(inst)(Map.empty)
-    def onInst(inst: Inst)(implicit localNames: LocalNames): Unit = inst match {
+    def show(inst: Inst): Unit = this.onInst(inst)(DebugInfo.empty)
+    def onInst(inst: Inst)(implicit debugInfo: DebugInfo): Unit = inst match {
       case Inst.Label(name, params) =>
         onLocal(name)
         if (params.isEmpty) {
@@ -154,6 +155,7 @@ object Show {
         }
         str(":")
       case Inst.Let(id, op, unwind) =>
+        debugInfo.scopeOf(id).foreach{v =>str(v.id.id); str(": ")}
         onLocal(id)
         str(" = ")
         onOp(op)
@@ -207,8 +209,8 @@ object Show {
         }
     }
 
-    def show(op: Op): Unit = onOp(op)(Map.empty)
-    def onOp(op: Op)(implicit localNames: LocalNames): Unit = op match {
+    def show(op: Op): Unit = onOp(op)(DebugInfo.empty)
+    def onOp(op: Op)(implicit debugInfo: DebugInfo): Unit = op match {
       case Op.Call(ty, f, args) =>
         str("call[")
         onType(ty)
@@ -474,8 +476,8 @@ object Show {
       case MemoryOrder.SeqCst    => str("onSeqcst")
     }
 
-    def show(value: Val): Unit = onVal(value)(Map.empty)
-    def onVal(value: Val)(implicit localNames: LocalNames): Unit = value match {
+    def show(value: Val): Unit = onVal(value)(DebugInfo.empty)
+    def onVal(value: Val)(implicit debugInfo: DebugInfo): Unit = value match {
       case Val.True =>
         str("true")
       case Val.False =>
@@ -580,8 +582,8 @@ object Show {
         onGlobal(name)
         str(" : ")
         onType(ty)
-      case Defn.Define(attrs, name, ty, insts, localNames, _) =>
-        implicit val _localNames: LocalNames = localNames
+      case Defn.Define(attrs, name, ty, insts, debugInfo) =>
+        implicit val _debugInfo: Defn.Define.DebugInfo = debugInfo
         onAttrs(attrs)
         str("def ")
         onGlobal(name)
@@ -691,11 +693,11 @@ object Show {
     def onSig(sig: Sig): Unit =
       str(sig.mangle)
 
-    def show(local: Local): Unit = onLocal(local)(Map.empty)
-    def onLocal(local: Local)(implicit localNames: LocalNames): Unit = {
+    def show(local: Local): Unit = onLocal(local)(DebugInfo.empty)
+    def onLocal(local: Local)(implicit debugInfo: DebugInfo): Unit = {
       str("%")
       str(local.id)
-      localNames.get(local).foreach { name =>
+      debugInfo.localNames.get(local).foreach { name =>
         str(" <"); str(name); str(">")
       }
     }

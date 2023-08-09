@@ -191,7 +191,7 @@ final class Method(
     val name: Global,
     val ty: Type,
     val insts: Array[Inst],
-    val localNames: LocalNames
+    val debugInfo: Defn.Define.DebugInfo
 )(implicit val position: Position)
     extends MemberInfo {
   val value: Val =

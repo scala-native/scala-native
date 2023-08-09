@@ -283,6 +283,18 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
+  private def getLexicalScope(): Defn.Define.LexicalScope = Defn.Define.LexicalScope(
+    id = getLocal(),
+    parent = getLocal(),
+    range = Defn.Define.LocalRange(start = getLocal(), end = getLocal())
+  )
+
+  private def getDebugInfo(): Defn.Define.DebugInfo =
+    Defn.Define.DebugInfo(
+      localNames = getLocalNames(),
+      lexicalScopes = getSeq(getLexicalScope())
+    )
+
   private def getDefn(): Defn = {
     val tag = getTag()
     val name = getGlobal()
@@ -292,7 +304,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.VarDefn     => Defn.Var(attrs, name, getType(), getVal())
       case T.ConstDefn   => Defn.Const(attrs, name, getType(), getVal())
       case T.DeclareDefn => Defn.Declare(attrs, name, getType())
-      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts(), getLocalNames())
+      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts(), getDebugInfo())
       case T.TraitDefn   => Defn.Trait(attrs, name, getGlobals())
       case T.ClassDefn   => Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
       case T.ModuleDefn  => Defn.Module(attrs, name, getGlobalOpt(), getGlobals())

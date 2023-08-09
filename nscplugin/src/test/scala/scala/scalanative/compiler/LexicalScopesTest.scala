@@ -37,13 +37,6 @@ class LexicalScopesTest {
       localNames.groupBy(identity).filter(_._2.size > 1).map(_._1)
     assertTrue(s"Found duplicated names of ${duplicated}", duplicated.isEmpty)
   }
-
-  def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
-    defn.insts.collect {
-      case inst: Inst.Let if defn.localNames.contains(inst.id) =>
-        inst -> defn.localNames(inst.id)
-    }.toMap
-
   private object TestMain {
     val companionMain = Global
       .Top("Test$")
@@ -53,7 +46,7 @@ class LexicalScopesTest {
   }
   private def findDefinition(linked: Seq[Defn]) = linked
     .collectFirst {
-      case defn @ Defn.Define(_, TestMain(), _, _, _, _) =>
+      case defn @ Defn.Define(_, TestMain(), _, _, _) =>
         defn
     }
     .ensuring(_.isDefined, "Not found linked method")
@@ -76,6 +69,7 @@ class LexicalScopesTest {
     """.stripMargin
   ) { loaded =>
     findDefinition(loaded).foreach { defn =>
+      defn.debugInfo.lexicalScopes.foreach(println)
       println(defn.show)
     //   val lets = namedLets(defn).values
     //   val expectedLetNames =

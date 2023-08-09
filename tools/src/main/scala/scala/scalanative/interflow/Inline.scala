@@ -164,7 +164,7 @@ trait Inline { self: Interflow =>
       val blocks =
         process(
           inlineInsts,
-          defn.localNames,
+          defn.debugInfo.localNames,
           inlineArgs,
           state,
           doInline = true,

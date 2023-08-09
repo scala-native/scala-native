@@ -35,7 +35,8 @@ trait Opt { self: Interflow =>
         attrs = origdefn.attrs.copy(opt = Attr.DidOpt),
         ty = Type.Function(argtys, retty),
         insts = ControlFlow.removeDeadBlocks(rawInsts),
-        localNames = localNames
+        debugInfo = origdefn.debugInfo.copy(localNames = localNames) // TODO
+        
       )(origdefn.pos)
 
     // Create new fresh and state for the first basic block.
@@ -61,7 +62,7 @@ trait Opt { self: Interflow =>
         } else argty
 
         val id = fresh()
-        origdefn.localNames
+        origdefn.debugInfo.localNames
           .get(origarg.id)
           .foreach(state.localNames.update(id, _))
         Val.Local(id, ty)
@@ -79,7 +80,7 @@ trait Opt { self: Interflow =>
           pushBlockFresh(fresh)
           process(
             origdefn.insts.toArray,
-            localNames = origdefn.localNames,
+            localNames = origdefn.debugInfo.localNames,
             args = args,
             state = state,
             doInline = false,

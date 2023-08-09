@@ -14,8 +14,7 @@ trait Transform {
         defn.copy(ty = onType(ty), rhs = onVal(value))
       case defn @ Defn.Declare(_, _, ty) =>
         defn.copy(ty = onType(ty))
-      case defn @ Defn.Define(_, _, ty, insts, _, _) =>
-        // TODO: // new localNames from onInsts?
+      case defn @ Defn.Define(_, _, ty, insts, _) =>
         defn.copy(ty = onType(ty), insts = onInsts(insts))
       case defn @ Defn.Trait(_, _, _) =>
         defn

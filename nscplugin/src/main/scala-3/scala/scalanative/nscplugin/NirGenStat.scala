@@ -235,7 +235,8 @@ trait NirGenStat(using Context) {
 
   private def genMethod(dd: DefDef): Option[Defn] = {
     implicit val pos: nir.Position = dd.span
-    val fresh, scopeFresh = Fresh()
+    val fresh = Fresh()
+    val scopeFresh = Fresh(-1L)
     val scopes = mutable.UnrolledBuffer.empty[LexicalScope]
 
     scoped(
@@ -288,8 +289,10 @@ trait NirGenStat(using Context) {
               name,
               sig,
               insts = body,
-              localNames = curMethodLocalNames.get.toMap,
-              lexicalScopes = scopes.toList
+              debugInfo = Defn.Define.DebugInfo(
+                localNames = curMethodLocalNames.get.toMap,
+                lexicalScopes = scopes.filter(_.id.id >= 1).toList
+              )
             )
             Some(defn)
           }
@@ -705,7 +708,7 @@ trait NirGenStat(using Context) {
     assert(moduleClass.is(ModuleClass), moduleClass)
 
     val existingStaticMethodNames: Set[Global] = existingMembers.collect {
-      case Defn.Define(_, name @ Global.Member(_, sig), _, _, _, _)
+      case Defn.Define(_, name @ Global.Member(_, sig), _, _, _)
           if sig.isStatic =>
         name
     }.toSet

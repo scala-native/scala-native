@@ -698,7 +698,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   name,
                   sig,
                   insts = body,
-                  localNames = curMethodLocalNames.get.toMap
+                  debugInfo = Defn.Define.DebugInfo(
+                    localNames = curMethodLocalNames.get.toMap,
+                    lexicalScopes = Nil
+                  ) // TODO
                 )
               )
             }

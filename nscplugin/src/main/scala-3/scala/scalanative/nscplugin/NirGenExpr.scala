@@ -163,7 +163,7 @@ trait NirGenExpr(using Context) {
 
     def genBlock(block: Block): Val = {
       val Block(stats, last) = block
-    
+
       def isCaseLabelDef(tree: Tree) =
         tree.isInstanceOf[Labeled] && tree.symbol.isAllOf(SyntheticCase)
 
@@ -175,29 +175,41 @@ trait NirGenExpr(using Context) {
 
       def lastLocalId = curFresh.get.last
       val parentScope = curScopeId.get
-      val blockStart = lastLocalId
+      val blockStart = nir.Local(lastLocalId.id + 1)
       val blockScope = curScopeFresh.get()
 
-      val result = scoped(
+      println()
+      println(s"block=$blockScope, parent=$parentScope")
+      println(block.show)
+
+      def addScope(blockEnd: nir.Local): Unit =
+        curScopes.get += nir.Defn.Define.LexicalScope(
+          blockScope,
+          parentScope,
+          nir.Defn.Define.LocalRange(blockStart, blockEnd)
+        )
+
+      scoped(
         curScopeId := blockScope
       ) {
         last match {
           case label: Labeled if isCaseLabelDef(label) =>
-            translateMatch(label)
+            try translateMatch(label)
+            finally addScope(lastLocalId)
 
           case Apply(
                 TypeApply(Select(label: Labeled, nme.asInstanceOf_), _),
                 _
               ) if isCaseLabelDef(label) =>
-            translateMatch(label)
+            try translateMatch(label)
+            finally addScope(lastLocalId)
 
           case _ =>
             stats.foreach(genExpr)
+            addScope(lastLocalId)
             genExpr(last)
         }
-      } 
-      curScopes.get += nir.Defn.Define.LexicalScope(blockScope, parentScope, nir.Defn.Define.LocalRange(blockStart, lastLocalId))
-      result
+      }
     }
 
     // Scala Native does not have any special treatment for closures.
