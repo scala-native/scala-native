@@ -29,8 +29,7 @@ object Build {
   lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
   lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
-    nirJVM, utilJVM, toolsJVM,
-    nativelib, clib, gc, posixlib, windowslib,
+    nativelib, clib, gclib, posixlib, windowslib,
     auxlib, javalib, scalalib,
     testInterface, testInterfaceSbtDefs, testRunner,
     junitRuntime
@@ -450,7 +449,7 @@ object Build {
                     // Native libraries
                     nativelib.forBinaryVersion(ver) / publishLocal,
                     clib.forBinaryVersion(ver) / publishLocal,
-                    gc.forBinaryVersion(ver) / publishLocal,
+                    gclib.forBinaryVersion(ver) / publishLocal,
                     posixlib.forBinaryVersion(ver) / publishLocal,
                     windowslib.forBinaryVersion(ver) / publishLocal,
                     // Standard language libraries
@@ -497,7 +496,7 @@ object Build {
     .dependsOn(nativelib)
     .withNativeCompilerPlugin
 
-  lazy val gc = MultiScalaProject("gc")
+  lazy val gclib = MultiScalaProject("gclib")
     .enablePlugins(MyScalaNativePlugin)
     .settings(mavenPublishSettings)
     .dependsOn(nativelib)
@@ -595,7 +594,7 @@ object Build {
             }
           )
       }
-      .dependsOn(auxlib, javalib, gc)
+      .dependsOn(auxlib, javalib, gclib)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
