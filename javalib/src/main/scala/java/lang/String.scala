@@ -8,7 +8,7 @@ import java.util._
 import java.util.regex._
 import java.nio._
 import java.nio.charset._
-import java.util.{Objects, Arrays}
+import java.util.Objects
 import java.util.ScalaOps._
 import java.lang.constant.{Constable, ConstantDesc}
 import scala.annotation.{switch, tailrec}
