@@ -1,66 +1,91 @@
 // Ported from Scala.js commit: 57d71da dated: 2023-05-31
-// This file has different implementations of add, merge, toString and length.
+// Extensively re-written for Scala Native.
 
 package java.util
 
-import ScalaOps._
-
-@inline
 final class StringJoiner private (
     delimiter: String,
-    prefix: String,
+    prefixLength: Integer,
     suffix: String
 ) extends AnyRef {
 
-  /** We need the delimiter of `other` for `merge`. */
-  private val delimStr: String = delimiter
+  def this(delimiter: CharSequence) = this(delimiter.toString(), 0, "")
 
-  /** The public constructor to be used from outside. */
   def this(
       delimiter: CharSequence,
       prefix: CharSequence,
       suffix: CharSequence
-  ) =
-    this(delimiter.toString(), prefix.toString(), suffix.toString())
+  ) = {
+    this(delimiter.toString(), prefix.length(), suffix.toString())
+    if (prefixLength > 0)
+      builder.append(prefix)
+  }
 
-  /** The custom value to return if empty, set by `setEmptyValue` (nullable). */
+  private val delimLength = delimiter.length()
+
+  /* Avoid early builder enlargeBuffer() calls.
+   * Add an arbitrary guestimate > default 16 excess capacity.
+   */
+  private val builder =
+    new java.lang.StringBuilder(prefixLength + 40 + suffix.length())
+
+  /* The custom value to return if empty, set by `setEmptyValue` (nullable).
+   */
   private var emptyValue: String = null
 
-  /** A list that holds the strings that have been added so far. */
-  private val contents: List[CharSequence] = new ArrayList()
+  /* "true" before the first add(), even of "",  or merge() of non-empty
+   * StringJoiner. See JDK StringJoiner documentation.
+   *
+   * A tricky bit:
+   *   Adding an initial empty string ("") will set isEmpty to "false" but
+   *   will not change builder.length(). Use former to determine when to
+   *   use emptyValue or not.
+   */
+  private var isEmpty = true
 
-  /** Whether the string joiner is currently empty. */
-  private def isEmpty: Boolean = contents.isEmpty()
-
-  /** Alternate constructor with no prefix or suffix */
-  def this(delimiter: CharSequence) = this(delimiter.toString(), "", "")
+  private def appendStemTo(other: StringJoiner) = {
+    if (!isEmpty) // builder contains more than prefix, possibly only "".
+      other.add(this.builder.substring(prefixLength))
+  }
 
   def setEmptyValue(emptyValue: CharSequence): StringJoiner = {
     this.emptyValue = emptyValue.toString()
     this
   }
 
-  override def toString(): String =
-    if (isEmpty && emptyValue != null) emptyValue
-    else contents.scalaOps.mkString(prefix, delimiter, suffix)
+  override def toString(): String = {
+    if (isEmpty && (emptyValue != null)) emptyValue
+    else {
+      if (suffix.length == 0)
+        builder.toString()
+      else { // avoid an extra String allocation.
+        val len = builder.length()
+        builder.append(suffix)
+        val s = builder.toString()
+        builder.setLength(len)
+        s
+      }
+    }
+  }
 
   def add(newElement: CharSequence): StringJoiner = {
-    contents.add(if (newElement == null) "null" else newElement)
+    if (isEmpty)
+      isEmpty = false
+    else if (delimLength > 0)
+      builder.append(delimiter)
+
+    builder.append(if (newElement == null) "null" else newElement)
     this
   }
 
   def merge(other: StringJoiner): StringJoiner = {
-    if (!other.isEmpty) { // if `other` is empty, `merge` has no effect
-      contents.add(other.contents.scalaOps.mkString("", other.delimStr, ""))
-    }
+    other.appendStemTo(this)
     this
   }
 
-  def length(): Int =
-    if (isEmpty && emptyValue != null) emptyValue.length()
-    else if (isEmpty) prefix.length() + suffix.length()
-    else
-      prefix.length() + suffix.length() +
-        delimiter.length() * (contents.size() - 1) +
-        contents.scalaOps.foldLeft(0)((acc, part) => acc + part.length())
+  def length(): Int = {
+    if (isEmpty && (emptyValue != null)) emptyValue.length()
+    else builder.length() + suffix.length()
+  }
+
 }
