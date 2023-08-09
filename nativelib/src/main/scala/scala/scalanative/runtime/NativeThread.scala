@@ -136,14 +136,7 @@ object NativeThread {
           case handler => handler
         }
         if (handler != null)
-          try handler.uncaughtException(thread, ex)
-          catch {
-            case ex: Throwable =>
-              val threadName = "\"" + thread.getName() + "\""
-              System.err.println(
-                s"\nException: ${ex.getClass().getName()} thrown from the UncaughtExceptionHandler in thread ${threadName}"
-              )
-          }
+          executeUncaughtExceptionHandler(handler, thread, ex)
     } finally
       thread.synchronized {
         try nativeThread.onTermination()

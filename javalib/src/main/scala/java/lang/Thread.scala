@@ -353,22 +353,6 @@ class Thread private[lang] (
 object Thread {
   trait UncaughtExceptionHandler {
     def uncaughtException(t: Thread, e: Throwable): Unit
-
-    // ScalaNativeSpecific exception handler, used when executing user-provied handlers, in main
-    // Duplicate in NativeThread.threadEntryPoint
-    private[java] final def uncaughtExceptionInternal(
-        t: Thread,
-        e: Throwable
-    ): Unit = {
-      try uncaughtException(t, e)
-      catch {
-        case ex: Throwable =>
-          val threadName = "\"" + t.getName() + "\""
-          System.err.println(
-            s"\nException: ${ex.getClass().getName()} thrown from the UncaughtExceptionHandler in thread ${threadName}"
-          )
-      }
-    }
   }
 
   sealed class State(name: String, ordinal: Int)

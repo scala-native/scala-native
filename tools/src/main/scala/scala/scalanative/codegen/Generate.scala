@@ -197,7 +197,7 @@ object Generate {
     private def withExceptionHandler(
         body: (() => Next.Unwind) => Seq[Inst]
     )(implicit fresh: Fresh): Seq[Inst] = {
-      val exc = Val.Local(fresh(), nir.Rt.Object)
+      val exc = Val.Local(fresh(), Throwable)
       val handler, thread, ueh, uehHandler = fresh()
 
       def unwind(): Next.Unwind = {
@@ -218,16 +218,11 @@ object Generate {
           Next.None
         ),
         Inst.Let(
-          uehHandler,
-          Op.Method(Val.Local(ueh, JavaThreadUEHRef), JavaThreadUEHUncoughtException.sig),
-          Next.None
-        ),
-        Inst.Let(
           fresh(),
           Op.Call(
-            JavaThreadUEHUncoughtExceptionSig,
-            Val.Local(uehHandler, Type.Ptr),
-            Seq(Val.Local(ueh, JavaThreadUEHRef), Val.Local(thread, JavaThreadRef), exc)
+            RuntimeExecuteUEHSig,
+            Val.Global(RuntimeExecuteUEH, Type.Ptr),
+            Seq(Val.Null, Val.Local(ueh, JavaThreadUEHRef), Val.Local(thread, JavaThreadRef), exc)
           ),
           Next.None
         ),
@@ -636,9 +631,9 @@ object Generate {
       Sig.Method("getUncaughtExceptionHandler", Seq(JavaThreadUEHRef))
     )
 
-    val JavaThreadUEHUncoughtExceptionSig = Type.Function(Seq(JavaThreadUEHRef, JavaThreadRef, Throwable), Type.Unit)
-    val JavaThreadUEHUncoughtException = JavaThreadUEH.member(
-      Sig.Method("uncaughtExceptionInternal", Seq(JavaThreadRef, Throwable, Type.Unit))
+    val RuntimeExecuteUEHSig = Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, Throwable), Type.Unit)
+    val RuntimeExecuteUEH = Runtime.name.member(
+      Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, Throwable, Type.Unit))
     )
 
     val InitSig = Type.Function(Seq.empty, Type.Unit)
@@ -666,10 +661,10 @@ object Generate {
     Runtime.name,
     RuntimeInit.name,
     RuntimeLoop.name,
+    RuntimeExecuteUEH,
     JavaThread,
     JavaThreadCurrentThread,
     JavaThreadGetUEH,
-    JavaThreadUEH,
-    JavaThreadUEHUncoughtException
+    JavaThreadUEH
   )
 }
