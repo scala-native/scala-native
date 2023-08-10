@@ -239,6 +239,7 @@ object ReachabilityAnalysis {
       val infos: mutable.Map[Global, Info],
       val entries: Seq[Global],
       val links: Seq[Attr.Link],
+      val preprocessorDefinitions: Seq[Attr.Define],
       val defns: Seq[Defn],
       val dynsigs: Seq[Sig],
       val dynimpls: Seq[Global.Member],
