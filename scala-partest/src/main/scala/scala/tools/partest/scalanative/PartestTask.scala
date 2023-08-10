@@ -154,6 +154,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       infos = mutable.Map.empty,
       entries = Nil,
       links = Defaults.links,
+      macros = Nil,
       defns = Nil,
       dynsigs = Nil,
       dynimpls = Nil,
