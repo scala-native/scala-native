@@ -28,6 +28,7 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
     val result = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.name)
+
       if (nextBlock.stackSavePtr != null &&
           emitStackRestoreFor.contains(next.name)) {
         emitIfMissing(

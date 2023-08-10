@@ -142,9 +142,15 @@ trait Opt { self: Interflow =>
 
   def postProcess(blocks: Seq[MergeBlock]): Seq[MergeBlock] = {
     lazy val blockIndices = blocks.zipWithIndex.toMap
+    lazy val blockCyclesFinder = new BlockCycleFinder(blocks)
 
     blocks.foreach { block =>
-      emitStackStateResetForCycles(block, blocks, blockIndices)
+      emitStackStateResetForCycles(
+        block = block,
+        blocks = blocks,
+        blockIndices = blockIndices,
+        cyclesFinder = blockCyclesFinder
+      )
     }
 
     blocks
@@ -153,58 +159,67 @@ trait Opt { self: Interflow =>
   private def emitStackStateResetForCycles(
       block: MergeBlock,
       blocks: Seq[MergeBlock],
-      blockIndices: => Map[MergeBlock, Int]
+      blockIndices: => Map[MergeBlock, Int],
+      cyclesFinder: => BlockCycleFinder
   ): Unit = {
     // Detect cycles involving stackalloc memory
     // Insert StackSave/StackRestore instructions at its first/last block
-    def allocatesOnStack(block: MergeBlock) = block.end.emit.exists {
-      case Inst.Let(_, _: Op.Stackalloc, _) => true
-      case _                                => false
-    }
+    val allocatesOnStackCache = mutable.Map.empty[MergeBlock, Boolean]
+    def allocatesOnStack(block: MergeBlock) =
+      allocatesOnStackCache.getOrElseUpdate(
+        block,
+        block.end.emit.exists {
+          case Inst.Let(_, _: Op.Stackalloc, _) => true
+          case _                                => false
+        }
+      )
 
-    if (allocatesOnStack(block)) {
+    val shouldCheck = allocatesOnStack(block) &&
+      cyclesFinder.canHaveCycles(block, blocks.head)
+    if (shouldCheck) {
       val allocationEscapeCheck = new TrackStackallocEscape()
       def tryEmit(
           block: MergeBlock,
           innerCycle: BlocksCycle,
           innerCycleStart: Option[MergeBlock]
       ): Unit = {
-        findCycles(block)
+        cyclesFinder
+          .cyclesOf(block)
           .filter { cycle =>
             val isDirectLoop = innerCycle.isEmpty
-            def isEnclosingLoop = innerCycle.toSet != cycle.toSet
+            def isEnclosingLoop = !cyclesFinder.isRotationOf(innerCycle, cycle)
             isDirectLoop || // 1st run
-              (isEnclosingLoop && !cycle.exists(allocatesOnStack)) // 2nd run
+              isEnclosingLoop // 2nd run
           }
           .foreach { cycle =>
             val startIdx = cycle.map(blockIndices(_)).min
             val start = blocks(startIdx)
             val startName = start.label.name
-            val endIdx = (cycle.indexOf(start) + 1) % cycle.size
-            val end = cycle(endIdx)
+            val end = cycle((cycle.indexOf(start) + 1) % cycle.size)
+            assert(
+              end.outgoing.contains(start.label.name),
+              "Invalid cycle, last block does not point to cycle start"
+            )
 
-            val isNewCycle = !end.emitStackRestoreFor.contains(startName)
             def canEscapeAlloc = allocationEscapeCheck(
               allocatingBlock = block,
               entryBlock = start,
               cycle = cycle
             )
-            if (isNewCycle) { // ensure unique
-              // If memory escapes current loop we cannot create stack stage guards
-              // Instead try to insert guard in outer loop
-              if (!canEscapeAlloc || innerCycleStart.exists(cycle.contains)) {
-                start.emitStackSaveOp = true
-                end.emitStackRestoreFor ::= startName
-              } else if (innerCycleStart.isEmpty) {
-                // If allocation escapes direct loop try to create state restore in outer loop
-                // Outer loop is a while loop which does not perform stack allocation, but is a cycle
-                // containing entry to inner loop
-                tryEmit(
-                  start,
-                  innerCycle = cycle,
-                  innerCycleStart = Some(start)
-                )
-              }
+            // If memory escapes current loop we cannot create stack stage guards
+            // Instead try to insert guard in outer loop
+            if (!canEscapeAlloc || innerCycleStart.exists(cycle.contains)) {
+              start.emitStackSaveOp = true
+              end.emitStackRestoreFor ::= startName
+            } else if (innerCycleStart.isEmpty) {
+              // If allocation escapes direct loop try to create state restore in outer loop
+              // Outer loop is a while loop which does not perform stack allocation, but is a cycle
+              // containing entry to inner loop
+              tryEmit(
+                start,
+                innerCycle = cycle,
+                innerCycleStart = Some(start)
+              )
             }
           }
       }
@@ -213,30 +228,6 @@ trait Opt { self: Interflow =>
   }
 
   private type BlocksCycle = List[MergeBlock]
-  private def findCycles(targetNode: MergeBlock): List[BlocksCycle] = {
-    def dfs(
-        current: MergeBlock,
-        visited: Set[MergeBlock],
-        stack: List[MergeBlock]
-    ): List[List[MergeBlock]] = {
-      if (visited(current)) {
-        // ignore cycle if backward edge does not point to targetNode
-        if (stack.nonEmpty && stack.last == current) stack :: Nil
-        else Nil
-      } else {
-        val newStack = current :: stack
-        current.outgoing
-          .flatMap {
-            case (_, next) => dfs(next, visited + current, newStack)
-          }
-          .filter(_.nonEmpty)
-          .toList
-      }
-    }
-
-    dfs(targetNode, Set.empty, Nil)
-  }
-
   // NIR traversal used to check if stackallocated memory might escape the cycle
   // meaning it might be referenced in next loop runs
   private class TrackStackallocEscape() extends nir.Traverse {
@@ -289,5 +280,71 @@ trait Opt { self: Interflow =>
         }
       case _ => ()
     }
+  }
+
+  private class BlockCycleFinder(blocks: Seq[MergeBlock]) {
+    def isRotationOf(expected: BlocksCycle, rotation: BlocksCycle): Boolean = {
+      if (expected.size != rotation.size) false
+      else {
+        val concat = expected ::: expected
+        concat.containsSlice(rotation)
+      }
+    }
+
+    private val blocksById = blocks.map(b => b.label.name -> b).toMap
+    private val canHaveCyclesCache = mutable.Map.empty[MergeBlock, Boolean]
+    private def canHaveCyclesImpl(
+        block: MergeBlock,
+        entryBlock: MergeBlock
+    ): Boolean = {
+      if (block eq entryBlock) false
+      else if (block.incoming.size > 1) true
+      else canHaveCycles(blocksById(block.incoming.head._1), entryBlock)
+    }
+    def canHaveCycles(block: MergeBlock, entryBlock: MergeBlock): Boolean =
+      canHaveCyclesCache.getOrElseUpdate(
+        block,
+        canHaveCyclesImpl(block, entryBlock)
+      )
+
+    private val cyclesOfCache = mutable.Map.empty[MergeBlock, List[BlocksCycle]]
+    private def cyclesOfImpl(block: MergeBlock) = {
+      val cycles = mutable.ListBuffer.empty[BlocksCycle]
+      def shortestPath(
+          from: MergeBlock,
+          to: MergeBlock
+      ): Option[BlocksCycle] = {
+        val visited = mutable.Set.empty[MergeBlock]
+        def loop(queue: List[(MergeBlock, BlocksCycle)]): Option[BlocksCycle] =
+          queue match {
+            case Nil               => None
+            case (`to`, path) :: _ => Some(path)
+            case (current, path) :: tail =>
+              if (visited.contains(current)) loop(tail)
+              else {
+                visited.add(current)
+                val todo = current.outgoing.map {
+                  case (_, node) => (node, node :: path)
+                }.toList
+                loop(todo ::: tail)
+              }
+          }
+        loop((from, from :: Nil) :: Nil)
+      }
+
+      block.outgoing
+        .foreach {
+          case (_, next) =>
+            shortestPath(next, block).foreach { cycle =>
+              def isDuplciate = cycles.exists(isRotationOf(_, cycle))
+              if (cycle.contains(block) && !isDuplciate)
+                cycles += cycle
+            }
+        }
+      cycles.toList
+    }
+
+    def cyclesOf(block: MergeBlock): List[BlocksCycle] =
+      cyclesOfCache.getOrElseUpdate(block, cyclesOfImpl(block))
   }
 }
