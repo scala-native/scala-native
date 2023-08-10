@@ -50,23 +50,32 @@ final class JUnitFramework extends Framework {
       str match {
         case "-v" => verbosity = RunSettings.Verbosity.Started
         case "+v" => verbosity = RunSettings.Verbosity.Terse
-        case s"--verbosity=$id" =>
-          verbosity = RunSettings.Verbosity.ofOrdinal(id.toInt)
+        case s if s.startsWith("--verbosity=") =>
+          val n = s.stripPrefix("--verbosity=").toInt
+          verbosity = RunSettings.Verbosity.ofOrdinal(n)
         case "-n" => noColor = true
         case "-s" => decodeScalaNames = true
         case "-a" => logAssert = true
         case "-c" => logExceptionClass = false
+        case "-q" => unsupported("-q")
 
-        case "-q"                       => unsupported("-q")
-        case s"--tests=$v"              => unsupported("--tests")
-        case s"--ignore-runners=$v"     => unsupported("--ignore-runners")
-        case s"--run-listener=$v"       => unsupported("--run-listener")
-        case s"--include-categories=$v" => unsupported("--include-categories")
-        case s"--exclude-categories=$v" => unsupported("--exclude-categories")
-        case s"-D$key=$value"           => unsupported("-Dkey=value")
-        case s"--summary=$id"           => unsupported("--summary")
-        case s if !s.startsWith("-") && !s.startsWith("+") => unsupported(s)
-        case _                                             => ()
+        case s if s.startsWith("--summary=") =>
+          unsupported("--summary=")
+        case s if s.startsWith("--tests=") =>
+          unsupported("--tests")
+        case s if s.startsWith("--ignore-runners=") =>
+          unsupported("--ignore-runners")
+        case s if s.startsWith("--run-listener=") =>
+          unsupported("--run-listener")
+        case s if s.startsWith("--include-categories=") =>
+          unsupported("--include-categories")
+        case s if s.startsWith("--exclude-categories=") =>
+          unsupported("--exclude-categories")
+        case s if s.startsWith("-D") && s.contains("=") =>
+          unsupported("-Dkey=value")
+        case s if !s.startsWith("-") && !s.startsWith("+") =>
+          unsupported(s)
+        case _ => ()
       }
     }
     for (s <- args) {
