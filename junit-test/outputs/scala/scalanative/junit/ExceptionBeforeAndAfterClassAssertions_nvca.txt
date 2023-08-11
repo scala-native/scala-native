@@ -1,6 +1,6 @@
-liTest run started
+liTest run scala.scalanative.junit.ExceptionBeforeAndAfterClass started
 leTest scala.scalanative.junit.ExceptionBeforeAndAfterClass failed: before, took <TIME>
 e2scala.scalanative.junit.ExceptionBeforeAndAfterClass
 leTest scala.scalanative.junit.ExceptionBeforeAndAfterClass failed: after, took <TIME>
-liTest run finished: 2 failed, 0 ignored, 0 total, <TIME>
+liTest run scala.scalanative.junit.ExceptionBeforeAndAfterClass finished: 2 failed, 0 ignored, 0 total, <TIME>
 d

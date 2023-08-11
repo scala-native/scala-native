@@ -1,4 +1,4 @@
-ldTest run started
+ldTest run scala.scalanative.junit.AssertEqualsDoubleTest started
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble started
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble finished, took <TIME>
 e0scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble
@@ -17,5 +17,5 @@ e0scala.scalanative.junit.AssertEqualsDoubleTest.worksWithInt
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.worksWithShort started
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.worksWithShort finished, took <TIME>
 e0scala.scalanative.junit.AssertEqualsDoubleTest.worksWithShort
-ldTest run finished: 0 failed, 0 ignored, 6 total, <TIME>
+ldTest run scala.scalanative.junit.AssertEqualsDoubleTest finished: 0 failed, 0 ignored, 6 total, <TIME>
 d

@@ -1,7 +1,7 @@
-liTest run started
+liTest run scala.scalanative.junit.AssertFalse2Test started
 liTest scala.scalanative.junit.AssertFalse2Test.test started
-leTest scala.scalanative.junit.AssertFalse2Test.test failed: This is the message, took <TIME>
+leTest scala.scalanative.junit.AssertFalse2Test.test failed: java.lang.AssertionError: This is the message, took <TIME>
 e2scala.scalanative.junit.AssertFalse2Test.test
 ldTest scala.scalanative.junit.AssertFalse2Test.test finished, took <TIME>
-liTest run finished: 1 failed, 0 ignored, 1 total, <TIME>
+liTest run scala.scalanative.junit.AssertFalse2Test finished: 1 failed, 0 ignored, 1 total, <TIME>
 d

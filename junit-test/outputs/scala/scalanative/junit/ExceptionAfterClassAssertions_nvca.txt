@@ -1,4 +1,4 @@
-liTest run started
+liTest run scala.scalanative.junit.ExceptionAfterClass started
 liTest scala.scalanative.junit.ExceptionAfterClass.test1 started
 ldTest scala.scalanative.junit.ExceptionAfterClass.test1 finished, took <TIME>
 e0scala.scalanative.junit.ExceptionAfterClass.test1
@@ -7,5 +7,5 @@ ldTest scala.scalanative.junit.ExceptionAfterClass.test2 finished, took <TIME>
 e0scala.scalanative.junit.ExceptionAfterClass.test2
 leTest scala.scalanative.junit.ExceptionAfterClass failed: foo, took <TIME>
 e2scala.scalanative.junit.ExceptionAfterClass
-liTest run finished: 1 failed, 0 ignored, 2 total, <TIME>
+liTest run scala.scalanative.junit.ExceptionAfterClass finished: 1 failed, 0 ignored, 2 total, <TIME>
 d

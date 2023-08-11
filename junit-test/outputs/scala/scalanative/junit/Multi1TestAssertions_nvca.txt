@@ -1,9 +1,9 @@
-liTest run started
+liTest run scala.scalanative.junit.Multi1Test started
 liTest scala.scalanative.junit.Multi1Test.multiTest1 started
 ldTest scala.scalanative.junit.Multi1Test.multiTest1 finished, took <TIME>
 e0scala.scalanative.junit.Multi1Test.multiTest1
 liTest scala.scalanative.junit.Multi1Test.multiTest2 started
 ldTest scala.scalanative.junit.Multi1Test.multiTest2 finished, took <TIME>
 e0scala.scalanative.junit.Multi1Test.multiTest2
-liTest run finished: 0 failed, 0 ignored, 2 total, <TIME>
+liTest run scala.scalanative.junit.Multi1Test finished: 0 failed, 0 ignored, 2 total, <TIME>
 d

@@ -37,62 +37,63 @@ final class JUnitFramework extends Framework {
   }
 
   private def parseRunSettings(args: Array[String]): RunSettings = {
-    var verbose = false
     var noColor = false
     var decodeScalaNames = false
-    var logAssert = false
-    var notLogExceptionClass = false
+    var logAssert = true
+    var logExceptionClass = true
+    var verbosity: RunSettings.Verbosity = RunSettings.Verbosity.Terse
+
+    def unsupported(name: String) =
+      throw new UnsupportedOperationException(name)
+
     for (str <- args) {
       str match {
-        case "-v" => verbose = true
+        case "-v" => verbosity = RunSettings.Verbosity.Started
+        case "+v" => verbosity = RunSettings.Verbosity.Terse
+        case s if s.startsWith("--verbosity=") =>
+          val n = s.stripPrefix("--verbosity=").toInt
+          verbosity = RunSettings.Verbosity.ofOrdinal(n)
         case "-n" => noColor = true
         case "-s" => decodeScalaNames = true
         case "-a" => logAssert = true
-        case "-c" => notLogExceptionClass = true
+        case "-c" => logExceptionClass = false
+        case "-q" => unsupported("-q")
 
-        case s if s.startsWith("-tests=") =>
-          throw new UnsupportedOperationException("-tests")
-
+        case s if s.startsWith("--summary=") =>
+          unsupported("--summary=")
         case s if s.startsWith("--tests=") =>
-          throw new UnsupportedOperationException("--tests")
-
+          unsupported("--tests")
         case s if s.startsWith("--ignore-runners=") =>
-          throw new UnsupportedOperationException("--ignore-runners")
-
+          unsupported("--ignore-runners")
         case s if s.startsWith("--run-listener=") =>
-          throw new UnsupportedOperationException("--run-listener")
-
+          unsupported("--run-listener")
         case s if s.startsWith("--include-categories=") =>
-          throw new UnsupportedOperationException("--include-categories")
-
+          unsupported("--include-categories")
         case s if s.startsWith("--exclude-categories=") =>
-          throw new UnsupportedOperationException("--exclude-categories")
-
+          unsupported("--exclude-categories")
         case s if s.startsWith("-D") && s.contains("=") =>
-          throw new UnsupportedOperationException("-Dkey=value")
-
+          unsupported("-Dkey=value")
         case s if !s.startsWith("-") && !s.startsWith("+") =>
-          throw new UnsupportedOperationException(s)
-
-        case _ =>
+          unsupported(s)
+        case _ => ()
       }
     }
     for (s <- args) {
       s match {
-        case "+v" => verbose = false
+        case "+q" => unsupported("+q")
         case "+n" => noColor = false
         case "+s" => decodeScalaNames = false
         case "+a" => logAssert = false
-        case "+c" => notLogExceptionClass = false
-        case _    =>
+        case "+c" => logExceptionClass = true
+        case _    => ()
       }
     }
     new RunSettings(
       !noColor,
       decodeScalaNames,
-      verbose,
+      verbosity,
       logAssert,
-      notLogExceptionClass
+      logExceptionClass
     )
   }
 }

@@ -1,7 +1,8 @@
-ldTest run started
+ldTest run scala.scalanative.junit.AssumeInAfter started
 ldTest scala.scalanative.junit.AssumeInAfter.test started
 lwTest assumption in test scala.scalanative.junit.AssumeInAfter.test failed: org.junit.AssumptionViolatedException: This assume should not pass, took <TIME>
 e3scala.scalanative.junit.AssumeInAfter.test
 ldTest scala.scalanative.junit.AssumeInAfter.test finished, took <TIME>
-ldTest run finished: 0 failed, 0 ignored, 1 total, <TIME>
+e0scala.scalanative.junit.AssumeInAfter.test
+ldTest run scala.scalanative.junit.AssumeInAfter finished: 0 failed, 0 ignored, 1 total, <TIME>
 d

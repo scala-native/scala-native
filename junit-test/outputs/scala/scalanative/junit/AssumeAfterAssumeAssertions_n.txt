@@ -1,4 +1,4 @@
-ldTest run started
+ldTest run scala.scalanative.junit.AssumeAfterAssume started
 ldTest scala.scalanative.junit.AssumeAfterAssume.assumeFail started
 leTest scala.scalanative.junit.AssumeAfterAssume.assumeFail failed: org.junit.TestCouldNotBeSkippedException: Test could not be skipped due to other failures, took <TIME>
 leCaused by: org.junit.AssumptionViolatedException: This assume should not pass
@@ -6,5 +6,5 @@ e2scala.scalanative.junit.AssumeAfterAssume.assumeFail
 leTest scala.scalanative.junit.AssumeAfterAssume.assumeFail failed: org.junit.TestCouldNotBeSkippedException: Test could not be skipped due to other failures, took <TIME>
 leCaused by: org.junit.AssumptionViolatedException: This assume should not pass
 ldTest scala.scalanative.junit.AssumeAfterAssume.assumeFail finished, took <TIME>
-ldTest run finished: 2 failed, 0 ignored, 1 total, <TIME>
+ldTest run scala.scalanative.junit.AssumeAfterAssume finished: 2 failed, 0 ignored, 1 total, <TIME>
 d
