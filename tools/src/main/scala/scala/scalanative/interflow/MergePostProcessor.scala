@@ -61,10 +61,10 @@ private[interflow] object MergePostProcessor {
           .foreach { cycle =>
             val startIdx = cycle.map(blockIndices(_)).min
             val start = blocks(startIdx)
-            val startName = start.label.name
+            val startName = start.label.id
             val end = cycle((cycle.indexOf(start) + 1) % cycle.size)
             assert(
-              end.outgoing.contains(start.label.name),
+              end.outgoing.contains(start.label.id),
               "Invalid cycle, last block does not point to cycle start"
             )
 
@@ -112,7 +112,7 @@ private[interflow] object MergePostProcessor {
         case MergePhi(_, values) =>
           values.foreach {
             case (_, v: Val.Local) =>
-              if (Type.isPtrType(v.ty)) loopStateVals += v.name
+              if (Type.isPtrType(v.ty)) loopStateVals += v.id
             case _ => ()
           }
       }
@@ -158,7 +158,7 @@ private[interflow] object MergePostProcessor {
       }
     }
 
-    private val blocksById = blocks.map(b => b.label.name -> b).toMap
+    private val blocksById = blocks.map(b => b.label.id -> b).toMap
     private val canHaveCyclesCache = mutable.Map.empty[MergeBlock, Boolean]
     private def canHaveCyclesImpl(
         block: MergeBlock,

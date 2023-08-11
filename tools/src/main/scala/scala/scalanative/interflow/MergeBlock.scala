@@ -27,10 +27,10 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
     val block = this
     val result = new nir.Buffer()(Fresh(0))
     def mergeNext(next: Next.Label): Next.Label = {
-      val nextBlock = outgoing(next.name)
+      val nextBlock = outgoing(next.id)
 
       if (nextBlock.stackSavePtr != null &&
-          emitStackRestoreFor.contains(next.name)) {
+          emitStackRestoreFor.contains(next.id)) {
         emitIfMissing(
           end.fresh(),
           Op.Call(StackRestoreSig, StackRestore, Seq(nextBlock.stackSavePtr))
@@ -54,7 +54,7 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
     }
 
     val params = block.phis.map(_.param)
-    result.label(block.name, params)
+    result.label(block.id, params)
     if (emitStackSaveOp) {
       val id = block.end.fresh()
       val emmited = emitIfMissing(
