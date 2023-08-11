@@ -892,9 +892,16 @@ object Files {
       maxDepth: Int,
       options: Array[FileVisitOption]
   ): Stream[Path] = {
+    if (maxDepth < 0)
+      throw new IllegalArgumentException("'maxDepth' is negative")
+
     val visited = new HashSet[Path]()
     visited.add(start)
-    walk(start, maxDepth, 0, options, visited)
+
+    /* To aid debugging, keep maxDepth and currentDepth sensibly related.
+     * if maxDepth == 0, start currentDepth at zero, else start at 1.
+     */
+    walk(start, maxDepth, Math.min(maxDepth, 1), options, visited)
   }
 
   private def walk(
@@ -905,7 +912,7 @@ object Files {
       visited: Set[Path] // Java Set, gets mutated. Private so no footgun.
   ): Stream[Path] = {
     /* Design Note:
-     *    This implementation is an update to Java streams of this historical
+     *    This implementation is an update to Java streams of the historical
      *    Scala  stream implementation.  It is somewhat inefficient/costly
      *    in that it converts known single names to a singleton Stream
      *    and then relies upon flatmap() to merge streams. Creating a
@@ -920,9 +927,10 @@ object Files {
      *    probably the most economic approach, once the problem is described.
      */
 
-    if (!isDirectory(start, linkOptsFromFileVisitOpts(options)))
+    if (!isDirectory(start, linkOptsFromFileVisitOpts(options)) ||
+        (maxDepth == 0)) {
       Stream.of(start)
-    else {
+    } else {
       Stream.concat(
         Stream.of(start),
         Arrays
@@ -975,9 +983,13 @@ object Files {
       options: Set[FileVisitOption],
       maxDepth: Int,
       visitor: FileVisitor[_ >: Path]
-  ): Path =
+  ): Path = {
+    if (maxDepth < 0)
+      throw new IllegalArgumentException("'maxDepth' is negative")
+
     try _walkFileTree(start, options, maxDepth, visitor)
     catch { case TerminateTraversalException => start }
+  }
 
   // The sense of how LinkOption follows links or not is somewhat
   // inverted because of a double negative.  The absense of
@@ -1001,7 +1013,11 @@ object Files {
     val dirsToSkip = new HashSet[Path]
     val openDirs = scala.collection.mutable.Stack.empty[Path]
 
-    val stream = walk(start, maxDepth, 0, optsArray, new HashSet[Path])
+    /* To aid debugging, keep maxDepth and currentDepth sensibly related.
+     * if maxDepth == 0, start currentDepth at zero, else start at 1.
+     */
+    val stream =
+      walk(start, maxDepth, Math.min(maxDepth, 1), optsArray, new HashSet[Path])
 
     stream.forEach { p =>
       val parent = p.getParent()
