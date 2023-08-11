@@ -267,11 +267,15 @@ object ConcurrentSkipListMap {
       else ???
   }
 
-//   final private[concurrent] class Values[K, V] private[concurrent](val m: ConcurrentNavigableMap[K, V]) extends AbstractCollection[V] {
+  final private[concurrent] class Values[K, V] private[concurrent] (
+      val m: ConcurrentNavigableMap[K, V]
+  ) extends AbstractCollection[V] {
 //     override def iterator: Iterator[V] = if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) new ConcurrentSkipListMap[K, V]#ValueIterator
+    override def iterator(): Iterator[V] = ???
+
 //     else new ConcurrentSkipListMap.SubMap[K, V]#SubMapValueIterator
 
-//     override def size: Int = m.size
+    override def size(): Int = m.size()
 
 //     override def isEmpty: Boolean = m.isEmpty
 
@@ -303,7 +307,7 @@ object ConcurrentSkipListMap {
 //       }
 //       removed
 //     }
-//   }
+  }
 
 //   final private[concurrent] class EntrySet[K, V] private[concurrent](val m: ConcurrentNavigableMap[K, V]) extends AbstractSet[Map.Entry[K, V]] {
 //     override def iterator: Iterator[Map.Entry[K, V]] = if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) new ConcurrentSkipListMap[K, V]#EntryIterator
@@ -580,130 +584,138 @@ object ConcurrentSkipListMap {
 //       }
 //     }
 
-//     override def containsKey(key: Any): Boolean = {
-//       if (key == null) throw new NullPointerException
-//       inBounds(key, m.comparator) && m.containsKey(key)
-//     }
+    override def containsKey(key: Any): Boolean = {
+      if (key == null) throw new NullPointerException
+      inBounds(key, m.comparator()) && m.containsKey(key)
+    }
 
-//     override def get(key: Any): V = {
-//       if (key == null) throw new NullPointerException
-//       if (!(inBounds(key, m.comparator))) null
-//       else m.get(key)
-//     }
+    override def get(key: Any): V = {
+      if (key == null) throw new NullPointerException
+      if (!(inBounds(key, m.comparator()))) null.asInstanceOf[V]
+      else m.get(key)
+    }
 
-//     override def put(key: K, value: V): V = {
-//       checkKeyBounds(key, m.comparator)
-//       m.put(key, value)
-//     }
+    override def put(key: K, value: V): V = {
+      checkKeyBounds(key, m.comparator())
+      m.put(key, value)
+    }
 
-//     override def remove(key: Any): V = if (!(inBounds(key, m.comparator))) null
-//     else m.remove(key)
+    override def remove(key: Any): V =
+      if (!(inBounds(key, m.comparator())))
+        null.asInstanceOf[V]
+      else m.remove(key)
 
-//     override def size: Int = {
-//       val cmp = m.comparator
-//       var count = 0
-//       var n = loNode(cmp)
-//       while ( {
-//         isBeforeEnd(n, cmp)
-//       }) {
-//         if (n.`val` != null) count += 1
+    override def size(): Int = {
+      val cmp = m.comparator()
+      var count = 0L
+      var n = loNode(cmp)
+      while (isBeforeEnd(n, cmp)) {
+        if (n.`val` != null) count += 1
 
-//         n = n.next
-//       }
-//       if (count >= Integer.MAX_VALUE) Integer.MAX_VALUE
-//       else count.toInt
-//     }
+        n = n.next
+      }
+      if (count >= Integer.MAX_VALUE) Integer.MAX_VALUE
+      else count.toInt
+    }
 
-//     override def isEmpty: Boolean = {
-//       val cmp = m.comparator
-//       !isBeforeEnd(loNode(cmp), cmp)
-//     }
+    override def isEmpty(): Boolean = {
+      val cmp = m.comparator()
+      !isBeforeEnd(loNode(cmp), cmp)
+    }
 
-//     override def containsValue(value: Any): Boolean = {
-//       if (value == null) throw new NullPointerException
-//       val cmp = m.comparator
-//       var n = loNode(cmp)
-//       while ( {
-//         isBeforeEnd(n, cmp)
-//       }) {
-//         val v = n.`val`
-//         if (v != null && value == v) return true
+    override def containsValue(value: Any): Boolean = {
+      if (value == null) throw new NullPointerException
+      val cmp = m.comparator()
+      var n = loNode(cmp)
+      while (isBeforeEnd(n, cmp)) {
+        val v = n.`val`
+        if (v != null && value == v) return true
 
-//         n = n.next
-//       }
-//       false
-//     }
+        n = n.next
+      }
+      false
+    }
 
-//     override def clear(): Unit = {
-//       val cmp = m.comparator
-//       var n = loNode(cmp)
-//       while ( {
-//         isBeforeEnd(n, cmp)
-//       }) {
-//         if (n.`val` != null) m.remove(n.key)
+    override def clear(): Unit = {
+      val cmp = m.comparator()
+      var n = loNode(cmp)
+      while (isBeforeEnd(n, cmp)) {
+        if (n.`val` != null) m.remove(n.key)
+        n = n.next
+      }
+    }
 
-//         n = n.next
-//       }
-//     }
+    override def putIfAbsent(key: K, value: V): V = {
+      checkKeyBounds(key, m.comparator())
+      m.putIfAbsent(key, value)
+    }
 
-//     override def putIfAbsent(key: K, value: V): V = {
-//       checkKeyBounds(key, m.comparator)
-//       m.putIfAbsent(key, value)
-//     }
+    override def remove(key: Any, value: Any): Boolean =
+      inBounds(key, m.comparator()) && m.remove(key, value)
 
-//     override def remove(key: Any, value: Any): Boolean = inBounds(key, m.comparator) && m.remove(key, value)
+    override def replace(key: K, oldValue: V, newValue: V): Boolean = {
+      checkKeyBounds(key, m.comparator())
+      m.replace(key, oldValue, newValue)
+    }
 
-//     override def replace(key: K, oldValue: V, newValue: V): Boolean = {
-//       checkKeyBounds(key, m.comparator)
-//       m.replace(key, oldValue, newValue)
-//     }
+    override def replace(key: K, value: V): V = {
+      checkKeyBounds(key, m.comparator())
+      m.replace(key, value)
+    }
 
-//     override def replace(key: K, value: V): V = {
-//       checkKeyBounds(key, m.comparator)
-//       m.replace(key, value)
-//     }
-
-    override def comparator(): Comparator[_ >: K] = ???
-//     override def comparator: Comparator[_ >: K] = {
-//       val cmp = m.comparator
-//       if (isDescending) Collections.reverseOrder(cmp)
-//       else cmp
-//     }
+    override def comparator(): Comparator[_ >: K] = {
+      val cmp = m.comparator()
+      if (isDescending) Collections.reverseOrder(cmp)
+      else cmp
+    }
 
     private[concurrent] def newSubMap(
-        fromKey: K,
-        fromInclusive: Boolean,
-        toKey: K,
-        toInclusive: Boolean
-    ) = ???
-//     private[concurrent] def newSubMap(fromKey: K, fromInclusive: Boolean, toKey: K, toInclusive: Boolean) = {
-//       val cmp = m.comparator
-//       if (isDescending) { // flip senses
-//         val tk = fromKey
-//         fromKey = toKey
-//         toKey = tk
-//         val ti = fromInclusive
-//         fromInclusive = toInclusive
-//         toInclusive = ti
-//       }
-//       if (lo != null) if (fromKey == null) {
-//         fromKey = lo
-//         fromInclusive = loInclusive
-//       }
-//       else {
-//         val c = cpr(cmp, fromKey, lo)
-//         if (c < 0 || (c == 0 && !loInclusive && fromInclusive)) throw new IllegalArgumentException("key out of range")
-//       }
-//       if (hi != null) if (toKey == null) {
-//         toKey = hi
-//         toInclusive = hiInclusive
-//       }
-//       else {
-//         val c = cpr(cmp, toKey, hi)
-//         if (c > 0 || (c == 0 && !hiInclusive && toInclusive)) throw new IllegalArgumentException("key out of range")
-//       }
-//       new ConcurrentSkipListMap.SubMap[K, V](m, fromKey, fromInclusive, toKey, toInclusive, isDescending)
-//     }
+        _fromKey: K,
+        _fromInclusive: Boolean,
+        _toKey: K,
+        _toInclusive: Boolean
+    ) = {
+      var fromKey = _fromKey
+      var toKey = _toKey
+      var fromInclusive = _fromInclusive
+      var toInclusive = _toInclusive
+
+      val cmp = m.comparator()
+      if (isDescending) { // flip senses
+        val tk = fromKey
+        fromKey = toKey
+        toKey = tk
+        val ti = fromInclusive
+        fromInclusive = toInclusive
+        toInclusive = ti
+      }
+      if (lo != null)
+        if (fromKey == null) {
+          fromKey = lo
+          fromInclusive = loInclusive
+        } else {
+          val c = cpr(cmp, fromKey, lo)
+          if (c < 0 || (c == 0 && !loInclusive && fromInclusive))
+            throw new IllegalArgumentException("key out of range")
+        }
+      if (hi != null)
+        if (toKey == null) {
+          toKey = hi
+          toInclusive = hiInclusive
+        } else {
+          val c = cpr(cmp, toKey, hi)
+          if (c > 0 || (c == 0 && !hiInclusive && toInclusive))
+            throw new IllegalArgumentException("key out of range")
+        }
+      new ConcurrentSkipListMap.SubMap[K, V](
+        m,
+        fromKey,
+        fromInclusive,
+        toKey,
+        toInclusive,
+        isDescending
+      )
+    }
 
     override def subMap(
         fromKey: K,
@@ -798,12 +810,12 @@ object ConcurrentSkipListMap {
       }
     }
 
-    override def navigableKeySet(): NavigableSet[K] = ???
-//     override def navigableKeySet: NavigableSet[K] = {
-//       var ks = null
-//       if ((ks = keySetView) != null) return ks
-//       keySetView = new ConcurrentSkipListMap.KeySet[K, V](this)
-//     }
+    override def navigableKeySet(): NavigableSet[K] = {
+      var ks: KeySet[K, V] = null
+      if ({ ks = keySetView; ks != null }) return ks
+      keySetView = new ConcurrentSkipListMap.KeySet[K, V](this)
+      keySetView
+    }
 
 //     override def values: Collection[V] = {
 //       var vs = null
