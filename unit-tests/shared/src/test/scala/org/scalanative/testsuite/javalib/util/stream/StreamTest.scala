@@ -48,6 +48,20 @@ class StreamTest {
     Arrays.stream(arr).asInstanceOf[Stream[T]]
   }
 
+  // Frequently used data
+  private def genHyadesList(): Tuple2[ArrayList[String], Int] = {
+    val nElements = 7
+    val sisters = new ArrayList[String](nElements)
+    sisters.add("Phaisyle")
+    sisters.add("Coronis")
+    sisters.add("Cleeia")
+    sisters.add("Phaeo")
+    sisters.add("Eudora")
+    sisters.add("Ambrosia")
+    sisters.add("Dione")
+    (sisters, nElements)
+  }
+
 // Methods specified in interface BaseStream ----------------------------
 
   @Test def streamUnorderedOnUnorderedStream(): Unit = {
@@ -624,15 +638,7 @@ class StreamTest {
   @Test def streamCollect_UsingSupplier(): Unit = {
     type U = ArrayList[String]
 
-    val nElements = 7
-    val sisters = new U(nElements)
-    sisters.add("Phaisyle")
-    sisters.add("Coronis")
-    sisters.add("Cleeia")
-    sisters.add("Phaeo")
-    sisters.add("Eudora")
-    sisters.add("Ambrosia")
-    sisters.add("Dione")
+    val (sisters, nElements) = genHyadesList()
 
     val s = sisters.stream()
 
@@ -1538,15 +1544,7 @@ class StreamTest {
   }
 
   @Test def streamToArrayObject(): Unit = {
-    val nElements = 7
-    val sisters = new ArrayList[String](nElements)
-    sisters.add("Phaisyle")
-    sisters.add("Coronis")
-    sisters.add("Cleeia")
-    sisters.add("Phaeo")
-    sisters.add("Eudora")
-    sisters.add("Ambrosia")
-    sisters.add("Dione")
+    val (sisters, nElements) = genHyadesList()
 
     val s = sisters.stream()
 
@@ -1557,19 +1555,11 @@ class StreamTest {
 
     // Proper elements, in encounter order
     for (j <- 0 until nElements)
-      assertEquals("elements do not match", sisters.get(j), resultantArray(j))
+      assertEquals("elements do not match, ", sisters.get(j), resultantArray(j))
   }
 
-  @Test def streamToArrayType(): Unit = {
-    val nElements = 7
-    val sisters = new ArrayList[String](nElements)
-    sisters.add("Phaisyle")
-    sisters.add("Coronis")
-    sisters.add("Cleeia")
-    sisters.add("Phaeo")
-    sisters.add("Eudora")
-    sisters.add("Ambrosia")
-    sisters.add("Dione")
+  @Test def streamToArrayTypeKnownSize(): Unit = {
+    val (sisters, nElements) = genHyadesList()
 
     val s = sisters.stream()
 
@@ -1590,7 +1580,37 @@ class StreamTest {
 
     // Proper elements, in encounter order
     for (j <- 0 until nElements)
-      assertEquals("elements do not match", sisters.get(j), resultantArray(j))
+      assertEquals("elements do not match, ", sisters.get(j), resultantArray(j))
+  }
+
+  @Test def streamToArrayTypeUnknownSize(): Unit = {
+    val (sisters, nElements) = genHyadesList()
+
+    val spliter = Spliterators.spliteratorUnknownSize(
+      sisters.iterator(),
+      Spliterator.ORDERED
+    )
+
+    val s = StreamSupport.stream(spliter, false)
+
+    val resultantArray = s.toArray(
+      new IntFunction[Array[String]]() {
+        def apply(value: Int): Array[String] = new Array[String](value)
+      }
+    )
+
+    // Proper type
+    assertTrue(
+      "Array element type not String",
+      resultantArray.isInstanceOf[Array[String]]
+    )
+
+    // Proper size
+    assertEquals("result size", nElements, resultantArray.size)
+
+    // Proper elements, in encounter order
+    for (j <- 0 until nElements)
+      assertEquals("elements do not match, ", sisters.get(j), resultantArray(j))
   }
 
 }
