@@ -7,6 +7,7 @@ import java.util.function.{Consumer => JConsumer}
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.scalanative.nir._
+import nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
 import scala.tools.nsc.{Global, util => _, _}
@@ -44,6 +45,10 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected val cachedMethodSig =
     collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
   protected var curMethodUsesLinktimeResolvedValues = false
+
+  protected var curScopes = new util.ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
+  protected val curScopeId = new util.ScopedVar[DebugInfo.ScopeId]
+  protected val curScopeFresh = new util.ScopedVar[nir.Fresh]
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>

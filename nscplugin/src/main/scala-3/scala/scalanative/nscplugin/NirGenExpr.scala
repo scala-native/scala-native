@@ -27,6 +27,7 @@ import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 
 import scala.scalanative.nir
 import nir._
+import nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
@@ -174,19 +175,18 @@ trait NirGenExpr(using Context) {
       }
 
       def lastLocalId = curFresh.get.last
-      val parentScope = curScopeId.get
+      val blockScope = DebugInfo.ScopeId.of(curScopeFresh.get())
+      // Parent of top level points to itself
+      val parentScope =
+        if (blockScope == DebugInfo.ScopeId.TopLevel) blockScope
+        else curScopeId.get
       val blockStart = nir.Local(lastLocalId.id + 1)
-      val blockScope = curScopeFresh.get()
-
-      println()
-      println(s"block=$blockScope, parent=$parentScope")
-      println(block.show)
-
+      
       def addScope(blockEnd: nir.Local): Unit =
-        curScopes.get += nir.Defn.Define.LexicalScope(
+        curScopes.get += DebugInfo.LexicalScope(
           blockScope,
           parentScope,
-          nir.Defn.Define.LocalRange(blockStart, blockEnd)
+          DebugInfo.LocalRange(blockStart, blockEnd)
         )
 
       scoped(

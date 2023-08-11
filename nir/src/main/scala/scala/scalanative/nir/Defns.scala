@@ -37,31 +37,35 @@ object Defn {
   object Define {
     case class DebugInfo(
         localNames: LocalNames,
-        lexicalScopes: Seq[LexicalScope]
+        lexicalScopes: Seq[DebugInfo.LexicalScope]
     ) {
+      import DebugInfo._
       def scopeOf(id: Local): Option[LexicalScope] = {
         val idV = id.id
-        val containedBy = lexicalScopes.filter{scope => 
-          val LocalRange(start,end) = scope.range
+        val containedBy = lexicalScopes.filter { scope =>
+          val LocalRange(start, end) = scope.range
           idV >= start.id && idV <= end.id
         }
-        if(containedBy.isEmpty) None
-        else if(containedBy.size == 1) Some(containedBy.head)
-        else {
-          println(id)
-          println(containedBy)
-          val res = containedBy.minBy(_.range.end.id)
-          println(res)
-          Some(res)
-        }
+        if (containedBy.isEmpty) None
+        else if (containedBy.size == 1) Some(containedBy.head)
+        else Some(containedBy.minBy(_.range.end.id))
       }
     }
     object DebugInfo {
       val empty: DebugInfo =
         DebugInfo(localNames = Map.empty, lexicalScopes = Nil)
+
+      case class ScopeId(id: Long) extends AnyVal
+      object ScopeId {
+        def of(id: Local): ScopeId = ScopeId(id.id)
+        val TopLevel = ScopeId(0L)
+      }
+      case class LocalRange(start: Local, end: Local)
+      case class LexicalScope(id: ScopeId, parent: ScopeId, range: LocalRange) {
+        def isTopLevel: Boolean = id.id == 0
+      }
     }
-    case class LocalRange(start: Local, end: Local)
-    case class LexicalScope(id: Local, parent: Local, range: LocalRange)
+
   }
 
   // high-level

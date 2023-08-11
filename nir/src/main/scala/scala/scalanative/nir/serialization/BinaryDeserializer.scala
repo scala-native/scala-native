@@ -283,10 +283,13 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
-  private def getLexicalScope(): Defn.Define.LexicalScope = Defn.Define.LexicalScope(
-    id = getLocal(),
-    parent = getLocal(),
-    range = Defn.Define.LocalRange(start = getLocal(), end = getLocal())
+  import Defn.Define.DebugInfo
+  private def getScopeId() = new DebugInfo.ScopeId(getLebUnsignedLong())
+
+  private def getLexicalScope() = DebugInfo.LexicalScope(
+    id =  getScopeId(),
+    parent = getScopeId(),
+    range = DebugInfo.LocalRange(start = getLocal(), end = getLocal())
   )
 
   private def getDebugInfo(): Defn.Define.DebugInfo =

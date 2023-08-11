@@ -4,7 +4,8 @@ package nscplugin
 import scala.annotation.{tailrec, switch}
 import scala.collection.mutable
 import scala.tools.nsc
-import scalanative.nir._
+import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scalanative.util.{StringUtils, unsupported}
 import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
@@ -117,19 +118,39 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genMatch(prologue, labels :+ last)
       }
 
-      last match {
-        case label: LabelDef if isCaseLabelDef(label) =>
-          translateMatch(label)
+      def lastLocalId = curFresh.get.last
+      val blockScope = DebugInfo.ScopeId.of(curScopeFresh.get())
+      val parentScope =
+        if (blockScope == DebugInfo.ScopeId.TopLevel) blockScope
+        else curScopeId.get
+      val blockStart = nir.Local(lastLocalId.id + 1)
 
-        case Apply(
-              TypeApply(Select(label: LabelDef, nme.asInstanceOf_Ob), _),
-              _
-            ) if isCaseLabelDef(label) =>
-          translateMatch(label)
+      def addScope(blockEnd: nir.Local): Unit =
+        curScopes.get += DebugInfo.LexicalScope(
+          blockScope,
+          // Parent of top level points to itself
+          if (blockScope.id == 0) blockScope else parentScope,
+          DebugInfo.LocalRange(blockStart, blockEnd)
+        )
+      scoped(
+        curScopeId := blockScope
+      ) {
+        last match {
+          case label: LabelDef if isCaseLabelDef(label) =>
+            try translateMatch(label)
+            finally addScope(lastLocalId)
+          case Apply(
+                TypeApply(Select(label: LabelDef, nme.asInstanceOf_Ob), _),
+                _
+              ) if isCaseLabelDef(label) =>
+            try translateMatch(label)
+            finally addScope(lastLocalId)
 
-        case _ =>
-          stats.foreach(genExpr(_))
-          genExpr(last)
+          case _ =>
+            stats.foreach(genExpr(_))
+            addScope(lastLocalId)
+            genExpr(last)
+        }
       }
     }
 

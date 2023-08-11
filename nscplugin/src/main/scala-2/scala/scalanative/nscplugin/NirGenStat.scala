@@ -4,6 +4,8 @@ package nscplugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.nir.Defn.Define.DebugInfo._
 import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
@@ -642,6 +644,12 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = Fresh()
       val env = new MethodEnv(fresh)
 
+      val scopes = mutable.UnrolledBuffer.empty[DebugInfo.LexicalScope]
+      val scopeFresh = Fresh(dd.rhs match {
+        case _: Block => -1L // Conpensate the top-level block
+        case _        => 0L
+      })
+
       implicit val pos: nir.Position = dd.pos
 
       scoped(
@@ -650,7 +658,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
         curFresh := fresh,
         curUnwindHandler := None,
-        curMethodLocalNames := localNamesBuilder()
+        curMethodLocalNames := localNamesBuilder(),
+        curScopeFresh := scopeFresh,
+        curScopeId := ScopeId.of(scopeFresh.last),
+        curScopes := scopes
       ) {
         val sym = dd.symbol
         val owner = curClassSym.get
@@ -700,8 +711,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   insts = body,
                   debugInfo = Defn.Define.DebugInfo(
                     localNames = curMethodLocalNames.get.toMap,
-                    lexicalScopes = Nil
-                  ) // TODO
+                    lexicalScopes = scopes.toList
+                  )
                 )
               )
             }

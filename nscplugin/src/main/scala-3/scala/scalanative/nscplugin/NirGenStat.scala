@@ -14,6 +14,8 @@ import dotty.tools.dotc.transform.SymUtils._
 
 import scala.collection.mutable
 import scala.scalanative.nir
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.nir.Defn.Define.DebugInfo._
 import nir._
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
@@ -21,8 +23,6 @@ import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.core.NameKinds
-import scala.scalanative.nir.Defn.Define.LexicalScope
-
 trait NirGenStat(using Context) {
   self: NirCodeGen =>
   import positionsConversions.fromSpan
@@ -236,8 +236,11 @@ trait NirGenStat(using Context) {
   private def genMethod(dd: DefDef): Option[Defn] = {
     implicit val pos: nir.Position = dd.span
     val fresh = Fresh()
-    val scopeFresh = Fresh(-1L)
-    val scopes = mutable.UnrolledBuffer.empty[LexicalScope]
+    val scopeFresh = Fresh(dd.rhs match {
+      case _: Block => -1L // Conpensate the top-level block
+      case _        => 0L
+    })
+    val scopes = mutable.UnrolledBuffer.empty[DebugInfo.LexicalScope]
 
     scoped(
       curMethodSym := dd.symbol,
@@ -246,7 +249,7 @@ trait NirGenStat(using Context) {
       curMethodInfo := CollectMethodInfo().collect(dd.rhs),
       curFresh := fresh,
       curScopeFresh := scopeFresh,
-      curScopeId := scopeFresh.last,
+      curScopeId := ScopeId.of(scopeFresh.last),
       curScopes := scopes,
       curUnwindHandler := None,
       curMethodLocalNames := localNamesBuilder()
@@ -291,7 +294,7 @@ trait NirGenStat(using Context) {
               insts = body,
               debugInfo = Defn.Define.DebugInfo(
                 localNames = curMethodLocalNames.get.toMap,
-                lexicalScopes = scopes.filter(_.id.id >= 1).toList
+                lexicalScopes = scopes.toList
               )
             )
             Some(defn)

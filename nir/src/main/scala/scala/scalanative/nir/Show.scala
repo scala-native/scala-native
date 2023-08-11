@@ -155,7 +155,11 @@ object Show {
         }
         str(":")
       case Inst.Let(id, op, unwind) =>
-        debugInfo.scopeOf(id).foreach{v =>str(v.id.id); str(": ")}
+        debugInfo.scopeOf(id).foreach { v =>
+          if (!v.isTopLevel) {
+            str(v.id.id); str(": ")
+          }
+        }
         onLocal(id)
         str(" = ")
         onOp(op)

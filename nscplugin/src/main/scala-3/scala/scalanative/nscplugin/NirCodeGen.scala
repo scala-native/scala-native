@@ -2,6 +2,7 @@ package scala.scalanative.nscplugin
 
 import scala.scalanative.util
 import scala.scalanative.nir
+import nir.Defn.Define.DebugInfo
 import scalanative.nir.serialization.serializeBinary
 
 import dotty.tools.dotc.{CompilationUnit, report}
@@ -48,8 +49,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected var curMethodUsesLinktimeResolvedValues = false
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
-  protected var curScopes = new util.ScopedVar[mutable.UnrolledBuffer[nir.Defn.Define.LexicalScope]]
-  protected val curScopeId = new util.ScopedVar[Local]
+  protected var curScopes = new util.ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
+  protected val curScopeId = new util.ScopedVar[DebugInfo.ScopeId]
   protected val curScopeFresh = new util.ScopedVar[nir.Fresh]
 
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
