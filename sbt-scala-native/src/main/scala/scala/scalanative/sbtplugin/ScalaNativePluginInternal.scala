@@ -48,7 +48,7 @@ object ScalaNativePluginInternal {
     Seq(
       "nativelib",
       "clib",
-      "gc",
+      "gclib",
       "posixlib",
       "windowslib",
       "javalib",
