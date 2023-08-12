@@ -200,9 +200,6 @@ object Build {
             case (3, _)  => scala213StdLibDeprecations
           }
       },
-      Test / scalacOptions --= Seq(
-        "-Xfatal-warnings"
-      ),
       buildInfoKeys ++= Seq(
         BuildInfoKey.map(scalaInstance) {
           case (_, v) =>
@@ -941,5 +938,4 @@ object Build {
         }
     }
   }
-
 }

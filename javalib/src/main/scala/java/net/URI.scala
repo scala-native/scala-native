@@ -6,6 +6,7 @@ import java.lang.{StringBuilder => JStringBuilder}
 import java.io.Serializable
 import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
+import scala.annotation.nowarn
 
 object URI {
   val unreserved: String = "_-!.~\'()*"
@@ -924,7 +925,7 @@ final class URI private () extends Comparable[URI] with Serializable {
 
   def isOpaque(): Boolean = opaque
 
-  def toURL(): URL = {
+  @nowarn def toURL(): URL = {
     if (!absolute) throw new IllegalArgumentException("URI is not absolute")
     else new URL(toString)
   }

@@ -42,13 +42,8 @@ class StubSpec extends LinkerSpec {
 
   @Test def includeMethods(): Unit = {
     link(entry, stubMethodSource, _.withLinkStubs(true)) { (cfg, result) =>
-      assert(cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(
-        result.unavailable.head == Global
-          .Top("Main$")
-          .member(Sig.Method("stubMethod", Seq(Type.Int)))
-      )
+      assertTrue(cfg.linkStubs)
+      assertTrue(result.unavailable.isEmpty)
     }
   }
 
@@ -62,9 +57,8 @@ class StubSpec extends LinkerSpec {
 
   @Test def includeClasses(): Unit = {
     link(entry, stubClassSource, _.withLinkStubs(true)) { (cfg, result) =>
-      assert(cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Global.Top("StubClass"))
+      assertTrue(cfg.linkStubs)
+      assertTrue(result.unavailable.isEmpty)
     }
   }
 
@@ -78,9 +72,8 @@ class StubSpec extends LinkerSpec {
 
   @Test def includeModules(): Unit = {
     link(entry, stubModuleSource, _.withLinkStubs(true)) { (cfg, result) =>
-      assert(cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Global.Top("StubModule$"))
+      assertTrue(cfg.linkStubs)
+      assertTrue(result.unavailable.isEmpty)
     }
   }
 
