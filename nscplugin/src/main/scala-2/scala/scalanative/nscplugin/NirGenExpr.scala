@@ -1954,20 +1954,76 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     ): Val =
       castConv(fromty, toty).fold(value)(buf.conv(_, toty, value, unwind))
 
-    def genStackalloc(app: Apply): Val = {
-      val Apply(_, Seq(sizep)) = app
+    private lazy val optimizedFunctions = {
+      // Included functions should be pure, and should not not narrow the result type
+      Set[Symbol](
+        CastIntToRawSize,
+        CastIntToRawSizeUnsigned,
+        CastLongToRawSize,
+        CastRawSizeToInt,
+        CastRawSizeToLong,
+        CastRawSizeToLongUnsigned,
+        Size_fromByte,
+        Size_fromShort,
+        Size_fromInt,
+        USize_fromUByte,
+        USize_fromUShort,
+        USize_fromUInt,
+        RuntimePackage_fromRawSize,
+        RuntimePackage_fromRawUSize
+      ) ++ UnsignedOfMethods ++ RuntimePackage_toRawSizeAlts
+    }
 
-      val size = genExpr(sizep)
-      val sizeTy = Type.normalize(size.ty)
-      val unboxed =
-        if (Type.isSizeBox(sizeTy))
-          buf.unbox(sizeTy, size, unwind)(sizep.pos)
-        else {
-          assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
-          size
+    private def getUnboxedSize(sizep: Tree)(implicit pos: nir.Position): Val =
+      sizep match {
+        // Optimize call, strip numeric conversions
+        case Literal(Constant(size: Int)) => Val.Size(size)
+        case Block(Nil, expr)             => getUnboxedSize(expr)
+        case Apply(fun, List(arg))
+            if optimizedFunctions.contains(fun.symbol) ||
+              arg.symbol.exists && optimizedFunctions.contains(arg.symbol) =>
+          getUnboxedSize(arg)
+        case Typed(expr, _) => getUnboxedSize(expr)
+        case _              =>
+          // actual unboxing
+          val size = genExpr(sizep)
+          val sizeTy = Type.normalize(size.ty)
+          val unboxed =
+            if (Type.unbox.contains(sizeTy)) buf.unbox(sizeTy, size, unwind)
+            else if (Type.box.contains(sizeTy)) size
+            else {
+              reporter.error(
+                sizep.pos,
+                s"Invalid usage of Intrinsic.stackalloc, argument is not an integer type: ${sizeTy}"
+              )
+              Val.Size(0)
+            }
+
+          if (unboxed.ty == nir.Type.Size) unboxed
+          else buf.conv(Conv.SSizeCast, nir.Type.Size, unboxed, unwind)
+      }
+
+    private def genStackalloc(app: Apply): Val = app match {
+      case Apply(_, args) => {
+        implicit val pos: nir.Position = app.pos
+        val tpe = app.attachments
+          .get[NonErasedType]
+          .map(v => genType(v.tpe, deconstructValueTypes = true))
+          .getOrElse {
+            reporter.error(
+              app.pos,
+              "Not found type attachment for stackalloc operation, report it as a bug."
+            )
+            Type.Nothing
+          }
+
+        val size = args match {
+          case Seq()         => Val.Size(1)
+          case Seq(sizep)    => getUnboxedSize(sizep)
+          case Seq(_, sizep) => getUnboxedSize(sizep)
         }
-
-      buf.stackalloc(nir.Type.Byte, unboxed, unwind)(app.pos)
+        buf.stackalloc(tpe, size, unwind)
+      }
     }
 
     def genCQuoteOp(app: Apply): Val = {

@@ -2,9 +2,6 @@ name: Run tests JDK compliance tests
 on:
   workflow_call:
   pull_request:
-  push:
-    branches:
-      - main
 concurrency:
   group: jdk-compliance-${{ github.head_ref }}-${{ github.event_name	}}
   cancel-in-progress: true

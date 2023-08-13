@@ -112,25 +112,35 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           }
 
         // sizeOf[T] -> sizeOf(classOf[T]) + attachment
-        case TypeApply(fun, List(tpeArg)) if fun.symbol == SizeOfTypeMethod =>
+        case TypeApply(fun, List(tpeArg)) if fun.symbol == SizeOfMethod =>
           val tpe = widenDealiasType(tpeArg.tpe)
           typer
             .typed {
-              Apply(SizeOfMethod, Literal(Constant(tpe)))
+              Apply(SizeOfInternalMethod, Literal(Constant(tpe)))
             }
             .updateAttachment(NonErasedType(tpe))
             .setPos(tree.pos)
 
         // alignmentOf[T] -> alignmentOf(classOf[T]) + attachment
-        case TypeApply(fun, List(tpeArg))
-            if fun.symbol == AlignmentOfTypeMethod =>
+        case TypeApply(fun, List(tpeArg)) if fun.symbol == AlignmentOfMethod =>
           val tpe = widenDealiasType(tpeArg.tpe)
           typer
             .typed {
-              Apply(AlignmentOfMethod, Literal(Constant(tpe)))
+              Apply(AlignmentOfInternalMethod, Literal(Constant(tpe)))
             }
             .updateAttachment(NonErasedType(tpe))
             .setPos(tree.pos)
+
+        case Apply(fun, args) if StackallocMethods.contains(fun.symbol) =>
+          val tpe = fun match {
+            case TypeApply(_, Seq(argTpe)) => widenDealiasType(argTpe.tpe)
+          }
+          if (tpe.isAny || tpe.isNothing)
+            reporter.error(
+              tree.pos,
+              s"Stackalloc requires concrete type, but ${show(tpe)} found"
+            )
+          tree.updateAttachment(NonErasedType(tpe))
 
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>

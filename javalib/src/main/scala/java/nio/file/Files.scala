@@ -820,7 +820,7 @@ object Files {
             fromCWideString(buffer, StandardCharsets.UTF_16LE)
           }
         } else {
-          val buf: CString = alloc[Byte](limits.PATH_MAX.toUInt)
+          val buf: CString = alloc[Byte](limits.PATH_MAX)
           if (unistd.readlink(
                 toCString(link.toString),
                 buf,

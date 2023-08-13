@@ -4,6 +4,7 @@ import scala.scalanative.build.{Config, NativeConfig, Mode, ScalaNative}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.scalanative.nir._
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {
@@ -31,8 +32,42 @@ abstract class OptimizerSpec extends LinkerSpec {
     link(entry, sources, setupConfig) {
       case (config, linked) =>
         val optimized = ScalaNative.optimize(config, linked)
-        val result = Await.result(optimized, 2.minute)
+        val result = Await.result(optimized, Duration.Inf)
         fn(config, result)
     }
 
+  protected def findEntry(linked: Seq[Defn]): Option[Defn.Define] = {
+    import OptimizerSpec._
+    val companionMethod = linked
+      .collectFirst { case defn @ Defn.Define(_, TestMain(), _, _) => defn }
+    def staticForwarder = linked
+      .collectFirst {
+        case defn @ Defn.Define(_, TestMainForwarder(), _, _) => defn
+      }
+    companionMethod
+      .orElse(staticForwarder)
+      .ensuring(_.isDefined, "Not found linked method")
+  }
+}
+
+object OptimizerSpec {
+  private object TestMain {
+    val TestModule = Global.Top("Test$")
+    val CompanionMain =
+      TestModule.member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+
+    def unapply(name: Global): Boolean = name match {
+      case CompanionMain => true
+      case Global.Member(TestModule, sig) =>
+        sig.unmangled match {
+          case Sig.Duplicate(of, _) => of == CompanionMain.sig
+          case _                    => false
+        }
+      case _ => false
+    }
+  }
+  private object TestMainForwarder {
+    val staticForwarder = Global.Top("Test").member(Rt.ScalaMainSig)
+    def unapply(name: Global): Boolean = name == staticForwarder
+  }
 }

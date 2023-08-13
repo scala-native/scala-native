@@ -1,4 +1,4 @@
-liTest run started
+liTest run scala.scalanative.junit.AssertTrueTest started
 liTest scala.scalanative.junit.AssertTrueTest.failTest started
 leTest scala.scalanative.junit.AssertTrueTest.failTest failed: java.lang.AssertionError: null, took <TIME>
 e2scala.scalanative.junit.AssertTrueTest.failTest
@@ -6,5 +6,5 @@ ldTest scala.scalanative.junit.AssertTrueTest.failTest finished, took <TIME>
 liTest scala.scalanative.junit.AssertTrueTest.successTest started
 ldTest scala.scalanative.junit.AssertTrueTest.successTest finished, took <TIME>
 e0scala.scalanative.junit.AssertTrueTest.successTest
-liTest run finished: 1 failed, 0 ignored, 2 total, <TIME>
+liTest run scala.scalanative.junit.AssertTrueTest finished: 1 failed, 0 ignored, 2 total, <TIME>
 d

@@ -721,7 +721,7 @@ object File {
         }
         fromCWideString(buff, StandardCharsets.UTF_16LE)
       } else {
-        val buff: CString = alloc[CChar](4096.toUInt)
+        val buff: CString = alloc[CChar](4096)
         if (getcwd(buff, 4095.toUInt) == 0.toUInt) {
           val errMsg = fromCString(string.strerror(errno.errno))
           throw new IOException(

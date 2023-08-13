@@ -382,11 +382,11 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 }
 
 object Size {
-  @inline implicit def byteToSize(x: Byte): Size = 
+  @inline implicit def fromByte(x: Byte): Size = 
     Size.valueOf(castIntToRawSize(x))
-  @inline implicit def shortToSize(x: Short): Size = 
+  @inline implicit def fromShort(x: Short): Size = 
     Size.valueOf(castIntToRawSize(x))
-  @inline implicit def intToSize(x: Int): Size = 
+  @inline implicit def fromInt(x: Int): Size = 
     Size.valueOf(castIntToRawSize(x))
 
   @inline def valueOf(rawSize: RawSize): Size = {

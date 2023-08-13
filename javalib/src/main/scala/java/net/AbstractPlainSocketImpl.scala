@@ -226,7 +226,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val family =
       storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN.toUSize)
+    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN)
 
     val (srcPtr, port) = if (family == socket.AF_INET) {
       val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]

@@ -17,7 +17,7 @@ class StackallocTest {
   }
 
   @Test def stackallocInt4(): Unit = {
-    val ptr: Ptr[Int] = stackalloc[Int](4.toUInt)
+    val ptr: Ptr[Int] = stackalloc[Int](4)
 
     ptr(0) = 1
     ptr(1) = 2

@@ -187,7 +187,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
     import scala.scalanative.posix.pollEvents._
 
     type PipeFDs = CArray[CInt, Nat._2]
-    val pipefd = stackalloc[PipeFDs](1.toUInt)
+    val pipefd = stackalloc[PipeFDs](1)
     checkStatus("create sleep interrupt event") {
       pipe(pipefd.at(0))
     }

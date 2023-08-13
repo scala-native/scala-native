@@ -95,7 +95,7 @@ class MsgIoSocketTest {
         val outData1 = chunk3
 
         val nOutIovs = 2
-        val outVec = alloc[iovec](nOutIovs.toUSize)
+        val outVec = alloc[iovec](nOutIovs)
 
         // outData created with only 1 byte UTF-8 chars, so length method OK.
 
@@ -127,13 +127,13 @@ class MsgIoSocketTest {
         // To mix things up, read data in reverse order of how it was sent.
 
         val inData0Size = outData1.size
-        val inData0: Ptr[Byte] = alloc[Byte](inData0Size.toInt.toUSize)
+        val inData0: Ptr[Byte] = alloc[Byte](inData0Size.toInt)
 
         val inData1Size = outData0.size
-        val inData1: Ptr[Byte] = alloc[Byte](inData1Size.toInt.toUSize)
+        val inData1: Ptr[Byte] = alloc[Byte](inData1Size.toInt)
 
         val nInIovs = 2
-        val inVec = alloc[iovec](nInIovs.toUSize)
+        val inVec = alloc[iovec](nInIovs)
 
         inVec(0).iov_base = inData0
         inVec(0).iov_len = inData0Size.toUInt
@@ -250,7 +250,7 @@ class MsgIoSocketTest {
         val SCM_TIMESTAMP = 0x1d // decimal 29
         val SOF_TIMESTAMPING_SOFTWARE = 0x10 // decimal 16
 
-        val sOpt = stackalloc[Int](1.toUSize)
+        val sOpt = stackalloc[Int](1)
         !sOpt = SOF_TIMESTAMPING_SOFTWARE
 
         val ssoStatus = setsockopt(
@@ -267,7 +267,7 @@ class MsgIoSocketTest {
         val outData1 = chunk3
 
         val nOutIovs = 2
-        val outVec = alloc[iovec](nOutIovs.toUSize)
+        val outVec = alloc[iovec](nOutIovs)
 
         // outData created with only 1 byte UTF-8 chars, so length method OK.
 
@@ -300,10 +300,10 @@ class MsgIoSocketTest {
         // Read all in one gulp. We are only marginally interested in data.
 
         val inData0Size = nBytesSent
-        val inData0: Ptr[Byte] = alloc[Byte](inData0Size.toInt.toUSize)
+        val inData0: Ptr[Byte] = alloc[Byte](inData0Size.toInt)
 
         val nInIovs = 1
-        val inVec = alloc[iovec](nInIovs.toUSize)
+        val inVec = alloc[iovec](nInIovs)
 
         inVec(0).iov_base = inData0
         inVec(0).iov_len = inData0Size.toUInt
@@ -324,7 +324,7 @@ class MsgIoSocketTest {
          */
 
         val nCtlBuf = 40 // sizeof[linux cmsghdr] + 8 // 8 is a guess
-        val ctlBuf = alloc[Byte](nCtlBuf.toUInt)
+        val ctlBuf = alloc[Byte](nCtlBuf)
 
         val inMsgHdr = alloc[msghdr]()
         inMsgHdr.msg_iov = inVec

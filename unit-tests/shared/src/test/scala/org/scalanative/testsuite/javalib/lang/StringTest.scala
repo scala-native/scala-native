@@ -961,4 +961,42 @@ class StringTest {
     )
   }
 
+  /* selected Static methods
+   */
+  @Test def joinVarargs(): Unit = {
+    val strings = Array("one", "two", "three")
+    val delimiter = "-%-"
+
+    val expected = s"${strings(0)}${delimiter}" +
+      s"${strings(1)}${delimiter}" +
+      s"${strings(2)}"
+    val joined = String.join(delimiter, strings(0), strings(1), strings(2))
+
+    assertEquals(
+      s"unexpected join",
+      expected,
+      joined
+    )
+  }
+
+  @Test def joinIterable(): Unit = {
+    val strings = new java.util.ArrayList[String](3)
+    strings.add("zeta")
+    strings.add("eta")
+    strings.add("theta")
+
+    val delimiter = "-*-"
+
+    val expected = s"${strings.get(0)}${delimiter}" +
+      s"${strings.get(1)}${delimiter}" +
+      s"${strings.get(2)}"
+    val joined = String.join(delimiter, strings)
+
+    assertEquals(
+      s"unexpected join",
+      expected,
+      joined
+    )
+  }
+
 }

@@ -1,7 +1,7 @@
-liTest run started
+liTest run scala.scalanative.junit.ExceptionTest started
 liTest scala.scalanative.junit.ExceptionTest.test started
 leTest scala.scalanative.junit.ExceptionTest.test failed: Exception message, took <TIME>
 e2scala.scalanative.junit.ExceptionTest.test
 ldTest scala.scalanative.junit.ExceptionTest.test finished, took <TIME>
-liTest run finished: 1 failed, 0 ignored, 1 total, <TIME>
+liTest run scala.scalanative.junit.ExceptionTest finished: 1 failed, 0 ignored, 1 total, <TIME>
 d

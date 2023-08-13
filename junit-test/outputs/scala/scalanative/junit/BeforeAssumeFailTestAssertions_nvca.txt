@@ -1,5 +1,5 @@
-liTest run started
+liTest run scala.scalanative.junit.BeforeAssumeFailTest started
 lwTest assumption in test scala.scalanative.junit.BeforeAssumeFailTest failed: This assume should not pass, took <TIME>
 e3scala.scalanative.junit.BeforeAssumeFailTest
-liTest run finished: 0 failed, 0 ignored, 0 total, <TIME>
+liTest run scala.scalanative.junit.BeforeAssumeFailTest finished: 0 failed, 0 ignored, 0 total, <TIME>
 d

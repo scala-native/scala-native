@@ -3,6 +3,8 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
+import scala.collection.mutable
+import scala.annotation.tailrec
 
 trait Opt { self: Interflow =>
 
@@ -134,6 +136,8 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq(retTy)
+    val blocks = processor.toSeq(retTy)
+    MergePostProcessor.postProcess(blocks)
   }
+
 }

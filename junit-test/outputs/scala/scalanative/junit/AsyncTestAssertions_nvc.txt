@@ -1,4 +1,4 @@
-liTest run started
+liTest run scala.scalanative.junit.AsyncTest started
 liTest scala.scalanative.junit.AsyncTest.asyncFailure started
 leTest scala.scalanative.junit.AsyncTest.asyncFailure failed: null, took <TIME>
 e2scala.scalanative.junit.AsyncTest.asyncFailure
@@ -9,5 +9,5 @@ e0scala.scalanative.junit.AsyncTest.expectedException
 liTest scala.scalanative.junit.AsyncTest.success started
 ldTest scala.scalanative.junit.AsyncTest.success finished, took <TIME>
 e0scala.scalanative.junit.AsyncTest.success
-liTest run finished: 1 failed, 0 ignored, 3 total, <TIME>
+liTest run scala.scalanative.junit.AsyncTest finished: 1 failed, 0 ignored, 3 total, <TIME>
 d

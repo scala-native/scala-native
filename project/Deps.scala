@@ -19,7 +19,7 @@ object Deps {
 
   lazy val SbtPlatformDeps  = "org.portable-scala" % "sbt-platform-deps" % "1.0.1"
   lazy val SbtTestInterface = "org.scala-sbt"      % "test-interface"    % "1.0"
-  lazy val JUnitInterface   = "com.novocode"       % "junit-interface"   % "0.11"
+  lazy val JUnitInterface   = "com.github.sbt"     % "junit-interface"   % "0.13.3"
   lazy val JUnit            = "junit"              % "junit"             % "4.13.2"
 
   def NativeLib(scalaVersion: String) = scalaVersionsDependendent(scalaVersion) {

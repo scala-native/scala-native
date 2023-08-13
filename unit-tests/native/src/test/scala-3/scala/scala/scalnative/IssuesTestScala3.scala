@@ -32,7 +32,7 @@ class IssuesTestScala3 {
     object functions:
       export extern_functions.test // should compile
 
-    val buff: Ptr[CChar] = stackalloc[CChar](128.toUSize)
+    val buff: Ptr[CChar] = stackalloc[CChar](128)
     functions.test(buff, c"%d %d %d", -1, 1, 42)
     assertEquals("-1 1 42", fromCString(buff))
   }

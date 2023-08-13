@@ -32,7 +32,7 @@ class ZoneTest {
 
       assertAccessible(ptr, 64)
 
-      val ptr2: Ptr[Int] = alloc[Int](128.toUInt)
+      val ptr2: Ptr[Int] = alloc[Int](128)
 
       assertAccessible(ptr2, 128)
     }
@@ -47,7 +47,7 @@ class ZoneTest {
 
     assertAccessible(ptr, 64)
 
-    val ptr2: Ptr[Int] = alloc[Int](128.toUInt)
+    val ptr2: Ptr[Int] = alloc[Int](128)
 
     assertAccessible(ptr2, 128)
 

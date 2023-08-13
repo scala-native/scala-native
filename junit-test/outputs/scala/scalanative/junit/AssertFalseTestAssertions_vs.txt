@@ -1,7 +1,7 @@
-li[34mTest run started[0m
+li[34mTest run [0mscala.scalanative.junit.[33mAssertFalseTest[0m[34m started[0m
 liTest scala.scalanative.junit.[33mAssertFalseTest[0m.[36mtest[0m started
-leTest scala.scalanative.junit.[33mAssertFalseTest[0m.[31mtest[0m failed: null, took <TIME>
+leTest scala.scalanative.junit.[33mAssertFalseTest[0m.[31mtest[0m failed: java.lang.[31mAssertionError[0m: null, took <TIME>
 e2scala.scalanative.junit.AssertFalseTest.test
 ldTest scala.scalanative.junit.[33mAssertFalseTest[0m.[36mtest[0m finished, took <TIME>
-li[34mTest run finished: [0m[31m1 failed[0m[34m, [0m[34m0 ignored[0m[34m, 1 total, <TIME>[0m
+li[34mTest run [0mscala.scalanative.junit.[33mAssertFalseTest[0m[34m finished: [0m[31m1 failed[0m[34m, [0m[34m0 ignored[0m[34m, 1 total, <TIME>[0m
 d
