@@ -8,7 +8,6 @@ import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
-import scala.scalanative.runtime.Platform
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
@@ -56,45 +55,48 @@ private[lang] object StackTrace {
         }
       }
     }
-    // Add filename and line number informatiion
-    // When analyzing the stack trace, if the entry "currentStackTrace" appears more than once, it indicates that a Throwable object
-    // was generated within the same "currentStackTrace" method, causing recursive calls. This recursive behavior can lead to an
-    // infinite loop, ultimately resulting in a stack overflow exception.
-    //
-    // To prevent excessive recursion, it's preferable to minimize multiple consecutive calls to the "currentStackTrace" method.
-    //
-    // The "currentStackTrace" process is straightforward and typically doesn't trigger exceptions.
-    // On the other hand, the "BackTrace.decodeFileline" is intricate, and if an exception thrown, it's likely to originate from that method.
-    //
-    // Consequently, to mitigate the risk of cascading recursive exceptions,
-    // skip executing "BackTrace.decodeFileline" if "currentStackTrace" is already being invoked recursively.
-    val recur = buffer.count(e => e._1.getMethodName == "currentStackTrace") > 1
-    buffer.map { e =>
-      val elem = e._1
-      val ip = e._2
-      if (recur || // Skip decoding if we're calling currentStackTrace in recursively
-          elem.getFileName != null || // Skip decoding if we already have filename information
-          !Platform.isMac() // Skip decoding if it's not on Mac, currently we support only Mac
-      ) elem
-      else {
-        try {
-          Backtrace.decodeFileline(ip.toLong) match {
-            case None =>
-              elem
-            case Some(v) =>
-              val updated = new StackTraceElement(
-                elem.getClassName,
-                elem.getMethodName,
-                v._1,
-                v._2
-              )
-              // Update cache with the updated stacktrace element
-              cache.update(ip, updated)
-              updated
-          }
-        } catch { case ex: Throwable => elem }
-      }
-    }.toArray
+
+    if (LinktimeInfo.isMac) {
+      // Add filename and line number informatiion
+      // When analyzing the stack trace, if the entry "currentStackTrace" appears more than once, it indicates that a Throwable object
+      // was generated within the same "currentStackTrace" method, causing recursive calls. This recursive behavior can lead to an
+      // infinite loop, ultimately resulting in a stack overflow exception.
+      //
+      // To prevent excessive recursion, it's preferable to minimize multiple consecutive calls to the "currentStackTrace" method.
+      //
+      // The "currentStackTrace" process is straightforward and typically doesn't trigger exceptions.
+      // On the other hand, the "BackTrace.decodeFileline" is intricate, and if an exception thrown, it's likely to originate from that method.
+      //
+      // Consequently, to mitigate the risk of cascading recursive exceptions,
+      // skip executing "BackTrace.decodeFileline" if "currentStackTrace" is already being invoked recursively.
+      val recur =
+        buffer.count(e => e._1.getMethodName == "currentStackTrace") > 1
+      buffer.map { e =>
+        val elem = e._1
+        val ip = e._2
+        if (recur || // Skip decoding if we're calling currentStackTrace in recursively
+            elem.getFileName != null // Skip decoding if we already have filename information
+        ) elem
+        else {
+          try {
+            Backtrace.decodeFileline(ip.toLong) match {
+              case None =>
+                elem
+              case Some(v) =>
+                val updated = new StackTraceElement(
+                  elem.getClassName,
+                  elem.getMethodName,
+                  v._1,
+                  v._2
+                )
+                // Update cache with the updated stacktrace element
+                cache.update(ip, updated)
+                updated
+            }
+          } catch { case ex: Throwable => elem }
+        }
+      }.toArray
+    } else buffer.map(_._1).toArray
   }
 }
 
