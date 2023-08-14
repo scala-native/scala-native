@@ -154,11 +154,9 @@ object Show {
           str(")")
         }
         str(":")
-      case Inst.Let(id, op, unwind) =>
-        debugInfo.scopeOf(id).foreach { v =>
-          if (!v.isTopLevel) {
-            str(v.id.id); str(": ")
-          }
+      case let @ Inst.Let(id, op, unwind) =>
+        if (!let.scope.isTopLevel) {
+          str(let.scope.id); str(": ")
         }
         onLocal(id)
         str(" = ")

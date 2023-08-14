@@ -201,6 +201,7 @@ trait NirGenStat(using Context) {
           name = genStaticMemberName(f, classSym),
           ty = Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
+            given ScopeId = ScopeId.TopLevel
             val fresh = curFresh.get
             buf.label(fresh())
             val module = buf.module(genModuleName(classSym), Next.None)
@@ -236,10 +237,7 @@ trait NirGenStat(using Context) {
   private def genMethod(dd: DefDef): Option[Defn] = {
     implicit val pos: nir.Position = dd.span
     val fresh = Fresh()
-    val scopeFresh = Fresh(dd.rhs match {
-      case _: Block => -1L // Conpensate the top-level block
-      case _        => 0L
-    })
+    val freshScope = initFreshScope(dd.rhs)
     val scopes = mutable.UnrolledBuffer.empty[DebugInfo.LexicalScope]
 
     scoped(
@@ -248,8 +246,8 @@ trait NirGenStat(using Context) {
       curMethodLabels := new MethodLabelsEnv(fresh),
       curMethodInfo := CollectMethodInfo().collect(dd.rhs),
       curFresh := fresh,
-      curScopeFresh := scopeFresh,
-      curScopeId := ScopeId.of(scopeFresh.last),
+      curFreshScope := freshScope,
+      curScopeId := ScopeId.TopLevel,
       curScopes := scopes,
       curUnwindHandler := None,
       curMethodLocalNames := localNamesBuilder()
@@ -513,10 +511,13 @@ trait NirGenStat(using Context) {
       methodName: nir.Global
   )(genValue: ExprBuffer => nir.Val)(using nir.Position): nir.Defn = {
     implicit val fresh: Fresh = Fresh()
+    val freshScopes = initFreshScope(dd.rhs)
     val buf = new ExprBuffer()
 
     scoped(
       curFresh := fresh,
+      curFreshScope := freshScopes,
+      curScopeId := ScopeId.TopLevel,
       curMethodSym := dd.symbol,
       curMethodThis := None,
       curMethodEnv := new MethodEnv(fresh),
@@ -762,7 +763,8 @@ trait NirGenStat(using Context) {
           val fresh = curFresh.get
           scoped(
             curUnwindHandler := None,
-            curMethodThis := None
+            curMethodThis := None,
+            curScopeId := ScopeId.TopLevel
           ) {
             val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
             val args = entryParams.map(ValTree(_))

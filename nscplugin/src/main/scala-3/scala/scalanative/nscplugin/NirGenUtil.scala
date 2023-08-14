@@ -32,7 +32,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   protected def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
     ScopedVar.scoped(
-      curFresh := Fresh()
+      curFresh := Fresh(),
+      curScopeId := scala.scalanative.nir.ScopeId.TopLevel
     ) {
       val buffer = new ExprBuffer(using curFresh)
       f(using buffer)

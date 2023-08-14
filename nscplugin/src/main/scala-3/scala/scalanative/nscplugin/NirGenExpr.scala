@@ -174,42 +174,39 @@ trait NirGenExpr(using Context) {
         genMatch(prologue, labels :+ last)
       }
 
-      def lastLocalId = curFresh.get.last
-      val blockScope = DebugInfo.ScopeId.of(curScopeFresh.get())
+      val blockScope = ScopeId.of(curFreshScope.get())
       // Parent of top level points to itself
       val parentScope =
-        if (blockScope == DebugInfo.ScopeId.TopLevel) blockScope
+        if (blockScope.isTopLevel) blockScope
         else curScopeId.get
-      val blockStart = nir.Local(lastLocalId.id + 1)
-      
-      def addScope(blockEnd: nir.Local): Unit =
-        curScopes.get += DebugInfo.LexicalScope(
-          blockScope,
-          parentScope,
-          DebugInfo.LocalRange(blockStart, blockEnd)
-        )
+
+
+      curScopes.get += DebugInfo.LexicalScope(
+        id = blockScope,
+        parent = parentScope
+      )
 
       scoped(
         curScopeId := blockScope
       ) {
         last match {
           case label: Labeled if isCaseLabelDef(label) =>
-            try translateMatch(label)
-            finally addScope(lastLocalId)
+            translateMatch(label)
 
           case Apply(
                 TypeApply(Select(label: Labeled, nme.asInstanceOf_), _),
                 _
               ) if isCaseLabelDef(label) =>
-            try translateMatch(label)
-            finally addScope(lastLocalId)
+            translateMatch(label)
 
           case _ =>
             stats.foreach(genExpr)
-            addScope(lastLocalId)
-            genExpr(last)
+            scoped(
+              curScopeId := parentScope
+            ) { genExpr(last) }
         }
       }
+
     }
 
     // Scala Native does not have any special treatment for closures.
@@ -345,9 +342,12 @@ trait NirGenExpr(using Context) {
 
         def genBody = {
           given fresh: Fresh = Fresh()
+          val freshScopes = initFreshScope(EmptyTree)
           given buf: ExprBuffer = new ExprBuffer()
           scoped(
             curFresh := fresh,
+            curFreshScope := freshScopes,
+            curScopeId := ScopeId.of(freshScopes.last),
             curExprBuffer := buf,
             curMethodEnv := MethodEnv(fresh),
             curMethodLabels := MethodLabelsEnv(fresh),
@@ -823,12 +823,17 @@ trait NirGenExpr(using Context) {
 
       // Nested code gen to separate out try/catch-related instructions.
       val nested = ExprBuffer()
-      scoped(curUnwindHandler := Some(handler)) {
+      scoped(
+        curUnwindHandler := Some(handler),
+        curScopeId := ScopeId.of(curFreshScope.get())
+      ) {
         nested.label(normaln)
         val res = nested.genExpr(expr)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
       }
-      locally {
+      scoped(
+        curScopeId := ScopeId.of(curFreshScope.get())
+      ) {
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
@@ -863,12 +868,16 @@ trait NirGenExpr(using Context) {
           }
           val f = { () =>
             symopt.foreach { sym =>
-              val cast = buf.as(excty, exc, unwind)(cd.span)
+              val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
               curMethodEnv.enter(sym, cast)
             }
-            val res = genExpr(body)
-            buf.jumpExcludeUnitValue(retty)(mergen, res)
-            Val.Unit
+            scoped(
+              curScopeId := ScopeId.of(curFreshScope.get())
+            ) {
+              val res = genExpr(body)
+              buf.jumpExcludeUnitValue(retty)(mergen, res)
+              Val.Unit
+            }
           }
           (excty, f, exprPos)
       }
@@ -879,7 +888,7 @@ trait NirGenExpr(using Context) {
             buf.raise(exc, unwind)
             Val.Unit
           case (excty, f, pos) +: rest =>
-            val cond = buf.is(excty, exc, unwind)(pos)
+            val cond = buf.is(excty, exc, unwind)(pos, getScopeId)
             genIf(
               retty,
               ValTree(cond),
@@ -924,8 +933,12 @@ trait NirGenExpr(using Context) {
           // must first go through finally block if it's present. We generate
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
-          finalies.label(finallyn)(cf.pos)
-          finalies.genExpr(finallyp)
+          scoped(
+            curScopeId := ScopeId.of(curFreshScope.get())
+          ) {
+            finalies.label(finallyn)(cf.pos)
+            finalies.genExpr(finallyp)
+          }
           finalies += cf
           // The original jump outside goes through finally block first.
           Inst.Jump(Next(finallyn))(cf.pos)
@@ -1359,7 +1372,10 @@ trait NirGenExpr(using Context) {
         val leftcoerced = genCoercion(genExpr(left), lty, opty)(using left.span)
         val rightcoerced =
           genCoercion(genExpr(right), rty, opty)(using right.span)
-        buf.let(op(opty, leftcoerced, rightcoerced), unwind)(using left.span)
+        buf.let(op(opty, leftcoerced, rightcoerced), unwind)(using
+          left.span,
+          getScopeId
+        )
       }
 
       val binres = opty match {
@@ -1632,7 +1648,8 @@ trait NirGenExpr(using Context) {
       val arg = boxValue(argp.tpe, genExpr(argp))
       val isnull =
         buf.comp(Comp.Ieq, Rt.Object, arg, Val.Null, unwind)(using
-          argp.span: nir.Position
+          argp.span: nir.Position,
+          getScopeId
         )
       val cond = ValTree(isnull)
       val thenp = ValTree(Val.Int(0))

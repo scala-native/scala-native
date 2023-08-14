@@ -49,9 +49,20 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected var curMethodUsesLinktimeResolvedValues = false
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
-  protected var curScopes = new util.ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
-  protected val curScopeId = new util.ScopedVar[DebugInfo.ScopeId]
-  protected val curScopeFresh = new util.ScopedVar[nir.Fresh]
+  protected var curScopes =
+    new util.ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
+  protected val curFreshScope = new util.ScopedVar[nir.Fresh]
+  protected val curScopeId = new util.ScopedVar[ScopeId]
+  implicit protected def getScopeId: nir.ScopeId = {
+    val res = curScopeId.get
+    assert(res.id >= ScopeId.TopLevel.id)
+    res
+  }
+  protected def initFreshScope(rhs: Tree) = Fresh(rhs match {
+    // Conpensate the top-level block
+    case Block(stats, _) => -1L
+    case _               => 0L
+  })
 
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
 

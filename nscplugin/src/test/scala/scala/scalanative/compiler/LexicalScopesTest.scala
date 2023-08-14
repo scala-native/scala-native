@@ -60,10 +60,10 @@ class LexicalScopesTest {
   def scopeOf(localName: LocalName)(implicit defn: Defn.Define) =
     namedLets(defn)
       .collectFirst {
-        case (Inst.Let(id, _, _), `localName`) => id
+        case (let @ Inst.Let(id, _, _), `localName`) => let.scope
       }
       .orElse { fail(s"Not found a local named: ${localName}"); None }
-      .flatMap(defn.debugInfo.scopeOf)
+      .flatMap(id => defn.debugInfo.lexicalScopes.find(_.id == id))
       .orElse { fail(s"Not found defined scope for ${localName}"); None }
       .get
 
@@ -94,6 +94,8 @@ class LexicalScopesTest {
         Seq("a", "b", "result", "innerA", "innerB", "innerResult", "deep"),
         namedLets(defn).values
       )
+      println(defn.show)
+      defn.debugInfo.lexicalScopes.foreach(println)
       // top-level
       val innerA = scopeOf("innerA")
       val innerB = scopeOf("innerB")

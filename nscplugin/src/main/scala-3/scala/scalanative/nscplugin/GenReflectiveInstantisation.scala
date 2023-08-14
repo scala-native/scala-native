@@ -55,6 +55,7 @@ trait GenReflectiveInstantisation(using Context) {
       scoped(
         curClassSym := sym,
         curFresh := Fresh(),
+        curScopeId := ScopeId.TopLevel,
         curUnwindHandler := None,
         curMethodThis := None
       ) {

@@ -257,8 +257,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def withFreshExprBuffer[R](f: ExprBuffer => R): R = {
+      Predef.assert(!curScopeId.isInitialized)
       scoped(
-        curFresh := Fresh()
+        curFresh := Fresh(),
+        curScopeId := ScopeId.TopLevel
       ) {
         val exprBuffer = new ExprBuffer()(curFresh)
         f(exprBuffer)
@@ -277,7 +279,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         scoped(
           curClassSym := cd.symbol,
           curFresh := Fresh(),
-          curUnwindHandler := None
+          curUnwindHandler := None,
+          curScopeId := ScopeId.TopLevel
         ) {
           genRegisterReflectiveInstantiation(cd)
         }
@@ -645,11 +648,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val env = new MethodEnv(fresh)
 
       val scopes = mutable.UnrolledBuffer.empty[DebugInfo.LexicalScope]
-      val scopeFresh = Fresh(dd.rhs match {
-        case _: Block => -1L // Conpensate the top-level block
-        case _        => 0L
-      })
-
       implicit val pos: nir.Position = dd.pos
 
       scoped(
@@ -659,8 +657,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curFresh := fresh,
         curUnwindHandler := None,
         curMethodLocalNames := localNamesBuilder(),
-        curScopeFresh := scopeFresh,
-        curScopeId := ScopeId.of(scopeFresh.last),
+        curFreshScope := initFreshScope(dd.rhs),
+        curScopeId := ScopeId.TopLevel,
         curScopes := scopes
       ) {
         val sym = dd.symbol
@@ -803,7 +801,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curMethodThis := None,
         curMethodEnv := new MethodEnv(fresh),
         curMethodInfo := new CollectMethodInfo,
-        curUnwindHandler := None
+        curUnwindHandler := None,
+        curScopeId := ScopeId.TopLevel
       ) {
         buf.label(fresh())
         val value = genValue(buf)
@@ -1191,7 +1190,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             val fresh = curFresh.get
             scoped(
               curUnwindHandler := None,
-              curMethodThis := None
+              curMethodThis := None,
+              curScopeId := ScopeId.TopLevel
             ) {
               val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
               buf.label(fresh(), entryParams)

@@ -225,12 +225,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.XorBin  => Bin.Xor
   }
 
+  private def getScopeId() = new ScopeId(getLebUnsignedLong())
   private def getInsts(): Seq[Inst] = in(prelude.sections.insts) {
     getSeq(getInst())
   }
   private def getInst(): Inst = {
     val tag = getTag()
     implicit val pos: nir.Position = getPosition()
+    implicit def scope: nir.ScopeId = getScopeId()
     (tag: @switch) match {
       case T.LabelInst       => Inst.Label(getLocal(), getParams())
       case T.LetInst         => Inst.Let(getLocal(), getOp(), Next.None)
@@ -284,12 +286,10 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
   }
 
   import Defn.Define.DebugInfo
-  private def getScopeId() = new DebugInfo.ScopeId(getLebUnsignedLong())
 
   private def getLexicalScope() = DebugInfo.LexicalScope(
     id =  getScopeId(),
-    parent = getScopeId(),
-    range = DebugInfo.LocalRange(start = getLocal(), end = getLocal())
+    parent = getScopeId()
   )
 
   private def getDebugInfo(): Defn.Define.DebugInfo =
