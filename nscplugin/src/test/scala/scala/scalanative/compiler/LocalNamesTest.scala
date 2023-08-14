@@ -117,7 +117,7 @@ class LocalNamesTest {
     |    val call = Test.method(0)
     |    val sizeOf = Intrinsics.sizeOf[Long]
     |    val alignmentOf = Intrinsics.alignmentOf[Long]
-    |    val stackalloc = Intrinsics.stackalloc(sizeOf)
+    |    val stackalloc = Intrinsics.stackalloc[Byte](sizeOf)
     |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
     |    val store = Intrinsics.storeInt(elem, 42)
     |    val load = Intrinsics.loadInt(elem)
