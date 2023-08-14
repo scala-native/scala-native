@@ -1,5 +1,6 @@
 import scala.sys.process.Process
 import java.util.Locale
+import scala.scalanative.build._
 
 enablePlugins(ScalaNativePlugin)
 
@@ -15,6 +16,7 @@ scalaVersion := {
 
 nativeConfig ~= { c =>
   c.withDebugMetadata(true)
+    .withMode(Mode.debug) // otherwise, clang O2 inlines the call stack in Linux
 }
 
 lazy val debugBuild = taskKey[Unit]("Compile and run dsymutil if exists")
