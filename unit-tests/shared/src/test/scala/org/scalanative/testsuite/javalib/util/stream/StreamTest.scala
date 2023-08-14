@@ -1543,6 +1543,143 @@ class StreamTest {
     assertEquals(msg, nElements, count)
   }
 
+  @Test def streamSortedUnknownSizeButSmall(): Unit = {
+
+    /* To fit array, nElements should be <= Integer.MAX_VALUE.
+     * Machine must have sufficient memory to support chosen number of
+     * elements.
+     */
+    val nElements = 20 // Use a few more than usual 2 or 8.
+
+    // Are the characteristics correct?
+    val rng = new ju.Random(567890123)
+
+    val wild = new ArrayList[String](nElements)
+    val doubleString = rng
+      .doubles(nElements, 0.0, jl.Double.MAX_VALUE)
+      .mapToObj(d => d.toString())
+      .forEach(ds => wild.add(ds))
+
+    val ordered = new ArrayList(wild)
+    ju.Collections.sort(ordered)
+
+    val iter0 = wild.stream().iterator()
+    val spliter0 = Spliterators.spliteratorUnknownSize(iter0, 0)
+    val s0 = StreamSupport.stream(spliter0, false)
+
+    val s0Spliter = s0.spliterator()
+    assertFalse(
+      "Unexpected un-SIZED stream",
+      s0Spliter.hasCharacteristics(Spliterator.SIZED)
+    )
+
+    // Validating un-SIZED terminated s0, so need fresh, identical stream
+    val iter1 = wild.stream().iterator()
+    val spliter1 = Spliterators.spliteratorUnknownSize(iter0, 0)
+    val s = StreamSupport.stream(spliter1, false)
+
+    val alphabetized = s.sorted()
+
+    var count = 0
+
+    alphabetized.forEachOrdered((e) => {
+      assertEquals("mismatched elements", ordered.get(count), e)
+      count += 1
+    })
+
+    val msg =
+      if (count == 0) "unexpected empty stream"
+      else "unexpected number of elements"
+
+    assertEquals(msg, nElements, count)
+  }
+
+  /* Manual test, not run regularly in CI. Because it takes tens of seconds,
+   * 21 or so on Apple M1 development machine. Useful during development
+   * to verify that code-under-test matches JVM; that is, eventually terminates.
+   */
+
+  @Ignore
+  @Test def streamSortedUnknownSizeButHuge(): Unit = {
+    /* This test is for development and Issue verification.
+     * It is Ignored in normal Continuous Integration because it takes
+     * tens of seconds.
+     *
+     *  It tests streams without the SIZED characteristics which have a length
+     *  larger than the largest possible Java array:
+     *  approximately Integer.MAX_VALUE.
+     */
+
+    val rng = new ju.Random(567890123)
+
+    // Are the characteristics correct?
+    val rs0 = rng
+      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+      .mapToObj(d => d.toString())
+
+    val iter0 = rs0.iterator()
+    val spliter0 = Spliterators.spliteratorUnknownSize(iter0, 0)
+    val s0 = StreamSupport.stream(spliter0, false)
+
+    val s0Spliter = s0.spliterator()
+    assertFalse(
+      "expected un-SIZED stream",
+      s0Spliter.hasCharacteristics(Spliterator.SIZED)
+    )
+
+    // Validating un-SIZED terminated s0, so need fresh, identical stream
+    val rs1 = rng
+      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+      .mapToObj(d => d.toString())
+
+    val spliter1 = Spliterators.spliteratorUnknownSize(iter0, 0)
+    val s = StreamSupport.stream(spliter1, false)
+
+    val uut = s.sorted() // unit-under-test
+
+    // May take tens of seconds or more to get to Exception.
+    assertThrows(classOf[OutOfMemoryError], uut.findFirst())
+  }
+
+  @Test def streamSortedZeroSize(): Unit = {
+    val nElements = 0
+    val wild = new ArrayList[String](nElements)
+
+    val s = wild.stream()
+
+    val alphabetized = s.sorted()
+    val count = alphabetized.count()
+
+    assertEquals("expected an empty stream", 0, count)
+  }
+
+  // Issue 3378
+  @Test def streamSortedLongSize(): Unit = {
+    /* This tests streams with the SIZED characteristics and a
+     *  know length is larger than the largest possible Java array:
+     *  approximately Integer.MAX_VALUE.
+     */
+    val rng = new ju.Random(1234567890)
+
+    val s = rng
+      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+      .mapToObj(d => d.toString())
+
+    /* The sorted() implementation should be a late binding, intermediate
+     * operation. Expect no "max array size" error here, but later.
+     */
+
+    val uut = s.sorted() // unit-under-test
+
+    /* Stream#findFirst() is a terminal operation, so expect any errors
+     * to happen here, not earlier.  In particular, expect code being tested
+     * to detect and report the huge size rather than taking a long time
+     * and then running out of memory.
+     */
+
+    assertThrows(classOf[IllegalArgumentException], uut.findFirst())
+  }
+
   @Test def streamToArrayObject(): Unit = {
     val (sisters, nElements) = genHyadesList()
 
