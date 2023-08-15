@@ -718,7 +718,7 @@ private[stream] class StreamImpl[T](
 
     // Do the sort in the eventual terminal operation, not now.
     val spl = new SortingSpliterSupplier[T](_spliter, comparator)
-    new StreamImpl[T](spl, 0, false)
+    new StreamImpl[T](spl, 0, _parallel)
   }
 
   def toArray(): Array[Object] = {

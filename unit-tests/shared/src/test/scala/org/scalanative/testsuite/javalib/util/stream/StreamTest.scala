@@ -1573,7 +1573,7 @@ class StreamTest {
       s0Spliter.hasCharacteristics(Spliterator.SIZED)
     )
 
-    // Validating un-SIZED terminated s0, so need fresh, identical stream
+    // Validating un-SIZED terminated s0, so need fresh similar stream
     val iter1 = wild.stream().iterator()
     val spliter1 = Spliterators.spliteratorUnknownSize(iter0, 0)
     val s = StreamSupport.stream(spliter1, false)
@@ -1594,16 +1594,28 @@ class StreamTest {
     assertEquals(msg, nElements, count)
   }
 
-  /* Manual test, not run regularly in CI. Because it takes tens of seconds,
-   * 21 or so on Apple M1 development machine. Useful during development
-   * to verify that code-under-test matches JVM; that is, eventually terminates.
+  /* A manual test, not run regularly in CI.
+   * Where is the end-of-the-world and how long does it take to get there?
+   *
+   * It takes tens of seconds, 21 or so on Apple M1 development machine
+   * using Scala 2.12.18, TestsJVM3, and Java 20.
+   *
+   * Similar Scala Native Test3 runs takes 200+ seconds.
+   *
+   * Scala 2.12.18 TestsJVM3 and Java 8 takes longer than a lunch break.
+   *
+   * Your experience may vary. The time variation is most likely
+   * due to memory handling, not the Stream code under test.
+   *
+   * Useful during development to verify code-under-test matches JVM;
+   * that is, eventually terminates or exceeds developers patience.
    */
 
   @Ignore
   @Test def streamSortedUnknownSizeButHuge(): Unit = {
     /* This test is for development and Issue verification.
      * It is Ignored in normal Continuous Integration because it takes
-     * tens of seconds.
+     * a long time.
      *
      *  It tests streams without the SIZED characteristics which have a length
      *  larger than the largest possible Java array:
@@ -1627,7 +1639,7 @@ class StreamTest {
       s0Spliter.hasCharacteristics(Spliterator.SIZED)
     )
 
-    // Validating un-SIZED terminated s0, so need fresh, identical stream
+    // Validating un-SIZED terminated s0, so need fresh similar stream
     val rs1 = rng
       .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
       .mapToObj(d => d.toString())
