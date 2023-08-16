@@ -1,4 +1,5 @@
 // ported from LLVM 887d6ab dated 2023-04-16
+// updated 2023-08-16 from https://llvm.org/doxygen/Triple_8cpp_source.html
 
 //===--- Triple.cpp - Target triple helper class --------------------------===//
 //
