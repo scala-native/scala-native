@@ -35,6 +35,11 @@ private[scalanative] object TargetTriple {
     )
   }
 
+  def isArch32Bit(arch: String): Boolean =
+    Arch.getArchPointerBitWidth(arch) == 32
+  def isArch64Bit(arch: String): Boolean =
+    Arch.getArchPointerBitWidth(arch) == 64
+
   object Arch {
     def parse(str: String): String = str match {
       case "i386" | "i486" | "i586" | "i686"          => x86
@@ -123,6 +128,26 @@ private[scalanative] object TargetTriple {
           parseBpf(other)
         else
           unknown
+    }
+
+    def getArchPointerBitWidth(arch: String): Int = {
+      parse(arch) match {
+        case `unknown`        => 0
+        case `avr` | `msp430` => 16
+        case `aarch64_32` | `amdil` | `arc` | `arm` | `armeb` | `csky` |
+            `dxil` | `hexagon` | `hsail` | `kalimba` | `lanai` | `le32` |
+            `loongarch32` | `m68k` | `mips` | `mipsel` | `nvptx` | `ppc` |
+            `ppcle` | `r600` | `renderscript32` | `riscv32` | `shave` |
+            `sparc` | `sparcel` | `spir` | `spirv32` | `tce` | `tcele` |
+            `thumb` | `thumbeb` | `wasm32` | `x86` | `xcore` | `xtensa` =>
+          32
+        case `aarch64` | `aarch64_be` | `amdgcn` | `amdil64` | `bpfeb` |
+            `bpfel` | `hsail64` | `le64` | `loongarch64` | `mips64` |
+            `mips64el` | `nvptx64` | `ppc64` | `ppc64le` | `renderscript64` |
+            `riscv64` | `sparcv9` | `spir64` | `spirv64` | `systemz` | `ve` |
+            `wasm64` | `x86_64` =>
+          64
+      }
     }
 
     private def parseArm(str: String): String = {
