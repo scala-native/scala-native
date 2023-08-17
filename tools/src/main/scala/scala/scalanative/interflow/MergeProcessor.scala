@@ -2,16 +2,18 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.util.unreachable
-import scalanative.nir._
-import scalanative.linker._
+import scala.scalanative.util.unreachable
+import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.linker._
 import scala.annotation.tailrec
 
 final class MergeProcessor(
     insts: Array[Inst],
-    localNames: LocalNames,
+    debugInfo: DebugInfo,
     blockFresh: Fresh,
     doInline: Boolean,
+    scopeMapping: ScopeId => ScopeId,
     eval: Eval
 )(implicit linked: linker.Result) {
   import MergeProcessor.MergeBlockOffset
@@ -53,10 +55,7 @@ final class MergeProcessor(
       merge: Local,
       params: Seq[Val.Local],
       incoming: Seq[(Local, (Seq[Val], State))]
-  )(implicit
-      linked: linker.Result,
-      origDefPos: Position
-  ): (Seq[MergePhi], State) = {
+  )(implicit linked: linker.Result): (Seq[MergePhi], State) = {
     val localIds = incoming.map { case (n, (_, _)) => n }
     val states = incoming.map { case (_, (_, s)) => s }.toList
 
@@ -114,8 +113,8 @@ final class MergeProcessor(
           }
         }
 
-        def localNameOf(local: Local) = if (eval.preserveLocalNames) {
-          localNames
+        def localNameOf(local: Local) = if (eval.preserveDebugInfo) {
+          debugInfo.localNames
             .get(local)
             .orElse(mergeLocalNames.get(local))
             .orElse(
@@ -124,7 +123,7 @@ final class MergeProcessor(
         } else None
 
         def virtualNameOf(addr: Addr): Option[LocalName] =
-          if (eval.preserveLocalNames) {
+          if (eval.preserveDebugInfo) {
             MergeProcessor.findNameOf(_.virtualNames.get(addr))(states)
           } else None
 
@@ -163,7 +162,7 @@ final class MergeProcessor(
                   }
                   mergeHeap(addr) = EscapedInstance(
                     mergePhi(values, None, virtualNameOf(addr))
-                  )
+                  )(headInstance)
                 case head: VirtualInstance =>
                   val mergeValues = head.values.zipWithIndex.map {
                     case (_, idx) =>
@@ -178,12 +177,15 @@ final class MergeProcessor(
                       }
                       mergePhi(values, bound, virtualNameOf(addr))
                   }
-                  mergeHeap(addr) = head.copy(values = mergeValues)
-                case DelayedInstance(op) =>
+                  mergeHeap(addr) = head.copy(values = mergeValues)(
+                    head.srcPosition,
+                    head.scopeId
+                  )
+                case delayed @ DelayedInstance(op) =>
                   assert(
                     states.forall(s => s.derefDelayed(addr).delayedOp == op)
                   )
-                  mergeHeap(addr) = DelayedInstance(op)
+                  mergeHeap(addr) = delayed
                 case _ => util.unreachable
               }
             }
@@ -248,11 +250,11 @@ final class MergeProcessor(
 
         // Wrap up anre rturn a new merge state
 
-        val mergeState = new State(merge)
+        val mergeState = new State(merge)(eval.preserveDebugInfo)
         mergeState.emit = new nir.Buffer()(mergeFresh)
         mergeState.fresh = mergeFresh
         mergeState.locals = mergeLocals
-        if (eval.preserveLocalNames) {
+        if (eval.preserveDebugInfo) {
           mergeState.localNames = mergeLocalNames
           states.foreach { s =>
             mergeState.localNames.addMissing(s.localNames)
@@ -406,7 +408,13 @@ final class MergeProcessor(
 
     block.start = newState.fullClone(block.id)
     block.end = newState
-    block.cf = eval.run(insts, offsets, block.label.id, localNames)(block.end)
+    block.cf = eval.run(
+      insts = insts,
+      offsets = offsets,
+      from = block.label.id,
+      debugInfo = debugInfo,
+      scopeMapping = scopeMapping
+    )(newState)
     block.outgoing.clear()
     updateDirectSuccessors(block)
 
@@ -425,9 +433,7 @@ final class MergeProcessor(
     }
   }
 
-  def toSeq(
-      retTy: Type
-  )(implicit originDefnPos: nir.Position): Seq[MergeBlock] = {
+  def toSeq(retTy: Type): Seq[MergeBlock] = {
     val sortedBlocks = blocks.values.toSeq
       .filter(_.cf != null)
       .sortBy { block => offsets(block.label.id) }
@@ -462,6 +468,7 @@ final class MergeProcessor(
       // are going tojump to. Synthetics names must be fresh relative
       // to the source instructions, not relative to generated ones.
       val syntheticFresh = Fresh(insts.toSeq)
+      implicit val synthticPos: nir.Position = orderedBlocks.last.cfPos
       val syntheticParam =
         Val.Local(syntheticFresh(), Sub.lub(tys, Some(retTy)))
       val syntheticLabel =
@@ -474,7 +481,7 @@ final class MergeProcessor(
       // and update incoming/outgoing edges to include result block.
       retMergeBlocks.foreach { block =>
         val Inst.Ret(v) = block.cf: @unchecked
-        block.cf = Inst.Jump(Next.Label(syntheticLabel.id, Seq(v)))
+        block.cf = Inst.Jump(Next.Label(syntheticLabel.id, Seq(v)))(block.cfPos)
         block.outgoing(syntheticLabel.id) = resultMergeBlock
         resultMergeBlock.incoming(block.label.id) = (Seq(v), block.end)
       }
@@ -484,11 +491,13 @@ final class MergeProcessor(
       // param value must be evaluated in end state as it
       // might be eliminated after merge processing.
       val (phis, state) = merge(resultMergeBlock)
+      val syntheticScopeId: nir.ScopeId = scopeMapping(ScopeId.TopLevel)
       resultMergeBlock.phis = phis
       resultMergeBlock.start = state
       resultMergeBlock.end = state
-      resultMergeBlock.cf =
-        Inst.Ret(eval.eval(syntheticParam)(state, originDefnPos))
+      resultMergeBlock.cf = Inst.Ret(
+        eval.eval(syntheticParam)(state, synthticPos, syntheticScopeId)
+      )
     }
 
     orderedBlocks ++= sortedBlocks.filter(isExceptional)
@@ -509,17 +518,32 @@ object MergeProcessor {
   def fromEntry(
       insts: Array[Inst],
       args: Seq[Val],
-      localNames: LocalNames,
+      debugInfo: DebugInfo,
       state: State,
       doInline: Boolean,
       blockFresh: Fresh,
-      eval: Eval
+      eval: Eval,
+      parentScopeId: ScopeId
   )(implicit linked: linker.Result): MergeProcessor = {
     val builder =
-      new MergeProcessor(insts, localNames, blockFresh, doInline, eval)
+      new MergeProcessor(
+        insts = insts,
+        debugInfo = debugInfo,
+        blockFresh = blockFresh,
+        doInline = doInline,
+        eval = eval,
+        scopeMapping = createScopeMapping(
+          state = state,
+          lexicalScopes = debugInfo.lexicalScopes,
+          preserveDebugInfo = eval.preserveDebugInfo,
+          doInline = doInline,
+          parentScopeId = parentScopeId,
+          interflow = eval.interflow
+        )
+      )
     val entryName = insts.head.asInstanceOf[Inst.Label].id
     val entryMergeBlock = builder.findMergeBlock(entryName)
-    val entryState = new State(entryMergeBlock.id)
+    val entryState = new State(entryMergeBlock.id)(eval.preserveDebugInfo)
     entryState.inherit(state, args)
     entryState.inlineDepth = state.inlineDepth
     if (doInline) entryState.inlineDepth += 1
@@ -527,6 +551,45 @@ object MergeProcessor {
     entryMergeBlock.incoming(Local(-1)) = (args, entryState)
     builder.todo += entryName
     builder
+  }
+
+  private def createScopeMapping(
+      state: State,
+      lexicalScopes: Seq[DebugInfo.LexicalScope],
+      preserveDebugInfo: Boolean,
+      doInline: Boolean,
+      parentScopeId: ScopeId,
+      interflow: Interflow
+  ): ScopeId => ScopeId = {
+    if (!preserveDebugInfo) _ => ScopeId.TopLevel
+    else {
+      val freshScope = interflow.currentFreshScope.get
+      val scopes = interflow.currentLexicalScopes.get
+      val mapping = mutable.Map.empty[ScopeId, ScopeId]
+      def newMappingOf(scopeId: ScopeId): ScopeId =
+        mapping.getOrElseUpdate(scopeId, ScopeId.of(freshScope()))
+
+      if (doInline) lexicalScopes.foreach {
+        case scope @ DebugInfo.LexicalScope(id, parent) =>
+          val newScope = scope.copy(
+            id = newMappingOf(id),
+            parent = if (id.isTopLevel) parentScopeId else newMappingOf(parent)
+          )
+
+          scopes += newScope
+      }
+      else {
+        lexicalScopes.foreach {
+          case scope @ DebugInfo.LexicalScope(id, parent) =>
+            scopes += scope
+            mapping(id) = id
+            mapping(parent) = parent
+        }
+        // Skip N-1 fresh names to prevent duplicate ids, -1 stands for ScopeId.TopLevel
+        freshScope.skip(lexicalScopes.size - 1)
+      }
+      mapping
+    }
   }
 
   @tailrec

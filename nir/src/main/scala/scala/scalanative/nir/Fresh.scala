@@ -8,6 +8,7 @@ final class Fresh private (private var start: Long) {
     Local(value)
   }
   def last = Local(start)
+  def skip(n: Long): Unit = start += n
 }
 
 object Fresh {

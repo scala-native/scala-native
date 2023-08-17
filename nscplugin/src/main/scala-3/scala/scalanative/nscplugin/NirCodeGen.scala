@@ -50,7 +50,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected var curScopes =
-    new util.ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
+    new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
   protected val curScopeId = new util.ScopedVar[ScopeId]
   implicit protected def getScopeId: nir.ScopeId = {

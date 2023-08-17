@@ -24,6 +24,7 @@ object Generate {
   implicit def linked(implicit meta: Metadata): linker.Result =
     meta.linked
   private implicit val pos: Position = Position.NoPosition
+  private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
   private class Impl(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata

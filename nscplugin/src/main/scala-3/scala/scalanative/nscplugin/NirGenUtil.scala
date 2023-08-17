@@ -8,6 +8,7 @@ import core.Types._
 import scala.scalanative.util.ScopedVar
 import scalanative.nir.{Fresh, Local, LocalName}
 import scala.collection.mutable
+import scala.scalanative.nir
 
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
@@ -38,6 +39,23 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
       val buffer = new ExprBuffer(using curFresh)
       f(using buffer)
     }
+  }
+
+  protected def withFreshBlockScope[R](f: nir.ScopeId => R): R = {
+    val blockScope = nir.ScopeId.of(curFreshScope.get())
+    // Parent of top level points to itself
+    val parentScope =
+      if (blockScope.isTopLevel) blockScope
+      else curScopeId.get
+
+    curScopes.get += nir.Defn.Define.DebugInfo.LexicalScope(
+      id = blockScope,
+      parent = parentScope
+    )
+
+    ScopedVar.scoped(
+      curScopeId := blockScope
+    )(f(parentScope))
   }
 
   protected def localNamesBuilder(): mutable.Map[Local, LocalName] =

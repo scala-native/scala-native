@@ -35,7 +35,7 @@ package object optimizer {
         inst -> defn.debugInfo.localNames(inst.id)
     }.toMap
 
-  protected def findEntry(
+  protected[optimizer] def findEntry(
       linked: Seq[Defn],
       entryName: String = "Test"
   ): Option[Defn.Define] = {

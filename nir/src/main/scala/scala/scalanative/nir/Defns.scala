@@ -1,7 +1,6 @@
 package scala.scalanative
 package nir
 import scala.scalanative.nir.Defn.Define
-import scala.collection.immutable.NumericRange
 
 sealed abstract class Defn {
   def name: Global
@@ -38,14 +37,24 @@ object Defn {
     case class DebugInfo(
         localNames: LocalNames,
         lexicalScopes: Seq[DebugInfo.LexicalScope]
-    )
+    ) {
+      lazy val lexicalScopeOf: Map[ScopeId, DebugInfo.LexicalScope] =
+        lexicalScopes.map {
+          case scope @ DebugInfo.LexicalScope(id, _) => (id, scope)
+        }.toMap
+    }
     object DebugInfo {
-      val empty: DebugInfo =
-        DebugInfo(localNames = Map.empty, lexicalScopes = Nil)
+      val empty: DebugInfo = DebugInfo(
+        localNames = Map.empty,
+        lexicalScopes = Seq(LexicalScope.TopLevel)
+      )
 
-     
       case class LexicalScope(id: ScopeId, parent: ScopeId) {
-        def isTopLevel: Boolean = id.id == 0
+        def isTopLevel: Boolean = id.isTopLevel
+      }
+      object LexicalScope {
+        val TopLevel = LexicalScope(ScopeId.TopLevel, ScopeId.TopLevel)
+        implicit val ordering: Ordering[LexicalScope] = Ordering.by(_.id.id)
       }
     }
 

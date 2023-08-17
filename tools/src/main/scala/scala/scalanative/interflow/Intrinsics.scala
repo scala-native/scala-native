@@ -33,7 +33,8 @@ trait Intrinsics { self: Interflow =>
 
   def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(implicit
       state: State,
-      origPos: Position
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Option[Val] = {
     val Global.Member(_, sig) = name: @unchecked
 

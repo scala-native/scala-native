@@ -5,7 +5,10 @@ import java.util.Arrays
 import scalanative.nir.{Type, Val, Op}
 import scalanative.linker.Class
 
-sealed abstract class Instance extends Cloneable {
+sealed abstract class Instance(implicit
+    val srcPosition: nir.Position,
+    val scopeId: nir.ScopeId
+) extends Cloneable {
   def ty: Type = this match {
     case EscapedInstance(value) =>
       value.ty
@@ -16,10 +19,8 @@ sealed abstract class Instance extends Cloneable {
   }
 
   override def clone(): Instance = this match {
-    case EscapedInstance(value) =>
-      EscapedInstance(value)
-    case DelayedInstance(op) =>
-      DelayedInstance(op)
+    case EscapedInstance(value) => EscapedInstance(value)(this)
+    case DelayedInstance(op)    => DelayedInstance(op)
     case VirtualInstance(kind, cls, values, zone) =>
       VirtualInstance(kind, cls, values.clone(), zone)
   }
@@ -35,16 +36,21 @@ sealed abstract class Instance extends Cloneable {
   }
 }
 
-final case class EscapedInstance(val escapedValue: Val) extends Instance
+final case class EscapedInstance(val escapedValue: Val)(instance: Instance)
+    extends Instance()(instance.srcPosition, instance.scopeId)
 
-final case class DelayedInstance(val delayedOp: Op) extends Instance
+final case class DelayedInstance(val delayedOp: Op)(implicit
+    srcPosition: nir.Position,
+    scopeId: nir.ScopeId
+) extends Instance
 
 final case class VirtualInstance(
     kind: Kind,
     cls: Class,
     values: Array[Val],
     zone: Option[Val]
-) extends Instance {
+)(implicit srcPosition: nir.Position, scopeId: nir.ScopeId)
+    extends Instance {
 
   // We can't use case class generated equals, due to the fact
   // that equals on arrays does reference equality by default.

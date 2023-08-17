@@ -174,21 +174,7 @@ trait NirGenExpr(using Context) {
         genMatch(prologue, labels :+ last)
       }
 
-      val blockScope = ScopeId.of(curFreshScope.get())
-      // Parent of top level points to itself
-      val parentScope =
-        if (blockScope.isTopLevel) blockScope
-        else curScopeId.get
-
-
-      curScopes.get += DebugInfo.LexicalScope(
-        id = blockScope,
-        parent = parentScope
-      )
-
-      scoped(
-        curScopeId := blockScope
-      ) {
+      withFreshBlockScope { parentScope =>
         last match {
           case label: Labeled if isCaseLabelDef(label) =>
             translateMatch(label)
@@ -299,23 +285,27 @@ trait NirGenExpr(using Context) {
 
       def genAnonymousClassCtor: nir.Defn = {
         val body = {
-          val fresh = Fresh()
-          val buf = new nir.Buffer()(fresh)
+          scoped(
+            curScopeId := nir.ScopeId.TopLevel
+          ) {
+            val fresh = Fresh()
+            val buf = new nir.Buffer()(fresh)
 
-          val superTy = nir.Type.Function(Seq(Rt.Object), Type.Unit)
-          val superName = Rt.Object.name.member(Sig.Ctor(Seq.empty))
-          val superCtor = Val.Global(superName, Type.Ptr)
+            val superTy = nir.Type.Function(Seq(Rt.Object), Type.Unit)
+            val superName = Rt.Object.name.member(Sig.Ctor(Seq.empty))
+            val superCtor = Val.Global(superName, Type.Ptr)
 
-          val self = Val.Local(fresh(), Type.Ref(anonClassName))
-          val captureFormals = captureTypes.map(Val.Local(fresh(), _))
-          buf.label(fresh(), self +: captureFormals)
-          buf.call(superTy, superCtor, Seq(self), Next.None)
-          captureNames.zip(captureFormals).foreach { (name, capture) =>
-            buf.fieldstore(capture.ty, self, name, capture, Next.None)
+            val self = Val.Local(fresh(), Type.Ref(anonClassName))
+            val captureFormals = captureTypes.map(Val.Local(fresh(), _))
+            buf.label(fresh(), self +: captureFormals)
+            buf.call(superTy, superCtor, Seq(self), Next.None)
+            captureNames.zip(captureFormals).foreach { (name, capture) =>
+              buf.fieldstore(capture.ty, self, name, capture, Next.None)
+            }
+            buf.ret(Val.Unit)
+
+            buf.toSeq
           }
-          buf.ret(Val.Unit)
-
-          buf.toSeq
         }
 
         new nir.Defn.Define(Attrs.None, ctorName, ctorTy, body)
@@ -824,16 +814,15 @@ trait NirGenExpr(using Context) {
       // Nested code gen to separate out try/catch-related instructions.
       val nested = ExprBuffer()
       scoped(
-        curUnwindHandler := Some(handler),
-        curScopeId := ScopeId.of(curFreshScope.get())
+        curUnwindHandler := Some(handler)
       ) {
-        nested.label(normaln)
-        val res = nested.genExpr(expr)
-        nested.jumpExcludeUnitValue(retty)(mergen, res)
+        withFreshBlockScope { _ =>
+          nested.label(normaln)
+          val res = nested.genExpr(expr)
+          nested.jumpExcludeUnitValue(retty)(mergen, res)
+        }
       }
-      scoped(
-        curScopeId := ScopeId.of(curFreshScope.get())
-      ) {
+      withFreshBlockScope { _ =>
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
@@ -867,17 +856,15 @@ trait NirGenExpr(using Context) {
               genType(pat.tpe) -> Some(pat.symbol)
           }
           val f = { () =>
-            symopt.foreach { sym =>
-              val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
-              curMethodEnv.enter(sym, cast)
-            }
-            scoped(
-              curScopeId := ScopeId.of(curFreshScope.get())
-            ) {
+            withFreshBlockScope { _ =>
+              symopt.foreach { sym =>
+                val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
+                curMethodEnv.enter(sym, cast)
+              }
               val res = genExpr(body)
               buf.jumpExcludeUnitValue(retty)(mergen, res)
-              Val.Unit
             }
+            Val.Unit
           }
           (excty, f, exprPos)
       }
@@ -933,9 +920,7 @@ trait NirGenExpr(using Context) {
           // must first go through finally block if it's present. We generate
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
-          scoped(
-            curScopeId := ScopeId.of(curFreshScope.get())
-          ) {
+          withFreshBlockScope { _ =>
             finalies.label(finallyn)(cf.pos)
             finalies.genExpr(finallyp)
           }
@@ -2654,7 +2639,8 @@ trait NirGenExpr(using Context) {
 
       val forwarderName = funcName.member(ExternForwarderSig)
       val forwarderBody = scoped(
-        curUnwindHandler := None
+        curUnwindHandler := None,
+        curScopeId := ScopeId.TopLevel
       ) {
         val fresh = Fresh()
         val buf = ExprBuffer(using fresh)

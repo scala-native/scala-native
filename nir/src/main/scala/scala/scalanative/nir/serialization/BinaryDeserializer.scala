@@ -225,7 +225,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.XorBin  => Bin.Xor
   }
 
-  private def getScopeId() = new ScopeId(getLebUnsignedLong())
+  private def getScopeId() = new ScopeId(getLebUnsignedInt())
   private def getInsts(): Seq[Inst] = in(prelude.sections.insts) {
     getSeq(getInst())
   }

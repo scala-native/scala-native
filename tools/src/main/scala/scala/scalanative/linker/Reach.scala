@@ -619,6 +619,8 @@ class Reach(
           lookup(newMethod.name, ignoreIfUnavailable = true)
             .map { _ =>
               implicit val pos: nir.Position = defn.pos
+              implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+
               val newType = {
                 val newArgsTpe = Type.Ref(owner) +: ty.args
                 Type.Function(newArgsTpe, ty.ret)

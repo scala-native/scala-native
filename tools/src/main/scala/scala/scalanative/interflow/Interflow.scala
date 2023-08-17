@@ -4,6 +4,7 @@ package interflow
 import scala.collection.mutable
 import scala.scalanative.codegen.PlatformInfo
 import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.scalanative.util.ScopedVar
 import java.util.function.Supplier
@@ -35,16 +36,21 @@ class Interflow(val config: build.Config)(implicit
   private val reached = mutable.HashSet.empty[Global]
   private val modulePurity = mutable.Map.empty[Global, Boolean]
 
-  private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
-    def get() = Nil
-  })
+  def currentFreshScope = freshScopeTl.get()
+  private val freshScopeTl =
+    ThreadLocal.withInitial(() => new ScopedVar[Fresh])
+
+  def currentLexicalScopes = lexicalScopesTl.get()
+  private val lexicalScopesTl = ThreadLocal.withInitial(() =>
+    new ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
+  )
+
+  private val contextTl =
+    ThreadLocal.withInitial(() => List.empty[String])
   private val mergeProcessorTl =
-    ThreadLocal.withInitial(new Supplier[List[MergeProcessor]] {
-      def get() = Nil
-    })
-  private val blockFreshTl = ThreadLocal.withInitial(new Supplier[List[Fresh]] {
-    def get() = Nil
-  })
+    ThreadLocal.withInitial(() => List.empty[MergeProcessor])
+  private val blockFreshTl =
+    ThreadLocal.withInitial(() => List.empty[Fresh])
 
   def hasOriginal(name: Global): Boolean =
     originals.contains(name) && originals(name).isInstanceOf[Defn.Define]

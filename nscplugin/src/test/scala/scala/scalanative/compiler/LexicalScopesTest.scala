@@ -94,8 +94,6 @@ class LexicalScopesTest {
         Seq("a", "b", "result", "innerA", "innerB", "innerResult", "deep"),
         namedLets(defn).values
       )
-      println(defn.show)
-      defn.debugInfo.lexicalScopes.foreach(println)
       // top-level
       val innerA = scopeOf("innerA")
       val innerB = scopeOf("innerB")

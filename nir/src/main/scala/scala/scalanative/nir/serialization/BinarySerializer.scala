@@ -48,7 +48,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
     def putVal(value: Val): Unit = putLebUnsignedInt(Vals.intern(value))
     def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
     def putLocal(local: Local): Unit = putLebUnsignedLong(local.id)
-    def putScopeId(scopeId: ScopeId) = putLebUnsignedLong(scopeId.id)
+    def putScopeId(scopeId: ScopeId) = putLebUnsignedInt(scopeId.id)
     def putGlobal(g: Global): Unit = putLebUnsignedInt(Globals.intern(g))
     def putGlobals(gs: Seq[Global]): Unit = putSeq(gs)(putGlobal)
     def putGlobalOpt(gopt: Option[Global]): Unit = putOpt(gopt)(putGlobal)
@@ -223,7 +223,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
     private def putDebugInfo(debugInfo: nir.Defn.Define.DebugInfo): Unit = {
       val nir.Defn.Define.DebugInfo(localNames, lexicalScopes) = debugInfo
       putLocalNames(localNames)
-      putSeq(lexicalScopes)(putLexicalScope)
+      putSeq(lexicalScopes.sorted)(putLexicalScope)
     }
 
     def put(defn: Defn): Unit = {
@@ -587,11 +587,12 @@ final class BinarySerializer(channel: WritableByteChannel) {
           putOp(op)
           putScopeId(let.scope)
 
-        case Inst.Let(id, op, unwind) =>
+        case let @ Inst.Let(id, op, unwind) =>
           putTagAndPosition(T.LetUnwindInst)
           putLocal(id)
           putOp(op)
           putNext(unwind)
+          putScopeId(let.scope)
 
         case Inst.Ret(v) =>
           putTagAndPosition(T.RetInst)

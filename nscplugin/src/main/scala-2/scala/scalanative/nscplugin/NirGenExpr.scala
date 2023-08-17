@@ -118,20 +118,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genMatch(prologue, labels :+ last)
       }
 
-      val blockScope = ScopeId.of(curFreshScope.get())
-      // Parent of top level points to itself
-      val parentScope =
-        if (blockScope.isTopLevel) blockScope
-        else curScopeId.get
-
-      curScopes.get += DebugInfo.LexicalScope(
-        id = blockScope,
-        parent = parentScope
-      )
-
-      scoped(
-        curScopeId := blockScope
-      ) {
+      withFreshBlockScope { parentScope =>
         last match {
           case label: LabelDef if isCaseLabelDef(label) =>
             translateMatch(label)
@@ -146,9 +133,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             stats.foreach(genExpr(_))
             scoped(
               curScopeId := parentScope
-            ) {
-              genExpr(last)
-            }
+            )(genExpr(last))
         }
       }
     }
@@ -184,14 +169,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.label(local, params)(label.pos)
       if (isStatic) {
         genExpr(label.rhs)
-      } else {
-        scoped(
-          curMethodThis := Some(params.head),
-          curScopeId := ScopeId.of(curFreshScope.get())
-        ) {
-          genExpr(label.rhs)
+      } else
+        withFreshBlockScope { _ =>
+          scoped(
+            curMethodThis := Some(params.head)
+          )(genExpr(label.rhs))
         }
-      }
     }
 
     def genValDef(vd: ValDef): Val = {
@@ -421,19 +404,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val pos: nir.Position = expr.pos
       // Nested code gen to separate out try/catch-related instructions.
       val nested = new ExprBuffer
-      locally {
+      withFreshBlockScope { _ =>
         scoped(
-          curUnwindHandler := Some(handler),
-          curScopeId := ScopeId.of(curFreshScope.get())
+          curUnwindHandler := Some(handler)
         ) {
           nested.label(normaln)
           val res = nested.genExpr(expr)
           nested.jumpExcludeUnitValue(retty)(mergen, res)
         }
       }
-      scoped(
-        curScopeId := ScopeId.of(curFreshScope.get())
-      ) {
+      withFreshBlockScope { _ =>
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
@@ -467,9 +447,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               (genType(pat.symbol.tpe), Some(pat.symbol))
           }
           val f = { () =>
-            scoped(
-              curScopeId := ScopeId.of(curFreshScope.get())
-            ) {
+            withFreshBlockScope { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)
                 curMethodEnv.enter(sym, cast)
@@ -530,9 +508,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // must first go through finally block if it's present. We generate
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
-          scoped(
-            curScopeId := ScopeId.of(curFreshScope.get())
-          ) {
+          withFreshBlockScope { _ =>
             finalies.label(finallyn)(cf.pos)
             val res = finalies.genExpr(finallyp)
           }
@@ -826,7 +802,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val ctorName = anonName.member(Sig.Ctor(captureTypes))
       val ctorTy =
         nir.Type.Function(Type.Ref(anonName) +: captureTypes, Type.Unit)
-      val ctorBody = {
+      val ctorBody = scoped(curScopeId := ScopeId.TopLevel) {
         val fresh = Fresh()
         val buf = new nir.Buffer()(fresh)
         val self = Val.Local(fresh(), Type.Ref(anonName))
@@ -863,6 +839,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           curMethodEnv := bodyEnv,
           curMethodInfo := (new CollectMethodInfo).collect(EmptyTree),
           curFresh := bodyFresh,
+          curScopeId := ScopeId.TopLevel,
           curUnwindHandler := None
         ) {
           val fresh = Fresh()
@@ -1348,7 +1325,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val forwarderName = funcName.member(ExternForwarderSig)
       val forwarderBody = scoped(
-        curUnwindHandler := None
+        curUnwindHandler := None,
+        curScopeId := ScopeId.TopLevel
       ) {
         val fresh = Fresh()
         val buf = new ExprBuffer()(fresh)

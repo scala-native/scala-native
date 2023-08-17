@@ -238,7 +238,8 @@ trait NirGenStat(using Context) {
     implicit val pos: nir.Position = dd.span
     val fresh = Fresh()
     val freshScope = initFreshScope(dd.rhs)
-    val scopes = mutable.UnrolledBuffer.empty[DebugInfo.LexicalScope]
+    val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
+    scopes += DebugInfo.LexicalScope.TopLevel
 
     scoped(
       curMethodSym := dd.symbol,
