@@ -155,8 +155,8 @@ object Show {
         }
         str(":")
       case let @ Inst.Let(id, op, unwind) =>
-        if (!let.scope.isTopLevel) {
-          str(let.scope.id); str(": ")
+        if (!let.scopeId.isTopLevel) {
+          str(let.scopeId.id); str(": ")
         }
         onLocal(id)
         str(" = ")

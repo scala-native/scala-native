@@ -585,14 +585,14 @@ final class BinarySerializer(channel: WritableByteChannel) {
           putTagAndPosition(T.LetInst)
           putLocal(id)
           putOp(op)
-          putScopeId(let.scope)
+          putScopeId(let.scopeId)
 
         case let @ Inst.Let(id, op, unwind) =>
           putTagAndPosition(T.LetUnwindInst)
           putLocal(id)
           putOp(op)
           putNext(unwind)
-          putScopeId(let.scope)
+          putScopeId(let.scopeId)
 
         case Inst.Ret(v) =>
           putTagAndPosition(T.RetInst)

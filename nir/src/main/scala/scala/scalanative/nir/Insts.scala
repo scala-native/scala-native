@@ -12,13 +12,13 @@ object Inst {
   ) extends Inst
   final case class Let(id: Local, op: Op, unwind: Next)(implicit
       val pos: Position,
-      val scope: ScopeId
+      val scopeId: ScopeId
   ) extends Inst
   object Let {
     def apply(op: Op, unwind: Next)(implicit
         fresh: Fresh,
         pos: Position,
-        scope: ScopeId
+        scopeId: ScopeId
     ): Let =
       Let(fresh(), op, unwind)
   }

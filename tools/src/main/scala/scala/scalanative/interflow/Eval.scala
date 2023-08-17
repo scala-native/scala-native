@@ -47,7 +47,7 @@ trait Eval { self: Interflow =>
         case _: Inst.Label =>
           unreachable
         case let @ Inst.Let(local, op, unwind) =>
-          lastScopeId = scopeMapping(let.scope)
+          lastScopeId = scopeMapping(let.scopeId)
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }

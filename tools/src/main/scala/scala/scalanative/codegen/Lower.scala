@@ -142,7 +142,7 @@ object Lower {
 
       insts.foreach {
         case inst @ Inst.Let(n, Op.Var(ty), unwind) =>
-          buf.let(n, Op.Stackalloc(ty, one), unwind)(inst.pos, inst.scope)
+          buf.let(n, Op.Stackalloc(ty, one), unwind)(inst.pos, inst.scopeId)
         case _ => ()
       }
 
@@ -165,7 +165,7 @@ object Lower {
           ScopedVar.scoped(
             unwindHandler := newUnwindHandler(unwind)(inst.pos)
           ) {
-            lastScopeId = inst.scope
+            lastScopeId = inst.scopeId
             genLet(buf, n, op)(inst.pos, lastScopeId)
           }
 
