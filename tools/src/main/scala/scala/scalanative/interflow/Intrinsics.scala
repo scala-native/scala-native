@@ -47,7 +47,7 @@ trait Intrinsics { self: Interflow =>
     sig match {
       case Rt.GetClassSig =>
         args match {
-          case Seq(VirtualRef(_, cls, _, _)) =>
+          case Seq(VirtualRef(_, cls, _)) =>
             Some(Val.Global(cls.name, Rt.Class))
           case Seq(value) =>
             val ty = value match {

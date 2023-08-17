@@ -15,7 +15,7 @@ object ControlFlow {
   final case class Edge(from: Block, to: Block, next: Next)
 
   final case class Block(
-      name: Local,
+      id: Local,
       params: Seq[Val.Local],
       insts: Seq[Inst],
       isEntry: Boolean
@@ -36,8 +36,8 @@ object ControlFlow {
 
     def pred = inEdges.map(_.from)
     def succ = outEdges.map(_.to)
-    def label = Inst.Label(name, params)
-    def show = name.show
+    def label = Inst.Label(id, params)
+    def show = id.show
   }
 
   final class Graph(
@@ -57,7 +57,7 @@ object ControlFlow {
         insts.foreach { inst =>
           inst match {
             case inst: Inst.Label =>
-              entries(inst.name) = i
+              entries(inst.id) = i
             case _ =>
               ()
           }
@@ -103,7 +103,7 @@ object ControlFlow {
         val insts :+ cf = node.insts: @unchecked
         insts.foreach {
           case inst @ Inst.Let(_, op, unwind) if unwind ne Next.None =>
-            edge(node, block(unwind.name)(inst.pos), unwind)
+            edge(node, block(unwind.id)(inst.pos), unwind)
           case _ =>
             ()
         }
@@ -113,23 +113,23 @@ object ControlFlow {
           case _: Inst.Ret =>
             ()
           case Inst.Jump(next) =>
-            edge(node, block(next.name), next)
+            edge(node, block(next.id), next)
           case Inst.If(_, next1, next2) =>
-            edge(node, block(next1.name), next1)
-            edge(node, block(next2.name), next2)
+            edge(node, block(next1.id), next1)
+            edge(node, block(next2.id), next2)
           case Inst.LinktimeIf(_, next1, next2) =>
-            edge(node, block(next1.name), next1)
-            edge(node, block(next2.name), next2)
+            edge(node, block(next1.id), next1)
+            edge(node, block(next2.id), next2)
           case Inst.Switch(_, default, cases) =>
-            edge(node, block(default.name), default)
-            cases.foreach { case_ => edge(node, block(case_.name), case_) }
+            edge(node, block(default.id), default)
+            cases.foreach { case_ => edge(node, block(case_.id), case_) }
           case Inst.Throw(_, next) =>
             if (next ne Next.None) {
-              edge(node, block(next.name), next)
+              edge(node, block(next.id), next)
             }
           case Inst.Unreachable(next) =>
             if (next ne Next.None) {
-              edge(node, block(next.name), next)
+              edge(node, block(next.id), next)
             }
           case inst =>
             unsupported(inst)
@@ -137,22 +137,22 @@ object ControlFlow {
       }
 
       val entryInst = insts.head.asInstanceOf[Inst.Label]
-      val entry = block(entryInst.name)(entryInst.pos)
+      val entry = block(entryInst.id)(entryInst.pos)
       val visited = mutable.Set.empty[Local]
 
       while (todo.nonEmpty) {
         val block = todo.head
         todo = todo.tail
-        val name = block.name
-        if (!visited(name)) {
-          visited += name
+        val id = block.id
+        if (!visited(id)) {
+          visited += id
           visit(block)
         }
       }
 
       val all = insts.collect {
-        case Inst.Label(name, _) if visited.contains(name) =>
-          blocks(name)
+        case Inst.Label(id, _) if visited.contains(id) =>
+          blocks(id)
       }
 
       new Graph(entry, all, blocks)

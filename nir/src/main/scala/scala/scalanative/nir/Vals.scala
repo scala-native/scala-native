@@ -188,7 +188,7 @@ object Val {
   final case class ByteString(bytes: Array[scala.Byte]) extends Val {
     def byteCount: scala.Int = bytes.length + 1
   }
-  final case class Local(name: nir.Local, valty: nir.Type) extends Val
+  final case class Local(id: nir.Local, valty: nir.Type) extends Val
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   // high-level

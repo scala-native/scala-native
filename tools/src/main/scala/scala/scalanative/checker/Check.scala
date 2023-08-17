@@ -149,7 +149,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
   def checkInst(inst: Inst): Unit = inst match {
     case _: Inst.Label =>
       ok
-    case Inst.Let(name, op, unwind) =>
+    case Inst.Let(_, op, unwind) =>
       checkOp(op)
       in("unwind")(checkUnwind(unwind))
     case Inst.Ret(v) =>

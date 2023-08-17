@@ -115,7 +115,7 @@ object Generate {
       val and = Val.Local(fresh(), Type.Int)
       val result = Val.Local(fresh(), Type.Bool)
 
-      def let(local: Val.Local, op: Op) = Inst.Let(local.name, op, Next.None)
+      def let(local: Val.Local, op: Op) = Inst.Let(local.id, op, Next.None)
 
       buf += Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
@@ -235,7 +235,7 @@ object Generate {
         unwind: () => Next
     )(implicit fresh: Fresh): Seq[Inst] = {
       defns.collect {
-        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+        case Defn.Define(_, name: Global.Member, _, _, _) if name.sig.isClinit =>
           Inst.Let(
             Op.Call(
               Type.Function(Seq.empty, Type.Unit),
@@ -255,7 +255,7 @@ object Generate {
       Seq(
         // init __stack_bottom variable
         Inst.Let(
-          stackBottom.name,
+          stackBottom.id,
           Op.Stackalloc(Type.Ptr, Val.Long(0)),
           unwind
         ),
@@ -306,9 +306,9 @@ object Generate {
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
             Seq(
-              Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
+              Inst.Let(rt.id, Op.Module(Runtime.name), unwind),
               Inst.Let(
-                arr.name,
+                arr.id,
                 Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                 unwind
               ),
@@ -400,10 +400,10 @@ object Generate {
             def loadSinglethreadImpl: Seq[Inst] = {
               Seq(
                 Inst.Label(entry, Seq.empty),
-                Inst.Let(slot.name, selectSlot, Next.None),
-                Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
+                Inst.Let(slot.id, selectSlot, Next.None),
+                Inst.Let(self.id, Op.Load(clsTy, slot), Next.None),
                 Inst.Let(
-                  cond.name,
+                  cond.id,
                   Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
                   Next.None
                 ),
@@ -412,7 +412,7 @@ object Generate {
                 Inst.Ret(self),
                 Inst.Label(initialize, Seq.empty),
                 Inst.Let(
-                  alloc.name,
+                  alloc.id,
                   Op.Classalloc(name, zone = None),
                   Next.None
                 ),
@@ -436,9 +436,9 @@ object Generate {
 
               Seq(
                 Inst.Label(entry, Seq.empty),
-                Inst.Let(slot.name, selectSlot, Next.None),
+                Inst.Let(slot.id, selectSlot, Next.None),
                 Inst.Let(
-                  self.name,
+                  self.id,
                   Op.Call(
                     LoadModuleSig,
                     LoadModule,

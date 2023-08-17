@@ -162,7 +162,14 @@ trait Inline { self: Interflow =>
       val inlineArgs = adapt(args, defn.ty)
       val inlineInsts = defn.insts.toArray
       val blocks =
-        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
+        process(
+          inlineInsts,
+          defn.localNames,
+          inlineArgs,
+          state,
+          doInline = true,
+          origRetTy
+        )
 
       val emit = new nir.Buffer()(state.fresh)
 
@@ -219,6 +226,12 @@ trait Inline { self: Interflow =>
             .getOrElse {
               (nothing, state)
             }
+      }
+      if (self.preserveLocalNames) {
+        blocks.foreach { block =>
+          endState.localNames.addMissing(block.end.localNames)
+          endState.virtualNames.addMissing(block.end.virtualNames)
+        }
       }
 
       state.emit ++= emit

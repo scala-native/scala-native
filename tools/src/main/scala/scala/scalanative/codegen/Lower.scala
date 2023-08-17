@@ -144,8 +144,7 @@ object Lower {
       insts.foreach {
         case inst @ Inst.Let(n, Op.Var(ty), unwind) =>
           buf.let(n, Op.Stackalloc(ty, one), unwind)(inst.pos)
-        case _ =>
-          ()
+        case _ => ()
       }
 
       val Inst.Label(firstLabel, _) = insts.head: @unchecked
@@ -1040,7 +1039,7 @@ object Lower {
           val safeZoneAllocImplMethod = Val.Local(fresh(), Type.Ptr)
           genMethodOp(
             buf,
-            safeZoneAllocImplMethod.name,
+            safeZoneAllocImplMethod.id,
             Op.Method(zone, safeZoneAllocImpl.sig)
           )
           buf.let(

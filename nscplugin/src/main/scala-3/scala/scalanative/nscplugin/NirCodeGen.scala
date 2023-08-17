@@ -41,6 +41,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
   protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
+  protected val curMethodLocalNames =
+    new util.ScopedVar[mutable.Map[Local, LocalName]]
   protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
   protected var curMethodUsesLinktimeResolvedValues = false

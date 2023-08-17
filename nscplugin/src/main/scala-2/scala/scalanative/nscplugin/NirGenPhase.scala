@@ -35,6 +35,8 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
   protected val curMethodThis = new util.ScopedVar[Option[Val]]
+  protected val curMethodLocalNames =
+    new util.ScopedVar[mutable.Map[Local, LocalName]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]

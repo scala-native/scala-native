@@ -203,6 +203,15 @@ final class BinarySerializer(channel: WritableByteChannel) {
       Insts.put(insts)
     }
 
+    private def putLocalNames(localNames: LocalNames): Unit = {
+      putLebUnsignedInt(localNames.size)
+      localNames.foreach {
+        case (local, localName) =>
+          putLocal(local)
+          putString(localName)
+      }
+    }
+
     def put(defn: Defn): Unit = {
       def putHeader(tag: Byte): Unit = {
         putTag(tag)
@@ -217,6 +226,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
           putHeader(T.DefineDefn)
           putType(defn.ty)
           putInsts(defn.insts)
+          putLocalNames(defn.localNames)
 
         case defn: Defn.Var =>
           putHeader(T.VarDefn)
@@ -542,7 +552,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
     private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)
     private def putParam(param: Val.Local) = {
-      putLebUnsignedLong(param.name.id)
+      putLebUnsignedLong(param.id.id)
       putType(param.ty)
     }
 
@@ -557,14 +567,14 @@ final class BinarySerializer(channel: WritableByteChannel) {
           putLocal(name)
           putParams(params)
 
-        case Inst.Let(name, op, Next.None) =>
+        case Inst.Let(id, op, Next.None) =>
           putTagAndPosition(T.LetInst)
-          putLocal(name)
+          putLocal(id)
           putOp(op)
 
-        case Inst.Let(name, op, unwind) =>
+        case Inst.Let(id, op, unwind) =>
           putTagAndPosition(T.LetUnwindInst)
-          putLocal(name)
+          putLocal(id)
           putOp(op)
           putNext(unwind)
 

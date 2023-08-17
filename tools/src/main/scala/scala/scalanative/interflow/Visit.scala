@@ -154,9 +154,8 @@ trait Visit { self: Interflow =>
 
   def duplicateName(name: Global, argtys: Seq[Type]): Global = {
     val orig = originalName(name)
-    if (!shallDuplicate(orig, argtys)) {
-      orig
-    } else {
+    if (!shallDuplicate(orig, argtys)) orig
+    else {
       val origargtys = argumentTypes(name)
       val dupargtys = argtys.zip(origargtys).map {
         case (argty, origty) =>

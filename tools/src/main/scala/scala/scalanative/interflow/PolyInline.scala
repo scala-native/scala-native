@@ -78,12 +78,9 @@ trait PolyInline { self: Interflow =>
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
     val mergeLabel = fresh()
 
-    val meth =
-      emit.method(obj, Rt.GetClassSig, Next.None)
-    val methty =
-      Type.Function(Seq(Rt.Object), Rt.Class)
-    val objcls =
-      emit.call(methty, meth, Seq(obj), Next.None)
+    val meth = emit.method(obj, Rt.GetClassSig, Next.None)
+    val methty = Type.Function(Seq(Rt.Object), Rt.Class)
+    val objcls = emit.call(methty, meth, Seq(obj), Next.None)
 
     checkLabels.zipWithIndex.foreach {
       case (checkLabel, idx) =>
@@ -124,11 +121,8 @@ trait PolyInline { self: Interflow =>
 
         val cargs = margs.zip(argtys).map {
           case (value, argty) =>
-            if (!Sub.is(value.ty, argty)) {
-              emit.conv(Conv.Bitcast, argty, value, Next.None)
-            } else {
-              value
-            }
+            if (Sub.is(value.ty, argty)) value
+            else emit.conv(Conv.Bitcast, argty, value, Next.None)
         }
         val res = emit.call(ty, Val.Global(m, Type.Ptr), cargs, Next.None)
         emit.jump(Next.Label(mergeLabel, Seq(res)))

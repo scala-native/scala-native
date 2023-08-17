@@ -14,8 +14,10 @@ final class State(block: Local) {
   var heap = mutable.LongMap.empty[Instance]
   var locals = mutable.OpenHashMap.empty[Local, Val]
   var delayed = mutable.AnyRefMap.empty[Op, Val]
-  var emitted = mutable.AnyRefMap.empty[Op, Val]
+  var emitted = mutable.AnyRefMap.empty[Op, Val.Local]
   var emit = new nir.Buffer()(fresh)
+  var localNames = mutable.OpenHashMap.empty[Local, String]
+  var virtualNames = mutable.LongMap.empty[String]
   var inlineDepth = 0
 
   private def alloc(
@@ -73,10 +75,12 @@ final class State(block: Local) {
       value
     }
   }
-  def emit(op: Op, idempotent: Boolean = false)(implicit
-      position: Position
-  ): Val = {
-    if (op.isIdempotent || idempotent) {
+  def emit(
+      op: Op,
+      idempotent: Boolean = false,
+      localName: Option[String] = None
+  )(implicit position: Position): Val = {
+    val value = if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
@@ -84,9 +88,12 @@ final class State(block: Local) {
         emitted(op) = value
         value
       }
-    } else {
-      emit.let(op, Next.None)
+    } else emit.let(op, Next.None)
+
+    localName.foreach { name =>
+      this.localNames += value.id -> name
     }
+    value
   }
   def deref(addr: Addr): Instance = {
     heap(addr)
@@ -150,15 +157,15 @@ final class State(block: Local) {
     } {
       val clone = obj.clone()
       clone match {
-        case DelayedInstance(op) =>
-          delayed(op) = Val.Virtual(addr)
-        case _ =>
-          ()
+        case DelayedInstance(op) => delayed(op) = Val.Virtual(addr)
+        case _                   => ()
       }
       heap(addr) = clone
     }
 
     emitted ++= other.emitted
+    localNames.addMissing(other.localNames)
+    virtualNames.addMissing(other.virtualNames)
   }
   def heapClosure(roots: Seq[Val]): mutable.Set[Addr] = {
     val reachable = mutable.Set.empty[Addr]
@@ -233,6 +240,9 @@ final class State(block: Local) {
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
     newstate.inlineDepth = inlineDepth
+    newstate.virtualNames = virtualNames.mapValuesNow(identity)
+    newstate.localNames = localNames.clone()
+
     newstate
   }
   override def equals(other: Any): Boolean = other match {
@@ -245,7 +255,6 @@ final class State(block: Local) {
       rootValue: Val
   )(implicit linked: linker.Result, origPos: Position): Val = {
     val locals = mutable.Map.empty[Addr, Val]
-
     def reachAddr(addr: Addr): Unit = {
       if (!locals.contains(addr)) {
         val local = reachAlloc(addr)
@@ -268,11 +277,17 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, Next.None, zone.map(escapedVal))
+        emit(
+          Op.Arrayalloc(elemty, init, zone.map(escapedVal)),
+          localName = virtualNames.get(addr)
+        )
       case VirtualInstance(BoxKind, cls, Array(value), zone) =>
         reachVal(value)
         zone.foreach(reachVal)
-        emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
+        emit(
+          Op.Box(Type.Ref(cls.name), escapedVal(value)),
+          localName = virtualNames.get(addr)
+        )
       case VirtualInstance(StringKind, _, values, zone)
           if !hasEscaped(values(linked.StringValueField.index)) =>
         val Val.Virtual(charsAddr) = values(
@@ -280,18 +295,23 @@ final class State(block: Local) {
         ): @unchecked
         val chars = derefVirtual(charsAddr).values
           .map {
-            case Val.Char(v) =>
-              v
-            case _ =>
-              unreachable
+            case Val.Char(v) => v
+            case _           => unreachable
           }
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values, zone) =>
-        emit.classalloc(cls.name, Next.None, zone.map(escapedVal))
+        emit(
+          Op.Classalloc(cls.name, zone.map(escapedVal)),
+          localName = virtualNames.get(addr)
+        )
       case DelayedInstance(op) =>
         reachOp(op)
-        emit(escapedOp(op), idempotent = true)
+        emit(
+          escapedOp(op),
+          idempotent = true,
+          localName = virtualNames.get(addr)
+        )
       case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)
@@ -310,12 +330,13 @@ final class State(block: Local) {
               if (!value.isZero) {
                 reachVal(value)
                 zone.foreach(reachVal)
-                emit.arraystore(
-                  elemty,
-                  local,
-                  Val.Int(idx),
-                  escapedVal(value),
-                  Next.None
+                emit(
+                  Op.Arraystore(
+                    ty = elemty,
+                    arr = local,
+                    idx = Val.Int(idx),
+                    value = escapedVal(value)
+                  )
                 )
               }
           }
@@ -331,12 +352,13 @@ final class State(block: Local) {
             if (!value.isZero) {
               reachVal(value)
               zone.foreach(reachVal)
-              emit.fieldstore(
-                fld.ty,
-                local,
-                fld.name,
-                escapedVal(value),
-                Next.None
+              emit(
+                Op.Fieldstore(
+                  ty = fld.ty,
+                  obj = local,
+                  name = fld.name,
+                  value = escapedVal(value)
+                )
               )
             }
         }
@@ -391,10 +413,8 @@ final class State(block: Local) {
     }
 
     def escapedVal(v: Val): Val = v match {
-      case Val.Virtual(addr) =>
-        locals(addr)
-      case _ =>
-        v
+      case Val.Virtual(addr) => locals(addr)
+      case _                 => v
     }
 
     def escapedOp(op: Op): Op = op match {
