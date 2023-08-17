@@ -118,7 +118,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genMatch(prologue, labels :+ last)
       }
 
-      withFreshBlockScope { parentScope =>
+      withFreshBlockScope(block.pos) { parentScope =>
         last match {
           case label: LabelDef if isCaseLabelDef(label) =>
             translateMatch(label)
@@ -170,7 +170,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       if (isStatic) {
         genExpr(label.rhs)
       } else
-        withFreshBlockScope { _ =>
+        withFreshBlockScope(label.rhs.pos) { _ =>
           scoped(
             curMethodThis := Some(params.head)
           )(genExpr(label.rhs))
@@ -404,7 +404,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       implicit val pos: nir.Position = expr.pos
       // Nested code gen to separate out try/catch-related instructions.
       val nested = new ExprBuffer
-      withFreshBlockScope { _ =>
+      withFreshBlockScope(pos) { _ =>
         scoped(
           curUnwindHandler := Some(handler)
         ) {
@@ -413,7 +413,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           nested.jumpExcludeUnitValue(retty)(mergen, res)
         }
       }
-      withFreshBlockScope { _ =>
+      withFreshBlockScope(pos) { _ =>
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
@@ -447,7 +447,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               (genType(pat.symbol.tpe), Some(pat.symbol))
           }
           val f = { () =>
-            withFreshBlockScope { _ =>
+            withFreshBlockScope(body.pos) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)
                 curMethodEnv.enter(sym, cast)
@@ -508,7 +508,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           // must first go through finally block if it's present. We generate
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
-          withFreshBlockScope { _ =>
+          withFreshBlockScope(cf.pos) { _ =>
             finalies.label(finallyn)(cf.pos)
             val res = finalies.genExpr(finallyp)
           }

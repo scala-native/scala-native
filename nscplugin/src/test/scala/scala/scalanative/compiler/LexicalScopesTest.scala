@@ -60,10 +60,10 @@ class LexicalScopesTest {
   def scopeOf(localName: LocalName)(implicit defn: Defn.Define) =
     namedLets(defn)
       .collectFirst {
-        case (let @ Inst.Let(id, _, _), `localName`) => let.scope
+        case (let @ Inst.Let(id, _, _), `localName`) => let.scopeId
       }
       .orElse { fail(s"Not found a local named: ${localName}"); None }
-      .flatMap(id => defn.debugInfo.lexicalScopes.find(_.id == id))
+      .flatMap(defn.debugInfo.lexicalScopeOf.get)
       .orElse { fail(s"Not found defined scope for ${localName}"); None }
       .get
 

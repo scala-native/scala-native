@@ -215,9 +215,10 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
     import nir.Defn.Define.DebugInfo
     private def putLexicalScope(scope: DebugInfo.LexicalScope): Unit = {
-      val DebugInfo.LexicalScope(id, parent) = scope
+      val DebugInfo.LexicalScope(id, parent, srcPosition) = scope
       putScopeId(id)
       putScopeId(parent)
+      putPosition(srcPosition)
     }
 
     private def putDebugInfo(debugInfo: nir.Defn.Define.DebugInfo): Unit = {

@@ -647,9 +647,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = Fresh()
       val env = new MethodEnv(fresh)
 
-      val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
-      scopes += DebugInfo.LexicalScope.TopLevel
       implicit val pos: nir.Position = dd.pos
+      val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
+      scopes += DebugInfo.LexicalScope.TopLevel(dd.rhs.pos)
 
       scoped(
         curMethodSym := dd.symbol,

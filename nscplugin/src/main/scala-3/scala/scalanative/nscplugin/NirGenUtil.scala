@@ -41,7 +41,9 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     }
   }
 
-  protected def withFreshBlockScope[R](f: nir.ScopeId => R): R = {
+  protected def withFreshBlockScope[R](
+      srcPosition: nir.Position
+  )(f: nir.ScopeId => R): R = {
     val blockScope = nir.ScopeId.of(curFreshScope.get())
     // Parent of top level points to itself
     val parentScope =
@@ -50,7 +52,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 
     curScopes.get += nir.Defn.Define.DebugInfo.LexicalScope(
       id = blockScope,
-      parent = parentScope
+      parent = parentScope,
+      srcPosition = srcPosition
     )
 
     ScopedVar.scoped(

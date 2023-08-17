@@ -82,7 +82,7 @@ trait Opt { self: Interflow =>
     } else
       scoped(
         currentFreshScope := Fresh(0L),
-        currentLexicalScopes := mutable.Set.empty
+        currentLexicalScopes := mutable.UnrolledBuffer.empty
       ) {
         // Run a merge processor starting from the entry basic block.
         val blocks =

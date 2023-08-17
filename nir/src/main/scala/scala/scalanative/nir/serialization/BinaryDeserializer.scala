@@ -288,8 +288,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
   import Defn.Define.DebugInfo
 
   private def getLexicalScope() = DebugInfo.LexicalScope(
-    id =  getScopeId(),
-    parent = getScopeId()
+    id = getScopeId(),
+    parent = getScopeId(),
+    srcPosition = getPosition()
   )
 
   private def getDebugInfo(): Defn.Define.DebugInfo =

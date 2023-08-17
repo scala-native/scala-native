@@ -570,7 +570,7 @@ object MergeProcessor {
         mapping.getOrElseUpdate(scopeId, ScopeId.of(freshScope()))
 
       if (doInline) lexicalScopes.foreach {
-        case scope @ DebugInfo.LexicalScope(id, parent) =>
+        case scope @ DebugInfo.LexicalScope(id, parent, _) =>
           val newScope = scope.copy(
             id = newMappingOf(id),
             parent = if (id.isTopLevel) parentScopeId else newMappingOf(parent)
@@ -580,7 +580,7 @@ object MergeProcessor {
       }
       else {
         lexicalScopes.foreach {
-          case scope @ DebugInfo.LexicalScope(id, parent) =>
+          case scope @ DebugInfo.LexicalScope(id, parent, _) =>
             scopes += scope
             mapping(id) = id
             mapping(parent) = parent

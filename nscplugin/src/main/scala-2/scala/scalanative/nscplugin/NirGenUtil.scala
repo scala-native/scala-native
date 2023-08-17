@@ -24,7 +24,7 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
     id
   }
 
-  protected def withFreshBlockScope[R](f: nir.ScopeId => R): R = {
+  protected def withFreshBlockScope[R](srcPosition: nir.Position)(f: nir.ScopeId => R): R = {
     val blockScope = nir.ScopeId.of(curFreshScope.get())
     // Parent of top level points to itself
     val parentScope =
@@ -33,7 +33,8 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
 
     curScopes.get += nir.Defn.Define.DebugInfo.LexicalScope(
       id = blockScope,
-      parent = parentScope
+      parent = parentScope,
+      srcPosition = srcPosition
     )
 
     ScopedVar.scoped(

@@ -42,7 +42,7 @@ class Interflow(val config: build.Config)(implicit
 
   def currentLexicalScopes = lexicalScopesTl.get()
   private val lexicalScopesTl = ThreadLocal.withInitial(() =>
-    new ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
+    new ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
   )
 
   private val contextTl =

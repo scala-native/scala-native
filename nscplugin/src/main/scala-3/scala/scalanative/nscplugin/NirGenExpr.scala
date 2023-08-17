@@ -174,7 +174,7 @@ trait NirGenExpr(using Context) {
         genMatch(prologue, labels :+ last)
       }
 
-      withFreshBlockScope { parentScope =>
+      withFreshBlockScope(block.span) { parentScope =>
         last match {
           case label: Labeled if isCaseLabelDef(label) =>
             translateMatch(label)
@@ -816,13 +816,13 @@ trait NirGenExpr(using Context) {
       scoped(
         curUnwindHandler := Some(handler)
       ) {
-        withFreshBlockScope { _ =>
+        withFreshBlockScope(summon[nir.Position]) { _ =>
           nested.label(normaln)
           val res = nested.genExpr(expr)
           nested.jumpExcludeUnitValue(retty)(mergen, res)
         }
       }
-      withFreshBlockScope { _ =>
+      withFreshBlockScope(summon[nir.Position]) { _ =>
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
@@ -856,7 +856,7 @@ trait NirGenExpr(using Context) {
               genType(pat.tpe) -> Some(pat.symbol)
           }
           val f = { () =>
-            withFreshBlockScope { _ =>
+            withFreshBlockScope(body.span) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
                 curMethodEnv.enter(sym, cast)
@@ -920,7 +920,7 @@ trait NirGenExpr(using Context) {
           // must first go through finally block if it's present. We generate
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
-          withFreshBlockScope { _ =>
+          withFreshBlockScope(cf.pos) { _ =>
             finalies.label(finallyn)(cf.pos)
             finalies.genExpr(finallyp)
           }

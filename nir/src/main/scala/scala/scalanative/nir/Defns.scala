@@ -40,20 +40,27 @@ object Defn {
     ) {
       lazy val lexicalScopeOf: Map[ScopeId, DebugInfo.LexicalScope] =
         lexicalScopes.map {
-          case scope @ DebugInfo.LexicalScope(id, _) => (id, scope)
+          case scope @ DebugInfo.LexicalScope(id, _, _) => (id, scope)
         }.toMap
     }
     object DebugInfo {
       val empty: DebugInfo = DebugInfo(
         localNames = Map.empty,
-        lexicalScopes = Seq(LexicalScope.TopLevel)
+        lexicalScopes = Seq(LexicalScope.AnyTopLevel)
       )
 
-      case class LexicalScope(id: ScopeId, parent: ScopeId) {
+      case class LexicalScope(
+          id: ScopeId,
+          parent: ScopeId,
+          srcPosition: Position
+      ) {
         def isTopLevel: Boolean = id.isTopLevel
       }
       object LexicalScope {
-        val TopLevel = LexicalScope(ScopeId.TopLevel, ScopeId.TopLevel)
+        final val AnyTopLevel =
+          LexicalScope(ScopeId.TopLevel, ScopeId.TopLevel, Position.NoPosition)
+        def TopLevel(defnPosition: Position) =
+          AnyTopLevel.copy(srcPosition = defnPosition)
         implicit val ordering: Ordering[LexicalScope] = Ordering.by(_.id.id)
       }
     }
