@@ -69,8 +69,7 @@ private[scalanative] object NativeLib {
     // Apply global configuraiton changes based on reachability analysis results
     def withAnalysisInfo(config: Config): Config = {
       val preprocessorFlags = analysis.preprocessorDefinitions.map {
-        case Attr.Define(name, None)             => s"-D$name"
-        case Attr.Define(name, Some(definition)) => s"-D$name=$definition"
+        case Attr.Define(name) => s"-D$name"
       }
       config.withCompilerConfig(_.withCompileOptions(_ ++ preprocessorFlags))
     }

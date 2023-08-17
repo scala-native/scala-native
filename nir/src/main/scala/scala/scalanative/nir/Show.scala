@@ -104,13 +104,9 @@ object Show {
         str("link(\"")
         str(escapeQuotes(name))
         str("\")")
-      case Attr.Define(name, definition) =>
+      case Attr.Define(name) =>
         str("define(\"")
         str(escapeQuotes(name))
-        definition.foreach { defn =>
-          str("=")
-          str(escapeQuotes(defn))
-        }
         str("\")")
       case Attr.Abstract =>
         str("abstract")

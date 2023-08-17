@@ -28,7 +28,7 @@ object Attr {
   case object Stub extends Attr
   case class Extern(blocking: Boolean) extends Attr
   final case class Link(name: String) extends Attr
-  final case class Define(name: String, definition: Option[String]) extends Attr
+  final case class Define(name: String) extends Attr
   case object Abstract extends Attr
   case object Volatile extends Attr
   case object Final extends Attr

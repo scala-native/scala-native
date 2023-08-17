@@ -12,7 +12,4 @@ final class define private () extends scala.annotation.StaticAnnotation {
   /** Define a macro like `-Dname` */
   def this(name: String) = this()
 
-  /** Define a macro like `-Dname=definition` */
-  def this(name: String, definition: String) = this()
-
 }
