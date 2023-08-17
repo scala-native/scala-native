@@ -83,22 +83,19 @@ sealed trait NativeConfig {
 
   /** Are we targeting a 32-bit platform?
    *
-   *  This should perhaps list known 32-bit architectures and search for others
-   *  containing "32" and assume everything else is 64-bit. Printing the
-   *  architecture for a name that is not found seems excessive perhaps?
+   *  @return
+   *    true if 32 bit, false if 64 bit, unknown, or 16 bit
    */
   def is32BitPlatform = {
-    configuredOrDetectedTriple.arch match {
-      case "x86_64"  => false
-      case "aarch64" => false
-      case "arm64"   => false
-      case "i386"    => true
-      case "i686"    => true
-      case o =>
-        println(
-          s"Unexpected architecture in target triple: ${o}, defaulting to 64-bit"
-        )
-        false
+    import TargetTriple._
+    val arch = configuredOrDetectedTriple.arch
+    if (isArch32Bit(arch)) true
+    else if (isArch64Bit(arch)) false
+    else {
+      println(
+        s"Unexpected architecture in target triple: ${arch}, defaulting to 64-bit"
+      )
+      false
     }
   }
 
