@@ -28,21 +28,6 @@ class LocalNamesTest extends OptimizerSpec {
       )
     )(fn)
 
-  def afterLowering(config: build.Config, optimized: => linker.Result)(
-      fn: Seq[Defn] => Unit
-  ): Unit = {
-    import scala.scalanative.codegen._
-    import scala.concurrent.ExecutionContext.Implicits.global
-    import scala.concurrent._
-    val defns = optimized.defns
-    implicit def logger: build.Logger = config.logger
-    implicit val platform: PlatformInfo = PlatformInfo(config)
-    implicit val meta: Metadata =
-      new Metadata(optimized, config.compilerConfig, Nil)
-    val lowered = llvm.CodeGen.lower(defns)
-    Await.result(lowered.map(fn), duration.Duration.Inf)
-  }
-
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
   @Test def localNamesExistence(): Unit = super.optimize(
     entry = "Test",

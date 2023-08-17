@@ -68,4 +68,20 @@ package object optimizer {
       .orElse(staticForwarder)
       .ensuring(_.isDefined, "Not found linked method")
   }
+
+  def afterLowering(config: build.Config, optimized: => linker.Result)(
+      fn: Seq[Defn] => Unit
+  ): Unit = {
+    import scala.scalanative.codegen._
+    import scala.concurrent.ExecutionContext.Implicits.global
+    import scala.concurrent._
+    val defns = optimized.defns
+    implicit def logger: build.Logger = config.logger
+    implicit val platform: PlatformInfo = PlatformInfo(config)
+    implicit val meta: Metadata =
+      new Metadata(optimized, config.compilerConfig, Nil)
+    val lowered = llvm.CodeGen.lower(defns)
+    Await.result(lowered.map(fn), duration.Duration.Inf)
+  }
+
 }
