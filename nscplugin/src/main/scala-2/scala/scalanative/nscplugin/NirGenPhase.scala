@@ -46,7 +46,8 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
   protected var curMethodUsesLinktimeResolvedValues = false
 
-  protected var curScopes = new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
+  protected var curScopes =
+    new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
   protected val curScopeId = new util.ScopedVar[ScopeId]
   implicit protected def getScopeId: nir.ScopeId = curScopeId.get
@@ -54,7 +55,6 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     case _: Block => -1L // Conpensate the top-level block
     case _        => 0L
   })
-
 
   protected def unwind(implicit fresh: Fresh): Next =
     curUnwindHandler.get.fold[Next](Next.None) { handler =>

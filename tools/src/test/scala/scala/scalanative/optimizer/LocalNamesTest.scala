@@ -272,14 +272,20 @@ class LocalNamesTest extends OptimizerSpec {
             val expectedNames = expectedLets ++ asParams
             assertContainsAll("lets", expectedLets, letsNames)
             assertEquals("asParams", asParams, asParams.diff(letsNames))
-            assertContainsAll("vals", expectedNames, defn.debugInfo.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
             // allowed, delayed and duplicated in each if-else branch
             assertDistinct(letsNames.diff(Seq("b")))
             defn.insts
               .find {
                 case Inst.Label(_, params) =>
                   asParams
-                    .diff(params.map(_.id).flatMap(defn.debugInfo.localNames.get))
+                    .diff(
+                      params.map(_.id).flatMap(defn.debugInfo.localNames.get)
+                    )
                     .isEmpty
                 case _ => false
               }
@@ -326,7 +332,11 @@ class LocalNamesTest extends OptimizerSpec {
             // match merge block param
             val expectedNames = expectedLets ++ Seq("temp2")
             assertContainsAll("lets", expectedLets, lets)
-            assertContainsAll("vals", expectedNames, defn.debugInfo.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
           }
       checkLocalNames(result.defns)
   }
@@ -369,7 +379,11 @@ class LocalNamesTest extends OptimizerSpec {
               Seq("argInt", "impl", "temp", "temp1", "temp2", "temp3")
             val expectedNames = expectedLets ++ Seq("result", "args")
             assertContainsAll("lets", expectedLets, lets)
-            assertContainsAll("vals", expectedNames, defn.debugInfo.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
           }
       checkLocalNames(result.defns)
   }
@@ -409,7 +423,11 @@ class LocalNamesTest extends OptimizerSpec {
               Seq("argInt", "impl")
             val expectedNames = expectedLets ++ Seq("result")
             assertContainsAll("lets", expectedLets, lets)
-            assertContainsAll("vals", expectedNames, defn.debugInfo.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
           }
       checkLocalNames(result.defns)
   }

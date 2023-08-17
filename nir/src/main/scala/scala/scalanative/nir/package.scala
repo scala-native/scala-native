@@ -3,7 +3,7 @@ package scala.scalanative
 package object nir {
   type LocalName = String
   type LocalNames = Map[Local, LocalName]
-  case class ScopeId(id: Int) extends AnyVal{
+  case class ScopeId(id: Int) extends AnyVal {
     def isTopLevel: Boolean = this.id == ScopeId.TopLevel.id
   }
   object ScopeId {
