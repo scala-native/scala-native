@@ -241,6 +241,22 @@ trait Inline { self: Interflow =>
           endState.localNames.addMissing(block.end.localNames)
           endState.virtualNames.addMissing(block.end.virtualNames)
         }
+
+        // Adapt result of inlined call
+        // Replace the calle scopeId with the scopeId of caller function, to represent that result of this call is available in parent
+        res match {
+          case Val.Local(id, _) =>
+            emit.updateLetInst(id)(i => i.copy()(i.pos, parentScopeId))
+          case Val.Virtual(addr) =>
+            endState.heap(addr) = endState.deref(addr) match {
+              case inst: EscapedInstance => println(inst); inst
+              case inst: DelayedInstance =>
+                inst.copy()(inst.srcPosition, parentScopeId)
+              case inst: VirtualInstance =>
+                inst.copy()(inst.srcPosition, parentScopeId)
+            }
+          case other => ()
+        }
       }
 
       state.emit ++= emit

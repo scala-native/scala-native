@@ -290,7 +290,7 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
         val instance = heap(addr)
         locals(addr) = local
         reachInit(local, addr)
-        heap(addr) = EscapedInstance(local)(instance)
+        heap(addr) = new EscapedInstance(local, instance)
       }
     }
 

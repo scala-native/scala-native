@@ -19,10 +19,9 @@ sealed abstract class Instance(implicit
   }
 
   override def clone(): Instance = this match {
-    case EscapedInstance(value) => EscapedInstance(value)(this)
-    case DelayedInstance(op)    => DelayedInstance(op)
-    case VirtualInstance(kind, cls, values, zone) =>
-      VirtualInstance(kind, cls, values.clone(), zone)
+    case inst: EscapedInstance => inst.copy()
+    case inst: DelayedInstance => inst.copy()
+    case inst: VirtualInstance => inst.copy(values = inst.values.clone())
   }
 
   override def toString: String = this match {
@@ -36,8 +35,13 @@ sealed abstract class Instance(implicit
   }
 }
 
-final case class EscapedInstance(val escapedValue: Val)(instance: Instance)
-    extends Instance()(instance.srcPosition, instance.scopeId)
+final case class EscapedInstance(val escapedValue: Val)(implicit
+    srcPosition: nir.Position,
+    scopeId: nir.ScopeId
+) extends Instance {
+  def this(escapedValue: Val, instance: Instance) =
+    this(escapedValue)(instance.srcPosition, instance.scopeId)
+}
 
 final case class DelayedInstance(val delayedOp: Op)(implicit
     srcPosition: nir.Position,

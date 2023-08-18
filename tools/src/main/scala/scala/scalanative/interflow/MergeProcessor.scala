@@ -160,9 +160,10 @@ final class MergeProcessor(
                       case _                      => Val.Virtual(addr)
                     }
                   }
-                  mergeHeap(addr) = EscapedInstance(
-                    mergePhi(values, None, virtualNameOf(addr))
-                  )(headInstance)
+                  mergeHeap(addr) = new EscapedInstance(
+                    mergePhi(values, None, virtualNameOf(addr)),
+                    headInstance
+                  )
                 case head: VirtualInstance =>
                   val mergeValues = head.values.zipWithIndex.map {
                     case (_, idx) =>

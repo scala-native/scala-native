@@ -81,9 +81,6 @@ class LexicalScopesTest extends OptimizerSpec {
     case (config, result) =>
       def test(defns: Seq[Defn]): Unit = findEntry(defns).foreach {
         implicit defn =>
-          defn.debugInfo.lexicalScopes.foreach(println)
-          println(defn.show)
-
           assertContainsAll(
             "named vals",
             Seq("a", "b", "result", "innerA", "innerB", "innerResult", "deep"),
@@ -160,10 +157,7 @@ class LexicalScopesTest extends OptimizerSpec {
 
           val aParents = scopeParents(a)
           val bParents = scopeParents(b)
-          // value of 'a' is inlined call to Array.size, so it's scope would be different then b, but they should have a common ancestor
-          assertNotEquals("a-b-diff-scope", a.id, b.id)
-          assertTrue("a-b-common-parent", aParents.diff(bParents).nonEmpty)
-          // result and b don't have inlined calls so they shall be defined in the same scope
+          assertEquals("a-b-diff-scope", a.id, b.id)
           assertEquals("result-eq-b-scope", b.id, result.id)
 
           assertEquals("innerA-parent", result.id, innerA.parent)
@@ -185,4 +179,124 @@ class LexicalScopesTest extends OptimizerSpec {
       test(result.defns)
       afterLowering(config, result)(test)
   }
+
+  @Test def inlinedCall(): Unit = optimize(
+    entry = "Test",
+    sources = Map(
+      "Test.scala" -> """
+    |object Test {
+    |  @scala.scalanative.annotation.alwaysinline
+    |  def calc(x: Int, y: Int): Int = {
+    |    val myMin = x min y
+    |    val myTmp = myMin * y + x
+    |    println(myTmp)
+    |    myTmp + 1
+    |  }
+    |  def main(args: Array[String]): Unit = {
+    |    val a = calc(42, args.size)
+    |    println(a + 1)
+    |    println(a.toString)
+    |  }
+    |}
+    """.stripMargin
+    ),
+    setupConfig = _.withMode(build.Mode.releaseFast)
+  ) {
+    case (config, result) =>
+      findEntry(result.defns).foreach { implicit defn =>
+        assertContainsAll(
+          "named vals",
+          Seq("a", "myMin", "myTmp"),
+          namedLets(defn).values
+        )
+        // a and b can move moved to seperate scopes in transofrmation, but shall still have common parent
+        val a = scopeOf("a")
+        assertEquals("a-parent", a.id, ScopeId.TopLevel)
+
+        val myMin = scopeOf("myMin")
+        assertNotEquals("myMin-scope", a.id, myMin.id)
+        assertEquals("myMin-parent", a.id, myMin.parent)
+
+        val myTmp = scopeOf("myTmp")
+        assertNotEquals("myTmp-scope", a.id, myTmp.id)
+        assertEquals("myTmp-parent", a.id, myTmp.parent)
+      }
+  }
+
+  @Test def multipleInlinedCalls(): Unit = optimize(
+    entry = "Test",
+    sources = Map(
+      "Test.scala" -> """
+    |object Test {
+    |  @scala.scalanative.annotation.alwaysinline
+    |  def calc(x: Int, y: Int): Int = {
+    |    val myMin = x min y
+    |    val myTmp = myMin * y + x
+    |    println(myTmp)
+    |    myTmp + 1
+    |  }
+    |  def main(args: Array[String]): Unit = {
+    |    val a = calc(42, args.size)
+    |    val b = calc(24, this.##)
+    |    println(a + 1)
+    |    println(b + 1)
+    |    println(a.toString -> b.toString)
+    |  }
+    |}
+    """.stripMargin
+    ),
+    setupConfig = _.withMode(build.Mode.releaseFast)
+  ) {
+    case (config, result) =>
+      findEntry(result.defns).foreach { implicit defn =>
+        assertContainsAll(
+          "named vals",
+          Seq("a", "b", "myMin", "myTmp"),
+          namedLets(defn).values
+        )
+        val nameDuplicates = namedLets(defn).groupBy(_._2).map {
+          case (key, values) => (key, values.map(_._1).toList.sortBy(_.id.id))
+        }
+
+        val a = scopeOf("a")
+        val b = scopeOf("b")
+        assertEquals("a-b-scopes", a.id, b.id)
+        assertEquals("a-b-parent", a.parent, b.parent)
+        assertTrue("a-b-toplevel", a.isTopLevel)
+
+        nameDuplicates("myMin") match {
+          case Seq(first, second) =>
+            assertNotEquals(
+              "first-second scope ids",
+              first.scopeId,
+              second.scopeId
+            )
+            assertEquals(
+              a.id,
+              defn.debugInfo.lexicalScopeOf(first.scopeId).parent
+            )
+            assertEquals(
+              b.id,
+              defn.debugInfo.lexicalScopeOf(second.scopeId).parent
+            )
+          case unexpected =>
+            fail(s"Unexpected ammount of myMin duplicates: $unexpected")
+        }
+        nameDuplicates("myTmp") match {
+          case Seq(first, second) =>
+            assertNotEquals(
+              "first-second scope ids",
+              first.scopeId,
+              second.scopeId
+            )
+            assertEquals(
+              defn.debugInfo.lexicalScopeOf(first.scopeId).parent,
+              defn.debugInfo.lexicalScopeOf(second.scopeId).parent
+            )
+          case unexpected =>
+            fail(s"Unexpected ammount of myMin duplicates: $unexpected")
+        }
+      }
+  }
+
 }
