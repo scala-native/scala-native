@@ -187,9 +187,7 @@ trait NirGenExpr(using Context) {
 
           case _ =>
             stats.foreach(genExpr)
-            scoped(
-              curScopeId := parentScope
-            ) { genExpr(last) }
+            genExpr(last)
         }
       }
 
@@ -986,6 +984,14 @@ trait NirGenExpr(using Context) {
         case v @ Val.Local(id, _) =>
           if !(localNames.contains(id) || isMutable)
           then localNames.update(id, name)
+          vd.rhs match {
+            // When rhs is a block patch the scopeId of it's result to match the current scopeId
+            // This allows us to reflect that ValDef is accessible in this scope
+            case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
+                Try(Typed(_: Block, _), _, _) =>
+              buf.updateLetInst(id)(i => i.copy()(i.pos, curScopeId.get))
+            case _ => ()
+          }
           v
         case Val.Unit => Val.Unit
         case v        => buf.let(fresh.namedId(name), Op.Copy(v), unwind)

@@ -14,6 +14,22 @@ class Buffer(implicit fresh: Fresh) {
   def foreach(fn: Inst => Unit) = buffer.foreach(fn)
   def exists(pred: Inst => Boolean) = buffer.exists(pred)
 
+  private[scalanative] def updateLetInst(
+      expectedId: Local
+  )(fn: Inst.Let => Inst.Let): Option[Inst.Let] = {
+    val idx = buffer.indexWhere {
+      case Inst.Let(id, _, _) => expectedId == id
+      case _                  => false
+    }
+    if (idx < 0) None
+    else {
+      val inst = buffer(idx).asInstanceOf[Inst.Let]
+      val patched = fn(inst)
+      buffer.update(idx, patched)
+      Some(patched)
+    }
+  }
+
   // Control-flow ops
   def label(id: Local)(implicit pos: Position): Unit =
     this += Inst.Label(id, Seq.empty)

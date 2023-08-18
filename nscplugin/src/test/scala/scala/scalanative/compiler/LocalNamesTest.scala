@@ -313,6 +313,42 @@ class LocalNamesTest {
     checkLocalNames(loaded)
   }
 
+  @Test def tryCatchFinalyBlocks(): Unit = compileAndLoad(
+    sources = "Test.scala" -> """
+    |object Test {
+    |  def main(args: Array[String]): Unit = {
+    |    val a = args.size
+    |    val b = 
+    |      try {
+    |        val inTry = args(0).toInt
+    |        inTry + 1
+    |      }catch{
+    |        case ex1: Exception => 
+    |          val n = args(0)
+    |          n.size
+    |        case ex2: Throwable => 
+    |          val m = args.size
+    |          throw ex2
+    |      } finally {
+    |        val finalVal = "fooBar"
+    |        println(finalVal) 
+    |      }
+    |  }
+    |}
+    """.stripMargin
+  ) { loaded =>
+    findDefinition(loaded).foreach { implicit defn =>
+      assertContainsAll(
+        "named vals",
+        // b passed as label argument
+        Seq("a", "inTry", "ex1", "n", "ex2", "m", "finalVal"),
+        namedLets(defn).values
+      )
+      assertFalse(namedLets(defn).values.toSeq.contains("b"))
+      assertContains("b passed as param", "b", defn.debugInfo.localNames.values)
+    }
+  }
+
   // TODO
   // @Test def identReference(): Unit = compileAndLoad(
   //   sources = "Test.scala" -> """

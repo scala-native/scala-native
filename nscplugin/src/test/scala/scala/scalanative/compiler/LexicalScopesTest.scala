@@ -158,8 +158,6 @@ class LexicalScopesTest {
     """.stripMargin
   ) { loaded =>
     findDefinition(loaded).foreach { implicit defn =>
-      println(defn.show)
-      defn.debugInfo.lexicalScopes.foreach(println)
       assertContainsAll(
         "named vals",
         // b passed as label argument
@@ -181,7 +179,6 @@ class LexicalScopesTest {
       assertContains("inTry-parents", a.id, scopeParents(inTry))
       assertEquals(ex1.id, n.parent)
       assertEquals(ex2.id, m.parent)
-      
     }
   }
 }
