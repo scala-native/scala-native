@@ -185,7 +185,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case v @ Val.Local(id, _) =>
           if (localNames.contains(id) || isMutable) ()
           else localNames.update(id, name)
-           vd.rhs match {
+          vd.rhs match {
             // When rhs is a block patch the scopeId of it's result to match the current scopeId
             // This allows us to reflect that ValDef is accessible in this scope
             case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
