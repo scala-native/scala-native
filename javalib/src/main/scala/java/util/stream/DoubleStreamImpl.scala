@@ -577,35 +577,47 @@ private[stream] class DoubleStreamImpl(
   def sorted(): DoubleStream = {
     // No commenceOperation() here. This is an intermediate operation.
 
-    /* Be aware that this method will/should throw on first use if type
-     * T is not Comparable[T]. This is described in the Java Stream doc.
-     *
-     * Implementation note:
-     *   It would seem that Comparator.naturalOrder()
-     *   could be used here. The SN complier complains, rightly, that
-     *   T is not known to be  [T <: Comparable[T]]. That is because
-     *   T may actually not _be_ comparable. The comparator below punts
-     *   the issue and raises an exception if T is, indeed, not comparable.
-     */
+    class SortingSpliterOfDoubleSupplier(
+        srcSpliter: Spliterator.OfDouble
+    ) extends Supplier[Spliterator.OfDouble] {
 
-    val buffer = toArray()
+      def get(): Spliterator.OfDouble = {
+        val knownSize = _spliter.getExactSizeIfKnown()
 
-    Arrays.sort(buffer)
+        if (knownSize > Integer.MAX_VALUE) {
+          throw new IllegalArgumentException(
+            "Stream size exceeds max array size"
+          )
+        } else {
+          /* Sufficiently large streams, with either known or unknown size may
+           * eventually throw an OutOfMemoryError exception, same as JVM.
+           *
+           * sorting streams of unknown size is likely to be _slow_.
+           */
 
-    val startingBits = _spliter.characteristics()
-    val alwaysSetBits =
-      Spliterator.SORTED | Spliterator.ORDERED |
-        Spliterator.SIZED | Spliterator.SUBSIZED
+          val buffer = toArray()
 
-    // Time & experience may show that additional bits need to be cleared here.
-    val alwaysClearedBits = Spliterator.IMMUTABLE
+          Arrays.sort(buffer)
 
-    val newCharacteristics =
-      (startingBits | alwaysSetBits) & ~alwaysClearedBits
+          val startingBits = _spliter.characteristics()
+          val alwaysSetBits =
+            Spliterator.SORTED | Spliterator.ORDERED |
+              Spliterator.SIZED | Spliterator.SUBSIZED
 
-    val spl = Spliterators.spliterator(buffer, newCharacteristics)
+          // Time & experience may show that additional bits need to be cleared
+          val alwaysClearedBits = Spliterator.IMMUTABLE
 
-    new DoubleStreamImpl(spl, _parallel, pipeline)
+          val newCharacteristics =
+            (startingBits | alwaysSetBits) & ~alwaysClearedBits
+
+          Spliterators.spliterator(buffer, newCharacteristics)
+        }
+      }
+    }
+
+    // Do the sort in the eventual terminal operation, not now.
+    val spl = new SortingSpliterOfDoubleSupplier(_spliter)
+    new DoubleStreamImpl(spl, 0, _parallel)
   }
 
   def sum(): scala.Double = {
