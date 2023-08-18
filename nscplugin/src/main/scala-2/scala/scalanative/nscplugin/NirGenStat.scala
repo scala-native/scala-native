@@ -257,7 +257,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def withFreshExprBuffer[R](f: ExprBuffer => R): R = {
-      Predef.assert(!curScopeId.isInitialized)
       scoped(
         curFresh := Fresh(),
         curScopeId := ScopeId.TopLevel
